@@ -9,7 +9,7 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = GPlatesMaths.o Matrix3D.o PointOnSphere.o Rotation.o
+OBJS = DirVector3D.o GPlatesMaths.o Matrix3D.o PointOnSphere.o Real.o Rotation.o UnitVector3D.o
 
 LIBNAME = libmaths.a
 
