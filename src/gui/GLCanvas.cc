@@ -27,6 +27,8 @@
 #include "GLCanvas.h"
 #include "Colour.h"
 #include "maths/UnitVector3D.h"
+#include "maths/UnitQuaternion3D.h"
+#include "maths/FiniteRotation.h"
 #include "fileio/GPlatesReader.h"
 
 using namespace GPlatesGui;
@@ -100,10 +102,11 @@ GLCanvas::OnSize(wxSizeEvent& evt)
 }
 
 
+static const GLfloat ORTHO_RATIO = 1.2;
+
 void
 GLCanvas::SetView()
 {
-	static const GLfloat ORTHO_RATIO = 1.2;
 	static const GLfloat Z_NEAR = 0.5;
 
 	// Always fill up the all of the available space.
@@ -137,26 +140,56 @@ GLCanvas::SetView()
 	glLoadIdentity();
 }
 
-#if 0
-/*
- * FIXME: There ought to be a more efficient way of doing this.
- */
-static GPlatesMaths::DirVector3D
-GetWorldCoordFromWindow(const GLdouble& winx, const GLdouble& winy)
+GPlatesMaths::PointOnSphere*
+GLCanvas::GetSphereCoordFromScreen(int screenx, int screeny)
 {
-	GLdouble modelmatrix[16], projmatrix[16], viewport[16];
-	GLdouble objx, objy, objz;  // World coordinates.
+	using namespace GPlatesMaths;
+
+	// the coordinate of the mouse projected onto the globe.
+	real_t x, y, z, discrim;  
+
+	int width, height;
+	GetClientSize(&width, &height);
+
+	// Minimum
+	GLdouble scale = static_cast<GLdouble>(width < height ? width : height);
 	
-	glGetDoublev(GL_MODELVIEW_MATRIX, &modelmatrix[0]);
-	glGetDoublev(GL_PROJECTION_MATRIX, &projmatrix[0]);
-	glGetDoublev(GL_VIEWPORT_MATRIX, &viewport[0]);
+	// Scale to "unit square".
+	y = 2.0*screenx - width;
+	z = height - 2.0*screeny;
+	y /= scale;
+	z /= scale;
 	
-	gluUnProject(winx, winy, 0.0, modelmatrix, projmatrix, viewport, 
-		&objx, &objy, &objz);
+	// Account for the zoom factor
+	y *= _zoom_factor*ORTHO_RATIO;
+	z *= _zoom_factor*ORTHO_RATIO;
+
+	// Test if point is within the sphere's horizon.
+	if ((discrim = y*y + z*z) > 1.0)
+	{
+		return NULL;
+	}
+
+	x = sqrt(1.0 - discrim);
+
+	// Transform the screen coord to be in the globe's coordinate system.
+	UnitQuaternion3D elev = UnitQuaternion3D::CreateEulerRotation(
+			UnitVector3D(0.0, 1.0, 0.0),  // Rotate around Y-axis
+			degreesToRadians(-1.0*_globe.GetElevation()));
 	
-	return GPlatesMaths::DirVector3D(real_t(objx), real_t(objy), real_t(objz));
+	UnitQuaternion3D merid = UnitQuaternion3D::CreateEulerRotation(
+			UnitVector3D(0.0, 0.0, 1.0),  // Rotate around Z-axis
+			degreesToRadians(-1.0*_globe.GetMeridian()));
+
+	FiniteRotation rot = FiniteRotation::CreateFiniteRotation(
+			merid * elev,
+			0.0);  // present day
+	
+	UnitVector3D uv(x, y, z);
+	uv = rot * uv;
+	
+	return new GPlatesMaths::PointOnSphere(uv);
 }
-#endif
 
 void
 GLCanvas::OnSpin(wxMouseEvent& evt)

@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #include <iostream>
@@ -35,6 +35,8 @@
 #include "controls/File.h"
 #include "controls/View.h"
 #include "controls/Reconstruct.h"
+#include "global/types.h"
+#include "maths/OperationsOnSphere.h"
 
 
 using namespace GPlatesGui;
@@ -122,9 +124,25 @@ GLFrame::GLFrame(wxFrame* parent,
 void
 GLFrame::OnMouseMove(wxMouseEvent& evt)
 {
+	using namespace GPlatesMaths;
+
+	PointOnSphere* pos = 
+		_canvas->GetSphereCoordFromScreen(evt.GetX(), evt.GetY());
+	
 	std::ostringstream oss;
-	oss << "Current window coordinate of mouse: (" 
-		<< evt.GetX() << ", " << evt.GetY() << ")";
+	if (pos == NULL)
+	{
+		oss << "Current Earth coordinate of mouse: (off globe)";
+	}
+	else
+	{
+		LatLonPoint point = 
+			OperationsOnSphere::convertPointOnSphereToLatLonPoint(*pos);
+		oss << "Current Earth coordinate of mouse: (" 
+			<< point.latitude() << ", " << point.longitude() << ")";
+		delete pos;
+	}
+
 	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent));
 }
 

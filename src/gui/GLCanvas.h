@@ -27,9 +27,10 @@
 #define _GPLATES_GUI_GLCANVAS_H_
 
 #include <wx/glcanvas.h>
+#include <iostream>
 #include "Globe.h"
 #include "geo/DataGroup.h"
-#include <iostream>
+#include "maths/PointOnSphere.h"
 
 namespace GPlatesGui
 {
@@ -76,6 +77,17 @@ namespace GPlatesGui
 			void
 			OnSpin(wxMouseEvent&);
 
+			/**
+			 * Return the PointOnSphere corresponding to the given screen
+			 * coordinate, or else return a NULL pointer.
+			 * @pre 0 <= screenx < SCREEN_WIDTH, 
+			 *      0 <= screeny < SCREEN_HEIGHT.
+			 * @warning The @b client is responsible for the deletion of
+			 *   the memory pointed to by the return value.
+			 */
+			GPlatesMaths::PointOnSphere*
+			GetSphereCoordFromScreen(int screenx, int screeny);
+			
 		private:
 			Globe _globe;
 			GLfloat _zoom_factor;
