@@ -9,7 +9,8 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@ @NETCDF_CPPFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = ErrorMessage.o File.o InfoMessage.o Reconstruct.o View.o
+OBJS = AnimationTimer.o ErrorMessage.o File.o InfoMessage.o Reconstruct.o \
+	View.o
 
 LIBNAME = libcontrols.a
 
