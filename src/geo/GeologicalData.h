@@ -21,7 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_GEOLOGICALDATA_H_

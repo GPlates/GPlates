@@ -47,7 +47,7 @@ namespace GPlatesGui
 			Clear(const Colour& c = Colour::BLACK);
 			
 			/**
-			 * GLUT callbacks.
+			 * Callbacks.
 			 */
 			static void
 			Display();

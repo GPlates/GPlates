@@ -7,11 +7,12 @@ SUBDIRS = fileio geo global gui maths
 
 DISTFILES = Makefile.in *.cc
 
-CXXFLAGS = @CXXFLAGS@ @EXTRA_CFLAGS@
+INCLUDES = -I.
+CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
-EXTRA_LIBS = fileio/libfileio.a geo/libgeo.a global/libglobal.a \
+EXTRA_LIBS = global/libglobal.a fileio/libfileio.a geo/libgeo.a \
 	gui/libgui.a maths/libmaths.a
 
 LIBS = @LIBS@

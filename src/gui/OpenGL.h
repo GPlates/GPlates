@@ -27,13 +27,8 @@
 #define _GPLATES_GUI_OPENGL_H_
 
 extern "C" {
-/**
- * I'm pretty sure glut.h includes gl.h and glu.h, but it 
- * can't hurt to include them too.
- */
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/glut.h>
 }
 
 #endif  /* _GPLATES_GUI_OPENGL_H_ */

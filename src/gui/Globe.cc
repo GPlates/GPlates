@@ -129,8 +129,7 @@ Globe::Draw()
 		glColor3fv(_colour);
 
 		// Draw globe.
-		glLineWidth(0.01);
-		glutWireSphere(_radius, _slices, _stacks);
+		gluSphere(_sphere, _radius, _slices, _stacks);
 
 		// XXX: Draw NURBS (temporary measure)
 		DrawArc(UnitVector3D(1.0, 0.0, 0.0), UnitVector3D(0.0, 0.0, 1.0), _nurbs_renderer);

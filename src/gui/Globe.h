@@ -31,17 +31,22 @@ namespace GPlatesGui
 	class Globe
 	{
 		public:
-			Globe(Colour colour = DEFAULT_COLOUR,
+			Globe(Colour  colour = DEFAULT_COLOUR,
 				  GLfloat radius = DEFAULT_RADIUS,
-				  GLuint slices = DEFAULT_SLICES,
-				  GLuint stacks = DEFAULT_STACKS)
+				  GLuint  slices = DEFAULT_SLICES,
+				  GLuint  stacks = DEFAULT_STACKS)
 			 : _colour(colour), _radius(radius), _slices(slices), 
 			   _stacks(stacks), _meridian(0.0), _elevation(0.0)  {
 			
+				_sphere = gluNewQuadric();
 				_nurbs_renderer = gluNewNurbsRenderer();
 			}
 
-			~Globe() { gluDeleteNurbsRenderer(_nurbs_renderer); }
+			~Globe() { 
+				
+				gluDeleteNurbsRenderer(_nurbs_renderer);
+				gluDeleteQuadric(_sphere);
+			}
 
 			GLuint&
 			GetSlices() { return _slices; }
@@ -93,6 +98,7 @@ namespace GPlatesGui
 			GLuint _slices;
 			GLuint _stacks;
 
+			GLUquadricObj *_sphere;
 			GLUnurbsObj *_nurbs_renderer;
 
 			GLfloat _meridian;

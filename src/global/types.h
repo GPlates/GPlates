@@ -21,7 +21,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   Hamish Law <hlaw@geosci.usyd.edu.au>
  *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 

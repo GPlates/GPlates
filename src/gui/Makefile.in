@@ -9,7 +9,7 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = Colour.o GLWindow.o Globe.o
+OBJS = GLWindow.o Globe.o Colour.o 
 
 LIBNAME = libgui.a
 

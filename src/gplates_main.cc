@@ -20,27 +20,28 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   Hamish Law <hlaw@geosci.usyd.edu.au>
  */
 
 /** 
- * @mainpage gPlates - Interactive Plate Tectonic Reconstructions
+ * @mainpage GPlates - Interactive Plate Tectonic Reconstructions
  * 
  * @section intro Introduction
- * Welcome to the gPlates Developers' Manual.
+ * Welcome to the GPlates Developers' Manual.
  *
  * @section patterns Design Patterns
- * All the references to design patterns in the gPlates documentation refer
- * to the book <i>Design Patterns</i> by Gamma, Helm, Johnson and Vlissides.
+ * All the references to design patterns in the GPlates documentation 
+ * refer to the book <i>Design Patterns</i> by Gamma, Helm, Johnson 
+ * and Vlissides.
  * See the References section below for more details.
  *
  * @section contact Contact
  * <b>Email</b>:
- * - Dr. R. Dietmar M&uuml;ller <dietmar@es.usyd.edu.au>
- * - Stuart Clark <srclark@es.usyd.edu.au>
- * - James Boyden <jboyden@es.usyd.edu.au>
- * - Hamish Law <hlaw@es.usyd.edu.au>
- * - David Symonds <ds@es.usyd.edu.au>
+ * - Dr. R. Dietmar M&uuml;ller <dietmar (at) geosci.usyd.edu.au>
+ * - Stuart Clark <srclark (at) geosci.usyd.edu.au>
+ * - James Boyden <jboyden (at) geosci.usyd.edu.au>
+ * - Hamish Law <hlaw (at) geosci.usyd.edu.au>
+ * - David Symonds <ds (at) geosci.usyd.edu.au>
  * 
  * <b>Snail Mail</b>:
  * - University of Sydney Institute of Marine Science<br>
@@ -95,7 +96,9 @@ main(int argc, char** argv)
 		GPlatesFileIO::GPlatesReader reader(argv[1]);
 		reader.Read(data);
 		
+#if 0
 		glutMainLoop();
+#endif
 	} catch (const GPlatesGlobal::Exception& e) {
 		std::cerr << "Caught exception: " << e << std::endl;
 	}

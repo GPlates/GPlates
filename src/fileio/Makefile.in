@@ -9,8 +9,7 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = ErrorHandler.o GPlatesFileHandler.o GPlatesReader.o \
-	GPlatesWriter.o
+OBJS = GPlatesReader.o GPlatesWriter.o
 
 LIBNAME = libfileio.a
 

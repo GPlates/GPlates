@@ -95,42 +95,44 @@ AC_CHECK_LIB([GLU], [main], [], AC_MSG_ERROR([
 !!     http://www.opengl.org
 !!]))
 
-AC_CHECK_LIB([glut], [main], [], AC_MSG_ERROR([
-!!
-!!  You don't appear to have the OpenGL Utility Toolkit (GLUT) 
-!!  shared library installed.  It may be obtained from 
-!!     http://www.opengl.org
-!!]))
+# wxWindows
+# ???
 
-AC_CHECK_LIB([xerces-c], [main], [], AC_MSG_ERROR([
+# We using Expat, which is included in contrib/src
+# XXX: Only compile eXpat if it does not already exist?
+# XXX: For now, place the obligation of eXpat installation
+#  on the user.
+AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([
 !!
-!!  You don't appear to have the Xerces C++ XML Parser
-!!  shared library installed.  It may be obtained from
-!!     http://xml.apache.org
+!!  You don't appear to have the eXpat XML Parser 
+!!  shared library installed.  It may be obtained from 
+!!     http://expat.sourceforge.net
 !!]))
 
 
 ##
 # Header dependencies.
 ##
+
+# OpenGL and GLU
 AC_CHECK_HEADERS([GL/gl.h GL/glu.h], [], AC_MSG_ERROR([
 !!
 !!  Failed to find the OpenGL headers.  Make sure the OpenGL
 !!  development package is installed on your system.
 !!]))
 
-AC_CHECK_HEADER([GL/glut.h], [], AC_MSG_ERROR([
+# wxWindows
+# ???
+
+# eXpat XML Parser
+# XXX: I had to alter my local copy of expat.h because it makes
+#  forward references to enums which gcc-2.95 doesn't like.
+AC_CHECK_HEADERS([expat.h], [], AC_MSG_ERROR([
 !!
-!!  Failed to find the GLUT headers.  Make sure the GLUT
+!!  Failed to find the eXpat headers.  Make sure the eXpat
 !!  development package is installed on your system.
 !!]))
 
-AC_CHECK_HEADER([xercesc/util/PlatformUtils.hpp], [], AC_MSG_ERROR([
-!!
-!!  Failed to find the Xerces headers.  Make sure the
-!!  Xerces-C++ development package is installed on your
-!!  system.
-!!]))
 
 # Check for dot (from graphviz package) for doxygen.conf
 # WARNING: does not verify this is the _real_ dot program we want
@@ -144,7 +146,7 @@ turn_on_dev="no"
 AC_ARG_ENABLE(dev, [  --enable-dev            Enable developer flags],
 [
 	turn_on_dev="yes"
-	EXTRA_CFLAGS="$EXTRA_CFLAGS -Wall -pedantic -ansi -W -Wfloat-equal -Wshadow -Wcast-align -Wwrite-strings -Wctor-dtor-privacy -Wnon-virtual-dtor -Wold-style-cast -Wpointer-arith -Werror -Wno-unused-parameter -g$debug_format"
+	EXTRA_CFLAGS="$EXTRA_CFLAGS -Wall -pedantic -ansi -W -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wctor-dtor-privacy -Wnon-virtual-dtor -Wold-style-cast -Wpointer-arith -Werror -g$debug_format"
 ])
 
 # Using '--enable-opt' turns on optimisations
@@ -164,9 +166,6 @@ AC_ARG_ENABLE(prof, [  --enable-prof           Enable profiling],
 	EXTRA_LDFLAGS="-g -pg"
 ])
 
-AC_SUBST(EXTRA_CFLAGS)
-AC_SUBST(EXTRA_LDFLAGS)
-
 
 AC_MSG_CHECKING([for Plesiosaurs in Loch Ness])
 AC_MSG_RESULT(yes)
@@ -176,14 +175,14 @@ AC_MSG_RESULT(yes)
 # UI targets
 ##################################
 probe_testui="auto"
-probe_gtkmm="auto"
+probe_wxwin="auto"
 
 AC_ARG_ENABLE(testui,
 	[  --disable-testui        Disable Test UI],
 	[probe_testui=$enableval])
-AC_ARG_ENABLE(gtkmm,
-	[  --disable-gtkmm         Disable probing for GTK--],
-	[probe_gtkmm=$enableval])
+AC_ARG_ENABLE(wxwin,
+	[  --disable-wxwin         Disable probing for wxWindows],
+	[probe_wxwin=$enableval])
 
 
 any_ui="no"
@@ -197,21 +196,43 @@ if test "$probe_testui" != "no"; then
 	#LIBS="$LIBS -l???"			# XXX
 	any_ui="yes"
 fi
-if test "$probe_gtkmm" != "no"; then
-	# Check for GTK--
-	PKG_CHECK_MODULES(GTKMM, gtkmm-2.0 >= 2.0.0,
-			  [enable_gtkmm="yes"], [enable_gtkmm="no"])
-	if test "$enable_gtkmm" = "yes"; then
-		# PKG_CHECK_MODULES has set up:
-		#	- GTKMM_CFLAGS
-		#	- GTKMM_LIBS
+if test "$probe_wxwin" != "no"; then
+	# Check for wxWindows
 
-		AC_DEFINE(HAVE_GTKMM)
+	if test -z "$WX_CONFIG"; then
+		AC_PATH_PROG(WX_CONFIG, wx-config, no)
+	fi
+	if test "$WX_CONFIG" = "no"; then
+		echo "### ERROR: The wxWindows configuration tool could not be found."
+		echo "###  Make sure that you have wxWindows installed, and that"
+		echo "###  wx-config is in your PATH or is referred to by the WX_CONFIG"
+		echo "###  shell variable."
+		enable_wxwin="no"
+	else
+		echo -n "Determining wxWindows-specific compilation flags... "
+		WXWIN_CFLAGS=`$WX_CONFIG --cflags`
+		WXWIN_LIBS=`$WX_CONFIG --libs`
+		WXWIN_GL_LIBS=`$WX_CONFIG --gl-libs`
+		echo "done."
+		enable_wxwin="yes"
+	fi
+	
+	if test "$enable_wxwin" = "yes"; then
+		# PKG_CHECK_MODULES has set up:
+		#	- WXWIN_CFLAGS
+		#	- WXWIN_LIBS
+		#	- WXWIN_GL_LIBS
+
+		AC_DEFINE(HAVE_WXWIN)
 		#UI_TARGETS="$UI_TARGETS ui-gtkmm.o"	# XXX
-		LIBS="$LIBS $GTKMM_LIBS"
+		EXTRA_CFLAGS="$EXTRA_CFLAGS $WXWIN_CFLAGS"
+		LIBS="$LIBS $WXWIN_LIBS $WXWIN_GL_LIBS"
 		any_ui="yes"
 	fi
 fi
+
+AC_SUBST(EXTRA_CFLAGS)
+AC_SUBST(EXTRA_LDFLAGS)
 
 
 # Fail if no UIs found
@@ -267,8 +288,8 @@ echo "###############################################"
 echo "#  User interfaces enabled:                   #"
 if test "$enable_testui" = "yes"; then
 	echo "#    * TestUI                                 #"; fi
-if test "$enable_gtkmm" = "yes"; then
-	echo "#    * GTK--                                  #"; fi
+if test "$enable_wxwin" = "yes"; then
+	echo "#    * wxWindows                              #"; fi
 
 echo "###############################################"
 echo "#  GPlates is now configured. Simply type...  #"

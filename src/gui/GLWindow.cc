@@ -45,6 +45,7 @@ GLWindow::GLWindow(int *argc, char **argv)
  // For some reason, if this is removed, the globe is black
  : _globe(Colour(1.0, 1.0, 1.0, 0.0))   // Globe should be transparent wrt data
 {
+#if 0
 	// Single buffering, RGBA mode, depth => 3D.
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 
@@ -91,6 +92,7 @@ GLWindow::GLWindow(int *argc, char **argv)
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 #endif
+#endif
 }
 
 void
@@ -112,7 +114,9 @@ GLWindow::Display()
 	glLoadIdentity();
 	glTranslatef(eyex, eyey, eyez);
 	_window->_globe.Draw();
+#if 0
 	glutSwapBuffers();
+#endif
 }
 
 void
@@ -146,14 +150,17 @@ GLWindow::Keyboard(unsigned char key, int, int)
 		_window->_globe.GetMeridian() = 0.0;
 //		eyez = -5.0;
 		ORTHO_RATIO = 1.2;
+#if 0
 		// XXX: PostRedisplay doesn't appear to work!!
 		glutPostRedisplay();
+#endif
 	}
 }
 
 void
 GLWindow::Special(int key, int, int)
 {
+#if 0
 	switch (key) {
 		case GLUT_KEY_UP:
 			if (glutGetModifiers() == GLUT_ACTIVE_ALT) {
@@ -185,4 +192,5 @@ GLWindow::Special(int key, int, int)
 	}
 	Reshape(600,600);  // FIXME: bad, Bad, BAD!!
 	glutPostRedisplay();
+#endif
 }
