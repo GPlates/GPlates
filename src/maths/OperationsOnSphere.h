@@ -26,11 +26,38 @@
 #ifndef _GPLATES_MATHS_OPERATIONSONSPHERE_H_
 #define _GPLATES_MATHS_OPERATIONSONSPHERE_H_
 
-#include "PointOnSphere.h"
 #include "UnitVector3D.h"
 
 namespace GPlatesMaths
 {
+	class LatLonPoint {
+
+		public:
+			static LatLonPoint
+			CreateLatLonPoint(const real_t &lat, const real_t &lon);
+
+			static bool isValidLat(const real_t &val);
+			static bool isValidLon(const real_t &val);
+
+			real_t
+			latitude() const { return _lat; }
+
+			real_t
+			longitude() const { return _lon; }
+
+			// no default constructor
+
+		protected:
+
+			LatLonPoint(const real_t &lat, const real_t &lon)
+			 : _lat(lat), _lon(lon) {  }
+
+		private:
+
+			real_t _lat, _lon;
+	};
+
+
 	namespace OperationsOnSphere
 	{
 		UnitVector3D convertLatLongToUnitVector(const real_t& latitude,

@@ -23,10 +23,62 @@
  *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
+#include <sstream>
 #include "OperationsOnSphere.h"
+#include "InvalidLatLonException.h"
 
 
 using namespace GPlatesMaths;
+
+
+LatLonPoint
+LatLonPoint::CreateLatLonPoint(const real_t &lat, const real_t &lon) {
+
+	if ( ! LatLonPoint::isValidLat(lat)) {
+
+		// not a valid latitude
+		std::ostringstream oss("Attempted to create a lat/lon point "
+		 "using the invalid latitude ");
+		oss << lat;
+
+		throw InvalidLatLonException(oss.str().c_str());
+	}
+	if ( ! LatLonPoint::isValidLon(lon)) {
+
+		// not a valid latitude
+		std::ostringstream oss("Attempted to create a lat/lon point "
+		 "using the invalid latitude ");
+		oss << lat;
+
+		throw InvalidLatLonException(oss.str().c_str());
+	}
+
+	return LatLonPoint(lat, lon);
+}
+
+
+/**
+ * Return whether a given value is a valid latitude.
+ * GPlates uses the range [-90.0, 90.0].
+ */
+bool
+LatLonPoint::isValidLat(const real_t &val) {
+
+	return (-90.0 <= val && val <= 90.0);
+}
+
+
+/**
+ * Return whether a given value is a valid longitude.
+ * GPlates uses the half-open range (-180.0, 180.0].
+ * Note that this is different to the range used by the PLATES format
+ * (All Hail PLATES!), which is [-180.0, 180.0].
+ */
+bool
+LatLonPoint::isValidLon(const real_t &val) {
+
+	return (-180.0 < val && val <= 180.0);
+}
 
 
 UnitVector3D
