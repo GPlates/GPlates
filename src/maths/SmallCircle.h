@@ -41,6 +41,8 @@ namespace GPlatesMaths
 		public:
 			/**
 			 * Create a small circle, given its axis and an angle.
+			 * @param axis The axis of the circle.
+			 * @param angle Angle between axis and circumference.
 			 */
 			SmallCircle (const UnitVector3D &axis, real_t angle)
 				: _normal (axis), _theta (angle)
@@ -56,7 +58,9 @@ namespace GPlatesMaths
 			             const PointOnSphere &pt);
 
 			const UnitVector3D &normal () const { return _normal; }
-			const real_t theta () const { return _theta; }
+			real_t theta () const { return _theta; }
+
+			real_t radius () const { return sin (_theta); }
 
 			// TODO
 			//UnitVector3D intersection (const GreatCircle &other)
