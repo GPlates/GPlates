@@ -87,8 +87,17 @@ HandleGPMLFile(const std::string& filename)
 static GPlatesMaths::LatLonPoint
 ConvertPlatesParserLatLonToMathsLatLon(const PlatesParser::LatLonPoint& point) 
 {
-	return GPlatesMaths::LatLonPoint::CreateLatLonPoint(
-	 GPlatesMaths::real_t(point._lat), GPlatesMaths::real_t(point._lon));
+	/*
+	 * Note that GPlates considers a valid longitude to be a value in
+	 * the half-open range (-180.0, 180.0].  Note that this appears
+	 * to be different to the range used by PLATES, which seems to be 
+	 * [-180.0, 180.0].
+	 */
+	GPlatesMaths::real_t lat = point._lat;
+	GPlatesMaths::real_t lon = point._lon;
+	if (lon == -180.0) lon = 180.0;
+
+	return GPlatesMaths::LatLonPoint::CreateLatLonPoint(lat, lon)
 }
 
 
