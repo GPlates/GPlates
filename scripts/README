@@ -1,0 +1,18 @@
+How to profile gPlates
+----------------------
+
+	* configure script must have been run with --enable-prof,
+		_before_ a complete recompilation
+	* Run gplates in the src/ directory, and leave the generated
+		"gmon.out" file there
+	* Move into the scripts/ directory, and either run:
+		./profile
+	  or
+		./graphical_profile
+
+	  The former generates a raw dump (capture with a pager), and
+	  the latter generates a "gplates-gprof.ps.gz" file.
+
+NOTE: Expect the latter to fail a lot of the time - it currently uses some
+	Perl filtering to handle C++ method signatures. It will improve over
+	time, whenever Dave gets around to it.

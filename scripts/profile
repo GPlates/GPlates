@@ -1,0 +1,9 @@
+#!/bin/sh
+
+BINARY=../src/gplates
+PROFILE=../src/gmon.out
+
+OPTIONS="--graph --brief --demangle"
+# options = --exec-counts
+
+/usr/bin/gprof $OPTIONS $@ $BINARY $PROFILE
