@@ -63,14 +63,20 @@ namespace GPlatesGeo
 			 *   to put the object into an illegal state (num points < 2).
 			 */
 			Line_t::iterator
-			GetIterator() { return _line.begin(); }
+			Begin() { return _line.begin(); }
+
+			Line_t::iterator
+			End() { return _line.end(); }
 			
 			/**
 			 * Restricted enumerative access the PointData constituting
 			 * this line.
 			 */
 			Line_t::const_iterator
-			GetIterator() const { return _line.begin(); }
+			Begin() const { return _line.begin(); }
+
+			Line_t::const_iterator
+			End() const { return _line.end(); }
 
 		private:
 			Line_t _line;

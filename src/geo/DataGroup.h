@@ -59,7 +59,7 @@ namespace GPlatesGeo
 			/**
 			 * Create a DataGroup containing the given elements.
 			 * The DataGroup is initialised with a copy of each of 
-			 * the elements from \a children.
+			 * the elements from @a children.
 			 */
 			DataGroup(const DataType_t&, const RotationGroupId_t&,
 				const Attributes_t&, const Children_t&);

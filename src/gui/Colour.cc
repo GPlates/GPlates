@@ -20,5 +20,28 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Some Guy <sguy@geosci.usyd.edu.au>
+ *   Hamish Law <hlaw@geosci.usyd.edu.au>
  */
+
+#include <iostream>
+#include "Colour.h"
+
+using namespace GPlatesGui;
+
+const Colour Colour::BLACK(0.0, 0.0, 0.0);
+const Colour Colour::WHITE(1.0, 1.0, 1.0);
+const Colour Colour::RED  (1.0, 0.0, 0.0);
+const Colour Colour::GREEN(0.0, 1.0, 0.0);
+const Colour Colour::BLUE (0.0, 0.0, 1.0);
+const Colour Colour::GREY (0.5, 0.5, 0.5);
+
+
+Colour::Colour(const GLfloat& red, const GLfloat& green, 
+ const GLfloat& blue, const GLfloat& alpha)
+{
+	_rgba[RED_INDEX]   = red;
+	_rgba[GREEN_INDEX] = green;
+	_rgba[BLUE_INDEX]  = blue;
+	_rgba[ALPHA_INDEX] = alpha;
+}
+

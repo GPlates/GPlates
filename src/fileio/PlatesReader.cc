@@ -20,5 +20,23 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Some Guy <sguy@geosci.usyd.edu.au>
+ *   Hamish Law <hlaw@es.usyd.edu.au>
  */
+
+#include <iterator>
+#include "PlatesReader.h"
+
+using namespace GPlatesGeo;
+
+void
+PlatesReader::Read(DataGroup& group)
+{
+	// Read in each LineData and add it to the group.
+	LineData line;
+	std::back_insert_iterator<Attributes_t> inserter;
+
+	inserter = group.AttributesInserter();
+	*inserter++ = "Region Number";
+	*inserter++ = "Reference Number";
+	// Et cetera.
+}

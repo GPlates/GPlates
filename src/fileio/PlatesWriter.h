@@ -38,7 +38,6 @@ namespace GPlatesFileIO
 	 * @role 
 	 *   - ConcreteBuilder in the Builder pattern (p97).
 	 *   - ConcreteVisitor1 in the Visitor pattern (p331).
-	 * @todo Yet to be implemented.
 	 */
 	class PlatesWriter : public WriterVisitor
 	{
@@ -51,7 +50,7 @@ namespace GPlatesFileIO
 			/**
 			 * @warning After a call to PrintOut, no more "Visit()ing" can occur
 			 *   because the internal representation is "frozen"; i.e. the method
-			 *   std::ostringstream::freeze() is called on _strstream.
+			 *   std::ostringstream::freeze() is called on _accum.
 			 * @role ConcreteBuilder::GetResult() in the Builder pattern (p97).
 			 */
 			virtual bool
@@ -61,7 +60,7 @@ namespace GPlatesFileIO
 			/**
 			 * Holds the accumulated information.
 			 */
-			std::ostringstream _strstream;
+			std::ostringstream _accum;
 	};
 }
 

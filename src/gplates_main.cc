@@ -76,9 +76,15 @@
 
 #include "global/config.h"
 
+#include "gui/GLWindow.h"
+
 int
-main()
+main(int argc, char** argv)
 {
 	std::cout << "This is \"" PACKAGE_STRING "\".\n";
+	
+	GPlatesGui::GLWindow::GetWindow(&argc, argv);
+	glutMainLoop();
+	
 	return EXIT_SUCCESS;
 }

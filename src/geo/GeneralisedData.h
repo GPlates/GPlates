@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /**
- * \file
+ * @file
  * File specific comments.
  *
  * Most recent change:

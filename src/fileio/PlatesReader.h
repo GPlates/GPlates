@@ -39,7 +39,7 @@ namespace GPlatesFileIO
 	class PlatesReader : public Reader
 	{
 		public:
-			PlatesReader(std::istream&) { }
+			PlatesReader(std::istream& is) : _datastream(is) { }
 
 			/**
 			 * Fill a DataGroup.
@@ -48,6 +48,9 @@ namespace GPlatesFileIO
 			 */
 			void
 			Read(GPlatesGeo::DataGroup&);
+
+		private:
+			std::istream& _datastream;
 	};
 }
 

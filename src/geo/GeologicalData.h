@@ -116,15 +116,18 @@ namespace GPlatesGeo
 			/** 
 			 * Enumerative access to the data's Attributes_t.
 			 */
-			virtual Attributes_t::iterator
-			AttributesIterator() { return _attributes.begin(); }
+			virtual std::back_insert_iterator<Attributes_t>
+			AttributesInserter() { return std::back_inserter(_attributes); }
 
 			/** 
 			 * Restricted enumerative access to the data's Attributes_t.
 			 */
 			virtual Attributes_t::const_iterator
-			AttributesIterator() const { return _attributes.begin(); }
+			AttributesBegin() const { return _attributes.begin(); }
 		
+			virtual Attributes_t::const_iterator
+			AttributesEnd() const { return _attributes.end(); }
+
 		private:
 			/**
 			 * A code identifying the type of data being represented.
