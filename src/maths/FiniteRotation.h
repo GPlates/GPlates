@@ -30,6 +30,9 @@
 #include "UnitQuaternion3D.h"
 #include "PointOnSphere.h"
 #include "GreatCircleArc.h"
+#include "GreatCircle.h"
+#include "SmallCircle.h"
+#include "GridOnSphere.h"
 #include "PolyLineOnSphere.h"
 #include "types.h"  /* real_t */
 
@@ -217,6 +220,49 @@ namespace GPlatesMaths
 
 		return
 		 GreatCircleArc::CreateGreatCircleArc(start, end, rot_axis);
+	}
+
+
+	/**
+	 * Apply the given rotation to the given great circle.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	inline GreatCircle
+	operator*(const FiniteRotation &r, const GreatCircle &g) {
+
+		UnitVector3D axis = r * g.axisvector();
+		return GreatCircle(axis);
+	}
+
+
+	/**
+	 * Apply the given rotation to the given small circle.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	inline SmallCircle
+	operator*(const FiniteRotation &r, const SmallCircle &s) {
+
+		UnitVector3D axis = r * s.axisvector();
+		return SmallCircle(axis, s.cosColatitude());
+	}
+
+
+	/**
+	 * Apply the given rotation to the given grid-on-sphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	inline GridOnSphere
+	operator*(const FiniteRotation &r, const GridOnSphere &g) {
+
+		SmallCircle sc = r * g.lineOfLat();
+		GreatCircle gc = r * g.lineOfLon();
+		PointOnSphere p = r * g.origin();
+
+		return
+		 GridOnSphere(sc, gc, p, g.deltaAlongLat(), g.deltaAlongLon());
 	}
 
 
