@@ -181,6 +181,7 @@ Globe::Paint()
 		if (data) {
 			glPointSize(5.0f);
 			// Paint the data.
+			glColor3fv(Colour::RED);
 			RenderVisitor renderer;
 			renderer.Visit(*data);
 		}

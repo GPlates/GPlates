@@ -42,9 +42,6 @@ CallVertexWithPoint(const UnitVector3D& uv)
 	);
 }
 
-/**
- * FIXME doesn't display the last point in the line!
- */
 static void
 CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin, 
 				   const PolyLineOnSphere::const_iterator& end)
@@ -52,8 +49,9 @@ CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin,
 	PolyLineOnSphere::const_iterator iter = begin;
 
 	glBegin(GL_LINE_STRIP);
+		CallVertexWithPoint(iter->startPoint());
 		for ( ; iter != end; ++iter)
-			CallVertexWithPoint(iter->startPoint());
+			CallVertexWithPoint(iter->endPoint());
 	glEnd();
 }
 
@@ -84,6 +82,7 @@ RenderVisitor::Visit(const DataGroup& data)
 	DataGroup::Children_t::const_iterator iter = data.ChildrenBegin();
 	for ( ; iter != data.ChildrenEnd(); ++iter) {
 		gd = *iter;
+		// XXX Ick, icky, icky.
 		pd = dynamic_cast<const PointData*>(gd);
 		ld = dynamic_cast<const LineData*>(gd);
 		dg = dynamic_cast<const DataGroup*>(gd);

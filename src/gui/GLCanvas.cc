@@ -164,7 +164,10 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 {
 	// XXX: Eek!  Non-reentrant!
 	static GLfloat last_x = 0.0, last_y = 0.0, last_zoom = 0.0;
-	static const GLfloat TOLERANCE = 5.0, ZOOM_TOLERANCE = 200.0;
+	// Make the tolerance inversely proportional to the current zoom.  
+	// That way the globe wont spin stupidly when the user is up close.
+	GLfloat TOLERANCE = 5.0/_zoom_factor;  
+	static const GLfloat ZOOM_TOLERANCE = 200.0;
 
 	GLfloat& meridian = _globe.GetMeridian();
 	GLfloat& elevation = _globe.GetElevation();
@@ -186,6 +189,12 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 		if (evt.Dragging())
 		{
 			_zoom_factor += (evt.GetY() - last_zoom)/ZOOM_TOLERANCE;
+
+			// Clamp the zoom factor.
+			if (_zoom_factor > 1.0)
+				_zoom_factor = 1.0;
+			else if (_zoom_factor < 0.01)
+				_zoom_factor = 0.01;
 
 			SetView();
 			Refresh();
