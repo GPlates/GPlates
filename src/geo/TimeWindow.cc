@@ -28,7 +28,6 @@
 
 using namespace GPlatesGeo;
 
-inline
 TimeWindow::TimeWindow(const fpdata_t& begin, const fpdata_t& end)
 	: GeneralisedData(), _begin(begin), _end(end)
 { }
