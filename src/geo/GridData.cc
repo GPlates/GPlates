@@ -53,15 +53,14 @@ GridData::~GridData ()
 {
 	if (grid->length < 1)
 		return;
-	GridRowPtr row = grid->rows[0];
-	for (index_t i = 0; i < grid->length; ++i, ++row) {
-		if (row->length < 1)
+	for (index_t i = 0; i < grid->length; ++i) {
+		GridRowPtr row = grid->rows[i];
+		if (!row->data || row->length < 1)
 			continue;
 		// TODO: do something with elements in each row?
 		//for (index_t j = 0; j < row->length; ++j) {
 			//GridElementPtr elem = row->data[j];
 		//}
-		std::cerr << "ZZZ: About to delete[] on row " << i << "..\n";
 		delete[] row->data;
 	}
 	delete[] grid->rows;

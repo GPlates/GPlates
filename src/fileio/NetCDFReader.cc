@@ -87,13 +87,14 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 		}
 		std::cerr << "\n";
 		std::cerr << "\tValues: ";
-		NcValues *vals = var->values ();
-		if (var->num_vals () < 10)
+		if (var->num_vals () < 10) {
+			NcValues *vals = var->values ();
 			vals->print (std::cerr);
-		else
+			delete vals;
+		} else {
 			std::cerr << "(too many - " << var->num_vals () << ")";
+		}
 		std::cerr << "\n";
-		delete vals;
 	}
 #endif
 
