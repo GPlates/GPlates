@@ -75,6 +75,13 @@ sqrt(Real r) {
  */
 #define MATHVALUE_PI_ON_2 (1.57079632679489661923)
 
+
+/*
+ * Calculate the arc sine of the Real r, which must lie in the valid domain
+ * of the arc sine function, the range [-1, 1].
+ *
+ * Don't forget: the arc sine will be returned in radians, not degrees!
+ */
 Real
 asin(Real r) {
 
