@@ -45,7 +45,7 @@ namespace GPlatesGeo
 		public:
 			/**
 			 * Constructor.
-			 * \throws IllegalParametersException
+			 * \throws InvalidParametersException
 			 *	if circles are not perpendicular
 			 */
 			GridData (const DataType_t&,

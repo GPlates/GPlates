@@ -27,7 +27,7 @@
 #include "GridData.h"
 #include "GridElement.h"
 #include "global/types.h"
-#include "global/IllegalParametersException.h"
+#include "global/InvalidParametersException.h"
 #include "maths/GridOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "state/Layout.h"
