@@ -101,4 +101,6 @@ GPlatesApp::OnInit()
 int GPlatesApp::OnExit ()
 {
 	delete _main_win;
+
+	return 0;
 }
