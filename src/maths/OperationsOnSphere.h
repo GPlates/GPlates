@@ -74,6 +74,12 @@ namespace GPlatesMaths
 		        (p1.longitude() == p2.longitude()));
 	}
 
+	inline std::ostream &operator<< (std::ostream &os, const LatLonPoint &p)
+	{
+		// TODO: use N/S/E/W notation?
+		return os << "(" << p.latitude () << " lat, " << p.longitude ()
+			<< " long)";
+	}
 
 	namespace OperationsOnSphere
 	{
