@@ -61,7 +61,7 @@ namespace GPlatesFileIO
 
 		// no default constructor
 
-		EulerRotation(LatLonPoint pole, fpdata angle)
+		EulerRotation(const LatLonPoint &pole, fpdata angle)
 		 : _pole(pole), _angle(angle) {  }
 	};
 
@@ -74,7 +74,9 @@ namespace GPlatesFileIO
 
 		// no default constructor
 
-		FiniteRotation(fpdata time, rgid_t fixed_rg, EulerRotation rot)
+		FiniteRotation(fpdata time, const rgid_t &fixed_rg,
+		 const EulerRotation &rot)
+
 		 : _time(time), _fixed_rg(fixed_rg), _rot(rot) {  }
 	};
 }
