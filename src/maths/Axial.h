@@ -35,7 +35,7 @@ namespace GPlatesMaths
 	 *
 	 * This class will be the base class of an inheritance hierarchy
 	 * containing the classes 'GreatCircle' and 'SmallCircle'.  NOTE:
-	 * that polymorphism is not supposed to occur in the aforementioned
+	 * polymorphism is not supposed to occur in the aforementioned
 	 * inheritance hierarchy (since small circles and great circles
 	 * are both <em>specialisations</em> of this class rather than
 	 * <em>subtypes</em>, which would violate substitutability).
@@ -45,13 +45,6 @@ namespace GPlatesMaths
 	class Axial
 	{
 		public:
-			/**
-			 * Create an axial object, given its axis.
-			 * @param axis The axis vector.
-			 */
-			Axial(const UnitVector3D &axis)
-			 : _axisvector(axis) {  }
-
 			/**
 			 * The unit vector of the axis of this object.
 			 */
@@ -73,6 +66,13 @@ namespace GPlatesMaths
 			}
 
 		protected:
+			/**
+			 * Create an axial object, given its axis.
+			 * @param axis The axis vector.
+			 */
+			explicit Axial(const UnitVector3D &axis)
+			 : _axisvector(axis) {  }
+
 			UnitVector3D _axisvector;
 	};
 }
