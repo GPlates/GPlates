@@ -257,7 +257,7 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
  _last_finish_on_end(true),
  _operation_mode(NORMAL_MODE)
 {
-	_menu_bar = CreateMenuBar(/*wxMB_DOCKABLE*/);
+	_menu_bar = CreateMenuBar();
 	if ( ! _menu_bar) {
 
 		std::cerr << "Failed to create menu bar." << std::endl;
@@ -265,7 +265,7 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	}
 	SetMenuBar(_menu_bar);
 
-	_tool_bar = CreateToolBar(/*wxNO_BORDER|wxTB_HORIZONTAL|wxTB_DOCKABLE*/);
+	_tool_bar = CreateToolBar(wxTB_HORIZONTAL);
 	if ( ! _tool_bar) {
 
 		std::cerr << "Failed to create tool bar." << std::endl;
@@ -645,7 +645,7 @@ GPlatesGui::MainWindow::CreateToolBar(long style)
 {
 	wxToolBar *tool_bar = wxFrame::CreateToolBar(style);
 
-	tool_bar->SetMargins(1, 1);
+	tool_bar->SetMargins(2, 2);
 
 	wxBitmap *zoom_in_bitmap = new wxBitmap(stock_zoom_in_24_xpm);
 	tool_bar->AddTool(EventIDs::TOOLBAR_ZOOM_IN, "Zoom In",
