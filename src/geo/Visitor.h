@@ -34,7 +34,6 @@ namespace GPlatesGeo
 	class GridData;
 	class DataGroup;
 	class RotationData;
-	class GPlatesMaths::PointOnSphere;
 
 	/** 
 	 * Abstract Visitor. 
@@ -74,13 +73,6 @@ namespace GPlatesGeo
 
 			virtual void
 			Visit(const DataGroup&) { }
-
-
-			virtual void
-			Visit(PointOnSphere&) { }
-
-			virtual void
-			Visit(const GPlatesMaths::PointOnSphere&) { }
 
 		private:
 			Visitor() { }

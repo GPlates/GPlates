@@ -26,12 +26,6 @@
 #include "PlatesWriter.h"
 
 void
-PlatesWriter::Visit(const PointOnSphere& point)
-{
-	_strstream << point.GetLatitude() << "  " << point.GetLongitude();
-}
-
-void
 PlatesWriter::Visit(const LineData& linedata)
 {
 	// Output line header information
@@ -39,7 +33,8 @@ PlatesWriter::Visit(const LineData& linedata)
 	// Output each of the points that make up the line.
 	LineData::Line_t::const_iterator iter = linedata.GetIterator();
 	for ( ; *iter; iter++) {
-		Visit(iter->GetPointOnSphere());
+		PointOnSphere point = iter->GetPointOnSphere();
+		_strstream << point.GetLatitude() << "  " << point.GetLongitude();
 		_strstream << " 2" << std::endl;  // This is the pen-plot command.
 	}									  // FIXME: remove magic numbers.
 }

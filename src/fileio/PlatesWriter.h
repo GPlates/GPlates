@@ -46,9 +46,6 @@ namespace GPlatesFileIO
 			using namespace GPlatesGeo;
 
 			virtual void
-			Visit(const PointOnSphere&);
-
-			virtual void
 			Visit(const LineData&);
 
 			/**

@@ -33,10 +33,3 @@ PointData::PointData(const DataType_t& dt, const RotationGroupId_t& id,
 	const Attributes_t& attrs, const GPlatesMaths::PointOnSphere& point)
 	: GeologicalData(dt, id, attrs), _point(point)
 { }
-
-void
-PointData::Accept(Visitor& visitor) const
-{
-	visitor.Visit(_point);
-	visitor.Visit(*this);
-}
