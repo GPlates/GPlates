@@ -145,6 +145,18 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Although this operation doesn't strictly make sense for a
+	 * FiniteRotation, it is provided to enable FiniteRotations to be
+	 * sorted by STL algorithms.
+	 */
+	inline bool
+	operator<(const FiniteRotation &r1, const FiniteRotation &r2) {
+
+		return (r1.time() < r2.time());
+	}
+
+
+	/**
 	 * Compose two FiniteRotations of the same point in time.
 	 *
 	 * Note: order of composition is important!
