@@ -171,11 +171,11 @@ AC_CHECK_HEADERS([expat.h], [], AC_MSG_ERROR([
 !!]))
 
 # netCDF
-AC_PATH_NETCDF([], AC_MSG_ERROR([
-!!
-!!  Failed to find the netCDF C++ library. Make sure that the netCDF
-!!  development package is installed on your system.
-!!]))
+#AC_PATH_NETCDF([], AC_MSG_ERROR([
+#!!
+#!!  Failed to find the netCDF C++ library. Make sure that the netCDF
+#!!  development package is installed on your system.
+#!!]))
 
 
 # Check for dot (from graphviz package) for doxygen.conf
