@@ -100,13 +100,13 @@ namespace GPlatesMaths
 			 */
 			GridOnSphere(const SmallCircle &line_of_lat,
 			             const GreatCircle &line_of_lon,
-			             const PointOnSphere &origin,
+			             const PointOnSphere &orig,
 			             const real_t &delta_along_lat,
 			             const real_t &delta_along_lon) :
 
 			 _line_of_lat(line_of_lat),
 			 _line_of_lon(line_of_lon),
-			 _origin(origin),
+			 _origin(orig),
 			 _delta_along_lat(delta_along_lat),
 			 _delta_along_lon(delta_along_lon) {
 
