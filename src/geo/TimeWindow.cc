@@ -29,5 +29,5 @@
 using namespace GPlatesGeo;
 
 TimeWindow::TimeWindow(const fpdata_t& begin, const fpdata_t& end)
-	: _begin(begin), _end(end)
+	: _begin(begin), _end(end), _inf(false)
 { }

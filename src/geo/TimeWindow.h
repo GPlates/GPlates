@@ -46,19 +46,32 @@ namespace GPlatesGeo
 	{
 		public:
 			TimeWindow()
-				: _begin(0.0), _end(0.0) { }
+				: _begin(0.0), _end(0.0), _inf(true) {  }
 
 			TimeWindow(const fpdata_t& begin, const fpdata_t& end);
-			
+
 			fpdata_t
 			GetBeginning() const { return _begin; }
 
 			fpdata_t
 			GetEnd() const { return _end; }
 
+			bool
+			IsInfinite() const { return _inf; }
+
 		private:
 			fpdata_t _begin, _end;
+			bool _inf;
 	};
+
+
+	inline bool
+	operator==(TimeWindow tw1, TimeWindow tw2) {
+
+		if (tw1.IsInfinite() && tw2.IsInfinite()) return true;
+		return ((tw1.GetBeginning() == tw2.GetBeginning()) &&
+		        (tw1.GetEnd() == tw2.GetEnd()));
+	}
 }
 
 #endif  // _GPLATES_GEO_TIMEWINDOW_H_
