@@ -99,7 +99,7 @@ OperationsOnSphere::convertLatLongToUnitVector(const real_t& latitude,
 
 
 PointOnSphere
-OperationsOnSphere::convertLatLongPointToUnitVector(const LatLonPoint &p) {
+OperationsOnSphere::convertLatLonPointToPointOnSphere(const LatLonPoint &p) {
 
 	real_t lat_angle = degreesToRadians(p.latitude());
 	real_t long_angle = degreesToRadians(p.longitude());

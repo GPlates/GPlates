@@ -65,7 +65,7 @@ namespace GPlatesMaths
 		UnitVector3D convertLatLongToUnitVector(const real_t& latitude,
 		 const real_t& longitude);
 
-		PointOnSphere convertLatLongPointToUnitVector(const
+		PointOnSphere convertLatLonPointToPointOnSphere(const
 		 LatLonPoint &p);
 
 		
