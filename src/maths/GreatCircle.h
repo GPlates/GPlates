@@ -59,6 +59,17 @@ namespace GPlatesMaths
 			UnitVector3D
 			normal () const { return axisvector(); }
 
+			/**
+			 * Evaluate whether the point @a pt lies on this
+			 * great circle.
+			 */
+			bool
+			contains (const PointOnSphere &pt) const {
+
+				real_t dp = dot (normal(), pt.unitvector ());
+				return (dp <= 0);
+			}
+
 #if 0  // No longer needed
 			/**
 			 * Computes one intersection point of this GreatCircle
