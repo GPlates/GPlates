@@ -27,6 +27,7 @@
 
 #include "StageRotation.h"
 #include "IndeterminateResultException.h"
+#include "DirVector3D.h"
 #include "Vector3D.h"
 
 
@@ -70,7 +71,7 @@ GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 	real_t sin_of_theta_on_2 = sin(theta_on_2);  // not zero
 
 	Vector3D axis_v = (1 / sin_of_theta_on_2) * sr.quat().v();
-	UnitVector3D axis_uv(axis_v.x(), axis_v.y(), axis_v.z());
+	DirVector3D axis_dv(axis_v.x(), axis_v.y(), axis_v.z());
 
 	/*
 	 * Ensure that the time delta of the stage rotation argument is not
@@ -89,7 +90,7 @@ GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 	 * 'axis_uv'.
 	 */
 	UnitQuaternion3D new_uq =
-	 UnitQuaternion3D::CreateEulerRotation(axis_uv,
+	 UnitQuaternion3D::CreateEulerRotation(axis_dv.normalise(),
 	  (new_time_delta * time_delta_reciprocal) * (theta_on_2 * 2));
 
 	return StageRotation(new_uq, new_time_delta);
@@ -106,6 +107,12 @@ GPlatesMaths::interpolate(const FiniteRotation &more_recent,
 	 * [ http://mathworld.wolfram.com/Minuend.html ].
 	 */
 	StageRotation sr = subtractFiniteRots(more_distant, more_recent);
+	if (sr.quat().isIdentity()) {
+
+		// the quaternions of the rotations were equivalent
+		return
+		 FiniteRotation::CreateFiniteRotation(more_recent.quat(), t);
+	}
 
 	real_t new_time_delta = t - more_recent.time();
 	StageRotation scaled_sr = scaleToNewTimeDelta(sr, new_time_delta);
