@@ -37,7 +37,7 @@
 #include "global/types.h"
 #include "state/Data.h"
 #include "state/Layout.h"
-#include "controls/View.h"
+#include "controls/GuiCalls.h"
 #include "maths/FiniteRotation.h"
 
 
@@ -219,7 +219,7 @@ WarpToTime(const fpdata_t &t) {
 			}
 		}
 	}
-	GPlatesControls::View::Redisplay();
+	GPlatesControls::GuiCalls::RepaintCanvas();
 }
 
 namespace GPlatesControls {
@@ -287,7 +287,7 @@ WarpToPresent() {
 			}
 		}
 	}
-	GPlatesControls::View::Redisplay();
+	GPlatesControls::GuiCalls::RepaintCanvas();
 }
 
 
