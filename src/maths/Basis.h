@@ -27,8 +27,6 @@
 #define _GPLATES_MATHS_BASIS_H_
 
 #include "DirVector3D.h"
-//#include "types.h"  /* real_t */
-//#include "ViolatedDirVectorInvariantException.h"
 
 namespace GPlatesMaths
 {
@@ -54,7 +52,7 @@ namespace GPlatesMaths
 		protected:
 			/** 
 			 * Assert the class invariant.
-			 * @throw ViolatedUnitVectorInvariantException
+			 * @throw ViolatedBasisInvariantException
 			 *   if the invariant has been violated.
 			 */
 			void
