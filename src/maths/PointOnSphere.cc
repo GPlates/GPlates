@@ -29,11 +29,6 @@
 
 using namespace GPlatesMaths;
 
-/**
- * Assert the class invariant.
- * Throw ViolatedCoordinateInvariantException if the invariant has been
- * violated.
- */
 void
 PointOnSphere::AssertInvariantHolds() const {
 
@@ -50,5 +45,3 @@ PointOnSphere::AssertInvariantHolds() const {
 		throw ViolatedCoordinateInvariantException(oss.str());
 	}
 }
-
-
