@@ -232,8 +232,8 @@ AC_OUTPUT(Makefile
 	src/fileio/Makefile
 	src/geo/Makefile
 	src/global/Makefile
-	src/maths/Makefile
-	src/gui/Makefile)
+	src/gui/Makefile
+	src/maths/Makefile)
 
 
 

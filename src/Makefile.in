@@ -11,7 +11,7 @@ CXXFLAGS = @CXXFLAGS@ @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
-EXTRA_LIBS = geo/libgeo.a global/libglobal.a maths/libmaths.a gui/libgui.a
+EXTRA_LIBS = geo/libgeo.a global/libglobal.a gui/libgui.a maths/libmaths.a
 
 LIBS = @LIBS@
 #LIBS = @LIBS@ -lefence
