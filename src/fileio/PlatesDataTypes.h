@@ -30,10 +30,9 @@
 
 #include <list>
 #include <string>
-#include "global/types.h"
+#include "../global/types.h"
 #include "PrimitiveDataTypes.h"
-#include "geo/TimeWindow.h"
-
+#include "../geo/TimeWindow.h"
 
 namespace GPlatesFileIO
 {
@@ -77,7 +76,9 @@ namespace GPlatesFileIO
 		rgid_t                      _plate_id;
 		std::list< PlatesPolyLine > _polylines;
 
-		// no default constructor
+	  // N.B. we must have a default constructor so that PlatesPlates can be stored in a map.
+
+	  PlatesPlate() {}
 
 		PlatesPlate(const rgid_t &plate_id)
 		 : _plate_id(plate_id) {  }
