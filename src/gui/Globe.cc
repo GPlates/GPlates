@@ -30,6 +30,7 @@
 #include <algorithm>
 
 #include "Globe.h"
+#include "PlatesColourTable.h"
 #include "state/Layout.h"
 
 
@@ -67,6 +68,7 @@ PaintPointDataPos(const Layout::PointDataPos& pointdata)
 }
 
 
+#if 0
 namespace
 {
 	using namespace GPlatesGui;
@@ -88,19 +90,38 @@ namespace
 
 	ColourMapInit _CMAP;
 }
+#endif
 
 
 static void
 PaintLineDataPos(const Layout::LineDataPos& linedata)
 {
+#if 1
+	const GPlatesGui::PlatesColourTable &ctab =
+	 *(GPlatesGui::PlatesColourTable::Instance());
+#endif
 	const PolyLineOnSphere& line = linedata.second;
 
-	ColourMap_t::iterator iter =
-		COLOUR_MAP.find(linedata.first->GetRotationGroupId());
-	if (iter != COLOUR_MAP.end())
+	GPlatesGlobal::rid_t rgid = linedata.first->GetRotationGroupId();
+#if 1
+	GPlatesGui::PlatesColourTable::const_iterator it = ctab.lookup(rgid);
+	if (it != ctab.end()) {
+
+		std::cerr << "Colour for plate " << rgid << ": "
+		 << *it << std::endl;
+		glColor3fv(*it);
+
+	} else glColor3fv(GPlatesGui::Colour::BLACK);
+#else
+	ColourMap_t::iterator iter = COLOUR_MAP.find(rgid);
+	if (iter != COLOUR_MAP.end()) {
+
+		std::cerr << "Colour for plate " << rgid << ": "
+		 << *iter->second << std::endl;
 		glColor3fv(*iter->second);
-	else
-		glColor3fv(GPlatesGui::Colour::BLACK);
+
+	} else glColor3fv(GPlatesGui::Colour::BLACK);
+#endif
 	CallVertexWithLine(line.begin(), line.end());
 }
 
