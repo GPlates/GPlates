@@ -46,7 +46,7 @@ clean:	subdir_clean
 subdir_clean:
 	@dlist='$(SUBDIRS)' ; \
 	for subdir in $$dlist ; do \
-		(cd $$subdir && $(MAKE) clean) ; \
+		(cd $$subdir && $(MAKE) clean) || exit 1 ; \
 	done
 
 $(PROGNAME):	$(OBJS) $(EXTRA_LIBS)
@@ -60,7 +60,7 @@ dep:	subdir_dep
 subdir_dep:
 	@dlist='$(SUBDIRS)' ; \
 	for subdir in $$dlist ; do \
-		(cd $$subdir && $(MAKE) dep) ; \
+		(cd $$subdir && $(MAKE) dep) || exit 1 ; \
 	done
 
 distdir = ../@PACKAGE_TARNAME@-@PACKAGE_VERSION@/$(subdir)
