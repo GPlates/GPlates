@@ -28,70 +28,48 @@
 #define _GPLATES_MATHS_POINTONSPHERE_H_
 
 #include "types.h"  /* real_t */
-#include "ViolatedCoordinateInvariantException.h"
+#include "UnitVector3D.h"
+
 
 namespace GPlatesMaths
 {
 	using namespace GPlatesGlobal;
 
 	/** 
-	 * Point on a sphere. 
-	 * Represents a coordinate on the surface of a sphere, i.e. in
-	 * terms of latitude and longitude.
-	 * @invariant 
-	 *   - -90 <= latitude <= 90
-	 *   - -180 <= longitude <= 180
+	 * Represents a point on the surface of a sphere. 
+	 *
+	 * Internally, this is stored as a 3D unit vector.
+	 * There is a one-to-one mapping from the set of all points on the
+	 * surface of a sphere and the set of all 3D unit vectors.
+	 *
+	 * As long as the invariant of the unit vector is maintained,
+	 * the point will definitely lie on the surface of the sphere.
 	 */
 	class PointOnSphere
 	{
 		public:
-			/**
-			 * Create a point with specified latitude and longitude.
-			 * @param lat The latitude.
-			 * @param lon The longitude.
-			 */
 			explicit 
-			PointOnSphere(const real_t& lat,
-			              const real_t& lon)
-				: _lat(lat), _long(lon) {
-				
-				AssertInvariantHolds();
-			}
+			PointOnSphere(const UnitVector3D &uv) : _uv(uv) {  }
 
-			real_t
-			GetLatitude() const { return _lat; }
-
-			real_t
-			GetLongitude() const { return _long; }
-
-		protected:
-			/** 
-			 * Assert the class invariant.
-			 * @throw ViolatedCoordinateInvariantException
-			 *   if the invariant has been violated.
-			 */
-			void
-			AssertInvariantHolds() const;
+			UnitVector3D
+			unitvector() const { return _uv; }
 
 		private:
-			real_t _lat,  /**< Latitude coordinate. */
-			       _long;  /**< Longitude coordinate. */
+			UnitVector3D _uv;
 	};
 
 
 	inline bool
-	operator==(PointOnSphere p1, PointOnSphere p2) {
+	operator==(const PointOnSphere &p1, const PointOnSphere &p2) {
 
-		return (p1.GetLatitude() == p2.GetLatitude()
-		     && p1.GetLongitude() == p2.GetLongitude());
+		return (p1.unitvector() == p2.unitvector());
 	}
 
 
 	inline bool
-	operator!=(PointOnSphere p1, PointOnSphere p2) {
+	operator!=(const PointOnSphere &p1, const PointOnSphere &p2) {
 
-		return (p1.GetLatitude() != p2.GetLatitude()
-		     || p1.GetLongitude() != p2.GetLongitude());
+		return (p1.unitvector() != p2.unitvector());
 	}
 }
 
