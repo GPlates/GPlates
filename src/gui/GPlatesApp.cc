@@ -18,6 +18,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ *
  */
 
 #include <iostream>
@@ -32,6 +33,25 @@
 
 using namespace GPlatesGui;
 
+namespace {
+
+	/*
+	 * Set the MESA_NO_SSE environment variable to 1 to circumvent a Mesa 
+	 * bug described at
+	 * 
+	 *  http://www.geosci.usyd.edu.au/users/hlaw/pmwiki/pmwiki.php?pagename=Main.NurbsBug
+	 * 
+	 * This will have no effect on systems that do not have this bug, nor 
+	 * on systems that do not use Mesa at all.
+	 */
+	void
+	fix_mesa_bug() {
+
+		wxString var(_("MESA_NO_SSE"), *wxConvCurrent);
+		wxString val(_("1"), *wxConvCurrent);
+		wxSetEnv(var, val);
+	}
+}
 
 bool
 GPlatesApp::OnInit()
@@ -50,6 +70,8 @@ GPlatesApp::OnInit()
 	if (dlg.ShowModal () == wxID_NO)
 		return FALSE;
 #endif
+
+	fix_mesa_bug();
 
 	/*
 	 * Note that this 'try ... catch' block can only catch exceptions
