@@ -56,7 +56,7 @@ enum status { SUCCESSFUL, CANNOT_BE_ROTATED };
 /**
  * FIXME: this should be placed somewhere "more official".
  */
-static const rid_t RIDOfGlobe = 0;
+static const rid_t RIDOfGlobe = rid_t(0);
 
 
 /**
