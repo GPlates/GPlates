@@ -21,14 +21,14 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_TIMEWINDOW_H_
 #define _GPLATES_GEO_TIMEWINDOW_H_
 
 #include "GeneralisedData.h"
-#include "global/types.h"  /* real_t */
+#include "global/types.h"  /* fpdata_t */
 
 namespace GPlatesGeo
 {
@@ -49,10 +49,13 @@ namespace GPlatesGeo
 			TimeWindow()
 				: GeneralisedData(), _begin(0.0), _end(0.0) { }
 
-			TimeWindow(const real_t& begin, const real_t& end);
+			TimeWindow(const fpdata_t& begin, const fpdata_t& end);
 			
 			virtual void
-			ReadIn(std::istream& is) { is >> _begin >> _end; }
+			ReadIn(std::istream& is) {
+
+				is >> _begin >> _end;
+			}
 
 			virtual void
 			PrintOut(std::ostream& os) const {
@@ -61,7 +64,7 @@ namespace GPlatesGeo
 			}
 
 		private:
-			real_t _begin, _end;
+			fpdata_t _begin, _end;
 	};
 }
 

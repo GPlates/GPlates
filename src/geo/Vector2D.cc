@@ -21,7 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include "Vector2D.h"
@@ -29,6 +29,6 @@
 using namespace GPlatesGeo;
 
 inline
-Vector2D::Vector2D(const real_t& x, const real_t& y)
+Vector2D::Vector2D(const fpdata_t& x, const fpdata_t& y)
 	: GeneralisedData(), _x(x), _y(y) 
 { }
