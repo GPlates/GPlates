@@ -104,6 +104,11 @@ using namespace GPlatesGui;
 bool
 GPlatesApp::OnInit()
 {
+	/*
+	 * Note that this 'try ... catch' block can only catch exceptions
+	 * thrown during the instantiation of the new GLFrame.  It CAN'T
+	 * catch exceptions thrown at any later stage.
+	 */
 	try {
 		// NULL => no parent
 		GLFrame* frame = new GLFrame(NULL, _(PACKAGE_STRING), wxSize(640,640));
