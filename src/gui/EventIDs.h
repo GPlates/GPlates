@@ -31,7 +31,7 @@
 namespace GPlatesGui {
 
 	/**
-	 * IDs for command and menu events.
+	 * IDs for command, toolbar and menu events.
 	 */
 	namespace EventIDs {
 
@@ -39,6 +39,13 @@ namespace GPlatesGui {
 
 			// Use 'wxID_HIGHEST + 1' to avoid ID clashes
 			COMMAND_ESCAPE = wxID_HIGHEST + 1,
+			COMMAND_PLUS,
+			COMMAND_MINUS,
+			COMMAND_1,
+
+			TOOLBAR_ZOOM_IN,
+			TOOLBAR_ZOOM_OUT,
+			TOOLBAR_ZOOM_RESET,
 
 			POPUP_SPIN_GLOBE,
 
@@ -48,9 +55,6 @@ namespace GPlatesGui {
 			MENU_FILE_EXPORT,
 			MENU_FILE_SAVEALLDATA,
 			MENU_FILE_EXIT,
-
-			MENU_VIEW_ZOOM_IN,
-			MENU_VIEW_ZOOM_OUT,
 
 			MENU_RECONSTRUCT_TIME,
 			MENU_RECONSTRUCT_PRESENT,

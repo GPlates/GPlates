@@ -45,6 +45,11 @@
 #include "controls/AnimationTimer.h"
 #include "global/types.h"
 
+// Pixmaps for icons
+#include "pixmaps/stock_zoom_in_24.xpm"
+#include "pixmaps/stock_zoom_out_24.xpm"
+#include "pixmaps/zoom_initial_24.xpm"
+
 
 /**
  * The menus.
@@ -89,6 +94,7 @@ namespace Menus {
 	}
 
 
+#if 0
 	wxMenu *
 	CreateViewMenu()
 	{
@@ -103,6 +109,7 @@ namespace Menus {
 
 		return viewmenu;
 	}
+#endif
 
 
 	wxMenu *
@@ -152,7 +159,9 @@ namespace Menus {
 	INSTANCES[] = {
 
 		{ _("&File"),         CreateFileMenu },
+#if 0
 		{ _("&View"),         CreateViewMenu },
+#endif
 		{ _("&Reconstruct"),  CreateReconstructMenu },
 		{ _("&Help"),         CreateHelpMenu }
 	};
@@ -167,7 +176,9 @@ namespace Menus {
 	enum {
 
 		MENU_FILE = 0,
+#if 0
 		MENU_VIEW,
+#endif
 		MENU_RECONSTRUCT,
 		MENU_HELP
 	};
@@ -208,9 +219,9 @@ namespace StatusbarFields {
 
 
 /**
- * Animation mode.
+ * Event handlers used for keyboard "accelerators" (shortcuts).
  */
-namespace AnimationMode {
+namespace {
 
 	/**
 	 * Extra event-handling functionality used during animations.
@@ -245,6 +256,23 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
  _last_finish_on_end(true),
  _operation_mode(NORMAL_MODE)
 {
+	_menu_bar = CreateMenuBar(/*wxMB_DOCKABLE*/);
+	if ( ! _menu_bar) {
+
+		std::cerr << "Failed to create menu bar." << std::endl;
+		std::exit(1);
+	}
+	SetMenuBar(_menu_bar);
+
+	_tool_bar = CreateToolBar(/*wxNO_BORDER|wxTB_HORIZONTAL|wxTB_DOCKABLE*/);
+	if ( ! _tool_bar) {
+
+		std::cerr << "Failed to create tool bar." << std::endl;
+		std::exit(1);
+	}
+	SetToolBar(_tool_bar);
+	SetAcceleratorTable(MainWindow::DefaultAccelTab());
+
 	const int num_statusbar_fields =
 	 static_cast< int >(sizeof(StatusbarFields::WIDTHS) /
 	                    sizeof(StatusbarFields::WIDTHS[0]));
@@ -257,21 +285,20 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	}
 	SetStatusWidths(num_statusbar_fields, StatusbarFields::WIDTHS);
 	SetCurrentTime(0.0);
-	SetCurrentZoom(1);
+	SetCurrentZoom(100);
 
 	_last_load_dir = "";
 	_last_save_dir = "";
 
-	_menu_bar = CreateMenuBar();
-	if ( ! _menu_bar) {
-
-		std::cerr << "Failed to create menu bar." << std::endl;
-		std::exit(1);
-	}
-	SetMenuBar(_menu_bar);
-
 	_canvas = new GLCanvas(this);
 	_canvas->SetCurrent();
+
+	/*
+	 * NOTE: without this next function call, the keyboard shortcuts
+	 * will not work until after the user has clicked inside the GLCanvas
+	 * frame.
+	 */
+	_canvas->SetFocus();
 
 	GPlatesControls::GuiCalls::SetComponents(this, _canvas);
 
@@ -381,16 +408,23 @@ GPlatesGui::MainWindow::OnExit(wxCommandEvent&)
 
 
 void
-GPlatesGui::MainWindow::OnViewZoomIn(wxCommandEvent&)
+GPlatesGui::MainWindow::OnZoomIn(wxCommandEvent&)
 {
 	_canvas->ZoomIn();
 }
 
 
 void
-GPlatesGui::MainWindow::OnViewZoomOut(wxCommandEvent&)
+GPlatesGui::MainWindow::OnZoomOut(wxCommandEvent&)
 {
 	_canvas->ZoomOut();
+}
+
+
+void
+GPlatesGui::MainWindow::OnZoomReset(wxCommandEvent&)
+{
+	_canvas->ZoomReset();
 }
 
 
@@ -463,7 +497,7 @@ void
 GPlatesGui::MainWindow::SetCurrentZoom(unsigned z)
 {
 	std::ostringstream oss;
-	oss << (z * 100) << "%";
+	oss << z << "%";
 	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent),
 	              StatusbarFields::ZOOM);
 }
@@ -500,11 +534,15 @@ GPlatesGui::MainWindow::SetOpModeToAnimation()
 	}
 
 	// A new event handler pushed onto handler stack
-	PushEventHandler(new AnimationMode::AnimEvtHandler(this));
+	PushEventHandler(new AnimEvtHandler(this));
 
 	// A new set of keyboard "accelerators" (ie, shortcuts)
-	wxAcceleratorEntry accels[1];
-	accels[0].Set(wxACCEL_NORMAL, WXK_ESCAPE, EventIDs::COMMAND_ESCAPE);
+	// FIXME: do this more elegantly... (ie, without the duplication)
+	wxAcceleratorEntry accels[4];
+	accels[0].Set(wxACCEL_SHIFT, '=', EventIDs::COMMAND_PLUS);
+	accels[1].Set(wxACCEL_NORMAL, '-', EventIDs::COMMAND_MINUS);
+	accels[2].Set(wxACCEL_NORMAL, '1', EventIDs::COMMAND_1);
+	accels[3].Set(wxACCEL_NORMAL, WXK_ESCAPE, EventIDs::COMMAND_ESCAPE);
 	size_t num_accels = sizeof(accels) / sizeof(accels[0]);
 	wxAcceleratorTable accel_tab(num_accels, accels);
 	SetAcceleratorTable(accel_tab);
@@ -540,7 +578,7 @@ GPlatesGui::MainWindow::ReturnOpModeToNormal()
 	PopEventHandler(true);
 
 	// Remove animation keyboard accelerators
-	SetAcceleratorTable(wxNullAcceleratorTable);
+	SetAcceleratorTable(MainWindow::DefaultAccelTab());
 
 	// Re-enable all menus
 	size_t num_menus = sizeof(Menus::INSTANCES) /
@@ -575,12 +613,12 @@ GPlatesGui::MainWindow::StopAnimation(bool interrupted)
 
 
 wxMenuBar *
-GPlatesGui::MainWindow::CreateMenuBar()
+GPlatesGui::MainWindow::CreateMenuBar(long style)
 {
 	size_t num_menus = sizeof(Menus::INSTANCES) /
 	                   sizeof(Menus::INSTANCES[0]);
 
-	wxMenuBar *menu_bar = new wxMenuBar(wxMB_DOCKABLE);
+	wxMenuBar *menu_bar = new wxMenuBar(style);
 
 	for (size_t i = 0; i < num_menus; i++) {
 
@@ -590,6 +628,42 @@ GPlatesGui::MainWindow::CreateMenuBar()
 		menu_bar->Append(fn(), title);
 	}
 	return menu_bar;
+}
+
+
+wxToolBar *
+GPlatesGui::MainWindow::CreateToolBar(long style)
+{
+	wxToolBar *tool_bar = wxFrame::CreateToolBar(style);
+
+	tool_bar->SetMargins(1, 1);
+
+	wxBitmap *zoom_in_bitmap = new wxBitmap(stock_zoom_in_24_xpm);
+	tool_bar->AddTool(EventIDs::TOOLBAR_ZOOM_IN, "Zoom In",
+	                   *zoom_in_bitmap, "Zoom In    +", wxITEM_NORMAL);
+	wxBitmap *zoom_out_bitmap = new wxBitmap(stock_zoom_out_24_xpm);
+	tool_bar->AddTool(EventIDs::TOOLBAR_ZOOM_OUT, "Zoom Out",
+	                   *zoom_out_bitmap, "Zoom Out    -", wxITEM_NORMAL);
+	wxBitmap *zoom_initial_bitmap = new wxBitmap(zoom_initial_24_xpm);
+	tool_bar->AddTool(EventIDs::TOOLBAR_ZOOM_RESET, "Reset Zoom",
+	                   *zoom_initial_bitmap, "Reset Zoom    1",
+	                   wxITEM_NORMAL);
+
+	return tool_bar;
+}
+
+
+wxAcceleratorTable
+GPlatesGui::MainWindow::DefaultAccelTab()
+{
+	wxAcceleratorEntry accels[3];
+	accels[0].Set(wxACCEL_SHIFT, '=', EventIDs::COMMAND_PLUS);
+	accels[1].Set(wxACCEL_NORMAL, '-', EventIDs::COMMAND_MINUS);
+	accels[2].Set(wxACCEL_NORMAL, '1', EventIDs::COMMAND_1);
+	size_t num_accels = sizeof(accels) / sizeof(accels[0]);
+	wxAcceleratorTable accel_tab(num_accels, accels);
+
+	return accel_tab;
 }
 
 
@@ -610,10 +684,12 @@ BEGIN_EVENT_TABLE(GPlatesGui::MainWindow, wxFrame)
 	EVT_MENU(EventIDs::MENU_FILE_EXIT,
 			GPlatesGui::MainWindow::OnExit)
 
+#if 0
 	EVT_MENU(EventIDs::MENU_VIEW_ZOOM_IN,
 			GPlatesGui::MainWindow::OnViewZoomIn)
 	EVT_MENU(EventIDs::MENU_VIEW_ZOOM_OUT,
 			GPlatesGui::MainWindow::OnViewZoomOut)
+#endif
 
 	EVT_MENU(EventIDs::MENU_RECONSTRUCT_TIME,
 			GPlatesGui::MainWindow::OnReconstructTime)
@@ -625,12 +701,26 @@ BEGIN_EVENT_TABLE(GPlatesGui::MainWindow, wxFrame)
 	EVT_MENU(EventIDs::MENU_HELP_ABOUT,
 			GPlatesGui::MainWindow::OnHelpAbout)
 
+	EVT_MENU(GPlatesGui::EventIDs::COMMAND_PLUS,
+			GPlatesGui::MainWindow::OnZoomIn)
+	EVT_MENU(GPlatesGui::EventIDs::COMMAND_MINUS,
+			GPlatesGui::MainWindow::OnZoomOut)
+	EVT_MENU(GPlatesGui::EventIDs::COMMAND_1,
+			GPlatesGui::MainWindow::OnZoomReset)
+
+	EVT_TOOL(EventIDs::TOOLBAR_ZOOM_IN,
+			GPlatesGui::MainWindow::OnZoomIn)
+	EVT_TOOL(EventIDs::TOOLBAR_ZOOM_OUT,
+			GPlatesGui::MainWindow::OnZoomOut)
+	EVT_TOOL(EventIDs::TOOLBAR_ZOOM_RESET,
+			GPlatesGui::MainWindow::OnZoomReset)
+
 END_EVENT_TABLE()
 
 
-BEGIN_EVENT_TABLE(AnimationMode::AnimEvtHandler, wxEvtHandler)
+BEGIN_EVENT_TABLE(AnimEvtHandler, wxEvtHandler)
 
 	EVT_MENU(GPlatesGui::EventIDs::COMMAND_ESCAPE,
-			AnimationMode::AnimEvtHandler::OnEscape)
+			AnimEvtHandler::OnEscape)
 
 END_EVENT_TABLE()

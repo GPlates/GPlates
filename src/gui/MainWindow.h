@@ -57,10 +57,6 @@ namespace GPlatesGui
 			void OnSaveAllData(wxCommandEvent&);
 			void OnExit(wxCommandEvent&);
 
-			// View events
-			void OnViewZoomIn(wxCommandEvent&);
-			void OnViewZoomOut(wxCommandEvent&);
-
 			// Reconstruct events
 			void OnReconstructTime(wxCommandEvent&);
 			void OnReconstructPresent(wxCommandEvent&);
@@ -68,6 +64,13 @@ namespace GPlatesGui
 
 			// Help events
 			void OnHelpAbout(wxCommandEvent&);
+
+			/*
+			 * Toolbar events
+			 */
+			void OnZoomIn(wxCommandEvent&);
+			void OnZoomOut(wxCommandEvent&);
+			void OnZoomReset(wxCommandEvent&);
 
 			/**
 			 * Set the current geological time (as displayed in
@@ -77,7 +80,7 @@ namespace GPlatesGui
 
 			/**
 			 * Set the current zoom (as displayed in the status
-			 * bar) to @a z.
+			 * bar) to @a z percent.
 			 */
 			void SetCurrentZoom(unsigned z);
 
@@ -124,6 +127,7 @@ namespace GPlatesGui
 			 */
 
 			wxMenuBar   *_menu_bar;
+			wxToolBar   *_tool_bar;
 			wxStatusBar *_status_bar;
 			GLCanvas    *_canvas;
 
@@ -143,7 +147,14 @@ namespace GPlatesGui
 			/**
 			 * Create a new wxMenuBar and return it.
 			 */
-			wxMenuBar *CreateMenuBar();
+			wxMenuBar *CreateMenuBar(long style = 0);
+
+			/**
+			 * Create a new wxToolBar and return it.
+			 */
+			wxToolBar *CreateToolBar(long style = 0);
+
+			static wxAcceleratorTable DefaultAccelTab();
 
 			enum operation_modes {
 

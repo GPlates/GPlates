@@ -25,7 +25,7 @@
  */
 
 #include <iostream>
-#include <cmath>  /* fabsf() */
+#include <cmath>  /* fabsf, pow */
 #include "GLCanvas.h"
 #include "EventIDs.h"
 #include "maths/types.h"
@@ -40,8 +40,10 @@
  * At the initial zoom, the smaller dimension of the GLCanvas will be
  * @a FRAMING_RATIO times the diameter of the Globe.  Obviously, when the
  * GLCanvas is resized, the Globe will be scaled accordingly.
+ *
+ * This is purely cosmetic.
  */
-static const GLfloat FRAMING_RATIO = 1.2;
+static const GLfloat FRAMING_RATIO = 1.07;
 
 
 static GLfloat eyex = 0.0, eyey = 0.0, eyez = -5.0;
@@ -119,7 +121,7 @@ GPlatesGui::GLCanvas::GLCanvas(MainWindow *parent,
  const wxSize &size, const wxPoint &position) :
  wxGLCanvas(parent, -1, position, size),
  _parent(parent),
- _zoom_factor(1),  // Zoom factor of 1 => no zoom
+ _zoom_power(1.0),  // Zoom power of 1.0 => no zoom
  _wheel_rotation(0),
  _is_initialised(false) {
 
@@ -129,6 +131,8 @@ GPlatesGui::GLCanvas::GLCanvas(MainWindow *parent,
 		std::cerr << "Failed to create popup menu." << std::endl;
 		std::exit(1);
 	}
+
+	RecalcZoom();
 
 	_parent->Show(TRUE);
 }
@@ -241,7 +245,7 @@ GPlatesGui::GLCanvas::OnSpin(wxMouseEvent& evt)
 	static GLfloat last_x = 0.0, last_y = 0.0, last_zoom = 0.0;
 	// Make the tolerance inversely proportional to the current zoom.  
 	// That way the globe won't spin stupidly when the user is up close.
-	GLfloat TOLERANCE = 5.0*_zoom_factor;  
+	GLfloat TOLERANCE = 5.0 * _zoom_factor;  
 	static const GLfloat ZOOM_TOLERANCE = 200.0;
 
 	GLfloat& meridian = _globe.GetMeridian();
@@ -359,9 +363,9 @@ GPlatesGui::GLCanvas::OnMouseEvent(wxMouseEvent &evt) {
 void
 GPlatesGui::GLCanvas::ZoomIn() {
 
-	if (_zoom_factor < 16) {
+	if (_zoom_power < 2.0) {
 
-		_zoom_factor++;
+		IncrZoomPower();
 		RecalcZoom();
 	}
 }
@@ -370,31 +374,39 @@ GPlatesGui::GLCanvas::ZoomIn() {
 void
 GPlatesGui::GLCanvas::ZoomOut() {
 
-	if (_zoom_factor > 1) {
+	if (_zoom_power > 1.0) {
 
-		_zoom_factor--;
+		DecrZoomPower();
 		RecalcZoom();
 	}
 }
 
 
 void
-GPlatesGui::GLCanvas::InitGL()
-{
+GPlatesGui::GLCanvas::ZoomReset() {
+
+	_zoom_power = 1.0;
+	RecalcZoom();
+}
+
+
+void
+GPlatesGui::GLCanvas::InitGL() {
+
 	SetCurrent();
 
 	// Enable depth buffering.
 	glEnable(GL_DEPTH_TEST);
 	// FIXME: enable polygon offset here or in Globe?
-	
+
 	ClearCanvas();
 	_is_initialised = true;
 }
 
 
 void
-GPlatesGui::GLCanvas::SetView()
-{
+GPlatesGui::GLCanvas::SetView() {
+
 	static const GLdouble depth_near_clipping = 0.5;
 
 	// Always fill up the all of the available space.
@@ -436,10 +448,35 @@ GPlatesGui::GLCanvas::SetView()
 }
 
 
+namespace {
+
+	const double ZOOM_POWER_DELTA = 0.05;
+}
+
+
+void
+GPlatesGui::GLCanvas::IncrZoomPower() {
+
+	_zoom_power += ZOOM_POWER_DELTA;
+}
+
+
+void
+GPlatesGui::GLCanvas::DecrZoomPower() {
+
+	_zoom_power -= ZOOM_POWER_DELTA;
+}
+
+
 void
 GPlatesGui::GLCanvas::RecalcZoom() {
 
-	_parent->SetCurrentZoom(_zoom_factor);
+	double zoom_percent = std::pow(10.0, _zoom_power + 1.0);
+	unsigned zp_rounded = static_cast< unsigned >(zoom_percent + 0.5);
+	_parent->SetCurrentZoom(zp_rounded);
+
+	_zoom_factor = zoom_percent / 100.0;
+
 	SetView();
 	Refresh();
 	HandleMouseMotion();

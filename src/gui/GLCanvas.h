@@ -85,6 +85,11 @@ namespace GPlatesGui
 			 */
 			void ZoomOut();
 
+			/**
+			 * Reset zoom to initial value of 1.
+			 */
+			void ZoomReset();
+
 #if 0
 			/**
 			 * Return the PointOnSphere corresponding to the given screen
@@ -106,7 +111,8 @@ namespace GPlatesGui
 			wxMenu *_popup_menu;
 
 			Globe _globe;
-			unsigned _zoom_factor;
+			double _zoom_power;
+			double _zoom_factor;
 			int _mouse_x;
 			int _mouse_y;
 			int _width;
@@ -118,6 +124,8 @@ namespace GPlatesGui
 
 			void InitGL();
 			void SetView();
+			void IncrZoomPower();
+			void DecrZoomPower();
 			void RecalcZoom();
 			void GetDimensions();
 			void ClearCanvas(const Colour &c = Colour::BLACK);
