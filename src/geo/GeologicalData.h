@@ -33,7 +33,7 @@
 #include "TimeWindow.h"
 #include "StringValue.h"
 #include "global/UnsupportedFunctionException.h"
-#include "global/types.h"  /* integer_t */
+#include "global/types.h"  /* integer_t, rid_t */
 
 namespace GPlatesGeo
 {
@@ -62,7 +62,7 @@ namespace GPlatesGeo
 			 *   shouldn't DataType_t be an int?
 			 */
 			typedef std::string DataType_t;
-			typedef integer_t RotationGroupId_t;
+			typedef rid_t RotationGroupId_t;
 
 			/**
 			 * If the data has no associated type, then it's DataType
