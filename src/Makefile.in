@@ -12,8 +12,9 @@ CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
-EXTRA_LIBS = global/libglobal.a gui/libgui.a fileio/libfileio.a controls/libcontrols.a \
-	state/libstate.a geo/libgeo.a maths/libmaths.a
+EXTRA_LIBS = global/libglobal.a gui/libgui.a fileio/libfileio.a \
+	controls/libcontrols.a state/libstate.a geo/libgeo.a \
+	maths/libmaths.a
 
 LIBS = @LIBS@
 #LIBS = @LIBS@ -lefence
