@@ -41,18 +41,18 @@ GPlatesMaths::LatLonPoint::LatLonPoint (const real_t &lat, const real_t &lon)
 	if ( ! LatLonPoint::isValidLat(lat)) {
 
 		// not a valid latitude
-		std::ostringstream oss("Attempted to create a lat/lon point "
-		 "using the invalid latitude ");
-		oss << lat;
+		std::ostringstream oss;
+		oss << "Attempted to create a lat/lon point "
+			"using the invalid latitude " << lat;
 
 		throw InvalidLatLonException(oss.str().c_str());
 	}
 	if ( ! LatLonPoint::isValidLon(lon)) {
 
-		// not a valid latitude
-		std::ostringstream oss("Attempted to create a lat/lon point "
-		 "using the invalid latitude ");
-		oss << lat;
+		// not a valid longitude
+		std::ostringstream oss;
+		oss << "Attempted to create a lat/lon point "
+			"using the invalid longitude " << lon;
 
 		throw InvalidLatLonException(oss.str().c_str());
 	}
