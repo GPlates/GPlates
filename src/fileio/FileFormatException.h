@@ -1,4 +1,4 @@
-/*$ID*/
+/*$ID$*/
 /// Exception used when a problem is found with the format of a Plates file being read in.
 /**
  * @file
