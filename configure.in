@@ -1,7 +1,7 @@
 # $Id$
 # Configure script for GPlates
 
-AC_INIT([GPlates], [1.0], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
+AC_INIT([GPlates], [0.5], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_HEADERS(src/global/config.h)

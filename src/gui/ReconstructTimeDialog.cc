@@ -30,19 +30,6 @@
 using namespace GPlatesGui;
 using namespace GPlatesMaths;
 
-class TimeValidator : public wxValidator
-{
-	public:
-		TimeValidator(real_t& time) 
-			: wxValidator(), _time(time) {  }
-	
-		virtual bool
-		TransferFromWindow() { return true; }
-
-	private:
-		real_t& _time;
-};
-
 ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent)
 	: wxDialog(parent, -1, "Reconstruct to...")
 {
@@ -50,26 +37,33 @@ ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent)
 	static const int DISALLOW_RESIZE = 0;
 	static const int BORDER_SIZE  = 10;
 	
+	wxBoxSizer* msgsizer = new wxBoxSizer(wxHORIZONTAL);
+	msgsizer->Add(new wxStaticText(this, -1,
+		"Enter the time for which you wish the reconstruction\n"
+		"to take place in units of millions of years ago.\n"), 
+		0, wxALL, BORDER_SIZE);
+
 	// A text entry thingo with a text note to the left
 	wxBoxSizer* entrysizer = new wxBoxSizer(wxHORIZONTAL);
 	entrysizer->Add(new wxStaticText(this, -1, "Enter time: (Ma)"), 
-					ALLOW_RESIZE, wxALIGN_LEFT | wxALL, BORDER_SIZE);
+					0, wxALL, BORDER_SIZE);
 	entrysizer->Add(_txtctrl = new wxTextCtrl(this, -1, "0.0"), 
-					ALLOW_RESIZE, wxALIGN_RIGHT | wxALL, BORDER_SIZE);  
+					0, wxALL, BORDER_SIZE);  
 							// This needs a validator
-	
+
 	wxBoxSizer* buttonsizer = new wxBoxSizer(wxHORIZONTAL);
 	buttonsizer->Add(new wxButton(this, wxID_OK, "OK"),
-					 DISALLOW_RESIZE, wxALIGN_LEFT | wxALL, BORDER_SIZE);
+					 1, wxALL, BORDER_SIZE);
 	buttonsizer->Add(new wxButton(this, wxID_CANCEL, "Cancel"), 
-					 DISALLOW_RESIZE, wxALIGN_RIGHT | wxALL, BORDER_SIZE);
+					 1, wxALL, BORDER_SIZE);
 	
 	wxBoxSizer* mainsizer = new wxBoxSizer(wxVERTICAL);
-	mainsizer->Add(entrysizer, 1, wxALIGN_TOP | wxALIGN_CENTRE_HORIZONTAL);
-	mainsizer->Add(buttonsizer, 1, wxALIGN_BOTTOM | wxALIGN_CENTRE_HORIZONTAL);
+	mainsizer->Add(msgsizer, 0);
+	mainsizer->Add(entrysizer, 0);
+	mainsizer->Add(buttonsizer, 0);
 
-	SetSizer(mainsizer);
 	mainsizer->SetSizeHints(this);
+	SetSizer(mainsizer);
 }
 
 

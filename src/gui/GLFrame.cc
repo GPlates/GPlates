@@ -31,6 +31,7 @@
 #include "OpenGL.h"
 #include "GLFrame.h"
 #include "ReconstructTimeDialog.h"
+#include "AnimationTimesDialog.h"
 #include "controls/File.h"
 #include "controls/View.h"
 #include "controls/Reconstruct.h"
@@ -78,7 +79,7 @@ CreateMenuBar(GLFrame* frame)
 							"Particular &Time...\tCtrl-T",
 							"Reconstruct the data at a particular time");
 	reconstructmenu->Append(MENU_RECONSTRUCT_PRESENT,
-							"&Present Time...\tCtrl-P",
+							"Return to &Present\tCtrl-P",
 							"Reconstruct the data at the present");
 	reconstructmenu->Append(MENU_RECONSTRUCT_ANIMATION,
 							"&Animation...\tCtrl-A",
@@ -193,9 +194,14 @@ GLFrame::OnReconstructPresent(wxCommandEvent&)
 void
 GLFrame::OnReconstructAnimation(wxCommandEvent&)
 {
-	GPlatesMaths::real_t begin_time, end_time;
-	GPlatesGlobal::integer_t nsteps;
-	GPlatesControls::Reconstruct::Animation(begin_time, end_time, nsteps);
+	AnimationTimesDialog dialog(this);
+
+	if (dialog.ShowModal() == wxID_OK) {
+		GPlatesControls::Reconstruct::Animation(
+			dialog.GetStartTime(), 
+			dialog.GetEndTime(),
+			dialog.GetNSteps());
+	}
 }
 
 BEGIN_EVENT_TABLE(GLFrame, wxFrame)

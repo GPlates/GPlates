@@ -25,7 +25,6 @@
 
 #include <string>
 #include <iostream>
-#include <locale>
 #include <iterator>  /* for istream_iterator */
 #include <algorithm> /* for unique_copy */
 #include <sstream>
@@ -43,20 +42,14 @@ typedef XMLParser::Element Element;
 class BothWhitespace
 {
 	public:
-		BothWhitespace(const std::locale& loc)
-			: _loc(loc)  {  }
-
 		/**
 		 * Returns true when both of the parameters are space
 		 * characters.
 		 */
 		bool
 		operator()(char c1, char c2) {
-			return std::isspace(c1, _loc) && std::isspace(c2, _loc);
+			return isspace(c1) && isspace(c2);
 		}
-
-	private:
-		const std::locale& _loc;
 };
 
 
@@ -73,7 +66,7 @@ CompressWhitespace(std::string& str)
 	std::istringstream istr(str);
 	
 	// Don't skip leading whitespaces.
-	istr.unsetf(std::ios_base::skipws);
+	istr.unsetf(std::ios::skipws);
 
 	// Copy from the stringstream back into our parameter (str).
 	// Copy blocks of whitespace as a single space using the
@@ -81,7 +74,7 @@ CompressWhitespace(std::string& str)
 	std::unique_copy(std::istream_iterator<char>(istr),
 					 std::istream_iterator<char>(),
 					 std::back_inserter(str),
-					 BothWhitespace(istr.getloc()));
+					 BothWhitespace());
 }
 
 // eXpat Callback functions.  Userdata is a pointer to a pointer to

@@ -10,7 +10,7 @@ CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
 OBJS = GLCanvas.o GLFrame.o Globe.o Colour.o RenderVisitor.o \
-	ReconstructTimeDialog.o
+	ReconstructTimeDialog.o AnimationTimesDialog.o
 
 LIBNAME = libgui.a
 
