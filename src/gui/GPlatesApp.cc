@@ -30,7 +30,7 @@
 #include "global/Exception.h"
 
 #include "GPlatesApp.h"
-#include "GLFrame.h"
+#include "MainWindow.h"
 
 using namespace GPlatesGui;
 
@@ -40,18 +40,18 @@ GPlatesApp::OnInit()
 {
 	/*
 	 * Note that this 'try ... catch' block can only catch exceptions
-	 * thrown during the instantiation of the new GLFrame.  It CANNOT
-	 * catch exceptions thrown at any later stage.
+	 * thrown during the instantiation of the new MainWindow.
+	 * It CANNOT catch exceptions thrown at any later stage.
 	 */
 	try {
 		/*
 		 * Note that '_(str)' is a gettext-style macro alias for
 		 * 'wxGetTranslation(str)'.
 		 */
-		GLFrame* frame =
-		 new GLFrame(NULL, _(PACKAGE_STRING), wxSize(640, 640));
-		frame->Show(TRUE);
-		SetTopWindow(frame);
+		MainWindow* main_win =
+		 new MainWindow(NULL, _(PACKAGE_STRING), wxSize(640, 640));
+		main_win->Show(TRUE);
+		SetTopWindow(main_win);
 
 	} catch (const GPlatesGlobal::Exception &e) {
 
