@@ -202,7 +202,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	num_x = index_t ((x_max - x_min) / x_step + 1);
 	num_y = index_t ((y_max - y_min) / y_step + 1);
 
-	// TODO: handle the case where x is actually longitude, etc.
+	// TODO: handle the case where x is actually latitude, etc.
 
 	// TODO: verify that this attribute actually exists, before reading it!
 	NcAtt *z_unit_att = ncf->get_var ("z_range")->get_att ("units");
@@ -212,15 +212,21 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	delete z_unit_att;
 	GPlatesGeo::GridData *gdata;
 	try {
-		GPlatesMaths::PointOnSphere orig = pos (x_min, y_min),
-				sc_step = pos (x_min + x_step, y_min),
-				gc_step = pos (x_min, y_min + y_step);
+		GPlatesMaths::PointOnSphere orig = pos (y_min, x_min),
+				sc_step = pos (y_min, x_min + x_step),
+				gc_step = pos (y_min + y_step, x_min);
+		if ((orig == GPlatesMaths::NorthPole) ||
+		    (orig == GPlatesMaths::SouthPole)) {
+			throw FileFormatException
+				("Can't handle grids with polar origins.");
+		}
 		gdata = new GPlatesGeo::GridData (
 			z_units, GPlatesGeo::GeologicalData::NO_ROTATIONGROUP,
 			GPlatesGeo::GeologicalData::NO_TIMEWINDOW,
 			GPlatesGeo::GeologicalData::Attributes_t (),
 			orig, sc_step, gc_step);
 	} catch (GPlatesGlobal::Exception &e) {
+		std::cerr << "{" << e << "}\n";
 		throw FileFormatException("Couldn't determine grid from file.");
 	}
 
@@ -244,6 +250,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	if (dlg)
 		dlg->Update (0, "Loading grid...");
 	for (index_t j = 0; j < num_y; ++j) {
+		index_t real_j = num_y - j - 1;	// flip top/bottom
 		if (dlg) {
 			double perc = 100 * double (j) / double (num_y);
 			int val = int (floor (perc));
@@ -255,13 +262,11 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 				break;
 			}
 		}
-		if (z_var->set_cur (j * num_x) == FALSE)
-			std::cerr << "ARGH!!! " << __LINE__ << "\n";
+		z_var->set_cur (j * num_x);
 		z_var->get (z, num_x);		// assumes it is ncFloat data
 		for (index_t i = 0; i < num_x; ++i, ++cnt) {
 			if (isnan (z[i]))
 				continue;
-			index_t real_i = (num_y - j - 1), real_j = i;
 
 			GPlatesGeo::GeologicalData::Attributes_t attr =
 				GPlatesGeo::GeologicalData::NO_ATTRIBUTES;
@@ -269,12 +274,13 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 			//	actually useful (value is in z[i])
 			GPlatesGeo::GridElement *elt =
 					new GPlatesGeo::GridElement (attr);
-			gdata->Add (elt, real_i, real_j);
+			gdata->Add (elt, i, real_j);
 
 #ifdef DEBUG_INSERTIONS
 			double lat, lon;
-			pos (gdata->resolve (real_i, real_j), lat, lon);
-			std::cerr << "Adding '" << z[i] << "' to (lat="
+			pos (gdata->resolve (i, real_j), lat, lon);
+			std::cerr << std::setprecision (1) << std::fixed
+				<< "Adding '" << z[i] << "' to (lat="
 				<< lat << ", long=" << lon << ").\n";
 #endif
 		}
