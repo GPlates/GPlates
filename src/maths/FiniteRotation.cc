@@ -90,7 +90,7 @@ FiniteRotation::operator*(const UnitVector3D &uv) const {
 	 * creation of this unit vector should be about 26 clock cycles +
 	 * the cost of a function call.
 	 */
-	UnitVector3D uv_rot(v_rot.x(), v_rot.y(), v_rot.z());
+	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z());
 }
 
 
