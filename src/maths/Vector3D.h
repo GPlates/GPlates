@@ -182,6 +182,15 @@ namespace GPlatesMaths
 		return (dp >= v1.magnitude () * v2.magnitude ());
 	}
 
+	/**
+	 * Test whether two vectors are perpendicular.
+	 */
+	inline bool perpendicular (const Vector3D &v1, const Vector3D &v2)
+	{
+		real_t dp = dot (v1, v2);
+		return (dp <= 0.0);
+	}
+
 
 	/**
 	 * This algorithm for testing whether two vectors are collinear
