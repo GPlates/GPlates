@@ -32,9 +32,10 @@
 #include <cmath>  /* for fabsf() */
 #include <wx/wx.h>
 
+#include "MainWindow.h"
+#include "GLCanvas.h"
 #include "AboutDialog.h"
 #include "AnimationTimesDialog.h"
-#include "MainWindow.h"
 #include "OpenGL.h"
 #include "ReconstructTimeDialog.h"
 #include "controls/File.h"
@@ -42,7 +43,6 @@
 #include "controls/Reconstruct.h"
 #include "controls/AnimationTimer.h"
 #include "global/types.h"
-#include "maths/OperationsOnSphere.h"
 
 
 /**
@@ -307,33 +307,6 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 
 
 void
-GPlatesGui::MainWindow::OnMouseMove(wxMouseEvent& evt)
-{
-	using namespace GPlatesMaths;
-
-	PointOnSphere* pos = 
-		_canvas->GetSphereCoordFromScreen(evt.GetX(), evt.GetY());
-	
-	std::ostringstream oss;
-	if (pos == NULL)
-	{
-		oss << "(off globe)";
-	}
-	else
-	{
-		LatLonPoint point = 
-		 OperationsOnSphere::convertPointOnSphereToLatLonPoint(*pos);
-		oss << "(" << point.latitude() << ", "
-		 << point.longitude() << ")";
-		delete pos;
-	}
-
-	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent),
-	              StatusbarFields::POSITION);
-}
-
-
-void
 GPlatesGui::MainWindow::OnOpenData(wxCommandEvent&)
 {
 	wxFileDialog filedlg(this,
@@ -511,6 +484,25 @@ GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t)
 
 
 void
+GPlatesGui::MainWindow::SetCurrentGlobePosOffGlobe()
+{
+	SetStatusText(wxString("(off globe)", *wxConvCurrent),
+	              StatusbarFields::POSITION);
+}
+
+
+void
+GPlatesGui::MainWindow::SetCurrentGlobePos(const GPlatesGlobal::fpdata_t &lat,
+	const GPlatesGlobal::fpdata_t &lon)
+{
+	std::ostringstream oss;
+	oss << "(" << lat << ", " << lon << ")";
+	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent),
+	              StatusbarFields::POSITION);
+}
+
+
+void
 GPlatesGui::MainWindow::SetOpModeToAnimation()
 {
 	if (_operation_mode != NORMAL_MODE) {
@@ -616,7 +608,6 @@ GPlatesGui::MainWindow::CreateMenuBar()
 BEGIN_EVENT_TABLE(GPlatesGui::MainWindow, wxFrame)
 
 	EVT_CLOSE(	GPlatesGui::MainWindow::OnExit)
-	EVT_MOTION(	GPlatesGui::MainWindow::OnMouseMove)
 
 	EVT_MENU(EventIDs::MENU_FILE_OPENDATA,
 			GPlatesGui::MainWindow::OnOpenData)

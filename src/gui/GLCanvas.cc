@@ -29,6 +29,7 @@
 #include "maths/UnitVector3D.h"
 #include "maths/UnitQuaternion3D.h"
 #include "maths/FiniteRotation.h"
+#include "maths/OperationsOnSphere.h"
 #include "fileio/GPlatesReader.h"
 
 using namespace GPlatesGui;
@@ -193,6 +194,8 @@ GLCanvas::GetSphereCoordFromScreen(int screenx, int screeny)
 void
 GLCanvas::OnSpin(wxMouseEvent& evt)
 {
+	using namespace GPlatesMaths;
+
 	// XXX: Eek!  Non-reentrant!
 	static GLfloat last_x = 0.0, last_y = 0.0, last_zoom = 0.0;
 	// Make the tolerance inversely proportional to the current zoom.  
@@ -233,7 +236,9 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 			Refresh();
 		}
 		last_zoom = evt.GetY();
-	} else if (evt.GetWheelRotation() != 0) {
+	}
+	else if (evt.GetWheelRotation() != 0)
+	{
 		GLfloat clicks = evt.GetWheelRotation() / 120;
 		_zoom_factor -= (clicks / 10.0);
 
@@ -246,9 +251,29 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 		SetView();
 		Refresh();
 	}
+	else if (evt.Moving())
+	{
+		// This is purely a motion event (no buttons depressed)
+		PointOnSphere *pos =
+		 GetSphereCoordFromScreen(evt.GetX(), evt.GetY());
+
+		if (pos == NULL)
+		{
+			_parent->SetCurrentGlobePosOffGlobe();
+		}
+		else
+		{
+			LatLonPoint point =
+			 OperationsOnSphere::convertPointOnSphereToLatLonPoint(
+			  *pos);
+			_parent->SetCurrentGlobePos(point.latitude().dval(),
+			 point.longitude().dval());
+			delete pos;
+		}
+	}
 
 	// Pass the mouse event to the parent's process queue
-	GetParent()->GetEventHandler()->AddPendingEvent(evt);
+	// GetParent()->GetEventHandler()->AddPendingEvent(evt);
 }
 
 BEGIN_EVENT_TABLE(GLCanvas, wxGLCanvas)

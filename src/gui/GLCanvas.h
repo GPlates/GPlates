@@ -29,6 +29,7 @@
 
 #include <wx/glcanvas.h>
 #include <iostream>
+#include "MainWindow.h"
 #include "Globe.h"
 #include "geo/DataGroup.h"
 #include "maths/PointOnSphere.h"
@@ -38,12 +39,17 @@ namespace GPlatesGui
 	class GLCanvas : public wxGLCanvas
 	{
 		public:
-			GLCanvas(wxWindow* parent, 
-					 const wxSize& size = wxDefaultSize,
-					 const wxPoint& position = wxDefaultPosition)
-				: wxGLCanvas(parent, -1, position, size), 
-				  _zoom_factor(1.0), // Zoom factor == 1.0 => no zoom
-				  _is_initialised(false) { parent->Show(TRUE); SetCurrent(); }
+			GLCanvas(MainWindow* parent, 
+				 const wxSize& size = wxDefaultSize,
+				 const wxPoint& position = wxDefaultPosition) :
+			 wxGLCanvas(parent, -1, position, size), 
+			 _parent(parent),
+			 _zoom_factor(1.0), // Zoom factor == 1.0 => no zoom
+			 _is_initialised(false) {
+
+				_parent->Show(TRUE);
+				SetCurrent();
+			}
 
 			/**
 			 * Paint the picture.
@@ -92,6 +98,8 @@ namespace GPlatesGui
 			Globe *GetGlobe() { return &_globe; }
 			
 		private:
+			MainWindow *_parent;
+
 			Globe _globe;
 			GLfloat _zoom_factor;
 			bool _is_initialised;

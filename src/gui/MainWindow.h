@@ -29,13 +29,14 @@
 #define _GPLATES_GUI_MAINWINDOW_H_
 
 #include <wx/wx.h>
-#include "GLCanvas.h"
 #include "Colour.h"
 #include "global/types.h"  /* fpdata_t */
 
 
 namespace GPlatesGui
 {
+	class GLCanvas;
+
 	class MainWindow : public wxFrame
 	{
 		public:
@@ -43,9 +44,6 @@ namespace GPlatesGui
 			           const wxString& title = "", 
 			           const wxSize& size = wxDefaultSize,
 			           const wxPoint& pos = wxDefaultPosition);
-
-			// Mouse events
-			void OnMouseMove(wxMouseEvent&);
 
 			/*
 			 * Menubar events
@@ -72,10 +70,23 @@ namespace GPlatesGui
 			void OnHelpAbout(wxCommandEvent&);
 
 			/**
-			 * Set the current geological time in the status bar
-			 * to @a t.
+			 * Set the current geological time (as displayed in
+			 * the status bar) to @a t.
 			 */
 			void SetCurrentTime(const GPlatesGlobal::fpdata_t &t);
+
+			/**
+			 * Set the current position on the globe (as displayed
+			 * in the status bar) to "(off globe)".
+			 */
+			void SetCurrentGlobePosOffGlobe();
+
+			/**
+			 * Set the current position on the globe (as displayed
+			 * in the status bar) to (@a lat, @a lon).
+			 */
+			void SetCurrentGlobePos(const GPlatesGlobal::fpdata_t
+			 &lat, const GPlatesGlobal::fpdata_t &lon);
 
 			/**
 			 * Set the current mode of operation to 'animation'.
