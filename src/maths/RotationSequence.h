@@ -43,10 +43,27 @@ namespace GPlatesMaths
 	 * which describe the motion of a moving plate relative to a given
 	 * fixed plate.
 	 *
-	 * The sequence of finite rotations will span a certain period of
+	 * If the sequence consists of a single finite rotation, it will
+	 * be defined at a single point in time.  If it consists of two
+	 * or more finite rotations, the sequence will span a period of
 	 * time.  By interpolating between the specified finite rotations,
 	 * it is possible to calculate a finite rotation for any point in
 	 * time within this period.
+	 *
+	 * Note that if a finite rotation corresponding to 0 Ma (ie, the
+	 * present-day) is not explicitly specified, the rotation sequence
+	 * will not extend to the present-day.  There is no <em>automatic,
+	 * implicit inclusion</em> of a 0 Ma finite rotation into a rotation
+	 * sequence.
+	 *
+	 * If a rotation sequence consists of two or more finite rotations,
+	 * one of which corresponds to 0 Ma, then the sequence will span
+	 * a period of time which extends to the present-day.  Making the
+	 * assumption that the motion of the plate does not experience any
+	 * sudden change at the present-day, it is possible to extrapolate
+	 * the motion represented by the most recent segment of the sequence
+	 * to calculate the probable finite rotation of a point in time in
+	 * the future.
 	 */
 	class RotationSequence
 	{
