@@ -28,7 +28,6 @@
 #define _GPLATES_MATHS_POINTONSPHERE_H_
 
 #include "global/types.h"  /* real_t */
-#include "global/Assert.h"
 #include "ViolatedCoordinateInvariantException.h"
 
 namespace GPlatesMaths
