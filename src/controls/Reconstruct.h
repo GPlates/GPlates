@@ -44,6 +44,13 @@ namespace GPlatesControls
 		Time(const GPlatesMaths::real_t& time);
 
 		/**
+		 * Reset the construction back to the present day.  This
+		 * is equivalent to calling Time with a parameter of 0.0.
+		 */
+		inline void
+		Present() { Time(0.0); }
+
+		/**
 		 * Display an animation of the positions of the data as
 		 * they move from time @a start_time to time @a end_time.
 		 * @a start_time and @a end_time are measured in millions

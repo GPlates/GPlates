@@ -29,8 +29,10 @@
 using namespace GPlatesControls;
 
 void
-Reconstruct::Time(const GPlatesMaths::real_t&)
+Reconstruct::Time(const GPlatesMaths::real_t& time)
 {
+	std::cout << "Request: reconstruct to time " << time << std::endl;
+
 	Dialogs::ErrorMessage(
 		"Construction not implemented.",
 		

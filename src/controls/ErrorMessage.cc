@@ -36,9 +36,9 @@ Dialogs::ErrorMessage(const char* title,
 {
 	std::ostringstream msg;
 	msg << "Message:" << std::endl
-		<< "\t" << message << std::endl << std::endl
+		<< "    " << message << std::endl << std::endl
 		<< "Result:" << std::endl
-		<< "\t" << result << std::endl;
+		<< "    " << result << std::endl;
 
 	// Annoy user:
 	wxMessageBox(msg.str().c_str(), title, wxOK | wxICON_ERROR);
