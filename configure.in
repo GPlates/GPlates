@@ -11,6 +11,7 @@ AC_PROG_CXX
 AC_PROG_MAKE_SET
 CHECK_GNU_MAKE
 AC_PROG_INSTALL
+AC_LANG_CPLUSPLUS
 
 # What system are we on?
 AC_PATH_PROG(unamepath, uname)
@@ -77,34 +78,56 @@ fi
 ## 
 # Library dependencies.
 ##
-AC_CHECK_LIB(GL, glOrtho, , AC_MSG_ERROR([
+AC_CHECK_LIB([GL], [main], [], AC_MSG_ERROR([
 !!
 !!  You don't appear to have the OpenGL shared library installed.
 !!  It may be obtained from
 !!     http://www.opengl.org
 !!]))
 
-AC_CHECK_LIB(GLU, gluNurbsCurve, , AC_MSG_ERROR([
+AC_CHECK_LIB([GLU], [main], [], AC_MSG_ERROR([
 !!
 !!  You don't appear to have the OpenGL Utility Library (GLU) 
 !!  shared library installed.  It may be obtained from 
 !!     http://www.opengl.org
 !!]))
 
-AC_CHECK_LIB(glut, glutMainLoop, , AC_MSG_ERROR([
+AC_CHECK_LIB([glut], [main], [], AC_MSG_ERROR([
 !!
-!!  You don't appear to have the OpenGL Utility Toolkit (glut) 
+!!  You don't appear to have the OpenGL Utility Toolkit (GLUT) 
 !!  shared library installed.  It may be obtained from 
 !!     http://www.opengl.org
 !!]))
 
-## XXX: Enable this when we work out how to test for a C++ class library.
-#AC_CHECK_LIB(xerces-c, XMLPlatformUtils::Initialize, , AC_MSG_ERROR([
-#!!
-#!!  You don't appear to have the Xerces C++ XML Parser
-#!!  shared library installed.  It may be obtained from
-#!!     http://xml.apache.org
-#!!]))
+AC_CHECK_LIB([xerces-c], [main], [], AC_MSG_ERROR([
+!!
+!!  You don't appear to have the Xerces C++ XML Parser
+!!  shared library installed.  It may be obtained from
+!!     http://xml.apache.org
+!!]))
+
+
+##
+# Header dependencies.
+##
+AC_CHECK_HEADERS([GL/gl.h GL/glu.h], [], AC_MSG_ERROR([
+!!
+!!  Failed to find the OpenGL headers.  Make sure the OpenGL
+!!  development package is installed on your system.
+!!]))
+
+AC_CHECK_HEADER([GL/glut.h], [], AC_MSG_ERROR([
+!!
+!!  Failed to find the GLUT headers.  Make sure the GLUT
+!!  development package is installed on your system.
+!!]))
+
+AC_CHECK_HEADER([xercesc/util/PlatformUtils.hpp], [], AC_MSG_ERROR([
+!!
+!!  Failed to find the Xerces headers.  Make sure the
+!!  Xerces-C++ development package is installed on your
+!!  system.
+!!]))
 
 # Check for dot (from graphviz package) for doxygen.conf
 # WARNING: does not verify this is the _real_ dot program we want
@@ -194,7 +217,7 @@ if test "$any_ui" = "no"; then
 	echo "# ERROR: No UIs have been   #"
 	echo "#  configured! At least one #"
 	echo "#  driver must be present   #"
-	echo "#  for gPlates to function. #"
+	echo "#  for GPlates to function. #"
 	echo "#############################"
 	exit 1
 fi
@@ -220,20 +243,20 @@ if test "$turn_on_dev" = "yes"; then
 	echo "### WARNING: You have enabled Developer flags. Unless you"
 	echo "###          are a developer, you are strongly advised to"
 	echo "###          leave developer flags turned off, or you may"
-	echo "###          have problems compiling gPlates."
+	echo "###          have problems compiling GPlates."
 fi
 if test "$turn_on_prof" = "yes"; then
 	echo "###"
 	echo "### WARNING: You have enabled Profiling. Unless you are a"
 	echo "###          developer, you are strongly advised to leave"
 	echo "###          profiling turned off, or you may have problems"
-	echo "###          compiling or running gPlates."
+	echo "###          compiling or running GPlates."
 fi
 if test "$turn_on_opt" = "yes" -a "$turn_on_dev" = "yes"; then
 	echo "###"
 	echo "### WARNING: You have enabled both Optimisation and Development"
 	echo "###          flags. This is highly discouraged, as it may cause"
-	echo "###          problems compiling or running gPlates."
+	echo "###          problems compiling or running GPlates."
 fi
 
 # UI information
@@ -245,7 +268,7 @@ if test "$enable_gtkmm" = "yes"; then
 	echo "#    * GTK--                                  #"; fi
 
 echo "###############################################"
-echo "#  gPlates is now configured. Simply type...  #"
+echo "#  GPlates is now configured. Simply type...  #"
 echo "#          make                               #"
-echo "#  ... and gPlates will be compiled.          #"
+echo "#  ... and GPlates will be compiled.          #"
 echo "###############################################"
