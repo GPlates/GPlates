@@ -27,22 +27,16 @@
 #include "Reconstruct.h"
 #include "Dialogs.h"
 #include "state/Data.h"
+#include "state/Layout.h"
+#include "controls/View.h"
 
 
 using namespace GPlatesControls;
 
 
 void
-Reconstruct::Time(const GPlatesMaths::real_t&)
+Reconstruct::Time(const GPlatesMaths::real_t &time)
 {
-	/*
-	 * NOTE: remember that this can be optimised if the time is 0.0:
-	 * still need to check which data is defined at 0.0, but no need
-	 * to rotate (since GPML and PLATES data are defined by their
-	 * position at time 0.0).  If the time is 0.0, then a rotation
-	 * file is also not strictly necessary.
-	 */
-
 	if (GPlatesState::Data::GetDataGroup() == NULL) {
 
 		Dialogs::ErrorMessage("No data to reconstruct",
@@ -64,6 +58,43 @@ Reconstruct::Time(const GPlatesMaths::real_t&)
 }
 
 
+static void
+WarpToPresent() {
+
+	using namespace GPlatesState;
+
+	/*
+	 * Assume that if Data::GetDataGroup() is not NULL, then
+	 * Data::GetDrawableData() is also not NULL.
+	 */
+	Data::DrawableMap_type *drawable_data = Data::GetDrawableData();
+	Layout::Clear();
+
+	// for each plate...
+	for (Data::DrawableMap_type::const_iterator i = drawable_data->begin();
+	     i != drawable_data->end();
+	     i++) {
+
+		// get the drawable data items which move with that plate
+		const Data::DrawableDataSet &items = i->second;
+
+		// then for each item...
+		for (Data::DrawableDataSet::const_iterator j = items.begin();
+		     j != items.end();
+		     j++) {
+
+			// if that item exists in the present...
+			if ((*j)->ExistsAtTime(0.0)) {
+
+				// draw it
+				(*j)->Draw();
+			}
+		}
+	}
+	GPlatesControls::View::Redisplay();
+}
+
+
 void
 Reconstruct::Present() {
 
@@ -78,7 +109,7 @@ Reconstruct::Present() {
 	}
 	// Do not need rotation data
 
-	// Reconstruct to a time of 0.0
+	WarpToPresent();
 }
 
 
