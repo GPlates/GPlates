@@ -30,8 +30,8 @@
 
 #include "DrawableData.h"
 #include "global/types.h"
-#include "maths/GreatCircle.h"
-#include "maths/SmallCircle.h"
+#include "maths/GridOnSphere.h"
+#include "maths/PointOnSphere.h"
 
 namespace GPlatesGeo
 {
@@ -46,6 +46,11 @@ namespace GPlatesGeo
 	 * is to be coincident with the latitudinal border of the grid that is
 	 * closer to the equator. In the case of grids that straddle the
 	 * equator either latitudinal border can be chosen.
+	 *
+	 * Instead of actually passing a GC and SC to the GridData constructor,
+	 * we pass three \ref GPlatesMaths::PointOnSphere objects that define
+	 * the origin of the grid, the first grid point along the GC, and the
+	 * first grid point along the SC.
 	 *
 	 * The <strong>primary corner</strong> of the grid is defined to be the
 	 * anterior intersection of the GC and the SC. If the normal vectors of
@@ -63,10 +68,6 @@ namespace GPlatesGeo
 	 * constructor, since a meridian GC can only intersect with a polar
 	 * normal SC at a pole if the SC is degenerate (i.e. zero radius).
 	 *
-	 * Finally, the direction of the growth of the grid from the primary
-	 * corner is considered to be in the direction of the normals.
-	 * (TODO: put a figure/diagram in here?)
-	 *
 	 * @todo We want to be able to support adaptive meshes sometime in
 	 *   the future.
 	 * @see GPlatesMaths::GreatCircle, GPlatesMaths::SmallCircle,
@@ -80,28 +81,27 @@ namespace GPlatesGeo
 			 * \throws IllegalParametersException
 			 *	if circles are not perpendicular
 			 */
-			GridData(const DataType_t&,
-				 const RotationGroupId_t&,
-				 const TimeWindow&,
-				 const Attributes_t&,
-				 const GPlatesMaths::GreatCircle &major,
-				 const GPlatesMaths::SmallCircle &minor);
+			GridData (const DataType_t&,
+				  const RotationGroupId_t&,
+				  const TimeWindow&,
+				  const Attributes_t&,
+				  const GPlatesMaths::PointOnSphere &origin,
+				  const GPlatesMaths::PointOnSphere &gc_step,
+				  const GPlatesMaths::PointOnSphere &sc_step);
 			~GridData ();
 
 			/**
 			 * Add @a elem to the grid.
 			 */
-			void
-			Add (const GridElement *element, index_t x1, index_t x2);
+			void Add (const GridElement *element, index_t x1, index_t x2);
 
-			virtual void
-			Accept(Visitor& visitor) const { visitor.Visit(*this); }
+			virtual void Accept (Visitor& visitor) const
+					{ visitor.Visit(*this); }
 
 			void Draw () const;
 			void RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const;
 		private:
-			GPlatesMaths::GreatCircle _major;
-			GPlatesMaths::SmallCircle _minor;
+			GPlatesMaths::GridOnSphere _lattice;
 
 			typedef const GridElement *GridElementPtr;
 			struct GridRow {

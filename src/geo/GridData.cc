@@ -24,14 +24,12 @@
  */
 
 #include <cstring>
-#include <vector>
 #include "DrawableData.h"
 #include "GridData.h"
 #include "global/types.h"
 #include "global/IllegalParametersException.h"
-#include "maths/GreatCircle.h"
+#include "maths/GridOnSphere.h"
 #include "maths/PointOnSphere.h"
-#include "maths/SmallCircle.h"
 #include "state/Layout.h"
 
 
@@ -39,19 +37,15 @@ using namespace GPlatesGeo;
 
 GridData::GridData(const DataType_t& dt, const RotationGroupId_t& id,
 	const TimeWindow& tw, const Attributes_t& attrs, 
-	const GPlatesMaths::GreatCircle &major,
-	const GPlatesMaths::SmallCircle &minor)
-	: DrawableData(dt, id, tw, attrs), _major(major), _minor(minor)
+	const GPlatesMaths::PointOnSphere &origin,
+	const GPlatesMaths::PointOnSphere &gc_step,
+	const GPlatesMaths::PointOnSphere &sc_step)
+	: DrawableData (dt, id, tw, attrs),
+	  _lattice (origin, gc_step, sc_step)
 {
 	grid = new Grid;
 	grid->offset = 0;
 	grid->length = 0;
-
-	// Ensure that the major and minor circles intersect, by checking that
-	// their normals are perpendicular
-	if (!perpendicular (_major.normal (), _minor.normal ()))
-		throw new IllegalParametersException (
-				"Major and minor circles aren't perpendicular");
 }
 
 GridData::~GridData ()
@@ -67,8 +61,7 @@ GridData::~GridData ()
 	delete[] grid->rows;
 }
 
-void
-GridData::Add (const GridElement *element, index_t x1, index_t x2)
+void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 {
 	index_t new_len;
 	GridRowPtr *new_rows;
@@ -148,15 +141,15 @@ GridData::Add (const GridElement *element, index_t x1, index_t x2)
 }
 
 
-void
-GridData::Draw() const {
+void GridData::Draw () const
+{
 	// TODO
 	//GPlatesState::Layout::InsertLineDataPos(this, _line);
 }
 
 
-void
-GridData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) const {
+void GridData::RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const
+{
 	// TODO
 	//GPlatesMaths::PolyLineOnSphere rot_line = (rot * _line);
 	//GPlatesState::Layout::InsertLineDataPos(this, rot_line);
