@@ -254,7 +254,7 @@ MainWindow::OnReconstructTime(wxCommandEvent&)
 	ReconstructTimeDialog dialog(this);
 
 	if (dialog.ShowModal() == wxID_OK)
-		GPlatesControls::Reconstruct::Time(dialog.GetInput());
+		GPlatesControls::Reconstruct::Time(dialog.GetTime());
 }
 
 void
