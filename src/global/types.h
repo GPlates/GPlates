@@ -29,17 +29,11 @@
 #define _GPLATES_GLOBAL_TYPES_H_
 
 #include <cstdlib>
-#include "Real.h"
 #include "FPData.h"
 
 
 namespace GPlatesGlobal
 {
-	/**
-	 * A floating-point approximation to the field of reals.
-	 */
-	typedef Real real_t;
-
 	/**
 	 * A floating-point type used to store static (ie. unchanging) data.
 	 */
