@@ -21,7 +21,7 @@ echo "ok, found $file_count files"
 
 echo
 echo
-cat $file_list | grep "\$Author$ -f2 | cut -d' ' -f2 \
+cat $file_list | grep "Author: [a-z]\+" | cut -d$ -f2 | cut -d' ' -f2 \
 	| sort | uniq -c | sort -n
 
 echo "     ^  ^------- Programmer"
