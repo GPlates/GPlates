@@ -76,8 +76,6 @@ namespace GPlatesControls
 			 * @param warp_to_time A pointer to the function which
 			 *   will be invoked to update the screen during the
 			 *   course of the animation.
-			 * @param num_steps The number of steps in the
-			 *   animation.
 			 * @param start_time The (geological) starting-time
 			 *   of the animation.
 			 * @param end_time The (geological) ending-time of the
