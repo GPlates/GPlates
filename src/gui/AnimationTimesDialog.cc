@@ -27,12 +27,15 @@
 #include <sstream>
 #include <wx/wx.h>
 #include "AnimationTimesDialog.h"
+#include "FPValidator.h"
 
-GPlatesGui::AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent)
-	: wxDialog(parent, -1, _("Constructing Animation..."))
+GPlatesGui::AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent) :
+ wxDialog(parent, -1, _("Constructing Animation...")),
+ _start_ctrl_str("0.0"), _end_ctrl_str("0.0"), _time_delta_ctrl_str("1.0")
 {
 	static const int BORDER_SIZE  = 10;
 	
+	// FIXME: are all these 'new's going to be deleted?
 	wxBoxSizer* msgsizer = new wxBoxSizer(wxHORIZONTAL);
 	msgsizer->Add(new wxStaticText(this, -1,
 		_("Enter the start and end times of the animation\n"
@@ -47,19 +50,26 @@ GPlatesGui::AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent)
 	entrysizer1->Add(new wxStaticText(this, -1,
 	 _("Enter start time: (Ma)")), 0, wxALL, BORDER_SIZE);
 	entrysizer1->Add(_start_ctrl = new wxTextCtrl(this, -1,
-	 _("0.0")), 0, wxALL, BORDER_SIZE);  // This needs a validator
+	 "", wxDefaultPosition, wxDefaultSize, 0,
+	 FPValidator(0, &_start_ctrl_str)),
+	 0, wxALL, BORDER_SIZE);
 
 	wxBoxSizer* entrysizer2 = new wxBoxSizer(wxHORIZONTAL);
 	entrysizer2->Add(new wxStaticText(this, -1,
 	 _("Enter end time: (Ma)")), 0, wxALL, BORDER_SIZE);
 	entrysizer2->Add(_end_ctrl = new wxTextCtrl(this, -1,
-	 _("0.0")), 0, wxALL, BORDER_SIZE);  // This needs a validator
+	 "", wxDefaultPosition, wxDefaultSize, 0,
+	 FPValidator(0, &_end_ctrl_str)),
+	 0, wxALL, BORDER_SIZE);
 
 	wxBoxSizer* entrysizer3 = new wxBoxSizer(wxHORIZONTAL);
 	entrysizer3->Add(new wxStaticText(this, -1,
 	 _("Enter time-delta: (M)")), 0, wxALL, BORDER_SIZE);
 	entrysizer3->Add(_time_delta_ctrl = new wxTextCtrl(this, -1,
-	 _("1.0")), 0, wxALL, BORDER_SIZE);  // This needs a validator
+	 "", wxDefaultPosition, wxDefaultSize, 0,
+	 FPValidator(FPValidator::DISALLOW_NEG | FPValidator::DISALLOW_ZERO,
+	  &_time_delta_ctrl_str)),
+	 0, wxALL, BORDER_SIZE);
 
 	wxBoxSizer* entrysizer4 = new wxBoxSizer(wxHORIZONTAL);
 	entrysizer4->Add(_finish_on_end = new wxCheckBox(this, -1,

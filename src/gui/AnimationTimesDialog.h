@@ -55,6 +55,10 @@ namespace GPlatesGui
 			wxTextCtrl* _end_ctrl;
 			wxTextCtrl* _time_delta_ctrl;
 			wxCheckBox* _finish_on_end;
+
+			wxString _start_ctrl_str;
+			wxString _end_ctrl_str;
+			wxString _time_delta_ctrl_str;
 	};
 }
 
