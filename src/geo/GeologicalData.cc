@@ -34,12 +34,17 @@ GeologicalData::NO_DATATYPE;
 const GeologicalData::RotationGroupId_t
 GeologicalData::NO_ROTATIONGROUP = -1;
 
+const TimeWindow
+GeologicalData::NO_TIMEWINDOW;
+
 const GeologicalData::Attributes_t
 GeologicalData::NO_ATTRIBUTES;
 
 GeologicalData::GeologicalData(const DataType_t& dt, 
-	const RotationGroupId_t& id, const Attributes_t& attrs)
-	: _data_type(dt), _rotation_group_id(id), _attributes(attrs)
+	const RotationGroupId_t& id, const TimeWindow& tw, 
+	const Attributes_t& attrs)
+	: _data_type(dt), _rotation_group_id(id), _time_window(tw),
+	  _attributes(attrs)
 { }
 
 void

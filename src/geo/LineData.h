@@ -27,9 +27,9 @@
 #define _GPLATES_LINEDATA_H_
 
 #include <vector>
-#include "GeologicalData.h"
+#include "DataOnSphere.h"
 #include "maths/PointOnSphere.h"
-#include "maths/types.h"  /* PolyLineOnSphere */
+#include "maths/PolyLineOnSphere.h"
 
 namespace GPlatesGeo
 {
@@ -37,21 +37,25 @@ namespace GPlatesGeo
 	 * Data corresponding to a line on a sphere.
 	 * @invariant Number of line elements is greater than or equal to 2.
 	 */
-	class LineData : public GeologicalData
+	class LineData : public DataOnSphere
 	{
 		public:
-			LineData(const DataType_t&, const RotationGroupId_t&,
-				const Attributes_t&, const GPlatesMaths::PolyLineOnSphere&);
+			LineData(const DataType_t&, 
+					 const RotationGroupId_t&,
+					 const TimeWindow&,
+					 const Attributes_t&, 
+					 const GPlatesMaths::PolyLineOnSphere&);
 
 			/** 
-			 * Add a point to the end of the line.
+			 * Add an arc to the end of the line.
 			 */
 			virtual void
-			Add(const GPlatesMaths::PointOnSphere& P) { _line.push_back(P); }
+			Add(const GPlatesMaths::GreatCircleArc& arc) { _line.push_back(arc); }
 			
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }
 			
+#if 0
 			/** 
 			 * Enumerative access the PointData constituting this line.
 			 * @warning Access to this iterator will allow the client
@@ -62,7 +66,7 @@ namespace GPlatesGeo
 
 			GPlatesMaths::PolyLineOnSphere::iterator
 			End() { return _line.end(); }
-			
+#endif
 			/**
 			 * Restricted enumerative access the PointData constituting
 			 * this line.

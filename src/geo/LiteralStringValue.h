@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /**
- * \file 
+ * @file 
  * File specific comments.
  *
  * Most recent change:
@@ -20,14 +20,28 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
-#include "Vector2D.h"
+#ifndef _GPLATES_GEO_LITERALSTRINGVALUE_H_
+#define _GPLATES_GEO_LITERALSTRINGVALUE_H_
 
-using namespace GPlatesGeo;
+#include "StringValue.h"
 
-Vector2D::Vector2D(const fpdata_t& x, const fpdata_t& y)
-	: GeneralisedData(), _x(x), _y(y) 
-{ }
+namespace GPlatesGeo
+{
+	class LiteralStringValue : public StringValue
+	{
+		public:
+			LiteralStringValue(const std::string& str)
+				: _str(str) {  }
+	
+			virtual std::string
+			GetString() const { return _str; }
+
+		private:
+			std::string _str;
+	};
+}
+
+#endif  /* _GPLATES_GEO_LITERALSTRINGVALUE_H_ */

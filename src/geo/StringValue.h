@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /**
- * \file 
+ * @file 
  * File specific comments.
  *
  * Most recent change:
@@ -20,20 +20,25 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
-#include "Vector3D.h"
+#ifndef _GPLATES_GEO_STRINGVALUE_H_
+#define _GPLATES_GEO_STRINGVALUE_H_
 
-using namespace GPlatesGeo;
+#include <string>
 
-Vector3D::Vector3D(const fpdata_t& x, const fpdata_t& y, const fpdata_t& z)
-	: GeneralisedData(), _x(x), _y(y), _z(z) 
-{ }
-
-void
-Vector3D::PrintOut(std::ostream& os) const 
+namespace GPlatesGeo
 {
-	os << GetX() << " " << GetY() << " " << GetZ();
+	class StringValue
+	{
+		public:
+			virtual std::string
+			GetString() const = 0;
+
+		protected:
+			StringValue() {  }
+	};
 }
+
+#endif  /* _GPLATES_GEO_STRINGVALUE_H_ */

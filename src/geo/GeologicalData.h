@@ -27,10 +27,11 @@
 #ifndef _GPLATES_GEO_GEOLOGICALDATA_H_
 #define _GPLATES_GEO_GEOLOGICALDATA_H_
 
-#include <vector>
+#include <map>
 #include <string>
 #include "Visitor.h"
-#include "GeneralisedData.h"
+#include "TimeWindow.h"
+#include "StringValue.h"
 #include "global/UnsupportedFunctionException.h"
 #include "global/types.h"  /* integer_t */
 
@@ -54,7 +55,7 @@ namespace GPlatesGeo
 			/** 
 			 * Convenience typedef for the manipulation of the data.
 			 */
-			typedef std::vector<GeneralisedData*> Attributes_t;
+			typedef std::map<std::string, StringValue*> Attributes_t;
 
 			/**
 			 * @todo Form a rationale for these choices.  For example, why
@@ -78,14 +79,24 @@ namespace GPlatesGeo
 			NO_ROTATIONGROUP;
 			
 			/**
+			 * If the data has no associated age of appearance/disappearance,
+			 * then TimeWindow should be NO_TIMEWINDOW.  This should be 
+			 * equivalent to the data being visible forever and ever.
+			 */
+			static const TimeWindow
+			NO_TIMEWINDOW;
+
+			/**
 			 * If the data has no associated attributes, then it's
 			 * Attributes should be NO_ATTRIBUTES.
 			 */
 			static const Attributes_t
 			NO_ATTRIBUTES;
 			
-			GeologicalData(const DataType_t&, const RotationGroupId_t&, 
-				const Attributes_t&);
+			GeologicalData(const DataType_t&, 
+						   const RotationGroupId_t&,
+						   const TimeWindow&,
+						   const Attributes_t& = NO_ATTRIBUTES);
 
 			virtual
 			~GeologicalData() { }
@@ -95,6 +106,9 @@ namespace GPlatesGeo
 
 			RotationGroupId_t
 			GetRotationGroupId() const { return _rotation_group_id; }
+
+			TimeWindow
+			GetTimeWindow() const { return _time_window; }
 
 			/**
 			 * Allow a Visitor to visit this data.
@@ -134,12 +148,24 @@ namespace GPlatesGeo
 			virtual void
 			Remove(GeologicalData*);
 
-			/** 
-			 * Enumerative access to the data's Attributes_t.
+			/**
+			 * Return the value associated with the given @a key,
+			 * or NULL if @a key was not found.
 			 */
-			virtual std::back_insert_iterator<Attributes_t>
-			AttributesInserter() { return std::back_inserter(_attributes); }
+			StringValue*
+			GetAttributeValue(const std::string& key);
 
+			/**
+			 * Adds the given @a key / @a value pair to the map of
+			 * attributes.
+			 *
+			 * If the given key already exists, its associated value is 
+			 * overwritten.
+			 */
+			void
+			SetAttributeValue(const std::string& key,
+							  StringValue* value);
+			
 			/** 
 			 * Restricted enumerative access to the data's Attributes_t.
 			 */
@@ -165,6 +191,12 @@ namespace GPlatesGeo
 			 * Gahagan).
 			 */
 			RotationGroupId_t _rotation_group_id;
+
+			/**
+			 * The window of time that the data is visible.
+			 * Taken from the ageof{appearance,disappearance} elements.
+			 */
+			TimeWindow _time_window;
 
 			/** 
 			 * The information associated with this piece of data.

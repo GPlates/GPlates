@@ -9,8 +9,8 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = DataGroup.o GeologicalData.o GPlatesGeo.o LineData.o PointData.o \
-	TimeWindow.o Vector2D.o Vector3D.o
+OBJS = DataGroup.o GeologicalData.o LineData.o PointData.o \
+	TimeWindow.o
 
 LIBNAME = libgeo.a
 

@@ -53,16 +53,21 @@ namespace GPlatesGeo
 			 * Create a DataGroup with no elements.
 			 * The parameters are passed directly to the superclass.
 			 */
-			DataGroup(const DataType_t&, const RotationGroupId_t&,
-				const Attributes_t&);
+			DataGroup(const DataType_t&,
+					  const RotationGroupId_t&,
+					  const TimeWindow&,
+					  const Attributes_t&);
 			
 			/**
 			 * Create a DataGroup containing the given elements.
 			 * The DataGroup is initialised with a copy of each of 
 			 * the elements from @a children.
 			 */
-			DataGroup(const DataType_t&, const RotationGroupId_t&,
-				const Attributes_t&, const Children_t&);
+			DataGroup(const DataType_t&, 
+					  const RotationGroupId_t&,
+					  const TimeWindow&,
+					  const Attributes_t&, 
+					  const Children_t&);
 			
 			/**
 			 * Delete each of the elements of _children.

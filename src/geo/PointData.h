@@ -27,7 +27,7 @@
 #ifndef _GPLATES_GEO_POINTDATA_H_
 #define _GPLATES_GEO_POINTDATA_H_
 
-#include "GeologicalData.h"
+#include "DataOnSphere.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesGeo
@@ -35,11 +35,12 @@ namespace GPlatesGeo
 	/** 
 	 * A PointOnSphere augmented with GeneralisedData.
 	 */
-	class PointData : public GeologicalData
+	class PointData : public DataOnSphere
 	{
 		public:
 			PointData(const DataType_t &,
 			          const RotationGroupId_t &,
+					  const TimeWindow &,
 			          const Attributes_t &,
 			          const GPlatesMaths::PointOnSphere &);
 

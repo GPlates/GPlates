@@ -29,6 +29,7 @@
 using namespace GPlatesGeo;
 
 PointData::PointData(const DataType_t& dt, const RotationGroupId_t& id,
-	const Attributes_t& attrs, const GPlatesMaths::PointOnSphere& point)
-	: GeologicalData(dt, id, attrs), _point(point)
+	const TimeWindow& tw, const Attributes_t& attrs, 
+	const GPlatesMaths::PointOnSphere& point)
+	: DataOnSphere(dt, id, tw, attrs), _point(point)
 { }

@@ -28,6 +28,7 @@
 using namespace GPlatesGeo;
 
 LineData::LineData(const DataType_t& dt, const RotationGroupId_t& id,
-	const Attributes_t& attrs, const GPlatesMaths::PolyLineOnSphere& line)
-	: GeologicalData(dt, id, attrs), _line(line)
+	const TimeWindow& tw, const Attributes_t& attrs, 
+	const GPlatesMaths::PolyLineOnSphere& line)
+	: DataOnSphere(dt, id, tw, attrs), _line(line)
 {  }

@@ -1,10 +1,8 @@
 /* $Id$ */
 
 /**
- * \file 
- * This file contains the definitions of functions that have been
- * declared in the GPlatesGeo namespace.  These will primarily consist
- * of operators.
+ * @file 
+ * File specific comments.
  *
  * Most recent change:
  *   $Author$
@@ -22,27 +20,28 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
-#include "GeneralisedData.h"
+#ifndef _GPLATES_GEO_DERIVEDSTRINGVALUE_H_
+#define _GPLATES_GEO_DERIVEDSTRINGVALUE_H_
 
-/*
- * Defined in GeneralisedData.h.
- */
-std::ostream&
-GPlatesGeo::operator<<(std::ostream& os, const GeneralisedData& data)
+#include "StringValue.h"
+
+namespace GPlatesGeo
 {
-	data.PrintOut(os); 
-	return os;
+	class DerivedStringValue : public StringValue
+	{
+		public:
+			DerivedStringValue(const StringValue* parent)
+				: _parent(parent) {  }
+
+			virtual std::string
+			GetString() const { return _parent->GetString(); }
+
+		private:
+			const StringValue* _parent;
+	};
 }
 
-/*
- * Defined in GeneralisedData.h.
- */
-std::istream&
-GPlatesGeo::operator>>(std::istream& is, GeneralisedData& data)
-{
-	data.ReadIn(is);
-	return is;
-}
+#endif  /* _GPLATES_GEO_DERIVEDSTRINGVALUE_H_ */

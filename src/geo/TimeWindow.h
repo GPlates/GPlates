@@ -27,7 +27,6 @@
 #ifndef _GPLATES_GEO_TIMEWINDOW_H_
 #define _GPLATES_GEO_TIMEWINDOW_H_
 
-#include "GeneralisedData.h"
 #include "global/types.h"  /* fpdata_t */
 
 namespace GPlatesGeo
@@ -43,25 +42,19 @@ namespace GPlatesGeo
 	 *
 	 * @todo Yet to be implemented.
 	 */
-	class TimeWindow : public GeneralisedData
+	class TimeWindow
 	{
 		public:
 			TimeWindow()
-				: GeneralisedData(), _begin(0.0), _end(0.0) { }
+				: _begin(0.0), _end(0.0) { }
 
 			TimeWindow(const fpdata_t& begin, const fpdata_t& end);
 			
-			virtual void
-			ReadIn(std::istream& is) {
+			fpdata_t
+			GetBeginning() const { return _begin; }
 
-				is >> _begin >> _end;
-			}
-
-			virtual void
-			PrintOut(std::ostream& os) const {
-				
-				os << _begin << " " << _end;
-			}
+			fpdata_t
+			GetEnd() const { return _end; }
 
 		private:
 			fpdata_t _begin, _end;
