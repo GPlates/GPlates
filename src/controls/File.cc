@@ -28,6 +28,9 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>  /* transform */
+#include <memory>  /* std::auto_ptr */
+#include <iomanip>
+#include <iterator>
 #include "File.h"
 #include "Reconstruct.h"
 #include "Dialogs.h"
@@ -39,8 +42,6 @@
 #include "fileio/FileIOException.h"
 #include "geo/LineData.h"
 #include "global/types.h"  /* rid_t */
-#include <iomanip>
-#include <iterator>
 
 using namespace GPlatesControls;
 using namespace GPlatesFileIO;
@@ -283,6 +284,95 @@ File::OpenData(const std::string& filename)
 }
 
 
+static GPlatesMaths::real_t
+ConvertPlatesParserAngleToGPlatesMathsAngle(const fpdata_t &pp_angle) {
+
+	GPlatesMaths::real_t angle_in_degrees(pp_angle);
+	return GPlatesMaths::degreesToRadians(angle_in_degrees);
+}
+
+
+static GPlatesMaths::PointOnSphere
+ConvertPlatesParserLLPToGPlatesMathsPOS(PlatesParser::LatLonPoint pp_llp) {
+
+	GPlatesMaths::LatLonPoint llp =
+	 ConvertPlatesParserLatLonToMathsLatLon(pp_llp);
+	return GPlatesMaths::OperationsOnSphere::
+	 convertLatLonPointToPointOnSphere(llp);
+}
+
+
+static GPlatesMaths::FiniteRotation
+ConvertPlatesParserFinRotToGPlatesMathsFinRot(const
+	PlatesParser::FiniteRotation &pp_fin_rot) {
+
+	GPlatesMaths::real_t time(pp_fin_rot._time);
+	GPlatesMaths::PointOnSphere pole =
+	 ConvertPlatesParserLLPToGPlatesMathsPOS(pp_fin_rot._rot._pole);
+	GPlatesMaths::real_t angle =
+	 ConvertPlatesParserAngleToGPlatesMathsAngle(pp_fin_rot._rot._angle);
+
+	return GPlatesMaths::FiniteRotation::CreateFiniteRotation(pole, angle, 
+	 time);
+}
+
+
+static GPlatesMaths::RotationSequence
+ConvertPlatesParserRotSeqToGPlatesMathsRotSeq(const
+	PlatesParser::RotationSequence &pp_rot_seq) {
+
+	GPlatesGlobal::rid_t fixed_plate(pp_rot_seq._fixed_plate);
+
+	/*
+	 * It is assumed that a PlatesParser RotationSequence will always
+	 * contain at least one PlatesParser::FiniteRotation.
+	 */
+	std::list< PlatesParser::FiniteRotation >::const_iterator it =
+	 pp_rot_seq._seq.begin();
+	std::list< PlatesParser::FiniteRotation >::const_iterator end_it =
+	 pp_rot_seq._seq.end();
+
+	GPlatesMaths::FiniteRotation first_fin_rot =
+	 ConvertPlatesParserFinRotToGPlatesMathsFinRot(*it);
+	GPlatesMaths::RotationSequence rot_seq(fixed_plate, first_fin_rot);
+
+	for (it++ ; it != end_it; it++) {
+
+		GPlatesMaths::FiniteRotation fin_rot =
+		 ConvertPlatesParserFinRotToGPlatesMathsFinRot(*it);
+		rot_seq.insert(fin_rot);
+	}
+	return rot_seq;
+}
+
+
+static void
+ConvertPlatesRotationDataToRotationMap(const
+	PlatesParser::PlatesRotationData &data) {
+
+	/*
+	 * Avoid memory leaks which would occur if an exception were thrown
+	 * in this function.
+	 */
+	std::auto_ptr< Data::RotationMap_type >
+	 rotation_map(new Data::RotationMap_type());
+
+	for (PlatesParser::PlatesRotationData::const_iterator it = data.begin();
+	     it != data.end();
+	     it++) {
+
+		GPlatesGlobal::rid_t moving_plate((*it)._moving_plate);
+		GPlatesMaths::RotationSequence rot_seq =
+		 ConvertPlatesParserRotSeqToGPlatesMathsRotSeq(*it);
+
+		(*rotation_map)[moving_plate].insert(rot_seq);
+	}
+
+	// Release the pointer from the auto_ptr
+	Data::SetRotationHistories(rotation_map.release());
+}
+
+
 void
 File::OpenRotation(const std::string& filename)
 {
@@ -291,12 +381,14 @@ File::OpenRotation(const std::string& filename)
 
 		// attempt to open file was unsuccessful
 		OpenFileErrorMessage(filename, "No rotation data was loaded.");
+		return;
 	}
-	PlatesParser::PlatesRotationData rotation_data;
+
+	PlatesParser::PlatesRotationData data;
 	try {
 
-		PlatesParser::ReadInRotationData(filename.c_str(), f,
-		 rotation_data);
+		PlatesParser::ReadInRotationData(filename.c_str(), f, data);
+		ConvertPlatesRotationDataToRotationMap(data);
 
 	} catch (const FileIOException &e) {
 
@@ -305,6 +397,7 @@ File::OpenRotation(const std::string& filename)
 		 << e;
 		Dialogs::ErrorMessage("Error in rotation file",
 		 msg.str().c_str(), "No rotation data was loaded.");
+		return;
 
 	} catch (const GPlatesGlobal::Exception &e) {
 
