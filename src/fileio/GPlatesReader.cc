@@ -183,10 +183,10 @@ namespace
 		GPlatesGlobal::fpdata_t appearance, disappearance;
 
 		appearance = ReadUnique< GPlatesGlobal::fpdata_t >(element, 
-			"appearance", 0.0);
+			"ageofappearance", 0.0);
 
 		disappearance = ReadUnique< GPlatesGlobal::fpdata_t >(element, 
-			"disappearance", 0.0);
+			"ageofdisappearance", 0.0);
 		
 		return TimeWindow(appearance, disappearance);
 	}
