@@ -26,20 +26,21 @@
 
 #include "IndeterminateResultException.h"
 #include "Vector3D.h"
+#include "UnitVector3D.h"
 
 
 using namespace GPlatesMaths;
 
 
-Vector3D Vector3D::normalise () const
+UnitVector3D Vector3D::normalise () const
 {
-	real_t mag2 = (_x * _x) + (_y * _y) + (_z * _z);
+	real_t mag_sqrd = (_x * _x) + (_y * _y) + (_z * _z);
 
-	if (mag2 == 0.0)
+	if (mag_sqrd <= 0.0)
 		throw IndeterminateResultException
 				("Can't normalise zero vectors!");
-	real_t scale = 1 / sqrt (mag2);
-	return Vector3D (_x * scale, _y * scale, _z * scale);
+	real_t scale = 1 / sqrt (mag_sqrd);
+	return UnitVector3D (_x * scale, _y * scale, _z * scale);
 }
 
 bool GPlatesMaths::parallel (const Vector3D &v1, const Vector3D &v2)

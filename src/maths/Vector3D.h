@@ -33,6 +33,8 @@
 
 namespace GPlatesMaths
 {
+	class UnitVector3D;
+
 	/** 
 	 * A three-dimensional vector.
 	 * In contrast to UnitVector3D and DirVector3D, there are no
@@ -68,10 +70,11 @@ namespace GPlatesMaths
 
 			virtual real_t
 			magnitude() const {
+
 				return sqrt((_x * _x) + (_y * _y) + (_z * _z));
 			}
 
-			virtual Vector3D normalise () const;
+			virtual UnitVector3D normalise () const;
 
 		protected:
 			real_t _x,  /**< x-component. */
