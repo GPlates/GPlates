@@ -196,7 +196,7 @@ namespace GPlatesMaths
 	inline bool perpendicular (const Vector3D &v1, const Vector3D &v2)
 	{
 		real_t dp = dot (v1, v2);
-		return (dp <= 0.0);
+		return (abs (dp) <= 0.0);
 	}
 
 
