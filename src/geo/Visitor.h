@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_VISITOR_H_
@@ -34,6 +35,7 @@ namespace GPlatesGeo
 	class GridData;
 	class DataGroup;
 	class RotationData;
+	class Tree;
 
 	/** 
 	 * Abstract Visitor. 
