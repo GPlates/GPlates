@@ -229,8 +229,6 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	//	upwards, and longitude increasing to the right.
 	///////////////////////////////////////////////////////////
 
-	// TODO: handle the case where x is actually longitude, etc.
-
 	// TODO: verify that this attribute actually exists, before reading it!
 	NcAtt *z_unit_att = ncf->get_var ("z_range")->get_att ("units");
 	char *str = z_unit_att->as_string (0);
