@@ -26,6 +26,8 @@
 #include <sstream>
 #include "OperationsOnSphere.h"
 #include "InvalidLatLonException.h"
+#include "InvalidPolyLineException.h"
+#include "GreatCircleArc.h"
 
 
 using namespace GPlatesMaths;
@@ -99,10 +101,10 @@ OperationsOnSphere::convertLatLongToUnitVector(const real_t& latitude,
 
 
 PointOnSphere
-OperationsOnSphere::convertLatLonPointToPointOnSphere(const LatLonPoint &p) {
+OperationsOnSphere::convertLatLonPointToPointOnSphere(const LatLonPoint &llp) {
 
-	real_t lat_angle = degreesToRadians(p.latitude());
-	real_t long_angle = degreesToRadians(p.longitude());
+	real_t lat_angle = degreesToRadians(llp.latitude());
+	real_t long_angle = degreesToRadians(llp.longitude());
 
 	real_t radius_of_small_circle_of_latitude = cos(lat_angle);
 
@@ -112,4 +114,42 @@ OperationsOnSphere::convertLatLonPointToPointOnSphere(const LatLonPoint &p) {
 
 	UnitVector3D uv = UnitVector3D(x_comp, y_comp, z_comp);
 	return PointOnSphere(uv);
+}
+
+
+PolyLineOnSphere
+OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(const
+	std::list< LatLonPoint > &llpl) {
+
+	if (llpl.size() < 2) {
+
+		// not enough points to create even a single great circle arc.
+		std::ostringstream oss("Attempted to create a poly-line "
+		 "from only ");
+		oss << llpl.size() << " point.";
+
+		throw InvalidPolyLineException(oss.str().c_str());
+	}
+	// else, we know that there will be *at least* two points
+
+	PolyLineOnSphere plos;
+
+	std::list< LatLonPoint >::const_iterator it = llpl.begin();
+
+	LatLonPoint p1 = *it;
+	UnitVector3D u1 = convertLatLongToUnitVector(p1.latitude(),
+	 p1.longitude());
+
+	for (it++; it != llpl.end(); it++) {
+
+		LatLonPoint p2 = *it;
+		UnitVector3D u2 = convertLatLongToUnitVector(p2.latitude(),
+		 p2.longitude());
+
+		GreatCircleArc g = GreatCircleArc::CreateGreatCircleArc(u1, u2);
+		plos.push_back(g);
+
+		u1 = u2;
+	}
+	return plos;
 }

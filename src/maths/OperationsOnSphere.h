@@ -26,8 +26,11 @@
 #ifndef _GPLATES_MATHS_OPERATIONSONSPHERE_H_
 #define _GPLATES_MATHS_OPERATIONSONSPHERE_H_
 
+#include <list>
 #include "UnitVector3D.h"
 #include "PointOnSphere.h"
+#include "PolyLineOnSphere.h"
+
 
 namespace GPlatesMaths
 {
@@ -66,9 +69,14 @@ namespace GPlatesMaths
 		 const real_t& longitude);
 
 		PointOnSphere convertLatLonPointToPointOnSphere(const
-		 LatLonPoint &p);
+		 LatLonPoint &llp);
 
-		
+		/**
+		 * The list must contain at least TWO LatLonPoints.
+		 * No two successive LatLonPoints may be equivalent.
+		 */
+		PolyLineOnSphere convertLatLonPointListToPolyLineOnSphere(const
+		 std::list< LatLonPoint > &llpl);
 	}
 }
 
