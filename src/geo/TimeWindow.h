@@ -36,17 +36,15 @@ namespace GPlatesGeo
 	/** 
 	 * A window of time. 
 	 * Units are Ma = millions of years ago.
-	 * If \a _begin > \a _end, then the window is directed forward in time.
-	 * If \a _begin < \a _end, then the window is directed backward in time.
-	 * If \a _begin = \a _end, then the window is an instant in time.
-	 *
-	 * @todo Yet to be implemented.
+	 * In the interests of a canonical representation, the time of
+	 * appearance must always be before or at the same time as the
+	 * time of disappearance, so the value of \a _begin must always
+	 * be greater-than or equal-to \a end.
 	 */
 	class TimeWindow
 	{
 		public:
-			TimeWindow()
-				: _begin(0.0), _end(0.0), _inf(true) {  }
+			TimeWindow() : _begin(0.0), _end(0.0), _inf(true) {  }
 
 			TimeWindow(const fpdata_t& begin, const fpdata_t& end);
 
@@ -58,6 +56,13 @@ namespace GPlatesGeo
 
 			bool
 			IsInfinite() const { return _inf; }
+
+			bool
+			ContainsTime(const fpdata_t &t) const {
+
+				if (_inf) return true;
+				return ((_begin >= t) && (t >= _end));
+			}
 
 		private:
 			fpdata_t _begin, _end;
