@@ -27,11 +27,14 @@
 #ifndef _GPLATES_STATE_DATA_H_
 #define _GPLATES_STATE_DATA_H_
 
+#include <list>
 #include <map>
+
 #include "geo/DataGroup.h"
 #include "geo/DrawableData.h"
 #include "global/types.h"
 #include "maths/RotationHistory.h"
+
 
 namespace GPlatesState
 {
@@ -45,7 +48,8 @@ namespace GPlatesState
 			typedef GPlatesGeo::DataGroup GeoData_type;
 
 			typedef std::map< GPlatesGlobal::rid_t,
-			 GPlatesGeo::DrawableData * > DrawableMap_type;
+			 std::list< GPlatesGeo::DrawableData * > >
+			 DrawableMap_type;
 
 			typedef std::map< GPlatesGlobal::rid_t,
 			 GPlatesMaths::RotationHistory > RotationMap_type;
