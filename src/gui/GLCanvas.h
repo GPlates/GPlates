@@ -22,6 +22,7 @@
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  *   Dave Symonds <ds@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_GLCANVAS_H_
@@ -54,29 +55,27 @@ namespace GPlatesGui
 			/**
 			 * Paint the picture.
 			 */
-			void
-			OnPaint(wxPaintEvent&);
+			void OnPaint(wxPaintEvent&);
 
 			/**
 			 * Set the dimensions of our picture.
-			 * Called on startup and when the user resizes the window.
+			 * Called on startup and when the user resizes the
+			 * window.
 			 */
-			void 
-			OnSize(wxSizeEvent&);
+			void OnSize(wxSizeEvent&);
 
 			/**
-			 * According to the wxWindows docs, declaring this function to
-			 * be empty eliminates flicker on some platforms (mainly win32).
+			 * According to the wxWindows docs, declaring this
+			 * function to be empty eliminates flicker on some
+			 * platforms (mainly win32).
 			 */
-			void 
-			OnEraseBackground(wxEraseEvent&) {  }
+			void OnEraseBackground(wxEraseEvent&) {  }
 
 			/**
-			 * Double clicking the left mouse button repositions the view
-			 * to centre on the point clicked.
+			 * Double clicking the left mouse button repositions
+			 * the view to centre on the point clicked.
 			 */
-			void
-			OnReposition(wxMouseEvent&);
+			void OnReposition(wxMouseEvent&);
 			
 			/**
 			 * Right mouse button is responsible for Z axis spins.
