@@ -43,7 +43,7 @@ GridData::GridData(const DataType_t& dt, const RotationGroupId_t& id,
 	const GPlatesMaths::PointOnSphere &gc_step)
 	: DrawableData (dt, id, tw, attrs),
 	  _lattice (GPlatesMaths::GridOnSphere::Create
-	            (origin, gc_step, sc_step))
+	            (origin, sc_step, gc_step))
 {
 	grid = new Grid;
 	grid->offset = 0;
