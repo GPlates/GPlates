@@ -77,7 +77,7 @@ namespace GPlatesMaths
 			virtual real_t
 			magnitude() const {
 
-				return sqrt(mag_sqrd());
+				return sqrt(magSqrd());
 			}
 
 			virtual UnitVector3D normalise () const;
