@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_COLOUR_H_
@@ -37,11 +37,46 @@ namespace GPlatesGui
 			/**
 			 * Some commonly used colours.
 			 */
-			static const Colour BLACK, WHITE, RED, GREEN, BLUE, GREY;
+			static const Colour 
+				BLACK, WHITE, RED, GREEN, 
+				BLUE, GREY, SILVER, MAROON,
+				PURPLE, FUSCHIA, LIME, OLIVE,
+				YELLOW, NAVY, TEAL, AQUA;
 
-			Colour(const GLfloat& red = 0.0, const GLfloat& green = 0.0,
-			 const GLfloat& blue = 0.0, const GLfloat& alpha = 1.0);
+			/**
+			 * Construct a colour with the given red, green and
+			 * blue components.
+			 * 
+			 * The parameters represent the percentage of red,
+			 * green and blue in the resulting colour.
+			 * 
+			 * The parameters should be in the range 0.0 - 1.0
+			 * inclusive.  Values outside this range will not
+			 * be clamped, since OpenGL does its own clamping.
+			 */
+			explicit
+			Colour(const GLfloat& red   = 0.0, 
+				   const GLfloat& green = 0.0,
+			 	   const GLfloat& blue  = 0.0, 
+				   const GLfloat& alpha = 1.0);
 
+			/**
+			 * Construct a colour with the given red, green and
+			 * blue components.
+			 * 
+			 * The parameters should be in the range 0 - 255 
+			 * (0x0 - 0xFF) inclusive.  Values outside this
+			 * range will not be clamped, since OpenGL does its
+			 * own clamping.
+			 *
+			 * @note This method is provided for convenience, it is
+			 *   the less efficient way to construct a colour.
+			 */
+			explicit
+			Colour(const GLuint& red   = 0x00, 
+				   const GLuint& green = 0x00,
+				   const GLuint& blue  = 0x00
+				   const GLuint& alpha = 0xFF);
 			/**
 			 * Accessor methods.
 			 */
@@ -82,16 +117,25 @@ namespace GPlatesGui
 
 		private:
 			/**
+			 * Indices of the respective colour componets.
+			 */
+			static const size_t RED_INDEX = 0, 
+								GREEN_INDEX = 1, 
+								BLUE_INDEX = 2, 
+								ALPHA_INDEX = 3;
+			/**
 			 * Number of components in an RGBA colour.
 			 */
 			static const size_t RGBA_SIZE = 4;
 
 			/**
-			 * Indices of the respective colour componets.
+			 * The storage space for the colour components.
+			 *
+			 * This is an array because that allows it to be
+			 * passed to OpenGL as a vector, which is often
+			 * faster than passing (and hence copying each
+			 * individual component.
 			 */
-			static const size_t RED_INDEX = 0, GREEN_INDEX = 1, 
-			 BLUE_INDEX = 2, ALPHA_INDEX = 3;
-
 			GLfloat _rgba[RGBA_SIZE];
 	};
 }
