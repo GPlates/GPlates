@@ -1,10 +1,11 @@
 # $Id$
 # Configure script for GPlates
 
-AC_INIT([GPlates], [0.001], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
+AC_INIT([GPlates], [1.0], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_HEADERS(src/global/config.h)
+AC_CONFIG_AUX_DIR(config)
 
 # Check C++ compiler
 # Setting CXXFLAGS is necessary to circumvent autoconf using its
@@ -49,6 +50,26 @@ fi
 AC_CXX_TEMPLATES
 if test "$ac_cv_cxx_templates" != yes; then
 	AC_MSG_ERROR([compiler doesn't support templates])
+fi
+AC_CXX_STATIC_CAST
+if test "$ac_cv_cxx_static_cast" != yes; then
+	AC_MSG_ERROR([compiler doesn't support static_cast])
+fi
+AC_CXX_DYNAMIC_CAST
+if test "$ac_cv_cxx_dynamic_cast" != yes; then
+	AC_MSG_ERROR([compiler doesn't support dynamic_cast])
+fi
+AC_CXX_EXPLICIT
+if test "$ac_cv_cxx_explicit" != yes; then
+	AC_MSG_ERROR([compiler doesn't support explict keyword])
+fi
+AC_CXX_MEMBER_CONSTANTS
+if test "$ac_cv_cxx_member_constants" != yes; then
+	AC_MSG_ERROR([compiler doesn't support constant class members])
+fi
+AC_CXX_TYPENAME
+if test "$ac_cv_cxx_typename" != yes; then
+	AC_MSG_ERROR([compiler doesn't support the typename keyword])
 fi
 AC_CXX_NAMESPACES
 if test "$ac_cv_cxx_namespaces" != yes; then
@@ -97,6 +118,7 @@ AC_CHECK_LIB([GLU], [main], [], AC_MSG_ERROR([
 
 # wxWindows
 # ???
+# need to make sure wxGLCanvas was enabled.
 
 # We using Expat, which is included in contrib/src
 # XXX: Only compile eXpat if it does not already exist?
@@ -189,13 +211,13 @@ AC_ARG_ENABLE(wxwin,
 any_ui="no"
 UI_TARGETS=""
 if test "$probe_testui" != "no"; then
-	# FIXME: Anything to test for?
+	# FIXME: No testui yet.
 
-	enable_testui="yes"
-	AC_DEFINE(HAVE_TESTUI)
+	enable_testui="no"
+	#AC_DEFINE([HAVE_TESTUI],[],[TestUI is available.])
 	#UI_TARGETS="$UI_TARGETS ui-test.o"	# XXX
 	#LIBS="$LIBS -l???"			# XXX
-	any_ui="yes"
+	#any_ui="yes"
 fi
 if test "$probe_wxwin" != "no"; then
 	# Check for wxWindows
@@ -224,7 +246,7 @@ if test "$probe_wxwin" != "no"; then
 		#	- WXWIN_LIBS
 		#	- WXWIN_GL_LIBS
 
-		AC_DEFINE(HAVE_WXWIN)
+		AC_DEFINE([HAVE_WXWIN],[],[wxWindows is available.])
 		#UI_TARGETS="$UI_TARGETS ui-gtkmm.o"	# XXX
 		EXTRA_CFLAGS="$EXTRA_CFLAGS $WXWIN_CFLAGS"
 		LIBS="$LIBS $WXWIN_LIBS $WXWIN_GL_LIBS"

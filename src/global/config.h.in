@@ -1,17 +1,106 @@
-//
-//	config.h
-//
+/* src/global/config.h.in.  Generated from configure.in by autoheader.  */
 
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+/* define if bool is a built-in type */
+#undef HAVE_BOOL
 
-// Package information
+/* define if the compiler supports dynamic_cast<> */
+#undef HAVE_DYNAMIC_CAST
+
+/* define if the compiler supports exceptions */
+#undef HAVE_EXCEPTIONS
+
+/* Define to 1 if you have the <expat.h> header file. */
+#undef HAVE_EXPAT_H
+
+/* define if the compiler supports the explicit keyword */
+#undef HAVE_EXPLICIT
+
+/* Define to 1 if you have the <GL/glu.h> header file. */
+#undef HAVE_GL_GLU_H
+
+/* Define to 1 if you have the <GL/gl.h> header file. */
+#undef HAVE_GL_GL_H
+
+/* define if the compiler supports IEEE math library */
+#undef HAVE_IEEE_MATH
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `expat' library (-lexpat). */
+#undef HAVE_LIBEXPAT
+
+/* Define to 1 if you have the `GL' library (-lGL). */
+#undef HAVE_LIBGL
+
+/* Define to 1 if you have the `GLU' library (-lGLU). */
+#undef HAVE_LIBGLU
+
+/* define if the compiler supports member constants */
+#undef HAVE_MEMBER_CONSTANTS
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* define if the compiler implements namespaces */
+#undef HAVE_NAMESPACES
+
+/* define if the compiler has stringstream */
+#undef HAVE_SSTREAM
+
+/* define if the compiler supports static_cast<> */
+#undef HAVE_STATIC_CAST
+
+/* define if the compiler supports ISO C++ standard library */
+#undef HAVE_STD
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* define if the compiler supports Standard Template Library */
+#undef HAVE_STL
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* define if the compiler supports basic templates */
+#undef HAVE_TEMPLATES
+
+/* define if the compiler recognizes typename */
+#undef HAVE_TYPENAME
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* wxWindows is available. */
+#undef HAVE_WXWIN
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
 #undef PACKAGE_NAME
-#undef PACKAGE_VERSION
+
+/* Define to the full name and version of this package. */
 #undef PACKAGE_STRING
 
-// UIs selected
-#undef HAVE_TESTUI
-#undef HAVE_GTKMM
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
 
-#endif	// __CONFIG_H__
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
