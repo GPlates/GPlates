@@ -38,7 +38,7 @@ UnitQuaternion3D::CreateEulerRotation(const UnitVector3D &euler_pole,
 	real_t theta_on_two = rotation_angle / 2.0;
 
 	real_t   scalar_part = cos(theta_on_two);
-	Vector3D vector_part = sin(theta_on_two) * Vector3D(pole);
+	Vector3D vector_part = sin(theta_on_two) * Vector3D(euler_pole);
 
 	return UnitQuaternion3D(scalar_part, vector_part);
 }
