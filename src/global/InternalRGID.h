@@ -42,6 +42,8 @@ namespace GPlatesGlobal
 	 * first-come-first-served basis.  The program will store a map of
 	 * external RGIDs to internal RGIDs to avoid duplication, and a map
 	 * of internal RGIDs to external RGIDs for output and display.
+	 *
+	 * The internal RGID of the globe will always be 0.
 	 */
 	class InternalRGID
 	{
