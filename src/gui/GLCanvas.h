@@ -37,11 +37,10 @@ namespace GPlatesGui
 	{
 		public:
 			GLCanvas(wxWindow* parent, 
-					 const GPlatesGeo::DataGroup* data,
 					 const wxSize& size = wxDefaultSize,
 					 const wxPoint& position = wxDefaultPosition)
 				: wxGLCanvas(parent, -1, position, size), 
-				  _data(data), _zoom_factor(1.0), // Zoom factor == 1.0 => no zoom
+				  _zoom_factor(1.0), // Zoom factor == 1.0 => no zoom
 				  _is_initialised(false) { parent->Show(TRUE); SetCurrent(); }
 
 			/**
@@ -79,7 +78,6 @@ namespace GPlatesGui
 
 		private:
 			Globe _globe;
-			const GPlatesGeo::DataGroup* _data;
 			GLfloat _zoom_factor;
 			bool _is_initialised;
 

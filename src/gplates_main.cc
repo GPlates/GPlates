@@ -104,11 +104,8 @@ bool
 GPlatesApp::OnInit()
 {
 	try {
-		GPlatesFileIO::GPlatesReader reader(std::cin);
-
 		// NULL => no parent
-		GLFrame* frame = new GLFrame(NULL, reader.Read(),
-			PACKAGE_STRING, wxSize(640,640));
+		GLFrame* frame = new GLFrame(NULL, PACKAGE_STRING, wxSize(640,640));
 		frame->Show(TRUE);
 
 	} catch (const GPlatesGlobal::Exception& e) {

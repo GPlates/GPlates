@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_GLFRAME_H_
@@ -39,16 +39,18 @@ namespace GPlatesGui
 	{
 		public:
 			GLFrame(wxFrame* parent, 
-					const GPlatesGeo::DataGroup* data,
 					const wxString& title = "", 
 					const wxSize& size = wxDefaultSize,
 					const wxPoint& pos = wxDefaultPosition);
 
-			void 
-			OnExit(wxCommandEvent&) { Destroy(); }
-			
-			void
-			OnMouseMove(wxMouseEvent&);
+			void OnExit(wxCommandEvent&) { Destroy(); }
+
+			// Mouse events
+			void OnMouseMove(wxMouseEvent&);
+
+			// Menubar events
+			void OnOpenData(wxCommandEvent&);
+			void OnOpenRotation(wxCommandEvent&);
 
 		private:
 			// XXX: DEFAULT_WINDOWID should be available to the entire GUI system.

@@ -27,12 +27,44 @@
 #include <sstream>
 #include <cstdlib>
 #include <cmath>  /* for fabsf() */
+#include <wx/wx.h>
 #include "OpenGL.h"
 #include "GLFrame.h"
 
 using namespace GPlatesGui;
 
-GLFrame::GLFrame(wxFrame* parent, const GPlatesGeo::DataGroup* data,
+
+/**
+ * Menu IDs.
+ */
+enum {
+	MENU_FILE_OPENDATA = 100,
+	MENU_FILE_OPENROTATION,
+	MENU_FILE_EXIT
+};
+
+
+static void
+CreateMenuBar(GLFrame* frame)
+{
+	wxMenu* filemenu = new wxMenu;
+
+	filemenu->Append(MENU_FILE_OPENDATA, 
+					 "Open Data", 
+					 "Open a data file");
+	filemenu->Append(MENU_FILE_OPENROTATION, 
+					 "Open Rotation", 
+					 "Open a rotation file");
+	filemenu->AppendSeparator();
+	filemenu->Append(MENU_FILE_EXIT, "Exit", "Exit GPlates");
+
+	wxMenuBar* menubar = new wxMenuBar(wxMB_DOCKABLE);
+	menubar->Append(filemenu, "File");
+
+	frame->SetMenuBar(menubar);
+}
+
+GLFrame::GLFrame(wxFrame* parent,
 	const wxString& title, const wxSize& size, const wxPoint& pos)
  : wxFrame(parent, -1 /* XXX: DEFAULT_WINDOWID */, title, pos, size)
 {
@@ -42,7 +74,8 @@ GLFrame::GLFrame(wxFrame* parent, const GPlatesGeo::DataGroup* data,
 		exit(1);
 	}
 
-	_canvas = new GLCanvas(this, data);
+	CreateMenuBar(this);
+	_canvas = new GLCanvas(this);
 	_canvas->SetCurrent();
 
 	Fit();
@@ -57,9 +90,24 @@ GLFrame::OnMouseMove(wxMouseEvent& evt)
 	SetStatusText(wxString(oss.str().c_str()));
 }
 
+void
+GLFrame::OnOpenData(wxCommandEvent& evt)
+{
+	std::cout << "Menu activated: File->Open Data" << std::endl;
+}
+
+void
+GLFrame::OnOpenRotation(wxCommandEvent& evt)
+{
+	std::cout << "Menu activated: File->Open Rotation" << std::endl;
+}
+
+
 BEGIN_EVENT_TABLE(GLFrame, wxFrame)
 	EVT_CLOSE(GLFrame::OnExit)
-	// FIXME: This isn't being notified of mouse movement.  Perhaps all the
-	// mouse events are being captured by GLCanvas?
 	EVT_MOTION(GLFrame::OnMouseMove)
+
+	EVT_MENU(MENU_FILE_OPENDATA, GLFrame::OnOpenData)
+	EVT_MENU(MENU_FILE_OPENROTATION, GLFrame::OnOpenRotation)
+	EVT_MENU(MENU_FILE_EXIT, GLFrame::OnExit)
 END_EVENT_TABLE()
