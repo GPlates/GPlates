@@ -26,7 +26,7 @@
 #include <iomanip>
 #include <iterator>
 #include <memory>  /* std::auto_ptr */
-#include <netcdfcpp.h>
+//#include <netcdfcpp.h>
 #include <sstream>
 #include <wx/progdlg.h>
 #include "File.h"
