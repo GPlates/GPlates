@@ -84,9 +84,8 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 	const GPlatesMaths::GridOnSphere &lattice = grid->getLattice ();
 	GPlatesMaths::PointOnSphere orig = lattice.resolve (0, 0);
 	GPlatesMaths::LatLonPoint orig_llp = llp (orig);
-	double lat_step = radiansToDegrees (lattice.deltaAlongLat ()).dval (),
-		lon_step = radiansToDegrees (lattice.deltaAlongLon ()).dval ();
-	lon_step = fabs (lon_step);	// HACK
+	double lat_step = radiansToDegrees (lattice.deltaAlongLon ()).dval (),
+		lon_step = radiansToDegrees (lattice.deltaAlongLat ()).dval ();
 	double orig_lat = orig_llp.latitude ().dval (),
 		orig_lon = orig_llp.longitude ().dval (),
 		corner_lat = orig_lat + lat_step * (ny - 1),
@@ -107,7 +106,7 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 	if (title_v)
 		title = title_v->GetString ();
 	ncf.add_att ("title", title.c_str ());
-	ncf.add_att ("source", PACKAGE_STRING "/netCDF Exporter");
+	ncf.add_att ("source", PACKAGE_STRING "/NetCDFWriter");
 
 	// Create dimensions
 	NcDim *dim_side = ncf.add_dim ("side", 2);
