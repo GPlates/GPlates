@@ -26,6 +26,8 @@
 #ifndef _GPLATES_MATHS_FINITEROTATION_H_
 #define _GPLATES_MATHS_FINITEROTATION_H_
 
+#include <iostream>
+
 #include "UnitVector3D.h"
 #include "UnitQuaternion3D.h"
 #include "PointOnSphere.h"
@@ -77,9 +79,9 @@ namespace GPlatesMaths
 			 * point in time is in Ma (Millions of years ago).
 			 */
 			static FiniteRotation
-			CreateFiniteRotation(const PointOnSphere &euler_pole,
-			                     const real_t &rotation_angle,
-			                     const real_t &point_in_time);
+			Create(const PointOnSphere &euler_pole,
+			       const real_t &rotation_angle,
+			       const real_t &point_in_time);
 
 
 			/**
@@ -88,8 +90,8 @@ namespace GPlatesMaths
 			 * The point in time is in Ma (Millions of years ago).
 			 */
 			static FiniteRotation
-			CreateFiniteRotation(const UnitQuaternion3D &uq,
-			                     const real_t &point_in_time);
+			Create(const UnitQuaternion3D &uq,
+			       const real_t &point_in_time);
 
 
 			UnitQuaternion3D
@@ -273,6 +275,9 @@ namespace GPlatesMaths
 	 */
 	PolyLineOnSphere
 	operator*(const FiniteRotation &r, const PolyLineOnSphere &p);
+
+
+	std::ostream &operator<<(std::ostream &os, const FiniteRotation &fr);
 }
 
 #endif  // _GPLATES_MATHS_FINITEROTATION_H_
