@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <functional>
 #include <string>
 #include "global/ControlFlowException.h"
 #include "GPlatesWriter.h"
@@ -42,154 +43,153 @@ using namespace GPlatesGlobal;
 
 static const char *XML_HEADER = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>";
 
+
 GPlatesWriter::GPlatesWriter()
+: _indent(0)
 {
+	// XXX: Why 14?
+	_accum.precision(14);
+
 	// All XML files must have this line.
 	_accum << XML_HEADER << std::endl;
 }
 
-static void
-WriteTimeWindow(std::ostream& os, const TimeWindow& tw, std::string indent)
+
+namespace
 {
-	os << indent 
-		<< "<ageofappearance>" 
-			<< tw.GetBeginning() 
-		<< "</ageofappearance>" << std::endl
-		<< indent
-		<< "<ageofdisappearance>"
-			<< tw.GetEnd()
-		<< "</ageofdisappearance>" << std::endl;
+	inline std::string
+	Indent(int indent)
+	{
+		// Create a new string with indent copies of tab.
+		return std::string(indent, '\t');
+	}
+
+
+	void
+	WriteTimeWindow(std::ostream& os, const TimeWindow& tw, int indent)
+	{
+		os << Indent(indent)
+			<< "<ageofappearance>" 
+				<< tw.GetBeginning() 
+			<< "</ageofappearance>" << std::endl
+			<< Indent(indent)
+			<< "<ageofdisappearance>"
+				<< tw.GetEnd()
+			<< "</ageofdisappearance>" << std::endl;
+	}
+
+
+	void
+	WritePlateID(std::ostream& os, const rid_t& id, int indent)
+	{
+		os << Indent(indent)
+			<< "<plateid>" 
+				<< id.ival() 
+			<< "</plateid>" << std::endl;
+	}
+
+
+	void
+	WriteAttributes(std::ostream& os, 
+					const GeologicalData& data, 
+					int indent)
+	{
+		WritePlateID(os, data.GetRotationGroupId(), indent);
+		WriteTimeWindow(os, data.GetTimeWindow(), indent);
+	}
+
+
+	void
+	WriteCoord(std::ostream& os, const PointOnSphere& point, int indent)
+	{
+		LatLonPoint llp = OperationsOnSphere::
+			convertPointOnSphereToLatLonPoint(point);
+
+		os << Indent(indent)
+			<< "<coord>" 
+				<< llp.latitude() << " " << llp.longitude()
+			<< "</coord>" << std::endl;
+	}
+
+
+	void
+	WriteCoordList(std::ostream& os,
+				   const PolyLineOnSphere::const_iterator& begin, 
+				   const PolyLineOnSphere::const_iterator& end, 
+				   int indent)
+	{
+		os << Indent(indent)
+			<< "<coordlist>" << std::endl;
+
+		PolyLineOnSphere::const_iterator iter = begin;
+		WriteCoord(os, PointOnSphere(iter->startPoint()), indent + 1);
+		for ( ; iter != end; ++iter)
+			WriteCoord(os, PointOnSphere(iter->endPoint()), indent + 1);
+
+		os << Indent(indent)
+			<< "</coordlist>" << std::endl;
+	}
 }
 
-static void
-WritePlateID(std::ostream& os, const rid_t& id, std::string indent)
+
+void
+GPlatesWriter::Visit(const PointData& data)
 {
-	os << indent 
-		<< "<plateid>" 
-			<< id.ival() 
-		<< "</plateid>" << std::endl;
-}
-
-static void
-WriteAttributes(std::ostream& os, 
-				const GeologicalData* data, 
-				std::string indent)
-{
-	WritePlateID(os, data->GetRotationGroupId(), indent);
-	WriteTimeWindow(os, data->GetTimeWindow(), indent);
-}
-
-
-static void
-WriteCoord(std::ostream& os, const PointOnSphere& point, std::string indent)
-{
-	LatLonPoint llp = OperationsOnSphere::
-		convertPointOnSphereToLatLonPoint(point);
-
-	os << indent
-		<< "<coord>" 
-			<< llp.latitude() << " " << llp.longitude()
-		<< "</coord>" << std::endl;
-}
-
-static void
-WriteCoordList(std::ostream& os,
-			   const PolyLineOnSphere::const_iterator& begin, 
-			   const PolyLineOnSphere::const_iterator& end, 
-			   std::string indent)
-{
-	os << indent
-		<< "<coordlist>" << std::endl;
-
-	PolyLineOnSphere::const_iterator iter = begin;
-	WriteCoord(os, PointOnSphere(iter->startPoint()), indent + '\t');
-	for ( ; iter != end; ++iter)
-		WriteCoord(os, PointOnSphere(iter->endPoint()), indent + '\t');
-
-	os << indent
-		<< "</coordlist>" << std::endl;
-}
-
-static void
-WritePointData(std::ostream& os, const PointData* data, std::string indent)
-{
-	os << indent
+	_accum << Indent(_indent)
 		<< "<pointdata>" << std::endl;
 
 	// Print attributes.
-	WriteAttributes(os, data, indent + '\t');
+	WriteAttributes(_accum, data, _indent + 1);
 	
 	// Print point
-	WriteCoord(os, data->GetPointOnSphere(), indent + '\t');
+	WriteCoord(_accum, data.GetPointOnSphere(), _indent + 1);
 
-	os << indent
+	_accum << Indent(_indent)
 		<< "</pointdata>" << std::endl;
 }
 
-static void
-WriteLineData(std::ostream& os, const LineData* data, std::string indent)
+
+void
+GPlatesWriter::Visit(const LineData& data)
 {
-	os << indent
+	_accum << Indent(_indent)
 		<< "<linedata>" << std::endl;
 
 	// Print attributes.
-	WriteAttributes(os, data, indent + '\t');
+	WriteAttributes(_accum, data, _indent + 1);
 
 	// Print PolyLine
-	WriteCoordList(os, data->Begin(), data->End(), indent + '\t');
+	WriteCoordList(_accum, data.Begin(), data.End(), _indent + 1);
 	
-	os << indent
+	_accum << Indent(_indent)
 		<< "</linedata>" << std::endl;
 }
 
-static void
-WriteDataGroup(std::ostream& os, const DataGroup* data, std::string indent)
+
+void
+GPlatesWriter::Visit(const DataGroup& data)
 {
-	os << indent 
+	_accum << Indent(_indent)
 		<< "<datagroup>" << std::endl;
 	
+	// Indent children
+	++_indent;
+	
 	// Print attributes.
-	WriteAttributes(os, data, indent + '\t');
+	WriteAttributes(_accum, data, _indent);
 
-	// XXX Should use the visitor functionality to achieve this.
-	DataGroup::Children_t::const_iterator iter = data->ChildrenBegin();
-	for ( ; iter != data->ChildrenEnd(); ++iter) {
-		const LineData* ld;
-		const PointData* pd;
-		const DataGroup* dg;
-
-		if ((ld = dynamic_cast< const LineData* >(*iter)))
-			WriteLineData(os, ld, indent + '\t');
-		else if ((pd = dynamic_cast< const PointData* >(*iter)))
-			WritePointData(os, pd, indent + '\t');
-		else if ((dg = dynamic_cast< const DataGroup* >(*iter)))
-			WriteDataGroup(os, dg, indent + '\t');
-		else {
-			std::ostringstream oss;
-			oss << "Encountered a DataGroup member that would not "
-				"cast to one of LineData, PointData or DataGroup.";
-			throw ControlFlowException(oss.str().c_str());
-		}
-	}
-
-	os << indent 
+	/*
+	 * Call Accept(this) on each of the datagroup's children.
+	 */
+	DataGroup::Children_t::const_iterator iter = data.ChildrenBegin();
+	for ( ; iter != data.ChildrenEnd(); ++iter)
+		(*iter)->Accept(*this);
+	
+	--_indent;
+	_accum << Indent(_indent)
 		<< "</datagroup>" << std::endl;
 }
 
-void
-GPlatesWriter::Visit(const DataGroup* data)
-{
-	/**
-	 * The current level of indentation.  Used to make the output
-	 * a bit more readable.
-	 */
-	std::string indent;
-
-	// XXX Why 14?
-	//_accum.precision(14);
-	
-	WriteDataGroup(_accum, data, indent);
-}
 
 void
 GPlatesWriter::PrintOut(std::ostream& os)

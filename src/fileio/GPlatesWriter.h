@@ -50,7 +50,13 @@ namespace GPlatesFileIO
 			~GPlatesWriter() {  }
 
 			virtual void
-			Visit(const GPlatesGeo::DataGroup*);
+			Visit(const GPlatesGeo::PointData&);
+			
+			virtual void
+			Visit(const GPlatesGeo::LineData&);
+
+			virtual void
+			Visit(const GPlatesGeo::DataGroup&);
 
 			/**
 			 * Print the accumulated information to the given stream.
@@ -67,6 +73,11 @@ namespace GPlatesFileIO
 			 * Holds the accumulated information.
 			 */
 			std::ostringstream _accum;
+
+			/**
+			 * Holds the current indent level.
+			 */
+			int _indent;
 	};
 }
 
