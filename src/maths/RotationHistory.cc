@@ -40,19 +40,14 @@ GPlatesMaths::RotationHistory::isDefinedAtTime(real_t t) const {
 
 
 GPlatesMaths::RotationHistory::const_iterator
-GPlatesMaths::RotationHistory::atTime(real_t t) const {
+GPlatesMaths::RotationHistory::findAtTime(real_t t) const {
 
 	ensureSeqSorted();
 	for (seq_type::const_iterator it = _seq.begin();
 	     it != _seq.end();
 	     ++it) {
 
-		if ((*it).isDefinedAtTime(t)) return it;
+		if ((*it).isDefinedAtTime(t)) return const_iterator(it);
 	}
-
-	std::ostringstream oss;
-	oss << "Attempted to access a rotation sequence for the time "
-	 << t << ",\nat which time this rotation history is not defined.";
-
-	throw InvalidOperationException(oss.str().c_str());
+	return const_iterator(_seq.end());
 }
