@@ -30,6 +30,7 @@
 #include "geo/GeologicalData.h"
 #include "geo/GridData.h"
 #include "geo/TimeWindow.h"
+#include "global/Exception.h"
 #include "maths/OperationsOnSphere.h"
 #include "maths/PointOnSphere.h"
 
@@ -125,8 +126,8 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 			z_units, 0, GPlatesGeo::TimeWindow (),
 			GPlatesGeo::GeologicalData::Attributes_t (),
 			orig, sc_step, gc_step);
-	} catch (...) {
-		//std::cerr << e << "\n";
+	} catch (GPlatesGlobal::Exception &e) {
+		std::cerr << e << "\n";
 		return 0;
 	}
 

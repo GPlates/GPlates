@@ -42,7 +42,7 @@ GridData::GridData(const DataType_t& dt, const RotationGroupId_t& id,
 	const GPlatesMaths::PointOnSphere &gc_step)
 	: DrawableData (dt, id, tw, attrs),
 	  _lattice (GPlatesMaths::GridOnSphere::Create
-	            (origin, sc_step, gc_step))
+	            (origin, gc_step, sc_step))
 {
 	grid = new Grid;
 	grid->offset = 0;
@@ -51,6 +51,8 @@ GridData::GridData(const DataType_t& dt, const RotationGroupId_t& id,
 
 GridData::~GridData ()
 {
+	if (grid->length < 1)
+		return;
 	GridRowPtr row = grid->rows[0];
 	for (index_t i = 0; i < grid->length; ++i, ++row) {
 		// TODO: do something with elements in each row?
