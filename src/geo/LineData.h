@@ -34,7 +34,7 @@ namespace GPlatesGeo
 {
 	/**
 	 * Data corresponding to a line on a sphere.
-	 * @invariant Number of line elements is greater than 2.
+	 * @invariant Number of line elements is greater than or equal to 2.
 	 */
 	class LineData : public GeologicalData
 	{
