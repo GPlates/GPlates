@@ -51,9 +51,17 @@ namespace GPlatesMaths
 			explicit 
 			PointOnSphere(const UnitVector3D &uv) : _uv(uv) {  }
 
+			PointOnSphere(const real_t& lat, const real_t& lon);
+			
 			UnitVector3D
 			unitvector() const { return _uv; }
+#if 0
+			real_t
+			GetLatitude() const;
 
+			real_t
+			GetLongitude() const;
+#endif
 		private:
 			UnitVector3D _uv;
 	};
