@@ -37,6 +37,14 @@ UnitVector3D::AssertInvariantHolds() const {
 	/*
 	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
 	 * For efficiency, don't bother sqrting yet.
+	 *
+	 * On a Pentium IV processor, the calculation of 'mag_sqrd' should
+	 * cost about (7 + 2 * 2) + (5 + 1) = 17 clock cycles, while the
+	 * FP comparison for unity should cost about 9 clock cycles, making
+	 * a total cost of about 26 clock cycles.
+	 *
+	 * Obviously, if the comparison returns false, performance will go
+	 * right out the window.
 	 */
 	real_t mag_sqrd = (_x * _x) + (_y * _y) + (_z * _z);
 	if (mag_sqrd != 1.0) {
