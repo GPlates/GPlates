@@ -42,10 +42,6 @@ namespace GPlatesGui
 		private:
 			wxSizer *_msizer;
 			wxStaticText *_top;
-			void okClick (wxCommandEvent &event);
-
-
-		DECLARE_EVENT_TABLE()
 	};
 }
 
