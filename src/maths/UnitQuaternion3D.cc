@@ -30,6 +30,20 @@
 
 using namespace GPlatesMaths;
 
+
+UnitQuaternion3D
+UnitQuaternion3D::CreateEulerRotation(const UnitVector3D &euler_pole,
+	const real_t &rotation_angle) {
+
+	real_t theta_on_two = rotation_angle / 2.0;
+
+	real_t   scalar_part = cos(theta_on_two);
+	Vector3D vector_part = sin(theta_on_two) * Vector3D(pole);
+
+	return UnitQuaternion3D(scalar_part, vector_part);
+}
+
+
 void
 UnitQuaternion3D::AssertInvariantHolds() const {
 

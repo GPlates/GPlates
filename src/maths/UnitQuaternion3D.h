@@ -119,6 +119,16 @@ namespace GPlatesMaths
 			UnitQuaternion3D
 			inverse() const { return conjugate(); }
 
+
+			/**
+			 * Create a unit quaternion to represent the following
+			 * Euler rotation around the unit vector of the Euler
+			 * pole, by the given rotation angle.
+			 */
+			static UnitQuaternion3D
+			CreateEulerRotation(const UnitVector3D &euler_pole, 
+			                    const real_t &rotation_angle);
+
 		protected:
 			/**
 			 * Create a 3D unit quaternion from the specified
