@@ -257,57 +257,166 @@ namespace
 	}
 }
 
+
+namespace DataFormats {
+
+	enum data_format {
+
+		ERROR,
+		UNKNOWN,
+		GPML,
+		PLATES,
+		NETCDF
+	};
+
+	enum data_format testGPML(const std::string &filename);
+	enum data_format testPLATES(const std::string &filename);
+	enum data_format testNetCDF(const std::string &filename);
+
+	// A pointer to a function which attempts to determine the file format.
+	typedef enum data_format (*DataFormatTest)(const std::string &);
+
+	DataFormatTest NATIVE_DATA_FORMAT_TESTS[] = {
+
+		testGPML
+	};
+
+	DataFormatTest NONNATIVE_DATA_FORMAT_TESTS[] = {
+
+		testPLATES,
+		testNetCDF
+	};
+
+
+	enum data_format
+	determineDataFormat(const std::string &filename, DataFormatTest *tests,
+	                    size_t num_tests) {
+
+		for (size_t i = 0; i < num_tests; i++) {
+
+			enum data_format df = (tests[i])(filename);
+			if (df == ERROR) return ERROR;
+			else if (df != UNKNOWN) return df;
+		}
+		return UNKNOWN;
+	}
+
+
+	bool
+	extensionMatches(const std::string &fname, const std::string &ext) {
+
+		std::string::size_type idx,
+		                       fname_len = fname.length(),
+		                       ext_len = ext.length();
+
+		if (ext_len >= fname_len) {
+
+			/* Filename is not long enough to contain extension.
+			 * Note that we use '>=' instead of '>' to disallow
+			 * filenames which consist entirely of the extension. */
+			return false;
+		}
+		idx = fname.rfind(ext);
+		if (idx + ext_len != fname_len) {
+
+			// Extension string is not where extension should be.
+			return false;
+		}
+		return true;
+	}
+
+
+	enum data_format
+	testGPML(const std::string &filename) {
+
+		// Test file suffix for a quick disqualification.
+		if ( ! extensionMatches(filename, ".gpml")) {
+
+			// expected extension does not match
+			return UNKNOWN;
+		}
+
+		// Attempt to recognise the file-type by reading a bit.
+		std::ifstream ifs(filename.c_str());
+		if ( ! ifs) {
+
+			OpenFileErrorMessage(filename, "Couldn't open file.");
+			return ERROR;
+		}
+
+		static const char expected_start[] = "<?xml";
+		char start[sizeof(expected_start)];
+
+		size_t expected_start_len = std::strlen(expected_start);
+		ifs.get(start, expected_start_len);
+		start[expected_start_len] = '\0';
+		ifs.close();
+
+		if (std::strcmp(expected_start, start) != 0) {
+
+			// does not match expected GPML
+			return UNKNOWN;
+		}
+		return GPML;
+	}
+
+
+	enum data_format
+	testPLATES(const std::string &filename) {
+
+		// Test file suffix for a quick disqualification.
+		if ( ! extensionMatches(filename, ".dat")) {
+
+			// expected extension does not match
+			return UNKNOWN;
+		}
+		return PLATES;
+	}
+
+
+	enum data_format
+	testNetCDF(const std::string &filename) {
+
+		// Test file suffix for a quick disqualification.
+		if ( ! extensionMatches(filename, ".grd")) {
+
+			// expected extension does not match
+			return UNKNOWN;
+		}
+		return NETCDF;
+	}
+}
+
+
 void
 GPlatesControls::File::OpenData(const std::string& filename)
 {
-	enum { UNKNOWN, GPML, PLATES } filetype = UNKNOWN;
+	enum DataFormats::data_format file_type =
+	 DataFormats::determineDataFormat(filename,
+	  DataFormats::NATIVE_DATA_FORMAT_TESTS,
+	  (sizeof(DataFormats::NATIVE_DATA_FORMAT_TESTS) /
+	   sizeof(DataFormats::DataFormatTest)));
 
-	// Read in some magic
-	std::ifstream ifs(filename.c_str());
-	if (!ifs) {
-		OpenFileErrorMessage(filename, "Couldn't open file.");
-		return;
-	}
-	char magic[8];
-	ifs.get(magic, 7);
-	magic[7] = '\0';
-	ifs.close();
+	switch (file_type) {
 
-	// Break out of this loop when we know what type of file we're reading
-	do {
-		// Try magic
-		if (!std::strncmp(magic, "<?xml", 5)) {
-			filetype = GPML;
+		case DataFormats::GPML:
+			// Recognised as a GPML file
+			HandleGPMLFile(filename);
 			break;
-		} else if (strtol(magic, NULL, 0) != 0) {
-			filetype = PLATES;
-			break;
-		}
 
-		// Try file extension
-		if (filename.rfind(".gpml") != std::string::npos) {
-			filetype = GPML;
-			break;
-		} else if (filename.rfind(".dat") != std::string::npos) {
-			filetype = PLATES;
-			break;
-		}
-	} while (0);
+		case DataFormats::ERROR:
+			// Already complained about this
+			return;
 
-	if (filetype == GPML)
-		HandleGPMLFile(filename);
-	else if (filetype == PLATES)
-		HandlePLATESFile(filename);
-	else {
-		std::ostringstream msg;
-		msg << "The file \"" << filename << "\" is in an unknown "
-								"format.";
-		Dialogs::ErrorMessage(
-			"File type not recognised",
-			msg.str().c_str(),
-			"Attempting to parse the file as a PLATES data file.");
-		// TODO: is this wise to guess that it's PLATES format? confirm with user?
-		HandlePLATESFile(filename);
+		default:
+			// No luck finding a match
+			std::ostringstream msg;
+			msg << "The file \"" << filename
+			 << "\" is in an unrecognised format.";
+			Dialogs::ErrorMessage("File type not recognised",
+			 msg.str().c_str(),
+			 "Couldn't open file.");
+			return;
 	}
 
 	DataGroup* data = GPlatesState::Data::GetDataGroup();
@@ -411,7 +520,7 @@ ConvertPlatesRotationDataToRotationMap(const
 
 
 void
-GPlatesControls::File::OpenRotation(const std::string& filename)
+GPlatesControls::File::LoadRotation(const std::string& filename)
 {
 	std::ifstream f(filename.c_str());
 	if ( ! f) {
@@ -444,43 +553,53 @@ GPlatesControls::File::OpenRotation(const std::string& filename)
 }
 
 
-void GPlatesControls::File::OpenGrid(const std::string& filename)
+void GPlatesControls::File::ImportData(const std::string& filename)
 {
-	enum { UNKNOWN, netCDF } filetype = UNKNOWN;
+	enum DataFormats::data_format file_type =
+	 DataFormats::determineDataFormat(filename,
+	  DataFormats::NONNATIVE_DATA_FORMAT_TESTS,
+	  (sizeof(DataFormats::NONNATIVE_DATA_FORMAT_TESTS) /
+	   sizeof(DataFormats::DataFormatTest)));
 
-	// Break out of this loop when we know what type of file we're reading
-	do {
-		// TODO: try to guess filetype by using "magic"
+	switch (file_type) {
 
-		// Try file extension
-		if (filename.rfind(".grd") != std::string::npos) {
-			filetype = netCDF;
+		case DataFormats::PLATES:
+			// Recognised as a Plates file
+			HandlePLATESFile(filename);
 			break;
-		}
-	} while (0);
 
-	if (filetype == netCDF)
-		HandleNetCDFFile(filename);
-	else {
-		std::ostringstream msg;
-		msg << "The file \"" << filename << "\" is in an unknown "
-								"format.";
-		Dialogs::ErrorMessage(
-			"File type not recognised",
-			msg.str().c_str(),
-			"Attempting to parse the file as a netCDF data file.");
-		// TODO: is this wise to guess that it's PLATES format? confirm with user?
-		HandleNetCDFFile(filename);
+		case DataFormats::NETCDF:
+			// Recognised as a NetCDF file
+			HandleNetCDFFile(filename);
+			break;
+
+		case DataFormats::ERROR:
+			// Already complained about this
+			return;
+
+		default:
+			// No luck finding a match
+			std::ostringstream msg;
+			msg << "The file \"" << filename
+			 << "\" is in an unrecognised format.";
+			Dialogs::ErrorMessage("File type not recognised",
+			 msg.str().c_str(),
+			 "Couldn't open file.");
+			return;
 	}
 
-	//DataGroup* data = GPlatesState::Data::GetDataGroup();
-	//if (!data)
-	//	return;
+	// Currently works for PLATES data files only...
+	if (file_type == DataFormats::PLATES) {
 
-	//ConvertDataGroupToDrawableDataMap(data);
+		DataGroup* data = GPlatesState::Data::GetDataGroup();
+		if (!data)
+			return;
 
-	// Draw the data on the screen in its present-day layout
-	//Reconstruct::Present();
+		ConvertDataGroupToDrawableDataMap(data);
+
+		// Draw the data on the screen in its present-day layout
+		Reconstruct::Present();
+	}
 }
 
 void

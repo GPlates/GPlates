@@ -35,7 +35,7 @@ namespace GPlatesControls
 	namespace File
 	{
 		/**
-		 * Load a GPML or PLATES data file.
+		 * Open a native GPlates data file.
 		 */
 		void
 		OpenData(const std::string& filepath);
@@ -44,12 +44,12 @@ namespace GPlatesControls
 		 * Load a PLATES rotation file.
 		 */
 		void
-		OpenRotation(const std::string& filepath);
+		LoadRotation(const std::string& filepath);
 
 		/**
-		 * Load a gridded data file.
+		 * Import a non-native data file.
 		 */
-		void OpenGrid (const std::string &filepath);
+		void ImportData(const std::string &filepath);
 
 		/**
 		 * Write the current data to a GPML file.
