@@ -38,7 +38,7 @@ namespace GPlatesMaths
 	 * Thus, the magnitude of this vector must be identical to 1.
 	 * This invariant will be enforced upon construction (the values
 	 * of x, y and z passed to the constructor will be checked), and
-	 * assumed true for all subsequent usage.  No operations must be
+	 * assumed true for all subsequent usage.  No operations may be
 	 * provided for this class which would allow the invariant to be
 	 * violated.
 	 * @invariant
