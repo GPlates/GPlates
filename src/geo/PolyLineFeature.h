@@ -25,8 +25,6 @@
 
 namespace GPlatesGeo {
 
-	class ReconstructedFeature;
-
 	/**
 	 * A Feature with polyline geometry.
 	 */
