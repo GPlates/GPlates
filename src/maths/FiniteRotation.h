@@ -164,6 +164,12 @@ namespace GPlatesMaths
 	 *     describe the motion of the moving plate M2 with respect to
 	 *     the fixed plate F1.  Thus, the unit vector which is rotated
 	 *     by the resulting finite rotation will "sit" on M2.
+	 *
+	 * If these finite rotations are considered the branches of a tree-
+	 * like hierarchy of plate-motion (with the stationary "globe" at
+	 * the root of the tree, and the motion of any given plate specified
+	 * relative to the plate root-ward of it), then the finite rotation
+	 * r1 should be one branch root-ward of the finite rotation r2.
 	 */
 	FiniteRotation
 	operator*(const FiniteRotation &r1, const FiniteRotation &r2);
