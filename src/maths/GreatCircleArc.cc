@@ -37,10 +37,18 @@ GreatCircleArc
 GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 
 	/*
+	 * As a speed-up, since parallel(u1,u2) iff dot(u1,u2) >= 1.0,
+	 * and antiparallel(u1,u2) iff dot(u1,u2) <= -1.0, we can factor
+	 * out the dot product computation, which is what I do here.
+	 *	- DAS 17/12/2003
+	 */
+	real_t dotP = dot(u1, u2);
+
+	/*
 	 * First, we ensure that these two unit vectors do in fact define
 	 * a single unique great-circle arc.
 	 */
-	if (parallel(u1, u2)) {
+	if (dotP >= 1.0) {
 
 		// start-point same as end-point => no arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
@@ -48,7 +56,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 		oss << u1 << " and " << u2 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
-	if (antiparallel(u1, u2)) {
+	if (dotP <= -1.0) {
 
 		// start-point and end-point antipodal => indeterminate arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
@@ -84,10 +92,16 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2,
 	UnitVector3D rot_axis) {
 
 	/*
+	 * (apply the same speedup as the other CreateGreatCircleArc, above)
+	 *	- DAS 17/12/2003
+	 */
+	real_t dotP = dot(u1, u2);
+
+	/*
 	 * First, we ensure that these two unit vectors do in fact define
 	 * a single unique great-circle arc.
 	 */
-	if (parallel(u1, u2)) {
+	if (dotP >= 1.0) {
 
 		// start-point same as end-point => no arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
@@ -95,7 +109,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2,
 		oss << u1 << " and " << u2 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
-	if (antiparallel(u1, u2)) {
+	if (dotP <= -1.0) {
 
 		// start-point and end-point antipodal => indeterminate arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
