@@ -192,16 +192,16 @@ namespace GPlatesMaths
 	/**
 	 * On a Pentium IV processor, it should cost about
 	 * (7 + 5 * 2) + (5 + 2 * 2) = 26 clock cycles to calculate the
-	 * components of the resultant vector, and at least 62 cycles
-	 * + the cost of two function calls, to create the DirVector3D
+	 * components of the resultant vector, and at least 71 cycles
+	 * + the cost of three function calls, to create the DirVector3D
 	 * (assuming these two unit vectors are neither parallel nor
 	 * antiparallel, which would result in a vector of zero length
 	 * and indeterminate direction, which would violate the invariant
 	 * of the DirVector3D, which would result in exception-throwing
 	 * happy crazy fun!!!!!!1).
 	 *
-	 * So, there you have it, folks: at least 88 clock cycles + the cost
-	 * of two function calls.
+	 * So, there you have it, folks: at least 97 clock cycles + the cost
+	 * of four function calls.
 	 */
 	DirVector3D cross(UnitVector3D v1, UnitVector3D v2);
 }
