@@ -3,6 +3,7 @@
 DIRS=". .."
 AUX_PATH=scripts/aux
 AUX_FILES="boilerplate cvs2cl.pl usermap"
+DEST="ChangeLog-CVS"
 
 # Find files
 for dir in $DIRS; do
@@ -22,18 +23,18 @@ for file in $AUX_FILES; do
 done
 
 ###################################################################
-OPTIONS="--revisions --day-of-week"
+OPTIONS="--revisions --day-of-week --tags"
 
 # --utc                    Show times in GMT/UTC instead of local time
 # -S, --separate-header    Blank line between each header and log message
 # --no-wrap                Don't auto-wrap log message (recommend -S also)
 
 
-rm -f ChangeLog
-$AUX_PATH/cvs2cl.pl --stdout -U $AUX_PATH/usermap -I ChangeLog $OPTIONS \
-	-g "-z3" --header $AUX_PATH/boilerplate > ChangeLog
-chmod 0644 ChangeLog
+rm -f $DEST
+$AUX_PATH/cvs2cl.pl --stdout -U $AUX_PATH/usermap -I $DEST $OPTIONS \
+	-g "-z3" --header $AUX_PATH/boilerplate > $DEST
+chmod 0644 $DEST
 echo "-------------"
 echo "Committing..."
-cvs -z3 commit -m "Updated ChangeLog." ChangeLog
+cvs -z3 commit -m "Updated $DEST." $DEST
 echo "-------------"
