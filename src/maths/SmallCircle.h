@@ -43,7 +43,10 @@ namespace GPlatesMaths
 			 * Create a small circle, given its axis and an angle.
 			 */
 			SmallCircle (const UnitVector3D &axis, real_t angle)
-				: _normal (axis), _theta (angle) { }
+				: _normal (axis), _theta (angle)
+			{
+				AssertInvariantHolds ();
+			}
 
 			/**
 			 * Create a small circle, given its axis and a point
