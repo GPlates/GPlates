@@ -1,0 +1,149 @@
+#!/bin/sh
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# Author: Marc Vertes, mailto:mvertes@free.fr, http://mvertes.free.fr
+# Version 1.0
+#
+usage()
+{
+	cat << \EOT
+NAME
+  cgprof - generate colored call graph for profiled executables
+
+SYNOPSIS
+  cgprof [-h] [-T dev] [-g gmon_data] [gprof_file]
+
+DESCRIPTION
+  cgprof generate a function calling graph for a profiled executable. The
+  executable must have been compiled and linked to output data suitable for
+  gprof(1) (look at -pg option of gcc(1)). If no -T option is given,
+  output is dot(1) commands. All the results are printed on standard
+  output. cgprof takes gprof_file as input, or standard input.
+
+  The result is a directed acyclic graph (DAG), where nodes represent
+  functions traversed during the program execution, and edges function
+  calls (arrow is from the caller to the called).
+
+  Node colors represent the cumulative execution time spent by a
+  function and its children. Colors range from intense red (100 % time) to
+  pale violet (0 %), like a rainbow. A node is white filled when it has
+  no time execution data available, which may be the case for profiling
+  functions or not instrumented functions.
+
+  cgprof helps to have a better understanding of program structure and
+  execution. It makes hot spots identification visual and intuitive,
+  and provides a minimum code coverage function.
+
+OPTIONS
+  -h      Display this help text.
+  -T dev  This option sets the output format to dev. Possible values of
+          dev are :
+	  X    X11 output, with direct previewing using dotty(1).
+	  ps   Postscript output, using dot(1) processor. The drawing will be
+	       sized to fill one landscape page.
+EXAMPLE
+  to print a report from execution of test_hash, run the following
+  command:
+    
+      $ cc -pg -o test_hash test_hash.c
+      $ test_hash < test_data
+      $ gprof test_hash | cgprof -Tps | lpr
+
+SEE ALSO
+  gprof(1), dot(1), dotty(1), cc(1).
+
+HISTORY
+  cgprof is inspired by a gprof2dot, a similar tool from AT&T Research Labs, 
+  distributed part of graphviz (http://www.graphviz.org) which includes
+  also dot tools.
+
+AUTHOR
+  mvertes@free.fr Marc Vertes, Cimai Tech. 2001
+EOT
+}
+
+g2d()
+{
+	echo "digraph gprof {"
+	echo "	rankdir=LR;"
+	echo "	node [style=filled];"
+	echo "	node [color=\"0.1 0.0 1.0\"];"
+	#echo "  node [fontsize=14];"
+
+	awk '
+	BEGIN { 
+		start = 0 
+		maxhue = 0.6	# from red (.0) to magenta (.6), cf rainbow
+		minsat = 0.1	# low saturation
+		bri = 1.0	# brightness, always 100%
+	}
+	/Call graph/		{ start = 1; next }
+	start == 0		{ next }
+	$1 == ""		{ exit }
+	$1 == "<spontaneous>"	{ next }
+	$1 == "granularity:"	{ next }
+	$1 == "index"		{ next }
+	NF == 0			{ next }
+	/<cycle [0-9]* as a whole>/	{ next }
+	{ gsub(/<.*>/, "") }
+	$1 ~ /\[/ { 
+		caller = $(NF -1)
+		cost = $2 / 100.0
+		if (cost > 0.0) {
+			# following formulas are totally empirical
+			hue = maxhue * (1.0 - cost)
+			sat = minsat + (3.0 - minsat) * cost
+		} else {
+			hue = maxhue
+			sat = minsat
+		}
+		printf("\t\"%s\" [color=\"%.3f %.3f %.3f\"];\n", 
+			caller, hue, sat, bri)
+		next 
+	}
+	/^---/ { 
+		for (i = 1; i <= nc; i++) {
+			if (caller == "") caller = called[i]
+			print "\t\"" called[i] "\" -> \"" caller "\";"
+		}
+		caller = ""; nc = 0; next 
+	}
+	caller == "" { called[++nc] = $(NF - 1) }
+	caller != "" { print "\t\"" caller "\" -> \"" $(NF -1) "\";" }
+	' $* | sort -u
+
+	echo "}"
+}
+
+dev=""
+
+while getopts :hT: opt
+do
+	case $opt in
+	T) dev=$OPTARG;;
+	*) usage; exit;;
+	esac
+done
+shift $(($OPTIND - 1))
+
+case $dev in
+	X)  post="dotty -";;
+	#ps) post="dot -Tps -Gsize=\"11,17\" -Grotate=90";;
+	ps) post="dot -Tps -Gsize=\"16,23\"";;
+	*)  post="cat"
+esac
+
+g2d $* | eval $post
