@@ -35,6 +35,7 @@
 #include "geo/GeologicalData.h"
 #include "geo/GridData.h"
 #include "geo/GridElement.h"
+#include "geo/LiteralStringValue.h"
 #include "global/Exception.h"
 #include "global/types.h"
 #include "maths/OperationsOnSphere.h"
@@ -293,6 +294,39 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	if (offset_attr) {
 		z_offset = offset_attr->as_float (0);
 		delete offset_attr;
+	}
+
+	// Get title
+	char *title_str = 0;
+	for (int i = 0; i < ncf->num_atts (); ++i) {
+		NcAtt *att = ncf->get_att (i);
+		if (strcmp (att->name (), "title")) {
+			delete att;
+			continue;
+		}
+		title_str = att->as_string (0);
+		delete att;
+		break;
+	}
+	if (title_str && (strlen (title_str) < 1)) {
+		delete[] title_str;
+		title_str = 0;
+	}
+	if (title_str) {
+		GPlatesGeo::LiteralStringValue *val =
+			new GPlatesGeo::LiteralStringValue (std::string
+								(title_str));
+		delete[] title_str;
+		gdata->SetAttributeValue ("title", val);
+	}
+	// Extract long_name attribute if we can, and save it for later
+	NcAtt *long_name_attr = z_var->get_att ("long_name");
+	if (long_name_attr) {
+		char *lstr = long_name_attr->as_string (0);
+		GPlatesGeo::LiteralStringValue *val =
+			new GPlatesGeo::LiteralStringValue (std::string (lstr));
+		delete[] lstr;
+		gdata->SetAttributeValue ("long_name", val);
 	}
 
 	// FIXME: I'm taking a guess, and hoping that this all happens in

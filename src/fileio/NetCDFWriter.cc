@@ -34,6 +34,7 @@
 #include "geo/GeologicalData.h"
 #include "geo/GridData.h"
 #include "geo/GridElement.h"
+#include "geo/StringValue.h"
 #include "global/Exception.h"
 #include "global/config.h"
 #include "global/types.h"
@@ -85,6 +86,7 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 	GPlatesMaths::LatLonPoint orig_llp = llp (orig);
 	double lat_step = radiansToDegrees (lattice.deltaAlongLat ()).dval (),
 		lon_step = radiansToDegrees (lattice.deltaAlongLon ()).dval ();
+	lon_step = fabs (lon_step);	// HACK
 	double orig_lat = orig_llp.latitude ().dval (),
 		orig_lon = orig_llp.longitude ().dval (),
 		corner_lat = orig_lat + lat_step * (ny - 1),
@@ -100,7 +102,11 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 		<< "\t1st row: " << x01 << ", " << x11 << "\n";
 
 	// Create global attributes
-	ncf.add_att ("title", "??");	// XXX
+	std::string title = "";
+	GPlatesGeo::StringValue *title_v = grid->GetAttributeValue ("title");
+	if (title_v)
+		title = title_v->GetString ();
+	ncf.add_att ("title", title.c_str ());
 	ncf.add_att ("source", PACKAGE_STRING "/netCDF Exporter");
 
 	// Create dimensions
@@ -121,7 +127,13 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 	NcVar *var_z = ncf.add_var ("z", ncFloat, dim_xysize);
 	var_z->add_att ("scale_factor", (double) 1.0);
 	var_z->add_att ("add_offset", (double) 0.0);
-	var_z->add_att ("long_name", "???");	// XXX
+	std::string long_name = "";
+	GPlatesGeo::StringValue *long_name_v =
+					grid->GetAttributeValue ("long_name");
+	if (long_name_v)
+		long_name = long_name_v->GetString ();
+	var_z->add_att ("long_name", long_name.c_str ());
+	var_z->add_att ("node_offset", (int) 0);
 
 	// Leave define mode and start writing data
 
