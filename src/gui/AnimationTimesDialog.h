@@ -21,12 +21,14 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_ANIMATIONTIMESDIALOG_H_
 #define _GPLATES_GUI_ANIMATIONTIMESDIALOG_H_
 
 #include <wx/dialog.h>
+#include <wx/checkbox.h>
 #include "global/types.h"
 
 namespace GPlatesGui
@@ -42,13 +44,17 @@ namespace GPlatesGui
 			GPlatesGlobal::fpdata_t
 			GetEndTime() const;
 
-			GPlatesGlobal::integer_t
-			GetNSteps() const;
+			GPlatesGlobal::fpdata_t
+			GetTimeDelta() const;
+
+			bool
+			GetFinishOnEnd() const;
 
 		private:
-			wxTextCtrl* _startctrl;
-			wxTextCtrl* _endctrl;
-			wxTextCtrl* _nstepsctrl;
+			wxTextCtrl* _start_ctrl;
+			wxTextCtrl* _end_ctrl;
+			wxTextCtrl* _time_delta_ctrl;
+			wxCheckBox* _finish_on_end;
 	};
 }
 
