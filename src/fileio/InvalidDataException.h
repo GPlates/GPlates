@@ -1,4 +1,12 @@
-/*
+/*$ID*/
+/// Exception used when some data value in a Plates file being read in is out of range.
+/**
+ * @file
+ *
+ * Most recent change:
+ * $Author$
+ * $Date$
+ *
  *
  * Copyright (C) 2003 The GPlates Consortium
  *

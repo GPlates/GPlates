@@ -1,4 +1,12 @@
-/*
+/*$ID*/
+/// Pure vittual base class of all IO Exceptions.
+/**
+ * @file
+ *
+ * Most recent change:
+ * $Author$
+ * $Date$
+ *
  * Copyright (C) 2003 The GPlates Consortium
  *
  * This program is free software; you can redistribute it and/or
