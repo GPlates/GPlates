@@ -236,8 +236,8 @@ File::OpenData(const std::string& filename)
 		Dialogs::ErrorMessage(
 			"File extension not recognised",
 			msg.str().c_str(),
-			"No data was loaded.");
-		return;
+			"Attempting to parse the file as a PLATES data file.");
+		HandlePLATESFile(filename);
 	}
 
 	DataGroup* data = GPlatesState::Data::GetDataGroup();
