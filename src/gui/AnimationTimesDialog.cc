@@ -30,7 +30,7 @@ GPlatesGui::AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent,
  GPlatesGlobal::fpdata_t start_time, GPlatesGlobal::fpdata_t end_time,
  GPlatesGlobal::fpdata_t time_delta, bool finish_on_end) :
 
- wxDialog(parent, -1, _("Constructing Animation...")),
+ wxDialog(parent, -1, wxString(_("Constructing Animation..."))),
  _start_ctrl_str(AnimationTimesDialog::fpToWxString(start_time)),
  _end_ctrl_str(AnimationTimesDialog::fpToWxString(end_time)),
  _time_delta_ctrl_str(AnimationTimesDialog::fpToWxString(time_delta))

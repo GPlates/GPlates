@@ -29,7 +29,7 @@
 
 
 GPlatesGui::AboutDialog::AboutDialog(wxWindow* parent)
-	: wxDialog(parent, -1, _("About GPlates..."))
+	: wxDialog(parent, -1, wxString(_("About GPlates...")))
 {
 	static const int BORDER_SIZE = 10;
 	

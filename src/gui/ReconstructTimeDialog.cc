@@ -1,4 +1,4 @@
-/* $Id$ */
+/* Id: ReconstructTimeDialog.cc,v 1.7 2004/04/20 23:32:24 hlaw Exp $ */
 
 /**
  * @file 
@@ -26,7 +26,7 @@
 #include "FPValidator.h"
 
 GPlatesGui::ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent) :
- wxDialog(parent, -1, _("Reconstruct to...")), _time_ctrl_str("0.0")
+ wxDialog(parent, -1, wxString(_("Reconstruct to..."))), _time_ctrl_str("0.0")
 {
 	static const int BORDER_SIZE  = 10;
 	
