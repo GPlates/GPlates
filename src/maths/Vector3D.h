@@ -106,6 +106,21 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * (7 + 2 * 2) + (5 + 1) = 17 clock cycles.
+	 */
+	inline real_t
+	dot(Vector3D v1, Vector3D v2) {
+
+		real_t x_dot = v1.x() * v2.x();
+		real_t y_dot = v1.y() * v2.y();
+		real_t z_dot = v1.z() * v2.z();
+
+		return (x_dot + y_dot + z_dot);
+	}
+
+
 	inline Vector3D
 	operator-(Vector3D v) {
 
@@ -146,18 +161,17 @@ namespace GPlatesMaths
 
 
 	/**
+	 * This algorithm for testing whether two vectors are parallel
+	 * is intended to remove the requirements that:
+	 *  - the magnitudes of the vectors are already known
+	 *  - any of the components are non-zero.
+	 *
+	 * Note that zero vectors are defined to be parallel to everything.
+	 *
 	 * On a Pentium IV processor, this should cost about
-	 * (7 + 2 * 2) + (5 + 1) = 17 clock cycles.
+	 * (7 + 5 * 2) + (3 * 9) + 2 = 46 clock cycles.
 	 */
-	inline real_t
-	dot(Vector3D v1, Vector3D v2) {
-
-		real_t x_dot = v1.x() * v2.x();
-		real_t y_dot = v1.y() * v2.y();
-		real_t z_dot = v1.z() * v2.z();
-
-		return (x_dot + y_dot + z_dot);
-	}
+	bool parallel(Vector3D v1, Vector3D v2);
 
 
 	/**

@@ -29,6 +29,22 @@
 using namespace GPlatesMaths;
 
 
+bool
+GPlatesMaths::parallel(Vector3D v1, Vector3D v2) {
+
+	/*
+	 * This algorithm is based upon the cross-product:
+	 * if two vectors are parallel, their cross-product results in
+	 * the zero vector (ie. a vector with zero x, y, z components).
+	 */
+	bool x_zero = (v1.y() * v2.z() == v1.z() * v2.y());
+	bool y_zero = (v1.z() * v2.x() == v1.x() * v2.z());
+	bool z_zero = (v1.x() * v2.y() == v1.y() * v2.x());
+
+	return (x_zero && y_zero && z_zero);
+}
+
+
 Vector3D
 GPlatesMaths::cross(Vector3D v1, Vector3D v2) {
 
