@@ -29,10 +29,13 @@
 #include "NetCDFReader.h"
 #include "geo/GeologicalData.h"
 #include "geo/GridData.h"
-#include "geo/TimeWindow.h"
+#include "geo/GridElement.h"
 #include "global/Exception.h"
+#include "global/types.h"
 #include "maths/OperationsOnSphere.h"
 #include "maths/PointOnSphere.h"
+
+using GPlatesGlobal::index_t;
 
 
 static GPlatesMaths::PointOnSphere pos (double lat, double lon)
@@ -88,8 +91,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 		if (var->num_vals () < 10)
 			vals->print (std::cerr);
 		else
-			std::cerr << "(too many - " << var->num_vals ()
-				<< ")";
+			std::cerr << "(too many - " << var->num_vals () << ")";
 		std::cerr << "\n";
 		delete vals;
 	}
@@ -98,6 +100,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	// TODO: _much_ more error checking is needed here
 
 	double x_min, x_max, x_step, y_min, y_max, y_step;
+	index_t num_x, num_y;
 	NcValues *vals;
 
 	vals = ncf->get_var ("x_range")->values ();
@@ -113,6 +116,9 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	y_step = vals->as_double (1);
 	delete vals;
 
+	num_x = index_t ((x_max - x_min) / x_step + 1);
+	num_y = index_t ((y_max - y_min) / y_step + 1);
+
 	GPlatesMaths::PointOnSphere orig = pos (x_min, y_min),
 				sc_step = pos (x_min + x_step, y_min),
 				gc_step = pos (x_min, y_min + y_step);
@@ -123,13 +129,35 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	GPlatesGeo::GridData *gdata;
 	try {
 		gdata = new GPlatesGeo::GridData (
-			z_units, 0, GPlatesGeo::TimeWindow (),
+			z_units, GPlatesGeo::GeologicalData::NO_ROTATIONGROUP,
+			GPlatesGeo::GeologicalData::NO_TIMEWINDOW,
 			GPlatesGeo::GeologicalData::Attributes_t (),
 			orig, sc_step, gc_step);
 	} catch (GPlatesGlobal::Exception &e) {
 		std::cerr << e << "\n";
 		return 0;
 	}
+	
+	// FIXME: I'm taking a guess, and hoping that this all happens in
+	//	x-major (i.e. along the y-direction first) order...
+	NcValues *z = ncf->get_var ("z")->values ();
+	index_t cnt = 0;
+	for (index_t i = 0; i < num_x; ++i) {
+		for (index_t j = 0; j < num_y; ++j, ++cnt) {
+			double val = z->as_double (cnt);
+			if (!isnan (val)) {
+				GPlatesGeo::GeologicalData::Attributes_t attr =
+						GPlatesGeo::GeologicalData::
+								NO_ATTRIBUTES;
+				// TODO: insert properly when StringValue is
+				//	actually useful
+				GPlatesGeo::GridElement *elt =
+					new GPlatesGeo::GridElement (attr);
+				gdata->Add (elt, i, j);
+			}
+		}
+	}
+	delete z;
 
 	return gdata;
 }

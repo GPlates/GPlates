@@ -27,7 +27,7 @@
 #ifndef _GPLATES_GEO_GRIDELEMENT_H_
 #define _GPLATES_GEO_GRIDELEMENT_H_
 
-#include "GridData.h"
+#include "GeologicalData.h"
 
 namespace GPlatesGeo
 {
@@ -36,6 +36,8 @@ namespace GPlatesGeo
 	 */
 	class GridElement
 	{
+		typedef GPlatesGeo::GeologicalData::Attributes_t Attributes_t;
+
 		public:
 			GridElement(const Attributes_t& attrs) 
 						: _attributes(attrs) { }
