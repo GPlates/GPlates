@@ -28,6 +28,7 @@
 #include "MainWindow.h"
 #include "Globe.h"
 #include "Colour.h"
+#include "ViewportZoom.h"
 #include "geo/DataGroup.h"
 #include "maths/PointOnSphere.h"
 
@@ -107,7 +108,6 @@ namespace GPlatesGui
 			wxMenu *_popup_menu;
 
 			Globe _globe;
-			double _zoom_power;
 			double _zoom_factor;
 			int _mouse_x;
 			int _mouse_y;
@@ -118,11 +118,11 @@ namespace GPlatesGui
 			int _wheel_rotation;
 			bool _is_initialised;
 
+			ViewportZoom m_viewport_zoom;
+
 			void InitGL();
 			void SetView();
-			void IncrZoomPower();
-			void DecrZoomPower();
-			void RecalcZoom();
+			void HandleZoomChange();
 			void GetDimensions();
 			void ClearCanvas(const Colour &c = Colour::BLACK);
 

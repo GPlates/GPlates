@@ -119,7 +119,6 @@ GPlatesGui::GLCanvas::GLCanvas(MainWindow *parent,
  const wxSize &size, const wxPoint &position) :
  wxGLCanvas(parent, -1, position, size),
  _parent(parent),
- _zoom_power(1.0),  // Zoom power of 1.0 => no zoom
  _wheel_rotation(0),
  _is_initialised(false) {
 
@@ -130,7 +129,7 @@ GPlatesGui::GLCanvas::GLCanvas(MainWindow *parent,
 		std::exit(1);
 	}
 
-	RecalcZoom();
+	HandleZoomChange();
 
 	_parent->Show(TRUE);
 }
@@ -391,10 +390,13 @@ GPlatesGui::GLCanvas::OnMouseEvent(wxMouseEvent &evt) {
 void
 GPlatesGui::GLCanvas::ZoomIn() {
 
-	if (_zoom_power < 2.0) {
+	unsigned zoom_percent = m_viewport_zoom.zoom_percent();
 
-		IncrZoomPower();
-		RecalcZoom();
+	m_viewport_zoom.zoom_in();
+	if (zoom_percent != m_viewport_zoom.zoom_percent()) {
+
+		// We zoomed in.
+		HandleZoomChange();
 	}
 }
 
@@ -402,10 +404,13 @@ GPlatesGui::GLCanvas::ZoomIn() {
 void
 GPlatesGui::GLCanvas::ZoomOut() {
 
-	if (_zoom_power > 1.0) {
+	unsigned zoom_percent = m_viewport_zoom.zoom_percent();
 
-		DecrZoomPower();
-		RecalcZoom();
+	m_viewport_zoom.zoom_out();
+	if (zoom_percent != m_viewport_zoom.zoom_percent()) {
+
+		// We zoomed out.
+		HandleZoomChange();
 	}
 }
 
@@ -413,8 +418,8 @@ GPlatesGui::GLCanvas::ZoomOut() {
 void
 GPlatesGui::GLCanvas::ZoomReset() {
 
-	_zoom_power = 1.0;
-	RecalcZoom();
+	m_viewport_zoom.reset_zoom();
+	HandleZoomChange();
 }
 
 
@@ -476,34 +481,11 @@ GPlatesGui::GLCanvas::SetView() {
 }
 
 
-namespace {
-
-	const double ZOOM_POWER_DELTA = 0.05;
-}
-
-
 void
-GPlatesGui::GLCanvas::IncrZoomPower() {
+GPlatesGui::GLCanvas::HandleZoomChange() {
 
-	_zoom_power += ZOOM_POWER_DELTA;
-}
-
-
-void
-GPlatesGui::GLCanvas::DecrZoomPower() {
-
-	_zoom_power -= ZOOM_POWER_DELTA;
-}
-
-
-void
-GPlatesGui::GLCanvas::RecalcZoom() {
-
-	double zoom_percent = std::pow(10.0, _zoom_power + 1.0);
-	unsigned zp_rounded = static_cast< unsigned >(zoom_percent + 0.5);
-	_parent->SetCurrentZoom(zp_rounded);
-
-	_zoom_factor = zoom_percent / 100.0;
+	_parent->SetCurrentZoom(m_viewport_zoom.zoom_percent());
+	_zoom_factor = m_viewport_zoom.zoom_factor();
 
 	SetView();
 	Refresh();
