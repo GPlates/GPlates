@@ -68,6 +68,11 @@ if test "$ac_cv_cxx_rtti" != yes; then
 fi
 
 
+# Check for dot (from graphviz package) for doxygen.conf
+# WARNING: does not verify this is the _real_ dot program we want
+AC_PATH_PROG([HAVE_DOT], [dot], [YES], [NO])
+
+
 EXTRA_CFLAGS=""
 
 # Using '--enable-dev' changes compile-time flags to be more strict
