@@ -68,60 +68,22 @@ PaintPointDataPos(const Layout::PointDataPos& pointdata)
 }
 
 
-#if 0
-namespace
-{
-	using namespace GPlatesGui;
-
-	/**
-	 * XXX: Hack to get Colours working.
-	 */
-	typedef std::map< rid_t, const Colour* > ColourMap_t;
-	ColourMap_t COLOUR_MAP;
-			
-	class ColourMapInit
-	{
-		public:
-			ColourMapInit()
-			{
-#include "plates.clr.inc"
-			}
-	};
-
-	ColourMapInit _CMAP;
-}
-#endif
-
-
 static void
 PaintLineDataPos(const Layout::LineDataPos& linedata)
 {
-#if 1
-	const GPlatesGui::PlatesColourTable &ctab =
-	 *(GPlatesGui::PlatesColourTable::Instance());
-#endif
+	using namespace GPlatesGui;
+
+	const PlatesColourTable &ctab = *(PlatesColourTable::Instance());
 	const PolyLineOnSphere& line = linedata.second;
 
 	GPlatesGlobal::rid_t rgid = linedata.first->GetRotationGroupId();
-#if 1
-	GPlatesGui::PlatesColourTable::const_iterator it = ctab.lookup(rgid);
+	PlatesColourTable::const_iterator it = ctab.lookup(rgid);
 	if (it != ctab.end()) {
 
-		std::cerr << "Colour for plate " << rgid << ": "
-		 << *it << std::endl;
+		// There is an entry for this RG-ID in the colour table.
 		glColor3fv(*it);
 
 	} else glColor3fv(GPlatesGui::Colour::BLACK);
-#else
-	ColourMap_t::iterator iter = COLOUR_MAP.find(rgid);
-	if (iter != COLOUR_MAP.end()) {
-
-		std::cerr << "Colour for plate " << rgid << ": "
-		 << *iter->second << std::endl;
-		glColor3fv(*iter->second);
-
-	} else glColor3fv(GPlatesGui::Colour::BLACK);
-#endif
 	CallVertexWithLine(line.begin(), line.end());
 }
 
