@@ -255,6 +255,19 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 		throw FileFormatException (oss.str ().c_str ());
 	}
 
+	// See if scaling and offset parameters are given
+	float z_scale = 1.0, z_offset = 0.0;
+	NcAtt *scale_attr = z_var->get_att ("scale_factor");
+	if (scale_attr) {
+		z_scale = scale_attr->as_float (0);
+		delete scale_attr;
+	}
+	NcAtt *offset_attr = z_var->get_att ("add_offset");
+	if (offset_attr) {
+		z_offset = offset_attr->as_float (0);
+		delete offset_attr;
+	}
+
 	// FIXME: I'm taking a guess, and hoping that this all happens in
 	//	x-major (i.e. along the y-direction first) order...
 	float *z = new float[num_y];
@@ -280,6 +293,13 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 		for (index_t j = 0; j < num_y; ++j, ++cnt) {
 			if (isnan (z[j]))
 				continue;
+
+			// Apply scaling and offsets
+			// TODO: this is a FANTASTIC place for some funky
+			//    vectorised optimisations, using some of the
+			//    MMX2/SSE/3DNow/AltiVec instructions such as
+			//    'pmaddwd' (MMX)
+			z[j] = z[j] * z_scale + z_offset;
 
 			// Hack to get around stupid netCDF bug
 			index_t real_i = cnt % num_x,
