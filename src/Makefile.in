@@ -3,7 +3,7 @@
 subdir = src
 prefix = @prefix@
 
-SUBDIRS = fileio geo global gui maths
+SUBDIRS = fileio geo global gui maths controls
 
 DISTFILES = Makefile.in *.cc
 
@@ -13,7 +13,7 @@ LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
 EXTRA_LIBS = global/libglobal.a fileio/libfileio.a gui/libgui.a geo/libgeo.a \
-	maths/libmaths.a
+	maths/libmaths.a controls/libcontrols.a
 
 LIBS = @LIBS@
 #LIBS = @LIBS@ -lefence

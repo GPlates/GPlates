@@ -280,7 +280,8 @@ AC_OUTPUT(Makefile
 	src/geo/Makefile
 	src/global/Makefile
 	src/gui/Makefile
-	src/maths/Makefile)
+	src/maths/Makefile
+	src/controls/Makefile)
 
 
 
