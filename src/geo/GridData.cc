@@ -26,6 +26,7 @@
 #include <cstring>
 #include "DrawableData.h"
 #include "GridData.h"
+#include "GridElement.h"
 #include "global/types.h"
 #include "global/IllegalParametersException.h"
 #include "maths/GridOnSphere.h"
@@ -57,10 +58,8 @@ GridData::~GridData ()
 		GridRowPtr row = grid->rows[i];
 		if (!row->data || row->length < 1)
 			continue;
-		// TODO: do something with elements in each row?
-		//for (index_t j = 0; j < row->length; ++j) {
-			//GridElementPtr elem = row->data[j];
-		//}
+		for (index_t j = 0; j < row->length; ++j)
+			delete row->data[j];
 		delete[] row->data;
 	}
 	delete[] grid->rows;

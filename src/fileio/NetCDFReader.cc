@@ -69,10 +69,11 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 			std::cerr << att->name () << " ("
 				<< types[att->type ()] << ") = ";
 			switch (att->type ()) {
+				char *str;
 				case ncChar:
-					std::cerr << '"'
-						<< att->as_string (0)
-						<< '"';
+					str = att->as_string (0);
+					std::cerr << '"' << str << '"';
+					delete str;
 					break;
 				case ncInt:
 					std::cerr << att->as_int (0);
@@ -192,7 +193,9 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 
 	// TODO: verify that this attribute actually exists, before reading it!
 	NcAtt *z_unit_att = ncf->get_var ("z_range")->get_att ("units");
-	std::string z_units (z_unit_att->as_string (0));
+	char *str = z_unit_att->as_string (0);
+	std::string z_units (str);
+	delete str;
 	delete z_unit_att;
 	GPlatesGeo::GridData *gdata;
 	try {
@@ -208,8 +211,6 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 		throw FileFormatException("Couldn't determine grid from file.");
 	}
 
-	if (dlg)
-		dlg->Update (0, "Loading raw values...");
 	NcVar *z_var = ncf->get_var ("z");
 
 	// Check we have enough values
@@ -224,32 +225,44 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	
 	// FIXME: I'm taking a guess, and hoping that this all happens in
 	//	x-major (i.e. along the y-direction first) order...
-	NcValues *z = z_var->values ();
+	float *z = new float[num_y];
 	index_t cnt = 0;
+	bool cancelled = false;
 	if (dlg)
 		dlg->Update (0, "Loading grid...");
 	for (index_t i = 0; i < num_x; ++i) {
 		if (dlg) {
 			double perc = 100 * double (i) / double (num_x);
 			int val = int (floor (perc));
-			if (dlg->Update (val, "Loading grid...") == FALSE)
+			if (dlg->Update (val, "Loading grid...") == FALSE) {
+				cancelled = true;
 				break;
-		}
-		for (index_t j = 0; j < num_y; ++j, ++cnt) {
-			double val = z->as_double (cnt);
-			if (!isnan (val)) {
-				GPlatesGeo::GeologicalData::Attributes_t attr =
-						GPlatesGeo::GeologicalData::
-								NO_ATTRIBUTES;
-				// TODO: insert properly when StringValue is
-				//	actually useful
-				GPlatesGeo::GridElement *elt =
-					new GPlatesGeo::GridElement (attr);
-				gdata->Add (elt, i, j);
 			}
 		}
+		z_var->set_cur (i * num_y);
+		if (z_var->get (z, num_y) == FALSE) {
+			std::cerr << "ARGH!\n";
+			break;
+		}
+		for (index_t j = 0; j < num_y; ++j, ++cnt) {
+			if (isnan (z[j]))
+				continue;
+
+			GPlatesGeo::GeologicalData::Attributes_t attr =
+				GPlatesGeo::GeologicalData::NO_ATTRIBUTES;
+			// TODO: insert properly when StringValue is
+			//	actually useful (value is in z[j])
+			GPlatesGeo::GridElement *elt =
+					new GPlatesGeo::GridElement (attr);
+			gdata->Add (elt, i, j);
+		}
 	}
-	delete z;
+	delete[] z;
+
+	if (cancelled) {
+		delete gdata;
+		return 0;
+	}
 
 	return gdata;
 }
