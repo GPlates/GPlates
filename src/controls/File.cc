@@ -91,11 +91,12 @@ ConvertPlatesParserLatLonToMathsLatLon(const PlatesParser::LatLonPoint& point)
 	 * Note that GPlates considers a valid longitude to be a value in
 	 * the half-open range (-180.0, 180.0].  Note that this appears
 	 * to be different to the range used by PLATES, which seems to be 
-	 * [-180.0, 180.0].
+	 * [-360.0, 360.0].
 	 */
 	GPlatesMaths::real_t lat(point._lat);
 	GPlatesMaths::real_t lon(point._lon);
-	if (lon == -180.0) lon = 180.0;
+	if (lon <= -180.0) lon += 360.0;
+	else if (lon > 180.0) lon -= 360.0;
 
 	return GPlatesMaths::LatLonPoint::CreateLatLonPoint(lat, lon);
 }
