@@ -34,30 +34,36 @@
 
 namespace GPlatesMaths
 {
+	using GPlatesGlobal::index_t;
+
 	/** 
 	 * Represents a grid of points on the surface of a sphere. 
+	 *
+	 * Similarly to the classes 'PointOnSphere' and 'PolyLineOnSphere',
+	 * this class deals only with geographical positions, not geo-data;
+	 * in contrast to its aforementioned siblings, this class does not
+	 * actually <em>store</em> geographical data: rather, it acts as a
+	 * template, storing the information which allows it to calculate
+	 * where a particular grid element will be located.
 	 */
 	class GridOnSphere
 	{
 		public:
-			using GPlatesGlobal::index_t;
-
-			GridOnSphere(const GreatCircle &gc,
-			             const SmallCircle &sc,
-			             real_t delta_along_lat,
-			             real_t delta_along_lon);
+			GridOnSphere(const PointOnSphere &origin,
+			             const PointOnSphere &next_along_lat,
+			             const PointOnSphere &next_along_lon);
 
 			PointOnSphere
 			resolve(index_t x, index_t y) const;
 
 		private:
-			GreatCircle _line_of_lon;
 			SmallCircle _line_of_lat;
+			GreatCircle _line_of_lon;
 
 			PointOnSphere _origin;
 
-			real_t _delta_on_lat;
-			real_t _delta_on_lon;
+			real_t _delta_along_lat;
+			real_t _delta_along_lon;
 	};
 }
 
