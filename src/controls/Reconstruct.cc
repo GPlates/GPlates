@@ -72,12 +72,12 @@ ListContainsElem(const std::list< T > &l, const T &e) {
 
 
 /**
- * Check whether the plate described by @a plate_id can be rotated to time @t.
+ * Check whether the plate described by @a plate_id can be rotated to time @a t.
  *
  * If a plate can be rotated, the function will return 'SUCCESSFUL'.
  * Otherwise, it will return 'CANNOT_BE_ROTATED'.
  *
- * Additionally, when it is verified that the plate can be rotated to time @t,
+ * Additionally, when it is verified that the plate can be rotated to time @a t,
  * the finite rotation to perform this rotation is calculated and stored in
  * the map @a rot_cache.
  * 
@@ -205,7 +205,7 @@ CheckRotation(rid_t plate_id, real_t t,
  * Given @a plates_to_draw (the collection of all plates to attempt to draw),
  * populate @a rot_cache (the collection of all plates which can be drawn)
  * with the finite rotations which will rotate the plates to their positions
- * at time @t.
+ * at time @a t.
  *
  * This function is a non-recursive "wrapper" around the recursive function
  * @a CheckRotation.
