@@ -165,7 +165,30 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 
 	std::istringstream iss(line);
 
+	/*
+	 * XXX Bad, bad, bad!  These values should be checked as
+	 * they're read in, just as Jimmy had done the first time.
+	 * Alas, my crapoid hack requires that I get all the
+	 * values up front, so as to 'early-out' when I find a 
+	 * terminating point.
+	 */	 
 	lat = attemptToReadFloat(lb, iss, "latitude of a point");
+	lon = attemptToReadFloat(lb, iss, "longitude of a point");
+	plotter_code = attemptToReadPlotterCode(lb, iss);
+
+	/*
+	 * Test for terminating point.
+	 * According to the PLATES data file spec, this has the 
+	 * uninformative magical values:
+	 *  lat = 99.0, lon = 99.0, plot code = 3 ('skip to')
+	 */
+	if ((lat == 99.0) && (lon == 99.0) 
+		&& (plotter_code == PlotterCodes::PEN_UP)) {
+
+		return std::make_pair(LatLonPoint(lat, lon), 
+			  static_cast< int >(PlotterCodes::PEN_TERMINATING_POINT));
+	}
+
 	if ( ! LatLonPoint::isValidLat(lat)) {
 
 		// not a valid latitude
@@ -176,7 +199,6 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 		throw InvalidDataException(oss.str().c_str());
 	}
 
-	lon = attemptToReadFloat(lb, iss, "longitude of a point");
 	if ( ! LatLonPoint::isValidLon(lon)) {
 
 		// not a valid longitude
@@ -187,7 +209,6 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 		throw InvalidDataException(oss.str().c_str());
 	}
 
-	plotter_code = attemptToReadPlotterCode(lb, iss);
 	if ((expected_plotter_code != PlotterCodes::PEN_EITHER)
 		&& (plotter_code != expected_plotter_code)) {
 
@@ -352,7 +373,7 @@ PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
 
 	// Ignore the 7th item on the line: the colour code number
 	attemptToReadInt(lb, iss, "colour code number");
-
+#if 0
 	// Get the 8th item on the line: the number of points in the polyline
 	int number_of_points = attemptToReadInt(lb, iss, "number of points");
 
@@ -372,4 +393,5 @@ PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
 
 	// Since it can never be < zero, let's return it as a size_t
 	num_points = static_cast< size_t >(number_of_points);
+#endif
 }

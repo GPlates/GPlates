@@ -85,7 +85,7 @@ ReadPolyLine(LineBuffer &lb, PlatesDataMap &plates_data) {
 	 * The rest of this polyline will consist of the actual points.
 	 */
 	PolyLine polyline(header);
-	ReadPolyLinePoints(lb, polyline._points, header._num_points);
+	ReadPolyLinePoints(lb, polyline._points);
 
 	/*
 	 * Having read the whole polyline, we now insert it into its
@@ -199,8 +199,7 @@ ReadSecondLineOfPolyLineHeader(LineBuffer &lb, std::string &str) {
 
 
 void
-ReadPolyLinePoints(LineBuffer &lb, std::list< BoundaryLatLonPoint > &points,
-	size_t num_points_to_expect) {
+ReadPolyLinePoints(LineBuffer &lb, std::list< BoundaryLatLonPoint > &points) {
     
 	/*
 	 * The number of points to expect was specified in the polyline header.
@@ -212,25 +211,28 @@ ReadPolyLinePoints(LineBuffer &lb, std::list< BoundaryLatLonPoint > &points,
 	points.push_back(first_point);
 
 	/*
-	 * We've already read the first point, and we don't want to read
-	 * the "terminating point" inside this loop.
+	 * We've already read the first point.  This loop reads until
+	 * a "terminating point" is found.
 	 */
-	for (size_t n = 1; n < num_points_to_expect; n++) {
+	for ( ; ; ) {
 
 		std::string line = ReadPolyLinePoint(lb);
 		BoundaryLatLonPoint point =
 		 LatLonPoint::ParseBoundaryLine(lb, line,
 		  PlotterCodes::PEN_EITHER);
+		
+		/*
+		 * Test for terminating point.
+		 * According to the PLATES data file spec, this has the 
+		 * uninformative magical values:
+		 *  lat = 99.0, lon = 99.0, plot code = 3 ('skip to')
+	 	 * No "point" object will be created.
+		 */
+		if (point.second == PlotterCodes::PEN_TERMINATING_POINT)
+			break;
+
 		points.push_back(point);
 	}
-
-	/*
-	 * Now, finally, read the "terminating point".
-	 * This is not really a "point", since its lat and lon are both 99.0.
-	 * No "point" object will be created.
-	 */
-	std::string term_line = ReadPolyLinePoint(lb);
-	LatLonPoint::ParseTermBoundaryLine(lb, term_line, PlotterCodes::PEN_UP);
 }
 
 

@@ -58,7 +58,10 @@ namespace GPlatesFileIO
 		 */
 		namespace PlotterCodes {
 
-			enum { PEN_EITHER, PEN_DOWN = 2, PEN_UP = 3 };
+			enum { 
+				PEN_EITHER, PEN_TERMINATING_POINT, 
+				PEN_DOWN = 2, PEN_UP = 3
+			};
 		}
 
 
