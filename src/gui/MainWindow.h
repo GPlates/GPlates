@@ -44,8 +44,6 @@ namespace GPlatesGui
 			           const wxSize& size = wxDefaultSize,
 			           const wxPoint& pos = wxDefaultPosition);
 
-			void OnExit(wxCommandEvent&);
-
 			// Mouse events
 			void OnMouseMove(wxMouseEvent&);
 
@@ -59,6 +57,8 @@ namespace GPlatesGui
 			void OnImport(wxCommandEvent&);
 			void OnExport(wxCommandEvent&);
 			void OnSaveAllData(wxCommandEvent&);
+			void OnExit(wxCommandEvent&);
+
 
 			// View events
 			void OnViewMetadata(wxCommandEvent&);

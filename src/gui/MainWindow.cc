@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <cmath>  /* for fabsf() */
 #include <wx/wx.h>
+
 #include "AboutDialog.h"
 #include "AnimationTimesDialog.h"
 #include "MainWindow.h"
@@ -41,9 +42,6 @@
 #include "controls/Reconstruct.h"
 #include "global/types.h"
 #include "maths/OperationsOnSphere.h"
-
-
-using namespace GPlatesGui;
 
 
 /**
@@ -75,6 +73,7 @@ namespace {
 	};
 }
 
+
 const int
 GPlatesGui::MainWindow::STATUSBAR_FIELDS[] = {
 
@@ -83,8 +82,9 @@ GPlatesGui::MainWindow::STATUSBAR_FIELDS[] = {
 };
 
 
-MainWindow::MainWindow(wxFrame* parent, const wxString& title,
+GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
  const wxSize& size, const wxPoint& pos) :
+
  wxFrame(parent, -1 /* XXX: DEFAULT_WINDOWID */, title, pos, size),
  _last_start_time(0.0),
  _last_end_time(0.0),
@@ -96,6 +96,7 @@ MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 
 	_status_bar = CreateStatusBar(num_statusbar_fields);
 	if (!_status_bar) {
+
 		std::cerr << "Failed to create status bar." << std::endl;
 		exit(1);
 	}
@@ -115,8 +116,9 @@ MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	CentreOnScreen();
 }
 
+
 void
-MainWindow::OnMouseMove(wxMouseEvent& evt)
+GPlatesGui::MainWindow::OnMouseMove(wxMouseEvent& evt)
 {
 	using namespace GPlatesMaths;
 
@@ -126,29 +128,43 @@ MainWindow::OnMouseMove(wxMouseEvent& evt)
 	std::ostringstream oss;
 	if (pos == NULL)
 	{
-		oss << "Current Earth coordinate of mouse: (off globe)";
+		oss << "(off globe)";
 	}
 	else
 	{
 		LatLonPoint point = 
 		 OperationsOnSphere::convertPointOnSphereToLatLonPoint(*pos);
-		oss << "Current Earth coordinate of mouse: (" 
-			<< point.latitude() << ", " << point.longitude() << ")";
+		oss << "(" << point.latitude() << ", "
+		 << point.longitude() << ")";
 		delete pos;
 	}
 
 	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent));
 }
 
+
+#if 0  // Disabled for now -- use 'wxWindow::PushEventHandler' instead
 void
-MainWindow::OnExit(wxCommandEvent&)
+GPlatesGui::MainWindow::OnKeyPress(wxKeyEvent& evt)
 {
-	Destroy();
-	GPlatesControls::File::Quit(0);
+	int key_code = (int)evt.KeyCode();
+
+	// For now, we're only interested in the Escape key.
+	if (key_code == WXK_ESCAPE) {
+
+		std::cerr << "Pressed ESCAPE!!!!1" << std::endl;
+
+	} else {
+
+		// Not interested in handling this key event -- pass it on.
+		evt.Skip();
+	}
 }
+#endif
+
 
 void
-MainWindow::OnOpenData(wxCommandEvent&)
+GPlatesGui::MainWindow::OnOpenData(wxCommandEvent&)
 {
 	wxFileDialog filedlg(this,
 	 _("Select a data file..."),
@@ -158,6 +174,7 @@ MainWindow::OnOpenData(wxCommandEvent&)
 	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
 	if (filedlg.ShowModal() == wxID_OK) {
+
 		std::string selected_file;
 		_last_load_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath().mb_str();
@@ -165,8 +182,9 @@ MainWindow::OnOpenData(wxCommandEvent&)
 	}
 }
 
+
 void
-MainWindow::OnLoadRotation(wxCommandEvent&)
+GPlatesGui::MainWindow::OnLoadRotation(wxCommandEvent&)
 {
 	wxFileDialog filedlg(this, 
 	 _("Select a rotation file..."),
@@ -176,6 +194,7 @@ MainWindow::OnLoadRotation(wxCommandEvent&)
 	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
 	if (filedlg.ShowModal() == wxID_OK) {
+
 		std::string selected_file;
 		_last_load_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath().mb_str();
@@ -183,7 +202,9 @@ MainWindow::OnLoadRotation(wxCommandEvent&)
 	}
 }
 
-void MainWindow::OnImport(wxCommandEvent&)
+
+void
+GPlatesGui::MainWindow::OnImport(wxCommandEvent&)
 {
 	wxFileDialog filedlg (this,
 	 _("Select a data file to import..."),
@@ -194,6 +215,7 @@ void MainWindow::OnImport(wxCommandEvent&)
 	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
 	if (filedlg.ShowModal () == wxID_OK) {
+
 		std::string selected_file;
 		_last_load_dir = filedlg.GetDirectory ();
 		selected_file = filedlg.GetPath ().mb_str ();
@@ -201,8 +223,9 @@ void MainWindow::OnImport(wxCommandEvent&)
 	}
 }
 
+
 void
-MainWindow::OnExport(wxCommandEvent&)
+GPlatesGui::MainWindow::OnExport(wxCommandEvent&)
 {
 #if 0
 	std::cout << GPlatesControls::File::Export()
@@ -210,8 +233,9 @@ MainWindow::OnExport(wxCommandEvent&)
 #endif
 }
 
+
 void
-MainWindow::OnSaveAllData(wxCommandEvent&)
+GPlatesGui::MainWindow::OnSaveAllData(wxCommandEvent&)
 {
 	wxFileDialog filedlg(this, 
 	 _("Designate a file name..."),
@@ -221,6 +245,7 @@ MainWindow::OnSaveAllData(wxCommandEvent&)
 	 wxSAVE | wxOVERWRITE_PROMPT);  // A 'Save' dialog box
 
 	if (filedlg.ShowModal() == wxID_OK) {
+
 		std::string selected_file;
 		_last_save_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath().mb_str();
@@ -229,8 +254,17 @@ MainWindow::OnSaveAllData(wxCommandEvent&)
 
 }
 
+
 void
-MainWindow::OnViewMetadata(wxCommandEvent&)
+GPlatesGui::MainWindow::OnExit(wxCommandEvent&)
+{
+	Destroy();
+	GPlatesControls::File::Quit(0);
+}
+
+
+void
+GPlatesGui::MainWindow::OnViewMetadata(wxCommandEvent&)
 {
 #if 0
 	std::cout << GPlatesControls::View::DocumentMetadata()
@@ -238,9 +272,10 @@ MainWindow::OnViewMetadata(wxCommandEvent&)
 #endif
 }
 
+
 #if 0  // globe transparency currently disabled
 void
-MainWindow::OnViewGlobe(wxCommandEvent &event)
+GPlatesGui::MainWindow::OnViewGlobe(wxCommandEvent &event)
 {
 	Globe *gl = _canvas->GetGlobe();
 	if (event.GetId() == MENU_VIEW_GLOBE_SOLID)
@@ -252,8 +287,9 @@ MainWindow::OnViewGlobe(wxCommandEvent &event)
 }
 #endif
 
+
 void
-MainWindow::OnReconstructTime(wxCommandEvent&)
+GPlatesGui::MainWindow::OnReconstructTime(wxCommandEvent&)
 {	
 	ReconstructTimeDialog dialog(this);
 
@@ -261,14 +297,16 @@ MainWindow::OnReconstructTime(wxCommandEvent&)
 		GPlatesControls::Reconstruct::Time(dialog.GetTime());
 }
 
+
 void
-MainWindow::OnReconstructPresent(wxCommandEvent&)
+GPlatesGui::MainWindow::OnReconstructPresent(wxCommandEvent&)
 {
 	GPlatesControls::Reconstruct::Present();
 }
 
+
 void
-MainWindow::OnReconstructAnimation(wxCommandEvent&)
+GPlatesGui::MainWindow::OnReconstructAnimation(wxCommandEvent&)
 {
 	AnimationTimesDialog dialog(this, _last_start_time, _last_end_time,
 	                             _last_time_delta, _last_finish_on_end);
@@ -285,13 +323,15 @@ MainWindow::OnReconstructAnimation(wxCommandEvent&)
 	}
 }
 
+
 void
-MainWindow::OnHelpAbout (wxCommandEvent&)
+GPlatesGui::MainWindow::OnHelpAbout (wxCommandEvent&)
 {	
 	AboutDialog dialog (this);
 
 	dialog.ShowModal ();
 }
+
 
 void
 GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t) {
@@ -312,8 +352,9 @@ GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t) {
 	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent), 1);
 }
 
+
 void
-MainWindow::CreateMenuBar()
+GPlatesGui::MainWindow::CreateMenuBar()
 {
 	wxMenu* filemenu = new wxMenu;
 	filemenu->Append(MENU_FILE_OPENDATA, 
@@ -378,26 +419,42 @@ MainWindow::CreateMenuBar()
 	SetMenuBar(menubar);
 }
 
-BEGIN_EVENT_TABLE(MainWindow, wxFrame)
-	EVT_CLOSE(MainWindow::OnExit)
-	EVT_MOTION(MainWindow::OnMouseMove)
 
-	EVT_MENU(MENU_FILE_OPENDATA, MainWindow::OnOpenData)
-	EVT_MENU(MENU_FILE_LOADROTATION, MainWindow::OnLoadRotation)
-	EVT_MENU(MENU_FILE_IMPORT, MainWindow::OnImport)
-	EVT_MENU(MENU_FILE_EXPORT, MainWindow::OnExport)
-	EVT_MENU(MENU_FILE_SAVEALLDATA, MainWindow::OnSaveAllData)
-	EVT_MENU(MENU_FILE_EXIT, MainWindow::OnExit)
+BEGIN_EVENT_TABLE(GPlatesGui::MainWindow, wxFrame)
 
-	EVT_MENU(MENU_VIEW_METADATA, MainWindow::OnViewMetadata)
+	EVT_CLOSE(	GPlatesGui::MainWindow::OnExit)
+	EVT_MOTION(	GPlatesGui::MainWindow::OnMouseMove)
+
+	EVT_MENU(MENU_FILE_OPENDATA,
+			GPlatesGui::MainWindow::OnOpenData)
+	EVT_MENU(MENU_FILE_LOADROTATION,
+			GPlatesGui::MainWindow::OnLoadRotation)
+	EVT_MENU(MENU_FILE_IMPORT,
+			GPlatesGui::MainWindow::OnImport)
+	EVT_MENU(MENU_FILE_EXPORT,
+			GPlatesGui::MainWindow::OnExport)
+	EVT_MENU(MENU_FILE_SAVEALLDATA,
+			GPlatesGui::MainWindow::OnSaveAllData)
+	EVT_MENU(MENU_FILE_EXIT,
+			GPlatesGui::MainWindow::OnExit)
+
+	EVT_MENU(MENU_VIEW_METADATA,
+			GPlatesGui::MainWindow::OnViewMetadata)
 #if 0  // globe transparency currently disabled
-	EVT_MENU(MENU_VIEW_GLOBE_SOLID, MainWindow::OnViewGlobe)
-	EVT_MENU(MENU_VIEW_GLOBE_TRANSPARENT, MainWindow::OnViewGlobe)
+	EVT_MENU(MENU_VIEW_GLOBE_SOLID,
+			GPlatesGui::MainWindow::OnViewGlobe)
+	EVT_MENU(MENU_VIEW_GLOBE_TRANSPARENT,
+			GPlatesGui::MainWindow::OnViewGlobe)
 #endif
 		
-	EVT_MENU(MENU_RECONSTRUCT_TIME, MainWindow::OnReconstructTime)
-	EVT_MENU(MENU_RECONSTRUCT_PRESENT, MainWindow::OnReconstructPresent)
-	EVT_MENU(MENU_RECONSTRUCT_ANIMATION, MainWindow::OnReconstructAnimation)
+	EVT_MENU(MENU_RECONSTRUCT_TIME,
+			GPlatesGui::MainWindow::OnReconstructTime)
+	EVT_MENU(MENU_RECONSTRUCT_PRESENT,
+			GPlatesGui::MainWindow::OnReconstructPresent)
+	EVT_MENU(MENU_RECONSTRUCT_ANIMATION,
+			GPlatesGui::MainWindow::OnReconstructAnimation)
 
-	EVT_MENU(MENU_HELP_ABOUT, MainWindow::OnHelpAbout)
+	EVT_MENU(MENU_HELP_ABOUT,
+			GPlatesGui::MainWindow::OnHelpAbout)
+
 END_EVENT_TABLE()
