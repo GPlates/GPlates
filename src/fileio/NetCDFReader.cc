@@ -1,5 +1,7 @@
 /* $Id$ */
 
+//#define DEBUG_INSERTIONS
+
 /**
  * @file 
  * Contains the NetCDF reader.
@@ -24,6 +26,7 @@
  */
 
 
+#include <iomanip>
 #include <netcdfcpp.h>
 #include <sstream>
 #include <wx/progdlg.h>
@@ -48,6 +51,7 @@ static GPlatesMaths::PointOnSphere pos (double lat, double lon)
 					(GPlatesMaths::LatLonPoint (lat, lon));
 }
 
+#ifdef DEBUG_INSERTIONS
 static void pos (GPlatesMaths::PointOnSphere pos, double &lat, double &lon)
 {
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::OperationsOnSphere::
@@ -55,6 +59,7 @@ static void pos (GPlatesMaths::PointOnSphere pos, double &lat, double &lon)
 	lat = llp.latitude ().dval ();
 	lon = llp.longitude ().dval ();
 }
+#endif
 
 GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 							wxProgressDialog *dlg)
@@ -233,7 +238,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 
 	// FIXME: I'm taking a guess, and hoping that this all happens in
 	//	y-major (i.e. along the x-direction first) order...
-	float *z = new float[num_y];
+	float *z = new float[num_x];
 	index_t cnt = 0;
 	bool cancelled = false;
 	if (dlg)
@@ -242,12 +247,16 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 		if (dlg) {
 			double perc = 100 * double (j) / double (num_y);
 			int val = int (floor (perc));
-			if (dlg->Update (val, "Loading grid...") == FALSE) {
+			std::ostringstream oss;
+			oss << "Loading grid (" << std::setprecision (0)
+				<< std::fixed << perc << "%)...";
+			if (dlg->Update (val, oss.str ().c_str ()) == FALSE) {
 				cancelled = true;
 				break;
 			}
 		}
-		z_var->set_cur (j * num_x);
+		if (z_var->set_cur (j * num_x) == FALSE)
+			std::cerr << "ARGH!!! " << __LINE__ << "\n";
 		z_var->get (z, num_x);		// assumes it is ncFloat data
 		for (index_t i = 0; i < num_x; ++i, ++cnt) {
 			if (isnan (z[i]))
@@ -262,13 +271,17 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 					new GPlatesGeo::GridElement (attr);
 			gdata->Add (elt, real_i, real_j);
 
-			// DEBUG
+#ifdef DEBUG_INSERTIONS
 			double lat, lon;
 			pos (gdata->resolve (real_i, real_j), lat, lon);
 			std::cerr << "Adding '" << z[i] << "' to (lat="
 				<< lat << ", long=" << lon << ").\n";
+#endif
 		}
 	}
+	if (dlg)
+		dlg->Update (99, "Done.");
+
 	delete[] z;
 
 	if (cancelled) {
