@@ -26,6 +26,7 @@
 #ifndef _GPLATES_MATHS_UNITVECTOR3D_H_
 #define _GPLATES_MATHS_UNITVECTOR3D_H_
 
+#include <iostream>
 #include "types.h"  /* real_t */
 #include "DirVector3D.h"
 #include "ViolatedUnitVectorInvariantException.h"
@@ -134,6 +135,14 @@ namespace GPlatesMaths
 		return (v1.x() * v2.x()
 		      + v1.y() * v2.y()
 		      + v1.z() * v2.z());
+	}
+
+
+	std::ostream &
+	operator<<(std::ostream &os, UnitVector3D v) {
+
+		os << "<" << v.x() << ", " << v.y() << ", " << v.z() << ">";
+		return os;
 	}
 
 
