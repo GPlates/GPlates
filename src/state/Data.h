@@ -56,6 +56,9 @@ namespace GPlatesState
 			typedef std::map< GPlatesGlobal::rid_t,
 			 GPlatesMaths::RotationHistory > RotationMap_type;
 
+			typedef std::map< std::string, std::string >
+			 DocumentMetaData_type;
+
 			/**
 			 * Get a pointer to the root of the data group. 
 			 */
@@ -73,6 +76,12 @@ namespace GPlatesState
 			 */
 			static RotationMap_type *
 			GetRotationHistories() { return _rot_hists; }
+
+			/**
+			 * Get a pointer to the map of meta data.
+			 */
+			static DocumentMetaData_type *
+			GetDocumentMetaData() { return _meta_data; }
 
 			/**
 			 * Set the pointer to the root of the DataGroup to the
@@ -107,6 +116,18 @@ namespace GPlatesState
 				_rot_hists = rot_hists;
 			}
 
+			/**
+			 * Set the pointer to the map of the document's meta
+			 * data to the map pointed to by @a meta_data.
+			 */
+			static void
+			SetDocumentMetaData(DocumentMetaData_type *meta_data) {
+
+				if (_meta_data)
+					delete _meta_data;
+				_meta_data = meta_data;
+			}
+
 		private:
 			/**
 			 * The main data hierarchy.
@@ -122,6 +143,12 @@ namespace GPlatesState
 			 * The map of rotation histories for each plate.
 			 */
 			static RotationMap_type *_rot_hists;
+
+			/**
+			 * The map of meta data associated with the current
+			 * data set.
+			 */ 
+			static DocumentMetaData_type *_meta_data;
 
 			/**
 			 * Prohibit construction of this class.

@@ -33,3 +33,6 @@ GPlatesState::Data::_drawable = NULL;
 
 GPlatesState::Data::RotationMap_type *
 GPlatesState::Data::_rot_hists = NULL;
+
+GPlatesState::Data::DocumentMetaData_type *
+GPlatesState::Data::_meta_data = NULL;
