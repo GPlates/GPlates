@@ -23,37 +23,25 @@
  *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
-#include <sstream>
-#include <vector>
 #include "GreatCircle.h"
-#include "IndeterminateResultException.h"
 #include "GridOnSphere.h"
 #include "OperationsOnSphere.h"
 #include "PointOnSphere.h"
 #include "SmallCircle.h"
 #include "UnitVector3D.h"
+#include "ViolatedClassInvariantException.h"
 
 
 GPlatesMaths::GridOnSphere::GridOnSphere (const PointOnSphere &origin,
-				const PointOnSphere &next_along_lon,
-				const PointOnSphere &next_along_lat)
-	: _line_of_lon (origin, next_along_lon),
-	  _line_of_lat (GPlatesMaths::NorthPole.unitvector (), next_along_lat),
+				const PointOnSphere &next_along_lat,
+				const PointOnSphere &next_along_lon)
+	: _line_of_lat (GPlatesMaths::NorthPole.unitvector (), next_along_lat),
+	  _line_of_lon (origin, next_along_lon),
 	  _origin (origin)
 {
-	// TODO: finish me
-	//	- need to check that GC and SC are perpendicular,
-	//	  that the origin lies on the SC, and ... ?
-#if 0
-	UnitVector3D point = pt.unitvector ();
-	real_t dp = dot (normal(), point);
+	AssertInvariantHolds ();
 
-	if (abs (dp) > 1.0)
-		throw IndeterminateResultException (
-			"Tried to create small circle with imaginary radius.");
-
-	_theta = acos (dp);
-#endif
+	// TODO: calculate _delta_along_lat, _delta_along_lon
 }
 
 
@@ -65,5 +53,17 @@ GPlatesMaths::GridOnSphere::GridOnSphere (const PointOnSphere &origin,
 
 void GPlatesMaths::GridOnSphere::AssertInvariantHolds () const
 {
-	// TODO
+	// Check that the origin lies on the SC
+	LatLonPoint org = GPlatesMaths::OperationsOnSphere::convertPointOnSphereToLatLonPoint (_origin);
+	if (degreesToRadians (org.latitude () + 90.0) != _line_of_lat.theta ()) {
+		throw ViolatedClassInvariantException (
+			"Origin and next_along_lat have different latitudes.");
+	}
+
+	// Check that SC and GC are perpendicular
+	if (!perpendicular (_line_of_lat.axisvector (),
+			    _line_of_lon.axisvector ())) {
+		throw ViolatedClassInvariantException (
+			"SmallCircle and GreatCircle are not perpendicular.");
+	}
 }

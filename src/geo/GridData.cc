@@ -38,10 +38,10 @@ using namespace GPlatesGeo;
 GridData::GridData(const DataType_t& dt, const RotationGroupId_t& id,
 	const TimeWindow& tw, const Attributes_t& attrs, 
 	const GPlatesMaths::PointOnSphere &origin,
-	const GPlatesMaths::PointOnSphere &gc_step,
-	const GPlatesMaths::PointOnSphere &sc_step)
+	const GPlatesMaths::PointOnSphere &sc_step,
+	const GPlatesMaths::PointOnSphere &gc_step)
 	: DrawableData (dt, id, tw, attrs),
-	  _lattice (origin, gc_step, sc_step)
+	  _lattice (origin, sc_step, gc_step)
 {
 	grid = new Grid;
 	grid->offset = 0;

@@ -48,20 +48,20 @@ namespace GPlatesMaths
 	 * where a particular grid element will be located. The data is managed
 	 * by the \ref GPlatesGeo::GridData class.
 	 *
-	 * We define a grid by specifying a \ref GPlatesMaths::GreatCircle (GC)
-	 * and a \ref GPlatesMaths::SmallCircle (SC). The GC is to be
-	 * coincident with one longitudinal border of the grid, whilst the SC
-	 * is to be coincident with the latitudinal border of the grid that is
-	 * closer to the equator. In the case of grids that straddle the
-	 * equator either latitudinal border can be chosen.
+	 * We define a grid by specifying a \ref GPlatesMaths::SmallCircle (SC)
+	 * and a \ref GPlatesMaths::GreatCircle (GC). The SC is to be
+	 * coincident with the latitudinal border of the grid that is closer to
+	 * to the equator, whilst the GC is to be coincident with one
+	 * longitudinal border of the grid. In the case of grids that straddle
+	 * the equator either latitudinal border can be chosen for the SC.
 	 *
-	 * Instead of actually passing a GC and SC to the GridOnSphere
+	 * Instead of actually passing a SC and GC to the GridOnSphere
 	 * constructor, we pass three \ref GPlatesMaths::PointOnSphere objects
 	 * that define the origin of the grid, the first grid point along the
-	 * GC, and the first grid point along the SC.
+	 * SC, and the first grid point along the GC.
 	 *
 	 * The <strong>origin</strong> of the grid is defined to be the
-	 * anterior intersection of the GC and the SC.
+	 * anterior intersection of the SC and the GC.
 	 *
 	 * @image html fig_grid.png
 	 * @image latex fig_grid.eps
@@ -70,8 +70,8 @@ namespace GPlatesMaths
 	{
 		public:
 			GridOnSphere(const PointOnSphere &origin,
-			             const PointOnSphere &next_along_lon,
-			             const PointOnSphere &next_along_lat);
+			             const PointOnSphere &next_along_lat,
+			             const PointOnSphere &next_along_lon);
 
 			PointOnSphere resolve(index_t x, index_t y) const;
 
@@ -79,13 +79,13 @@ namespace GPlatesMaths
 			void AssertInvariantHolds () const;
 
 		private:
-			GreatCircle _line_of_lon;
 			SmallCircle _line_of_lat;
+			GreatCircle _line_of_lon;
 
 			PointOnSphere _origin;
 
-			real_t _delta_along_lon;
 			real_t _delta_along_lat;
+			real_t _delta_along_lon;
 	};
 }
 

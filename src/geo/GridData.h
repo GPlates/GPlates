@@ -58,8 +58,8 @@ namespace GPlatesGeo
 				  const TimeWindow&,
 				  const Attributes_t&,
 				  const GPlatesMaths::PointOnSphere &origin,
-				  const GPlatesMaths::PointOnSphere &gc_step,
-				  const GPlatesMaths::PointOnSphere &sc_step);
+				  const GPlatesMaths::PointOnSphere &sc_step,
+				  const GPlatesMaths::PointOnSphere &gc_step);
 			~GridData ();
 
 			/**
