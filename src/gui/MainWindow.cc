@@ -51,7 +51,7 @@ using namespace GPlatesGui;
 namespace {
 
 	enum {
-		MENU_FILE_OPENDATA,
+		MENU_FILE_OPENDATA = wxID_HIGHEST + 1,  // To avoid ID clashes
 		MENU_FILE_LOADROTATION,
 		MENU_FILE_IMPORT,
 		MENU_FILE_EXPORT,
