@@ -42,7 +42,7 @@ namespace GPlatesMaths
 			 * Create a basis from the specified vectors.
 			 */
 			explicit 
-			Basis(DirVector3D &vec1, DirVector3D &vec2)
+			Basis(const DirVector3D &vec1, const DirVector3D &vec2)
 				: _v1(vec1), _v2(vec2)
 			{
 				AssertInvariantHolds();
