@@ -26,8 +26,9 @@
 #ifndef _GPLATES_MATHS_FINITEROTATION_H_
 #define _GPLATES_MATHS_FINITEROTATION_H_
 
-#include "PointOnSphere.h"
+#include "UnitVector3D.h"
 #include "UnitQuaternion3D.h"
+#include "PointOnSphere.h"
 #include "types.h"  /* real_t */
 
 
@@ -95,7 +96,7 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Apply this rotation to a point on the sphere.
+			 * Apply this rotation to a unit vector.
 			 *
 			 * Note that this function is a member function for
 			 * two (2) reasons:
@@ -104,14 +105,14 @@ namespace GPlatesMaths
 			 *       '_d' and '_e'.
 			 *
 			 *  (ii) to enforce the concept that the operation of
-			 *        a finite rotation is APPLIED TO a point --
+			 *        a finite rotation is APPLIED TO a vector --
 			 *        it is very much a PREmultiplication, in the
 			 *        style of traditional matrix operations.
 			 *
 			 * This operation is not supposed to be symmetrical.
 			 */
-			PointOnSphere
-			operator*(const PointOnSphere &p) const;
+			UnitVector3D
+			operator*(const UnitVector3D &uv) const;
 
 		protected:
 			FiniteRotation(const UnitQuaternion3D &q,

@@ -62,16 +62,15 @@ FiniteRotation::CreateFiniteRotation(const UnitQuaternion3D &uq,
 }
 
 
-PointOnSphere
-FiniteRotation::operator*(const PointOnSphere &p) const {
+UnitVector3D
+FiniteRotation::operator*(const UnitVector3D &uv) const {
 
-	Vector3D pv(p.unitvector());
-	Vector3D pv_rot = _d * pv
-	                + (2.0 * dot(_quat.v(), pv)) * _quat.v()
-	                + cross(_e, pv);
+	Vector3D v(uv);
+	Vector3D v_rot = _d * v
+	               + (2.0 * dot(_quat.v(), v)) * _quat.v()
+	               + cross(_e, v);
 
-	UnitVector3D puv_rot(pv_rot.x(), pv_rot.y(), pv_rot.z());
-	return PointOnSphere(puv_rot);
+	UnitVector3D uv_rot(v_rot.x(), v_rot.y(), v_rot.z());
 }
 
 
