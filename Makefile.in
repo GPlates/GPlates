@@ -56,3 +56,5 @@ dist:	Makefile
 	tar zchf $(distdir).tar.gz $(distdir)
 	gunzip -c $(distdir).tar.gz | bzip2 -9 > $(distdir).tar.bz2
 	rm -rf $(distdir)
+
+.PHONY: all doc install uninstall clean dep dist

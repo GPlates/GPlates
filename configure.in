@@ -70,7 +70,7 @@ fi
 
 # Check for dot (from graphviz package) for doxygen.conf
 # WARNING: does not verify this is the _real_ dot program we want
-AC_PATH_PROG([HAVE_DOT], [dot], [YES], [NO])
+AC_CHECK_PROG([HAVE_DOT], [dot], [YES], [NO])
 
 
 EXTRA_CFLAGS=""
