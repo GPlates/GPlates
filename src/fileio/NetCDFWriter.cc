@@ -38,10 +38,9 @@
 #include "maths/PointOnSphere.h"
 
 using GPlatesGlobal::index_t;
-using GPlatesFileIO::FileFormatException;
 
 
-bool GPlatesFileIO::NetCDFReader::Write (const std::string &filename,
+bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 			GPlatesGeo::GridData *grid, wxProgressDialog *dlg)
 {
 	///////////////////////////////////////////////////////////
@@ -56,4 +55,5 @@ bool GPlatesFileIO::NetCDFReader::Write (const std::string &filename,
 	///////////////////////////////////////////////////////////
 
 	// TODO: Can't actually do this until GeologicalData is implemented
+	return false;
 }
