@@ -19,9 +19,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Authors:
+ * Primary Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *
+ * Corrections, Additions:
  *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
@@ -43,7 +45,6 @@
 
 using namespace GPlatesGlobal;
 using namespace GPlatesState;
-//using namespace GPlatesControls;
 using namespace GPlatesMaths;
 
 
@@ -52,9 +53,16 @@ typedef std::map< rid_t, FiniteRotation > RotationsByPlate;
 
 enum status { SUCCESSFUL, CANNOT_BE_ROTATED };
 
+/**
+ * FIXME: this should be placed somewhere "more official".
+ */
 static const rid_t RIDOfGlobe = 0;
 
 
+/**
+ * A convenient alias for the operation of searching through a list
+ * for a particular element.
+ */
 template< typename T >
 inline bool
 ListContainsElem(const std::list< T > &l, const T &e) {
@@ -63,12 +71,44 @@ ListContainsElem(const std::list< T > &l, const T &e) {
 }
 
 
-enum status
+/**
+ * Check whether the plate described by @a plate_id can be rotated to time @t.
+ *
+ * If a plate can be rotated, the function will return 'SUCCESSFUL'.
+ * Otherwise, it will return 'CANNOT_BE_ROTATED'.
+ *
+ * Additionally, when it is verified that the plate can be rotated to time @t,
+ * the finite rotation to perform this rotation is calculated and stored in
+ * the map @a rot_cache.
+ * 
+ * This function operates recursively.  This is due to the fact that a plate
+ * depends on all the plates in the rotation hierarchy between itself and the
+ * globe.  Thus, in checking a plate X, all plates between X and the globe
+ * will also be checked.
+ *
+ * The operation of this function is sped up by caching negative results in
+ * the list @a cannot_be_rotated.  The map @a rot_cache serves as a cache of
+ * positive results.  This caching ensures that it is not necessary to
+ * traverse the hierarchy all the way to the globe every single time.
+ */
+static enum status
 CheckRotation(rid_t plate_id, real_t t,
 	RotationsByPlate &rot_cache, std::list< rid_t > &cannot_be_rotated,
 	const Data::RotationMap_type &histories) {
 
-	// Firstly, check whether this plate can be rotated
+	/*
+	 * Firstly, check whether this plate can be rotated to time 't'.
+	 *
+	 * See if it can be found in the collection of rotation histories
+	 * for each plate (a map: plate id -> rotation history for that plate).
+	 * If there is no match for the given plate id, this plate has no
+	 * rotation history, and hence there is no way it can be rotated.
+	 *
+	 * If there IS a match, query the rotation history as to whether
+	 * it is defined at time 't'.  If not, there is no rotation sequence
+	 * defined at 't', and hence there is no way the plate can be
+	 * rotated to a position at 't'.
+	 */
 	Data::RotationMap_type::const_iterator i = histories.find(plate_id);
 	if (i == histories.end()) {
 
@@ -85,20 +125,22 @@ CheckRotation(rid_t plate_id, real_t t,
 
 	/*
 	 * Otherwise, we know that this plate has a rotation history defined
-	 * at time 't', which means there must exist a finite rotation for
-	 * time 't'.
+	 * at time 't', which means there must exist a finite rotation for 't'.
 	 *
 	 * Now we need to check upwards in the rotation hierarchy, to ensure
 	 * that those plates are also rotatable to time 't'.
 	 */
-	RotationHistory::const_iterator info = i->second.atTime(t);
-	rid_t fixed_plate_id = (*info).fixedPlate();
+	RotationHistory::const_iterator rot_seq = i->second.atTime(t);
+	rid_t fixed_plate_id = (*rot_seq).fixedPlate();
 
+	// Base case of recursion: if this plate is moving relative to globe.
 	if (fixed_plate_id == RIDOfGlobe) {
 
-		/* the fixed plate is the globe, which is always defined,
-		 * so the rotation of our plate is defined */
-		FiniteRotation rot = (*info).finiteRotationAtTime(t);
+		/*
+		 * The fixed plate is the globe, which is always defined,
+		 * so the rotation of our plate is defined.
+		 */
+		FiniteRotation rot = (*rot_seq).finiteRotationAtTime(t);
 		rot_cache.insert(std::make_pair(plate_id, rot));
 		return SUCCESSFUL;
 	}
@@ -110,16 +152,20 @@ CheckRotation(rid_t plate_id, real_t t,
 	RotationsByPlate::const_iterator j = rot_cache.find(fixed_plate_id);
 	if (j != rot_cache.end()) {
 
-		/* the fixed plate has already been dealt with, and is known
-		 * to be rotatable, so the rotation of our plate is defined */
-		FiniteRotation rot = (*info).finiteRotationAtTime(t);
+		/*
+		 * The fixed plate has already been dealt with, and is known
+		 * to be rotatable, so the rotation of our plate is defined.
+		 */
+		FiniteRotation rot = (*rot_seq).finiteRotationAtTime(t);
 		rot_cache.insert(std::make_pair(plate_id, j->second * rot));
 		return SUCCESSFUL;
 	}
 	if (ListContainsElem(cannot_be_rotated, fixed_plate_id)) {
 
-		/* the fixed plate (or some plate in the hierarchy above it)
-		 * is known not to be rotatable */
+		/*
+		 * The fixed plate (or some plate in the hierarchy above it)
+		 * is known not to be rotatable.
+		 */
 		cannot_be_rotated.push_back(plate_id);
 		return CANNOT_BE_ROTATED;
 	}
@@ -132,8 +178,10 @@ CheckRotation(rid_t plate_id, real_t t,
 	 cannot_be_rotated, histories);
 	if (query_status == CANNOT_BE_ROTATED) {
 
-		/* the fixed plate (or some plate in the hierarchy above it)
-		 * has been determined to be not rotatable */
+		/*
+		 * The fixed plate (or some plate in the hierarchy above it)
+		 * has been determined to be not rotatable.
+		 */
 		cannot_be_rotated.push_back(plate_id);
 		return CANNOT_BE_ROTATED;
 	}
@@ -144,13 +192,24 @@ CheckRotation(rid_t plate_id, real_t t,
 	 * so this search should not fail.
 	 */
 	RotationsByPlate::const_iterator k = rot_cache.find(fixed_plate_id);
+	// FIXME: check that (k != rot_cache.end()), and if so, throw an
+	// exception for an internal error.
 
-	FiniteRotation rot = (*info).finiteRotationAtTime(t);
+	FiniteRotation rot = (*rot_seq).finiteRotationAtTime(t);
 	rot_cache.insert(std::make_pair(plate_id, k->second * rot));
 	return SUCCESSFUL;
 }
 
 
+/**
+ * Given @a plates_to_draw (the collection of all plates to attempt to draw),
+ * populate @a rot_cache (the collection of all plates which can be drawn)
+ * with the finite rotations which will rotate the plates to their positions
+ * at time @t.
+ *
+ * This function is a non-recursive "wrapper" around the recursive function
+ * @a CheckRotation.
+ */
 static void
 PopulateRotatableData(const Data::DrawableMap_type *plates_to_draw,
 	RotationsByPlate &rot_cache, const real_t &t) {
@@ -168,12 +227,20 @@ PopulateRotatableData(const Data::DrawableMap_type *plates_to_draw,
 		// get the plate id
 		rid_t plate_id = i->first;
 
+		// Check whether this plate can be rotated to time 't'
 		CheckRotation(plate_id, t, rot_cache, cannot_be_rotated,
 		 *histories);
 	}
 }
 
 
+/**
+ * Warp the geological data to its position at time @a t.
+ *
+ * This function assumes it has been invoked by a function such as
+ * 'GPlatesControls::Reconstruct::Time', which will verify the 
+ * validity of the data returned by 'Data::GetDataGroup'.
+ */
 static void
 WarpToTime(const fpdata_t &t) {
 
@@ -184,6 +251,10 @@ WarpToTime(const fpdata_t &t) {
 	Data::DrawableMap_type *drawable_data = Data::GetDrawableData();
 	Layout::Clear();
 
+	/*
+	 * From the collection of drawable data, generate the collection of
+	 * rotatable data.
+	 */
 	RotationsByPlate rotatable_data;
 	PopulateRotatableData(drawable_data, rotatable_data, real_t(t));
 
@@ -192,6 +263,7 @@ WarpToTime(const fpdata_t &t) {
 	     i != drawable_data->end();
 	     i++) {
 
+		// the rotation id of this plate
 		rid_t plate_id = i->first;
 
 		RotationsByPlate::const_iterator k =
@@ -223,7 +295,13 @@ WarpToTime(const fpdata_t &t) {
 	GPlatesControls::GuiCalls::RepaintCanvas();
 }
 
-namespace GPlatesControls {
+
+/**
+ * Perform a reconstruction animation for the time @a time.
+ *
+ * This function corresponds directly to the GUI menu item of
+ * 'Reconstruct -> Jump to Time'.
+ */
 void
 GPlatesControls::Reconstruct::Time(const fpdata_t &time)
 {
@@ -255,8 +333,16 @@ GPlatesControls::Reconstruct::Time(const fpdata_t &time)
 		exit(1);
 	}
 }
-}
 
+
+/**
+ * Warp the geological data to its position in the present-day
+ * (ie, at time 0.0 Ma).
+ *
+ * This function assumes it has been invoked by a function such as
+ * 'GPlatesControls::Reconstruct::Present', which will verify the 
+ * validity of the data returned by 'Data::GetDataGroup'.
+ */
 static void
 WarpToPresent() {
 
@@ -293,6 +379,12 @@ WarpToPresent() {
 }
 
 
+/**
+ * Perform a reconstruction for the present.
+ *
+ * This function corresponds directly to the GUI menu item of
+ * 'Reconstruct -> Return to Present'.
+ */
 void
 GPlatesControls::Reconstruct::Present() {
 
@@ -311,6 +403,13 @@ GPlatesControls::Reconstruct::Present() {
 }
 
 
+/**
+ * Perform a reconstruction animation between the two times @a start_time
+ * and @a end_time.
+ *
+ * This function corresponds directly to the GUI menu item of
+ * 'Reconstruct -> Animation'.
+ */
 void
 GPlatesControls::Reconstruct::Animation(const fpdata_t &start_time,
  const fpdata_t &end_time, const fpdata_t& time_delta, bool finish_on_end) {
