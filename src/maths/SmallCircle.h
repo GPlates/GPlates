@@ -100,6 +100,9 @@ namespace GPlatesMaths
 			real_t
 			colatitude () const { return acos (_cos_colat); }
 
+			real_t
+			cosColatitude () const { return _cos_colat; }
+
 			/**
 			 * Evaluate whether the point @a pt lies on this
 			 * small circle.
