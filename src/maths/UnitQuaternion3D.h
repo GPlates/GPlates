@@ -149,6 +149,15 @@ namespace GPlatesMaths
 
 
 			/**
+			 * Return whether this quaternion represents an
+			 * identity rotation (ie. a rotation which maps
+			 * a unit vector to itself.
+			 */
+			bool
+			isIdentity() const { return (w() == 1.0); }
+
+
+			/**
 			 * Create a unit quaternion to represent the following
 			 * Euler rotation around the unit vector of the Euler
 			 * pole, by the given rotation angle.
