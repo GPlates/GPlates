@@ -30,6 +30,8 @@
 #include "maths/FiniteRotation.h"
 #include "maths/OperationsOnSphere.h"
 #include "fileio/GPlatesReader.h"
+#include "global/Exception.h"
+#include "controls/Lifetime.h"
 
 
 /**
@@ -137,47 +139,66 @@ GPlatesGui::GLCanvas::GLCanvas(MainWindow *parent,
 void 
 GPlatesGui::GLCanvas::OnPaint(wxPaintEvent&) {
 
-	wxPaintDC dc(this);
+	try {
 
-	if (!GetContext())
-		return;
+		wxPaintDC dc(this);
 
-	if (!_is_initialised)
-		InitGL();
+		if (!GetContext())
+			return;
 
-	SetCurrent();
+		if (!_is_initialised)
+			InitGL();
 
-	ClearCanvas();
-	glLoadIdentity();
-	glTranslatef(eyex, eyey, eyez);
+		SetCurrent();
 
-	/*
-	 * Set up our universe coordinate system (standard mathematical one):
-	 *   Z points up
-	 *   Y points right
-	 *   X points out of screen
-	 */
-	glRotatef(-90.0, 1.0, 0.0, 0.0);
-	glRotatef(-90.0, 0.0, 0.0, 1.0);
+		ClearCanvas();
+		glLoadIdentity();
+		glTranslatef(eyex, eyey, eyez);
 
-	_globe.Paint();
+		/*
+		 * Set up our universe coordinate system (standard mathematical
+		 * one):
+		 *   Z points up
+		 *   Y points right
+		 *   X points out of screen
+		 */
+		glRotatef(-90.0, 1.0, 0.0, 0.0);
+		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-	SwapBuffers();
+		_globe.Paint();
+
+		SwapBuffers();
+
+	} catch (const GPlatesGlobal::Exception &e) {
+
+		std::cerr << "Caught Exception: " << e << std::endl;
+		GPlatesControls::Lifetime::instance()->terminate(
+		 "Unable to recover from exception caught in GPlatesGui::GLCanvas::OnPaint.");
+	}
 }
 
 void
 GPlatesGui::GLCanvas::OnSize(wxSizeEvent &evt) {
 
-	wxGLCanvas::OnSize(evt);
+	try {
 
-	if (!GetContext())
-		return;
+		wxGLCanvas::OnSize(evt);
 
-	if (!_is_initialised)
-		InitGL();
+		if (!GetContext())
+			return;
 
-	SetCurrent();
-	SetView();
+		if (!_is_initialised)
+			InitGL();
+
+		SetCurrent();
+		SetView();
+
+	} catch (const GPlatesGlobal::Exception &e) {
+
+		std::cerr << "Caught Exception: " << e << std::endl;
+		GPlatesControls::Lifetime::instance()->terminate(
+		 "Unable to recover from exception caught in GPlatesGui::GLCanvas::OnSize.");
+	}
 }
 
 
@@ -301,58 +322,69 @@ GPlatesGui::GLCanvas::OnSpin(wxMouseEvent& evt)
 void
 GPlatesGui::GLCanvas::OnMouseEvent(wxMouseEvent &evt) {
 
-	if (evt.RightDown()) {
+	try {
 
-		// The right mouse button was just pressed down.
-		long x = evt.GetX();
-		long y = evt.GetY();
-		PopupMenu(_popup_menu, x, y);
-		return;
+		if (evt.RightDown()) {
+
+			// The right mouse button was just pressed down.
+			long x = evt.GetX();
+			long y = evt.GetY();
+			PopupMenu(_popup_menu, x, y);
+			return;
+		}
+
+		if (evt.LeftDown()) {
+
+			// The state of the left mouse button just changed to
+			// "down".  The effect of this change is determined by
+			// the mode of operation.
+			_mouse_x = evt.GetX();
+			_mouse_y = evt.GetY();
+			HandleLeftMouseEvent(MOUSE_EVENT_DOWN);
+			HandleMouseMotion();
+			Refresh();
+			return;
+		}
+
+		if (evt.LeftIsDown()) {
+
+			// Some event occurred with the left mouse button
+			// depressed.  The effect of this event is determined
+			// by the mode of operation.
+			_mouse_x = evt.GetX();
+			_mouse_y = evt.GetY();
+			HandleLeftMouseEvent(MOUSE_EVENT_DRAG);
+			HandleMouseMotion();
+			Refresh();
+			return;
+		}
+
+		if (evt.GetWheelRotation() != 0) {
+
+			// Some wheel rotation occurred.
+			_wheel_rotation += evt.GetWheelRotation();
+			HandleWheelRotation(evt.GetWheelDelta());
+			return;
+		}
+
+		if (evt.Moving()) {
+
+			// This is purely a motion event (no buttons depressed).
+			_mouse_x = evt.GetX();
+			_mouse_y = evt.GetY();
+			HandleMouseMotion();
+			return;
+		}
+
+		// else, pass this along to the next event handler
+		evt.Skip();
+
+	} catch (const GPlatesGlobal::Exception &e) {
+
+		std::cerr << "Caught Exception: " << e << std::endl;
+		GPlatesControls::Lifetime::instance()->terminate(
+		 "Unable to recover from exception caught in GPlatesGui::GLCanvas::OnMouseEvent.");
 	}
-
-	if (evt.LeftDown()) {
-
-		// The state of the left mouse button just changed to "down".
-		// The effect of this is determined by the mode of operation.
-		_mouse_x = evt.GetX();
-		_mouse_y = evt.GetY();
-		HandleLeftMouseEvent(MOUSE_EVENT_DOWN);
-		HandleMouseMotion();
-		Refresh();
-		return;
-	}
-
-	if (evt.LeftIsDown()) {
-
-		// Some event occurred with the left mouse button depressed.
-		// The effect of this is determined by the mode of operation.
-		_mouse_x = evt.GetX();
-		_mouse_y = evt.GetY();
-		HandleLeftMouseEvent(MOUSE_EVENT_DRAG);
-		HandleMouseMotion();
-		Refresh();
-		return;
-	}
-
-	if (evt.GetWheelRotation() != 0) {
-
-		// Some wheel rotation occurred.
-		_wheel_rotation += evt.GetWheelRotation();
-		HandleWheelRotation(evt.GetWheelDelta());
-		return;
-	}
-
-	if (evt.Moving()) {
-
-		// This is purely a motion event (no buttons depressed).
-		_mouse_x = evt.GetX();
-		_mouse_y = evt.GetY();
-		HandleMouseMotion();
-		return;
-	}
-
-	// else, pass this along to the next event handler
-	evt.Skip();
 }
 
 
@@ -624,6 +656,7 @@ GPlatesGui::GLCanvas::HandleMouseMotion() {
 void
 GPlatesGui::GLCanvas::OnSpinGlobe(wxCommandEvent &evt) {
 
+	// FIXME: Why is there no body to this function?
 }
 
 
@@ -632,6 +665,8 @@ BEGIN_EVENT_TABLE(GPlatesGui::GLCanvas, wxGLCanvas)
 	EVT_SIZE(GPlatesGui::GLCanvas::OnSize)
 	EVT_PAINT(GPlatesGui::GLCanvas::OnPaint)
 	EVT_MOUSE_EVENTS(GPlatesGui::GLCanvas::OnMouseEvent)
+
+	// FIXME: Where is this function defined?
 	EVT_ERASE_BACKGROUND(GPlatesGui::GLCanvas::OnEraseBackground)
 
 	EVT_MENU(EventIDs::POPUP_SPIN_GLOBE, GPlatesGui::GLCanvas::OnSpinGlobe)
