@@ -41,9 +41,13 @@ namespace
 {
 	// The knot vector has (degree + length(ctrl_points) - 1)
 	// elements.
-	static const GLsizei KNOT_SIZE = 6;
+	static const GLsizei KNOT_SIZE = 12;
 	static GLfloat knots[KNOT_SIZE] = {  // would make this const but
-		0.0, 0.0, 0.0, 1.0, 1.0, 1.0     // opengl doesn't allow it.
+		0.0, 0.0, 0.0,                   // opengl doesn't allow it. 
+		0.25, 0.25,
+		0.5, 0.5,
+		0.75, 0.75,
+		1.0, 1.0, 1.0
 	};
 }
 
@@ -92,7 +96,7 @@ DrawSmallCircle(GLUnurbsObj* nurbs_renderer, const real_t& latitude)
 		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
 		 &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
 	gluEndCurve(nurbs_renderer);
-
+#if 0
 	gluBeginCurve(nurbs_renderer);
 		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
 		 &ctrl_points[2][0], ORDER, GL_MAP1_VERTEX_4);
@@ -107,6 +111,7 @@ DrawSmallCircle(GLUnurbsObj* nurbs_renderer, const real_t& latitude)
 		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
 		 &ctrl_points[6][0], ORDER, GL_MAP1_VERTEX_4);
 	gluEndCurve(nurbs_renderer);
+#endif
 //	glEndList();
 }
 
@@ -161,7 +166,7 @@ DrawGreatCircle(GLUnurbsObj* nurbs_renderer, const real_t& longitude)
 		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
 		 &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
 	gluEndCurve(nurbs_renderer);
-
+#if 0
 	gluBeginCurve(nurbs_renderer);
 		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
 		 &ctrl_points[2][0], ORDER, GL_MAP1_VERTEX_4);
@@ -176,6 +181,7 @@ DrawGreatCircle(GLUnurbsObj* nurbs_renderer, const real_t& longitude)
 		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
 		 &ctrl_points[6][0], ORDER, GL_MAP1_VERTEX_4);
 	gluEndCurve(nurbs_renderer);
+#endif
 //	glEndList();
 }
 
@@ -184,10 +190,6 @@ namespace
 	GLUnurbsObj* nurbs_renderer;
 }
 
-/**
- * @a C specifies the centre of the circle, @a P specifies
- * a point on the perimeter.
- */
 static void
 CompileGrid(const real_t& degrees_per_lat,
 			const real_t& degrees_per_lon,
