@@ -39,7 +39,7 @@ GPlatesMaths::DirVector3D::normalise() const {
 
 
 void
-GPlatesMaths::DirVector3D::AssertInvariantHolds() const {
+GPlatesMaths::DirVector3D::AssertInvariant() const {
 
 	/**
 	 * On a Pentium IV processor, this FP comparison should cost about
@@ -51,8 +51,8 @@ GPlatesMaths::DirVector3D::AssertInvariantHolds() const {
 	if (_mag <= 0.0) {
 
 		// invariant has been violated
-		std::ostringstream oss("DirVector3D has magnitude ");
-		oss << _mag;
+		std::ostringstream oss;
+		oss << "DirVector3D has magnitude " << _mag << ".";
 		throw ViolatedDirVectorInvariantException(oss.str().c_str());
 	}
 }

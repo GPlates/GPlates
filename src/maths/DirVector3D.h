@@ -73,13 +73,13 @@ namespace GPlatesMaths
 			 : Vector3D (x_comp, y_comp, z_comp) {
 
 				UpdateMagnitude();
-				AssertInvariantHolds();
+				AssertInvariant();
 			}
 
 			DirVector3D (const Vector3D &v) : Vector3D (v)
 			{
 				UpdateMagnitude();
-				AssertInvariantHolds ();
+				AssertInvariant();
 			}
 
 			virtual real_t
@@ -87,14 +87,15 @@ namespace GPlatesMaths
 
 			virtual UnitVector3D normalise() const;
 
-			DirVector3D &operator= (const Vector3D &v)
+			DirVector3D &
+			operator= (const Vector3D &v)
 			{
 				_x = v.x ();
 				_y = v.y ();
 				_z = v.z ();
 
 				UpdateMagnitude();
-				AssertInvariantHolds ();
+				AssertInvariant();
 
 				return *this;
 			}
@@ -112,7 +113,8 @@ namespace GPlatesMaths
 
 			/**
 			 * Another super-secret backdoor constructor for
-			 * specialised base classes.
+			 * specialised base classes.  The magnitude better
+			 * be correct!
 			 */
 			DirVector3D(const Vector3D &v, const real_t &mag)
 			 : Vector3D (v), _mag (mag) {  }
@@ -134,7 +136,7 @@ namespace GPlatesMaths
 			 * Since this is invoked by constructors,
 			 * it should not be a virtual function.
 			 */
-			void AssertInvariantHolds () const;
+			void AssertInvariant () const;
 
 			real_t _mag;
 	};
