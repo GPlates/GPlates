@@ -192,6 +192,7 @@ AC_ARG_ENABLE(prof, [  --enable-prof           Enable profiling],
 AC_MSG_CHECKING([for Plesiosaurs in Loch Ness])
 AC_MSG_RESULT(yes)
 
+AM_OPTIONS_WXCONFIG
 
 ##################################
 # UI targets
@@ -220,35 +221,19 @@ if test "$probe_testui" != "no"; then
 fi
 if test "$probe_wxwin" != "no"; then
 	# Check for wxWindows
+	AM_PATH_WXCONFIG([2.4.0], [enable_wxwin="yes"],
+			 [enable_wxwin="no"])
 
-	if test -z "$WX_CONFIG"; then
-		AC_PATH_PROG(WX_CONFIG, wx-config, no)
-	fi
-	if test "$WX_CONFIG" = "no"; then
-		echo "### ERROR: The wxWindows configuration tool could not be found."
-		echo "###  Make sure that you have wxWindows installed, and that"
-		echo "###  wx-config is in your PATH or is referred to by the WX_CONFIG"
-		echo "###  shell variable."
-		enable_wxwin="no"
-	else
-		echo -n "Determining wxWindows-specific compilation flags... "
-		WXWIN_CFLAGS=`$WX_CONFIG --cflags`
-		WXWIN_LIBS=`$WX_CONFIG --libs`
-		WXWIN_GL_LIBS=`$WX_CONFIG --gl-libs`
-		echo "done."
-		enable_wxwin="yes"
-	fi
-	
 	if test "$enable_wxwin" = "yes"; then
-		# PKG_CHECK_MODULES has set up:
-		#	- WXWIN_CFLAGS
-		#	- WXWIN_LIBS
-		#	- WXWIN_GL_LIBS
+		# AM_PATH_WXCONFIG has set up:
+		#	- WX_CXXFLAGS
+		#	- WX_LIBS
+		WX_GL_LIBS=`$WX_CONFIG_WITH_ARGS --gl-libs`
 
 		AC_DEFINE([HAVE_WXWIN],[],[wxWindows is available.])
 		#UI_TARGETS="$UI_TARGETS ui-gtkmm.o"	# XXX
-		EXTRA_CFLAGS="$EXTRA_CFLAGS $WXWIN_CFLAGS"
-		LIBS="$LIBS $WXWIN_LIBS $WXWIN_GL_LIBS"
+		EXTRA_CFLAGS="$EXTRA_CFLAGS $WX_CXXFLAGS"
+		LIBS="$LIBS $WX_LIBS $WX_GL_LIBS"
 		any_ui="yes"
 	fi
 fi

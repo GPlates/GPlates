@@ -3,4 +3,3 @@ autom4te*
 config.log
 config.status
 configure
-aclocal.m4
