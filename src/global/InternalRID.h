@@ -53,14 +53,14 @@ namespace GPlatesGlobal
 
 
 	inline bool
-	operator==(InternalRID i1, InternalRID i2) {
+	operator==(const InternalRID &i1, const InternalRID &i2) {
 
 		return (i1.ival() == i2.ival());
 	}
 
 
 	inline bool
-	operator!=(InternalRID i1, InternalRID i2) {
+	operator!=(const InternalRID &i1, const InternalRID &i2) {
 
 		return (i1.ival() != i2.ival());
 	}
@@ -72,9 +72,21 @@ namespace GPlatesGlobal
 	 * as keys in STL maps.
 	 */
 	inline bool
-	operator<(InternalRID i1, InternalRID i2) {
+	operator<(const InternalRID &i1, const InternalRID &i2) {
 
 		return (i1.ival() < i2.ival());
+	}
+
+
+	/**
+	 * Although this operation doesn't strictly make sense for an
+	 * InternalRID, it is provided to enable client code to work out
+	 * the "highest" InternalRID in a collection.
+	 */
+	inline bool
+	operator>(const InternalRID &i1, const InternalRID &i2) {
+
+		return (i1.ival() > i2.ival());
 	}
 }
 
