@@ -26,18 +26,20 @@
 #ifndef _GPLATES_CONTROLS_VIEW_H_
 #define _GPLATES_CONTROLS_VIEW_H_
 
+#include <string>
+
 namespace GPlatesControls
 {
 	namespace View
 	{
 		/**
-		 * Display the title and meta information for the loaded
+		 * Return the title and meta information for the loaded
 		 * data set.
 		 *
 		 * XXX: should emit some kind of error if there is no data
 		 * set loaded from which to obtain the infomation.
 		 */
-		void
+		std::string
 		DocumentMetadata();
 	}
 }

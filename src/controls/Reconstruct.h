@@ -40,7 +40,7 @@ namespace GPlatesControls
 		 * data to reconstruct with.
 		 */
 		void
-		Time(const real_t& time);
+		Time(const GPlatesMaths::real_t& time);
 
 		/**
 		 * Display an animation of the positions of the data as
@@ -52,8 +52,8 @@ namespace GPlatesControls
 		 * data to reconstruct with.
 		 */
 		void
-		Animation(const real_t& start_time,
-				  const real_t& end_time);
+		Animation(const GPlatesMaths::real_t& start_time,
+				  const GPlatesMaths::real_t& end_time);
 	}
 }
 

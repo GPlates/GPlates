@@ -49,7 +49,7 @@ namespace GPlatesControls
 		 * Exit GPlates.
 		 */
 		void
-		Quit(const integer_t& exit_status);
+		Quit(const GPlatesGlobal::integer_t& exit_status);
 	}
 }
 
