@@ -168,13 +168,14 @@ namespace GPlatesMaths
 
 	/**
 	 * Calculate and return the finite rotation which is the interpolation
-	 * of the two finite rotations 'more_recent' and 'more_distant' to the
-	 * time 't'.
+	 * of the two finite rotations @a more_recent and @a more_distant to
+	 * the time @a t.
 	 *
-	 * Obviously, 't' should lie between 'more_recent' and 'more_distant'
-	 * (hence the name "interpolation"), such that the time of the finite
-	 * rotation 'more_recent' is more recent than 't', and the time of
-	 * 'more_distant' is more distant than 't'.
+	 * To be precise, this is really only an "interpolation" if @a t is
+	 * between @a more_recent and @a more_distant, otherwise it is an
+	 * "extrapolation".  Originally, this function was only designed to
+	 * perform interpolations between finite rotations;  it is now also
+	 * used to extrapolate into the future.
 	 *
 	 * Note to CG programmers: this is a "slerp".
 	 */

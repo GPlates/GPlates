@@ -83,7 +83,30 @@ GPlatesMaths::RotationSequence::insert(const FiniteRotation &frot) {
 GPlatesMaths::FiniteRotation
 GPlatesMaths::RotationSequence::finiteRotationAtTime(real_t t) const {
 
-	// it is assumed that a rotation sequence can never be empty
+	// It is assumed that a rotation sequence can never be empty.
+
+	// First, deal with times in the future.
+	if (t < 0.0) {
+
+		if ( ! isDefinedInFuture()) {
+
+			std::ostringstream oss;
+			oss << "Attempted to obtain a finite rotation "
+			 << "for the time " << t << ",\n"
+			 << "but this rotation sequence ["
+			 << _most_recent_time << "Ma, "
+			 << _most_distant_time<< "Ma] cannot be extrapolated\n"
+			 << "into the future.";
+
+			throw InvalidOperationException(oss.str().c_str());
+		}
+
+		seq_type::const_iterator most_recent = _shared_seq->begin();
+		seq_type::const_iterator next = most_recent;
+		next++;
+
+		return interpolate(*most_recent, *next, t);
+	}
 
 	seq_type::const_iterator curr_rot = _shared_seq->begin();
 	if (t == (*curr_rot).time()) {

@@ -234,8 +234,32 @@ namespace GPlatesMaths
 			bool
 			isDefinedAtTime(real_t t) const {
 
+				// First, deal with times in the future.
+				if (t < 0.0) {
+
+					// It's a time in the future.
+					return isDefinedInFuture();
+				}
 				return (_most_recent_time <= t &&
 				        t <= _most_distant_time);
+			}
+
+
+			/**
+			 * Returns whether this rotation sequence is "defined"
+			 * in the future.
+			 *
+			 * For this to occur:
+			 * - the rotation sequence must consist of two or more
+			 *    finite rotations.
+			 * - the most recent finite rotation must correspond
+			 *    to the present-day.
+			 */
+			bool
+			isDefinedInFuture() const {
+
+				return (_most_recent_time == 0.0 &&
+				       _most_distant_time != 0.0);
 			}
 
 
