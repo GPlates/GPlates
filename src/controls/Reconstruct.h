@@ -27,6 +27,7 @@
 #define _GPLATES_CONTROLS_RECONSTRUCT_H_
 
 #include "maths/types.h"
+#include "global/types.h"
 
 namespace GPlatesControls
 {
@@ -53,7 +54,8 @@ namespace GPlatesControls
 		 */
 		void
 		Animation(const GPlatesMaths::real_t& start_time,
-				  const GPlatesMaths::real_t& end_time);
+				  const GPlatesMaths::real_t& end_time,
+				  const GPlatesGlobal::integer_t& nsteps);
 	}
 }
 

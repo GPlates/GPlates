@@ -23,34 +23,23 @@
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
-#include "Reconstruct.h"
-#include "Dialogs.h"
+#ifndef _GPLATES_CONTROLS_DIALOGS_H_
+#define _GPLATES_CONTROLS_DIALOGS_H_
 
-using namespace GPlatesControls;
-
-void
-Reconstruct::Time(const GPlatesMaths::real_t&)
+namespace GPlatesControls
 {
-	Dialogs::ErrorMessage(
-		"Construction not implemented.",
-		
-		"The functionality you requested (construction) is "
-		"not yet implemented.",
-
-		"No construction could be made.");
+	namespace Dialogs
+	{
+		/**
+		 * Present a dialog to the user with the given
+		 * @a title, @a message and @a result, with a
+		 * single OK button for them to click.
+		 */
+		void
+		ErrorMessage(const char* title,
+					 const char* message,
+					 const char* result);
+	}
 }
 
-void
-Reconstruct::Animation(const GPlatesMaths::real_t&, 
-					   const GPlatesMaths::real_t&,
-					   const GPlatesGlobal::integer_t&)
-{
-	Dialogs::ErrorMessage(
-		"Animation not implemented.",
-		
-		"The functionality you requested (animation) is "
-		"not yet implemented.",
-
-		"No animation could be constructed.");
-		
-}
+#endif  /* _GPLATES_CONTROLS_DIALOGS_H_ */

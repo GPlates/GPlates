@@ -23,34 +23,23 @@
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
-#include "Reconstruct.h"
+#include <sstream>
+#include <wx/wx.h>
 #include "Dialogs.h"
 
 using namespace GPlatesControls;
 
 void
-Reconstruct::Time(const GPlatesMaths::real_t&)
+Dialogs::ErrorMessage(const char* title,
+					  const char* message,
+					  const char* result)
 {
-	Dialogs::ErrorMessage(
-		"Construction not implemented.",
-		
-		"The functionality you requested (construction) is "
-		"not yet implemented.",
+	std::ostringstream msg;
+	msg << "Message:" << std::endl
+		<< "\t" << message << std::endl << std::endl
+		<< "Result:" << std::endl
+		<< "\t" << result << std::endl;
 
-		"No construction could be made.");
-}
-
-void
-Reconstruct::Animation(const GPlatesMaths::real_t&, 
-					   const GPlatesMaths::real_t&,
-					   const GPlatesGlobal::integer_t&)
-{
-	Dialogs::ErrorMessage(
-		"Animation not implemented.",
-		
-		"The functionality you requested (animation) is "
-		"not yet implemented.",
-
-		"No animation could be constructed.");
-		
+	// Annoy user:
+	wxMessageBox(msg.str().c_str(), title, wxOK | wxICON_ERROR);
 }
