@@ -32,9 +32,12 @@ void
 Exception::Write(std::ostream &os) const {
 
 	os << ExceptionName();
-	if (HasMessage()) {
 
-		os << "(" << Message() << ")";
+	// output a message (if it exists)
+	std::string msg = Message();
+	if ( ! msg.empty()) {
+
+		os << "(" << msg << ")";
 	}
 }
 
