@@ -56,20 +56,9 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Create a rotation history, initialising the history
-			 * with a rotation sequence.
-			 *
-			 * Since a rotation sequence must be provided to this
-			 * constructor, it will be assumed that a rotation
-			 * history can never be empty of rotation sequences.
+			 * Create a rotation history.
 			 */
-			RotationHistory(const RotationSequence &rseq)
-			 : _is_modified(true) {
-
-				_seq.push_back(rseq);
-				_most_recent_time = rseq.mostRecentTime();
-				_most_distant_time = rseq.mostDistantTime();
-			}
+			RotationHistory() : _is_modified(false) {  }
 
 
 			/**
@@ -87,7 +76,11 @@ namespace GPlatesMaths
 			/**
 			 * Insert another rotation sequence into the list.
 			 */
-			void insert(const RotationSequence &rseq);
+			void insert(const RotationSequence &rseq) {
+
+				_seq.push_back(rseq);
+				_is_modified = true;
+			}
 
 
 			/**
@@ -109,17 +102,13 @@ namespace GPlatesMaths
 
 			/*
 			 * Whether the list of rotation sequences has been
-			 * modified since it was last sorted -- if it has
-			 * even been sorted yet at all.
+			 * modified since it was last sorted.
 			 *
 			 * This member is mutable because its value needs
 			 * to be changed in the const member function
 			 * 'ensureSeqSorted'.
 			 */
 			mutable bool _is_modified;
-
-			real_t _most_recent_time;  // Millions of years ago
-			real_t _most_distant_time;  // Millions of years ago
 
 
 			void
@@ -129,8 +118,7 @@ namespace GPlatesMaths
 
 					/*
 					 * The sequence has been modified
-					 * since last sort (or has not yet
-					 * been sorted at all).
+					 * since last sort.
 					 */
 					_seq.sort();
 					_is_modified = false;

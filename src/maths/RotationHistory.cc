@@ -34,10 +34,6 @@ using namespace GPlatesMaths;
 bool
 RotationHistory::isDefinedAtTime(real_t t) const {
 
-	// check outer bounds
-	if (t < _most_recent_time) return false;
-	if (t > _most_distant_time) return false;
-
 	ensureSeqSorted();
 	for (seq_type::const_iterator it = _seq.begin();
 	     it != _seq.end();
@@ -49,26 +45,8 @@ RotationHistory::isDefinedAtTime(real_t t) const {
 }
 
 
-void
-RotationHistory::insert(const RotationSequence &rseq) {
-
-	_seq.push_back(rseq);
-	_is_modified = true;
-	if (rseq.mostRecentTime() < _most_recent_time) {
-
-		_most_recent_time = rseq.mostRecentTime();
-	}
-	if (rseq.mostDistantTime() < _most_distant_time) {
-
-		_most_distant_time = rseq.mostDistantTime();
-	}
-}
-
-
 RotationHistory::const_iterator
 RotationHistory::atTime(real_t t) const {
-
-	// it is assumed that the list can never be empty
 
 	ensureSeqSorted();
 	for (seq_type::const_iterator it = _seq.begin();
