@@ -112,6 +112,22 @@ namespace GPlatesMaths
 	}
 
 
+	inline bool
+	parallel(UnitVector3D v1, UnitVector3D v2) {
+
+		return (v1 == v2);
+	}
+
+
+	inline bool
+	antiparallel(UnitVector3D v1, UnitVector3D v2) {
+
+		return (v1.x() == -v2.x()
+		     && v1.y() == -v2.y()
+		     && v1.z() == -v2.z());
+	}
+
+
 	inline real_t
 	operator*(UnitVector3D v1, UnitVector3D v2) {
 
