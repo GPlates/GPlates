@@ -82,7 +82,11 @@ namespace GPlatesMaths
 
 			virtual real_t magnitude() const { return 1.0; }
 
-			virtual UnitVector3D normalise() const { return *this; }
+			virtual UnitVector3D
+			normalise() const {
+
+				return *this;
+			}
 
 		protected:
 			/** 
@@ -100,14 +104,6 @@ namespace GPlatesMaths
 	{
 		real_t adp = abs (dot (s1, s2));
 		return (adp >= 1.0);
-	}
-
-	inline UnitVector3D normalise (const DirVector3D &v1)
-	{
-		real_t scale = 1 / v1.magnitude ();
-		return UnitVector3D (v1.x () * scale,
-				     v1.y () * scale,
-				     v1.z () * scale);
 	}
 }
 
