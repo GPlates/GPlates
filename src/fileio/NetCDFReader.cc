@@ -195,7 +195,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	NcAtt *z_unit_att = ncf->get_var ("z_range")->get_att ("units");
 	char *str = z_unit_att->as_string (0);
 	std::string z_units (str);
-	delete str;
+	delete[] str;
 	delete z_unit_att;
 	GPlatesGeo::GridData *gdata;
 	try {

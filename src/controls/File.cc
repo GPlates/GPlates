@@ -174,13 +174,16 @@ namespace
 
 		GPlatesGeo::GridData *gdata = 0;
 		std::ostringstream oss;
+		bool cancelled = false;
 		try {
 			gdata = GPlatesFileIO::NetCDFReader::Read (&ncf, dlg);
+			if (!gdata)
+				cancelled = true;
 		} catch (GPlatesFileIO::FileFormatException &e) {
 			e.Write (oss);
 		}
 		delete dlg;
-		if (!gdata) {
+		if (!gdata && !cancelled) {
 			Dialogs::ErrorMessage ("netCDF File",
 				"Loading Failed!", oss.str ().c_str ());
 			return;

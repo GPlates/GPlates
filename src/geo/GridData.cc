@@ -61,6 +61,7 @@ GridData::~GridData ()
 		for (index_t j = 0; j < row->length; ++j)
 			delete row->data[j];
 		delete[] row->data;
+		delete row;
 	}
 	delete[] grid->rows;
 
