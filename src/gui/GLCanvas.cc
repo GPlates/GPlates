@@ -181,9 +181,8 @@ GLCanvas::GetSphereCoordFromScreen(int screenx, int screeny)
 			UnitVector3D(0.0, 0.0, 1.0),  // Rotate around Z-axis
 			degreesToRadians(-1.0*_globe.GetMeridian()));
 
-	FiniteRotation rot = FiniteRotation::CreateFiniteRotation(
-			merid * elev,
-			0.0);  // present day
+	FiniteRotation rot = FiniteRotation::Create(merid * elev,
+	                      0.0);  // present day
 	
 	UnitVector3D uv(x, y, z);
 	uv = rot * uv;
