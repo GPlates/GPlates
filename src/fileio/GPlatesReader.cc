@@ -33,6 +33,7 @@
 #include "maths/types.h"
 #include "maths/OperationsOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "geo/GeologicalData.h"
 #include "geo/PointData.h"
 #include "geo/LineData.h"
 #include "geo/DataGroup.h"

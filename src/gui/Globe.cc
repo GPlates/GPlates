@@ -86,6 +86,7 @@ Globe::NormaliseMeridianElevation()
 }
 
 
+#if 0
 static void
 DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
 {
@@ -141,7 +142,7 @@ DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
 		 &ctrl_points[0][0], 3, GL_MAP1_VERTEX_4);
 	gluEndCurve(renderer);
 }
-
+#endif
 
 void
 Globe::Paint(const GPlatesGeo::DataGroup& data)

@@ -31,6 +31,9 @@ using namespace GPlatesGeo;
 const GeologicalData::DataType_t
 GeologicalData::NO_DATATYPE;
 
+const GeologicalData::RotationGroupId_t
+GeologicalData::NO_ROTATIONGROUP = -1;
+
 const GeologicalData::Attributes_t
 GeologicalData::NO_ATTRIBUTES;
 

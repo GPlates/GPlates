@@ -79,9 +79,9 @@ namespace GPlatesGui
 
 		private:
 			Globe _globe;
+			GPlatesGeo::DataGroup _data;
 			GLfloat _zoom_factor;
 			bool _is_initialised;
-			GPlatesGeo::DataGroup _data;
 
 			void InitGL();
 			void SetView();

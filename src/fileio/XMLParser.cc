@@ -118,7 +118,7 @@ XMLParser::Parse(std::istream& istr)
 	static const size_t BUFFER_SIZE = 8192;
 	int done;
 	char buf[BUFFER_SIZE];
-	while (cin.read(&buf[0], BUFFER_SIZE)) {
+	while (istr.read(&buf[0], BUFFER_SIZE)) {
 		size_t len = std::strlen(&buf[0]);
 		done = len < BUFFER_SIZE;
 		if (XML_Parse(_parser, buf, len, done) == 0) {

@@ -75,7 +75,7 @@ namespace GPlatesGeo
 			 * RotationGroupId should be NO_ROTATIONGROUP.
 			 */
 			static const RotationGroupId_t
-			NO_ROTATIONGROUP = -1;
+			NO_ROTATIONGROUP;
 			
 			/**
 			 * If the data has no associated attributes, then it's
