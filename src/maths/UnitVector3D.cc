@@ -49,7 +49,7 @@ UnitVector3D::AssertInvariantHolds() const {
 
 
 DirVector3D
-cross(UnitVector3D v1, UnitVector3D v2) {
+GPlatesMaths::cross(UnitVector3D v1, UnitVector3D v2) {
 
 	real_t x_comp = v1.y() * v2.z() - v1.z() * v2.y();
 	real_t y_comp = v1.z() * v2.x() - v1.x() * v2.z();
