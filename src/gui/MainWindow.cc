@@ -272,7 +272,8 @@ MainWindow::OnReconstructAnimation(wxCommandEvent&)
 		GPlatesControls::Reconstruct::Animation(
 			dialog.GetStartTime(), 
 			dialog.GetEndTime(),
-			dialog.GetNSteps());
+			dialog.GetTimeDelta(),
+		        dialog.GetFinishOnEnd());
 	}
 }
 
