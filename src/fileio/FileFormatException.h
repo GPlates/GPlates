@@ -1,4 +1,11 @@
-/*
+/*$ID*/
+/// Exception used when a problem is found with the format of a Plates file being read in.
+/**
+ * @file
+ *
+ * Most recent change:
+ * $Author$
+ * $Date$
  *
  * Copyright (C) 2003 The GPlates Consortium
  *
@@ -24,12 +31,14 @@ namespace GPlatesFileIO {
   
   // This exception is thrown when there is  a problem with the Format of a file being read in by GPlates.
   class FileFormatException : public FileIOException {
-  public:
+   public:
+    
+    /// message is a description of the conditions which cause the invariant to be violated.
     FileFormatException(const char* message) : _message(message) { }
     
     virtual ~FileFormatException() { }
     
-  protected:
+   protected:
     virtual const char * ExceptionName() const { return "FileFormatException"; }
     
     virtual std::string Message() const { return _message; }
@@ -38,6 +47,6 @@ namespace GPlatesFileIO {
     std::string _message;
   };
   
- } // End namespace
+} // End namespace
 
 #endif  // _GPLATES_FILEIO_FILEFORMATEXCEPTION_H_
