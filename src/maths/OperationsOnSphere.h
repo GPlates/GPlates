@@ -51,8 +51,8 @@ namespace GPlatesMaths
 			 * Return whether a given value is a valid longitude.
 			 * GPlates uses the half-open range (-180.0, 180.0].
 			 * Note that this seems to be different to the range
-			 * used by the PLATES format (All Hail PLATES!),
-			 * which seems to be [-180.0, 180.0].
+			 * accepted by the PLATES formats (All Hail PLATES!),
+			 * which seems to be [-360.0, 360.0].
 			 */
 			static bool isValidLon(const real_t &val);
 
