@@ -523,7 +523,7 @@ ConvertPlatesParserRotSeqToGPlatesMathsRotSeq(const
 	GPlatesMaths::RotationSequence rot_seq(fixed_plate, moving_plate,
 	 first_fin_rot);
 
-	for (it++ ; it != end_it; it++) {
+	for (++it ; it != end_it; ++it) {
 
 		GPlatesMaths::FiniteRotation fin_rot =
 		 ConvertPlatesParserFinRotToGPlatesMathsFinRot(*it);
@@ -546,7 +546,7 @@ ConvertPlatesRotationDataToRotationMap(const
 
 	for (PlatesParser::PlatesRotationData::const_iterator it = data.begin();
 	     it != data.end();
-	     it++) {
+	     ++it) {
 
 		GPlatesGlobal::rid_t moving_plate((*it)._moving_plate);
 		GPlatesMaths::RotationSequence rot_seq =
