@@ -41,8 +41,8 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 
 	/*
 	 * Create the small-circle of latitude (whose axis is the North pole)
-	 * and the great-circle of longitude (which must by definition pass
-	 * through the North pole).
+	 * and the great-circle of longitude (which is defined to be "directed"
+	 * from the South Pole up to the origin).
 	 */
 	SmallCircle line_of_lat(GPlatesMaths::NorthPole.unitvector(), origin);
 	GreatCircle line_of_lon(GPlatesMaths::SouthPole, origin);
