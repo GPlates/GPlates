@@ -21,7 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_VECTOR3D_H_
@@ -29,7 +29,7 @@
 
 #include <iostream>
 #include "GeneralisedData.h"
-#include "global/types.h"  /* real_t */
+#include "global/types.h"  /* fpdata_t */
 
 namespace GPlatesGeo
 {
@@ -50,7 +50,7 @@ namespace GPlatesGeo
 			/** 
 			 * Create the vector (@a x , @a y , @a z ).
 			 */
-			Vector3D(const real_t& x, const real_t& y, const real_t& z);
+			Vector3D(const fpdata_t& x, const fpdata_t& y, const fpdata_t& z);
 
 			/**
 			 * @todo See Todo section from Vector2D::ReadIn().
@@ -58,7 +58,10 @@ namespace GPlatesGeo
 			 *   Method design pattern (p325).
 			 */
 			virtual void
-			ReadIn(std::istream& is) { is >> _x >> _y >> _z; }
+			ReadIn(std::istream& is) {
+
+				is >> _x >> _y >> _z;
+			}
 
 			/**
 			 * @todo See Todo section from Vector2D::PrintOut().
@@ -68,17 +71,17 @@ namespace GPlatesGeo
 			virtual void
 			PrintOut(std::ostream& os) const;
 			
-			real_t
+			fpdata_t
 			GetX() const { return _x; }
 
-			real_t
+			fpdata_t
 			GetY() const { return _y; }
 
-			real_t
+			fpdata_t
 			GetZ() const { return _z; }
 
 		private:
-			real_t _x, _y, _z;
+			fpdata_t _x, _y, _z;
 	};
 }
 
