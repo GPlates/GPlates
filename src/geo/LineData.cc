@@ -28,9 +28,6 @@
 using namespace GPlatesGeo;
 
 LineData::LineData(const DataType_t& dt, const RotationGroupId_t& id,
-	const Attributes_t& attrs, const PointData& P, const PointData& Q)
-	: GeologicalData(dt, id, attrs)
-{
-	_line.push_back(P); 
-	_line.push_back(Q);
-}
+	const Attributes_t& attrs, const PolyLineOnSphere& line);
+	: GeologicalData(dt, id, attrs), _line(line)
+{  }

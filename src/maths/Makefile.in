@@ -9,8 +9,9 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = DirVector3D.o FiniteRotation.o GreatCircleArc.o PointOnSphere.o Real.o \
-	StageRotation.o UnitQuaternion3D.o UnitVector3D.o Vector3D.o
+OBJS = DirVector3D.o FiniteRotation.o GreatCircleArc.o OperationsOnSphere.o \
+	PointOnSphere.o Real.o StageRotation.o UnitQuaternion3D.o \
+	UnitVector3D.o Vector3D.o
 
 LIBNAME = libmaths.a
 

@@ -33,7 +33,8 @@ namespace GPlatesMaths
 {
 	namespace OperationsOnSphere
 	{
-		UnitVector3D convertPointOnSphereToUnitVector(PointOnSphere pt);
+		UnitVector3D convertLatLongToUnitVector(const real_t& latitude,
+		 const real_t& longitude);
 	}
 }
 

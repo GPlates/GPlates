@@ -40,19 +40,19 @@ namespace GPlatesFileIO
 	class GPlatesReader : public Reader
 	{
 		public:
-			GPlatesReader(const std::string& filepath)
-				: _filepath(filepath) {  }
+			GPlatesReader(std::istream& istr)
+				: _istr(istr) {  }
 
 			/**
 			 * Fill a DataGroup.
 			 * @role ConcreteCreator::FactoryMethod() in the Factory
 			 *   Method design pattern (p107).
 			 */
-			void
-			Read(GPlatesGeo::DataGroup&);
+			GPlatesGeo::DataGroup
+			Read();
 
 		private:
-			std::string _filepath;
+			std::istream& _istr;
 	};
 }
 

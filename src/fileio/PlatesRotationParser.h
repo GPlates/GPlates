@@ -26,7 +26,7 @@
 #ifndef _GPLATES_FILEIO_PLATESROTATIONPARSER_H_
 #define _GPLATES_FILEIO_PLATESROTATIONPARSER_H_
 
-#include <istream>
+#include <iostream>
 #include <string>
 #include <map>
 

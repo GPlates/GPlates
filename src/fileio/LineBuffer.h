@@ -26,7 +26,6 @@
 #ifndef _GPLATES_FILEIO_LINEBUFFER_H_
 #define _GPLATES_FILEIO_LINEBUFFER_H_
 
-#include <ios>
 #include <iostream>
 #include <string>
 

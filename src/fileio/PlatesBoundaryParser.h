@@ -26,7 +26,7 @@
 #ifndef _GPLATES_FILEIO_PLATESBOUNDARYPARSER_H_
 #define _GPLATES_FILEIO_PLATESBOUNDARYPARSER_H_
 
-#include <istream>
+#include <iostream>
 #include <string>
 #include <list>
 #include <map>

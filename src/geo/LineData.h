@@ -28,7 +28,7 @@
 
 #include <vector>
 #include "GeologicalData.h"
-#include "PointData.h"
+#include "maths/PolyLineOnSphere.h"
 
 namespace GPlatesGeo
 {
@@ -39,20 +39,14 @@ namespace GPlatesGeo
 	class LineData : public GeologicalData
 	{
 		public:
-			/**
-			 * Convenience typedef.
-			 * A Line_t is just a sequence of PointData.
-			 */
-			typedef std::vector<PointData> Line_t;
-			
 			LineData(const DataType_t&, const RotationGroupId_t&,
-				const Attributes_t&, const PointData& P, const PointData& Q);
+				const Attributes_t&, const PolyLineOnSphere&);
 
 			/** 
 			 * Add a point to the end of the line.
 			 */
 			virtual void
-			Add(const PointData& P) { _line.push_back(P); }
+			Add(const PointOnSphere& P) { _line.push_back(P); }
 			
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }
@@ -62,24 +56,24 @@ namespace GPlatesGeo
 			 * @warning Access to this iterator will allow the client
 			 *   to put the object into an illegal state (num points < 2).
 			 */
-			Line_t::iterator
+			PolyLineOnSphere::iterator
 			Begin() { return _line.begin(); }
 
-			Line_t::iterator
+			PolyLineOnSphere::iterator
 			End() { return _line.end(); }
 			
 			/**
 			 * Restricted enumerative access the PointData constituting
 			 * this line.
 			 */
-			Line_t::const_iterator
+			PolyLineOnSphere::const_iterator
 			Begin() const { return _line.begin(); }
 
-			Line_t::const_iterator
+			PolyLineOnSphere::const_iterator
 			End() const { return _line.end(); }
 
 		private:
-			Line_t _line;
+			PolyLineOnSphere _line;
 	};
 }
 

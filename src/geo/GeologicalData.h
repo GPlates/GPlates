@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
@@ -63,6 +63,27 @@ namespace GPlatesGeo
 			typedef std::string DataType_t;
 			typedef integer_t RotationGroupId_t;
 
+			/**
+			 * If the data has no associated type, then it's DataType
+			 * should be NO_DATATYPE.
+			 */
+			static const DataType_t
+			NO_DATATYPE;
+
+			/**
+			 * If the data has no associated rotation group, then it's
+			 * RotationGroupId should be NO_ROTATIONGROUP.
+			 */
+			static const RotationGroupId_t
+			NO_ROTATIONGROUP = -1;
+			
+			/**
+			 * If the data has no associated attributes, then it's
+			 * Attributes should be NO_ATTRIBUTES.
+			 */
+			static const Attributes_t
+			NO_ATTRIBUTES;
+			
 			GeologicalData(const DataType_t&, const RotationGroupId_t&, 
 				const Attributes_t&);
 

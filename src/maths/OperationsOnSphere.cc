@@ -30,10 +30,11 @@ using namespace GPlatesMaths;
 
 
 UnitVector3D
-OperationsOnSphere::convertPointOnSphereToUnitVector(PointOnSphere pt) {
+OperationsOnSphere::convertLatLongToUnitVector(const real_t& latitude, 
+ const real_t& longitude) {
 
-	real_t lat_angle = degreesToRadians(pt.GetLatitude());
-	real_t long_angle = degreesToRadians(pt.GetLongitude());
+	real_t lat_angle = degreesToRadians(latitude);
+	real_t long_angle = degreesToRadians(longitude);
 
 	real_t radius_of_small_circle_of_latitude = cos(lat_angle);
 

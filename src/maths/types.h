@@ -45,6 +45,12 @@ namespace GPlatesMaths
 	 * A floating-point approximation to the field of reals.
 	 */
 	typedef Real real_t;
+
+	/**
+	 * A collection of points on the globe to be draw with line
+	 * segments between them.
+	 */
+	typedef std::list<PointOnSphere> PolyLineOnSphere;
 }
 
 #endif  // _GPLATES_MATHS_TYPES_H_
