@@ -1,3 +1,4 @@
+# $Id$
 # Configure script for GPlates
 
 AC_INIT([GPlates], [0.001])
