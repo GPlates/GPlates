@@ -275,6 +275,20 @@ namespace GPlatesMaths
 	}
 
 
+	/*
+	 * FIXME: This is often defined in the C Standard Library -- but is it
+	 * *always* defined *everywhere*, and to the *same precision*?
+	 */
+	const double MATHVALUE_PI = 3.14159265358979323846;
+
+
+	inline Real
+	degreesToRadians(Real rdeg) {
+
+		return Real((MATHVALUE_PI / 180.0) * rdeg);
+	}
+
+
 	inline std::ostream &
 	operator<<(std::ostream &os, Real r) {
 
