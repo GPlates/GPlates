@@ -169,14 +169,14 @@ Globe::Paint()
 		gluSphere(_sphere, _radius, 36, 18);
 
 		// Set the grid's colour.
-		glColor3fv(_colour);
+		glColor3fv(Colour::WHITE);
 		
 		/*
 		 * Draw grid.
 		 * DepthRange calls push the grid back in the depth buffer a bit to
 		 * avoid Z-fighting with the LineData.
 		 */
-		glDepthRange(0.01, 1.0);
+		glDepthRange(0.005, 1.0);
 		_grid.Paint();
 
 		// Restore DepthRange

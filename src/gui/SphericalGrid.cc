@@ -186,8 +186,7 @@ DrawGreatCircle(GLUnurbsObj* nurbs_renderer, const real_t& longitude)
 static void
 CompileGrid(const real_t& degrees_per_lat,
 			const real_t& degrees_per_lon,
-			const Colour& colour,
-			int display_list_id)
+			const Colour& colour, int)
 {
 	// Create renderer.
 	GLUnurbsObj* nurbs_renderer = gluNewNurbsRenderer();
