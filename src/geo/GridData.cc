@@ -199,7 +199,28 @@ void GPlatesGeo::GridData::RotateAndDraw (const GPlatesMaths::FiniteRotation
 	//GPlatesState::Layout::InsertLineDataPos(this, rot_line);
 }
 
-void GPlatesGeo::GridData::getDimensions (index_t &x_size, index_t &ysize) const
+const GPlatesGeo::GridElement *GPlatesGeo::GridData::get (index_t x, index_t y)
+									const
 {
-	// TODO
+	if ((x < grid->offset) || (x >= (grid->offset + grid->length)))
+		return 0;
+	GridRowPtr row = grid->rows[x - grid->offset];
+	if (!row)
+		return 0;
+	if ((y < row->offset) || (y >= (row->offset + row->length)))
+		return 0;
+	return row->data[y - row->offset];
+}
+
+void GPlatesGeo::GridData::getDimensions (index_t &x_sz, index_t &y_sz) const
+{
+	x_sz = grid->offset + grid->length;
+
+	y_sz = 0;
+	for (index_t i = 0; i < grid->length; ++i) {
+		GridRowPtr row = grid->rows[i];
+		index_t row_sz = row->offset + row->length;
+		if (row_sz > y_sz)
+			y_sz = row_sz;
+	}
 }

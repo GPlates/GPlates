@@ -80,7 +80,8 @@ namespace GPlatesGeo
 			void Draw () const;
 			void RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const;
 
-			void getDimensions (index_t &x_size, index_t &ysize) const;
+			const GridElement *get (index_t x, index_t y) const;
+			void getDimensions (index_t &x_sz, index_t &y_sz) const;
 
 		private:
 			GPlatesMaths::GridOnSphere _lattice;
