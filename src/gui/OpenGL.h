@@ -17,15 +17,20 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
-#ifndef _GPLATES_GUI_OPENGL_H_
-#define _GPLATES_GUI_OPENGL_H_
+#ifndef GPLATES_GUI_OPENGL_H
+#define GPLATES_GUI_OPENGL_H
 
 extern "C" {
+#ifdef __APPLE__
+/* Assume compilation on Mac OS X. */
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#else
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
 }
 
-#endif  /* _GPLATES_GUI_OPENGL_H_ */
+#endif  // GPLATES_GUI_OPENGL_H
