@@ -45,76 +45,27 @@ using namespace GPlatesGui;
 
 
 /**
- * Menu IDs.
+ * Menu IDs, all wrapped up to avoid namespace pollution.
  */
-enum {
-	MENU_FILE_OPENDATA,
-	MENU_FILE_OPENROTATION,
-	MENU_FILE_SAVEDATA,
-	MENU_FILE_EXIT,
+namespace {
 
-	MENU_VIEW_METADATA,
-	MENU_VIEW_GLOBE,
-	MENU_VIEW_GLOBE_SOLID,
-	MENU_VIEW_GLOBE_TRANSPARENT,
+	enum {
+		MENU_FILE_OPENDATA,
+		MENU_FILE_OPENROTATION,
+		MENU_FILE_SAVEDATA,
+		MENU_FILE_EXIT,
 
-	MENU_RECONSTRUCT_TIME,
-	MENU_RECONSTRUCT_PRESENT,
-	MENU_RECONSTRUCT_ANIMATION
-};
+		MENU_VIEW_METADATA,
+		MENU_VIEW_GLOBE,
+		MENU_VIEW_GLOBE_SOLID,
+		MENU_VIEW_GLOBE_TRANSPARENT,
 
-
-static void
-CreateMenuBar(MainWindow* frame)
-{
-	wxMenu* filemenu = new wxMenu;
-	filemenu->Append(MENU_FILE_OPENDATA, 
-	 _("Open &Data...\tCtrl-O"), 
-	 _("Open a data file"));
-	filemenu->Append(MENU_FILE_OPENROTATION, 
-	 _("Open &Rotation...\tCtrl-R"), 
-	 _("Open a rotation file"));
-	filemenu->Append(MENU_FILE_SAVEDATA,
-	 _("&Save Data...\tCtrl-S"),
-	 _("Save current data to file"));
-	filemenu->AppendSeparator();
-	filemenu->Append(MENU_FILE_EXIT,
-	 _("&Quit\tCtrl-Q"),
-	 _("Exit GPlates"));
-
-	wxMenu* viewmenu = new wxMenu;
-	viewmenu->Append(MENU_VIEW_METADATA,
-	 _("&View Metadata...\tCtrl-V"),
-	 _("View the document's metadata"));
-
-	viewmenu->AppendSeparator();
-	wxMenu *viewGlobe_menu = new wxMenu;
-	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_SOLID,
-	 _("&Solid"));
-	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_TRANSPARENT,
-	 _("&Transparent"));
-	viewmenu->Append(MENU_VIEW_GLOBE,
-	 _("&Globe"),
-	 viewGlobe_menu);
-
-	wxMenu* reconstructmenu = new wxMenu;
-	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
-	 _("Particular &Time...\tCtrl-T"),
-	 _("Reconstruct the data at a particular time"));
-	reconstructmenu->Append(MENU_RECONSTRUCT_PRESENT,
-	 _("Return to &Present\tCtrl-P"),
-	 _("Reconstruct the data at the present"));
-	reconstructmenu->Append(MENU_RECONSTRUCT_ANIMATION,
-	 _("&Animation...\tCtrl-A"),
-	 _("Animate the reconstruction of the data between two times."));
-	
-	wxMenuBar* menubar = new wxMenuBar(wxMB_DOCKABLE);
-	menubar->Append(filemenu, _("&File"));
-	menubar->Append(viewmenu, _("&View"));
-	menubar->Append(reconstructmenu, _("&Reconstruct"));
-
-	frame->SetMenuBar(menubar);
+		MENU_RECONSTRUCT_TIME,
+		MENU_RECONSTRUCT_PRESENT,
+		MENU_RECONSTRUCT_ANIMATION
+	};
 }
+
 
 MainWindow::MainWindow(wxFrame* parent, const wxString& title,
  const wxSize& size, const wxPoint& pos)
@@ -129,7 +80,7 @@ MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	_last_load_dir = "";
 	_last_save_dir = "";
 
-	CreateMenuBar(this);
+	CreateMenuBar();
 	_canvas = new GLCanvas(this);
 	_canvas->SetCurrent();
 
@@ -277,6 +228,58 @@ MainWindow::OnReconstructAnimation(wxCommandEvent&)
 			dialog.GetEndTime(),
 			dialog.GetNSteps());
 	}
+}
+
+void
+MainWindow::CreateMenuBar()
+{
+	wxMenu* filemenu = new wxMenu;
+	filemenu->Append(MENU_FILE_OPENDATA, 
+	 _("Open &Data...\tCtrl-O"), 
+	 _("Open a data file"));
+	filemenu->Append(MENU_FILE_OPENROTATION, 
+	 _("Open &Rotation...\tCtrl-R"), 
+	 _("Open a rotation file"));
+	filemenu->Append(MENU_FILE_SAVEDATA,
+	 _("&Save Data...\tCtrl-S"),
+	 _("Save current data to file"));
+	filemenu->AppendSeparator();
+	filemenu->Append(MENU_FILE_EXIT,
+	 _("&Quit\tCtrl-Q"),
+	 _("Exit GPlates"));
+
+	wxMenu* viewmenu = new wxMenu;
+	viewmenu->Append(MENU_VIEW_METADATA,
+	 _("&View Metadata...\tCtrl-V"),
+	 _("View the document's metadata"));
+
+	viewmenu->AppendSeparator();
+	wxMenu *viewGlobe_menu = new wxMenu;
+	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_SOLID,
+	 _("&Solid"));
+	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_TRANSPARENT,
+	 _("&Transparent"));
+	viewmenu->Append(MENU_VIEW_GLOBE,
+	 _("&Globe"),
+	 viewGlobe_menu);
+
+	wxMenu* reconstructmenu = new wxMenu;
+	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
+	 _("Particular &Time...\tCtrl-T"),
+	 _("Reconstruct the data at a particular time"));
+	reconstructmenu->Append(MENU_RECONSTRUCT_PRESENT,
+	 _("Return to &Present\tCtrl-P"),
+	 _("Reconstruct the data at the present"));
+	reconstructmenu->Append(MENU_RECONSTRUCT_ANIMATION,
+	 _("&Animation...\tCtrl-A"),
+	 _("Animate the reconstruction of the data between two times."));
+	
+	wxMenuBar* menubar = new wxMenuBar(wxMB_DOCKABLE);
+	menubar->Append(filemenu, _("&File"));
+	menubar->Append(viewmenu, _("&View"));
+	menubar->Append(reconstructmenu, _("&Reconstruct"));
+
+	SetMenuBar(menubar);
 }
 
 BEGIN_EVENT_TABLE(MainWindow, wxFrame)

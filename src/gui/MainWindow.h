@@ -47,7 +47,9 @@ namespace GPlatesGui
 			// Mouse events
 			void OnMouseMove(wxMouseEvent&);
 
-			// Menubar events
+			/*
+			 * Menubar events
+			 */
 
 			//File events
 			void OnOpenData(wxCommandEvent&);
@@ -76,6 +78,8 @@ namespace GPlatesGui
 			wxStatusBar *_status_bar;
 			GLCanvas    *_canvas;
 			wxString _last_load_dir, _last_save_dir;
+
+			void CreateMenuBar();
 
 			DECLARE_EVENT_TABLE()
 	};
