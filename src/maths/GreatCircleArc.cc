@@ -37,12 +37,6 @@ using namespace GPlatesMaths;
 GreatCircleArc
 GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 
-	/*
-	 * As a speed-up, since parallel(u1,u2) iff dot(u1,u2) >= 1.0,
-	 * and antiparallel(u1,u2) iff dot(u1,u2) <= -1.0, we can factor
-	 * out the dot product computation, which is what I do here.
-	 *	- DAS 17/12/2003
-	 */
 	real_t dotP = dot(u1, u2);
 
 	/*
@@ -51,7 +45,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	 */
 	if (dotP >= 1.0) {
 
-		// start-point same as end-point => no arc
+		// parallel => start-point same as end-point => no arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
 		 "arc from duplicate endpoints ");
 		oss << u1 << " and " << u2 << ".";
@@ -59,7 +53,8 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	}
 	if (dotP <= -1.0) {
 
-		// start-point and end-point antipodal => indeterminate arc
+		// antiparallel => start-point and end-point antipodal =>
+		// indeterminate arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
 		 "arc from antipodal endpoints ");
 		oss << u1 << " and " << u2 << ".";
@@ -92,10 +87,6 @@ GreatCircleArc
 GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2,
 	UnitVector3D rot_axis) {
 
-	/*
-	 * (apply the same speedup as the other CreateGreatCircleArc, above)
-	 *	- DAS 17/12/2003
-	 */
 	real_t dotP = dot(u1, u2);
 
 	/*
@@ -121,13 +112,14 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2,
 
 	/*
 	 * Ensure that 'rot_axis' does, in fact, qualify as a rotation axis
-	 * (ie. that it is parallel to the cross product of 'u1' and 'u2').
+	 * (ie. that it is collinear with (ie. parallel or antiparallel to)
+	 * the cross product of 'u1' and 'u2').
 	 *
 	 * To do this, we calculate the cross product.
 	 * (We use the Vector3D cross product, which is faster).
 	 */
 	Vector3D v = cross(Vector3D(u1), Vector3D(u2));
-	if ( ! parallel(v, Vector3D(rot_axis))) {
+	if ( ! collinear(v, Vector3D(rot_axis))) {
 
 		// 'rot_axis' is not the axis which rotates 'u1' into 'u2'
 		std::ostringstream oss("Attempted to calculate a great-circle "
