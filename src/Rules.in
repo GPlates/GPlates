@@ -1,5 +1,6 @@
 %.o : %.cc
-	@CXX@ $(CXXFLAGS) -c $< -o $@
+	@echo "    Compiling $@"
+	@@CXX@ $(CXXFLAGS) -c $< -o $@
 
 ################
 # DEPENDENCIES #
