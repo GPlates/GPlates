@@ -169,7 +169,8 @@ namespace GPlatesMaths
 	}
 
 
-	inline std::ostream &operator<< (std::ostream &os, const Vector3D &v)
+	inline std::ostream &
+	operator<< (std::ostream &os, const Vector3D &v)
 	{
 		os << "(" << v.x() << ", " << v.y() << ", " << v.z() << ")";
 		return os;
@@ -184,8 +185,9 @@ namespace GPlatesMaths
 	 *
 	 * Note that zero vectors are defined to be parallel to everything.
 	 */
-	inline bool parallel(const Vector3D &v1, const Vector3D &v2) {
-
+	inline bool
+	parallel(const Vector3D &v1, const Vector3D &v2)
+	{
 		real_t dp = dot(v1, v2);
 		return (dp >= v1.magnitude () * v2.magnitude ());
 	}
@@ -193,7 +195,8 @@ namespace GPlatesMaths
 	/**
 	 * Test whether two vectors are perpendicular.
 	 */
-	inline bool perpendicular (const Vector3D &v1, const Vector3D &v2)
+	inline bool
+	perpendicular (const Vector3D &v1, const Vector3D &v2)
 	{
 		real_t dp = dot (v1, v2);
 		return (abs (dp) <= 0.0);
@@ -209,7 +212,8 @@ namespace GPlatesMaths
 	 *
 	 * Note that zero vectors are defined to be collinear to everything.
 	 */
-	inline bool collinear(const Vector3D &v1, const Vector3D &v2)
+	inline bool
+	collinear(const Vector3D &v1, const Vector3D &v2)
 	{
 		real_t adp = abs (dot (v1, v2));
 		return (adp >= v1.magnitude () * v2.magnitude ());
