@@ -101,37 +101,50 @@ namespace GPlatesFileIO {
 
   using GPlatesGlobal::rgid_t;
 
-  /** Read in a Plates format isochron file and put its contents in the map.
-   * The inputstream must point to the beginning of an already open file containing plates boundary data.  
+  /// Read in a Plates format isochron file and put its contents in the map.
+   /* The inputstream must point to the beginning of an already open file containing plates boundary data.  
+    */
+  void ReadInPlateBoundaryData(const char *filename, std::istream &input_stream, std::map< rgid_t, PlatesPlate> &plates_data); 
+
+  bool ReadIsochron(LineBuffer &lb, std::map< rgid_t, PlatesPlate> &plates_data); /// given a LineBuffer, reads in the file into two strings and a list of LatLonPoints
+
+  /// Extract the begin time from the string and return it.
+  fpdata_t ExtractBeginTime(const std::string &second_line);
+
+  /// Extract the end time from the string and return it.
+  fpdata_t ExtractEndTime(const std::string &second_line);
+
+  /// Extract the plateid which is the first four characters of the file, which should be followed by a space.
+  rgid_t ExtractPlateId(const std::string &first_line); 
+
+  /// Takes a reference to a line buffer and returns the first line read in a string.
+  std::string ReadFirstLineOfIsochronHeader(LineBuffer &lb); 
+
+  /// Takes a reference to a line buffer and returns the first line read in a string.
+  std::string ReadSecondLineOfIsochronHeader(LineBuffer &lb); 
+
+  /// Just read all the LatLon points from the file into the list points.
+  void ReadIsochronPoints(LineBuffer &lb, std::list< LatLonPoint > &points, size_t num_points_to_expect); 
+
+  /// Just read a line of the file from lb and return it as a string.
+  std::string ReadIsochronPoint(LineBuffer &lb); 
+
+  /// Parse the string to get a Lat and a Lon point and return them in a LatLonPoint. Will cause an exception if the expected plotter code isn't found.
+  /** *** Warning - there are two different functions both called parseLine ***
    */
-  void readinplateboundarydata(const char *filename, std::istream &inputstream, std::map< rgid_t, PlatesPlate> &platesdata); 
-
-  bool readIsochron(LineBuffer &lb, std::map< rgid_t, PlatesPlate> &platesdata); /// given a LineBuffer, reads in the file into two strings and a list of LatLonPoints
-
-  fpdata_t extractbegintime(const std::string &secondline);
-
-  fpdata_t extractendtime(const std::string &secondline);
-
-  rgid_t extractplateid(const std::string &firstline); /// The plateid is the first four characters of the file, which should be followed by a space.
-
-    std::string readFirstLineOfIsochronHeader(LineBuffer &lb); /// takes a reference to a line buffer and returns the first line read in a string.
-
-  std::string readSecondLineOfIsochronHeader(LineBuffer &lb); /// takes a reference to a line buffer and returns the first line read in a string.
-
-    void readIsochronPoints(LineBuffer &lb, std::list< LatLonPoint > &points, size_t num_points_to_expect); /// Just read all the LatLon points from the file into the list points.
-
-  std::string readIsochronPoint(LineBuffer &lb); /// Just read a line of the file from lb and return it as a string.
-
-  // *** Warning - there are two different functions both called parseLine ***
-    LatLonPoint parseLine(const std::string &line, const LineBuffer &lb, int expected_plotter_code); /// Read parse the string to get a Lat and a Lon point and return them in a LatLonPoint. Will cause an exception if the expected plotter code isn't found.
+  LatLonPoint ParseLine(const std::string &line, const LineBuffer &lb, int expected_plotter_code); 
   
-  fpdata_t attemptToReadCoord(std::istringstream &iss, const LineBuffer &lb, const char *desc);
+  /// Attempt to read a particular Lat or Lon coordinate and return it. Throw an exception if this doesn't work.
+  fpdata_t AttemptToReadCoord(std::istringstream &iss, const LineBuffer &lb, const char *desc);
+ 
+  /// Try to read a particular Lat or Lon coordinate from the istringstream.
+  int AttemptToReadPlotterCode(std::istringstream &iss, const LineBuffer &lb);
   
-  int attemptToReadPlotterCode(std::istringstream &iss, const LineBuffer &lb); /// Try to read a particular Lat or Lon coordinate from the istringstream.
-  
-  void parseTerminatingLine(const std::string &line, const LineBuffer &lb); /// Check that the final line conforms to the expected format.
+  /// Check that the final line conforms to the expected format.
+  void ParseTerminatingLine(const std::string &line, const LineBuffer &lb); 
     
-    size_t parseLine(const std::string &line, const LineBuffer &lb); /// This just returns the last item in the second line of the file (which is an integer).
+  /// This just returns the last item in the second line of the file (which is an integer).
+  size_t ParseLine(const std::string &line, const LineBuffer &lb); 
 
 }
 

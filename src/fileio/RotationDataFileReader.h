@@ -49,21 +49,21 @@
 
 namespace GPlatesFileIO {
   
-  const int MAXIMUMLENGTHOFROTATIONDATALINE=500; // Make sure that this is big enough for anything we're likely to encounter.
+  const int MAXIMUM_LENGTH_OF_ROTATION_DATA_LINE=500; // Make sure that this is big enough for anything we're likely to encounter.
  
-  /** This functions reads in a Plates rotation data file and puts its contents in the map.   
-   * The inputstream must point to the beginning of an already open file containing plates rotation data.
+  /// This functions reads in a Plates rotation data file and puts its contents in the map.   
+  /** The inputstream must point to the beginning of an already open file containing plates rotation data.
    */
-  void readinplaterotationdata(const char *filename, std::istream &inputstream, std::map< rgid_t, std::multimap< fpdata_t, FiniteRotation > > &rotationdata); 
+  void ReadInPlateRotationData(const char *filename, std::istream &input_stream, std::map< rgid_t, std::multimap< fpdata_t, FiniteRotation > > &rotation_data); 
 
   /// Reads one line of the file and puts it in the map - returns false iff there is no more file to be read.
-  bool readrotationline(LineBuffer &lb, std::map< GPlatesGlobal::rgid_t, std::multimap< fpdata_t, FiniteRotation > > &rotationdata);
+  bool ReadRotationLine(LineBuffer &lb, std::map< GPlatesGlobal::rgid_t, std::multimap< fpdata_t, FiniteRotation > > &rotation_data);
 
   /// Reads in an rgid_t from the istringstream - exception will be thrown if it fails.
-  rgid_t attemptToReadrgid_t(std::istringstream &iss, const LineBuffer &lb);
+  rgid_t AttemptToReadRgid_t(std::istringstream &iss, const LineBuffer &lb);
   
   /// Reads in a float from the istringstream - exception will be thrown if it fails.
-  double attemptToReadFloat(std::istringstream &iss, const LineBuffer &lb);
+  double AttemptToReadFloat(std::istringstream &iss, const LineBuffer &lb);
 
 }
 

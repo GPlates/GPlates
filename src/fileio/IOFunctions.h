@@ -31,10 +31,10 @@
 namespace GPlatesFileIO {
 
   /// Returns true iff the buffer is empty of anything except spaces, tabs or newlines.
-  bool empty(const char *buf); 
+  bool Empty(const char *buf); 
 
   /// Returns the substrng starting at start and ending at end. (N.B. end is actually the last character included, not one after it.)
-  std::string substring(std::string wholestring, int start, int end); 
+  std::string SubString(std::string whole_string, int start, int end); 
 
 }
 
