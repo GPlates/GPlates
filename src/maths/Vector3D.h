@@ -173,6 +173,11 @@ namespace GPlatesMaths
 	 */
 	bool parallel (const Vector3D &s1, const Vector3D &s2);
 
+	inline bool collinear (const Vector3D &s1, const Vector3D &s2)
+	{
+		real_t adp = abs (dot (s1, s2));
+		return (adp >= s1.magnitude () * s2.magnitude ());
+	}
 
 	/**
 	 * On a Pentium IV processor, this should cost about

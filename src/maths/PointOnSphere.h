@@ -22,6 +22,7 @@
  * Authors:
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_POINTONSPHERE_H_
@@ -71,6 +72,16 @@ namespace GPlatesMaths
 
 		return (p1.unitvector() != p2.unitvector());
 	}
+
+	/**
+	 * True iff points are equal or antipodal
+	 */
+	inline bool diametric (const PointOnSphere &s1, const PointOnSphere &s2)
+	{
+		return (collinear (s1.unitvector (), s2.unitvector ()));
+	}
+
+
 }
 
 #endif  // _GPLATES_MATHS_POINTONSPHERE_H_

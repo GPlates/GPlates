@@ -96,6 +96,12 @@ namespace GPlatesMaths
 			void AssertInvariantHolds () const;
 	};
 
+	inline bool collinear (const UnitVector3D &s1, const UnitVector3D &s2)
+	{
+		real_t adp = abs (dot (s1, s2));
+		return (adp >= 1.0);
+	}
+
 	inline UnitVector3D normalise (const DirVector3D &v1)
 	{
 		real_t scale = 1 / v1.magnitude ();

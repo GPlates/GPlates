@@ -22,6 +22,7 @@
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_REAL_H_
