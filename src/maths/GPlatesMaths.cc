@@ -31,7 +31,7 @@
 /*
  * Defined in Rotation.h.
  */
-inline Rotation
+inline GPlatesMaths::Rotation
 GPlatesMaths::operator+(const Rotation& A, const Rotation& B)
 { 
 	return Rotation(A) += B;
