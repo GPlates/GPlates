@@ -223,8 +223,8 @@ GPlatesGui::GLCanvas::GetSphereCoordFromScreen(int screenx, int screeny) {
 	z /= scale;
 	
 	// Account for the zoom factor
-	y *= FRAMING_RATIO / _zoom_factor;
-	z *= FRAMING_RATIO / _zoom_factor;
+	y *= FRAMING_RATIO / m_viewport_zoom.zoom_factor();
+	z *= FRAMING_RATIO / m_viewport_zoom.zoom_factor();
 
 	// Test if point is within the sphere's horizon.
 	if ((discrim = y*y + z*z) > 1.0)
@@ -261,7 +261,7 @@ GPlatesGui::GLCanvas::OnSpin(wxMouseEvent& evt)
 	static GLfloat last_x = 0.0, last_y = 0.0, last_zoom = 0.0;
 	// Make the tolerance inversely proportional to the current zoom.  
 	// That way the globe won't spin stupidly when the user is up close.
-	GLfloat TOLERANCE = 5.0 * _zoom_factor;  
+	GLfloat TOLERANCE = 5.0 * m_viewport_zoom.zoom_factor();  
 	static const GLfloat ZOOM_TOLERANCE = 200.0;
 
 	GLfloat& meridian = _globe.GetMeridian();
@@ -451,7 +451,8 @@ GPlatesGui::GLCanvas::SetView() {
 
 	// The coords of the symmetrical clipping planes which bound
 	// the smaller dimension.
-	GLdouble smaller_dim_clipping = FRAMING_RATIO / _zoom_factor;
+	GLdouble smaller_dim_clipping =
+	 FRAMING_RATIO / m_viewport_zoom.zoom_factor();
 
 	// The coords of the symmetrical clipping planes which bound
 	// the larger dimension.
@@ -485,7 +486,6 @@ void
 GPlatesGui::GLCanvas::HandleZoomChange() {
 
 	_parent->SetCurrentZoom(m_viewport_zoom.zoom_percent());
-	_zoom_factor = m_viewport_zoom.zoom_factor();
 
 	SetView();
 	Refresh();
@@ -526,7 +526,7 @@ GPlatesGui::GLCanvas::getUniverseCoordY(int screen_x) {
 	// Scale screen to "unit square".
 	GPlatesMaths::real_t y = (2.0 * screen_x - _width) / _smaller_dim;
 
-	return (y * FRAMING_RATIO / _zoom_factor);
+	return (y * FRAMING_RATIO / m_viewport_zoom.zoom_factor());
 }
 
 
@@ -536,7 +536,7 @@ GPlatesGui::GLCanvas::getUniverseCoordZ(int screen_y) {
 	// Scale screen to "unit square".
 	GPlatesMaths::real_t z = (_height - 2.0 * screen_y) / _smaller_dim;
 
-	return (z * FRAMING_RATIO / _zoom_factor);
+	return (z * FRAMING_RATIO / m_viewport_zoom.zoom_factor());
 }
 
 

@@ -108,7 +108,6 @@ namespace GPlatesGui
 			wxMenu *_popup_menu;
 
 			Globe _globe;
-			double _zoom_factor;
 			int _mouse_x;
 			int _mouse_y;
 			int _width;
