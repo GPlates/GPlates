@@ -23,8 +23,11 @@
  *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
+#include <sstream>
+
 #include "FiniteRotation.h"
 #include "Vector3D.h"
+#include "InvalidOperationException.h"
 
 
 using namespace GPlatesMaths;
@@ -47,6 +50,18 @@ FiniteRotation::CreateFiniteRotation(const PointOnSphere &euler_pole,
 }
 
 
+FiniteRotation
+FiniteRotation::CreateFiniteRotation(const UnitQuaternion3D &uq,
+	const real_t &point_in_time) {
+
+	// values used to optimise rotation of points on the sphere
+	real_t   d = (uq.s() * uq.s()) - dot(uq.v(), uq.v());
+	Vector3D e = (2.0 * uq.s()) * uq.v();
+
+	return FiniteRotation(uq, point_in_time, d, e);
+}
+
+
 PointOnSphere
 FiniteRotation::operator*(const PointOnSphere &p) const {
 
@@ -57,4 +72,24 @@ FiniteRotation::operator*(const PointOnSphere &p) const {
 
 	UnitVector3D puv_rot(pv_rot.x(), pv_rot.y(), pv_rot.z());
 	return PointOnSphere(puv_rot);
+}
+
+
+FiniteRotation
+operator*(const FiniteRotation &r1, const FiniteRotation &r2) {
+
+	if (r1.time() != r2.time()) {
+
+		// these FiniteRotations are not of the same point in time.
+		std::ostringstream oss(
+		 "Mismatched times in composition of FiniteRotations: ");
+		oss << r1.time()
+		 << " vs. "
+		 << r2.time();
+
+		throw InvalidOperationException(oss.str().c_str());
+	}
+
+	UnitQuaternion3D resultant_uq = r1.quat() * r2.quat();
+	return FiniteRotation::CreateFiniteRotation(resultant_uq, r1.time());
 }

@@ -68,11 +68,21 @@ namespace GPlatesMaths
 			 * Create a finite rotation with the given Euler pole
 			 * and rotation angle, for the given point in time.
 			 * As always, the rotation angle is in radians; the
-			 * point in time is in Ma (millions of years Ago).
+			 * point in time is in Ma (Millions of years ago).
 			 */
 			static FiniteRotation
 			CreateFiniteRotation(const PointOnSphere &euler_pole,
 			                     const real_t &rotation_angle,
+			                     const real_t &point_in_time);
+
+
+			/**
+			 * Create a finite rotation consisting of the given
+			 * unit quaternion and the given point in time.
+			 * The point in time is in Ma (Millions of years ago).
+			 */
+			static FiniteRotation
+			CreateFiniteRotation(const UnitQuaternion3D &uq,
 			                     const real_t &point_in_time);
 
 
@@ -114,6 +124,16 @@ namespace GPlatesMaths
 			Vector3D _e;
 	};
 
+
+	/**
+	 * Compose two FiniteRotations of the same point in time.
+	 *
+	 * Note: order of composition is important!
+	 * Quaternion multiplication is not commutative!
+	 * This operation is not symmetrical!
+	 */
+	FiniteRotation
+	operator*(const FiniteRotation &r1, const FiniteRotation &r2);
 }
 
 #endif  // _GPLATES_MATHS_FINITEROTATION_H_
