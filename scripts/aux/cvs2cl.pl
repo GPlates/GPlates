@@ -17,6 +17,7 @@ exec perl -w -x $0 ${1+"$@"} # -*- mode: perl; perl-indent-level: 2; -*-
 ##   (C) 1999 Karl Fogel <kfogel@red-bean.com>, under the GNU GPL.
 ##
 ##   (Extensively hacked on by Melissa O'Neill <oneill@cs.sfu.ca>.)
+##   (Gecos hacking by Robin Johnson <robbat2@orbis-terrarum.net>.)
 ##
 ## cvs2cl.pl is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -35,9 +36,10 @@ exec perl -w -x $0 ${1+"$@"} # -*- mode: perl; perl-indent-level: 2; -*-
 
 
 use strict;
-use Text::Wrap;
+use Text::Wrap qw( );
 use Time::Local;
-use File::Basename;
+use File::Basename qw( fileparse );
+use User::pwent;
 
 
 # The Plan:
@@ -74,6 +76,8 @@ use File::Basename;
 
 ############### Globals ################
 
+use constant MAILNAME => "/etc/mailname";
+
 # What we run to generate it:
 my $Log_Source_Command = "cvs log";
 
@@ -102,8 +106,28 @@ my $Log_File_Name = "ChangeLog";
 # to that ChangeLog.
 my $Cumulative = 0;
 
+# `cvs log -d`, this will repeat the last entry in the old log.  This is OK,
+# as it guarantees at least one entry in the update changelog, which means
+# that there will always be a date to extract for the next update.  The repeat
+# entry can be removed in postprocessing, if necessary.
+
+# MJP 2003-08-02
+# I don't think this actually does anything useful
+my $Update = 0;
+
 # Expand usernames to email addresses based on a map file?
 my $User_Map_File = "";
+my $User_Passwd_File;
+my $Mail_Domain;
+
+# Output log in chronological order? [default is reverse chronological order]
+my $Chronological_Order = 0;
+
+# Grab user details via gecos
+my $Gecos = 0;
+
+# User domain for gecos email addresses
+my $Domain;
 
 # Output to a file or to stdout?
 my $Output_To_Stdout = 0;
@@ -112,10 +136,19 @@ my $Output_To_Stdout = 0;
 my $Prune_Empty_Msgs = 0;
 
 # Tags of which not to output
-my @ignore_tags;
+my %ignore_tags;
+
+# Show only revisions with Tags
+my %show_tags;
 
 # Don't call Text::Wrap on the body of the message
 my $No_Wrap = 0;
+
+# Indentation of log messages
+my $Indent = "\t";
+
+# Don't do any pretty print processing
+my $Summary = 0;
 
 # Separates header from log message.  Code assumes it is either " " or
 # "\n\n", so if there's ever an option to set it to something else,
@@ -127,6 +160,8 @@ my $XML_Encoding = '';
 
 # Format more for programs than for humans.
 my $XML_Output = 0;
+my $No_XML_Namespace = 0;
+my $No_XML_ISO_Date = 0;
 
 # Do some special tweaks for log data that was written in FSF
 # ChangeLog style.
@@ -143,6 +178,13 @@ my $Show_Day_Of_Week = 0;
 
 # Show revision numbers in output?
 my $Show_Revisions = 0;
+
+# Show dead files in output?
+my $Show_Dead = 0;
+
+# Hide dead trunk files which were created as a result of additions on a
+# branch?
+my $Hide_Branch_Additions = 1;
 
 # Show tags (symbolic names) in output?
 my $Show_Tags = 0;
@@ -178,6 +220,9 @@ my $Input_From_Stdin = 0;
 # Don't show filenames in output.
 my $Hide_Filenames = 0;
 
+# Don't shorten directory names from filenames.
+my $Common_Dir = 1;
+
 # Max checkin duration. CVS checkin is not atomic, so we may have checkin
 # times that span a range of time. We assume that checkins will last no
 # longer than $Max_Checkin_Duration seconds, and that similarly, no
@@ -192,6 +237,13 @@ my $ChangeLog_Header = "";
 my $Delta_Mode = 0;
 my $Delta_From = "";
 my $Delta_To = "";
+
+my $TestCode;
+
+# Whether to parse filenames from the RCS filename, and if so what
+# prefix to strip.
+my $RCS_Mode = 0;
+my $RCS_Root = "";
 
 ## end vars set by options.
 
@@ -208,19 +260,43 @@ my $file_separator = "======================================="
 # within a file:
 my $logmsg_separator = "----------------------------";
 
+my $No_Ancestors = 0;
+
+my $No_Extra_Indent = 0;
+
+my $GroupWithinDate = 0;
+
 ############### End globals ############
 
 
+
 &parse_options ();
-&derive_change_log ();
+if ( defined $TestCode ) {
+  eval $TestCode;
+  die "Eval failed: '$@'\n"
+    if $@;
+} else {
+  &derive_change_log ();
+}
 
 
 ### Everything below is subroutine definitions. ###
 
+sub run_ext {
+  my ($cmd) = @_;
+  $cmd = [$cmd]
+    unless ref $cmd;
+  local $" = ' ';
+  my $out = qx"@$cmd 2>&1";
+  my $rv  = $?;
+  my ($sig, $core, $exit) = ($? & 127, $? & 128, $? >> 8);
+  return $out, $exit, $sig, $core;
+}
+
 # If accumulating, grab the boundary date from pre-existing ChangeLog.
 sub maybe_grab_accumulation_date ()
 {
-  if (! $Cumulative) {
+  if (! $Cumulative || $Update) {
     return "";
   }
 
@@ -240,7 +316,43 @@ sub maybe_grab_accumulation_date ()
   }
 
   close (LOG);
+
+  # convert time from utc to local timezone if the ChangeLog has
+  # dates/times in utc
+  if ($UTC_Times && $boundary_date)
+  {
+    # convert the utc time to a time value
+    my ($year,$mon,$mday,$hour,$min) = $boundary_date =~
+      m#(\d+)-(\d+)-(\d+)\s+(\d+):(\d+)#;
+    my $time = timegm(0,$min,$hour,$mday,$mon-1,$year-1900);
+    # print the timevalue in the local timezone
+    my ($ignore,$wday);
+    ($ignore,$min,$hour,$mday,$mon,$year,$wday) = localtime($time);
+    $boundary_date=sprintf ("%4u-%02u-%02u %02u:%02u",
+                            $year+1900,$mon+1,$mday,$hour,$min);
+  }
+
   return $boundary_date;
+}
+
+# Don't call this wrap, because with 5.5.3, that clashes with the
+# (unconditional :-( ) export of wrap() from Text::Wrap
+sub mywrap {
+  my ($indent1, $indent2, @text) = @_;
+  # If incoming text looks preformatted, don't get clever
+  my $text = Text::Wrap::wrap($indent1, $indent2, @text);
+  if ( grep /^\s+/m, @text ) {
+    return $text;
+  }
+  my @lines = split /\n/, $text;
+  $indent2 =~ s!^((?: {8})+)!"\t" x (length($1)/8)!e;
+  $lines[0] =~ s/^$indent1\s+/$indent1/;
+  s/^$indent2\s+/$indent2/
+    for @lines[1..$#lines];
+  my $newtext = join "\n", @lines;
+  $newtext .= "\n"
+    if substr($text, -1) eq "\n";
+  return $newtext;
 }
 
 # Fills up a ChangeLog structure in the current directory.
@@ -254,6 +366,9 @@ sub derive_change_log ()
   my $time;
   my $revision;
   my $author;
+  my $state;
+  my $lines;
+  my $cvsstate;
   my $msg_txt;
   my $detected_file_separator;
 
@@ -304,11 +419,23 @@ sub derive_change_log ()
   {
     # Canonicalize line endings
     s/\r$//;
+    my $new_full_path;
+
     # If on a new file and don't see filename, skip until we find it, and
     # when we find it, grab it.
-    if ((! (defined $file_full_path)) and /^Working file: (.*)/)
+    if (! (defined $file_full_path))
     {
-      $file_full_path = $1;
+      if (/^Working file: (.*)/) {
+        $new_full_path = $1;
+      } elsif ($RCS_Mode && m|^RCS file: $RCS_Root[/\\](.*),v$|) {
+        $new_full_path = $1;
+        $new_full_path =~ s!Attic/!!;
+      }
+    }
+
+    if (defined $new_full_path)
+    {
+      $file_full_path = $new_full_path;
       if (@Ignore_Files)
       {
         my $base;
@@ -424,7 +551,9 @@ sub derive_change_log ()
               goto dengo;
             }
             # Non-trivial case: check if rev is ancestral to branch
-            elsif ((length ($branch_number)) > (length ($revision)))
+            elsif ((length ($branch_number)) > (length ($revision))
+                   and
+                   $No_Ancestors)
             {
               $revision =~ /^((?:\d+\.)+)(\d+)$/;
               my $r_left = $1;          # still has the trailing "."
@@ -474,9 +603,27 @@ sub derive_change_log ()
     {
       if (/^date: .*/)
       {
-        ($time, $author) = &parse_date_and_author ($_);
+        ($time, $author, $state, $lines) =
+          &parse_date_author_and_state ($_);
         if (defined ($usermap{$author}) and $usermap{$author}) {
           $author = $usermap{$author};
+        } elsif(defined $Domain or $Gecos == 1) {
+          my $email = $author;
+          if(defined $Domain && $Domain ne '') {
+            $email = $author."@".$Domain;
+          }
+          my $pw = getpwnam($author);
+          my $fullname;
+          my $office;
+          my $workphone;
+          my $homephone;
+          for (($fullname, $office, $workphone, $homephone) = split /\s*,\s*/, $pw->gecos) {
+            next if not defined $_;
+            s/&/ucfirst(lc($pw->name))/ge;
+          }
+          if($fullname ne "") {
+            $author = $fullname . "  <" . $email . ">";
+          }
         }
       }
       else {
@@ -620,6 +767,10 @@ sub derive_change_log ()
       # loop-end deals with organizing these in qunk.
 
       $qunk{'revision'} = $revision;
+      $qunk{'state'} = $state;
+      if ( defined( $lines )) {
+        $qunk{'lines'} = $lines;
+      }
 
       # Grab the branch, even though we may or may not need it:
       $qunk{'revision'} =~ /((?:\d+\.)+)\d+/;
@@ -628,6 +779,9 @@ sub derive_change_log ()
       if ($branch_names{$branch_prefix}) {
         $qunk{'branch'} = $branch_names{$branch_prefix};
       }
+
+      # Keep a record of the file's cvs state.
+      $qunk{'cvsstate'} = $state;
 
       # If there's anything in the @branch_roots array, then this
       # revision is the root of at least one branch.  We'll display
@@ -643,36 +797,38 @@ sub derive_change_log ()
         $qunk{'tags'} = $symbolic_names{$revision};
         delete $symbolic_names{$revision};
 
-	# If we're in 'delta' mode, update the latest observed
-	# times for the beginning and ending tags, and
-	# when we get around to printing output, we will simply restrict
-	# ourselves to that timeframe...
-	
-	if ($Delta_Mode) {
-	  if (($time > $Delta_StartTime) &&
-	      (grep { $_ eq $Delta_From } @{$qunk{'tags'}}))
-	  {
-	    $Delta_StartTime = $time;
-	  }
-	  
-	  if (($time > $Delta_EndTime) &&
-	      (grep { $_ eq $Delta_To } @{$qunk{'tags'}}))
-	  {
-	    $Delta_EndTime = $time;
-	  }
-	}
+        # If we're in 'delta' mode, update the latest observed
+        # times for the beginning and ending tags, and
+        # when we get around to printing output, we will simply restrict
+        # ourselves to that timeframe...
+
+        if ($Delta_Mode) {
+          if (($time > $Delta_StartTime) &&
+              (grep { $_ eq $Delta_From } @{$qunk{'tags'}}))
+          {
+            $Delta_StartTime = $time;
+          }
+
+          if (($time > $Delta_EndTime) &&
+              (grep { $_ eq $Delta_To } @{$qunk{'tags'}}))
+          {
+            $Delta_EndTime = $time;
+          }
+        }
       }
 
-      # Add this file to the list
-      # (We use many spoonfuls of autovivication magic. Hashes and arrays
-      # will spring into existence if they aren't there already.)
+      unless ($Hide_Branch_Additions and $msg_txt =~ /file .+ was initially added on branch \S+./) {
+        # Add this file to the list
+        # (We use many spoonfuls of autovivication magic. Hashes and arrays
+        # will spring into existence if they aren't there already.)
 
-      &debug ("(pushing log msg for ${dir_key}$qunk{'filename'})\n");
+        &debug ("(pushing log msg for ${dir_key}$qunk{'filename'})\n");
 
-      # Store with the files in this commit.  Later we'll loop through
-      # again, making sure that revisions with the same log message
-      # and nearby commit times are grouped together as one commit.
-      push (@{$grand_poobah{$dir_key}{$author}{$time}{$msg_txt}}, \%qunk);
+        # Store with the files in this commit.  Later we'll loop through
+        # again, making sure that revisions with the same log message
+        # and nearby commit times are grouped together as one commit.
+        push (@{$grand_poobah{$dir_key}{$author}{$time}{$msg_txt}}, \%qunk);
+      }
     }
 
   CLEAR:
@@ -724,12 +880,12 @@ sub derive_change_log ()
         my $msghash = $timehash->{$time};
         while (my ($msg,$qunklist) = each %$msghash)
         {
- 	  my $stamptime = $stamptime{$msg};
+          my $stamptime = $stamptime{$msg};
           if ((defined $stamptime)
               and (($time - $stamptime) < $Max_Checkin_Duration)
               and (defined $changelog{$stamptime}{$author}{$msg}))
           {
- 	    push(@{$changelog{$stamptime}{$author}{$msg}}, @$qunklist);
+            push(@{$changelog{$stamptime}{$author}{$msg}}, @$qunklist);
           }
           else {
             $changelog{$time}{$author}{$msg} = $qunklist;
@@ -743,6 +899,7 @@ sub derive_change_log ()
     ### Now we can write out the ChangeLog!
 
     my ($logfile_here, $logfile_bak, $tmpfile);
+    my $lastdate;
 
     if (! $Output_To_Stdout) {
       $logfile_here =  $dir . $Log_File_Name;
@@ -759,27 +916,44 @@ sub derive_change_log ()
     print LOG_OUT $ChangeLog_Header;
 
     if ($XML_Output) {
-      my $encoding    = 
+      my $encoding    =
         length $XML_Encoding ? qq'encoding="$XML_Encoding"' : '';
       my $version     = 'version="1.0"';
-      my $declaration = 
+      my $declaration =
         sprintf '<?xml %s?>', join ' ', grep length, $version, $encoding;
       my $root        =
+        $No_XML_Namespace ?
+        '<changelog>'     :
         '<changelog xmlns="http://www.red-bean.com/xmlns/cvs2cl/">';
       print LOG_OUT "$declaration\n\n$root\n\n";
     }
 
-    foreach my $time (sort {$main::b <=> $main::a} (keys %changelog))
+    my @key_list = ();
+    if($Chronological_Order) {
+        @key_list = sort {$main::a <=> $main::b} (keys %changelog);
+    } else {
+        @key_list = sort {$main::b <=> $main::a} (keys %changelog);
+    }
+    foreach my $time (@key_list)
     {
       next if ($Delta_Mode &&
-	       (($time <= $Delta_StartTime) ||
-		($time > $Delta_EndTime && $Delta_EndTime)));
+               (($time <= $Delta_StartTime) ||
+                ($time > $Delta_EndTime && $Delta_EndTime)));
 
       # Set up the date/author line.
       # kff todo: do some more XML munging here, on the header
       # part of the entry:
       my ($ignore,$min,$hour,$mday,$mon,$year,$wday)
           = $UTC_Times ? gmtime($time) : localtime($time);
+
+      my $isoDate;
+      {
+        my ($y, $m, $d, $H, $M, $S) = (gmtime($time))[5,4,3,2,1,0];
+
+        # Ideally, this would honor $UTC_Times and use +HH:MM syntax
+        $isoDate = sprintf("%04d-%02d-%02dT%02d:%02d:%02dZ",
+            $y + 1900, $m + 1, $d, $H, $M, $S);
+      }
 
       # XML output includes everything else, we might as well make
       # it always include Day Of Week too, for consistency.
@@ -798,15 +972,16 @@ sub derive_change_log ()
         while (my ($author,$mesghash) = each %$authorhash) {
           while (my ($msg,$qunk) = each %$mesghash) {
             foreach my $qunkref2 (@$qunk) {
-	      if (defined ($$qunkref2{'tags'})) {
+              if (defined ($$qunkref2{'tags'})) {
                 foreach my $tag (@{$$qunkref2{'tags'}}) {
                   $tags{$tag} = 1;
                 }
               }
-	    }
+            }
           }
         }
-        foreach my $tag (keys %tags) {
+        # Sort here for determinism to ease testing
+        foreach my $tag (sort keys %tags) {
           if (!defined $tag_date_printed{$tag}) {
             $tag_date_printed{$tag} = $time;
             if ($XML_Output) {
@@ -832,16 +1007,27 @@ sub derive_change_log ()
         }
 
       FOOBIE:
-        while (my ($msg,$qunklist) = each %$mesghash)
+        # We sort here to enable predictable ordering for the testing porpoises
+        for my $msg (sort keys %$mesghash)
         {
+          my $qunklist = $mesghash->{$msg};
+
           ## MJP: 19.xii.01 : Exclude @ignore_tags
-          for my $ignore_tag (@ignore_tags) {
+          for my $ignore_tag (keys %ignore_tags) {
             next FOOBIE
-              if grep $_ eq $ignore_tag, map(@{$_->{tags}},
+              if grep($_ eq $ignore_tag, map(@{$_->{tags}},
                                              grep(defined $_->{tags},
-                                                  @$qunklist));
+                                                  @$qunklist)));
           }
           ## MJP: 19.xii.01 : End exclude @ignore_tags
+
+          # show only files with tag --show-tag $show_tag
+          if ( keys %show_tags ) {
+            next FOOBIE
+              if !grep(exists $show_tags{$_}, map(@{$_->{tags}},
+                                                  grep(defined $_->{tags},
+                                                       @$qunklist)));
+          }
 
           my $files               = &pretty_file_list ($qunklist);
           my $header_line;          # date and author
@@ -852,9 +1038,11 @@ sub derive_change_log ()
             $header_line =
                 sprintf ("<date>%4u-%02u-%02u</date>\n"
                          . "${wday}"
-                         . "<time>%02u:%02u</time>\n"
-                         . "<author>%s</author>\n",
-                         $year+1900, $mon+1, $mday, $hour, $min, $author);
+                         . "<time>%02u:%02u</time>\n",
+                         $year+1900, $mon+1, $mday, $hour, $min);
+            $header_line .= "<isoDate>$isoDate</isoDate>\n"
+              unless $No_XML_ISO_Date;
+            $header_line .= sprintf("<author>%s</author>\n" , $author);
           }
           else {
            if ($Show_Times) {
@@ -862,9 +1050,17 @@ sub derive_change_log ()
                 sprintf ("%4u-%02u-%02u${wday} %02u:%02u  %s\n\n",
                          $year+1900, $mon+1, $mday, $hour, $min, $author);
            } else {
-             $header_line =
-                sprintf ("%4u-%02u-%02u${wday}  %s\n\n",
-                         $year+1900, $mon+1, $mday, $author);
+             my $date = sprintf "%4u-%02u-%02u", $year+1900, $mon+1, $mday;
+             if ( $date ne $lastdate or ! $GroupWithinDate ) {
+               if ( $GroupWithinDate ) {
+                 $header_line = "$date$wday\n\n";
+               } else {
+                 $header_line = "$date$wday  $author\n\n";
+               }
+             } else {
+               $header_line = '';
+             }
+             $lastdate = $date;
            }
           }
 
@@ -876,21 +1072,104 @@ sub derive_change_log ()
             $msg = &preprocess_msg_text ($msg);
             $body = $files . $msg;
           }
-          elsif ($No_Wrap)
+          elsif ($No_Wrap && !$Summary)
           {
             $msg = &preprocess_msg_text ($msg);
-            $files = wrap ("\t", "	", "$files");
-            $msg =~ s/\n(.*)/\n\t$1/g;
+            $files = mywrap ("\t", "\t  ", "* $files");
+            $msg =~ s/\n(.+)/\n$Indent$1/g;
             unless ($After_Header eq " ") {
-              $msg =~ s/^(.*)/\t$1/g;
+              $msg =~ s/^(.+)/$Indent$1/g;
             }
             $body = $files . $After_Header . $msg;
           }
+          elsif ($Summary)
+          {
+            my( $filelist, $qunk );
+            my( @DeletedQunks, @AddedQunks, @ChangedQunks );
+
+            $msg = &preprocess_msg_text ($msg);
+            #
+            #     Sort the files (qunks) according to the operation that was
+            # performed.  Files which were added have no line change
+            # indicator, whereas deleted files have state dead.
+            #
+            foreach $qunk ( @$qunklist )
+            {
+              if ( "dead" eq $qunk->{'state'})
+              {
+                push( @DeletedQunks, $qunk );
+              }
+              elsif ( !exists( $qunk->{'lines'}))
+              {
+                push( @AddedQunks, $qunk );
+              }
+              else
+              {
+                push( @ChangedQunks, $qunk );
+              }
+            }
+            #
+            #     The qunks list was  originally in tree search order.  Let's
+            # get that back.  The lists, if they exist, will be reversed upon
+            # processing.
+            #
+
+            #
+            #     Now write the three sections onto $filelist
+            #
+            if ( @DeletedQunks )
+            {
+              $filelist .= "\tDeleted:\n";
+              foreach $qunk ( @DeletedQunks )
+              {
+                $filelist .= "\t\t" . $qunk->{'filename'};
+                $filelist .= " (" . $qunk->{'revision'} . ")";
+                $filelist .= "\n";
+              }
+              undef( @DeletedQunks );
+            }
+            if ( @AddedQunks )
+            {
+              $filelist .= "\tAdded:\n";
+              foreach $qunk ( @AddedQunks )
+              {
+                $filelist .= "\t\t" . $qunk->{'filename'};
+                $filelist .= " (" . $qunk->{'revision'} . ")";
+                $filelist .= "\n";
+              }
+              undef( @AddedQunks );
+            }
+            if ( @ChangedQunks )
+            {
+              $filelist .= "\tChanged:\n";
+              foreach $qunk ( @ChangedQunks )
+              {
+                $filelist .= "\t\t" . $qunk->{'filename'};
+                $filelist .= " (" . $qunk->{'revision'} . ")";
+                $filelist .= ", \"" . $qunk->{'state'} . "\"";
+                $filelist .= ", lines: " . $qunk->{'lines'};
+                $filelist .= "\n";
+              }
+              undef( @ChangedQunks );
+            }
+            chomp( $filelist );
+            if ($Hide_Filenames)
+            {
+              $filelist = "";
+            }
+            $msg =~ s/\n(.*)/\n$Indent$1/g;
+            unless ($After_Header eq " ") {
+              $msg =~ s/^(.*)/$Indent$1/g;
+            }
+            $body = $filelist . $After_Header . $msg;
+          }
           else  # do wrapping, either FSF-style or regular
           {
+            my $latter_wrap = $No_Extra_Indent ? "\t" : "\t  ";
+#print STDERR "LATTER:->$latter_wrap<-$No_Extra_Indent:\n";
             if ($FSF_Style)
             {
-              $files = wrap ("\t", "        ", "$files");
+              $files = mywrap ("\t", $latter_wrap, "* $files");
 
               my $files_last_line_len = 0;
               if ($After_Header eq " ")
@@ -900,17 +1179,19 @@ sub derive_change_log ()
               }
 
               $msg = &wrap_log_entry
-                  ($msg, "\t", 69 - $files_last_line_len, 69);
+                  ($msg, $latter_wrap, 69 - $files_last_line_len, 69);
               $body = $files . $After_Header . $msg;
             }
             else  # not FSF-style
             {
               $msg = &preprocess_msg_text ($msg);
               $body = $files . $After_Header . $msg;
-              $body = wrap ("\t", "        ", "$body");
+              $body = mywrap ("\t", $latter_wrap, "* $body");
+              $body =~ s/[ \t]+\n/\n/g;
             }
           }
 
+          $body =~ s/[ \t]+\n/\n/g;
           $wholething = $header_line . $body;
 
           if ($XML_Output) {
@@ -990,7 +1271,7 @@ sub derive_change_log ()
   }
 }
 
-sub parse_date_and_author ()
+sub parse_date_author_and_state ()
 {
   # Parses the date/time and author out of a line like:
   #
@@ -998,14 +1279,19 @@ sub parse_date_and_author ()
 
   my $line = shift;
 
-  my ($year, $mon, $mday, $hours, $min, $secs, $author) = $line =~
-      m#(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+);\s+author:\s+([^;]+);#
+  my ($year, $mon, $mday, $hours, $min, $secs, $author, $state, $rest) =
+    $line =~
+      m#(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+);\s+author:\s+([^;]+);\s+state:\s+([^;]+);(.*)#
           or  die "Couldn't parse date ``$line''";
   die "Bad date or Y2K issues" unless ($year > 1969 and $year < 2258);
   # Kinda arbitrary, but useful as a sanity check
   my $time = timegm($secs,$min,$hours,$mday,$mon-1,$year-1900);
-
-  return ($time, $author);
+  my $lines;
+  if ( $rest =~ m#\s+lines:\s+(.*)# )
+    {
+      $lines =$1;
+    }
+  return ($time, $author, $state, $lines);
 }
 
 # Here we take a bunch of qunks and convert them into printed
@@ -1017,7 +1303,15 @@ sub pretty_file_list ()
   }
 
   my $qunksref = shift;
-  my @qunkrefs = @$qunksref;
+
+  my @qunkrefs =
+    grep +((! exists $_->{'tags'}                             or
+            ! grep exists $ignore_tags{$_}, @{$_->{'tags'}})        and
+           (! keys %show_tags                                 or
+            (exists $_->{'tags'}                                and
+             grep exists $show_tags{$_}, @{$_->{'tags'}}))
+          ),
+    @$qunksref;
   my @filenames;
   my $beauty = "";          # The accumulating header string for this entry.
   my %non_unanimous_tags;   # Tags found in a proper subset of qunks
@@ -1032,17 +1326,10 @@ sub pretty_file_list ()
  QUNKREF:
   foreach my $qunkref (@qunkrefs)
   {
-    ## MJP: 19.xii.01 : Exclude @ignore_tags
-    for my $ignore_tag (@ignore_tags) {
-      next QUNKREF
-        if grep $_ eq $ignore_tag, @{$$qunkref{'tags'}};
-    }
-    ## MJP: 19.xii.01 : End exclude @ignore_tags
-
     # Keep track of whether all the files in this commit were in the
     # same directory, and memorize it if so.  We can make the output a
     # little more compact by mentioning the directory only once.
-    if ((scalar (@qunkrefs)) > 1)
+    if ($Common_Dir && (scalar (@qunkrefs)) > 1)
     {
       if (! (defined ($common_dir)))
       {
@@ -1110,6 +1397,7 @@ sub pretty_file_list ()
     foreach my $qunkref (@qunkrefs)
     {
       my $filename    = $$qunkref{'filename'};
+      my $cvsstate    = $$qunkref{'cvsstate'};
       my $revision    = $$qunkref{'revision'};
       my $tags        = $$qunkref{'tags'};
       my $branch      = $$qunkref{'branch'};
@@ -1120,6 +1408,7 @@ sub pretty_file_list ()
 
       $beauty .= "<file>\n";
       $beauty .= "<name>${filename}</name>\n";
+      $beauty .= "<cvsstate>${cvsstate}</cvsstate>\n";
       $beauty .= "<revision>${revision}</revision>\n";
       if ($branch) {
         $branch   = &xml_escape ($branch);     # more paranoia
@@ -1232,47 +1521,56 @@ sub pretty_file_list ()
   # Okay; any qunks that were done according to branch are taken care
   # of, and marked as printed.  Now print everyone else.
 
+  my %fileinfo_printed;
   foreach my $qunkref (@qunkrefs)
   {
     next if (defined ($$qunkref{'printed'}));   # skip if already printed
 
-    if ($fbegun) {
-      $beauty .= ", ";
-    }
-    else {
-      $fbegun = 1;
-    }
-    $beauty .= substr ($$qunkref{'filename'}, length ($common_dir));
+    my $b = substr ($$qunkref{'filename'}, length ($common_dir));
     # todo: Shlomo's change was this:
     # $beauty .= substr ($$qunkref{'filename'},
     #              (($common_dir eq "./") ? "" : length ($common_dir)));
     $$qunkref{'printed'} = 1;  # Set a mark bit.
 
-    if ($Show_Revisions || $Show_Tags)
+    if ($Show_Revisions || $Show_Tags || $Show_Dead)
     {
       my $started_addendum = 0;
 
       if ($Show_Revisions) {
         $started_addendum = 1;
-        $beauty .= " (";
-        $beauty .= "$$qunkref{'revision'}";
+        $b .= " (";
+        $b .= "$$qunkref{'revision'}";
+      }
+      if ($Show_Dead && $$qunkref{'cvsstate'} =~ /dead/)
+      {
+        # Deliberately not using $started_addendum. Keeping it simple.
+        $b .= "[DEAD]";
       }
       if ($Show_Tags && (defined $$qunkref{'tags'})) {
         my @tags = grep ($non_unanimous_tags{$_}, @{$$qunkref{'tags'}});
         if ((scalar (@tags)) > 0) {
           if ($started_addendum) {
-            $beauty .= ", ";
+            $b .= ", ";
           }
           else {
-            $beauty .= " (tags: ";
+            $b .= " (tags: ";
           }
-          $beauty .= join (', ', @tags);
+          $b .= join (', ', @tags);
           $started_addendum = 1;
         }
       }
       if ($started_addendum) {
-        $beauty .= ")";
+        $b .= ")";
       }
+    }
+
+    unless ( exists $fileinfo_printed{$b} ) {
+      if ($fbegun) {
+        $beauty .= ", ";
+      } else {
+        $fbegun = 1;
+      }
+      $beauty .= $b, $fileinfo_printed{$b} = 1;
     }
   }
 
@@ -1286,42 +1584,49 @@ sub pretty_file_list ()
 
   # todo: still have to take care of branch_roots?
 
-  $beauty = "* $beauty:";
+  $beauty = "$beauty:";
 
   return $beauty;
 }
 
-sub common_path_prefix ()
-{
-  my $path1 = shift;
-  my $path2 = shift;
+sub min ($$) { $_[0] < $_[1] ? $_[0] : $_[1] }
 
-  my ($dir1, $dir2);
-  (undef, $dir1, undef) = fileparse ($path1);
-  (undef, $dir2, undef) = fileparse ($path2);
+sub common_path_prefix ($$)
+{
+  my ($path1, $path2) = @_;
+
+  # For compatibility (with older versions of cvs2cl.pl), we think in UN*X
+  # terms, and mould windoze filenames to match.  Is this really appropriate?
+  # If a file is checked in under UN*X, and cvs log run on windoze, which way
+  # do the path separators slope?  Can we use fileparse as per the local
+  # conventions?  If so, we should probably have a user option to specify an
+  # OS to emulate to handle stdin-fed logs.  If we did this, we could avoid
+  # the nasty \-/ transmogrification below.
+
+  my ($dir1, $dir2) = map +(fileparse($_))[1], $path1, $path2;
 
   # Transmogrify Windows filenames to look like Unix.
   # (It is far more likely that someone is running cvs2cl.pl under
   # Windows than that they would genuinely have backslashes in their
   # filenames.)
-  $dir1 =~ tr#\\#/#;
-  $dir2 =~ tr#\\#/#;
+  tr!\\!/!
+    for $dir1, $dir2;
 
-  my $accum1 = "";
-  my $accum2 = "";
-  my $last_common_prefix = "";
+  my ($accum1, $accum2, $last_common_prefix) = ('') x 3;
 
-  while ($accum1 eq $accum2)
-  {
-    $last_common_prefix = $accum1;
-    last if ($accum1 eq $dir1);
-    my ($tmp1) = split (/\//, (substr ($dir1, length ($accum1))));
-    my ($tmp2) = split (/\//, (substr ($dir2, length ($accum2))));
-    $accum1 .= "$tmp1/" if (defined $tmp1 and $tmp1 ne '');
-    $accum2 .= "$tmp2/" if (defined $tmp2 and $tmp2 ne '');
+  my @path1 = grep length($_), split qr!/!, $dir1;
+  my @path2 = grep length($_), split qr!/!, $dir2;
+
+  my @common_path;
+  for (0..min($#path1,$#path2)) {
+    if ( $path1[$_] eq $path2[$_]) {
+      push @common_path, $path1[$_];
+    } else {
+      last;
+    }
   }
 
-  return $last_common_prefix;
+  return join '', map "$_/", @common_path;
 }
 
 sub preprocess_msg_text ()
@@ -1337,6 +1642,7 @@ sub preprocess_msg_text ()
   if ($XML_Output)
   {
     $text = &xml_escape ($text);
+    chomp $text;
     $text = "<msg>${text}</msg>\n";
   }
   elsif (! $No_Wrap)
@@ -1558,10 +1864,23 @@ sub xml_escape ()
 sub maybe_read_user_map_file ()
 {
   my %expansions;
+  my $User_Map_Input;
 
   if ($User_Map_File)
   {
-    open (MAPFILE, "<$User_Map_File")
+    if ( $User_Map_File =~ m{^([-\w\@+=.,\/]+):([-\w\@+=.,\/:]+)} and
+         !-f $User_Map_File )
+    {
+      my $rsh = (exists $ENV{'CVS_RSH'} ? $ENV{'CVS_RSH'} : 'ssh');
+      $User_Map_Input = "$rsh $1 'cat $2' |";
+      &debug ("(run \"${User_Map_Input}\")\n");
+    }
+    else
+    {
+      $User_Map_Input = "<$User_Map_File";
+    }
+
+    open (MAPFILE, $User_Map_Input)
         or die ("Unable to open $User_Map_File ($!)");
 
     while (<MAPFILE>)
@@ -1591,8 +1910,47 @@ sub maybe_read_user_map_file ()
       else {
         $expansions{$username} = $expansion;
       }
+    } # fi ($User_Map_File)
+
+    close (MAPFILE);
+  }
+
+  if (defined $User_Passwd_File)
+  {
+    if ( ! defined $Domain ) {
+      if ( -e MAILNAME ) {
+        chomp($Domain = slurp_file(MAILNAME));
+      } else {
+      MAILDOMAIN_CMD:
+        for ([qw(hostname -d)], 'dnsdomainname', 'domainname') {
+          my ($text, $exit, $sig, $core) = run_ext($_);
+          if ( $exit == 0 && $sig == 0 && $core == 0 ) {
+            chomp $text;
+            if ( length $text ) {
+              $Domain = $text;
+              last MAILDOMAIN_CMD;
+            }
+          }
+        }
+      }
     }
 
+    die "No mail domain found\n"
+      unless defined $Domain;
+
+    open (MAPFILE, "<$User_Passwd_File")
+        or die ("Unable to open $User_Passwd_File ($!)");
+    while (<MAPFILE>)
+    {
+      # all lines are valid
+      my ($username, $pw, $uid, $gid, $gecos, $homedir, $shell) = split ':';
+      my $expansion = '';
+      ($expansion) = split (',', $gecos)
+        if defined $gecos && length $gecos;
+
+      my $mailname = $Domain eq '' ? $username : "$username\@$Domain";
+      $expansions{$username} = "$expansion <$mailname>";
+    }
     close (MAPFILE);
   }
 
@@ -1608,6 +1966,8 @@ sub parse_options ()
   # the end of this subroutine.
   my $exit_with_admonishment = 0;
 
+  my (@Global_Opts, @Local_Opts);
+
   while (my $arg = shift (@ARGV))
   {
     if ($arg =~ /^-h$|^-help$|^--help$|^--usage$|^-?$/) {
@@ -1616,11 +1976,11 @@ sub parse_options ()
     elsif ($arg =~ /^--delta$/) {
       my $narg = shift(@ARGV) || die "$arg needs argument.\n";
       if ($narg =~ /^([A-Za-z][A-Za-z0-9_\-]*):([A-Za-z][A-Za-z0-9_\-]*)$/) {
-	$Delta_From = $1;
-	$Delta_To = $2;
-	$Delta_Mode = 1;
+        $Delta_From = $1;
+        $Delta_To = $2;
+        $Delta_Mode = 1;
       } else {
-	die "--delta FROM_TAG:TO_TAG is what you meant to say.\n";
+        die "--delta FROM_TAG:TO_TAG is what you meant to say.\n";
       }
     }
     elsif ($arg =~ /^--debug$/) {        # unadvertised option, heh
@@ -1632,10 +1992,12 @@ sub parse_options ()
     elsif ($arg =~ /^-g$|^--global-opts$/) {
       my $narg = shift (@ARGV) || die "$arg needs argument.\n";
       # Don't assume CVS is called "cvs" on the user's system:
+      push @Global_Opts, $narg;
       $Log_Source_Command =~ s/(^\S*)/$1 $narg/;
     }
     elsif ($arg =~ /^-l$|^--log-opts$/) {
       my $narg = shift (@ARGV) || die "$arg needs argument.\n";
+      push @Local_Opts, $narg;
       $Log_Source_Command .= " $narg";
     }
     elsif ($arg =~ /^-f$|^--file$/) {
@@ -1645,16 +2007,48 @@ sub parse_options ()
     elsif ($arg =~ /^--accum$/) {
       $Cumulative = 1;
     }
+    elsif ($arg =~ /^--update$/) {
+      $Update = 1;
+    }
     elsif ($arg =~ /^--fsf$/) {
       $FSF_Style = 1;
+    }
+    elsif ($arg =~ /^--FSF$/) {
+      $Show_Times = 0;
+      $Common_Dir = 0;
+      $No_Extra_Indent = 1;
+    }
+    elsif ($arg =~ /^--rcs/) {
+      my $narg = shift (@ARGV) || die "$arg needs argument.\n";
+      $RCS_Root = $narg;
+      $RCS_Mode = 1;
     }
     elsif ($arg =~ /^-U$|^--usermap$/) {
       my $narg = shift (@ARGV) || die "$arg needs argument.\n";
       $User_Map_File = $narg;
     }
+    elsif ($arg =~ /^--gecos$/) {
+      $Gecos = 1;
+    }
+    elsif ($arg =~ /^--domain$/) {
+      my $narg = shift (@ARGV) || die "$arg needs argument.\n";
+      $Domain = $narg;
+    }
+    elsif ($arg =~ /^--passwd$/) {
+      my $narg = shift (@ARGV) || die "$arg needs argument.\n";
+      $User_Passwd_File = $narg;
+    }
+    elsif ($arg =~ /^--mailname$/) {
+      my $narg = shift (@ARGV) || die "$arg needs argument.\n";
+      warn "--mailname is deprecated; please use --domain instead\n";
+      $Domain = $narg;
+    }
     elsif ($arg =~ /^-W$|^--window$/) {
       defined(my $narg = shift (@ARGV)) || die "$arg needs argument.\n";
       $Max_Checkin_Duration = $narg;
+    }
+    elsif ($arg =~ /^--chrono$/) {
+      $Chronological_Order = 1;
     }
     elsif ($arg =~ /^-I$|^--ignore$/) {
       my $narg = shift (@ARGV) || die "$arg needs argument.\n";
@@ -1681,9 +2075,17 @@ sub parse_options ()
     }
     elsif ($arg =~ /^-S$|^--separate-header$/) {
       $After_Header = "\n\n";
+      $No_Extra_Indent = 1;
     }
     elsif ($arg =~ /^--no-wrap$/) {
       $No_Wrap = 1;
+    }
+    elsif ($arg =~ /^--no-indent$/) {
+      $Indent = "";
+    }
+    elsif ($arg =~ /^--summary$/) {
+      $Summary = 1;
+      $After_Header = "\n\n"; # Summary implies --separate-header
     }
     elsif ($arg =~ /^--gmt$|^--utc$/) {
       $UTC_Times = 1;
@@ -1694,8 +2096,18 @@ sub parse_options ()
     elsif ($arg =~ /^--no-times$/) {
       $Show_Times = 0;
     }
+    elsif ($arg =~ /^--group-within-date$/) {
+      $GroupWithinDate = 1;
+      $Show_Times = 0;
+    }
     elsif ($arg =~ /^-r$|^--revisions$/) {
       $Show_Revisions = 1;
+    }
+    elsif ($arg =~ /^--show-dead$/) {
+      $Show_Dead = 1;
+    }
+    elsif ($arg =~ /^--no-hide-branch-additions$/) {
+      $Hide_Branch_Additions = 0;
     }
     elsif ($arg =~ /^-t$|^--tags$/) {
       $Show_Tags = 1;
@@ -1727,14 +2139,39 @@ sub parse_options ()
     elsif ($arg =~ /^--xml$/) {
       $XML_Output = 1;
     }
+    elsif ($arg =~ /^--noxmlns$/) {
+      $No_XML_Namespace = 1;
+    }
+    elsif ($arg =~ /^--no-xml-iso-date$/) {
+      # undocumented: this is really only here for compatiblity with old tests
+      $No_XML_ISO_Date = 1;
+    }
     elsif ($arg =~ /^--hide-filenames$/) {
       $Hide_Filenames = 1;
       $After_Header = "";
     }
+    elsif ($arg =~ /^--no-common-dir$/) {
+      $Common_Dir = 0;
+    }
     elsif ($arg =~ /^--ignore-tag$/ ) {
       die "$arg needs argument.\n"
         unless @ARGV;
-      push @ignore_tags, shift @ARGV;
+      $ignore_tags{shift @ARGV} = 1;
+    }
+    elsif ($arg =~ /^--show-tag$/ ) {
+      die "$arg needs argument.\n"
+        unless @ARGV;
+      $show_tags{shift @ARGV} = 1;
+    }
+    elsif ( lc ($arg) eq '--test-code' ) {
+      # Deliberately undocumented.  This is not a public interface,
+      # and may change/disappear at any time.
+      die "$arg needs argument.\n"
+        unless @ARGV;
+      $TestCode = shift @ARGV;
+    }
+    elsif ($arg =~ /^--no-ancestors$/) {
+      $No_Ancestors = 1;
     }
     else {
       # Just add a filename as argument to the log command
@@ -1751,6 +2188,16 @@ sub parse_options ()
 
   if ($Output_To_Stdout && $output_file) {
     print STDERR "cannot pass both --stdout and --file\n";
+    $exit_with_admonishment = 1;
+  }
+
+  if ($Input_From_Stdin && @Global_Opts) {
+    print STDERR "cannot pass both --stdin and -g\n";
+    $exit_with_admonishment = 1;
+  }
+
+  if ($Input_From_Stdin && @Local_Opts) {
+    print STDERR "cannot pass both --stdin and -l\n";
     $exit_with_admonishment = 1;
   }
 
@@ -1851,6 +2298,31 @@ last in this usage message):
     (Note that CVS 1.10.7 and below requires there be no space between
     -d and its argument).
 
+    Some examples (working on UNIX shells):
+
+      # logs after 6th March, 2003 (inclusive)
+      cvs2cl.pl -l "-d'>2003-03-06'"
+      # logs after 4:34PM 6th March, 2003 (inclusive)
+      cvs2cl.pl -l "-d'>2003-03-06 16:34'"
+      # logs between 4:46PM 6th March, 2003 (exclusive) and
+      # 4:34PM 6th March, 2003 (inclusive)
+      cvs2cl.pl -l "-d'2003-03-06 16:46>2003-03-06 16:34'"
+
+    Some examples (on non-UNIX shells):
+
+      # Reported to work on windows xp/2000
+      cvs2cl.pl -l  "-d"">2003-10-18;today<"""
+
+   Dates/times are interpreted in the local time zone.
+
+   Remember to quote the argument to `-l' so that your shell doesn't interpret
+   spaces as argument separators.
+
+   See the 'Common Options' section of the cvs manual ('info cvs' on UNIX-like
+   systems) for more information.
+
+   Note that the rules for quoting under windows shells are different.
+
 Options/Arguments:
 
   -h, -help, --help, or -?     Show this usage and exit
@@ -1859,28 +2331,67 @@ Options/Arguments:
   -b, --branches               Show branch names in revisions when possible
   -t, --tags                   Show tags (symbolic names) in output
   -T, --tagdates               Show tags in output on their first occurance
+  --show-dead                  Show dead files
   --stdin                      Read from stdin, don't run cvs log
   --stdout                     Output to stdout not to ChangeLog
   -d, --distributed            Put ChangeLogs in subdirs
   -f FILE, --file FILE         Write to FILE instead of "ChangeLog"
   --fsf                        Use this if log data is in FSF ChangeLog style
+  --FSF                        Attempt strict FSF-standard compatible output
   -W SECS, --window SECS       Window of time within which log entries unify
   -U UFILE, --usermap UFILE    Expand usernames to email addresses from UFILE
+  --passwd   PASSWORDFILE      Use system passwd file for user name expansion.
+                               If no mail domain is provided (via --domain),
+                               it tries to read one from  /etc/mailname else
+                               output of
+                               hostname -d / dnsdomainname / domainname.  Dies
+                               if none successful.  Use a domain of '' to
+                               prevent the addition of a mail domain.
+  --domain DOMAIN              Domain to build email addresses from
+  --gecos                      Get user information from GECOS data
   -R REGEXP, --regexp REGEXP   Include only entries that match REGEXP
   -I REGEXP, --ignore REGEXP   Ignore files whose names match REGEXP
   -C, --case-insensitive       Any regexp matching is done case-insensitively
   -F BRANCH, --follow BRANCH   Show only revisions on or ancestral to BRANCH
+  --no-ancestors               When using -F, only track changes since the
+                               BRANCH started
+  --no-hide-branch-additions   By default, entries generated by cvs for a file
+                               added on a branch (a dead 1.1 entry) are not
+                               shown.  This flag reverses that action.
   -S, --separate-header        Blank line between each header and log message
+  --summary                    Add CVS change summary information
   --no-wrap                    Don't auto-wrap log message (recommend -S also)
+  --no-indent                  Don't indent log message
   --gmt, --utc                 Show times in GMT/UTC instead of local time
   --accum                      Add to an existing ChangeLog (incompat w/ --xml)
   -w, --day-of-week            Show day of week
   --no-times                   Don't show times in output
+  --group-within-date          Group all changes for a given date, ignoring
+                               time & author.
+  --chrono                     Output log in chronological order
+                               (default is reverse chronological order)
   --header FILE                Get ChangeLog header from FILE ("-" means stdin)
   --xml                        Output XML instead of ChangeLog format
   --xml-encoding ENCODING      Insert encoding clause in XML header
+  --noxmlns                    Don't include xmlns= attribute in root element
   --hide-filenames             Don't show filenames (ignored for XML output)
+  --no-common-dir              Don't shorten directory names from filenames.
+  --rcs CVSROOT                Handle filenames from raw RCS, for instance
+                               those produced by "cvs rlog" output, stripping
+                               the prefix CVSROOT.
   -P, --prune                  Don't show empty log messages
+  --ignore-tag TAG             Ignore individual changes that are associated
+                               with a given tag.  May be repeated, if so,
+                               changes that are associated with any of the
+                               given tags are ignored.
+  --show-tag TAG               Log only individual changes that are associated
+                               with a given tag.  May be repeated, if so,
+                               changes that are associated with any of the
+                               given tags are logged.
+  --delta FROM_TAG:TO_TAG      Attempt a delta between two tags (since FROM_TAG
+                               up to & including TO_TAG).  The algorithm is a
+                               simple date-based one (this is a *hard* problem)
+                               so results are imperfect
   -g OPTS, --global-opts OPTS  Invoke like this "cvs OPTS log ..."
   -l OPTS, --log-opts OPTS     Invoke like this "cvs ... log OPTS"
   FILE1 [FILE2 ...]            Show only log information for the named FILE(s)
