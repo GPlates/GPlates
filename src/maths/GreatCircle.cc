@@ -42,3 +42,8 @@ GreatCircle::GreatCircle (const UnitVector3D &v1, const UnitVector3D &v2)
 
 	_normal = cross (Vector3D (v1), Vector3D (v2));
 }
+
+UnitVector3D GreatCircle::intersection (const GreatCircle &other) const
+{
+	return normalise (cross (_normal, other.normal ()));
+}

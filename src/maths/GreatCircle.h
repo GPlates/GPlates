@@ -51,13 +51,27 @@ namespace GPlatesMaths
 			 */
 			GreatCircle (const UnitVector3D &v1, const UnitVector3D &v2);
 
-			UnitVector3D normal () const { return _normal; }
+			const UnitVector3D &normal () const { return _normal; }
+
+			/**
+			 * Computes one intersection point of this GreatCircle
+			 * with another. The other intersection point is the
+			 * antipodal point to this.
+			 * @param other The other GreatCircle.
+			 */
+			UnitVector3D intersection (const GreatCircle &other) const;
 
 		private:
 			UnitVector3D _normal;
 	};
 
-	inline bool operator== (const GreatCircle &a, const GreatCircle &b)
+	inline GreatCircle operator- (const GreatCircle &c)
+	{
+		UnitVector3D v = -c.normal ();
+		return GreatCircle (v);
+	}
+
+	inline bool areEquivalent (const GreatCircle &a, const GreatCircle &b)
 	{
 		UnitVector3D an = a.normal (), bn = b.normal ();
 
