@@ -1,8 +1,7 @@
 /* $Id$ */
 
 /**
- * \file 
- * File specific comments.
+ * @file 
  *
  * Most recent change:
  *   $Author$
@@ -129,7 +128,8 @@ namespace
 		os << Indent(indent)
 			<< "</coordlist>" << std::endl;
 	}
-}
+
+}  // End anonymous namespace
 
 
 void
