@@ -28,6 +28,7 @@
 
 #include "GPlatesApp.h"
 #include "MainWindow.h"
+#include "controls/Lifetime.h"
 
 using namespace GPlatesGui;
 
@@ -64,6 +65,7 @@ GPlatesApp::OnInit()
 				(NULL, _(PACKAGE_STRING), wxSize (600, 500));
 		_main_win->Show (TRUE);
 		SetTopWindow (_main_win);
+		GPlatesControls::Lifetime::init(_main_win);
 
 	} catch (const GPlatesGlobal::Exception &e) {
 
