@@ -48,7 +48,8 @@ namespace GPlatesMaths
 			/** 
 			 * Create a rotation with pole (0, 0) and angle 0.
 			 */
-			Rotation() : _angle(0.0) { }
+			Rotation()
+				: _pole(0.0, 0.0), _angle(0.0) { }
 
 			/** 
 			 * Create a rotation with the given pole and angle.
