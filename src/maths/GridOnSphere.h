@@ -45,7 +45,30 @@ namespace GPlatesMaths
 	 * in contrast to its aforementioned siblings, this class does not
 	 * actually <em>store</em> geographical data: rather, it acts as a
 	 * template, storing the information which allows it to calculate
-	 * where a particular grid element will be located.
+	 * where a particular grid element will be located. The data is managed
+	 * by the \ref GPlatesGeo::GridData class.
+	 *
+	 * We define a grid by specifying a \ref GPlatesMaths::GreatCircle (GC)
+	 * and a \ref GPlatesMaths::SmallCircle (SC). The GC is to be
+	 * coincident with one longitudinal border of the grid, whilst the SC
+	 * is to be coincident with the latitudinal border of the grid that is
+	 * closer to the equator. In the case of grids that straddle the
+	 * equator either latitudinal border can be chosen.
+	 *
+	 * Instead of actually passing a GC and SC to the GridOnSphere
+	 * constructor, we pass three \ref GPlatesMaths::PointOnSphere objects
+	 * that define the origin of the grid, the first grid point along the
+	 * GC, and the first grid point along the SC.
+	 *
+	 * The <strong>origin</strong> of the grid is defined to be the
+	 * anterior intersection of the GC and the SC. If the normal vectors of
+	 * the GC and SC are \f$ \hat{n_G} \f$ and \f$ \hat{n_S} \f$
+	 * respectively, then the origin is given by
+	 * \f$ \hat{O} = \hat{n_G} \times \hat{n_S} \f$ (note the order!).
+	 * We assume that the grids are always <em>regular</em>, so the GC and
+	 * SC normals will be perpendicular, and so \f$ \hat{O} \f$ will indeed
+	 * be a unit vector (see \ref GPlatesMaths::UnitVector3D), and thus a
+	 * \ref GPlatesMaths::PointOnSphere.
 	 *
 	 * @image html fig_grid.png
 	 * @image latex fig_grid.eps
@@ -54,20 +77,20 @@ namespace GPlatesMaths
 	{
 		public:
 			GridOnSphere(const PointOnSphere &origin,
-			             const PointOnSphere &next_along_lat,
-			             const PointOnSphere &next_along_lon);
+			             const PointOnSphere &next_along_lon,
+			             const PointOnSphere &next_along_lat);
 
 			PointOnSphere
 			resolve(index_t x, index_t y) const;
 
 		private:
-			SmallCircle _line_of_lat;
 			GreatCircle _line_of_lon;
+			SmallCircle _line_of_lat;
 
 			PointOnSphere _origin;
 
-			real_t _delta_along_lat;
 			real_t _delta_along_lon;
+			real_t _delta_along_lat;
 	};
 }
 

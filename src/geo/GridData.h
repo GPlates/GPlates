@@ -40,34 +40,6 @@ namespace GPlatesGeo
 	/**
 	 * Data arranged in a rigid regular manner.
 	 *
-	 * We define a grid by specifying a \ref GPlatesMaths::GreatCircle (GC)
-	 * and a \ref GPlatesMaths::SmallCircle (SC). The GC is to be
-	 * coincident with one longitudinal border of the grid, whilst the SC
-	 * is to be coincident with the latitudinal border of the grid that is
-	 * closer to the equator. In the case of grids that straddle the
-	 * equator either latitudinal border can be chosen.
-	 *
-	 * Instead of actually passing a GC and SC to the GridData constructor,
-	 * we pass three \ref GPlatesMaths::PointOnSphere objects that define
-	 * the origin of the grid, the first grid point along the GC, and the
-	 * first grid point along the SC.
-	 *
-	 * The <strong>primary corner</strong> of the grid is defined to be the
-	 * anterior intersection of the GC and the SC. If the normal vectors of
-	 * the GC and SC are \f$ \hat{n_G} \f$ and \f$ \hat{n_S} \f$
-	 * respectively, then the primary corner is given by
-	 * \f$ \hat{P} = \hat{n_G} \times \hat{n_S} \f$ (note the order!).
-	 * We assume that the grids are always <em>regular</em>, so the GC and
-	 * SC normals will be perpendicular, and so \f$ \hat{P} \f$ will indeed
-	 * be a unit vector (see \ref GPlatesMaths::UnitVector3D), and thus a
-	 * \ref GPlatesMaths::PointOnSphere.
-	 *
-	 * Because of the construction method, it is not possible to have the
-	 * primary corner at either pole (latitude \f$ = \pm 90^\circ \f$).
-	 * This is implicitly enforced by the \ref GPlatesMaths::SmallCircle
-	 * constructor, since a meridian GC can only intersect with a polar
-	 * normal SC at a pole if the SC is degenerate (i.e. zero radius).
-	 *
 	 * @todo We want to be able to support adaptive meshes sometime in
 	 *   the future.
 	 * @see GPlatesMaths::GreatCircle, GPlatesMaths::SmallCircle,
