@@ -38,6 +38,11 @@ namespace GPlatesMaths
 
 		public:
 
+			/**
+			 * @throws InvalidLatLonException when
+			 *   @p isValidLat( @a lat ) returns false or
+			 *   @p isValidLon( @a lon ) returns false.
+			 */
 			LatLonPoint(const real_t &lat, const real_t &lon);
 
 			/**
