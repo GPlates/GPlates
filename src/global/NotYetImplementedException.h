@@ -51,9 +51,6 @@ namespace GPlatesGlobal
 				return "NotYetImplementedException";
 			}
 
-			virtual bool
-			HasMessage() const { return true; }
-
 			virtual std::string
 			Message() const { return _msg; }
 

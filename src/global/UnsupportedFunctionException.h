@@ -52,9 +52,6 @@ namespace GPlatesGlobal
 				return "UnsupportedFunctionException";
 			}
 
-			virtual bool
-			HasMessage() const { return true; }
-
 			virtual std::string
 			Message() const { return _msg; }
 
