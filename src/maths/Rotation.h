@@ -52,6 +52,13 @@ namespace GPlatesMaths
 	 */
 	class Rotation
 	{
+			/*
+			 * Declare this as a friend to enable it to use
+			 * the protected creation function.
+			 */
+			friend Rotation operator*(const Rotation &r1,
+			                          const Rotation &r2);
+
 		public:
 			/**
 			 * Create a rotation with the given rotation axis
@@ -64,6 +71,15 @@ namespace GPlatesMaths
 			       const real_t &rotation_angle);
 
 
+			/**
+			 * Create a rotation which transforms @a initial
+			 * to @a final.
+			 */
+			static Rotation
+			Create(const UnitVector3D &initial,
+			       const UnitVector3D &final);
+
+
 			UnitVector3D
 			axis() const { return _axis; }
 
@@ -74,6 +90,20 @@ namespace GPlatesMaths
 
 			UnitQuaternion3D
 			quat() const { return _quat; }
+
+
+			/**
+			 * Return the reverse of this rotation.
+			 */
+			Rotation
+			reverse() const {
+
+				UnitQuaternion3D rev_quat = quat().inverse();
+				UnitVector3D rev_axis = -axis();
+
+				return
+				 Rotation::Create(rev_quat, rev_axis, angle());
+			}
 
 
 			/**
@@ -96,6 +126,20 @@ namespace GPlatesMaths
 			operator*(const UnitVector3D &uv) const;
 
 		protected:
+			/**
+			 * Create the rotation described by the supplied
+			 * quaternion.  The supplied axis and angle
+			 * must match those inside the quaternion.
+			 * This requirement will not be checked!
+			 *
+			 * As always, the rotation angle is in radians.
+			 */
+			static Rotation
+			Create(const UnitQuaternion3D &uq,
+			       const UnitVector3D &rotation_axis,
+			       const real_t &rotation_angle);
+
+
 			Rotation(const UnitVector3D &ax,
 			         const real_t &ang,
 			         const UnitQuaternion3D &q,
@@ -125,6 +169,34 @@ namespace GPlatesMaths
 			real_t   _d;
 			Vector3D _e;
 	};
+
+
+	/**
+	 * Compose two Rotations.
+	 *
+	 * Note: order of composition is important!
+	 * Quaternion multiplication is not commutative!
+	 * This operation is not commutative!
+	 *
+	 * This composition of rotations is very much in the style of matrix
+	 * composition by premultiplication:  You take 'r2', then apply 'r1'
+	 * to it (in front of it).
+	 */
+	Rotation
+	operator*(const Rotation &r1, const Rotation &r2);
+
+
+	/**
+	 * Create a rotation which transforms the point @a initial
+	 * to the point @a final.
+	 */
+	inline Rotation
+	CreateRotation(const PointOnSphere &initial,
+		const PointOnSphere &final) {
+
+		return
+		 Rotation::Create(initial.unitvector(), final.unitvector());
+	}
 
 
 	/**
