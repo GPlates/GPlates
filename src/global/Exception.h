@@ -34,7 +34,6 @@ namespace GPlatesGlobal
 {
 	/**
 	 * Generic exception.
-	 * Empty declaration.
 	 */
 	class Exception
 	{
@@ -42,20 +41,37 @@ namespace GPlatesGlobal
 			virtual
 			~Exception() {  }
 
+			/**
+			 * Insert the name and message (if it exists) of this
+			 * Exception into the given stream.
+			 */
 			void
 			Write(std::ostream &os) const;
 
 		protected:
+			/**
+			 * @return The name of this Exception.
+			 */
 			virtual const char *
 			ExceptionName() const = 0;
 
+			/**
+			 * @return True if there is a message associated with
+			 *   Exception.
+			 */
 			virtual bool
 			HasMessage() const = 0;
 
+			/**
+			 * @return The Exception's messages as a string.
+			 */
 			virtual std::string
 			Message() const = 0;
 	};
 
+	/**
+	 * Synonym/shorthand for Exception::Write().
+	 */
 	inline std::ostream &
 	operator<<(std::ostream &os, const Exception &ex) {
 
