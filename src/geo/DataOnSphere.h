@@ -21,12 +21,14 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_DATAONSPHERE_H_
 #define _GPLATES_GEO_DATAONSPHERE_H_
 
 #include "GeologicalData.h"
+#include "maths/FiniteRotation.h"
 
 namespace GPlatesGeo
 {
@@ -37,12 +39,16 @@ namespace GPlatesGeo
 	 */
 	class DataOnSphere : public GeologicalData
 	{
+		public:
+			virtual void
+			Rotate(const GPlatesMaths::FiniteRotation &) const = 0;
+
 		protected:
 			DataOnSphere(const DataType_t& dt,
-						 const RotationGroupId_t& rg,
-						 const TimeWindow& tw,
-						 const Attributes_t& attrs)
-				: GeologicalData(dt, rg, tw, attrs) {  }
+			             const RotationGroupId_t& rg,
+			             const TimeWindow& tw,
+			             const Attributes_t& attrs)
+			 : GeologicalData(dt, rg, tw, attrs) {  }
 	};
 }
 
