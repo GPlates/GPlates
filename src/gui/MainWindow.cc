@@ -44,7 +44,10 @@
 #include "pixmaps/stock_zoom_in_24.xpm"
 #include "pixmaps/stock_zoom_out_24.xpm"
 #include "pixmaps/zoom_initial_24.xpm"
+#include "pixmaps/mode_observation_24.xpm"
+#include "pixmaps/mode_plate_manip_24.xpm"
 #include "pixmaps/stock_stop_24.xpm"
+#include "pixmaps/help_24.xpm"
 
 
 /**
@@ -642,6 +645,21 @@ GPlatesGui::MainWindow::CreateToolBar(long style)
 
 	tool_bar->SetMargins(2, 2);
 
+	wxBitmap *mode_observation_bitmap =
+	 new wxBitmap(mode_observation_24_xpm);
+	tool_bar->AddTool(EventIDs::TOOLBAR_MODE_OBSERVATION,
+	                   "Enter Observation Mode", *mode_observation_bitmap,
+	                   "Enter Observation Mode    F3", wxITEM_NORMAL);
+	wxBitmap *mode_plate_manip_bitmap =
+	 new wxBitmap(mode_plate_manip_24_xpm);
+	tool_bar->AddTool(EventIDs::TOOLBAR_MODE_PLATE_MANIP,
+	                   "Enter Plate Manipulation Mode",
+	                   *mode_plate_manip_bitmap,
+	                   "Enter Plate Manipulation Mode    F4",
+	                   wxITEM_NORMAL);
+
+	tool_bar->AddSeparator();
+
 	wxBitmap *zoom_in_bitmap = new wxBitmap(stock_zoom_in_24_xpm);
 	tool_bar->AddTool(EventIDs::TOOLBAR_ZOOM_IN, "Zoom In",
 	                   *zoom_in_bitmap, "Zoom In    +", wxITEM_NORMAL);
@@ -658,6 +676,13 @@ GPlatesGui::MainWindow::CreateToolBar(long style)
 	wxBitmap *stop_bitmap = new wxBitmap(stock_stop_24_xpm);
 	tool_bar->AddTool(EventIDs::TOOLBAR_STOP, "Stop Animation",
 	                   *stop_bitmap, "Stop Animation    Esc",
+	                   wxITEM_NORMAL);
+
+	tool_bar->AddSeparator();
+
+	wxBitmap *help_bitmap = new wxBitmap(help_24_xpm);
+	tool_bar->AddTool(EventIDs::TOOLBAR_HELP, "Open Help Browser",
+	                   *help_bitmap, "Open Help Browser    Shift+F1",
 	                   wxITEM_NORMAL);
 
 	return tool_bar;
