@@ -22,9 +22,13 @@
  * Authors:
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
+#include <map>
+#include <string>
 #include "GeologicalData.h"
+#include "StringValue.h"
 
 using namespace GPlatesGeo;
 
@@ -59,4 +63,31 @@ void
 GeologicalData::Remove(GeologicalData*)
 {
 	throw UnsupportedFunctionException("GeologicalData::Remove");
+}
+
+StringValue *GeologicalData::GetAttributeValue (const std::string &key) const
+{
+	Attributes_t::const_iterator it;
+
+	it = _attributes.find (key);
+	if (it == _attributes.end ())
+		return 0;
+	return it->second;
+}
+
+void GeologicalData::SetAttributeValue (const std::string &key,
+					StringValue *value)
+{
+	Attributes_t::iterator it;
+
+	// Remove existing attribute
+	it = _attributes.find (key);
+	if (it != _attributes.end ()) {
+		delete it->second;
+		_attributes.erase (it);
+	}
+
+	_attributes.insert (
+		std::make_pair<std::string, StringValue *> (key, value)
+		);
 }
