@@ -97,12 +97,12 @@ namespace GPlatesMaths
 		 */
 
 		friend
-		UnitQuaternion3D
+		const UnitQuaternion3D
 		operator-(
 		 const UnitQuaternion3D &q);
 
 		friend
-		UnitQuaternion3D
+		const UnitQuaternion3D
 		operator*(
 		 const UnitQuaternion3D &q1,
 		 const UnitQuaternion3D &q2);
@@ -175,7 +175,7 @@ namespace GPlatesMaths
 		 * This operation is used in the calculation of the
 		 * multiplicative inverse.
 		 */
-		UnitQuaternion3D
+		const UnitQuaternion3D
 		get_conjugate() const {
 
 			return UnitQuaternion3D(m_scalar_part, -m_vector_part);
@@ -191,7 +191,7 @@ namespace GPlatesMaths
 		 * A neat feature of the unit quaternion: its inverse is
 		 * identical to its conjugate.
 		 */
-		UnitQuaternion3D
+		const UnitQuaternion3D
 		get_inverse() const {
 
 			return get_conjugate();
@@ -218,7 +218,7 @@ namespace GPlatesMaths
 		 * invoked upon a unit quaternion instance which represents an
 		 * identity rotation.
 		 */
-		RotationParams
+		const RotationParams
 		get_rotation_params() const;
 
 
@@ -230,7 +230,7 @@ namespace GPlatesMaths
 		 * As always, the rotation angle is in radians.
 		 */
 		static
-		UnitQuaternion3D
+		const UnitQuaternion3D
 		create_rotation(
 		 const UnitVector3D &axis, 
 		 real_t angle);
@@ -263,7 +263,7 @@ namespace GPlatesMaths
 		 * This operation is used in the assertion of the class
 		 * invariant.
 		 */
-		real_t
+		const real_t
 		get_actual_norm_sqrd() const {
 
 			return
@@ -339,7 +339,7 @@ namespace GPlatesMaths
 	 * represent equivalent rotations.
 	 */
 	inline
-	UnitQuaternion3D
+	const UnitQuaternion3D
 	operator-(
 	 const UnitQuaternion3D &q) {
 
@@ -419,7 +419,7 @@ namespace GPlatesMaths
 	 *
 	 * NOTE that quaternion multiplication is <em>NOT</em> commutative.
 	 */
-	UnitQuaternion3D
+	const UnitQuaternion3D
 	operator*(
 	 const UnitQuaternion3D &q1,
 	 const UnitQuaternion3D &q2);

@@ -29,7 +29,7 @@
 #include "ViolatedClassInvariantException.h"
 
 
-GPlatesMaths::UnitQuaternion3D::RotationParams
+const GPlatesMaths::UnitQuaternion3D::RotationParams
 GPlatesMaths::UnitQuaternion3D::get_rotation_params() const {
 
 	/*
@@ -68,7 +68,7 @@ GPlatesMaths::UnitQuaternion3D::get_rotation_params() const {
 }
 
 
-GPlatesMaths::UnitQuaternion3D
+const GPlatesMaths::UnitQuaternion3D
 GPlatesMaths::UnitQuaternion3D::create_rotation(
  const UnitVector3D &axis,
  real_t angle) {
@@ -112,7 +112,7 @@ GPlatesMaths::UnitQuaternion3D::assert_invariant() const {
 }
 
 
-GPlatesMaths::UnitQuaternion3D
+const GPlatesMaths::UnitQuaternion3D
 GPlatesMaths::operator*(
  const UnitQuaternion3D &q1,
  const UnitQuaternion3D &q2) {
