@@ -28,5 +28,8 @@
 GPlatesState::Data::GeoData_type *
 GPlatesState::Data::_datagroup = NULL;
 
-GPlatesState::Data::RotationData_type *
+GPlatesState::Data::DrawableMap_type *
+GPlatesState::Data::_drawable = NULL;
+
+GPlatesState::Data::RotationMap_type *
 GPlatesState::Data::_rot_hists = NULL;

@@ -29,6 +29,7 @@
 
 #include <map>
 #include "geo/DataGroup.h"
+#include "geo/DrawableData.h"
 #include "global/types.h"
 #include "maths/RotationHistory.h"
 
@@ -44,18 +45,27 @@ namespace GPlatesState
 			typedef GPlatesGeo::DataGroup GeoData_type;
 
 			typedef std::map< GPlatesGlobal::rid_t,
-			 GPlatesMaths::RotationHistory > RotationData_type;
+			 GPlatesGeo::DrawableData * > DrawableMap_type;
+
+			typedef std::map< GPlatesGlobal::rid_t,
+			 GPlatesMaths::RotationHistory > RotationMap_type;
 
 			/**
 			 * Get a pointer to the root of the data group. 
 			 */
 			static GeoData_type *
-			GetDataGroup()  { return _datagroup; }
+			GetDataGroup() { return _datagroup; }
+
+			/**
+			 * Get a pointer to the map of drawable data.
+			 */
+			static DrawableMap_type *
+			GetDrawableData() { return _drawable; }
 
 			/**
 			 * Get a pointer to the map of rotation histories.
 			 */
-			static RotationData_type *
+			static RotationMap_type *
 			GetRotationHistories() { return _rot_hists; }
 
 			/**
@@ -70,11 +80,22 @@ namespace GPlatesState
 			}
 
 			/**
+			 * Set the pointer to the map of drawable data
+			 * to the map pointer to by @a drawable.
+			 */
+			static void
+			SetDrawableData(DrawableMap_type *drawable) {
+
+				if (_drawable) delete _drawable;
+				_drawable = drawable;
+			}
+
+			/**
 			 * Set the pointer to the map of the rotation histories
 			 * to the map pointed to by @a rot_hists.
 			 */
 			static void
-			SetRotationHistories(RotationData_type *rot_hists) {
+			SetRotationHistories(RotationMap_type *rot_hists) {
 
 				if (_rot_hists) delete _rot_hists;
 				_rot_hists = rot_hists;
@@ -87,9 +108,14 @@ namespace GPlatesState
 			static GeoData_type *_datagroup;
 
 			/**
+			 * The map of drawable data for each plate.
+			 */
+			static DrawableMap_type *_drawable;
+
+			/**
 			 * The map of rotation histories for each plate.
 			 */
-			static RotationData_type *_rot_hists;
+			static RotationMap_type *_rot_hists;
 
 			/**
 			 * Prohibit construction of this class.
