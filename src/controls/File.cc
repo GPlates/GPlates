@@ -139,22 +139,32 @@ namespace
 		}
 
 		int i;
-		NcAtt *att_title = 0;
-		for (i = 0; i < ncf.num_atts (); ++i)
-			if (strcmp (ncf.get_att (i)->as_string (0), "title")) {
-				att_title = ncf.get_att (i);
-				break;
+		char *title_str = 0;
+		for (i = 0; i < ncf.num_atts (); ++i) {
+			NcAtt *att = ncf.get_att (i);
+			if (strcmp (att->name (), "title")) {
+				delete att;
+				continue;
 			}
-		if (!att_title) {
+			title_str = att->as_string (0);
+			delete att;
+			break;
+		}
+		if (title_str && (strlen (title_str) < 1)) {
+			delete[] title_str;
+			title_str = 0;
+		}
+		
+		if (!title_str) {
 			Dialogs::InfoMessage ("netCDF File",
-				"Data file doesn't have a title;"
+				"Data file doesn't have a title;\n"
 				"trying to continue anyway.");
 		} else {
 			msg << "Loading data file with title:\n";
-			msg << "    \"" << att_title->as_string (0) << "\"\n";
+			msg << "    \"" << title_str << "\"\n";
 			Dialogs::InfoMessage ("netCDF File",
 							msg.str ().c_str ());
-			delete att_title;
+			delete[] title_str;
 		}
 
 		wxProgressDialog *dlg = new wxProgressDialog (
