@@ -199,14 +199,14 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Given two vectors @a orig and @a next, as well as
-			 * the unit-vector of an axis, calculate the
-			 * angular delta (in radians) about the axis
+			 * Given two unit-vectors @a orig and @a next,
+			 * as well as the unit-vector of an axis, calculate
+			 * the angular delta (in radians) about the axis
 			 * from @a orig to @a next.
 			 */
 			static real_t
-			calcDelta(const Vector3D &orig,
-			          const Vector3D &next,
+			calcDelta(const UnitVector3D &orig,
+			          const UnitVector3D &next,
 			          const UnitVector3D &axis);
 	};
 }

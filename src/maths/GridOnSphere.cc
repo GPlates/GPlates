@@ -156,38 +156,17 @@ GPlatesMaths::GridOnSphere::calcDeltaAlongLat(const UnitVector3D &orig,
 	Vector3D next_orth = next - par;
 
 	/*
-	 * Since 'orig' and 'next' are neither parallel nor antiparallel with
-	 * 'north', they must possess a non-zero orthogonal projection.
-	 * Hence, we can safely pass the projections into 'calcDelta'.
+	 * Since 'orig' and 'next' are neither parallel nor antiparallel
+	 * with 'north', they must possess a non-zero orthogonal projection.
+	 * Hence, we can normalise them.
 	 */
-	return calcDelta(orig_orth, next_orth, north);
+	return calcDelta(orig_orth.normalise(), next_orth.normalise(), north);
 }
 
 
 GPlatesMaths::real_t
-GPlatesMaths::GridOnSphere::calcDelta(const Vector3D &orig,
- const Vector3D &next, const UnitVector3D &axis) {
-
-	/*
-	 * For this to work right, we need to ensure that the magnitudes of
-	 * the two vectors are non-zero.
-	 */
-	if (orig.magnitude() <= 0.0) {
-
-		// LEON: Wake up, time to die!
-		std::ostringstream oss;
-		oss << "Function 'GridOnSphere::calcDelta' invoked with "
-		 << "invalid argument " << orig << ".";
-		throw FunctionDomainException(oss.str().c_str());
-	}
-	if (next.magnitude() <= 0.0) {
-
-		// All Your Base Are Belong To Suck
-		std::ostringstream oss;
-		oss << "Function 'GridOnSphere::calcDelta' invoked with "
-		 << "invalid argument " << next << ".";
-		throw FunctionDomainException(oss.str().c_str());
-	}
+GPlatesMaths::GridOnSphere::calcDelta(const UnitVector3D &orig,
+ const UnitVector3D &next, const UnitVector3D &axis) {
 
 	real_t   dp = dot(orig, next);
 	Vector3D xp = cross(orig, next);
