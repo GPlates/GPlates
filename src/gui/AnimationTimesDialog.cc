@@ -30,45 +30,45 @@
 using namespace GPlatesGui;
 
 AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent)
-	: wxDialog(parent, -1, "Constructing Animation...")
+	: wxDialog(parent, -1, _("Constructing Animation..."))
 {
 	static const int BORDER_SIZE  = 10;
 	
 	wxBoxSizer* msgsizer = new wxBoxSizer(wxHORIZONTAL);
 	msgsizer->Add(new wxStaticText(this, -1,
-		"Enter the start and end times between which you\n"
+		_("Enter the start and end times between which you\n"
 		"wish the reconstruction to take place in units\n"
 		"of millions of years ago.  Additionaly, specify\n"
 		"the number of steps to take for the animation.\n"
-		"(More steps -> better quality, but slower.)\n"), 
+		"(More steps -> better quality, but slower.)\n")), 
 		0, wxALL, BORDER_SIZE);
 
 	// A text entry thingo with a text note to the left
 	wxBoxSizer* entrysizer1 = new wxBoxSizer(wxHORIZONTAL);
-	entrysizer1->Add(new wxStaticText(this, -1, "Enter start time: (Ma)"), 
+	entrysizer1->Add(new wxStaticText(this, -1, _("Enter start time: (Ma)")), 
 					0, wxALL, BORDER_SIZE);
-	entrysizer1->Add(_startctrl = new wxTextCtrl(this, -1, "0.0"), 
+	entrysizer1->Add(_startctrl = new wxTextCtrl(this, -1, _("0.0")), 
 					0, wxALL, BORDER_SIZE);  
 							// This needs a validator
 
 	wxBoxSizer* entrysizer2 = new wxBoxSizer(wxHORIZONTAL);
-	entrysizer2->Add(new wxStaticText(this, -1, "Enter end time: (Ma)"), 
+	entrysizer2->Add(new wxStaticText(this, -1, _("Enter end time: (Ma)")), 
 					0, wxALL, BORDER_SIZE);
-	entrysizer2->Add(_endctrl = new wxTextCtrl(this, -1, "0.0"), 
+	entrysizer2->Add(_endctrl = new wxTextCtrl(this, -1, _("0.0")), 
 					0, wxALL, BORDER_SIZE);  
 							// This needs a validator
 
 	wxBoxSizer* entrysizer3 = new wxBoxSizer(wxHORIZONTAL);
-	entrysizer3->Add(new wxStaticText(this, -1, "Enter number of steps: "), 
+	entrysizer3->Add(new wxStaticText(this, -1, _("Enter number of steps: ")), 
 					0, wxALL, BORDER_SIZE);
-	entrysizer3->Add(_nstepsctrl = new wxTextCtrl(this, -1, "0"), 
+	entrysizer3->Add(_nstepsctrl = new wxTextCtrl(this, -1, _("0")), 
 					0, wxALL, BORDER_SIZE);  
 							// This needs a validator
 
 	wxBoxSizer* buttonsizer = new wxBoxSizer(wxHORIZONTAL);
-	buttonsizer->Add(new wxButton(this, wxID_OK, "OK"),
+	buttonsizer->Add(new wxButton(this, wxID_OK, _("OK")),
 					 1, wxALL, BORDER_SIZE);
-	buttonsizer->Add(new wxButton(this, wxID_CANCEL, "Cancel"), 
+	buttonsizer->Add(new wxButton(this, wxID_CANCEL, _("Cancel")), 
 					 1, wxALL, BORDER_SIZE);
 	
 	wxBoxSizer* mainsizer = new wxBoxSizer(wxVERTICAL);
@@ -88,7 +88,7 @@ AnimationTimesDialog::GetStartTime() const
 {
 	GPlatesGlobal::fpdata_t res;
 	
-	std::istringstream iss(_startctrl->GetValue().c_str());
+	std::istringstream iss(std::string(_startctrl->GetValue().mb_str()));
 	iss >> res;
 
 	// FIXME: check for error
@@ -101,7 +101,7 @@ AnimationTimesDialog::GetEndTime() const
 {
 	GPlatesGlobal::fpdata_t res;
 	
-	std::istringstream iss(_endctrl->GetValue().c_str());
+	std::istringstream iss(std::string(_endctrl->GetValue().mb_str()));
 	iss >> res;
 
 	// FIXME: check for error
@@ -114,7 +114,7 @@ AnimationTimesDialog::GetNSteps() const
 {
 	GPlatesGlobal::integer_t res;
 	
-	std::istringstream iss(_nstepsctrl->GetValue().c_str());
+	std::istringstream iss(std::string(_nstepsctrl->GetValue().mb_str()));
 	iss >> res;
 
 	// FIXME: check for error

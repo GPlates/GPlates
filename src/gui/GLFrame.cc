@@ -61,35 +61,35 @@ CreateMenuBar(GLFrame* frame)
 {
 	wxMenu* filemenu = new wxMenu;
 	filemenu->Append(MENU_FILE_OPENDATA, 
-					 "Open &Data...\tCtrl-O", 
-					 "Open a data file");
+					 _("Open &Data...\tCtrl-O"), 
+					 _("Open a data file"));
 	filemenu->Append(MENU_FILE_OPENROTATION, 
-					 "Open &Rotation...\tCtrl-R", 
-					 "Open a rotation file");
+					 _("Open &Rotation...\tCtrl-R"), 
+					 _("Open a rotation file"));
 	filemenu->AppendSeparator();
-	filemenu->Append(MENU_FILE_EXIT, "&Quit\tCtrl-Q", "Exit GPlates");
+	filemenu->Append(MENU_FILE_EXIT, _("&Quit\tCtrl-Q"), _("Exit GPlates"));
 
 	wxMenu* viewmenu = new wxMenu;
 	viewmenu->Append(MENU_VIEW_METADATA,
-					 "&View Metadata...\tCtrl-V",
-					 "View the document's metadata");
+					 _("&View Metadata...\tCtrl-V"),
+					 _("View the document's metadata"));
 
 	wxMenu* reconstructmenu = new wxMenu;
 	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
-							"Particular &Time...\tCtrl-T",
-							"Reconstruct the data at a particular time");
+							_("Particular &Time...\tCtrl-T"),
+							_("Reconstruct the data at a particular time"));
 	reconstructmenu->Append(MENU_RECONSTRUCT_PRESENT,
-							"Return to &Present\tCtrl-P",
-							"Reconstruct the data at the present");
+							_("Return to &Present\tCtrl-P"),
+							_("Reconstruct the data at the present"));
 	reconstructmenu->Append(MENU_RECONSTRUCT_ANIMATION,
-							"&Animation...\tCtrl-A",
-							"Animate the reconstruction of the data between "
-							"two times.");
+							_("&Animation...\tCtrl-A"),
+							_("Animate the reconstruction of the data between "
+							"two times."));
 	
 	wxMenuBar* menubar = new wxMenuBar(wxMB_DOCKABLE);
-	menubar->Append(filemenu, "&File");
-	menubar->Append(viewmenu, "&View");
-	menubar->Append(reconstructmenu, "&Reconstruct");
+	menubar->Append(filemenu, _("&File"));
+	menubar->Append(viewmenu, _("&View"));
+	menubar->Append(reconstructmenu, _("&Reconstruct"));
 
 	frame->SetMenuBar(menubar);
 }
@@ -121,7 +121,7 @@ GLFrame::OnMouseMove(wxMouseEvent& evt)
 	std::ostringstream oss;
 	oss << "Current window coordinate of mouse: (" 
 		<< evt.GetX() << ", " << evt.GetY() << ")";
-	SetStatusText(wxString(oss.str().c_str()));
+	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent));
 }
 
 void
@@ -134,20 +134,20 @@ GLFrame::OnExit(wxCommandEvent&)
 void
 GLFrame::OnOpenData(wxCommandEvent&)
 {
-	static wxString default_dir = "";
+	static wxString default_dir = _("");
 	wxFileDialog filedlg(this, 
-						 "Select a data file...",
+						 _("Select a data file..."),
 						 default_dir,  // default dir  = none
-						 "",  // default file = none
-						 "GPlates Data files (*.gpml)|*.gpml|"
+						 _(""),  // default file = none
+						 _("GPlates Data files (*.gpml)|*.gpml|"
 						 "PLATES Data files (*.dat)|*.dat|"
-						 "All files (*.*)|*.*",  // wildcard
+						 "All files (*.*)|*.*"),  // wildcard
 						 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
 	if (filedlg.ShowModal() == wxID_OK) {
 		std::string selected_file;
 		default_dir = filedlg.GetDirectory();
-		selected_file = filedlg.GetPath();
+		selected_file = filedlg.GetPath().mb_str();
 		GPlatesControls::File::OpenData(selected_file);
 	}
 }
@@ -155,19 +155,19 @@ GLFrame::OnOpenData(wxCommandEvent&)
 void
 GLFrame::OnOpenRotation(wxCommandEvent&)
 {
-	static wxString default_dir = "";
+	static wxString default_dir = _("");
 	wxFileDialog filedlg(this, 
-						 "Select a rotation file...",
+						 _("Select a rotation file..."),
 						 default_dir,  // default dir  = none
-						 "",  // default file = none
-						 "PLATES Rotation files (*.rot)|*.rot|"
-						 "All files (*.*)|*.*",  // wildcard
+						 _(""),  // default file = none
+						 _("PLATES Rotation files (*.rot)|*.rot|"
+						 "All files (*.*)|*.*"),  // wildcard
 						 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
 	if (filedlg.ShowModal() == wxID_OK) {
 		std::string selected_file;
 		default_dir = filedlg.GetDirectory();
-		selected_file = filedlg.GetPath();
+		selected_file = filedlg.GetPath().mb_str();
 		GPlatesControls::File::OpenRotation(selected_file);
 	}
 }

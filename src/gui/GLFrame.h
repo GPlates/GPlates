@@ -26,20 +26,17 @@
 #ifndef _GPLATES_GUI_GLFRAME_H_
 #define _GPLATES_GUI_GLFRAME_H_
 
-#include <wx/frame.h>
+#include <wx/wx.h>
 #include "GLCanvas.h"
 #include "Colour.h"
 
 namespace GPlatesGui
 {
-	/**
-	 * GLFrame conforms to the Singleton pattern
-	 */
 	class GLFrame : public wxFrame
 	{
 		public:
 			GLFrame(wxFrame* parent, 
-					const wxString& title = "", 
+					const wxString& title = _(""), 
 					const wxSize& size = wxDefaultSize,
 					const wxPoint& pos = wxDefaultPosition);
 
