@@ -30,12 +30,8 @@
 #include "InvalidOperationException.h"
 
 
-// using namespace GPlatesMaths;
-namespace GPlatesMaths {
-
-
-FiniteRotation
-FiniteRotation::CreateFiniteRotation(const PointOnSphere &euler_pole,
+GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::Create(const PointOnSphere &euler_pole,
 	const real_t &rotation_angle,
 	const real_t &point_in_time) {
 
@@ -51,8 +47,8 @@ FiniteRotation::CreateFiniteRotation(const PointOnSphere &euler_pole,
 }
 
 
-FiniteRotation
-FiniteRotation::CreateFiniteRotation(const UnitQuaternion3D &uq,
+GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::Create(const UnitQuaternion3D &uq,
 	const real_t &point_in_time) {
 
 	// values used to optimise rotation of points on the sphere
@@ -63,8 +59,8 @@ FiniteRotation::CreateFiniteRotation(const UnitQuaternion3D &uq,
 }
 
 
-UnitVector3D
-FiniteRotation::operator*(const UnitVector3D &uv) const {
+GPlatesMaths::UnitVector3D
+GPlatesMaths::FiniteRotation::operator*(const UnitVector3D &uv) const {
 
 	Vector3D v(uv);
 
@@ -95,28 +91,26 @@ FiniteRotation::operator*(const UnitVector3D &uv) const {
 }
 
 
-FiniteRotation
-operator*(const FiniteRotation &r1, const FiniteRotation &r2) {
+GPlatesMaths::FiniteRotation
+GPlatesMaths::operator*(const FiniteRotation &r1, const FiniteRotation &r2) {
 
 	if (r1.time() != r2.time()) {
 
 		// these FiniteRotations are not of the same point in time.
-		std::ostringstream oss(
-		 "Mismatched times in composition of FiniteRotations: ");
-		oss << r1.time()
-		 << " vs. "
-		 << r2.time();
+		std::ostringstream oss;
+		oss << "Mismatched times in composition of FiniteRotations:\n"
+		 << r1.time() << " vs. " << r2.time() << ".";
 
 		throw InvalidOperationException(oss.str().c_str());
 	}
 
 	UnitQuaternion3D resultant_uq = r1.quat() * r2.quat();
-	return FiniteRotation::CreateFiniteRotation(resultant_uq, r1.time());
+	return FiniteRotation::Create(resultant_uq, r1.time());
 }
 
 
-PolyLineOnSphere
-operator*(const FiniteRotation &r, const PolyLineOnSphere &p) {
+GPlatesMaths::PolyLineOnSphere
+GPlatesMaths::operator*(const FiniteRotation &r, const PolyLineOnSphere &p) {
 
 	PolyLineOnSphere rot_p;
 
@@ -130,4 +124,24 @@ operator*(const FiniteRotation &r, const PolyLineOnSphere &p) {
 }
 
 
-} // end GPlatesMaths
+std::ostream &
+GPlatesMaths::operator<<(std::ostream &os, const FiniteRotation &fr) {
+
+	os << "(time = " << fr.time() << "; rot = ";
+
+	UnitQuaternion3D uq = fr.quat();
+	if (uq.isIdentity()) {
+
+		os << "identity";
+
+	} else {
+
+		UnitQuaternion3D::RotationParams params =
+		 uq.calcRotationParams();
+		os << "(axis = " << params.axis
+		 << "; angle = " << params.angle << ")";
+	}
+	os << ")";
+
+	return os;
+}
