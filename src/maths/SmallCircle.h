@@ -40,6 +40,8 @@ namespace GPlatesMaths
 	/** 
 	 * A small circle of a unit sphere.
 	 *
+	 * @image html fig_small_circle.png
+	 * @image latex fig_small_circle.eps width=2.3in
 	 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
 	 */
 	class SmallCircle : public Axial
