@@ -66,12 +66,12 @@ namespace GPlatesMaths
 			real_t
 			z() const { return _z; }
 
-			real_t
+			virtual real_t
 			magnitude() const {
 				return sqrt((_x * _x) + (_y * _y) + (_z * _z));
 			}
 
-			Vector3D normalise () const;
+			virtual Vector3D normalise () const;
 
 		protected:
 			real_t _x,  /**< x-component. */

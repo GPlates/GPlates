@@ -83,7 +83,7 @@ namespace GPlatesMaths
 				AssertInvariantHolds ();
 			}
 
-			real_t
+			virtual real_t
 			magnitude() const { return _mag; }
 
 			DirVector3D &operator= (const Vector3D &v)

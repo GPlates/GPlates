@@ -81,6 +81,11 @@ namespace GPlatesMaths
 				return *this;
 			}
 
+			virtual real_t magnitude () const { return 1.0; }
+
+			virtual Vector3D normalise () const
+						{ return *this; }
+
 		protected:
 			/** 
 			 * Assert the class invariant.
