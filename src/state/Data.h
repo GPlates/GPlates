@@ -49,6 +49,8 @@ namespace GPlatesState
 			 */
 			static void
 			SetDataGroup(GPlatesGeo::DataGroup* data) { 
+
+				if (_datagroup) delete _datagroup;
 				_datagroup = data; 
 			}
 
