@@ -147,9 +147,9 @@ ReadRotationLine(LineBuffer &lb, std::string &str) {
 		if (lb.eof()) return;
 
 		// else, there *was* an unexplained failure
-		std::ostringstream oss("Unsuccessful read from ");
-		oss << lb
-		 << " while attempting to read a rotation line";
+		std::ostringstream oss;
+		oss << "Unsuccessful read from " << lb
+		 << "\nwhile attempting to read a rotation line.";
 
 		throw FileFormatException(oss.str().c_str());
 	}

@@ -168,9 +168,10 @@ ReadFirstLineOfPolyLineHeader(LineBuffer &lb, std::string &str) {
 		if (lb.eof()) return;
 
 		// else, there *was* an unexplained failure
-		std::ostringstream oss("Unsuccessful read from ");
-		oss << lb
-		 << " while attempting to read first line of polyline header";
+		std::ostringstream oss;
+		oss << "Unsuccessful read from " << lb
+		 << "\nwhile attempting to read the first line of a"
+		 " polyline header.";
 
 		throw FileFormatException(oss.str().c_str());
 	}
@@ -186,9 +187,10 @@ ReadSecondLineOfPolyLineHeader(LineBuffer &lb, std::string &str) {
 	if ( ! lb.getline(buf, sizeof(buf))) {
 
 		// For some reason, the read was considered "unsuccessful"
-		std::ostringstream oss("Unsuccessful read from ");
-		oss << lb
-		 << " while attempting to read second line of polyline header";
+		std::ostringstream oss;
+		oss << "Unsuccessful read from " << lb
+		 << "\nwhile attempting to read the second line of a "
+		 "polyline header.";
 
 		throw FileFormatException(oss.str().c_str());
 	}
@@ -257,9 +259,9 @@ ReadPolyLinePoint(LineBuffer &lb) {
 	if ( ! lb.getline(buf, sizeof(buf))) {
 
 		// For some reason, the read was considered "unsuccessful"
-		std::ostringstream oss("Unsuccessful read from ");
-		oss << lb
-		 << " while attempting to read a polyline point";
+		std::ostringstream oss;
+		oss << "Unsuccessful read from " << lb
+		 << "\nwhile attempting to read a polyline point.";
 
 		throw FileFormatException(oss.str().c_str());
 	}

@@ -79,7 +79,7 @@ ReadRestOfLine(const LineBuffer &lb, std::istringstream &iss) {
 		// ran out of space in the buffer
 		std::ostringstream oss;
 		oss << "The comment found in rotation file " << lb
-		 << "was too long:\n" << buf;
+		 << "\nwas too long:\n" << buf;
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -115,10 +115,9 @@ GPlatesFileIO::PlatesParser::ParseRotationLine(const LineBuffer &lb,
 	if ( ! LatLonPoint::isValidLat(lat)) {
 
 		// not a valid latitude
-		std::ostringstream oss("Invalid value (");
-		oss << lat
-		 << ") for latitude found at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Invalid value (" << lat << ") for latitude found in\n"
+		 << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -127,10 +126,9 @@ GPlatesFileIO::PlatesParser::ParseRotationLine(const LineBuffer &lb,
 	if ( ! LatLonPoint::isValidLon(lon)) {
 
 		// not a valid longitude
-		std::ostringstream oss("Invalid value (");
-		oss << lon
-		 << ") for longitude found at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Invalid value (" << lon << ") for longitude found in\n"
+		 << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -170,10 +168,9 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 	if ( ! LatLonPoint::isValidLat(lat)) {
 
 		// not a valid latitude
-		std::ostringstream oss("Invalid value (");
-		oss << lat
-		 << ") for latitude found at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Invalid value (" << lat << ") for latitude found in\n"
+		 << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -182,10 +179,9 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 	if ( ! LatLonPoint::isValidLon(lon)) {
 
 		// not a valid longitude
-		std::ostringstream oss("Invalid value (");
-		oss << lon
-		 << ") for longitude found at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Invalid value (" << lon << ") for longitude found in\n"
+		 << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -197,10 +193,9 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 		 * The plotter code which was read was not
 		 * the code which was expected.
 		 */
-		std::ostringstream oss("Unexpected value (");
-		oss << plotter_code
-		 << ") for plotter code found at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Unexpected value (" << plotter_code
+		 << ") for plotter code\nfound in " << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -229,10 +224,9 @@ LatLonPoint::ParseTermBoundaryLine(const LineBuffer &lb,
 		 * The value read was not the expected value of 99.0,
 		 * which marks a terminating point.
 		 */
-		std::ostringstream oss("Invalid value (");
-		oss << lat
-		 << ") for latitude of terminating point found at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Invalid value (" << lat << ") for latitude of"
+		 << " terminating point\nfound in " << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -244,10 +238,9 @@ LatLonPoint::ParseTermBoundaryLine(const LineBuffer &lb,
 		 * The value read was not the expected value of 99.0,
 		 * which marks a terminating point.
 		 */
-		std::ostringstream oss("Invalid value (");
-		oss << lon
-		 << ") for longitude of terminating point found at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Invalid value (" << lon << ") for longitude of"
+		 << " terminating point\nfound in " << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -259,10 +252,9 @@ LatLonPoint::ParseTermBoundaryLine(const LineBuffer &lb,
 		 * The plotter code which was read was not
 		 * the code which was expected.
 		 */
-		std::ostringstream oss("Unexpected value (");
-		oss << plotter_code
-		 << ") for plotter code found at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Unexpected value (" << plotter_code
+		 << ") for plotter code\nfound in " << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
 	}
@@ -352,12 +344,12 @@ PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
 	 */
 	if (number_of_points < 2) {
 
-		std::ostringstream oss("Invalid value (");
-		oss << number_of_points
-		 << ") for the number of points in the polyline header at "
-		 << lb;
+		std::ostringstream oss;
+		oss << "Invalid value (" << number_of_points
+		 << ") for the number of points\nin the polyline header in "
+		 << lb << ".";
 
-		InvalidDataException(oss.str().c_str());
+		throw InvalidDataException(oss.str().c_str());
 	}
 
 	// Since it can never be < zero, let's return it as a size_t

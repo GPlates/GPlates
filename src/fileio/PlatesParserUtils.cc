@@ -44,10 +44,9 @@ attemptToReadInt(const LineBuffer &lb, std::istringstream &iss,
 	if ( ! (iss >> i)) {
 
 		// For some reason, unable to read an int
-		std::ostringstream oss("Unable to extract an int from ");
-		oss << lb
-		 << " while attempting to parse the "
-		 << desc;
+		std::ostringstream oss;
+		oss << "Unable to extract an int from " << lb
+		 << "\nwhile attempting to parse the " << desc << ".";
 
 		throw FileFormatException(oss.str().c_str());
 	}
@@ -64,10 +63,9 @@ attemptToReadFloat(const LineBuffer &lb, std::istringstream &iss,
 	if ( ! (iss >> f)) {
 
 		// For some reason, unable to read a float
-		std::ostringstream oss("Unable to extract a float from ");
-		oss << lb
-		 << " while attempting to parse the "
-		 << desc;
+		std::ostringstream oss;
+		oss << "Unable to extract a float from " << lb
+		 << "\nwhile attempting to parse the " << desc << ".";
 
 		throw FileFormatException(oss.str().c_str());
 	}
@@ -84,10 +82,9 @@ attemptToReadString(const LineBuffer &lb, std::istringstream &iss,
 	if ( ! (iss >> s)) {
 
 		// For some reason, unable to read a string
-		std::ostringstream oss("Unable to extract a string from ");
-		oss << lb
-		 << " while attempting to parse the "
-		 << desc;
+		std::ostringstream oss;
+		oss << "Unable to extract a string from " << lb
+		 << "\nwhile attempting to parse the " << desc << ".";
 
 		throw FileFormatException(oss.str().c_str());
 	}
@@ -104,10 +101,9 @@ attemptToReadPlateID(const LineBuffer &lb, std::istringstream &iss,
 	if ( ! (iss >> p)) {
 
 		// For some reason, unable to read a plate id
-		std::ostringstream oss("Unable to extract plate id from ");
-		oss << lb
-		 << " while attempting to parse the "
-		 << desc;
+		std::ostringstream oss;
+		oss << "Unable to extract a plate id from " << lb
+		 << "\nwhile attempting to parse the " << desc << ".";
 
 		throw FileFormatException(oss.str().c_str());
 	}
@@ -123,9 +119,9 @@ attemptToReadPlotterCode(const LineBuffer &lb, std::istringstream &iss) {
 	if ( ! (iss >> i)) {
 
 		// For some reason, unable to read an int
-		std::ostringstream oss("Unable to extract an integer from ");
-		oss << lb
-		 << " while attempting to parse the plotter code of a point";
+		std::ostringstream oss;
+		oss << "Unable to extract an integer from " << lb
+		 << "\nwhile attempting to parse the plotter code of a point.";
 
 		throw FileFormatException(oss.str().c_str());
 	}
