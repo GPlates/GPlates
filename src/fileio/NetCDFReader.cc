@@ -223,9 +223,10 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	delete z_unit_att;
 	GPlatesGeo::GridData *gdata;
 	try {
-		GPlatesMaths::PointOnSphere orig = pos (y_min, x_min),
-				sc_step = pos (y_min, x_min + x_step),
-				gc_step = pos (y_min + y_step, x_min);
+		double real_x_min = (x_min <= -180.0) ? (x_min + 180.0) : x_min;
+		GPlatesMaths::PointOnSphere orig = pos (y_min, real_x_min),
+				sc_step = pos (y_min, real_x_min + x_step),
+				gc_step = pos (y_min + y_step, real_x_min);
 		if ((orig == GPlatesMaths::NorthPole) ||
 		    (orig == GPlatesMaths::SouthPole)) {
 			throw FileFormatException

@@ -21,4 +21,4 @@ fi
 
 echo "Running with valgrind, output to \"$OUTPUT\"..."
 valgrind -v --leak-check=yes --num-callers=8 \
-	./gplates 2> valgrind.log
+	./gplates 2> $OUTPUT
