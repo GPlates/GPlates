@@ -160,7 +160,9 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 	 * and an int (a plotter code).
 	 */
 	fpdata_t lat, lon;
+#if 0
 	int plotter_code;
+#endif
 
 	std::istringstream iss(line);
 
