@@ -28,7 +28,7 @@ all:	subdir_all $(PROGNAME)
 subdir_all:
 	@dlist='$(SUBDIRS)' ; \
 	for subdir in $$dlist ; do \
-		(cd $$subdir && $(MAKE) all) ; \
+		(cd $$subdir && $(MAKE) all) || exit 1 ; \
 	done
 
 install:
