@@ -53,11 +53,8 @@ namespace GPlatesMaths
 			Vector3D(const real_t& x_comp,
 			         const real_t& y_comp,
 			         const real_t& z_comp)
-			 : _x(x_comp), _y(y_comp), _z(z_comp) {
+			 : _x(x_comp), _y(y_comp), _z(z_comp) {  }
 
-				// Calculate magnitude of vector.
-				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
-			}
 
 			/**
 			 * Create a regular vector from a unit vector.
@@ -66,7 +63,8 @@ namespace GPlatesMaths
 			 */
 			explicit
 			Vector3D(const UnitVector3D &uv)
-			 : _x(uv.x()), _y(uv.y()), _z(uv.z()), _mag(1.0) {  }
+			 : _x(uv.x()), _y(uv.y()), _z(uv.z()) {  }
+
 
 			real_t
 			x() const { return _x; }
@@ -78,14 +76,15 @@ namespace GPlatesMaths
 			z() const { return _z; }
 
 			real_t
-			magnitude() const { return _mag; }
+			magnitude() const {
+
+				return sqrt((_x * _x) + (_y * _y) + (_z * _z));
+			}
 
 		private:
 			real_t _x,  /**< x-component. */
 			       _y,  /**< y-component. */
 			       _z;  /**< z-component. */
-
-			real_t _mag;
 	};
 
 
