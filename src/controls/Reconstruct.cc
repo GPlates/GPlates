@@ -296,6 +296,9 @@ WarpToTime(const fpdata_t &t) {
 }
 
 
+// A hack to deal with a GCC bug and a bad XFree86 header file...
+namespace GPlatesControls {
+
 /**
  * Perform a reconstruction animation for the time @a time.
  *
@@ -303,7 +306,7 @@ WarpToTime(const fpdata_t &t) {
  * 'Reconstruct -> Jump to Time'.
  */
 void
-GPlatesControls::Reconstruct::Time(const fpdata_t &time)
+Reconstruct::Time(const fpdata_t &time)
 {
 	if (Data::GetDataGroup() == NULL) {
 
@@ -330,8 +333,10 @@ GPlatesControls::Reconstruct::Time(const fpdata_t &time)
 	} catch (const GPlatesGlobal::Exception &e) {
 
 		std::cerr << "Internal exception: " << e << std::endl;
-		exit(1);
+		std::exit(1);
 	}
+}
+
 }
 
 
