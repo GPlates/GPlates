@@ -35,6 +35,7 @@
 #include "geo/GridData.h"
 #include "geo/GridElement.h"
 #include "global/Exception.h"
+#include "global/config.h"
 #include "global/types.h"
 #include "maths/OperationsOnSphere.h"
 #include "maths/PointOnSphere.h"
@@ -98,9 +99,13 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 		<< "\tbottom row: " << x00 << ", " << x10 << "\n"
 		<< "\t1st row: " << x01 << ", " << x11 << "\n";
 
+	// Create global attributes
+	ncf.add_att ("title", "??");	// XXX
+	ncf.add_att ("source", PACKAGE_STRING "/netCDF Exporter");
+
 	// Create dimensions
 	NcDim *dim_side = ncf.add_dim ("side", 2);
-	//NcDim *dim_xysize = ncf.add_dim ("xysize", nx * ny);
+	NcDim *dim_xysize = ncf.add_dim ("xysize", nx * ny);
 
 	// Create variables and their attributes
 	NcVar *var_x_range = ncf.add_var ("x_range", ncDouble, dim_side);
@@ -113,9 +118,10 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 	NcVar *var_spacing = ncf.add_var ("spacing", ncDouble, dim_side);
 	var_spacing->add_att ("units", "deg");
 	NcVar *var_dimension = ncf.add_var ("dimension", ncInt, dim_side);
-	//NcVar *var_z = ncf.add_var ("z", ncFloat, dim_xysize);
-	//var_z->add_att ("scale_factor", (double) 1.0);
-	//var_z->add_att ("add_offset", (double) 0.0);
+	NcVar *var_z = ncf.add_var ("z", ncFloat, dim_xysize);
+	var_z->add_att ("scale_factor", (double) 1.0);
+	var_z->add_att ("add_offset", (double) 0.0);
+	var_z->add_att ("long_name", "???");	// XXX
 
 	// Leave define mode and start writing data
 
@@ -130,5 +136,23 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 	int dimension[2] = { nx, ny };
 	var_dimension->put (dimension, 2);
 
-	return false;
+	// Dump data to file
+	index_t cnt = 0;
+	float *z = new float[nx];
+	for (int j = nx - 1; j >= 0; --j) {
+		// FIXME: set these all to NaN's
+		memset (z, 0, nx * sizeof (float));
+		for (index_t i = 0; i < nx; ++i) {
+			const GPlatesGeo::GridElement *elt = grid->get (i, j);
+			if (!elt)
+				continue;
+			z[i] = elt->getValue ();
+		}
+		cnt += nx;
+		var_z->set_cur (cnt);
+		var_z->put (z, nx);
+	}
+	delete z;
+
+	return true;
 }

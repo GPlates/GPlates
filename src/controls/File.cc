@@ -196,7 +196,9 @@ namespace
 		}
 
 		// TODO: do something useful with this GridData ptr!
-		GPlatesFileIO::NetCDFWriter::Write ("grid-out.grd", gdata, 0);
+		if (gdata)
+			GPlatesFileIO::NetCDFWriter::Write ("grid-out.grd",
+								gdata, 0);
 		delete gdata;
 	}
 
