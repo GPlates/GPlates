@@ -62,14 +62,14 @@ namespace GPlatesMaths
 				     const real_t &z_comp)
 				: DirVector3D (x_comp, y_comp, z_comp)
 			{
-				// Already called from DirVector3D ctor
-				// AssertInvariantHolds ();
+				// Virtual functions don't work in ctors
+				AssertInvariantHolds ();
 			}
 
 			UnitVector3D (const Vector3D &v) : DirVector3D (v)
 			{
-				// Already called from DirVector3D ctor
-				// AssertInvariantHolds ();
+				// Virtual functions don't work in ctors
+				AssertInvariantHolds ();
 			}
 
 			UnitVector3D &operator= (const Vector3D &v)
@@ -77,23 +77,25 @@ namespace GPlatesMaths
 				_x = v.x ();
 				_y = v.x ();
 				_z = v.x ();
+
 				AssertInvariantHolds ();
 				return *this;
 			}
 
-			virtual real_t magnitude () const { return 1.0; }
+			virtual real_t magnitude() const { return 1.0; }
 
-			virtual Vector3D normalise () const
-						{ return *this; }
+			virtual UnitVector3D normalise() const { return *this; }
 
 		protected:
 			/** 
 			 * Assert the class invariant.
 			 * @throw ViolatedUnitVectorInvariantException
 			 *   if the invariant has been violated.
+			 *
+			 * Since this is invoked by constructors,
+			 * it should not be a virtual function.
 			 */
-			virtual void
-			AssertInvariantHolds () const;
+			void AssertInvariantHolds () const;
 	};
 
 	inline UnitVector3D normalise (const DirVector3D &v1)
