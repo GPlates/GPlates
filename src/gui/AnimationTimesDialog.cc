@@ -25,13 +25,19 @@
  */
 
 #include <sstream>
+#include <iomanip>
 #include <wx/wx.h>
 #include "AnimationTimesDialog.h"
 #include "FPValidator.h"
 
-GPlatesGui::AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent) :
+GPlatesGui::AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent,
+ GPlatesGlobal::fpdata_t start_time, GPlatesGlobal::fpdata_t end_time,
+ GPlatesGlobal::fpdata_t time_delta, bool finish_on_end) :
+
  wxDialog(parent, -1, _("Constructing Animation...")),
- _start_ctrl_str("0.0"), _end_ctrl_str("0.0"), _time_delta_ctrl_str("1.0")
+ _start_ctrl_str(AnimationTimesDialog::fpToWxString(start_time)),
+ _end_ctrl_str(AnimationTimesDialog::fpToWxString(end_time)),
+ _time_delta_ctrl_str(AnimationTimesDialog::fpToWxString(time_delta))
 {
 	static const int BORDER_SIZE  = 10;
 	
@@ -75,7 +81,7 @@ GPlatesGui::AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent) :
 	wxBoxSizer* entrysizer4 = new wxBoxSizer(wxHORIZONTAL);
 	entrysizer4->Add(_finish_on_end = new wxCheckBox(this, -1,
 	 _("Finish animation exactly on end time.")), 0, wxALL, BORDER_SIZE);
-	_finish_on_end->SetValue(TRUE);
+	_finish_on_end->SetValue(finish_on_end);
 
 	wxBoxSizer* buttonsizer = new wxBoxSizer(wxHORIZONTAL);
 	buttonsizer->Add(new wxButton(this, wxID_OK, _("OK")),
@@ -143,4 +149,13 @@ bool
 GPlatesGui::AnimationTimesDialog::GetFinishOnEnd() const
 {
 	return _finish_on_end->IsChecked();
+}
+
+
+wxString
+GPlatesGui::AnimationTimesDialog::fpToWxString(GPlatesGlobal::fpdata_t f)
+{
+	std::ostringstream oss;
+	oss << std::fixed << std::setprecision(1) << f.dval();
+	return wxString(oss.str().c_str());
 }

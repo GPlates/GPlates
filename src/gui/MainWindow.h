@@ -87,7 +87,17 @@ namespace GPlatesGui
 
 			wxStatusBar *_status_bar;
 			GLCanvas    *_canvas;
+
+			/**
+			 * Cached stuff.
+			 */
 			wxString _last_load_dir, _last_save_dir;
+
+			// For animations
+			GPlatesGlobal::fpdata_t _last_start_time;
+			GPlatesGlobal::fpdata_t _last_end_time;
+			GPlatesGlobal::fpdata_t _last_time_delta;
+			bool _last_finish_on_end;
 
 			/**
 			 * The current geological time.

@@ -36,7 +36,11 @@ namespace GPlatesGui
 	class AnimationTimesDialog : public wxDialog
 	{
 		public:
-			AnimationTimesDialog(wxWindow* parent);
+			AnimationTimesDialog(wxWindow* parent,
+			 GPlatesGlobal::fpdata_t start_time,
+			 GPlatesGlobal::fpdata_t end_time,
+			 GPlatesGlobal::fpdata_t time_delta,
+			 bool finish_on_end);
 	
 			GPlatesGlobal::fpdata_t
 			GetStartTime() const;
@@ -49,6 +53,10 @@ namespace GPlatesGui
 
 			bool
 			GetFinishOnEnd() const;
+
+		protected:
+			static wxString
+			fpToWxString(GPlatesGlobal::fpdata_t f);
 
 		private:
 			wxTextCtrl* _start_ctrl;

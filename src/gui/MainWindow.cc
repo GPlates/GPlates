@@ -84,8 +84,12 @@ GPlatesGui::MainWindow::STATUSBAR_FIELDS[] = {
 
 
 MainWindow::MainWindow(wxFrame* parent, const wxString& title,
- const wxSize& size, const wxPoint& pos)
- : wxFrame(parent, -1 /* XXX: DEFAULT_WINDOWID */, title, pos, size)
+ const wxSize& size, const wxPoint& pos) :
+ wxFrame(parent, -1 /* XXX: DEFAULT_WINDOWID */, title, pos, size),
+ _last_start_time(0.0),
+ _last_end_time(0.0),
+ _last_time_delta(1.0),
+ _last_finish_on_end(true)
 {
 	const int num_statusbar_fields =
 	 static_cast< int >(sizeof(STATUSBAR_FIELDS) / sizeof(int));
@@ -266,14 +270,18 @@ MainWindow::OnReconstructPresent(wxCommandEvent&)
 void
 MainWindow::OnReconstructAnimation(wxCommandEvent&)
 {
-	AnimationTimesDialog dialog(this);
+	AnimationTimesDialog dialog(this, _last_start_time, _last_end_time,
+	                             _last_time_delta, _last_finish_on_end);
 
 	if (dialog.ShowModal() == wxID_OK) {
-		GPlatesControls::Reconstruct::Animation(
-			dialog.GetStartTime(), 
-			dialog.GetEndTime(),
-			dialog.GetTimeDelta(),
-		        dialog.GetFinishOnEnd());
+
+		_last_start_time = dialog.GetStartTime();
+		_last_end_time = dialog.GetEndTime();
+		_last_time_delta = dialog.GetTimeDelta();
+		_last_finish_on_end = dialog.GetFinishOnEnd();
+
+		GPlatesControls::Reconstruct::Animation(_last_start_time,
+		 _last_end_time, _last_time_delta, _last_finish_on_end);
 	}
 }
 
