@@ -67,7 +67,8 @@ namespace {
 		MENU_RECONSTRUCT_PRESENT,
 		MENU_RECONSTRUCT_ANIMATION,
 
-		MENU_HELP_ABOUT
+		// Important for the ID to be this value, for the Mac port
+		MENU_HELP_ABOUT = wxID_ABOUT
 	};
 }
 
@@ -293,7 +294,7 @@ MainWindow::CreateMenuBar()
 	
 	wxMenu* helpmenu = new wxMenu;
 	helpmenu->Append(MENU_HELP_ABOUT,
-	 _("&About GPlates..."),
+	 _("&About GPlates...\tF1"),
 	 _("Find out about GPlates"));
 
 	wxMenuBar* menubar = new wxMenuBar(wxMB_DOCKABLE);
