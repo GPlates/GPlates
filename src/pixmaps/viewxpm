@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# viewxpm
+#
+#   A tiny script to ease the viewing of these slightly-broken XPM images.
+#
+#   They're "slightly-broken" because G++ with the "-Wwrite-strings" option
+#   enabled was complaining about the "static char *" array in the XPM files
+#   ("warning: deprecated conversion from string constant to `char*'").  The
+#   quickest fix was to replace "static char *" with "static const char *",
+#   which unfortunately seems to break just about everything else...
+#
+#   Obviously, this script requires the installation of the "display" utility
+#   (part of the "ImageMagick" package).
+
+for i
+do
+	sed 's/static const char/static char/' $i | display -border 30x30  -
+done
+
