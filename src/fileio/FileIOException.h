@@ -1,5 +1,5 @@
 /*$Id$*/
-/// Pure vittual base class of all IO Exceptions.
+
 /**
  * @file
  *
@@ -25,19 +25,19 @@
 #ifndef _GPLATES_FILEIO_FILEIOEXCEPTION_H_
 #define _GPLATES_FILEIO_FILEIOEXCEPTION_H_
 
-#include "../global/Exception.h"
+#include "global/Exception.h"
  
- namespace GPlatesFileIO {
-   
-   /**
-    * The (pure virtual) base class of all fileio exceptions.
-    */
-   class FileIOException : public GPlatesGlobal::Exception
-     {
-     public:
-       virtual
-	 ~FileIOException() {  }
-     };
- }
+namespace GPlatesFileIO
+{
+	/**
+	 * The (pure virtual) base class of all file I/O exceptions.
+	 */
+	class FileIOException : public GPlatesGlobal::Exception
+	{
+		public:
+			virtual
+			~FileIOException() {  }
+	};
+}
 
 #endif  // _GPLATES_FILEIO_FILEIOEXCEPTION_H_
