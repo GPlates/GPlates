@@ -329,4 +329,27 @@ Reconstruct::Animation(const fpdata_t &start_time,
 
 		return;
 	}
+
+	// FIXME: we really should COMPLAIN if 'nsteps' is < 2
+	if (nsteps < 2) return;
+	try {
+
+		real_t t(start_time);  // first time of the animation
+		real_t time_incr = (real_t(end_time) - t) / (nsteps - 1);
+
+		unsigned num_frames = static_cast< unsigned >(nsteps);
+
+		for (unsigned n = 0;
+		     n < num_frames;
+		     n++, t += time_incr) {
+
+			// display the frame for time 't'
+			WarpToTime(t.dval());
+		}
+
+	} catch (const GPlatesGlobal::Exception &e) {
+
+		std::cerr << "Internal exception: " << e << std::endl;
+		exit(1);
+	}
 }
