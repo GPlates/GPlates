@@ -35,7 +35,6 @@ DirVector3D::AssertInvariantHolds() const {
 
 	/*
 	 * Calculate magnitude of vector.
-	 * For efficiency, don't bother sqrting yet.
 	 */
 	real_t mag_sqrd = (_x * _x) + (_y * _y) + (_z * _z);
 	if (mag_sqrd == 0.0) {
@@ -62,12 +61,12 @@ DirVector3D::normalise() const {
 }
 
 
-DirectionVector3D
+DirVector3D
 cross(DirVector3D v1, DirVector3D v2) {
 
 	real_t x_comp = v1.y() * v2.z() - v1.z() * v2.y();
 	real_t y_comp = v1.z() * v2.x() - v1.x() * v2.z();
 	real_t z_comp = v1.x() * v2.y() - v1.y() * v2.x();
 
-	return DirectionVector3D(x_comp, y_comp, z_comp);
+	return DirVector3D(x_comp, y_comp, z_comp);
 }
