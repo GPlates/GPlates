@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_GLOBE_H_
@@ -51,6 +52,9 @@ namespace GPlatesGui
 
 			GLfloat&
 			GetElevation() { return _elevation; }
+
+			void
+			SetTransparency(bool trans = true);
 
 			void
 			Paint();

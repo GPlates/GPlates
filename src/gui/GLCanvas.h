@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_GLCANVAS_H_
@@ -87,6 +88,8 @@ namespace GPlatesGui
 			 */
 			GPlatesMaths::PointOnSphere*
 			GetSphereCoordFromScreen(int screenx, int screeny);
+
+			Globe *GetGlobe() { return &_globe; }
 			
 		private:
 			Globe _globe;

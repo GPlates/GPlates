@@ -55,6 +55,7 @@ namespace GPlatesGui
 
 			//   View events
 			void OnViewMetadata(wxCommandEvent&);
+			void OnViewGlobe(wxCommandEvent&);
 
 			//   Reconstruct events
 			void OnReconstructTime(wxCommandEvent&);

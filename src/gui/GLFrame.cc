@@ -53,6 +53,9 @@ enum {
 	MENU_FILE_EXIT,
 
 	MENU_VIEW_METADATA,
+	MENU_VIEW_GLOBE,
+		MENU_VIEW_GLOBE_SOLID,
+		MENU_VIEW_GLOBE_TRANSPARENT,
 	
 	MENU_RECONSTRUCT_TIME,
 	MENU_RECONSTRUCT_PRESENT,
@@ -80,6 +83,12 @@ CreateMenuBar(GLFrame* frame)
 	viewmenu->Append(MENU_VIEW_METADATA,
 					 _("&View Metadata...\tCtrl-V"),
 					 _("View the document's metadata"));
+
+	viewmenu->AppendSeparator();
+	wxMenu *viewGlobe_menu = new wxMenu;
+	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_SOLID, _("&Solid"));
+	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_TRANSPARENT, _("&Transparent"));
+	viewmenu->Append(MENU_VIEW_GLOBE, _("&Globe"), viewGlobe_menu);
 
 	wxMenu* reconstructmenu = new wxMenu;
 	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
@@ -226,6 +235,18 @@ GLFrame::OnViewMetadata(wxCommandEvent&)
 }
 
 void
+GLFrame::OnViewGlobe(wxCommandEvent &event)
+{
+	Globe *gl = _canvas->GetGlobe();
+	if (event.GetId() == MENU_VIEW_GLOBE_SOLID)
+		gl->SetTransparency(false);
+	else if (event.GetId() == MENU_VIEW_GLOBE_TRANSPARENT)
+		gl->SetTransparency(true);
+
+	gl->Paint();
+}
+
+void
 GLFrame::OnReconstructTime(wxCommandEvent&)
 {	
 	ReconstructTimeDialog dialog(this);
@@ -263,6 +284,8 @@ BEGIN_EVENT_TABLE(GLFrame, wxFrame)
 	EVT_MENU(MENU_FILE_EXIT, GLFrame::OnExit)
 
 	EVT_MENU(MENU_VIEW_METADATA, GLFrame::OnViewMetadata)
+		EVT_MENU(MENU_VIEW_GLOBE_SOLID, GLFrame::OnViewGlobe)
+		EVT_MENU(MENU_VIEW_GLOBE_TRANSPARENT, GLFrame::OnViewGlobe)
 		
 	EVT_MENU(MENU_RECONSTRUCT_TIME, GLFrame::OnReconstructTime)
 	EVT_MENU(MENU_RECONSTRUCT_PRESENT, GLFrame::OnReconstructPresent)

@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <iostream>
@@ -52,9 +53,15 @@ Globe::Globe(Colour colour, GLfloat radius, GLint slices, GLint stacks)
 	_sphere = gluNewQuadric();
 	gluQuadricNormals(_sphere, GLU_SMOOTH);	// Generate normals for lighting
 	gluQuadricTexture(_sphere, GL_FALSE);	// Don't generate texture coords
-	gluQuadricDrawStyle(_sphere, GLU_FILL);	// Draw solid sphere
+	SetTransparency(false);			// Draw solid sphere
 	gluQuadricCallback(_sphere, GLU_ERROR,  // Catch errors.
 		reinterpret_cast<void (*)()>(&QuadricError));
+}
+
+void
+Globe::SetTransparency(bool trans)
+{
+	gluQuadricDrawStyle(_sphere, trans ? GLU_LINE : GLU_FILL);
 }
 
 void
