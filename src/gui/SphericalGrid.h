@@ -21,39 +21,89 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_SPHERICALGRID_H_
-#define _GPLATES_SPHERICALGRID_H_
+#ifndef _GPLATES_GUI_SPHERICALGRID_H_
+#define _GPLATES_GUI_SPHERICALGRID_H_
 
-#include "OpenGL.h"
 #include "Colour.h"
-#include "maths/types.h"
+#include "NurbsRenderer.h"
 
 namespace GPlatesGui
 {
 	class SphericalGrid
 	{
 		public:
-			SphericalGrid(const GPlatesMaths::real_t& degrees_per_lat,
-			              const GPlatesMaths::real_t& degrees_per_lon,
-			              const Colour& colour = Colour::WHITE);
-			
-			~SphericalGrid();
+			SphericalGrid(unsigned num_circles_lat,
+			              unsigned num_circles_lon,
+			              const Colour &colour = Colour::WHITE)
 
-			void
-			Paint();
+			 : _num_circles_lat(num_circles_lat),
+			   _num_circles_lon(num_circles_lon),
+			   _colour(colour) {
+
+				// subdivide into stacks
+				unsigned num_stacks = _num_circles_lat + 1;
+				_lat_delta = pi / num_stacks;
+
+				// subdivide into slices
+				if (_num_circles_lon > 0) {
+
+					// num_slices == 2 * _num_circles_lon
+					_lon_delta = pi / _num_circles_lon;
+
+				} else _lon_delta = 2 * pi;  // meaningless
+			}
+			
+			~SphericalGrid() {  }
 
 		private:
+			/*
+			 * These two member functions intentionally declared
+			 * private to avoid object copying/assignment.
+			 * [Since the data member '_nurbs' itself cannot be
+			 * copied or assigned.]
+			 */
+			SphericalGrid(const SphericalGrid &other);
+
+			SphericalGrid &operator=(const SphericalGrid &other);
+
+		public:
+			void Paint();
+
+		private:
+			void drawLineOfLat(double lat);  // in radians
+			void drawLineOfLon(double lon);
+
+			NurbsRenderer _nurbs;
+
+			unsigned _num_circles_lat;
+			unsigned _num_circles_lon;
+
+			Colour _colour;
+
+			double _lat_delta;  // in radians
+			double _lon_delta;
+
 			/**
-			 * Magic number to refer to the grid's display
-			 * list.
+			 * FIXME: Pi is often defined in the C Standard Library
+			 * -- but is it <em>always</em> defined on
+			 * <em>every</em> platform? and to the <em>same
+			 * precision</em>?
+			 */
+			static const double pi;
+
+#if 0  // FIXME: implement display lists
+			/**
+			 * Magic number to refer to the grid's display list.
 			 * XXX: we need to implement a mechanism by which
 			 * we can guarantee that this number is unique among
 			 * all the display lists.
 			 */ 
 			static const int GRID = 42;
+#endif
 	};
 }
 
-#endif /* _GPLATES_SPHERICALGRID_H_ */
+#endif /* _GPLATES_GUI_SPHERICALGRID_H_ */

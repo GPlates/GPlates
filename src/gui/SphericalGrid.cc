@@ -21,29 +21,44 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
-#include "SphericalGrid.h"
-#include "maths/types.h"
+
 #include <cmath>
+#include "SphericalGrid.h"
+#include "OpenGL.h"
 
-using namespace GPlatesMaths;
-using namespace GPlatesGui;
-
-// Catch errors
-static void
-NurbsError(GLenum error)
-{
-	std::cerr << "NURBS Error: " << gluErrorString(error) << std::endl;
-	exit(1);
-}
 
 namespace
 {
-	// The knot vector has (degree + length(ctrl_points) - 1)
-	// elements.
+	static const GLfloat WEIGHT = 1.0 / sqrt(2.0);
+
+	/*
+	 * The offset between successive curve control points.
+	 * [The number of coords in a control point.]
+	 */
+	static const GLint STRIDE = 4;
+
+	/*
+	 * The degree of the curve + 1.
+	 */
+	static const GLint ORDER = 3;
+
+	/*
+	 * The number of control points.
+	 */
+	static const GLsizei NUM_CONTROL_POINTS = 9;
+
+	/*
+	 * The knot vector has (degree + length(ctrl_points) - 1) elements.
+	 * [KNOT_SIZE == ORDER + NUM_CONTROL_POINTS.]
+	 */
 	static const GLsizei KNOT_SIZE = 12;
-	static GLfloat knots[KNOT_SIZE] = {  // would make this const but
-		0.0, 0.0, 0.0,                   // opengl doesn't allow it. 
+
+	// Would have made this const but OpenGL doesn't allow it.
+	static GLfloat knots[KNOT_SIZE] = {
+
+		0.0, 0.0, 0.0,
 		0.25, 0.25,
 		0.5, 0.5,
 		0.75, 0.75,
@@ -51,183 +66,88 @@ namespace
 	};
 }
 
-static void
-DrawSmallCircle(GLUnurbsObj* nurbs_renderer, const real_t& latitude)
-{
-	const real_t rad_lat = degreesToRadians(latitude);
-	const GLfloat radius = cos(rad_lat).dval();
-	const GLfloat height = sin(rad_lat).dval();
-
-	GLfloat P = radius;
-
-	static const GLfloat WEIGHT = 1.0f / std::sqrt(2.0f);
-	GLfloat uP = P*WEIGHT;
-	GLfloat uheight = height*WEIGHT;
-
-	static const GLsizei NUM_CONTROL_POINTS = 9;
-	static const GLint   STRIDE = 4; // num of coords in a ctrl_point
-	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
-		{ radius, 0.0, height, 1.0 },
-		{ uP, uP, uheight, WEIGHT },
-		{ 0.0, radius, height, 1.0 },
-		{ -uP, uP, uheight, WEIGHT },
-		{ -radius, 0.0, height, 1.0 },
-		{ -uP, -uP, uheight, WEIGHT },
-		{ 0.0, -radius, height, 1.0 },
-		{ uP, -uP, uheight, WEIGHT },
-		{ radius, 0.0, height, 1.0 }
-	};
-	static const GLint ORDER = 3; // XXX: I forget what this does.
-
-	/*
-	 * Draw the NURBS.
-	 * Draw one quarter of the circle at a time.  Do this
-	 * because the performance cost increases (non-linearly)
-	 * with the number of control points; each quarter has 3 
-	 * control points, compared to 8 for the whole circle.
-	 * XXX: for reasons that elude me, *each* of the calls to
-	 *   gluNurbsCurve needs to be wrapped in a glu{Begin,End}Curve
-	 *   block; it would be preferable to have the four calls 
-	 *   inside a single block.
-	 */
-//	glNewList(display_list_id, GL_COMPILE_AND_EXECUTE);
-
-	gluBeginCurve(nurbs_renderer);
-		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
-		 &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
-	gluEndCurve(nurbs_renderer);
-#if 0
-	gluBeginCurve(nurbs_renderer);
-		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
-		 &ctrl_points[2][0], ORDER, GL_MAP1_VERTEX_4);
-	gluEndCurve(nurbs_renderer);
-
-	gluBeginCurve(nurbs_renderer);
-		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
-		 &ctrl_points[4][0], ORDER, GL_MAP1_VERTEX_4);
-	gluEndCurve(nurbs_renderer);
-
-	gluBeginCurve(nurbs_renderer);
-		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
-		 &ctrl_points[6][0], ORDER, GL_MAP1_VERTEX_4);
-	gluEndCurve(nurbs_renderer);
-#endif
-//	glEndList();
-}
-
-static void
-DrawGreatCircle(GLUnurbsObj* nurbs_renderer, const real_t& longitude)
-{
-	/*
-	 * P is a point on the perimeter of the great circle.
-	 */
-	const real_t rad_lon = degreesToRadians(longitude);
-	GLfloat P_x = cos(rad_lon).dval();
-	GLfloat P_y = sin(rad_lon).dval();
-	GLfloat P_z = 1.0;
-
-	static const GLfloat WEIGHT = 1.0f / std::sqrt(2.0f);
-
-	GLfloat uP_x = P_x*WEIGHT,
-		uP_y = P_y*WEIGHT,
-		uP_z = P_z*WEIGHT;
-
-	static const GLsizei NUM_CONTROL_POINTS = 9;
-	static const GLint   STRIDE = 4; // num of coords in a ctrl_point
-	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
-		{ 0.0, 0.0, 1.0, 1.0 },                // North pole
-		{ uP_x, uP_y, uP_z, WEIGHT },
-		{ P_x, P_y, 0.0, 1.0 },
-		{ uP_x, uP_y, -uP_z, WEIGHT },
-		{ 0.0, 0.0, -1.0, 1.0 },               // South pole
-		{ -uP_x, -uP_y, -uP_z, WEIGHT },
-		{ -P_x, -P_y, 0.0, 1.0 },
-		{ -uP_x, -uP_y, uP_z, WEIGHT },
-		{ 0.0, 0.0, 1.0, 1.0 }     // North pole (repeated to close loop).
-	};
-
-
-	static const GLint ORDER = 3; // XXX: I forget what this does.
-
-	/*
-	 * Draw the NURBS.
-	 * Draw one quarter of the circle at a time.  Do this
-	 * because the performance cost increases (non-linearly)
-	 * with the number of control points; each quarter has 3 
-	 * control points, compared to 8 for the whole circle.
-	 * XXX: for reasons that elude me, *each* of the calls to
-	 *   gluNurbsCurve needs to be wrapped in a glu{Begin,End}Curve
-	 *   block; it would be preferable to have the four calls 
-	 *   inside a single block.
-	 */
-//	glNewList(display_list_id, GL_COMPILE_AND_EXECUTE);
-
-	gluBeginCurve(nurbs_renderer);
-		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
-		 &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
-	gluEndCurve(nurbs_renderer);
-#if 0
-	gluBeginCurve(nurbs_renderer);
-		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
-		 &ctrl_points[2][0], ORDER, GL_MAP1_VERTEX_4);
-	gluEndCurve(nurbs_renderer);
-
-	gluBeginCurve(nurbs_renderer);
-		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
-		 &ctrl_points[4][0], ORDER, GL_MAP1_VERTEX_4);
-	gluEndCurve(nurbs_renderer);
-
-	gluBeginCurve(nurbs_renderer);
-		gluNurbsCurve(nurbs_renderer, KNOT_SIZE, &knots[0], STRIDE,
-		 &ctrl_points[6][0], ORDER, GL_MAP1_VERTEX_4);
-	gluEndCurve(nurbs_renderer);
-#endif
-//	glEndList();
-}
-
-namespace 
-{
-	GLUnurbsObj* nurbs_renderer;
-}
-
-static void
-CompileGrid(const real_t& degrees_per_lat,
-			const real_t& degrees_per_lon,
-			const Colour& colour, int)
-{
-	glColor3fv(colour);
-
-	GLfloat incr = degrees_per_lon.dval();
-	for (GLfloat lon = 0.0; lon < 180.0f; lon += incr)
-		DrawGreatCircle(nurbs_renderer, lon);
-
-	incr = degrees_per_lat.dval();
-	for (GLfloat lat = 90.0 - incr; lat > -90.0; lat -= incr)
-		DrawSmallCircle(nurbs_renderer, lat);
-}
-
-SphericalGrid::SphericalGrid(const real_t& degrees_per_lat,
-	const real_t& degrees_per_lon,
-	const Colour& colour)
-{
-	// Create renderer.
-	nurbs_renderer = gluNewNurbsRenderer();
-	gluNurbsCallback(nurbs_renderer, GLU_ERROR,
-		reinterpret_cast<void (*)()>(&NurbsError));
-
-	CompileGrid(degrees_per_lat, degrees_per_lon, colour, GRID);
-}
-
-
-SphericalGrid::~SphericalGrid()
-{
-	gluDeleteNurbsRenderer(nurbs_renderer);
-}
 
 void
-SphericalGrid::Paint()
-{
-//	glColor3fv(_colour);
-//	glCallList(GRID);
-	CompileGrid(30, 30, Colour::WHITE, 0);
+GPlatesGui::SphericalGrid::Paint() {
+
+	glColor3fv(_colour);
+
+	for (unsigned i = 0; i < _num_circles_lat; i++) {
+
+		double lat = ((i + 1) * _lat_delta) - (pi / 2);
+		drawLineOfLat(lat);
+	}
+
+	for (unsigned j = 0; j < _num_circles_lon; j++) {
+
+		double lon = j * _lon_delta;
+		drawLineOfLon(lon);
+	}
 }
+
+
+void
+GPlatesGui::SphericalGrid::drawLineOfLat(double lat) {
+
+	/*
+	 * We want to draw a small circle around the z-axis.
+	 * Calculate the height (above z = 0) and radius of this circle.
+	 */
+	GLfloat height = sin(lat);
+	GLfloat radius = cos(lat);
+
+	GLfloat u_radius = WEIGHT * radius;
+	GLfloat u_height = WEIGHT * height;
+
+	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
+
+		{ radius, 0.0, height, 1.0 },
+		{ u_radius, u_radius, u_height, WEIGHT },
+		{ 0.0, radius, height, 1.0 },
+		{ -u_radius, u_radius, u_height, WEIGHT },
+		{ -radius, 0.0, height, 1.0 },
+		{ -u_radius, -u_radius, u_height, WEIGHT },
+		{ 0.0, -radius, height, 1.0 },
+		{ u_radius, -u_radius, u_height, WEIGHT },
+		{ radius, 0.0, height, 1.0 }
+	};
+
+	_nurbs.drawCurve(KNOT_SIZE, &knots[0], STRIDE, &ctrl_points[0][0],
+	 ORDER, GL_MAP1_VERTEX_4);
+}
+
+
+void
+GPlatesGui::SphericalGrid::drawLineOfLon(double lon) {
+
+	/*
+	 * We want to draw a great circle which is bisected by the z-axis.
+	 * 'p' is a point on the perimeter of the great circle.
+	 */
+	GLfloat p_x = cos(lon);
+	GLfloat p_y = sin(lon);
+
+	GLfloat u_p_x = WEIGHT * p_x;
+	GLfloat u_p_y = WEIGHT * p_y;
+	GLfloat u_p_z = WEIGHT * 1.0;
+
+	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
+
+		{ 0.0, 0.0, 1.0, 1.0 },    // North pole
+		{ u_p_x, u_p_y, u_p_z, WEIGHT },
+		{ p_x, p_y, 0.0, 1.0 },
+		{ u_p_x, u_p_y, -u_p_z, WEIGHT },
+		{ 0.0, 0.0, -1.0, 1.0 },   // South pole
+		{ -u_p_x, -u_p_y, -u_p_z, WEIGHT },
+		{ -p_x, -p_y, 0.0, 1.0 },
+		{ -u_p_x, -u_p_y, u_p_z, WEIGHT },
+		{ 0.0, 0.0, 1.0, 1.0 }     // North pole again (to close loop).
+	};
+
+	_nurbs.drawCurve(KNOT_SIZE, &knots[0], STRIDE, &ctrl_points[0][0],
+	 ORDER, GL_MAP1_VERTEX_4);
+}
+
+
+const double
+GPlatesGui::SphericalGrid::pi = 3.14159265358979323846;
