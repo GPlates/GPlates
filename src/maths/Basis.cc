@@ -2,8 +2,7 @@
 
 /**
  * \file 
- * This file contains typedefs that are used in various places in
- * the code; they are not tied to any particular class.
+ * File specific comments.
  *
  * Most recent change:
  *   $Author$
@@ -21,22 +20,24 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_MATHS_TYPES_H_
-#define _GPLATES_MATHS_TYPES_H_
+#include <sstream>
+#include "Basis.h"
+#include "DirVector3D.h"
+#include "ViolatedBasisInvariantException.h"
+#include "types.h"
 
-#include <list>
-#include "Real.h"
 
-namespace GPlatesMaths
+using namespace GPlatesMaths;
+
+void
+Basis::AssertInvariantHolds() const
 {
-	/**
-	 * A floating-point approximation to the field of reals.
-	 */
-	typedef Real real_t;
-}
+	real_t dp = dot (_v1, _v2);
 
-#endif  // _GPLATES_MATHS_TYPES_H_
+	if (dp != 0.0)
+		throw ViolatedBasisInvariantException
+				("Basis vectors are not perpendicular");
+}
