@@ -78,19 +78,3 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 
 	return GreatCircleArc(u1, rot_axis, rot_angle);
 }
-
-
-UnitVector3D
-GreatCircleArc::convertToUnitVector(PointOnSphere pt) {
-
-	real_t lat_angle = degreesToRadians(pt.GetLatitude());
-	real_t long_angle = degreesToRadians(pt.GetLongitude());
-
-	real_t radius_of_small_circle_of_latitude = cos(lat_angle);
-
-	real_t x_comp = radius_of_small_circle_of_latitude * cos(long_angle);
-	real_t y_comp = radius_of_small_circle_of_latitude * sin(long_angle);
-	real_t z_comp = sin(lat_angle);  // height above equator
-
-	return UnitVector3D(x_comp, y_comp, z_comp);
-}

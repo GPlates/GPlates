@@ -54,9 +54,6 @@ namespace GPlatesMaths
 			CreateGreatCircleArc(UnitVector3D u1,
 			                     UnitVector3D u2);
 
-			static UnitVector3D
-			convertToUnitVector(PointOnSphere pt);
-
 			UnitVector3D
 			startPoint() const { return _u1; }
 
