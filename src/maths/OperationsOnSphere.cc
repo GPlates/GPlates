@@ -31,12 +31,12 @@
 #include "GreatCircleArc.h"
 #include "PointOnSphere.h"
 
-
 using namespace GPlatesMaths;
 
-
 LatLonPoint
-LatLonPoint::CreateLatLonPoint(const real_t &lat, const real_t &lon) {
+GPlatesMaths::LatLonPoint::CreateLatLonPoint
+			(const real_t &lat, const real_t &lon)
+{
 
 	if ( ! LatLonPoint::isValidLat(lat)) {
 
@@ -62,22 +62,23 @@ LatLonPoint::CreateLatLonPoint(const real_t &lat, const real_t &lon) {
 
 
 bool
-LatLonPoint::isValidLat(const real_t &val) {
+GPlatesMaths::LatLonPoint::isValidLat(const real_t &val) {
 
 	return (-90.0 <= val && val <= 90.0);
 }
 
 
 bool
-LatLonPoint::isValidLon(const real_t &val) {
+GPlatesMaths::LatLonPoint::isValidLon(const real_t &val) {
 
 	return (-180.0 < val && val <= 180.0);
 }
 
 
 UnitVector3D
-OperationsOnSphere::convertLatLongToUnitVector(const real_t& latitude, 
- const real_t& longitude) {
+GPlatesMaths::OperationsOnSphere::convertLatLongToUnitVector
+		(const real_t& latitude, const real_t& longitude)
+{
 
 	real_t lat_angle = degreesToRadians(latitude);
 	real_t long_angle = degreesToRadians(longitude);
@@ -93,8 +94,9 @@ OperationsOnSphere::convertLatLongToUnitVector(const real_t& latitude,
 
 
 PointOnSphere
-OperationsOnSphere::convertLatLonPointToPointOnSphere(const LatLonPoint &llp) {
-
+GPlatesMaths::OperationsOnSphere::convertLatLonPointToPointOnSphere
+						(const LatLonPoint &llp)
+{
 	real_t lat_angle = degreesToRadians(llp.latitude());
 	real_t long_angle = degreesToRadians(llp.longitude());
 
@@ -110,9 +112,9 @@ OperationsOnSphere::convertLatLonPointToPointOnSphere(const LatLonPoint &llp) {
 
 
 PolyLineOnSphere
-OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(const
-	std::list< LatLonPoint > &llpl) {
-
+GPlatesMaths::OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere
+				(const std::list< LatLonPoint > &llpl)
+{
 	if (llpl.size() < 2) {
 
 		// not enough points to create even a single great circle arc.
@@ -142,8 +144,8 @@ OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(const
 
 
 LatLonPoint 
-OperationsOnSphere::convertPointOnSphereToLatLonPoint(
-	const PointOnSphere& point)
+GPlatesMaths::OperationsOnSphere::convertPointOnSphereToLatLonPoint
+					(const PointOnSphere& point)
 {
 	const real_t &x = point.unitvector().x(),
 				 &y = point.unitvector().y(),
