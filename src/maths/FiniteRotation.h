@@ -153,16 +153,17 @@ namespace GPlatesMaths
 	 * composition by premultiplication:  You take 'r2', then apply 'r1'
 	 * to it (in front of it).
 	 *
-	 * If 'r1' describes the rotation of a moving plate 'M1' with respect
-	 * to a fixed plate 'F1', and 'r2' describes the rotation of a moving
+	 * If r1 describes the rotation of a moving plate 'M1' with respect
+	 * to a fixed plate 'F1', and r2 describes the rotation of a moving
 	 * plate 'M2' with respect to 'F2', then:
 	 *
-	 *  + F1 should equal M2  ("should equal" instead of "must equal",
+	 *  + M1 should equal F2  ("should equal" instead of "must equal",
 	 *     since this function cannot enforce this equality).
 	 *
-	 *  + if the result of this operation is called 'rr', then 'rr' will
-	 *     describe the motion of the moving plate 'M1' with respect to
-	 *     the fixed plate 'F2'.
+	 *  + if the result of this operation is called 'rr', then rr will
+	 *     describe the motion of the moving plate M2 with respect to
+	 *     the fixed plate F1.  Thus, the unit vector which is rotated
+	 *     by the resulting finite rotation will "sit" on M2.
 	 */
 	FiniteRotation
 	operator*(const FiniteRotation &r1, const FiniteRotation &r2);
