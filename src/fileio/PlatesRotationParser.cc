@@ -30,9 +30,10 @@
 #include "FileFormatException.h"
 
 
-using namespace GPlatesFileIO;
-using namespace GPlatesFileIO::PlatesParser;
+//using namespace GPlatesFileIO;
 
+namespace GPlatesFileIO {
+	namespace PlatesParser {
 
 void 
 ReadInRotationData(const char *filename, std::istream &input_stream,
@@ -154,3 +155,6 @@ ReadRotationLine(LineBuffer &lb, std::string &str) {
 	}
 	str = std::string(buf);
 }
+
+}  // end namespace PlatesParser
+}  // end namespace GPlatesFileIO
