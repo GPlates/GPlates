@@ -229,8 +229,9 @@ File::OpenRotation(const std::string& filename)
 
 	} catch (const FileIOException &e) {
 
-		std::ostringstream msg("An error was encountered in \"");
-		msg << filename << "\":\n" << e;
+		std::ostringstream msg;
+		msg << "An error was encountered in \"" << filename << "\":\n"
+		 << e;
 		Dialogs::ErrorMessage("Error in rotation file",
 		 msg.str().c_str(), "No rotation data was loaded.");
 
