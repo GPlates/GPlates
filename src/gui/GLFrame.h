@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_GLFRAME_H_

@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <iostream>
