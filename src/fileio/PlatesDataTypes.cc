@@ -25,6 +25,7 @@
 
 #include <iomanip>
 #include <sstream>
+#include <iterator>
 #include "PlatesDataTypes.h"
 #include "PlatesParserUtils.h"
 #include "InvalidDataException.h"
@@ -32,6 +33,58 @@
 
 using namespace GPlatesFileIO;
 using namespace GPlatesFileIO::PlatesParser;
+
+
+/**
+ * A reasonable maximum length for each line of a rotation header.
+ * This length does not include a terminating character.
+ *
+ * Note that, if the second argument to an invocation of 'getline' is
+ * the integer value 'n', this tells 'getline' to expect a character buffer
+ * of 'n' characters, so 'getline' will read at most (n - 1) characters into
+ * this buffer.  This (n - 1) characters includes the newline, although the
+ * newline will not be stored into the buffer.
+ *
+ * If, during this call, 'getline' encounters a line which contains *more*
+ * than (n - 1) characters, it will set the failbit.  Thus, by testing the
+ * status of the stream after the invocation of 'getline', we will be aware
+ * of the failure in the unlikely event of a line which exceeds this maxiumum.
+ */
+static const size_t ROT_LINE_COMMENT_LEN = 80;
+
+
+static std::string
+ReadRestOfLine(const LineBuffer &lb, std::istringstream &iss) {
+
+	static char buf[ROT_LINE_COMMENT_LEN + 1];
+
+	std::istreambuf_iterator< char > iss_it(iss);
+	std::istreambuf_iterator< char > end_it;
+
+	size_t n = 0;
+	for ( ; n < ROT_LINE_COMMENT_LEN && iss_it != end_it; n++, iss_it++) {
+
+		// copy the character into the buffer
+		buf[n] = *iss_it;
+	}
+	buf[n] = '\0';
+
+	/*
+	 * So, we have exited the loop.
+	 * But did we exit because we've reached the end of the line (ok)?
+	 * or because we ran out of space in the buffer (not ok)?
+	 */
+	if (iss_it != end_it) {
+
+		// ran out of space in the buffer
+		std::ostringstream oss;
+		oss << "The comment found in rotation file " << lb
+		 << "was too long:\n" << buf;
+
+		throw InvalidDataException(oss.str().c_str());
+	}
+	return std::string(buf);
+}
 
 
 FiniteRotation
@@ -87,25 +140,10 @@ GPlatesFileIO::PlatesParser::ParseRotationLine(const LineBuffer &lb,
 
 	/*
 	 * The rest of the line (after whitespace) is assumed to be a comment.
-	 * Skip leading whitespace, then dump the rest into a string.
-	 * This string is the comment, and should begin with '!'.
+	 * Eat leading whitespace, then dump the rest into a string.
 	 */
 	iss >> std::ws;
-	comment = iss.str();
-	if (comment.size() != 0) {
-
-		// there was a comment present: need to validate it
-		if (comment[0] != '!') {
-
-			// not a valid comment
-			std::ostringstream oss("Invalid comment \"");
-			oss << comment
-			 << "\" for comment found at "
-			 << lb;
-
-			throw InvalidDataException(oss.str().c_str());
-		}
-	}
+	comment = ReadRestOfLine(lb, iss);
 
 	// Now, finally, create and return the PLATES data types.
 	LatLonPoint euler_pole(lat, lon);
