@@ -30,7 +30,7 @@
 /*
  * Defined in GeneralisedData.h.
  */
-inline std::ostream&
+std::ostream&
 GPlatesGeo::operator<<(std::ostream& os, const GeneralisedData& data)
 {
 	data.PrintOut(os); 
@@ -40,7 +40,7 @@ GPlatesGeo::operator<<(std::ostream& os, const GeneralisedData& data)
 /*
  * Defined in GeneralisedData.h.
  */
-inline std::istream&
+std::istream&
 GPlatesGeo::operator>>(std::istream& is, GeneralisedData& data)
 {
 	data.ReadIn(is);

@@ -28,12 +28,11 @@
 
 using namespace GPlatesGeo;
 
-inline
 Vector3D::Vector3D(const fpdata_t& x, const fpdata_t& y, const fpdata_t& z)
 	: GeneralisedData(), _x(x), _y(y), _z(z) 
 { }
 
-inline void
+void
 Vector3D::PrintOut(std::ostream& os) const 
 {
 	os << GetX() << " " << GetY() << " " << GetZ();

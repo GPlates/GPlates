@@ -28,7 +28,6 @@
 
 using namespace GPlatesGeo;
 
-inline
 Vector2D::Vector2D(const fpdata_t& x, const fpdata_t& y)
 	: GeneralisedData(), _x(x), _y(y) 
 { }
