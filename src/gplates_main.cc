@@ -75,16 +75,21 @@
 #include <iostream>
 
 #include "global/config.h"
+#include "global/Exception.h"
 
 #include "gui/GLWindow.h"
 
 int
 main(int argc, char** argv)
 {
-	std::cout << "This is \"" PACKAGE_STRING "\".\n";
+	try {
+		std::cout << "This is \"" PACKAGE_STRING "\".\n";
 	
-	GPlatesGui::GLWindow::GetWindow(&argc, argv);
-	glutMainLoop();
+		GPlatesGui::GLWindow::GetWindow(&argc, argv);
+		glutMainLoop();
+	} catch (const GPlatesGlobal::Exception& e) {
+		std::cerr << "Caught exception: " << e << std::endl;
+	}
 	
 	return EXIT_SUCCESS;
 }

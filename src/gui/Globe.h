@@ -72,12 +72,12 @@ namespace GPlatesGui
 			/**
 			 * One slice every 5 degrees.
 			 */
-			static const GLuint DEFAULT_SLICES = 36;
+			static const GLuint DEFAULT_SLICES = 72;
 
 			/**
 			 * One stack every 5 degrees.
 			 */
-			static const GLuint DEFAULT_STACKS = 18;
+			static const GLuint DEFAULT_STACKS = 36;
 
 			Colour _colour;
 

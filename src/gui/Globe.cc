@@ -26,8 +26,11 @@
 #include <iostream>
 #include <cstdlib>
 #include "Globe.h"
+#include "maths/types.h"
+#include "maths/UnitVector3D.h"
 
 using namespace GPlatesGui;
+using namespace GPlatesMaths;
 
 const GLfloat Globe::DEFAULT_RADIUS = 1.0;
 const Colour Globe::DEFAULT_COLOUR = Colour::WHITE;
@@ -51,23 +54,12 @@ Globe::NormaliseMeridianElevation()
 	}
 }
 
-class UnitVector
-{
-	public:
-		GLfloat x, y, z;
-
-		UnitVector(const GLfloat& xx, const GLfloat& yy,
-		 const GLfloat& zz) : x(xx), y(yy), z(zz) {  }
-
-		GLfloat dot(const UnitVector& o) const { 
-			return o.x*x + o.y*y + o.z*z;
-		}
-};
-
 static void
-DrawArc(const UnitVector& a, const UnitVector& b, 
+DrawArc(const UnitVector3D& a, const UnitVector3D& b, 
  GLUnurbsObj *renderer)
 {
+	using GPlatesMaths::sqrt;
+
 	// The knot vector has (degree + length(ctrl_points) - 1)
 	// elements.
 	static const GLsizei KNOT_SIZE = 6;
@@ -77,28 +69,28 @@ DrawArc(const UnitVector& a, const UnitVector& b,
 
 	// FIXME: There should be a way to avoid copying these values.
 	GLfloat ctrl_points[3][4] = {
-		{ a.x, a.y, a.z, 1.0 },
+		{ a.x().dval(), a.y().dval(), a.z().dval(), 1.0 },
 		{ 0.0, 0.0, 0.0, 0.0 },  // Dummy value, still to be calculated.
-		{ b.x, b.y, b.z, 1.0 }
+		{ b.x().dval(), b.y().dval(), b.z().dval(), 1.0 }
 	};
 
-	static const GLfloat ONE_DIV_ROOT_TWO = 
-	 1.0 / static_cast<GLfloat>(sqrt(2.0));
+	static const double ONE_DIV_ROOT_TWO = 1.0 / std::sqrt(2.0);
 
 	// Calculate the weight of the control point.
 	ctrl_points[1][3] = 
-	 ONE_DIV_ROOT_TWO * static_cast<GLfloat>(sqrt(1.0 + a.dot(b)));
+		static_cast<GLfloat>((ONE_DIV_ROOT_TWO * sqrt(1.0 + a*b)).dval());
 
 	// Calculate the control point itself.
 	// 1) a + b
-	ctrl_points[1][0] = a.x + b.x;
-	ctrl_points[1][1] = a.y + b.y;
-	ctrl_points[1][2] = a.z + b.z;
+	ctrl_points[1][0] = a.x().dval() + b.x().dval();
+	ctrl_points[1][1] = a.y().dval() + b.y().dval();
+	ctrl_points[1][2] = a.z().dval() + b.z().dval();
 	// 2) scale = 1 / size
-	GLfloat ctrlptscale = 1 / static_cast<GLfloat>(
-		sqrt(ctrl_points[1][0]*ctrl_points[1][0] + 
+	GLfloat ctrlptscale = static_cast<GLfloat>(
+		1.0 / std::sqrt(ctrl_points[1][0]*ctrl_points[1][0] +
 		 ctrl_points[1][1]*ctrl_points[1][1] + 
-		 ctrl_points[1][2]*ctrl_points[1][2]));
+		 ctrl_points[1][2]*ctrl_points[1][2])
+	);
 	ctrl_points[1][0] *= ctrlptscale;
 	ctrl_points[1][1] *= ctrlptscale;
 	ctrl_points[1][2] *= ctrlptscale;
@@ -141,9 +133,10 @@ Globe::Draw()
 		glutWireSphere(_radius, _slices, _stacks);
 
 		// XXX: Draw NURBS (temporary measure)
-		DrawArc(UnitVector(1.0, 0.0, 0.0), UnitVector(0.0, 0.0, 1.0), _nurbs_renderer);
-		DrawArc(UnitVector(1.0, 0.0, 0.0), UnitVector(0.0, 1.0, 0.0), _nurbs_renderer);
-		DrawArc(UnitVector(0.707107, 0.707107, 0.0), UnitVector(0.0, 0.707107, 0.707107), _nurbs_renderer);
+		DrawArc(UnitVector3D(1.0, 0.0, 0.0), UnitVector3D(0.0, 0.0, 1.0), _nurbs_renderer);
+		DrawArc(UnitVector3D(1.0, 0.0, 0.0), UnitVector3D(0.0, 1.0, 0.0), _nurbs_renderer);
+		real_t tmp = real_t(1.0) / sqrt(real_t(2.0));
+		DrawArc(UnitVector3D(tmp, tmp, 0.0), UnitVector3D(0.0, tmp, tmp), _nurbs_renderer);
 
 	glPopMatrix();
 }
