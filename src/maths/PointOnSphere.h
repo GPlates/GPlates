@@ -58,6 +58,12 @@ namespace GPlatesMaths
 				AssertInvariantHolds();
 			}
 
+			real_t
+			GetLatitude() const { return _lat; }
+
+			real_t
+			GetLongitude() const { return _long; }
+
 		protected:
 			/** 
 			 * Assert the class invariant.

@@ -21,22 +21,31 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
  */
 
-#include "PointData.h"
-
-using namespace GPlatesGeo;
-
-inline
-PointData::PointData(const DataType_t& dt, const RotationGroupId_t& id,
-	const Attributes_t& attrs, const GPlatesMaths::PointOnSphere& point)
-	: GeologicalData(dt, id, attrs), _point(point)
-{ }
+#include "PlatesWriter.h"
 
 void
-PointData::Accept(Visitor& visitor) const
+PlatesWriter::Visit(const PointOnSphere& point)
 {
-	visitor.Visit(_point);
-	visitor.Visit(*this);
+	_strstream << point.GetLatitude() << "  " << point.GetLongitude();
+}
+
+void
+PlatesWriter::Visit(const LineData& linedata)
+{
+	// Output line header information
+	
+	// Output each of the points that make up the line.
+	LineData::Line_t::const_iterator iter = linedata.GetIterator();
+	for ( ; *iter; iter++) {
+		Visit(iter->GetPointOnSphere());
+		_strstream << " 2" << std::endl;  // This is the pen-plot command.
+	}									  // FIXME: remove magic numbers.
+}
+
+bool
+PrintWriter::PrintOut(std::ostream& os)
+{
+	os << _strstream.str();
 }

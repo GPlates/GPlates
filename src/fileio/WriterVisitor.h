@@ -23,9 +23,10 @@
  *   Hamish Law <hlaw@es.usyd.edu.au>
  */
 
-#ifndef _GPLATES_WRITERVISITOR_H_
-#define _GPLATES_WRITERVISITOR_H_
+#ifndef _GPLATES_FILEIO_WRITERVISITOR_H_
+#define _GPLATES_FILEIO_WRITERVISITOR_H_
 
+#include <iostream>
 #include "geo/Visitor.h"
 
 namespace GPlatesFileIO
@@ -34,15 +35,29 @@ namespace GPlatesFileIO
 	 * The superclass for all the classes that will convert the
 	 * internal gPlates representation of the data into some
 	 * kind of output format.
+	 * To use this class for output, do something like the following:
+	 * @code
+	 *   GeologicalData *gd;
+	 *   // Initialise gd in some way.
+	 *   PlatesWriter pw;
+	 *   gd->Accept(pw);
+	 *   pw.PrintOut(std::cout);
+	 *   @endcode
+	 * Thus, if you want to output a whole bunch of GeologicalData, just make
+	 * @a gd a DataGroup - everything will be output as if it were magic!
+	 * @role Builder in the Builder pattern (p97).
 	 */
-	// FIXME: Need there be any functionality in this class? Do
-	// we need this extra layer of generality between the visitors
-	// and the file i/o?  Only time will tell...
 	class WriterVisitor : public GPlatesGeo::Visitor
 	{
-		protected:
-			WriterVisitor() {}
+		public:
+			/**
+			 * @return False if there was insufficient information for the 
+			 *   the file to be written properly.
+			 * @role Builder::BuildPart() in the Builder pattern (p97).
+			 */
+			virtual bool
+			PrintOut(std::ostream&) = 0;
 	};
 }
 
-#endif
+#endif  // _GPLATES_FILEIO_WRITERVISITOR_H_

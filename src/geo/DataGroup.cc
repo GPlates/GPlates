@@ -55,3 +55,19 @@ DataGroup::Remove(GeologicalData* child) throw()
 	if (pos != _children.end())
 		_children.erase(pos);
 }
+
+void
+DataGroup::Accept(Visitor& visitor)
+{
+	Children_t::iterator iter = _children.begin();
+	for ( ; iter != _children.end(); iter++)
+		iter->Accept(visitor);
+}
+
+void
+DataGroup::Accept(Visitor& visitor) const
+{
+	Children_t::const_iterator iter = _children.begin();
+	for ( ; iter != _children.end(); iter++)
+		iter->Accept(visitor);
+}

@@ -65,11 +65,18 @@ namespace GPlatesGeo
 				const Attributes_t&, const Children_t&);
 			
 			/**
+			 * Calls Accept() on all of its (immutable) children.
 			 * @role ConcreteElement::Accept(Visitor) in the Visitor
 			 *   design pattern (p331).
 			 */
 			virtual void
-			Accept(Visitor& visitor) const { visitor.Visit(*this); }
+			Accept(Visitor& visitor) const;
+
+			/**
+			 * As above but the children are mutable.
+			 */
+			virtual void
+			Accept(Visitor& visitor);
 			
 			/** 
 			 * Add an element to the container of children.

@@ -23,10 +23,9 @@
  *   Hamish Law <hlaw@es.usyd.edu.au>
  */
 
-#ifndef _GPLATES_PLATESWRITER_H_
-#define _GPLATES_PLATESWRITER_H_
+#ifndef _GPLATES_FILEIO_PLATESWRITER_H_
+#define _GPLATES_FILEIO_PLATESWRITER_H_
 
-#include <iostream>
 #include "WriterVisitor.h"
 
 namespace GPlatesFileIO
@@ -36,15 +35,37 @@ namespace GPlatesFileIO
 	 * of the data and converting it into a stream (e.g.\ a file).
 	 * Subclasses need only supply implementations of the Visit() methods 
 	 * (from Visitor) that they require.
+	 * @role 
+	 *   - ConcreteBuilder in the Builder pattern (p97).
+	 *   - ConcreteVisitor1 in the Visitor pattern (p331).
 	 * @todo Yet to be implemented.
-	 * @see The Builder pattern (p97) for a possible method of 
-	 *   implementing this class.
 	 */
 	class PlatesWriter : public WriterVisitor
 	{
 		public:
-			PlatesWriter(std::ostream&) { }
+			using namespace GPlatesGeo;
+
+			virtual void
+			Visit(const PointOnSphere&);
+
+			virtual void
+			Visit(const LineData&);
+
+			/**
+			 * @warning After a call to PrintOut, no more "Visit()ing" can occur
+			 *   because the internal representation is "frozen"; i.e. the method
+			 *   std::ostringstream::freeze() is called on _strstream.
+			 * @role ConcreteBuilder::GetResult() in the Builder pattern (p97).
+			 */
+			virtual bool
+			PrintOut(std::ostream&);
+
+		private:
+			/**
+			 * Holds the accumulated information.
+			 */
+			std::ostringstream _strstream;
 	};
 }
 
-#endif  // _GPLATES_PLATESWRITER_H_
+#endif  // _GPLATES_FILEIO_PLATESWRITER_H_

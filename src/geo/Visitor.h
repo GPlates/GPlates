@@ -23,8 +23,8 @@
  *   Hamish Law <hlaw@es.usyd.edu.au>
  */
 
-#ifndef _GPLATES_VISITOR_H_
-#define _GPLATES_VISITOR_H_
+#ifndef _GPLATES_GEO_VISITOR_H_
+#define _GPLATES_GEO_VISITOR_H_
 
 namespace GPlatesGeo
 {
@@ -34,6 +34,7 @@ namespace GPlatesGeo
 	class GridData;
 	class DataGroup;
 	class RotationData;
+	class GPlatesMaths::PointOnSphere;
 
 	/** 
 	 * Abstract Visitor. 
@@ -74,9 +75,16 @@ namespace GPlatesGeo
 			virtual void
 			Visit(const DataGroup&) { }
 
-		protected:
+
+			virtual void
+			Visit(PointOnSphere&) { }
+
+			virtual void
+			Visit(const GPlatesMaths::PointOnSphere&) { }
+
+		private:
 			Visitor() { }
 	};
 }
 
-#endif  // _GPLATES_VISITOR_H_
+#endif  // _GPLATES_GEO_VISITOR_H_
