@@ -20,27 +20,22 @@ CHECK_GNU_MAKE
 AC_PROG_INSTALL
 AC_LANG(C++)
 
-
-# What system are we on?
-AC_PATH_PROG(unamepath, uname)
-if test "_$unamepath" = _; then
-	system="unknown"
-else
-	AC_MSG_CHECKING(system type)
-	system=`$unamepath -s`
-	AC_MSG_RESULT($system)
-fi
+# Check the canonical build-system type
+AC_CANONICAL_BUILD
 
 ##################################
 # System-dependant options
 ##################################
 # Debugging format; will be appended to "-g", and passed to the compiler
 debug_format=""
-if test "$system" = "Linux"; then
-	debug_format="stabs+"
-elif test "$system" = "SunOS"; then
-	debug_format="stabs"
-fi
+case "$build" in
+	*-*-linux-* )
+		debug_format="stabs+"
+	;;
+	*-*-sunos* | *-*-solaris* )
+		debug_format="stabs"
+	;;
+esac
 
 # Check for required features
 AC_CXX_BOOL
@@ -106,19 +101,38 @@ fi
 ## 
 # Library dependencies.
 ##
-AC_CHECK_LIB([GL], [main], [], AC_MSG_ERROR([
+
+# How we look for OpenGL is dependent upon the type of the host system.
+AC_MSG_CHECKING([OpenGL library dependency type])
+case "$host" in
+	*-apple-darwin* )
+		AC_MSG_RESULT([Mac OS X OpenGL framework])
+		AC_CXX_HAVE_OPENGL_FRAMEWORK
+		if test "$ac_cv_cxx_have_opengl_framework" != yes; then
+			AC_MSG_ERROR([
 !!
-!!  You don't appear to have the OpenGL shared library installed.
+!!  You don't appear to have the OpenGL framework installed.
+!!  It may be obtained from your Apple Developer Tools CD, or from
+!!     http://developer.apple.com/tools/
+!!])
+		fi
+	;;
+	* )
+		AC_MSG_RESULT([link with GL and GLU])
+		AC_CHECK_LIB([GL], [main], [], AC_MSG_ERROR([
+!!
+!!  You don't appear to have the OpenGL (GL) shared library installed.
 !!  It may be obtained from
 !!     http://www.opengl.org
 !!]))
-
-AC_CHECK_LIB([GLU], [main], [], AC_MSG_ERROR([
+		AC_CHECK_LIB([GLU], [main], [], AC_MSG_ERROR([
 !!
-!!  You don't appear to have the OpenGL Utility Library (GLU) 
-!!  shared library installed.  It may be obtained from 
+!!  You don't appear to have the OpenGL Utility (GLU) shared library installed.
+!!  It may be obtained from 
 !!     http://www.opengl.org
 !!]))
+	;;
+esac
 
 # wxWindows
 # ???
