@@ -101,7 +101,7 @@ namespace GPlatesGlobal
 
 
 	inline std::ostream &
-	operator>>(std::ostream &os, const FPData &fpd) {
+	operator>>(std::ostream &os, FPData &fpd) {
 
 		double d;
 		os >> d;
