@@ -137,7 +137,7 @@ case "$host" in
 	;;
 esac
 
-# wxWindows
+# wxWidgets
 # ???
 # need to make sure wxGLCanvas was enabled.
 
@@ -207,7 +207,7 @@ AC_ARG_ENABLE(dev, [  --enable-dev            Enable developer flags],
 [
 	turn_on_dev="yes"
 	EXTRA_CFLAGS="$EXTRA_CFLAGS -Wall -pedantic -ansi -W -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wctor-dtor-privacy -Wnon-virtual-dtor -Wpointer-arith -Werror -g$debug_format"
-# This warning breaks wxWindows: -Wold-style-cast 
+# This warning breaks wxWidgets: -Wold-style-cast 
 ])
 if test "$turn_on_dev" != "yes"; then
 	if test "$package_is_beta" = "yes"; then
@@ -239,46 +239,30 @@ AC_MSG_RESULT(yes)
 AM_OPTIONS_WXCONFIG
 
 ##################################
-# UI targets
+# Finding wxWidgets
 ##################################
-probe_testui="auto"
-probe_wxwin="auto"
+probe_wxwid="auto"
 
-AC_ARG_ENABLE(testui,
-	[  --disable-testui        Disable Test UI],
-	[probe_testui=$enableval])
-AC_ARG_ENABLE(wxwin,
-	[  --disable-wxwin         Disable probing for wxWindows],
-	[probe_wxwin=$enableval])
+AC_ARG_ENABLE(wxwid,
+	[  --disable-wxwid         Disable probing for wxWidgets],
+	[probe_wxwid=$enableval])
 
 
-any_ui="no"
-UI_TARGETS=""
-if test "$probe_testui" != "no"; then
-	# FIXME: No testui yet.
+found_wxwid="no"
+if test "$probe_wxwid" != "no"; then
+	# Check for wxWidgets
+	AM_PATH_WXCONFIG([2.4.0], [enable_wxwid="yes"], [enable_wxwid="no"])
 
-	enable_testui="no"
-	#AC_DEFINE([HAVE_TESTUI],[],[TestUI is available.])
-	#UI_TARGETS="$UI_TARGETS ui-test.o"	# XXX
-	#LIBS="$LIBS -l???"			# XXX
-	#any_ui="yes"
-fi
-if test "$probe_wxwin" != "no"; then
-	# Check for wxWindows
-	AM_PATH_WXCONFIG([2.4.0], [enable_wxwin="yes"],
-			 [enable_wxwin="no"])
-
-	if test "$enable_wxwin" = "yes"; then
+	if test "$enable_wxwid" = "yes"; then
 		# AM_PATH_WXCONFIG has set up:
 		#	- WX_CXXFLAGS
 		#	- WX_LIBS
 		WX_GL_LIBS=`$WX_CONFIG_WITH_ARGS --gl-libs`
 
-		AC_DEFINE([HAVE_WXWIN],[],[wxWindows is available.])
-		#UI_TARGETS="$UI_TARGETS ui-gtkmm.o"	# XXX
+		AC_DEFINE([HAVE_WXWIN],[],[wxWidgets is available.])
 		EXTRA_CFLAGS="$EXTRA_CFLAGS $WX_CXXFLAGS"
 		LIBS="$LIBS $WX_LIBS $WX_GL_LIBS"
-		any_ui="yes"
+		found_wxwid="yes"
 	fi
 fi
 
@@ -286,14 +270,19 @@ AC_SUBST(EXTRA_CFLAGS)
 AC_SUBST(EXTRA_LDFLAGS)
 
 
-# Fail if no UIs found
-if test "$any_ui" = "no"; then
-	echo "#############################"
-	echo "# ERROR: No UIs have been   #"
-	echo "#  configured! At least one #"
-	echo "#  driver must be present   #"
-	echo "#  for GPlates to function. #"
-	echo "#############################"
+# Fail if wxWidgets not found
+if test "$found_wxwid" = "no"; then
+	echo "#########################################################"
+	echo "#  ERROR: Could not detect the wxWidgets GUI library!   #"
+	echo "#                                                       #"
+	echo "#  If you are attempting to build GPlates on Mac OS X   #"
+	echo "#  (and you compiled wxWidgets yourself and installed   #"
+	echo "#  the library in the default location), you may need   #"
+	echo "#  to add the directory                                 #"
+	echo "#          /usr/local/bin                               #"
+	echo "#  to your PATH environment variable before executing   #"
+	echo "#  this 'configure' script again.                       #"
+	echo "#########################################################"
 	exit 1
 fi
 
@@ -338,14 +327,6 @@ if test "$turn_on_opt" = "yes" -a "$turn_on_dev" = "yes"; then
 	echo "###          problems compiling or running GPlates."
 	echo "###"
 fi
-
-# UI information
-echo "###############################################"
-echo "#  User interfaces enabled:                   #"
-if test "$enable_testui" = "yes"; then
-	echo "#    * TestUI                                 #"; fi
-if test "$enable_wxwin" = "yes"; then
-	echo "#    * wxWindows                              #"; fi
 
 echo "###############################################"
 echo "#  GPlates is now configured. Simply type...  #"
