@@ -55,16 +55,23 @@
  * Update, 2004-02-05: well, it seems 1.0e-14 is too strict... so let's try
  * 1.0e-12, I guess...  I really need to do this stuff properly. --JB
  */
-#define REAL_EPSILON (1.0e-12)
-
-using namespace GPlatesMaths;
-
-const double Real::Epsilon = REAL_EPSILON;
-const double Real::NegativeEpsilon = -REAL_EPSILON;
+#define EXPONENT 12
+#define RE_EPS(y) (1.0##e##-##y)  // Yes, we *really do* need all those hashes.
+#define REAL_EPSILON(y) RE_EPS(y)  // Yes, we *really do* need this extra macro.
 
 
-Real
-GPlatesMaths::sqrt(Real r) {
+const unsigned
+GPlatesMaths::Real::High_Precision = EXPONENT + 2;
+
+const double
+GPlatesMaths::Real::Epsilon = REAL_EPSILON(EXPONENT);
+
+const double
+GPlatesMaths::Real::Negative_Epsilon = -REAL_EPSILON(EXPONENT);
+
+
+GPlatesMaths::Real
+GPlatesMaths::sqrt(GPlatesMaths::Real r) {
 
 	// First, perform "almost exact" comparison.
 	if (r < 0.0) {
@@ -100,8 +107,8 @@ GPlatesMaths::sqrt(Real r) {
  *
  * Don't forget: the arc sine will be returned in radians, not degrees!
  */
-Real
-GPlatesMaths::asin(Real r) {
+GPlatesMaths::Real
+GPlatesMaths::asin(GPlatesMaths::Real r) {
 
 	// First, perform "almost exact" comparisons for bounds of domain.
 	if (r < -1.0 || r > 1.0) {
@@ -141,8 +148,8 @@ GPlatesMaths::asin(Real r) {
  *
  * Don't forget: the arc cosine will be returned in radians, not degrees!
  */
-Real
-GPlatesMaths::acos(Real r) {
+GPlatesMaths::Real
+GPlatesMaths::acos(GPlatesMaths::Real r) {
 
 	// First, perform "almost exact" comparisons for bounds of domain.
 	if (r < -1.0 || r > 1.0) {
