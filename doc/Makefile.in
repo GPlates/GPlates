@@ -13,6 +13,7 @@ all:
 
 doc:	doxygen.conf $(FIGURES:.fig=.png)
 	doxygen $<
+	cp -f $(FIGURES:.fig=.png) html
 
 install:
 
