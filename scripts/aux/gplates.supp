@@ -25,6 +25,12 @@
    obj:/usr/X11R6/lib/libX11.so.6.2
 }
 {
+   realloc/X11
+   Memcheck:Leak
+   fun:realloc
+   obj:/usr/X11R6/lib/libX11.so.6.2
+}
+{
    malloc/xomGeneric
    Memcheck:Leak
    fun:malloc
@@ -40,10 +46,12 @@
 
 #--------------------------- Stuff in wxWindows
 {
-   .../wxDateTimeHolidaysModule/*
+   new/wxApp::Initialize
    Memcheck:Leak
    fun:_Znwj
-   fun:_ZN24wxDateTimeHolidaysModule6OnInitEv
+   fun:_ZN5wxApp10InitializeEv
+   fun:_Z12wxEntryStartRiPPc
+   fun:_Z7wxEntryiPPc
 }
 {
    .../wxThreadModule/*
@@ -58,8 +66,15 @@
    fun:*wx*Module*
 }
 {
-   new/wxInitializeStockObjects
+   new/wxInitializeStock*
    Memcheck:Leak
    fun:_Znwj
-   fun:_Z24wxInitializeStockObjectsv
+   fun:_Z24wxInitializeStock*
 }
+{
+   new/wxArtProvider*
+   Memcheck:Leak
+   fun:_Znwj
+   fun:_ZN13wxArtProvider*
+}
+
