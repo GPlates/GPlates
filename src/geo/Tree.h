@@ -41,6 +41,10 @@ namespace GPlatesGeo
 	 * different spatial data structures will be representable by the
 	 * use of different @a Compare classes.
 	 *
+	 * @warning We have tried to adhere to the STL interface and semantics 
+	 *   wherever possible, but users of this class are cautioned that 
+	 *   deviations from the STL do occur at various points.  Hopefully these 
+	 *   have been sufficiently well marked as to avoid confusion.
 	 * @warning At the moment, the requirements on @a ElemType are that it 
 	 *   is assignable, copyable, and comparable according to the sorting
 	 *   criterion.  Also, presently the @a Compare type must define 'strict 
@@ -92,17 +96,18 @@ namespace GPlatesGeo
 			typedef const reference const_reference;
 
 			/**
-			 * The type of iterators.  Bidirectional, element is 
-			 * constant.
+			 * Locked iterator.
+			 * @todo Rant about this class.
 			 */
-			typedef typename container_t::iterator iterator;
+			typedef typename container_t::iterator locked_iterator;
 
 			/**
-			 * The type of constant iterators.  Bidirectional, element
-			 * is constant.
+			 * For convenience and hides the underlying iterator
+			 * type.
 			 */
-			typedef typename container_t::const_iterator const_iterator;
-
+			typedef locked_iterator iterator;
+			typedef const iterator const_iterator;
+			
 			/**
 			 * The unsigned integral type for size values.
 			 */
@@ -156,34 +161,6 @@ namespace GPlatesGeo
 			 */
 			Tree&
 			operator=(const Tree& t) { return assign(t); }
-
-			/**
-			 * Return an iterator for the beginning of the container (the
-			 * position of the first element).  It is equivalent to end() if 
-			 * the container is empty.
-			 */
-			iterator
-			begin() { return _elements.begin(); }
-
-			/**
-			 * As above.
-			 */
-			const_iterator
-			begin() const { return _elements.begin(); }
-
-			/**
-			 * Return an iterator for the end of the container (the
-			 * position @em after the last element).  It is equivalent
-			 * to begin() if the container is empty.
-			 */
-			iterator
-			end() { return _elements.end(); }
-
-			/**
-			 * As above.
-			 */
-			const_iterator
-			end() const { return _elements.end(); }
 
 			/**
 			 * Return if the container has no elements.
@@ -275,9 +252,24 @@ namespace GPlatesGeo
 			 */
 			void
 			Accept(Visitor& visitor) const {
-				for (iterator iter = begin(); iter != end(); ++iter)
+				for (const_iterator iter = begin(); iter != end(); ++iter)
 					iter->Accept(visitor);
 			}
+
+		protected:
+			// These methods may not be necessary in the end.
+			// Currently only used by Accept().
+			iterator
+			begin() { return _elements.begin(); }
+
+			const_iterator
+			begin() const { return _elements.begin(); }
+
+			iterator
+			end() { return _elements.end(); }
+
+			const_iterator
+			end() const { return _elements.end(); }
 			
 		private:
 			/**
