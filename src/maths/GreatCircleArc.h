@@ -57,6 +57,15 @@ namespace GPlatesMaths
 			static UnitVector3D
 			convertToUnitVector(PointOnSphere pt);
 
+			UnitVector3D
+			startPoint() const { return _u1; }
+
+			UnitVector3D
+			rotationAxis() const { return _rot_axis; }
+
+			real_t
+			rotationAngle() const { return _rot_angle; }
+
 		protected:
 			GreatCircleArc(UnitVector3D u1,
 			               UnitVector3D rot_axis,
