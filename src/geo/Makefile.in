@@ -10,7 +10,8 @@ CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
 OBJS = DataGroup.o GeologicalData.o GridData.o LineData.o PointData.o \
-	TimeWindow.o
+	TimeWindow.o \
+	PointFeature.o ReconstructedPointFeature.o
 
 LIBNAME = libgeo.a
 
