@@ -219,6 +219,7 @@ WarpToTime(const fpdata_t &t) {
 			}
 		}
 	}
+	GPlatesControls::GuiCalls::SetCurrentTime(t);
 	GPlatesControls::GuiCalls::RepaintCanvas();
 }
 
@@ -287,6 +288,7 @@ WarpToPresent() {
 			}
 		}
 	}
+	GPlatesControls::GuiCalls::SetCurrentTime(0.0);
 	GPlatesControls::GuiCalls::RepaintCanvas();
 }
 
