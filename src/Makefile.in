@@ -3,22 +3,30 @@
 subdir = src
 prefix = @prefix@
 
+SUBDIRS = geo maths
+
 DISTFILES = Makefile.in *.cc
 
 CXXFLAGS = @CXXFLAGS@ @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
-EXTRA_LIBS = maths/libmaths.a
+EXTRA_LIBS = geo/libgeo.a maths/libmaths.a
 
-LIBS = $(EXTRA_LIBS) @LIBS@
-#LIBS = $(EXTRA_LIBS) @LIBS@ -lefence
+LIBS = @LIBS@
+#LIBS = @LIBS@ -lefence
 
 OBJS = gplates_main.o
 
 PROGNAME = gplates
 
-all:		$(PROGNAME)
+all:	subdir_all $(PROGNAME)
+
+subdir_all:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) all) ; \
+	done
 
 install:
 	@INSTALL@ -d @prefix@/bin
@@ -27,15 +35,29 @@ install:
 uninstall:
 	rm -f @prefix@/bin/$(PROGNAME)
 
-clean:
+clean:	subdir_clean
 	rm -f $(OBJS)
 	rm -f $(PROGNAME)
 	rm -f core gmon.out
 
-$(PROGNAME):	$(OBJS)
+subdir_clean:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) clean) ; \
+	done
+
+$(PROGNAME):	$(OBJS) $(EXTRA_LIBS)
 	@CXX@ $(LDFLAGS) $^ $(LIBS) -o $@
 
 include Rules
+
+dep:	subdir_dep
+
+subdir_dep:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) dep) ; \
+	done
 
 distdir = ../@PACKAGE_TARNAME@-@PACKAGE_VERSION@/$(subdir)
 dist:	Makefile $(DISTFILES)

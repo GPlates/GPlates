@@ -7,7 +7,7 @@
 
 dep:
 	@echo -n "Generating dependencies... "
-	@@CXX@ -MM $(OBJS:.o=.cc) > depend.1
+	@@CXX@ -MM $(INCLUDES) $(OBJS:.o=.cc) > depend.1
 	@echo "done!"
 
 # This is a GNU-ism - probably will need dropping
