@@ -88,6 +88,13 @@ namespace GPlatesMaths
 				return sqrt(magSqrd());
 			}
 
+			/**
+			 * Generate a vector having the same direction as @a this,
+			 * but which has unit magnitude.
+			 *
+			 * @throws IndeterminateResultException if @a this has zero
+			 *   magnitude.
+			 */
 			virtual UnitVector3D normalise () const;
 
 		protected:

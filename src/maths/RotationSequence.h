@@ -272,6 +272,15 @@ namespace GPlatesMaths
 			/**
 			 * If this rotation sequence is defined at time 't',
 			 * calculate the finite rotation for time 't'.
+			 *
+			 * @throws InvalidOperationException if @a t is negative
+			 *   (i.e. in the future) and @p isDefinedInFuture()
+			 *   returns false.
+			 * @throws InvalidOperationException if @a t is outside
+			 *   the time-span of the rotation sequence.
+			 * @throws ControlFlowException if, against all reason and
+			 *   good taste, the flow of the execution makes it's way
+			 *   into Never-Never Land.
 			 */
 			FiniteRotation finiteRotationAtTime(real_t t) const;
 

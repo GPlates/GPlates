@@ -359,10 +359,23 @@ namespace GPlatesMaths
 	 *
 	 * Thus, the execution of the body of this function should cost at
 	 * least 47 clock cycles + the cost of a function call.
+	 *
+	 * @throw FunctionDomainException if @a r is less than 0.
 	 */
 	Real sqrt(Real r);
 
+	/**
+	 * Calculate the arc sine of @a r.
+	 *
+	 * @throws FunctionDomainException if @a r < -1 or @a r > 1.
+	 */
 	Real asin(Real r);
+
+	/**
+	 * Calculate the arc cosine of @a r.
+	 *
+	 * @throws FunctionDomainException if @a r < -1 or @a r > 1.
+	 */
 	Real acos(Real r);
 }
 

@@ -161,6 +161,12 @@ namespace GPlatesMaths
 	 * (a rotation which occurs in zero time implies an infinite angular
 	 * speed), a zero time delta obviously renders any attempt to scale
 	 * the rotation *by its time delta* impossible.
+	 *
+	 * @throws IndeterminateResultException if the quaternion associated
+	 *   with @a sr represents the indentity rotation.  @code
+	 *   sr.quat().isIdentity() @endcode
+	 * @throws IndeterminateResultException if the time delta of @a sr
+	 *   is zero.  @code sr.timeDelta() == 0 @endcode
 	 */
 	StageRotation
 	scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta);

@@ -52,6 +52,9 @@ namespace GPlatesMaths
 			 * Create a great circle, given two points on it.
 			 * @param p1 One point.
 			 * @param p2 Another point. Must be distinct from v1.
+			 *
+			 * @throws IndeterminateResultException if @a p1 and 
+			 *   @a p2 are either coincident or antipodal.
 			 */
 			GreatCircle (const PointOnSphere &p1,
 			             const PointOnSphere &p2);
@@ -86,11 +89,10 @@ namespace GPlatesMaths
 			 * Given two unit vectors, @a v1 and @a v2, calculate
 			 * the normal of the great circle they define.
 			 *
-			 * The two unit vectors must be neither parallel nor
-			 * antiparallel -- an exception will be thrown if they
-			 * are.
-			 *
 			 * This function is invoked by one of the constructors.
+			 * 
+			 * @throws IndeterminateResultException if the vectors 
+			 *   @a v1 and @a v2 are either parallel or antiparallel.
 			 */
 			static UnitVector3D calcNormal(const UnitVector3D &v1,
 			                               const UnitVector3D &v2);

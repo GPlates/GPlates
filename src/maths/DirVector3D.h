@@ -54,6 +54,9 @@ namespace GPlatesMaths
 			 * @param y_comp The y-component.
 			 * @param z_comp The z-component.
 			 *
+			 * @throws ViolatedDirVectorInvariantException if the magnitude
+			 *   of the resulting DirVector is <= 0.
+			 * 
 			 * On a Pentium IV processor, the first line should
 			 * cost about (7 + 2 * 2) + (5 + 1) = 17 clock cycles
 			 * + the cost of the 'sqrt' function call (presumed
@@ -76,6 +79,10 @@ namespace GPlatesMaths
 				AssertInvariant();
 			}
 
+			/**
+			 * @throws ViolatedDirVectorInvariantException if the magnitude
+			 *   of the @a v is <= 0.
+			 */
 			DirVector3D (const Vector3D &v) : Vector3D (v)
 			{
 				UpdateMagnitude();
@@ -87,6 +94,10 @@ namespace GPlatesMaths
 
 			virtual UnitVector3D normalise() const;
 
+			/**
+			 * @throws ViolatedDirVectorInvariantException if the magnitude
+			 *   of the @a v is <= 0.
+			 */
 			DirVector3D &
 			operator= (const Vector3D &v)
 			{

@@ -189,6 +189,8 @@ namespace GPlatesMaths
 	 * the root of the tree, and the motion of any given plate specified
 	 * relative to the plate root-ward of it), then the finite rotation
 	 * r1 should be one branch root-ward of the finite rotation r2.
+	 *
+	 * @throws InvalidOperationException if @a r1.time() != @a r2.time().
 	 */
 	FiniteRotation
 	operator*(const FiniteRotation &r1, const FiniteRotation &r2);

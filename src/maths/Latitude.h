@@ -41,6 +41,12 @@ namespace GPlatesMaths
 		public:
 			Latitude() : _rval(0.0) {  }
 
+			/**
+			 * Create Latitude from a real number.
+			 *
+			 * @throws ViolatedClassInvariantException if @a r is
+			 *   outside the range [-pi/2, pi/2].
+			 */
 			explicit
 			Latitude(const Real &r) : _rval(r) {
 
@@ -56,6 +62,10 @@ namespace GPlatesMaths
 		private:
 			Real _rval;
 
+			/**
+			 * @throws ViolatedClassInvariantException if @a r is
+			 *   outside the range [-pi/2, pi/2].
+			 */
 			void AssertInvariant();
 	};
 

@@ -89,6 +89,13 @@ namespace GPlatesMaths
 
 	namespace OperationsOnSphere
 	{
+		/**
+		 * Get the (cartesian) unit vector that corresponds to the given
+		 * (spherical) @a latitude and @a longitude.
+		 * 
+		 * @deprecated Use GPlatesMaths::OperationsOnSphere::convertLatLonPointToPointOnSphere
+		 *   instead.
+		 */
 		UnitVector3D convertLatLongToUnitVector(const real_t& latitude,
 		 const real_t& longitude);
 
@@ -101,6 +108,9 @@ namespace GPlatesMaths
 		/**
 		 * The list must contain at least TWO LatLonPoints.
 		 * No two successive LatLonPoints may be equivalent.
+		 *
+		 * @throws InvalidPolyLineException if @a llpl contains less 
+		 *   than two LatLonPoints.
 		 */
 		PolyLineOnSphere convertLatLonPointListToPolyLineOnSphere(const
 		 std::list< LatLonPoint > &llpl);

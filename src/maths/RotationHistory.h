@@ -88,6 +88,9 @@ namespace GPlatesMaths
 			 * return a const iterator which points to a rotation
 			 * sequence which can be used to rotate the moving
 			 * plate back to its location at time 't'.
+			 *
+			 * @throw InvalidOperationException if the rotation
+			 *   history is not defined at time @a t. 
 			 */
 			const_iterator atTime(real_t t) const;
 

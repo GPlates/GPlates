@@ -93,6 +93,9 @@ namespace GPlatesMaths
 			 * @param y_comp The y-component.
 			 * @param z_comp The z-component.
 			 * @param w_comp The w-component.
+			 *
+			 * @throws ViolatedUnitQuatInvariantException if the resulting
+			 *   quaternion's magnitude is not 1.
 			 */
 			explicit 
 			UnitQuaternion3D(const real_t &x_comp,
@@ -175,7 +178,8 @@ namespace GPlatesMaths
 			 * Calculate the rotation parameters of this unit
 			 * quaternion.
 			 *
-			 * NOTE: if this function is invoked upon a unit
+			 * @throws IndeterminateResultException 
+			 * if this function is invoked upon a unit
 			 * quaternion instance which represents an identity
 			 * rotation, an 'IndeterminateResultException' will
 			 * be thrown.

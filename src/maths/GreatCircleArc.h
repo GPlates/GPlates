@@ -50,10 +50,27 @@ namespace GPlatesMaths
 	class GreatCircleArc
 	{
 		public:
+			/**
+			 * Make a great circle arc beginning at @a p1 and ending
+			 * at @a p2.
+			 *
+			 * @throws IndeterminateResultException when one of the 
+			 *   following occurs:
+			 *   - @a p1 and @a p2 are the same;
+			 *   - @a p1 and @a p2 are antipodal (that is, they are
+			 *     diametrically opposite on the globe).
+			 */
 			static GreatCircleArc
 			CreateGreatCircleArc(PointOnSphere p1,
 			                     PointOnSphere p2);
 
+			/**
+			 * @overload
+			 *
+			 * @throws InvalidOperationException when @a rot_axis
+			 *   is not collinear with the cross product of the vectors
+			 *   pointing from the origin to @a p1 and @a p2 respectively.
+			 */
 			static GreatCircleArc
 			CreateGreatCircleArc(PointOnSphere p1,
 			                     PointOnSphere p2,

@@ -44,6 +44,7 @@ namespace GPlatesMaths
 	 * Degenerate circles (ie. circles whose colatitudes are 0 or pi,
 	 * resulting in point-like circles) are allowed, as are circles whose
 	 * colatitudes are exactly pi (which are technically great circles).
+	 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
 	 */
 	class SmallCircle : public Axial
 	{
@@ -56,7 +57,9 @@ namespace GPlatesMaths
 			 *
 			 * @image html fig_small_circle.png
 			 * @image latex fig_small_circle.eps width=2.3in
-			 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
+			 *
+			 * @throws ViolatedClassInvariantException if
+			 *   @p abs(@p cos(@a theta)) > 1.
 			 */
 			SmallCircle (const UnitVector3D &axis,
 			             const Colatitude &theta)
@@ -86,6 +89,9 @@ namespace GPlatesMaths
 			 * @param cos_theta The cosine of the angle between
 			 *   axis and circumference (aka the "colatitude").
 			 *   Obviously, it must lie in the range [-1, 1].
+			 * 
+			 * @throws ViolatedClassInvariantException if
+			 *   @p abs(@a cosi_theta)) > 1.
 			 */
 			SmallCircle (const UnitVector3D &axis,
 			             const real_t &cos_theta)
@@ -128,6 +134,9 @@ namespace GPlatesMaths
 			/**
 			 * Assert the class invariant: that the cosine of the
 			 * colatitude lies within the range [-1, 1].
+			 *
+			 * @throws ViolatedClassInvariantException if
+			 *   @p abs(@a _cos_colat) > 1.
 			 */
 			void AssertInvariantHolds () const;
 

@@ -41,6 +41,12 @@ namespace GPlatesMaths
 		public:
 			Colatitude() : _rval(0.0) {  }
 
+			/**
+			 * Create a Colatitude using a real number.
+			 *
+			 * @throws ViolatedClassInvariantException if @a r is 
+			 *   outside the range [0, pi].
+			 */
 			explicit
 			Colatitude(const Real &r) : _rval(r) {
 
@@ -56,6 +62,11 @@ namespace GPlatesMaths
 		private:
 			Real _rval;
 
+			/**
+			 * @throws ViolatedClassInvariantException if the class 
+			 *   invariant is false (i.e. @a _rval is outside the 
+			 *   range [0, pi]).
+			 */
 			void AssertInvariant();
 	};
 

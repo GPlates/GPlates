@@ -55,6 +55,9 @@ namespace GPlatesMaths
 			 * @param x_comp The x-component.
 			 * @param y_comp The y-component.
 			 * @param z_comp The z-component.
+			 *
+			 * @throw ViolatedUnitVectorInvariantException if the
+			 *   resulting vector does not have unit magnitude.
 			 */
 			explicit
 			UnitVector3D(const real_t &x_comp,
@@ -65,11 +68,19 @@ namespace GPlatesMaths
 				AssertInvariant ();
 			}
 
+			/**
+			 * @throw ViolatedUnitVectorInvariantException if @a v
+			 *   does not have unit magnitude.
+			 */
 			UnitVector3D (const Vector3D &v) : DirVector3D (v, 1.0)
 			{
 				AssertInvariant ();
 			}
 
+			/**
+			 * @throw ViolatedUnitVectorInvariantException if @a v
+			 *   does not have unit magnitude.
+			 */
 			UnitVector3D &
 			operator= (const Vector3D &v)
 			{
