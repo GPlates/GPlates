@@ -76,39 +76,6 @@ namespace GPlatesMaths
 			UnitVector3D _rot_axis;
 			real_t       _rot_angle;  // in radians
 	};
-
-
-// FIXME: port these functions to GreatCircleArc also...
-#if 0
-	inline bool
-	operator==(UnitVector3D v1, UnitVector3D v2) {
-
-		return (v1.x() == v2.x()
-		     && v1.y() == v2.y()
-		     && v1.z() == v2.z());
-	}
-
-
-	inline bool
-	operator!=(UnitVector3D v1, UnitVector3D v2) {
-
-		return (v1.x() != v2.x()
-		     || v1.y() != v2.y()
-		     || v1.z() != v2.z());
-	}
-
-
-	inline real_t
-	operator*(UnitVector3D v1, UnitVector3D v2) {
-
-		return (v1.x() * v2.x()
-		      + v1.y() * v2.y()
-		      + v1.z() * v2.z());
-	}
-
-
-	DirVector3D cross(UnitVector3D v1, UnitVector3D v2);
-#endif
 }
 
 #endif  // _GPLATES_MATHS_GREATCIRCLEARC_H_
