@@ -46,6 +46,12 @@ namespace GPlatesControls
 		OpenRotation(const std::string& filepath);
 
 		/**
+		 * Write the current data to a GPML file.
+		 */
+		void
+		SaveData(const std::string& filepath);
+		
+		/**
 		 * Exit GPlates.
 		 */
 		void

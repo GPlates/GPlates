@@ -39,6 +39,7 @@
 #include "maths/OperationsOnSphere.h"
 #include "fileio/PlatesBoundaryParser.h"
 #include "fileio/GPlatesReader.h"
+#include "fileio/GPlatesWriter.h"
 #include "fileio/FileIOException.h"
 #include "fileio/FileFormatException.h"
 #include "geo/PointData.h"
@@ -64,27 +65,32 @@ OpenFileErrorMessage(const std::string &fname, const char *fail_result_msg) {
 static void
 HandleGPMLFile(const std::string& filename)
 {
-#if 0
-	std::ostringstream result;
-	result << "No GPML data was loaded from \"" << filename
-		<< "\"." << std::endl;
-	
-	Dialogs::ErrorMessage(
-		"GPML Not Implemented",
-		"The GPML parser is still under development,\n"
-		"hence GPlates cannot yet load GPML data files.\n",
-		result.str().c_str());
-#endif
-
 	std::ifstream file(filename.c_str());
 	if (!file) {
 		OpenFileErrorMessage(filename, "No GPML data was loaded.");
 		return;
 	}
 
-	GPlatesReader reader(file);
-	DataGroup *data = reader.Read();
-	GPlatesState::Data::SetDataGroup(data);
+	try {
+
+		GPlatesReader reader(file);
+		DataGroup *data = reader.Read();
+		GPlatesState::Data::SetDataGroup(data);
+
+	} catch (const Exception& e) {
+		std::ostringstream msg, result;
+
+		msg << "Parse error occurred.  Error message:\n"
+			<< e;
+		
+		result << "No GPML data was loaded from \"" << filename
+			<< "\"." << std::endl;
+	
+		Dialogs::ErrorMessage(
+			"Error encountered.",
+			msg.str().c_str(),
+			result.str().c_str());
+	}
 }
 
 
@@ -505,4 +511,37 @@ void
 File::Quit(const GPlatesGlobal::integer_t& exit_status)
 {
 	exit(exit_status);
+}
+
+void
+File::SaveData(const std::string& filepath)
+{
+	std::ofstream outfile(filepath.c_str());
+	if ( ! outfile) {
+		
+		// Could not open filepath for writing.
+		std::ostringstream msg;
+		msg << "The file \"" << filepath << "\" could not\n"
+		 << "be opened for writing.";
+
+		Dialogs::ErrorMessage("Unable to open file", msg.str().c_str(),
+		 "No GPML data was saved!");
+		return;
+	}
+
+	GPlatesWriter writer;
+	DataGroup* data = GPlatesState::Data::GetDataGroup();
+
+	if ( ! data ) {
+
+		// No data to write.
+		Dialogs::ErrorMessage(
+			"You want me to create an empty file?", 
+			"There is currently no data loaded for you to save.",
+			"No GPML data was saved! -- Try loading something first.");
+		return;
+	}
+	
+	writer.Visit(data);
+	writer.PrintOut(outfile);
 }
