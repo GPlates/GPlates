@@ -108,6 +108,9 @@ GLFrame::GLFrame(wxFrame* parent,
 	_canvas = new GLCanvas(this);
 	_canvas->SetCurrent();
 
+	GPlatesControls::View::Redisplay.SetFrame(_canvas);
+		
+
 	Fit();
 	CentreOnScreen();
 }
@@ -131,9 +134,10 @@ GLFrame::OnExit(wxCommandEvent&)
 void
 GLFrame::OnOpenData(wxCommandEvent&)
 {
+	static wxString default_dir = "";
 	wxFileDialog filedlg(this, 
 						 "Select a data file...",
-						 "",  // default dir  = none
+						 default_dir,  // default dir  = none
 						 "",  // default file = none
 						 "GPlates Data files (*.gpml)|*.gpml|"
 						 "PLATES Data files (*.dat)|*.dat|"
@@ -142,6 +146,7 @@ GLFrame::OnOpenData(wxCommandEvent&)
 
 	if (filedlg.ShowModal() == wxID_OK) {
 		std::string selected_file;
+		default_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath();
 		GPlatesControls::File::OpenData(selected_file);
 	}
@@ -150,9 +155,10 @@ GLFrame::OnOpenData(wxCommandEvent&)
 void
 GLFrame::OnOpenRotation(wxCommandEvent&)
 {
+	static wxString default_dir = "";
 	wxFileDialog filedlg(this, 
 						 "Select a rotation file...",
-						 "",  // default dir  = none
+						 default_dir,  // default dir  = none
 						 "",  // default file = none
 						 "PLATES Rotation files (*.rot)|*.rot|"
 						 "All files (*.*)|*.*",  // wildcard
@@ -160,6 +166,7 @@ GLFrame::OnOpenRotation(wxCommandEvent&)
 
 	if (filedlg.ShowModal() == wxID_OK) {
 		std::string selected_file;
+		default_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath();
 		GPlatesControls::File::OpenRotation(selected_file);
 	}
@@ -178,7 +185,7 @@ GLFrame::OnReconstructTime(wxCommandEvent&)
 	ReconstructTimeDialog dialog(this);
 
 	if (dialog.ShowModal() == wxID_OK)
-		GPlatesControls::Reconstruct::Time(dialog.GetInput());
+		GPlatesControls::Reconstruct::Time_asdf(dialog.GetInput());
 }
 
 void

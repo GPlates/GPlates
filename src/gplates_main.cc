@@ -108,8 +108,6 @@ GPlatesApp::OnInit()
 		// NULL => no parent
 		GLFrame* frame = new GLFrame(NULL, PACKAGE_STRING, wxSize(640,640));
 		
-		GPlatesControls::View::Redisplay.SetFrame(frame);
-		
 		frame->Show(TRUE);
 
 	} catch (const GPlatesGlobal::Exception& e) {

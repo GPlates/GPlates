@@ -37,7 +37,7 @@ namespace GPlatesControls
 		 * using the loaded rotation file.
 		 */
 		void
-		Time(const GPlatesGlobal::fpdata_t& time);
+		Time_asdf(const GPlatesGlobal::fpdata_t& time);
 
 		/**
 		 * Reset the construction back to the present day.

@@ -27,27 +27,29 @@
 #define _GPLATES_CONTROLS_VIEW_FRAMEREDISPLAY_H_
 
 #include <wx/wx.h>
+#include "gui/GLCanvas.h"
 
 namespace GPlatesControls
 {
 	namespace View
 	{
+		// XXX fix var names in this file
 		class FrameRedisplay
 		{
 			public:
-				FrameRedisplay(wxFrame* frame = NULL) 
+				FrameRedisplay(GPlatesGui::GLCanvas* frame = NULL) 
 					: _frame(frame) {  }
 
 				void
-				SetFrame(wxFrame* frame) { _frame = frame; }
+				SetFrame(GPlatesGui::GLCanvas* frame) { _frame = frame; }
 
 				void operator()() { 
 					wxPaintEvent evt;
-					_frame->AddPendingEvent(evt);
+					_frame->ProcessEvent(evt);
 				}
 			
 			private:
-				wxFrame* _frame;
+				GPlatesGui::GLCanvas* _frame;
 		};
 	}
 }

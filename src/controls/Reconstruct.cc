@@ -221,7 +221,7 @@ WarpToTime(const fpdata_t &t) {
 
 
 void
-Reconstruct::Time(const fpdata_t &time)
+Reconstruct::Time_asdf(const fpdata_t &time)
 {
 	if (Data::GetDataGroup() == NULL) {
 
