@@ -53,6 +53,7 @@ namespace {
 	enum {
 		MENU_FILE_OPENDATA,
 		MENU_FILE_OPENROTATION,
+		MENU_FILE_IMPORT,
 		MENU_FILE_SAVEDATA,
 		MENU_FILE_EXIT,
 
@@ -148,7 +149,6 @@ MainWindow::OnOpenData(wxCommandEvent&)
 	}
 }
 
-
 void
 MainWindow::OnSaveData(wxCommandEvent&)
 {
@@ -184,6 +184,23 @@ MainWindow::OnOpenRotation(wxCommandEvent&)
 		_last_load_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath().mb_str();
 		GPlatesControls::File::OpenRotation(selected_file);
+	}
+}
+
+void MainWindow::OnImport (wxCommandEvent&)
+{
+	wxFileDialog filedlg (this,
+	 _("Select a data file to import..."),
+	 _last_load_dir, "",  // no default file
+	 _("netCDF files (*.grd)|*.grd|"
+	  "All files (*.*)|*.*"),  // wildcard
+	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
+
+	if (filedlg.ShowModal () == wxID_OK) {
+		std::string selected_file;
+		_last_load_dir = filedlg.GetDirectory ();
+		selected_file = filedlg.GetPath ().mb_str ();
+		GPlatesControls::File::OpenGrid (selected_file);
 	}
 }
 
@@ -256,6 +273,9 @@ MainWindow::CreateMenuBar()
 	filemenu->Append(MENU_FILE_OPENROTATION, 
 	 _("Open &Rotation...\tCtrl-R"), 
 	 _("Open a rotation file"));
+	filemenu->Append (MENU_FILE_IMPORT,
+	 _("&Import..."),
+	 _("Import a data file"));
 	filemenu->Append(MENU_FILE_SAVEDATA,
 	 _("&Save Data...\tCtrl-S"),
 	 _("Save current data to file"));
@@ -312,6 +332,7 @@ BEGIN_EVENT_TABLE(MainWindow, wxFrame)
 
 	EVT_MENU(MENU_FILE_OPENDATA, MainWindow::OnOpenData)
 	EVT_MENU(MENU_FILE_OPENROTATION, MainWindow::OnOpenRotation)
+	EVT_MENU(MENU_FILE_IMPORT, MainWindow::OnImport)
 	EVT_MENU(MENU_FILE_SAVEDATA, MainWindow::OnSaveData)
 	EVT_MENU(MENU_FILE_EXIT, MainWindow::OnExit)
 

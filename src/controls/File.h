@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_CONTROLS_FILE_H_
@@ -44,6 +45,11 @@ namespace GPlatesControls
 		 */
 		void
 		OpenRotation(const std::string& filepath);
+
+		/**
+		 * Load a gridded data file.
+		 */
+		void OpenGrid (const std::string &filepath);
 
 		/**
 		 * Write the current data to a GPML file.

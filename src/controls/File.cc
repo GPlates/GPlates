@@ -45,6 +45,7 @@
 #include "fileio/FileFormatException.h"
 #include "geo/PointData.h"
 #include "geo/LineData.h"
+#include "global/NotYetImplementedException.h"
 #include "global/types.h"  /* rid_t */
 
 using namespace GPlatesControls;
@@ -123,6 +124,34 @@ namespace
 		}
 	}
 
+	void HandleNetCDFFile (const std::string &filename)
+	{
+		throw new NotYetImplementedException (
+				"netCDF loading not yet implemented!");
+
+		std::ifstream file (filename.c_str ());
+		if (!file) {
+			OpenFileErrorMessage (filename, "Couldn't open file!");
+			return;
+		}
+
+		try {
+			// TODO
+		} catch (const Exception &e) {
+			std::ostringstream msg, result;
+
+			msg << "Parse error occurred.  Error message:\n"
+				<< e;
+			
+			result << "No GPML data was loaded from \"" << filename
+				<< "\"." << std::endl;
+		
+			Dialogs::ErrorMessage (
+				"Error encountered.",
+				msg.str ().c_str (),
+				result.str ().c_str ());
+		}
+	}
 
 	using namespace GPlatesState;
 
@@ -399,6 +428,45 @@ GPlatesControls::File::OpenRotation(const std::string& filename)
 	}
 }
 
+
+void GPlatesControls::File::OpenGrid(const std::string& filename)
+{
+	enum { UNKNOWN, netCDF } filetype = UNKNOWN;
+
+	// Break out of this loop when we know what type of file we're reading
+	do {
+		// TODO: try to guess filetype by using "magic"
+
+		// Try file extension
+		if (filename.rfind(".grd") != std::string::npos) {
+			filetype = netCDF;
+			break;
+		}
+	} while (0);
+
+	if (filetype == netCDF)
+		HandleNetCDFFile(filename);
+	else {
+		std::ostringstream msg;
+		msg << "The file \"" << filename << "\" is in an unknown "
+								"format.";
+		Dialogs::ErrorMessage(
+			"File type not recognised",
+			msg.str().c_str(),
+			"Attempting to parse the file as a netCDF data file.");
+		// TODO: is this wise to guess that it's PLATES format? confirm with user?
+		HandleNetCDFFile(filename);
+	}
+
+	//DataGroup* data = GPlatesState::Data::GetDataGroup();
+	//if (!data)
+	//	return;
+
+	//ConvertDataGroupToDrawableDataMap(data);
+
+	// Draw the data on the screen in its present-day layout
+	//Reconstruct::Present();
+}
 
 void
 GPlatesControls::File::Quit(const GPlatesGlobal::integer_t& exit_status)
