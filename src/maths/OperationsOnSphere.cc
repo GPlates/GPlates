@@ -136,7 +136,7 @@ GPlatesMaths::OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere
 	std::list< LatLonPoint >::const_iterator it = llpl.begin();
 	PointOnSphere p1 = convertLatLonPointToPointOnSphere(*it);
 
-	for (it++; it != llpl.end(); it++) {
+	for (++it; it != llpl.end(); ++it) {
 
 		PointOnSphere p2 = convertLatLonPointToPointOnSphere(*it);
 		GreatCircleArc g = GreatCircleArc::CreateGreatCircleArc(p1, p2);

@@ -34,7 +34,7 @@ GPlatesMaths::RotationHistory::isDefinedAtTime(real_t t) const {
 	ensureSeqSorted();
 	for (seq_type::const_iterator it = _seq.begin();
 	     it != _seq.end();
-	     it++) {
+	     ++it) {
 
 		if ((*it).isDefinedAtTime(t)) return true;
 	}
@@ -48,7 +48,7 @@ GPlatesMaths::RotationHistory::atTime(real_t t) const {
 	ensureSeqSorted();
 	for (seq_type::const_iterator it = _seq.begin();
 	     it != _seq.end();
-	     it++) {
+	     ++it) {
 
 		if ((*it).isDefinedAtTime(t)) return it;
 	}

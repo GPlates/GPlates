@@ -116,7 +116,7 @@ GPlatesMaths::operator*(const FiniteRotation &r, const PolyLineOnSphere &p) {
 
 	for (PolyLineOnSphere::const_iterator it = p.begin();
 	     it != p.end();
-	     it++) {
+	     ++it) {
 
 		rot_p.push_back(r * (*it));
 	}
