@@ -26,6 +26,8 @@
 #ifndef _GPLATES_GLOBAL_INTERNALRID_H_
 #define _GPLATES_GLOBAL_INTERNALRID_H_
 
+#include <iostream>
+
 namespace GPlatesGlobal
 {
 	/**
@@ -87,6 +89,17 @@ namespace GPlatesGlobal
 	operator>(const InternalRID &i1, const InternalRID &i2) {
 
 		return (i1.ival() > i2.ival());
+	}
+
+
+	/**
+	 * This operation is useful for debugging.
+	 */
+	inline std::ostream &
+	operator<<(std::ostream &os, const InternalRID &i) {
+
+		os << i.ival();
+		return os;
 	}
 }
 
