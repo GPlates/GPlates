@@ -86,16 +86,6 @@ namespace GPlatesMaths
 
 	namespace LatLonPointConversions
 	{
-		/**
-		 * Get the (cartesian) unit vector that corresponds to the given
-		 * (spherical) @a latitude and @a longitude.
-		 * 
-		 * @deprecated Use GPlatesMaths::LatLonPointConversions::convertLatLonPointToPointOnSphere
-		 *   instead.
-		 */
-		UnitVector3D convertLatLongToUnitVector(const real_t& latitude,
-		 const real_t& longitude);
-
 		PointOnSphere convertLatLonPointToPointOnSphere(const
 		 LatLonPoint &llp);
 

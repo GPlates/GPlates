@@ -68,24 +68,6 @@ GPlatesMaths::LatLonPoint::isValidLon(const real_t &val) {
 }
 
 
-UnitVector3D
-GPlatesMaths::LatLonPointConversions::convertLatLongToUnitVector
-		(const real_t& latitude, const real_t& longitude)
-{
-
-	real_t lat_angle = degreesToRadians(latitude);
-	real_t long_angle = degreesToRadians(longitude);
-
-	real_t radius_of_small_circle_of_latitude = cos(lat_angle);
-
-	real_t x_comp = radius_of_small_circle_of_latitude * cos(long_angle);
-	real_t y_comp = radius_of_small_circle_of_latitude * sin(long_angle);
-	real_t z_comp = sin(lat_angle);  // height above equator
-
-	return UnitVector3D(x_comp, y_comp, z_comp);
-}
-
-
 PointOnSphere
 GPlatesMaths::LatLonPointConversions::convertLatLonPointToPointOnSphere
 						(const LatLonPoint &llp)
