@@ -26,7 +26,7 @@
 #ifndef _GPLATES_MATHS_DIRVECTOR3D_H_
 #define _GPLATES_MATHS_DIRVECTOR3D_H_
 
-#include "global/types.h"  /* real_t */
+#include "types.h"  /* real_t */
 #include "ViolatedDirVectorInvariantException.h"
 
 namespace GPlatesMaths

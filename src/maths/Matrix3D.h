@@ -21,7 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_MATRIX3D_H_
@@ -29,7 +29,7 @@
 
 #include "PointOnSphere.h"
 #include "Rotation.h"
-#include "global/types.h"  /* real_t */
+#include "types.h"  /* real_t */
 
 namespace GPlatesMaths
 {

@@ -26,7 +26,7 @@
 #ifndef _GPLATES_MATHS_UNITVECTOR3D_H_
 #define _GPLATES_MATHS_UNITVECTOR3D_H_
 
-#include "global/types.h"  /* real_t */
+#include "types.h"  /* real_t */
 #include "DirVector3D.h"
 #include "ViolatedUnitVectorInvariantException.h"
 

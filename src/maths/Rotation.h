@@ -21,13 +21,14 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_ROTATION_H_
 #define _GPLATES_MATHS_ROTATION_H_
 
 #include "PointOnSphere.h"
-#include "global/types.h"  /* real_t */
+#include "types.h"  /* real_t */
 
 namespace GPlatesMaths
 {

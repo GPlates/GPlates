@@ -21,13 +21,13 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_POINTONSPHERE_H_
 #define _GPLATES_MATHS_POINTONSPHERE_H_
 
-#include "global/types.h"  /* real_t */
+#include "types.h"  /* real_t */
 #include "ViolatedCoordinateInvariantException.h"
 
 namespace GPlatesMaths
