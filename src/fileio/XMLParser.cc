@@ -67,7 +67,7 @@ static XML_Parser parser;
 // the current Element.
 
 /**
- * Called for start tags, such as <datagroup> or <meta ...
+ * Called for start tags, such as \<datagroup> or <meta ...
  *
  * attrs is an array of XML_Char* strings, arranged in name/value
  * pairs.  Thus it will always have an even length.
@@ -96,7 +96,7 @@ StartElementHandler(void* userdata,
 }
 
 /**
- * Called for an end tag, such as </datagroup> or ... />.
+ * Called for an end tag, such as \</datagroup> or ... />.
  */
 static void
 EndElementHandler(void* userdata, const XML_Char* name)

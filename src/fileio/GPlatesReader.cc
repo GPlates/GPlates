@@ -249,7 +249,7 @@ namespace
 	/**
 	 * Create a new PointData object from the given @a element.
 	 *
-	 * @pre @a element must refer to a <pointdata> element.
+	 * @pre @a element must refer to a \<pointdata> element.
 	 */
 	PointData*
 	GetPointData(Element_ptr element)
@@ -276,9 +276,9 @@ namespace
 	/**
 	 * Create a new PolyLineOnSphere object from the given @a element.
 	 *
-	 * @pre @a element must refer to a <coordlist> element.
+	 * @pre @a element must refer to a \<coordlist> element.
 	 * @throw FileFormatException Thrown if there is less than two
-	 *   <coord> elements in the <coordlist>, since we need at least
+	 *   \<coord> elements in the \<coordlist>, since we need at least
 	 *   two coordinates to specify a PolyLineOnSphere.
 	 */
 	PolyLineOnSphere
@@ -306,7 +306,7 @@ namespace
 	/**
 	 * Create a new LineData object from the given @a element.
 	 *
-	 * @pre @a element must refer to a <linedata> element.
+	 * @pre @a element must refer to a \<linedata> element.
 	 */
 	LineData*
 	GetLineData(Element_ptr element)
@@ -332,7 +332,7 @@ namespace
 	/**
 	 * Create a new DataGroup object from the given @a element.
 	 *
-	 * @pre @a element must refer to a <datagroup> element.
+	 * @pre @a element must refer to a \<datagroup> element.
 	 * @warning This method rearranges the order of the children.
 	 * @todo Construct a visitor to replace this method.
 	 */
