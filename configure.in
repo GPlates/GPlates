@@ -4,7 +4,7 @@
 AC_INIT([gPlates], [0.001])
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/geo/GeologicalData.h)
-#AC_CONFIG_HEADER(src/global/config.h)
+AC_CONFIG_HEADERS(src/global/config.h)
 
 # Check C++ compiler
 AC_PROG_CXX
@@ -109,33 +109,47 @@ AC_MSG_CHECKING([for Plesiosaurs in Loch Ness])
 AC_MSG_RESULT(yes)
 
 # UI targets
+probe_testui="auto"
 probe_glui="auto"
 probe_gtkmm="no"	# yet to do
 
+AC_ARG_ENABLE(testui,
+	[  --disable-testui        Disable Test UI],
+	[probe_testui=$enableval])
 AC_ARG_ENABLE(glui,
 	[  --disable-glui          Disable probing for GLUI],
-	[probe_glui=$enable_val])
+	[probe_glui=$enableval])
 #AC_ARG_ENABLE(gtkmm,
 #	[  --disable-gtkmm         Disable probing for GTK--],
-#	[probe_gtkmm=$enable_val])
+#	[probe_gtkmm=$enableval])
 
 AC_PATH_X
 AC_PATH_XTRA
 # AC_PATH_X: defines x_includes and x_libraries
-CXXFLAGS="$CXXFLAGS $X_CFLAGS"
 
 any_ui="no"
 UI_TARGETS=""
+if test "$probe_testui" != "no"; then
+	# FIXME: Anything to test for?
+
+	enable_testui="yes"
+	AC_DEFINE(HAVE_TESTUI)
+	#UI_TARGETS="$UI_TARGETS ui-test.o"	# XXX
+	#LIBS="$LIBS -l???"			# XXX
+	any_ui="yes"
+fi
 if test "$probe_glui" != "no"; then
 	# Check for GLUI
+	OLD_CXXFLAGS=$CXXFLAGS
+	CXXFLAGS="$CXXFLAGS $X_CFLAGS"
 	AC_HAVE_GLUI
+	CXXFLAGS=$OLD_CXXFLAGS
 	if test "$ac_cv_have_glui" = yes; then
 		enable_glui="yes"
 	fi
 	if test "$enable_glui" = "yes"; then
-		#AC_DEFINE(HAVE_GLUI)
 		#UI_TARGETS="$UI_TARGETS ui-glui.o"	# XXX
-		#LIBS="$LIBS -lglui"		# XXX
+		#LIBS="$LIBS -lglui"			# XXX
 		any_ui="yes"
 	fi
 fi
@@ -155,7 +169,6 @@ fi
 
 # Write output
 AC_OUTPUT(Makefile
-	src/global/config.h
 	doc/doxygen.conf
 	doc/Makefile
 	src/Rules
@@ -190,7 +203,9 @@ fi
 
 # UI information
 echo "###############################################"
-echo "#  Display targets enabled:                   #"
+echo "#  User interfaces enabled:                   #"
+if test "$enable_testui" = "yes"; then
+	echo "#    * TestUI                                 #"; fi
 if test "$enable_glui" = "yes"; then
 	echo "#    * GLUI                                   #"; fi
 if test "$enable_gtkmm" = "yes"; then

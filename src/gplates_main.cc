@@ -71,9 +71,11 @@
 #include <cstdlib>  /* EXIT_SUCCESS */
 #include <iostream>
 
+#include "global/config.h"
+
 int
 main()
 {
-	std::cout << "This is gPlates!\n";
+	std::cout << "This is \"" PACKAGE_STRING "\".\n";
 	return EXIT_SUCCESS;
 }

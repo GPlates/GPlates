@@ -5,7 +5,14 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+// Package information
+#undef PACKAGE_NAME
+#undef PACKAGE_VERSION
+#undef PACKAGE_STRING
+
 // UIs selected
+#undef HAVE_TESTUI
 #undef HAVE_GLUI
+#undef HAVE_GTKMM
 
 #endif	// __CONFIG_H__
