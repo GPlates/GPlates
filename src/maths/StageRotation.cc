@@ -90,7 +90,7 @@ subtractFinite(const FiniteRotation &r1, const FiniteRotation &r2) {
 		 "same point in time.");
 	}
 
-	UnitQuaternion3D res_uq = r1.quat() * r2.quat().inverse();
+	UnitQuaternion3D res_uq = r2.quat().inverse() * r1.quat();
 	real_t time_delta = r1.time() - r2.time();
 
 	return StageRotation::CreateStageRotation(res_uq, time_delta);
