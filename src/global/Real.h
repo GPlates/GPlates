@@ -228,6 +228,13 @@ namespace GPlatesGlobal
 	}
 
 
+	inline Real
+	sqrt(Real r) {
+
+		return std::sqrt(r.dval());
+	}
+
+
 	inline std::ostream &
 	operator<<(std::ostream &os, Real r) {
 
