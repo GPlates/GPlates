@@ -50,8 +50,12 @@ namespace GPlatesMaths
 	 */
 	class Real
 	{
+		public:
+			static const unsigned High_Precision;
+
+		private:
 			static const double Epsilon;
-			static const double NegativeEpsilon;
+			static const double Negative_Epsilon;
 
 			/*
 			 * these functions are friends,
@@ -64,8 +68,7 @@ namespace GPlatesMaths
 			friend bool operator<(Real, Real);
 			friend bool operator>(Real, Real);
 			
-			friend std::istream&
-			operator>>(std::istream&, Real&);
+			friend std::istream &operator>>(std::istream &, Real &);
 
 			double _dval;
 
@@ -79,7 +82,10 @@ namespace GPlatesMaths
 
 
 			double
-			dval() const { return _dval; }
+			dval() const {
+
+				return _dval;
+			}
 
 
 			Real &
@@ -135,7 +141,7 @@ namespace GPlatesMaths
 		 * That range will be [-e, e].
 		 */
 		double d = r1.dval() - r2.dval();
-		return (Real::NegativeEpsilon <= d && d <= Real::Epsilon);
+		return (Real::Negative_Epsilon <= d && d <= Real::Epsilon);
 	}
 
 
@@ -152,7 +158,7 @@ namespace GPlatesMaths
 		 * (a == b) iff not (a != b)
 		 */
 		double d = r1.dval() - r2.dval();
-		return (Real::NegativeEpsilon > d || d > Real::Epsilon);
+		return (Real::Negative_Epsilon > d || d > Real::Epsilon);
 	}
 
 
@@ -186,7 +192,7 @@ namespace GPlatesMaths
 		 * comparison to return true.
 		 */
 		double d = r1.dval() - r2.dval();
-		return (Real::NegativeEpsilon <= d);
+		return (Real::Negative_Epsilon <= d);
 	}
 
 
@@ -208,7 +214,7 @@ namespace GPlatesMaths
 		 * (a < b) must be the logical inverse of (a >= b).
 		 */
 		double d = r1.dval() - r2.dval();
-		return (Real::NegativeEpsilon > d);
+		return (Real::Negative_Epsilon > d);
 	}
 
 	inline Real abs (const Real &r1)
