@@ -48,7 +48,7 @@ namespace GPlatesFileIO
 
 		// no default constructor
 
-		PlatesPolyHeader(const std::string &first_line,
+		PlatesPolyLineHeader(const std::string &first_line,
 		 const std::string &second_line,
 		 const rgid_t &plate_id,
 		 GPlatesGeo::TimeWindow &lifetime)
