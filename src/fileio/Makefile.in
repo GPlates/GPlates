@@ -13,7 +13,7 @@ LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 OBJS = GPlatesReader.o GPlatesWriter.o \
 	PlatesBoundaryParser.o PlatesDataTypes.o PlatesParserUtils.o \
 	PlatesPostParseTranslator.o PlatesRotationParser.o \
-	TranslationInterface.o XMLParser.o
+	XMLParser.o # TranslationInterface.o 
 #	NetCDFReader.o NetCDFWriter.o \
 
 LIBNAME = libfileio.a
