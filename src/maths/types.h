@@ -29,7 +29,6 @@
 #ifndef _GPLATES_MATHS_TYPES_H_
 #define _GPLATES_MATHS_TYPES_H_
 
-#include <list>
 #include "Real.h"
 
 namespace GPlatesMaths
