@@ -29,7 +29,7 @@
 #include <iostream>
 #include "types.h"  /* real_t */
 #include "DirVector3D.h"
-#include "ViolatedUnitVectorInvariantException.h"
+
 
 namespace GPlatesMaths
 {

@@ -26,6 +26,7 @@
 #include <sstream>
 #include "UnitVector3D.h"
 #include "DirVector3D.h"
+#include "ViolatedUnitVectorInvariantException.h"
 
 
 using namespace GPlatesMaths;
