@@ -39,6 +39,8 @@ namespace GPlatesGui
 			              const GPlatesMaths::real_t& degrees_per_lon,
 			              const Colour& colour = Colour::WHITE);
 			
+			~SphericalGrid();
+
 			void
 			Paint();
 

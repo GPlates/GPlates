@@ -179,6 +179,11 @@ DrawGreatCircle(GLUnurbsObj* nurbs_renderer, const real_t& longitude)
 //	glEndList();
 }
 
+namespace 
+{
+	GLUnurbsObj* nurbs_renderer;
+}
+
 /**
  * @a C specifies the centre of the circle, @a P specifies
  * a point on the perimeter.
@@ -188,11 +193,6 @@ CompileGrid(const real_t& degrees_per_lat,
 			const real_t& degrees_per_lon,
 			const Colour& colour, int)
 {
-	// Create renderer.
-	GLUnurbsObj* nurbs_renderer = gluNewNurbsRenderer();
-	gluNurbsCallback(nurbs_renderer, GLU_ERROR,
-		reinterpret_cast<void (*)()>(&NurbsError));
-
 	glColor3fv(colour);
 
 	GLfloat incr = degrees_per_lon.dval();
@@ -202,17 +202,25 @@ CompileGrid(const real_t& degrees_per_lat,
 	incr = degrees_per_lat.dval();
 	for (GLfloat lat = 90.0 - incr; lat > -90.0; lat -= incr)
 		DrawSmallCircle(nurbs_renderer, lat);
-
-	gluDeleteNurbsRenderer(nurbs_renderer);
 }
 
 SphericalGrid::SphericalGrid(const real_t& degrees_per_lat,
 	const real_t& degrees_per_lon,
 	const Colour& colour)
 {
+	// Create renderer.
+	nurbs_renderer = gluNewNurbsRenderer();
+	gluNurbsCallback(nurbs_renderer, GLU_ERROR,
+		reinterpret_cast<void (*)()>(&NurbsError));
+
 	CompileGrid(degrees_per_lat, degrees_per_lon, colour, GRID);
 }
 
+
+SphericalGrid::~SphericalGrid()
+{
+	gluDeleteNurbsRenderer(nurbs_renderer);
+}
 
 void
 SphericalGrid::Paint()
