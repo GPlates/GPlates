@@ -42,6 +42,13 @@ namespace GPlatesMaths
 	 *
 	 * Note that the collection of rotation sequences is not guaranteed
 	 * to be continuous through time: there may be gaps or overlaps.
+	 *
+	 * Update, 2004-07-12: DM says that overlaps are "not allowed" other
+	 * than at "cross-over" points (points in time at which one sequence
+	 * ends and another begins).  However, (i) we still need to handle
+	 * cross-over points, and (ii) we should still check for overlaps
+	 * (perhaps when loading rotation files) because these people have
+	 * a habit of hand-editing rotation files and introducing bugs...
 	 */
 	class RotationHistory
 	{
