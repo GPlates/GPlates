@@ -43,6 +43,7 @@ namespace GPlatesGlobal
 			 * @param fname is the name of the function which is
 			 * not supported.
 			 */
+			explicit
 			UnsupportedFunctionException(const char *fname)
 				: _fname(fname) {  }
 

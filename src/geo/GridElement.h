@@ -39,6 +39,7 @@ namespace GPlatesGeo
 		typedef GPlatesGeo::GeologicalData::Attributes_t Attributes_t;
 
 		public:
+			explicit
 			GridElement (float val, const Attributes_t &attrs =
 						GeologicalData::NO_ATTRIBUTES)
 				: _value (val), _attributes(attrs)

@@ -39,6 +39,7 @@ namespace GPlatesFileIO {
 			/**
 			 * @param msg is the description of the problem.
 			 */
+			explicit
 			InvalidDataException(const char* msg) : _msg(msg) { }
 
 			virtual

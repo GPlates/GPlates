@@ -42,6 +42,7 @@ namespace GPlatesGlobal
 			 * @param fname is the name of the function which is
 			 * not yet implemented.   
 			 */
+			explicit
 			NotYetImplementedException(const char *fname)
 				: _fname(fname) {  }
 

@@ -40,6 +40,7 @@ namespace GPlatesGlobal
 			/**
 			 * @param msg is a message describing the situation.
 			 */
+			explicit
 			ControlFlowException(const char *msg)
 				: _msg(msg) {  }
 

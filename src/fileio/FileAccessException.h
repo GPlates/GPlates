@@ -40,6 +40,7 @@ namespace GPlatesFileIO {
 			/**
 			 * @param msg is a description of the problem.
 			 */
+			explicit
 			FileAccessException (const char *msg) : _msg(msg) { }
 
 			virtual ~FileAccessException() { }

@@ -40,6 +40,7 @@ namespace GPlatesFileIO
 	class GPlatesReader : public Reader
 	{
 		public:
+			explicit
 			GPlatesReader(std::istream& istr)
 				: _istr(istr) {  }
 

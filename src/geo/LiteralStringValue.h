@@ -36,6 +36,7 @@ namespace GPlatesGeo
 	class LiteralStringValue : public StringValue
 	{
 		public:
+			explicit
 			LiteralStringValue(const std::string& str)
 				: _str(str) {  }
 	

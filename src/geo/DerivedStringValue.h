@@ -40,6 +40,7 @@ namespace GPlatesGeo
 	class DerivedStringValue : public StringValue
 	{
 		public:
+			explicit
 			DerivedStringValue(const StringValue* parent)
 				: _parent(parent) {  }
 

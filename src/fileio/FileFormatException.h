@@ -40,6 +40,7 @@ namespace GPlatesFileIO {
 			/**
 			 * @param msg is a description of the problem.
 			 */
+			explicit
 			FileFormatException(const char* msg) : _msg(msg) { }
 
 			virtual
