@@ -1,4 +1,13 @@
-/*
+/*$Id$*/
+/// Reads in Plates data rotation files.
+/**
+ * @file
+ *
+ * Most recent change:
+ * $Author$
+ * $Date$
+ *
+ *
  * Copyright (C) 2003 The GPlates Consortium
  *
  * This program is free software; you can redistribute it and/or
@@ -12,20 +21,20 @@
  *
  * Authors:
  *   Mike Dowman <mdowman@geosci.usyd.edu.au> and James Boyden <jboyden@geosci.usyd.edu.au>
-
- This file reads in files in the plates rotation file format. This format arranges data in columns separated by spaces. The columns appear in the following order, left to right.
-
- integer moving plate number 
- float   time
- float   latitude
- float   longitude
- float   angle
- integer fixed plate number
- string  comment (comment is immediately preceeded by as explanation mark, as in !comment).
-
- Each line of the file is in the same format, but colums don't necessarily line up.
-
-*/
+ *
+ * This file reads in files in the plates rotation file format. This format arranges data in columns separated by spaces. The columns appear in the following order, left to right.
+ *
+ * integer moving plate number 
+ * float   time
+ * float   latitude
+ * float   longitude
+ * float   angle
+ * integer fixed plate number
+ * string  comment (comment is immediately preceeded by as explanation mark, as in !comment).
+ *
+ * Each line of the file is in the same format, but colums don't necessarily line up.
+ *
+ */
 
 #ifndef _ROTATION_DATA_FILE_READER_H
 #define _ROTATION_DATA_FILE_READER_H
@@ -41,13 +50,19 @@
 namespace GPlatesFileIO {
   
   const int MAXIMUMLENGTHOFROTATIONDATALINE=500; // Make sure that this is big enough for anything we're likely to encounter.
-  
-  void readinplaterotationdata(const char *filename, std::istream &inputstream, std::map< rgid_t, std::multimap< fpdata_t, FiniteRotation > > &rotationdata); // The inputstream must point to the beginning of an already open file containing plates rotation data.
+ 
+  /** This functions reads in a Plates rotation data file and puts its contents in the map.   
+   * The inputstream must point to the beginning of an already open file containing plates rotation data.
+   */
+  void readinplaterotationdata(const char *filename, std::istream &inputstream, std::map< rgid_t, std::multimap< fpdata_t, FiniteRotation > > &rotationdata); 
 
+  /// Reads one line of the file and puts it in the map - returns false iff there is no more file to be read.
   bool readrotationline(LineBuffer &lb, std::map< GPlatesGlobal::rgid_t, std::multimap< fpdata_t, FiniteRotation > > &rotationdata);
 
+  /// Reads in an rgid_t from the istringstream - exception will be thrown if it fails.
   rgid_t attemptToReadrgid_t(std::istringstream &iss, const LineBuffer &lb);
   
+  /// Reads in a float from the istringstream - exception will be thrown if it fails.
   double attemptToReadFloat(std::istringstream &iss, const LineBuffer &lb);
 
 }
