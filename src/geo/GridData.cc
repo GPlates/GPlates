@@ -24,10 +24,13 @@
  */
 
 #include <cstring>
+#include <vector>
 #include "DrawableData.h"
 #include "GridData.h"
 #include "global/types.h"
+#include "global/IllegalParametersException.h"
 #include "maths/GreatCircle.h"
+#include "maths/PointOnSphere.h"
 #include "maths/SmallCircle.h"
 #include "state/Layout.h"
 
@@ -43,6 +46,12 @@ GridData::GridData(const DataType_t& dt, const RotationGroupId_t& id,
 	grid = new Grid;
 	grid->offset = 0;
 	grid->length = 0;
+
+	// Ensure that the major and minor circles intersect, by checking that
+	// their normals are perpendicular
+	if (!perpendicular (_major.normal (), _minor.normal ()))
+		throw new IllegalParametersException (
+				"Major and minor circles aren't perpendicular");
 }
 
 GridData::~GridData ()

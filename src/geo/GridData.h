@@ -45,12 +45,17 @@ namespace GPlatesGeo
 	class GridData : public DrawableData
 	{
 		public:
+			/**
+			 * Constructor.
+			 * \throws IllegalParametersException
+			 *	if circles are not perpendicular
+			 */
 			GridData(const DataType_t&,
 				 const RotationGroupId_t&,
 				 const TimeWindow&,
 				 const Attributes_t&,
-				 const GPlatesMaths::GreatCircle&,
-				 const GPlatesMaths::SmallCircle&);
+				 const GPlatesMaths::GreatCircle &major,
+				 const GPlatesMaths::SmallCircle &minor);
 			~GridData ();
 
 			/**
