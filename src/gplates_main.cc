@@ -74,6 +74,6 @@
 int
 main()
 {
-	std::cout << "This is GPlates!\n";
+	std::cout << "This is gPlates!\n";
 	return EXIT_SUCCESS;
 }

@@ -1,7 +1,7 @@
 # $Id$
-# Configure script for GPlates
+# Configure script for gPlates
 
-AC_INIT([GPlates], [0.001])
+AC_INIT([gPlates], [0.001])
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/geo/GeologicalData.h)
 #AC_CONFIG_HEADER(src/global/config.h)
@@ -115,24 +115,24 @@ if test "$turn_on_dev" = "yes"; then
 	echo "### WARNING: You have enabled Developer flags. Unless you"
 	echo "###          are a developer, you are strongly advised to"
 	echo "###          leave developer flags turned off, or you may"
-	echo "###          have problems compiling GPlates."
+	echo "###          have problems compiling gPlates."
 fi
 if test "$turn_on_prof" = "yes"; then
 	echo "###"
 	echo "### WARNING: You have enabled Profiling. Unless you are a"
 	echo "###          developer, you are strongly advised to leave"
 	echo "###          profiling turned off, or you may have problems"
-	echo "###          compiling or running GPlates."
+	echo "###          compiling or running gPlates."
 fi
 if test "$turn_on_opt" = "yes" -a "$turn_on_dev" = "yes"; then
 	echo "###"
 	echo "### WARNING: You have enabled both Optimisation and Development"
 	echo "###          flags. This is highly discouraged, as it may cause"
-	echo "###          problems compiling or running GPlates."
+	echo "###          problems compiling or running gPlates."
 fi
 
 echo "###############################################"
-echo "#  GPlates is now configured. Simply type...  #"
+echo "#  gPlates is now configured. Simply type...  #"
 echo "#          make                               #"
-echo "#  ... and GPlates will be compiled.          #"
+echo "#  ... and gPlates will be compiled.          #"
 echo "###############################################"
