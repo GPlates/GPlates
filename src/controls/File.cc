@@ -46,8 +46,8 @@
 #include "fileio/GPlatesWriter.h"
 #include "fileio/FileIOException.h"
 #include "fileio/FileFormatException.h"
-#include "fileio/NetCDFReader.h"
-#include "fileio/NetCDFWriter.h"
+//#include "fileio/NetCDFReader.h"
+//#include "fileio/NetCDFWriter.h"
 #include "geo/PointData.h"
 #include "geo/LineData.h"
 #include "global/NotYetImplementedException.h"
@@ -129,6 +129,7 @@ namespace
 		}
 	}
 
+/*
 	void HandleNetCDFFile (const std::string &filename)
 	{
 		NcFile ncf (filename.c_str ());
@@ -201,6 +202,7 @@ namespace
 		//						gdata, 0);
 		delete gdata;
 	}
+*/
 
 	using namespace GPlatesState;
 
@@ -305,7 +307,7 @@ namespace DataFormats {
 
 	enum data_format testGPML(const std::string &filename);
 	enum data_format testPLATES(const std::string &filename);
-	enum data_format testNetCDF(const std::string &filename);
+//	enum data_format testNetCDF(const std::string &filename);
 
 	// A pointer to a function which attempts to determine the file format.
 	typedef enum data_format (*DataFormatTest)(const std::string &);
@@ -318,7 +320,7 @@ namespace DataFormats {
 	DataFormatTest NONNATIVE_DATA_FORMAT_TESTS[] = {
 
 		testPLATES,
-		testNetCDF
+//		testNetCDF
 	};
 
 
@@ -415,13 +417,14 @@ namespace DataFormats {
 		return PLATES;
 	}
 
-
+/*
 	enum data_format testNetCDF (const std::string &filename)
 	{
 		if (!magicMatches (filename, "CDF\1", 4))
 			return UNKNOWN;		// not netCDF
 		return NETCDF;
 	}
+*/
 }
 
 
@@ -608,7 +611,7 @@ void GPlatesControls::File::ImportData(const std::string& filename)
 
 		case DataFormats::NETCDF:
 			// Recognised as a NetCDF file
-			HandleNetCDFFile(filename);
+//			HandleNetCDFFile(filename);
 			break;
 
 		case DataFormats::ERROR:

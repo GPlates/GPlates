@@ -357,7 +357,7 @@ GPlatesGui::MainWindow::OnImport(wxCommandEvent&)
 	 _("Select a data file to import..."),
 	 _last_load_dir, "",  // no default file
 	 _("PLATES Data files (*.dat)|*.dat|"
-	  "NetCDF Grid files (*.grd)|*.grd|"
+//	  "NetCDF Grid files (*.grd)|*.grd|"
 	  "All files (*)|*"),  // wildcard
 	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
