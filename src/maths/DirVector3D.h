@@ -21,6 +21,7 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_DIRVECTOR3D_H_
