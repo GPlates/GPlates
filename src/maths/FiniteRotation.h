@@ -72,6 +72,7 @@ namespace GPlatesMaths
 			/**
 			 * Create a finite rotation with the given Euler pole
 			 * and rotation angle, for the given point in time.
+			 *
 			 * As always, the rotation angle is in radians; the
 			 * point in time is in Ma (Millions of years ago).
 			 */
@@ -84,6 +85,7 @@ namespace GPlatesMaths
 			/**
 			 * Create a finite rotation consisting of the given
 			 * unit quaternion and the given point in time.
+			 *
 			 * The point in time is in Ma (Millions of years ago).
 			 */
 			static FiniteRotation
@@ -91,16 +93,24 @@ namespace GPlatesMaths
 			       const real_t &point_in_time);
 
 
+			/**
+			 * Return the unit quaternion associated with this
+			 * finite rotation.
+			 */
 			UnitQuaternion3D
 			quat() const { return _quat; }
 
 
+			/**
+			 * Return the point in time associated with this
+			 * finite rotation.
+			 */
 			real_t
 			time() const { return _time; }
 
 
 			/**
-			 * Apply this rotation to a unit vector.
+			 * Apply this rotation to a unit vector @a uv.
 			 *
 			 * Note that this function is a member function for
 			 * two (2) reasons:
@@ -147,9 +157,20 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Although this operation doesn't strictly make sense for a
-	 * FiniteRotation, it is provided to enable FiniteRotations to be
-	 * sorted by STL algorithms.
+	 * Calculate the reverse of the given finite rotation @a r.
+	 */
+	inline FiniteRotation
+	reverse(const FiniteRotation &r) {
+
+		return FiniteRotation::Create(r.quat().inverse(), r.time());
+	}
+
+
+	/**
+	 * Compare two finite rotations by their time.
+	 *
+	 * This operation provides a strict weak ordering, which enables
+	 * finite rotations to be sorted by STL algorithms.
 	 */
 	inline bool
 	operator<(const FiniteRotation &r1, const FiniteRotation &r2) {
