@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_MATHEMATICALEXCEPTION_H_
