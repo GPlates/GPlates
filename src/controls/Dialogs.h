@@ -32,17 +32,21 @@ namespace GPlatesControls
 	namespace Dialogs
 	{
 		/**
-		 * Present a dialog to the user with the given
+		 * Present an error dialog with the given
 		 * @a title, @a message and @a result, with a
 		 * single OK button for them to click.
 		 */
 		void
 		ErrorMessage(const char* title,
-					 const char* message,
-					 const char* result);
+		             const char* message,
+		             const char* result);
 
-		/// Show an informational dialog
-		void InfoMessage (const char *title, const char *message);
+		/**
+		 * Present an informational dialog with the given
+		 * @a title and @message, with a single OK button
+		 * for them to click.
+		 */
+		void InfoMessage(const char *title, const char *message);
 	}
 }
 
