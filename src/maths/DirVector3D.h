@@ -70,7 +70,7 @@ namespace GPlatesMaths
 			DirVector3D(const real_t& x_comp,
 			            const real_t& y_comp,
 			            const real_t& z_comp)
-				: Vector3D (x_comp, y_comp, z_comp) {
+			 : Vector3D (x_comp, y_comp, z_comp) {
 
 				UpdateMagnitude();
 				AssertInvariantHolds();
@@ -84,6 +84,15 @@ namespace GPlatesMaths
 
 			virtual real_t
 			magnitude() const { return _mag; }
+
+			virtual UnitVector3D
+			normalise() const {
+
+				real_t scale = 1 / magnitude();
+				return UnitVector3D (scale * v1.x (),
+				                     scale * v1.y (),
+				                     scale * v1.z ());
+			}
 
 			DirVector3D &operator= (const Vector3D &v)
 			{
@@ -106,18 +115,14 @@ namespace GPlatesMaths
 			            const real_t &y_comp,
 			            const real_t &z_comp,
 				    const real_t &mag)
-				: Vector3D (x_comp, y_comp, z_comp), _mag (mag)
-			{
-			}
+			 : Vector3D (x_comp, y_comp, z_comp), _mag (mag) {  }
 
 			/**
-			 * Another Super-secret backdoor constructor for
+			 * Another super-secret backdoor constructor for
 			 * specialised base classes.
 			 */
 			DirVector3D(const Vector3D &v, const real_t &mag)
-				: Vector3D (v), _mag (mag)
-			{
-			}
+			 : Vector3D (v), _mag (mag) {  }
 
 			/**
 			 * Calculate and set the magnitude.
@@ -125,7 +130,7 @@ namespace GPlatesMaths
 			void
 			UpdateMagnitude()
 			{
-				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
+				_mag = Vector3D::magnitude();
 			}
 
 			/** 
