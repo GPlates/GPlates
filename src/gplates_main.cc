@@ -104,14 +104,6 @@ bool
 GPlatesApp::OnInit()
 {
 	try {
-#if 0
-		GPlatesGeo::DataGroup data("Cool Data (tm)", 42, 
-			GPlatesGeo::GeologicalData::Attributes_t());
-
-		GPlatesFileIO::GPlatesReader reader("anus");
-		reader.Read(data);
-#endif
-		
 		GPlatesFileIO::GPlatesReader reader(std::cin);
 
 		// NULL => no parent
@@ -120,7 +112,14 @@ GPlatesApp::OnInit()
 		frame->Show(TRUE);
 
 	} catch (const GPlatesGlobal::Exception& e) {
-		std::cerr << "Caught exception: " << e << std::endl;
+		std::cerr << "Caught GPlates exception: " << e << std::endl;
+		return FALSE;
+	} catch (const std::exception& e) {
+		std::cerr << "Caught non-GPlates exception: " << e.what() 
+			<< std::endl;
+		return FALSE;
+	} catch (...) {
+		std::cerr << "Caught unrecognised exception: " << std::endl;
 		return FALSE;
 	}
 	return TRUE;
