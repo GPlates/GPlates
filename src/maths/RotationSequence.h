@@ -162,15 +162,16 @@ namespace GPlatesMaths
 		public:
 
 			/**
-			 * Create a rotation sequence for motion relative to
-			 * the given fixed plate, initialising the sequence
-			 * with a finite rotation.
+			 * Create a rotation sequence for motion of the given
+			 * moving plate relative to the given fixed plate,
+			 * initialising the sequence with a finite rotation.
 			 *
 			 * Since a finite rotation must be provided to this
 			 * constructor, it will be assumed that a rotation
 			 * sequence can never be empty.
 			 */
 			RotationSequence(const rid_t &fixed_plate,
+			                 const rid_t &moving_plate,
 			                 const FiniteRotation &frot);
 
 
@@ -180,6 +181,7 @@ namespace GPlatesMaths
 			 */
 			RotationSequence(const RotationSequence &other)
 			 : _fixed_plate(other._fixed_plate),
+			   _moving_plate(other._moving_plate),
 			   _most_recent_time(other._most_recent_time),
 			   _most_distant_time(other._most_distant_time) {
 
@@ -217,6 +219,10 @@ namespace GPlatesMaths
 			fixedPlate() const { return _fixed_plate; }
 
 
+			rid_t
+			movingPlate() const { return _moving_plate; }
+
+
 			/**
 			 * Returns whether this rotation sequence is "defined"
 			 * at a particular point in time.
@@ -248,6 +254,7 @@ namespace GPlatesMaths
 		private:
 
 			rid_t  _fixed_plate;
+			rid_t  _moving_plate;
 			real_t _most_recent_time;  // Millions of years ago
 			real_t _most_distant_time;  // Millions of years ago
 
