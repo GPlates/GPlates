@@ -53,6 +53,9 @@ ReadInRotationData(const char *filename, std::istream &input_stream,
 }
 
 
+static const plate_id_t PLATE_ID_TO_IGNORE = 999;
+
+
 /**
  * Given a LineBuffer, read a single rotation and store it.
  */
@@ -72,6 +75,11 @@ ReadRotation(LineBuffer &lb, PlatesRotationData &rotation_data) {
 
 	plate_id_t moving_plate = rot._moving_plate;
 	plate_id_t fixed_plate = rot._fixed_plate;
+
+	/*
+	 * Ignore "commented-out" finite rotations.
+	 */
+	if (moving_plate == PLATE_ID_TO_IGNORE) return;
 
 	/*
 	 * If there is not yet any rotation data, this will be the start
