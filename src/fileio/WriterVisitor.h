@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_FILEIO_WRITERVISITOR_H_
@@ -33,14 +33,14 @@ namespace GPlatesFileIO
 {
 	/**
 	 * The superclass for all the classes that will convert the
-	 * internal gPlates representation of the data into some
+	 * internal GPlates representation of the data into some
 	 * kind of output format.
 	 * To use this class for output, do something like the following:
 	 * @code
-	 *   GeologicalData *gd;
-	 *   // Initialise gd in some way.
-	 *   PlatesWriter pw;
-	 *   gd->Accept(pw);
+	 *   DataGroup *dg;
+	 *   // Initialise dg in some way.
+	 *   GPlatesWriter pw;
+	 *   pw.Visit(dg);
 	 *   pw.PrintOut(std::cout);
 	 *   @endcode
 	 * Thus, if you want to output a whole bunch of GeologicalData, just make
@@ -51,11 +51,9 @@ namespace GPlatesFileIO
 	{
 		public:
 			/**
-			 * @return False if there was insufficient information for the 
-			 *   the file to be written properly.
 			 * @role Builder::BuildPart() in the Builder pattern (p97).
 			 */
-			virtual bool
+			virtual void
 			PrintOut(std::ostream&) = 0;
 	};
 }

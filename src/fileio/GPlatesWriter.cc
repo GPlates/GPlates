@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #include <string>
@@ -29,63 +29,77 @@
 using namespace GPlatesFileIO;
 using namespace GPlatesGeo;
 
-/**
- * Pen command for 'draw to'.
- */
-static const std::string DRAW_TO_POINT = "2";
+static const char *XML_HEADER = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>";
 
-/**
- * Pen command for 'skip to'.
- */
-static const std::string SKIP_TO_POINT = "3";
-
-/**
- * Definition of the end of a line.
- */
-static const std::string LINE_END = "  99.0000  99.0000 3";
-
-void
-GPlatesWriter::Visit(const LineData&)
+GPlatesWriter::GPlatesWriter()
+	: _indent(0)
 {
-#if 0
-	PointOnSphere point;
-	
-	// Output line header information
-	// First line of header is useless information.  Format is:
-	//   <region number> <reference number> <string number> <description>
-	// FIXME: we may be storing the correct values for these
-	//   in the GeneralisedData.
-	_accum << "666 6 6 COMMENT" << std::endl;
-
-	// Format for the second line:
-	//   <plate id> <age of appearance> <age of disappearance>
-	//   <data type code> <data type code number> <plate id number>
-	//   <colour code number> <number of points>
-	// FIXME: how do I get this information out of the GeneralisedData?
-	
-	// Output each of the points that make up the line.
-	LineData::Line_t::const_iterator
-		iter = linedata.Begin(),
-		end = linedata.End();
-
-	// First point in the line should be a SKIP_TO_POINT
-	// pen movement.
-	point = iter->GetPointOnSphere();
-	_accum << "  " << point.GetLatitude() << "  " 
-		<< point.GetLongitude() << " " << SKIP_TO_POINT << std::endl;
-	iter++;
-	for ( ; iter != end; ++iter) {
-		point = iter->GetPointOnSphere();
-		_accum << "  " << point.GetLatitude() << "  " 
-			<< point.GetLongitude() << " " << DRAW_TO_POINT << std::endl;
-	}
-	_accum << LINE_END << std::endl;
-#endif
+	// All XML files must have this line.
+	_accum << XML_HEADER << std::endl;
 }
 
-bool
+#if 0
+static std::string
+Indent(int indent)
+{
+	return std::string(indent, '\t');
+}
+
+static void
+WriteTimeWindow(std::ostream& os, const TimeWindow& tw)
+{
+}
+
+static void
+WritePlateID(std::ostream& os, const rid_t& id)
+{
+}
+
+static void
+WriteCoord(std::ostream& os, const PointOnSphere& point)
+{
+}
+
+WriteCoordList(std::ostream& os, const PolyLineOnSphere& line)
+{
+}
+
+static void
+WritePointData(std::ostream& os, const PointData* data)
+{
+}
+
+static void
+WriteLineData(std::ostream& os, const LineData* data)
+{
+}
+
+static void
+WriteDataGroup(std::ostream& os, const DataGroup* data)
+{
+	static const char *DATAGROUP_START = "<datagroup>";
+	static const char *DATAGROUP_END   = "</datagroup>";
+	
+	// XXX don't have access to _indent
+	os << Indent(_indent) << DATAGROUP_START << std::endl;
+	
+	// Make sure children are indented.
+	++_indent;
+
+	
+
+	os << Indent(_indent) << DATAGROUP_END << std::endl;
+}
+#endif
+
+void
+GPlatesWriter::Visit(const DataGroup* /*data*/)
+{
+//	WriteDataGroup(_accum, data);
+}
+
+void
 GPlatesWriter::PrintOut(std::ostream& os)
 {
 	os << _accum.str();
-	return true;
 }

@@ -28,6 +28,7 @@
 
 #include <sstream>
 #include "WriterVisitor.h"
+#include "geo/DataGroup.h"
 
 namespace GPlatesFileIO
 {
@@ -43,11 +44,13 @@ namespace GPlatesFileIO
 	class GPlatesWriter : public WriterVisitor
 	{
 		public:
+			GPlatesWriter();
+
 			virtual
 			~GPlatesWriter() {  }
 
 			virtual void
-			Visit(const GPlatesGeo::LineData&);
+			Visit(const GPlatesGeo::DataGroup*);
 
 			/**
 			 * @warning After a call to PrintOut, no more "Visit()ing" can occur
@@ -55,7 +58,7 @@ namespace GPlatesFileIO
 			 *   std::ostringstream::freeze() is called on _accum.
 			 * @role ConcreteBuilder::GetResult() in the Builder pattern (p97).
 			 */
-			virtual bool
+			virtual void
 			PrintOut(std::ostream&);
 
 		private:
@@ -63,6 +66,12 @@ namespace GPlatesFileIO
 			 * Holds the accumulated information.
 			 */
 			std::ostringstream _accum;
+
+			/**
+			 * The current level of indentation.  Used to make the output
+			 * a bit more readable.
+			 */
+			int _indent;
 	};
 }
 
