@@ -35,15 +35,18 @@
 using namespace GPlatesMaths;
 
 GreatCircleArc
-GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
+GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2) {
 
-	real_t dotP = dot(u1, u2);
+	UnitVector3D u1 = p1.unitvector();
+	UnitVector3D u2 = p2.unitvector();
+
+	real_t dp = dot(u1, u2);
 
 	/*
 	 * First, we ensure that these two unit vectors do in fact define
 	 * a single unique great-circle arc.
 	 */
-	if (dotP >= 1.0) {
+	if (dp >= 1.0) {
 
 		// parallel => start-point same as end-point => no arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
@@ -51,7 +54,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 		oss << u1 << " and " << u2 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
-	if (dotP <= -1.0) {
+	if (dp <= -1.0) {
 
 		// antiparallel => start-point and end-point antipodal =>
 		// indeterminate arc
@@ -79,21 +82,24 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	 */
 	UnitVector3D rot_axis = v.normalise();
 
-	return GreatCircleArc(u1, u2, rot_axis);
+	return GreatCircleArc(p1, p2, rot_axis);
 }
 
 
 GreatCircleArc
-GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2,
+GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2,
 	UnitVector3D rot_axis) {
 
-	real_t dotP = dot(u1, u2);
+	UnitVector3D u1 = p1.unitvector();
+	UnitVector3D u2 = p2.unitvector();
+
+	real_t dp = dot(u1, u2);
 
 	/*
 	 * First, we ensure that these two unit vectors do in fact define
 	 * a single unique great-circle arc.
 	 */
-	if (dotP >= 1.0) {
+	if (dp >= 1.0) {
 
 		// start-point same as end-point => no arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
@@ -101,7 +107,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2,
 		oss << u1 << " and " << u2 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
-	if (dotP <= -1.0) {
+	if (dp <= -1.0) {
 
 		// start-point and end-point antipodal => indeterminate arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
@@ -128,5 +134,5 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2,
 		throw InvalidOperationException(oss.str().c_str());
 	}
 
-	return GreatCircleArc(u1, u2, rot_axis);
+	return GreatCircleArc(p1, p2, rot_axis);
 }

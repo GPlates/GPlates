@@ -58,8 +58,10 @@ Globe::NormaliseMeridianElevation()
 }
 
 static void
-CallVertexWithPoint(const UnitVector3D& uv)
+CallVertexWithPoint(const PointOnSphere& p)
 {
+	UnitVector3D uv = p.unitvector();
+
 	glVertex3d(
 		uv.x().dval(),
 		uv.y().dval(),
@@ -84,7 +86,7 @@ static void
 PaintPointDataPos(const Layout::PointDataPos& pointdata)
 {
 	const PointOnSphere& point = pointdata.second;
-	CallVertexWithPoint(point.unitvector());
+	CallVertexWithPoint(point);
 }
 
 

@@ -210,12 +210,13 @@ namespace GPlatesMaths
 	inline GreatCircleArc
 	operator*(const FiniteRotation &r, const GreatCircleArc &g) {
 
-		UnitVector3D rot_start    = r * g.startPoint();
-		UnitVector3D rot_end      = r * g.endPoint();
-		UnitVector3D rot_rot_axis = r * g.rotationAxis();
+		PointOnSphere start = r * g.startPoint();
+		PointOnSphere end   = r * g.endPoint();
 
-		return GreatCircleArc::CreateGreatCircleArc(rot_start, rot_end,
-		 rot_rot_axis);
+		UnitVector3D rot_axis = r * g.rotationAxis();
+
+		return
+		 GreatCircleArc::CreateGreatCircleArc(start, end, rot_axis);
 	}
 
 

@@ -27,6 +27,7 @@
 #define _GPLATES_MATHS_GREATCIRCLEARC_H_
 
 #include "types.h"  /* real_t */
+#include "PointOnSphere.h"
 #include "UnitVector3D.h"
 
 namespace GPlatesMaths
@@ -50,31 +51,31 @@ namespace GPlatesMaths
 	{
 		public:
 			static GreatCircleArc
-			CreateGreatCircleArc(UnitVector3D u1,
-			                     UnitVector3D u2);
+			CreateGreatCircleArc(PointOnSphere p1,
+			                     PointOnSphere p2);
 
 			static GreatCircleArc
-			CreateGreatCircleArc(UnitVector3D u1,
-			                     UnitVector3D u2,
+			CreateGreatCircleArc(PointOnSphere p1,
+			                     PointOnSphere p2,
 			                     UnitVector3D rot_axis);
 
-			UnitVector3D
-			startPoint() const { return _u1; }
+			PointOnSphere
+			startPoint() const { return _p1; }
 
-			UnitVector3D
-			endPoint() const { return _u2; }
+			PointOnSphere
+			endPoint() const { return _p2; }
 
 			UnitVector3D
 			rotationAxis() const { return _rot_axis; }
 
 		protected:
-			GreatCircleArc(UnitVector3D u1, UnitVector3D u2,
+			GreatCircleArc(PointOnSphere p1, PointOnSphere p2,
 			               UnitVector3D rot_axis)
-				: _u1(u1), _u2(u2),
+				: _p1(p1), _p2(p2),
 				  _rot_axis(rot_axis) {  }
 
 		private:
-			UnitVector3D _u1, _u2;
+			PointOnSphere _p1, _p2;
 			UnitVector3D _rot_axis;
 	};
 }

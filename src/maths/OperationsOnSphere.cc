@@ -127,21 +127,15 @@ OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(const
 	PolyLineOnSphere plos;
 
 	std::list< LatLonPoint >::const_iterator it = llpl.begin();
-
-	LatLonPoint p1 = *it;
-	UnitVector3D u1 = convertLatLongToUnitVector(p1.latitude(),
-	 p1.longitude());
+	PointOnSphere p1 = convertLatLonPointToPointOnSphere(*it);
 
 	for (it++; it != llpl.end(); it++) {
 
-		LatLonPoint p2 = *it;
-		UnitVector3D u2 = convertLatLongToUnitVector(p2.latitude(),
-		 p2.longitude());
-
-		GreatCircleArc g = GreatCircleArc::CreateGreatCircleArc(u1, u2);
+		PointOnSphere p2 = convertLatLonPointToPointOnSphere(*it);
+		GreatCircleArc g = GreatCircleArc::CreateGreatCircleArc(p1, p2);
 		plos.push_back(g);
 
-		u1 = u2;
+		p1 = p2;
 	}
 	return plos;
 }
