@@ -83,7 +83,7 @@ namespace GPlatesFileIO
 					 * failbit set.  We only want
 					 * to clear the failbit.
 					 */
-					_istr.clear(_istr.rdstate
+				  _istr.clear(_istr.rdstate()
 					 & ~std::ios::failbit);
 				}
 			}
