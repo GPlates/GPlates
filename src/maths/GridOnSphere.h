@@ -61,14 +61,7 @@ namespace GPlatesMaths
 	 * GC, and the first grid point along the SC.
 	 *
 	 * The <strong>origin</strong> of the grid is defined to be the
-	 * anterior intersection of the GC and the SC. If the normal vectors of
-	 * the GC and SC are \f$ \hat{n_G} \f$ and \f$ \hat{n_S} \f$
-	 * respectively, then the origin is given by
-	 * \f$ \hat{O} = \hat{n_G} \times \hat{n_S} \f$ (note the order!).
-	 * We assume that the grids are always <em>regular</em>, so the GC and
-	 * SC normals will be perpendicular, and so \f$ \hat{O} \f$ will indeed
-	 * be a unit vector (see \ref GPlatesMaths::UnitVector3D), and thus a
-	 * \ref GPlatesMaths::PointOnSphere.
+	 * anterior intersection of the GC and the SC.
 	 *
 	 * @image html fig_grid.png
 	 * @image latex fig_grid.eps
@@ -80,8 +73,10 @@ namespace GPlatesMaths
 			             const PointOnSphere &next_along_lon,
 			             const PointOnSphere &next_along_lat);
 
-			PointOnSphere
-			resolve(index_t x, index_t y) const;
+			PointOnSphere resolve(index_t x, index_t y) const;
+
+		protected:
+			void AssertInvariantHolds () const;
 
 		private:
 			GreatCircle _line_of_lon;
