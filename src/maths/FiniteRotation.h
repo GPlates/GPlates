@@ -29,6 +29,7 @@
 #include "UnitVector3D.h"
 #include "UnitQuaternion3D.h"
 #include "PointOnSphere.h"
+#include "GreatCircleArc.h"
 #include "types.h"  /* real_t */
 
 
@@ -112,7 +113,7 @@ namespace GPlatesMaths
 			 * This operation is not supposed to be symmetrical.
 			 *
 			 * On a Pentium IV processor, this should cost about
-			 * 113 clock cycles + the cost of two function calls.
+			 * 113 clock cycles + the cost of three function calls.
 			 */
 			UnitVector3D
 			operator*(const UnitVector3D &uv) const;
@@ -173,6 +174,36 @@ namespace GPlatesMaths
 	 */
 	FiniteRotation
 	operator*(const FiniteRotation &r1, const FiniteRotation &r2);
+
+
+	/**
+	 * Apply the given rotation to the given point-on-sphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	inline PointOnSphere
+	operator*(const FiniteRotation &r, const PointOnSphere &p) {
+
+		UnitVector3D rot_uv = r * p.unitvector();
+		return PointOnSphere(rot_uv);
+	}
+
+
+	/**
+	 * Apply the given rotation to the given great circle arc.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	inline GreatCircleArc
+	operator*(const FiniteRotation &r, const GreatCircleArc &g) {
+
+		UnitVector3D rot_start    = r * g.startPoint();
+		UnitVector3D rot_end      = r * g.endPoint();
+		UnitVector3D rot_rot_axis = r * g.rotationAxis();
+
+		return GreatCircleArc::CreateGreatCircleArc(rot_start, rot_end,
+		 rot_rot_axis);
+	}
 }
 
 #endif  // _GPLATES_MATHS_FINITEROTATION_H_
