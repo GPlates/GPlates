@@ -26,13 +26,20 @@
 
 #include <sstream>
 #include "DirVector3D.h"
+#include "UnitVector3D.h"
 #include "ViolatedDirVectorInvariantException.h"
 
 
-using namespace GPlatesMaths;
+GPlatesMaths::UnitVector3D
+GPlatesMaths::DirVector3D::normalise() const {
+
+	real_t scale = 1 / magnitude();
+	return UnitVector3D(scale * x(), scale * y(), scale * z());
+}
+
 
 void
-DirVector3D::AssertInvariantHolds() const {
+GPlatesMaths::DirVector3D::AssertInvariantHolds() const {
 
 	/**
 	 * On a Pentium IV processor, this FP comparison should cost about

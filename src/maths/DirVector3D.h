@@ -85,14 +85,7 @@ namespace GPlatesMaths
 			virtual real_t
 			magnitude() const { return _mag; }
 
-			virtual UnitVector3D
-			normalise() const {
-
-				real_t scale = 1 / magnitude();
-				return UnitVector3D (scale * v1.x (),
-				                     scale * v1.y (),
-				                     scale * v1.z ());
-			}
+			virtual UnitVector3D normalise() const;
 
 			DirVector3D &operator= (const Vector3D &v)
 			{
