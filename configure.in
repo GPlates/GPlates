@@ -5,7 +5,6 @@ AC_INIT([GPlates], [0.5], [http://sourceforge.net/tracker/?func=add&group_id=745
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_HEADERS(src/global/config.h)
-AC_CONFIG_AUX_DIR(config)
 
 # Check C++ compiler
 # Setting CXXFLAGS is necessary to circumvent autoconf using its

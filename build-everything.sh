@@ -1,7 +1,7 @@
 #! /bin/bash
 
 set -x
-aclocal -I config && \
+aclocal && \
 autoconf && \
 ./configure --enable-dev && \
 make dep && \

@@ -25,7 +25,7 @@ $(LIBNAME):	$(OBJS)
 
 include ../Rules
 
-distdir = ../@PACKAGE_TARNAME@-@PACKAGE_VERSION@/$(subdir)
+distdir = ../../@PACKAGE_TARNAME@-@PACKAGE_VERSION@/$(subdir)
 dist:	Makefile $(DISTFILES)
 	for file in $(DISTFILES) ; do \
 		ln $$file $(distdir) 2>/dev/null || \

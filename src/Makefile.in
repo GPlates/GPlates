@@ -5,7 +5,7 @@ prefix = @prefix@
 
 SUBDIRS = fileio geo global gui maths controls state
 
-DISTFILES = Makefile.in *.cc
+DISTFILES = Rules.in Makefile.in *.cc
 
 INCLUDES = -I.
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
@@ -68,6 +68,11 @@ dist:	Makefile $(DISTFILES)
 	for file in $(DISTFILES) ; do \
 		ln $$file $(distdir) 2>/dev/null || \
 			cp -p $$file $(distdir); \
+	done
+	for subdir in $(SUBDIRS) ; do \
+		mkdir $(distdir)/$$subdir || exit 1; \
+		chmod 777 $(distdir)/$$subdir; \
+		(cd $$subdir && $(MAKE) dist) || exit 1; \
 	done
 
 include Rules
