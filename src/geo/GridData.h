@@ -69,6 +69,10 @@ namespace GPlatesGeo
 			GPlatesMaths::PointOnSphere resolve (index_t x, index_t y) const
 					{ return _lattice.resolve (x, y); }
 
+			/// Return the grid lattice
+			const GPlatesMaths::GridOnSphere &getLattice () const
+							{ return _lattice; }
+
 			/**
 			 * Add @a elem to the grid.
 			 */
