@@ -121,6 +121,22 @@ namespace GPlatesMaths
 
 
 	inline bool
+	parallel(UnitVector3D uv, DirVector3D dv) {
+
+		return (dv.x() == dv.magnitude() * uv.x() &&
+		        dv.y() == dv.magnitude() * uv.y() &&
+		        dv.z() == dv.magnitude() * uv.z());
+	}
+
+
+	inline bool
+	parallel(DirVector3D dv, UnitVector3D uv) {
+
+		return parallel(uv, dv);
+	}
+
+
+	inline bool
 	antiparallel(UnitVector3D v1, UnitVector3D v2) {
 
 		return (v1.x() == -v2.x()
