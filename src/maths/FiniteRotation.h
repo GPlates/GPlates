@@ -110,6 +110,9 @@ namespace GPlatesMaths
 			 *        style of traditional matrix operations.
 			 *
 			 * This operation is not supposed to be symmetrical.
+			 *
+			 * On a Pentium IV processor, this should cost about
+			 * 111 clock cycles + the cost of two function calls.
 			 */
 			UnitVector3D
 			operator*(const UnitVector3D &uv) const;

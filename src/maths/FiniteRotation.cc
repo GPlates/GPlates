@@ -66,10 +66,30 @@ UnitVector3D
 FiniteRotation::operator*(const UnitVector3D &uv) const {
 
 	Vector3D v(uv);
+
+	/*
+	 * On a Pentium IV processor, the first line should cost about
+	 * (7 + 2 * 2) = 11 clock cycles;  the second should cost about
+	 * (17 + 7 + (7 + 2 * 2)) = 35 cycles (assuming an inlined Vector3D
+	 * dot-product is 17 cycles);  the third line should cost about 26
+	 * clock cycles + the cost of a function call (assuming a Vector3D
+	 * cross-product costs 26 cycles).
+	 *
+	 * Adding the lines should cost about (5 + 5 * 2) = 15 clock cycles
+	 * -- it's Vector3D addition, remember -- which gives an approximate
+	 * total cost of (11 + 35 + 26 + 15) = 85 clock cycles + the cost of
+	 * a function call.
+	 */
 	Vector3D v_rot = _d * v
 	               + (2.0 * dot(_quat.v(), v)) * _quat.v()
 	               + cross(_e, v);
 
+	/*
+	 * Assuming that these components do, in fact, represent a unit vector
+	 * (thus avoiding any exception-throwing craziness), the cost of the
+	 * creation of this unit vector should be about 26 clock cycles +
+	 * the cost of a function call.
+	 */
 	UnitVector3D uv_rot(v_rot.x(), v_rot.y(), v_rot.z());
 }
 
