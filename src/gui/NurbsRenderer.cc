@@ -29,12 +29,14 @@ using namespace GPlatesGui;
 namespace
 {
 	// Handle GLU NURBS errors
-	void
-	NurbsError(GLenum error) {
+	GLvoid
+	NurbsError() {
 
+		// XXX I'm not sure if glGetError actually returns the GLU 
+		// error codes as well as the GL codes.
 		std::cerr
 		 << "NURBS Error: "
-		 << gluErrorString(error)
+		 << gluErrorString(glGetError())
 		 << std::endl;
 
 		exit(1);  // FIXME: should this be an exception instead?
@@ -53,6 +55,8 @@ GPlatesGui::NurbsRenderer::NurbsRenderer() {
 	}
 	// Previously, the type-parameter of the cast was 'void (*)()'.
 	// On Mac OS X, the compiler complained, so it was changed to this.
+	// Update: Fixed the prototype of the NurbsError callback function 
+	// and removed the varargs ellipsis from the cast type.
 	gluNurbsCallback(_nr, GLU_ERROR,
-	 reinterpret_cast< GLvoid (*)(...) >(&NurbsError));
+	 reinterpret_cast< GLvoid (*)() >(&NurbsError));
 }

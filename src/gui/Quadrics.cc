@@ -27,12 +27,14 @@
 namespace
 {
 	// Handle GLU quadric errors
-	void
-	QuadricError(GLenum error) {
+	GLvoid
+	QuadricError() {
 
+		// XXX: Not sure if glGetError returns GLU error codes as well
+		// as GL codes.
 		std::cerr
 		 << "Quadric Error: "
-		 << gluErrorString(error)
+		 << gluErrorString(glGetError())
 		 << std::endl;
 
 		exit(1);  // FIXME: should this be an exception instead?
@@ -51,6 +53,8 @@ GPlatesGui::Quadrics::Quadrics() {
 	}
 	// Previously, the type-parameter of the cast was 'void (*)()'.
 	// On Mac OS X, the compiler complained, so it was changed to this.
+	// Update: Fixed the prototype of the QuadricError callback function 
+	// and removed the varargs ellipsis from the cast type.
 	gluQuadricCallback(_q, GLU_ERROR,
-	 reinterpret_cast< GLvoid (*)(...) >(&QuadricError));
+	 reinterpret_cast< GLvoid (*)() >(&QuadricError));
 }
