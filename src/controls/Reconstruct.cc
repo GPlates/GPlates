@@ -31,6 +31,7 @@
 
 using namespace GPlatesControls;
 
+
 void
 Reconstruct::Time(const GPlatesMaths::real_t&)
 {
@@ -38,7 +39,8 @@ Reconstruct::Time(const GPlatesMaths::real_t&)
 	 * NOTE: remember that this can be optimised if the time is 0.0:
 	 * still need to check which data is defined at 0.0, but no need
 	 * to rotate (since GPML and PLATES data are defined by their
-	 * position at time 0.0).
+	 * position at time 0.0).  If the time is 0.0, then a rotation
+	 * file is also not strictly necessary.
 	 */
 
 	if (GPlatesState::Data::GetDataGroup() == NULL) {
@@ -50,7 +52,7 @@ Reconstruct::Time(const GPlatesMaths::real_t&)
 
 		return;
 	}
-	if (GPlatesState::Data::GetRotHistories() == NULL) {
+	if (GPlatesState::Data::GetRotationHistories() == NULL) {
 
 		Dialogs::ErrorMessage("No rotation data",
 		 "Cannot perform a reconstruction, since there is no"
@@ -94,7 +96,7 @@ Reconstruct::Animation(const GPlatesMaths::real_t &start_time,
 
 		return;
 	}
-	if (GPlatesState::Data::GetRotHistories() == NULL) {
+	if (GPlatesState::Data::GetRotationHistories() == NULL) {
 
 		Dialogs::ErrorMessage("No rotation data",
 		 "Cannot perform a reconstruction, since there is no"
