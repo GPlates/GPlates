@@ -156,11 +156,16 @@ namespace
 			delete att_title;
 		}
 
-		GPlatesGeo::GridData *gdata =
-			GPlatesFileIO::NetCDFReader::Read (&ncf);
+		GPlatesGeo::GridData *gdata = 0;
+		std::ostringstream oss;
+		try {
+			gdata = GPlatesFileIO::NetCDFReader::Read (&ncf);
+		} catch (GPlatesFileIO::FileFormatException &e) {
+			e.Write (oss);
+		}
 		if (!gdata) {
 			Dialogs::ErrorMessage ("netCDF File",
-					"Loading Failed!", "...");
+				"Loading Failed!", oss.str ().c_str ());
 			return;
 		}
 

@@ -26,6 +26,7 @@
 
 #include <netcdfcpp.h>
 #include <sstream>
+#include "FileFormatException.h"
 #include "NetCDFReader.h"
 #include "geo/GeologicalData.h"
 #include "geo/GridData.h"
@@ -36,6 +37,7 @@
 #include "maths/PointOnSphere.h"
 
 using GPlatesGlobal::index_t;
+using GPlatesFileIO::FileFormatException;
 
 
 static GPlatesMaths::PointOnSphere pos (double lat, double lon)
@@ -47,7 +49,7 @@ static GPlatesMaths::PointOnSphere pos (double lat, double lon)
 
 GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 {
-#if 1
+#if 0
 	const char *vars[] = { "x_range", "y_range", "z_range",
 				"spacing", "dimension", "z" };
 	const char *types[] = { "**", "ncByte", "ncChar", "ncShort",
@@ -103,6 +105,61 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	double x_min, x_max, x_step, y_min, y_max, y_step;
 	index_t num_x, num_y;
 	NcValues *vals;
+	int checks;
+
+	// Check for necessary variables, and their types
+	checks = 0;
+	static const int decimal_mask = (1 << ncShort) | (1 << ncInt) |
+					(1 << ncFloat) | (1 << ncDouble);
+	static struct {
+		const char *name;
+		int types;	// bitmask of valid types (e.g. (1 << ncChar))
+		int min_values;	// minimum number of values required
+	} needed_vars[] = {
+		{ "x_range", decimal_mask, 2 },
+		{ "y_range", decimal_mask, 2 },
+		{ "z_range", decimal_mask, 0 },	// only get units from z_range
+		{ "spacing", decimal_mask, 2 },
+		{ "z", decimal_mask, 1 }
+	};
+	size_t num_needed_vars = sizeof (needed_vars) / sizeof (needed_vars[0]);
+	for (int i = 0; i < ncf->num_vars (); ++i) {
+		NcVar *var = ncf->get_var (i);
+		for (size_t j = 0; j < num_needed_vars; ++j) {
+			int mask = (1 << j);
+			if (checks & mask)
+				continue;
+			if (!strcmp (var->name (), needed_vars[j].name)) {
+				checks |= mask;
+				break;
+			}
+		}
+	}
+	for (size_t j = 0; j < num_needed_vars; ++j) {
+		if (!(checks & (1 << j))) {
+			// Missing variable!
+			std::ostringstream oss;
+			oss << "netCDF file is missing the '"
+				<< needed_vars[j].name << "' variable!";
+			throw FileFormatException (oss.str ().c_str ());
+		}
+		NcVar *var = ncf->get_var (needed_vars[j].name);
+		if (!(needed_vars[j].types & (1 << var->type ()))) {
+			// Bad type
+			std::ostringstream oss;
+			oss << "'" << needed_vars[j].name << "' variable has "
+								"wrong type!";
+			throw FileFormatException (oss.str ().c_str ());
+		}
+		if (var->num_vals () < needed_vars[j].min_values) {
+			// Not enough values
+			std::ostringstream oss;
+			oss << "'" << needed_vars[j].name << "' variable has "
+				"too few values (" << var->num_vals ()
+				<< "<" << needed_vars[j].min_values << ").";
+			throw FileFormatException (oss.str ().c_str ());
+		}
+	}
 
 	vals = ncf->get_var ("x_range")->values ();
 	x_min = vals->as_double (0);
@@ -117,6 +174,11 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	y_step = vals->as_double (1);
 	delete vals;
 
+	if (x_min > x_max)
+		x_step = -x_step;
+	if (y_min > y_max)
+		y_step = -y_step;
+
 	num_x = index_t ((x_max - x_min) / x_step + 1);
 	num_y = index_t ((y_max - y_min) / y_step + 1);
 
@@ -124,6 +186,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 				sc_step = pos (x_min + x_step, y_min),
 				gc_step = pos (x_min, y_min + y_step);
 
+	// TODO: verify that this attribute actually exists, before reading it!
 	NcAtt *z_unit_att = ncf->get_var ("z_range")->get_att ("units");
 	std::string z_units (z_unit_att->as_string (0));
 	delete z_unit_att;
@@ -135,8 +198,17 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 			GPlatesGeo::GeologicalData::Attributes_t (),
 			orig, sc_step, gc_step);
 	} catch (GPlatesGlobal::Exception &e) {
-		std::cerr << e << "\n";
-		return 0;
+		throw FileFormatException("Couldn't determine grid from file.");
+	}
+
+	// Check we have enough values
+	if (ncf->get_var ("z")->num_vals () < long (num_x * num_y)) {
+		std::ostringstream oss;
+		oss << "Data file has too few values ("
+			<< ncf->get_var ("z")->num_vals () << " < "
+			<< num_x * num_y << " = " << num_x << " * "
+			<< num_y << ").";
+		throw FileFormatException (oss.str ().c_str ());
 	}
 	
 	// FIXME: I'm taking a guess, and hoping that this all happens in
