@@ -172,6 +172,7 @@ namespace
 			wxPD_APP_MODAL | wxPD_CAN_ABORT | wxPD_ELAPSED_TIME |
 			wxPD_ESTIMATED_TIME | wxPD_REMAINING_TIME);
 
+		NcError ncerr (NcError::verbose_nonfatal);
 		GPlatesGeo::GridData *gdata = 0;
 		std::ostringstream oss;
 		bool cancelled = false;
@@ -183,6 +184,10 @@ namespace
 			e.Write (oss);
 		}
 		delete dlg;
+		if (ncerr.get_err () != NC_NOERR) {
+			std::cerr << "netCDF library error: "
+				<< nc_strerror (ncerr.get_err ()) << "\n";
+		}
 		if (!gdata && !cancelled) {
 			Dialogs::ErrorMessage ("netCDF File",
 				"Loading Failed!", oss.str ().c_str ());
