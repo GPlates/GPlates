@@ -47,8 +47,11 @@ namespace GPlatesGeo
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }
 
-			GPlatesMaths::PointOnSphere
+			const GPlatesMaths::PointOnSphere &
 			GetPointOnSphere() const { return _point; }
+
+			void
+			Rotate(const GPlatesMaths::FiniteRotation &) const;
 
 		private:
 			/** 

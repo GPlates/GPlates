@@ -21,10 +21,12 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include "PointData.h"
+#include "state/Layout.h"
+
 
 using namespace GPlatesGeo;
 
@@ -33,3 +35,11 @@ PointData::PointData(const DataType_t& dt, const RotationGroupId_t& id,
 	const GPlatesMaths::PointOnSphere& point)
 	: DataOnSphere(dt, id, tw, attrs), _point(point)
 { }
+
+
+void
+PointData::Rotate(const GPlatesMaths::FiniteRotation &rot) const {
+
+	GPlatesMaths::PointOnSphere pos = (rot * GetPointOnSphere());
+	GPlatesState::Layout::InsertPointDataPos(this, pos);
+}
