@@ -76,5 +76,31 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	real_t rot_angle = asin(v.magnitude());
 	UnitVector3D rot_axis = v.normalise();
 
-	return GreatCircleArc(u1, rot_axis, rot_angle);
+	/*
+	 * Note that together, u1 and u2 defined a plane, but they were not
+	 * necessarily perpendicular.  The rotation axis is defined to be
+	 * normal to the plane, and thus must be perpendicular to u1.
+	 *
+	 * Together, u1 and the rotation axis also define a plane, whose
+	 * normal we will denote y.  Since u1 and the rotation axis are
+	 * perpendicular, u1, y and the rotation axis together form a
+	 * right-handed orthonormal basis.
+	 *
+	 * The reason we choose to consider the normal y to the new plane
+	 * as the _second_ component of the basis (in effect, considering
+	 * it as the y-axis), is so that our rotation axis will be the
+	 * z-axis, and thus all rotation will take place in the xy-plane,
+	 * rotating from u1 (the x-axis) towards the normal y the y-axis).
+	 *
+	 * We shall calculate y using the cross-product, with the additional
+	 * knowledge that we _know_ that u1 is perpendicular to the rotation
+	 * axis, so the resulting vector will immediately have magnitude 1.
+	 */
+	real_t x_comp = rot_axis.y() * u1.z() - rot_axis.z() * u1.y();
+	real_t y_comp = rot_axis.z() * u1.x() - rot_axis.x() * u1.z();
+	real_t z_comp = rot_axis.x() * u1.y() - rot_axis.y() * u1.x();
+
+	UnitVector3D normal_y(x_comp, y_comp, z_comp);
+
+	return GreatCircleArc(u1, normal_y, rot_axis, rot_angle);
 }
