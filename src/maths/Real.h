@@ -29,9 +29,13 @@
 #include <iostream>
 #include <cmath>
 
+#include "global/types.h"
+
 
 namespace GPlatesMaths
 {
+	using namespace GPlatesGlobal;
+
 	/**
 	 * An instance of this class is a floating-point approximation
 	 * to an element of the field of real numbers.  The difference
@@ -68,7 +72,13 @@ namespace GPlatesMaths
 
 			Real(double d) : _dval(d) {  }
 
-			double dval() const { return _dval; }
+			explicit
+			Real(fpdata_t fpd) : _dval(fpd.dval()) {  }
+
+
+			double
+			dval() const { return _dval; }
+
 
 			Real &
 			operator+=(Real other) {
