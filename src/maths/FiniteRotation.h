@@ -96,6 +96,19 @@ namespace GPlatesMaths
 
 			/**
 			 * Apply this rotation to a point on the sphere.
+			 *
+			 * Note that this function is a member function for
+			 * two (2) reasons:
+			 *
+			 *  (i) to enable it to access the private member data
+			 *       '_d' and '_e'.
+			 *
+			 *  (ii) to enforce the concept that the operation of
+			 *        a finite rotation is APPLIED TO a point --
+			 *        it is very much a PREmultiplication, in the
+			 *        style of traditional matrix operations.
+			 *
+			 * This operation is not supposed to be symmetrical.
 			 */
 			PointOnSphere
 			operator*(const PointOnSphere &p) const;
@@ -113,7 +126,7 @@ namespace GPlatesMaths
 			real_t           _time;  // Millions of years ago
 
 			/*
-			 * And now for the mysterious values of 'd' and 'e'!...
+			 * And now for the mysterious values of '_d' and '_e' !
 			 *
 			 * These are only used to rotate points on the sphere,
 			 * and are calculated purely for optimisation purposes.
@@ -130,7 +143,22 @@ namespace GPlatesMaths
 	 *
 	 * Note: order of composition is important!
 	 * Quaternion multiplication is not commutative!
-	 * This operation is not symmetrical!
+	 * This operation is not commutative!
+	 *
+	 * This composition of rotations is very much in the style of matrix
+	 * composition by premultiplication: you take 'r2', then apply 'r1'
+	 * to it, in front of it.
+	 *
+	 * If 'r1' describes the rotation of a moving plate 'M1' with respect
+	 * to a fixed plate 'F1', and 'r2' describes the rotation of a moving
+	 * plate 'M2' with respect to 'F2', then:
+	 *
+	 *  + F1 should equal M2  ("should equal" instead of "must equal",
+	 *     since this function cannot enforce this equality).
+	 *
+	 *  + if the result of this operation is called 'rr', then 'rr' will
+	 *     describe the motion of the moving plate 'M1' with respect to
+	 *     the fixed plate 'F2'.
 	 */
 	FiniteRotation
 	operator*(const FiniteRotation &r1, const FiniteRotation &r2);
