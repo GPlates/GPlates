@@ -34,7 +34,7 @@ namespace GPlatesFileIO
 	 */
 	class Reader
 	{
-		private:
+		protected:
 			Reader() { }
 	};
 }

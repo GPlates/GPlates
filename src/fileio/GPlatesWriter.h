@@ -20,12 +20,13 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   Hamish Law <hlaw@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_FILEIO_PLATESWRITER_H_
-#define _GPLATES_FILEIO_PLATESWRITER_H_
+#ifndef _GPLATES_FILEIO_GPLATESWRITER_H_
+#define _GPLATES_FILEIO_GPLATESWRITER_H_
 
+#include <sstream>
 #include "WriterVisitor.h"
 
 namespace GPlatesFileIO
@@ -39,13 +40,14 @@ namespace GPlatesFileIO
 	 *   - ConcreteBuilder in the Builder pattern (p97).
 	 *   - ConcreteVisitor1 in the Visitor pattern (p331).
 	 */
-	class PlatesWriter : public WriterVisitor
+	class GPlatesWriter : public WriterVisitor
 	{
 		public:
-			using namespace GPlatesGeo;
+			virtual
+			~GPlatesWriter() {  }
 
 			virtual void
-			Visit(const LineData&);
+			Visit(const GPlatesGeo::LineData&);
 
 			/**
 			 * @warning After a call to PrintOut, no more "Visit()ing" can occur

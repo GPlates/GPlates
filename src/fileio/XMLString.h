@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /**
- * \file 
+ * @file 
  * File specific comments.
  *
  * Most recent change:
@@ -23,37 +23,33 @@
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_FILEIO_GPLATESREADER_H_
-#define _GPLATES_FILEIO_GPLATESREADER_H_
+#ifndef _GPLATES_FILEIO_XMLSTRING_H_
+#define _GPLATES_FILEIO_XMLSTRING_H_
 
 #include <iostream>
-#include <string>
-#include "Reader.h"
-#include "geo/DataGroup.h"
+#include <xercesc/util/XMLString.hpp>
 
 namespace GPlatesFileIO
 {
-	/** 
-	 * GPlatesReader is responsible for converting an input stream in
-	 * the GPlates data format into the GPlates internal representation.
-	 */
-	class GPlatesReader : public Reader
+	class XMLString
 	{
 		public:
-			GPlatesReader(const std::string& filepath)
-				: _filepath(filepath) {  }
+			XMLString(const XMLCh *const str) 
+				: _str(xercesc::XMLString::transcode(str)) {  }
 
-			/**
-			 * Fill a DataGroup.
-			 * @role ConcreteCreator::FactoryMethod() in the Factory
-			 *   Method design pattern (p107).
-			 */
-			void
-			Read(GPlatesGeo::DataGroup&);
+			~XMLString() { xercesc::XMLString::release(&_str); }
+
+			const char*
+			c_str() const { return _str; }
 
 		private:
-			std::string _filepath;
+			char *_str;
 	};
+
+	inline std::ostream&
+	operator<<(std::ostream& os, const XMLString& str) {
+		return os << str.c_str();
+	}
 }
 
-#endif  // _GPLATES_FILEIO_GPLATESREADER_H_
+#endif  // _GPLATES_FILEIO_XMLSTRING_H_

@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /**
- * \file 
+ * @file 
  * File specific comments.
  *
  * Most recent change:
@@ -23,37 +23,30 @@
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_FILEIO_GPLATESREADER_H_
-#define _GPLATES_FILEIO_GPLATESREADER_H_
+#ifndef _GPLATES_FILEIO_ERRORHANDLER_H_
+#define _GPLATES_FILEIO_ERRORHANDLER_H_
 
-#include <iostream>
-#include <string>
-#include "Reader.h"
-#include "geo/DataGroup.h"
+#include <xercesc/sax/HandlerBase.hpp>
+#include <xercesc/sax/SAXParseException.hpp>
 
 namespace GPlatesFileIO
 {
-	/** 
-	 * GPlatesReader is responsible for converting an input stream in
-	 * the GPlates data format into the GPlates internal representation.
-	 */
-	class GPlatesReader : public Reader
+	class ErrorHandler : public xercesc::HandlerBase
 	{
 		public:
-			GPlatesReader(const std::string& filepath)
-				: _filepath(filepath) {  }
-
 			/**
-			 * Fill a DataGroup.
-			 * @role ConcreteCreator::FactoryMethod() in the Factory
-			 *   Method design pattern (p107).
+			 * Error handler interface.
 			 */
-			void
-			Read(GPlatesGeo::DataGroup&);
 
-		private:
-			std::string _filepath;
+			void
+			warning(const xercesc::SAXParseException& ex);
+
+			void
+			error(const xercesc::SAXParseException& ex);
+
+			void
+			fatalError(const xercesc::SAXParseException& ex);
 	};
 }
 
-#endif  // _GPLATES_FILEIO_GPLATESREADER_H_
+#endif  // _GPLATES_FILEIO_ERRORHANDLER_H_

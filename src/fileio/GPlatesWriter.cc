@@ -24,9 +24,10 @@
  */
 
 #include <string>
-#include "PlatesWriter.h"
+#include "GPlatesWriter.h"
 
 using namespace GPlatesFileIO;
+using namespace GPlatesGeo;
 
 /**
  * Pen command for 'draw to'.
@@ -44,8 +45,9 @@ static const std::string SKIP_TO_POINT = "3";
 static const std::string LINE_END = "  99.0000  99.0000 3";
 
 void
-PlatesWriter::Visit(const LineData& linedata)
+GPlatesWriter::Visit(const LineData&)
 {
+#if 0
 	PointOnSphere point;
 	
 	// Output line header information
@@ -78,10 +80,11 @@ PlatesWriter::Visit(const LineData& linedata)
 			<< point.GetLongitude() << " " << DRAW_TO_POINT << std::endl;
 	}
 	_accum << LINE_END << std::endl;
+#endif
 }
 
 bool
-PlatesWriter::PrintOut(std::ostream& os)
+GPlatesWriter::PrintOut(std::ostream& os)
 {
 	os << _accum.str();
 	return true;
