@@ -45,7 +45,6 @@ namespace GPlatesMaths
 			Basis(DirVector3D &vec1, DirVector3D &vec2)
 				: _v1(vec1), _v2(vec2)
 			{
-
 				AssertInvariantHolds();
 			}
 
@@ -59,7 +58,7 @@ namespace GPlatesMaths
 			AssertInvariantHolds() const;
 
 		private:
-			DirVector3D &_v1, &_v2;
+			DirVector3D _v1, _v2;
 	};
 }
 

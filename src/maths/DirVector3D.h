@@ -80,13 +80,6 @@ namespace GPlatesMaths
 				AssertInvariantHolds();
 			}
 
-			DirVector3D(const DirVector3D &other)
-				: _x(other._x), _y(other._y), _z(other._z)
-			{
-				_mag = other.magnitude ();
-				AssertInvariantHolds();
-			}
-
 			real_t
 			x() const { return _x; }
 
