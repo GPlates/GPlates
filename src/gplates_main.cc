@@ -69,9 +69,11 @@
  */
 
 #include <cstdlib>  /* EXIT_SUCCESS */
+#include <iostream>
 
 int
 main()
 {
+	std::cout << "This is GPlates!\n";
 	return EXIT_SUCCESS;
 }

@@ -87,7 +87,8 @@ AC_MSG_RESULT(yes)
 
 
 # Write output
-AC_OUTPUT(Makefile)	# other Makefiles?
+AC_OUTPUT(Makefile
+	src/Makefile)
 
 
 

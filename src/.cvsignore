@@ -1,0 +1,4 @@
+*.o
+Makefile
+depend.1
+gplates

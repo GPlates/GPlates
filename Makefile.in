@@ -1,6 +1,6 @@
 @SET_MAKE@
 
-SUBDIRS = src doc
+SUBDIRS = src
 
 DISTFILES = COPYING ChangeLog Makefile.in README TODO aclocal.m4 \
 	configure configure.in install-sh
