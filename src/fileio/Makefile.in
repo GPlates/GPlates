@@ -9,9 +9,9 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = GPlatesReader.o GPlatesWriter.o NetCDFReader.o PlatesBoundaryParser.o \
-	PlatesDataTypes.o PlatesParserUtils.o PlatesPostParseTranslator.o \
-	PlatesRotationParser.o XMLParser.o
+OBJS = GPlatesReader.o GPlatesWriter.o NetCDFReader.o NetCDFWriter.o \
+	PlatesBoundaryParser.o PlatesDataTypes.o PlatesParserUtils.o \
+	PlatesPostParseTranslator.o PlatesRotationParser.o XMLParser.o
 
 LIBNAME = libfileio.a
 

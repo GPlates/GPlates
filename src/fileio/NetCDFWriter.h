@@ -8,7 +8,7 @@
  *   $Author$
  *   $Date$
  * 
- * Copyright (C) 2003 The GPlates Consortium
+ * Copyright (C) 2004 The GPlates Consortium
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License,
@@ -23,30 +23,30 @@
  *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_FILEIO_NETCDFREADER_H_
-#define _GPLATES_FILEIO_NETCDFREADER_H_
+#ifndef _GPLATES_FILEIO_NETCDFWRITER_H_
+#define _GPLATES_FILEIO_NETCDFWRITER_H_
 
+#include <string>
 #include <wx/progdlg.h>
 #include "geo/GridData.h"
-
-class NcFile;
 
 namespace GPlatesFileIO
 {
 	/** 
-	 * NetCDFReader is responsible for converting an input stream in
-	 * the NetCDF data format into the GPlates internal representation.
+	 * NetCDFWriter is responsible for outputting a GridData object,
+	 * in the netCDF data format.
 	 */
-	class NetCDFReader
+	class NetCDFWriter
 	{
 		public:
 			/**
-			 * Create a GridData object.
-			 * Return NULL on error.
+			 * Output a GridData object.
+			 * Return false on error.
 			 */
-			static GPlatesGeo::GridData *Read (NcFile *ncf,
-						wxProgressDialog *dlg = 0);
+			static bool Write (const std::string &filename,
+					GPlatesGeo::GridData *grid,
+					wxProgressDialog *dlg = 0);
 	};
 }
 
-#endif  // _GPLATES_FILEIO_NETCDFREADER_H_
+#endif  // _GPLATES_FILEIO_NETCDFWRITER_H_
