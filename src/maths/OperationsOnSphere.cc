@@ -96,3 +96,19 @@ OperationsOnSphere::convertLatLongToUnitVector(const real_t& latitude,
 
 	return UnitVector3D(x_comp, y_comp, z_comp);
 }
+
+
+UnitVector3D
+OperationsOnSphere::convertLatLongPointToUnitVector(const LatLonPoint &p) {
+
+	real_t lat_angle = degreesToRadians(p.latitude());
+	real_t long_angle = degreesToRadians(p.longitude());
+
+	real_t radius_of_small_circle_of_latitude = cos(lat_angle);
+
+	real_t x_comp = radius_of_small_circle_of_latitude * cos(long_angle);
+	real_t y_comp = radius_of_small_circle_of_latitude * sin(long_angle);
+	real_t z_comp = sin(lat_angle);  // height above equator
+
+	return UnitVector3D(x_comp, y_comp, z_comp);
+}

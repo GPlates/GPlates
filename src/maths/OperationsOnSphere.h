@@ -33,6 +33,7 @@ namespace GPlatesMaths
 	class LatLonPoint {
 
 		public:
+
 			static LatLonPoint
 			CreateLatLonPoint(const real_t &lat, const real_t &lon);
 
@@ -54,7 +55,7 @@ namespace GPlatesMaths
 
 		private:
 
-			real_t _lat, _lon;
+			real_t _lat, _lon;  // in degrees
 	};
 
 
@@ -62,6 +63,10 @@ namespace GPlatesMaths
 	{
 		UnitVector3D convertLatLongToUnitVector(const real_t& latitude,
 		 const real_t& longitude);
+
+
+		UnitVector3D convertLatLongPointToUnitVector(const
+		 LatLonPoint &p);
 	}
 }
 
