@@ -22,7 +22,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_TYPES_H_
@@ -30,6 +30,7 @@
 
 #include <utility>  // std::pair
 #include "geo/Vector2D.h"
+#include "Real.h"
 
 namespace GPlatesMaths
 {
@@ -39,6 +40,11 @@ namespace GPlatesMaths
 	 * fleshed-out class in the end.
 	 */
 	typedef std::pair<GPlatesGeo::Vector2D, GPlatesGeo::Vector2D> Basis2D_t;
+
+	/**
+	 * A floating-point approximation to the field of reals.
+	 */
+	typedef Real real_t;
 }
 
 #endif  // _GPLATES_MATHS_TYPES_H_
