@@ -74,7 +74,7 @@ namespace
 		else if (lon > 180.0)
 			lon -= 360.0;
 
-		return GPlatesMaths::LatLonPoint::CreateLatLonPoint(lat, lon);
+		return GPlatesMaths::LatLonPoint::LatLonPoint(lat, lon);
 	}
 
 	void

@@ -242,7 +242,7 @@ namespace
 				"in range (-180.0, 180.0]", line);
 		}
 		
-		return LatLonPoint::CreateLatLonPoint(lat, lon);
+		return LatLonPoint::LatLonPoint(lat, lon);
 	}
 
 	

@@ -38,8 +38,7 @@ namespace GPlatesMaths
 
 		public:
 
-			static LatLonPoint
-			CreateLatLonPoint(const real_t &lat, const real_t &lon);
+			LatLonPoint(const real_t &lat, const real_t &lon);
 
 			/**
 			 * Return whether a given value is a valid latitude.
@@ -61,13 +60,6 @@ namespace GPlatesMaths
 
 			real_t
 			longitude() const { return _lon; }
-
-			// no default constructor
-
-		protected:
-
-			LatLonPoint(const real_t &lat, const real_t &lon)
-			 : _lat(lat), _lon(lon) {  }
 
 		private:
 
@@ -101,6 +93,12 @@ namespace GPlatesMaths
 		PolyLineOnSphere convertLatLonPointListToPolyLineOnSphere(const
 		 std::list< LatLonPoint > &llpl);
 	}
+
+	/// The north pole (latitude \f$ 90^\circ \f$)
+	static const PointOnSphere NorthPole = OperationsOnSphere::convertLatLonPointToPointOnSphere (LatLonPoint (90.0, 0.0));
+	/// The south pole (latitude \f$ -90^\circ \f$)
+	static const PointOnSphere SouthPole = OperationsOnSphere::convertLatLonPointToPointOnSphere (LatLonPoint (-90.0, 0.0));
+
 }
 
 #endif  // _GPLATES_MATHS_OPERATIONSONSPHERE_H_

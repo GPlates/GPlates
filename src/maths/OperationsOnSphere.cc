@@ -22,6 +22,7 @@
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <sstream>
@@ -33,9 +34,8 @@
 
 using namespace GPlatesMaths;
 
-LatLonPoint
-GPlatesMaths::LatLonPoint::CreateLatLonPoint
-			(const real_t &lat, const real_t &lon)
+GPlatesMaths::LatLonPoint::LatLonPoint (const real_t &lat, const real_t &lon)
+	: _lat(lat), _lon(lon)
 {
 
 	if ( ! LatLonPoint::isValidLat(lat)) {
@@ -56,8 +56,6 @@ GPlatesMaths::LatLonPoint::CreateLatLonPoint
 
 		throw InvalidLatLonException(oss.str().c_str());
 	}
-
-	return LatLonPoint(lat, lon);
 }
 
 
@@ -172,5 +170,5 @@ GPlatesMaths::OperationsOnSphere::convertPointOnSphereToLatLonPoint
 	lat = radiansToDegrees(lat);
 	lon = radiansToDegrees(lon);
 	
-	return LatLonPoint::CreateLatLonPoint(lat, lon);
+	return LatLonPoint::LatLonPoint(lat, lon);
 }
