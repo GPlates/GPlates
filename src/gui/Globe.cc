@@ -48,7 +48,7 @@ QuadricError(GLenum error)
 
 Globe::Globe(Colour colour, GLfloat radius, GLint slices, GLint stacks)
 	: _colour(colour), _radius(radius), _meridian(0.0), _elevation(0.0),
-	  _grid(180.0f/stacks, 360.0f/slices)
+	  _grid(5, 6)
 {
 	_sphere = gluNewQuadric();
 	gluQuadricNormals(_sphere, GLU_SMOOTH);	// Generate normals for lighting
