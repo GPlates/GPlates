@@ -25,7 +25,6 @@
 #include "RotationSequence.h"
 #include "StageRotation.h"  /* interpolate */
 #include "InvalidOperationException.h"
-#include "global/ControlFlowException.h"
 
 
 GPlatesMaths::RotationSequence::RotationSequence(const rid_t &fixed_plate,
@@ -50,14 +49,16 @@ GPlatesMaths::RotationSequence::RotationSequence(const rid_t &fixed_plate,
 GPlatesMaths::RotationSequence &
 GPlatesMaths::RotationSequence::operator=(const RotationSequence &other) { 
 
-	_fixed_plate = other._fixed_plate;
-	_most_recent_time = other._most_recent_time;
-	_most_distant_time = other._most_distant_time;
+	if (&other != this) {
 
-	SharedSequence *ss = _shared_seq;
-	shareOthersSharedSeq(other);
-	decrementSharedSeqRefCount(ss);
+		_fixed_plate = other._fixed_plate;
+		_most_recent_time = other._most_recent_time;
+		_most_distant_time = other._most_distant_time;
 
+		SharedSequence *ss = _shared_seq;
+		shareOthersSharedSeq(other);
+		decrementSharedSeqRefCount(ss);
+	}
 	return *this;
 }
 
@@ -98,19 +99,22 @@ GPlatesMaths::RotationSequence::finiteRotationAtTime(real_t t) const {
 			throw InvalidOperationException(oss.str().c_str());
 		}
 
+		// Interpolate between most recent (which is assumed to be
+		// at time 0) and the next most recent.
 		seq_type::const_iterator most_recent = _shared_seq->begin();
-		seq_type::const_iterator next = most_recent;
-		next++;
 
-		return interpolate(*most_recent, *next, t);
+		seq_type::const_iterator next_most_recent = most_recent;
+		next_most_recent++;
+
+		return interpolate(*most_recent, *next_most_recent, t);
 	}
 
+	/*
+	 * Otherwise, t >= 0.  See if 't' matches the most recent finite
+	 * rotation (there will always be at least one finite rotation in
+	 * a rotation sequence).
+	 */
 	seq_type::const_iterator curr_rot = _shared_seq->begin();
-	if (t == (*curr_rot).time()) {
-
-		// direct hit! first time! You got the touch!
-		return (*curr_rot);
-	}
 	if (t < (*curr_rot).time()) {
 
 		std::ostringstream oss;
@@ -122,24 +126,41 @@ GPlatesMaths::RotationSequence::finiteRotationAtTime(real_t t) const {
 
 		throw InvalidOperationException(oss.str().c_str());
 	}
+	if (t == (*curr_rot).time()) {
 
+		// An exact match.
+		return (*curr_rot);
+	}
+
+	/*
+	 * Imagine this whole finite rotation thing like a series of
+	 * fence-posts with horizontal rails between them: |--|--|--|
+	 * (great asky-art, huh?)
+	 *
+	 * Each fence-post is a finite rotation, and each rail is the
+	 * interpolation between adjacent posts.  We want to check whether
+	 * the point representing 't' lies on this fence, or outside it.
+	 * We've already checked the first fence-post, and we know that 't'
+	 * lies after this first fence-post.  Now we will compare 't' with
+	 * all the remaining rails and posts.
+	 */
+
+	// This is the most recent post which has already been considered.
 	seq_type::const_iterator prev_rot = curr_rot;
+
+	// This is the very last post.
 	seq_type::const_iterator seq_end = _shared_seq->end();
 	for (curr_rot++; curr_rot != seq_end; prev_rot = curr_rot++) {
 
-		if (t == (*curr_rot).time()) {
-
-			// direct hit!
-			return (*curr_rot);
-		}
 		if (t < (*curr_rot).time()) {
 
 			/*
-			 * The time for which we're searching ('t')
-			 * lies in-between the time of the previous finite
-			 * rotation and the time of the current finite
-			 * rotation.  Hence we need to interpolate with
-			 * a stage rotation.
+			 * The time for which we're searching ('t') lies
+			 * in-between the time of the previous finite
+			 * rotation (the most recent post) and the time of
+			 * the current finite rotation (the next post) --
+			 * on a rail, if you like.  Hence we need to
+			 * interpolate with a stage rotation.
 			 *
 			 * As we iterate through the sequence, we're moving
 			 * back in time, away from the present.  So 'curr_rot'
@@ -147,31 +168,23 @@ GPlatesMaths::RotationSequence::finiteRotationAtTime(real_t t) const {
 			 */
 			return interpolate(*prev_rot, *curr_rot, t);
 		}
+		if (t == (*curr_rot).time()) {
+
+			// An exact match.
+			return (*curr_rot);
+		}
 	}
-
-	if (t > (*prev_rot).time()) {
-
-		std::ostringstream oss;
-		oss << "Attempted to obtain a finite rotation for the time "
-		 << t << ",\n"
-		 << "which is outside the time-span of this rotation sequence: "
-		 << "[" << _most_recent_time << "Ma, "
-		 << _most_distant_time << "Ma].";
-
-		throw InvalidOperationException(oss.str().c_str());
-	}
-
 	/*
-	 * It should not be possible to reach the end of this function:
-	 * Logically, 't' must be one of:
-	 *  - more recent than this rotation sequence -> exception
-	 *  - more distant than this rotation sequence -> exception
-	 *  - within the time-span of this rotation sequence -> return
-	 *     a finite rotation
-	 *
-	 * So, if control flow gets to the end of this function, the
-	 * programmer has made a mistake.
+	 * Else, we've passed the last fence-post, and none of them were
+	 * greater-than or equal-to 't', which means that 't' was greater
+	 * than them all.  [Tweedledee: "That's logic."]
 	 */
-	throw ControlFlowException("Reached the end of the function "
-	 "RotationSequence::finiteRotationAtTime");
+	std::ostringstream oss;
+	oss << "Attempted to obtain a finite rotation for the time "
+	 << t << ",\n"
+	 << "which is outside the time-span of this rotation sequence: "
+	 << "[" << _most_recent_time << "Ma, "
+	 << _most_distant_time << "Ma].";
+
+	throw InvalidOperationException(oss.str().c_str());
 }
