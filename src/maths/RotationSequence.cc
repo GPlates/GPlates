@@ -57,24 +57,37 @@ GPlatesMaths::RotationSequence::operator=(const RotationSequence &other) {
 
 		SharedSequence *ss = _shared_seq;
 		shareOthersSharedSeq(other);
-		decrementSharedSeqRefCount(ss);
+		relinquish(ss);
 	}
 	return *this;
 }
 
 
-void
-GPlatesMaths::RotationSequence::insert(const FiniteRotation &frot) {
+bool
+GPlatesMaths::RotationSequence::edgeProperties(real_t t, EdgeType mode) const {
 
-	_shared_seq->insert(frot);
-	if (frot.time() < _most_recent_time) {
+	// First, deal with times in the future.
+	if (t < 0.0) {
 
-		_most_recent_time = frot.time();
+		/*
+		 * Either:
+		 *  (i) this sequence IS defined in the future, which means
+		 *   it's defined at ALL times in the future, which means there
+		 *   cannot be an edge at the current point in time;
+		 * or:
+		 *  (ii) this sequence IS NOT defined in the future, which
+		 *   means there cannot be an edge at the current point in
+		 *   time.
+		 *
+		 * Either way, the answer is, uh, 'false'.
+		 */
+		return false;
 	}
-	if (frot.time() > _most_distant_time) {
 
-		_most_distant_time = frot.time();
-	}
+	if ((mode & EARLIER_EDGE) && (t == _most_recent_time)) return true;
+	if ((mode & LATER_EDGE) && (t == _most_distant_time)) return true;
+
+	return false;
 }
 
 
@@ -187,4 +200,15 @@ GPlatesMaths::RotationSequence::finiteRotationAtTime(real_t t) const {
 	 << _most_distant_time << "Ma].";
 
 	throw InvalidOperationException(oss.str().c_str());
+}
+
+
+void
+GPlatesMaths::RotationSequence::insert(const FiniteRotation &frot) {
+
+	_shared_seq->insert(frot);
+
+	// Update '_most_recent_time' and '_most_distant_time' as appropriate.
+	if (frot.time() < _most_recent_time) _most_recent_time = frot.time();
+	if (frot.time() > _most_distant_time) _most_distant_time = frot.time();
 }

@@ -91,7 +91,7 @@ namespace GPlatesMaths
 
 					seq_type _seq;
 
-					/*
+					/**
 					 * Whether the sequence of finite
 					 * rotations has been modified since
 					 * it was last sorted -- if it has
@@ -101,7 +101,7 @@ namespace GPlatesMaths
 
 				public:
 
-					/*
+					/**
 					 * The number of references to an
 					 * instance of this object.
 					 */
@@ -157,6 +157,31 @@ namespace GPlatesMaths
 			};
 
 		public:
+			/**
+			 * The elements of this enumeration represent the
+			 * possible edge-properties which a rotation sequence
+			 * may possess at a given point in time.
+			 *
+			 * Note that these properties are not mutually
+			 * exclusive: they may be combined using bitwise OR
+			 * ('|').  A sequence at a given point in time may
+			 * possess none, either or both of these properties.
+			 *
+			 * This enumeration is part of a kludge used to handle
+			 * "cross-over" points (the points in time at which one
+			 * sequence ends and another begins).
+			 *
+			 * FIXME: handle cross-overs in a less-sucky way.
+			 */
+			enum EdgeType {
+
+				// The earlier of the two edges
+				EARLIER_EDGE = 1,
+
+				// The later of the two edges
+				LATER_EDGE = 2
+			};
+
 
 			/**
 			 * Create a rotation sequence for motion of the given
@@ -192,7 +217,7 @@ namespace GPlatesMaths
 			 */
 			~RotationSequence() {
 
-				decrementSharedSeqRefCount(_shared_seq);
+				relinquish(_shared_seq);
 			}
 
 
@@ -200,29 +225,57 @@ namespace GPlatesMaths
 			 * Explicitly define an assignment operator, since
 			 * we're doing ref-counting magic.
 			 */
-			RotationSequence &
-			operator=(const RotationSequence &other);
+			RotationSequence &operator=(const RotationSequence
+			 &other);
 
 
+			/**
+			 * Return the most recent point in time at which this
+			 * rotation sequence is defined.
+			 */
 			real_t
-			mostRecentTime() const { return _most_recent_time; }
+			mostRecentTime() const {
+
+				return _most_recent_time;
+			}
 
 
+			/**
+			 * Return the most distant point in time at which this
+			 * rotation sequence is defined.
+			 */
 			real_t
-			mostDistantTime() const { return _most_distant_time; }
+			mostDistantTime() const {
+
+				return _most_distant_time;
+			}
 
 
+			/**
+			 * Return the plate id of the fixed plate for this
+			 * rotation sequence.
+			 */
 			rid_t
-			fixedPlate() const { return _fixed_plate; }
+			fixedPlate() const {
+
+				return _fixed_plate;
+			}
 
 
+			/**
+			 * Return the plate id of the moving plate for this
+			 * rotation sequence.
+			 */
 			rid_t
-			movingPlate() const { return _moving_plate; }
+			movingPlate() const {
+
+				return _moving_plate;
+			}
 
 
 			/**
 			 * Returns whether this rotation sequence is "defined"
-			 * at a particular point in time.
+			 * at a particular point in time @a t.
 			 *
 			 * A rotation sequence is a continuous sequence which
 			 * spans a certain period of time.  It is "defined"
@@ -237,9 +290,36 @@ namespace GPlatesMaths
 					// It's a time in the future.
 					return isDefinedInFuture();
 				}
+
 				return (_most_recent_time <= t &&
 				        t <= _most_distant_time);
 			}
+
+
+			/**
+			 * This function is used to query the edge-properties
+			 * of a rotation sequence at a particular point in time
+			 * @a t.
+			 *
+			 * Its interface is based upon that of the standard
+			 * UNIX system-call 'access(2)'.  @a mode is a mask
+			 * consisting of one or more of the elements of the
+			 * enumeration @a EdgeType.
+			 *
+			 * However, in contrast to the 'access' syscall, this
+			 * function will return true if the sequence possesses
+			 * <em>any</em> of the specified properties at the
+			 * current point in time (the 'access' syscall requires
+			 * <em>all</em> the specified permissions to be granted
+			 * for it to return true).
+			 *
+			 * This function is part of a kludge used to handle
+			 * "cross-over" points (the points in time at which
+			 * one sequence ends and another begins).
+			 *
+			 * FIXME: handle cross-overs in a less-sucky way.
+			 */
+			bool edgeProperties(real_t t, EdgeType mode) const;
 
 
 			/**
@@ -261,25 +341,23 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Insert another finite rotation into the sequence.
-			 */
-			void insert(const FiniteRotation &frot);
-
-
-			/**
-			 * If this rotation sequence is defined at time 't',
-			 * calculate the finite rotation for time 't'.
+			 * If this rotation sequence is defined at time @a t,
+			 * calculate the finite rotation for time @a t.
 			 *
 			 * @throws InvalidOperationException if @a t is negative
 			 *   (i.e. in the future) and @p isDefinedInFuture()
 			 *   returns false.
 			 * @throws InvalidOperationException if @a t is outside
 			 *   the time-span of the rotation sequence.
-			 * @throws ControlFlowException if, against all reason and
-			 *   good taste, the flow of the execution makes it's way
-			 *   into Never-Never Land.
 			 */
 			FiniteRotation finiteRotationAtTime(real_t t) const;
+
+
+			/**
+			 * Insert another finite rotation @a frot into this
+			 * rotation sequence.
+			 */
+			void insert(const FiniteRotation &frot);
 
 		private:
 
@@ -292,6 +370,11 @@ namespace GPlatesMaths
 			SharedSequence *_shared_seq;
 
 
+			/**
+			 * "Share" (in the sense of taking part-ownership of)
+			 * the SharedSequence belonging to @a other.  [Insert
+			 * political humour -> here <-.]
+			 */
 			void
 			shareOthersSharedSeq(const RotationSequence &other) {
 
@@ -300,8 +383,11 @@ namespace GPlatesMaths
 			}
 
 
+			/**
+			 * Give up any ownership of SharedSequence @a ss.
+			 */
 			void
-			decrementSharedSeqRefCount(SharedSequence *ss) {
+			relinquish(SharedSequence *ss) {
 
 				if (--(ss->_ref_count) == 0) {
 
@@ -313,18 +399,6 @@ namespace GPlatesMaths
 				}
 			}
 	};
-
-
-	/**
-	 * Although this operation doesn't strictly make sense for a
-	 * RotationSequence, it is provided to enable RotationSequences to be
-	 * sorted by STL algorithms.
-	 */
-	inline bool
-	operator<(const RotationSequence &rs1, const RotationSequence &rs2) {
-
-		return (rs1.mostRecentTime() < rs2.mostRecentTime());
-	}
 }
 
 #endif  // _GPLATES_MATHS_ROTATIONSEQUENCE_H_
