@@ -33,20 +33,13 @@ using namespace GPlatesMaths;
 void
 DirVector3D::AssertInvariantHolds() const {
 
-	/*
-	 * Calculate magnitude of vector.
-	 */
-	real_t mag_sqrd = (_x * _x) + (_y * _y) + (_z * _z);
-	if (mag_sqrd == 0.0) {
+	if (_mag == 0.0) {
 
 		// invariant has been violated
 		std::ostringstream oss("DirVector3D has magnitude ");
-		oss << sqrt(mag_sqrd);
+		oss << _mag;
 		throw ViolatedDirVectorInvariantException(oss.str().c_str());
 	}
-
-	// cache the magnitude
-	_mag = sqrt(mag_sqrd);
 }
 
 

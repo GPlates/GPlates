@@ -61,7 +61,9 @@ namespace GPlatesMaths
 			            const real_t& y_comp,
 			            const real_t& z_comp)
 				: _x(x_comp), _y(y_comp), _z(z_comp) {
-				
+
+				// Calculate magnitude of vector.
+				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
 				AssertInvariantHolds();
 			}
 
