@@ -38,7 +38,7 @@ GPlatesMaths::SmallCircle::SmallCircle (const UnitVector3D &axis,
 
 	UnitVector3D u = pt.unitvector ();
 	real_t dp = dot (normal(), u);
-	_theta = acos (dp);
+	_colatitude = acos (dp);
 }
 
 
@@ -55,7 +55,7 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 	// A is one point on the line through the intersection points, and
 	// B is the direction vector, so the line equation is: x = A + Bt
 	Vector3D B = cross (other.axisvector (), _axisvector);
-	real_t scale = cos (_theta) / B.magSqrd ();
+	real_t scale = cos (_colatitude) / B.magSqrd ();
 	Vector3D A = cross (B, other.axisvector ()) * scale;
 
 	// solve a quadratic equation to get the actual points
@@ -86,12 +86,12 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 void
 GPlatesMaths::SmallCircle::AssertInvariantHolds () const
 {
-	if ((_theta < 0.0) || (_theta > M_PI)) {
+	if ((_colatitude < 0.0) || (_colatitude > M_PI)) {
 
 		// an invalid colatitude
 		std::ostringstream oss;
-		oss << "Invalid colatitude " << _theta << " radians\n"
-		 << "for small circle.";
+		oss << "Small circle has invalid colatitude of "
+		 << _colatitude << " radians.";
 		throw ViolatedClassInvariantException(oss.str().c_str());
 	}
 }

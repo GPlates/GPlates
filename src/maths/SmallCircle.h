@@ -40,9 +40,9 @@ namespace GPlatesMaths
 	/** 
 	 * A small circle of a unit sphere.
 	 *
-	 * @image html fig_small_circle.png
-	 * @image latex fig_small_circle.eps width=2.3in
-	 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
+	 * Degenerate circles (ie. circles whose colatitudes are 0 or pi,
+	 * resulting in point-like circles) are allowed, as are circles whose
+	 * colatitudes are exactly pi (which are technically great circles).
 	 */
 	class SmallCircle : public Axial
 	{
@@ -50,10 +50,15 @@ namespace GPlatesMaths
 			/**
 			 * Create a small circle, given its axis and an angle.
 			 * @param axis The axis of the circle.
-			 * @param angle Angle between axis and circumference.
+			 * @param theta Angle between axis and circumference,
+			 *   aka the "colatitude".  In radians, as always.
+			 *
+			 * @image html fig_small_circle.png
+			 * @image latex fig_small_circle.eps width=2.3in
+			 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
 			 */
-			SmallCircle (const UnitVector3D &axis, real_t angle)
-				: Axial (axis), _theta (angle) {
+			SmallCircle (const UnitVector3D &axis, real_t theta)
+				: Axial (axis), _colatitude (theta) {
 
 				AssertInvariantHolds ();
 			}
@@ -69,10 +74,10 @@ namespace GPlatesMaths
 			normal () const { return axisvector(); }
 
 			real_t
-			theta () const { return _theta; }
+			colatitude () const { return _colatitude; }
 
 			real_t
-			radius () const { return sin (_theta); }
+			radius () const { return sin (_colatitude); }
 
 			/**
 			 * Find the intersection points (if any) of this
@@ -88,7 +93,7 @@ namespace GPlatesMaths
 			void AssertInvariantHolds () const;
 
 		private:
-			real_t _theta;
+			real_t _colatitude;
 	};
 }
 
