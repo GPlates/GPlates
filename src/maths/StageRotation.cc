@@ -31,31 +31,21 @@
 #include "Vector3D.h"
 
 
-using namespace GPlatesMaths;
-
-
-StageRotation
+GPlatesMaths::StageRotation
 GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 
 	/*
 	 * The basic algorithm used in this function is:
 	 * 1. given a unit quaternion, reverse-engineer the rotation axis
-	 *     and the rotation angle, 'theta'.
-	 * 2. scale theta by the ratio (new time delta / time delta).
+	 *     and the rotation angle.
+	 * 2. scale the rot-angle by the ratio (new time delta / time delta).
 	 * 3. create a new stage rotation which represents a rotation around
-	 *     the rotation axis, by the scaled rotation angle.
+	 *     the rot-axis, by the scaled rot-angle.
 	 */
 
 	/*
 	 * Ensure that the quaternion of the stage rotation argument does not
 	 * represent an identity rotation.
-	 *
-	 * In an identity rotation, the angle of rotation is (2 * n * pi),
-	 * for some integer 'n':  this would later result in an evaluation of
-	 * the sine of some (n * pi), which is always zero.  This, in turn,
-	 * would result in a division by zero when attempting to calculate
-	 * the rotation axis, which is geometrically equivalent to the fact
-	 * that, in an identity rotation, the axis is indeterminate.
 	 */
 	if (sr.quat().isIdentity()) {
 
@@ -63,15 +53,9 @@ GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 		 "stage rotation whose quaternion represents the identity "
 		 "rotation.");
 	}
-	/*
-	 * Thus, we can be sure that the angle of rotation ('theta') is not a
-	 * multiple of two pi, and the axis of rotation is clearly determined.
-	 */
-	real_t theta_on_2 = acos(sr.quat().s());  // not a multiple of pi
-	real_t sin_of_theta_on_2 = sin(theta_on_2);  // not zero
 
-	Vector3D axis_v = (1 / sin_of_theta_on_2) * sr.quat().v();
-	DirVector3D axis_dv(axis_v.x(), axis_v.y(), axis_v.z());
+	UnitQuaternion3D::RotationParams params =
+	 sr.quat().calcRotationParams();
 
 	/*
 	 * Ensure that the time delta of the stage rotation argument is not
@@ -86,18 +70,17 @@ GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 
 	/*
 	 * Finally, create a unit quaternion which represents a rotation of
-	 * ((new time delta / time delta) * theta) about the axis specified by
-	 * 'axis_uv'.
+	 * ((new time delta / time delta) * params.angle) about 'params.axis'.
 	 */
 	UnitQuaternion3D new_uq =
-	 UnitQuaternion3D::CreateEulerRotation(axis_dv.normalise(),
-	  (new_time_delta * time_delta_reciprocal) * (theta_on_2 * 2));
+	 UnitQuaternion3D::CreateEulerRotation(params.axis,
+	  (new_time_delta * time_delta_reciprocal) * params.angle);
 
 	return StageRotation(new_uq, new_time_delta);
 }
 
 
-FiniteRotation
+GPlatesMaths::FiniteRotation
 GPlatesMaths::interpolate(const FiniteRotation &more_recent, 
 	const FiniteRotation &more_distant, const real_t &t) {
 
@@ -110,8 +93,7 @@ GPlatesMaths::interpolate(const FiniteRotation &more_recent,
 	if (sr.quat().isIdentity()) {
 
 		// the quaternions of the rotations were equivalent
-		return
-		 FiniteRotation::CreateFiniteRotation(more_recent.quat(), t);
+		return FiniteRotation::Create(more_recent.quat(), t);
 	}
 
 	real_t new_time_delta = t - more_recent.time();
