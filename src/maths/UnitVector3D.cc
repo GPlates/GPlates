@@ -22,6 +22,7 @@
 
 #include <sstream>
 #include "UnitVector3D.h"
+#include "HighPrecision.h"
 #include "ViolatedUnitVectorInvariantException.h"
 
 
@@ -45,7 +46,8 @@ GPlatesMaths::UnitVector3D::AssertInvariant () const
 
 		// invariant has been violated
 		std::ostringstream oss;
-		oss << "UnitVector3D has magnitude " << sqrt(mag_sqrd) << ".";
+		oss << "UnitVector3D has magnitude-squared of "
+		 << HighPrecision< real_t >(mag_sqrd) << ".";
 		throw ViolatedUnitVectorInvariantException(oss.str().c_str());
 	}
 }
