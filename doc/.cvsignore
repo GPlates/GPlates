@@ -1,3 +1,4 @@
+*.eps
 *.png
 Makefile
 doxygen.conf

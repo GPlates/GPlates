@@ -3,7 +3,7 @@
 subdir = doc
 prefix = @prefix@
 
-FIGURES = fig_small_circle.eps
+FIGURES = fig_grid.fig fig_small_circle.fig
 
 DISTFILES = Makefile.in doxygen.conf.in $(FIGURES)
 
@@ -11,17 +11,19 @@ INSTALL = @INSTALL@
 
 all:
 
-doc:	doxygen.conf $(FIGURES:.eps=.png)
+doc:	doxygen.conf $(FIGURES:.fig=.png)
 	doxygen $<
 
 install:
 
 clean:
 	rm -rf html
-	rm $(FIGURES:.eps=.png)
+	rm -f $(FIGURES:.fig=.png)
 
-%.png : %.eps
-	convert -quality 100 $< $@
+%.png : %.fig
+	fig2dev -L png $< $@
+%.eps : %.fig
+	fig2dev -L eps $< $@
 
 dep:
 
