@@ -236,9 +236,11 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 			GPlatesGeo::GeologicalData::NO_TIMEWINDOW,
 			GPlatesGeo::GeologicalData::Attributes_t (),
 			orig, sc_step, gc_step);
+	} catch (FileFormatException &e) {
+		throw e;
 	} catch (GPlatesGlobal::Exception &e) {
-		std::cerr << "{" << e << "}\n";
-		throw FileFormatException("Couldn't determine grid from file.");
+		throw FileFormatException
+			("Couldn't determine grid structure from file.");
 	}
 
 	NcVar *z_var = ncf->get_var ("z");
@@ -301,8 +303,9 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 #endif
 		}
 	}
-	if (dlg)
-		dlg->Update (99, "Done.");
+	if (dlg) {
+		dlg->Update (99, cancelled ? "Cancelled!" : "Done.");
+	}
 
 	delete[] z;
 

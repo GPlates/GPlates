@@ -56,7 +56,7 @@ GridData::~GridData ()
 		return;
 	for (index_t i = 0; i < grid->length; ++i) {
 		GridRowPtr row = grid->rows[i];
-		if (!row->data || row->length < 1)
+		if (!row || !row->data || row->length < 1)
 			continue;
 		for (index_t j = 0; j < row->length; ++j)
 			delete row->data[j];
