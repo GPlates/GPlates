@@ -115,7 +115,7 @@ namespace GPlatesMaths
 
 	/**
 	 * On a Pentium IV processor, this should cost about
-	 * (5 [FSUB] + (2 + 1) [2*FCOM] + 1 [OR]) == 9 clock cycles.
+	 * (5 [FSUB] + (2 + 1) [2*FCOM] + 1 [OR]) = 9 clock cycles.
 	 */
 	inline bool
 	operator!=(Real r1, Real r2) {
@@ -132,7 +132,7 @@ namespace GPlatesMaths
 
 	/**
 	 * On a Pentium IV processor, this should cost about
-	 * (5 [FSUB] + 2 [FCOM]) == 7 clock cycles.
+	 * (5 [FSUB] + 2 [FCOM]) = 7 clock cycles.
 	 */
 	inline bool
 	operator<=(Real r1, Real r2) {
@@ -316,7 +316,19 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * If the argument to this function is greater-than or equal-to 0.0
+	 * (and thus, no exceptions are thrown), on a Pentium IV processor,
+	 * this should cost about (5 [FSUB] + 2 [FCOM] + 2 [FCOM]) = 9 clock
+	 * cycles plus the cost of the invocation of the 'std::sqrt' function
+	 * (presumably at least 38 cycles for the P-IV FSQRT insn + the cost
+	 * of a function call).
+	 *
+	 * Thus, the execution of the body of this function should cost at
+	 * least 47 clock cycles + the cost of a function call.
+	 */
 	Real sqrt(Real r);
+
 	Real asin(Real r);
 	Real acos(Real r);
 }
