@@ -53,9 +53,10 @@ namespace GPlatesGui
 
 			//File events
 			void OnOpenData(wxCommandEvent&);
-			void OnOpenRotation(wxCommandEvent&);
-			void OnImport (wxCommandEvent&);
-			void OnSaveData(wxCommandEvent&);
+			void OnLoadRotation(wxCommandEvent&);
+			void OnImport(wxCommandEvent&);
+			void OnExport(wxCommandEvent&);
+			void OnSaveAllData(wxCommandEvent&);
 
 			// View events
 			void OnViewMetadata(wxCommandEvent&);

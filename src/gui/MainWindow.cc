@@ -52,9 +52,10 @@ namespace {
 
 	enum {
 		MENU_FILE_OPENDATA,
-		MENU_FILE_OPENROTATION,
+		MENU_FILE_LOADROTATION,
 		MENU_FILE_IMPORT,
-		MENU_FILE_SAVEDATA,
+		MENU_FILE_EXPORT,
+		MENU_FILE_SAVEALLDATA,
 		MENU_FILE_EXIT,
 
 		MENU_VIEW_METADATA,
@@ -137,7 +138,6 @@ MainWindow::OnOpenData(wxCommandEvent&)
 	 _("Select a data file..."),
 	 _last_load_dir, "",  // no default file
 	 _("GPlates Data files (*.gpml)|*.gpml|"
-	  "PLATES Data files (*.dat)|*.dat|"
 	  "All files (*.*)|*.*"),  // wildcard
 	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
@@ -150,7 +150,52 @@ MainWindow::OnOpenData(wxCommandEvent&)
 }
 
 void
-MainWindow::OnSaveData(wxCommandEvent&)
+MainWindow::OnLoadRotation(wxCommandEvent&)
+{
+	wxFileDialog filedlg(this, 
+	 _("Select a rotation file..."),
+	 _last_load_dir, "",  // no default file
+	 _("PLATES Rotation files (*.rot)|*.rot|"
+	  "All files (*.*)|*.*"),  // wildcard
+	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
+
+	if (filedlg.ShowModal() == wxID_OK) {
+		std::string selected_file;
+		_last_load_dir = filedlg.GetDirectory();
+		selected_file = filedlg.GetPath().mb_str();
+		GPlatesControls::File::LoadRotation(selected_file);
+	}
+}
+
+void MainWindow::OnImport(wxCommandEvent&)
+{
+	wxFileDialog filedlg (this,
+	 _("Select a data file to import..."),
+	 _last_load_dir, "",  // no default file
+	 _("PLATES Data files (*.dat)|*.dat|"
+	  "NetCDF Grid files (*.grd)|*.grd|"
+	  "All files (*.*)|*.*"),  // wildcard
+	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
+
+	if (filedlg.ShowModal () == wxID_OK) {
+		std::string selected_file;
+		_last_load_dir = filedlg.GetDirectory ();
+		selected_file = filedlg.GetPath ().mb_str ();
+		GPlatesControls::File::ImportData(selected_file);
+	}
+}
+
+void
+MainWindow::OnExport(wxCommandEvent&)
+{
+#if 0
+	std::cout << GPlatesControls::File::Export()
+		<< std::endl;
+#endif
+}
+
+void
+MainWindow::OnSaveAllData(wxCommandEvent&)
 {
 	wxFileDialog filedlg(this, 
 	 _("Designate a file name..."),
@@ -166,42 +211,6 @@ MainWindow::OnSaveData(wxCommandEvent&)
 		GPlatesControls::File::SaveData(selected_file);
 	}
 
-}
-
-
-void
-MainWindow::OnOpenRotation(wxCommandEvent&)
-{
-	wxFileDialog filedlg(this, 
-	 _("Select a rotation file..."),
-	 _last_load_dir, "",  // no default file
-	 _("PLATES Rotation files (*.rot)|*.rot|"
-	  "All files (*.*)|*.*"),  // wildcard
-	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
-
-	if (filedlg.ShowModal() == wxID_OK) {
-		std::string selected_file;
-		_last_load_dir = filedlg.GetDirectory();
-		selected_file = filedlg.GetPath().mb_str();
-		GPlatesControls::File::OpenRotation(selected_file);
-	}
-}
-
-void MainWindow::OnImport (wxCommandEvent&)
-{
-	wxFileDialog filedlg (this,
-	 _("Select a data file to import..."),
-	 _last_load_dir, "",  // no default file
-	 _("netCDF files (*.grd)|*.grd|"
-	  "All files (*.*)|*.*"),  // wildcard
-	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
-
-	if (filedlg.ShowModal () == wxID_OK) {
-		std::string selected_file;
-		_last_load_dir = filedlg.GetDirectory ();
-		selected_file = filedlg.GetPath ().mb_str ();
-		GPlatesControls::File::OpenGrid (selected_file);
-	}
 }
 
 void
@@ -268,26 +277,29 @@ MainWindow::CreateMenuBar()
 {
 	wxMenu* filemenu = new wxMenu;
 	filemenu->Append(MENU_FILE_OPENDATA, 
-	 _("Open &Data...\tCtrl-O"), 
-	 _("Open a data file"));
-	filemenu->Append(MENU_FILE_OPENROTATION, 
-	 _("Open &Rotation...\tCtrl-R"), 
-	 _("Open a rotation file"));
+	 _("Open &Data..."), 
+	 _("Open a native GPlates data file."));
+	filemenu->Append(MENU_FILE_LOADROTATION, 
+	 _("Load &Rotation...\tCtrl-R"), 
+	 _("Load a new rotation file."));
 	filemenu->Append (MENU_FILE_IMPORT,
 	 _("&Import External Data..."),
-	 _("Import a data file"));
-	filemenu->Append(MENU_FILE_SAVEDATA,
-	 _("&Save Data...\tCtrl-S"),
-	 _("Save current data to file"));
+	 _("Import a non-native data file."));
+	filemenu->Append (MENU_FILE_EXPORT,
+	 _("&Export Snapshot..."),
+	 _("Export a snapshot of the current state of the data."));
+	filemenu->Append(MENU_FILE_SAVEALLDATA,
+	 _("&Save All Data\tCtrl-S"),
+	 _("Save all data to file."));
 	filemenu->AppendSeparator();
 	filemenu->Append(MENU_FILE_EXIT,
 	 _("&Quit\tCtrl-Q"),
-	 _("Exit GPlates"));
+	 _("Exit GPlates."));
 
 	wxMenu* viewmenu = new wxMenu;
 	viewmenu->Append(MENU_VIEW_METADATA,
-	 _("&View Metadata...\tCtrl-V"),
-	 _("View the document's metadata"));
+	 _("&View Metadata..."),
+	 _("View the document's metadata."));
 
 #if 0  // globe transparency currently disabled
 	viewmenu->AppendSeparator();
@@ -304,10 +316,10 @@ MainWindow::CreateMenuBar()
 	wxMenu* reconstructmenu = new wxMenu;
 	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
 	 _("Jump to &Time...\tCtrl-T"),
-	 _("Reconstruct the data at a particular time"));
+	 _("Reconstruct the data at a particular time."));
 	reconstructmenu->Append(MENU_RECONSTRUCT_PRESENT,
 	 _("Return to &Present\tCtrl-P"),
-	 _("Reconstruct the data at the present"));
+	 _("Reconstruct the data as it is in the present."));
 	reconstructmenu->Append(MENU_RECONSTRUCT_ANIMATION,
 	 _("&Animation...\tCtrl-A"),
 	 _("Animate the reconstruction of the data between two times."));
@@ -315,7 +327,7 @@ MainWindow::CreateMenuBar()
 	wxMenu* helpmenu = new wxMenu;
 	helpmenu->Append(MENU_HELP_ABOUT,
 	 _("&About GPlates...\tF1"),
-	 _("Find out about GPlates"));
+	 _("Find out about GPlates."));
 
 	wxMenuBar* menubar = new wxMenuBar(wxMB_DOCKABLE);
 	menubar->Append(filemenu, _("&File"));
@@ -331,9 +343,10 @@ BEGIN_EVENT_TABLE(MainWindow, wxFrame)
 	EVT_MOTION(MainWindow::OnMouseMove)
 
 	EVT_MENU(MENU_FILE_OPENDATA, MainWindow::OnOpenData)
-	EVT_MENU(MENU_FILE_OPENROTATION, MainWindow::OnOpenRotation)
+	EVT_MENU(MENU_FILE_LOADROTATION, MainWindow::OnLoadRotation)
 	EVT_MENU(MENU_FILE_IMPORT, MainWindow::OnImport)
-	EVT_MENU(MENU_FILE_SAVEDATA, MainWindow::OnSaveData)
+	EVT_MENU(MENU_FILE_EXPORT, MainWindow::OnExport)
+	EVT_MENU(MENU_FILE_SAVEALLDATA, MainWindow::OnSaveAllData)
 	EVT_MENU(MENU_FILE_EXIT, MainWindow::OnExit)
 
 	EVT_MENU(MENU_VIEW_METADATA, MainWindow::OnViewMetadata)
