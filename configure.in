@@ -108,9 +108,54 @@ AC_SUBST(EXTRA_LDFLAGS)
 AC_MSG_CHECKING([for Plesiosaurs in Loch Ness])
 AC_MSG_RESULT(yes)
 
+# UI targets
+probe_glui="auto"
+probe_gtkmm="no"	# yet to do
+
+AC_ARG_ENABLE(glui,
+	[  --disable-glui          Disable probing for GLUI],
+	[probe_glui=$enable_val])
+#AC_ARG_ENABLE(gtkmm,
+#	[  --disable-gtkmm         Disable probing for GTK--],
+#	[probe_gtkmm=$enable_val])
+
+AC_PATH_X
+AC_PATH_XTRA
+# AC_PATH_X: defines x_includes and x_libraries
+CXXFLAGS="$CXXFLAGS $X_CFLAGS"
+
+any_ui="no"
+UI_TARGETS=""
+if test "$probe_glui" != "no"; then
+	# Check for GLUI
+	AC_HAVE_GLUI
+	if test "$ac_cv_have_glui" = yes; then
+		enable_glui="yes"
+	fi
+	if test "$enable_glui" = "yes"; then
+		#AC_DEFINE(HAVE_GLUI)
+		#UI_TARGETS="$UI_TARGETS ui-glui.o"	# XXX
+		#LIBS="$LIBS -lglui"		# XXX
+		any_ui="yes"
+	fi
+fi
+
+
+# Fail if no UIs found
+if test "$any_ui" = "no"; then
+	echo "#############################"
+	echo "# ERROR: No UIs have been   #"
+	echo "#  configured! At least one #"
+	echo "#  driver must be present   #"
+	echo "#  for gPlates to function. #"
+	echo "#############################"
+	exit 1
+fi
+
 
 # Write output
 AC_OUTPUT(Makefile
+	src/global/config.h
 	doc/doxygen.conf
 	doc/Makefile
 	src/Rules
@@ -142,6 +187,14 @@ if test "$turn_on_opt" = "yes" -a "$turn_on_dev" = "yes"; then
 	echo "###          flags. This is highly discouraged, as it may cause"
 	echo "###          problems compiling or running gPlates."
 fi
+
+# UI information
+echo "###############################################"
+echo "#  Display targets enabled:                   #"
+if test "$enable_glui" = "yes"; then
+	echo "#    * GLUI                                   #"; fi
+if test "$enable_gtkmm" = "yes"; then
+	echo "#    * GTK--                                  #"; fi
 
 echo "###############################################"
 echo "#  gPlates is now configured. Simply type...  #"

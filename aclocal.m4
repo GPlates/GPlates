@@ -312,3 +312,22 @@ dnl If there was a GNU version, then set @ifGNUmake@ to the empty string, '#' ot
         AC_SUBST(ifGNUmake)
 ] )
 
+dnl @synopsis AC_HAVE_GLUI
+dnl
+dnl @author David Symonds <ds@es.usyd.edu.au>
+AC_DEFUN([AC_HAVE_GLUI],
+[AC_CACHE_CHECK(whether GLUI is present,
+ac_cv_have_glui,
+[AC_LANG_SAVE
+ AC_LANG_CPLUSPLUS
+ AC_TRY_COMPILE([#include <GL/glut.h>
+#include<GL/glui.h>],[
+GLUI *glui = GLUI_Master.create_glui ("GLUI", 0);],
+ ac_cv_have_glui=yes, ac_cv_have_glui=no)
+ AC_LANG_RESTORE
+])
+if test "$ac_cv_have_glui" = yes; then
+  AC_DEFINE(HAVE_GLUI,,[define if GLUI is present])
+fi
+])
+
