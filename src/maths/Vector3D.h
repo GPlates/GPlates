@@ -145,6 +145,10 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * (7 + 2 * 2) + (5 + 1) = 17 clock cycles.
+	 */
 	inline real_t
 	dot(Vector3D v1, Vector3D v2) {
 
@@ -154,6 +158,10 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * (7 + 5 * 2) + (5 + 2 * 2) = 26 clock cycles.
+	 */
 	Vector3D cross(Vector3D v1, Vector3D v2);
 }
 
