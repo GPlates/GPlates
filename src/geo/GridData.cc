@@ -49,6 +49,8 @@ GPlatesGeo::GridData::GridData
 	grid = new Grid;
 	grid->offset = 0;
 	grid->length = 0;
+
+	min_val = max_val = 0.0;
 }
 
 GPlatesGeo::GridData::~GridData ()
@@ -75,8 +77,12 @@ void GPlatesGeo::GridData::Add (GridElement *element, index_t x1, index_t x2)
 	GridRowPtr *new_rows;
 	GridElementPtr *new_elems;
 
-	if (grid->length == 0)
+	if (grid->length == 0) {
+		// First value
 		grid->offset = x1;
+		min_val = max_val = element->getValue ();
+	}
+
 	// expand out to the correct row
 	if (x1 >= (grid->offset + grid->length)) {
 		// expand to right
@@ -181,6 +187,11 @@ void GPlatesGeo::GridData::Add (GridElement *element, index_t x1, index_t x2)
 	}
 
 	row->data[x2 - row->offset] = element;
+	float val = element->getValue ();
+	if (min_val > val)
+		min_val = val;
+	if (max_val < val)
+		max_val = val;
 }
 
 

@@ -83,6 +83,9 @@ namespace GPlatesGeo
 			const GridElement *get (index_t x, index_t y) const;
 			void getDimensions (index_t &x_sz, index_t &y_sz) const;
 
+			float min () const { return min_val; }
+			float max () const { return max_val; }
+
 		private:
 			GPlatesMaths::GridOnSphere _lattice;
 
@@ -99,6 +102,7 @@ namespace GPlatesGeo
 			};
 
 			Grid *grid;
+			float min_val, max_val;
 	};
 }
 
