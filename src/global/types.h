@@ -31,7 +31,7 @@
 #include <cstdlib>
 #include <string>
 #include "FPData.h"
-#include "InternalRGID.h"
+#include "InternalRID.h"
 
 
 namespace GPlatesGlobal
@@ -42,9 +42,9 @@ namespace GPlatesGlobal
 	typedef FPData fpdata_t;
 
 	/**
-	 * The type used for internal rotation-group IDs.
+	 * The type internally for rotation ids.
 	 */
-	typedef InternalRGID int_rgid_t;
+	typedef InternalRID rid_t;
 
 	/** 
 	 * The integral type.
