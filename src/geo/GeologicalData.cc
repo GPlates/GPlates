@@ -53,6 +53,15 @@ GeologicalData::GeologicalData(const DataType_t& dt,
 	  _attributes(attrs)
 { }
 
+GeologicalData::~GeologicalData ()
+{
+	// Delete all attributes
+	Attributes_t::iterator it;
+
+	for (it = _attributes.begin (); it != _attributes.end (); ++it)
+		delete it->second;
+}
+
 void
 GeologicalData::Add(GeologicalData*)
 {

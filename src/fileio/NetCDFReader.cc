@@ -325,6 +325,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 		char *lstr = long_name_attr->as_string (0);
 		GPlatesGeo::LiteralStringValue *val =
 			new GPlatesGeo::LiteralStringValue (std::string (lstr));
+		delete long_name_attr;
 		delete[] lstr;
 		gdata->SetAttributeValue ("long_name", val);
 	}

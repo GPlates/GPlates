@@ -98,8 +98,7 @@ namespace GPlatesGeo
 						   const TimeWindow&,
 						   const Attributes_t& = NO_ATTRIBUTES);
 
-			virtual
-			~GeologicalData() { }
+			virtual ~GeologicalData();
 			
 			DataType_t
 			GetDataType() const { return _data_type; }
