@@ -110,25 +110,21 @@ PaintLines()
 void
 GPlatesGui::Globe::SetNewHandlePos(const PointOnSphere &pos)
 {
-	_handle_pos = pos;
+	m_globe_orientation.set_new_handle_at_pos(pos);
 }
 
 
 void
 GPlatesGui::Globe::UpdateHandlePos(const PointOnSphere &pos)
 {
-	Rotation rot = CreateRotation(_handle_pos, pos);
-
-	_cumul_rot = rot * _cumul_rot;
-	_rev_cumul_rot = _cumul_rot.reverse();
-	_handle_pos = pos;
+	m_globe_orientation.move_handle_to_pos(pos);
 }
 
 
 PointOnSphere
 GPlatesGui::Globe::Orient(const PointOnSphere &pos)
 {
-	return (_rev_cumul_rot * pos);
+	return m_globe_orientation.reverse_orient_point(pos);
 }
 
 
@@ -140,8 +136,9 @@ GPlatesGui::Globe::Paint()
 		// rotate everything to get a nice almost-equatorial shot
 //		glRotatef(-80.0, 1.0, 0.0, 0.0);
 
-		UnitVector3D axis = _cumul_rot.axis();
-		real_t angle_in_deg = radiansToDegrees(_cumul_rot.angle());
+		UnitVector3D axis = m_globe_orientation.rotation_axis();
+		real_t angle_in_deg =
+		 radiansToDegrees(m_globe_orientation.rotation_angle());
 		glRotatef(angle_in_deg.dval(),
 		           axis.x().dval(), axis.y().dval(), axis.z().dval());
 

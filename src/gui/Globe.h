@@ -26,6 +26,7 @@
 #include "Colour.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
+#include "SimpleGlobeOrientation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
@@ -38,14 +39,8 @@ namespace GPlatesGui
 		public:
 			Globe() :
 			 _sphere(Colour(0.35, 0.35, 0.35)),
-			 _grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON, Colour::WHITE),
-			 _handle_pos(GPlatesMaths::UnitVector3D::xBasis()),
-			 _cumul_rot(GPlatesMaths::Rotation::Create(
-			             GPlatesMaths::UnitVector3D::zBasis(),
-			             0.0)),
-			 _rev_cumul_rot(GPlatesMaths::Rotation::Create(
-			                GPlatesMaths::UnitVector3D::zBasis(),
-			                0.0)) {  }
+			 _grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON, Colour::WHITE)
+			 {  }
 
 			~Globe() {  }
 
@@ -76,21 +71,9 @@ namespace GPlatesGui
 			SphericalGrid _grid;
 
 			/**
-			 * The current position of the "handle".
-			 * Move this handle to spin the globe.
+			 * The accumulated orientation of the globe.
 			 */
-			GPlatesMaths::PointOnSphere _handle_pos;
-
-			/**
-			 * The accumulated rotation of the globe.
-			 */
-			GPlatesMaths::Rotation _cumul_rot;
-
-			/**
-			 * The REVERSE of the accumulated rotation of the globe.
-			 * [Used by the frequently-used @a Orient function.]
-			 */
-			GPlatesMaths::Rotation _rev_cumul_rot;
+			SimpleGlobeOrientation m_globe_orientation;
 
 			/**
 			 * One circle of latitude every 30 degrees.
