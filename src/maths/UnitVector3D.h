@@ -60,15 +60,13 @@ namespace GPlatesMaths
 			UnitVector3D(const real_t &x_comp,
 				     const real_t &y_comp,
 				     const real_t &z_comp)
-				: DirVector3D (x_comp, y_comp, z_comp)
+				: DirVector3D (x_comp, y_comp, z_comp, 1.0)
 			{
-				// Virtual functions don't work in ctors
 				AssertInvariantHolds ();
 			}
 
 			UnitVector3D (const Vector3D &v) : DirVector3D (v)
 			{
-				// Virtual functions don't work in ctors
 				AssertInvariantHolds ();
 			}
 

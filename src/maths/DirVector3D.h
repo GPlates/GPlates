@@ -99,11 +99,24 @@ namespace GPlatesMaths
 
 		protected:
 			/**
+			 * Super-secret backdoor constructor for specialised
+			 * base classes. The magnitude better be correct!
+			 */
+			DirVector3D(const real_t &x_comp,
+			            const real_t &y_comp,
+			            const real_t &z_comp,
+				    const real_t &mag)
+				: Vector3D (x_comp, y_comp, z_comp), _mag (mag)
+			{
+				AssertInvariantHolds();
+			}
+
+			/**
 			 * Calculate and set the magnitude.
 			 */
 			void
-			UpdateMagnitude() {
-
+			UpdateMagnitude()
+			{
 				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
 			}
 
