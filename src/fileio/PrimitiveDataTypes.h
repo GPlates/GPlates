@@ -37,7 +37,7 @@
 #ifndef _GPLATES_FILEIO_PRIMITIVEDATATYPES_H_
 #define _GPLATES_FILEIO_PRIMITIVEDATATYPES_H_
 
-#include "global/types.h"
+#include "../global/types.h"
 
 namespace GPlatesFileIO
 {
@@ -61,7 +61,7 @@ namespace GPlatesFileIO
 
 		// no default constructor
 
-		EulerRotation(const LatLonPoint &pole, fpdata angle)
+		EulerRotation(const LatLonPoint &pole, fpdata_t angle)
 		 : _pole(pole), _angle(angle) {  }
 	};
 
@@ -74,7 +74,7 @@ namespace GPlatesFileIO
 
 		// no default constructor
 
-		FiniteRotation(fpdata time, const rgid_t &fixed_rg,
+		FiniteRotation(fpdata_t time, const rgid_t &fixed_rg,
 		 const EulerRotation &rot)
 
 		 : _time(time), _fixed_rg(fixed_rg), _rot(rot) {  }
