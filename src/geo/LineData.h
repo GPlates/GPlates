@@ -28,7 +28,8 @@
 
 #include <vector>
 #include "GeologicalData.h"
-#include "maths/types.h"
+#include "maths/PointOnSphere.h"
+#include "maths/types.h"  /* PolyLineOnSphere */
 
 namespace GPlatesGeo
 {
@@ -40,13 +41,13 @@ namespace GPlatesGeo
 	{
 		public:
 			LineData(const DataType_t&, const RotationGroupId_t&,
-				const Attributes_t&, const PolyLineOnSphere&);
+				const Attributes_t&, const GPlatesMaths::PolyLineOnSphere&);
 
 			/** 
 			 * Add a point to the end of the line.
 			 */
 			virtual void
-			Add(const PointOnSphere& P) { _line.push_back(P); }
+			Add(const GPlatesMaths::PointOnSphere& P) { _line.push_back(P); }
 			
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }
@@ -56,24 +57,24 @@ namespace GPlatesGeo
 			 * @warning Access to this iterator will allow the client
 			 *   to put the object into an illegal state (num points < 2).
 			 */
-			PolyLineOnSphere::iterator
+			GPlatesMaths::PolyLineOnSphere::iterator
 			Begin() { return _line.begin(); }
 
-			PolyLineOnSphere::iterator
+			GPlatesMaths::PolyLineOnSphere::iterator
 			End() { return _line.end(); }
 			
 			/**
 			 * Restricted enumerative access the PointData constituting
 			 * this line.
 			 */
-			PolyLineOnSphere::const_iterator
+			GPlatesMaths::PolyLineOnSphere::const_iterator
 			Begin() const { return _line.begin(); }
 
-			PolyLineOnSphere::const_iterator
+			GPlatesMaths::PolyLineOnSphere::const_iterator
 			End() const { return _line.end(); }
 
 		private:
-			PolyLineOnSphere _line;
+			GPlatesMaths::PolyLineOnSphere _line;
 	};
 }
 

@@ -38,15 +38,22 @@ DataGroup::DataGroup(const DataType_t& dt, const RotationGroupId_t& id,
 	: GeologicalData(dt, id, attrs), _children(children)
 { }
 
-inline void
-DataGroup::Add(GeologicalData* child) throw()
+DataGroup::~DataGroup()
+{
+	Children_t::iterator iter = _children.begin();
+	for ( ; iter != _children.end(); ++iter)
+		delete *iter;
+}
+
+void
+DataGroup::Add(GeologicalData* child)
 {
 	// XXX: This throws std::bad_alloc when the memory is exhausted.
 	_children.push_back(child);
 }  
 
 void
-DataGroup::Remove(GeologicalData* child) throw()
+DataGroup::Remove(GeologicalData* child)
 {
 	if (child == NULL)
 		return;

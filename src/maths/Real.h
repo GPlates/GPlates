@@ -57,6 +57,9 @@ namespace GPlatesMaths
 			friend bool operator>=(Real, Real);
 			friend bool operator<(Real, Real);
 			friend bool operator>(Real, Real);
+			
+			friend std::istream&
+			operator>>(std::istream&, Real&);
 
 			double _dval;
 
@@ -294,6 +297,14 @@ namespace GPlatesMaths
 
 		os << r.dval();
 		return os;
+	}
+
+
+	inline std::istream &
+	operator>>(std::istream &is, Real& r) {
+
+		is >> r._dval;
+		return is;
 	}
 
 

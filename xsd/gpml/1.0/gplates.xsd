@@ -18,6 +18,7 @@
   -      Numbering is at the discretion of the developers, though
   -      typically z will be incremented for minor bug fixes, and
   -      y incremented for major bug fixes or feature additions.
+  -      If the z value is absent it is assumed equal to zero.
   -
   - Most recent change:
   -   $Author$

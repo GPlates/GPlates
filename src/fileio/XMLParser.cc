@@ -28,7 +28,7 @@
 #include "XMLParser.h"
 
 using namespace GPlatesFileIO;
-using XMLParser::Element;
+typedef XMLParser::Element Element;
 
 // eXpat Callback functions.  Userdata is a pointer to a pointer to
 // the current Element.
@@ -37,22 +37,19 @@ StartElementHandler(void* userdata,
 					const XML_Char*  name,
 					const XML_Char** attrs)
 {
-	using XMLParser::Element::AttributeList;
-   
 	Element* result = new Element;
-	result->name = new std::string(name);
+	result->_name = new std::string(name);
 	
-	result->attributes = new AttributeList;
+	result->_attributes = new XMLParser::Element::AttributeList;
 	const XML_Char* attr = *attrs;
 	for ( ; attr; attr += 2) {
-		attrlist->push_back(
+		result->_attributes->push_back(
 			std::make_pair(std::string(attr), std::string(attr + 1)));
 	}
 	
 	Element* current = *static_cast<Element**>(userdata);
-	result->_parent = parent;
+	result->_parent = current;
 	current = result;
-	
 }
 
 void
@@ -73,14 +70,14 @@ CharacterDataHandler(void* userdata, const XML_Char* str, int len)
 {
 	const std::string content(str, len);
 	Element* current = *static_cast<Element**>(userdata);
-	current->_content += content;
+	*current->_content += content;
 }
 
 
 XMLParser::XMLParser()
 	: _root(NULL)
 {
-	_parser = XML_ParserCreate();
+	_parser = XML_ParserCreate(NULL);
 	if (!_parser) {
 		std::cerr << "Could not allocate memory to create parser." 
 			<< std::endl;
@@ -102,7 +99,7 @@ XMLParser::Parse(std::istream& istr)
 		delete _root;
 	_root = NULL;
 
-	XML_ParserReset(_parser);
+	XML_ParserReset(_parser, NULL);
 
 	// Set up callbacks
 	XML_SetElementHandler(_parser,
@@ -117,16 +114,15 @@ XMLParser::Parse(std::istream& istr)
 XMLParser::Element::~Element()
 {
 	if (_name)
-		delete name;
-	if (_attributes) {
-		AttributeList::iterator iter = _attributes->begin();
-		for ( ; iter != _attributes->end(); ++iter)
+		delete _name;
+	if (_attributes)
+		delete _attributes;
+	if (_children) {
+		ElementList::iterator iter = _children->begin();
+		for ( ; iter != _children->end(); ++iter)
 			delete *iter;
-	}
-	if (_elements) {
-		ElementList::iterator iter = _elements->begin();
-		for ( ; iter != _elements->end(); ++iter)
-			delete *iter;
+
+		delete _children;
 	}
 	if (_content)
 		delete _content;

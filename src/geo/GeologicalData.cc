@@ -28,10 +28,10 @@
 
 using namespace GPlatesGeo;
 
-const DataType_t
+const GeologicalData::DataType_t
 GeologicalData::NO_DATATYPE;
 
-const Attributes_t
+const GeologicalData::Attributes_t
 GeologicalData::NO_ATTRIBUTES;
 
 GeologicalData::GeologicalData(const DataType_t& dt, 
@@ -39,13 +39,13 @@ GeologicalData::GeologicalData(const DataType_t& dt,
 	: _data_type(dt), _rotation_group_id(id), _attributes(attrs)
 { }
 
-inline void
-GeologicalData::Add(const GeologicalData&)
+void
+GeologicalData::Add(GeologicalData*)
 {
 	throw UnsupportedFunctionException("GeologicalData::Add");
 }
 
-inline void
+void
 GeologicalData::Remove(GeologicalData*)
 {
 	throw UnsupportedFunctionException("GeologicalData::Remove");

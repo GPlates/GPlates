@@ -29,8 +29,8 @@
 #define _GPLATES_MATHS_TYPES_H_
 
 #include <utility>  // std::pair
+#include <list>
 #include "geo/Vector2D.h"
-#include "PointOnSphere.h"
 #include "Real.h"
 
 namespace GPlatesMaths
@@ -46,6 +46,8 @@ namespace GPlatesMaths
 	 * A floating-point approximation to the field of reals.
 	 */
 	typedef Real real_t;
+
+	class PointOnSphere;
 
 	/**
 	 * A collection of points on the globe to be draw with line

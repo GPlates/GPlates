@@ -64,17 +64,19 @@ namespace GPlatesFileIO
 	{
 		typedef std::pair<const std::string, 
 						  const std::string> Attribute;
-		typedef std::list<Attribute*> 		 AttributeList;
+		typedef std::list<Attribute> 		 AttributeList;
 		typedef std::list<Element*> 		 ElementList;
 
 		Element()
 			: _name(NULL), _attributes(NULL), _parent(NULL), 
-			  _elements(NULL), _content(NULL) {  }
+			  _children(NULL), _content(NULL) {  }
+
+		~Element();
 		
 		std::string*	_name;
 		AttributeList*	_attributes;
 		Element*		_parent;
-		ElementList*	_elements;    /*< sub-elements */
+		ElementList*	_children;    /*< sub-elements */
 		std::string*	_content;
 	};
 }

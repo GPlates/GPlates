@@ -119,7 +119,7 @@ namespace GPlatesGeo
 			 * @see DataGroup.
 			 */
 			virtual void
-			Add(const GeologicalData&);
+			Add(GeologicalData*);
 
 			/** 
 			 * A child management method, for use with DataGroup.

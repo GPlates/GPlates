@@ -2,7 +2,8 @@
 
 /**
  * @file 
- * Contains the parser implementation for the GPML.
+ * Contains the parser implementation for the GPML.  
+ * FIXME Makes use of some horrible pointer arithmetic.
  *
  * Most recent change:
  *   $Author$
@@ -32,6 +33,9 @@
 #include "maths/types.h"
 #include "maths/OperationsOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "geo/PointData.h"
+#include "geo/LineData.h"
+#include "geo/DataGroup.h"
 
 #include <map>
 typedef std::map<std::string, std::string> GeneralData_t;
@@ -40,8 +44,9 @@ typedef std::map<std::string, std::string> GeneralData_t;
 using namespace GPlatesFileIO;
 using namespace GPlatesMaths;
 using namespace GPlatesGeo;
-using XMLParser::Element;
-using Element::ElementList;
+
+typedef XMLParser::Element Element;
+typedef Element::ElementList ElementList;
 
 static const std::string GENERAL_DATA_ELEMENTS[] = {
 	"attribution",
@@ -57,6 +62,7 @@ static const std::string GENERAL_DATA_ELEMENTS[] = {
 };
 
 
+#if 0
 // FIXME (Not being used yet anyway.)
 static std::string
 CompressWhitespace(const std::string& str)
@@ -77,9 +83,10 @@ static void
 GetGeneralData(const Element* element, GeneralData_t& map)
 {
 }
+#endif
 
 static PointOnSphere
-GetPointOnSphere(const std::string* text)
+GetPointOnSphere(const std::string& text)
 {
 	std::istringstream istr(text);
 	
@@ -93,10 +100,10 @@ GetPointOnSphere(const std::string* text)
 }
 
 static void
-TrimWhitespace(string& str)
+TrimWhitespace(std::string& str)
 {
 	// trim leading whitespace
-	string::size_type  notwhite = str.find_first_not_of(" \t\n");
+	std::string::size_type  notwhite = str.find_first_not_of(" \t\n");
 	str.erase(0,notwhite);
 
 	// trim trailing whitespace
@@ -107,11 +114,10 @@ TrimWhitespace(string& str)
 static PointOnSphere
 GetCoord(const Element* element)
 {
-	const std::string& text = element->_content;
+	std::string& text = *element->_content;
 	TrimWhitespace(text);
 	if (text.empty()) {
-		std::cerr << "Line " << text->get_line()
-			<< ": Empty coord element." << std::endl;
+		std::cerr << "Error: Empty coord element." << std::endl;
 		// FIXME: Dummy value; should allow the parser to skip
 		// such values.
 		return PointOnSphere(UnitVector3D(1.0, 0.0, 0.0));
@@ -123,8 +129,9 @@ GetCoord(const Element* element)
 static PointData
 GetPointData(const Element* element)
 {
-	return PointData(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES,
-		GetPointOnSphere(element));
+	// FIXME doesn't check for <coord> element.
+	return PointData(GeologicalData::NO_DATATYPE, GeologicalData::NO_ROTATIONGROUP, GeologicalData::NO_ATTRIBUTES,
+		GetCoord(element));
 }
 
 static PolyLineOnSphere
@@ -135,8 +142,8 @@ GetCoordList(const Element* element)
 	
 	ElementList::const_iterator iter = nodes->begin();
 	for ( ; iter != nodes->end(); ++iter) {
-		if (iter->_name == "coord")
-			coordlist.push_back(GetPointOnSphere(*iter));
+		if (*(*iter)->_name == "coord")
+			coordlist.push_back(GetCoord(*iter));
 	}
 	return coordlist;
 }
@@ -151,28 +158,30 @@ GetLineData(const Element* element)
 	ElementList::const_iterator iter = list->begin();
 
 	for ( ; iter != list->end(); ++iter)
-		if (iter->_name == "coordlist")
+		if (*(*iter)->_name == "coordlist")
 			break;
 	
-	return LineData(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES,
+	return LineData(GeologicalData::NO_DATATYPE, GeologicalData::NO_ROTATIONGROUP, GeologicalData::NO_ATTRIBUTES,
 		GetCoordList(*iter));
 }
 
 static DataGroup
 GetDataGroup(const Element* element)
 {
-	DataGroup datagroup(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES);
+	DataGroup datagroup(GeologicalData::NO_DATATYPE, GeologicalData::NO_ROTATIONGROUP, GeologicalData::NO_ATTRIBUTES);
 	const ElementList* list = element->_children;
 	ElementList::const_iterator iter = list->begin();
 
 	for ( ; iter != list->end(); ++iter) {
-		if (iter->_name == "pointdata")
-			datagroup.Add(GetPointData(*iter));
-		else if (iter->_name == "linedata")
-			datagroup.Add(GetLineData(*iter));
-		else if (iter->_name == "datagroup")
+		const std::string& name = *(*iter)->_name;
+		// FIXME need to work out who owns the results of these calls
+		if (name == "pointdata")
+			datagroup.Add(new PointData(GetPointData(*iter)));
+		else if (name == "linedata")
+			datagroup.Add(new LineData(GetLineData(*iter)));
+		else if (name == "datagroup")
 			// Hooray for recursion.
-			datagroup.Add(GetDataGroup(*iter));
+			datagroup.Add(new DataGroup(GetDataGroup(*iter)));
 	}
 	return datagroup;
 }
@@ -196,7 +205,7 @@ GetRootDataGroup(const Element* element)
 #endif
 
 	// Pass parameters on to general datagroup handler.
-	DataGroup& dg = GetDataGroup(element);
+	DataGroup dg = GetDataGroup(element);
 
 	// Add stuff from title and meta tags
 	// FIXME
@@ -215,5 +224,5 @@ GPlatesReader::Read()
 	return (root ? 
 		GetRootDataGroup(root) :
 		// Parse failed, return empty DataGroup.
-		DataGroup(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES));
+		DataGroup(GeologicalData::NO_DATATYPE, GeologicalData::NO_ROTATIONGROUP, GeologicalData::NO_ATTRIBUTES));
 }

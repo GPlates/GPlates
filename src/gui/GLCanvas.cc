@@ -190,6 +190,9 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 		}
 		last_zoom = evt.GetY();
 	}
+
+	// Pass the mouse event to the parent's process queue
+	GetParent()->GetEventHandler()->AddPendingEvent(evt);
 }
 
 BEGIN_EVENT_TABLE(GLCanvas, wxGLCanvas)

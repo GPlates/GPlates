@@ -47,7 +47,7 @@ namespace GPlatesGeo
 			 * because the Composite role provides a tree object 
 			 * structure: 'Children' is taken from tree nomenclature.
 			 */
-			typedef std::vector<GeologicalData> Children_t;
+			typedef std::vector<GeologicalData*> Children_t;
 			
 			/** 
 			 * Create a DataGroup with no elements.
@@ -65,6 +65,11 @@ namespace GPlatesGeo
 				const Attributes_t&, const Children_t&);
 			
 			/**
+			 * Delete each of the elements of _children.
+			 */
+			~DataGroup();
+
+			/**
 			 * Calls Accept() on all of its (immutable) children.
 			 * @role ConcreteElement::Accept(Visitor) in the Visitor
 			 *   design pattern (p331).
@@ -80,12 +85,13 @@ namespace GPlatesGeo
 			
 			/** 
 			 * Add an element to the container of children.
+			 * Does nothing if @a child is NULL.
 			 * @param child The element to be added to the group. 
 			 * @role Composite::Add(Component) in the Composite design pattern 
 			 *   (p163).
 			 */
 			virtual void
-			Add(const GeologicalData& child);
+			Add(GeologicalData* child);
 
 			/**
 			 * Remove an element from the container of children.
