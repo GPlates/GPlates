@@ -45,6 +45,7 @@
 #include "fileio/GPlatesWriter.h"
 #include "fileio/FileIOException.h"
 #include "fileio/FileFormatException.h"
+#include "fileio/NetCDFReader.h"
 #include "geo/PointData.h"
 #include "geo/LineData.h"
 #include "global/NotYetImplementedException.h"
@@ -155,73 +156,16 @@ namespace
 			delete att_title;
 		}
 
-#if 1
-		const char *vars[] = { "x_range", "y_range", "z_range",
-					"spacing", "dimension", "z" };
-		const char *types[] = { "**", "ncByte", "ncChar", "ncShort",
-					"ncInt", "ncFloat", "ncDouble" };
-		for (i = 0; i < sizeof (vars) / sizeof (vars[0]); ++i) {
-			NcVar *var = ncf.get_var (vars[i]);
-			std::cerr << vars[i] << ": a " << var->num_dims ()
-				<< "-D " << types[var->type ()]
-				<< " variable with " << var->num_atts ()
-				<< " attributes and " << var->num_vals ()
-				<< " values.\n";
-			std::cerr << "\tAttributes: ";
-			for (int j = 0; j < var->num_atts (); ++j) {
-				NcAtt *att = var->get_att (j);
-				std::cerr << att->name () << " ("
-					<< types[att->type ()] << ") = ";
-				switch (att->type ()) {
-					case ncChar:
-						std::cerr << '"'
-							<< att->as_string (0)
-							<< '"';
-						break;
-					case ncInt:
-						std::cerr << att->as_int (0);
-						break;
-					case ncFloat:
-						std::cerr << att->as_float (0);
-						break;
-					case ncDouble:
-						std::cerr << att->as_double (0);
-						break;
-					default:
-						std::cerr << "?!?";
-				}
-				std::cerr << ";";
-				delete att;
-			}
-			std::cerr << "\n";
-			std::cerr << "\tValues: ";
-			NcValues *vals = var->values ();
-			if (var->num_vals () < 10)
-				vals->print (std::cerr);
-			else
-				std::cerr << "(too many - " << var->num_vals ()
-					<< ")";
-			std::cerr << "\n";
-			delete vals;
+		GPlatesGeo::GridData *gdata =
+			GPlatesFileIO::NetCDFReader::Read (&ncf);
+		if (!gdata) {
+			Dialogs::ErrorMessage ("netCDF File",
+					"Loading Failed!", "...");
+			return;
 		}
-#endif
 
-		double x_min, x_max, x_step, y_min, y_max, y_step;
-		NcValues *vals;
-		// TODO: _much_ more error checking needed here
-
-		vals = ncf.get_var ("x_range")->values ();
-		x_min = vals->as_double (0);
-		x_max = vals->as_double (1);
-		delete vals;
-		vals = ncf.get_var ("y_range")->values ();
-		y_min = vals->as_double (0);
-		y_max = vals->as_double (1);
-		delete vals;
-		vals = ncf.get_var ("spacing")->values ();
-		x_step = vals->as_double (0);
-		y_step = vals->as_double (1);
-		delete vals;
+		// TODO: do something useful with this GridData ptr!
+		delete gdata;
 	}
 
 	using namespace GPlatesState;
