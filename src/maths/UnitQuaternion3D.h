@@ -221,6 +221,14 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * Multiply quaternion 'q1' with 'q2'.
+	 *
+	 * Note that, in the context of rotations, quaternion multiplication
+	 * behaves a lot like matrix multiplication: it can be considered a
+	 * <em>composition</em> of the quaternions, in the sense that 'q1'
+	 * is being applied to 'q2'.  This is known as "premultiplication".
+	 */
 	UnitQuaternion3D operator*(UnitQuaternion3D q1, UnitQuaternion3D q2);
 }
 
