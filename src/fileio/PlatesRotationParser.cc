@@ -128,7 +128,7 @@ ReadRotation(LineBuffer &lb, PlatesRotationData &rotation_data) {
  * A reasonable maximum length for each line of the rotation data.
  * This length does not include a terminating character.
  */
-static const size_t ROTATION_LINE_LEN = 120;
+static const size_t ROTATION_LINE_LEN = 511;
 
 
 void
