@@ -32,6 +32,7 @@
 #include <string>
 
 #include "global/types.h"
+#include "PlatesDataTypes.h"
 #include "LineBuffer.h"
 
 
@@ -50,7 +51,7 @@ namespace GPlatesFileIO
 		std::string attemptToReadString(const LineBuffer &lb,
 			std::istringstream &iss, const char *desc);
 
-		rgid_t attemptToReadRGID(const LineBuffer &lb,
+		plate_id_t attemptToReadPlateID(const LineBuffer &lb,
 			std::istringstream &iss, const char *desc);
 
 		int attemptToReadPlotterCode(const LineBuffer &lb,

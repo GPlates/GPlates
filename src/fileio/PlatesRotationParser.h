@@ -40,12 +40,11 @@ namespace GPlatesFileIO
 	namespace PlatesParser
 	{
 		using GPlatesGlobal::fpdata_t;
-		using GPlatesGlobal::rgid_t;
 
 		typedef std::multimap< fpdata_t, FiniteRotation >
 		 FiniteRotationsOfPlateMap;
 
-		typedef std::map< rgid_t, FiniteRotationsOfPlateMap >
+		typedef std::map< plate_id_t, FiniteRotationsOfPlateMap >
 		 RotationDataMap;
 
 		void ReadInPlateRotationData(const char *filename,

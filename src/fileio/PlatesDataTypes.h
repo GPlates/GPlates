@@ -47,6 +47,10 @@ namespace GPlatesFileIO
 		using namespace GPlatesGlobal;
 
 
+		// The type which will be used for the plate id
+		typedef unsigned int plate_id_t;
+
+
 		struct FiniteRotation;
 
 		FiniteRotation ParseRotationLine(const LineBuffer &lb,
@@ -112,7 +116,7 @@ namespace GPlatesFileIO
 
 			public:
 				fpdata_t      _time;  // Millions of years ago
-				rgid_t        _moving_plate, _fixed_plate;
+				plate_id_t    _moving_plate, _fixed_plate;
 				EulerRotation _rot;
 				std::string   _comment;
 
@@ -120,8 +124,8 @@ namespace GPlatesFileIO
 
 			protected:
 				FiniteRotation(const fpdata_t &time,
-				 const rgid_t &moving_plate,
-				 const rgid_t &fixed_plate,
+				 const plate_id_t &moving_plate,
+				 const plate_id_t &fixed_plate,
 				 const EulerRotation &rot,
 				 const std::string &comment)
 				 : _time(time),
@@ -142,7 +146,7 @@ namespace GPlatesFileIO
 
 				static void
 				ParseSecondLine(const LineBuffer &lb,
-				 const std::string &line, rgid_t &plate_id,
+				 const std::string &line, plate_id_t &plate_id,
 				 fpdata_t &age_appear, fpdata_t &age_disappear,
 				 size_t &num_points);
 
@@ -153,7 +157,7 @@ namespace GPlatesFileIO
 				 * the plate id of the plate
 				 * to which this polyline belongs.
 				 */
-				rgid_t _plate_id;
+				plate_id_t _plate_id;
 
 				/*
 				 * the lifetime of this polyline, from
@@ -170,7 +174,7 @@ namespace GPlatesFileIO
 
 				PolyLineHeader(const std::string &first_line,
 				 const std::string &second_line,
-				 const rgid_t &plate_id,
+				 const plate_id_t &plate_id,
 				 const GPlatesGeo::TimeWindow &lifetime,
 				 size_t num_points)
 
@@ -196,12 +200,12 @@ namespace GPlatesFileIO
 
 		struct Plate {
 
-			rgid_t                _plate_id;
+			plate_id_t            _plate_id;
 			std::list< PolyLine > _polylines;
 
 			// no default constructor
 
-			Plate(const rgid_t &plate_id)
+			Plate(const plate_id_t &plate_id)
 			 : _plate_id(plate_id) {  }
 		};
 	}

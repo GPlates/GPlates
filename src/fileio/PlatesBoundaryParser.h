@@ -40,11 +40,7 @@ namespace GPlatesFileIO
 {
 	namespace PlatesParser
 	{
-		typedef std::map< GPlatesGlobal::rgid_t, Plate >
-		 PlatesDataMap;
-
-		using GPlatesGlobal::rgid_t;
-
+		typedef std::map< plate_id_t, Plate > PlatesDataMap;
 
 		void ReadInPlateBoundaryData(const char *filename,
 		 std::istream &input_stream, PlatesDataMap &plates_data);
@@ -52,7 +48,7 @@ namespace GPlatesFileIO
 		void ReadPolyLine(LineBuffer &lb, PlatesDataMap &plates_data);
 
 		void AppendPolyLineToPlatesData(PlatesDataMap &plates_data,
-		 const rgid_t &plate_id, const PolyLine &pl);
+		 const plate_id_t &plate_id, const PolyLine &pl);
 
 		void ReadFirstLineOfPolyLineHeader(LineBuffer &lb,
 		 std::string &str);

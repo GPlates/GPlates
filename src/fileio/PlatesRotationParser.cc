@@ -70,7 +70,7 @@ ReadRotation(LineBuffer &lb, RotationDataMap &rotation_data) {
 
 	FiniteRotation rot = ParseRotationLine(lb, line);
 
-	rgid_t plate_id = rot._moving_plate;
+	plate_id_t plate_id = rot._moving_plate;
 	RotationDataMap::iterator it = rotation_data.find(plate_id);
 	if (it == rotation_data.end()) {
 

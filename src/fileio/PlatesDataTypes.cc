@@ -50,11 +50,12 @@ GPlatesFileIO::PlatesParser::ParseRotationLine(const LineBuffer &lb,
 	 *  - plate id of fixed plate
 	 *  - comment (begins with '!', continues to end of line)
 	 */
-	rgid_t moving_plate, fixed_plate;
+	plate_id_t moving_plate, fixed_plate;
 	fpdata_t time, lat, lon, angle;
 	std::string comment;
 
-	moving_plate = attemptToReadRGID(lb, iss, "plate id of moving plate");
+	moving_plate =
+	 attemptToReadPlateID(lb, iss, "plate id of moving plate");
 	time = attemptToReadFloat(lb, iss, "time of rotation");
 
 	lat = attemptToReadFloat(lb, iss, "latitude of Euler pole");
@@ -82,7 +83,7 @@ GPlatesFileIO::PlatesParser::ParseRotationLine(const LineBuffer &lb,
 	}
 
 	angle = attemptToReadFloat(lb, iss, "rotation angle");
-	fixed_plate = attemptToReadRGID(lb, iss, "plate id of fixed plate");
+	fixed_plate = attemptToReadPlateID(lb, iss, "plate id of fixed plate");
 
 	/*
 	 * The rest of the line (after whitespace) is assumed to be a comment.
@@ -259,7 +260,7 @@ PolyLineHeader::ParseLines(const LineBuffer &lb,
 	const std::string &first_line,
 	const std::string &second_line) {
 
-	rgid_t plate_id;
+	plate_id_t plate_id;
 	fpdata_t age_appear, age_disappear;
 	size_t num_points;
 
@@ -274,7 +275,7 @@ PolyLineHeader::ParseLines(const LineBuffer &lb,
 void
 PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
 	const std::string &line,
-	rgid_t &plate_id,
+	plate_id_t &plate_id,
 	fpdata_t &age_appear,
 	fpdata_t &age_disappear,
 	size_t &num_points) {
@@ -282,7 +283,7 @@ PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
 	std::istringstream iss(line);
 
 	// Get the 1st item on the line: the plate id
-	plate_id = attemptToReadRGID(lb, iss, "plate id");
+	plate_id = attemptToReadPlateID(lb, iss, "plate id");
 
 	// Get the 2nd item on the line: the age of appearance
 	age_appear = attemptToReadFloat(lb, iss, "age of appearance");
@@ -297,7 +298,7 @@ PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
 	attemptToReadInt(lb, iss, "data type code number");
 
 	// Ignore the 6th item on the line: the conjugate plate id
-	attemptToReadRGID(lb, iss, "conjugate plate id");
+	attemptToReadPlateID(lb, iss, "conjugate plate id");
 
 	// Ignore the 7th item on the line: the colour code number
 	attemptToReadInt(lb, iss, "colour code number");

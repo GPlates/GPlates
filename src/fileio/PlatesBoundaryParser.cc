@@ -90,14 +90,14 @@ ReadPolyLine(LineBuffer &lb, PlatesDataMap &plates_data) {
 	 * Having read the whole polyline, we now insert it into its
 	 * containing plate -- where a plate is identified by its plate_id.
 	 */
-	rgid_t plate_id = header._plate_id;
+	plate_id_t plate_id = header._plate_id;
 	AppendPolyLineToPlatesData(plates_data, plate_id, polyline);
 }
 
 
 void
-AppendPolyLineToPlatesData(PlatesDataMap &plates_data, const rgid_t &plate_id,
-	const PolyLine &pl) {
+AppendPolyLineToPlatesData(PlatesDataMap &plates_data,
+	const plate_id_t &plate_id, const PolyLine &pl) {
 
 	/*
 	 * If this is the first polyline read for this plate_id, the plate

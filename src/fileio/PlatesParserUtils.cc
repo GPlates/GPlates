@@ -90,23 +90,23 @@ attemptToReadString(const LineBuffer &lb, std::istringstream &iss,
 }
 
 
-rgid_t
-attemptToReadRGID(const LineBuffer &lb, std::istringstream &iss,
+plate_id_t
+attemptToReadPlateID(const LineBuffer &lb, std::istringstream &iss,
 	const char *desc) {
 
-	rgid_t r;
+	plate_id_t p;
 
-	if ( ! (iss >> r)) {
+	if ( ! (iss >> p)) {
 
-		// For some reason, unable to read an rgid
-		std::ostringstream oss("Unable to extract an rgid from ");
+		// For some reason, unable to read a plate id
+		std::ostringstream oss("Unable to extract plate id from ");
 		oss << lb
 		 << " while attempting to parse the "
 		 << desc;
 
 		throw FileFormatException(oss.str().c_str());
 	}
-	return r;
+	return p;
 }
 
 
