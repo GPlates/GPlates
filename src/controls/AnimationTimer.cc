@@ -124,12 +124,14 @@ GPlatesControls::AnimationTimer::Notify() {
 
 		} else {
 
-			// final frame
-			if (_finish_on_end) {
+			// finish animation
+
+			if ((_sense * _curr_t - _time_delta) < (_sense * _end_t)
+			    && _finish_on_end) {
 
 				/*
-				 * Add an extra frame to ensure animation
-				 * finishes *exactly* on end time.
+				 * Add one last frame to ensure the animation
+				 * finishes *exactly* on the end time.
 				 */
 				(*_warp_to_time)(_end_t.dval());
 			}
