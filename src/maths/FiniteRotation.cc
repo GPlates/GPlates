@@ -77,7 +77,7 @@ FiniteRotation::operator*(const UnitVector3D &uv) const {
 	 *
 	 * Adding the lines should cost about (5 + 5 * 2) = 15 clock cycles
 	 * -- it's Vector3D addition, remember -- which gives an approximate
-	 * total cost of (11 + 35 + 26 + 15) = 85 clock cycles + the cost of
+	 * total cost of (11 + 35 + 26 + 15) = 87 clock cycles + the cost of
 	 * a function call.
 	 */
 	Vector3D v_rot = _d * v
