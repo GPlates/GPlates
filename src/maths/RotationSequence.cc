@@ -1,0 +1,149 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * File specific comments.
+ *
+ * Most recent change:
+ *   $Author$
+ *   $Date$
+ * 
+ * Copyright (C) 2003 The GPlates Consortium
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * Authors:
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
+ */
+
+#include <sstream>
+#include <memory>  /* std::auto_ptr */
+#include "RotationSequence.h"
+#include "StageRotation.h"  /* interpolate */
+#include "InvalidOperationException.h"
+
+
+using namespace GPlatesMaths;
+
+
+RotationSequence::RotationSequence(const rid_t &fixed_plate,
+	const FiniteRotation &frot)
+
+	: _fixed_plate(fixed_plate) {
+
+	/*
+	 * Avoid memory leaks which would occur if an exception were thrown
+	 * in this ctor.
+	 */
+	std::auto_ptr< SharedSequence > ss_ptr(new SharedSequence());
+	ss_ptr->insert(frot);
+
+	// ok, it should be safe now
+	_shared_seq = ss_ptr.release();
+	_most_recent_time = frot.time();
+	_most_distant_time = frot.time();
+}
+
+
+RotationSequence &
+RotationSequence::operator=(const RotationSequence &other) { 
+
+	_fixed_plate = other._fixed_plate;
+	_most_recent_time = other._most_recent_time;
+	_most_distant_time = other._most_distant_time;
+
+	SharedSequence *ss = _shared_seq;
+	shareOthersSharedSeq(other);
+	decrementSharedSeqRefCount(ss);
+
+	return *this;
+}
+
+
+void
+RotationSequence::insert(const FiniteRotation &frot) {
+
+	_shared_seq->insert(frot);
+	if (frot.time() < _most_recent_time) {
+
+		_most_recent_time = frot.time();
+	}
+	if (frot.time() > _most_distant_time) {
+
+		_most_distant_time = frot.time();
+	}
+}
+
+
+FiniteRotation
+RotationSequence::finiteRotationAtTime(real_t t) const {
+
+	// it is assumed that a rotation sequence can never be empty
+
+	seq_type::const_iterator curr_rot = _shared_seq->begin();
+	if (t == (*curr_rot).time()) {
+
+		// direct hit! first time! You got the touch!
+		return (*curr_rot);
+	}
+	if (t < (*curr_rot).time()) {
+
+		std::ostringstream oss("Attempted to obtain a finite rotation "
+		 "for the time ");
+		oss << t << ", which is outside the time-span of this "
+		 "rotation sequence: [" << _most_recent_time << "Ma, "
+		 << _most_distant_time << "Ma].";
+
+		throw InvalidOperationException(oss.str().c_str());
+	}
+
+	seq_type::const_iterator prev_rot = curr_rot;
+	seq_type::const_iterator seq_end = _shared_seq->end();
+	for (curr_rot++; curr_rot != seq_end; prev_rot = curr_rot++) {
+
+		if (t == (*curr_rot).time()) {
+
+			// direct hit!
+			return (*curr_rot);
+		}
+		if (t < (*curr_rot).time()) {
+
+			/*
+			 * The time for which we're searching ('t')
+			 * lies in-between the time of the previous finite
+			 * rotation and the time of the current finite
+			 * rotation.  Hence we need to interpolate with
+			 * a stage rotation.
+			 *
+			 * As we iterate through the sequence, we're moving
+			 * back in time, away from the present.  So 'curr_rot'
+			 * will be more distant in time than 'prev_rot'.
+			 */
+			return interpolate(*prev_rot, *curr_rot, t);
+		}
+	}
+
+	if (t > (*curr_rot).time()) {
+
+		std::ostringstream oss("Attempted to obtain a finite rotation "
+		 "for the time ");
+		oss << t << ", which is outside the time-span of this "
+		 "rotation sequence: [" << _most_recent_time << "Ma, "
+		 << _most_distant_time << "Ma].";
+
+		throw InvalidOperationException(oss.str().c_str());
+	}
+
+	/*
+	 * It should never be possible to reach the end of this function,
+	 * but we'll put a return statement here to satisfy the compiler.
+	 */
+	return (*seq_end);
+}
