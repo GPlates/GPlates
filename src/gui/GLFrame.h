@@ -43,14 +43,23 @@ namespace GPlatesGui
 					const wxSize& size = wxDefaultSize,
 					const wxPoint& pos = wxDefaultPosition);
 
-			void OnExit(wxCommandEvent&) { Destroy(); }
+			void OnExit(wxCommandEvent&);
 
 			// Mouse events
 			void OnMouseMove(wxMouseEvent&);
 
 			// Menubar events
+
+			//   File events
 			void OnOpenData(wxCommandEvent&);
 			void OnOpenRotation(wxCommandEvent&);
+
+			//   View events
+			void OnViewMetadata(wxCommandEvent&);
+
+			//   Reconstruct events
+			void OnReconstructTime(wxCommandEvent&);
+			void OnReconstructAnimation(wxCommandEvent&);
 
 		private:
 			// XXX: DEFAULT_WINDOWID should be available to the entire GUI system.
