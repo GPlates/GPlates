@@ -43,7 +43,7 @@ namespace GPlatesGlobal
 
 			/**
 			 * Insert the name and message (if it exists) of this
-			 * Exception into the given stream.
+			 * Exception into the given output stream.
 			 */
 			void
 			Write(std::ostream &os) const;
@@ -56,14 +56,7 @@ namespace GPlatesGlobal
 			ExceptionName() const = 0;
 
 			/**
-			 * @return True if there is a message associated with
-			 *   Exception.
-			 */
-			virtual bool
-			HasMessage() const = 0;
-
-			/**
-			 * @return The Exception's messages as a string.
+			 * @return The Exception's message as a string.
 			 */
 			virtual std::string
 			Message() const = 0;
