@@ -247,6 +247,17 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 			throw FileFormatException
 				("Can't handle grids with polar origins.");
 		}
+#if 0
+		std::cerr << ">>> Creating a grid lattice with these points:\n"
+			"\torigin  = " << orig << "\n"
+			"\tsc_step = " << sc_step << " (lon step)\n"
+			"\tgc_step = " << gc_step << " (lat step)\n"
+			"\n"
+			"  (North Pole = " << GPlatesMaths::NorthPole << ")\n"
+			"  (South Pole = " << GPlatesMaths::SouthPole << ")\n"
+			"  ((0lon, 0lat) = " << pos (0, 0) << ")\n"
+			"  ((90lon, 0lat) = " << pos (0, 90) << ")\n";
+#endif
 		gdata = new GPlatesGeo::GridData (
 			z_units, GPlatesGeo::GeologicalData::NO_ROTATIONGROUP,
 			GPlatesGeo::GeologicalData::NO_TIMEWINDOW,

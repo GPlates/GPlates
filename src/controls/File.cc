@@ -47,6 +47,7 @@
 #include "fileio/FileIOException.h"
 #include "fileio/FileFormatException.h"
 #include "fileio/NetCDFReader.h"
+#include "fileio/NetCDFWriter.h"
 #include "geo/PointData.h"
 #include "geo/LineData.h"
 #include "global/NotYetImplementedException.h"
@@ -195,6 +196,7 @@ namespace
 		}
 
 		// TODO: do something useful with this GridData ptr!
+		GPlatesFileIO::NetCDFWriter::Write ("grid-out.grd", gdata, 0);
 		delete gdata;
 	}
 

@@ -89,6 +89,15 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 		corner_lat = orig_lat + lat_step * (ny - 1),
 		corner_lon = orig_lon + lon_step * (nx - 1);
 
+	GPlatesMaths::LatLonPoint
+		x00 = llp (lattice.resolve (0, 0)),
+		x01 = llp (lattice.resolve (0, 1)),
+		x10 = llp (lattice.resolve (1, 0)),
+		x11 = llp (lattice.resolve (1, 1));
+	std::cerr << "First four grid points:\n"
+		<< "\tbottom row: " << x00 << ", " << x10 << "\n"
+		<< "\t1st row: " << x01 << ", " << x11 << "\n";
+
 	// Create dimensions
 	NcDim *dim_side = ncf.add_dim ("side", 2);
 	//NcDim *dim_xysize = ncf.add_dim ("xysize", nx * ny);
