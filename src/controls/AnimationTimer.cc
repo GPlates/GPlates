@@ -23,6 +23,7 @@
 #include <iostream>
 #include "AnimationTimer.h"
 #include "GuiCalls.h"
+#include "Lifetime.h"
 #include "global/Exception.h"
 
 
@@ -139,10 +140,14 @@ GPlatesControls::AnimationTimer::Notify() {
 
 	} catch (const GPlatesGlobal::Exception &e) {
 
-		std::cerr
-		 << "Internal exception inside 'AnimationTimer::Notify':"
-		 << e << std::endl;
-		exit(1);
+		/*
+		 * Need to deal with GPlates Exceptions here in a "tough" way
+		 * (ie. terminating the program) since this member function is
+		 * called directly by wxWindows.
+		 */
+		std::cerr << "Caught Exception: " << e << std::endl;
+		GPlatesControls::Lifetime::instance()->terminate(
+		 "Unable to recover from exception caught in GPlatesControls::AnimationTimer::Notify.");
 	}
 }
 
