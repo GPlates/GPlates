@@ -33,6 +33,7 @@
 
 #include "Reconstruct.h"
 #include "Dialogs.h"
+#include "AnimationTimer.h"
 #include "global/types.h"
 #include "state/Data.h"
 #include "state/Layout.h"
@@ -307,50 +308,6 @@ GPlatesControls::Reconstruct::Present() {
 	WarpToPresent();
 }
 
-namespace {
-class AnimationTimer : public wxTimer
-{
-	public:
-		AnimationTimer(int nsteps, fpdata_t start_time, fpdata_t end_time)
-			: wxTimer(), current_frame(1), t(start_time), end_t(end_time)
-		{
-			time_incr = (real_t(end_time) - t) / (nsteps - 1);
-			num_frames = static_cast< unsigned >(nsteps);
-		}
-
-		virtual void
-		Notify()
-		{
-			try
-			{
-				if (current_frame < num_frames)
-				{
-					// display the frame for time 't'
-					WarpToTime(t.dval());
-
-					++current_frame;
-					t += time_incr;
-				}
-				else
-				{
-					// final frame
-					WarpToTime(end_t.dval());
-
-					Stop();
-				}
-			} 
-			catch (const GPlatesGlobal::Exception &e)
-			{
-				std::cerr << "Internal exception: " << e << std::endl;
-				exit(1);
-			}
-		}
-	
-	private:
-		unsigned num_frames, current_frame;
-		real_t t, time_incr, end_t;
-};
-}
 
 void
 GPlatesControls::Reconstruct::Animation(const fpdata_t &start_time,
@@ -376,7 +333,7 @@ GPlatesControls::Reconstruct::Animation(const fpdata_t &start_time,
 		return;
 	}
 
-	// XXX: Hooray for memory leaks!
-	AnimationTimer* anim = new AnimationTimer(nsteps, start_time, end_time);
-	anim->Start(500, wxTIMER_CONTINUOUS); // twice per second
+	// FIXME: Don't forget to check return value!
+	AnimationTimer::StartNew(WarpToTime, nsteps, start_time, end_time,
+	 500);  // 500 ms => 2 updates per second
 }
