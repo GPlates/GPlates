@@ -279,14 +279,14 @@ LatLonPoint::isValidLat(const fpdata_t &val) {
 
 /**
  * Return whether a given value is a valid longitude.
- * For the PLATES format, the valid range of longitude is [-180.0, 180.0].
- * Note that this is different to the rest of GPlates, which uses the
- * half-open range (-180.0, 180.0].
+ * For the PLATES formats, we must accept longitudes in the range
+ * [-360.0, 360.0].  Note that this is different to the rest of GPlates,
+ * which uses the half-open range (-180.0, 180.0].
  */
 bool
 LatLonPoint::isValidLon(const fpdata_t &val) {
 
-	return (-180.0 <= val && val <= 180.0);
+	return (-360.0 <= val && val <= 360.0);
 }
 
 
