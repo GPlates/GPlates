@@ -59,10 +59,6 @@ LatLonPoint::CreateLatLonPoint(const real_t &lat, const real_t &lon) {
 }
 
 
-/**
- * Return whether a given value is a valid latitude.
- * GPlates uses the range [-90.0, 90.0].
- */
 bool
 LatLonPoint::isValidLat(const real_t &val) {
 
@@ -70,12 +66,6 @@ LatLonPoint::isValidLat(const real_t &val) {
 }
 
 
-/**
- * Return whether a given value is a valid longitude.
- * GPlates uses the half-open range (-180.0, 180.0].
- * Note that this is different to the range used by the PLATES format
- * (All Hail PLATES!), which is [-180.0, 180.0].
- */
 bool
 LatLonPoint::isValidLon(const real_t &val) {
 

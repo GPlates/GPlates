@@ -41,7 +41,19 @@ namespace GPlatesMaths
 			static LatLonPoint
 			CreateLatLonPoint(const real_t &lat, const real_t &lon);
 
+			/**
+			 * Return whether a given value is a valid latitude.
+			 * GPlates uses the range [-90.0, 90.0].
+			 */
 			static bool isValidLat(const real_t &val);
+
+			/**
+			 * Return whether a given value is a valid longitude.
+			 * GPlates uses the half-open range (-180.0, 180.0].
+			 * Note that this seems to be different to the range
+			 * used by the PLATES format (All Hail PLATES!),
+			 * which seems to be [-180.0, 180.0].
+			 */
 			static bool isValidLon(const real_t &val);
 
 			real_t
