@@ -24,13 +24,14 @@
  *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
+#include <algorithm>  /* transform */
 #include <cstdlib>
 #include <fstream>
-#include <sstream>
-#include <algorithm>  /* transform */
-#include <memory>  /* std::auto_ptr */
 #include <iomanip>
 #include <iterator>
+#include <memory>  /* std::auto_ptr */
+#include <netcdfcpp.h>
+#include <sstream>
 #include "File.h"
 #include "Reconstruct.h"
 #include "Dialogs.h"
@@ -126,31 +127,22 @@ namespace
 
 	void HandleNetCDFFile (const std::string &filename)
 	{
-		throw new NotYetImplementedException (
-				"netCDF loading not yet implemented!");
+		NcFile ncf (filename.c_str ());
+		std::ostringstream msg;
 
-		std::ifstream file (filename.c_str ());
-		if (!file) {
+		if (!ncf.is_valid ()) {
 			OpenFileErrorMessage (filename, "Couldn't open file!");
 			return;
 		}
 
-		try {
-			// TODO
-		} catch (const Exception &e) {
-			std::ostringstream msg, result;
+		msg << "Loading data file with title:\n";
+		NcAtt *att_title = ncf.get_att ("title");
+		if (att_title)
+			msg << "    \"" << att_title->as_string (0) << "\"\n";
 
-			msg << "Parse error occurred.  Error message:\n"
-				<< e;
-			
-			result << "No GPML data was loaded from \"" << filename
-				<< "\"." << std::endl;
-		
-			Dialogs::ErrorMessage (
-				"Error encountered.",
-				msg.str ().c_str (),
-				result.str ().c_str ());
-		}
+		Dialogs::InfoMessage ("netCDF File", msg.str ().c_str ());
+
+		// TODO: actually load netCDF data
 	}
 
 	using namespace GPlatesState;

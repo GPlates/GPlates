@@ -17,7 +17,7 @@ AC_PROG_CXX
 AC_PROG_MAKE_SET
 CHECK_GNU_MAKE
 AC_PROG_INSTALL
-AC_LANG_CPLUSPLUS
+AC_LANG(C++)
 
 
 # What system are we on?
@@ -146,15 +146,19 @@ AC_CHECK_HEADERS([GL/gl.h GL/glu.h], [], AC_MSG_ERROR([
 !!  development package is installed on your system.
 !!]))
 
-# wxWindows
-# ???
-
 # eXpat XML Parser
 # XXX: I had to alter my local copy of expat.h because it makes
 #  forward references to enums which gcc-2.95 doesn't like.
 AC_CHECK_HEADERS([expat.h], [], AC_MSG_ERROR([
 !!
 !!  Failed to find the eXpat headers.  Make sure the eXpat
+!!  development package is installed on your system.
+!!]))
+
+# netCDF
+AC_PATH_NETCDF([], AC_MSG_ERROR([
+!!
+!!  Failed to find the netCDF C++ library. Make sure that the netCDF
 !!  development package is installed on your system.
 !!]))
 

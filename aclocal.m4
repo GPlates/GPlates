@@ -630,3 +630,31 @@ AC_DEFUN(AM_PATH_WXCONFIG,
   AC_SUBST(WX_LIBS_STATIC)
   AC_SUBST(WX_VERSION)
 ])
+
+dnl ---------------------------------------------------------------------------
+dnl AC_PATH_NETCDF([ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
+dnl
+dnl Test for netCDF, and define NETCDF_CPPFLAGS and NETCDF_LIBS.
+dnl ---------------------------------------------------------------------------
+AC_DEFUN(AC_PATH_NETCDF,
+[
+	NETCDF_CPPFLAGS=""
+	NETCDF_LIBS="-lnetcdf_c++ -lnetcdf"
+
+	AC_CHECK_HEADERS([netcdfcpp.h], [], [
+		AC_MSG_RESULT(no)
+		exit 1
+	])
+	AC_MSG_CHECKING(netCDF C++ library)
+	AC_TRY_COMPILE([#include <netcdfcpp.h>], [
+		NcFile nc ("Test.nc");
+		if (!nc.is_valid ())
+			std::cerr << "Failed!";
+		else
+			nc.close ();
+	], [AC_MSG_RESULT(yes)], [AC_MSG_RESULT(no); ifelse([$2], , :, [$2])])
+
+	AC_SUBST(NETCDF_CPPFLAGS)
+	AC_SUBST(NETCDF_LIBS)
+       ifelse([$1], , :, [$1])
+])
