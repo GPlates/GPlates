@@ -26,6 +26,7 @@
 #ifndef _GPLATES_GUI_COLOUR_H_
 #define _GPLATES_GUI_COLOUR_H_
 
+#include <iostream>
 #include <cstdio>  /* for size_t */
 #include "OpenGL.h"
 
@@ -121,6 +122,19 @@ namespace GPlatesGui
 			 */
 			GLfloat _rgba[RGBA_SIZE];
 	};
+
+
+	inline std::ostream &
+	operator<<(std::ostream &os, const Colour &c) {
+
+		os << "("
+		 << c.Red() << ", "
+		 << c.Green() << ", "
+		 << c.Blue() << ", "
+		 << c.Alpha() << ")";
+
+		return os;
+	}
 }
 
 #endif  /* _GPLATES_GUI_COLOUR_H_ */
