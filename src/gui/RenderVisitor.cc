@@ -20,28 +20,65 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #include "RenderVisitor.h"
+#include "maths/PointOnSphere.h"
 #include "OpenGL.h"
 
 using namespace GPlatesGeo;
 using namespace GPlatesGui;
 
+static void
+CallVertexWithPoint(const GPlatesMaths::PointOnSphere& point)
+{
+	GLdouble x, y, z;
+	const GPlatesMaths::UnitVector3D& uv = point.unitvector();
+
+	x = uv.x().dval();
+	y = uv.y().dval();
+	z = uv.z().dval();
+
+	glVertex3d(x, y, z);
+}
+
 void
 RenderVisitor::Visit(const PointData& point)
 {
-	
+	glBegin(GL_POINTS);
+		CallVertexWithPoint(point.GetPointOnSphere());
+	glEnd();
 }
 
 void
 RenderVisitor::Visit(const LineData& line)
 {
+	GPlatesMaths::PolyLineOnSphere::const_iterator iter = line.Begin();
+
+	glBegin(GL_LINE_STRIP);
+		for ( ; iter != line.End(); ++iter)
+			CallVertexWithPoint(*iter);
+	glEnd();
 }
 
 void
 RenderVisitor::Visit(const DataGroup& data)
 {
-
+	DataGroup::Children_t::const_iterator iter = data.ChildrenBegin();
+	for ( ; iter != data.ChildrenEnd(); ++iter) {
+		const PointData* pd = dynamic_cast<const PointData*>(*iter);
+		const LineData*  ld = dynamic_cast<const LineData*>(*iter);
+		const DataGroup* dg = dynamic_cast<const DataGroup*>(*iter);
+		
+		if (pd)
+			Visit(*pd);
+		else if (ld)
+			Visit(*ld);
+		else if (dg)
+			Visit(*dg);
+		else
+			std::cerr << "Error: Child of DataGroup was not derived from "
+				"GeologicalData!" << std::endl;
+	}
 }

@@ -173,6 +173,7 @@ Globe::Paint(const GPlatesGeo::DataGroup& data)
 		gluSphere(_sphere, _radius, _slices, _stacks);
 		glDepthRange(0.0, 0.9);
 
+		glPointSize(5.0f);
 		// Paint the data.
 		RenderVisitor renderer;
 		renderer.Visit(data);

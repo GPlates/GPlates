@@ -38,13 +38,18 @@ namespace GPlatesGui
 	class GLFrame : public wxFrame
 	{
 		public:
-			GLFrame(wxFrame* parent, const wxString& title = "", 
+			GLFrame(wxFrame* parent, 
+					const GPlatesGeo::DataGroup& data,
+					const wxString& title = "", 
 					const wxSize& size = wxDefaultSize,
 					const wxPoint& pos = wxDefaultPosition);
 
-			void OnExit(wxCommandEvent&) { Destroy(); }
-			void OnMouseMove(wxMouseEvent&);
-				
+			void 
+			OnExit(wxCommandEvent&) { Destroy(); }
+			
+			void
+			OnMouseMove(wxMouseEvent&);
+
 		private:
 			// XXX: DEFAULT_WINDOWID should be available to the entire GUI system.
 //			static const wxWindowID DEFAULT_WINDOWID = -1;

@@ -28,6 +28,7 @@
 
 #include <wx/glcanvas.h>
 #include "Globe.h"
+#include "geo/DataGroup.h"
 #include <iostream>
 
 namespace GPlatesGui
@@ -35,11 +36,13 @@ namespace GPlatesGui
 	class GLCanvas : public wxGLCanvas
 	{
 		public:
-			GLCanvas(wxWindow* parent, const wxSize& size = wxDefaultSize,
+			GLCanvas(wxWindow* parent, 
+					 const GPlatesGeo::DataGroup& data,
+					 const wxSize& size = wxDefaultSize,
 					 const wxPoint& position = wxDefaultPosition)
 				: wxGLCanvas(parent, -1, position, size), 
-				  _zoom_factor(1.0), _is_initialised(false) { parent->Show(TRUE); SetCurrent(); }
-				// Zoom factor == 1.0 => no zoom
+				  _data(data), _zoom_factor(1.0), // Zoom factor == 1.0 => no zoom
+				  _is_initialised(false) { parent->Show(TRUE); SetCurrent(); }
 
 			/**
 			 * Paint the picture.
@@ -78,6 +81,7 @@ namespace GPlatesGui
 			Globe _globe;
 			GLfloat _zoom_factor;
 			bool _is_initialised;
+			GPlatesGeo::DataGroup _data;
 
 			void InitGL();
 			void SetView();

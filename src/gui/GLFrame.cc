@@ -32,8 +32,8 @@
 
 using namespace GPlatesGui;
 
-GLFrame::GLFrame(wxFrame* parent, const wxString& title,
-	const wxSize& size, const wxPoint& pos)
+GLFrame::GLFrame(wxFrame* parent, const GPlatesGeo::DataGroup& data,
+	const wxString& title, const wxSize& size, const wxPoint& pos)
  : wxFrame(parent, -1 /* XXX: DEFAULT_WINDOWID */, title, pos, size)
 {
 	_status_bar = CreateStatusBar(STATUSBAR_NUM_FIELDS);
@@ -42,7 +42,7 @@ GLFrame::GLFrame(wxFrame* parent, const wxString& title,
 		exit(1);
 	}
 
-	_canvas = new GLCanvas(this);
+	_canvas = new GLCanvas(this, data);
 	_canvas->SetCurrent();
 
 	Fit();

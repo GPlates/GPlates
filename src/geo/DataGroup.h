@@ -107,14 +107,20 @@ namespace GPlatesGeo
 			 * Enumerative access to the children.
 			 */
 			virtual Children_t::iterator
-			ChildrenIterator() { return _children.begin(); }
+			ChildrenBegin() { return _children.begin(); }
+
+			virtual Children_t::iterator
+			ChildrenEnd() { return _children.end(); }
 
 			/** 
 			 * Restricted enumerative access to the children.
 			 */
 			virtual Children_t::const_iterator
-			ChildrenIterator() const { return _children.begin(); }
+			ChildrenBegin() const { return _children.begin(); }
 			
+			virtual Children_t::const_iterator
+			ChildrenEnd() const { return _children.end(); }
+
 		private:
 			/** 
 			 * The children of this node in the 'data tree'.
