@@ -26,6 +26,7 @@
 
 #include <netcdfcpp.h>
 #include <sstream>
+#include <wx/progdlg.h>
 #include "FileFormatException.h"
 #include "NetCDFReader.h"
 #include "geo/GeologicalData.h"
@@ -47,7 +48,8 @@ static GPlatesMaths::PointOnSphere pos (double lat, double lon)
 					(GPlatesMaths::LatLonPoint (lat, lon));
 }
 
-GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
+GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
+							wxProgressDialog *dlg)
 {
 #if 0
 	const char *vars[] = { "x_range", "y_range", "z_range",
@@ -100,7 +102,8 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	}
 #endif
 
-	// TODO: _much_ more error checking is needed here
+	if (dlg)
+		dlg->Update (0, "Checking file...");
 
 	double x_min, x_max, x_step, y_min, y_max, y_step;
 	index_t num_x, num_y;
@@ -161,6 +164,9 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 		}
 	}
 
+	if (dlg)
+		dlg->Update (0, "Loading grid lattice...");
+
 	vals = ncf->get_var ("x_range")->values ();
 	x_min = vals->as_double (0);
 	x_max = vals->as_double (1);
@@ -182,9 +188,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	num_x = index_t ((x_max - x_min) / x_step + 1);
 	num_y = index_t ((y_max - y_min) / y_step + 1);
 
-	GPlatesMaths::PointOnSphere orig = pos (x_min, y_min),
-				sc_step = pos (x_min + x_step, y_min),
-				gc_step = pos (x_min, y_min + y_step);
+	// TODO: handle the case where x is actually longitude, etc.
 
 	// TODO: verify that this attribute actually exists, before reading it!
 	NcAtt *z_unit_att = ncf->get_var ("z_range")->get_att ("units");
@@ -192,6 +196,9 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	delete z_unit_att;
 	GPlatesGeo::GridData *gdata;
 	try {
+		GPlatesMaths::PointOnSphere orig = pos (x_min, y_min),
+				sc_step = pos (x_min + x_step, y_min),
+				gc_step = pos (x_min, y_min + y_step);
 		gdata = new GPlatesGeo::GridData (
 			z_units, GPlatesGeo::GeologicalData::NO_ROTATIONGROUP,
 			GPlatesGeo::GeologicalData::NO_TIMEWINDOW,
@@ -201,8 +208,12 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 		throw FileFormatException("Couldn't determine grid from file.");
 	}
 
+	if (dlg)
+		dlg->Update (0, "Loading raw values...");
+	NcVar *z_var = ncf->get_var ("z");
+
 	// Check we have enough values
-	if (ncf->get_var ("z")->num_vals () < long (num_x * num_y)) {
+	if (z_var->num_vals () < long (num_x * num_y)) {
 		std::ostringstream oss;
 		oss << "Data file has too few values ("
 			<< ncf->get_var ("z")->num_vals () << " < "
@@ -213,9 +224,17 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 	
 	// FIXME: I'm taking a guess, and hoping that this all happens in
 	//	x-major (i.e. along the y-direction first) order...
-	NcValues *z = ncf->get_var ("z")->values ();
+	NcValues *z = z_var->values ();
 	index_t cnt = 0;
+	if (dlg)
+		dlg->Update (0, "Loading grid...");
 	for (index_t i = 0; i < num_x; ++i) {
+		if (dlg) {
+			double perc = 100 * double (i) / double (num_x);
+			int val = int (floor (perc));
+			if (dlg->Update (val, "Loading grid...") == FALSE)
+				break;
+		}
 		for (index_t j = 0; j < num_y; ++j, ++cnt) {
 			double val = z->as_double (cnt);
 			if (!isnan (val)) {

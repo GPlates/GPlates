@@ -26,6 +26,7 @@
 #ifndef _GPLATES_FILEIO_NETCDFREADER_H_
 #define _GPLATES_FILEIO_NETCDFREADER_H_
 
+#include <wx/progdlg.h>
 #include "Reader.h"
 #include "geo/GridData.h"
 
@@ -44,7 +45,8 @@ namespace GPlatesFileIO
 			 * Create a GridData object.
 			 * Return NULL on error.
 			 */
-			static GPlatesGeo::GridData *Read (NcFile *ncf);
+			static GPlatesGeo::GridData *Read (NcFile *ncf,
+						wxProgressDialog *dlg = 0);
 	};
 }
 

@@ -33,6 +33,7 @@
 #include <memory>  /* std::auto_ptr */
 #include <netcdfcpp.h>
 #include <sstream>
+#include <wx/progdlg.h>
 #include "File.h"
 #include "Reconstruct.h"
 #include "Dialogs.h"
@@ -156,13 +157,19 @@ namespace
 			delete att_title;
 		}
 
+		wxProgressDialog *dlg = new wxProgressDialog (
+			"Loading netCDF File", "Please wait...", 100, 0,
+			wxPD_APP_MODAL | wxPD_CAN_ABORT | wxPD_ELAPSED_TIME |
+			wxPD_ESTIMATED_TIME | wxPD_REMAINING_TIME);
+
 		GPlatesGeo::GridData *gdata = 0;
 		std::ostringstream oss;
 		try {
-			gdata = GPlatesFileIO::NetCDFReader::Read (&ncf);
+			gdata = GPlatesFileIO::NetCDFReader::Read (&ncf, dlg);
 		} catch (GPlatesFileIO::FileFormatException &e) {
 			e.Write (oss);
 		}
+		delete dlg;
 		if (!gdata) {
 			Dialogs::ErrorMessage ("netCDF File",
 				"Loading Failed!", oss.str ().c_str ());
