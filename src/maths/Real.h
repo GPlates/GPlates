@@ -26,6 +26,7 @@
 #ifndef _GPLATES_MATHS_REAL_H_
 #define _GPLATES_MATHS_REAL_H_
 
+#include <iostream>
 #include <cmath>
 
 
@@ -60,6 +61,8 @@ namespace GPlatesMaths
 			double _dval;
 
 		public:
+			Real() : _dval(0.0) {  }
+
 			Real(double d) : _dval(d) {  }
 
 			double dval() const { return _dval; }
@@ -210,28 +213,28 @@ namespace GPlatesMaths
 	inline Real
 	sin(Real r) {
 
-		return std::sin(r.dval());
+		return Real(std::sin(r.dval()));
 	}
 
 
 	inline Real
 	cos(Real r) {
 
-		return std::cos(r.dval());
+		return Real(std::cos(r.dval()));
 	}
 
 
 	inline Real
 	tan(Real r) {
 
-		return std::tan(r.dval());
+		return Real(std::tan(r.dval()));
 	}
 
 
 	inline Real
 	sqrt(Real r) {
 
-		return std::sqrt(r.dval());
+		return Real(std::sqrt(r.dval()));
 	}
 
 
