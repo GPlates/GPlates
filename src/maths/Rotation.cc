@@ -31,7 +31,7 @@
 
 
 GPlatesMaths::Rotation
-GPlatesMaths::Rotation::CreateRotation(const UnitVector3D &rotation_axis,
+GPlatesMaths::Rotation::Create(const UnitVector3D &rotation_axis,
 	const real_t &rotation_angle) {
 
 	UnitQuaternion3D uq =

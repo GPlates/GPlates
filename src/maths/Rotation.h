@@ -29,8 +29,6 @@
 #include "UnitVector3D.h"
 #include "UnitQuaternion3D.h"
 #include "PointOnSphere.h"
-#include "GreatCircle.h"
-#include "SmallCircle.h"
 #include "types.h"  /* real_t */
 
 
@@ -62,8 +60,8 @@ namespace GPlatesMaths
 			 * As always, the rotation angle is in radians.
 			 */
 			static Rotation
-			CreateRotation(const UnitVector3D &rotation_axis,
-			               const real_t &rotation_angle);
+			Create(const UnitVector3D &rotation_axis,
+			       const real_t &rotation_angle);
 
 
 			UnitVector3D
@@ -137,34 +135,8 @@ namespace GPlatesMaths
 	inline PointOnSphere
 	operator*(const Rotation &r, const PointOnSphere &p) {
 
-		UnitVector3D rot_uv = r * p.unitvector();
-		return PointOnSphere(rot_uv);
-	}
-
-
-	/**
-	 * Apply the given rotation to the given great circle.
-	 *
-	 * This operation is not supposed to be symmetrical.
-	 */
-	inline GreatCircle
-	operator*(const Rotation &r, const GreatCircle &g) {
-
-		UnitVector3D n = g.normal();
-		return GreatCircle(r * n);
-	}
-
-
-	/**
-	 * Apply the given rotation to the given small circle.
-	 *
-	 * This operation is not supposed to be symmetrical.
-	 */
-	inline SmallCircle
-	operator*(const Rotation &r, const SmallCircle &s) {
-
-		UnitVector3D n = s.normal();
-		return SmallCircle(r * n, s.theta());
+		UnitVector3D u = p.unitvector();
+		return PointOnSphere(r * u);
 	}
 }
 
