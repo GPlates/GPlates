@@ -1,12 +1,15 @@
 # $Id$
 # Configure script for GPlates
 
-AC_INIT([GPlates], [0.001])
+AC_INIT([GPlates], [0.001], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
 AC_PREREQ(2.53)
-AC_CONFIG_SRCDIR(src/geo/GeologicalData.h)
+AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_HEADERS(src/global/config.h)
 
 # Check C++ compiler
+# Setting CXXFLAGS is necessary to circumvent autoconf using its
+#  own (namely CXXFLAGS="-g -O2").
+CXXFLAGS=""
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 CHECK_GNU_MAKE
@@ -68,11 +71,11 @@ if test "$ac_cv_cxx_have_stl" != yes; then
 	AC_MSG_ERROR([no C++ STL present])
 fi
 
-# XXX: Do we *really* need this.
-AC_CXX_RTTI
-if test "$ac_cv_cxx_rtti" != yes; then
-	AC_MSG_ERROR([compiler doesn't support RTTI])
-fi
+# XXX: We don't *really* need this.
+#AC_CXX_RTTI
+#if test "$ac_cv_cxx_rtti" != yes; then
+#	AC_MSG_ERROR([compiler doesn't support RTTI])
+#fi
 
 
 ## 
