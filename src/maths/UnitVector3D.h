@@ -53,6 +53,11 @@ namespace GPlatesMaths
 			 * @param x_comp The x-component.
 			 * @param y_comp The y-component.
 			 * @param z_comp The z-component.
+			 *
+			 * On a Pentium IV processor, the creation of a
+			 * UnitVector3D instance will cost about 26 clock
+			 * cycles + the cost of a function call (assuming
+			 * the invariant isn't violated).
 			 */
 			explicit 
 			UnitVector3D(const real_t& x_comp,
@@ -95,6 +100,10 @@ namespace GPlatesMaths
 	};
 
 
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * (3 * 9) + (2 * 1) = 29 clock cycles.
+	 */
 	inline bool
 	operator==(UnitVector3D v1, UnitVector3D v2) {
 
@@ -113,19 +122,55 @@ namespace GPlatesMaths
 	}
 
 
-	inline bool
-	parallel(UnitVector3D v1, UnitVector3D v2) {
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * (7 + 2 * 2) + (5 + 1) = 17 clock cycles.
+	 */
+	inline real_t
+	dot(UnitVector3D v1, UnitVector3D v2) {
 
-		return (v1 == v2);
+		real_t x_dot = v1.x() * v2.x();
+		real_t y_dot = v1.y() * v2.y();
+		real_t z_dot = v1.z() * v2.z();
+
+		return (x_dot + y_dot + z_dot);
 	}
 
 
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * 17 + 7 = 24 clock cycles.
+	 */
+	inline bool
+	parallel(UnitVector3D v1, UnitVector3D v2) {
+
+		return (dot(v1, v2) >= 1.0);
+	}
+
+
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * 17 + 7 = 24 clock cycles.
+	 */
+	inline bool
+	antiparallel(UnitVector3D v1, UnitVector3D v2) {
+
+		return (dot(v1, v2) <= -1.0);
+	}
+
+
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * (7 + 2 * 2) + (5 + 1) + 7 = 24 clock cycles.
+	 */
 	inline bool
 	parallel(UnitVector3D uv, DirVector3D dv) {
 
-		return (dv.x() == dv.magnitude() * uv.x() &&
-		        dv.y() == dv.magnitude() * uv.y() &&
-		        dv.z() == dv.magnitude() * uv.z());
+		real_t x_dot = uv.x() * dv.x();
+		real_t y_dot = uv.y() * dv.y();
+		real_t z_dot = uv.z() * dv.z();
+
+		return (x_dot + y_dot + z_dot >= dv.magnitude());
 	}
 
 
@@ -133,24 +178,6 @@ namespace GPlatesMaths
 	parallel(DirVector3D dv, UnitVector3D uv) {
 
 		return parallel(uv, dv);
-	}
-
-
-	inline bool
-	antiparallel(UnitVector3D v1, UnitVector3D v2) {
-
-		return (v1.x() == -v2.x()
-		     && v1.y() == -v2.y()
-		     && v1.z() == -v2.z());
-	}
-
-
-	inline real_t
-	dot(UnitVector3D v1, UnitVector3D v2) {
-
-		return (v1.x() * v2.x()
-		      + v1.y() * v2.y()
-		      + v1.z() * v2.z());
 	}
 
 
@@ -162,6 +189,20 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * On a Pentium IV processor, it should cost about
+	 * (7 + 5 * 2) + (5 + 2 * 2) = 26 clock cycles to calculate the
+	 * components of the resultant vector, and at least 62 cycles
+	 * + the cost of two function calls, to create the DirVector3D
+	 * (assuming these two unit vectors are neither parallel nor
+	 * antiparallel, which would result in a vector of zero length
+	 * and indeterminate direction, which would violate the invariant
+	 * of the DirVector3D, which would result in exception-throwing
+	 * happy crazy fun!!!!!!1).
+	 *
+	 * So, there you have it, folks: at least 88 clock cycles + the cost
+	 * of two function calls.
+	 */
 	DirVector3D cross(UnitVector3D v1, UnitVector3D v2);
 }
 
