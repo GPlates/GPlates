@@ -27,6 +27,7 @@
 #define _GPLATES_MATHS_STAGEROTATION_H_
 
 #include "UnitQuaternion3D.h"
+#include "UnitVector3D.h"
 #include "FiniteRotation.h"
 #include "types.h"  /* real_t */
 
@@ -58,11 +59,13 @@ namespace GPlatesMaths
 			 * Create a stage rotation consisting of the given
 			 * unit quaternion and the given change in time.
 			 * The change in time is in Millions of years.
+			 *
+			 * NOTE that the unit quaternion argument MAY NOT
+			 * represent an identity rotation.
 			 */
-			StageRotation(const UnitQuaternion3D &uq,
-			              const real_t &time_delta)
-
-			 : _quat(uq), _time_delta(time_delta) {  }
+			static StageRotation
+			CreateStageRotation(const UnitQuaternion3D &uq,
+			                    const real_t &time_delta);
 
 
 			UnitQuaternion3D
@@ -87,7 +90,7 @@ namespace GPlatesMaths
 			FiniteRotation
 			operator*(const FiniteRotation &r) const {
 
-				UnitQuaternion res_uq = quat() * r.quat();
+				UnitQuaternion3D res_uq = quat() * r.quat();
 				real_t res_time = r.time() + timeDelta();
 
 				return
@@ -95,9 +98,20 @@ namespace GPlatesMaths
 				  res_time);
 			}
 
+		protected:
+			StageRotation(const UnitQuaternion3D &uq,
+			              const real_t &time_delta,
+			              const UnitVector3D &pole,
+			              const real_t &rot_angle)
+
+			 : _quat(uq), _time_delta(time_delta),
+			   _euler_pole(pole), _rotation_angle(rot_angle) {  }
+
 		private:
 			UnitQuaternion3D _quat;
 			real_t           _time_delta;  // Millions of years
+			UnitVector3D     _euler_pole;
+			real_t           _rotation_angle;  // radians
 	};
 
 
@@ -105,11 +119,18 @@ namespace GPlatesMaths
 	 * Returns the difference between two finite rotations as a
 	 * stage rotation.
 	 *
+	 * Note that the quaternions of the two finite rotations may not be
+	 * equivalent, or else the stage rotation will be indeterminate.
+	 *
 	 * If we call the first argument 'r1' and the second 'r2', then
 	 * the following facts may be stated:
 	 *
-	 *  + in general, r1.time() != r2.time()  (which results, in general,
-	 *     in a nonzero time delta).
+	 *  + r1.time() should NOT equal r2.time()  (or else, the stage
+	 *     rotation would describe a rotation through a nonzero angle
+	 *     occurring in a zero time delta -- which, in addition to
+	 *     being physically impossible (it would imply an infinite
+	 *     angular speed), would mean that scaling the stage rotation
+	 *     through time would be impossible).
 	 *
 	 *  + if 'r1' describes the rotation of a moving plate 'M1'
 	 *     with respect to a fixed plate 'F1', and 'r2' describes
@@ -147,13 +168,7 @@ namespace GPlatesMaths
 	 * or right-to-left).
 	 */
 	StageRotation
-	subtractFinite(const FiniteRotation &r1, const FiniteRotation &r2) {
-
-		UnitQuaternion3D res_uq = r1.quat() * r2.quat().inverse();
-		real_t time_delta = r1.time() - r2.time();
-
-		return StageRotation(res_uq, time_delta);
-	}
+	subtractFinite(const FiniteRotation &r1, const FiniteRotation &r2);
 }
 
 #endif  // _GPLATES_MATHS_STAGEROTATION_H_
