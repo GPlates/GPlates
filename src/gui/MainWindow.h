@@ -83,14 +83,15 @@ namespace GPlatesGui
 			static const wxWindowID DEFAULT_WINDOWID = -1;
 #endif
 
-			static const int STATUSBAR_FIELDS[];
-
+			wxMenuBar   *_menu_bar;
 			wxStatusBar *_status_bar;
 			GLCanvas    *_canvas;
 
-			/**
+			/*
 			 * Cached stuff.
 			 */
+
+			// For opening and saving files
 			wxString _last_load_dir, _last_save_dir;
 
 			// For animations
@@ -104,7 +105,7 @@ namespace GPlatesGui
 			 */
 			GPlatesGlobal::fpdata_t _current_time;
 
-			void CreateMenuBar();
+			wxMenuBar *CreateMenuBar();
 
 			DECLARE_EVENT_TABLE()
 	};

@@ -45,12 +45,15 @@
 
 
 /**
- * Menu IDs, all wrapped up to avoid namespace pollution.
+ * IDs for command and menu events.
  */
-namespace {
+namespace EventIDs {
 
 	enum {
-		MENU_FILE_OPENDATA = wxID_HIGHEST + 1,  // To avoid ID clashes
+
+		COMMAND_ESCAPE = wxID_HIGHEST + 1,  // To avoid ID clashes
+
+		MENU_FILE_OPENDATA,
 		MENU_FILE_LOADROTATION,
 		MENU_FILE_IMPORT,
 		MENU_FILE_EXPORT,
@@ -58,11 +61,6 @@ namespace {
 		MENU_FILE_EXIT,
 
 		MENU_VIEW_METADATA,
-#if 0  // globe transparency currently disabled
-		MENU_VIEW_GLOBE,
-		MENU_VIEW_GLOBE_SOLID,
-		MENU_VIEW_GLOBE_TRANSPARENT,
-#endif
 
 		MENU_RECONSTRUCT_TIME,
 		MENU_RECONSTRUCT_PRESENT,
@@ -74,12 +72,157 @@ namespace {
 }
 
 
-const int
-GPlatesGui::MainWindow::STATUSBAR_FIELDS[] = {
+/**
+ * The menus.
+ */
+namespace Menus {
 
-	-1,  /* variable width */
-	100  /* 100 pixels wide */
-};
+	/**
+	 * The type of function used to create menu instances.
+	 */
+	typedef wxMenu *(*create_fn)();
+
+
+	wxMenu *
+	CreateFileMenu() {
+
+		wxMenu *filemenu = new wxMenu;
+
+		filemenu->Append(EventIDs::MENU_FILE_OPENDATA, 
+		 _("Open &Data..."), 
+		 _("Open a native GPlates data file."));
+		filemenu->Append(EventIDs::MENU_FILE_LOADROTATION, 
+		 _("Load &Rotation...\tCtrl-R"), 
+		 _("Load a new rotation file."));
+		filemenu->Append(EventIDs::MENU_FILE_IMPORT,
+		 _("&Import External Data..."),
+		 _("Import a non-native data file."));
+		filemenu->Append(EventIDs::MENU_FILE_EXPORT,
+		 _("&Export Snapshot..."),
+		 _("Export a snapshot of the current state of the data."));
+		filemenu->Append(EventIDs::MENU_FILE_SAVEALLDATA,
+		 _("&Save All Data\tCtrl-S"),
+		 _("Save all data to file."));
+		filemenu->AppendSeparator();
+		filemenu->Append(EventIDs::MENU_FILE_EXIT,
+		 _("&Quit\tCtrl-Q"),
+		 _("Exit GPlates."));
+
+		return filemenu;
+	}
+
+
+	wxMenu *
+	CreateViewMenu() {
+
+		wxMenu *viewmenu = new wxMenu;
+
+		viewmenu->Append(EventIDs::MENU_VIEW_METADATA,
+		 _("&View Metadata..."),
+		 _("View the document's metadata."));
+
+		return viewmenu;
+	}
+
+
+	wxMenu *
+	CreateReconstructMenu() {
+
+		wxMenu *reconstructmenu = new wxMenu;
+
+		reconstructmenu->Append(EventIDs::MENU_RECONSTRUCT_TIME,
+		 _("Jump to &Time...\tCtrl-T"),
+		 _("Reconstruct the data at a particular time."));
+		reconstructmenu->Append(EventIDs::MENU_RECONSTRUCT_PRESENT,
+		 _("Return to &Present\tCtrl-P"),
+		 _("Reconstruct the data as it is in the present."));
+		reconstructmenu->Append(EventIDs::MENU_RECONSTRUCT_ANIMATION,
+		 _("&Animation...\tCtrl-A"),
+		 _("Animate the reconstruction of the data between two times.")
+		);
+
+		return reconstructmenu;
+	}
+
+
+	wxMenu *
+	CreateHelpMenu() {
+
+		wxMenu *helpmenu = new wxMenu;
+
+		helpmenu->Append(EventIDs::MENU_HELP_ABOUT,
+		 _("&About GPlates...\tF1"),
+		 _("Find out about GPlates."));
+
+		return helpmenu;
+	}
+
+
+	struct MenuInstance {
+
+		const char *title;
+		create_fn   fn;
+	};
+
+
+	/**
+	 * The menu instances.
+	 */
+	MenuInstance
+	INSTANCES[] = {
+
+		{ _("&File"),         CreateFileMenu },
+		{ _("&View"),         CreateViewMenu },
+		{ _("&Reconstruct"),  CreateReconstructMenu },
+		{ _("&Help"),         CreateHelpMenu }
+	};
+
+
+	/**
+	 * IDs for the menu instances.
+	 * These are intended to function as indices into the array of
+	 * menu instances.
+	 * Be sure to keep them in sync with the ordering of the previous array.
+	 */
+	enum {
+
+		MENU_FILE = 0,
+		MENU_VIEW,
+		MENU_RECONSTRUCT,
+		MENU_HELP
+	};
+}
+
+
+/**
+ * The statusbar fields.
+ */
+namespace StatusbarFields {
+
+	/**
+	 * The widths of the statusbar fields.
+	 */
+	const int
+	WIDTHS[] = {
+
+		-1,  /* variable width */
+		150, /* 150 pixels wide */
+		100  /* 100 pixels wide */
+	};
+
+
+	/**
+	 * IDs for the statusbar fields.
+	 * These are intended to function as indices into the previous array.
+	 * Be sure to keep them in sync with the ordering of the previous array.
+	 */
+	enum {
+
+		INFO = 0,
+		POSITION,
+		TIME
+	};
+}
 
 
 GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
@@ -92,21 +235,29 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
  _last_finish_on_end(true)
 {
 	const int num_statusbar_fields =
-	 static_cast< int >(sizeof(STATUSBAR_FIELDS) / sizeof(int));
+	 static_cast< int >(sizeof(StatusbarFields::WIDTHS) /
+	                    sizeof(StatusbarFields::WIDTHS[0]));
 
 	_status_bar = CreateStatusBar(num_statusbar_fields);
-	if (!_status_bar) {
+	if ( ! _status_bar) {
 
 		std::cerr << "Failed to create status bar." << std::endl;
 		exit(1);
 	}
-	SetStatusWidths(num_statusbar_fields, STATUSBAR_FIELDS);
+	SetStatusWidths(num_statusbar_fields, StatusbarFields::WIDTHS);
 	SetCurrentTime(0.0);
 
 	_last_load_dir = "";
 	_last_save_dir = "";
 
-	CreateMenuBar();
+	_menu_bar = CreateMenuBar();
+	if ( ! _menu_bar) {
+
+		std::cerr << "Failed to create menu bar." << std::endl;
+		exit(1);
+	}
+	SetMenuBar(_menu_bar);
+
 	_canvas = new GLCanvas(this);
 	_canvas->SetCurrent();
 
@@ -139,28 +290,9 @@ GPlatesGui::MainWindow::OnMouseMove(wxMouseEvent& evt)
 		delete pos;
 	}
 
-	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent));
+	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent),
+	              StatusbarFields::POSITION);
 }
-
-
-#if 0  // Disabled for now -- use 'wxWindow::PushEventHandler' instead
-void
-GPlatesGui::MainWindow::OnKeyPress(wxKeyEvent& evt)
-{
-	int key_code = (int)evt.KeyCode();
-
-	// For now, we're only interested in the Escape key.
-	if (key_code == WXK_ESCAPE) {
-
-		std::cerr << "Pressed ESCAPE!!!!1" << std::endl;
-
-	} else {
-
-		// Not interested in handling this key event -- pass it on.
-		evt.Skip();
-	}
-}
-#endif
 
 
 void
@@ -273,21 +405,6 @@ GPlatesGui::MainWindow::OnViewMetadata(wxCommandEvent&)
 }
 
 
-#if 0  // globe transparency currently disabled
-void
-GPlatesGui::MainWindow::OnViewGlobe(wxCommandEvent &event)
-{
-	Globe *gl = _canvas->GetGlobe();
-	if (event.GetId() == MENU_VIEW_GLOBE_SOLID)
-		gl->SetTransparency(false);
-	else if (event.GetId() == MENU_VIEW_GLOBE_TRANSPARENT)
-		gl->SetTransparency(true);
-
-	gl->Paint();
-}
-#endif
-
-
 void
 GPlatesGui::MainWindow::OnReconstructTime(wxCommandEvent&)
 {	
@@ -338,9 +455,8 @@ GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t) {
 
 	std::ostringstream oss;
 	oss
-	/* wxWindows doesn't use a fixed-width font in the status bar,
-	 * so this code doesn't achieve its aim of aligning all the times. */
-#if 0
+#if 0  /* wxWindows doesn't use a fixed-width font in the status bar,
+        * so this code doesn't achieve its aim of aligning all the times. */
 	 << std::setw(8)          // field width of 8 chars
 	 << std::right            // right-align the text in the field
 	 << std::setfill(' ')     // fill with a space
@@ -349,74 +465,27 @@ GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t) {
 #endif
 	 << t
 	 << " Ma";
-	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent), 1);
+	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent),
+	              StatusbarFields::TIME);
 }
 
 
-void
+wxMenuBar *
 GPlatesGui::MainWindow::CreateMenuBar()
 {
-	wxMenu* filemenu = new wxMenu;
-	filemenu->Append(MENU_FILE_OPENDATA, 
-	 _("Open &Data..."), 
-	 _("Open a native GPlates data file."));
-	filemenu->Append(MENU_FILE_LOADROTATION, 
-	 _("Load &Rotation...\tCtrl-R"), 
-	 _("Load a new rotation file."));
-	filemenu->Append (MENU_FILE_IMPORT,
-	 _("&Import External Data..."),
-	 _("Import a non-native data file."));
-	filemenu->Append (MENU_FILE_EXPORT,
-	 _("&Export Snapshot..."),
-	 _("Export a snapshot of the current state of the data."));
-	filemenu->Append(MENU_FILE_SAVEALLDATA,
-	 _("&Save All Data\tCtrl-S"),
-	 _("Save all data to file."));
-	filemenu->AppendSeparator();
-	filemenu->Append(MENU_FILE_EXIT,
-	 _("&Quit\tCtrl-Q"),
-	 _("Exit GPlates."));
+	const size_t num_menu_instances = sizeof(Menus::INSTANCES) /
+	                                  sizeof(Menus::INSTANCES[0]);
 
-	wxMenu* viewmenu = new wxMenu;
-	viewmenu->Append(MENU_VIEW_METADATA,
-	 _("&View Metadata..."),
-	 _("View the document's metadata."));
+	wxMenuBar *menu_bar = new wxMenuBar(wxMB_DOCKABLE);
 
-#if 0  // globe transparency currently disabled
-	viewmenu->AppendSeparator();
-	wxMenu *viewGlobe_menu = new wxMenu;
-	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_SOLID,
-	 _("&Solid"));
-	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_TRANSPARENT,
-	 _("&Transparent"));
-	viewmenu->Append(MENU_VIEW_GLOBE,
-	 _("&Globe"),
-	 viewGlobe_menu);
-#endif
+	for (size_t i = 0; i < num_menu_instances; i++) {
 
-	wxMenu* reconstructmenu = new wxMenu;
-	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
-	 _("Jump to &Time...\tCtrl-T"),
-	 _("Reconstruct the data at a particular time."));
-	reconstructmenu->Append(MENU_RECONSTRUCT_PRESENT,
-	 _("Return to &Present\tCtrl-P"),
-	 _("Reconstruct the data as it is in the present."));
-	reconstructmenu->Append(MENU_RECONSTRUCT_ANIMATION,
-	 _("&Animation...\tCtrl-A"),
-	 _("Animate the reconstruction of the data between two times."));
-	
-	wxMenu* helpmenu = new wxMenu;
-	helpmenu->Append(MENU_HELP_ABOUT,
-	 _("&About GPlates...\tF1"),
-	 _("Find out about GPlates."));
+		const char *title = Menus::INSTANCES[i].title;
+		Menus::create_fn fn = Menus::INSTANCES[i].fn;
 
-	wxMenuBar* menubar = new wxMenuBar(wxMB_DOCKABLE);
-	menubar->Append(filemenu, _("&File"));
-	menubar->Append(viewmenu, _("&View"));
-	menubar->Append(reconstructmenu, _("&Reconstruct"));
-	menubar->Append(helpmenu, _("&Help"));
-
-	SetMenuBar(menubar);
+		menu_bar->Append(fn(), title);
+	}
+	return menu_bar;
 }
 
 
@@ -425,36 +494,30 @@ BEGIN_EVENT_TABLE(GPlatesGui::MainWindow, wxFrame)
 	EVT_CLOSE(	GPlatesGui::MainWindow::OnExit)
 	EVT_MOTION(	GPlatesGui::MainWindow::OnMouseMove)
 
-	EVT_MENU(MENU_FILE_OPENDATA,
+	EVT_MENU(EventIDs::MENU_FILE_OPENDATA,
 			GPlatesGui::MainWindow::OnOpenData)
-	EVT_MENU(MENU_FILE_LOADROTATION,
+	EVT_MENU(EventIDs::MENU_FILE_LOADROTATION,
 			GPlatesGui::MainWindow::OnLoadRotation)
-	EVT_MENU(MENU_FILE_IMPORT,
+	EVT_MENU(EventIDs::MENU_FILE_IMPORT,
 			GPlatesGui::MainWindow::OnImport)
-	EVT_MENU(MENU_FILE_EXPORT,
+	EVT_MENU(EventIDs::MENU_FILE_EXPORT,
 			GPlatesGui::MainWindow::OnExport)
-	EVT_MENU(MENU_FILE_SAVEALLDATA,
+	EVT_MENU(EventIDs::MENU_FILE_SAVEALLDATA,
 			GPlatesGui::MainWindow::OnSaveAllData)
-	EVT_MENU(MENU_FILE_EXIT,
+	EVT_MENU(EventIDs::MENU_FILE_EXIT,
 			GPlatesGui::MainWindow::OnExit)
 
-	EVT_MENU(MENU_VIEW_METADATA,
+	EVT_MENU(EventIDs::MENU_VIEW_METADATA,
 			GPlatesGui::MainWindow::OnViewMetadata)
-#if 0  // globe transparency currently disabled
-	EVT_MENU(MENU_VIEW_GLOBE_SOLID,
-			GPlatesGui::MainWindow::OnViewGlobe)
-	EVT_MENU(MENU_VIEW_GLOBE_TRANSPARENT,
-			GPlatesGui::MainWindow::OnViewGlobe)
-#endif
-		
-	EVT_MENU(MENU_RECONSTRUCT_TIME,
+
+	EVT_MENU(EventIDs::MENU_RECONSTRUCT_TIME,
 			GPlatesGui::MainWindow::OnReconstructTime)
-	EVT_MENU(MENU_RECONSTRUCT_PRESENT,
+	EVT_MENU(EventIDs::MENU_RECONSTRUCT_PRESENT,
 			GPlatesGui::MainWindow::OnReconstructPresent)
-	EVT_MENU(MENU_RECONSTRUCT_ANIMATION,
+	EVT_MENU(EventIDs::MENU_RECONSTRUCT_ANIMATION,
 			GPlatesGui::MainWindow::OnReconstructAnimation)
 
-	EVT_MENU(MENU_HELP_ABOUT,
+	EVT_MENU(EventIDs::MENU_HELP_ABOUT,
 			GPlatesGui::MainWindow::OnHelpAbout)
 
 END_EVENT_TABLE()
