@@ -90,9 +90,7 @@ namespace GPlatesMaths
 				UnitQuaternion3D res_uq = quat() * r.quat();
 				real_t res_time = r.time() + timeDelta();
 
-				return
-				 FiniteRotation::CreateFiniteRotation(res_uq,
-				  res_time);
+				return FiniteRotation::Create(res_uq, res_time);
 			}
 
 		private:
