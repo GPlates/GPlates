@@ -29,6 +29,7 @@
 #define _GPLATES_GLOBAL_TYPES_H_
 
 #include <cstdlib>
+#include <string>
 #include "FPData.h"
 
 
@@ -49,6 +50,13 @@ namespace GPlatesGlobal
 	 * index_t has integral semantics.  
 	 */
 	typedef int index_t;
+
+	/**
+	 * The type used for rotation-group IDs.
+	 * In the old PLATES software, this was an integral type;
+	 * in GPlates, it will be an ASCII string
+	 */
+	typedef std::string rgid_t;
 }
 
 #endif  // _GPLATES_GLOBAL_TYPES_H_
