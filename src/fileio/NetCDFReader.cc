@@ -48,6 +48,14 @@ static GPlatesMaths::PointOnSphere pos (double lat, double lon)
 					(GPlatesMaths::LatLonPoint (lat, lon));
 }
 
+static void pos (GPlatesMaths::PointOnSphere pos, double &lat, double &lon)
+{
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::OperationsOnSphere::
+					convertPointOnSphereToLatLonPoint (pos);
+	lat = llp.latitude ().dval ();
+	lon = llp.longitude ().dval ();
+}
+
 GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 							wxProgressDialog *dlg)
 {
@@ -124,7 +132,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 		{ "y_range", decimal_mask, 2 },
 		{ "z_range", decimal_mask, 0 },	// only get units from z_range
 		{ "spacing", decimal_mask, 2 },
-		{ "z", decimal_mask, 1 }
+		{ "z", (1 << ncFloat), 1 }
 	};
 	size_t num_needed_vars = sizeof (needed_vars) / sizeof (needed_vars[0]);
 	for (int i = 0; i < ncf->num_vars (); ++i) {
@@ -222,39 +230,43 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 			<< num_y << ").";
 		throw FileFormatException (oss.str ().c_str ());
 	}
-	
+
 	// FIXME: I'm taking a guess, and hoping that this all happens in
-	//	x-major (i.e. along the y-direction first) order...
+	//	y-major (i.e. along the x-direction first) order...
 	float *z = new float[num_y];
 	index_t cnt = 0;
 	bool cancelled = false;
 	if (dlg)
 		dlg->Update (0, "Loading grid...");
-	for (index_t i = 0; i < num_x; ++i) {
+	for (index_t j = 0; j < num_y; ++j) {
 		if (dlg) {
-			double perc = 100 * double (i) / double (num_x);
+			double perc = 100 * double (j) / double (num_y);
 			int val = int (floor (perc));
 			if (dlg->Update (val, "Loading grid...") == FALSE) {
 				cancelled = true;
 				break;
 			}
 		}
-		z_var->set_cur (i * num_y);
-		if (z_var->get (z, num_y) == FALSE) {
-			std::cerr << "ARGH!\n";
-			break;
-		}
-		for (index_t j = 0; j < num_y; ++j, ++cnt) {
-			if (isnan (z[j]))
+		z_var->set_cur (j * num_x);
+		z_var->get (z, num_x);		// assumes it is ncFloat data
+		for (index_t i = 0; i < num_x; ++i, ++cnt) {
+			if (isnan (z[i]))
 				continue;
+			index_t real_i = (num_y - j - 1), real_j = i;
 
 			GPlatesGeo::GeologicalData::Attributes_t attr =
 				GPlatesGeo::GeologicalData::NO_ATTRIBUTES;
 			// TODO: insert properly when StringValue is
-			//	actually useful (value is in z[j])
+			//	actually useful (value is in z[i])
 			GPlatesGeo::GridElement *elt =
 					new GPlatesGeo::GridElement (attr);
-			gdata->Add (elt, i, j);
+			gdata->Add (elt, real_i, real_j);
+
+			// DEBUG
+			double lat, lon;
+			pos (gdata->resolve (real_i, real_j), lat, lon);
+			std::cerr << "Adding '" << z[i] << "' to (lat="
+				<< lat << ", long=" << lon << ").\n";
 		}
 	}
 	delete[] z;
