@@ -61,6 +61,22 @@ namespace GPlatesControls
 			static void SetComponents(GPlatesGui::MainWindow
 			 *window, GPlatesGui::GLCanvas *canvas);
 
+			/**
+			 * Set the current mode of operation to 'animation'.
+			 */
+			static void SetOpModeToAnimation();
+
+			/**
+			 * Return the current mode of operation to 'normal'.
+			 */
+			static void ReturnOpModeToNormal();
+
+			/**
+			 * Notify the main window that the animation has been
+			 * stopped.
+			 */
+			static void StopAnimation(bool interrupted);
+
 		private:
 			static GPlatesGui::MainWindow *_window;
 			static GPlatesGui::GLCanvas   *_canvas;

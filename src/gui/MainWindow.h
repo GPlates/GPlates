@@ -59,7 +59,6 @@ namespace GPlatesGui
 			void OnSaveAllData(wxCommandEvent&);
 			void OnExit(wxCommandEvent&);
 
-
 			// View events
 			void OnViewMetadata(wxCommandEvent&);
 			void OnViewGlobe(wxCommandEvent&);
@@ -72,7 +71,27 @@ namespace GPlatesGui
 			// Help events
 			void OnHelpAbout(wxCommandEvent&);
 
+			/**
+			 * Set the current geological time in the status bar
+			 * to @a t.
+			 */
 			void SetCurrentTime(const GPlatesGlobal::fpdata_t &t);
+
+			/**
+			 * Set the current mode of operation to 'animation'.
+			 */
+			void SetOpModeToAnimation();
+
+			/**
+			 * Return the current mode of operation to 'normal'.
+			 */
+			void ReturnOpModeToNormal();
+
+			/**
+			 * Notify this main window that the animation has been
+			 * stopped.
+			 */
+			void StopAnimation(bool interrupted);
 
 		private:
 #if 0
@@ -82,6 +101,10 @@ namespace GPlatesGui
 			 */
 			static const wxWindowID DEFAULT_WINDOWID = -1;
 #endif
+
+			/*
+			 * Gui components contained within this window.
+			 */
 
 			wxMenuBar   *_menu_bar;
 			wxStatusBar *_status_bar;
@@ -105,8 +128,25 @@ namespace GPlatesGui
 			 */
 			GPlatesGlobal::fpdata_t _current_time;
 
+			/**
+			 * Create a new wxMenuBar and return it.
+			 */
 			wxMenuBar *CreateMenuBar();
 
+			enum operation_modes {
+
+				NORMAL_MODE,
+				ANIMATION_MODE
+			};
+
+			/**
+			 * The current mode of operation.
+			 */
+			enum operation_modes _operation_mode;
+
+			/**
+			 * Declare a wxWindows event table.
+			 */
 			DECLARE_EVENT_TABLE()
 	};
 }

@@ -40,6 +40,7 @@
 #include "controls/File.h"
 #include "controls/GuiCalls.h"
 #include "controls/Reconstruct.h"
+#include "controls/AnimationTimer.h"
 #include "global/types.h"
 #include "maths/OperationsOnSphere.h"
 
@@ -84,8 +85,8 @@ namespace Menus {
 
 
 	wxMenu *
-	CreateFileMenu() {
-
+	CreateFileMenu()
+	{
 		wxMenu *filemenu = new wxMenu;
 
 		filemenu->Append(EventIDs::MENU_FILE_OPENDATA, 
@@ -113,8 +114,8 @@ namespace Menus {
 
 
 	wxMenu *
-	CreateViewMenu() {
-
+	CreateViewMenu()
+	{
 		wxMenu *viewmenu = new wxMenu;
 
 		viewmenu->Append(EventIDs::MENU_VIEW_METADATA,
@@ -126,8 +127,8 @@ namespace Menus {
 
 
 	wxMenu *
-	CreateReconstructMenu() {
-
+	CreateReconstructMenu()
+	{
 		wxMenu *reconstructmenu = new wxMenu;
 
 		reconstructmenu->Append(EventIDs::MENU_RECONSTRUCT_TIME,
@@ -146,8 +147,8 @@ namespace Menus {
 
 
 	wxMenu *
-	CreateHelpMenu() {
-
+	CreateHelpMenu()
+	{
 		wxMenu *helpmenu = new wxMenu;
 
 		helpmenu->Append(EventIDs::MENU_HELP_ABOUT,
@@ -158,8 +159,8 @@ namespace Menus {
 	}
 
 
-	struct MenuInstance {
-
+	struct MenuInstance
+	{
 		const char *title;
 		create_fn   fn;
 	};
@@ -225,6 +226,34 @@ namespace StatusbarFields {
 }
 
 
+/**
+ * Animation mode.
+ */
+namespace AnimationMode {
+
+	/**
+	 * Extra event-handling functionality used during animations.
+	 */
+	class AnimEvtHandler : public wxEvtHandler
+	{
+		public:
+			AnimEvtHandler(GPlatesGui::MainWindow *w) :
+			 _main_window(w) {  }
+
+			void
+			OnEscape(wxCommandEvent&) {
+
+				GPlatesControls::AnimationTimer::StopTimer();
+			}
+
+		private:
+			GPlatesGui::MainWindow *_main_window;
+
+			DECLARE_EVENT_TABLE()
+	};
+}
+
+
 GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
  const wxSize& size, const wxPoint& pos) :
 
@@ -232,7 +261,8 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
  _last_start_time(0.0),
  _last_end_time(0.0),
  _last_time_delta(1.0),
- _last_finish_on_end(true)
+ _last_finish_on_end(true),
+ _operation_mode(NORMAL_MODE)
 {
 	const int num_statusbar_fields =
 	 static_cast< int >(sizeof(StatusbarFields::WIDTHS) /
@@ -451,8 +481,8 @@ GPlatesGui::MainWindow::OnHelpAbout (wxCommandEvent&)
 
 
 void
-GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t) {
-
+GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t)
+{
 	std::ostringstream oss;
 	oss
 #if 0  /* wxWindows doesn't use a fixed-width font in the status bar,
@@ -470,15 +500,99 @@ GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t) {
 }
 
 
+void
+GPlatesGui::MainWindow::SetOpModeToAnimation()
+{
+	if (_operation_mode != NORMAL_MODE) {
+
+		// FIXME: should we complain?  For now, do nothing.
+		return;
+	}
+
+	// A new event handler pushed onto handler stack
+	PushEventHandler(new AnimationMode::AnimEvtHandler(this));
+
+	// A new set of keyboard "accelerators" (ie, shortcuts)
+	wxAcceleratorEntry accels[1];
+	accels[0].Set(wxACCEL_NORMAL, WXK_ESCAPE, EventIDs::COMMAND_ESCAPE);
+	size_t num_accels = sizeof(accels) / sizeof(accels[0]);
+	wxAcceleratorTable accel_tab(num_accels, accels);
+	SetAcceleratorTable(accel_tab);
+
+	// Disable all menus
+	size_t num_menus = sizeof(Menus::INSTANCES) /
+	                   sizeof(Menus::INSTANCES[0]);
+
+	for (size_t i = 0; i < num_menus; i++) {
+
+		// Disable menu 'i'
+		_menu_bar->EnableTop(i, false);
+	}
+
+	SetStatusText(_("Press ESC to interrupt animation."),
+	              StatusbarFields::INFO);
+
+	// Operation mode has been changed
+	_operation_mode = ANIMATION_MODE;
+}
+
+
+void
+GPlatesGui::MainWindow::ReturnOpModeToNormal()
+{
+	if (_operation_mode == NORMAL_MODE) {
+
+		// FIXME: should we complain?  For now, do nothing.
+		return;
+	}
+
+	// Pop animation event handler from handler stack (and delete it)
+	PopEventHandler(true);
+
+	// Remove animation keyboard accelerators
+	SetAcceleratorTable(wxNullAcceleratorTable);
+
+	// Re-enable all menus
+	size_t num_menus = sizeof(Menus::INSTANCES) /
+	                   sizeof(Menus::INSTANCES[0]);
+
+	for (size_t i = 0; i < num_menus; i++) {
+
+		// Re-enable menu 'i'
+		_menu_bar->EnableTop(i, true);
+	}
+
+	// Operation mode has been returned to normal
+	_operation_mode = NORMAL_MODE;
+}
+
+
+void
+GPlatesGui::MainWindow::StopAnimation(bool interrupted)
+{
+	if (interrupted) {
+
+		// The animation was prematurely interrupted
+		SetStatusText(_("Animation interrupted."),
+		              StatusbarFields::INFO);
+
+	} else {
+
+		SetStatusText(_("Animation finished."),
+		              StatusbarFields::INFO);
+	}
+}
+
+
 wxMenuBar *
 GPlatesGui::MainWindow::CreateMenuBar()
 {
-	const size_t num_menu_instances = sizeof(Menus::INSTANCES) /
-	                                  sizeof(Menus::INSTANCES[0]);
+	size_t num_menus = sizeof(Menus::INSTANCES) /
+	                   sizeof(Menus::INSTANCES[0]);
 
 	wxMenuBar *menu_bar = new wxMenuBar(wxMB_DOCKABLE);
 
-	for (size_t i = 0; i < num_menu_instances; i++) {
+	for (size_t i = 0; i < num_menus; i++) {
 
 		const char *title = Menus::INSTANCES[i].title;
 		Menus::create_fn fn = Menus::INSTANCES[i].fn;
@@ -519,5 +633,13 @@ BEGIN_EVENT_TABLE(GPlatesGui::MainWindow, wxFrame)
 
 	EVT_MENU(EventIDs::MENU_HELP_ABOUT,
 			GPlatesGui::MainWindow::OnHelpAbout)
+
+END_EVENT_TABLE()
+
+
+BEGIN_EVENT_TABLE(AnimationMode::AnimEvtHandler, wxEvtHandler)
+
+	EVT_MENU(EventIDs::COMMAND_ESCAPE,
+			AnimationMode::AnimEvtHandler::OnEscape)
 
 END_EVENT_TABLE()

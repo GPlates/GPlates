@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include "AnimationTimer.h"
+#include "GuiCalls.h"
 #include "global/Exception.h"
 
 
@@ -49,7 +50,14 @@ GPlatesControls::AnimationTimer::StartNew(WarpFn warp_to_time,
 	}
 	_instance = new AnimationTimer(warp_to_time, start_time, end_time,
 	 time_delta, finish_on_end);
-	return (_instance->Start(milli_secs, wxTIMER_CONTINUOUS));
+
+	bool success = _instance->Start(milli_secs, wxTIMER_CONTINUOUS);
+	if (success) {
+
+		// the animation was successfully started
+		GuiCalls::SetOpModeToAnimation();
+	}
+	return success;
 }
 
 
@@ -93,7 +101,12 @@ GPlatesControls::AnimationTimer::RestartTimer(int milli_secs) {
 void
 GPlatesControls::AnimationTimer::StopTimer() {
 
-	if (AnimationTimer::isRunning()) _instance->Stop();
+	if (AnimationTimer::isRunning()) {
+
+		_instance->Stop();
+		GuiCalls::StopAnimation(true);
+		GuiCalls::ReturnOpModeToNormal();
+	}
 }
 
 
@@ -121,6 +134,8 @@ GPlatesControls::AnimationTimer::Notify() {
 				(*_warp_to_time)(_end_t.dval());
 			}
 			_instance->Stop();
+			GuiCalls::StopAnimation(false);
+			GuiCalls::ReturnOpModeToNormal();
 		}
 
 	} catch (const GPlatesGlobal::Exception &e) {

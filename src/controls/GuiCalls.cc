@@ -54,6 +54,33 @@ GPlatesControls::GuiCalls::SetComponents(GPlatesGui::MainWindow *window,
 	_canvas = canvas;
 }
 
+void
+GPlatesControls::GuiCalls::SetOpModeToAnimation() {
+
+	if (_window != NULL) {
+
+		_window->SetOpModeToAnimation();
+	}
+}
+
+void
+GPlatesControls::GuiCalls::ReturnOpModeToNormal() {
+
+	if (_window != NULL) {
+
+		_window->ReturnOpModeToNormal();
+	}
+}
+
+void
+GPlatesControls::GuiCalls::StopAnimation(bool interrupted) {
+
+	if (_window != NULL) {
+
+		_window->StopAnimation(interrupted);
+	}
+}
+
 
 GPlatesGui::MainWindow *GPlatesControls::GuiCalls::_window = NULL;
 GPlatesGui::GLCanvas   *GPlatesControls::GuiCalls::_canvas = NULL;
