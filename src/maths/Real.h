@@ -113,6 +113,10 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * (5 [FSUB] + (2 + 1) [2*FCOM] + 1 [OR]) == 9 clock cycles.
+	 */
 	inline bool
 	operator!=(Real r1, Real r2) {
 
@@ -126,6 +130,10 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * On a Pentium IV processor, this should cost about
+	 * (5 [FSUB] + 2 [FCOM]) == 7 clock cycles.
+	 */
 	inline bool
 	operator<=(Real r1, Real r2) {
 
