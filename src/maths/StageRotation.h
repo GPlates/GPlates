@@ -166,6 +166,24 @@ namespace GPlatesMaths
 	 */
 	StageRotation
 	scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta);
+
+
+	/**
+	 * Calculate and return the finite rotation which is the interpolation
+	 * of the two finite rotations 'more_recent' and 'more_distant' to the
+	 * time 't'.
+	 *
+	 * Obviously, 't' should lie between 'more_recent' and 'more_distant'
+	 * (hence the name "interpolation"), such that the time of the finite
+	 * rotation 'more_recent' is more recent than 't', and the time of
+	 * 'more_distant' is more distant than 't'.
+	 *
+	 * Note to CG programmers: this is a "slerp".
+	 */
+	FiniteRotation
+	interpolate(const FiniteRotation &more_recent,
+	            const FiniteRotation &more_distant,
+	            const real_t &t);
 }
 
 #endif  // _GPLATES_MATHS_STAGEROTATION_H_

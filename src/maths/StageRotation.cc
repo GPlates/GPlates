@@ -34,7 +34,7 @@ using namespace GPlatesMaths;
 
 
 StageRotation
-scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
+GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 
 	/*
 	 * The basic algorithm used in this function is:
@@ -93,4 +93,23 @@ scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 	  (new_time_delta * time_delta_reciprocal) * (theta_on_2 * 2));
 
 	return StageRotation(new_uq, new_time_delta);
+}
+
+
+FiniteRotation
+GPlatesMaths::interpolate(const FiniteRotation &more_recent, 
+	const FiniteRotation &more_distant, const real_t &t) {
+
+	/*
+	 * Remember that 'more_distant' is a "larger" finite rotation than
+	 * 'more_recent', so it should be the minuend of the subtraction
+	 * [ http://mathworld.wolfram.com/Minuend.html ].
+	 */
+	StageRotation sr = subtractFiniteRots(more_distant, more_recent);
+
+	real_t new_time_delta = t - more_recent.time();
+	StageRotation scaled_sr = scaleToNewTimeDelta(sr, new_time_delta);
+	FiniteRotation interp = scaled_sr * more_recent;
+
+	return interp;
 }
