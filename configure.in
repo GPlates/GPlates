@@ -10,7 +10,7 @@ AC_CONFIG_AUX_DIR(config)
 # Check C++ compiler
 # Setting CXXFLAGS is necessary to circumvent autoconf using its
 #  own (namely CXXFLAGS="-g -O2").
-#CXXFLAGS=""
+CXXFLAGS=""
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 CHECK_GNU_MAKE
