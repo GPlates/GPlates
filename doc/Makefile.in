@@ -11,9 +11,8 @@ INSTALL = @INSTALL@
 
 all:
 
-doc:	doxygen.conf $(FIGURES:.fig=.png)
+doc:	doxygen.conf $(FIGURES:.fig=.png) $(FIGURES:.fig=.eps)
 	doxygen $<
-	cp -f $(FIGURES:.fig=.png) html
 
 install:
 

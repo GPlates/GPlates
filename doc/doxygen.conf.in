@@ -82,14 +82,14 @@ ABBREVIATE_BRIEF       =
 # Doxygen will generate a detailed section even if there is only a brief 
 # description.
 
-ALWAYS_DETAILED_SEC    = NO
+ALWAYS_DETAILED_SEC    = YES
 
 # If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all inherited 
 # members of a class in the documentation of that class as if those members were 
 # ordinary class members. Constructors, destructors and assignment operators of 
 # the base classes will not be shown.
 
-INLINE_INHERITED_MEMB  = NO
+INLINE_INHERITED_MEMB  = YES
 
 # If the FULL_PATH_NAMES tag is set to YES then Doxygen will prepend the full 
 # path before files name in the file list and in the header files. If set 
@@ -131,7 +131,7 @@ MULTILINE_CPP_IS_BRIEF = NO
 # If set to NO, the detailed description appears after the member 
 # documentation.
 
-DETAILS_AT_TOP         = NO
+DETAILS_AT_TOP         = YES
 
 # If the INHERIT_DOCS tag is set to YES (the default) then an undocumented 
 # member inherits the documentation from any documented member that it 
@@ -196,18 +196,18 @@ EXTRACT_ALL            = YES
 # If the EXTRACT_PRIVATE tag is set to YES all private members of a class 
 # will be included in the documentation.
 
-EXTRACT_PRIVATE        = YES
+EXTRACT_PRIVATE        = NO
 
 # If the EXTRACT_STATIC tag is set to YES all static members of a file 
 # will be included in the documentation.
 
-EXTRACT_STATIC         = YES
+EXTRACT_STATIC         = NO
 
 # If the EXTRACT_LOCAL_CLASSES tag is set to YES classes (and structs) 
 # defined locally in source files will be included in the documentation. 
 # If set to NO only classes defined in header files are included.
 
-EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_CLASSES  = NO
 
 # If the HIDE_UNDOC_MEMBERS tag is set to YES, Doxygen will hide all 
 # undocumented members of documented classes, files or namespaces. 
@@ -320,7 +320,7 @@ MAX_INITIALIZER_LINES  = 30
 # at the bottom of the documentation of classes and structs. If set to YES the 
 # list will mention the files that were used to generate the documentation.
 
-SHOW_USED_FILES        = YES
+SHOW_USED_FILES        = NO
 
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
@@ -496,13 +496,13 @@ VERBATIM_HEADERS       = YES
 # of all compounds will be generated. Enable this if the project 
 # contains a lot of classes, structs, unions or interfaces.
 
-ALPHABETICAL_INDEX     = NO
+ALPHABETICAL_INDEX     = YES
 
 # If the alphabetical index is enabled (see ALPHABETICAL_INDEX) then 
 # the COLS_IN_ALPHA_INDEX tag can be used to specify the number of columns 
 # in which this list will be split (can be a number in the range [1..20])
 
-COLS_IN_ALPHA_INDEX    = 5
+COLS_IN_ALPHA_INDEX    = 3
 
 # In case all classes in a project start with a common prefix, all 
 # classes will be put under the same header in the alphabetical index. 
