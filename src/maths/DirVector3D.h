@@ -58,13 +58,14 @@ namespace GPlatesMaths
 			 *
 			 * On a Pentium IV processor, the first line should
 			 * cost about (7 + 2 * 2) + (5 + 1) = 17 clock cycles
-			 * + the cost of the 'sqrt' function call (at least 38
-			 * cycles for the FSQRT insn);  the second should cost
-			 * about 7 clock cycles + the cost of a function call
-			 * (as long as the invariant isn't violated).
+			 * + the cost of the 'sqrt' function call (presumed
+			 * to be at least 47 clock cycles + the cost of two
+			 * function calls);  the second should cost about 7
+			 * clock cycles + the cost of a function call (as
+			 * long as the invariant isn't violated).
 			 *
 			 * Thus, the creation of a DirVector3D instance will
-			 * cost at least 62 clock cycles + the cost of two
+			 * cost at least 71 clock cycles + the cost of three
 			 * function calls.
 			 */
 			explicit 
@@ -90,6 +91,16 @@ namespace GPlatesMaths
 			real_t
 			magnitude() const { return _mag; }
 
+			/**
+			 * On a Pentium IV processor, this should cost about
+			 * (3 * 38) = 114 clock cycles, plus the cost of the
+			 * creation of a UnitVector3D instance, which is about
+			 * 26 cycles + the cost of a function call (assuming
+			 * the invariant isn't violated).
+			 *
+			 * Thus, the total cost of this function should be
+			 * about 140 cycles + the cost of two function calls.
+			 */ 
 			UnitVector3D
 			normalise() const;
 
