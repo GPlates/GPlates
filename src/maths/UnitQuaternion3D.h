@@ -152,6 +152,8 @@ namespace GPlatesMaths
 			 * Create a unit quaternion to represent the following
 			 * Euler rotation around the unit vector of the Euler
 			 * pole, by the given rotation angle.
+			 *
+			 * As always, the rotation angle is in radians.
 			 */
 			static UnitQuaternion3D
 			CreateEulerRotation(const UnitVector3D &euler_pole, 
