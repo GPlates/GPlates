@@ -41,7 +41,7 @@ namespace GPlatesGeo
 		public:
 			GridElement (float val, const Attributes_t &attrs =
 						GeologicalData::NO_ATTRIBUTES)
-				: _attributes(attrs)
+				: _value (val), _attributes(attrs)
 			{ }
 
 			float getValue () const { return _value; }

@@ -152,7 +152,7 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 		var_z->set_cur (cnt);
 		var_z->put (z, nx);
 	}
-	delete z;
+	delete[] z;
 
 	return true;
 }
