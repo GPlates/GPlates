@@ -43,7 +43,7 @@ namespace GPlatesControls
 
 		/**
 		 * Present an informational dialog with the given
-		 * @a title and @message, with a single OK button
+		 * @a title and @a message, with a single OK button
 		 * for them to click.
 		 */
 		void InfoMessage(const char *title, const char *message);
