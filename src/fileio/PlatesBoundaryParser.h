@@ -57,7 +57,7 @@ namespace GPlatesFileIO
 		 std::string &str);
 
 		void ReadPolyLinePoints(LineBuffer &lb,
-		 std::list< LatLonPoint > &points, size_t num_points_to_expect);
+		 std::list< BoundaryLatLonPoint > &points, size_t num_points_to_expect);
 
 		std::string ReadPolyLinePoint(LineBuffer &lb);
 	}

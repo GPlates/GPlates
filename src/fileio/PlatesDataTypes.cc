@@ -24,6 +24,7 @@
  */
 
 #include <iomanip>
+#include <utility>
 #include <sstream>
 #include <iterator>
 #include "PlatesDataTypes.h"
@@ -151,7 +152,7 @@ GPlatesFileIO::PlatesParser::ParseRotationLine(const LineBuffer &lb,
 }
 
 
-LatLonPoint
+BoundaryLatLonPoint
 LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 	int expected_plotter_code) {
 
@@ -160,9 +161,7 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 	 * and an int (a plotter code).
 	 */
 	fpdata_t lat, lon;
-#if 0
 	int plotter_code;
-#endif
 
 	std::istringstream iss(line);
 
@@ -188,9 +187,9 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 		throw InvalidDataException(oss.str().c_str());
 	}
 
-#if 0
 	plotter_code = attemptToReadPlotterCode(lb, iss);
-	if (plotter_code != expected_plotter_code) {
+	if ((expected_plotter_code != PlotterCodes::PEN_EITHER)
+		&& (plotter_code != expected_plotter_code)) {
 
 		/*
 		 * The plotter code which was read was not
@@ -201,9 +200,25 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 		 << ") for plotter code\nfound in " << lb << ".";
 
 		throw InvalidDataException(oss.str().c_str());
+	} else {
+
+		// expected_plotter code must be PEN_EITHER
+		
+		if ((plotter_code != PlotterCodes::PEN_DOWN)
+			&& (plotter_code != PlotterCodes::PEN_UP)) {
+
+			/*
+			 * The plotter code which was read was not
+			 * one of the valid codes (UP=3, DOWN=2).
+			 */
+			std::ostringstream oss;
+			oss << "Unexpected value (" << plotter_code
+			 << ") for plotter code\nfound in " << lb << ".";
+
+			throw InvalidDataException(oss.str().c_str());
+		}
 	}
-#endif
-	return LatLonPoint(lat, lon);  // not interested in plotter code
+	return std::make_pair(LatLonPoint(lat, lon), plotter_code);
 }
 
 

@@ -106,7 +106,7 @@ GPlatesApp::OnInit()
 {
 	try {
 		// NULL => no parent
-		GLFrame* frame = new GLFrame(NULL, PACKAGE_STRING, wxSize(640,640));
+		GLFrame* frame = new GLFrame(NULL, _(PACKAGE_STRING), wxSize(640,640));
 		
 		frame->Show(TRUE);
 

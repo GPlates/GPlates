@@ -198,18 +198,8 @@ ReadSecondLineOfPolyLineHeader(LineBuffer &lb, std::string &str) {
 }
 
 
-/**
- * The possible values for the plotter code.
- * Don't worry too much about what this means.
- */
-namespace PlotterCodes {
-
-	enum { PEN_DOWN = 2, PEN_UP = 3 };
-}
-
-
 void
-ReadPolyLinePoints(LineBuffer &lb, std::list< LatLonPoint > &points,
+ReadPolyLinePoints(LineBuffer &lb, std::list< BoundaryLatLonPoint > &points,
 	size_t num_points_to_expect) {
     
 	/*
@@ -217,7 +207,7 @@ ReadPolyLinePoints(LineBuffer &lb, std::list< LatLonPoint > &points,
 	 * We have asserted that it must be at least 2.  Read the first point.
 	 */
 	std::string first_line = ReadPolyLinePoint(lb);
-	LatLonPoint first_point =
+	BoundaryLatLonPoint first_point =
 	 LatLonPoint::ParseBoundaryLine(lb, first_line, PlotterCodes::PEN_UP);
 	points.push_back(first_point);
 
@@ -228,9 +218,9 @@ ReadPolyLinePoints(LineBuffer &lb, std::list< LatLonPoint > &points,
 	for (size_t n = 1; n < num_points_to_expect; n++) {
 
 		std::string line = ReadPolyLinePoint(lb);
-		LatLonPoint point =
+		BoundaryLatLonPoint point =
 		 LatLonPoint::ParseBoundaryLine(lb, line,
-		  PlotterCodes::PEN_DOWN);
+		  PlotterCodes::PEN_EITHER);
 		points.push_back(point);
 	}
 

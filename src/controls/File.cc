@@ -104,28 +104,70 @@ ConvertPlatesParserLatLonToMathsLatLon(const PlatesParser::LatLonPoint& point)
 }
 
 
-static LineData*
-GetLineDataFromPolyLine(const PlatesParser::PolyLine& line)
+namespace
+{
+	// List of LatLonPoint Lists.  XXX There is no God.
+	typedef std::list< std::list< PlatesParser::LatLonPoint > > LLLPL_t;
+}
+
+static void
+ConvertPolyLineToListOfLatLonPointLists(const PlatesParser::PolyLine& line,
+	LLLPL_t& plate_segments)
+{
+	std::list< PlatesParser::LatLonPoint > llpl;
+
+	std::list< PlatesParser::BoundaryLatLonPoint >::const_iterator 
+		iter = line._points.begin();
+	// Handle first point
+	llpl.push_back(iter->first);
+	++iter;
+
+	for ( ; iter != line._points.end(); ++iter) {
+		if (iter->second == PlatesParser::PlotterCodes::PEN_UP) {
+			// We need to split this line, so push_back a copy of
+			// the line so far
+			plate_segments.push_back(llpl);
+			llpl.clear();  // start a new segment
+		}
+		llpl.push_back(iter->first);
+	}
+	// There should always be one segment left to add.
+	if (llpl.size())
+		plate_segments.push_back(llpl);
+}
+
+static void
+GetLineDataListFromPolyLine(const PlatesParser::PolyLine& line, 
+	std::list< LineData* >& result)
 {
 	using namespace GPlatesMaths;
 
 	GPlatesGlobal::rid_t plate_id = line._header._plate_id;
 	TimeWindow lifetime = line._header._lifetime;
 	
-	std::list< LatLonPoint > llpl;
-	std::transform(line._points.begin(), line._points.end(), 
-	               std::back_inserter(llpl),
-	               &ConvertPlatesParserLatLonToMathsLatLon);
-	llpl.unique();  // Eliminate identical consecutive points.
+	// Filter line._points such that it is split up according to PlotterCode.
 
-	PolyLineOnSphere polyline =
-	 OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(llpl);
+	LLLPL_t plate_segments;
+	ConvertPolyLineToListOfLatLonPointLists(line, plate_segments);
+
+	LLLPL_t::const_iterator iter = plate_segments.begin();
+	for ( ; iter != plate_segments.end(); ++iter) {
+		std::list< LatLonPoint > llpl;
+		std::transform(iter->begin(), iter->end(), 
+		               std::back_inserter(llpl),
+		               &ConvertPlatesParserLatLonToMathsLatLon);
+		llpl.unique();  // Eliminate identical consecutive points.
 	
-	return new LineData(GeologicalData::NO_DATATYPE, 
-	                    plate_id, 
-	                    lifetime,
-	                    GeologicalData::NO_ATTRIBUTES,
-	                    polyline);
+		// Point is "commented"
+		if (llpl.size() <= 1)
+			continue;
+		
+		PolyLineOnSphere polyline =
+		 OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(llpl);
+		
+		result.push_back(new LineData(GeologicalData::NO_DATATYPE, 
+			plate_id, lifetime, GeologicalData::NO_ATTRIBUTES, polyline));
+	}
 }
 
 
@@ -135,8 +177,14 @@ AddLinesFromPlate(DataGroup* data, const PlatesParser::Plate& plate)
 	using namespace PlatesParser;
 
 	std::list<PolyLine>::const_iterator iter = plate._polylines.begin();
+
 	for ( ; iter != plate._polylines.end(); ++iter) {
-		data->Add(GetLineDataFromPolyLine(*iter));
+		std::list< LineData* > ld;
+		GetLineDataListFromPolyLine(*iter, ld);
+
+		std::list< LineData* >::iterator jter = ld.begin();
+		for ( ; jter != ld.end(); ++jter)
+			data->Add(*jter);
 	}
 }
 
@@ -206,7 +254,7 @@ ConvertDataGroupToDrawableDataMap(DataGroup* data)
 	Data::DrawableMap_type* map = new Data::DrawableMap_type;
 
 	AddGeoDataToDrawableMap AddData(map);
-	AddData(data);  
+	AddData(data); 
 	
 	Data::SetDrawableData(map);
 }

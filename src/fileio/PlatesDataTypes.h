@@ -35,6 +35,7 @@
 
 #include <list>
 #include <string>
+#include <utility>
 
 #include "LineBuffer.h"
 #include "global/types.h"
@@ -51,11 +52,27 @@ namespace GPlatesFileIO
 		typedef unsigned int plate_id_t;
 
 
+		/**
+		 * The possible values for the plotter code.
+		 * Don't worry too much about what this means.
+		 */
+		namespace PlotterCodes {
+
+			enum { PEN_EITHER, PEN_DOWN = 2, PEN_UP = 3 };
+		}
+
+
 		struct FiniteRotation;
 
 		FiniteRotation ParseRotationLine(const LineBuffer &lb,
 		 const std::string &line);
 
+		struct LatLonPoint;
+
+		/**
+		 * Store a LatLonPoint with its plotter code.
+		 */
+		typedef std::pair<LatLonPoint, int> BoundaryLatLonPoint;
 
 		struct LatLonPoint
 		{
@@ -65,7 +82,7 @@ namespace GPlatesFileIO
 
 			public:
 
-				static LatLonPoint
+				static BoundaryLatLonPoint
 				ParseBoundaryLine(const LineBuffer &lb,
 				 const std::string &line,
 				 int expected_plotter_code);
@@ -220,7 +237,7 @@ namespace GPlatesFileIO
 		struct PolyLine
 		{
 			PolyLineHeader           _header;
-			std::list< LatLonPoint > _points;
+			std::list< BoundaryLatLonPoint > _points;
 
 			// no default constructor
 

@@ -41,5 +41,6 @@ Dialogs::ErrorMessage(const char* title,
 		<< result << std::endl;
 
 	// Annoy user:
-	wxMessageBox(msg.str().c_str(), title, wxOK | wxICON_ERROR);
+	wxMessageBox(wxString(msg.str().c_str(), *wxConvCurrent), 
+				wxString(title, *wxConvCurrent), wxOK | wxICON_ERROR);
 }
