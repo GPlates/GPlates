@@ -22,6 +22,7 @@
  * Authors:
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
  *   Dave Symonds <ds@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_GLOBE_H_
@@ -29,6 +30,7 @@
 
 #include "OpenGL.h"
 #include "Colour.h"
+#include "OpaqueSphere.h"
 #include "SphericalGrid.h"
 #include "geo/DataGroup.h"
 
@@ -37,15 +39,13 @@ namespace GPlatesGui
 	class Globe
 	{
 		public:
-			Globe(Colour  colour = DEFAULT_COLOUR,
-				  GLfloat radius = DEFAULT_RADIUS,
-				  GLint   slices = DEFAULT_SLICES,
-				  GLint   stacks = DEFAULT_STACKS);
+			Globe()
+			 : _meridian(0.0), _elevation(0.0),
+			   _sphere(Colour(0.35, 0.35, 0.35)),
+			   _grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON,
+			    Colour::WHITE) {  }
 
-			~Globe() { 
-				
-				gluDeleteQuadric(_sphere);
-			}
+			~Globe() {  }
 
 			GLfloat&
 			GetMeridian() { return _meridian; }
@@ -53,48 +53,37 @@ namespace GPlatesGui
 			GLfloat&
 			GetElevation() { return _elevation; }
 
+			// currently does nothing.
 			void
-			SetTransparency(bool trans = true);
+			SetTransparency(bool trans = true) {  }
 
-			void
-			Paint();
+			void Paint();
 
 		private:
 			/**
-			 * Globe is initially white.
+			 * One circle of latitude every 30 degrees.
 			 */
-			static const Colour DEFAULT_COLOUR;
-			
-			/**
-			 * Unit radius to ease calculations and display of data.
-			 */
-			static const GLfloat DEFAULT_RADIUS;
+			static const unsigned NUM_CIRCLES_LAT = 5;
 
 			/**
-			 * One slice every 30 degrees.
+			 * One circle of longitude every 30 degrees.
 			 */
-			static const GLint DEFAULT_SLICES = 12;
-
-			/**
-			 * One stack every 30 degrees.
-			 */
-			static const GLint DEFAULT_STACKS = 6;
-
-			Colour _colour;
-
-			/**
-			 * The Globe's radius will almost always be one.
-			 */
-			GLfloat _radius;
+			static const unsigned NUM_CIRCLES_LON = 6;
 
 			GLfloat _meridian;
 			GLfloat _elevation;
 
-			GLUquadricObj *_sphere;	/*< The solid earth. */
-			SphericalGrid  _grid;	/*< Lines of lat and lon on surface. */ 
+			/**
+			 * The solid earth.
+			 */
+			OpaqueSphere _sphere;
 
-			void
-			NormaliseMeridianElevation();
+			/**
+			 * Lines of lat and lon on surface of earth.
+			 */
+			SphericalGrid _grid;
+
+			void NormaliseMeridianElevation();
 	};
 }
 

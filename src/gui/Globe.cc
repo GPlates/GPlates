@@ -22,6 +22,7 @@
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  *   Dave Symonds <ds@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include <iostream>
@@ -36,33 +37,6 @@ using namespace GPlatesGui;
 using namespace GPlatesMaths;
 using namespace GPlatesState;
 
-const GLfloat Globe::DEFAULT_RADIUS = 1.0;
-const Colour Globe::DEFAULT_COLOUR = Colour::WHITE;
-
-static void
-QuadricError(GLenum error)
-{
-	std::cerr << "Quadric Error: " << gluErrorString(error) << std::endl;
-	exit(1);
-}
-
-Globe::Globe(Colour colour, GLfloat radius, GLint slices, GLint stacks)
-	: _colour(colour), _radius(radius), _meridian(0.0), _elevation(0.0),
-	  _grid(5, 6, Colour::WHITE)
-{
-	_sphere = gluNewQuadric();
-	gluQuadricNormals(_sphere, GLU_SMOOTH);	// Generate normals for lighting
-	gluQuadricTexture(_sphere, GL_FALSE);	// Don't generate texture coords
-	SetTransparency(false);			// Draw solid sphere
-	gluQuadricCallback(_sphere, GLU_ERROR,  // Catch errors.
-		reinterpret_cast<void (*)()>(&QuadricError));
-}
-
-void
-Globe::SetTransparency(bool trans)
-{
-	gluQuadricDrawStyle(_sphere, trans ? GLU_LINE : GLU_FILL);
-}
 
 void
 Globe::NormaliseMeridianElevation()
@@ -200,7 +174,7 @@ Globe::Paint()
 		 * avoid Z-fighting with the LineData.
 		 */
 		glDepthRange(0.02, 1.0);
-		gluSphere(_sphere, _radius, 36, 18);
+		_sphere.Paint();
 
 		// Set the grid's colour.
 		glColor3fv(Colour::WHITE);
