@@ -28,7 +28,6 @@
 #include "AnimationTimesDialog.h"
 
 using namespace GPlatesGui;
-using namespace GPlatesMaths;
 
 AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent)
 	: wxDialog(parent, -1, "Constructing Animation...")
@@ -84,10 +83,10 @@ AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent)
 }
 
 
-GPlatesMaths::real_t
+GPlatesGlobal::fpdata_t
 AnimationTimesDialog::GetStartTime() const
 {
-	GPlatesMaths::real_t res;
+	GPlatesGlobal::fpdata_t res;
 	
 	std::istringstream iss(_startctrl->GetValue().c_str());
 	iss >> res;
@@ -97,10 +96,10 @@ AnimationTimesDialog::GetStartTime() const
 	return res;
 }
 
-GPlatesMaths::real_t
+GPlatesGlobal::fpdata_t
 AnimationTimesDialog::GetEndTime() const
 {
-	GPlatesMaths::real_t res;
+	GPlatesGlobal::fpdata_t res;
 	
 	std::istringstream iss(_endctrl->GetValue().c_str());
 	iss >> res;

@@ -27,7 +27,7 @@
 #define _GPLATES_GUI_RECONSTRUCTTIMEDIALOG_H_
 
 #include <wx/dialog.h>
-#include "maths/types.h"
+#include "global/types.h"
 
 namespace GPlatesGui
 {
@@ -36,7 +36,7 @@ namespace GPlatesGui
 		public:
 			ReconstructTimeDialog(wxWindow* parent);
 	
-			GPlatesMaths::real_t
+			GPlatesGlobal::fpdata_t
 			GetInput() const;
 
 		private:

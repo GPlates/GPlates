@@ -27,7 +27,6 @@
 #define _GPLATES_GUI_ANIMATIONTIMESDIALOG_H_
 
 #include <wx/dialog.h>
-#include "maths/types.h"
 #include "global/types.h"
 
 namespace GPlatesGui
@@ -37,10 +36,10 @@ namespace GPlatesGui
 		public:
 			AnimationTimesDialog(wxWindow* parent);
 	
-			GPlatesMaths::real_t
+			GPlatesGlobal::fpdata_t
 			GetStartTime() const;
-			
-			GPlatesMaths::real_t
+
+			GPlatesGlobal::fpdata_t
 			GetEndTime() const;
 
 			GPlatesGlobal::integer_t

@@ -28,7 +28,6 @@
 #include "ReconstructTimeDialog.h"
 
 using namespace GPlatesGui;
-using namespace GPlatesMaths;
 
 ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent)
 	: wxDialog(parent, -1, "Reconstruct to...")
@@ -65,10 +64,10 @@ ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent)
 }
 
 
-GPlatesMaths::real_t
+GPlatesGlobal::fpdata_t
 ReconstructTimeDialog::GetInput() const
 {
-	GPlatesMaths::real_t res;
+	GPlatesGlobal::fpdata_t res;
 	
 	std::istringstream iss(_txtctrl->GetValue().c_str());
 	iss >> res;
