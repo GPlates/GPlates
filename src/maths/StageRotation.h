@@ -120,43 +120,39 @@ namespace GPlatesMaths
 	 * stage rotation.
 	 *
 	 * Note that the quaternions of the two finite rotations may not be
-	 * equivalent, or else the stage rotation will be indeterminate.
+	 * equivalent, or else the stage rotation would be indeterminate.
 	 *
-	 * If we call the first argument 'r1' and the second 'r2', then
-	 * the following facts may be stated:
+	 * Note also that the times of the two finite rotations may not be
+	 * equal, or else the stage rotation would describe a rotation through
+	 * a nonzero angle which occurs in a zero time delta.  In addition to
+	 * being physically impossible (it would imply an infinite angular
+	 * speed), a zero time delta would mean that scaling the stage rotation
+	 * by time would be undefined.
 	 *
-	 *  + r1.time() should NOT equal r2.time()  (or else, the stage
-	 *     rotation would describe a rotation through a nonzero angle
-	 *     occurring in a zero time delta -- which, in addition to
-	 *     being physically impossible (it would imply an infinite
-	 *     angular speed), would mean that scaling the stage rotation
-	 *     through time would be impossible).
+	 * If 'r1' describes the rotation of a moving plate 'M1' with respect
+	 * to a fixed plate 'F1', and 'r2' describes the rotation of a moving
+	 * plate 'M2' with respect to a fixed plate 'F2', then:
 	 *
-	 *  + if 'r1' describes the rotation of a moving plate 'M1'
-	 *     with respect to a fixed plate 'F1', and 'r2' describes
-	 *     the rotation of a moving plate 'M2' with respect to a
-	 *     fixed plate 'F2', then:
+	 *  + F1 should equal F2  ("should equal" instead of "must equal",
+	 *     since this function cannot enforce this equality).
 	 *
-	 *      - F1 should equal F2  ("should equal" instead of "must equal",
-	 *         since this function cannot enforce this equality).
+	 *  + M1 should equal M2.
 	 *
-	 *      - M1 should equal M2.
+	 *  + if the result of this operation is called 'sr', then sr will
+	 *     describe the motion of the moving plate.
 	 *
-	 *      - if the result of this operation is called 'sr', then
-	 *         'sr' will describe the motion of the plate M1 == M2.
-	 *
-	 * Note that, in contrast to most of the stage rotation / finite
-	 * rotation / point operations, this operation is NOT read right-
-	 * to-left (ie. starting with the right-most object, then moving
-	 * left as successive operations are applied) in the style of
-	 * premultiplication.  Rather, 'r1' is taken, and then 'r2' is
-	 * "subtracted" from it (or rather, the inverse of 'r2' is applied
-	 * to it).  In mathematical symbols, if
+	 * Note that, in contrast to most of the stage-rotation / finite-
+	 * rotation / point-on-sphere operations, this operation is NOT
+	 * read right-to-left (ie. starting with the right-most object,
+	 * then moving left as successive operations are applied) in the
+	 * style of premultiplication.  Rather, r1 is "taken", and then r2
+	 * is "subtracted" from it (or rather, the inverse of r2 is applied
+	 * to it).  In mathematical symbols, if:
 	 *  C := A - B == A + (-B)
-	 *             == B.inverse() * A  [where '+' is intended in the
+	 *             == B.inverse() * A  [where '+ X' is intended in the
 	 * style of position vectors and displacements, and may be read as
-	 * "then apply", while '*' is intended in the style of matrices,
-	 * and may be read as "premultiply to apply-to"], then
+	 * "then apply X"; while 'X *' is intended in the style of matrices,
+	 * and may be read as "premultiply X, in order to apply it"], then:
 	 *  A == B + C
 	 *    == C * B.
 	 * Due to this irregularity in the order-of-evaluation of arguments,
