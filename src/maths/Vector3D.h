@@ -152,9 +152,11 @@ namespace GPlatesMaths
 	inline real_t
 	dot(Vector3D v1, Vector3D v2) {
 
-		return (v1.x() * v2.x()
-		      + v1.y() * v2.y()
-		      + v1.z() * v2.z());
+		real_t x_dot = v1.x() * v2.x();
+		real_t y_dot = v1.y() * v2.y();
+		real_t z_dot = v1.z() * v2.z();
+
+		return (x_dot + y_dot + z_dot);
 	}
 
 
