@@ -32,7 +32,7 @@ namespace GPlatesGeo {
 		
 		public:
 
-			template< properties_iterator >
+			template< typename properties_iterator >
 			PolyLineFeature(
 			 properties_iterator begin,
 			 properties_iterator end,
