@@ -25,7 +25,7 @@
 #include "InvalidGridException.h"
 #include "FunctionDomainException.h"
 #include "ViolatedClassInvariantException.h"
-#include "OperationsOnSphere.h"
+#include "LatLonPointConversions.h"
 #include "Vector3D.h"
 
 

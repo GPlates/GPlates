@@ -35,7 +35,7 @@
 #include "Lifetime.h"
 #include "state/Data.h"
 #include "fileio/PlatesRotationParser.h"
-#include "maths/OperationsOnSphere.h"
+#include "maths/LatLonPointConversions.h"
 #include "fileio/PlatesBoundaryParser.h"
 #include "fileio/PlatesPostParseTranslator.h"
 #include "fileio/GPlatesReader.h"
@@ -481,7 +481,7 @@ ConvertPlatesParserLLPToGPlatesMathsPOS(PlatesParser::LatLonPoint pp_llp) {
 
 	GPlatesMaths::LatLonPoint llp =
 	 ConvertPlatesParserLatLonToMathsLatLon(pp_llp);
-	return GPlatesMaths::OperationsOnSphere::
+	return GPlatesMaths::LatLonPointConversions::
 	 convertLatLonPointToPointOnSphere(llp);
 }
 

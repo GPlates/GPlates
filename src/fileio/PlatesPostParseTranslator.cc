@@ -27,7 +27,7 @@
 #include <memory>  /* std::auto_ptr */
 #include <iomanip>
 #include <iterator>
-#include "maths/OperationsOnSphere.h"
+#include "maths/LatLonPointConversions.h"
 #include "fileio/PlatesBoundaryParser.h"
 #include "fileio/FileFormatException.h"
 #include "geo/PointData.h"
@@ -124,7 +124,7 @@ namespace
 				continue;
 			
 			PolyLineOnSphere polyline =
-			 OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(llpl);
+			 LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(llpl);
 			
 			result.push_back(new LineData(GeologicalData::NO_DATATYPE, 
 				plate_id, lifetime, GeologicalData::NO_ATTRIBUTES, polyline));
@@ -148,7 +148,7 @@ namespace
 		LatLonPoint 
 			llp = ConvertPlatesParserLatLonToMathsLatLon(point->first);
 		PointOnSphere
-			pos = OperationsOnSphere::convertLatLonPointToPointOnSphere(llp);
+			pos = LatLonPointConversions::convertLatLonPointToPointOnSphere(llp);
 		return new PointData(GeologicalData::NO_DATATYPE, plate_id,
 			lifetime, GeologicalData::NO_ATTRIBUTES, pos);
 	}

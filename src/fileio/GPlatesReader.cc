@@ -31,7 +31,7 @@
 #include "InvalidDataException.h"
 #include "global/types.h"
 #include "maths/types.h"
-#include "maths/OperationsOnSphere.h"
+#include "maths/LatLonPointConversions.h"
 #include "maths/PointOnSphere.h"
 #include "geo/Visitor.h"
 #include "geo/GeologicalData.h"
@@ -264,7 +264,7 @@ namespace
 			 GetRotationGroupId(element), 
 			 GetTimeWindow(element),
 			 GetAttributes(element),
-			 OperationsOnSphere::
+			 LatLonPointConversions::
 			  convertLatLonPointToPointOnSphere(
 					GetLatLonPoint(*list.begin())));
 	}
@@ -295,7 +295,7 @@ namespace
 		std::transform(nodes.begin(), nodes.end(),
 			std::back_inserter(coordlist), &GetLatLonPoint);
 
-		return OperationsOnSphere::
+		return LatLonPointConversions::
 				convertLatLonPointListToPolyLineOnSphere(coordlist);
 	}
 

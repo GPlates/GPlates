@@ -30,7 +30,7 @@
 #include "geo/LineData.h"
 #include "geo/DataGroup.h"
 #include "maths/PolyLineOnSphere.h"
-#include "maths/OperationsOnSphere.h"
+#include "maths/LatLonPointConversions.h"
 
 using namespace GPlatesFileIO;
 using namespace GPlatesGeo;
@@ -98,7 +98,7 @@ namespace
 	void
 	WriteCoord(std::ostream& os, const PointOnSphere& point, int indent)
 	{
-		LatLonPoint llp = OperationsOnSphere::
+		LatLonPoint llp = LatLonPointConversions::
 			convertPointOnSphereToLatLonPoint(point);
 
 		os << Indent(indent)

@@ -28,7 +28,7 @@
 #include "maths/UnitVector3D.h"
 #include "maths/UnitQuaternion3D.h"
 #include "maths/FiniteRotation.h"
-#include "maths/OperationsOnSphere.h"
+#include "maths/LatLonPointConversions.h"
 #include "fileio/GPlatesReader.h"
 #include "global/Exception.h"
 #include "controls/Lifetime.h"
@@ -305,7 +305,7 @@ GPlatesGui::GLCanvas::OnSpin(wxMouseEvent& evt)
 		else
 		{
 			LatLonPoint point =
-			 OperationsOnSphere::convertPointOnSphereToLatLonPoint(
+			 LatLonPointConversions::convertPointOnSphereToLatLonPoint(
 			  *pos);
 			_parent->SetCurrentGlobePos(point.latitude().dval(),
 			 point.longitude().dval());
@@ -639,7 +639,7 @@ GPlatesGui::GLCanvas::HandleMouseMotion() {
 		PointOnSphere rotated_p = _globe.Orient(p);
 
 		LatLonPoint llp =
-		 OperationsOnSphere::
+		 LatLonPointConversions::
 		  convertPointOnSphereToLatLonPoint(rotated_p);
 
 		_parent->SetCurrentGlobePos(llp.latitude().dval(),
