@@ -11,7 +11,8 @@ LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
 OBJS = Basis.o DirVector3D.o FiniteRotation.o GreatCircle.o GreatCircleArc.o \
 	OperationsOnSphere.o Real.o RotationHistory.o RotationSequence.o \
-	StageRotation.o UnitQuaternion3D.o UnitVector3D.o Vector3D.o
+	SmallCircle.o StageRotation.o UnitQuaternion3D.o UnitVector3D.o \
+	Vector3D.o
 
 LIBNAME = libmaths.a
 
