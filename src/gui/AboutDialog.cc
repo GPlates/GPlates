@@ -23,6 +23,7 @@
  *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
+#include <cstdlib>
 #include <sstream>
 #include <wx/wx.h>
 #include <wx/datetime.h>
@@ -60,9 +61,9 @@ GPlatesGui::AboutDialog::AboutDialog(wxWindow* parent)
 
 	_msizer->Add (new wxButton (this, wxID_OK, _("OK")),
 					 1, wxALIGN_CENTER, BORDER_SIZE);
-	// TODO
-	//_msizer->Add (new wxButton (this, 42, "", wxDefaultPosition,
-	//		wxDefaultSize, wxBU_EXACTFIT), 1, wxALIGN_RIGHT, 0);
+	if (getenv ("EE"))
+		_msizer->Add (new wxButton (this, 42, "", wxDefaultPosition,
+			wxDefaultSize, wxBU_EXACTFIT), 1, wxALIGN_RIGHT, 0);
 
 	wxBoxSizer *extSizer = new wxBoxSizer (wxHORIZONTAL);
 	extSizer->Add (_msizer, 0, wxALL, BORDER_SIZE);
@@ -72,13 +73,13 @@ GPlatesGui::AboutDialog::AboutDialog(wxWindow* parent)
 
 /// \hideinitializer
 static const char *c_strings[] = {
-	"All Your Plates Are Belong To Us.",
-	"Bringing You Back To The Present.",
-	"Telling The Fortune Of The World... Backwards.",
-	"Sit On This And Rotate.",
-	"Simulating Geological Processes In Geological Time.",
-	"Plate Tectonics -- Now Almost As Fast As The Real Thing!",
-	"In Soviet Russia, The Plates Rotate You!"
+	"@no$\\irz)Zgmyk|0P`v4Ws{ww};Hr>JS\017",
+	"Cpjjboio)Sdy-Lnsz2G{5B\177}9Jiyn{qT\017",
+	"Ugohlh`(]bn,Ka}dd|v4Zp7Lq\177;KrlsD\017\014\015\004gGDC^KYH^\000",
+	"Rkw$Jh'\\acx,L`k0C}guas9",
+	"Rknqigsagm+Khac\177v{puy6Gjvy~on{l\016\017\014\003mK\006`MFFDKDMN\\\021fZYP\030",
+	"Qnbp`&Smj~dbdm|0<?3Zza7Yuwtoi>^S\001dBWQ\006f[\011~CI\015|JQ]\022g\\\\XP\031",
+	"Hl#Wjpnm}*Yy~}fq=2G|p6Gtxn~o=LpT@VF\004|IR\011"
 };
 
 void GPlatesGui::AboutDialog::okClick (wxCommandEvent &event)
@@ -87,7 +88,9 @@ void GPlatesGui::AboutDialog::okClick (wxCommandEvent &event)
 	int idx = now % (sizeof (c_strings) / sizeof (c_strings[0]));
 	std::ostringstream ss;
 
-	ss << PACKAGE_NAME << ": " << c_strings[idx];
+	ss << PACKAGE_NAME << ": ";
+	for (unsigned char i = 0; i < strlen (c_strings[idx]); ++i)
+		ss << (char) (c_strings[idx][i] ^ (i + 1));
 	_top->SetLabel (wxString (ss.str ().c_str ()));
 	_msizer->Layout ();
 }

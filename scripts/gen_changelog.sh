@@ -32,7 +32,8 @@ OPTIONS="--revisions --day-of-week --tags"
 
 rm -f $DEST
 $AUX_PATH/cvs2cl.pl --stdout -U $AUX_PATH/usermap -I $DEST $OPTIONS \
-	-g "-z3" --header $AUX_PATH/boilerplate > $DEST
+	-g "-z3" --header $AUX_PATH/boilerplate \
+	| sed "s/\.  /\. /g" > $DEST
 chmod 0644 $DEST
 echo "-------------"
 echo "Committing..."
