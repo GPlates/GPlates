@@ -65,6 +65,9 @@ namespace GPlatesGui
 			void OnReconstructPresent(wxCommandEvent&);
 			void OnReconstructAnimation(wxCommandEvent&);
 
+			// Help events
+			void OnHelpAbout(wxCommandEvent&);
+
 		private:
 #if 0
 			/*

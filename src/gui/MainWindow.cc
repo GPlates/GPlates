@@ -30,10 +30,11 @@
 #include <cstdlib>
 #include <cmath>  /* for fabsf() */
 #include <wx/wx.h>
-#include "OpenGL.h"
-#include "MainWindow.h"
-#include "ReconstructTimeDialog.h"
+#include "AboutDialog.h"
 #include "AnimationTimesDialog.h"
+#include "MainWindow.h"
+#include "OpenGL.h"
+#include "ReconstructTimeDialog.h"
 #include "controls/File.h"
 #include "controls/View.h"
 #include "controls/Reconstruct.h"
@@ -64,7 +65,9 @@ namespace {
 
 		MENU_RECONSTRUCT_TIME,
 		MENU_RECONSTRUCT_PRESENT,
-		MENU_RECONSTRUCT_ANIMATION
+		MENU_RECONSTRUCT_ANIMATION,
+
+		MENU_HELP_ABOUT
 	};
 }
 
@@ -235,6 +238,14 @@ MainWindow::OnReconstructAnimation(wxCommandEvent&)
 }
 
 void
+MainWindow::OnHelpAbout (wxCommandEvent&)
+{	
+	AboutDialog dialog (this);
+
+	dialog.ShowModal ();
+}
+
+void
 MainWindow::CreateMenuBar()
 {
 	wxMenu* filemenu = new wxMenu;
@@ -280,10 +291,16 @@ MainWindow::CreateMenuBar()
 	 _("&Animation...\tCtrl-A"),
 	 _("Animate the reconstruction of the data between two times."));
 	
+	wxMenu* helpmenu = new wxMenu;
+	helpmenu->Append(MENU_HELP_ABOUT,
+	 _("&About GPlates..."),
+	 _("Find out about GPlates"));
+
 	wxMenuBar* menubar = new wxMenuBar(wxMB_DOCKABLE);
 	menubar->Append(filemenu, _("&File"));
 	menubar->Append(viewmenu, _("&View"));
 	menubar->Append(reconstructmenu, _("&Reconstruct"));
+	menubar->Append(helpmenu, _("&Help"));
 
 	SetMenuBar(menubar);
 }
@@ -306,4 +323,6 @@ BEGIN_EVENT_TABLE(MainWindow, wxFrame)
 	EVT_MENU(MENU_RECONSTRUCT_TIME, MainWindow::OnReconstructTime)
 	EVT_MENU(MENU_RECONSTRUCT_PRESENT, MainWindow::OnReconstructPresent)
 	EVT_MENU(MENU_RECONSTRUCT_ANIMATION, MainWindow::OnReconstructAnimation)
+
+	EVT_MENU(MENU_HELP_ABOUT, MainWindow::OnHelpAbout)
 END_EVENT_TABLE()
