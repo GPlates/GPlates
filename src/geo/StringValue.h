@@ -43,6 +43,9 @@ namespace GPlatesGeo
 			virtual std::string
 			GetString() const = 0;
 
+			virtual
+			~StringValue() {  }
+	
 		protected:
 			StringValue() {  }
 	};
