@@ -12,7 +12,10 @@ my @filter_regexes = (
 	"^char",
 	"^std::",
 	"^void",
-	"^__do_global_"
+	"^__do_global_",
+	"^_GLOBAL__I",
+	"^__static_initialization_and_destruction",
+	"^__tcf"
 );
 
 # Process call graph
@@ -51,6 +54,9 @@ LINE: while (<>) {
 	s/\([^)]*\)//g;
 	# 2: remove const specifier
 	s/ const//;
+	# 3: remove "[in-charge]" and  "[not-in-charge]"
+	s/\[in-charge\]//g;
+	s/\[not-in-charge\]//g;
 
 	$buffer .= $_;
 	next unless /^---/;
