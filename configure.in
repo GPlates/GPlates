@@ -39,10 +39,10 @@ elif test "$system" = "SunOS"; then
 fi
 
 # Check for required features
-#AC_CXX_BOOL
-#if test "$ac_cv_cxx_bool" != yes; then
-#	AC_MSG_ERROR([bool is not a built-in type])
-#fi
+AC_CXX_BOOL
+if test "$ac_cv_cxx_bool" != yes; then
+	AC_MSG_ERROR([bool is not a built-in type])
+fi
 AC_CXX_EXCEPTIONS
 if test "$ac_cv_cxx_exceptions" != yes; then
 	AC_MSG_ERROR([compiler doesn't support exceptions])
@@ -59,10 +59,10 @@ AC_CXX_DYNAMIC_CAST
 if test "$ac_cv_cxx_dynamic_cast" != yes; then
 	AC_MSG_ERROR([compiler doesn't support dynamic_cast])
 fi
-#AC_CXX_EXPLICIT
-#if test "$ac_cv_cxx_explicit" != yes; then
-#	AC_MSG_ERROR([compiler doesn't support explict keyword])
-#fi
+AC_CXX_EXPLICIT
+if test "$ac_cv_cxx_explicit" != yes; then
+	AC_MSG_ERROR([compiler doesn't support explict keyword])
+fi
 AC_CXX_MEMBER_CONSTANTS
 if test "$ac_cv_cxx_member_constants" != yes; then
 	AC_MSG_ERROR([compiler doesn't support constant class members])
