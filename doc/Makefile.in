@@ -12,6 +12,8 @@ all:
 doc:	doxygen.conf
 	doxygen $<
 
+install:
+
 clean:
 	rm -rf html
 
