@@ -33,7 +33,7 @@ Exception::Write(std::ostream &os) const {
 	std::string msg = Message();
 	if ( ! msg.empty()) {
 
-		os << "(" << msg << ")";
+		os << "(\"" << msg << "\")";
 	}
 }
 
