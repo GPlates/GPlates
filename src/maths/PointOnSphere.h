@@ -56,23 +56,21 @@ namespace GPlatesMaths
 			              const real_t& lon = 0.0)
 				: _lat(lat), _lon(lon) {
 				
-				Assert(InvariantHolds(),
-				       ViolatedCoordinateInvariantException(
-					"
+				AssertInvariantHolds();
 			}
 
 		protected:
 			/** 
 			 * Assert the class invariant.
-			 * Throw ViolatedCoordinateInvariantException
-			 * if the invariant has been violated.
+			 * @throw ViolatedCoordinateInvariantException
+			 *   if the invariant has been violated.
 			 */
 			void
 			AssertInvariantHolds() const;
 
 		private:
-			real_t _lat,  /** Latitude coordinate. */
-			       _long;  /** Longitude coordinate. */
+			real_t _lat,  /**< Latitude coordinate. */
+			       _lon;  /**< Longitude coordinate. */
 	};
 }
 
