@@ -160,6 +160,30 @@ namespace GPlatesMaths
 			isIdentity() const { return (w() == 1.0); }
 
 
+			struct RotationParams
+			{
+				RotationParams(const UnitVector3D &rot_axis,
+				               const real_t &rot_angle) :
+				 axis(rot_axis), angle(rot_angle) {  }
+
+				UnitVector3D axis;
+				real_t angle;  // in radians
+			};
+
+
+			/**
+			 * Calculate the rotation parameters of this unit
+			 * quaternion.
+			 *
+			 * NOTE: if this function is invoked upon a unit
+			 * quaternion instance which represents an identity
+			 * rotation, an 'IndeterminateResultException' will
+			 * be thrown.
+			 */
+			RotationParams
+			calcRotationParams() const;
+
+
 			/**
 			 * Create a unit quaternion to represent the following
 			 * Euler rotation around the unit vector of the axis,
@@ -169,7 +193,7 @@ namespace GPlatesMaths
 			 */
 			static UnitQuaternion3D
 			CreateEulerRotation(const UnitVector3D &axis, 
-			                    const real_t &rotation_angle);
+			                    const real_t &angle);
 
 		protected:
 			/**
