@@ -32,3 +32,7 @@ View::DocumentMetadata()
 {
 	return "";
 }
+
+// Corresponds to extern declertion in View.h
+View::FrameRedisplay
+View::Redisplay;

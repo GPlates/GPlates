@@ -23,34 +23,33 @@
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_CONTROLS_VIEW_H_
-#define _GPLATES_CONTROLS_VIEW_H_
+#ifndef _GPLATES_CONTROLS_VIEW_FRAMEREDISPLAY_H_
+#define _GPLATES_CONTROLS_VIEW_FRAMEREDISPLAY_H_
 
-#include <string>
-#include "FrameRedisplay.h"
+#include <wx/wx.h>
 
 namespace GPlatesControls
 {
 	namespace View
 	{
-		/**
-		 * Return the title and meta information for the loaded
-		 * data set.
-		 *
-		 * XXX: should emit some kind of error if there is no data
-		 * set loaded from which to obtain the infomation.
-		 */
-		std::string
-		DocumentMetadata();
+		class FrameRedisplay
+		{
+			public:
+				FrameRedisplay(wxFrame* frame = NULL) 
+					: _frame(frame) {  }
 
-		/**
-		 * This is a function object.  Calling 
-		 * GPlatesControls::View::Redisplay() will send a request for
-		 * the repainting of the main frame.
-		 */
-		extern FrameRedisplay
-		Redisplay;
+				void
+				SetFrame(wxFrame* frame) { _frame = frame; }
+
+				void operator()() { 
+					wxPaintEvent evt;
+					_frame->AddPendingEvent(evt);
+				}
+			
+			private:
+				wxFrame* _frame;
+		};
 	}
 }
 
-#endif  /* _GPLATES_CONTROLS_VIEW_H_ */
+#endif  /* _GPLATES_CONTROLS_VIEW_FRAMEREDISPLAY_H_ */
