@@ -9,7 +9,7 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = Data.o
+OBJS = Data.o Layout.o
 
 LIBNAME = libstate.a
 
