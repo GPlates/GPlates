@@ -46,6 +46,7 @@ using namespace GPlatesGeo;
 static void
 HandleGPMLFile(const std::string& filename)
 {
+#if 0
 	std::ostringstream result;
 	result << "No GPML data was loaded from \"" << filename
 		<< "\"." << std::endl;
@@ -55,6 +56,28 @@ HandleGPMLFile(const std::string& filename)
 		"The GPML parser is still under development,\n"
 		"hence GPlates cannot yet load GPML data files.\n",
 		result.str().c_str());
+#endif
+	DataGroup* data = GPlatesState::Data::GetDataGroup();
+	if (data)
+		delete data;
+
+	std::ifstream file(filename.c_str());
+	if (!file) {
+		std::ostringstream msg;
+		msg << "The file \"" << filename << "\" could not\n"
+			"be opened for reading." << std::endl;
+		
+		Dialogs::ErrorMessage(
+			"Could not open file",
+			msg.str().c_str(),
+			"No GPML data was loaded.");
+		return;
+	}
+
+	GPlatesReader reader(file);
+	data = reader.Read();
+
+	GPlatesState::Data::SetDataGroup(data);
 }
 
 static GPlatesMaths::LatLonPoint

@@ -170,8 +170,8 @@ GLFrame::OnOpenRotation(wxCommandEvent&)
 void
 GLFrame::OnViewMetadata(wxCommandEvent&)
 {
-	std::cout << GPlatesControls::View::DocumentMetadata()
-		<< std::endl;
+//	std::cout << GPlatesControls::View::DocumentMetadata()
+//		<< std::endl;
 }
 
 void

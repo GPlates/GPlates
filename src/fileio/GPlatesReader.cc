@@ -29,6 +29,7 @@
 
 #include "GPlatesReader.h"
 #include "XMLParser.h"
+#include "global/types.h"
 #include "maths/types.h"
 #include "maths/OperationsOnSphere.h"
 #include "maths/PointOnSphere.h"
@@ -52,7 +53,7 @@ typedef Element::ElementList ElementList;
 /**
  * Extract the RotationGroupId from the given string.
  */
-static GeologicalData::RotationGroupId_t
+static GPlatesGlobal::rid_t
 GetRotationGroupId(const Element*)
 {
 	return GeologicalData::NO_ROTATIONGROUP;
