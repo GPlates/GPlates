@@ -25,6 +25,8 @@
 
 #include "PlatesWriter.h"
 
+using namespace GPlatesFileIO;
+
 void
 PlatesWriter::Visit(const LineData& linedata)
 {
@@ -40,7 +42,7 @@ PlatesWriter::Visit(const LineData& linedata)
 }
 
 bool
-PrintWriter::PrintOut(std::ostream& os)
+PlatesWriter::PrintOut(std::ostream& os)
 {
 	os << _strstream.str();
 }
