@@ -274,7 +274,7 @@ MainWindow::CreateMenuBar()
 	 _("Open &Rotation...\tCtrl-R"), 
 	 _("Open a rotation file"));
 	filemenu->Append (MENU_FILE_IMPORT,
-	 _("&Import..."),
+	 _("&Import External Data..."),
 	 _("Import a data file"));
 	filemenu->Append(MENU_FILE_SAVEDATA,
 	 _("&Save Data...\tCtrl-S"),
@@ -303,7 +303,7 @@ MainWindow::CreateMenuBar()
 
 	wxMenu* reconstructmenu = new wxMenu;
 	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
-	 _("Particular &Time...\tCtrl-T"),
+	 _("Jump to &Time...\tCtrl-T"),
 	 _("Reconstruct the data at a particular time"));
 	reconstructmenu->Append(MENU_RECONSTRUCT_PRESENT,
 	 _("Return to &Present\tCtrl-P"),
