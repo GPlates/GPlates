@@ -22,9 +22,11 @@ else
 fi
 
 # System-dependant options
-debug_format="stabs"
+debug_format=""
 if test "$system" = "Linux"; then
 	debug_format="stabs+"
+elif test "$system" = "SunOS"; then
+	debug_format="stabs"
 fi
 
 # Check for required features
