@@ -146,7 +146,8 @@ turn_on_dev="no"
 AC_ARG_ENABLE(dev, [  --enable-dev            Enable developer flags],
 [
 	turn_on_dev="yes"
-	EXTRA_CFLAGS="$EXTRA_CFLAGS -Wall -pedantic -ansi -W -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wctor-dtor-privacy -Wnon-virtual-dtor -Wold-style-cast -Wpointer-arith -Werror -g$debug_format"
+	EXTRA_CFLAGS="$EXTRA_CFLAGS -Wall -pedantic -ansi -W -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wctor-dtor-privacy -Wnon-virtual-dtor -Wpointer-arith -Werror -g$debug_format"
+# This warning breaks wxWindows: -Wold-style-cast 
 ])
 
 # Using '--enable-opt' turns on optimisations
@@ -268,6 +269,7 @@ if test "$turn_on_dev" = "yes"; then
 	echo "###          are a developer, you are strongly advised to"
 	echo "###          leave developer flags turned off, or you may"
 	echo "###          have problems compiling GPlates."
+	echo "###"
 fi
 if test "$turn_on_prof" = "yes"; then
 	echo "###"
@@ -275,12 +277,14 @@ if test "$turn_on_prof" = "yes"; then
 	echo "###          developer, you are strongly advised to leave"
 	echo "###          profiling turned off, or you may have problems"
 	echo "###          compiling or running GPlates."
+	echo "###"
 fi
 if test "$turn_on_opt" = "yes" -a "$turn_on_dev" = "yes"; then
 	echo "###"
 	echo "### WARNING: You have enabled both Optimisation and Development"
 	echo "###          flags. This is highly discouraged, as it may cause"
 	echo "###          problems compiling or running GPlates."
+	echo "###"
 fi
 
 # UI information

@@ -23,6 +23,9 @@
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
  */
 
+#ifndef _GPLATES_GUI_GLOBE_H_
+#define _GPLATES_GUI_GLOBE_H_
+
 #include "OpenGL.h"
 #include "Colour.h"
 
@@ -33,14 +36,8 @@ namespace GPlatesGui
 		public:
 			Globe(Colour  colour = DEFAULT_COLOUR,
 				  GLfloat radius = DEFAULT_RADIUS,
-				  GLuint  slices = DEFAULT_SLICES,
-				  GLuint  stacks = DEFAULT_STACKS)
-			 : _colour(colour), _radius(radius), _slices(slices), 
-			   _stacks(stacks), _meridian(0.0), _elevation(0.0)  {
-			
-				_sphere = gluNewQuadric();
-				_nurbs_renderer = gluNewNurbsRenderer();
-			}
+				  GLint   slices = DEFAULT_SLICES,
+				  GLint   stacks = DEFAULT_STACKS);
 
 			~Globe() { 
 				
@@ -48,10 +45,10 @@ namespace GPlatesGui
 				gluDeleteQuadric(_sphere);
 			}
 
-			GLuint&
+			GLint&
 			GetSlices() { return _slices; }
 
-			GLuint&
+			GLint&
 			GetStacks() { return _stacks; }
 
 			GLfloat&
@@ -61,7 +58,7 @@ namespace GPlatesGui
 			GetElevation() { return _elevation; }
 
 			void
-			Draw();
+			Paint();
 
 		private:
 			/**
@@ -77,12 +74,12 @@ namespace GPlatesGui
 			/**
 			 * One slice every 5 degrees.
 			 */
-			static const GLuint DEFAULT_SLICES = 72;
+			static const GLint DEFAULT_SLICES = 36;
 
 			/**
 			 * One stack every 5 degrees.
 			 */
-			static const GLuint DEFAULT_STACKS = 36;
+			static const GLint DEFAULT_STACKS = 18;
 
 			Colour _colour;
 
@@ -95,8 +92,8 @@ namespace GPlatesGui
 			 * The stacks and slices determine the 'resolution' of 
 			 * the rendered Globe.
 			 */
-			GLuint _slices;
-			GLuint _stacks;
+			GLint _slices;
+			GLint _stacks;
 
 			GLUquadricObj *_sphere;
 			GLUnurbsObj *_nurbs_renderer;
@@ -108,3 +105,5 @@ namespace GPlatesGui
 			NormaliseMeridianElevation();
 	};
 }
+
+#endif  /* _GPLATES_GUI_GLOBE_H_ */

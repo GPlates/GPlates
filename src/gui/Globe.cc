@@ -35,6 +35,36 @@ using namespace GPlatesMaths;
 const GLfloat Globe::DEFAULT_RADIUS = 1.0;
 const Colour Globe::DEFAULT_COLOUR = Colour::WHITE;
 
+static void
+QuadricError(GLenum error)
+{
+	std::cerr << "Quadric Error: " << gluErrorString(error) << std::endl;
+	exit(1);
+}
+
+static void
+NurbsError(GLenum error)
+{
+	std::cerr << "NURBS Error: " << gluErrorString(error) << std::endl;
+	exit(1);
+}
+
+Globe::Globe(Colour colour, GLfloat radius, GLint slices, GLint stacks)
+	: _colour(colour), _radius(radius), _slices(slices), 
+	  _stacks(stacks), _meridian(0.0), _elevation(0.0)
+{
+	_sphere = gluNewQuadric();
+	gluQuadricNormals(_sphere, GLU_NONE);	// Don't generate normals
+	gluQuadricTexture(_sphere, GL_FALSE);	// Don't generate texture coords
+	gluQuadricDrawStyle(_sphere, GLU_LINE);	// Draw wireframe
+	gluQuadricCallback(_sphere, GLU_ERROR, 
+		reinterpret_cast<void (*)()>(&QuadricError));
+	
+	_nurbs_renderer = gluNewNurbsRenderer();
+	gluNurbsCallback(_nurbs_renderer, GLU_ERROR,
+		reinterpret_cast<void (*)()>(&NurbsError));
+}
+
 void
 Globe::NormaliseMeridianElevation()
 {
@@ -54,6 +84,8 @@ Globe::NormaliseMeridianElevation()
 	}
 }
 
+
+// FIXME: Use GPlatesMaths::GreatCircleArc
 static void
 DrawArc(const UnitVector3D& a, const UnitVector3D& b, 
  GLUnurbsObj *renderer)
@@ -97,7 +129,6 @@ DrawArc(const UnitVector3D& a, const UnitVector3D& b,
 
 	// FIXME: Change the colour depending on the line.
 	glColor3fv(Colour::RED);
-	glLineWidth(3.0);
 	
 	// Draw the NURBS.
 	gluBeginCurve(renderer);
@@ -106,9 +137,11 @@ DrawArc(const UnitVector3D& a, const UnitVector3D& b,
 	gluEndCurve(renderer);
 }
 
+
 void
-Globe::Draw()
+Globe::Paint()
 {
+		
 	glPushMatrix();
 		// Ensure that the meridian and elevation are in the acceptable 
 		// range.
@@ -127,7 +160,7 @@ Globe::Draw()
 
 		// Set the globe's colour.
 		glColor3fv(_colour);
-
+		
 		// Draw globe.
 		gluSphere(_sphere, _radius, _slices, _stacks);
 
@@ -136,6 +169,6 @@ Globe::Draw()
 		DrawArc(UnitVector3D(1.0, 0.0, 0.0), UnitVector3D(0.0, 1.0, 0.0), _nurbs_renderer);
 		real_t tmp = real_t(1.0) / sqrt(real_t(2.0));
 		DrawArc(UnitVector3D(tmp, tmp, 0.0), UnitVector3D(0.0, tmp, tmp), _nurbs_renderer);
-
+		
 	glPopMatrix();
 }

@@ -7,7 +7,7 @@
 
 dep:
 	@echo -n "Generating dependencies... "
-	@@CXX@ -MM $(INCLUDES) $(OBJS:.o=.cc) > depend.1
+	@@CXX@ -MM $(INCLUDES) @EXTRA_CFLAGS@ $(OBJS:.o=.cc) > depend.1
 	@echo "done!"
 
 # This is a GNU-ism - cleverly ignored when not using GNU make

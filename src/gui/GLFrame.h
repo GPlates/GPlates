@@ -23,54 +23,37 @@
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_GUI_GLWINDOW_H_
-#define _GPLATES_GUI_GLWINDOW_H_
+#ifndef _GPLATES_GUI_GLFRAME_H_
+#define _GPLATES_GUI_GLFRAME_H_
 
-#include "Globe.h"
+#include <wx/frame.h>
+#include "GLCanvas.h"
 #include "Colour.h"
 
 namespace GPlatesGui
 {
 	/**
-	 * GLWindow conforms to the Singleton pattern
+	 * GLFrame conforms to the Singleton pattern
 	 */
-	class GLWindow
+	class GLFrame : public wxFrame
 	{
 		public:
-			static GLWindow*
-			GetWindow(int* argc = NULL, char** argv = NULL);
+			GLFrame(wxFrame* parent, const wxString& title = "", 
+					const wxSize& size = wxDefaultSize,
+					const wxPoint& pos = wxDefaultPosition);
+
+			void OnExit(wxCommandEvent& event) { Destroy(); }
 				
 		private:
-			GLWindow(int* argc, char** argv);
+			// XXX: DEFAULT_WINDOWID should be available to the entire GUI system.
+//			static const wxWindowID DEFAULT_WINDOWID = -1;
+			static const int STATUSBAR_NUM_FIELDS = 2;
+		
+			wxStatusBar* _status_bar;
+			GLCanvas*	 _canvas;
 
-			void
-			Clear(const Colour& c = Colour::BLACK);
-			
-			/**
-			 * Callbacks.
-			 */
-			static void
-			Display();
-
-			static void
-			Reshape(int width, int height);
-
-			static void
-			Keyboard(unsigned char key, int x, int y);
-
-			static void
-			Special(int key, int x, int y);
-
-			/**
-			 * The one and only window that can exist.
-			 */
-			static GLWindow* _window;
-
-			/**
-			 * The globe to display on this window.
-			 */
-			Globe _globe;
+			DECLARE_EVENT_TABLE()
 	};
 }
 
-#endif  /* _GPLATES_GUI_GLWINDOW_H_ */
+#endif  /* _GPLATES_GUI_GLFRAME_H_ */

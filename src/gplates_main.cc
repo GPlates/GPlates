@@ -72,36 +72,53 @@
  *   Addison-Wesley.
  */
 
-#include <cstdlib>  /* EXIT_SUCCESS */
 #include <iostream>
+#include <wx/app.h>
 
 #include "global/config.h"
 #include "global/Exception.h"
 
-#include "gui/GLWindow.h"
+#include "gui/GLFrame.h"
 #include "geo/DataGroup.h"
 #include "fileio/GPlatesReader.h"
 
-int
-main(int argc, char** argv)
+namespace 
+{
+	class GPlatesApp : public wxApp
+	{
+		public:
+			/**
+			 * wxWindows equivalent of the traditional main() function.
+			 * Commandline arguments are available to all GPlatesApp
+			 * functions.
+			 */
+			bool OnInit();
+	};
+}
+
+IMPLEMENT_APP(GPlatesApp)
+
+using namespace GPlatesGui;
+
+bool
+GPlatesApp::OnInit()
 {
 	try {
-		std::cout << "This is \"" PACKAGE_STRING "\".\n";
-	
-		GPlatesGui::GLWindow::GetWindow(&argc, argv);
+		// NULL => no parent
+		GLFrame* frame = new GLFrame(NULL, PACKAGE_STRING);
+		frame->Show(TRUE);
 
+#if 0
 		GPlatesGeo::DataGroup data("Cool Data (tm)", 42, 
 			GPlatesGeo::GeologicalData::Attributes_t());
 
-		GPlatesFileIO::GPlatesReader reader(argv[1]);
+		GPlatesFileIO::GPlatesReader reader("anus");
 		reader.Read(data);
-		
-#if 0
-		glutMainLoop();
 #endif
+		
 	} catch (const GPlatesGlobal::Exception& e) {
 		std::cerr << "Caught exception: " << e << std::endl;
+		return FALSE;
 	}
-	
-	return EXIT_SUCCESS;
+	return TRUE;
 }
