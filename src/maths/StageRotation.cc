@@ -29,7 +29,9 @@
 
 
 GPlatesMaths::StageRotation
-GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
+GPlatesMaths::scaleToNewTimeDelta(
+ StageRotation sr,
+ real_t new_time_delta) {
 
 	/*
 	 * The basic algorithm used in this function is:
@@ -44,7 +46,7 @@ GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 	 * Ensure that the quaternion of the stage rotation argument does not
 	 * represent an identity rotation.
 	 */
-	if (sr.quat().isIdentity()) {
+	if (represents_identity_rotation(sr.quat())) {
 
 		throw IndeterminateResultException("Attempted to scale a "
 		 "stage rotation whose quaternion represents the identity "
@@ -52,7 +54,7 @@ GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 	}
 
 	UnitQuaternion3D::RotationParams params =
-	 sr.quat().calcRotationParams();
+	 sr.quat().calc_rotation_params();
 
 	/*
 	 * Ensure that the time delta of the stage rotation argument is not
@@ -70,7 +72,7 @@ GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 	 * ((new time delta / time delta) * params.angle) about 'params.axis'.
 	 */
 	UnitQuaternion3D new_uq =
-	 UnitQuaternion3D::CreateEulerRotation(params.axis,
+	 UnitQuaternion3D::create_rotation(params.axis,
 	  (new_time_delta * time_delta_reciprocal) * params.angle);
 
 	return StageRotation(new_uq, new_time_delta);
@@ -78,8 +80,10 @@ GPlatesMaths::scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 
 
 GPlatesMaths::FiniteRotation
-GPlatesMaths::interpolate(const FiniteRotation &more_recent, 
-	const FiniteRotation &more_distant, const real_t &t) {
+GPlatesMaths::interpolate(
+ const FiniteRotation &more_recent, 
+ const FiniteRotation &more_distant,
+ const real_t &t) {
 
 	/*
 	 * Remember that 'more_distant' is a "larger" finite rotation than
@@ -87,7 +91,7 @@ GPlatesMaths::interpolate(const FiniteRotation &more_recent,
 	 * [ http://mathworld.wolfram.com/Minuend.html ].
 	 */
 	StageRotation sr = subtractFiniteRots(more_distant, more_recent);
-	if (sr.quat().isIdentity()) {
+	if (represents_identity_rotation(sr.quat())) {
 
 		// the quaternions of the rotations were equivalent
 		return FiniteRotation::Create(more_recent.quat(), t);

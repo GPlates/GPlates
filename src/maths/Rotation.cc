@@ -28,24 +28,54 @@
 #include "InvalidOperationException.h"
 
 
+namespace {
+
+	inline
+	GPlatesMaths::real_t
+	calculate_d_value(
+	 const GPlatesMaths::UnitQuaternion3D &uq) {
+
+		GPlatesMaths::real_t s = uq.scalar_part();
+		const GPlatesMaths::Vector3D &v = uq.vector_part();
+
+		return ((s * s) - dot(v, v));
+	}
+
+
+	inline
+	GPlatesMaths::Vector3D
+	calculate_e_value(
+	 const GPlatesMaths::UnitQuaternion3D &uq) {
+
+		GPlatesMaths::real_t s = uq.scalar_part();
+		const GPlatesMaths::Vector3D &v = uq.vector_part();
+
+		return ((2.0 * s) * v);
+	}
+
+}
+
+
 GPlatesMaths::Rotation
-GPlatesMaths::Rotation::Create(const UnitVector3D &rotation_axis,
-	const real_t &rotation_angle) {
+GPlatesMaths::Rotation::Create(
+ const UnitVector3D &rotation_axis,
+ const real_t &rotation_angle) {
 
 	UnitQuaternion3D uq =
-	 UnitQuaternion3D::CreateEulerRotation(rotation_axis, rotation_angle);
+	 UnitQuaternion3D::create_rotation(rotation_axis, rotation_angle);
 
-	// values used to optimise rotation of points on the sphere
-	real_t   d = (uq.s() * uq.s()) - dot(uq.v(), uq.v());
-	Vector3D e = (2.0 * uq.s()) * uq.v();
+	// These values are used to optimise rotation of points on the sphere.
+	real_t d = calculate_d_value(uq);
+	Vector3D e = calculate_e_value(uq);
 
 	return Rotation(rotation_axis, rotation_angle, uq, d, e);
 }
 
 
 GPlatesMaths::Rotation
-GPlatesMaths::Rotation::Create(const UnitVector3D &initial,
-	const UnitVector3D &final) {
+GPlatesMaths::Rotation::Create(
+ const UnitVector3D &initial,
+ const UnitVector3D &final) {
 
 	real_t dp = dot(initial, final);
 	if (abs(dp) >= 1.0) {
@@ -108,28 +138,24 @@ GPlatesMaths::Rotation::operator*(const UnitVector3D &uv) const {
 
 	Vector3D v(uv);
 
-	Vector3D v_rot = _d * v
-	               + (2.0 * dot(_quat.v(), v)) * _quat.v()
-	               + cross(_e, v);
+	Vector3D v_rot =
+	 _d * v +
+	 (2.0 * dot(_quat.vector_part(), v)) * _quat.vector_part() +
+	 cross(_e, v);
 
-	/*
-	 * Assuming that these components do, in fact, represent a unit vector
-	 * (thus avoiding any exception-throwing craziness), the cost of the
-	 * creation of this unit vector should be about 26 clock cycles +
-	 * the cost of a function call.
-	 */
 	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z());
 }
 
 
 GPlatesMaths::Rotation
-GPlatesMaths::Rotation::Create(const UnitQuaternion3D &uq,
-	const UnitVector3D &rotation_axis,
-	const real_t &rotation_angle) {
+GPlatesMaths::Rotation::Create(
+ const UnitQuaternion3D &uq,
+ const UnitVector3D &rotation_axis,
+ const real_t &rotation_angle) {
 
-	// values used to optimise rotation of points on the sphere
-	real_t   d = (uq.s() * uq.s()) - dot(uq.v(), uq.v());
-	Vector3D e = (2.0 * uq.s()) * uq.v();
+	// These values are used to optimise rotation of points on the sphere.
+	real_t d = calculate_d_value(uq);
+	Vector3D e = calculate_e_value(uq);
 
 	return Rotation(rotation_axis, rotation_angle, uq, d, e);
 }
@@ -139,7 +165,7 @@ GPlatesMaths::Rotation
 GPlatesMaths::operator*(const Rotation &r1, const Rotation &r2) {
 
 	UnitQuaternion3D resultant_uq = r1.quat() * r2.quat();
-	if (resultant_uq.isIdentity()) {
+	if (represents_identity_rotation(resultant_uq)) {
 
 		/*
 		 * The identity rotation is represented by a rotation of
@@ -156,7 +182,7 @@ GPlatesMaths::operator*(const Rotation &r1, const Rotation &r2) {
 		 * and a non-zero angle of rotation.
 		 */
 		UnitQuaternion3D::RotationParams params =
-		 resultant_uq.calcRotationParams();
+		 resultant_uq.calc_rotation_params();
 
 		return
 		 Rotation::Create(resultant_uq, params.axis, params.angle);

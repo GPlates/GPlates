@@ -20,53 +20,58 @@
  *
  */
 
+#include <iostream>
 #include <sstream>
 #include <cmath>
 
 #include "UnitQuaternion3D.h"
 #include "IndeterminateResultException.h"
-#include "ViolatedUnitQuatInvariantException.h"
+#include "ViolatedClassInvariantException.h"
 
 
 GPlatesMaths::UnitQuaternion3D::RotationParams
-GPlatesMaths::UnitQuaternion3D::calcRotationParams() const {
+GPlatesMaths::UnitQuaternion3D::calc_rotation_params() const {
 
 	/*
 	 * Ensure that the quaternion does not represent an identity rotation.
 	 *
-	 * In an identity rotation, the angle of rotation is (2 * n * pi),
+	 * In an identity rotation, the angle of rotation is (2 * n * PI),
 	 * for some integer 'n':  this would later result in an evaluation of
-	 * the sine of some (n * pi), which is always zero.  This, in turn,
+	 * the sine of some (n * PI), which is always zero.  This, in turn,
 	 * would result in a division by zero when attempting to calculate
 	 * the rotation axis, which is geometrically equivalent to the fact
 	 * that, in an identity rotation, the axis is indeterminate.
 	 */
-	if (isIdentity()) {
+	if (represents_identity_rotation(*this)) {
 
 		std::ostringstream oss;
-		oss << "Attempted to calculate the rotation parameters\n"
+
+		oss
+		 << "Attempted to calculate the rotation parameters\n"
 		 << "of a quaternion which represents the identity rotation:\n"
 		 << (*this);
+
 		throw IndeterminateResultException(oss.str().c_str());
 	}
 
 	/*
 	 * We can now be sure that the angle of rotation ('theta') is not a
-	 * multiple of two pi, and the axis of rotation is clearly determined.
+	 * multiple of two PI, and the axis of rotation is clearly determined.
 	 */
-	real_t theta_on_2 = acos(s());  // theta_on_2 is not a multiple of pi
+	real_t theta_on_2 = acos(scalar_part());  // not a multiple of PI
 	real_t sin_of_theta_on_2 = sin(theta_on_2);  // not zero
 
-	Vector3D axis_v = (1 / sin_of_theta_on_2) * v();
-	UnitVector3D axis_uv = axis_v.normalise();
+	Vector3D axis_vect = (1 / sin_of_theta_on_2) * vector_part();
+	UnitVector3D axis_unit_vect = axis_vect.normalise();
 
-	return RotationParams(axis_uv, theta_on_2 * 2);
+	return RotationParams(axis_unit_vect, theta_on_2 * 2.0);
 }
 
 
 GPlatesMaths::UnitQuaternion3D
-GPlatesMaths::UnitQuaternion3D::CreateEulerRotation(const UnitVector3D &axis,
-	const real_t &angle) {
+GPlatesMaths::UnitQuaternion3D::create_rotation(
+ const UnitVector3D &axis,
+ real_t angle) {
 
 	real_t theta_on_two = angle / 2.0;
 
@@ -78,34 +83,64 @@ GPlatesMaths::UnitQuaternion3D::CreateEulerRotation(const UnitVector3D &axis,
 
 
 void
-GPlatesMaths::UnitQuaternion3D::AssertInvariantHolds() const {
+GPlatesMaths::UnitQuaternion3D::assert_invariant() const {
 
 	/*
-	 * Calculate magnitude of quaternion to ensure that it actually _is_ 1.
+	 * FIXME: (1) implement loose/tight comparisons policy, with automatic
+	 * self-correction in the case of natural drift.
+	 *
+	 * FIXME: (2) once (1) is implemented, invoke this in the ctor.
+	 */
+
+	/*
+	 * Calculate norm of quaternion to ensure that it actually _is_ 1.
 	 * For efficiency, don't bother sqrting yet.
 	 */
-	real_t mag_sqrd = (_s * _s) + dot(_v, _v);
-	if (mag_sqrd != 1.0) {
+	real_t norm_sqrd = actual_norm_sqrd();
+	if (norm_sqrd != 1.0) {
 
 		// invariant has been violated
 		std::ostringstream oss;
-		oss << "UnitQuaternion3D has magnitude "
-		 << sqrt(mag_sqrd) << ".";
-		throw ViolatedUnitQuatInvariantException(oss.str().c_str());
+
+		oss
+		 << "UnitQuaternion3D has magnitude "
+		 << sqrt(norm_sqrd)
+		 << ".";
+
+		throw ViolatedClassInvariantException(oss.str().c_str());
 	}
 }
 
 
 GPlatesMaths::UnitQuaternion3D
-GPlatesMaths::operator*(UnitQuaternion3D q1, UnitQuaternion3D q2) {
+GPlatesMaths::operator*(
+ const UnitQuaternion3D &q1,
+ const UnitQuaternion3D &q2) {
 
-	real_t   s1 = q1.s();
-	real_t   s2 = q2.s();
-	Vector3D v1 = q1.v();
-	Vector3D v2 = q2.v();
+	real_t s1 = q1.scalar_part();
+	real_t s2 = q2.scalar_part();
 
-	real_t   scalar_part = s1 * s2 - dot(v1, v2);
-	Vector3D vector_part = s1 * v2 + s2 * v1 + cross(v1, v2);
+	const Vector3D &v1 = q1.vector_part();
+	const Vector3D &v2 = q2.vector_part();
 
-	return UnitQuaternion3D(scalar_part, vector_part);
+	real_t   res_scalar_part = s1 * s2 - dot(v1, v2);
+	Vector3D res_vector_part = s1 * v2 + s2 * v1 + cross(v1, v2);
+
+	return UnitQuaternion3D(res_scalar_part, res_vector_part);
+}
+
+
+std::ostream &
+GPlatesMaths::operator<<(
+ std::ostream &os,
+ const UnitQuaternion3D &q) {
+
+	os
+	 << "("
+	 << q.w() << ", "
+	 << q.x() << ", "
+	 << q.y() << ", "
+	 << q.z() << ")";
+
+	return os;
 }

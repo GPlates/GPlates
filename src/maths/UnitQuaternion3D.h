@@ -20,10 +20,11 @@
  *
  */
 
-#ifndef _GPLATES_MATHS_UNITQUATERNION3D_H_
-#define _GPLATES_MATHS_UNITQUATERNION3D_H_
+#ifndef GPLATES_MATHS_UNITQUATERNION3D_H
+#define GPLATES_MATHS_UNITQUATERNION3D_H
 
-#include <iostream>
+#include <iosfwd>
+
 #include "types.h"  /* real_t */
 #include "Vector3D.h"
 #include "UnitVector3D.h"
@@ -32,216 +33,274 @@
 namespace GPlatesMaths
 {
 	/**
-	 * A three-dimensional unit quaternion.
+	 * A unit quaternion with three-dimensional operations.
 	 *
-	 * For more information on quaternions, see:
-	 *  - MathWorld:
-	 *     http://mathworld.wolfram.com/Quaternion.html
-	 *  - Wikipedia
-	 *     http://www.wikipedia.org/wiki/Quaternion
+	 * Unit quaternions are used in this context to efficiently calculate
+	 * rotations about arbitrarily-oriented rotation axes.
 	 *
-	 * To quote briefly from Wikipedia:
+	 * The references used during the design and implementation of this
+	 * class include:
+	 *  - Eric W. Weisstein, <i>Quaternion</i>.  From MathWorld, A Wolfram
+	 *     Web Resource:
+	 *      http://mathworld.wolfram.com/Quaternion.html
+	 *  - Eric W. Weisstein, <i>Division Algebra</i>.  From MathWorld, A
+	 *     Wolfram Web Resource:
+	 *      http://mathworld.wolfram.com/DivisionAlgebra.html
+	 *  - Jack B. Kuipers, <i>Quaternions and Rotation Sequences</i>,
+	 *     Princeton University Press, 2002.
+	 *  - Wikipedia, <i>Quaternion</i>:
+	 *      http://en.wikipedia.org/wiki/Quaternion
+	 *  - Wikipedia, <i>Quaternions and spatial rotation</i>:
+	 *      http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
 	 *
+	 * To quote briefly from Wikipedia (at some point in time in the past):
+	 *
+	 * @par
 	 *   Quaternions are sometimes used in computer graphics (and
 	 *   associated geometric analysis) to represent rotations or
 	 *   orientations of objects in 3d space.  The advantages are:
-	 *   non-singular representation (compared with Euler angles
-	 *   for example), more compact (and faster) than matrices
-	 *   [since matrices can represent all sorts of transformations,
-	 *   but (unit) quaternions can only represent rotations -- JB].
+	 *   non-singular representation (compared with Euler angles for
+	 *   example), more compact (and faster) than matrices.
 	 *
-	 *   The set of all unit quaternions forms a 3-dimensional
-	 *   sphere S^3 and a group (even a Lie group) under
-	 *   multiplication.  S^3 is the double cover of the group
-	 *   SO(3,R) of real orthogonal 3x3 matrices of determinant 1
-	 *   since two unit quaternions correspond to every rotation
-	 *   under the above correspondence.
+	 * @par
+	 *   The set of all unit quaternions forms a 3-dimensional sphere S^3
+	 *   and a group (even a Lie group) under multiplication.  S^3 is the
+	 *   double cover of the group SO(3,R) of real orthogonal 3x3 matrices
+	 *   of determinant 1 since two unit quaternions correspond to every
+	 *   rotation under the above correspondence.
 	 *
+	 * Quaternions form a "non-commutative division algebra".  In practical
+	 * terms, this tells us:
+	 *  - multiplication is associative but NOT commutative.
+	 *  - there exists a multiplicative identity.
+	 *  - for every non-zero element there exists a multiplicative inverse.
 	 *
-	 * The components of this quaternion will be x, y, z and w,
-	 * where a quaternion Q == (x, y, z, w) == w + xi + yj + zk.
+	 * The components of this quaternion will be x, y, z and w, where a
+	 * quaternion Q = (w, x, y, z) = w + xi + yj + zk.
 	 *
-	 * Alternately, if Q == (s, v) [where s is a scalar and v is
-	 * a vector], then s == w and v == (x, y, z).
+	 * Alternately, if Q is considered as a duple (scalar, vector), then
+	 * scalar = w and vector = (x, y, z).
 	 *
-	 * Since this is a unit quaternion, its magnitude must always be
+	 * Since this is a unit quaternion, its magnitude (norm) must always be
 	 * identical to 1.  This invariant will be enforced upon construction
-	 * (the values of w, x, y and z passed to the constructor will be
-	 * checked), and assumed true for all subsequent usage.  No operations
-	 * may be provided for this class which would allow the invariant to
-	 * be violated.
+	 * and assumed true for all subsequent usage.  No operations should be
+	 * provided for this class which would allow the invariant to be
+	 * violated.
+	 *
 	 * @invariant
-	 *  - magnitude of quaternion is identical to 1
+	 *  - magnitude (norm) of quaternion is identical to 1
 	 */
-	class UnitQuaternion3D
-	{
-			// these functions use the protected constructor
-			friend UnitQuaternion3D
-			operator-(UnitQuaternion3D q);
+	class UnitQuaternion3D {
 
-			friend UnitQuaternion3D
-			operator*(UnitQuaternion3D q1, UnitQuaternion3D q2);
+		/*
+		 * These functions use the protected constructor.
+		 */
 
-		public:
-			/**
-			 * Create a 3D unit quaternion from the specified
-			 * x, y, z and w components.
-			 * @param x_comp The x-component.
-			 * @param y_comp The y-component.
-			 * @param z_comp The z-component.
-			 * @param w_comp The w-component.
-			 *
-			 * @throws ViolatedUnitQuatInvariantException if the
-			 * resulting quaternion's magnitude is not 1.
-			 */
-			explicit 
-			UnitQuaternion3D(const real_t &x_comp,
-			                 const real_t &y_comp,
-			                 const real_t &z_comp,
-			                 const real_t &w_comp)
-			 : _s(w_comp), _v(x_comp, y_comp, z_comp) {
+		friend
+		UnitQuaternion3D
+		operator-(
+		 const UnitQuaternion3D &q);
 
-				AssertInvariantHolds();
-			}
+		friend
+		UnitQuaternion3D
+		operator*(
+		 const UnitQuaternion3D &q1,
+		 const UnitQuaternion3D &q2);
+
+	 public:
+
+		/**
+		 * Access quaternion as the duple (scalar, vector).
+		 */
+		real_t
+		scalar_part() const {
+			
+			return m_scalar_part;
+		}
 
 
-			/*
-			 * Access quaternion as Q = (s, v).
-			 */
-			real_t
-			s() const { return _s; }
-
-			Vector3D
-			v() const { return _v; }
-
-
-			/*
-			 * Access quaternion as Q = (x, y, z, w).
-			 */
-			real_t
-			x() const { return _v.x(); }
-
-			real_t
-			y() const { return _v.y(); }
-
-			real_t
-			z() const { return _v.z(); }
-
-			real_t
-			w() const { return _s; }
+		/**
+		 * Access quaternion as the duple (scalar, vector).
+		 */
+		const Vector3D &
+		vector_part() const {
+			
+			return m_vector_part;
+		}
 
 
-			/**
-			 * Return the conjugate of this unit quaternion.
-			 *
-			 * The conjugate of a quaternion is required for the
-			 * multiplicative inverse.
-			 */
-			UnitQuaternion3D
-			conjugate() const {
-
-				return UnitQuaternion3D(_s, -_v);
-			}
+		/**
+		 * Access quaternion as the real 4-tuple (w, x, y, z).
+		 */
+		real_t
+		w() const {
+			
+			return m_scalar_part;
+		}
 
 
-			/**
-			 * Return the inverse of this unit quaternion.
-			 *
-			 * If a unit quaternion is representing a rotation,
-			 * the inverse of that quaternion is the reverse of
-			 * the rotation).
-			 *
-			 * A neat feature of the unit quaternion: its inverse
-			 * is identical to its conjugate.
-			 */
-			UnitQuaternion3D
-			inverse() const {
-
-				return conjugate();
-			}
+		/**
+		 * Access quaternion as the real 4-tuple (w, x, y, z).
+		 */
+		real_t
+		x() const {
+			
+			return m_vector_part.x();
+		}
 
 
-			/**
-			 * Return whether this unit quaternion represents
-			 * an identity rotation (ie. a rotation which maps
-			 * a unit vector to itself).
-			 */
-			bool
-			isIdentity() const {
-
-				return (w() == 1.0);
-			}
+		/**
+		 * Access quaternion as the real 4-tuple (w, x, y, z).
+		 */
+		real_t
+		y() const {
+			
+			return m_vector_part.y();
+		}
 
 
-			struct RotationParams
-			{
-				RotationParams(const UnitVector3D &rot_axis,
-				               const real_t &rot_angle) :
-				 axis(rot_axis), angle(rot_angle) {  }
-
-				UnitVector3D axis;
-				real_t angle;  // in radians
-			};
-
-
-			/**
-			 * Calculate the rotation parameters of this unit
-			 * quaternion.
-			 *
-			 * @throws IndeterminateResultException if this
-			 * function is invoked upon a unit quaternion
-			 * instance which represents an identity rotation.
-			 */
-			RotationParams
-			calcRotationParams() const;
+		/**
+		 * Access quaternion as the real 4-tuple (w, x, y, z).
+		 */
+		real_t
+		z() const {
+			
+			return m_vector_part.z();
+		}
 
 
-			/**
-			 * Create a unit quaternion to represent the following
-			 * Euler rotation around the given unit vector @a axis,
-			 * by the given rotation angle @a angle.
-			 *
-			 * As always, the rotation angle is in radians.
-			 */
-			static UnitQuaternion3D
-			CreateEulerRotation(const UnitVector3D &axis, 
-			                    const real_t &angle);
+		/**
+		 * Return the conjugate of this unit quaternion.
+		 *
+		 * This operation is used in the calculation of the
+		 * multiplicative inverse.
+		 */
+		UnitQuaternion3D
+		conjugate() const {
 
-		protected:
-			/**
-			 * Create a 3D unit quaternion from the specified
-			 * (s, v) components.
-			 * @param s_comp The scalar-component.
-			 * @param v_comp The vector-component.
-			 *
-			 * This constructor is protected because it
-			 * <em>assumes</em> that the scalar and vector with
-			 * which it is supplied will maintain the invariant.
-			 * This constructor will not check the invariant.
-			 */
-			explicit 
-			UnitQuaternion3D(const real_t &s_comp,
-			                 const Vector3D &v_comp)
-			 : _s(s_comp), _v(v_comp) {  }
+			return UnitQuaternion3D(m_scalar_part, -m_vector_part);
+		}
 
 
-			/** 
-			 * Assert the class invariant.
-			 *
-			 * @throw ViolatedUnitQuaternionInvariantException
-			 * if the invariant has been violated.
-			 */
-			void
-			AssertInvariantHolds() const;
+		/**
+		 * Return the multiplicative inverse of this unit quaternion.
+		 *
+		 * If a unit quaternion is representing a rotation, the inverse
+		 * of that quaternion is the reverse of the rotation).
+		 *
+		 * A neat feature of the unit quaternion: its inverse is
+		 * identical to its conjugate.
+		 */
+		UnitQuaternion3D
+		inverse() const {
 
-		private:
-			real_t   _s;
-			Vector3D _v;
+			return conjugate();
+		}
+
+
+		struct RotationParams
+		{
+			RotationParams(
+			 const UnitVector3D &rot_axis,
+			 real_t rot_angle) :
+			 axis(rot_axis),
+			 angle(rot_angle) {  }
+
+			UnitVector3D axis;
+			real_t angle;  // in radians
+		};
+
+
+		/**
+		 * Calculate the rotation parameters of this unit quaternion.
+		 *
+		 * @throws IndeterminateResultException if this function is
+		 * invoked upon a unit quaternion instance which represents an
+		 * identity rotation.
+		 */
+		RotationParams
+		calc_rotation_params() const;
+
+
+		/**
+		 * Create a unit quaternion to represent the following rotation
+		 * around the given unit vector @a axis, by the given rotation
+		 * angle @a angle.
+		 *
+		 * As always, the rotation angle is in radians.
+		 */
+		static
+		UnitQuaternion3D
+		create_rotation(
+		 const UnitVector3D &axis, 
+		 real_t angle);
+
+	 protected:
+
+		/**
+		 * Create a unit quaternion composed of the specified
+		 * (scalar, vector) parts.
+		 *
+		 * @param s The scalar part.
+		 * @param v The vector part.
+		 *
+		 * This constructor is protected because it <em>assumes</em>
+		 * that the scalar and vector with which it is supplied will
+		 * maintain the invariant.  Again, this constructor does NOT
+		 * check the invariant.
+		 */
+		UnitQuaternion3D(
+		 real_t s,
+		 const Vector3D &v) :
+		 m_scalar_part(s),
+		 m_vector_part(v) {  }
+
+
+		/**
+		 * Calculate the square of the <em>actual</em> norm of this
+		 * quaternion (rather than just assuming it is equal to 1).
+		 *
+		 * This operation is used in the assertion of the class
+		 * invariant.
+		 */
+		real_t
+		actual_norm_sqrd() const {
+
+			return
+			 (scalar_part() * scalar_part() +
+			  dot(vector_part(), vector_part()));
+		}
+
+
+		/** 
+		 * Assert the class invariant.
+		 *
+		 * @throw ViolatedClassInvariantException if the invariant has
+		 * been violated.
+		 */
+		void
+		assert_invariant() const;
+
+	 private:
+
+		real_t m_scalar_part;
+
+		Vector3D m_vector_part;
+
 	};
 
 
-	inline bool
-	operator==(UnitQuaternion3D q1, UnitQuaternion3D q2) {
+	/**
+	 * Return whether these two unit quaternions @a q1 and @a q2 are equal.
+	 *
+	 * NOTE that this does not imply that they represent equivalent
+	 * rotations.  For that, use the function @a represent_equiv_rotations.
+	 */
+	inline
+	bool
+	operator==(
+	 const UnitQuaternion3D &q1,
+	 const UnitQuaternion3D &q2) {
 
 		return (q1.x() == q2.x()
 		     && q1.y() == q2.y()
@@ -250,8 +309,18 @@ namespace GPlatesMaths
 	}
 
 
-	inline bool
-	operator!=(UnitQuaternion3D q1, UnitQuaternion3D q2) {
+	/**
+	 * Return whether these two unit quaternions @a q1 and @a q2 are
+	 * not equal.
+	 *
+	 * NOTE that this does not imply that they do not represent equivalent
+	 * rotations.  For that, use the function @a represent_equiv_rotations.
+	 */
+	inline
+	bool
+	operator!=(
+	 const UnitQuaternion3D &q1,
+	 const UnitQuaternion3D &q2) {
 
 		return (q1.x() != q2.x()
 		     || q1.y() != q2.y()
@@ -265,11 +334,52 @@ namespace GPlatesMaths
 	 *
 	 * NOTE that the negative of a quaternion is <em>NOT</em> the same as
 	 * its conjugate or inverse.
+	 *
+	 * This operation is used in the test of whether two quaternions
+	 * represent equivalent rotations.
 	 */
-	inline UnitQuaternion3D
-	operator-(UnitQuaternion3D q) {
+	inline
+	UnitQuaternion3D
+	operator-(
+	 const UnitQuaternion3D &q) {
 
-		return UnitQuaternion3D(-q.s(), -q.v());
+		return UnitQuaternion3D(-q.scalar_part(), -q.vector_part());
+	}
+
+
+	/**
+	 * Return whether this unit quaternion @a q represents an identity
+	 * rotation (ie. a rotation which maps a vector to itself).
+	 */
+	inline
+	bool
+	represents_identity_rotation(
+	 const UnitQuaternion3D &q) {
+
+		/*
+		 * An identity rotation: theta = n * 2 * PI.
+		 *
+		 * s := the scalar part of the quat.
+		 *
+		 * First consider even n (n = 0, 2, ..., 2 * N, ...):
+		 *  theta = 2 * 2 * N * PI
+		 *  s = cos(theta/2)
+		 *    = cos(2 * N * PI)
+		 *    = 1
+		 *
+		 * Next consider odd n (n = 1, 3, ..., 2 * N + 1, ...):
+		 *  theta = 2 * (2 * N + 1) * PI
+		 *  s = cos(theta/2)
+		 *    = cos((2 * N + 1) * PI)
+		 *    = cos(2 * N * PI + PI)
+		 *    = cos(2 * N * PI) * cos(PI) -
+		 *       sin(2 * N * PI) * sin(PI)
+		 *    = 1 * (-1) - 0 * 0
+		 *    = -1
+		 *
+		 * Thus, (abs(s) = 1) implies an identity rotation.
+		 */
+		return (abs(q.scalar_part()) == 1.0);
 	}
 
 
@@ -277,8 +387,11 @@ namespace GPlatesMaths
 	 * Return whether these two unit quaternions @a q1 and @a q2 represent
 	 * equivalent rotations.
 	 */
-	inline bool
-	representEquivRotations(UnitQuaternion3D q1, UnitQuaternion3D q2) {
+	inline
+	bool
+	represent_equiv_rotations(
+	 const UnitQuaternion3D &q1,
+	 const UnitQuaternion3D &q2) {
 
 		/*
 		 * A rotation is defined by an axis of rotation and an angle
@@ -287,13 +400,13 @@ namespace GPlatesMaths
 		 * vector pointing in the direction of the axis of rotation.
 		 * Together, U and theta are used to define a unit quaternion
 		 * which describes the rotation.  [Assume theta is contained
-		 * in the half-open range (pi, pi].]
+		 * in the half-open range (-PI, PI].]
 		 *
 		 * It may be observed that a rotation of theta about U is
-		 * equivalent to a rotation of (2 pi - theta) about (-U).
+		 * equivalent to a rotation of (2 * PI - theta) about (-U).
 		 * Accordingly, the quaternion 'Q1' (defined by theta and U)
 		 * describes a rotation equivalent to that described by the
-		 * quaternion 'Q2' (defined by (2 pi - theta) and (-U)).
+		 * quaternion 'Q2' (defined by (2 * PI - theta) and (-U)).
 		 *
 		 * In fact, it may be shown that Q2 is equivalent to (-Q1).
 		 */
@@ -301,24 +414,22 @@ namespace GPlatesMaths
 	}
 
 
-	inline std::ostream &
-	operator<<(std::ostream &os, UnitQuaternion3D v) {
-
-		os << "(" << v.x() << ", " << v.y() << ", " << v.z() << ", "
-		 << v.w() <<  ")";
-		return os;
-	}
-
-
 	/**
-	 * Multiply quaternion @a q1 with @a q2.
+	 * Multiply the two quaternions @a q1 and @a q2.
 	 *
-	 * Note that, in the context of rotations, quaternion multiplication
-	 * behaves a lot like matrix multiplication: it can be considered a
-	 * <em>composition</em> of the quaternions, in the sense that @a q1
-	 * is being applied to @a q2.  This is known as "premultiplication".
+	 * NOTE that quaternion multiplication is <em>NOT</em> commutative.
 	 */
-	UnitQuaternion3D operator*(UnitQuaternion3D q1, UnitQuaternion3D q2);
+	UnitQuaternion3D
+	operator*(
+	 const UnitQuaternion3D &q1,
+	 const UnitQuaternion3D &q2);
+
+
+	std::ostream &
+	operator<<(
+	 std::ostream &os,
+	 const UnitQuaternion3D &u);
+
 }
 
-#endif  // _GPLATES_MATHS_UNITQUATERNION3D_H_
+#endif  // GPLATES_MATHS_UNITQUATERNION3D_H
