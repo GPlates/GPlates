@@ -232,6 +232,39 @@ GPlatesMaths::GridOnSphere::calcDelta(const Vector3D &orig,
 }
 
 
+GPlatesMaths::PointOnSphere
+GPlatesMaths::GridOnSphere::resolve(index_t x, index_t y) const {
+
+	/*
+	 * NOTE: that the order of rotation is important!
+	 *
+	 * Different great-circles of longitude have different normals,
+	 * and thus different rotations associated with them, while all
+	 * the small-circles of latitude share the same normal, and thus
+	 * the same rotation.
+	 *
+	 * For this reason, the rotation about the axis of the great-circle
+	 * of longitude must occur first -- if the rotation about the axis
+	 * of the small-circle of latitude occurs first, the axis of the
+	 * great-circle will be pointing in the wrong direction.  This would
+	 * result in the point being rotated OFF the sphere!
+	 */
+
+	/*
+	 * Rotate the origin to the appropriate latitude (along the line
+	 * of longitude, ie. about the axis of the great circle of longitude).
+	 */
+	PointOnSphere rot_orig =
+	 _line_of_lon.rotateAboutAxis(_origin, y * _delta_along_lon);
+
+	/*
+	 * Next, rotate the rotated-origin to the appropriate longitude
+	 * (about the axis of the small circle of latitude).
+	 */
+	return _line_of_lat.rotateAboutAxis(rot_orig, x * _delta_along_lat);
+}
+
+
 void
 GPlatesMaths::GridOnSphere::AssertInvariantHolds() const {
 
