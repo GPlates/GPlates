@@ -31,13 +31,10 @@
 #include "global/ControlFlowException.h"
 
 
-using namespace GPlatesMaths;
+GPlatesMaths::RotationSequence::RotationSequence(const rid_t &fixed_plate,
+	const rid_t &moving_plate, const FiniteRotation &frot)
 
-
-RotationSequence::RotationSequence(const rid_t &fixed_plate,
-	const FiniteRotation &frot)
-
-	: _fixed_plate(fixed_plate) {
+	: _fixed_plate(fixed_plate), _moving_plate(moving_plate) {
 
 	/*
 	 * Avoid memory leaks which would occur if an exception were thrown
@@ -53,8 +50,8 @@ RotationSequence::RotationSequence(const rid_t &fixed_plate,
 }
 
 
-RotationSequence &
-RotationSequence::operator=(const RotationSequence &other) { 
+GPlatesMaths::RotationSequence &
+GPlatesMaths::RotationSequence::operator=(const RotationSequence &other) { 
 
 	_fixed_plate = other._fixed_plate;
 	_most_recent_time = other._most_recent_time;
@@ -69,7 +66,7 @@ RotationSequence::operator=(const RotationSequence &other) {
 
 
 void
-RotationSequence::insert(const FiniteRotation &frot) {
+GPlatesMaths::RotationSequence::insert(const FiniteRotation &frot) {
 
 	_shared_seq->insert(frot);
 	if (frot.time() < _most_recent_time) {
@@ -83,8 +80,8 @@ RotationSequence::insert(const FiniteRotation &frot) {
 }
 
 
-FiniteRotation
-RotationSequence::finiteRotationAtTime(real_t t) const {
+GPlatesMaths::FiniteRotation
+GPlatesMaths::RotationSequence::finiteRotationAtTime(real_t t) const {
 
 	// it is assumed that a rotation sequence can never be empty
 
@@ -96,10 +93,11 @@ RotationSequence::finiteRotationAtTime(real_t t) const {
 	}
 	if (t < (*curr_rot).time()) {
 
-		std::ostringstream oss("Attempted to obtain a finite rotation "
-		 "for the time ");
-		oss << t << ", which is outside the time-span of this "
-		 "rotation sequence: [" << _most_recent_time << "Ma, "
+		std::ostringstream oss;
+		oss << "Attempted to obtain a finite rotation for the time "
+		 << t << ",\n"
+		 << "which is outside the time-span of this rotation sequence: "
+		 << "[" << _most_recent_time << "Ma, "
 		 << _most_distant_time << "Ma].";
 
 		throw InvalidOperationException(oss.str().c_str());
@@ -133,10 +131,11 @@ RotationSequence::finiteRotationAtTime(real_t t) const {
 
 	if (t > (*prev_rot).time()) {
 
-		std::ostringstream oss("Attempted to obtain a finite rotation "
-		 "for the time ");
-		oss << t << ", which is outside the time-span of this "
-		 "rotation sequence: [" << _most_recent_time << "Ma, "
+		std::ostringstream oss;
+		oss << "Attempted to obtain a finite rotation for the time "
+		 << t << ",\n"
+		 << "which is outside the time-span of this rotation sequence: "
+		 << "[" << _most_recent_time << "Ma, "
 		 << _most_distant_time << "Ma].";
 
 		throw InvalidOperationException(oss.str().c_str());
