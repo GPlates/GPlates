@@ -234,6 +234,18 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 			Refresh();
 		}
 		last_zoom = evt.GetY();
+	} else if (evt.GetWheelRotation() != 0) {
+		GLfloat clicks = evt.GetWheelRotation() / 120;
+		_zoom_factor -= (clicks / 10.0);
+
+		// Clamp the zoom factor.
+		if (_zoom_factor > 1.0)
+			_zoom_factor = 1.0;
+		else if (_zoom_factor < 0.01)
+			_zoom_factor = 0.01;
+
+		SetView();
+		Refresh();
 	}
 
 	// Pass the mouse event to the parent's process queue
