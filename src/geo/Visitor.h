@@ -34,7 +34,6 @@ namespace GPlatesGeo
 	class LineData;
 	class GridData;
 	class DataGroup;
-	class RotationData;
 	class Tree;
 
 	/** 
@@ -63,12 +62,6 @@ namespace GPlatesGeo
 
 			virtual void
 			Visit(const GridData&) { }
-
-			virtual void
-			Visit(RotationData&) { }
-
-			virtual void
-			Visit(const RotationData&) { }
 
 			virtual void
 			Visit(DataGroup&) { }
