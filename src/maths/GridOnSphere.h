@@ -69,14 +69,64 @@ namespace GPlatesMaths
 	class GridOnSphere
 	{
 		public:
-			GridOnSphere(const PointOnSphere &origin,
-			             const PointOnSphere &next_along_lat,
-			             const PointOnSphere &next_along_lon);
+			/**
+			 * Call this "factory method" to create a GridOnSphere
+			 * instance from three grid-points.
+			 *
+			 * This is the function you are expected to use
+			 * when you create a GridOnSphere instance after 
+			 * parsing a grid file.  It takes three grid-points
+			 * and calculates the rest for you.  It also performs
+			 * detailed error-checking.
+			 *
+			 * @param origin The point of origin of the grid.
+			 * @param next_along_lat The next point along the
+			 *   line-of-latitude from the origin.
+			 * @param next_along_lon The next point along the
+			 *   line-of-longitude from the origin.
+			 */
+			static GridOnSphere
+			Create(const PointOnSphere &origin,
+			       const PointOnSphere &next_along_lat,
+			       const PointOnSphere &next_along_lon);
 
+
+			/**
+			 * Create a GridOnSphere instance, passing it all
+			 * of its member data at once.
+			 *
+			 * In general, this constructor should only be called
+			 * by the finite rotation functions.
+			 */
+			GridOnSphere(const SmallCircle &line_of_lat,
+			             const GreatCircle &line_of_lon,
+			             const PointOnSphere &origin,
+			             const real_t &delta_along_lat,
+			             const real_t &delta_along_lon) :
+
+			 _line_of_lat(line_of_lat),
+			 _line_of_lon(line_of_lon),
+			 _origin(origin),
+			 _delta_along_lat(delta_along_lat),
+			 _delta_along_lon(delta_along_lon) {
+
+				AssertInvariantHolds();
+			}
+
+
+			/**
+			 * Return the point-on-sphere corresponding to the
+			 * grid indices @a x and @a y.
+			 */
 			PointOnSphere resolve(index_t x, index_t y) const;
 
 		protected:
-			void AssertInvariantHolds () const;
+			/**
+			 * Assert the class invariant: that the great circle
+			 * is perpendicular to the small circle, and the
+			 * origin lies at their intersection.
+			 */
+			void AssertInvariantHolds() const;
 
 		private:
 			SmallCircle _line_of_lat;
@@ -84,8 +134,60 @@ namespace GPlatesMaths
 
 			PointOnSphere _origin;
 
+			/// Angular delta along the line of lat
 			real_t _delta_along_lat;
+
+			/// Angular delta along the line of lon
 			real_t _delta_along_lon;
+
+
+			/**
+			 * Ensure the origin of the grid does not lie on either
+			 * the North or South pole.
+			 *
+			 * This should only be invoked by the 'Create' function.
+			 * @param o The origin.
+			 */
+			static void EnsureValidOrigin(const PointOnSphere &o);
+
+
+			/**
+			 * Given the unit-vector of the origin of the grid,
+			 * the unit-vector of the the next point along the
+			 * line-of-latitude from the origin, and the
+			 * unit-vector of the North pole, calculate the
+			 * angular delta (in radians) from the origin to the
+			 * next point.
+			 *
+			 * This angular delta should be the angle of rotation
+			 * about the North pole which would rotate the origin
+			 * into the next point.
+			 *
+			 * @param orig The unit-vector of the origin.
+			 * @param next The unit-vector of the next point along.
+			 * @param north The unit-vector of the North pole.
+			 *
+			 * A special function is required for the line-of-lat
+			 * (as opposed to the line-of-lon) because @a orig
+			 * and @a next are not necessarily orthogonal to
+			 * @a north.
+			 */
+			static real_t
+			calcDeltaAlongLat(const UnitVector3D &orig,
+			                  const UnitVector3D &next,
+			                  const UnitVector3D &north);
+
+
+			/**
+			 * Given two vectors @a orig and @a next, as well as
+			 * the unit-vector of an axis, calculate the
+			 * angular delta (in radians) about the axis
+			 * from @a orig to @a next.
+			 */
+			static real_t
+			calcDelta(const Vector3D &orig,
+			          const Vector3D &next,
+			          const UnitVector3D &axis);
 	};
 }
 
