@@ -49,6 +49,7 @@ namespace GPlatesGui
 			};
 
 
+			explicit
 			FPValidator(long style = 0, wxString *val = NULL) :
 			 wxValidator(), _style(style), _val(val) {  }
 

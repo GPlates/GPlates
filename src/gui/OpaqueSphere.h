@@ -36,6 +36,7 @@ namespace GPlatesGui
 	class OpaqueSphere
 	{
 		public:
+			explicit
 			OpaqueSphere(const Colour &colour);
 
 			~OpaqueSphere() {  }

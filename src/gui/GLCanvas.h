@@ -41,6 +41,7 @@ namespace GPlatesGui
 	class GLCanvas : public wxGLCanvas
 	{
 		public:
+			explicit
 			GLCanvas(MainWindow *parent, 
 				 const wxSize &size = wxDefaultSize,
 				 const wxPoint &position = wxDefaultPosition);

@@ -39,6 +39,7 @@ namespace GPlatesGui
 	class AboutDialog : public wxDialog
 	{
 		public:
+			explicit
 			AboutDialog (wxWindow *parent);
 
 		private:

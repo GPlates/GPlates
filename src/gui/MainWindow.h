@@ -40,6 +40,7 @@ namespace GPlatesGui
 	class MainWindow : public wxFrame
 	{
 		public:
+			explicit
 			MainWindow(wxFrame* parent, 
 			           const wxString& title = "", 
 			           const wxSize& size = wxDefaultSize,

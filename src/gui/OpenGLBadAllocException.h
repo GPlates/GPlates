@@ -42,6 +42,7 @@ namespace GPlatesGui
 			 * @param msg is a description of the conditions
 			 * in which the problem occurs.
 			 */
+			explicit
 			OpenGLBadAllocException(const char *msg)
 				: _msg(msg) {  }
 

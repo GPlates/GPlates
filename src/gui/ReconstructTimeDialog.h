@@ -35,6 +35,7 @@ namespace GPlatesGui
 	class ReconstructTimeDialog : public wxDialog
 	{
 		public:
+			explicit
 			ReconstructTimeDialog(wxWindow* parent);
 	
 			GPlatesGlobal::fpdata_t
