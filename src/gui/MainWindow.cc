@@ -56,9 +56,11 @@ namespace {
 		MENU_FILE_EXIT,
 
 		MENU_VIEW_METADATA,
+#if 0  // globe transparency currently disabled
 		MENU_VIEW_GLOBE,
 		MENU_VIEW_GLOBE_SOLID,
 		MENU_VIEW_GLOBE_TRANSPARENT,
+#endif
 
 		MENU_RECONSTRUCT_TIME,
 		MENU_RECONSTRUCT_PRESENT,
@@ -190,6 +192,7 @@ MainWindow::OnViewMetadata(wxCommandEvent&)
 #endif
 }
 
+#if 0  // globe transparency currently disabled
 void
 MainWindow::OnViewGlobe(wxCommandEvent &event)
 {
@@ -201,6 +204,7 @@ MainWindow::OnViewGlobe(wxCommandEvent &event)
 
 	gl->Paint();
 }
+#endif
 
 void
 MainWindow::OnReconstructTime(wxCommandEvent&)
@@ -253,6 +257,7 @@ MainWindow::CreateMenuBar()
 	 _("&View Metadata...\tCtrl-V"),
 	 _("View the document's metadata"));
 
+#if 0  // globe transparency currently disabled
 	viewmenu->AppendSeparator();
 	wxMenu *viewGlobe_menu = new wxMenu;
 	viewGlobe_menu->AppendRadioItem(MENU_VIEW_GLOBE_SOLID,
@@ -262,6 +267,7 @@ MainWindow::CreateMenuBar()
 	viewmenu->Append(MENU_VIEW_GLOBE,
 	 _("&Globe"),
 	 viewGlobe_menu);
+#endif
 
 	wxMenu* reconstructmenu = new wxMenu;
 	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
@@ -292,8 +298,10 @@ BEGIN_EVENT_TABLE(MainWindow, wxFrame)
 	EVT_MENU(MENU_FILE_EXIT, MainWindow::OnExit)
 
 	EVT_MENU(MENU_VIEW_METADATA, MainWindow::OnViewMetadata)
+#if 0  // globe transparency currently disabled
 	EVT_MENU(MENU_VIEW_GLOBE_SOLID, MainWindow::OnViewGlobe)
 	EVT_MENU(MENU_VIEW_GLOBE_TRANSPARENT, MainWindow::OnViewGlobe)
+#endif
 		
 	EVT_MENU(MENU_RECONSTRUCT_TIME, MainWindow::OnReconstructTime)
 	EVT_MENU(MENU_RECONSTRUCT_PRESENT, MainWindow::OnReconstructPresent)
