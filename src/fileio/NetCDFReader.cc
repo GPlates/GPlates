@@ -48,7 +48,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 				"spacing", "dimension", "z" };
 	const char *types[] = { "**", "ncByte", "ncChar", "ncShort",
 				"ncInt", "ncFloat", "ncDouble" };
-	for (int i = 0; i < sizeof (vars) / sizeof (vars[0]); ++i) {
+	for (unsigned int i = 0; i < sizeof (vars) / sizeof (vars[0]); ++i) {
 		NcVar *var = ncf->get_var (vars[i]);
 		std::cerr << vars[i] << ": a " << var->num_dims ()
 			<< "-D " << types[var->type ()]
@@ -116,13 +116,19 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf)
 				sc_step = pos (x_min + x_step, y_min),
 				gc_step = pos (x_min, y_min + y_step);
 
-	NcAtt *z_units = ncf->get_var ("z_range")->get_att ("units");
-	GPlatesGeo::GridData *gdata = new GPlatesGeo::GridData (
-		std::string (z_units->as_string (0)), 0,
-		GPlatesGeo::TimeWindow (),
-		GPlatesGeo::GeologicalData::Attributes_t (),
-		orig, sc_step, gc_step);
-	delete z_units;
+	NcAtt *z_unit_att = ncf->get_var ("z_range")->get_att ("units");
+	std::string z_units (z_unit_att->as_string (0));
+	delete z_unit_att;
+	GPlatesGeo::GridData *gdata;
+	try {
+		gdata = new GPlatesGeo::GridData (
+			z_units, 0, GPlatesGeo::TimeWindow (),
+			GPlatesGeo::GeologicalData::Attributes_t (),
+			orig, sc_step, gc_step);
+	} catch (...) {
+		//std::cerr << e << "\n";
+		return 0;
+	}
 
 	return gdata;
 }
