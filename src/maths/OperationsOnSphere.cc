@@ -115,12 +115,19 @@ PolyLineOnSphere
 GPlatesMaths::OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere
 				(const std::list< LatLonPoint > &llpl)
 {
-	if (llpl.size() < 2) {
+	if (llpl.size() == 0) {
 
 		// not enough points to create even a single great circle arc.
 		std::ostringstream oss("Attempted to create a poly-line "
-		 "from only ");
-		oss << llpl.size() << " point.";
+		 "from 0 points.");
+
+		throw InvalidPolyLineException(oss.str().c_str());
+	}
+	if (llpl.size() == 1) {
+
+		// not enough points to create even a single great circle arc.
+		std::ostringstream oss("Attempted to create a poly-line "
+		 "from only 1 point.");
 
 		throw InvalidPolyLineException(oss.str().c_str());
 	}
