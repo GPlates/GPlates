@@ -49,7 +49,9 @@ namespace GPlatesMaths
 	 *   associated geometric analysis) to represent rotations or
 	 *   orientations of objects in 3d space.  The advantages are:
 	 *   non-singular representation (compared with Euler angles
-	 *   for example), more compact (and faster) than matrices. 
+	 *   for example), more compact (and faster) than matrices
+	 *   [since matrices can represent all sorts of transformations,
+	 *   but (unit) quaternions can only represent rotations -- JB].
 	 *
 	 *   The set of all unit quaternions forms a 3-dimensional
 	 *   sphere S^3 and a group (even a Lie group) under
@@ -135,8 +137,12 @@ namespace GPlatesMaths
 
 
 			/**
+			 * If a unit quaternion is representing a rotation,
+			 * the inverse of that quaternion is the reverse of
+			 * the rotation).
+			 *
 			 * A neat feature of unit quaternions:
-			 * the inverse of a unit quat is its conjugate.
+			 * its inverse is identical to its conjugate.
 			 */
 			UnitQuaternion3D
 			inverse() const { return conjugate(); }
