@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   James Boyden <jboyden@es.usyd.edu.au>
  */
 
 #include "GeologicalData.h"
@@ -36,11 +37,11 @@ GeologicalData::GeologicalData(const DataType_t& dt,
 inline void
 GeologicalData::Add(GeologicalData*) throw(UnsupportedFunctionException)
 {
-	throw UnsupportedFunctionException("GeologicalData::Add()");
+	throw UnsupportedFunctionException("GeologicalData::Add");
 }
 
 inline void
 GeologicalData::Remove(GeologicalData*) throw(UnsupportedFunctionException)
 {
-	throw UnsupportedFunctionException("GeologicalData::Remove()");
+	throw UnsupportedFunctionException("GeologicalData::Remove");
 }
