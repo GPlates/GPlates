@@ -31,7 +31,7 @@
 namespace GPlatesMaths
 {
 	/**
-	 * The Exception thrown when coordinate invariants are violated.
+	 * The Exception thrown when unit vector invariants are violated.
 	 */
 	class ViolatedUnitVectorInvariantException
 		: public MathematicalException
