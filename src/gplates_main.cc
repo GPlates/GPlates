@@ -39,7 +39,6 @@
  * @section contact Contact
  * <b>Email</b>:
  * - Dr. R. Dietmar M&uuml;ller <dietmar (at) geosci.usyd.edu.au>
- * - Stuart Clark <srclark (at) geosci.usyd.edu.au>
  * - James Boyden <jboyden (at) geosci.usyd.edu.au>
  * - Hamish Law <hlaw (at) geosci.usyd.edu.au>
  * - David Symonds <ds (at) geosci.usyd.edu.au>
