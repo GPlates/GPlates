@@ -208,7 +208,9 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 	{
 		if (evt.Dragging())
 		{
-			meridian  += (evt.GetX() - last_x)/TOLERANCE;
+			GLfloat dir = (elevation > 90.0 && elevation < 270.0) ?
+									-1 : 1;
+			meridian  += dir * (evt.GetX() - last_x)/TOLERANCE;
 			elevation += (evt.GetY() - last_y)/TOLERANCE;
 			Refresh();  // Send a "Repaint" event.
 		}
