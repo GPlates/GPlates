@@ -22,7 +22,10 @@ else
 	AC_MSG_RESULT($system)
 fi
 
+##################################
 # System-dependant options
+##################################
+# Debugging format; will be appended to "-g", and passed to the compiler
 debug_format=""
 if test "$system" = "Linux"; then
 	debug_format="stabs+"
@@ -108,24 +111,19 @@ AC_SUBST(EXTRA_LDFLAGS)
 AC_MSG_CHECKING([for Plesiosaurs in Loch Ness])
 AC_MSG_RESULT(yes)
 
+AM_OPTIONS_WXCONFIG
+
 # UI targets
 probe_testui="auto"
-probe_glui="auto"
-probe_gtkmm="no"	# yet to do
+probe_wxwindows="auto"
 
 AC_ARG_ENABLE(testui,
 	[  --disable-testui        Disable Test UI],
 	[probe_testui=$enableval])
-AC_ARG_ENABLE(glui,
-	[  --disable-glui          Disable probing for GLUI],
-	[probe_glui=$enableval])
-#AC_ARG_ENABLE(gtkmm,
-#	[  --disable-gtkmm         Disable probing for GTK--],
-#	[probe_gtkmm=$enableval])
+AC_ARG_ENABLE(wxwindows,
+	[  --disable-wxwindows     Disable probing for wxWindows],
+	[probe_wxwindows=$enableval])
 
-AC_PATH_X
-AC_PATH_XTRA
-# AC_PATH_X: defines x_includes and x_libraries
 
 any_ui="no"
 UI_TARGETS=""
@@ -138,18 +136,18 @@ if test "$probe_testui" != "no"; then
 	#LIBS="$LIBS -l???"			# XXX
 	any_ui="yes"
 fi
-if test "$probe_glui" != "no"; then
-	# Check for GLUI
-	OLD_CXXFLAGS=$CXXFLAGS
-	CXXFLAGS="$CXXFLAGS $X_CFLAGS"
-	AC_HAVE_GLUI
-	CXXFLAGS=$OLD_CXXFLAGS
-	if test "$ac_cv_have_glui" = yes; then
-		enable_glui="yes"
-	fi
-	if test "$enable_glui" = "yes"; then
+if test "$probe_wxWindows" != "no"; then
+	# Check for wxWindows
+	AM_PATH_WXCONFIG([2.4.0], [enable_wxwindows="yes"],
+			 		[enable_wxwindows="no"])
+	if test "$enable_wxwindows" = "yes"; then
+		# AM_PATH_WXCONFIG has set up:
+		#	- WX_CXXFLAGS
+		#	- WX_LIBS
+
+		AC_DEFINE(HAVE_WXWINDOWS)
 		#UI_TARGETS="$UI_TARGETS ui-glui.o"	# XXX
-		#LIBS="$LIBS -lglui"			# XXX
+		LIBS="$LIBS $WX_LIBS"
 		any_ui="yes"
 	fi
 fi
@@ -206,10 +204,8 @@ echo "###############################################"
 echo "#  User interfaces enabled:                   #"
 if test "$enable_testui" = "yes"; then
 	echo "#    * TestUI                                 #"; fi
-if test "$enable_glui" = "yes"; then
-	echo "#    * GLUI                                   #"; fi
-if test "$enable_gtkmm" = "yes"; then
-	echo "#    * GTK--                                  #"; fi
+if test "$enable_wxwindows" = "yes"; then
+	echo "#    * wxWindows                              #"; fi
 
 echo "###############################################"
 echo "#  gPlates is now configured. Simply type...  #"
