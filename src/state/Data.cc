@@ -25,5 +25,8 @@
 
 #include "Data.h"
 
-GPlatesGeo::DataGroup*
+GPlatesState::Data::GeoData_type *
 GPlatesState::Data::_datagroup = NULL;
+
+GPlatesState::Data::RotationData_type *
+GPlatesState::Data::_rot_hists = NULL;
