@@ -54,7 +54,8 @@ namespace GPlatesControls
 		void
 		Animation(const GPlatesGlobal::fpdata_t& start_time,
 		          const GPlatesGlobal::fpdata_t& end_time,
-		          const GPlatesGlobal::integer_t& nsteps);
+		          const GPlatesGlobal::fpdata_t& time_delta,
+		          bool finish_on_end);
 	}
 }
 

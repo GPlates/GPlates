@@ -313,9 +313,8 @@ GPlatesControls::Reconstruct::Present() {
 
 void
 GPlatesControls::Reconstruct::Animation(const fpdata_t &start_time,
-	const fpdata_t &end_time,
-	const integer_t &nsteps)
-{
+ const fpdata_t &end_time, const fpdata_t& time_delta, bool finish_on_end) {
+
 	if (Data::GetDataGroup() == NULL) {
 
 		Dialogs::ErrorMessage("No data to reconstruct",
@@ -336,6 +335,6 @@ GPlatesControls::Reconstruct::Animation(const fpdata_t &start_time,
 	}
 
 	// FIXME: Don't forget to check return value!
-	AnimationTimer::StartNew(WarpToTime, nsteps, start_time, end_time,
-	 500);  // 500 ms => 2 updates per second
+	AnimationTimer::StartNew(WarpToTime, start_time, end_time, time_delta,
+	 finish_on_end, 500);  // 500 ms => 2 updates per second
 }
