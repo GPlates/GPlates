@@ -5,7 +5,6 @@ dnl define HAVE_BOOL. Note that a typedef is not a separate
 dnl type since you cannot overload a function such that it accepts either
 dnl the basic type or the typedef.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_BOOL],
@@ -31,7 +30,6 @@ dnl
 dnl If the C++ compiler supports exceptions handling (try,
 dnl throw and catch), define HAVE_EXCEPTIONS.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_EXCEPTIONS],
@@ -54,7 +52,6 @@ dnl If the compiler has the double math functions acosh,
 dnl asinh, atanh, expm1, erf, erfc, isnan, j0, j1, lgamma, logb,
 dnl log1p, rint, y0 and y1, define HAVE_IEEE_MATH.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_HAVE_IEEE_MATH],
@@ -92,7 +89,6 @@ dnl
 dnl If the C++ library has a working stringstream, define HAVE_SSTREAM.
 dnl
 dnl @author Ben Stanley
-dnl @version $Id$
 dnl
 AC_DEFUN([AC_CXX_HAVE_SSTREAM],
 [AC_CACHE_CHECK(whether the compiler has stringstream,
@@ -117,7 +113,6 @@ dnl
 dnl If the compiler supports ISO C++ standard library (i.e., can include the
 dnl files iostream, map, iomanip and cmath}), define HAVE_STD.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_HAVE_STD],
@@ -145,7 +140,6 @@ dnl @synopsis AC_CXX_HAVE_STL
 dnl
 dnl If the compiler supports the Standard Template Library, define HAVE_STL.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_HAVE_STL],
@@ -173,7 +167,6 @@ dnl
 dnl If the compiler can prevent names clashes using namespaces, define
 dnl HAVE_NAMESPACES.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_NAMESPACES],
@@ -196,7 +189,6 @@ dnl
 dnl If the compiler supports Run-Time Type Identification (typeinfo
 dnl header and typeid keyword), define HAVE_RTTI.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_RTTI],
@@ -230,7 +222,6 @@ dnl @synopsis AC_CXX_TEMPLATES
 dnl
 dnl If the compiler supports basic templates, define HAVE_TEMPLATES.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_TEMPLATES],
@@ -288,7 +279,6 @@ dnl Then, if any (well almost any) other make is called, and GNU make also exist
 dnl then the other make wraps the GNU make.
 dnl
 dnl @author John Darrington <j.darrington@elvis.murdoch.edu.au>
-dnl @version $Id$
 dnl
 AC_DEFUN(
         [CHECK_GNU_MAKE], [ AC_CACHE_CHECK( for GNU make,_cv_gnu_make_command,
@@ -316,7 +306,6 @@ dnl @synopsis AC_CXX_STATIC_CAST
 dnl
 dnl If the compiler supports static_cast<>, define HAVE_STATIC_CAST.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_STATIC_CAST],
@@ -342,7 +331,6 @@ dnl @synopsis AC_CXX_DYNAMIC_CAST
 dnl
 dnl If the compiler supports dynamic_cast<>, define HAVE_DYNAMIC_CAST.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_DYNAMIC_CAST],
@@ -368,7 +356,6 @@ dnl If the compiler can be asked to prevent using implicitly one argument
 dnl constructors as converting constructors with the explicit
 dnl keyword, define HAVE_EXPLICIT.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_EXPLICIT],
@@ -390,7 +377,6 @@ dnl @synopsis AC_CXX_MEMBER_CONSTANTS
 dnl
 dnl If the compiler supports member constants, define HAVE_MEMBER_CONSTANTS.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_MEMBER_CONSTANTS],
@@ -412,7 +398,6 @@ dnl @synopsis AC_CXX_TYPENAME
 dnl
 dnl If the compiler recognizes the typename keyword, define HAVE_TYPENAME.
 dnl
-dnl @version $Id$
 dnl @author Luc Maisonobe
 dnl
 AC_DEFUN([AC_CXX_TYPENAME],
@@ -427,6 +412,30 @@ ac_cv_cxx_typename,
 ])
 if test "$ac_cv_cxx_typename" = yes; then
   AC_DEFINE(HAVE_TYPENAME,,[define if the compiler recognizes typename])
+fi
+])
+
+dnl @synopsis AC_CXX_HAVE_OPENGL_FRAMEWORK
+dnl
+dnl Check whether it is possible to link with the OpenGL framework on Mac OS.
+dnl
+dnl @author James Boyden <jboyden@geosci.usyd.edu.au>
+dnl
+AC_DEFUN([AC_CXX_HAVE_OPENGL_FRAMEWORK],
+[AC_CACHE_CHECK(whether the OpenGL framework is present,
+ac_cv_have_opengl_framework,
+[AC_LANG_SAVE
+ AC_LANG_CPLUSPLUS
+ ac_save_LIBS="$LIBS"
+ LIBS="$LIBS -framework OpenGL"
+ AC_TRY_LINK(,,
+ ac_cv_cxx_have_opengl_framework=yes, ac_cv_cxx_have_opengl_framework=no)
+ LIBS="$ac_save_LIBS"
+ AC_LANG_RESTORE
+])
+if test "$ac_cv_cxx_have_opengl_framework" = yes; then
+  AC_DEFINE(HAVE_OPENGL_FRAMEWORK, 1)
+  LIBS="-framework OpenGL $LIBS"
 fi
 ])
 
