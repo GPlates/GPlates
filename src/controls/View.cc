@@ -30,6 +30,3 @@ GPlatesControls::View::DocumentMetadata()
 {
 	return "";
 }
-
-// Corresponds to extern declertion in View.h
-GPlatesControls::View::FrameRedisplay GPlatesControls::View::Redisplay;

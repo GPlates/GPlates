@@ -27,7 +27,6 @@
 #define _GPLATES_CONTROLS_VIEW_H_
 
 #include <string>
-#include "FrameRedisplay.h"
 
 namespace GPlatesControls
 {
@@ -40,16 +39,7 @@ namespace GPlatesControls
 		 * XXX: should emit some kind of error if there is no data
 		 * set loaded from which to obtain the infomation.
 		 */
-		std::string
-		DocumentMetadata();
-
-		/**
-		 * This is a function object.  Calling 
-		 * GPlatesControls::View::Redisplay() will send a request for
-		 * the repainting of the main frame.
-		 */
-		extern FrameRedisplay
-		Redisplay;
+		std::string DocumentMetadata();
 	}
 }
 
