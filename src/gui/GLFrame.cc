@@ -185,7 +185,7 @@ GLFrame::OnReconstructTime(wxCommandEvent&)
 	ReconstructTimeDialog dialog(this);
 
 	if (dialog.ShowModal() == wxID_OK)
-		GPlatesControls::Reconstruct::Time_asdf(dialog.GetInput());
+		GPlatesControls::Reconstruct::Time(dialog.GetInput());
 }
 
 void

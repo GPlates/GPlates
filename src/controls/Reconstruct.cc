@@ -40,7 +40,7 @@
 
 using namespace GPlatesGlobal;
 using namespace GPlatesState;
-using namespace GPlatesControls;
+//using namespace GPlatesControls;
 using namespace GPlatesMaths;
 
 
@@ -219,9 +219,9 @@ WarpToTime(const fpdata_t &t) {
 	GPlatesControls::View::Redisplay();
 }
 
-
+namespace GPlatesControls {
 void
-Reconstruct::Time_asdf(const fpdata_t &time)
+GPlatesControls::Reconstruct::Time(const fpdata_t &time)
 {
 	if (Data::GetDataGroup() == NULL) {
 
@@ -251,7 +251,7 @@ Reconstruct::Time_asdf(const fpdata_t &time)
 		exit(1);
 	}
 }
-
+}
 
 static void
 WarpToPresent() {
@@ -289,7 +289,7 @@ WarpToPresent() {
 
 
 void
-Reconstruct::Present() {
+GPlatesControls::Reconstruct::Present() {
 
 	if (Data::GetDataGroup() == NULL) {
 
@@ -307,7 +307,7 @@ Reconstruct::Present() {
 
 
 void
-Reconstruct::Animation(const fpdata_t &start_time,
+GPlatesControls::Reconstruct::Animation(const fpdata_t &start_time,
 	const fpdata_t &end_time,
 	const integer_t &nsteps)
 {
