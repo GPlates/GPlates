@@ -30,6 +30,11 @@
 
 namespace GPlatesFileIO
 {
+	/**
+	 * The superclass for all the classes that will convert the
+	 * internal gPlates representation of the data into some
+	 * kind of output format.
+	 */
 	// FIXME: Need there be any functionality in this class? Do
 	// we need this extra layer of generality between the visitors
 	// and the file i/o?  Only time will tell...

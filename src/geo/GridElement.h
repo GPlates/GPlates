@@ -31,11 +31,16 @@
 
 namespace GPlatesGeo
 {
+	/**
+	 * An element of a Grid, which has it's own Attributes_t.
+	 */
 	class GridData::GridElement
 	{
 		public:
-			GridElement(index_t row, index_t col) 
-				: _row(row), _col(col) { }
+			GridElement(index_t row, 
+						index_t col, 
+						const Attributes_t& attrs) 
+				: _row(row), _col(col), _attributes(attrs) { }
 
 		private:
 			index_t _row, _col;

@@ -40,8 +40,8 @@ namespace GPlatesGeo
 
 	/**
 	 * An abstraction for displayable data.
-	 * Each piece of GeologicalData has an associated collection of 
-	 * Attributes_t, of which one may be displayed at the data's 
+	 * Each piece of GeologicalData has an associated Attributes_t 
+	 * collection, of which one attribute may be displayed at the data's 
 	 * location.
 	 * @invariant There should be some restriction on the values that
 	 *   _rotation_group_id can take.

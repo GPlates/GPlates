@@ -23,11 +23,15 @@
  *   Hamish Law <hlaw@es.usyd.edu.au>
  */
 
-#ifndef _GPLATES_READER_H_
-#define _GPLATES_READER_H_
+#ifndef _GPLATES_FILEIO_READER_H_
+#define _GPLATES_FILEIO_READER_H_
 
 namespace GPlatesFileIO
 {
+	/**
+	 * The superclass for each of the classes that will convert some
+	 * format of input source to the internal gPlates representation.
+	 */
 	// See the comment at declaration of WriterVisitor.
 	class Reader
 	{
@@ -36,4 +40,4 @@ namespace GPlatesFileIO
 	};
 }
 
-#endif
+#endif  // _GPLATES_FILEIO_READER_H_
