@@ -307,12 +307,8 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 				real_j = num_y - (cnt / num_x) - 1;
 			//std::cerr << cnt << "=>" << real_j << "\n";
 
-			GPlatesGeo::GeologicalData::Attributes_t attr =
-				GPlatesGeo::GeologicalData::NO_ATTRIBUTES;
-			// TODO: insert properly when StringValue is
-			//	actually useful (value is in z[j])
 			GPlatesGeo::GridElement *elt =
-					new GPlatesGeo::GridElement (attr);
+					new GPlatesGeo::GridElement (z[j]);
 			gdata->Add (elt, real_i, real_j);
 
 #ifdef DEBUG_INSERTIONS
