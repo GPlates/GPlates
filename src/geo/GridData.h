@@ -22,14 +22,15 @@
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
  *   James Boyden <jboyden@es.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_GRIDDATA_H_
 #define _GPLATES_GEO_GRIDDATA_H_
 
-#include "GeologicalData.h"
-#include "Vector2D.h"
-#include "maths/types.h"  /* Basis2D_t */
+#include "DrawableData.h"
+#include "maths/Basis.h"
+#include "maths/PointOnSphere.h"
 
 namespace GPlatesGeo
 {
@@ -38,29 +39,35 @@ namespace GPlatesGeo
 	 * @todo We want to be able to support adaptive meshes sometime in
 	 *   the future.
 	 */
-	class GridData : public GeologicalData
+	class GridData : public DrawableData
 	{
 		public:
 			class GridElement;
 
-			typedef std::vector<GridElement> Grid_t;
+			//typedef std::vector<GridElement> Grid_t;
 
-			GridData(const DataType_t&, const RotationGroupId_t&,
-				const Attributes_t&, const Grid_t&);
+			GridData(const DataType_t&,
+				 const RotationGroupId_t&,
+				 const TimeWindow&,
+				 const Attributes_t&,
+				 const GPlatesMaths::PointOnSphere&,
+				 const GPlatesMaths::Basis&);
 
 			/**
 			 * Add @a elem to the grid.
 			 */
-			virtual void
-			Add(const GridElement& elem) { _grid.push_back(elem); }
+			//virtual void
+			//Add(const GridElement& elem) { _grid.push_back(elem); }
 
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }
 
+			void Draw () const;
+			void RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const;
 		private:
-			Grid_t _grid;
-			Vector2D _origin;
-			GPlatesMaths::Basis2D_t _basis;
+			//Grid_t _grid;
+			GPlatesMaths::PointOnSphere _origin;
+			GPlatesMaths::Basis _basis;
 	};
 }
 
