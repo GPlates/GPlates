@@ -55,13 +55,18 @@ GridData::~GridData ()
 		return;
 	GridRowPtr row = grid->rows[0];
 	for (index_t i = 0; i < grid->length; ++i, ++row) {
+		if (row->length < 1)
+			continue;
 		// TODO: do something with elements in each row?
 		//for (index_t j = 0; j < row->length; ++j) {
-			//GridElementPtr elem = row->data[j + row->offset];
+			//GridElementPtr elem = row->data[j];
 		//}
+		std::cerr << "ZZZ: About to delete[] on row " << i << "..\n";
 		delete[] row->data;
 	}
 	delete[] grid->rows;
+
+	delete grid;
 }
 
 void GridData::Add (const GridElement *element, index_t x1, index_t x2)
