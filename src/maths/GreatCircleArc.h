@@ -27,7 +27,6 @@
 #define _GPLATES_MATHS_GREATCIRCLEARC_H_
 
 #include "types.h"  /* real_t */
-#include "PointOnSphere.h"
 #include "UnitVector3D.h"
 
 namespace GPlatesMaths
