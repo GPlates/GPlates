@@ -37,19 +37,32 @@ extern "C" {
 
 namespace GPlatesFileIO
 {
+	/**
+	 * XMLParser is a simple DOM-like wrapper around the
+	 * eXpat XML parser [http://expat.sourceforge.net].
+	 */
 	class XMLParser
 	{
 		public:
 			struct Element;
 
+			/**
+			 * Constructor creates the eXpat parser.
+			 */
 			XMLParser();
 
+			/**
+			 * Destructor frees the eXpat parser and all of the
+			 * elements created during the parse.  Thus a pointer
+			 * to a document root returned from Parse() will be
+			 * invalid after the XMLParser is deleted.
+			 */ 
 			~XMLParser();
 
 			/**
 			 * Convert the given istream into an XML document tree.
 			 * If parsing was successful, returns the root Element of
-			 * the tree, otherwise NULL is returned.
+			 * the tree, otherwise FileFormatException is thrown.
 			 * Cleanup of returned Element and all of its children will
 			 * be done by the parser.
 			 */
@@ -68,12 +81,24 @@ namespace GPlatesFileIO
 			Initialise();
 	};
 	
+	/**
+	 * The main node in the document tree.  Has a link to the
+	 * parent and a list of links to the children (list is 
+	 * empty for leaf nodes, parent is NULL for root node).
+	 */
 	struct XMLParser::Element
 	{
-		typedef std::pair<const std::string, 
-						  const std::string> Attribute;
-		typedef std::list<Attribute> 		 AttributeList;
-		typedef std::list<Element*>	 		 ElementList;
+		/**
+		 * A name/value pair.
+		 */
+		typedef std::pair< const std::string, 
+						   const std::string >  Attribute;
+		typedef std::list< Attribute >          AttributeList;
+
+		/**
+		 * Container to hold the children.
+		 */
+		typedef std::list< const Element* >  ElementList;
 
 		Element(const char* name)
 			: _name(name), _parent(NULL)
@@ -81,9 +106,9 @@ namespace GPlatesFileIO
 
 		~Element();
 		
-		std::string		_name;
-		AttributeList	_attributes;
-		std::string		_content;
+		const std::string	_name;
+		AttributeList		_attributes;
+		std::string			_content;
 
 		Element*		_parent;
 		ElementList		_children;    /*< sub-elements */

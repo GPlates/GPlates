@@ -31,26 +31,30 @@
 
 #include <cstring>
 #include "XMLParser.h"
+#include "FileFormatException.h"
 #include "global/Assert.h"
 
 using namespace GPlatesFileIO;
 typedef XMLParser::Element Element;
 
-/**
- * Binary functor (predicate) for use with std::unique_copy.
- */
-class BothWhitespace
+namespace 
 {
-	public:
-		/**
-		 * Returns true when both of the parameters are space
-		 * characters.
-		 */
-		bool
-		operator()(char c1, char c2) {
-			return isspace(c1) && isspace(c2);
-		}
-};
+	/**
+	 * Binary functor (predicate) for use with std::unique_copy.
+	 */
+	class BothWhitespace
+	{
+		public:
+			/**
+			 * Returns true when both of the parameters are space
+			 * characters.
+			 */
+			bool
+			operator()(char c1, char c2) {
+				return isspace(c1) && isspace(c2);
+			}
+	};
+}
 
 
 /**
@@ -244,12 +248,13 @@ XMLParser::Parse(std::istream& istr)
 		// XML_Parse calls the various handlers registered in
 		// XMLParser::Initialise() and does syntax checking.
 		if (XML_Parse(_parser, buf, len, done) == 0) {
-			// Handle a syntax error.
-			std::cerr << XML_ErrorString(XML_GetErrorCode(_parser))
+
+			// Handle a file format error.
+			std::ostringstream oss;
+			oss << XML_ErrorString(XML_GetErrorCode(_parser))
 				<< " at line " << XML_GetCurrentLineNumber(_parser)
-				<< std::endl
-				<< "No data was loaded." << std::endl;
-			return static_cast<const Element *>(NULL);
+				<< std::endl;
+			throw FileFormatException(oss.str().c_str());
 		}
 	} while (!done);
 
@@ -257,9 +262,9 @@ XMLParser::Parse(std::istream& istr)
 	// are not at the end of the input then something bad has
 	// happened.
 	if (!istr.eof()) {
-		std::cerr << "Error: Parse loop exited before EOF." << std::endl
-			<< "No data was loaded." << std::endl;
-		return static_cast<const Element *>(NULL);
+		std::ostringstream oss;
+		oss << "Error: Parse loop exited before EOF." << std::endl;
+		throw FileFormatException(oss.str().c_str());
 	}
 	
 	return _root;
