@@ -20,9 +20,10 @@
  *
  */
 
-#ifndef GPLATES_GUI_SINGLEGLOBEORIENTATION_H
-#define GPLATES_GUI_SINGLEGLOBEORIENTATION_H
+#ifndef GPLATES_GUI_SIMPLEGLOBEORIENTATION_H
+#define GPLATES_GUI_SIMPLEGLOBEORIENTATION_H
 
+#include "GlobeOrientation.h"
 #include "maths/types.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
@@ -36,7 +37,7 @@ namespace GPlatesGui {
 	 * changes to this globe orientation do not affect any other globe
 	 * orientation, and vice-versa).
 	 */
-	class SimpleGlobeOrientation {
+	class SimpleGlobeOrientation: public GlobeOrientation {
 
 	 public:
 
@@ -108,4 +109,4 @@ namespace GPlatesGui {
 
 }
 
-#endif  /* GPLATES_GUI_SINGLEGLOBEORIENTATION_H */
+#endif  /* GPLATES_GUI_SIMPLEGLOBEORIENTATION_H */
