@@ -1,0 +1,33 @@
+@SET_MAKE@
+
+subdir = src/state
+prefix = @prefix@
+
+DISTFILES = Makefile.in *.cc *.h
+
+INCLUDES = -I..
+CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
+LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
+
+OBJS = Data.o
+
+LIBNAME = libstate.a
+
+all:		$(LIBNAME)
+
+clean:
+	rm -f $(OBJS)
+	rm -f $(LIBNAME)
+	rm -f core gmon.out
+
+$(LIBNAME):	$(OBJS)
+		ar rcv $@ $^
+
+include ../Rules
+
+distdir = ../@PACKAGE_TARNAME@-@PACKAGE_VERSION@/$(subdir)
+dist:	Makefile $(DISTFILES)
+	for file in $(DISTFILES) ; do \
+		ln $$file $(distdir) 2>/dev/null || \
+			cp -p $$file $(distdir); \
+	done

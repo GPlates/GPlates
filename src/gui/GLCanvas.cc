@@ -67,10 +67,7 @@ GLCanvas::OnPaint(wxPaintEvent&)
 	glRotatef(-90.0, 0.0, 0.0, 1.0);
 
 	using namespace GPlatesGeo;
-	_globe.Paint(new DataGroup(GeologicalData::NO_DATATYPE,
-							   GeologicalData::NO_ROTATIONGROUP,
-							   GeologicalData::NO_TIMEWINDOW,
-							   GeologicalData::NO_ATTRIBUTES));
+	_globe.Paint();
 
 	SwapBuffers();
 }

@@ -29,6 +29,7 @@
 #include "RenderVisitor.h"
 #include "maths/types.h"
 #include "maths/GreatCircleArc.h"
+#include "state/Data.h"
 
 using namespace GPlatesGui;
 using namespace GPlatesMaths;
@@ -145,8 +146,11 @@ DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
 #endif
 
 void
-Globe::Paint(const GPlatesGeo::DataGroup* data)
+Globe::Paint()
 {
+	const GPlatesGeo::DataGroup* data = 
+		GPlatesState::Data::GetDataGroup();
+
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
 		// Ensure that the meridian and elevation are in the acceptable 
@@ -174,10 +178,12 @@ Globe::Paint(const GPlatesGeo::DataGroup* data)
 		gluSphere(_sphere, _radius, _slices, _stacks);
 		glDepthRange(0.0, 0.9);
 
-		glPointSize(5.0f);
-		// Paint the data.
-		RenderVisitor renderer;
-		renderer.Visit(*data);
+		if (data) {
+			glPointSize(5.0f);
+			// Paint the data.
+			RenderVisitor renderer;
+			renderer.Visit(*data);
+		}
 
 	glPopMatrix();
 }
