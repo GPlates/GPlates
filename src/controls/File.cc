@@ -32,6 +32,7 @@
 #include "File.h"
 #include "Reconstruct.h"
 #include "Dialogs.h"
+#include "Lifetime.h"
 #include "state/Data.h"
 #include "fileio/PlatesRotationParser.h"
 #include "maths/OperationsOnSphere.h"
@@ -45,6 +46,7 @@
 //#include "fileio/NetCDFWriter.h"
 #include "geo/PointData.h"
 #include "geo/LineData.h"
+#include "global/Exception.h"
 #include "global/NotYetImplementedException.h"
 #include "global/types.h"  /* rid_t */
 
@@ -280,10 +282,11 @@ namespace
 				msg.str().c_str(),
 				"No PLATES data was loaded.");  
 		} 
-		catch (const GPlatesGlobal::Exception& ex)
+		catch (const GPlatesGlobal::Exception& e)
 		{
-			std::cerr << "Internal exception: " << ex << std::endl;
-			exit(1);
+			std::cerr << "Caught Exception: " << e << std::endl;
+			GPlatesControls::Lifetime::instance()->terminate(
+			 "Unable to recover from exception caught in <anonymous>::HandlePLATESFile.");
 		}
 	}
 }
@@ -583,8 +586,9 @@ GPlatesControls::File::LoadRotation(const std::string& filename)
 
 	} catch (const GPlatesGlobal::Exception &e) {
 
-		std::cerr << "Internal exception: " << e << std::endl;
-		exit(1);
+		std::cerr << "Caught Exception: " << e << std::endl;
+		GPlatesControls::Lifetime::instance()->terminate(
+		 "Unable to recover from exception caught in GPlatesControls::File::LoadRotation.");
 	}
 }
 
