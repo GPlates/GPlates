@@ -40,20 +40,19 @@ GPlatesMaths::SmallCircle::SmallCircle (const UnitVector3D &axis,
 	UnitVector3D point = pt.unitvector ();
 	real_t dp = dot (normal(), point);
 
-	if (abs (dp) >= 1.0)
+	if (abs (dp) > 1.0)
 		throw IndeterminateResultException (
-				"Tried to create degenerate small circle.");
+			"Tried to create small circle with imaginary radius.");
 
 	_theta = acos (dp);
 }
 
 
-#if 0
 unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 				std::vector<PointOnSphere> &points) const
 {
 	// If small circle and great circle are parallel, no intersections
-	if (collinear (_normal, other.normal ()))
+	if (collinear (_axisvector, other.axisvector ()))
 		return 0;
 
 	// Since the axes are not collinear, the planes that the circles live
@@ -61,9 +60,9 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 
 	// A is one point on the line through the intersection points, and
 	// B is the direction vector, so the line equation is: x = A + Bt
-	Vector3D B = cross (other.normal (), _normal);
+	Vector3D B = cross (other.axisvector (), _axisvector);
 	real_t scale = cos (_theta) / B.magSqrd ();
-	Vector3D A = cross (B, other.normal ()) * scale;
+	Vector3D A = cross (B, other.axisvector ()) * scale;
 
 	// solve a quadratic equation to get the actual points
 	real_t a, b, c;
@@ -88,7 +87,6 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 
 	return 2;
 }
-#endif
 
 
 void GPlatesMaths::SmallCircle::AssertInvariantHolds () const

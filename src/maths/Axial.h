@@ -75,7 +75,7 @@ namespace GPlatesMaths
 				return PointOnSphere(r * pt);
 			}
 
-		private:
+		protected:
 			UnitVector3D _axisvector;
 	};
 }

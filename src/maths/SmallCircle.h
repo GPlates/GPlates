@@ -27,9 +27,7 @@
 #ifndef _GPLATES_MATHS_SMALLCIRCLE_H_
 #define _GPLATES_MATHS_SMALLCIRCLE_H_
 
-#if 0  // No longer needed
 #include <vector>
-#endif
 #include "Axial.h"
 #include "types.h"
 #include "GreatCircle.h"
@@ -41,6 +39,8 @@ namespace GPlatesMaths
 {
 	/** 
 	 * A small circle of a unit sphere.
+	 *
+	 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
 	 */
 	class SmallCircle : public Axial
 	{
@@ -72,7 +72,6 @@ namespace GPlatesMaths
 			real_t
 			radius () const { return sin (_theta); }
 
-#if 0  // No longer needed
 			/**
 			 * Find the intersection points (if any) of this
 			 * SmallCircle and the given GreatCircle. Intersection
@@ -82,7 +81,6 @@ namespace GPlatesMaths
 			 */
 			unsigned int intersection (const GreatCircle &other,
 				std::vector<PointOnSphere> &points) const;
-#endif
 
 		protected:
 			void AssertInvariantHolds () const;
