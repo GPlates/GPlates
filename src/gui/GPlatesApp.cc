@@ -25,6 +25,7 @@
  */
 
 #include <iostream>
+#include <wx/wx.h>
 
 #include "global/config.h"
 #include "global/Exception.h"
@@ -38,6 +39,21 @@ using namespace GPlatesGui;
 bool
 GPlatesApp::OnInit()
 {
+#ifdef PACKAGE_IS_BETA
+	// Warning message for beta versions
+	wxMessageDialog dlg (0,
+		"WARNING!\n"
+		"This is a BETA version of GPlates and is not supported!\n"
+		"Please check http://www.gplates.org regularly for updated\n"
+		"versions. You have been warned!\n"
+		"\n"
+		"Given that, do you still want to use it?",
+		"WARNING: Beta Version",
+		wxYES_NO | wxNO_DEFAULT | wxICON_EXCLAMATION);
+	if (dlg.ShowModal () == wxID_NO)
+		return FALSE;
+#endif
+
 	/*
 	 * Note that this 'try ... catch' block can only catch exceptions
 	 * thrown during the instantiation of the new MainWindow.

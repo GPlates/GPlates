@@ -6,6 +6,9 @@
 /* wxWindows is available. */
 #undef HAVE_WXWIN
 
+/* Whether this is a beta. */
+#undef PACKAGE_IS_BETA
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
