@@ -146,8 +146,8 @@ namespace GPlatesMaths
 	 * This operation is not commutative!
 	 *
 	 * This composition of rotations is very much in the style of matrix
-	 * composition by premultiplication: you take 'r2', then apply 'r1'
-	 * to it, in front of it.
+	 * composition by premultiplication:  You take 'r2', then apply 'r1'
+	 * to it (in front of it).
 	 *
 	 * If 'r1' describes the rotation of a moving plate 'M1' with respect
 	 * to a fixed plate 'F1', and 'r2' describes the rotation of a moving
