@@ -26,7 +26,6 @@
 #ifndef _GPLATES_CONTROLS_RECONSTRUCT_H_
 #define _GPLATES_CONTROLS_RECONSTRUCT_H_
 
-#include "maths/types.h"
 #include "global/types.h"
 
 namespace GPlatesControls
@@ -38,7 +37,7 @@ namespace GPlatesControls
 		 * using the loaded rotation file.
 		 */
 		void
-		Time(const GPlatesMaths::real_t& time);
+		Time(const GPlatesGlobal::fpdata_t& time);
 
 		/**
 		 * Reset the construction back to the present day.
@@ -53,8 +52,8 @@ namespace GPlatesControls
 		 * of years ago.
 		 */
 		void
-		Animation(const GPlatesMaths::real_t& start_time,
-		          const GPlatesMaths::real_t& end_time,
+		Animation(const GPlatesGlobal::fpdata_t& start_time,
+		          const GPlatesGlobal::fpdata_t& end_time,
 		          const GPlatesGlobal::integer_t& nsteps);
 	}
 }
