@@ -103,12 +103,28 @@ namespace GPlatesMaths
 			real_t
 			w() const { return _s; }
 
+
+			/**
+			 * The conjugate of a quaternion is required
+			 * for the multiplicative inverse.
+			 */
+			UnitQuaternion3D
+			conjugate() const { return UnitQuaternion3D(_s, -_v); }
+
+
+			/**
+			 * A neat feature of unit quaternions:
+			 * the inverse of a unit quat is its conjugate.
+			 */
+			UnitQuaternion3D
+			inverse() const { return conjugate(); }
+
 		protected:
 			/**
 			 * Create a 3D unit quaternion from the specified
 			 * (s, v) components.
-			 * @param s_comp The s-component.
-			 * @param v_comp The v-component.
+			 * @param s_comp The scalar-component.
+			 * @param v_comp The vector-component.
 			 *
 			 * This constructor is protected because it
 			 * <b>assumes</b> that the scalar and vector
