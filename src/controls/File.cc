@@ -355,6 +355,30 @@ namespace DataFormats {
 		return true;
 	}
 
+	bool magicMatches (const std::string &fname, const char *magic, int n)
+	{
+		std::ifstream ifs (fname.c_str ());
+		if (!ifs) {
+			OpenFileErrorMessage (fname, "Couldn't open file.");
+			return false;
+		}
+
+		char *start = new char[n];
+		if (!ifs.read (start, n)) {
+			OpenFileErrorMessage (fname, "Couldn't read file.");
+			delete[] start;
+			return false;
+		}
+		ifs.close ();
+
+		if (std::memcmp (start, magic, n) != 0) {
+			// Doesn't match
+			delete[] start;
+			return false;
+		}
+		delete[] start;
+		return true;
+	}
 
 	enum data_format
 	testGPML(const std::string &filename) {
@@ -366,24 +390,8 @@ namespace DataFormats {
 			return UNKNOWN;
 		}
 
-		// Attempt to recognise the file-type by reading a bit.
-		std::ifstream ifs(filename.c_str());
-		if ( ! ifs) {
-
-			OpenFileErrorMessage(filename, "Couldn't open file.");
-			return ERROR;
-		}
-
-		static const char expected_start[] = "<?xml";
-		char start[sizeof(expected_start)];
-
-		size_t expected_start_len = std::strlen(expected_start);
-		ifs.get(start, expected_start_len);
-		start[expected_start_len] = '\0';
-		ifs.close();
-
-		if (std::strcmp(expected_start, start) != 0) {
-
+		// Test for magic
+		if (!magicMatches (filename, "<?xml", 5)) {
 			// does not match expected GPML
 			return UNKNOWN;
 		}
@@ -404,15 +412,10 @@ namespace DataFormats {
 	}
 
 
-	enum data_format
-	testNetCDF(const std::string &filename) {
-
-		// Test file suffix for a quick disqualification.
-		if ( ! extensionMatches(filename, ".grd")) {
-
-			// expected extension does not match
-			return UNKNOWN;
-		}
+	enum data_format testNetCDF (const std::string &filename)
+	{
+		if (!magicMatches (filename, "CDF\1", 4))
+			return UNKNOWN;		// not netCDF
 		return NETCDF;
 	}
 }
