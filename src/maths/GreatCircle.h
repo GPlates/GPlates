@@ -67,7 +67,7 @@ namespace GPlatesMaths
 			contains (const PointOnSphere &pt) const {
 
 				real_t dp = dot (normal(), pt.unitvector ());
-				return (dp <= 0);
+				return (dp == 0);
 			}
 
 #if 0  // No longer needed
