@@ -37,38 +37,28 @@
 using namespace GPlatesFileIO;
 typedef XMLParser::Element Element;
 
-namespace 
+/**
+ * Returns true when both of the parameters are space
+ * characters.
+ */
+static bool
+cmp_space(char c1, char c2) 
 {
-	/**
-	 * Binary functor (predicate) for use with std::unique_copy.
-	 */
-	class BothWhitespace
-	{
-		public:
-			/**
-			 * Returns true when both of the parameters are space
-			 * characters.
-			 */
-			bool
-			operator()(char c1, char c2) {
-				return isspace(c1) && isspace(c2);
-			}
-	};
+	return isspace(c1) && isspace(c2);
 }
-
 
 /**
  * Replace contiguous blocks of whitespace with a single space
  * character.
- *
- * Based on an example from N. Josuttis.
  */
 static void
 CompressWhitespace(std::string& str)
 {
 	// Copy blocks of whitespace as a single space using the
 	// BothWhitespace functor.
-	std::unique(str.begin(), str.end(), BothWhitespace());
+	str.erase(
+		std::unique(str.begin(), str.end(), &cmp_space),
+		str.end());
 }
 
 static XML_Parser parser;
@@ -260,5 +250,11 @@ XMLParser::Parse(std::istream& istr)
 
 Element::~Element()
 {
-	// XXX: Memory leak!
+	ElementMap_type::iterator iter = _children.begin();
+	for ( ; iter != _children.end(); ++iter)
+	{
+		ElementList_type::iterator jter = iter->second.begin();
+		for ( ; jter != iter->second.end(); ++jter)
+			delete *jter;
+	}
 }
