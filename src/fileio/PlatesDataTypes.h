@@ -57,13 +57,14 @@ namespace GPlatesFileIO
 		 const std::string &line);
 
 
-		struct LatLonPoint {
-
+		struct LatLonPoint
+		{
 				friend FiniteRotation
 				ParseRotationLine(const LineBuffer &lb,
 				 const std::string &line);
 
 			public:
+
 				static LatLonPoint
 				ParseBoundaryLine(const LineBuffer &lb,
 				 const std::string &line,
@@ -89,32 +90,35 @@ namespace GPlatesFileIO
 		};
 
 
-		struct EulerRotation {
-
+		struct EulerRotation
+		{
 				friend FiniteRotation
 				ParseRotationLine(const LineBuffer &lb,
 				 const std::string &line);
 
 			public:
+
 				LatLonPoint _pole;
 				fpdata_t    _angle;  // degrees
 
 				// no default constructor
 
 			protected:
+
 				EulerRotation(const LatLonPoint &pole,
 				 const fpdata_t &angle)
 				 : _pole(pole), _angle(angle) {  }
 		};
 
 
-		struct FiniteRotation {
-
+		struct FiniteRotation
+		{
 				friend FiniteRotation
 				ParseRotationLine(const LineBuffer &lb,
 				 const std::string &line);
 
 			public:
+
 				fpdata_t      _time;  // Millions of years ago
 				plate_id_t    _moving_plate, _fixed_plate;
 				EulerRotation _rot;
@@ -123,6 +127,7 @@ namespace GPlatesFileIO
 				// no default constructor
 
 			protected:
+
 				FiniteRotation(const fpdata_t &time,
 				 const plate_id_t &moving_plate,
 				 const plate_id_t &fixed_plate,
@@ -136,9 +141,35 @@ namespace GPlatesFileIO
 		};
 
 
-		struct PolyLineHeader {
+		struct RotationSequence
+		{
+			plate_id_t _moving_plate, _fixed_plate;
 
+			/*
+			 * The elements in this list are finite rotations
+			 * which operate upon the same (moving plate, fixed
+			 * plate) pair, and were listed in an uninterrupted
+			 * sequence in the rotation file.
+			 */
+			std::list< FiniteRotation > _seq;
+
+			// no default constructor
+
+			RotationSequence(const plate_id_t &moving_plate,
+			 const plate_id_t &fixed_plate,
+			 const FiniteRotation &rot)
+			 : _moving_plate(moving_plate),
+			   _fixed_plate(fixed_plate) {
+
+				_seq.push_back(rot);
+			}
+		};
+
+
+		struct PolyLineHeader
+		{
 			public:
+
 				static PolyLineHeader
 				ParseLines(const LineBuffer &lb,
 				 const std::string &first_line,
@@ -186,8 +217,8 @@ namespace GPlatesFileIO
 		};
 
 
-		struct PolyLine {
-
+		struct PolyLine
+		{
 			PolyLineHeader           _header;
 			std::list< LatLonPoint > _points;
 
@@ -198,8 +229,8 @@ namespace GPlatesFileIO
 		};
 
 
-		struct Plate {
-
+		struct Plate
+		{
 			plate_id_t            _plate_id;
 			std::list< PolyLine > _polylines;
 
