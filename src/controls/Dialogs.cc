@@ -25,7 +25,8 @@
  */
 
 #include <sstream>
-#include <wx/wx.h>
+#include <wx/string.h>
+#include <wx/msgdlg.h>
 #include "Dialogs.h"
 
 void
