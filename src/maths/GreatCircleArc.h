@@ -53,6 +53,11 @@ namespace GPlatesMaths
 			CreateGreatCircleArc(UnitVector3D u1,
 			                     UnitVector3D u2);
 
+			static GreatCircleArc
+			CreateGreatCircleArc(UnitVector3D u1,
+			                     UnitVector3D u2,
+			                     UnitVector3D rot_axis);
+
 			UnitVector3D
 			startPoint() const { return _u1; }
 
@@ -62,21 +67,15 @@ namespace GPlatesMaths
 			UnitVector3D
 			rotationAxis() const { return _rot_axis; }
 
-			real_t
-			rotationAngle() const { return _rot_angle; }
-
 		protected:
 			GreatCircleArc(UnitVector3D u1, UnitVector3D u2,
-			               UnitVector3D rot_axis,
-			               real_t rot_angle)
+			               UnitVector3D rot_axis)
 				: _u1(u1), _u2(u2),
-				  _rot_axis(rot_axis),
-				  _rot_angle(rot_angle) {  }
+				  _rot_axis(rot_axis) {  }
 
 		private:
 			UnitVector3D _u1, _u2;
 			UnitVector3D _rot_axis;
-			real_t       _rot_angle;  // in radians
 	};
 }
 

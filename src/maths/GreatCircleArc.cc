@@ -26,7 +26,9 @@
 #include <sstream>
 #include "GreatCircleArc.h"
 #include "DirVector3D.h"
+#include "Vector3D.h"
 #include "IndeterminateResultException.h"
+#include "InvalidOperationException.h"
 
 
 using namespace GPlatesMaths;
@@ -38,7 +40,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	 * First, we ensure that these two unit vectors do in fact define
 	 * a single unique great-circle arc.
 	 */
-	if (u1 == u2) {
+	if (parallel(u1, u2)) {
 
 		// start-point same as end-point => no arc
 		std::ostringstream oss("Attempted to calculate a great-circle "
@@ -56,10 +58,8 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	}
 
 	/*
-	 * Now we want to calculate:
-	 *  - the angle of rotation
-	 *  - the unit vector normal to the plane of rotation (or
-	 *     the "rotation axis")
+	 * Now we want to calculate the unit vector normal to the plane
+	 * of rotation (this vector also known as the "rotation axis").
 	 *
 	 * To do this, we calculate the cross product.
 	 */
@@ -73,8 +73,53 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	 * Note that the magnitude of v cannot be _equal_ to zero,
 	 * since the vectors are neither parallel nor antiparallel.
 	 */
-	real_t rot_angle = asin(v.magnitude());
 	UnitVector3D rot_axis = v.normalise();
 
-	return GreatCircleArc(u1, u2, rot_axis, rot_angle);
+	return GreatCircleArc(u1, u2, rot_axis);
+}
+
+
+GreatCircleArc
+GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2,
+	UnitVector3D rot_axis) {
+
+	/*
+	 * First, we ensure that these two unit vectors do in fact define
+	 * a single unique great-circle arc.
+	 */
+	if (parallel(u1, u2)) {
+
+		// start-point same as end-point => no arc
+		std::ostringstream oss("Attempted to calculate a great-circle "
+		 "arc from duplicate endpoints ");
+		oss << u1 << " and " << u2 << ".";
+		throw IndeterminateResultException(oss.str().c_str());
+	}
+	if (antiparallel(u1, u2)) {
+
+		// start-point and end-point antipodal => indeterminate arc
+		std::ostringstream oss("Attempted to calculate a great-circle "
+		 "arc from antipodal endpoints ");
+		oss << u1 << " and " << u2 << ".";
+		throw IndeterminateResultException(oss.str().c_str());
+	}
+
+	/*
+	 * Ensure that 'rot_axis' does, in fact, qualify as a rotation axis
+	 * (ie. that it is parallel to the cross product of 'u1' and 'u2').
+	 *
+	 * To do this, we calculate the cross product.
+	 * (We use the Vector3D cross product, which is faster).
+	 */
+	Vector3D v = cross(Vector3D(u1), Vector3D(u2));
+	if ( ! parallel(v, Vector3D(rot_axis))) {
+
+		// 'rot_axis' is not the axis which rotates 'u1' into 'u2'
+		std::ostringstream oss("Attempted to calculate a great-circle "
+		 "arc from an invalid triple of vectors (");
+		oss << u1 << " and " << u2 << " around " << rot_axis << ").";
+		throw InvalidOperationException(oss.str().c_str());
+	}
+
+	return GreatCircleArc(u1, u2, rot_axis);
 }
