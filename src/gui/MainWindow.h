@@ -58,8 +58,8 @@ namespace GPlatesGui
 			void OnExit(wxCommandEvent&);
 
 			// View events
-			void OnViewMetadata(wxCommandEvent&);
-			void OnViewGlobe(wxCommandEvent&);
+			void OnViewZoomIn(wxCommandEvent&);
+			void OnViewZoomOut(wxCommandEvent&);
 
 			// Reconstruct events
 			void OnReconstructTime(wxCommandEvent&);
@@ -74,6 +74,12 @@ namespace GPlatesGui
 			 * the status bar) to @a t.
 			 */
 			void SetCurrentTime(const GPlatesGlobal::fpdata_t &t);
+
+			/**
+			 * Set the current zoom (as displayed in the status
+			 * bar) to @a z.
+			 */
+			void SetCurrentZoom(unsigned z);
 
 			/**
 			 * Set the current position on the globe (as displayed
@@ -133,11 +139,6 @@ namespace GPlatesGui
 			GPlatesGlobal::fpdata_t _last_end_time;
 			GPlatesGlobal::fpdata_t _last_time_delta;
 			bool _last_finish_on_end;
-
-			/**
-			 * The current geological time.
-			 */
-			GPlatesGlobal::fpdata_t _current_time;
 
 			/**
 			 * Create a new wxMenuBar and return it.

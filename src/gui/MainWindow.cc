@@ -34,6 +34,7 @@
 
 #include "MainWindow.h"
 #include "GLCanvas.h"
+#include "EventIDs.h"
 #include "AboutDialog.h"
 #include "AnimationTimesDialog.h"
 #include "OpenGL.h"
@@ -46,39 +47,12 @@
 
 
 /**
- * IDs for command and menu events.
- */
-namespace EventIDs {
-
-	enum {
-
-		COMMAND_ESCAPE = wxID_HIGHEST + 1,  // To avoid ID clashes
-
-		MENU_FILE_OPENDATA,
-		MENU_FILE_LOADROTATION,
-		MENU_FILE_IMPORT,
-		MENU_FILE_EXPORT,
-		MENU_FILE_SAVEALLDATA,
-		MENU_FILE_EXIT,
-
-#if 0  // Temporarily disabled
-		MENU_VIEW_METADATA,
-#endif
-
-		MENU_RECONSTRUCT_TIME,
-		MENU_RECONSTRUCT_PRESENT,
-		MENU_RECONSTRUCT_ANIMATION,
-
-		// Important for the ID to be this value, for the Mac port
-		MENU_HELP_ABOUT = wxID_ABOUT
-	};
-}
-
-
-/**
  * The menus.
  */
 namespace Menus {
+
+	using namespace GPlatesGui;
+
 
 	/**
 	 * The type of function used to create menu instances.
@@ -115,19 +89,20 @@ namespace Menus {
 	}
 
 
-#if 0  // Temporarily disabled
 	wxMenu *
 	CreateViewMenu()
 	{
 		wxMenu *viewmenu = new wxMenu;
 
-		viewmenu->Append(EventIDs::MENU_VIEW_METADATA,
-		 _("&View Metadata..."),
-		 _("View the document's metadata."));
+		viewmenu->Append(EventIDs::MENU_VIEW_ZOOM_IN,
+		 _("Zoom &In\tCtrl-I"),
+		 _("Zoom in on the globe."));
+		viewmenu->Append(EventIDs::MENU_VIEW_ZOOM_OUT,
+		 _("Zoom &Out\tCtrl-O"),
+		 _("Zoom out from the globe."));
 
 		return viewmenu;
 	}
-#endif
 
 
 	wxMenu *
@@ -177,9 +152,7 @@ namespace Menus {
 	INSTANCES[] = {
 
 		{ _("&File"),         CreateFileMenu },
-#if 0  // Temporarily disabled
 		{ _("&View"),         CreateViewMenu },
-#endif
 		{ _("&Reconstruct"),  CreateReconstructMenu },
 		{ _("&Help"),         CreateHelpMenu }
 	};
@@ -194,9 +167,7 @@ namespace Menus {
 	enum {
 
 		MENU_FILE = 0,
-#if 0  // Temporarily disabled
 		MENU_VIEW,
-#endif
 		MENU_RECONSTRUCT,
 		MENU_HELP
 	};
@@ -216,7 +187,8 @@ namespace StatusbarFields {
 
 		-1,  /* variable width */
 		150, /* 150 pixels wide */
-		100  /* 100 pixels wide */
+		90,  /* 90 pixels wide */
+		50   /* 50 pixels wide */
 	};
 
 
@@ -229,7 +201,8 @@ namespace StatusbarFields {
 
 		INFO = 0,
 		POSITION,
-		TIME
+		TIME,
+		ZOOM
 	};
 }
 
@@ -280,10 +253,11 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	if ( ! _status_bar) {
 
 		std::cerr << "Failed to create status bar." << std::endl;
-		exit(1);
+		std::exit(1);
 	}
 	SetStatusWidths(num_statusbar_fields, StatusbarFields::WIDTHS);
 	SetCurrentTime(0.0);
+	SetCurrentZoom(1);
 
 	_last_load_dir = "";
 	_last_save_dir = "";
@@ -292,7 +266,7 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	if ( ! _menu_bar) {
 
 		std::cerr << "Failed to create menu bar." << std::endl;
-		exit(1);
+		std::exit(1);
 	}
 	SetMenuBar(_menu_bar);
 
@@ -406,16 +380,18 @@ GPlatesGui::MainWindow::OnExit(wxCommandEvent&)
 }
 
 
-#if 0  // Temporarily disabled
 void
-GPlatesGui::MainWindow::OnViewMetadata(wxCommandEvent&)
+GPlatesGui::MainWindow::OnViewZoomIn(wxCommandEvent&)
 {
-#if 0
-	std::cout << GPlatesControls::View::DocumentMetadata()
-		<< std::endl;
-#endif
+	_canvas->ZoomIn();
 }
-#endif
+
+
+void
+GPlatesGui::MainWindow::OnViewZoomOut(wxCommandEvent&)
+{
+	_canvas->ZoomOut();
+}
 
 
 void
@@ -484,6 +460,16 @@ GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t)
 
 
 void
+GPlatesGui::MainWindow::SetCurrentZoom(unsigned z)
+{
+	std::ostringstream oss;
+	oss << (z * 100) << "%";
+	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent),
+	              StatusbarFields::ZOOM);
+}
+
+
+void
 GPlatesGui::MainWindow::SetCurrentGlobePosOffGlobe()
 {
 	SetStatusText(wxString("(off globe)", *wxConvCurrent),
@@ -496,7 +482,9 @@ GPlatesGui::MainWindow::SetCurrentGlobePos(const GPlatesGlobal::fpdata_t &lat,
 	const GPlatesGlobal::fpdata_t &lon)
 {
 	std::ostringstream oss;
-	oss << "(" << lat << ", " << lon << ")";
+	oss << "("
+	 << std::fixed << std::setprecision(4) << lat << ", "
+	 << std::fixed << std::setprecision(4) << lon << ")";
 	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent),
 	              StatusbarFields::POSITION);
 }
@@ -622,10 +610,10 @@ BEGIN_EVENT_TABLE(GPlatesGui::MainWindow, wxFrame)
 	EVT_MENU(EventIDs::MENU_FILE_EXIT,
 			GPlatesGui::MainWindow::OnExit)
 
-#if 0  // Temporarily disabled
-	EVT_MENU(EventIDs::MENU_VIEW_METADATA,
-			GPlatesGui::MainWindow::OnViewMetadata)
-#endif
+	EVT_MENU(EventIDs::MENU_VIEW_ZOOM_IN,
+			GPlatesGui::MainWindow::OnViewZoomIn)
+	EVT_MENU(EventIDs::MENU_VIEW_ZOOM_OUT,
+			GPlatesGui::MainWindow::OnViewZoomOut)
 
 	EVT_MENU(EventIDs::MENU_RECONSTRUCT_TIME,
 			GPlatesGui::MainWindow::OnReconstructTime)
@@ -642,7 +630,7 @@ END_EVENT_TABLE()
 
 BEGIN_EVENT_TABLE(AnimationMode::AnimEvtHandler, wxEvtHandler)
 
-	EVT_MENU(EventIDs::COMMAND_ESCAPE,
+	EVT_MENU(GPlatesGui::EventIDs::COMMAND_ESCAPE,
 			AnimationMode::AnimEvtHandler::OnEscape)
 
 END_EVENT_TABLE()
