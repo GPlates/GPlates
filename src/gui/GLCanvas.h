@@ -29,9 +29,10 @@
 #define _GPLATES_GUI_GLCANVAS_H_
 
 #include <wx/glcanvas.h>
-#include <iostream>
+#include <wx/menu.h>
 #include "MainWindow.h"
 #include "Globe.h"
+#include "Colour.h"
 #include "geo/DataGroup.h"
 #include "maths/PointOnSphere.h"
 
@@ -40,17 +41,9 @@ namespace GPlatesGui
 	class GLCanvas : public wxGLCanvas
 	{
 		public:
-			GLCanvas(MainWindow* parent, 
-				 const wxSize& size = wxDefaultSize,
-				 const wxPoint& position = wxDefaultPosition) :
-			 wxGLCanvas(parent, -1, position, size), 
-			 _parent(parent),
-			 _zoom_factor(1.0), // Zoom factor == 1.0 => no zoom
-			 _is_initialised(false) {
-
-				_parent->Show(TRUE);
-				SetCurrent();
-			}
+			GLCanvas(MainWindow *parent, 
+				 const wxSize &size = wxDefaultSize,
+				 const wxPoint &position = wxDefaultPosition);
 
 			/**
 			 * Paint the picture.
@@ -65,24 +58,34 @@ namespace GPlatesGui
 			void OnSize(wxSizeEvent&);
 
 			/**
+			 * Handle all mouse events.
+			 */
+			void OnMouseEvent(wxMouseEvent&);
+
+			/**
 			 * According to the wxWindows docs, declaring this
 			 * function to be empty eliminates flicker on some
 			 * platforms (mainly win32).
 			 */
-			void OnEraseBackground(wxEraseEvent&) {  }
-
-			/**
-			 * Double clicking the left mouse button repositions
-			 * the view to centre on the point clicked.
-			 */
-			void OnReposition(wxMouseEvent&);
-			
-			/**
-			 * Right mouse button is responsible for Z axis spins.
-			 */
 			void
-			OnSpin(wxMouseEvent&);
+			OnEraseBackground(wxEraseEvent&) {  }
 
+			/**
+			 * Change the mode of interaction to 'spin globe' mode.
+			 */
+			void OnSpinGlobe(wxCommandEvent&);
+
+			/**
+			 * Zoom in.
+			 */
+			void ZoomIn();
+
+			/**
+			 * Zoom out.
+			 */
+			void ZoomOut();
+
+#if 0
 			/**
 			 * Return the PointOnSphere corresponding to the given screen
 			 * coordinate, or else return a NULL pointer.
@@ -95,16 +98,51 @@ namespace GPlatesGui
 			GetSphereCoordFromScreen(int screenx, int screeny);
 
 			Globe *GetGlobe() { return &_globe; }
+#endif
 			
 		private:
 			MainWindow *_parent;
 
+			wxMenu *_popup_menu;
+
 			Globe _globe;
-			GLfloat _zoom_factor;
+			unsigned _zoom_factor;
+			int _mouse_x;
+			int _mouse_y;
+			int _width;
+			int _height;
+			GLdouble _smaller_dim;
+			GLdouble _larger_dim;
+			int _wheel_rotation;
 			bool _is_initialised;
 
 			void InitGL();
 			void SetView();
+			void RecalcZoom();
+			void GetDimensions();
+			void ClearCanvas(const Colour &c = Colour::BLACK);
+
+			GPlatesMaths::real_t getUniverseCoordY(int screen_x);
+			GPlatesMaths::real_t getUniverseCoordZ(int screen_y);
+
+			/**
+			 * Create a new wxMenu (for the popup menu) and
+			 * return it.
+			 */
+			wxMenu *CreatePopupMenu();
+
+			enum mouse_event_type {
+
+				MOUSE_EVENT_DRAG,
+				MOUSE_EVENT_DOWN,
+				MOUSE_EVENT_UP,
+				MOUSE_EVENT_DCLICK
+			};
+
+			void HandleLeftMouseEvent(enum mouse_event_type type);
+
+			void HandleWheelRotation(int delta);
+			void HandleMouseMotion();
 
 			DECLARE_EVENT_TABLE()
 	};
