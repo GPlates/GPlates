@@ -75,15 +75,43 @@ namespace GPlatesMaths
 			                     const real_t &rotation_angle,
 			                     const real_t &point_in_time);
 
+
+			UnitQuaternion3D
+			quat() const { return _quat; }
+
+
+			real_t
+			time() const { return _time; }
+
+
+			/**
+			 * Apply this rotation to a point on the sphere.
+			 */
+			PointOnSphere
+			operator*(const PointOnSphere &p) const;
+
 		protected:
 			FiniteRotation(const UnitQuaternion3D &q,
-			               const real_t &t)
+			               const real_t &t,
+			               const real_t &d,
+			               const Vector3D &e)
 
-			 : _quat(q), _time(t) {  }
+			 : _quat(q), _time(t), _d(d), _e(e) {  }
 
 		private:
 			UnitQuaternion3D _quat;
 			real_t           _time;  // Millions of years ago
+
+			/*
+			 * And now for the mysterious values of 'd' and 'e'!...
+			 *
+			 * These are only used to rotate points on the sphere,
+			 * and are calculated purely for optimisation purposes.
+			 * I don't know whether they have any physical meaning.
+			 * I suspect not.
+			 */
+			real_t   _d;
+			Vector3D _e;
 	};
 
 }

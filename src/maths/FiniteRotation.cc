@@ -24,6 +24,8 @@
  */
 
 #include "FiniteRotation.h"
+#include "Vector3D.h"
+
 
 using namespace GPlatesMaths;
 
@@ -33,10 +35,26 @@ FiniteRotation::CreateFiniteRotation(const PointOnSphere &euler_pole,
 	const real_t &rotation_angle,
 	const real_t &point_in_time) {
 
-	const UnitVector3D &rotation_axis = euler_pole.unitvector();
-	const UnitQuaternion3D &uq =
+	UnitVector3D rotation_axis = euler_pole.unitvector();
+	UnitQuaternion3D uq =
 	 UnitQuaternion3D::CreateEulerRotation(rotation_axis, rotation_angle);
 
-	return FiniteRotation(uq, point_in_time);
+	// values used to optimise rotation of points on the sphere
+	real_t   d = (uq.s() * uq.s()) - dot(uq.v(), uq.v());
+	Vector3D e = (2.0 * uq.s()) * uq.v();
+
+	return FiniteRotation(uq, point_in_time, d, e);
 }
 
+
+PointOnSphere
+FiniteRotation::operator*(const PointOnSphere &p) const {
+
+	Vector3D pv(p.unitvector());
+	Vector3D pv_rot = _d * pv
+	                + (2.0 * dot(_quat.v(), pv)) * _quat.v()
+	                + cross(_e, pv);
+
+	UnitVector3D puv_rot(pv_rot.x(), pv_rot.y(), pv_rot.z());
+	return PointOnSphere(puv_rot);
+}
