@@ -64,11 +64,20 @@ static void pos (GPlatesMaths::PointOnSphere pos, double &lat, double &lon)
 GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 							wxProgressDialog *dlg)
 {
-#if 0
+#if 1
 	const char *vars[] = { "x_range", "y_range", "z_range",
 				"spacing", "dimension", "z" };
 	const char *types[] = { "**", "ncByte", "ncChar", "ncShort",
 				"ncInt", "ncFloat", "ncDouble" };
+	for (int i = 0; i < ncf->num_dims (); ++i) {
+		NcDim *dim = ncf->get_dim (i);
+		std::cerr << dim->name () << ": a dimension of ";
+		if (dim->is_unlimited ())
+			std::cerr << "infinite size";
+		else
+			std::cerr << "size " << dim->size ();
+		std::cerr << ".\n";
+	}
 	for (unsigned int i = 0; i < sizeof (vars) / sizeof (vars[0]); ++i) {
 		NcVar *var = ncf->get_var (vars[i]);
 		std::cerr << vars[i] << ": a " << var->num_dims ()
@@ -86,7 +95,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 				case ncChar:
 					str = att->as_string (0);
 					std::cerr << '"' << str << '"';
-					delete str;
+					delete[] str;
 					break;
 				case ncInt:
 					std::cerr << att->as_int (0);
@@ -104,6 +113,12 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 			delete att;
 		}
 		std::cerr << "\n";
+		std::cerr << "\tDimensions: ";
+		for (int j = 0; j < var->num_dims (); ++j) {
+			NcDim *dim = var->get_dim (j);
+			std::cerr << dim->name () << ", ";
+		}
+		std::cerr << "\b\b \n";
 		std::cerr << "\tValues: ";
 		if (var->num_vals () < 10) {
 			NcValues *vals = var->values ();
