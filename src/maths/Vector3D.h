@@ -21,13 +21,13 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_VECTOR3D_H_
 #define _GPLATES_MATHS_VECTOR3D_H_
 
 #include "types.h"  /* real_t */
-#include "UnitVector3D.h"
 
 
 namespace GPlatesMaths
@@ -56,16 +56,6 @@ namespace GPlatesMaths
 			 : _x(x_comp), _y(y_comp), _z(z_comp) {  }
 
 
-			/**
-			 * Create a regular vector from a unit vector.
-			 * This represents a relaxation of the unit-vector
-			 * invariant.
-			 */
-			explicit
-			Vector3D(const UnitVector3D &uv)
-			 : _x(uv.x()), _y(uv.y()), _z(uv.z()) {  }
-
-
 			real_t
 			x() const { return _x; }
 
@@ -77,11 +67,10 @@ namespace GPlatesMaths
 
 			real_t
 			magnitude() const {
-
 				return sqrt((_x * _x) + (_y * _y) + (_z * _z));
 			}
 
-		private:
+		protected:
 			real_t _x,  /**< x-component. */
 			       _y,  /**< y-component. */
 			       _z;  /**< z-component. */
@@ -89,7 +78,7 @@ namespace GPlatesMaths
 
 
 	inline bool
-	operator==(Vector3D v1, Vector3D v2) {
+	operator==(const Vector3D &v1, const Vector3D &v2) {
 
 		return (v1.x() == v2.x()
 		     && v1.y() == v2.y()
@@ -98,7 +87,7 @@ namespace GPlatesMaths
 
 
 	inline bool
-	operator!=(Vector3D v1, Vector3D v2) {
+	operator!=(const Vector3D &v1, const Vector3D &v2) {
 
 		return (v1.x() != v2.x()
 		     || v1.y() != v2.y()
@@ -111,7 +100,7 @@ namespace GPlatesMaths
 	 * (7 + 2 * 2) + (5 + 1) = 17 clock cycles.
 	 */
 	inline real_t
-	dot(Vector3D v1, Vector3D v2) {
+	dot(const Vector3D &v1, const Vector3D &v2) {
 
 		real_t x_dot = v1.x() * v2.x();
 		real_t y_dot = v1.y() * v2.y();
@@ -122,28 +111,28 @@ namespace GPlatesMaths
 
 
 	inline Vector3D
-	operator-(Vector3D v) {
+	operator-(const Vector3D &v) {
 
 		return Vector3D(-v.x(), -v.y(), -v.z());
 	}
 
 
 	inline Vector3D
-	operator*(real_t r, Vector3D v) {
+	operator*(real_t r, const Vector3D &v) {
 
 		return Vector3D(r * v.x(), r * v.y(), r * v.z());
 	}
 
 
 	inline Vector3D
-	operator*(Vector3D v, real_t r) {
+	operator*(const Vector3D &v, real_t r) {
 
 		return (r * v);
 	}
 
 
 	inline Vector3D
-	operator+(Vector3D v1, Vector3D v2) {
+	operator+(const Vector3D &v1, const Vector3D &v2) {
 
 		return Vector3D(v1.x() + v2.x(),
 		                v1.y() + v2.y(),
@@ -152,7 +141,7 @@ namespace GPlatesMaths
 
 
 	inline Vector3D
-	operator-(Vector3D v1, Vector3D v2) {
+	operator-(const Vector3D &v1, const Vector3D &v2) {
 
 		return Vector3D(v1.x() - v2.x(),
 		                v1.y() - v2.y(),
@@ -171,14 +160,14 @@ namespace GPlatesMaths
 	 * On a Pentium IV processor, this should cost about
 	 * (7 + 5 * 2) + (3 * 9) + 2 = 46 clock cycles.
 	 */
-	bool parallel(Vector3D v1, Vector3D v2);
+	bool parallel(const Vector3D &s1, const Vector3D &s2);
 
 
 	/**
 	 * On a Pentium IV processor, this should cost about
 	 * (7 + 5 * 2) + (5 + 2 * 2) = 26 clock cycles.
 	 */
-	Vector3D cross(Vector3D v1, Vector3D v2);
+	Vector3D cross(const Vector3D &s1, const Vector3D &s2);
 }
 
 #endif  // _GPLATES_MATHS_VECTOR3D_H_

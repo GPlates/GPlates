@@ -28,14 +28,11 @@
 #define _GPLATES_MATHS_DIRVECTOR3D_H_
 
 #include "types.h"  /* real_t */
+#include "Vector3D.h"
 #include "ViolatedDirVectorInvariantException.h"
 
 namespace GPlatesMaths
 {
-	// forward declaration for 'DirVector3D::normalise'
-	class UnitVector3D;
-
-
 	/** 
 	 * A three-dimensional direction vector.
 	 * Thus, the magnitude of this vector must be greater than 0.
@@ -47,7 +44,7 @@ namespace GPlatesMaths
 	 * @invariant
 	 *  - magnitude of vector is greater than 0
 	 */
-	class DirVector3D
+	class DirVector3D : public Vector3D
 	{
 		public:
 			/**
@@ -73,7 +70,7 @@ namespace GPlatesMaths
 			DirVector3D(const real_t& x_comp,
 			            const real_t& y_comp,
 			            const real_t& z_comp)
-				: _x(x_comp), _y(y_comp), _z(z_comp) {
+				: Vector3D (x_comp, y_comp, z_comp) {
 
 				// Calculate magnitude of vector.
 				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
@@ -81,76 +78,18 @@ namespace GPlatesMaths
 			}
 
 			real_t
-			x() const { return _x; }
-
-			real_t
-			y() const { return _y; }
-
-			real_t
-			z() const { return _z; }
-
-			real_t
 			magnitude() const { return _mag; }
-
-			/**
-			 * On a Pentium IV processor, this should cost about
-			 * (3 * 38) = 114 clock cycles, plus the cost of the
-			 * creation of a UnitVector3D instance, which is about
-			 * 26 cycles + the cost of a function call (assuming
-			 * the invariant isn't violated).
-			 *
-			 * Thus, the total cost of this function should be
-			 * about 140 cycles + the cost of two function calls.
-			 */ 
-			UnitVector3D
-			normalise() const;
 
 		protected:
 			/** 
 			 * Assert the class invariant.
-			 * @throw ViolatedUnitVectorInvariantException
+			 * @throw ViolatedDirVectorInvariantException
 			 *   if the invariant has been violated.
 			 */
-			void
-			AssertInvariantHolds() const;
-
-		private:
-			real_t _x,  /**< x-component. */
-			       _y,  /**< y-component. */
-			       _z;  /**< z-component. */
+			virtual void AssertInvariantHolds () const;
 
 			real_t _mag;
 	};
-
-
-	inline bool
-	operator==(DirVector3D v1, DirVector3D v2) {
-
-		return (v1.x() == v2.x()
-		     && v1.y() == v2.y()
-		     && v1.z() == v2.z());
-	}
-
-
-	inline bool
-	operator!=(DirVector3D v1, DirVector3D v2) {
-
-		return (v1.x() != v2.x()
-		     || v1.y() != v2.y()
-		     || v1.z() != v2.z());
-	}
-
-
-	inline real_t
-	dot(DirVector3D v1, DirVector3D v2) {
-
-		return (v1.x() * v2.x()
-		      + v1.y() * v2.y()
-		      + v1.z() * v2.z());
-	}
-
-
-	DirVector3D cross(DirVector3D v1, DirVector3D v2);
 }
 
 #endif  // _GPLATES_MATHS_DIRVECTOR3D_H_

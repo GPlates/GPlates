@@ -21,11 +21,12 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <sstream>
 #include "DirVector3D.h"
-#include "UnitVector3D.h"
+#include "ViolatedDirVectorInvariantException.h"
 
 
 using namespace GPlatesMaths;
@@ -47,26 +48,4 @@ DirVector3D::AssertInvariantHolds() const {
 		oss << _mag;
 		throw ViolatedDirVectorInvariantException(oss.str().c_str());
 	}
-}
-
-
-UnitVector3D
-DirVector3D::normalise() const {
-
-	real_t x_comp = _x / _mag;
-	real_t y_comp = _y / _mag;
-	real_t z_comp = _z / _mag;
-
-	return UnitVector3D(x_comp, y_comp, z_comp);
-}
-
-
-DirVector3D
-GPlatesMaths::cross(DirVector3D v1, DirVector3D v2) {
-
-	real_t x_comp = v1.y() * v2.z() - v1.z() * v2.y();
-	real_t y_comp = v1.z() * v2.x() - v1.x() * v2.z();
-	real_t z_comp = v1.x() * v2.y() - v1.y() * v2.x();
-
-	return DirVector3D(x_comp, y_comp, z_comp);
 }

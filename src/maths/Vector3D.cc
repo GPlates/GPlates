@@ -21,6 +21,7 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include "Vector3D.h"
@@ -29,28 +30,24 @@
 using namespace GPlatesMaths;
 
 
-bool
-GPlatesMaths::parallel(Vector3D v1, Vector3D v2) {
-
+bool GPlatesMaths::parallel (const Vector3D &v1, const Vector3D &v2)
+{
 	/*
-	 * This algorithm is based upon the cross-product:
+	 * This is based upon the cross-product:
 	 * if two vectors are parallel, their cross-product results in
 	 * the zero vector (ie. a vector with zero x, y, z components).
 	 */
-	bool x_zero = (v1.y() * v2.z() == v1.z() * v2.y());
-	bool y_zero = (v1.z() * v2.x() == v1.x() * v2.z());
-	bool z_zero = (v1.x() * v2.y() == v1.y() * v2.x());
-
-	return (x_zero && y_zero && z_zero);
+	return ((v1.y () * v2.z () == v1.z () * v2.y ()) &&
+		(v1.z () * v2.x () == v1.x () * v2.z ()) &&
+		(v1.x () * v2.y () == v1.y () * v2.x ()));
 }
 
 
-Vector3D
-GPlatesMaths::cross(Vector3D v1, Vector3D v2) {
+Vector3D GPlatesMaths::cross (const Vector3D &v1, const Vector3D &v2)
+{
+	real_t x_comp = v1.y () * v2.z () - v1.z () * v2.y ();
+	real_t y_comp = v1.z () * v2.x () - v1.x () * v2.z ();
+	real_t z_comp = v1.x () * v2.y () - v1.y () * v2.x ();
 
-	real_t x_comp = v1.y() * v2.z() - v1.z() * v2.y();
-	real_t y_comp = v1.z() * v2.x() - v1.x() * v2.z();
-	real_t z_comp = v1.x() * v2.y() - v1.y() * v2.x();
-
-	return Vector3D(x_comp, y_comp, z_comp);
+	return Vector3D (x_comp, y_comp, z_comp);
 }
