@@ -175,6 +175,50 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * Using the exact value of the Real, return whether it is positive
+	 * (ie. greater than exact zero) or not.
+	 */
+	inline bool
+	isPositive(Real r) {
+
+		return (r.dval() > 0.0);
+	}
+
+
+	/**
+	 * Using the exact value of the Real, return whether it is negative
+	 * (ie. less than exact zero) or not.
+	 */
+	inline bool
+	isNegative(Real r) {
+
+		return (r.dval() < 0.0);
+	}
+
+
+	/**
+	 * Using the exact value of the Real, return whether it is greater
+	 * than exact one or not.
+	 */
+	inline bool
+	isGreaterThanOne(Real r) {
+
+		return (r.dval() > 1.0);
+	}
+
+
+	/**
+	 * Using the exact value of the Real, return whether it is greater
+	 * than exact minus-one or not.
+	 */
+	inline bool
+	isLessThanMinusOne(Real r) {
+
+		return (r.dval() < -1.0);
+	}
+
+
 	inline Real
 	operator+(Real r1, Real r2) {
 
@@ -231,19 +275,16 @@ namespace GPlatesMaths
 	}
 
 
-	inline Real
-	sqrt(Real r) {
-
-		return Real(std::sqrt(r.dval()));
-	}
-
-
 	inline std::ostream &
 	operator<<(std::ostream &os, Real r) {
 
 		os << r.dval();
 		return os;
 	}
+
+
+	Real sqrt(Real r);
+	Real asin(Real r);
 }
 
 #endif  // _GPLATES_MATHS_REAL_H_
