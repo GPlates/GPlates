@@ -192,6 +192,10 @@ namespace GPlatesMaths
 			mostRecentTime() const { return _most_recent_time; }
 
 
+			real_t
+			mostDistantTime() const { return _most_distant_time; }
+
+
 			rid_t
 			fixedPlate() const { return _fixed_plate; }
 
