@@ -21,7 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_VECTOR2D_H_
@@ -29,7 +29,7 @@
 
 #include <iostream>
 #include "GeneralisedData.h"
-#include "global/types.h"  /* real_t */
+#include "global/types.h"  /* fpdata_t */
 
 namespace GPlatesGeo
 {
@@ -49,7 +49,7 @@ namespace GPlatesGeo
 			/**
 			 * Create the vector (@a x , @a y ).
 			 */
-			Vector2D(const real_t& x, const real_t& y);
+			Vector2D(const fpdata_t& x, const fpdata_t& y);
 
 			/**
 			 * @todo Provide some kind of parsing/checking.
@@ -67,14 +67,14 @@ namespace GPlatesGeo
 			virtual void
 			PrintOut(std::ostream& os) const { os << GetX() << " " << GetY(); }
 			
-			real_t
+			fpdata_t
 			GetX() const { return _x; }
 
-			real_t
+			fpdata_t
 			GetY() const { return _y; }
 
 		private:
-			real_t _x, _y;
+			fpdata_t _x, _y;
 	};
 }
 

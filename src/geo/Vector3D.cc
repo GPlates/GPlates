@@ -21,7 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include "Vector3D.h"
@@ -29,7 +29,7 @@
 using namespace GPlatesGeo;
 
 inline
-Vector3D::Vector3D(const real_t& x, const real_t& y, const real_t& z)
+Vector3D::Vector3D(const fpdata_t& x, const fpdata_t& y, const fpdata_t& z)
 	: GeneralisedData(), _x(x), _y(y), _z(z) 
 { }
 
