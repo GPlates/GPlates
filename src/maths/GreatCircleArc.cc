@@ -82,7 +82,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	 * Note that the magnitude of v cannot be _equal_ to zero,
 	 * since the vectors are neither parallel nor antiparallel.
 	 */
-	UnitVector3D rot_axis = normalise (v);
+	UnitVector3D rot_axis = v.normalise();
 
 	return GreatCircleArc(u1, u2, rot_axis);
 }
