@@ -24,11 +24,11 @@
  */
 
 
-#include <libxml++/libxml++.h>
 #include <sstream>
 #include <iterator>  /* for inserters */
 
 #include "GPlatesReader.h"
+#include "XMLParser.h"
 #include "maths/types.h"
 #include "maths/OperationsOnSphere.h"
 #include "maths/PointOnSphere.h"
@@ -40,7 +40,8 @@ typedef std::map<std::string, std::string> GeneralData_t;
 using namespace GPlatesFileIO;
 using namespace GPlatesMaths;
 using namespace GPlatesGeo;
-using namespace xmlpp;
+using XMLParser::Element;
+using Element::ElementList;
 
 static const std::string GENERAL_DATA_ELEMENTS[] = {
 	"attribution",
@@ -78,27 +79,42 @@ GetGeneralData(const Element* element, GeneralData_t& map)
 }
 
 static PointOnSphere
-GetPointOnSphere(const ContentNode* text)
+GetPointOnSphere(const std::string* text)
 {
-	std::istringstream istr(text->get_content());
+	std::istringstream istr(text);
 	
 	real_t lat, lon;
 	istr >> lat >> lon;
 	// FIXME: check return value of istr.
 	
-	return PointOnSphere(convertLatLongToUnitVector(lat, lon));
+	UnitVector3D uv = 
+		OperationsOnSphere::convertLatLongToUnitVector(lat, lon);
+	return PointOnSphere(uv);
+}
+
+static void
+TrimWhitespace(string& str)
+{
+	// trim leading whitespace
+	string::size_type  notwhite = str.find_first_not_of(" \t\n");
+	str.erase(0,notwhite);
+
+	// trim trailing whitespace
+	notwhite = str.find_last_not_of(" \t\n"); 
+	str.erase(notwhite+1); 
 }
 
 static PointOnSphere
 GetCoord(const Element* element)
 {
-	const ContentNode* text = element->get_child_content();
-	if (text->is_white_space()) {
+	const std::string& text = element->_content;
+	TrimWhitespace(text);
+	if (text.empty()) {
 		std::cerr << "Line " << text->get_line()
 			<< ": Empty coord element." << std::endl;
-		// FIXME: Dummy value, should allow the parser to skip
+		// FIXME: Dummy value; should allow the parser to skip
 		// such values.
-		return PointOnSphere;
+		return PointOnSphere(UnitVector3D(1.0, 0.0, 0.0));
 	}
 
 	return GetPointOnSphere(text);
@@ -114,84 +130,51 @@ GetPointData(const Element* element)
 static PolyLineOnSphere
 GetCoordList(const Element* element)
 {
-	const NodeList nodes = element->get_children("coord");
+	const ElementList* nodes = element->_children;
 	PolyLineOnSphere coordlist;
 	
-	NodeList::const_iterator iter = nodes.begin();
-	for ( ; iter != nodes.end(); ++iter) {
-		const Element* el = dynamic_cast<Element*>(*iter);
-		if (!el) {
-			std::cerr << "CRITICAL: received a node which is not an element" 
-				<< std::endl
-			exit(-1);
-		}
-		coordlist.push_back(GetPointOnSphere(el));
+	ElementList::const_iterator iter = nodes->begin();
+	for ( ; iter != nodes->end(); ++iter) {
+		if (iter->_name == "coord")
+			coordlist.push_back(GetPointOnSphere(*iter));
 	}
 	return coordlist;
 }
 
+/**
+ * XXX Uses only the first coordlist found.
+ */
 static LineData
 GetLineData(const Element* element)
 {
-	const NodeList nodes = element->get_children("coordlist");
-	
-	if (nodes.length() > 1) {
-		std::cerr << "Warning: multiple coordlist elements specified inside"
-			" a <linedata> element.  Using first of these." << std::endl;
-	}
+	const ElementList* list = element->_children;
+	ElementList::const_iterator iter = list->begin();
 
-	const Element* element = dynamic_cast<Element*>(*nodes.begin());
-	if (!element) {
-		std::cerr << "CRITICAL: received a node which is not an element" 
-			<< std::endl
-		exit(-1);
-	}
+	for ( ; iter != list->end(); ++iter)
+		if (iter->_name == "coordlist")
+			break;
+	
 	return LineData(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES,
-		GetCoordList(element));
+		GetCoordList(*iter));
 }
 
-static void
-GetDataGroup(const Element* element, DataGroup& datagroup)
+static DataGroup
+GetDataGroup(const Element* element)
 {
-	const NodeList 
-		pointlist = element->get_children("pointdata"),
-		linelist  = element->get_children("linedata"),
-		grouplist = element->get_children("datagroup");
-	
-	// FIXME AAARGH!  Horrible repetition of code!
-	NodeList::const_iterator iter = pointlist.begin();
-	for ( ; iter != pointlist.end(); ++iter) {
-		const Element* el = dynamic_cast<Element*>(*iter);
-		if (!el) {
-			std::cerr << "CRITICAL: received a node which is not an element" 
-				<< std::endl;
-			exit(-1);
-		}
-		datagroup.Add(GetPointData(el));
+	DataGroup datagroup(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES);
+	const ElementList* list = element->_children;
+	ElementList::const_iterator iter = list->begin();
+
+	for ( ; iter != list->end(); ++iter) {
+		if (iter->_name == "pointdata")
+			datagroup.Add(GetPointData(*iter));
+		else if (iter->_name == "linedata")
+			datagroup.Add(GetLineData(*iter));
+		else if (iter->_name == "datagroup")
+			// Hooray for recursion.
+			datagroup.Add(GetDataGroup(*iter));
 	}
-	
-	iter = linelist.begin();
-	for ( ; iter != linelist.end(); ++iter) {
-		const Element* el = dynamic_cast<Element*>(*iter);
-		if (!el) {
-			std::cerr << "CRITICAL: received a node which is not an element" 
-				<< std::endl;
-			exit(-1);
-		}
-		datagroup.Add(GetLineData(el));
-	}
-	
-	iter = grouplist.begin();
-	for ( ; iter != grouplist.end(); ++iter) {
-		const Element* el = dynamic_cast<Element*>(*iter);
-		if (!el) {
-			std::cerr << "CRITICAL: received a node which is not an element" 
-				<< std::endl;
-			exit(-1);
-		}
-		// Hooray for recursion.
-		datagroup.Add(GetDataGroup(el));
-	}
+	return datagroup;
 }
 
 /** 
@@ -212,33 +195,25 @@ GetRootDataGroup(const Element* element)
 	}
 #endif
 
-	DataGroup datagroup(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES);
 	// Pass parameters on to general datagroup handler.
-	GetDataGroup(element, datagroup);
+	DataGroup& dg = GetDataGroup(element);
+
+	// Add stuff from title and meta tags
+	// FIXME
+	
+	return dg;
 }
 
 DataGroup
 GPlatesReader::Read()
 {
-	DomParser parser;
+	XMLParser parser;
 	const Element* root;
 
-	try {
-		parser.parse_stream(_istr);
-
-		if (parser) {
-			// root is deleted by the parser.
-			root = parser.get_document()->get_root_node();
-
-			return GetRootDataGroup(root);
-
-		} else
-			std::cerr << "Parse failed." << std::endl;
-
-	} catch (const std::exception& ex) {
-		std::cerr << "Caught exception: " << ex.what() << std::endl;
-	}
-
-	// Parse failed, return empty DataGroup.
-	return DataGroup(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES);
+	root = parser.Parse(_istr);
+	
+	return (root ? 
+		GetRootDataGroup(root) :
+		// Parse failed, return empty DataGroup.
+		DataGroup(NO_DATATYPE, NO_ROTATIONGROUP, NO_ATTRIBUTES));
 }

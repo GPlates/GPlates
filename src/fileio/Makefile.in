@@ -10,7 +10,8 @@ CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
 OBJS = GPlatesReader.o GPlatesWriter.o PlatesBoundaryParser.o \
-	PlatesDataTypes.o PlatesParserUtils.o PlatesRotationParser.o
+	PlatesDataTypes.o PlatesParserUtils.o PlatesRotationParser.o \
+	XMLParser.o
 
 LIBNAME = libfileio.a
 

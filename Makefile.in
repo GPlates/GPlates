@@ -2,8 +2,9 @@
 
 SUBDIRS = src
 
-DISTFILES = COPYING ChangeLog Makefile.in README TODO aclocal.m4 \
-	configure configure.in install-sh
+DISTFILES = COPYING ChangeLog Makefile.in aclocal.m4 \
+	configure configure.in config/install-sh
+#	README TODO 
 
 
 all:

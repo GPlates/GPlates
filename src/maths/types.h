@@ -30,6 +30,7 @@
 
 #include <utility>  // std::pair
 #include "geo/Vector2D.h"
+#include "PointOnSphere.h"
 #include "Real.h"
 
 namespace GPlatesMaths

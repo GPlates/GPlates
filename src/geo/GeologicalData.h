@@ -119,7 +119,7 @@ namespace GPlatesGeo
 			 * @see DataGroup.
 			 */
 			virtual void
-			Add(GeologicalData*) throw(UnsupportedFunctionException);
+			Add(const GeologicalData&);
 
 			/** 
 			 * A child management method, for use with DataGroup.
@@ -132,7 +132,7 @@ namespace GPlatesGeo
 			 * @see Add(), DataGroup.
 			 */
 			virtual void
-			Remove(GeologicalData*) throw(UnsupportedFunctionException);
+			Remove(GeologicalData*);
 
 			/** 
 			 * Enumerative access to the data's Attributes_t.

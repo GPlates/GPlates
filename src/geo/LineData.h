@@ -28,7 +28,7 @@
 
 #include <vector>
 #include "GeologicalData.h"
-#include "maths/PolyLineOnSphere.h"
+#include "maths/types.h"
 
 namespace GPlatesGeo
 {
