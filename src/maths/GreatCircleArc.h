@@ -58,6 +58,9 @@ namespace GPlatesMaths
 			startPoint() const { return _u1; }
 
 			UnitVector3D
+			endPoint() const { return _u2; }  // XXX: HL for demo
+
+			UnitVector3D
 			yAxis() const { return _y_axis; }
 
 			UnitVector3D
@@ -67,17 +70,17 @@ namespace GPlatesMaths
 			rotationAngle() const { return _rot_angle; }
 
 		protected:
-			GreatCircleArc(UnitVector3D u1,
+			GreatCircleArc(UnitVector3D u1, UnitVector3D u2,
 			               UnitVector3D y_axis,
 			               UnitVector3D rot_axis,
 			               real_t rot_angle)
-				: _u1(u1),
+				: _u1(u1), _u2(u2),
 				  _y_axis(y_axis),
 				  _rot_axis(rot_axis),
 				  _rot_angle(rot_angle) {  }
 
 		private:
-			UnitVector3D _u1;
+			UnitVector3D _u1, _u2;
 			UnitVector3D _y_axis;
 			UnitVector3D _rot_axis;
 			real_t       _rot_angle;  // in radians

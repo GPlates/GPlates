@@ -102,5 +102,5 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 
 	UnitVector3D normal_y(x_comp, y_comp, z_comp);
 
-	return GreatCircleArc(u1, normal_y, rot_axis, rot_angle);
+	return GreatCircleArc(u1, u2, normal_y, rot_axis, rot_angle);
 }

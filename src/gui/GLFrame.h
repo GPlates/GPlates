@@ -42,12 +42,13 @@ namespace GPlatesGui
 					const wxSize& size = wxDefaultSize,
 					const wxPoint& pos = wxDefaultPosition);
 
-			void OnExit(wxCommandEvent& event) { Destroy(); }
+			void OnExit(wxCommandEvent&) { Destroy(); }
+			void OnMouseMove(wxMouseEvent&);
 				
 		private:
 			// XXX: DEFAULT_WINDOWID should be available to the entire GUI system.
 //			static const wxWindowID DEFAULT_WINDOWID = -1;
-			static const int STATUSBAR_NUM_FIELDS = 2;
+			static const int STATUSBAR_NUM_FIELDS = 1;
 		
 			wxStatusBar* _status_bar;
 			GLCanvas*	 _canvas;

@@ -5,6 +5,9 @@
 <!--
   - GPlates Application Schema, version 1.0
   -
+  - ATTENTION: This Application Schema is provided as a guide only.
+  - It is unlikely to be a valid XSD.
+  -
   -	Regarding version numbering:
   - A version number x.y.z is to be interpreted as follows:
   -   x: the major version number.  This should be the same as the

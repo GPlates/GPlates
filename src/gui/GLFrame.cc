@@ -24,6 +24,7 @@
  */
 
 #include <iostream>
+#include <sstream>
 #include <cstdlib>
 #include <cmath>  /* for fabsf() */
 #include "OpenGL.h"
@@ -40,16 +41,25 @@ GLFrame::GLFrame(wxFrame* parent, const wxString& title,
 		std::cerr << "Failed to create status bar." << std::endl;
 		exit(1);
 	}
-	SetStatusText("Guten Abend", 0);
-	SetStatusText("Dietmar", 1);
 
-	_canvas = new GLCanvas(this, wxSize(640,640));
-	_canvas->InitGL();
+	_canvas = new GLCanvas(this);
+	_canvas->SetCurrent();
 
 	Fit();
 	CentreOnScreen();
 }
 
+void
+GLFrame::OnMouseMove(wxMouseEvent& evt)
+{
+	std::ostringstream oss;
+	oss << "Current window coordinate of mouse: (" << evt.GetX() << ", " << evt.GetY() << ")";
+	SetStatusText(wxString(oss.str().c_str()));
+}
+
 BEGIN_EVENT_TABLE(GLFrame, wxFrame)
 	EVT_CLOSE(GLFrame::OnExit)
+	// FIXME: This isn't being notified of mouse movement.  Perhaps all the
+	// mouse events are being captured by GLCanvas?
+	EVT_MOTION(GLFrame::OnMouseMove)
 END_EVENT_TABLE()

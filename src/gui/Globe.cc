@@ -20,14 +20,14 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #include <iostream>
 #include <cstdlib>
 #include "Globe.h"
 #include "maths/types.h"
-#include "maths/UnitVector3D.h"
+#include "maths/GreatCircleArc.h"
 
 using namespace GPlatesGui;
 using namespace GPlatesMaths;
@@ -90,7 +90,10 @@ DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
 {
 	using GPlatesMaths::sqrt;
 
-	UnitVector3D a, b;
+	// FIXME: Work out whether the arc is visible before doing these
+	// calculations (e.g. back-face culling).
+
+	UnitVector3D a = arc.startPoint(), b = arc.endPoint();
 
 	// The knot vector has (degree + length(ctrl_points) - 1)
 	// elements.
@@ -169,9 +172,11 @@ Globe::Paint()
 		glDepthRange(0.0, 0.9);
 
 		// Draw NURBS
-		list<GreatCircleArc>::iterator iter, end = arcs.end();
-		for ( ; iter != end; ++iter)
-			DrawArc(*iter, _nurbs_renderer);
-		
+		// FIXME: should be drawing the data that has been read in.
+#if 0
+		TectonicArcs::list_type::const_iterator iter, end = _arcs->end();
+		for (iter = _arcs->begin(); iter != end; ++iter)
+#endif	
+			DrawArc(GreatCircleArc::CreateGreatCircleArc(UnitVector3D(0,0,1), UnitVector3D(1,0,0)), _nurbs_renderer);
 	glPopMatrix();
 }

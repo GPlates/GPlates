@@ -37,9 +37,9 @@ namespace GPlatesGui
 		public:
 			GLCanvas(wxWindow* parent, const wxSize& size = wxDefaultSize,
 					 const wxPoint& position = wxDefaultPosition)
-				: wxGLCanvas(parent, -1, position, size), _zoom_factor(1.0) {  }
-												// Zoom factor == 1.0 => no zoom
-			void InitGL();
+				: wxGLCanvas(parent, -1, position, size), 
+				  _zoom_factor(1.0), _is_initialised(false) { parent->Show(TRUE); SetCurrent(); }
+				// Zoom factor == 1.0 => no zoom
 
 			/**
 			 * Paint the picture.
@@ -77,6 +77,10 @@ namespace GPlatesGui
 		private:
 			Globe _globe;
 			GLfloat _zoom_factor;
+			bool _is_initialised;
+
+			void InitGL();
+			void SetView();
 
 			DECLARE_EVENT_TABLE()
 	};

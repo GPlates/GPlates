@@ -45,14 +45,15 @@ void
 GLCanvas::OnPaint(wxPaintEvent&)
 {
 	wxPaintDC dc(this);
+
 	if (!GetContext())
 		return;
+
+	if (!_is_initialised)
+		InitGL();
+
 	SetCurrent();
-	// FIXME FIXME FIXME: Need to find out when the context is 
-	// created and set the size after that.
-	wxSizeEvent evt(GetSize());
-	OnSize(evt);
-	
+
 	ClearCanvas();
 	glLoadIdentity();
 	glTranslatef(eyex, eyey, eyez);
@@ -72,11 +73,14 @@ GLCanvas::OnPaint(wxPaintEvent&)
 void
 GLCanvas::InitGL()
 {
-	ClearCanvas();
+	SetCurrent();
+
 	// Enable depth buffering.
 	glEnable(GL_DEPTH_TEST);
 	// FIXME: enable polygon offset here or in Globe?
 	
+	ClearCanvas();
+	_is_initialised = true;
 }
 
 void
@@ -84,16 +88,27 @@ GLCanvas::OnSize(wxSizeEvent& evt)
 {
 	wxGLCanvas::OnSize(evt);
 
+	if (!GetContext())
+		return;
+
+	if (!_is_initialised)
+		InitGL();
+
+	SetCurrent();
+	SetView();
+}
+
+
+void
+GLCanvas::SetView()
+{
 	static const GLfloat ORTHO_RATIO = 1.2;
 	static const GLfloat Z_NEAR = 0.1;
-	int width, height;
 
+	// Always fill up the all of the available space.
+	int width, height;
 	GetClientSize(&width, &height);
-	if (GetContext()) {
-		SetCurrent();
-		glViewport(0, 0, static_cast<GLsizei>(width),
-			static_cast<GLsizei>(height));
-	}
+	glViewport(0, 0, (GLsizei)width, (GLsizei)height);  
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -142,8 +157,6 @@ GetWorldCoordFromWindow(const GLdouble& winx, const GLdouble& winy)
 }
 #endif
 
-#include <iostream>
-
 void
 GLCanvas::OnSpin(wxMouseEvent& evt)
 {
@@ -172,9 +185,7 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 		{
 			_zoom_factor += (evt.GetY() - last_zoom)/ZOOM_TOLERANCE;
 
-			wxSizeEvent tmp(GetSize());
-			OnSize(tmp);
-	
+			SetView();
 			Refresh();
 		}
 		last_zoom = evt.GetY();

@@ -104,10 +104,6 @@ bool
 GPlatesApp::OnInit()
 {
 	try {
-		// NULL => no parent
-		GLFrame* frame = new GLFrame(NULL, PACKAGE_STRING);
-		frame->Show(TRUE);
-
 #if 0
 		GPlatesGeo::DataGroup data("Cool Data (tm)", 42, 
 			GPlatesGeo::GeologicalData::Attributes_t());
@@ -116,6 +112,10 @@ GPlatesApp::OnInit()
 		reader.Read(data);
 #endif
 		
+		// NULL => no parent
+		GLFrame* frame = new GLFrame(NULL, PACKAGE_STRING, wxSize(640,640));
+		frame->Show(TRUE);
+
 	} catch (const GPlatesGlobal::Exception& e) {
 		std::cerr << "Caught exception: " << e << std::endl;
 		return FALSE;
