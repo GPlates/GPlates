@@ -45,7 +45,7 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 	 * through the North pole).
 	 */
 	SmallCircle line_of_lat(GPlatesMaths::NorthPole.unitvector(), origin);
-	GreatCircle line_of_lon(GPlatesMaths::NorthPole, origin);
+	GreatCircle line_of_lon(GPlatesMaths::SouthPole, origin);
 
 	/*
 	 * Ensure that the point 'next_along_lat' lies on the circle of
