@@ -90,7 +90,7 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 		orig_lon = orig_llp.longitude ().dval (),
 		corner_lat = orig_lat + lat_step * (ny - 1),
 		corner_lon = orig_lon + lon_step * (nx - 1);
-
+#if 0
 	GPlatesMaths::LatLonPoint
 		x00 = llp (lattice.resolve (0, 0)),
 		x01 = llp (lattice.resolve (0, 1)),
@@ -99,6 +99,7 @@ bool GPlatesFileIO::NetCDFWriter::Write (const std::string &filename,
 	std::cerr << "First four grid points:\n"
 		<< "\tbottom row: " << x00 << ", " << x10 << "\n"
 		<< "\t1st row: " << x01 << ", " << x11 << "\n";
+#endif
 
 	// Create global attributes
 	std::string title = "";

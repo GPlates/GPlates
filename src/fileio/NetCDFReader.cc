@@ -65,7 +65,7 @@ static void pos (GPlatesMaths::PointOnSphere pos, double &lat, double &lon)
 GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 							wxProgressDialog *dlg)
 {
-#if 1
+#if 0
 	const char *vars[] = { "x_range", "y_range", "z_range",
 				"spacing", "dimension", "z" };
 	const char *types[] = { "**", "ncByte", "ncChar", "ncShort",
