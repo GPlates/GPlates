@@ -545,6 +545,6 @@ File::SaveData(const std::string& filepath)
 		return;
 	}
 	
-	writer.Visit(data);
+	writer.Visit(*data);
 	writer.PrintOut(outfile);
 }
