@@ -2,7 +2,9 @@
 
 /**
  * @file 
- * File specific comments.
+ * A great deal of the code in this file was either based upon,
+ * or copied directly from, the files "include/wx/valtext.h" and
+ * "src/common/valtext.cpp" in the 'wxGTK' wxWindows release.
  *
  * Most recent change:
  *   $Author$
@@ -80,6 +82,31 @@ GPlatesGui::FPValidator::Validate(wxWindow *parent) {
 		return false;
 	}
 	return true;
+}
+
+
+void
+GPlatesGui::FPValidator::OnChar(wxKeyEvent &ev) {
+
+	if (m_validatorWindow) {
+
+		int key_code = (int)ev.KeyCode();
+
+		// Don't filter special keys and Delete
+		if ( ! (key_code < WXK_SPACE ||
+		        key_code == WXK_DELETE ||
+		        key_code > WXK_START) &&
+		     ! (isdigit(key_code) ||
+		        key_code == '.' ||
+		        key_code == ',' ||
+		        key_code == '-')) {
+
+			// invalid character -- complain and return
+			if ( ! wxValidator::IsSilent()) wxBell();
+			return;
+		}
+	}
+	ev.Skip();
 }
 
 
@@ -230,3 +257,8 @@ GPlatesGui::FPValidator::CheckValidator() const {
 
 	return true;
 }
+
+
+BEGIN_EVENT_TABLE(GPlatesGui::FPValidator, wxValidator)
+	EVT_CHAR(GPlatesGui::FPValidator::OnChar)
+END_EVENT_TABLE()

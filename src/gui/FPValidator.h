@@ -2,7 +2,9 @@
 
 /**
  * @file 
- * File specific comments.
+ * A great deal of the code in this file was either based upon,
+ * or copied directly from, the files "include/wx/valtext.h" and
+ * "src/common/valtext.cpp" in the 'wxGTK' wxWindows release.
  *
  * Most recent change:
  *   $Author$
@@ -94,11 +96,9 @@ namespace GPlatesGui
 			 */
 			virtual bool Validate(wxWindow *parent);
 
-#if 0
 			virtual void OnChar(wxKeyEvent &ev);
 
 			DECLARE_EVENT_TABLE()
-#endif
 
 		private:
 			long _style;
