@@ -32,5 +32,5 @@ PointOnSphere
 Rotation::ApplyTo(const PointOnSphere& point) const {
 
 	throw GPlatesGlobal::NotYetImplementedException("Rotation::ApplyTo");
-	return PointOnSphere();
+	return PointOnSphere(0.0, 0.0);
 }
