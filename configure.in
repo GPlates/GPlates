@@ -10,6 +10,12 @@ AC_CONFIG_HEADERS(src/global/config.h)
 AC_DEFINE([COPYRIGHT_STRING],
 	  ["Copyright (c) 2003-2004 The GPlates Consortium"],[])
 
+# Check the canonical build-system type (sets the variable "$build").
+AC_CANONICAL_BUILD
+
+# Check the canonical host-system type (sets the variable "$host").
+AC_CANONICAL_HOST
+
 # Check C++ compiler
 # Setting CXXFLAGS is necessary to circumvent autoconf using its
 #  own (namely CXXFLAGS="-g -O2").
@@ -19,9 +25,6 @@ AC_PROG_MAKE_SET
 CHECK_GNU_MAKE
 AC_PROG_INSTALL
 AC_LANG(C++)
-
-# Check the canonical build-system type
-AC_CANONICAL_BUILD
 
 ##################################
 # System-dependant options
@@ -102,13 +105,13 @@ fi
 # Library dependencies.
 ##
 
-# How we look for OpenGL is dependent upon the type of the host system.
+# How we link with OpenGL is dependent upon the type of the host system.
 AC_MSG_CHECKING([OpenGL library dependency type])
 case "$host" in
 	*-apple-darwin* )
-		AC_MSG_RESULT([Mac OS X OpenGL framework])
-		AC_CXX_HAVE_OPENGL_FRAMEWORK
-		if test "$ac_cv_cxx_have_opengl_framework" != yes; then
+		AC_MSG_RESULT([link with Mac OS X OpenGL framework])
+		AC_CXX_LINK_OPENGL_FRAMEWORK
+		if test "$ac_cv_cxx_can_link_opengl_framework" != yes; then
 			AC_MSG_ERROR([
 !!
 !!  You don't appear to have the OpenGL framework installed.
@@ -122,14 +125,14 @@ case "$host" in
 		AC_CHECK_LIB([GL], [main], [], AC_MSG_ERROR([
 !!
 !!  You don't appear to have the OpenGL (GL) shared library installed.
-!!  It may be obtained from
-!!     http://www.opengl.org
+!!  It may be obtained from your operating system vendor or your graphics card
+!!  vendor (usually on a driver CD or the vendor website).
 !!]))
 		AC_CHECK_LIB([GLU], [main], [], AC_MSG_ERROR([
 !!
 !!  You don't appear to have the OpenGL Utility (GLU) shared library installed.
-!!  It may be obtained from 
-!!     http://www.opengl.org
+!!  It may be obtained from your operating system vendor or your graphics card
+!!  vendor (usually on a driver CD or the vendor website).
 !!]))
 	;;
 esac
@@ -155,11 +158,26 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([
 ##
 
 # OpenGL and GLU
-AC_CHECK_HEADERS([GL/gl.h GL/glu.h], [], AC_MSG_ERROR([
+# How we compile the OpenGL headers dependent upon the type of the build system.
+AC_MSG_CHECKING([OpenGL header location])
+case "$build" in
+	*-apple-darwin* )
+		AC_MSG_RESULT([Mac OS X OpenGL framework])
+		AC_CHECK_HEADERS([OpenGL/gl.h OpenGL/glu.h], [], AC_MSG_ERROR([
 !!
 !!  Failed to find the OpenGL headers.  Make sure the OpenGL
 !!  development package is installed on your system.
 !!]))
+	;;
+	* )
+		AC_MSG_RESULT([UNIX-style include directory])
+		AC_CHECK_HEADERS([GL/gl.h GL/glu.h], [], AC_MSG_ERROR([
+!!
+!!  Failed to find the OpenGL headers.  Make sure the OpenGL
+!!  development package is installed on your system.
+!!]))
+	;;
+esac
 
 # eXpat XML Parser
 # XXX: I had to alter my local copy of expat.h because it makes

@@ -415,27 +415,30 @@ if test "$ac_cv_cxx_typename" = yes; then
 fi
 ])
 
-dnl @synopsis AC_CXX_HAVE_OPENGL_FRAMEWORK
+dnl @synopsis AC_CXX_LINK_OPENGL_FRAMEWORK
 dnl
-dnl Check whether it is possible to link with the OpenGL framework on Mac OS.
+dnl Check whether it is possible to link with the OpenGL framework on Mac OS X.
+dnl If it is possible, define CAN_LINK_OPENGL_FRAMEWORK.
 dnl
 dnl @author James Boyden <jboyden@geosci.usyd.edu.au>
 dnl
-AC_DEFUN([AC_CXX_HAVE_OPENGL_FRAMEWORK],
-[AC_CACHE_CHECK(whether the OpenGL framework is present,
-ac_cv_have_opengl_framework,
+AC_DEFUN([AC_CXX_LINK_OPENGL_FRAMEWORK],
+[AC_CACHE_CHECK(whether we can link with the OpenGL framework,
+ac_cv_cxx_can_link_opengl_framework,
 [AC_LANG_SAVE
  AC_LANG_CPLUSPLUS
  ac_save_LIBS="$LIBS"
  LIBS="$LIBS -framework OpenGL"
  AC_TRY_LINK(,,
- ac_cv_cxx_have_opengl_framework=yes, ac_cv_cxx_have_opengl_framework=no)
+ ac_cv_cxx_can_link_opengl_framework=yes,
+ ac_cv_cxx_can_link_opengl_framework=no)
  LIBS="$ac_save_LIBS"
  AC_LANG_RESTORE
 ])
-if test "$ac_cv_cxx_have_opengl_framework" = yes; then
-  AC_DEFINE(HAVE_OPENGL_FRAMEWORK, 1)
-  LIBS="-framework OpenGL $LIBS"
+if test "$ac_cv_cxx_can_link_opengl_framework" = yes; then
+ LIBS="$LIBS -framework OpenGL"
+  AC_DEFINE(CAN_LINK_OPENGL_FRAMEWORK,,
+   [define if we can link with the OpenGL framework])
 fi
 ])
 
