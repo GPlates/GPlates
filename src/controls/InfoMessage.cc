@@ -20,30 +20,16 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
-#ifndef _GPLATES_CONTROLS_DIALOGS_H_
-#define _GPLATES_CONTROLS_DIALOGS_H_
+#include <sstream>
+#include <wx/wx.h>
+#include "Dialogs.h"
 
-namespace GPlatesControls
+void GPlatesControls::Dialogs::InfoMessage (const char *title,
+						const char *message)
 {
-	namespace Dialogs
-	{
-		/**
-		 * Present a dialog to the user with the given
-		 * @a title, @a message and @a result, with a
-		 * single OK button for them to click.
-		 */
-		void
-		ErrorMessage(const char* title,
-					 const char* message,
-					 const char* result);
-
-		/// Show an informational dialog
-		void InfoMessage (const char *title, const char *message);
-	}
+	wxMessageBox (wxString (message, *wxConvCurrent),
+		wxString (title, *wxConvCurrent), wxOK | wxICON_INFORMATION);
 }
-
-#endif  /* _GPLATES_CONTROLS_DIALOGS_H_ */

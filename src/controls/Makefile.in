@@ -6,10 +6,10 @@ prefix = @prefix@
 DISTFILES = Makefile.in *.cc *.h
 
 INCLUDES = -I..
-CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
+CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@ @NETCDF_CPPFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = File.o View.o Reconstruct.o ErrorMessage.o
+OBJS = ErrorMessage.o File.o InfoMessage.o Reconstruct.o View.o
 
 LIBNAME = libcontrols.a
 
