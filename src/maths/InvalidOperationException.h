@@ -40,7 +40,7 @@ namespace GPlatesMaths
 		public:
 			/**
 			 * @param msg is a description of the conditions
-			 * which cause the invariant to be violated.
+			 * which cause the operation to be invalid.
 			 */
 			InvalidOperationException(const char *msg)
 				: _msg(msg) {  }
