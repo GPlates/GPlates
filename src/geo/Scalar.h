@@ -21,7 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_SCALAR_H_
@@ -29,7 +29,7 @@
 
 #include <iostream>
 #include "GeneralisedData.h"
-#include "global/types.h"  /* real_t */
+#include "global/types.h"  /* fpdata_t */
 
 namespace GPlatesGeo
 {
@@ -46,7 +46,7 @@ namespace GPlatesGeo
 			 * magnitude.
 			 */
 			explicit
-			Scalar(const real_t& value = 0.0)
+			Scalar(const fpdata_t& value = 0.0)
 				: GeneralisedData(), _value(value) { }
 
 			/**
@@ -63,11 +63,11 @@ namespace GPlatesGeo
 			virtual void
 			PrintOut(std::ostream& os) const { os << _value; }
 
-			real_t
+			fpdata_t
 			GetValue() const { return _value; }
 
 		private:
-			real_t _value;  /** Magnitude of the variable. */
+			fpdata_t _value;  /** Magnitude of the variable. */
 	};
 }
 

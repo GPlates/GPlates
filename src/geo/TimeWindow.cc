@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include "TimeWindow.h"
@@ -28,6 +29,6 @@
 using namespace GPlatesGeo;
 
 inline
-TimeWindow::TimeWindow(const real_t& begin, const real_t& end)
+TimeWindow::TimeWindow(const fpdata_t& begin, const fpdata_t& end)
 	: GeneralisedData(), _begin(begin), _end(end)
 { }
