@@ -37,6 +37,15 @@ namespace GPlatesMaths
 	using namespace GPlatesGlobal;
 
 
+	/**
+	 * This class represents the rotation history of a moving plate.
+	 * It is a collection of the various rotational sequences which
+	 * describe the motion of this plate with respect to various
+	 * fixed plates.
+	 *
+	 * Note that the collection of rotation sequences is not guaranteed
+	 * to be continuous through time: there may be gaps or overlaps.
+	 */
 	class RotationHistory
 	{
 		public:
@@ -46,6 +55,14 @@ namespace GPlatesMaths
 			typedef seq_type::const_iterator const_iterator;
 
 
+			/**
+			 * Create a rotation history, initialising the history
+			 * with a rotation sequence.
+			 *
+			 * Since a rotation sequence must be provided to this
+			 * constructor, it will be assumed that a rotation
+			 * history can never be empty of rotation sequences.
+			 */
 			RotationHistory(const RotationSequence &rseq)
 			 : _is_modified(true) {
 
@@ -55,12 +72,16 @@ namespace GPlatesMaths
 			}
 
 
+			/**
+			 * Returns whether this rotation history is "defined"
+			 * at a particular point in time.
+			 *
+			 * A rotation history is "defined" at a particular
+			 * point in time if it contains at least one rotation
+			 * sequence which is defined at that point in time.
+			 */
 			bool
-			isDefinedAtTime(real_t t) const {
-
-				return (_most_recent_time <= t &&
-				        t <= _most_distant_time);
-			}
+			isDefinedAtTime(real_t t) const;
 
 
 			/**
@@ -69,7 +90,12 @@ namespace GPlatesMaths
 			void insert(const RotationSequence &rseq);
 
 
-			// returns first match
+			/**
+			 * If this rotation history is defined at time 't',
+			 * return a const iterator which points to a rotation
+			 * sequence which can be used to rotate the moving
+			 * plate back to its location at time 't'.
+			 */
 			const_iterator atTime(real_t t) const;
 
 		private:

@@ -31,6 +31,24 @@
 using namespace GPlatesMaths;
 
 
+bool
+RotationHistory::isDefinedAtTime(real_t t) const {
+
+	// check outer bounds
+	if (t < _most_recent_time) return false;
+	if (t > _most_distant_time) return false;
+
+	ensureSeqSorted();
+	for (seq_type::const_iterator it = _seq.begin();
+	     it != _seq.end();
+	     it++) {
+
+		if ((*it).isDefinedAtTime(t)) return true;
+	}
+	return false;
+}
+
+
 void
 RotationHistory::insert(const RotationSequence &rseq) {
 
@@ -62,9 +80,7 @@ RotationHistory::atTime(real_t t) const {
 
 	std::ostringstream oss("Attempted to access a rotation sequence "
 	 "for the time ");
-	oss << t << ", which is outside the time-span of this "
-	 "rotation history: [" << _most_recent_time << "Ma, "
-	 << _most_distant_time << "Ma].";
+	oss << t << ", at which time this rotation history is not defined.";
 
 	throw InvalidOperationException(oss.str().c_str());
 }
