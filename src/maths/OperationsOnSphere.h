@@ -27,6 +27,7 @@
 #define _GPLATES_MATHS_OPERATIONSONSPHERE_H_
 
 #include "UnitVector3D.h"
+#include "PointOnSphere.h"
 
 namespace GPlatesMaths
 {
@@ -64,9 +65,10 @@ namespace GPlatesMaths
 		UnitVector3D convertLatLongToUnitVector(const real_t& latitude,
 		 const real_t& longitude);
 
-
-		UnitVector3D convertLatLongPointToUnitVector(const
+		PointOnSphere convertLatLongPointToUnitVector(const
 		 LatLonPoint &p);
+
+		
 	}
 }
 
