@@ -76,7 +76,7 @@ namespace GPlatesMaths
 			                     const real_t &point_in_time);
 
 		protected:
-			FiniteRotation(const UnitQuaternion &q,
+			FiniteRotation(const UnitQuaternion3D &q,
 			               const real_t &t)
 
 			 : _quat(q), _time(t) {  }
