@@ -215,28 +215,53 @@ namespace
 void
 File::OpenData(const std::string& filename)
 {
-	// XXX file type determined by extension!
-	// XXX extension could occur anywhere in the filename!
-	static const char* GPML_EXT = ".gpml";
-	static const char* PLATES_EXT = ".dat";
+	enum { UNKNOWN, GPML, PLATES } filetype = UNKNOWN;
 
-	if (filename.rfind(GPML_EXT) != std::string::npos) {
-		// File is a GPML file
+	// Read in some magic
+	std::ifstream ifs(filename.c_str());
+	if (!ifs) {
+		OpenFileErrorMessage(filename, "Couldn't open file.");
+		return;
+	}
+	char magic[8];
+	ifs.get(magic, 7);
+	magic[7] = '\0';
+	ifs.close();
+
+	// Break out of this loop when we know what type of file we're reading
+	do {
+		// Try magic
+		if (!std::strncmp(magic, "<?xml", 5)) {
+			filetype = GPML;
+			break;
+		} else if (strtol(magic, NULL, 0) != 0) {
+			filetype = PLATES;
+			break;
+		}
+
+		// Try file extension
+		if (filename.rfind(".gpml") != std::string::npos) {
+			filetype = GPML;
+			break;
+		} else if (filename.rfind(".dat") != std::string::npos) {
+			filetype = PLATES;
+			break;
+		}
+	} while (0);
+
+	if (filetype == GPML)
 		HandleGPMLFile(filename);
-	} else if (filename.rfind(PLATES_EXT) != std::string::npos) {
-		// File is a PLATES file.
+	else if (filetype == PLATES)
 		HandlePLATESFile(filename);
-	} else {
+	else {
 		std::ostringstream msg;
-		msg << "The file \"" << filename << "\" does not have a" <<std::endl
-			<< "supported extension.  Supported extensions " << std::endl
-			<< "include: " << std::endl
-			<< "-- " << GPML_EXT << ": for GPML files; and" << std::endl
-			<< "-- " << PLATES_EXT << ": for PLATES files." << std::endl;
+		msg << "The file \"" << filename << "\" is in an unknown "
+								"format.";
 		Dialogs::ErrorMessage(
-			"File extension not recognised",
+			"File type not recognised",
 			msg.str().c_str(),
 			"Attempting to parse the file as a PLATES data file.");
+		// TODO: is this wise to guess that it's PLATES format? confirm with user?
 		HandlePLATESFile(filename);
 	}
 
