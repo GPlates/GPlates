@@ -55,6 +55,17 @@ namespace GPlatesMaths
 			 * @param x_comp The x-component.
 			 * @param y_comp The y-component.
 			 * @param z_comp The z-component.
+			 *
+			 * On a Pentium IV processor, the first line should
+			 * cost about (7 + 2 * 2) + (5 + 1) = 17 clock cycles
+			 * + the cost of the 'sqrt' function call (at least 38
+			 * cycles for the FSQRT insn);  the second should cost
+			 * about 7 clock cycles + the cost of a function call
+			 * (as long as the invariant isn't violated).
+			 *
+			 * Thus, the creation of a DirVector3D instance will
+			 * cost at least 62 clock cycles + the cost of two
+			 * function calls.
 			 */
 			explicit 
 			DirVector3D(const real_t& x_comp,

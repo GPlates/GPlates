@@ -33,6 +33,13 @@ using namespace GPlatesMaths;
 void
 DirVector3D::AssertInvariantHolds() const {
 
+	/**
+	 * On a Pentium IV processor, this FP comparison should cost about
+	 * 7 clock cycles.
+	 *
+	 * Obviously, if the comparison returns false, performance will go
+	 * right out the window.
+	 */
 	if (_mag <= 0.0) {
 
 		// invariant has been violated
