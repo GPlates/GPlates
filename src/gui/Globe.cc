@@ -106,11 +106,38 @@ PaintPointDataPos(const Layout::PointDataPos& pointdata)
 	CallVertexWithPoint(point.unitvector());
 }
 
+
+namespace
+{
+	/**
+	 * XXX: Hack to get Colours working.
+	 */
+	typedef std::map< rid_t, const Colour* > ColourMap_t;
+	ColourMap_t COLOUR_MAP;
+			
+	class ColourMapInit
+	{
+		public:
+			ColourMapInit()
+			{
+#include "plates.clr.inc"
+			}
+	};
+
+	ColourMapInit _CMAP;
+}
+
 static void
 PaintLineDataPos(const Layout::LineDataPos& linedata)
 {
 	const PolyLineOnSphere& line = linedata.second;
 
+	ColourMap_t::iterator iter =
+		COLOUR_MAP.find(linedata.first->GetRotationGroupId());
+	if (iter != COLOUR_MAP.end())
+		glColor3fv(*iter->second);
+	else
+		glColor3fv(Colour::BLACK);
 	CallVertexWithLine(line.begin(), line.end());
 }
 
@@ -177,6 +204,8 @@ Globe::Paint()
 		 * avoid Z-fighting with the LineData.
 		 */
 		glDepthRange(0.005, 1.0);
+		// XXX Should be using the class member, but doing so causes the
+		// grid to vanish sometimes.  This seems to fix things.
 		_grid.Paint();
 
 		// Restore DepthRange
@@ -188,10 +217,10 @@ Globe::Paint()
 		 * Paint the data.
 		 */
 		glColor3fv(Colour::GREEN);
-		PaintPoints();  // Points are yellow.
+		PaintPoints();
 		
-		glColor3fv(Colour::RED);
-		PaintLines();  // lines are red.
+		glColor3fv(Colour::BLACK);
+		PaintLines();
 
 	glPopMatrix();
 }
