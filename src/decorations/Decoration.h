@@ -17,10 +17,10 @@
  * GNU General Public License for more details.
  */
 
-#ifndef GPLATES_GEO_DECORATION_H
-#define GPLATES_GEO_DECORATION_H
+#ifndef GPLATES_DECORATIONS_DECORATION_H
+#define GPLATES_DECORATIONS_DECORATION_H
 
-namespace GPlatesGeo {
+namespace GPlatesDecorations {
 
 	/**
 	 * Decoration stores the information and behaviour requried to

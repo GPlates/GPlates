@@ -23,7 +23,7 @@
 #include <list>
 #include "ReconstructedFeature.h"
 #include "Property.h"
-#include "Decoration.h"
+#include "decorations/Decoration.h"
 #include "maths/FiniteRotationSnapshotTable.h"
 
 namespace GPlatesGeo {
@@ -68,7 +68,7 @@ namespace GPlatesGeo {
 			/**
 			 * The way we wish to represent this Feature on the Globe.
 			 */
-			Decoration m_decoration;
+			GPlatesDecorations::Decoration m_decoration;
 
 	};
 }
