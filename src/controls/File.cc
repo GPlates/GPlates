@@ -325,6 +325,9 @@ File::OpenData(const std::string& filename)
 	}
 
 	DataGroup* data = GPlatesState::Data::GetDataGroup();
+	if (!data)
+		return;
+
 	ConvertDataGroupToDrawableDataMap(data);
 
 	// Draw the data on the screen in its present-day layout
