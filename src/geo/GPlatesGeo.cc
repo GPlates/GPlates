@@ -27,13 +27,11 @@
 
 #include "GeneralisedData.h"
 
-using namespace GPlatesGeo;
-
 /*
  * Defined in GeneralisedData.h.
  */
 inline std::ostream&
-operator<<(std::ostream& os, const GeneralisedData& data)
+GPlatesGeo::operator<<(std::ostream& os, const GeneralisedData& data)
 {
 	data.PrintOut(os); 
 	return os;
@@ -43,7 +41,7 @@ operator<<(std::ostream& os, const GeneralisedData& data)
  * Defined in GeneralisedData.h.
  */
 inline std::istream&
-operator>>(std::istream& is, GeneralisedData& data)
+GPlatesGeo::operator>>(std::istream& is, GeneralisedData& data)
 {
 	data.ReadIn(is);
 	return is;

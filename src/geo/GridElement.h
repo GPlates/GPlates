@@ -32,7 +32,7 @@
 namespace GPlatesGeo
 {
 	/**
-	 * An element of a Grid, which has it's own Attributes_t.
+	 * An element of a GridData, which has it's own Attributes_t.
 	 */
 	class GridData::GridElement
 	{

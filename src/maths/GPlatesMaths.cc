@@ -28,13 +28,11 @@
 
 #include "Rotation.h"
 
-using namespace GPlatesMaths;
-
 /*
  * Defined in Rotation.h.
  */
 inline Rotation
-operator+(const Rotation& A, const Rotation& B)
+GPlatesMaths::operator+(const Rotation& A, const Rotation& B)
 { 
 	return Rotation(A) += B;
 }
