@@ -18,11 +18,10 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
-#ifndef _GPLATES_MATHS_TYPES_H_
-#define _GPLATES_MATHS_TYPES_H_
+#ifndef GPLATES_MATHS_TYPES_H
+#define GPLATES_MATHS_TYPES_H
 
 #include "Real.h"
 
@@ -32,6 +31,13 @@ namespace GPlatesMaths
 	 * A floating-point approximation to the field of reals.
 	 */
 	typedef Real real_t;
+
+	/**
+	 * The type used to identify plate rotations.
+	 * FIXME: This type should replace GPlatesGlobal::rid_t.
+	 * Also, instead of unsigned long, use std::size_t.
+	 */
+	typedef unsigned long rot_id_t;
 }
 
-#endif  // _GPLATES_MATHS_TYPES_H_
+#endif  // GPLATES_MATHS_TYPES_H
