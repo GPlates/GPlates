@@ -81,6 +81,7 @@
 #include "gui/GLFrame.h"
 #include "geo/DataGroup.h"
 #include "fileio/GPlatesReader.h"
+#include "controls/View.h"
 
 namespace 
 {
@@ -106,6 +107,9 @@ GPlatesApp::OnInit()
 	try {
 		// NULL => no parent
 		GLFrame* frame = new GLFrame(NULL, PACKAGE_STRING, wxSize(640,640));
+		
+		GPlatesControls::View::Redisplay.SetFrame(frame);
+		
 		frame->Show(TRUE);
 
 	} catch (const GPlatesGlobal::Exception& e) {
