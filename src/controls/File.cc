@@ -491,8 +491,7 @@ ConvertPlatesParserFinRotToGPlatesMathsFinRot(const
 	GPlatesMaths::real_t angle =
 	 ConvertPlatesParserAngleToGPlatesMathsAngle(pp_fin_rot._rot._angle);
 
-	return GPlatesMaths::FiniteRotation::CreateFiniteRotation(pole, angle, 
-	 time);
+	return GPlatesMaths::FiniteRotation::Create(pole, angle, time);
 }
 
 
@@ -501,6 +500,7 @@ ConvertPlatesParserRotSeqToGPlatesMathsRotSeq(const
 	PlatesParser::RotationSequence &pp_rot_seq) {
 
 	GPlatesGlobal::rid_t fixed_plate(pp_rot_seq._fixed_plate);
+	GPlatesGlobal::rid_t moving_plate(pp_rot_seq._moving_plate);
 
 	/*
 	 * It is assumed that a PlatesParser RotationSequence will always
@@ -513,7 +513,8 @@ ConvertPlatesParserRotSeqToGPlatesMathsRotSeq(const
 
 	GPlatesMaths::FiniteRotation first_fin_rot =
 	 ConvertPlatesParserFinRotToGPlatesMathsFinRot(*it);
-	GPlatesMaths::RotationSequence rot_seq(fixed_plate, first_fin_rot);
+	GPlatesMaths::RotationSequence rot_seq(fixed_plate, moving_plate,
+	 first_fin_rot);
 
 	for (it++ ; it != end_it; it++) {
 
