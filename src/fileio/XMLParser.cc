@@ -77,7 +77,7 @@ CharacterDataHandler(void* userdata, const XML_Char* str, int len)
 
 
 XMLParser::XMLParser()
-	: _root(NULL)
+	: _root(NULL), _parser(NULL)
 {  }
 
 XMLParser::~XMLParser()
