@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Law <hlaw@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 /** 
@@ -72,63 +73,6 @@
  *   Addison-Wesley.
  */
 
-#include <iostream>
-#include <wx/app.h>
+#include "gui/GPlatesApp.h"
 
-#include "global/config.h"
-#include "global/Exception.h"
-
-#include "gui/GLFrame.h"
-#include "geo/DataGroup.h"
-#include "fileio/GPlatesReader.h"
-#include "controls/View.h"
-
-namespace 
-{
-	class GPlatesApp : public wxApp
-	{
-		public:
-			/**
-			 * wxWindows equivalent of the traditional main() function.
-			 * Commandline arguments are available to all GPlatesApp
-			 * functions.
-			 */
-			bool OnInit();
-	};
-}
-
-IMPLEMENT_APP(GPlatesApp)
-
-using namespace GPlatesGui;
-
-bool
-GPlatesApp::OnInit()
-{
-	/*
-	 * Note that this 'try ... catch' block can only catch exceptions
-	 * thrown during the instantiation of the new GLFrame.  It CAN'T
-	 * catch exceptions thrown at any later stage.
-	 */
-	try {
-		// NULL => no parent
-		/*
-		 * Note that '_(str)' is a gettext-style macro alias for
-		 * 'wxGetTranslation(str)'.
-		 */
-		GLFrame* frame = new GLFrame(NULL, _(PACKAGE_STRING), wxSize(640,640));
-		
-		frame->Show(TRUE);
-
-	} catch (const GPlatesGlobal::Exception& e) {
-		std::cerr << "Caught GPlates exception: " << e << std::endl;
-		return FALSE;
-	} catch (const std::exception& e) {
-		std::cerr << "Caught non-GPlates exception: " << e.what() 
-			<< std::endl;
-		return FALSE;
-	} catch (...) {
-		std::cerr << "Caught unrecognised exception: " << std::endl;
-		return FALSE;
-	}
-	return TRUE;
-}
+IMPLEMENT_APP(GPlatesGui::GPlatesApp)
