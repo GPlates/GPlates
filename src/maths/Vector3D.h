@@ -55,6 +55,10 @@ namespace GPlatesMaths
 			 : _x(x_comp), _y(y_comp), _z(z_comp) {  }
 
 
+			virtual
+			~Vector3D() {  }
+
+
 			real_t
 			x() const { return _x; }
 

@@ -85,6 +85,9 @@ namespace GPlatesMaths
 				AssertInvariant();
 			}
 
+			virtual
+			~DirVector3D() {  }
+
 			virtual real_t
 			magnitude() const { return _mag; }
 

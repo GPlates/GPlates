@@ -73,6 +73,9 @@ namespace GPlatesMaths
 				AssertInvariant ();
 			}
 
+			virtual
+			~UnitVector3D() {  }
+
 			/**
 			 * @throw ViolatedUnitVectorInvariantException if @a v
 			 *   does not have unit magnitude.
