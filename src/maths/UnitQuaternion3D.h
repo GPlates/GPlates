@@ -36,18 +36,40 @@ namespace GPlatesMaths
 {
 	/**
 	 * A three-dimensional unit quaternion.
+	 *
+	 * For more information on quaternions, see:
+	 *  - MathWorld:
+	 *     http://mathworld.wolfram.com/Quaternion.html
+	 *  - Wikipedia
+	 *     http://www.wikipedia.org/wiki/Quaternion
+	 *
+	 * To quote briefly from Wikipedia:
+	 *
+	 *   Quaternions are sometimes used in computer graphics (and
+	 *   associated geometric analysis) to represent rotations or
+	 *   orientations of objects in 3d space.  The advantages are:
+	 *   non-singular representation (compared with Euler angles
+	 *   for example), more compact (and faster) than matrices. 
+	 *
+	 *   The set of all unit quaternions forms a 3-dimensional
+	 *   sphere S^3 and a group (even a Lie group) under
+	 *   multiplication.  S^3 is the double cover of the group
+	 *   SO(3,R) of real orthogonal 3x3 matrices of determinant 1
+	 *   since two unit quaternions correspond to every rotation
+	 *   under the above correspondence.
+	 *
+	 *
 	 * The components of this quaternion will be x, y, z and w,
-	 * where a quaternion Q = (x, y, z, w) = w + xi + yj + zk.
-	 * If Q = (s, v) [where s is a scalar and v is a vector]
-	 * then s = w and v = (x, y, z).
+	 * where a quaternion Q == (x, y, z, w) == w + xi + yj + zk.
 	 *
-	 * Since this is a unit quaternion, its magnitude must be identical
-	 * to 1.
+	 * Alternately, if Q == (s, v) [where s is a scalar and v is
+	 * a vector], then s == w and v == (x, y, z).
 	 *
-	 * This invariant will be enforced upon construction (the values
-	 * of w, x, y and z passed to the constructor will be checked),
-	 * and assumed true for all subsequent usage.  No operations may
-	 * be provided for this class which would allow the invariant to
+	 * Since this is a unit quaternion, its magnitude must always be
+	 * identical to 1.  This invariant will be enforced upon construction
+	 * (the values of w, x, y and z passed to the constructor will be
+	 * checked), and assumed true for all subsequent usage.  No operations
+	 * may be provided for this class which would allow the invariant to
 	 * be violated.
 	 * @invariant
 	 *  - magnitude of quaternion is identical to 1
