@@ -22,6 +22,7 @@
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <list>
@@ -311,7 +312,7 @@ class AnimationTimer : public wxTimer
 {
 	public:
 		AnimationTimer(int nsteps, fpdata_t start_time, fpdata_t end_time)
-			: wxTimer(), current_frame(0), t(start_time)
+			: wxTimer(), current_frame(1), t(start_time), end_t(end_time)
 		{
 			time_incr = (real_t(end_time) - t) / (nsteps - 1);
 			num_frames = static_cast< unsigned >(nsteps);
@@ -326,16 +327,15 @@ class AnimationTimer : public wxTimer
 				{
 					// display the frame for time 't'
 					WarpToTime(t.dval());
-					
-					current_frame++;
+
+					++current_frame;
 					t += time_incr;
 				}
 				else
 				{
-					// XXX hack to fix the disappearance of the data
-					// after an animation
-					WarpToTime(t.dval());
-					
+					// final frame
+					WarpToTime(end_t.dval());
+
 					Stop();
 				}
 			} 
@@ -348,7 +348,7 @@ class AnimationTimer : public wxTimer
 	
 	private:
 		unsigned num_frames, current_frame;
-		real_t t, time_incr;
+		real_t t, time_incr, end_t;
 };
 }
 

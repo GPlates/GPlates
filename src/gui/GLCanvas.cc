@@ -197,7 +197,7 @@ GLCanvas::OnSpin(wxMouseEvent& evt)
 	// XXX: Eek!  Non-reentrant!
 	static GLfloat last_x = 0.0, last_y = 0.0, last_zoom = 0.0;
 	// Make the tolerance inversely proportional to the current zoom.  
-	// That way the globe wont spin stupidly when the user is up close.
+	// That way the globe won't spin stupidly when the user is up close.
 	GLfloat TOLERANCE = 5.0/_zoom_factor;  
 	static const GLfloat ZOOM_TOLERANCE = 200.0;
 
