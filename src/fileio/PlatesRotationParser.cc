@@ -35,8 +35,8 @@ using namespace GPlatesFileIO::PlatesParser;
 
 
 void 
-ReadInPlateRotationData(const char *filename, std::istream &input_stream,
-	RotationDataMap &rotation_data) {
+ReadInRotationData(const char *filename, std::istream &input_stream,
+	PlatesRotationData &rotation_data) {
 
 	/*
 	 * The input stream must point to the beginning of an already-opened
@@ -57,7 +57,7 @@ ReadInPlateRotationData(const char *filename, std::istream &input_stream,
  * Given a LineBuffer, read a single rotation and store it.
  */
 void
-ReadRotation(LineBuffer &lb, RotationDataMap &rotation_data) {
+ReadRotation(LineBuffer &lb, PlatesRotationData &rotation_data) {
 
 	std::string line;
 	ReadRotationLine(lb, line);
@@ -70,22 +70,48 @@ ReadRotation(LineBuffer &lb, RotationDataMap &rotation_data) {
 
 	FiniteRotation rot = ParseRotationLine(lb, line);
 
-	plate_id_t plate_id = rot._moving_plate;
-	RotationDataMap::iterator it = rotation_data.find(plate_id);
-	if (it == rotation_data.end()) {
+	plate_id_t moving_plate = rot._moving_plate;
+	plate_id_t fixed_plate = rot._fixed_plate;
 
-		/*
-		 * A FiniteRotationsOfPlateMap of this plate_id does not yet
-		 * exist in the map -- make it so.
-		 */
-		std::pair< RotationDataMap::iterator, bool > pos_and_status =
-		 rotation_data.insert(RotationDataMap::value_type(plate_id,
-		  std::multimap< fpdata_t, FiniteRotation >()));
+	/*
+	 * If there is not yet any rotation data, this will be the start
+	 * of the first rotation sequence.
+	 */
+	if (rotation_data.empty()) {
 
-		it = pos_and_status.first;
+		// simply create a new rotation sequence and append it
+		RotationSequence rot_seq(moving_plate, fixed_plate, rot);
+		rotation_data.push_back(rot_seq);
+
+		return;
 	}
-	fpdata_t time = rot._time;
-	it->second.insert(FiniteRotationsOfPlateMap::value_type(time, rot));
+	// else, the rotation data must contain at least one rotation sequence.
+
+	/*
+	 * Now, will this finite rotation become part of an already-existing
+	 * rotation sequence, or will it be the start of a new one?
+	 *
+	 * It all depends on its moving plate and fixed plate:  If they are
+	 * the same as those of the most-recently-appended (ie, last) rotation
+	 * sequence in the rotation data, then this finite rotation must be
+	 * another item in that rotation sequence.  Else, it will become the
+	 * start of a new rotation sequence.
+	 */
+	PlatesRotationData::reverse_iterator rit = rotation_data.rbegin();
+	// recall that the rotation data must contain at least one element
+	RotationSequence &last_rot_seq = *(rit);
+	if (last_rot_seq._moving_plate == moving_plate &&
+	    last_rot_seq._fixed_plate == fixed_plate) {
+
+		// another item in this rotation sequence
+		last_rot_seq._seq.push_back(rot);
+
+	} else {
+
+		// the start of a new rotation sequence
+		RotationSequence rot_seq(moving_plate, fixed_plate, rot);
+		rotation_data.push_back(rot_seq);
+	}
 }
 
 

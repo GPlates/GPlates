@@ -41,17 +41,14 @@ namespace GPlatesFileIO
 	{
 		using GPlatesGlobal::fpdata_t;
 
-		typedef std::multimap< fpdata_t, FiniteRotation >
-		 FiniteRotationsOfPlateMap;
+		typedef std::list< RotationSequence > PlatesRotationData;
 
-		typedef std::map< plate_id_t, FiniteRotationsOfPlateMap >
-		 RotationDataMap;
-
-		void ReadInPlateRotationData(const char *filename,
-		 std::istream &input_stream, RotationDataMap &rotation_data);
+		void ReadInRotationData(const char *filename,
+		 std::istream &input_stream,
+		 PlatesRotationData &rotation_data);
 
 		void ReadRotation(LineBuffer &lb,
-		 RotationDataMap &rotation_data);
+		 PlatesRotationData &rotation_data);
 
 		void ReadRotationLine(LineBuffer &lb, std::string &str);
 	}
