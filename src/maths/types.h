@@ -30,17 +30,22 @@
 
 #include <utility>  // std::pair
 #include <list>
-#include "geo/Vector2D.h"
 #include "Real.h"
 
 namespace GPlatesMaths
 {
+/*
+ * This is not currently used, and breaks the code because it depends on
+ * the old GPlatesGeo::Vector2D.
+ */
+#if 0
 	/**
 	 * A two-dimensional basis.
 	 * This typedef is a placeholder for what will be a fully
 	 * fleshed-out class in the end.
 	 */
 	typedef std::pair<GPlatesGeo::Vector2D, GPlatesGeo::Vector2D> Basis2D_t;
+#endif
 
 	/**
 	 * A floating-point approximation to the field of reals.
