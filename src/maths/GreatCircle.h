@@ -28,17 +28,27 @@
 
 #include "types.h"
 #include "UnitVector3D.h"
+#include "Vector3D.h"
 
 namespace GPlatesMaths
 {
 	/** 
-	 * A great-circle on the surface of a sphere.
+	 * A great circle of a unit sphere.
 	 */
 	class GreatCircle
 	{
 		public:
-			GreatCircle (UnitVector3D &normal_vec)
-				: _normal (normal_vec) { }
+			/**
+			 * Create a great circle, given its axis.
+			 * @param axis The axis vector.
+			 */
+			GreatCircle (UnitVector3D &axis)
+				: _normal (axis) { }
+			/**
+			 * Create a great circle, given two points on it.
+			 * @param v1 One point.
+			 * @param v2 Another point. Must be distinct from v1.
+			 */
 			GreatCircle (const UnitVector3D &v1, const UnitVector3D &v2);
 
 			UnitVector3D normal () const { return _normal; }
@@ -46,6 +56,13 @@ namespace GPlatesMaths
 		private:
 			UnitVector3D _normal;
 	};
+
+	inline bool operator== (const GreatCircle &a, const GreatCircle &b)
+	{
+		UnitVector3D an = a.normal (), bn = b.normal ();
+
+		return (an == bn) || (an == -bn);
+	}
 }
 
 #endif  // _GPLATES_MATHS_GREATCIRCLE_H_
