@@ -31,6 +31,8 @@
 #include <wx/wx.h>
 #include "GLCanvas.h"
 #include "Colour.h"
+#include "global/types.h"  /* fpdata_t */
+
 
 namespace GPlatesGui
 {
@@ -70,6 +72,8 @@ namespace GPlatesGui
 			// Help events
 			void OnHelpAbout(wxCommandEvent&);
 
+			void SetCurrentTime(const GPlatesGlobal::fpdata_t &t);
+
 		private:
 #if 0
 			/*
@@ -78,11 +82,17 @@ namespace GPlatesGui
 			 */
 			static const wxWindowID DEFAULT_WINDOWID = -1;
 #endif
-			static const int STATUSBAR_NUM_FIELDS = 1;
-		
+
+			static const int STATUSBAR_FIELDS[];
+
 			wxStatusBar *_status_bar;
 			GLCanvas    *_canvas;
 			wxString _last_load_dir, _last_save_dir;
+
+			/**
+			 * The current geological time.
+			 */
+			GPlatesGlobal::fpdata_t _current_time;
 
 			void CreateMenuBar();
 

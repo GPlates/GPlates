@@ -26,6 +26,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <cstdlib>
 #include <cmath>  /* for fabsf() */
@@ -36,7 +37,7 @@
 #include "OpenGL.h"
 #include "ReconstructTimeDialog.h"
 #include "controls/File.h"
-#include "controls/View.h"
+#include "controls/GuiCalls.h"
 #include "controls/Reconstruct.h"
 #include "global/types.h"
 #include "maths/OperationsOnSphere.h"
@@ -74,16 +75,28 @@ namespace {
 	};
 }
 
+const int
+GPlatesGui::MainWindow::STATUSBAR_FIELDS[] = {
+
+	-1,  /* variable width */
+	100  /* 100 pixels wide */
+};
+
 
 MainWindow::MainWindow(wxFrame* parent, const wxString& title,
  const wxSize& size, const wxPoint& pos)
  : wxFrame(parent, -1 /* XXX: DEFAULT_WINDOWID */, title, pos, size)
 {
-	_status_bar = CreateStatusBar(STATUSBAR_NUM_FIELDS);
+	const int num_statusbar_fields =
+	 static_cast< int >(sizeof(STATUSBAR_FIELDS) / sizeof(int));
+
+	_status_bar = CreateStatusBar(num_statusbar_fields);
 	if (!_status_bar) {
 		std::cerr << "Failed to create status bar." << std::endl;
 		exit(1);
 	}
+	SetStatusWidths(num_statusbar_fields, STATUSBAR_FIELDS);
+	SetCurrentTime(0.0);
 
 	_last_load_dir = "";
 	_last_save_dir = "";
@@ -92,8 +105,7 @@ MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	_canvas = new GLCanvas(this);
 	_canvas->SetCurrent();
 
-	GPlatesControls::View::Redisplay.SetFrame(_canvas);
-		
+	GPlatesControls::GuiCalls::SetComponents(this, _canvas);
 
 	Fit();
 	CentreOnScreen();
@@ -270,6 +282,25 @@ MainWindow::OnHelpAbout (wxCommandEvent&)
 	AboutDialog dialog (this);
 
 	dialog.ShowModal ();
+}
+
+void
+GPlatesGui::MainWindow::SetCurrentTime(const GPlatesGlobal::fpdata_t &t) {
+
+	std::ostringstream oss;
+	oss
+	/* wxWindows doesn't use a fixed-width font in the status bar,
+	 * so this code doesn't achieve its aim of aligning all the times. */
+#if 0
+	 << std::setw(8)          // field width of 8 chars
+	 << std::right            // right-align the text in the field
+	 << std::setfill(' ')     // fill with a space
+	 << std::fixed            // always use decimal notation
+	 << std::setprecision(3)  // 3 decimal places
+#endif
+	 << t
+	 << " Ma";
+	SetStatusText(wxString(oss.str().c_str(), *wxConvCurrent), 1);
 }
 
 void
