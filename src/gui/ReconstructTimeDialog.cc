@@ -21,32 +21,33 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include <sstream>
 #include <wx/wx.h>
 #include "ReconstructTimeDialog.h"
+#include "FPValidator.h"
 
-using namespace GPlatesGui;
-
-ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent)
-	: wxDialog(parent, -1, _("Reconstruct to..."))
+GPlatesGui::ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent) :
+ wxDialog(parent, -1, _("Reconstruct to...")), _time_ctrl_str("0.0")
 {
 	static const int BORDER_SIZE  = 10;
 	
 	wxBoxSizer* msgsizer = new wxBoxSizer(wxHORIZONTAL);
 	msgsizer->Add(new wxStaticText(this, -1,
-		_("Enter the time for which you wish the reconstruction\n"
-		"to take place in units of millions of years ago.\n")), 
+		_("Enter the time for the reconstruction\n"
+		 "(in units of \"millions of years ago\").\n")), 
 		0, wxALL, BORDER_SIZE);
 
 	// A text entry thingo with a text note to the left
 	wxBoxSizer* entrysizer = new wxBoxSizer(wxHORIZONTAL);
-	entrysizer->Add(new wxStaticText(this, -1, _("Enter time: (Ma)")), 
-					0, wxALL, BORDER_SIZE);
-	entrysizer->Add(_txtctrl = new wxTextCtrl(this, -1, _("0.0")), 
-					0, wxALL, BORDER_SIZE);  
-							// This needs a validator
+	entrysizer->Add(new wxStaticText(this, -1,
+	 _("Enter time: (Ma)")), 0, wxALL, BORDER_SIZE);
+	entrysizer->Add(_time_ctrl = new wxTextCtrl(this, -1,
+	 "", wxDefaultPosition, wxDefaultSize, 0,
+	 FPValidator(0, &_time_ctrl_str)),
+	 0, wxALL, BORDER_SIZE);
 
 	wxBoxSizer* buttonsizer = new wxBoxSizer(wxHORIZONTAL);
 	buttonsizer->Add(new wxButton(this, wxID_OK, _("OK")),
@@ -65,11 +66,11 @@ ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent)
 
 
 GPlatesGlobal::fpdata_t
-ReconstructTimeDialog::GetInput() const
+GPlatesGui::ReconstructTimeDialog::GetTime() const
 {
 	GPlatesGlobal::fpdata_t res;
 	
-	std::istringstream iss(std::string(_txtctrl->GetValue().mb_str()));
+	std::istringstream iss(std::string(_time_ctrl->GetValue().mb_str()));
 	iss >> res;
 
 	// FIXME: check for error

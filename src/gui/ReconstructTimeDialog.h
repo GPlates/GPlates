@@ -21,6 +21,7 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_RECONSTRUCTTIMEDIALOG_H_
@@ -37,10 +38,12 @@ namespace GPlatesGui
 			ReconstructTimeDialog(wxWindow* parent);
 	
 			GPlatesGlobal::fpdata_t
-			GetInput() const;
+			GetTime() const;
 
 		private:
-			wxTextCtrl* _txtctrl;
+			wxTextCtrl* _time_ctrl;
+
+			wxString _time_ctrl_str;
 	};
 }
 
