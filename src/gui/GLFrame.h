@@ -35,6 +35,10 @@ namespace GPlatesGui
 	class GLFrame : public wxFrame
 	{
 		public:
+			/*
+			 * Note that '_(str)' is a gettext-style macro alias
+			 * for 'wxGetTranslation(str)'.
+			 */
 			GLFrame(wxFrame* parent, 
 					const wxString& title = _(""), 
 					const wxSize& size = wxDefaultSize,

@@ -111,6 +111,10 @@ GPlatesApp::OnInit()
 	 */
 	try {
 		// NULL => no parent
+		/*
+		 * Note that '_(str)' is a gettext-style macro alias for
+		 * 'wxGetTranslation(str)'.
+		 */
 		GLFrame* frame = new GLFrame(NULL, _(PACKAGE_STRING), wxSize(640,640));
 		
 		frame->Show(TRUE);
