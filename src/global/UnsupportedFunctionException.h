@@ -34,12 +34,15 @@ namespace GPlatesGlobal
 	/**
 	 * Should be thrown when a function that has purposely not been
 	 * implemented is called.
-	 * @param fname is the name of the function which is not yet implemented.
 	 * @see GeologicalData::Add(), GeologicalData::Remove().
 	 */
 	class UnsupportedFunctionException : public Exception
 	{
 		public:
+			/**
+			 * @param fname is the name of the function which is
+			 * not supported.
+			 */
 			UnsupportedFunctionException(const char *fname)
 				: _fname(fname) {  }
 

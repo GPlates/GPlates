@@ -34,11 +34,14 @@ namespace GPlatesGlobal
 	/**
 	 * Should be thrown when a function that has not YET been
 	 * implemented is called.
-	 * @param fname is the name of the function which is not yet implemented.
 	 */
 	class NotYetImplementedException : public Exception
 	{
 		public:
+			/**
+			 * @param fname is the name of the function which is
+			 * not yet implemented.   
+			 */
 			NotYetImplementedException(const char *fname)
 				: _fname(fname) {  }
 
