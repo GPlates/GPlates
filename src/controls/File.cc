@@ -156,6 +156,58 @@ LoadDataGroupFromPlatesDataMap(const PlatesParser::PlatesDataMap& map)
 }
 
 
+using namespace GPlatesState;
+
+namespace
+{
+	class AddGeoDataToDrawableMap
+	{
+		public:
+			AddGeoDataToDrawableMap(Data::DrawableMap_type* map)
+				: _map(map) {  }
+
+			void
+			operator()(GeologicalData* data) {
+				
+				const DataGroup* dg = dynamic_cast<const DataGroup*>(data);
+				if (dg) {
+					// Handle 'recursive' case
+					
+					std::for_each(dg->ChildrenBegin(),
+								  dg->ChildrenEnd(), 
+								  AddGeoDataToDrawableMap(_map));
+					return;
+				}
+				
+				DrawableData* drawabledata = dynamic_cast<DrawableData*>(data);
+				if (!drawabledata) {
+					// Anything other than a DataGroup should be drawable.
+					// Therefore, if the cast above fails we have issues.
+					std::cerr << "Internal error: DrawableData cast failure." 
+						<< std::endl;
+					File::Quit(1);
+				}
+				
+				rid_t plate_id = drawabledata->GetRotationGroupId();
+				(*_map)[plate_id].push_back(drawabledata);
+			}
+			
+		private:
+			Data::DrawableMap_type* _map;
+	};
+}
+
+static void
+ConvertDataGroupToDrawableDataMap(DataGroup* data)
+{
+	Data::DrawableMap_type* map = new Data::DrawableMap_type;
+
+	AddGeoDataToDrawableMap AddData(map);
+	AddData(data);  
+	
+	Data::SetDrawableData(map);
+}
+
 static void
 HandlePLATESFile(const std::string& filename)
 {
@@ -169,8 +221,9 @@ HandlePLATESFile(const std::string& filename)
 	PlatesParser::PlatesDataMap map;
 	try {
 
-		PlatesParser::ReadInPlateBoundaryData(filename.c_str(), file,
-		 map);
+		PlatesParser::ReadInPlateBoundaryData(filename.c_str(), 
+											  file,
+											  map);
 		LoadDataGroupFromPlatesDataMap(map);
 
 	} catch (const FileIOException& e) {
@@ -217,7 +270,11 @@ File::OpenData(const std::string& filename)
 			"File extension not recognised",
 			msg.str().c_str(),
 			"No data was loaded.");
+		return;
 	}
+
+	DataGroup* data = GPlatesState::Data::GetDataGroup();
+	ConvertDataGroupToDrawableDataMap(data);
 }
 
 
