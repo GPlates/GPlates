@@ -9,7 +9,7 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = AboutDialog.o AnimationTimesDialog.o Colour.o GLCanvas.o \
+OBJS = AboutDialog.o AnimationTimesDialog.o Colour.o FPValidator.o GLCanvas.o \
 	GPlatesApp.o Globe.o MainWindow.o NurbsRenderer.o OpaqueSphere.o \
 	Quadrics.o ReconstructTimeDialog.o SphericalGrid.o
 
