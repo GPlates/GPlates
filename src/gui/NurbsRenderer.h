@@ -74,10 +74,9 @@ namespace GPlatesGui
 			 *
 			 * The <i>order</i> of the NURBS curve equals
 			 * (<i>degree</i> + 1).  Thus, a cubic curve has an
-			 * order of 4.  The number of control points required
-			 * for a NURBS curve (hence, the length of the array
-			 * @a ctrl_pts) equals the number of knots minus
-			 * the order.
+			 * order of 4.  The number of knots equals the order
+			 * of the curve plus the number of control points
+			 * (the length of the array @a ctrl_pts).
 			 */
 			void
 			drawCurve(GLint num_knots,
