@@ -62,7 +62,7 @@ GPlatesControls::Lifetime::instance() {
 	if ( ! _is_initialised) {
 
 		throw GPlatesGlobal::UninitialisedSingletonException(
-		 "Attempted to instantiate GPlatesControls::Lifetime uninitialised."
+		 "Attempted to instantiate GPlatesControls::Lifetime uninitialised.");
 	}
 	if (_instance == NULL) {
 
