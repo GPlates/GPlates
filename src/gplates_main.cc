@@ -78,6 +78,8 @@
 #include "global/Exception.h"
 
 #include "gui/GLWindow.h"
+#include "geo/DataGroup.h"
+#include "fileio/GPlatesReader.h"
 
 int
 main(int argc, char** argv)
@@ -86,6 +88,13 @@ main(int argc, char** argv)
 		std::cout << "This is \"" PACKAGE_STRING "\".\n";
 	
 		GPlatesGui::GLWindow::GetWindow(&argc, argv);
+
+		GPlatesGeo::DataGroup data("Cool Data (tm)", 42, 
+			GPlatesGeo::GeologicalData::Attributes_t());
+
+		GPlatesFileIO::GPlatesReader reader(argv[1]);
+		reader.Read(data);
+		
 		glutMainLoop();
 	} catch (const GPlatesGlobal::Exception& e) {
 		std::cerr << "Caught exception: " << e << std::endl;

@@ -28,14 +28,22 @@
 
 #include <xercesc/sax/HandlerBase.hpp>
 #include <xercesc/sax/AttributeList.hpp>
+#include "geo/DataGroup.h"
 
 namespace GPlatesFileIO
 {
+	/**
+	 * Fills the DataGroup with the data from the XML file.
+	 */
 	class GPlatesFileHandler : public xercesc::HandlerBase
 	{
 		public:
-			GPlatesFileHandler()
-				: _locator(NULL) {  }
+			/**
+			 * @param datagroup The DataGroup to fill, which already
+			 *   exists and is owned by someone else.
+			 */
+			GPlatesFileHandler(GPlatesGeo::DataGroup& datagroup)
+				: _locator(NULL), _datagroup(datagroup) {  }
 
 			/** 
 			 * SAX DocumentHandler interface.
@@ -75,8 +83,12 @@ namespace GPlatesFileIO
 				_locator = locator;
 			}
 
+			GPlatesGeo::DataGroup&
+			GetDataGroup() { return _datagroup; }
+
 		private:
 			const xercesc::Locator* _locator;
+			GPlatesGeo::DataGroup& _datagroup;
 	};
 }
 

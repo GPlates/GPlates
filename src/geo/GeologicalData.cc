@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * Authors:
- *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   Hamish Law <hlaw@geosci.usyd.edu.au>
  *   James Boyden <jboyden@es.usyd.edu.au>
  */
 
@@ -28,7 +28,6 @@
 
 using namespace GPlatesGeo;
 
-inline
 GeologicalData::GeologicalData(const DataType_t& dt, 
 	const RotationGroupId_t& id, const Attributes_t& attrs)
 	: _data_type(dt), _rotation_group_id(id), _attributes(attrs)

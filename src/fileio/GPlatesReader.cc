@@ -41,6 +41,12 @@ using xercesc::XMLException;
 using xercesc::SAXParser;
 using xercesc::SAXException;
 
+// FIXME: Find out how to set INSTALL_PREFIX.  Check out
+// @prefix@ in the Makefile.in's.
+static const char* const SCHEMA_LOCATION 
+	= //@INSTALL_PREFIX@
+		"/share/schemas/gplates/gplates.xsd";
+
 /**
  * Return true if the parser was initialised successfully, false
  * otherwise.
@@ -61,7 +67,8 @@ InitialiseParser(SAXParser*& parser)
 	parser = new SAXParser;
 
 	// Enable schema processing.
-	// FIXME: Load the GPlates App Schema explicitly.
+	// FIXME: Check the existence of SCHEMA_LOCATION first.
+//	parser->setExternalSchemaLocation(SCHEMA_LOCATION);
 	parser->setValidationScheme(SAXParser::Val_Always);
 	parser->setDoNamespaces(true);
 	parser->setDoSchema(true);
@@ -82,7 +89,7 @@ GPlatesReader::Read(DataGroup& group)
 		return;
 	
 	// Set handlers
-	GPlatesFileHandler doc_handler;
+	GPlatesFileHandler doc_handler(group);
 	parser->setDocumentHandler(&doc_handler);
 
 	ErrorHandler err_handler;
