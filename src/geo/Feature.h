@@ -28,6 +28,14 @@
 
 namespace GPlatesGeo {
 
+	/**
+	 * Feature represents an "object" on the globe.
+	 *
+	 * Features are composed of a geometry (see 
+	 * GPlatesMaths::PointOnSphere and GPlatesMaths::PolyLineOnSphere) 
+	 * and a set of associated properties (see Property and 
+	 * ConcretePropery).
+	 */
 	class Feature {
 
 		public:

@@ -24,6 +24,12 @@
 
 namespace GPlatesGeo {
 
+	/**
+	 * Property represents a (name, value) pair.
+	 *
+	 * The type of value is a parameter of the child class 
+	 * ConcreteProperty.
+	 */
 	class Property {
 		
 		public:
@@ -36,12 +42,20 @@ namespace GPlatesGeo {
 			virtual
 			~Property() {  }
 
+			/**
+			 * Return the descriptive name of this Property as a 
+			 * std::string.
+			 */
 			std::string
 			get_name() const {
 
 				return m_name;
 			}
 
+			/**
+			 * Return the description of the units of this Property 
+			 * as a std::string.
+			 */
 			std::string
 			get_units() const {
 
