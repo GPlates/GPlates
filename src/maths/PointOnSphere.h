@@ -28,6 +28,7 @@
 #ifndef _GPLATES_MATHS_POINTONSPHERE_H_
 #define _GPLATES_MATHS_POINTONSPHERE_H_
 
+#include <ostream>
 #include "types.h"  /* real_t */
 #include "UnitVector3D.h"
 
@@ -82,6 +83,12 @@ namespace GPlatesMaths
 	}
 
 
+	inline std::ostream &
+	operator<<(std::ostream &os, const PointOnSphere &p) {
+
+		os << p.unitvector();
+		return os;
+	}
 }
 
 #endif  // _GPLATES_MATHS_POINTONSPHERE_H_
