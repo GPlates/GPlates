@@ -7,11 +7,14 @@ DISTFILES = Makefile.in *.cc *.h
 
 INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
+#  netcdf flags?
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = GPlatesReader.o GPlatesWriter.o NetCDFReader.o NetCDFWriter.o \
+OBJS = GPlatesReader.o GPlatesWriter.o \
 	PlatesBoundaryParser.o PlatesDataTypes.o PlatesParserUtils.o \
-	PlatesPostParseTranslator.o PlatesRotationParser.o XMLParser.o
+	PlatesPostParseTranslator.o PlatesRotationParser.o \
+	TranslationInterface.o XMLParser.o
+#	NetCDFReader.o NetCDFWriter.o \
 
 LIBNAME = libfileio.a
 

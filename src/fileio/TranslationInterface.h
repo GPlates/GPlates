@@ -31,51 +31,53 @@
 
 #include "global/types.h"
 
+class GPlatesGeo::DataGroup;
+
+
 namespace GPlatesFileIO
 {
+	/**
+	 * Interface through which data in a file is converted into
+	 * the GPlates internal representation.  TranslationInterface
+	 * serves as an abstraction of the internal data representation
+	 * so that the internal representation may vary without effecting
+	 * the various data file handling classes.  It has deliberately
+	 * been defined to be as restrictive as possible, for the purpose
+	 * of ease of maintainence of backward compatibility.
+	 */
 	class TranslationInterface
 	{
 		public:
 			/**
-			 * Types.
+			 * @name Interface Types
 			 * The following types should be used when communicating
 			 * with the file translation interface.
 			 */
 			/// @{
 
+			/**
+			 * Use fpdata_t for floating-point data.
+			 */
 			typedef GPlatesGlobal::fpdata_t  fpdata_t;
-			typedef GPlatesGlobal::rid_t     rid_t;
-			typedef GPlatesGlobal::integer_t integer_t;
-			typedef std::string              String_t;
-
-			enum Colour_t
-			{
-				BLACK, WHITE, RED, GREEN, 
-				BLUE, GREY, SILVER, MAROON,
-				PURPLE, FUSCHIA, LIME, OLIVE,
-				YELLOW, NAVY, TEAL, AQUA
-			};
-
-			/// @}
-
 
 			/**
-			 * @name Geometry.
-			 * The following classes are used to represent the geometry 
-			 * of the data.  The geometry of the data determines the 
-			 * location on the screen at which it is displayed.
+			 * Use integer_t for integer data.
 			 */
-			/// @{
+			typedef GPlatesGlobal::integer_t integer_t;
 
-			class LatLonPoint;
+			/**
+			 * Use rid_t to specify a rotation group identifier.
+			 */
+			typedef GPlatesGlobal::rid_t     rid_t;
 
-			class LatLonLine;
-
-			class ClosedLatLonLine;
+			/**
+			 * Use string_t to specify a character string.
+			 */
+			typedef std::string              string_t;
 
 			/// @}
-			
-			
+
+		
 			/**
 			 * A location on the globe specified by latitude and longitude.
 			 * This is the basic geometric element, the other geometric
@@ -149,7 +151,7 @@ namespace GPlatesFileIO
 					}
 					
 					/**
-					 * @name Element Access.
+					 * @name Element Access
 					 * STL-style iterators to obtain access to the points
 					 * that make up this line.
 					 *
@@ -188,11 +190,11 @@ namespace GPlatesFileIO
 			 * form a loop.  The first and last point need not be coincident
 			 * for the loop to be valid.
 			 */
-			class ClosedLatLonLine
+			class LatLonLoop
 			{
 				public:
 					/**
-					 * To ensure that the ClosedLatLonLine is always in a 
+					 * To ensure that the LatLonLoop is always in a 
 					 * valid state, the constructor takes three arguments
 					 * specifying the three corners of a "triangle" on the
 					 * globe.  The closed line will take form as additional
@@ -204,7 +206,7 @@ namespace GPlatesFileIO
 					 * @param p2 "Second" corner of the "triangle".
 					 * @param p3 "Third" corner of the "triangle".
 					 */
-					ClosedLatLonLine(
+					LatLonLoop(
 					 const LatLonPoint& p1,
 					 const LatLonPoint& p2,
 					 const LatLonPoint& p3)
@@ -227,7 +229,7 @@ namespace GPlatesFileIO
 					}
 
 					/**
-					 * @name Element Access.
+					 * @name Element Access
 					 * STL-style iterators to obtain access to the points
 					 * that make up this closed line.
 					 *
@@ -263,74 +265,97 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * @name Data Attributes.
+			 * @name Data Attributes
 			 * The following class is used to represent that attributes that
 			 * may be attached to a geometry.
 			 */
 			/// @{
 			
+			/**
+			 * Represents a set of name/value pairs where the possible
+			 * values for name are predefined.
+			 */
 			class Attributes
 			{
 				public:
 					void
-					SetDataType(const String_t& type)
+					SetDataType(const string_t& type)
 					{
+						InsertAttribute(string_t("dataType"), type);
 					}
 
 					void
-					SetSubDataType(const String_t& subtype)
+					SetSubDataType(const string_t& subtype)
 					{
+						InsertAttribute(string_t("dataSubType"), subtype);
 					}
 					
 					void
-					SetRotationGroup(const String_t& rid)
+					SetRotationGroup(const string_t& rid)
 					{
-						_attributes.insert(std::make_pair("rotationGroup", rid));
+						InsertAttribute(string_t("rotationGroup"), rid);
 					}
 
 					void
-					SetRegion(const String_t& region)
+					SetRegion(const string_t& region)
 					{
+						InsertAttribute(string_t("region"), region);
 					}
 
 					void
-					SetAgeOfAppearance(const String_t& appearance)
+					SetAgeOfAppearance(const string_t& appearance)
 					{
+						InsertAttribute(string_t("ageOfAppearance"), appearance);
 					}
 
 					void
-					SetAgeOfDisappearance(const String_t& disappearance)
+					SetAgeOfDisappearance(const string_t& disappearance)
 					{
+						InsertAttribute(string_t("ageOfDisappearance"), disappearance);
 					}
 
 					void
-					SetResponsibleParty(const String_t& responsibleParty)
+					SetResponsibleParty(const string_t& responsibleParty)
 					{
+						InsertAttribute(string_t("responsibleParty"), responsibleParty);
 					}
 
 					void
-					SetColour(const String_t& colour)
+					SetColour(const string_t& colour)
 					{
+						InsertAttribute(string_t("colour"), colour);
 					}
 
 					void
 					SetArbitraryAttribute(
-					 const String_t& name,
-					 const String_t& value)
+					 const string_t& name,
+					 const string_t& value)
 					{
+						// FIXME: Should not insert this value if such an
+						// element already exists as part of the definition
+						// of GPML.
+						InsertAttribute(name, value);
 					}
 
 				private:
-					typedef std::map< String_t, String_t >  StringMap_t;
+					typedef std::map< string_t, string_t >  StringMap_t;
 
 					StringMap_t _attributes;
+
+					void
+					InsertAttribute(
+					 const string_t& name,
+					 const string_t& value)
+					{
+						_attributes.insert(std::make_pair(name, value));
+					}
 			};
 			
 			/// @}
 			
 
 			/**
-			 * @name Data Registration Functions.
+			 * @name Data Registration Functions
 			 * The following functions are used to create the internal
 			 * representation of the data contained in a file.  Each
 			 * function takes a geometry element and the attributes
@@ -351,12 +376,22 @@ namespace GPlatesFileIO
 
 			
 			void
-			RegisterClosedLatLonLineData(
-			 const ClosedLatLonLine& loop,
-			 const Attributes&       attributes);
+			RegisterLatLonLoopData(
+			 const LatLonLoop& loop,
+			 const Attributes& attributes);
 
 			/// @}
-	}
+			
+		private:
+			GPlatesGeo::DataGroup* _data;
+
+			TranslationInterface();
+
+			/**
+			 * Copy constructor deliberately not implemented.
+			 */
+			TranslationInterface(const TranslationInterface&);
+	};
 }
 
 #endif  /* _GPLATES_FILEIO_TRANSLATIONINTERFACE_H_ */
