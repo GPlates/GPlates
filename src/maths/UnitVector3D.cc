@@ -34,7 +34,7 @@ void
 UnitVector3D::AssertInvariantHolds() const {
 
 	/*
-	 * Calculate magnitude of vector.
+	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
 	 * For efficiency, don't bother sqrting yet.
 	 */
 	real_t mag_sqrd = (_x * _x) + (_y * _y) + (_z * _z);
