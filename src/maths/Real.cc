@@ -32,16 +32,18 @@
  * 
  * According to:
  *  http://www.cs.berkeley.edu/~demmel/cs267/lecture21/lecture21.html
- * the machine epsilon for an IEEE 754-compliant machine is about 1.0e-16.
+ * and
+ *  http://www.ma.utexas.edu/documentation/lapack/node73.html
+ * the machine epsilon for an IEEE 754-compliant machine is about 1.2e-16.
  *
- * According to this document, the machine epsilon (aka "macheps") is
+ * According to these documents, the machine epsilon (aka "macheps") is
  * half the distance between 1 and the next largest fp value.
  *
  * Not only do I wish to allow for rounding errors due to the limits of
  * floating-point precision, I also wish to allow for a small accumulation
  * of such rounding errors.
  *
- * If macheps is 1.0e-16, then I -guessed- that it might be a good idea to
+ * If macheps is 1.2e-16, then I -guessed- that it might be a good idea to
  * allow a flexibility of about two orders of magnitude, ie. 1.0e-14.
  *
  * The situations where such flexibility might be really important would
