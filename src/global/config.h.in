@@ -12,6 +12,6 @@
 
 // UIs selected
 #undef HAVE_TESTUI
-#undef HAVE_WXWINDOWS
+#undef HAVE_GTKMM
 
 #endif	// __CONFIG_H__
