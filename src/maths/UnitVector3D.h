@@ -65,7 +65,7 @@ namespace GPlatesMaths
 				AssertInvariantHolds ();
 			}
 
-			UnitVector3D (const Vector3D &v) : DirVector3D (v)
+			UnitVector3D (const Vector3D &v) : DirVector3D (v, 1.0)
 			{
 				AssertInvariantHolds ();
 			}

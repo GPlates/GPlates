@@ -108,7 +108,15 @@ namespace GPlatesMaths
 				    const real_t &mag)
 				: Vector3D (x_comp, y_comp, z_comp), _mag (mag)
 			{
-				AssertInvariantHolds();
+			}
+
+			/**
+			 * Another Super-secret backdoor constructor for
+			 * specialised base classes.
+			 */
+			DirVector3D(const Vector3D &v, const real_t &mag)
+				: Vector3D (v), _mag (mag)
+			{
 			}
 
 			/**
