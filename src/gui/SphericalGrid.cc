@@ -67,6 +67,26 @@ namespace
 }
 
 
+GPlatesGui::SphericalGrid::SphericalGrid(unsigned num_circles_lat,
+ unsigned num_circles_lon, const Colour &colour)
+ : _num_circles_lat(num_circles_lat),
+   _num_circles_lon(num_circles_lon),
+   _colour(colour) {
+
+	// subdivide into stacks
+	unsigned num_stacks = _num_circles_lat + 1;
+	_lat_delta = pi / num_stacks;
+
+	// subdivide into slices
+	if (_num_circles_lon > 0) {
+
+		// num_slices == 2 * _num_circles_lon
+		_lon_delta = pi / _num_circles_lon;
+
+	} else _lon_delta = 2 * pi;  // meaningless
+}
+
+
 void
 GPlatesGui::SphericalGrid::Paint() {
 
