@@ -47,9 +47,11 @@ namespace GPlatesState
 		public:
 			typedef GPlatesGeo::DataGroup GeoData_type;
 
+			typedef std::list< GPlatesGeo::DrawableData * >
+			 DrawableDataSet;
+
 			typedef std::map< GPlatesGlobal::rid_t,
-			 std::list< GPlatesGeo::DrawableData * > >
-			 DrawableMap_type;
+			 DrawableDataSet > DrawableMap_type;
 
 			typedef std::map< GPlatesGlobal::rid_t,
 			 GPlatesMaths::RotationHistory > RotationMap_type;
