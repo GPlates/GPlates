@@ -21,12 +21,14 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_TREE_H_
 #define _GPLATES_GEO_TREE_H_
 
 #include <set>
+#include "Visitor.h"
 
 namespace GPlatesGeo
 {
