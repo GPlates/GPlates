@@ -30,6 +30,7 @@
 #include "UnitQuaternion3D.h"
 #include "PointOnSphere.h"
 #include "GreatCircleArc.h"
+#include "PolyLineOnSphere.h"
 #include "types.h"  /* real_t */
 
 
@@ -204,6 +205,15 @@ namespace GPlatesMaths
 		return GreatCircleArc::CreateGreatCircleArc(rot_start, rot_end,
 		 rot_rot_axis);
 	}
+
+
+	/**
+	 * Apply the given rotation to the given poly-line-on-sphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	PolyLineOnSphere
+	operator*(const FiniteRotation &r, const PolyLineOnSphere &p);
 }
 
 #endif  // _GPLATES_MATHS_FINITEROTATION_H_

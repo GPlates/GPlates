@@ -112,3 +112,18 @@ operator*(const FiniteRotation &r1, const FiniteRotation &r2) {
 	UnitQuaternion3D resultant_uq = r1.quat() * r2.quat();
 	return FiniteRotation::CreateFiniteRotation(resultant_uq, r1.time());
 }
+
+
+PolyLineOnSphere
+operator*(const FiniteRotation &r, const PolyLineOnSphere &p) {
+
+	PolyLineOnSphere rot_p;
+
+	for (PolyLineOnSphere::const_iterator it = p.begin();
+	     it != p.end();
+	     it++) {
+
+		rot_p.push_back(r * (*it));
+	}
+	return rot_p;
+}
