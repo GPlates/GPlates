@@ -69,7 +69,7 @@ namespace GPlatesMaths
 			z() const { return _z; }
 
 			real_t
-			mag_sqrd() const {
+			magSqrd() const {
 
 				return ((_x * _x) + (_y * _y) + (_z * _z));
 			}
