@@ -45,10 +45,13 @@ namespace GPlatesFileIO
 
 			/**
 			 * Fill a DataGroup.
+			 * Return NULL on error.
+			 * It is the responsibility of the caller to delete the
+			 * DataGroup.
 			 * @role ConcreteCreator::FactoryMethod() in the Factory
 			 *   Method design pattern (p107).
 			 */
-			GPlatesGeo::DataGroup
+			GPlatesGeo::DataGroup*
 			Read();
 
 		private:

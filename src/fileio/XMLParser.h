@@ -53,12 +53,19 @@ namespace GPlatesFileIO
 			 * Cleanup of returned Element and all of its children will
 			 * be done by the parser.
 			 */
-			Element*
+			const Element*
 			Parse(std::istream&);
 
 		private:
 			Element* _root;     /*< Root of the XML document tree. */
 			XML_Parser _parser;	/*< eXpat parser instance. */
+
+			/**
+			 * Perform various initialisation tasks that are required
+			 * for the parser to be in a state where parsing can begin.
+			 */
+			void
+			Initialise();
 	};
 	
 	struct XMLParser::Element
@@ -66,20 +73,20 @@ namespace GPlatesFileIO
 		typedef std::pair<const std::string, 
 						  const std::string> Attribute;
 		typedef std::list<Attribute> 		 AttributeList;
-		typedef std::list<Element*> 		 ElementList;
+		typedef std::list<Element*>	 		 ElementList;
 
 		Element(const char* name)
-			: _name(new std::string(name)), _attributes(new AttributeList), 
-			  _parent(NULL), _children(new ElementList), 
-			  _content(new std::string) {  }
+			: _name(name), _parent(NULL)
+		{  }
 
 		~Element();
 		
-		std::string*	_name;
-		AttributeList*	_attributes;
+		std::string		_name;
+		AttributeList	_attributes;
+		std::string		_content;
+
 		Element*		_parent;
-		ElementList*	_children;    /*< sub-elements */
-		std::string*	_content;
+		ElementList		_children;    /*< sub-elements */
 	};
 }
 
