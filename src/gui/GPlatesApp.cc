@@ -65,7 +65,7 @@ GPlatesApp::OnInit()
 		 * 'wxGetTranslation(str)'.
 		 */
 		_main_win = new MainWindow
-				(NULL, _(PACKAGE_STRING), wxSize (640, 640));
+				(NULL, _(PACKAGE_STRING), wxSize (600, 500));
 		_main_win->Show (TRUE);
 		SetTopWindow (_main_win);
 
