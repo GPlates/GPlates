@@ -20,7 +20,7 @@
 #include "PointFeature.h"
 #include "ReconstructedPointFeature.h"
 
-GPlatesGeo::ReconstructedPointFeature *
+GPlatesGeo::ReconstructedFeature *
 GPlatesGeo::PointFeature::reconstruct(
  const GPlatesMaths::FiniteRotationSnapshotTable &table) {
 

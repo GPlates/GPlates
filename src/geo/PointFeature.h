@@ -21,10 +21,11 @@
 #define GPLATES_GEO_POINTFEATURE_H
 
 #include "Feature.h"
-#include "ReconstructedPointFeature.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesGeo {
+
+	class ReconstructedFeature;
 
 	/**
 	 * A Feature with point-geometry.
@@ -49,7 +50,7 @@ namespace GPlatesGeo {
 			}
 
 			virtual
-			ReconstructedPointFeature *
+			ReconstructedFeature *
 			reconstruct(
 			 const GPlatesMaths::FiniteRotationSnapshotTable &table);
 

@@ -21,12 +21,11 @@
 #define GPLATES_GEO_RECONSTRUCTEDPOINTFEATURE_H
 
 #include "ReconstructedFeature.h"
+#include "PointFeature.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesGeo {
 
-	class PointFeature;
-		
 	class ReconstructedPointFeature : public ReconstructedFeature {
 
 		public:
