@@ -74,6 +74,11 @@ namespace GPlatesGeo
 			virtual void
 			Visit(const DataGroup&) { }
 
+			virtual void
+			Visit(Tree&) { }
+
+			virtual void
+			Visit(const Tree&) { }
 		private:
 			Visitor() { }
 	};

@@ -63,6 +63,9 @@
  *   Addison-Wesley.
  * - Greiner, B., "Euler Rotations in Plate-Tectonic Reconstructions"
  *   in <i>Computers and Geosciences</i> (1999) No. 25, pp209-216.
+ * - Josuttis, N. (1999)
+ *   <i>The C++ Standard Library: A Tutorial and Reference</i>,
+ *   Addison-Wesley.
  * - Stoustrup, B. (2000)
  *   <i>The C++ Programming Language (3rd Ed.)</i>,
  *   Addison-Wesley.

@@ -32,10 +32,9 @@ namespace GPlatesFileIO
 	 * The superclass for each of the classes that will convert some
 	 * format of input source to the internal gPlates representation.
 	 */
-	// See the comment at declaration of WriterVisitor.
 	class Reader
 	{
-		protected:
+		private:
 			Reader() { }
 	};
 }
