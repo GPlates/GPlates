@@ -9,8 +9,10 @@ CXXFLAGS = @CXXFLAGS@ @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
-LIBS = @LIBS@
-#LIBS = @LIBS@ -lefence
+EXTRA_LIBS = maths/libmaths.a
+
+LIBS = $(EXTRA_LIBS) @LIBS@
+#LIBS = $(EXTRA_LIBS) @LIBS@ -lefence
 
 OBJS = gplates_main.o
 
@@ -31,27 +33,9 @@ clean:
 	rm -f core gmon.out
 
 $(PROGNAME):	$(OBJS)
-		@CXX@ $(LDFLAGS) $^ $(LIBS) -o $@
+	@CXX@ $(LDFLAGS) $^ $(LIBS) -o $@
 
-%.o : %.cc
-	@CXX@ $(CXXFLAGS) -c $< -o $@
-
-
-
-################
-# DEPENDENCIES #
-################
-
-dep:
-	@echo -n "Generating dependencies... "
-	@@CXX@ -MM $(OBJS:.o=.cc) > depend.1
-	@echo "done!"
-
-ifeq (depend.1, $(wildcard depend.1))
-include depend.1
-endif
-
-
+include Rules
 
 distdir = ../@PACKAGE_TARNAME@-@PACKAGE_VERSION@/$(subdir)
 dist:	Makefile $(DISTFILES)

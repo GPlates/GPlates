@@ -1,4 +1,5 @@
 *.o
 Makefile
+Rules
 depend.1
 gplates
