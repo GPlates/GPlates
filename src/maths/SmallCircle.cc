@@ -35,10 +35,10 @@
 
 GPlatesMaths::SmallCircle::SmallCircle (const UnitVector3D &axis,
 					const PointOnSphere &pt)
-	: _normal (axis)
-{
+	: Axial (axis) {
+
 	UnitVector3D point = pt.unitvector ();
-	real_t dp = dot (_normal, point);
+	real_t dp = dot (normal(), point);
 
 	if (abs (dp) >= 1.0)
 		throw IndeterminateResultException (
@@ -47,6 +47,8 @@ GPlatesMaths::SmallCircle::SmallCircle (const UnitVector3D &axis,
 	_theta = acos (dp);
 }
 
+
+#if 0
 unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 				std::vector<PointOnSphere> &points) const
 {
@@ -86,6 +88,8 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 
 	return 2;
 }
+#endif
+
 
 void GPlatesMaths::SmallCircle::AssertInvariantHolds () const
 {

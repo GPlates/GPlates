@@ -21,12 +21,16 @@
  *
  * Authors:
  *   Dave Symonds <ds@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_SMALLCIRCLE_H_
 #define _GPLATES_MATHS_SMALLCIRCLE_H_
 
+#if 0  // No longer needed
 #include <vector>
+#endif
+#include "Axial.h"
 #include "types.h"
 #include "GreatCircle.h"
 #include "PointOnSphere.h"
@@ -38,7 +42,7 @@ namespace GPlatesMaths
 	/** 
 	 * A small circle of a unit sphere.
 	 */
-	class SmallCircle
+	class SmallCircle : public Axial
 	{
 		public:
 			/**
@@ -47,8 +51,8 @@ namespace GPlatesMaths
 			 * @param angle Angle between axis and circumference.
 			 */
 			SmallCircle (const UnitVector3D &axis, real_t angle)
-				: _normal (axis), _theta (angle)
-			{
+				: Axial (axis), _theta (angle) {
+
 				AssertInvariantHolds ();
 			}
 
@@ -59,11 +63,16 @@ namespace GPlatesMaths
 			SmallCircle (const UnitVector3D &axis,
 			             const PointOnSphere &pt);
 
-			UnitVector3D normal () const { return _normal; }
-			real_t theta () const { return _theta; }
+			UnitVector3D
+			normal () const { return axisvector(); }
 
-			real_t radius () const { return sin (_theta); }
+			real_t
+			theta () const { return _theta; }
 
+			real_t
+			radius () const { return sin (_theta); }
+
+#if 0  // No longer needed
 			/**
 			 * Find the intersection points (if any) of this
 			 * SmallCircle and the given GreatCircle. Intersection
@@ -73,12 +82,12 @@ namespace GPlatesMaths
 			 */
 			unsigned int intersection (const GreatCircle &other,
 				std::vector<PointOnSphere> &points) const;
+#endif
 
 		protected:
 			void AssertInvariantHolds () const;
 
 		private:
-			UnitVector3D _normal;
 			real_t _theta;
 	};
 }
