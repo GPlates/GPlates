@@ -28,9 +28,32 @@
 #include "FunctionDomainException.h"
 
 /*
- * FIXME: this value was just a guess. Discover what this value should be.
+ * FIXME: the value below was just a guess. Discover what this value should be.
+ * 
+ * According to:
+ *  http://www.cs.berkeley.edu/~demmel/cs267/lecture21/lecture21.html
+ * the machine epsilon for an IEEE 754-compliant machine is about 1.0e-16.
+ *
+ * According to this document, the machine epsilon (aka "macheps") is
+ * half the distance between 1 and the next largest fp value.
+ *
+ * Not only do I wish to allow for rounding errors due to the limits of
+ * floating-point precision, I also wish to allow for a small accumulation
+ * of such rounding errors.
+ *
+ * If macheps is 1.0e-16, then I -guessed- that it might be a good idea to
+ * allow a flexibility of about two orders of magnitude, ie. 1.0e-14.
+ *
+ * The situations where such flexibility might be really important would
+ * occur when deviations outside the epsilon could cause exceptions to be
+ * thrown.  For example, say we are rotating a unitvector by multiplication
+ * with a matrix.  That's 9 fpmuls and 6 fpadds to perform the rotation,
+ * and then 3 fpmuls and 2 fpadds to check the magnitude of the resulting
+ * unitvector.  That's a lot of error that can accumulate, and that's only
+ * a _single_ rotation.  Of course, bear in mind that I have no background
+ * in numerical analysis (yet...) so this is all just handwaving.  End rant.
  */
-#define REAL_EPSILON (1.0e-15)
+#define REAL_EPSILON (1.0e-14)
 
 using namespace GPlatesMaths;
 
