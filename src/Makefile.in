@@ -13,7 +13,7 @@ LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
 EXTRA_LIBS = global/libglobal.a fileio/libfileio.a geo/libgeo.a \
-	gui/libgui.a maths/libmaths.a
+	maths/libmaths.a gui/libgui.a
 
 LIBS = @LIBS@
 #LIBS = @LIBS@ -lefence

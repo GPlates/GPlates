@@ -26,6 +26,7 @@
 #include <iostream>
 #include <cstdlib>
 #include "Globe.h"
+#include "RenderVisitor.h"
 #include "maths/types.h"
 #include "maths/GreatCircleArc.h"
 
@@ -143,7 +144,7 @@ DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
 
 
 void
-Globe::Paint()
+Globe::Paint(const GPlatesGeo::DataGroup& data)
 {
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
@@ -172,12 +173,9 @@ Globe::Paint()
 		gluSphere(_sphere, _radius, _slices, _stacks);
 		glDepthRange(0.0, 0.9);
 
-		// Draw NURBS
-		// FIXME: should be drawing the data that has been read in.
-#if 0
-		TectonicArcs::list_type::const_iterator iter, end = _arcs->end();
-		for (iter = _arcs->begin(); iter != end; ++iter)
-#endif	
-			DrawArc(GreatCircleArc::CreateGreatCircleArc(UnitVector3D(0,0,1), UnitVector3D(1,0,0)), _nurbs_renderer);
+		// Paint the data.
+		RenderVisitor renderer;
+		renderer.Visit(data);
+
 	glPopMatrix();
 }

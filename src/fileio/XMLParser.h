@@ -32,6 +32,7 @@ extern "C" {
 }
 #include <iostream>
 #include <string>
+#include <utility>  /* std::pair */
 #include <list>
 
 namespace GPlatesFileIO

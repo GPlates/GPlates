@@ -25,7 +25,9 @@
 
 #include <string>
 
+#include <cstring>
 #include "XMLParser.h"
+#include "global/Assert.h"
 
 using namespace GPlatesFileIO;
 typedef XMLParser::Element Element;
@@ -76,14 +78,7 @@ CharacterDataHandler(void* userdata, const XML_Char* str, int len)
 
 XMLParser::XMLParser()
 	: _root(NULL)
-{
-	_parser = XML_ParserCreate(NULL);
-	if (!_parser) {
-		std::cerr << "Could not allocate memory to create parser." 
-			<< std::endl;
-		exit(-1);
-	}
-}
+{  }
 
 XMLParser::~XMLParser()
 {
@@ -99,7 +94,19 @@ XMLParser::Parse(std::istream& istr)
 		delete _root;
 	_root = NULL;
 
-	XML_ParserReset(_parser, NULL);
+	// XXX The following should be done with
+	//   XML_ParserReset(_parser, NULL);
+	// but that function is only a recent addtion to expat.
+	
+	if (_parser)
+		XML_ParserFree(_parser);
+	
+	_parser = XML_ParserCreate(NULL);
+	if (!_parser) {
+		std::cerr << "Could not allocate memory to create parser." 
+			<< std::endl;
+		exit(-1);
+	}
 
 	// Set up callbacks
 	XML_SetElementHandler(_parser,
@@ -107,6 +114,22 @@ XMLParser::Parse(std::istream& istr)
 						  &EndElementHandler);
 	XML_SetCharacterDataHandler(_parser, &CharacterDataHandler);
 	XML_SetUserData(_parser, &_root);
+
+	static const size_t BUFFER_SIZE = 8192;
+	int done;
+	char buf[BUFFER_SIZE];
+	while (cin.read(&buf[0], BUFFER_SIZE)) {
+		size_t len = std::strlen(&buf[0]);
+		done = len < BUFFER_SIZE;
+		if (XML_Parse(_parser, buf, len, done) == 0) {
+			std::cerr << XML_ErrorString(XML_GetErrorCode(_parser))
+				<< " at line " << XML_GetCurrentLineNumber(_parser)
+				<< std::endl;
+			exit(-1);
+		}
+	}
+	GPlatesGlobal::Assert(done, 
+		std::string("Error: Parse loop exited before finish."));
 	
 	return _root;
 }

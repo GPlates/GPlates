@@ -74,7 +74,8 @@ namespace GPlatesGeo
 
 			virtual void
 			Visit(const Tree&) { }
-		private:
+
+		protected:
 			Visitor() { }
 	};
 }

@@ -27,6 +27,7 @@
 #include "GLCanvas.h"
 #include "Colour.h"
 #include "maths/UnitVector3D.h"
+#include "fileio/GPlatesReader.h"
 
 using namespace GPlatesGui;
 
@@ -65,7 +66,9 @@ GLCanvas::OnPaint(wxPaintEvent&)
 	glRotatef(-90.0, 1.0, 0.0, 0.0);
 	glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-	_globe.Paint();
+	// XXX Read Datagroup from proper place
+	GPlatesFileIO::GPlatesReader parser(std::cin);
+	_globe.Paint(parser.Read());
 
 	SwapBuffers();
 }

@@ -28,6 +28,7 @@
 
 #include "OpenGL.h"
 #include "Colour.h"
+#include "geo/DataGroup.h"
 
 namespace GPlatesGui
 {
@@ -58,7 +59,7 @@ namespace GPlatesGui
 			GetElevation() { return _elevation; }
 
 			void
-			Paint();
+			Paint(const GPlatesGeo::DataGroup&);
 
 		private:
 			/**
