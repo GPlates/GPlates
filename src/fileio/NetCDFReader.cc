@@ -202,7 +202,18 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	num_x = index_t ((x_max - x_min) / x_step + 1);
 	num_y = index_t ((y_max - y_min) / y_step + 1);
 
-	// TODO: handle the case where x is actually latitude, etc.
+	///////////////////////////////////////////////////////////
+	// BIG FIXME: The actual ordering of data in the grid is
+	//	starting from the top-left, working to the right,
+	//	then down a row, etc. For example,
+	//			1  2  3  4
+	//			5  6  7  8
+	//			9 10 11 12
+	//	would go in numerical order, with latitude increasing
+	//	upwards, and longitude increasing to the right.
+	///////////////////////////////////////////////////////////
+
+	// TODO: handle the case where x is actually longitude, etc.
 
 	// TODO: verify that this attribute actually exists, before reading it!
 	NcAtt *z_unit_att = ncf->get_var ("z_range")->get_att ("units");
@@ -243,43 +254,43 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	}
 
 	// FIXME: I'm taking a guess, and hoping that this all happens in
-	//	y-major (i.e. along the x-direction first) order...
-	float *z = new float[num_x];
+	//	x-major (i.e. along the y-direction first) order...
+	float *z = new float[num_y];
 	index_t cnt = 0;
 	bool cancelled = false;
 	if (dlg)
 		dlg->Update (0, "Loading grid...");
-	for (index_t j = 0; j < num_y; ++j) {
-		index_t real_j = num_y - j - 1;	// flip top/bottom
+	for (index_t i = 0; i < num_x; ++i) {
 		if (dlg) {
-			double perc = 100 * double (j) / double (num_y);
+			double perc = 100 * double (i) / double (num_x);
 			int val = int (floor (perc));
 			std::ostringstream oss;
 			oss << "Loading grid (" << std::setprecision (0)
 				<< std::fixed << perc << "%)...";
-			if (dlg->Update (val, oss.str ().c_str ()) == FALSE) {
+			wxString w_str (oss.str ().c_str ());
+			if (dlg->Update (val, w_str) == FALSE) {
 				cancelled = true;
 				break;
 			}
 		}
-		z_var->set_cur (j * num_x);
-		z_var->get (z, num_x);		// assumes it is ncFloat data
-		for (index_t i = 0; i < num_x; ++i, ++cnt) {
-			if (isnan (z[i]))
+		z_var->set_cur (i * num_y);
+		z_var->get (z, num_y);		// assumes it is ncFloat data
+		for (index_t j = 0; j < num_y; ++j, ++cnt) {
+			if (isnan (z[j]))
 				continue;
 
 			GPlatesGeo::GeologicalData::Attributes_t attr =
 				GPlatesGeo::GeologicalData::NO_ATTRIBUTES;
 			// TODO: insert properly when StringValue is
-			//	actually useful (value is in z[i])
+			//	actually useful (value is in z[j])
 			GPlatesGeo::GridElement *elt =
 					new GPlatesGeo::GridElement (attr);
-			gdata->Add (elt, i, real_j);
+			gdata->Add (elt, i, j);
 
 #ifdef DEBUG_INSERTIONS
 			double lat, lon;
 			pos (gdata->resolve (i, real_j), lat, lon);
-			std::cerr << std::setprecision (1) << std::fixed
+			std::cerr << std::setprecision (2) << std::fixed
 				<< "Adding '" << z[i] << "' to (lat="
 				<< lat << ", long=" << lon << ").\n";
 #endif
