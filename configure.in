@@ -1,7 +1,7 @@
 # $Id$
-# Configure script for gPlates
+# Configure script for GPlates
 
-AC_INIT([gPlates], [0.001])
+AC_INIT([GPlates], [0.001])
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/geo/GeologicalData.h)
 AC_CONFIG_HEADERS(src/global/config.h)
@@ -66,11 +66,45 @@ AC_CXX_HAVE_STL
 if test "$ac_cv_cxx_have_stl" != yes; then
 	AC_MSG_ERROR([no C++ STL present])
 fi
+
+# XXX: Do we *really* need this.
 AC_CXX_RTTI
 if test "$ac_cv_cxx_rtti" != yes; then
 	AC_MSG_ERROR([compiler doesn't support RTTI])
 fi
 
+
+## 
+# Library dependencies.
+##
+AC_CHECK_LIB(GL, glOrtho, , AC_MSG_ERROR([
+!!
+!!  You don't appear to have the OpenGL shared library installed.
+!!  It may be obtained from
+!!     http://www.opengl.org
+!!]))
+
+AC_CHECK_LIB(GLU, gluNurbsCurve, , AC_MSG_ERROR([
+!!
+!!  You don't appear to have the OpenGL Utility Library (GLU) 
+!!  shared library installed.  It may be obtained from 
+!!     http://www.opengl.org
+!!]))
+
+AC_CHECK_LIB(glut, glutMainLoop, , AC_MSG_ERROR([
+!!
+!!  You don't appear to have the OpenGL Utility Toolkit (glut) 
+!!  shared library installed.  It may be obtained from 
+!!     http://www.opengl.org
+!!]))
+
+## XXX: Enable this when we work out how to test for a C++ class library.
+#AC_CHECK_LIB(xerces-c, XMLPlatformUtils::Initialize, , AC_MSG_ERROR([
+#!!
+#!!  You don't appear to have the Xerces C++ XML Parser
+#!!  shared library installed.  It may be obtained from
+#!!     http://xml.apache.org
+#!!]))
 
 # Check for dot (from graphviz package) for doxygen.conf
 # WARNING: does not verify this is the _real_ dot program we want
@@ -175,7 +209,8 @@ AC_OUTPUT(Makefile
 	src/fileio/Makefile
 	src/geo/Makefile
 	src/global/Makefile
-	src/maths/Makefile)
+	src/maths/Makefile
+	src/gui/Makefile)
 
 
 
