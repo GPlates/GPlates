@@ -66,18 +66,20 @@ static void
 HandleGPMLFile(const std::string& filename)
 {
 	std::ifstream file(filename.c_str());
-	if (!file) {
+	if (!file) 
+	{
 		OpenFileErrorMessage(filename, "No GPML data was loaded.");
 		return;
 	}
 
-	try {
-
+	try 
+	{
 		GPlatesReader reader(file);
 		DataGroup *data = reader.Read();
 		GPlatesState::Data::SetDataGroup(data);
-
-	} catch (const Exception& e) {
+	} 
+	catch (const Exception& e)
+	{
 		std::ostringstream msg, result;
 
 		msg << "Parse error occurred.  Error message:\n"
@@ -208,7 +210,7 @@ AddLinesFromPlate(DataGroup* data, const PlatesParser::Plate& plate)
 	if (plate._polylines.size() <= 0) {
 
 		/* 
-		 * Some how we got this far with an plate.  Better
+		 * Some how we got this far with only one plate.  Better
 		 * throw a reggie, well a FileFormatException anyway.
 		 */
 		std::ostringstream oss;
@@ -219,15 +221,16 @@ AddLinesFromPlate(DataGroup* data, const PlatesParser::Plate& plate)
 
 	std::list<PolyLine>::const_iterator iter = plate._polylines.begin();
 
-	// A polyline with a single point is actually PointData.
-	if (plate._polylines.size() == 1) {
+	for ( ; iter != plate._polylines.end(); ++iter)
+	{
+		// A polyline with a single point is actually PointData.
+		if (iter->_points.size() == 1)
+		{
+			PointData* pd = GetPointDataFromPolyLine(*iter);
+			data->Add(pd);
+			continue;
+		}
 
-		PointData* pd = GetPointDataFromPolyLine(*iter);
-		data->Add(pd);
-		return;
-	}
-
-	for ( ; iter != plate._polylines.end(); ++iter) {
 		std::list< LineData* > ld;
 		GetLineDataListFromPolyLine(*iter, ld);
 
