@@ -2,7 +2,6 @@
 
 /**
  * @file 
- * File specific comments.
  *
  * Most recent change:
  *   $Author$
@@ -38,6 +37,7 @@
 #include "fileio/PlatesRotationParser.h"
 #include "maths/OperationsOnSphere.h"
 #include "fileio/PlatesBoundaryParser.h"
+#include "fileio/PlatesPostParseTranslator.h"
 #include "fileio/GPlatesReader.h"
 #include "fileio/GPlatesWriter.h"
 #include "fileio/FileIOException.h"
@@ -50,219 +50,81 @@ using namespace GPlatesControls;
 using namespace GPlatesFileIO;
 using namespace GPlatesGeo;
 
-static void
-OpenFileErrorMessage(const std::string &fname, const char *fail_result_msg) {
-
-	std::ostringstream msg;
-	msg << "The file \"" << fname << "\" could not\n"
-	 << "be opened for reading.";
-
-	Dialogs::ErrorMessage("Unable to open file", msg.str().c_str(),
-	 fail_result_msg);
-}
-
-
-static void
-HandleGPMLFile(const std::string& filename)
+namespace
 {
-	std::ifstream file(filename.c_str());
-	if (!file) 
-	{
-		OpenFileErrorMessage(filename, "No GPML data was loaded.");
-		return;
-	}
-
-	try 
-	{
-		GPlatesReader reader(file);
-		DataGroup *data = reader.Read();
-		GPlatesState::Data::SetDataGroup(data);
-	} 
-	catch (const Exception& e)
-	{
-		std::ostringstream msg, result;
-
-		msg << "Parse error occurred.  Error message:\n"
-			<< e;
-		
-		result << "No GPML data was loaded from \"" << filename
-			<< "\"." << std::endl;
-	
-		Dialogs::ErrorMessage(
-			"Error encountered.",
-			msg.str().c_str(),
-			result.str().c_str());
-	}
-}
-
-
-static GPlatesMaths::LatLonPoint
-ConvertPlatesParserLatLonToMathsLatLon(const PlatesParser::LatLonPoint& point) 
-{
-	/*
-	 * Note that GPlates considers a valid longitude to be a value in
-	 * the half-open range (-180.0, 180.0].  Note that this appears
-	 * to be different to the range used by PLATES, which seems to be 
-	 * [-360.0, 360.0].
+	/**
+	 * @todo Remove this definition, since it is a duplicate of
+	 *   a function in PlatesPostParseTranslator.
 	 */
-	GPlatesMaths::real_t lat(point._lat);
-	GPlatesMaths::real_t lon(point._lon);
-	if (lon <= -180.0) lon += 360.0;
-	else if (lon > 180.0) lon -= 360.0;
-
-	return GPlatesMaths::LatLonPoint::CreateLatLonPoint(lat, lon);
-}
-
-
-namespace
-{
-	// List of LatLonPoint Lists.  XXX There is no God.
-	typedef std::list< std::list< PlatesParser::LatLonPoint > > LLLPL_t;
-}
-
-static void
-ConvertPolyLineToListOfLatLonPointLists(const PlatesParser::PolyLine& line,
-	LLLPL_t& plate_segments)
-{
-	std::list< PlatesParser::LatLonPoint > llpl;
-
-	std::list< PlatesParser::BoundaryLatLonPoint >::const_iterator 
-		iter = line._points.begin();
-	// Handle first point
-	llpl.push_back(iter->first);
-	++iter;
-
-	for ( ; iter != line._points.end(); ++iter) {
-		if (iter->second == PlatesParser::PlotterCodes::PEN_UP) {
-			// We need to split this line, so push_back a copy of
-			// the line so far
-			plate_segments.push_back(llpl);
-			llpl.clear();  // start a new segment
-		}
-		llpl.push_back(iter->first);
-	}
-	// There should always be one segment left to add.
-	if (llpl.size())
-		plate_segments.push_back(llpl);
-}
-
-static void
-GetLineDataListFromPolyLine(const PlatesParser::PolyLine& line, 
-	std::list< LineData* >& result)
-{
-	using namespace GPlatesMaths;
-
-	GPlatesGlobal::rid_t plate_id = line._header._plate_id;
-	TimeWindow lifetime = line._header._lifetime;
-	
-	// Filter line._points such that it is split up according to PlotterCode.
-
-	LLLPL_t plate_segments;
-	ConvertPolyLineToListOfLatLonPointLists(line, plate_segments);
-
-	LLLPL_t::const_iterator iter = plate_segments.begin();
-	for ( ; iter != plate_segments.end(); ++iter) {
-		std::list< LatLonPoint > llpl;
-		std::transform(iter->begin(), iter->end(), 
-		               std::back_inserter(llpl),
-		               &ConvertPlatesParserLatLonToMathsLatLon);
-		llpl.unique();  // Eliminate identical consecutive points.
-	
-		// Point is "commented"
-		if (llpl.size() <= 1)
-			continue;
-		
-		PolyLineOnSphere polyline =
-		 OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(llpl);
-		
-		result.push_back(new LineData(GeologicalData::NO_DATATYPE, 
-			plate_id, lifetime, GeologicalData::NO_ATTRIBUTES, polyline));
-	}
-}
-
-static PointData*
-GetPointDataFromPolyLine(const PlatesParser::PolyLine& line)
-{
-	using namespace GPlatesMaths;
-
-	// FIXME: This should be factored out from here and 
-	// GetLineDataFromPolyLine.
-	GPlatesGlobal::rid_t plate_id = line._header._plate_id;
-	TimeWindow lifetime = line._header._lifetime;
-
-	// Get an iterator to the first and only point in the line.
-	std::list< PlatesParser::BoundaryLatLonPoint >::const_iterator 
-		point = line._points.begin();
-
-	LatLonPoint 
-		llp = ConvertPlatesParserLatLonToMathsLatLon(point->first);
-	PointOnSphere
-		pos = OperationsOnSphere::convertLatLonPointToPointOnSphere(llp);
-	return new PointData(GeologicalData::NO_DATATYPE, plate_id,
-		lifetime, GeologicalData::NO_ATTRIBUTES, pos);
-}
-
-static void
-AddLinesFromPlate(DataGroup* data, const PlatesParser::Plate& plate)
-{
-	using namespace PlatesParser;
-
-	if (plate._polylines.size() <= 0) {
-
-		/* 
-		 * Some how we got this far with only one plate.  Better
-		 * throw a reggie, well a FileFormatException anyway.
-		 */
-		std::ostringstream oss;
-		oss << "No data found on plate with ID: "
-		 << plate._plate_id << std::endl;
-		throw FileFormatException(oss.str().c_str());
-	}
-
-	std::list<PolyLine>::const_iterator iter = plate._polylines.begin();
-
-	for ( ; iter != plate._polylines.end(); ++iter)
+	GPlatesMaths::LatLonPoint
+	ConvertPlatesParserLatLonToMathsLatLon(
+		const PlatesParser::LatLonPoint& point) 
 	{
-		// A polyline with a single point is actually PointData.
-		if (iter->_points.size() == 1)
+		/*
+		 * Note that GPlates considers a valid longitude to be a value in
+		 * the half-open range (-180.0, 180.0].  Note that this appears
+		 * to be different to the range used by PLATES, which seems to be 
+		 * [-360.0, 360.0].
+		 */
+		GPlatesMaths::real_t lat(point._lat);
+		GPlatesMaths::real_t lon(point._lon);
+		if (lon <= -180.0) 
+			lon += 360.0;
+		else if (lon > 180.0)
+			lon -= 360.0;
+
+		return GPlatesMaths::LatLonPoint::CreateLatLonPoint(lat, lon);
+	}
+
+	void
+	OpenFileErrorMessage(const std::string &fname, const char *fail_result_msg) {
+
+		std::ostringstream msg;
+		msg << "The file \"" << fname << "\" could not\n"
+		 << "be opened for reading.";
+
+		Dialogs::ErrorMessage("Unable to open file", msg.str().c_str(),
+		 fail_result_msg);
+	}
+
+
+	void
+	HandleGPMLFile(const std::string& filename)
+	{
+		std::ifstream file(filename.c_str());
+		if (!file) 
 		{
-			PointData* pd = GetPointDataFromPolyLine(*iter);
-			data->Add(pd);
-			continue;
+			OpenFileErrorMessage(filename, "No GPML data was loaded.");
+			return;
 		}
 
-		std::list< LineData* > ld;
-		GetLineDataListFromPolyLine(*iter, ld);
+		try 
+		{
+			GPlatesReader reader(file);
+			DataGroup *data = reader.Read();
+			GPlatesState::Data::SetDataGroup(data);
+		} 
+		// XXX Factor this shit out, MAN.
+		catch (const Exception& e)
+		{
+			std::ostringstream msg, result;
 
-		std::list< LineData* >::iterator jter = ld.begin();
-		for ( ; jter != ld.end(); ++jter)
-			data->Add(*jter);
+			msg << "Parse error occurred.  Error message:\n"
+				<< e;
+			
+			result << "No GPML data was loaded from \"" << filename
+				<< "\"." << std::endl;
+		
+			Dialogs::ErrorMessage(
+				"Error encountered.",
+				msg.str().c_str(),
+				result.str().c_str());
+		}
 	}
-}
 
 
-static void
-LoadDataGroupFromPlatesDataMap(const PlatesParser::PlatesDataMap& map)
-{
-	DataGroup *data = new DataGroup(GeologicalData::NO_DATATYPE,
-	                                GeologicalData::NO_ROTATIONGROUP,
-	                                GeologicalData::NO_TIMEWINDOW,
-	                                GeologicalData::NO_ATTRIBUTES);
+	using namespace GPlatesState;
 
-	PlatesParser::PlatesDataMap::const_iterator iter = map.begin();
-	for ( ; iter != map.end(); ++iter) {
-		// Insert the PlatesParser::Plate into the new DataGroup
-		AddLinesFromPlate(data, iter->second);
-	}
-
-	GPlatesState::Data::SetDataGroup(data);
-}
-
-
-using namespace GPlatesState;
-
-namespace
-{
 	class AddGeoDataToDrawableMap
 	{
 		public:
@@ -298,55 +160,57 @@ namespace
 		private:
 			Data::DrawableMap_type* _map;
 	};
-}
 
-static void
-ConvertDataGroupToDrawableDataMap(DataGroup* data)
-{
-	Data::DrawableMap_type* map = new Data::DrawableMap_type;
+	void
+	ConvertDataGroupToDrawableDataMap(DataGroup* data)
+	{
+		Data::DrawableMap_type* map = new Data::DrawableMap_type;
 
-	AddGeoDataToDrawableMap AddData(map);
-	AddData(data); 
-	
-	Data::SetDrawableData(map);
-}
-
-static void
-HandlePLATESFile(const std::string& filename)
-{
-	std::ifstream file(filename.c_str());
-	if (!file) {
-		OpenFileErrorMessage(filename, "No PLATES data was loaded.");
-		return;
+		AddGeoDataToDrawableMap AddData(map);
+		AddData(data); 
+		
+		Data::SetDrawableData(map);
 	}
 
-	// filename is good for reading.
-	PlatesParser::PlatesDataMap map;
-	try {
+	void
+	HandlePLATESFile(const std::string& filename)
+	{
+		std::ifstream file(filename.c_str());
+		if (!file) {
+			OpenFileErrorMessage(filename, "No PLATES data was loaded.");
+			return;
+		}
 
-		PlatesParser::ReadInPlateBoundaryData(filename.c_str(), 
-											  file,
-											  map);
-		LoadDataGroupFromPlatesDataMap(map);
+		// filename is good for reading.
+		PlatesParser::PlatesDataMap map;
+		try 
+		{
+			PlatesParser::
+				ReadInPlateBoundaryData(filename.c_str(), file, map);
+			DataGroup *data = 
+				PlatesPostParseTranslator::
+					GetDataGroupFromPlatesDataMap(map);
 
-	} catch (const FileIOException& e) {
-
-		std::ostringstream msg;
-		msg << "An error was encountered in \"" << filename 
-			<< "\"" << std::endl
-			<< "Error message: " << std::endl << e;
-		Dialogs::ErrorMessage(
-			"Error in data file",
-			msg.str().c_str(),
-			"No PLATES data was loaded.");  
-
-	} catch (const GPlatesGlobal::Exception& ex) {
-
-		std::cerr << "Internal exception: " << ex << std::endl;
-		exit(1);
+			GPlatesState::Data::SetDataGroup(data);
+		} 
+		catch (const FileIOException& e)
+		{
+			std::ostringstream msg;
+			msg << "An error was encountered in \"" << filename 
+				<< "\"" << std::endl
+				<< "Error message: " << std::endl << e;
+			Dialogs::ErrorMessage(
+				"Error in data file",
+				msg.str().c_str(),
+				"No PLATES data was loaded.");  
+		} 
+		catch (const GPlatesGlobal::Exception& ex)
+		{
+			std::cerr << "Internal exception: " << ex << std::endl;
+			exit(1);
+		}
 	}
 }
-
 
 void
 File::OpenData(const std::string& filename)
