@@ -25,14 +25,15 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <algorithm>
 #include "Globe.h"
-#include "RenderVisitor.h"
 #include "maths/types.h"
 #include "maths/GreatCircleArc.h"
-#include "state/Data.h"
+#include "state/Layout.h"
 
 using namespace GPlatesGui;
 using namespace GPlatesMaths;
+using namespace GPlatesState;
 
 const GLfloat Globe::DEFAULT_RADIUS = 1.0;
 const Colour Globe::DEFAULT_COLOUR = Colour::WHITE;
@@ -43,14 +44,6 @@ QuadricError(GLenum error)
 	std::cerr << "Quadric Error: " << gluErrorString(error) << std::endl;
 	exit(1);
 }
-
-static void
-NurbsError(GLenum error)
-{
-	std::cerr << "NURBS Error: " << gluErrorString(error) << std::endl;
-	exit(1);
-}
-
 Globe::Globe(Colour colour, GLfloat radius, GLint slices, GLint stacks)
 	: _colour(colour), _radius(radius), _slices(slices), 
 	  _stacks(stacks), _meridian(0.0), _elevation(0.0)
@@ -61,10 +54,6 @@ Globe::Globe(Colour colour, GLfloat radius, GLint slices, GLint stacks)
 	gluQuadricDrawStyle(_sphere, GLU_LINE);	// Draw wireframe
 	gluQuadricCallback(_sphere, GLU_ERROR, 
 		reinterpret_cast<void (*)()>(&QuadricError));
-	
-	_nurbs_renderer = gluNewNurbsRenderer();
-	gluNurbsCallback(_nurbs_renderer, GLU_ERROR,
-		reinterpret_cast<void (*)()>(&NurbsError));
 }
 
 void
@@ -86,71 +75,70 @@ Globe::NormaliseMeridianElevation()
 	}
 }
 
-
-#if 0
 static void
-DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
+CallVertexWithPoint(const UnitVector3D& uv)
 {
-	using GPlatesMaths::sqrt;
-
-	// FIXME: Work out whether the arc is visible before doing these
-	// calculations (e.g. back-face culling).
-
-	UnitVector3D a = arc.startPoint(), b = arc.endPoint();
-
-	// The knot vector has (degree + length(ctrl_points) - 1)
-	// elements.
-	static const GLsizei KNOT_SIZE = 6;
-	GLfloat knots[KNOT_SIZE] = {
-		0.0, 0.0, 0.0, 1.0, 1.0, 1.0
-	};
-
-	// FIXME: There should be a way to avoid copying these values.
-	GLfloat ctrl_points[3][4] = {
-		{ a.x().dval(), a.y().dval(), a.z().dval(), 1.0 },
-		{ 0.0, 0.0, 0.0, 0.0 },  // Dummy value, still to be calculated.
-		{ b.x().dval(), b.y().dval(), b.z().dval(), 1.0 }
-	};
-
-	static const double ONE_DIV_ROOT_TWO = 1.0 / std::sqrt(2.0);
-
-	// Calculate the weight of the control point.
-	ctrl_points[1][3] = 
-		static_cast<GLfloat>((ONE_DIV_ROOT_TWO
-		 * sqrt(1.0 + dot(a, b))).dval());
-
-	// Calculate the control point itself.
-	// 1) a + b
-	ctrl_points[1][0] = a.x().dval() + b.x().dval();
-	ctrl_points[1][1] = a.y().dval() + b.y().dval();
-	ctrl_points[1][2] = a.z().dval() + b.z().dval();
-	// 2) scale = 1 / size
-	GLfloat ctrlptscale = static_cast<GLfloat>(
-		1.0 / std::sqrt(ctrl_points[1][0]*ctrl_points[1][0] +
-		 ctrl_points[1][1]*ctrl_points[1][1] + 
-		 ctrl_points[1][2]*ctrl_points[1][2])
+	glVertex3d(
+		uv.x().dval(),
+		uv.y().dval(),
+		uv.z().dval()
 	);
-	ctrl_points[1][0] *= ctrlptscale;
-	ctrl_points[1][1] *= ctrlptscale;
-	ctrl_points[1][2] *= ctrlptscale;
-
-	// FIXME: Change the colour depending on the line.
-	glColor3fv(Colour::RED);
-	
-	// Draw the NURBS.
-	gluBeginCurve(renderer);
-		gluNurbsCurve(renderer, KNOT_SIZE, &knots[0], 4, 
-		 &ctrl_points[0][0], 3, GL_MAP1_VERTEX_4);
-	gluEndCurve(renderer);
 }
-#endif
+
+static void
+CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin, 
+				   const PolyLineOnSphere::const_iterator& end)
+{
+	PolyLineOnSphere::const_iterator iter = begin;
+
+	glBegin(GL_LINE_STRIP);
+		CallVertexWithPoint(iter->startPoint());
+		for ( ; iter != end; ++iter)
+			CallVertexWithPoint(iter->endPoint());
+	glEnd();
+}
+
+static void
+PaintPointDataPos(const Layout::PointDataPos& pointdata)
+{
+	const PointOnSphere& point = pointdata.second;
+	CallVertexWithPoint(point.unitvector());
+}
+
+static void
+PaintLineDataPos(const Layout::LineDataPos& linedata)
+{
+	const PolyLineOnSphere& line = linedata.second;
+
+	CallVertexWithLine(line.begin(), line.end());
+}
+
+static void
+PaintPoints()
+{
+	Layout::PointDataLayout::const_iterator 
+		points_begin = Layout::PointDataLayoutBegin(),
+		points_end   = Layout::PointDataLayoutEnd();
+
+	glBegin(GL_POINTS);
+		for_each(points_begin, points_end, PaintPointDataPos);
+	glEnd();
+}
+
+
+static void
+PaintLines()
+{
+	Layout::LineDataLayout::const_iterator 
+		lines_begin = Layout::LineDataLayoutBegin(),
+		lines_end   = Layout::LineDataLayoutEnd();
+	
+	for_each(lines_begin, lines_end, PaintLineDataPos);
+}
 
 void
 Globe::Paint()
 {
-	const GPlatesGeo::DataGroup* data = 
-		GPlatesState::Data::GetDataGroup();
-
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
 		// Ensure that the meridian and elevation are in the acceptable 
@@ -178,13 +166,16 @@ Globe::Paint()
 		gluSphere(_sphere, _radius, _slices, _stacks);
 		glDepthRange(0.0, 0.9);
 
-		if (data) {
-			glPointSize(5.0f);
-			// Paint the data.
-			glColor3fv(Colour::RED);
-			RenderVisitor renderer;
-			renderer.Visit(*data);
-		}
+		glPointSize(5.0f);
+		
+		/* 
+		 * Paint the data.
+		 */
+		glColor3fv(Colour::GREEN);
+		PaintPoints();  // Points are yellow.
+		
+		glColor3fv(Colour::RED);
+		PaintLines();  // lines are red.
 
 	glPopMatrix();
 }
