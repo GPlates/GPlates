@@ -113,7 +113,8 @@ DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
 
 	// Calculate the weight of the control point.
 	ctrl_points[1][3] = 
-		static_cast<GLfloat>((ONE_DIV_ROOT_TWO * sqrt(1.0 + a*b)).dval());
+		static_cast<GLfloat>((ONE_DIV_ROOT_TWO
+		 * sqrt(1.0 + dot(a, b))).dval());
 
 	// Calculate the control point itself.
 	// 1) a + b
