@@ -63,6 +63,13 @@ namespace GPlatesGeo
 			~GridData ();
 
 			/**
+			 * Return the GPlatesMaths::PointOnSphere corresponding
+			 * to the grid location @a x and @a y.
+			 */
+			GPlatesMaths::PointOnSphere resolve (index_t x, index_t y) const
+					{ return _lattice.resolve (x, y); }
+
+			/**
 			 * Add @a elem to the grid.
 			 */
 			void Add (const GridElement *element, index_t x1, index_t x2);

@@ -100,6 +100,7 @@ void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 		memset (new_rows, 0, (grid->offset - x1) * sizeof (GridRowPtr));
 		grid->length = new_len;
 		grid->rows = new_rows;
+		grid->offset = x1;
 	}
 
 	GridRow *row = grid->rows[x1 - grid->offset];
@@ -136,6 +137,7 @@ void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 		memset (new_elems, 0, (row->offset - x2) * sizeof (GridElementPtr));
 		row->length = new_len;
 		row->data = new_elems;
+		row->offset = x2;
 	}
 
 	if (row->data[x2 - row->offset]) {
