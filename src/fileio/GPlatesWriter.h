@@ -53,6 +53,7 @@ namespace GPlatesFileIO
 			Visit(const GPlatesGeo::DataGroup*);
 
 			/**
+			 * Print the accumulated information to the given stream.
 			 * @warning After a call to PrintOut, no more "Visit()ing" can occur
 			 *   because the internal representation is "frozen"; i.e. the method
 			 *   std::ostringstream::freeze() is called on _accum.
@@ -66,12 +67,6 @@ namespace GPlatesFileIO
 			 * Holds the accumulated information.
 			 */
 			std::ostringstream _accum;
-
-			/**
-			 * The current level of indentation.  Used to make the output
-			 * a bit more readable.
-			 */
-			int _indent;
 	};
 }
 

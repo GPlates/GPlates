@@ -29,6 +29,7 @@
 
 #include "GPlatesReader.h"
 #include "XMLParser.h"
+#include "FileFormatException.h"
 #include "global/types.h"
 #include "maths/types.h"
 #include "maths/OperationsOnSphere.h"
@@ -48,30 +49,110 @@ using namespace GPlatesMaths;
 using namespace GPlatesGeo;
 
 typedef XMLParser::Element Element;
-typedef Element::ElementList ElementList;
+typedef Element::ElementList_type ElementList;
+
+static void
+ReadError(const char* was_reading, unsigned int line)
+{
+	std::ostringstream oss;
+	oss << "Error when reading " << was_reading << " (line " 
+		<< line << ")." << std::endl;
+	throw FileFormatException(oss.str().c_str());
+}
+
+static void
+InvalidDataError(const char* datatype, const char* got,
+		const char* wanted, unsigned int line)
+{
+	std::ostringstream oss;
+	oss << "Invald " << datatype << " data encountered on line "
+		<< line << "." << std::endl
+		<< "Got: " << got << std::endl
+		<< "Wanted: " << wanted << std::endl;
+	throw FileFormatException(oss.str().c_str());
+}
+
+static void
+MultipleDefinitionError(const char* of_elem, const char* in_elem, 
+	const ElementList& list, unsigned int line)
+{
+	std::ostringstream oss;
+	oss << "Mulitple <" << of_elem << "> elements defined in element "
+		<< in_elem << " (line " << line << ")." << std::endl
+		<< "Offending data: " << std::endl;
+	
+	ElementList::const_iterator iter = list.begin();
+	for ( ; iter != list.end(); ++iter)
+	{
+		oss << "\t->  " << (*iter)->GetContent() << " (line "
+			<< (*iter)->GetLineNumber() << ")" << std::endl;
+	}
+	
+	throw FileFormatException(oss.str().c_str());
+}
+
+template < typename T >
+static T
+ReadUnique(const Element* element, const char* to_read, 
+	const T& default_value)
+{
+	const ElementList& nodes = element->GetChildren(to_read);
+	if (nodes.size() > 1)
+	{
+		MultipleDefinitionError(to_read, element->GetName().c_str(),
+			nodes, element->GetLineNumber());
+	}
+	else if (nodes.empty())
+	{
+		// No data was defined, so return the default
+		return default_value;
+	}
+	
+	const Element* node = *nodes.begin();
+
+	std::istringstream iss(node->GetContent());
+	T data;
+
+	if ( ! (iss >> data))
+		ReadError(to_read, node->GetLineNumber());
+	
+	return data;
+}
 
 /**
  * Extract the RotationGroupId from the given string.
  */
 static GPlatesGlobal::rid_t
-GetRotationGroupId(const Element*)
+GetRotationGroupId(const Element* element)
 {
-	return GeologicalData::NO_ROTATIONGROUP;
+	// FIXME: When tables are implemented, should check that the
+	// return value is a valid plate.
+	return rid_t(ReadUnique< unsigned int >(element, "plateid",
+		1000000));
 }
 
 /**
  * Extract the DataType from the given string.
  */
 static GeologicalData::DataType_t
-GetDataType(const Element*)
+GetDataType(const Element* element)
 {
-	return GeologicalData::NO_DATATYPE;
+	return ReadUnique< GeologicalData::DataType_t >(element, "datatype",
+		GeologicalData::NO_DATATYPE);
 }
 
 static TimeWindow
-GetTimeWindow(const Element*)
+GetTimeWindow(const Element* element)
 {
-	return GeologicalData::NO_TIMEWINDOW;
+	GPlatesGlobal::fpdata_t appearance, disappearance;
+
+	appearance = ReadUnique< GPlatesGlobal::fpdata_t >(element, 
+		"appearance", 0.0);
+
+	disappearance = ReadUnique< GPlatesGlobal::fpdata_t >(element, 
+		"disappearance", 0.0);
+	
+	return TimeWindow(appearance, disappearance);
 }
 
 static GeologicalData::Attributes_t
@@ -81,13 +162,28 @@ GetAttributes(const Element*)
 }
 
 static LatLonPoint
-GetLatLonPoint(const std::string& text)
+GetLatLonPoint(const std::string& text, unsigned int line)
 {
 	std::istringstream istr(text);
 	
 	real_t lat, lon;
-	istr >> lat >> lon;
-	// FIXME: check return value of istr.
+	if ( ! (istr >> lat))
+		ReadError("latitude", line);
+	
+	if ( ! (istr >> lon))
+		ReadError("longitude", line);
+	
+	if ( ! LatLonPoint::isValidLat(lat))
+	{
+		InvalidDataError("latitude", text.c_str(), 
+			"in range [-90.0, 90.0]", line);
+	}
+						
+	if ( ! LatLonPoint::isValidLon(lon))
+	{
+		InvalidDataError("longitude", text.c_str(),
+			"in range (-180.0, 180.0]", line);
+	}
 	
 	return LatLonPoint::CreateLatLonPoint(lat, lon);
 }
@@ -95,102 +191,95 @@ GetLatLonPoint(const std::string& text)
 static LatLonPoint
 GetCoord(const Element* element)
 {
-	const std::string& text = element->_content;
-	if (text.empty()) {
-		std::cerr << "Error: Empty coord element." << std::endl;
-		// FIXME: Dummy value; should allow the parser to skip
-		// such values.
-		return LatLonPoint::CreateLatLonPoint(0.0, 0.0);
-	}
-
-	return GetLatLonPoint(text);
+	return GetLatLonPoint(element->GetContent(), element->GetLineNumber());
 }
 
-static PointData
+static PointData*
 GetPointData(const Element* element)
 {
-	const ElementList& list = element->_children;
-	ElementList::const_iterator iter = list.begin();
-
-	for ( ; iter != list.end(); ++iter)
-		if ((*iter)->_name == "coord")
-			break;
+	const ElementList& list = element->GetChildren("coord");
 	
-	if (iter == list.end()) {
-		std::cerr << "Empty coord." << std::endl;
-		exit(-1);
+	if (list.empty())
+	{
+		std::ostringstream oss;
+		oss << "No coord element found in <pointdata> at line "
+			<< element->GetLineNumber() << "." << std::endl;
+		throw FileFormatException(oss.str().c_str());
 	}
-	return PointData(GetDataType(element), 
+	return new PointData(GetDataType(element), 
 					 GetRotationGroupId(element), 
 					 GetTimeWindow(element),
 					 GetAttributes(element),
 					 OperationsOnSphere::
-					  convertLatLonPointToPointOnSphere(GetCoord(*iter)));
+					  convertLatLonPointToPointOnSphere(GetCoord(*list.begin())));
 }
 
 static PolyLineOnSphere
 GetCoordList(const Element* element)
 {
-	const ElementList& nodes = element->_children;
+	const ElementList& nodes = element->GetChildren("coord");
 	std::list<LatLonPoint> coordlist;
 	
-	ElementList::const_iterator iter = nodes.begin();
-	for ( ; iter != nodes.end(); ++iter) {
-		if ((*iter)->_name == "coord")
-			coordlist.push_back(GetCoord(*iter));
+	if (nodes.size() < 2)
+	{
+		std::ostringstream oss;
+		oss << nodes.size() << " <coord>s";
+		InvalidDataError("coordlist", oss.str().c_str(),
+			"2 or more <coords>", element->GetLineNumber());
 	}
+	
+	std::transform(nodes.begin(), nodes.end(),
+		std::back_inserter(coordlist), &GetCoord);
+
 	return OperationsOnSphere::
 			convertLatLonPointListToPolyLineOnSphere(coordlist);
 }
 
-/**
- * XXX Uses only the first coordlist found.
- */
-static LineData
+static LineData*
 GetLineData(const Element* element)
 {
-	const ElementList& list = element->_children;
-	ElementList::const_iterator iter = list.begin();
+	const ElementList& list = element->GetChildren("coordlist");
 
-	for ( ; iter != list.end(); ++iter)
-		if ((*iter)->_name == "coordlist")
-			break;
-	
-	if (iter == list.end()) {
-		std::cerr << "Empty coordlist." << std::endl;
-		exit(-1);
+	if (list.empty())
+	{
+		std::ostringstream oss;
+		oss << "No coordlist element found in <linedata> at line "
+			<< element->GetLineNumber() << "." << std::endl;
+		throw FileFormatException(oss.str().c_str());
 	}
 
-	return LineData(GetDataType(element), 
+	return new LineData(GetDataType(element), 
 					GetRotationGroupId(element), 
 					GetTimeWindow(element),
 					GetAttributes(element),
-					GetCoordList(*iter));
+					GetCoordList(*list.begin()));
 }
 
 static DataGroup*
 GetDataGroup(const Element* element)
 {
-	DataGroup* datagroup = 
-		new DataGroup(GetDataType(element), 
+	DataGroup::Children_t children;
+
+	const ElementList& points = element->GetChildren("pointdata");
+	std::transform(points.begin(), points.end(),
+		std::back_inserter(children),
+		&GetPointData);
+	
+	const ElementList& lines = element->GetChildren("linedata");
+	std::transform(lines.begin(), lines.end(),
+		std::back_inserter(children),
+		&GetLineData);
+	
+	const ElementList& dgs = element->GetChildren("datagroup");
+	std::transform(dgs.begin(), dgs.end(),
+		std::back_inserter(children),
+		&GetDataGroup); // Hooray for recursion.
+	
+	return new DataGroup(GetDataType(element), 
 					  GetRotationGroupId(element),
 					  GetTimeWindow(element),
-					  GetAttributes(element));
-	const ElementList& list = element->_children;
-	ElementList::const_iterator iter = list.begin();
-
-	for ( ; iter != list.end(); ++iter) {
-		const std::string& name = (*iter)->_name;
-		// FIXME need to work out who owns the results of these calls
-		if (name == "pointdata")
-			datagroup->Add(new PointData(GetPointData(*iter)));
-		else if (name == "linedata")
-			datagroup->Add(new LineData(GetLineData(*iter)));
-		else if (name == "datagroup")
-			// Hooray for recursion.
-			datagroup->Add(GetDataGroup(*iter));
-	}
-	return datagroup;
+					  GetAttributes(element),
+					  children);
 }
 
 /** 
@@ -200,8 +289,6 @@ GetDataGroup(const Element* element)
 static DataGroup*
 GetRootDataGroup(const Element* element)
 {
-	
-
 	// Pass parameters on to general datagroup handler.
 	DataGroup* dg = GetDataGroup(element);
 
@@ -214,15 +301,28 @@ GetRootDataGroup(const Element* element)
 DataGroup*
 GPlatesReader::Read()
 {
-	XMLParser parser;
-	const Element* root;
+	Element* root = NULL;
+	DataGroup* datagroup = NULL;
 
-	// Create the pseudo-DOM hierarchy from the input.
-	root = parser.Parse(_istr);
-	
-	if (root)
-		return GetRootDataGroup(root);
+	try
+	{
+		// Create the pseudo-DOM hierarchy from the input.
+		root = XMLParser::Parse(_istr);
 
-	// !root => parse failed => return NULL.
-	return static_cast<DataGroup*>(NULL);
+		// Transform the hierarchy into our internal format.
+		datagroup = GetRootDataGroup(root);
+	} 
+	catch (const FileFormatException&)
+	{
+		// Cleanup...
+		if (root)
+			delete root;
+		if (datagroup)
+			delete datagroup;
+
+		// ...and rethrow
+		throw;
+	}
+
+	return datagroup;	
 }

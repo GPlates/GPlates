@@ -66,20 +66,12 @@ namespace
 static void
 CompressWhitespace(std::string& str)
 {
-	// Create a stream representation of the parameter.
-	std::istringstream istr(str);
-	
-	// Don't skip leading whitespaces.
-	istr.unsetf(std::ios::skipws);
-
-	// Copy from the stringstream back into our parameter (str).
 	// Copy blocks of whitespace as a single space using the
 	// BothWhitespace functor.
-	std::unique_copy(std::istream_iterator<char>(istr),
-					 std::istream_iterator<char>(),
-					 std::back_inserter(str),
-					 BothWhitespace());
+	std::unique(str.begin(), str.end(), BothWhitespace());
 }
+
+static XML_Parser parser;
 
 // eXpat Callback functions.  Userdata is a pointer to a pointer to
 // the current Element.
@@ -95,19 +87,21 @@ StartElementHandler(void* userdata,
 					const XML_Char*  name,
 					const XML_Char** attrs)
 {
-	Element* result = new Element(name);
+	// XXX XXX XXX
+	Element* result = new Element(name, XML_GetCurrentLineNumber(parser));
 	
 	// For each pair of attributes...
 	for (size_t i = 0; attrs[i]; i += 2) {
-		result->_attributes.push_back(
+		result->InsertAttribute(
 			std::make_pair(std::string(attrs[i]), 
-						   std::string(attrs[i + 1])));
+						   std::string(attrs[i + 1]))
+		);
 	}
 	
 	Element** current = static_cast<Element**>(userdata);
 
 	// Push the new Element onto the stack.
-	result->_parent = *current;
+	result->SetParent(*current);
 	*current = result;
 }
 
@@ -122,24 +116,28 @@ EndElementHandler(void* userdata, const XML_Char* name)
 	// The name of the current Element should be the same
 	// as the terminating element name (name).  If it isn't,
 	// then my stack is broken (i.e. out of sync).
-	if (std::string(name) != current->_name) {
-		std::cerr <<  "Error: Parser: Broken stack." << std::endl;
+	if (std::string(name) != current->GetName()) {
+		std::cerr << "Error: Parser: Broken stack." << std::endl;
+		std::cerr << "current name: " << name << std::endl
+			<< "current line: " << XML_GetCurrentLineNumber(parser) << std::endl
+			<< "element name: " << current->GetName() << std::endl
+			<< "element line: " << current->GetLineNumber() << std::endl;
 		exit(-1);
 	}
 	
 	// Attempt to move back up the stack.
-	if (current->_parent)  { // Parent is NULL for the root only.
+	if (current->GetParent())  { // Parent is NULL for the root only.
 		// Add current element to the list of its parent's elements.
-		current->_parent->_children.push_back(current);
+		current->GetParent()->InsertChild(current);
 
 		// Return to parent (pop off stack).
 		Element** newcurr = static_cast<Element**>(userdata);
-		*newcurr = current->_parent;
+		*newcurr = current->GetParent();
 	}
 }
 
 /**
- * Called when character data within an element.  All whitespace
+ * Called for character data within an element.  All whitespace
  * blocks are compressed into a single space character.  There will
  * be no markup in str.
  *
@@ -155,7 +153,7 @@ EndElementHandler(void* userdata, const XML_Char* name)
 static void
 CharacterDataHandler(void* userdata, const XML_Char* str, int len)
 {
-	std::string content(str, str+len);
+	std::string content(str, str + len);
 	CompressWhitespace(content);
 	
 	Element* current = *static_cast<Element**>(userdata);
@@ -163,68 +161,44 @@ CharacterDataHandler(void* userdata, const XML_Char* str, int len)
 		return;
 	
 	// Append previously seen content.
-	current->_content += content;
+	current->GetContent() += content;
 }
 
-void
-XMLParser::Initialise()
+/**
+ * Set the callbacks for the parser.
+ */
+static void
+SetCallbacks(Element** root)
 {
-	static const XML_Char* ENCODING = NULL;
-
-	// If the parser has already been run, then _root will still be
-	// set from the last run.  So get rid of it.
-	if (_root) {
-		delete _root;
-		_root = NULL;
-	}
-
-	// XXX The following should be done with
-	//   XML_ParserReset(_parser, ENCODING);
-	// but that function is only a recent addtion to expat.
-	
-	if (_parser)
-		XML_ParserFree(_parser);
-	
-	_parser = XML_ParserCreate(ENCODING);
-	if (!_parser) {
-		std::cerr << "Could not allocate memory to create parser." 
-			<< std::endl;
-		exit(-1);
-	}
-
 	// Register callbacks
-	XML_SetElementHandler(_parser,
+	XML_SetElementHandler(parser,
 						  &StartElementHandler,
 						  &EndElementHandler);
-	XML_SetCharacterDataHandler(_parser, &CharacterDataHandler);
+	XML_SetCharacterDataHandler(parser, &CharacterDataHandler);
 
 	// The user data is a pointer to the Element* currently being
 	// parsed.  So it is of type Element**: a pointer to a pointer
 	// to the current element.  The current element is initially the
 	// document root.
-	XML_SetUserData(_parser, &_root);
+	XML_SetUserData(parser, root);
 }
 
-XMLParser::XMLParser()
-	: _root(NULL), _parser(NULL)
-{
-	Initialise();
-}
-
-XMLParser::~XMLParser()
-{
-	delete _root;
-
-	XML_ParserFree(_parser);
-}
-
-const Element*
+Element*
 XMLParser::Parse(std::istream& istr)
 {
 	static const size_t BUFFER_SIZE = 8192;
+	static const XML_Char* ENCODING = NULL;
+	
+	Element *root = NULL;
 
-	// Clear any previous parsing information.
-	Initialise();
+	parser = XML_ParserCreate(ENCODING);
+	if (!parser) {
+		std::cerr << "Could not allocate memory to create parser." 
+			<< std::endl;
+		exit(-1);
+	}
+
+	SetCallbacks(&root);
 
 	bool done;
 	size_t len;
@@ -238,7 +212,7 @@ XMLParser::Parse(std::istream& istr)
 		// Read a block of input.  -1 leaves space for \0.
 		istr.read(&buf[0], BUFFER_SIZE-1);  
 
-		// This calculation counts on the memset above.
+		// This calculation relies on the memset above.
 		len = std::strlen(&buf[0]);
 
 		// done is true if we did not fill all of buf; i.e. we
@@ -247,13 +221,20 @@ XMLParser::Parse(std::istream& istr)
 
 		// XML_Parse calls the various handlers registered in
 		// XMLParser::Initialise() and does syntax checking.
-		if (XML_Parse(_parser, buf, len, done) == 0) {
+		if (XML_Parse(parser, buf, len, done) == 0) {
 
 			// Handle a file format error.
 			std::ostringstream oss;
-			oss << XML_ErrorString(XML_GetErrorCode(_parser))
-				<< " at line " << XML_GetCurrentLineNumber(_parser)
+			oss << "Parse error: " << std::endl
+				<< XML_ErrorString(XML_GetErrorCode(parser))
+				<< " at line " << XML_GetCurrentLineNumber(parser)
 				<< std::endl;
+			
+			// Ensure proper cleanup
+			XML_ParserFree(parser);
+			if (root)
+				delete root;
+
 			throw FileFormatException(oss.str().c_str());
 		}
 	} while (!done);
@@ -264,15 +245,20 @@ XMLParser::Parse(std::istream& istr)
 	if (!istr.eof()) {
 		std::ostringstream oss;
 		oss << "Error: Parse loop exited before EOF." << std::endl;
+
+		// Ensure proper cleanup
+		XML_ParserFree(parser);  
+		if (root)
+			delete root;
+
 		throw FileFormatException(oss.str().c_str());
 	}
 	
-	return _root;
+	XML_ParserFree(parser);
+	return root;
 }
 
 Element::~Element()
 {
-	ElementList::iterator iter = _children.begin();
-	for ( ; iter != _children.end(); ++iter)
-		delete *iter;  // *iter is an Element*.
+	// XXX: Memory leak!
 }
