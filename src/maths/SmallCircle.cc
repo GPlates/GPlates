@@ -32,16 +32,6 @@
 #include "ViolatedClassInvariantException.h"
 
 
-GPlatesMaths::SmallCircle::SmallCircle (const UnitVector3D &axis,
-					const PointOnSphere &pt)
-	: Axial (axis) {
-
-	UnitVector3D u = pt.unitvector ();
-	real_t dp = dot (normal(), u);
-	_colatitude = acos (dp);
-}
-
-
 unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 				std::vector<PointOnSphere> &points) const
 {
@@ -55,7 +45,7 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 	// A is one point on the line through the intersection points, and
 	// B is the direction vector, so the line equation is: x = A + Bt
 	Vector3D B = cross (other.axisvector (), _axisvector);
-	real_t scale = cos (_colatitude) / B.magSqrd ();
+	real_t scale = _cos_colat / B.magSqrd ();
 	Vector3D A = cross (B, other.axisvector ()) * scale;
 
 	// solve a quadratic equation to get the actual points
@@ -86,12 +76,12 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 void
 GPlatesMaths::SmallCircle::AssertInvariantHolds () const
 {
-	if ((_colatitude < 0.0) || (_colatitude > M_PI)) {
+	if (abs (_cos_colat) > 1.0) {
 
-		// an invalid colatitude
+		// an invalid cos(colatitude)
 		std::ostringstream oss;
-		oss << "Small circle has invalid colatitude of "
-		 << _colatitude << " radians.";
+		oss << "Small circle has invalid cos(colatitude) of "
+		 << _cos_colat << ".";
 		throw ViolatedClassInvariantException(oss.str().c_str());
 	}
 }

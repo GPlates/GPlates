@@ -33,6 +33,7 @@
 #include "GreatCircle.h"
 #include "PointOnSphere.h"
 #include "UnitVector3D.h"
+#include "Colatitude.h"
 #include "Vector3D.h"
 
 namespace GPlatesMaths
@@ -50,34 +51,61 @@ namespace GPlatesMaths
 			/**
 			 * Create a small circle, given its axis and an angle.
 			 * @param axis The axis of the circle.
-			 * @param theta Angle between axis and circumference,
-			 *   aka the "colatitude".  In radians, as always.
+			 * @param theta Angle between axis and circumference
+			 *   (aka the "colatitude").  In radians, as always.
 			 *
 			 * @image html fig_small_circle.png
 			 * @image latex fig_small_circle.eps width=2.3in
 			 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
 			 */
-			SmallCircle (const UnitVector3D &axis, real_t theta)
-				: Axial (axis), _colatitude (theta) {
+			SmallCircle (const UnitVector3D &axis,
+			             const Colatitude &theta)
+				: Axial (axis) {
 
+				_cos_colat = cos (theta);
 				AssertInvariantHolds ();
 			}
 
 			/**
-			 * Create a small circle, given its axis and a point
-			 * on it.
+			 * Create a small circle, given its axis and a point.
+			 * @param axis The axis of the circle.
+			 * @param pt A point through which the circle must pass.
 			 */
 			SmallCircle (const UnitVector3D &axis,
-			             const PointOnSphere &pt);
+			             const PointOnSphere &pt)
+				: Axial (axis) {
+
+				_cos_colat = dot (normal(), pt.unitvector ());
+				AssertInvariantHolds ();
+			}
+
+			/**
+			 * Create a small circle, given its axis and the cosine
+			 * of an angle.
+			 * @param axis The axis of the circle.
+			 * @param cos_theta The cosine of the angle between
+			 *   axis and circumference (aka the "colatitude").
+			 *   Obviously, it must lie in the range [-1, 1].
+			 */
+			SmallCircle (const UnitVector3D &axis,
+			             const real_t &cos_theta)
+				: Axial (axis), _cos_colat (cos_theta) {
+
+				AssertInvariantHolds ();
+			}
 
 			UnitVector3D
 			normal () const { return axisvector(); }
 
 			real_t
-			colatitude () const { return _colatitude; }
+			colatitude () const { return acos (_cos_colat); }
 
-			real_t
-			radius () const { return sin (_colatitude); }
+			bool
+			contains (const PointOnSphere &pt) const {
+
+				real_t dp = dot (normal(), pt.unitvector ());
+				return (dp == _cos_colat);
+			}
 
 			/**
 			 * Find the intersection points (if any) of this
@@ -93,7 +121,10 @@ namespace GPlatesMaths
 			void AssertInvariantHolds () const;
 
 		private:
-			real_t _colatitude;
+			/**
+			 * The cosine of the colatitude.
+			 */
+			real_t _cos_colat;
 	};
 }
 
