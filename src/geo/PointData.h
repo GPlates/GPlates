@@ -21,13 +21,13 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
- *   James Boyden <jboyden@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GEO_POINTDATA_H_
 #define _GPLATES_GEO_POINTDATA_H_
 
-#include "DataOnSphere.h"
+#include "DrawableData.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesGeo
@@ -35,23 +35,27 @@ namespace GPlatesGeo
 	/** 
 	 * A PointOnSphere augmented with GeneralisedData.
 	 */
-	class PointData : public DataOnSphere
+	class PointData : public DrawableData
 	{
 		public:
 			PointData(const DataType_t &,
 			          const RotationGroupId_t &,
-					  const TimeWindow &,
+			          const TimeWindow &,
 			          const Attributes_t &,
 			          const GPlatesMaths::PointOnSphere &);
 
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }
 
-			const GPlatesMaths::PointOnSphere &
+			GPlatesMaths::PointOnSphere
 			GetPointOnSphere() const { return _point; }
 
 			void
-			Rotate(const GPlatesMaths::FiniteRotation &) const;
+			Draw() const;
+
+			void
+			RotateAndDraw(const GPlatesMaths::FiniteRotation &)
+			 const;
 
 		private:
 			/** 

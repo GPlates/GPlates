@@ -33,13 +33,20 @@ using namespace GPlatesGeo;
 LineData::LineData(const DataType_t& dt, const RotationGroupId_t& id,
 	const TimeWindow& tw, const Attributes_t& attrs, 
 	const GPlatesMaths::PolyLineOnSphere& line)
-	: DataOnSphere(dt, id, tw, attrs), _line(line)
+	: DrawableData(dt, id, tw, attrs), _line(line)
 {  }
 
 
 void
-LineData::Rotate(const GPlatesMaths::FiniteRotation &rot) const {
+LineData::Draw() const {
 
-	GPlatesMaths::PolyLineOnSphere plos = (rot * GetPolyLineOnSphere());
-	GPlatesState::Layout::InsertLineDataPos(this, plos);
+	GPlatesState::Layout::InsertLineDataPos(this, _line);
+}
+
+
+void
+LineData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) const {
+
+	GPlatesMaths::PolyLineOnSphere rot_line = (rot * _line);
+	GPlatesState::Layout::InsertLineDataPos(this, rot_line);
 }

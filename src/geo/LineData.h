@@ -27,7 +27,7 @@
 #define _GPLATES_LINEDATA_H_
 
 #include <vector>
-#include "DataOnSphere.h"
+#include "DrawableData.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolyLineOnSphere.h"
 
@@ -37,14 +37,14 @@ namespace GPlatesGeo
 	 * Data corresponding to a line on a sphere.
 	 * @invariant Number of line elements is greater than or equal to 2.
 	 */
-	class LineData : public DataOnSphere
+	class LineData : public DrawableData
 	{
 		public:
 			LineData(const DataType_t&, 
-					 const RotationGroupId_t&,
-					 const TimeWindow&,
-					 const Attributes_t&, 
-					 const GPlatesMaths::PolyLineOnSphere&);
+			         const RotationGroupId_t&,
+			         const TimeWindow&,
+			         const Attributes_t&, 
+			         const GPlatesMaths::PolyLineOnSphere&);
 
 			/** 
 			 * Add an arc to the end of the line.
@@ -77,11 +77,12 @@ namespace GPlatesGeo
 			GPlatesMaths::PolyLineOnSphere::const_iterator
 			End() const { return _line.end(); }
 
-			const GPlatesMaths::PolyLineOnSphere &
-			GetPolyLineOnSphere() const { return _line; }
+			void
+			Draw() const;
 
 			void
-			Rotate(const GPlatesMaths::FiniteRotation &) const;
+			RotateAndDraw(const GPlatesMaths::FiniteRotation &)
+			 const;
 
 		private:
 			GPlatesMaths::PolyLineOnSphere _line;

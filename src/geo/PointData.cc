@@ -33,13 +33,20 @@ using namespace GPlatesGeo;
 PointData::PointData(const DataType_t& dt, const RotationGroupId_t& id,
 	const TimeWindow& tw, const Attributes_t& attrs, 
 	const GPlatesMaths::PointOnSphere& point)
-	: DataOnSphere(dt, id, tw, attrs), _point(point)
+	: DrawableData(dt, id, tw, attrs), _point(point)
 { }
 
 
 void
-PointData::Rotate(const GPlatesMaths::FiniteRotation &rot) const {
+PointData::Draw() const {
 
-	GPlatesMaths::PointOnSphere pos = (rot * GetPointOnSphere());
-	GPlatesState::Layout::InsertPointDataPos(this, pos);
+	GPlatesState::Layout::InsertPointDataPos(this, _point);
+}
+
+
+void
+PointData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) const {
+
+	GPlatesMaths::PointOnSphere rot_point = (rot * _point);
+	GPlatesState::Layout::InsertPointDataPos(this, rot_point);
 }
