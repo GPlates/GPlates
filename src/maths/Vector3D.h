@@ -68,10 +68,16 @@ namespace GPlatesMaths
 			real_t
 			z() const { return _z; }
 
+			real_t
+			mag_sqrd() const {
+
+				return ((_x * _x) + (_y * _y) + (_z * _z));
+			}
+
 			virtual real_t
 			magnitude() const {
 
-				return sqrt((_x * _x) + (_y * _y) + (_z * _z));
+				return sqrt(mag_sqrd());
 			}
 
 			virtual UnitVector3D normalise () const;
