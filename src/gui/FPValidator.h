@@ -7,7 +7,6 @@
  * "src/common/valtext.cpp" in the 'wxGTK' wxWindows release.
  *
  * Most recent change:
- *   $Author$
  *   $Date$
  * 
  * Copyright (C) 2003 The GPlates Consortium
@@ -21,8 +20,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Authors:
- *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GUI_FPVALIDATOR_H_

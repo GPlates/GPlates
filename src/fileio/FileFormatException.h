@@ -4,7 +4,6 @@
  * @file
  *
  * Most recent change:
- * $Author$
  * $Date$
  *
  * Copyright (C) 2003 The GPlates Consortium
@@ -18,8 +17,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Author:
- *   Mike Dowman <mdowman@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_FILEIO_FILEFORMATEXCEPTION_H_

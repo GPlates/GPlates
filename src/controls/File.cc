@@ -4,7 +4,6 @@
  * @file 
  *
  * Most recent change:
- *   $Author$
  *   $Date$
  * 
  * Copyright (C) 2003 The GPlates Consortium
@@ -18,10 +17,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Authors:
- *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
- *   James Boyden <jboyden@geosci.usyd.edu.au>
- *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <algorithm>  /* transform */

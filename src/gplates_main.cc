@@ -2,11 +2,8 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Author$
- *   $Date$
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2003 The GPlates Consortium
  *
@@ -19,9 +16,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Authors:
- *   Hamish Law <hlaw@geosci.usyd.edu.au>
- *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 /** 
@@ -41,7 +35,6 @@
  * - Dr. R. Dietmar M&uuml;ller <dietmar (at) geosci.usyd.edu.au>
  * - James Boyden <jboyden (at) geosci.usyd.edu.au>
  * - Hamish Law <hlaw (at) geosci.usyd.edu.au>
- * - David Symonds <ds (at) geosci.usyd.edu.au>
  * 
  * <b>Snail Mail</b>:
  * - University of Sydney Institute of Marine Science<br>

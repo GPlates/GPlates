@@ -4,7 +4,6 @@
  * @file 
  *
  * Most recent change:
- *   $Author$
  *   $Date$
  * 
  * Copyright (C) 2004 The GPlates Consortium
@@ -18,8 +17,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Authors:
- *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_FILEIO_TRANSLATIONINTERFACE_H_
@@ -31,7 +28,10 @@
 
 #include "global/types.h"
 
-class GPlatesGeo::DataGroup;
+namespace GPlatesGeo
+{
+	class DataGroup;
+}
 
 
 namespace GPlatesFileIO
@@ -166,13 +166,13 @@ namespace GPlatesFileIO
 					const_iterator
 					Begin() const
 					{
-						return _loop.begin();
+						return _line.begin();
 					}
 
 					const_iterator
 					End() const
 					{
-						return _loop.end();
+						return _line.end();
 					}
 					
 					/// @}
@@ -382,10 +382,14 @@ namespace GPlatesFileIO
 
 			/// @}
 			
+			/**
+			 * Temporary: will have "virtual" constructor
+			 * eventually.
+			 */
+			TranslationInterface() { }
+
 		private:
 			GPlatesGeo::DataGroup* _data;
-
-			TranslationInterface();
 
 			/**
 			 * Copy constructor deliberately not implemented.

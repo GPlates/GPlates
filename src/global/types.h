@@ -6,7 +6,6 @@
  * the code; they are not tied to any particular class.
  *
  * Most recent change:
- *   $Author$
  *   $Date$
  * 
  * Copyright (C) 2003 The GPlates Consortium
@@ -20,9 +19,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Authors:
- *   Hamish Law <hlaw@geosci.usyd.edu.au>
- *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_GLOBAL_TYPES_H_

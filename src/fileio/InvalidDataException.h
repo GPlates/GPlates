@@ -4,7 +4,6 @@
  * @file
  *
  * Most recent change:
- * $Author$
  * $Date$
  *
  *
@@ -19,8 +18,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Author:
- *   Mike Dowman <mdowman@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_FILEIO_INVALIDDATAEXCEPTION_H_

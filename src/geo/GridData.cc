@@ -7,7 +7,6 @@
  * File specific comments.
  *
  * Most recent change:
- *   $Author$
  *   $Date$
  * 
  * Copyright (C) 2004 The GPlates Consortium
@@ -21,8 +20,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Authors:
- *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <cstring>

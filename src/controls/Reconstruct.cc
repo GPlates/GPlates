@@ -5,7 +5,6 @@
  * File specific comments.
  *
  * Most recent change:
- *   $Author$
  *   $Date$
  * 
  * Copyright (C) 2003 The GPlates Consortium
@@ -19,12 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Primary Authors:
- *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
- *   James Boyden <jboyden@geosci.usyd.edu.au>
  *
  * Corrections, Additions:
- *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <list>

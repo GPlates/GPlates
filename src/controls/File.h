@@ -1,12 +1,6 @@
-/* $Id$ */
-
 /**
  * @file 
- * File specific comments.
- *
- * Most recent change:
- *   $Author$
- *   $Date$
+ * $Id$
  * 
  * Copyright (C) 2003 The GPlates Consortium
  *
@@ -18,10 +12,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * Authors:
- *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
- *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_CONTROLS_FILE_H_

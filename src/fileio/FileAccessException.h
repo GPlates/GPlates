@@ -4,7 +4,6 @@
  * @file
  *
  * Most recent change:
- * $Author$
  * $Date$
  *
  * Copyright (C) 2004 The GPlates Consortium
@@ -18,8 +17,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Author:
- *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_FILEIO_FILEACCESSEXCEPTION_H_

@@ -5,7 +5,6 @@
  * Contains the parser implementation for the GPML.  
  *
  * Most recent change:
- *   $Author$
  *   $Date$
  * 
  * Copyright (C) 2003 The GPlates Consortium
@@ -19,8 +18,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Authors:
- *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 
