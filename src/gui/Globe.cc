@@ -203,9 +203,7 @@ Globe::Paint()
 		 * DepthRange calls push the grid back in the depth buffer a bit to
 		 * avoid Z-fighting with the LineData.
 		 */
-		glDepthRange(0.005, 1.0);
-		// XXX Should be using the class member, but doing so causes the
-		// grid to vanish sometimes.  This seems to fix things.
+		glDepthRange(0.01, 1.0);
 		_grid.Paint();
 
 		// Restore DepthRange
