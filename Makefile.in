@@ -13,10 +13,7 @@ all:
 	done
 
 doc:
-	@dlist='$(SUBDIRS)' ; \
-	for subdir in $$dlist ; do \
-		(cd $$subdir && $(MAKE) doc) ; \
-	done
+	cd doc && $(MAKE) doc
 
 install:
 	@dlist='$(SUBDIRS)' ; \

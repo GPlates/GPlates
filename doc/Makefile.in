@@ -1,0 +1,23 @@
+@SET_MAKE@
+
+subdir = doc
+prefix = @prefix@
+
+DISTFILES = Makefile.in doxygen.conf.in
+
+INSTALL = @INSTALL@
+
+all:
+
+doc:	doxygen.conf
+	doxygen $<
+
+clean:
+	rm -rf html
+
+distdir = ../@PACKAGE_TARNAME@-@PACKAGE_VERSION@/$(subdir)
+dist:	Makefile $(DISTFILES)
+	for file in $(DISTFILES) ; do \
+		ln $$file $(distdir) 2>/dev/null || \
+			cp -p $$file $(distdir); \
+	done

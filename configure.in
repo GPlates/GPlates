@@ -110,6 +110,8 @@ AC_MSG_RESULT(yes)
 
 # Write output
 AC_OUTPUT(Makefile
+	doc/doxygen.conf
+	doc/Makefile
 	src/Rules
 	src/Makefile
 	src/fileio/Makefile
