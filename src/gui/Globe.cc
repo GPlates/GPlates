@@ -145,7 +145,7 @@ DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
 #endif
 
 void
-Globe::Paint(const GPlatesGeo::DataGroup& data)
+Globe::Paint(const GPlatesGeo::DataGroup* data)
 {
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
@@ -177,7 +177,7 @@ Globe::Paint(const GPlatesGeo::DataGroup& data)
 		glPointSize(5.0f);
 		// Paint the data.
 		RenderVisitor renderer;
-		renderer.Visit(data);
+		renderer.Visit(*data);
 
 	glPopMatrix();
 }

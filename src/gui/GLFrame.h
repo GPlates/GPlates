@@ -39,7 +39,7 @@ namespace GPlatesGui
 	{
 		public:
 			GLFrame(wxFrame* parent, 
-					const GPlatesGeo::DataGroup& data,
+					const GPlatesGeo::DataGroup* data,
 					const wxString& title = "", 
 					const wxSize& size = wxDefaultSize,
 					const wxPoint& pos = wxDefaultPosition);

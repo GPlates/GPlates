@@ -29,47 +29,64 @@
 
 using namespace GPlatesGeo;
 using namespace GPlatesGui;
+using namespace GPlatesMaths;
+
 
 static void
-CallVertexWithPoint(const GPlatesMaths::PointOnSphere& point)
+CallVertexWithPoint(const UnitVector3D& uv)
 {
-	GLdouble x, y, z;
-	const GPlatesMaths::UnitVector3D& uv = point.unitvector();
+	glVertex3d(
+		uv.x().dval(),
+		uv.y().dval(),
+		uv.z().dval()
+	);
+}
 
-	x = uv.x().dval();
-	y = uv.y().dval();
-	z = uv.z().dval();
+/**
+ * FIXME doesn't display the last point in the line!
+ */
+static void
+CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin, 
+				   const PolyLineOnSphere::const_iterator& end)
+{
+	PolyLineOnSphere::const_iterator iter = begin;
 
-	glVertex3d(x, y, z);
+	glBegin(GL_LINE_STRIP);
+		for ( ; iter != end; ++iter)
+			CallVertexWithPoint(iter->startPoint());
+	glEnd();
 }
 
 void
 RenderVisitor::Visit(const PointData& point)
 {
 	glBegin(GL_POINTS);
-		CallVertexWithPoint(point.GetPointOnSphere());
+		CallVertexWithPoint(point.GetPointOnSphere().unitvector());
 	glEnd();
 }
 
 void
 RenderVisitor::Visit(const LineData& line)
 {
-	GPlatesMaths::PolyLineOnSphere::const_iterator iter = line.Begin();
-
 	glBegin(GL_LINE_STRIP);
-		for ( ; iter != line.End(); ++iter)
-			CallVertexWithPoint(*iter);
+		CallVertexWithLine(line.Begin(), line.End());
 	glEnd();
 }
 
 void
 RenderVisitor::Visit(const DataGroup& data)
 {
+	const GeologicalData* gd;
+	const PointData* pd;
+	const LineData*  ld;
+	const DataGroup* dg;
+
 	DataGroup::Children_t::const_iterator iter = data.ChildrenBegin();
 	for ( ; iter != data.ChildrenEnd(); ++iter) {
-		const PointData* pd = dynamic_cast<const PointData*>(*iter);
-		const LineData*  ld = dynamic_cast<const LineData*>(*iter);
-		const DataGroup* dg = dynamic_cast<const DataGroup*>(*iter);
+		gd = *iter;
+		pd = dynamic_cast<const PointData*>(gd);
+		ld = dynamic_cast<const LineData*>(gd);
+		dg = dynamic_cast<const DataGroup*>(gd);
 		
 		if (pd)
 			Visit(*pd);

@@ -59,7 +59,7 @@ namespace GPlatesGui
 			GetElevation() { return _elevation; }
 
 			void
-			Paint(const GPlatesGeo::DataGroup&);
+			Paint(const GPlatesGeo::DataGroup*);
 
 		private:
 			/**
