@@ -21,6 +21,7 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_OPERATIONSONSPHERE_H_
@@ -48,7 +49,7 @@ namespace GPlatesMaths
 
 			/**
 			 * Return whether a given value is a valid longitude.
-			 * GPlates uses the half-open range (-180.0, 180.0].
+			 * GPlates uses the range [-180.0, 180.0].
 			 * Note that this seems to be different to the range
 			 * accepted by the PLATES formats (All Hail PLATES!),
 			 * which seems to be [-360.0, 360.0].
