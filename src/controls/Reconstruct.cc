@@ -242,7 +242,14 @@ Reconstruct::Time(const fpdata_t &time)
 		return;
 	}
 
-	WarpToTime(time);
+	try {
+		WarpToTime(time);
+
+	} catch (const GPlatesGlobal::Exception &e) {
+
+		std::cerr << "Internal exception: " << e << std::endl;
+		exit(1);
+	}
 }
 
 
