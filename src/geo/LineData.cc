@@ -21,9 +21,12 @@
  *
  * Authors:
  *   Hamish Law <hlaw@es.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include "LineData.h"
+#include "state/Layout.h"
+
 
 using namespace GPlatesGeo;
 
@@ -32,3 +35,11 @@ LineData::LineData(const DataType_t& dt, const RotationGroupId_t& id,
 	const GPlatesMaths::PolyLineOnSphere& line)
 	: DataOnSphere(dt, id, tw, attrs), _line(line)
 {  }
+
+
+void
+LineData::Rotate(const GPlatesMaths::FiniteRotation &rot) const {
+
+	GPlatesMaths::PolyLineOnSphere plos = (rot * GetPolyLineOnSphere());
+	GPlatesState::Layout::InsertLineDataPos(this, plos);
+}

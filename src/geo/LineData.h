@@ -77,6 +77,12 @@ namespace GPlatesGeo
 			GPlatesMaths::PolyLineOnSphere::const_iterator
 			End() const { return _line.end(); }
 
+			const GPlatesMaths::PolyLineOnSphere &
+			GetPolyLineOnSphere() const { return _line; }
+
+			void
+			Rotate(const GPlatesMaths::FiniteRotation &) const;
+
 		private:
 			GPlatesMaths::PolyLineOnSphere _line;
 	};
