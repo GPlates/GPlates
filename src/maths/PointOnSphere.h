@@ -51,8 +51,8 @@ namespace GPlatesMaths
 			 * @param lon The longitude.
 			 */
 			explicit 
-			PointOnSphere(const real_t& lat = 0.0,
-			              const real_t& lon = 0.0)
+			PointOnSphere(const real_t& lat,
+			              const real_t& lon)
 				: _lat(lat), _long(lon) {
 				
 				AssertInvariantHolds();
