@@ -125,7 +125,7 @@ CheckRotation(rid_t plate_id, real_t t,
 	 * Now we need to check upwards in the rotation hierarchy, to ensure
 	 * that those plates are also rotatable to time 't'.
 	 */
-	RotationHistory::const_iterator rot_seq = i->second.atTime(t);
+	RotationHistory::const_iterator rot_seq = i->second.findAtTime(t);
 	rid_t fixed_plate_id = (*rot_seq).fixedPlate();
 
 	// Base case of recursion: if this plate is moving relative to globe.
