@@ -110,6 +110,14 @@ namespace GPlatesGeo
 			TimeWindow
 			GetTimeWindow() const { return _time_window; }
 
+
+			bool
+			ExistsAtTime(const fpdata_t &t) const {
+
+				return (_time_window.ContainsTime(t));
+			}
+
+
 			/**
 			 * Allow a Visitor to visit this data.
 			 * @role Element::Accept(Visitor) in the Visitor pattern (p331).
