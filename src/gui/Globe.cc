@@ -161,7 +161,7 @@ GPlatesGui::Globe::Paint()
 		 * DepthRange calls push the grid back in the depth buffer
 		 * a bit to avoid Z-fighting with the LineData.
 		 */
-		glDepthRange(0.01, 1.0);
+		glDepthRange(0.0, 0.9);
 		_grid.Paint();
 
 		// Restore DepthRange
