@@ -40,8 +40,22 @@ namespace GPlatesGeo {
 
 		public:
 
+			template< properties_iterator >
+			Feature(
+			 properties_iterator begin,
+			 properties_iterator end)
+			 : m_properties(begin, end) {
+
+				m_selected_property = m_properties.begin();
+			}
+			 
 			virtual
-			~Feature();
+			~Feature() {
+
+				PropertyCollection::iterator iter = m_properties.begin();
+				for ( ; iter != m_properties.end(); ++iter)
+					delete *iter;
+			}
 
 			/**
 			 * Create a reconstruction of this Feature.

@@ -32,6 +32,13 @@ namespace GPlatesGeo {
 		
 		public:
 
+			template< properties_iterator >
+			PolyLineFeature(
+			 properties_iterator begin,
+			 properties_iterator end,
+			 const GPlatesMaths::PolyLineOnSphere &polyline)
+			 : Feature(begin, end), m_polyline(polyline) {  }
+
 			virtual
 			~PolyLineFeature();
 

@@ -32,6 +32,13 @@ namespace GPlatesGeo {
 		
 		public:
 
+			template< properties_iterator >
+			PointFeature(
+			 properties_iterator begin,
+			 properties_iterator end,
+			 const GPlatesMaths::PointOnSphere &point)
+			 : Feature(begin, end), m_point(point) {  }
+
 			virtual
 			~PointFeature() {  }
 
