@@ -58,8 +58,8 @@ ReadRestOfLine(const LineBuffer &lb, std::istringstream &iss) {
 
 	static char buf[ROT_LINE_COMMENT_LEN + 1];
 
-	std::istreambuf_iterator< char > iss_it(iss);
-	std::istreambuf_iterator< char > end_it;
+	std::istream_iterator< char > iss_it(iss);
+	std::istream_iterator< char > end_it;
 
 	size_t n = 0;
 	for ( ; n < ROT_LINE_COMMENT_LEN && iss_it != end_it; n++, iss_it++) {
@@ -186,6 +186,7 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 		throw InvalidDataException(oss.str().c_str());
 	}
 
+#if 0
 	plotter_code = attemptToReadPlotterCode(lb, iss);
 	if (plotter_code != expected_plotter_code) {
 
@@ -199,7 +200,7 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 
 		throw InvalidDataException(oss.str().c_str());
 	}
-
+#endif
 	return LatLonPoint(lat, lon);  // not interested in plotter code
 }
 
