@@ -21,30 +21,42 @@
  *
  * Authors:
  *   Dave Symonds <ds@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include <sstream>
 #include "GreatCircle.h"
-#include "UnitVector3D.h"
 #include "IndeterminateResultException.h"
 
 
-using namespace GPlatesMaths;
+GPlatesMaths::GreatCircle::GreatCircle (const PointOnSphere &p1,
+ const PointOnSphere &p2)
+ : _normal (calcNormal(p1.unitvector(), p2.unitvector())) {  }
 
-GreatCircle::GreatCircle (const UnitVector3D &v1, const UnitVector3D &v2)
-		: _normal (1, 0, 0)
-{
-	if (dot (v1, v2) == 0.0) {
-		std::ostringstream oss;
-		oss << "Attempted to calculate a great-circle from identical "
-			"endpoint " << v1 << ".";
-		throw IndeterminateResultException (oss.str ().c_str ());
-	}
 
-	_normal = cross (Vector3D (v1), Vector3D (v2));
-}
-
-UnitVector3D GreatCircle::intersection (const GreatCircle &other) const
+GPlatesMaths::UnitVector3D
+GPlatesMaths::GreatCircle::intersection (const GreatCircle &other) const
 {
 	return normalise (cross (_normal, other.normal ()));
+}
+
+
+GPlatesMaths::UnitVector3D
+GPlatesMaths::GreatCircle::calcNormal(const UnitVector3D &v1,
+ const UnitVector3D &v2) {
+
+	Vector3D x = cross(v1, v2);
+
+	real_t x_mag_sqrd = x.magSqrd();
+	if (x_mag_sqrd <= 0) {
+
+		// mag_sqrd equal to zero => magnitude is equal to zero =>
+		// collinear vectors => PANIC!!!!one
+		std::ostringstream oss;
+		oss << "Attempted to calculate a great-circle from "
+		 << "collinear points "
+		 << v1 << " and " << v2 << ".";
+		throw IndeterminateResultException (oss.str().c_str());
+	}
+	return x.normalise();
 }
