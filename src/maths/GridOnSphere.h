@@ -114,6 +114,26 @@ namespace GPlatesMaths
 			}
 
 
+			SmallCircle
+			lineOfLat() const { return _line_of_lat; }
+
+
+			GreatCircle
+			lineOfLon() const { return _line_of_lon; }
+
+
+			PointOnSphere
+			origin() const { return _origin; }
+
+
+			real_t
+			deltaAlongLat() const { return _delta_along_lat; }
+
+
+			real_t
+			deltaAlongLon() const { return _delta_along_lon; }
+
+
 			/**
 			 * Return the point-on-sphere corresponding to the
 			 * grid indices @a x and @a y.
