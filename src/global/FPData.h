@@ -98,6 +98,16 @@ namespace GPlatesGlobal
 		os << fpd.dval();
 		return os;
 	}
+
+
+	inline std::ostream &
+	operator>>(std::ostream &os, const FPData &fpd) {
+
+		double d;
+		os >> d;
+		fpd = FPData(d);
+		return os;
+	}
 }
 
 #endif  // _GPLATES_GLOBAL_FPDATA_H_
