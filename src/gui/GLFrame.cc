@@ -46,6 +46,7 @@ using namespace GPlatesGui;
 enum {
 	MENU_FILE_OPENDATA,
 	MENU_FILE_OPENROTATION,
+	MENU_FILE_SAVEDATA,
 	MENU_FILE_EXIT,
 
 	MENU_VIEW_METADATA,
@@ -66,6 +67,9 @@ CreateMenuBar(GLFrame* frame)
 	filemenu->Append(MENU_FILE_OPENROTATION, 
 					 _("Open &Rotation...\tCtrl-R"), 
 					 _("Open a rotation file"));
+	filemenu->Append(MENU_FILE_SAVEDATA,
+					 _("&Save Data...\tCtrl-S"),
+					 _("Save current data to file"));
 	filemenu->AppendSeparator();
 	filemenu->Append(MENU_FILE_EXIT, _("&Quit\tCtrl-Q"), _("Exit GPlates"));
 
@@ -152,6 +156,29 @@ GLFrame::OnOpenData(wxCommandEvent&)
 	}
 }
 
+
+void
+GLFrame::OnSaveData(wxCommandEvent&)
+{
+	static wxString default_dir = _("");
+	wxFileDialog filedlg(this, 
+						 _("Designate a file name..."),
+						 default_dir,  // default dir  = none
+						 _(""),  // default file = none
+						 _("GPlates Data files (*.gpml)|*.gpml|"
+						 "All files (*.*)|*.*"),  // wildcard
+						 wxSAVE | wxOVERWRITE_PROMPT);  // A 'Save' dialog box
+
+	if (filedlg.ShowModal() == wxID_OK) {
+		std::string selected_file;
+		default_dir = filedlg.GetDirectory();
+		selected_file = filedlg.GetPath().mb_str();
+		GPlatesControls::File::SaveData(selected_file);
+	}
+
+}
+
+
 void
 GLFrame::OnOpenRotation(wxCommandEvent&)
 {
@@ -213,6 +240,7 @@ BEGIN_EVENT_TABLE(GLFrame, wxFrame)
 
 	EVT_MENU(MENU_FILE_OPENDATA, GLFrame::OnOpenData)
 	EVT_MENU(MENU_FILE_OPENROTATION, GLFrame::OnOpenRotation)
+	EVT_MENU(MENU_FILE_SAVEDATA, GLFrame::OnSaveData)
 	EVT_MENU(MENU_FILE_EXIT, GLFrame::OnExit)
 
 	EVT_MENU(MENU_VIEW_METADATA, GLFrame::OnViewMetadata)

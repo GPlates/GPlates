@@ -158,7 +158,7 @@ Globe::Paint()
 		glRotatef(_meridian, 0.0, 0.0, 1.0);
 
 		// Set the sphere's colour.
-		glColor3fv(Colour(0.2, 0.2, 0.2));
+		glColor3fv(Colour(0.35, 0.35, 0.35));
 		
 		/*
 		 * Draw sphere.

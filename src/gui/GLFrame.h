@@ -50,6 +50,7 @@ namespace GPlatesGui
 			//   File events
 			void OnOpenData(wxCommandEvent&);
 			void OnOpenRotation(wxCommandEvent&);
+			void OnSaveData(wxCommandEvent&);
 
 			//   View events
 			void OnViewMetadata(wxCommandEvent&);
