@@ -55,8 +55,11 @@
  * unitvector.  That's a lot of error that can accumulate, and that's only
  * a _single_ rotation.  Of course, bear in mind that I have no background
  * in numerical analysis (yet...) so this is all just handwaving.  End rant.
+ *
+ * Update, 2004-02-05: well, it seems 1.0e-14 is too strict... so let's try
+ * 1.0e-12, I guess...  I really need to do this stuff properly. --JB
  */
-#define REAL_EPSILON (1.0e-14)
+#define REAL_EPSILON (1.0e-12)
 
 using namespace GPlatesMaths;
 
