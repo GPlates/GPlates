@@ -29,11 +29,14 @@
 #define _GPLATES_GEO_GRIDDATA_H_
 
 #include "DrawableData.h"
+#include "global/types.h"
 #include "maths/Basis.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesGeo
 {
+	class GridElement;
+
 	/**
 	 * Data arranged in a rigid regular manner.
 	 * @todo We want to be able to support adaptive meshes sometime in
@@ -42,22 +45,19 @@ namespace GPlatesGeo
 	class GridData : public DrawableData
 	{
 		public:
-			class GridElement;
-
-			//typedef std::vector<GridElement> Grid_t;
-
 			GridData(const DataType_t&,
 				 const RotationGroupId_t&,
 				 const TimeWindow&,
 				 const Attributes_t&,
 				 const GPlatesMaths::PointOnSphere&,
 				 const GPlatesMaths::Basis&);
+			~GridData ();
 
 			/**
 			 * Add @a elem to the grid.
 			 */
-			//virtual void
-			//Add(const GridElement& elem) { _grid.push_back(elem); }
+			void
+			Add (const GridElement *element, index_t x1, index_t x2);
 
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }
@@ -65,9 +65,22 @@ namespace GPlatesGeo
 			void Draw () const;
 			void RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const;
 		private:
-			//Grid_t _grid;
 			GPlatesMaths::PointOnSphere _origin;
 			GPlatesMaths::Basis _basis;
+
+			typedef const GridElement *GridElementPtr;
+			struct GridRow {
+				index_t offset, length;
+				GridElementPtr *data;
+			};
+			typedef struct GridRow *GridRowPtr;
+
+			struct Grid {
+				index_t offset, length;
+				GridRowPtr *rows;
+			};
+
+			Grid *grid;
 	};
 }
 

@@ -27,23 +27,19 @@
 #define _GPLATES_GEO_GRIDELEMENT_H_
 
 #include "GridData.h"
-#include "global/types.h"  /* index_t */
 
 namespace GPlatesGeo
 {
 	/**
-	 * An element of a GridData, which has it's own Attributes_t.
+	 * An element of gridded data.
 	 */
-	class GridData::GridElement
+	class GridElement
 	{
 		public:
-			GridElement(index_t row, 
-						index_t col, 
-						const Attributes_t& attrs) 
-				: _row(row), _col(col), _attributes(attrs) { }
+			GridElement(const Attributes_t& attrs) 
+						: _attributes(attrs) { }
 
 		private:
-			index_t _row, _col;
 			Attributes_t _attributes;
 	};
 }
