@@ -27,7 +27,8 @@
 #include "DrawableData.h"
 #include "GridData.h"
 #include "global/types.h"
-#include "maths/Basis.h"
+#include "maths/GreatCircle.h"
+#include "maths/SmallCircle.h"
 #include "state/Layout.h"
 
 
@@ -35,9 +36,9 @@ using namespace GPlatesGeo;
 
 GridData::GridData(const DataType_t& dt, const RotationGroupId_t& id,
 	const TimeWindow& tw, const Attributes_t& attrs, 
-	const GPlatesMaths::PointOnSphere& origin,
-	const GPlatesMaths::Basis& basis)
-	: DrawableData(dt, id, tw, attrs), _origin(origin), _basis(basis)
+	const GPlatesMaths::GreatCircle &major,
+	const GPlatesMaths::SmallCircle &minor)
+	: DrawableData(dt, id, tw, attrs), _major(major), _minor(minor)
 {
 	grid = new Grid;
 	grid->offset = 0;

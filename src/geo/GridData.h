@@ -30,8 +30,8 @@
 
 #include "DrawableData.h"
 #include "global/types.h"
-#include "maths/Basis.h"
-#include "maths/PointOnSphere.h"
+#include "maths/GreatCircle.h"
+#include "maths/SmallCircle.h"
 
 namespace GPlatesGeo
 {
@@ -49,8 +49,8 @@ namespace GPlatesGeo
 				 const RotationGroupId_t&,
 				 const TimeWindow&,
 				 const Attributes_t&,
-				 const GPlatesMaths::PointOnSphere&,
-				 const GPlatesMaths::Basis&);
+				 const GPlatesMaths::GreatCircle&,
+				 const GPlatesMaths::SmallCircle&);
 			~GridData ();
 
 			/**
@@ -65,8 +65,8 @@ namespace GPlatesGeo
 			void Draw () const;
 			void RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const;
 		private:
-			GPlatesMaths::PointOnSphere _origin;
-			GPlatesMaths::Basis _basis;
+			GPlatesMaths::GreatCircle _major;
+			GPlatesMaths::SmallCircle _minor;
 
 			typedef const GridElement *GridElementPtr;
 			struct GridRow {
