@@ -44,7 +44,7 @@ namespace GPlatesMaths
 			 * Create a great circle, given its axis.
 			 * @param axis The axis vector.
 			 */
-			GreatCircle (UnitVector3D &axis)
+			GreatCircle (const UnitVector3D &axis)
 				: _normal (axis) { }
 
 			/**
@@ -55,7 +55,7 @@ namespace GPlatesMaths
 			GreatCircle (const PointOnSphere &p1,
 			             const PointOnSphere &p2);
 
-			const UnitVector3D &normal () const { return _normal; }
+			UnitVector3D normal () const { return _normal; }
 
 			/**
 			 * Computes one intersection point of this GreatCircle
