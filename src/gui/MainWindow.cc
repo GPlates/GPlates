@@ -138,7 +138,7 @@ MainWindow::OnOpenData(wxCommandEvent&)
 	 _("Select a data file..."),
 	 _last_load_dir, "",  // no default file
 	 _("GPlates Data files (*.gpml)|*.gpml|"
-	  "All files (*.*)|*.*"),  // wildcard
+	  "All files (*)|*"),  // wildcard
 	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
 	if (filedlg.ShowModal() == wxID_OK) {
@@ -156,7 +156,7 @@ MainWindow::OnLoadRotation(wxCommandEvent&)
 	 _("Select a rotation file..."),
 	 _last_load_dir, "",  // no default file
 	 _("PLATES Rotation files (*.rot)|*.rot|"
-	  "All files (*.*)|*.*"),  // wildcard
+	  "All files (*)|*"),  // wildcard
 	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
 	if (filedlg.ShowModal() == wxID_OK) {
@@ -174,7 +174,7 @@ void MainWindow::OnImport(wxCommandEvent&)
 	 _last_load_dir, "",  // no default file
 	 _("PLATES Data files (*.dat)|*.dat|"
 	  "NetCDF Grid files (*.grd)|*.grd|"
-	  "All files (*.*)|*.*"),  // wildcard
+	  "All files (*)|*"),  // wildcard
 	 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
 
 	if (filedlg.ShowModal () == wxID_OK) {
@@ -201,7 +201,7 @@ MainWindow::OnSaveAllData(wxCommandEvent&)
 	 _("Designate a file name..."),
 	 _last_save_dir, "",  // no default file
 	 _("GPlates Data files (*.gpml)|*.gpml|"
-	  "All files (*.*)|*.*"),  // wildcard
+	  "All files (*)|*"),  // wildcard
 	 wxSAVE | wxOVERWRITE_PROMPT);  // A 'Save' dialog box
 
 	if (filedlg.ShowModal() == wxID_OK) {
