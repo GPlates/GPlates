@@ -196,6 +196,11 @@ namespace GPlatesMaths
 		return (Real::NegativeEpsilon > d);
 	}
 
+	inline Real abs (const Real &r1)
+	{
+		return Real (fabs (r1.dval ()));
+	}
+
 
 	/**
 	 * Using the exact value of the Real, return whether it is positive
