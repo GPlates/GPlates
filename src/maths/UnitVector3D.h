@@ -141,7 +141,7 @@ namespace GPlatesMaths
 	inline std::ostream &
 	operator<<(std::ostream &os, UnitVector3D v) {
 
-		os << "<" << v.x() << ", " << v.y() << ", " << v.z() << ">";
+		os << "(" << v.x() << ", " << v.y() << ", " << v.z() << ")";
 		return os;
 	}
 
