@@ -29,6 +29,7 @@
 #include <sstream>
 #include <algorithm>  /* transform */
 #include "File.h"
+#include "Reconstruct.h"
 #include "Dialogs.h"
 #include "state/Data.h"
 #include "fileio/PlatesRotationParser.h"
@@ -276,6 +277,9 @@ File::OpenData(const std::string& filename)
 
 	DataGroup* data = GPlatesState::Data::GetDataGroup();
 	ConvertDataGroupToDrawableDataMap(data);
+
+	// Draw the data on the screen in its present-day layout
+	Reconstruct::Present();
 }
 
 
