@@ -26,9 +26,11 @@
 #ifndef _GPLATES_MATHS_SMALLCIRCLE_H_
 #define _GPLATES_MATHS_SMALLCIRCLE_H_
 
+#include <vector>
 #include "types.h"
-#include "UnitVector3D.h"
+#include "GreatCircle.h"
 #include "PointOnSphere.h"
+#include "UnitVector3D.h"
 #include "Vector3D.h"
 
 namespace GPlatesMaths
@@ -62,9 +64,15 @@ namespace GPlatesMaths
 
 			real_t radius () const { return sin (_theta); }
 
-			// TODO
-			//UnitVector3D intersection (const GreatCircle &other)
-			// const;
+			/**
+			 * Find the intersection points (if any) of this
+			 * SmallCircle and the given GreatCircle. Intersection
+			 * points are added to @a points, and the number of
+			 * intersections is returned.
+			 * @todo Allow any container to be passed in.
+			 */
+			unsigned int intersection (const GreatCircle &other,
+				std::vector<PointOnSphere> &points) const;
 
 		protected:
 			void AssertInvariantHolds () const;

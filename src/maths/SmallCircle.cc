@@ -24,9 +24,11 @@
  */
 
 #include <sstream>
-#include "SmallCircle.h"
+#include <vector>
+#include "GreatCircle.h"
 #include "IndeterminateResultException.h"
 #include "PointOnSphere.h"
+#include "SmallCircle.h"
 #include "UnitVector3D.h"
 #include "ViolatedSmallCircleInvariantException.h"
 
@@ -43,6 +45,46 @@ GPlatesMaths::SmallCircle::SmallCircle (const UnitVector3D &axis,
 				"Tried to create degenerate small circle.");
 
 	_theta = acos (dp);
+}
+
+unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
+				std::vector<PointOnSphere> &points) const
+{
+	// If small circle and great circle are parallel, no intersections
+	if (collinear (_normal, other.normal ()))
+		return 0;
+
+	// Since the axes are not collinear, the planes that the circles live
+	// on definitely intersect, in the form of a line.
+
+	// A is one point on the line through the intersection points, and
+	// B is the direction vector, so the line equation is: x = A + Bt
+	Vector3D B = cross (other.normal (), _normal);
+	real_t scale = cos (_theta) / B.magSqrd ();
+	Vector3D A = cross (B, other.normal ()) * scale;
+
+	// solve a quadratic equation to get the actual points
+	real_t a, b, c;
+	a = B.magnitude ();
+	b = 2 * dot (A, B);
+	c = A.magnitude () - 1;
+	real_t discr = b * b - 4 * a * c;
+	if (discr < 0.0)
+		return 0;	// no intersection
+	if (discr <= 0.0) {
+		// only one intersection point
+		real_t t = -b / (2 * a);
+		points.push_back (PointOnSphere (A + B * t));
+		return 1;
+	}
+
+	// two intersection points
+	real_t pm = sqrt (discr);
+	real_t t1 = (-b - pm) / (2 * a), t2 = (-b + pm) / (2 * a);
+	points.push_back (PointOnSphere (A + B * t1));
+	points.push_back (PointOnSphere (A + B * t2));
+
+	return 2;
 }
 
 void GPlatesMaths::SmallCircle::AssertInvariantHolds () const
