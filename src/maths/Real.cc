@@ -39,7 +39,7 @@ const double Real::NegativeEpsilon = -REAL_EPSILON;
 
 
 Real
-sqrt(Real r) {
+GPlatesMaths::sqrt(Real r) {
 
 	// First, perform "almost exact" comparison.
 	if (r < 0.0) {
@@ -83,7 +83,7 @@ sqrt(Real r) {
  * Don't forget: the arc sine will be returned in radians, not degrees!
  */
 Real
-asin(Real r) {
+GPlatesMaths::asin(Real r) {
 
 	// First, perform "almost exact" comparisons for bounds of domain.
 	if (r < -1.0 || r > 1.0) {
