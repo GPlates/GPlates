@@ -91,8 +91,8 @@ namespace GPlatesMaths
 			 * @param z_comp The z-component.
 			 * @param w_comp The w-component.
 			 *
-			 * @throws ViolatedUnitQuatInvariantException if the resulting
-			 *   quaternion's magnitude is not 1.
+			 * @throws ViolatedUnitQuatInvariantException if the
+			 * resulting quaternion's magnitude is not 1.
 			 */
 			explicit 
 			UnitQuaternion3D(const real_t &x_comp,
@@ -132,23 +132,33 @@ namespace GPlatesMaths
 
 
 			/**
-			 * The conjugate of a quaternion is required
-			 * for the multiplicative inverse.
+			 * Return the conjugate of this unit quaternion.
+			 *
+			 * The conjugate of a quaternion is required for the
+			 * multiplicative inverse.
 			 */
 			UnitQuaternion3D
-			conjugate() const { return UnitQuaternion3D(_s, -_v); }
+			conjugate() const {
+
+				return UnitQuaternion3D(_s, -_v);
+			}
 
 
 			/**
+			 * Return the inverse of this unit quaternion.
+			 *
 			 * If a unit quaternion is representing a rotation,
 			 * the inverse of that quaternion is the reverse of
 			 * the rotation).
 			 *
-			 * A neat feature of unit quaternions:
-			 * its inverse is identical to its conjugate.
+			 * A neat feature of the unit quaternion: its inverse
+			 * is identical to its conjugate.
 			 */
 			UnitQuaternion3D
-			inverse() const { return conjugate(); }
+			inverse() const {
+
+				return conjugate();
+			}
 
 
 			/**
@@ -157,7 +167,10 @@ namespace GPlatesMaths
 			 * a unit vector to itself).
 			 */
 			bool
-			isIdentity() const { return (w() == 1.0); }
+			isIdentity() const {
+
+				return (w() == 1.0);
+			}
 
 
 			struct RotationParams
@@ -175,11 +188,9 @@ namespace GPlatesMaths
 			 * Calculate the rotation parameters of this unit
 			 * quaternion.
 			 *
-			 * @throws IndeterminateResultException 
-			 * if this function is invoked upon a unit
-			 * quaternion instance which represents an identity
-			 * rotation, an 'IndeterminateResultException' will
-			 * be thrown.
+			 * @throws IndeterminateResultException if this
+			 * function is invoked upon a unit quaternion
+			 * instance which represents an identity rotation.
 			 */
 			RotationParams
 			calcRotationParams() const;
@@ -187,8 +198,8 @@ namespace GPlatesMaths
 
 			/**
 			 * Create a unit quaternion to represent the following
-			 * Euler rotation around the unit vector of the axis,
-			 * by the given rotation angle.
+			 * Euler rotation around the given unit vector @a axis,
+			 * by the given rotation angle @a angle.
 			 *
 			 * As always, the rotation angle is in radians.
 			 */
@@ -204,10 +215,9 @@ namespace GPlatesMaths
 			 * @param v_comp The vector-component.
 			 *
 			 * This constructor is protected because it
-			 * <b>assumes</b> that the scalar and vector
-			 * with which it is supplied will maintain
-			 * the invariant.  This constructor will not
-			 * check the invariant.
+			 * <em>assumes</em> that the scalar and vector with
+			 * which it is supplied will maintain the invariant.
+			 * This constructor will not check the invariant.
 			 */
 			explicit 
 			UnitQuaternion3D(const real_t &s_comp,
@@ -217,8 +227,9 @@ namespace GPlatesMaths
 
 			/** 
 			 * Assert the class invariant.
+			 *
 			 * @throw ViolatedUnitQuaternionInvariantException
-			 *   if the invariant has been violated.
+			 * if the invariant has been violated.
 			 */
 			void
 			AssertInvariantHolds() const;
@@ -250,7 +261,9 @@ namespace GPlatesMaths
 
 
 	/**
-	 * NOTE that the negative of a quaternion is NOT the same as
+	 * Return the negative of the unit quaternion @a q.
+	 *
+	 * NOTE that the negative of a quaternion is <em>NOT</em> the same as
 	 * its conjugate or inverse.
 	 */
 	inline UnitQuaternion3D
@@ -261,7 +274,7 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Return whether these two unit quaternions represent
+	 * Return whether these two unit quaternions @a q1 and @a q2 represent
 	 * equivalent rotations.
 	 */
 	inline bool
@@ -298,12 +311,12 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Multiply quaternion 'q1' with 'q2'.
+	 * Multiply quaternion @a q1 with @a q2.
 	 *
 	 * Note that, in the context of rotations, quaternion multiplication
 	 * behaves a lot like matrix multiplication: it can be considered a
-	 * <em>composition</em> of the quaternions, in the sense that 'q1'
-	 * is being applied to 'q2'.  This is known as "premultiplication".
+	 * <em>composition</em> of the quaternions, in the sense that @a q1
+	 * is being applied to @a q2.  This is known as "premultiplication".
 	 */
 	UnitQuaternion3D operator*(UnitQuaternion3D q1, UnitQuaternion3D q2);
 }
