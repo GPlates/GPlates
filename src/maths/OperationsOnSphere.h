@@ -39,6 +39,7 @@ namespace GPlatesMaths
 		public:
 
 			/**
+			 * Make a point in the standard spherical coordinate system.
 			 * @throws InvalidLatLonException when
 			 *   @p isValidLat( @a lat ) returns false or
 			 *   @p isValidLon( @a lon ) returns false.
