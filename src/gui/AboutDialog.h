@@ -27,7 +27,12 @@
 #define _GPLATES_GUI_ABOUTDIALOG_H_
 
 #include <wx/dialog.h>
+#include <wx/event.h>
 #include "global/types.h"
+
+// forward declarations
+class wxSizer;
+class wxStaticText;
 
 namespace GPlatesGui
 {
@@ -35,6 +40,14 @@ namespace GPlatesGui
 	{
 		public:
 			AboutDialog (wxWindow *parent);
+
+		private:
+			wxSizer *_msizer;
+			wxStaticText *_top;
+			void okClick (wxCommandEvent &event);
+
+
+		DECLARE_EVENT_TABLE()
 	};
 }
 
