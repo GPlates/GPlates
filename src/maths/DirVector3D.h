@@ -31,8 +31,6 @@
 
 namespace GPlatesMaths
 {
-	using namespace GPlatesGlobal;
-
 	// forward declaration for 'DirVector3D::normalise'
 	class UnitVector3D;
 
@@ -54,15 +52,15 @@ namespace GPlatesMaths
 			/**
 			 * Create a 3D direction vector from the specified
 			 * x, y and z components.
-			 * @param x The x-component.
-			 * @param y The y-component.
-			 * @param z The z-component.
+			 * @param x_comp The x-component.
+			 * @param y_comp The y-component.
+			 * @param z_comp The z-component.
 			 */
 			explicit 
-			DirVector3D(const real_t& x,
-			            const real_t& y,
-			            const real_t& z)
-				: _x(x), _y(y), _z(z) {
+			DirVector3D(const real_t& x_comp,
+			            const real_t& y_comp,
+			            const real_t& z_comp)
+				: _x(x_comp), _y(y_comp), _z(z_comp) {
 				
 				AssertInvariantHolds();
 			}

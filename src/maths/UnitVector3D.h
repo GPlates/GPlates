@@ -32,8 +32,6 @@
 
 namespace GPlatesMaths
 {
-	using namespace GPlatesGlobal;
-
 	/** 
 	 * A three-dimensional unit vector.
 	 * Thus, the magnitude of this vector must be identical to 1.
@@ -51,15 +49,15 @@ namespace GPlatesMaths
 			/**
 			 * Create a 3D unit vector from the specified
 			 * x, y and z components.
-			 * @param x The x-component.
-			 * @param y The y-component.
-			 * @param z The z-component.
+			 * @param x_comp The x-component.
+			 * @param y_comp The y-component.
+			 * @param z_comp The z-component.
 			 */
 			explicit 
-			UnitVector3D(const real_t& x,
-			             const real_t& y,
-			             const real_t& z)
-				: _x(x), _y(y), _z(z) {
+			UnitVector3D(const real_t& x_comp,
+			             const real_t& y_comp,
+			             const real_t& z_comp)
+				: _x(x_comp), _y(y_comp), _z(z_comp) {
 				
 				AssertInvariantHolds();
 			}
