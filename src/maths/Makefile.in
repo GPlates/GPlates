@@ -10,7 +10,8 @@ CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
 OBJS = DirVector3D.o GPlatesMaths.o GreatCircleArc.o Matrix3D.o \
-	OperationsOnSphere.o PointOnSphere.o Real.o Rotation.o UnitVector3D.o
+	OperationsOnSphere.o PointOnSphere.o Real.o Rotation.o \
+	UnitQuaternion3D.o UnitVector3D.o Vector3D.o
 
 LIBNAME = libmaths.a
 
