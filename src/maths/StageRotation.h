@@ -45,7 +45,7 @@ namespace GPlatesMaths
 	 * the delta between a pair of finite rotations.  It represents
 	 * the change in rotation over the change in time.  [Note that
 	 * the stage rotation itself is not a time-derivative, but it
-	 * could be very easily used to calculate a time-derivative.]
+	 * could very easily be used to calculate a time-derivative.]
 	 *
 	 * Alternately, if a finite rotation is considered as a point in a
 	 * 4-dimensional rotation-space, a stage rotation is a displacement
@@ -72,11 +72,88 @@ namespace GPlatesMaths
 			real_t
 			timeDelta() const { return _time_delta; }
 
+
+			/**
+			 * Apply this stage rotation to a finite rotation.
+			 *
+			 * Note that this function is a member function for
+			 * a reason: to enforce the concept that the operation
+			 * of a stage rotation is APPLIED TO a finite rotation
+			 * -- it is very much a PREmultiplication, in the style
+			 * of traditional matrix operations.
+			 *
+			 * This operation is not supposed to be symmetrical.
+			 */
+			FiniteRotation
+			operator*(const FiniteRotation &r) const {
+
+				UnitQuaternion res_uq = quat() * r.quat();
+				real_t res_time = r.time() + timeDelta();
+
+				return
+				 FiniteRotation::CreateFiniteRotation(res_uq,
+				  res_time);
+			}
+
 		private:
 			UnitQuaternion3D _quat;
 			real_t           _time_delta;  // Millions of years
 	};
 
+
+	/**
+	 * Returns the difference between two finite rotations as a
+	 * stage rotation.
+	 *
+	 * If we call the first argument 'r1' and the second 'r2', then
+	 * the following facts may be stated:
+	 *
+	 *  + in general, r1.time() != r2.time()  (which results, in general,
+	 *     in a nonzero time delta).
+	 *
+	 *  + if 'r1' describes the rotation of a moving plate 'M1'
+	 *     with respect to a fixed plate 'F1', and 'r2' describes
+	 *     the rotation of a moving plate 'M2' with respect to a
+	 *     fixed plate 'F2', then:
+	 *
+	 *      - F1 should equal F2  ("should equal" instead of "must equal",
+	 *         since this function cannot enforce this equality).
+	 *
+	 *      - M1 should equal M2.
+	 *
+	 *      - if the result of this operation is called 'sr', then
+	 *         'sr' will describe the motion of the plate M1 == M2.
+	 *
+	 * Note that, in contrast to most of the stage rotation / finite
+	 * rotation / point operations, this operation is NOT read right-
+	 * to-left (ie. starting with the right-most object, then moving
+	 * left as successive operations are applied) in the style of
+	 * premultiplication.  Rather, 'r1' is taken, and then 'r2' is
+	 * "subtracted" from it (or rather, the inverse of 'r2' is applied
+	 * to it).  In mathematical symbols, if
+	 *  C := A - B == A + (-B)
+	 *             == B.inverse() * A  [where '+' is intended in the
+	 * style of position vectors and displacements, and may be read as
+	 * "then apply", while '*' is intended in the style of matrices,
+	 * and may be read as "premultiply to apply-to"], then
+	 *  A == B + C
+	 *    == C * B.
+	 * Due to this irregularity in the order-of-evaluation of arguments,
+	 * this operation will be left as a named function (rather than being
+	 * provided as an overloaded arithmetic operator), with the aim of
+	 * minimising the confusion experienced when trying to read the code
+	 * which invokes these operations (and trying to work out whether one
+	 * is currently supposed to be reading the symbols from left-to-right
+	 * or right-to-left).
+	 */
+	StageRotation
+	subtractFinite(const FiniteRotation &r1, const FiniteRotation &r2) {
+
+		UnitQuaternion3D res_uq = r1.quat() * r2.quat().inverse();
+		real_t time_delta = r1.time() - r2.time();
+
+		return StageRotation(res_uq, time_delta);
+	}
 }
 
 #endif  // _GPLATES_MATHS_STAGEROTATION_H_
