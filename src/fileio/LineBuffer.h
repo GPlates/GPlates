@@ -114,7 +114,7 @@ namespace GPlatesFileIO
 			void
 			writeTo(std::ostream &ostr) const {
 
-				ostr << "file \"" << _fname << "\" [line "
+				ostr << "\"" << _fname << "\" [line "
 				     << _line_num << "]";
 			}
 
