@@ -26,24 +26,18 @@
 #include <sstream>
 #include <vector>
 #include "GreatCircle.h"
-#include "IndeterminateResultException.h"
 #include "PointOnSphere.h"
 #include "SmallCircle.h"
 #include "UnitVector3D.h"
-#include "ViolatedSmallCircleInvariantException.h"
+#include "ViolatedClassInvariantException.h"
 
 
 GPlatesMaths::SmallCircle::SmallCircle (const UnitVector3D &axis,
 					const PointOnSphere &pt)
 	: Axial (axis) {
 
-	UnitVector3D point = pt.unitvector ();
-	real_t dp = dot (normal(), point);
-
-	if (abs (dp) > 1.0)
-		throw IndeterminateResultException (
-			"Tried to create small circle with imaginary radius.");
-
+	UnitVector3D u = pt.unitvector ();
+	real_t dp = dot (normal(), u);
 	_theta = acos (dp);
 }
 
@@ -89,10 +83,15 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 }
 
 
-void GPlatesMaths::SmallCircle::AssertInvariantHolds () const
+void
+GPlatesMaths::SmallCircle::AssertInvariantHolds () const
 {
-	// TODO: make message more detailed
-	if ((_theta < 0.0) || (_theta > M_PI))
-		throw ViolatedSmallCircleInvariantException (
-						"Theta out of range");
+	if ((_theta < 0.0) || (_theta > M_PI)) {
+
+		// an invalid colatitude
+		std::ostringstream oss;
+		oss << "Invalid colatitude " << _theta << " radians\n"
+		 << "for small circle.";
+		throw ViolatedClassInvariantException(oss.str().c_str());
+	}
 }
