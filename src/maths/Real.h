@@ -21,6 +21,7 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_REAL_H_
@@ -309,6 +310,11 @@ namespace GPlatesMaths
 		return Real((MATHVALUE_PI / 180.0) * rdeg);
 	}
 
+	inline Real
+	radiansToDegrees(Real drad) {
+
+		return Real((180.0 / MATHVALUE_PI) * drad);
+	}
 
 	inline std::ostream &
 	operator<<(std::ostream &os, Real r) {

@@ -21,6 +21,7 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
  */
 
 #include <sstream>
@@ -28,6 +29,7 @@
 #include "InvalidLatLonException.h"
 #include "InvalidPolyLineException.h"
 #include "GreatCircleArc.h"
+#include "PointOnSphere.h"
 
 
 using namespace GPlatesMaths;
@@ -142,4 +144,65 @@ OperationsOnSphere::convertLatLonPointListToPolyLineOnSphere(const
 		u1 = u2;
 	}
 	return plos;
+}
+
+
+LatLonPoint 
+OperationsOnSphere::convertPointOnSphereToLatLonPoint(
+	const PointOnSphere& point)
+{
+	real_t lat, lon;
+	const real_t &x = point.unitvector().x(),
+				 &y = point.unitvector().y(),
+				 &z = point.unitvector().z();
+
+	if (z == 1.0) { // North pole
+		
+		lat = 90.0; 
+		lon = 0.0;
+		
+	} else if (z == -1.0) { // South pole
+			
+		lat = -90.0;
+		lon = 0.0;
+		
+	} else if (x == 0.0) { // longitude is +/- 90
+
+		lat = asin(point.unitvector().z());
+		lat = radiansToDegrees(lat);
+		lon = (y > 0.0 ? 90.0 : -90.0);
+		
+	} else if (y == 0.0) { // longitude is 0 or 180
+		
+		lat = asin(point.unitvector().z());
+		lat = radiansToDegrees(lat);
+		lon = (x > 0.0 ? 0.0 : 180.0);
+
+	} else {
+
+		lat = asin(z);
+		real_t tmp = y/x, sine_tmp = sin(tmp);
+		
+		if (sine_tmp == 0.0) {  // y/x == n*pi, for some integer n.
+				
+			lon = 0.0;
+		
+		} else {
+				
+			// arctan = cos/sin
+			lon = cos(tmp)/sine_tmp;
+			lon = radiansToDegrees(lon);
+
+			// Ensure that the longitude is in the correct range.
+			while (lon > 180.0)
+				lon -= 180.0;
+
+			while (lon <= -180.0)
+				lon += 180.0;
+		}
+
+		lat = radiansToDegrees(lat);
+	}
+
+	return LatLonPoint::CreateLatLonPoint(lat, lon);
 }

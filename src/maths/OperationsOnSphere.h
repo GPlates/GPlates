@@ -91,6 +91,9 @@ namespace GPlatesMaths
 		PointOnSphere convertLatLonPointToPointOnSphere(const
 		 LatLonPoint &llp);
 
+		LatLonPoint 
+		convertPointOnSphereToLatLonPoint(const PointOnSphere&);
+						
 		/**
 		 * The list must contain at least TWO LatLonPoints.
 		 * No two successive LatLonPoints may be equivalent.
