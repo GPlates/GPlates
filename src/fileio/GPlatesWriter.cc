@@ -24,6 +24,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include "global/ControlFlowException.h"
 #include "GPlatesWriter.h"
@@ -82,7 +83,6 @@ WriteAttributes(std::ostream& os,
 static void
 WriteCoord(std::ostream& os, const PointOnSphere& point, std::string indent)
 {
-	// convertPointOnSphereToLatLonPoint(point)
 	LatLonPoint llp = OperationsOnSphere::
 		convertPointOnSphereToLatLonPoint(point);
 
@@ -151,6 +151,7 @@ WriteDataGroup(std::ostream& os, const DataGroup* data, std::string indent)
 	// Print attributes.
 	WriteAttributes(os, data, indent + '\t');
 
+	// XXX Should use the visitor functionality to achieve this.
 	DataGroup::Children_t::const_iterator iter = data->ChildrenBegin();
 	for ( ; iter != data->ChildrenEnd(); ++iter) {
 		const LineData* ld;
@@ -184,8 +185,8 @@ GPlatesWriter::Visit(const DataGroup* data)
 	 */
 	std::string indent;
 
-//	_accum.precision(10);
-//	_accum.setf(std::ios_base::showpoint);
+	// XXX Why 14?
+	//_accum.precision(14);
 	
 	WriteDataGroup(_accum, data, indent);
 }
