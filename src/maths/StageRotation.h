@@ -138,7 +138,7 @@ namespace GPlatesMaths
 	inline StageRotation
 	subtractFiniteRots(const FiniteRotation &r1, const FiniteRotation &r2) {
 
-		UnitQuaternion3D res_uq = r2.quat().inverse() * r1.quat();
+		UnitQuaternion3D res_uq = r2.quat().get_inverse() * r1.quat();
 		real_t time_delta = r1.time() - r2.time();
 
 		return StageRotation(res_uq, time_delta);

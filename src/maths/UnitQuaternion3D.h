@@ -112,7 +112,7 @@ namespace GPlatesMaths
 		/**
 		 * Access quaternion as the duple (scalar, vector).
 		 */
-		real_t
+		const real_t &
 		scalar_part() const {
 			
 			return m_scalar_part;
@@ -132,7 +132,7 @@ namespace GPlatesMaths
 		/**
 		 * Access quaternion as the real 4-tuple (w, x, y, z).
 		 */
-		real_t
+		const real_t &
 		w() const {
 			
 			return m_scalar_part;
@@ -142,7 +142,7 @@ namespace GPlatesMaths
 		/**
 		 * Access quaternion as the real 4-tuple (w, x, y, z).
 		 */
-		real_t
+		const real_t &
 		x() const {
 			
 			return m_vector_part.x();
@@ -152,7 +152,7 @@ namespace GPlatesMaths
 		/**
 		 * Access quaternion as the real 4-tuple (w, x, y, z).
 		 */
-		real_t
+		const real_t &
 		y() const {
 			
 			return m_vector_part.y();
@@ -162,7 +162,7 @@ namespace GPlatesMaths
 		/**
 		 * Access quaternion as the real 4-tuple (w, x, y, z).
 		 */
-		real_t
+		const real_t &
 		z() const {
 			
 			return m_vector_part.z();
@@ -176,7 +176,7 @@ namespace GPlatesMaths
 		 * multiplicative inverse.
 		 */
 		UnitQuaternion3D
-		conjugate() const {
+		get_conjugate() const {
 
 			return UnitQuaternion3D(m_scalar_part, -m_vector_part);
 		}
@@ -192,9 +192,9 @@ namespace GPlatesMaths
 		 * identical to its conjugate.
 		 */
 		UnitQuaternion3D
-		inverse() const {
+		get_inverse() const {
 
-			return conjugate();
+			return get_conjugate();
 		}
 
 
@@ -219,7 +219,7 @@ namespace GPlatesMaths
 		 * identity rotation.
 		 */
 		RotationParams
-		calc_rotation_params() const;
+		get_rotation_params() const;
 
 
 		/**
@@ -264,7 +264,7 @@ namespace GPlatesMaths
 		 * invariant.
 		 */
 		real_t
-		actual_norm_sqrd() const {
+		get_actual_norm_sqrd() const {
 
 			return
 			 (scalar_part() * scalar_part() +

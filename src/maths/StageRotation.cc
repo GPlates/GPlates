@@ -54,7 +54,7 @@ GPlatesMaths::scaleToNewTimeDelta(
 	}
 
 	UnitQuaternion3D::RotationParams params =
-	 sr.quat().calc_rotation_params();
+	 sr.quat().get_rotation_params();
 
 	/*
 	 * Ensure that the time delta of the stage rotation argument is not

@@ -30,7 +30,7 @@
 
 
 GPlatesMaths::UnitQuaternion3D::RotationParams
-GPlatesMaths::UnitQuaternion3D::calc_rotation_params() const {
+GPlatesMaths::UnitQuaternion3D::get_rotation_params() const {
 
 	/*
 	 * Ensure that the quaternion does not represent an identity rotation.
@@ -61,10 +61,10 @@ GPlatesMaths::UnitQuaternion3D::calc_rotation_params() const {
 	real_t theta_on_2 = acos(scalar_part());  // not a multiple of PI
 	real_t sin_of_theta_on_2 = sin(theta_on_2);  // not zero
 
-	Vector3D axis_vect = (1 / sin_of_theta_on_2) * vector_part();
-	UnitVector3D axis_unit_vect = axis_vect.normalise();
+	Vector3D axis_vector = (1 / sin_of_theta_on_2) * vector_part();
+	UnitVector3D axis_unit_vector = axis_vector.normalise();
 
-	return RotationParams(axis_unit_vect, theta_on_2 * 2.0);
+	return RotationParams(axis_unit_vector, theta_on_2 * 2.0);
 }
 
 
@@ -96,7 +96,7 @@ GPlatesMaths::UnitQuaternion3D::assert_invariant() const {
 	 * Calculate norm of quaternion to ensure that it actually _is_ 1.
 	 * For efficiency, don't bother sqrting yet.
 	 */
-	real_t norm_sqrd = actual_norm_sqrd();
+	real_t norm_sqrd = get_actual_norm_sqrd();
 	if (norm_sqrd != 1.0) {
 
 		// invariant has been violated

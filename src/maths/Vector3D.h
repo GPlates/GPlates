@@ -59,13 +59,13 @@ namespace GPlatesMaths
 			~Vector3D() {  }
 
 
-			real_t
+			const real_t &
 			x() const { return _x; }
 
-			real_t
+			const real_t &
 			y() const { return _y; }
 
-			real_t
+			const real_t &
 			z() const { return _z; }
 
 			/**

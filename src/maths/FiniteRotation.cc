@@ -34,7 +34,7 @@ namespace {
 	calculate_d_value(
 	 const GPlatesMaths::UnitQuaternion3D &uq) {
 
-		GPlatesMaths::real_t s = uq.scalar_part();
+		const GPlatesMaths::real_t &s = uq.scalar_part();
 		const GPlatesMaths::Vector3D &v = uq.vector_part();
 
 		return ((s * s) - dot(v, v));
@@ -46,7 +46,7 @@ namespace {
 	calculate_e_value(
 	 const GPlatesMaths::UnitQuaternion3D &uq) {
 
-		GPlatesMaths::real_t s = uq.scalar_part();
+		const GPlatesMaths::real_t &s = uq.scalar_part();
 		const GPlatesMaths::Vector3D &v = uq.vector_part();
 
 		return ((2.0 * s) * v);
@@ -153,7 +153,7 @@ GPlatesMaths::operator<<(
 	} else {
 
 		UnitQuaternion3D::RotationParams params =
-		 uq.calc_rotation_params();
+		 uq.get_rotation_params();
 		os << "(axis = " << params.axis
 		 << "; angle = " << params.angle << ")";
 	}

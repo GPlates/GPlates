@@ -162,7 +162,8 @@ namespace GPlatesMaths
 	inline FiniteRotation
 	reverse(const FiniteRotation &r) {
 
-		return FiniteRotation::Create(r.quat().inverse(), r.time());
+		return
+		 FiniteRotation::Create(r.quat().get_inverse(), r.time());
 	}
 
 

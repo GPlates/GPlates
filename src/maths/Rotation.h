@@ -95,7 +95,8 @@ namespace GPlatesMaths
 			Rotation
 			reverse() const {
 
-				UnitQuaternion3D rev_quat = quat().inverse();
+				UnitQuaternion3D rev_quat =
+				 quat().get_inverse();
 				UnitVector3D rev_axis = -axis();
 
 				return
