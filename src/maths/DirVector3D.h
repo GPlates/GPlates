@@ -72,14 +72,13 @@ namespace GPlatesMaths
 			            const real_t& z_comp)
 				: Vector3D (x_comp, y_comp, z_comp) {
 
-				// Calculate magnitude of vector.
-				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
+				UpdateMagnitude();
 				AssertInvariantHolds();
 			}
 
 			DirVector3D (const Vector3D &v) : Vector3D (v)
 			{
-				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
+				UpdateMagnitude();
 				AssertInvariantHolds ();
 			}
 
@@ -91,17 +90,32 @@ namespace GPlatesMaths
 				_x = v.x ();
 				_y = v.y ();
 				_z = v.z ();
+
+				UpdateMagnitude();
 				AssertInvariantHolds ();
+
 				return *this;
 			}
 
 		protected:
+			/**
+			 * Calculate and set the magnitude.
+			 */
+			void
+			UpdateMagnitude() {
+
+				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
+			}
+
 			/** 
 			 * Assert the class invariant.
 			 * @throw ViolatedDirVectorInvariantException
 			 *   if the invariant has been violated.
+			 *
+			 * Since this is invoked by constructors,
+			 * it should not be a virtual function.
 			 */
-			virtual void AssertInvariantHolds () const;
+			void AssertInvariantHolds () const;
 
 			real_t _mag;
 	};
