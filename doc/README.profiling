@@ -3,12 +3,11 @@ How to profile GPlates
 
 	* configure script must have been run with --enable-prof,
 		_before_ a complete recompilation
-	* Run gplates in the src/ directory, and leave the generated
-		"gmon.out" file there
-	* Move into the scripts/ directory, and either run:
-		./profile
+	* Run gplates (from either the base dir, or the src/ dir)
+	* Run either:
+		scripts/profile
 	  or
-		./graphical_profile
+		./graphical_profile  (should be run from the scripts/ dir)
 
 	  The former generates a raw dump (capture with a pager), and
 	  the latter generates a "gplates-gprof.ps.gz" file.
