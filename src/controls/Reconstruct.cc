@@ -352,4 +352,7 @@ GPlatesControls::Reconstruct::Animation(const fpdata_t &start_time,
 		std::cerr << "Internal exception: " << e << std::endl;
 		exit(1);
 	}
+
+	// XXX hack to fix the disappearance of the data after an animation
+	Reconstruct::Present();
 }
