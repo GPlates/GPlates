@@ -29,13 +29,15 @@
 #define _GPLATES_GLOBAL_TYPES_H_
 
 #include <cstdlib>
+#include "Real.h"
+
 
 namespace GPlatesGlobal
 {
-	/** 
-	 * From the field of reals.
+	/**
+	 * A floating-point approximation to the field of reals.
 	 */
-	typedef double real_t;
+	typedef Real real_t;
 
 	/** 
 	 * The integral type.
