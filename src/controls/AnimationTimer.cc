@@ -29,9 +29,9 @@
 
 
 bool
-GPlatesControls::AnimationTimer::StartNew(WarpFn warp_to_time, int num_steps,
+GPlatesControls::AnimationTimer::StartNew(WarpFn warp_to_time,
  GPlatesGlobal::fpdata_t start_time, GPlatesGlobal::fpdata_t end_time,
- int milli_secs) {
+ GPlatesGlobal::fpdata_t time_delta, bool finish_on_end, int milli_secs) {
 
 	if (AnimationTimer::exists()) {
 
@@ -47,8 +47,8 @@ GPlatesControls::AnimationTimer::StartNew(WarpFn warp_to_time, int num_steps,
 			delete _instance;
 		}
 	}
-	_instance =
-	 new AnimationTimer(warp_to_time, num_steps, start_time, end_time);
+	_instance = new AnimationTimer(warp_to_time, start_time, end_time,
+	 time_delta, finish_on_end);
 	return (_instance->Start(milli_secs, wxTIMER_CONTINUOUS));
 }
 
@@ -102,18 +102,24 @@ GPlatesControls::AnimationTimer::Notify() {
 
 	try {
 
-		if (_curr_frame < _num_frames) {
+		if ((_sense * _curr_t) <= (_sense * _end_t)) {
 
 			// display the frame for time '_curr_t'
 			(*_warp_to_time)(_curr_t.dval());
 
-			_curr_frame++;
-			_curr_t += _time_incr;
+			_curr_t += (_sense * _time_delta);
 
 		} else {
 
 			// final frame
-			(*_warp_to_time)(_end_t.dval());
+			if (_finish_on_end) {
+
+				/*
+				 * Add an extra frame to ensure animation
+				 * finishes *exactly* on end time.
+				 */
+				(*_warp_to_time)(_end_t.dval());
+			}
 			_instance->Stop();
 		}
 
@@ -132,11 +138,21 @@ GPlatesControls::AnimationTimer::_instance = NULL;
 
 
 GPlatesControls::AnimationTimer::AnimationTimer(WarpFn warp_to_time,
- int num_steps, GPlatesGlobal::fpdata_t start_time,
- GPlatesGlobal::fpdata_t end_time) :
- wxTimer(), _warp_to_time(warp_to_time), _curr_frame(1), _curr_t(start_time),
- _end_t(end_time) {
+ GPlatesGlobal::fpdata_t start_time, GPlatesGlobal::fpdata_t end_time,
+ GPlatesGlobal::fpdata_t time_delta, bool finish_on_end) :
+ wxTimer(), _warp_to_time(warp_to_time), _curr_t(start_time), _end_t(end_time),
+ _time_delta(time_delta), _finish_on_end(finish_on_end) {
 
-	_num_frames = static_cast< unsigned >(num_steps);
-	_time_incr = (_end_t - _curr_t) / (num_steps - 1);
+	/*
+	 * Calculate the "sense" (ie, direction through time)
+	 * from 'start_time' to 'end_time'.
+	 */
+	if (end_time >= start_time) {
+
+		_sense = 1.0;
+
+	} else {
+
+		_sense = -1.0;
+	}
 }

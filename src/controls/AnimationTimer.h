@@ -56,7 +56,7 @@ namespace GPlatesControls
 			 * during the course of the animation.
 			 *
 			 * The function takes a single floating-point argument:
-			 * the (data) time to which to "warp".
+			 * the (geological) time to which to "warp".
 			 *
 			 * It is passed-in and stored as a data member to
 			 * provide better separation of components.
@@ -78,10 +78,15 @@ namespace GPlatesControls
 			 *   course of the animation.
 			 * @param num_steps The number of steps in the
 			 *   animation.
-			 * @param start_time The (data) starting-time of the
+			 * @param start_time The (geological) starting-time
+			 *   of the animation.
+			 * @param end_time The (geological) ending-time of the
 			 *   animation.
-			 * @param end_time The (data) ending-time of the
-			 *   animation.
+			 * @param time_delta The (geological) time interval
+			 *  between successive frames.  NOTE that this value
+			 *  must be greater than zero.
+			 * @param finish_on_end Whether or not the animation
+			 *  should finish exactly on the ending-time.
 			 * @param milli_secs The (real) time interval between
 			 *   updates.
 			 *
@@ -93,9 +98,10 @@ namespace GPlatesControls
 			 * timer.
 			 */
 			static bool StartNew(WarpFn warp_to_time,
-			                     int num_steps,
 			                     GPlatesGlobal::fpdata_t start_time,
 			                     GPlatesGlobal::fpdata_t end_time,
+			                     GPlatesGlobal::fpdata_t time_delta,
+			                     bool finish_on_end,
 			                     int milli_secs);
 
 
@@ -145,9 +151,10 @@ namespace GPlatesControls
 			 * invariant.
 			 */
 			AnimationTimer(WarpFn warp_to_time,
-			               int num_steps,
 			               GPlatesGlobal::fpdata_t start_time,
-			               GPlatesGlobal::fpdata_t end_time);
+			               GPlatesGlobal::fpdata_t end_time,
+			               GPlatesGlobal::fpdata_t time_delta,
+			               bool finish_on_end);
 
 
 			/**
@@ -157,20 +164,13 @@ namespace GPlatesControls
 			 */
 			const WarpFn _warp_to_time;
 
-
-			/**
-			 * The number of frames which will be displayed
-			 * over the course of the animation.
-			 */
-			unsigned _num_frames;
-			unsigned _curr_frame;
-
-			/**
-			 * The (data) time increment between successive frames.
-			 */
-			GPlatesMaths::real_t _time_incr;
 			GPlatesMaths::real_t _curr_t;
 			GPlatesMaths::real_t _end_t;
+			GPlatesMaths::real_t _time_delta;
+
+			bool _finish_on_end;
+
+			GPlatesMaths::real_t _sense;
 	};
 
 }
