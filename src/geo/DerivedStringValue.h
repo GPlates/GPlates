@@ -30,6 +30,13 @@
 
 namespace GPlatesGeo
 {
+	/**
+	 * Represents a string that is defined further up the
+	 * hierarchy.  The parent should be from one of the 
+	 * enclosing DataGroups.  When this parent list is 
+	 * followed, we should (in theory) wind up at a 
+	 * LiteralStringValue.
+	 */
 	class DerivedStringValue : public StringValue
 	{
 		public:

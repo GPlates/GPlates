@@ -153,7 +153,7 @@ namespace GPlatesGeo
 			 * or NULL if @a key was not found.
 			 */
 			StringValue*
-			GetAttributeValue(const std::string& key);
+			GetAttributeValue(const std::string& key) const;
 
 			/**
 			 * Adds the given @a key / @a value pair to the map of

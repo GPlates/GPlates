@@ -30,6 +30,9 @@
 
 namespace GPlatesGeo
 {
+	/**
+	 * Represents an *actual* string value.
+	 */
 	class LiteralStringValue : public StringValue
 	{
 		public:

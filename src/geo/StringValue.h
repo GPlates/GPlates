@@ -30,9 +30,16 @@
 
 namespace GPlatesGeo
 {
+	/**
+	 * Represents the value that a key may take inside an attribute
+	 * map.
+	 */
 	class StringValue
 	{
 		public:
+			/**
+			 * Return the string to which this StringValue refers.
+			 */
 			virtual std::string
 			GetString() const = 0;
 
