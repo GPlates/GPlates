@@ -160,11 +160,13 @@ namespace GPlatesMaths
 		                v1.z() - v2.z());
 	}
 
+
 	inline std::ostream &operator<< (std::ostream &os, const Vector3D &v)
 	{
 		os << "(" << v.x() << ", " << v.y() << ", " << v.z() << ")";
 		return os;
 	}
+
 
 	/**
 	 * This algorithm for testing whether two vectors are parallel
@@ -173,17 +175,29 @@ namespace GPlatesMaths
 	 *  - any of the components are non-zero.
 	 *
 	 * Note that zero vectors are defined to be parallel to everything.
-	 *
-	 * On a Pentium IV processor, this should cost about
-	 * (7 + 5 * 2) + (3 * 9) + 2 = 46 clock cycles.
 	 */
-	bool parallel (const Vector3D &s1, const Vector3D &s2);
+	inline bool parallel(const Vector3D &v1, const Vector3D &v2) {
 
-	inline bool collinear (const Vector3D &s1, const Vector3D &s2)
-	{
-		real_t adp = abs (dot (s1, s2));
-		return (adp >= s1.magnitude () * s2.magnitude ());
+		real_t dp = dot(v1, v2);
+		return (dp >= v1.magnitude () * v2.magnitude ());
 	}
+
+
+	/**
+	 * This algorithm for testing whether two vectors are collinear
+	 * (ie. parallel or antiparallel) is intended to remove the
+	 * requirements that:
+	 *  - the magnitudes of the vectors are already known
+	 *  - any of the components are non-zero.
+	 *
+	 * Note that zero vectors are defined to be collinear to everything.
+	 */
+	inline bool collinear(const Vector3D &v1, const Vector3D &v2)
+	{
+		real_t adp = abs (dot (v1, v2));
+		return (adp >= v1.magnitude () * v2.magnitude ());
+	}
+
 
 	/**
 	 * On a Pentium IV processor, this should cost about

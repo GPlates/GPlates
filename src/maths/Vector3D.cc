@@ -32,7 +32,8 @@
 using namespace GPlatesMaths;
 
 
-UnitVector3D Vector3D::normalise () const
+GPlatesMaths::UnitVector3D
+GPlatesMaths::Vector3D::normalise() const
 {
 	real_t mag_sqrd = (_x * _x) + (_y * _y) + (_z * _z);
 
@@ -43,20 +44,9 @@ UnitVector3D Vector3D::normalise () const
 	return UnitVector3D (_x * scale, _y * scale, _z * scale);
 }
 
-bool GPlatesMaths::parallel (const Vector3D &v1, const Vector3D &v2)
-{
-	/*
-	 * This is based upon the cross-product:
-	 * if two vectors are parallel, their cross-product results in
-	 * the zero vector (ie. a vector with zero x, y, z components).
-	 */
-	return ((v1.y () * v2.z () == v1.z () * v2.y ()) &&
-		(v1.z () * v2.x () == v1.x () * v2.z ()) &&
-		(v1.x () * v2.y () == v1.y () * v2.x ()));
-}
 
-
-Vector3D GPlatesMaths::cross (const Vector3D &v1, const Vector3D &v2)
+GPlatesMaths::Vector3D
+GPlatesMaths::cross(const Vector3D &v1, const Vector3D &v2)
 {
 	real_t x_comp = v1.y () * v2.z () - v1.z () * v2.y ();
 	real_t y_comp = v1.z () * v2.x () - v1.x () * v2.z ();
