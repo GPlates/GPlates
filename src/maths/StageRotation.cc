@@ -27,71 +27,70 @@
 
 #include "StageRotation.h"
 #include "IndeterminateResultException.h"
+#include "Vector3D.h"
 
 
 using namespace GPlatesMaths;
 
 
 StageRotation
-StageRotation::CreateStageRotation(const UnitQuaternion3D &uq,
-	const real_t &time_delta) {
-
-	real_t theta_on_2 = acos(uq.s());
-	real_t sin_of_theta_on_2 = sin(theta_on_2);
+scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta) {
 
 	/*
-	 * Ensure that the time delta is not zero.
+	 * The basic algorithm used in this function is:
+	 * 1. given a unit quaternion, reverse-engineer the rotation axis
+	 *     and the rotation angle, 'theta'.
+	 * 2. scale theta by the ratio (new time delta / time delta).
+	 * 3. create a new stage rotation which represents a rotation around
+	 *     the rotation axis, by the scaled rotation angle.
 	 */
-	if (time_delta == 0) {
-
-		throw IndeterminateResultException("Attempted to calculate a "
-		 "stage rotation for a zero time delta.");
-	}
 
 	/*
-	 * Ensure that the unit quaternion argument does not represent
-	 * an identity rotation.
+	 * Ensure that the quaternion of the stage rotation argument does not
+	 * represent an identity rotation.
 	 *
 	 * In an identity rotation, the angle of rotation is (2 * n * pi),
-	 * for some integer 'n':  this results in a sine of (n * pi), which
-	 * is always zero.  This would result in a division by zero when
-	 * attempting to calculate the euler pole, which is geometrically
-	 * equivalent to the fact that, in an identity rotation, the euler
-	 * pole is indeterminate.
+	 * for some integer 'n':  this would later result in an evaluation of
+	 * the sine of some (n * pi), which is always zero.  This, in turn,
+	 * would result in a division by zero when attempting to calculate
+	 * the rotation axis, which is geometrically equivalent to the fact
+	 * that, in an identity rotation, the axis is indeterminate.
 	 */
-	if (uq.isIdentity()) {
+	if (sr.quat().isIdentity()) {
 
-		throw IndeterminateResultException("Attempted to calculate a "
-		 "stage rotation from a quaternion which represents the "
-		 "identity rotation.");
+		throw IndeterminateResultException("Attempted to scale a "
+		 "stage rotation whose quaternion represents the identity "
+		 "rotation.");
 	}
-	// else, sin_of_theta_on_2 is nonzero
-	Vector3D euler_pole = (1 / sin_of_theta_on_2) * uq.v();
+	/*
+	 * Thus, we can be sure that the angle of rotation ('theta') is not a
+	 * multiple of two pi, and the axis of rotation is clearly determined.
+	 */
+	real_t theta_on_2 = acos(sr.quat().s());  // not a multiple of pi
+	real_t sin_of_theta_on_2 = sin(theta_on_2);  // not zero
 
-	return StageRotation(uq, time_delta,
-	 UnitVector3D(euler_pole.x(), euler_pole.y(), euler_pole.z()),
-	  theta_on_2 * 2);
-}
+	Vector3D axis_v = (1 / sin_of_theta_on_2) * sr.quat().v();
+	UnitVector3D axis_uv(axis_v.x(), axis_v.y(), axis_v.z());
 
+	/*
+	 * Ensure that the time delta of the stage rotation argument is not
+	 * zero.
+	 */
+	if (sr.timeDelta() == 0) {
 
-StageRotation
-subtractFinite(const FiniteRotation &r1, const FiniteRotation &r2) {
-
-	if (representEquivRotations(r1.quat(), r2.quat())) {
-
-		throw IndeterminateResultException("Attempted to calculate a "
-		 "stage rotation between two finite rotations defined by "
-		 "equivalent quaternions.");
+		throw IndeterminateResultException("Attempted to scale a "
+		 "stage rotation whose time delta is zero.");
 	}
-	if (r1.time() == r2.time()) {
+	real_t time_delta_reciprocal = 1.0 / sr.timeDelta();
 
-		throw IndeterminateResultException("Attempted to calculate a "
-		 "stage rotation between two finite rotations defined for the "
-		 "same point in time.");
-	}
+	/*
+	 * Finally, create a unit quaternion which represents a rotation of
+	 * ((new time delta / time delta) * theta) about the axis specified by
+	 * 'axis_uv'.
+	 */
+	UnitQuaternion3D new_uq =
+	 UnitQuaternion3D::CreateEulerRotation(axis_uv,
+	  (new_time_delta * time_delta_reciprocal) * (theta_on_2 * 2));
 
-	UnitQuaternion3D res_uq = r2.quat().inverse() * r1.quat();
-	real_t time_delta = r1.time() - r2.time();
-
-	return StageRotation::CreateStageRotation(res_uq, time_delta);
+	return StageRotation(new_uq, new_time_delta);
 }
