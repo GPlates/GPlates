@@ -32,6 +32,9 @@
 #include "ViolatedClassInvariantException.h"
 
 
+using GPlatesMaths::OperationsOnSphere::convertPointOnSphereToLatLonPoint;
+
+
 GPlatesMaths::GridOnSphere::GridOnSphere (const PointOnSphere &origin,
 				const PointOnSphere &next_along_lat,
 				const PointOnSphere &next_along_lon)
@@ -39,9 +42,13 @@ GPlatesMaths::GridOnSphere::GridOnSphere (const PointOnSphere &origin,
 	  _line_of_lon (origin, next_along_lon),
 	  _origin (origin)
 {
-	AssertInvariantHolds ();
+	LatLonPoint org = convertPointOnSphereToLatLonPoint (_origin);
+	LatLonPoint lat = convertPointOnSphereToLatLonPoint (next_along_lat);
+	LatLonPoint lon = convertPointOnSphereToLatLonPoint (next_along_lon);
+	_delta_along_lat = lat.longitude () - org.longitude ();
+	_delta_along_lon = lon.latitude () - org.latitude ();
 
-	// TODO: calculate _delta_along_lat, _delta_along_lon
+	AssertInvariantHolds ();
 }
 
 
@@ -54,7 +61,7 @@ GPlatesMaths::GridOnSphere::GridOnSphere (const PointOnSphere &origin,
 void GPlatesMaths::GridOnSphere::AssertInvariantHolds () const
 {
 	// Check that the origin lies on the SC
-	LatLonPoint org = GPlatesMaths::OperationsOnSphere::convertPointOnSphereToLatLonPoint (_origin);
+	LatLonPoint org = convertPointOnSphereToLatLonPoint (_origin);
 	if (degreesToRadians (org.latitude () + 90.0) != _line_of_lat.theta ()) {
 		throw ViolatedClassInvariantException (
 			"Origin and next_along_lat have different latitudes.");
