@@ -30,7 +30,7 @@ namespace GPlatesFileIO
 {
 	/**
 	 * The superclass for each of the classes that will convert some
-	 * format of input source to the internal gPlates representation.
+	 * format of input source to the internal GPlates representation.
 	 */
 	class Reader
 	{

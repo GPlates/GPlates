@@ -1,4 +1,4 @@
-How to profile gPlates
+How to profile GPlates
 ----------------------
 
 	* configure script must have been run with --enable-prof,
