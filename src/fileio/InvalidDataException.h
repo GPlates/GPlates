@@ -29,23 +29,32 @@
 #include "FileIOException.h"
 
 namespace GPlatesFileIO {
-  
-  // This exception is thrown when there is  a problem with the value of a data item in a file being read in by GPlates.
-  class InvalidDataException : public FileIOException {
-  public:
-    InvalidDataException(const char* message) : _message(message) { }
-    
-    virtual ~InvalidDataException() { }
-    
-  protected:
-    virtual const char * ExceptionName() const { return "InvalidDataException"; }
-    
-    virtual std::string Message() const { return _message; }
-    
-   private:
-    std::string _message;
-  };
-  
- } // End namespace
+
+	/**
+	 * The Exception thrown when the input data is invalid.
+	 */
+	class InvalidDataException : public FileIOException
+	{
+		public:
+			/**
+			 * @param msg is the description of the problem.
+			 */
+			InvalidDataException(const char* msg) : _msg(msg) { }
+
+			virtual
+			~InvalidDataException() { }
+
+		protected:
+			virtual const char *
+			ExceptionName() const { return "InvalidDataException"; }
+
+			virtual std::string
+			Message() const { return _msg; }
+
+		private:
+			std::string _msg;
+	};
+
+}
 
 #endif  // _GPLATES_FILEIO_INVALIDDATAEXCEPTION_H_
