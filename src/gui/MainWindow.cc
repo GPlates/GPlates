@@ -61,7 +61,9 @@ namespace EventIDs {
 		MENU_FILE_SAVEALLDATA,
 		MENU_FILE_EXIT,
 
+#if 0  // Temporarily disabled
 		MENU_VIEW_METADATA,
+#endif
 
 		MENU_RECONSTRUCT_TIME,
 		MENU_RECONSTRUCT_PRESENT,
@@ -113,6 +115,7 @@ namespace Menus {
 	}
 
 
+#if 0  // Temporarily disabled
 	wxMenu *
 	CreateViewMenu()
 	{
@@ -124,6 +127,7 @@ namespace Menus {
 
 		return viewmenu;
 	}
+#endif
 
 
 	wxMenu *
@@ -173,7 +177,9 @@ namespace Menus {
 	INSTANCES[] = {
 
 		{ _("&File"),         CreateFileMenu },
+#if 0  // Temporarily disabled
 		{ _("&View"),         CreateViewMenu },
+#endif
 		{ _("&Reconstruct"),  CreateReconstructMenu },
 		{ _("&Help"),         CreateHelpMenu }
 	};
@@ -188,7 +194,9 @@ namespace Menus {
 	enum {
 
 		MENU_FILE = 0,
+#if 0  // Temporarily disabled
 		MENU_VIEW,
+#endif
 		MENU_RECONSTRUCT,
 		MENU_HELP
 	};
@@ -425,6 +433,7 @@ GPlatesGui::MainWindow::OnExit(wxCommandEvent&)
 }
 
 
+#if 0  // Temporarily disabled
 void
 GPlatesGui::MainWindow::OnViewMetadata(wxCommandEvent&)
 {
@@ -433,6 +442,7 @@ GPlatesGui::MainWindow::OnViewMetadata(wxCommandEvent&)
 		<< std::endl;
 #endif
 }
+#endif
 
 
 void
@@ -621,8 +631,10 @@ BEGIN_EVENT_TABLE(GPlatesGui::MainWindow, wxFrame)
 	EVT_MENU(EventIDs::MENU_FILE_EXIT,
 			GPlatesGui::MainWindow::OnExit)
 
+#if 0  // Temporarily disabled
 	EVT_MENU(EventIDs::MENU_VIEW_METADATA,
 			GPlatesGui::MainWindow::OnViewMetadata)
+#endif
 
 	EVT_MENU(EventIDs::MENU_RECONSTRUCT_TIME,
 			GPlatesGui::MainWindow::OnReconstructTime)
