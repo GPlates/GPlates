@@ -90,8 +90,8 @@ namespace GPlatesMaths
 			 * @throws IndeterminateResultException if the vectors 
 			 *   @a v1 and @a v2 are either parallel or antiparallel.
 			 */
-			static UnitVector3D calcNormal(const UnitVector3D &v1,
-			                               const UnitVector3D &v2);
+			static UnitVector3D calcNormal(const UnitVector3D &u1,
+			                               const UnitVector3D &u2);
 	};
 
 	inline GreatCircle

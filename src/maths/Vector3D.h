@@ -95,7 +95,7 @@ namespace GPlatesMaths
 			 * @throws IndeterminateResultException if @a this has zero
 			 *   magnitude.
 			 */
-			virtual UnitVector3D normalise () const;
+			virtual UnitVector3D get_normalisation () const;
 
 		protected:
 			real_t _x,  /**< x-component. */
@@ -122,10 +122,6 @@ namespace GPlatesMaths
 	}
 
 
-	/**
-	 * On a Pentium IV processor, this should cost about
-	 * (7 + 2 * 2) + (5 + 1) = 17 clock cycles.
-	 */
 	inline real_t
 	dot(const Vector3D &v1, const Vector3D &v2) {
 
@@ -227,10 +223,6 @@ namespace GPlatesMaths
 	}
 
 
-	/**
-	 * On a Pentium IV processor, this should cost about
-	 * (7 + 5 * 2) + (5 + 2 * 2) = 26 clock cycles.
-	 */
 	Vector3D cross (const Vector3D &s1, const Vector3D &s2);
 }
 

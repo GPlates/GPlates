@@ -27,7 +27,7 @@
 
 
 GPlatesMaths::UnitVector3D
-GPlatesMaths::DirVector3D::normalise() const {
+GPlatesMaths::DirVector3D::get_normalisation() const {
 
 	real_t scale = 1 / magnitude();
 	return UnitVector3D(scale * x(), scale * y(), scale * z());
@@ -37,13 +37,6 @@ GPlatesMaths::DirVector3D::normalise() const {
 void
 GPlatesMaths::DirVector3D::AssertInvariant() const {
 
-	/**
-	 * On a Pentium IV processor, this FP comparison should cost about
-	 * 7 clock cycles.
-	 *
-	 * Obviously, if the comparison returns false, performance will go
-	 * right out the window.
-	 */
 	if (_mag <= 0.0) {
 
 		// invariant has been violated

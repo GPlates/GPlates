@@ -26,7 +26,7 @@
 
 
 GPlatesMaths::UnitVector3D
-GPlatesMaths::Vector3D::normalise() const
+GPlatesMaths::Vector3D::get_normalisation() const
 {
 	real_t mag_sqrd = (_x * _x) + (_y * _y) + (_z * _z);
 

@@ -34,10 +34,10 @@ GPlatesMaths::GreatCircle::GreatCircle (const PointOnSphere &p1,
 GPlatesMaths::UnitVector3D
 GPlatesMaths::GreatCircle::intersection (const GreatCircle &other) const
 {
-	Vector3D x = cross(normal(), other.normal());
+	Vector3D v = cross(normal(), other.normal());
 
-	real_t x_mag_sqrd = x.magSqrd();
-	if (x_mag_sqrd <= 0) {
+	real_t v_mag_sqrd = v.magSqrd();
+	if (v_mag_sqrd <= 0) {
 
 		// mag_sqrd equal to zero => magnitude is equal to zero =>
 		// collinear vectors => PANIC!!!!one
@@ -46,27 +46,27 @@ GPlatesMaths::GreatCircle::intersection (const GreatCircle &other) const
 		 << "equivalent great-circles.";
 		throw IndeterminateResultException (oss.str().c_str());
 	}
-	return x.normalise();
+	return v.get_normalisation();
 }
 #endif
 
 
 GPlatesMaths::UnitVector3D
-GPlatesMaths::GreatCircle::calcNormal(const UnitVector3D &v1,
- const UnitVector3D &v2) {
+GPlatesMaths::GreatCircle::calcNormal(const UnitVector3D &u1,
+ const UnitVector3D &u2) {
 
-	Vector3D x = cross(v1, v2);
+	Vector3D v = cross(u1, u2);
 
-	real_t x_mag_sqrd = x.magSqrd();
-	if (x_mag_sqrd <= 0) {
+	real_t v_mag_sqrd = v.magSqrd();
+	if (v_mag_sqrd <= 0) {
 
 		// mag_sqrd equal to zero => magnitude is equal to zero =>
 		// collinear vectors => PANIC!!!!one
 		std::ostringstream oss;
 		oss << "Attempted to calculate a great-circle from "
 		 << "collinear points "
-		 << v1 << " and " << v2 << ".";
+		 << u1 << " and " << u2 << ".";
 		throw IndeterminateResultException (oss.str().c_str());
 	}
-	return x.normalise();
+	return v.get_normalisation();
 }

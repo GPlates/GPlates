@@ -52,18 +52,6 @@ namespace GPlatesMaths
 			 *
 			 * @throws ViolatedDirVectorInvariantException if the magnitude
 			 *   of the resulting DirVector is <= 0.
-			 * 
-			 * On a Pentium IV processor, the first line should
-			 * cost about (7 + 2 * 2) + (5 + 1) = 17 clock cycles
-			 * + the cost of the 'sqrt' function call (presumed
-			 * to be at least 47 clock cycles + the cost of two
-			 * function calls);  the second should cost about 7
-			 * clock cycles + the cost of a function call (as
-			 * long as the invariant isn't violated).
-			 *
-			 * Thus, the creation of a DirVector3D instance will
-			 * cost at least 71 clock cycles + the cost of three
-			 * function calls.
 			 */
 			explicit 
 			DirVector3D(const real_t& x_comp,
@@ -91,7 +79,7 @@ namespace GPlatesMaths
 			virtual real_t
 			magnitude() const { return _mag; }
 
-			virtual UnitVector3D normalise() const;
+			virtual UnitVector3D get_normalisation() const;
 
 			/**
 			 * @throws ViolatedDirVectorInvariantException if the magnitude

@@ -156,7 +156,9 @@ GPlatesMaths::GridOnSphere::calcDeltaAlongLat(const UnitVector3D &orig,
 	 * with 'north', they must possess a non-zero orthogonal projection.
 	 * Hence, we can normalise them.
 	 */
-	return calcDelta(orig_orth.normalise(), next_orth.normalise(), north);
+	return
+	 calcDelta(orig_orth.get_normalisation(),
+	  next_orth.get_normalisation(), north);
 }
 
 

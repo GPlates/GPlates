@@ -62,7 +62,7 @@ GPlatesMaths::UnitQuaternion3D::get_rotation_params() const {
 	real_t sin_of_theta_on_2 = sin(theta_on_2);  // not zero
 
 	Vector3D axis_vector = (1 / sin_of_theta_on_2) * vector_part();
-	UnitVector3D axis_unit_vector = axis_vector.normalise();
+	UnitVector3D axis_unit_vector = axis_vector.get_normalisation();
 
 	return RotationParams(axis_unit_vector, theta_on_2 * 2.0);
 }

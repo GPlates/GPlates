@@ -126,7 +126,7 @@ GPlatesMaths::Rotation::Create(
 		 * their cross-product will be a vector of non-zero length,
 		 * which we can safely normalise.
 		 */
-		UnitVector3D axis = cross(initial, final).normalise();
+		UnitVector3D axis = cross(initial, final).get_normalisation();
 		real_t angle = acos(dp);
 		return Rotation::Create(axis, angle);
 	}

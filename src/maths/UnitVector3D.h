@@ -95,7 +95,7 @@ namespace GPlatesMaths
 			magnitude() const { return 1.0; }
 
 			virtual UnitVector3D
-			normalise() const {
+			get_normalisation() const {
 
 				return *this;
 			}
