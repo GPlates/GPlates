@@ -59,7 +59,7 @@ namespace GPlatesMaths
 			SmallCircle (const UnitVector3D &axis,
 			             const PointOnSphere &pt);
 
-			const UnitVector3D &normal () const { return _normal; }
+			UnitVector3D normal () const { return _normal; }
 			real_t theta () const { return _theta; }
 
 			real_t radius () const { return sin (_theta); }
