@@ -12,8 +12,8 @@ CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
-EXTRA_LIBS = global/libglobal.a fileio/libfileio.a gui/libgui.a geo/libgeo.a \
-	maths/libmaths.a controls/libcontrols.a state/libstate.a
+EXTRA_LIBS = global/libglobal.a gui/libgui.a fileio/libfileio.a controls/libcontrols.a \
+	state/libstate.a geo/libgeo.a maths/libmaths.a
 
 LIBS = @LIBS@
 #LIBS = @LIBS@ -lefence
@@ -49,7 +49,10 @@ subdir_clean:
 	done
 
 $(PROGNAME):	$(OBJS) $(EXTRA_LIBS)
-	@CXX@ $(LDFLAGS) $^ $(LIBS) -o $@
+#	@CXX@ $(LDFLAGS) $^ $(LIBS) -o $@
+#	The extra linker flags allow the libraries to be specified in any
+#	order.  This circumvents some 'circular' dependcies that have arisen.
+	@CXX@ $(LDFLAGS) -Wl,--start-group $^ -Wl,--end-group $(LIBS) -o $@
 
 dep:	subdir_dep
 

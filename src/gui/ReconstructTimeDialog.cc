@@ -33,8 +33,6 @@ using namespace GPlatesMaths;
 ReconstructTimeDialog::ReconstructTimeDialog(wxWindow* parent)
 	: wxDialog(parent, -1, "Reconstruct to...")
 {
-	static const int ALLOW_RESIZE = 1;
-	static const int DISALLOW_RESIZE = 0;
 	static const int BORDER_SIZE  = 10;
 	
 	wxBoxSizer* msgsizer = new wxBoxSizer(wxHORIZONTAL);

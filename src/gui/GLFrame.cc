@@ -142,9 +142,7 @@ GLFrame::OnOpenData(wxCommandEvent&)
 
 	if (filedlg.ShowModal() == wxID_OK) {
 		std::string selected_file;
-		selected_file = filedlg.GetPath() + 
-						filedlg.GetDirectory() +
-						filedlg.GetFilename();
+		selected_file = filedlg.GetPath();
 		GPlatesControls::File::OpenData(selected_file);
 	}
 }

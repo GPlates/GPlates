@@ -26,9 +26,14 @@
 #include "PlatesParserUtils.h"
 #include "FileFormatException.h"
 
-using namespace GPlatesFileIO;
-using namespace GPlatesFileIO::PlatesParser;
+//using namespace GPlatesFileIO;
+//using namespace GPlatesFileIO::PlatesParser;
 
+// Don't ask me why, but for some reason explicitly including the
+// namespaces like this solves an incomprehensible linking error
+// that was occuring.
+namespace GPlatesFileIO {
+	namespace PlatesParser {
 
 int
 attemptToReadInt(const LineBuffer &lb, std::istringstream &iss,
@@ -126,3 +131,6 @@ attemptToReadPlotterCode(const LineBuffer &lb, std::istringstream &iss) {
 	}
 	return i;
 }
+
+	}  // end namespace PlatesParser
+}  // end namespace GPlatesFileIO

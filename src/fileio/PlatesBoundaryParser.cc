@@ -30,10 +30,11 @@
 #include "FileFormatException.h"
 
 
-using namespace GPlatesFileIO;
-using namespace GPlatesFileIO::PlatesParser;
+//using namespace GPlatesFileIO;
 
-
+namespace GPlatesFileIO {
+	namespace PlatesParser {
+		
 void 
 ReadInPlateBoundaryData(const char *filename, std::istream &input_stream,
 	PlatesDataMap &plates_data) {
@@ -264,3 +265,6 @@ ReadPolyLinePoint(LineBuffer &lb) {
 	}
 	return std::string(buf);
 }
+
+}  // end namespace PlatesParser
+}  // end namespace GPlatesFileIO

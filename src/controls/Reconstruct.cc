@@ -29,7 +29,7 @@
 using namespace GPlatesControls;
 
 void
-Reconstruct::Time(const GPlatesMaths::real_t& time)
+Reconstruct::Time(const GPlatesMaths::real_t&)
 {
 	Dialogs::ErrorMessage(
 		"Construction not implemented.",

@@ -32,7 +32,9 @@ const GeologicalData::DataType_t
 GeologicalData::NO_DATATYPE;
 
 const GeologicalData::RotationGroupId_t
-GeologicalData::NO_ROTATIONGROUP = static_cast<GPlatesGlobal::rid_t>(-1);
+// AAAAAAAAAAAAAAAAARRRRRRRRRRRRRRRRRGGGGGGGGGGGGGGGGGGGHHHHHHHHHHH!!!!!!!!!!!!
+// XXX XXX XXX XXX XXX XXX XXX
+GeologicalData::NO_ROTATIONGROUP = static_cast<GPlatesGlobal::rid_t>(1000000);
 
 const TimeWindow
 GeologicalData::NO_TIMEWINDOW;
