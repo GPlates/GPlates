@@ -49,6 +49,7 @@
 #include "pixmaps/stock_zoom_in_24.xpm"
 #include "pixmaps/stock_zoom_out_24.xpm"
 #include "pixmaps/zoom_initial_24.xpm"
+#include "pixmaps/stock_stop_24.xpm"
 
 
 /**
@@ -272,6 +273,8 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	}
 	SetToolBar(_tool_bar);
 	SetAcceleratorTable(MainWindow::DefaultAccelTab());
+	// Disable "stop" button until animations
+	_tool_bar->EnableTool(EventIDs::TOOLBAR_STOP, false);
 
 	const int num_statusbar_fields =
 	 static_cast< int >(sizeof(StatusbarFields::WIDTHS) /
@@ -557,7 +560,10 @@ GPlatesGui::MainWindow::SetOpModeToAnimation()
 		_menu_bar->EnableTop(i, false);
 	}
 
-	SetStatusText(_("Press ESC to interrupt animation."),
+	// Enable "stop" button
+	_tool_bar->EnableTool(EventIDs::TOOLBAR_STOP, true);
+
+	SetStatusText(_("Press Esc to interrupt animation."),
 	              StatusbarFields::INFO);
 
 	// Operation mode has been changed
@@ -589,6 +595,9 @@ GPlatesGui::MainWindow::ReturnOpModeToNormal()
 		// Re-enable menu 'i'
 		_menu_bar->EnableTop(i, true);
 	}
+
+	// Disable "stop" button again
+	_tool_bar->EnableTool(EventIDs::TOOLBAR_STOP, false);
 
 	// Operation mode has been returned to normal
 	_operation_mode = NORMAL_MODE;
@@ -647,6 +656,13 @@ GPlatesGui::MainWindow::CreateToolBar(long style)
 	wxBitmap *zoom_initial_bitmap = new wxBitmap(zoom_initial_24_xpm);
 	tool_bar->AddTool(EventIDs::TOOLBAR_ZOOM_RESET, "Reset Zoom",
 	                   *zoom_initial_bitmap, "Reset Zoom    1",
+	                   wxITEM_NORMAL);
+
+	tool_bar->AddSeparator();
+
+	wxBitmap *stop_bitmap = new wxBitmap(stock_stop_24_xpm);
+	tool_bar->AddTool(EventIDs::TOOLBAR_STOP, "Stop Animation",
+	                   *stop_bitmap, "Stop Animation    Esc",
 	                   wxITEM_NORMAL);
 
 	return tool_bar;
@@ -721,6 +737,9 @@ END_EVENT_TABLE()
 BEGIN_EVENT_TABLE(AnimEvtHandler, wxEvtHandler)
 
 	EVT_MENU(GPlatesGui::EventIDs::COMMAND_ESCAPE,
+			AnimEvtHandler::OnEscape)
+
+	EVT_TOOL(GPlatesGui::EventIDs::TOOLBAR_STOP,
 			AnimEvtHandler::OnEscape)
 
 END_EVENT_TABLE()
