@@ -66,8 +66,8 @@ namespace GPlatesMaths
 			bool
 			contains (const PointOnSphere &pt) const {
 
-				real_t dp = dot (normal(), pt.unitvector ());
-				return (dp == 0);
+				return perpendicular (axisvector (),
+				                   pt.unitvector ());
 			}
 
 #if 0  // No longer needed
