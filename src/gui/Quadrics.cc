@@ -49,6 +49,8 @@ GPlatesGui::Quadrics::Quadrics() {
 		throw OpenGLBadAllocException(
 		 "Not enough memory for OpenGL to create new quadric.");
 	}
+	// Previously, the type-parameter of the cast was 'void (*)()'.
+	// On Mac OS X, the compiler complained, so it was changed to this.
 	gluQuadricCallback(_q, GLU_ERROR,
-	 reinterpret_cast< void (*)() >(&QuadricError));
+	 reinterpret_cast< GLvoid (*)(...) >(&QuadricError));
 }

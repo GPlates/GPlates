@@ -51,6 +51,8 @@ GPlatesGui::NurbsRenderer::NurbsRenderer() {
 		throw OpenGLBadAllocException(
 		 "Not enough memory for OpenGL to create new NURBS renderer.");
 	}
+	// Previously, the type-parameter of the cast was 'void (*)()'.
+	// On Mac OS X, the compiler complained, so it was changed to this.
 	gluNurbsCallback(_nr, GLU_ERROR,
-	 reinterpret_cast< void (*)() >(&NurbsError));
+	 reinterpret_cast< GLvoid (*)(...) >(&NurbsError));
 }
