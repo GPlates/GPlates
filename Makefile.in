@@ -1,0 +1,61 @@
+@SET_MAKE@
+
+SUBDIRS = src doc
+
+DISTFILES = COPYING ChangeLog Makefile.in README TODO aclocal.m4 \
+	configure configure.in install-sh
+
+
+all:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) all) ; \
+	done
+
+doc:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) doc) ; \
+	done
+
+install:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) install) ; \
+	done
+
+uninstall:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) uninstall) ; \
+	done
+
+clean:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) clean) ; \
+	done
+
+dep:
+	@dlist='$(SUBDIRS)' ; \
+	for subdir in $$dlist ; do \
+		(cd $$subdir && $(MAKE) dep) ; \
+	done
+
+distdir = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
+dist:	Makefile
+	rm -rf $(distdir)
+	mkdir $(distdir)
+	chmod 777 $(distdir)
+	for file in $(DISTFILES) ; do \
+		ln $$file $(distdir) 2>/dev/null || \
+			cp -p $$file $(distdir); \
+	done
+	for subdir in $(SUBDIRS) ; do \
+		mkdir $(distdir)/$$subdir || exit 1; \
+		chmod 777 $(distdir)/$$subdir; \
+		(cd $$subdir && $(MAKE) dist) || exit 1; \
+	done
+	tar zchf $(distdir).tar.gz $(distdir)
+	gunzip -c $(distdir).tar.gz | bzip2 -9 > $(distdir).tar.bz2
+	rm -rf $(distdir)
