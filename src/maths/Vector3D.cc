@@ -29,9 +29,6 @@
 #include "UnitVector3D.h"
 
 
-using namespace GPlatesMaths;
-
-
 GPlatesMaths::UnitVector3D
 GPlatesMaths::Vector3D::normalise() const
 {
