@@ -3,7 +3,7 @@
 subdir = src
 prefix = @prefix@
 
-SUBDIRS = fileio geo global gui maths controls state
+SUBDIRS = controls fileio geo global gui maths state
 
 DISTFILES = Rules.in Makefile.in *.cc
 
