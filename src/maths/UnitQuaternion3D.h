@@ -78,7 +78,10 @@ namespace GPlatesMaths
 	 */
 	class UnitQuaternion3D
 	{
-			// this function uses the protected constructor
+			// these functions use the protected constructor
+			friend UnitQuaternion3D
+			operator-(UnitQuaternion3D q);
+
 			friend UnitQuaternion3D
 			operator*(UnitQuaternion3D q1, UnitQuaternion3D q2);
 
@@ -149,9 +152,9 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Return whether this quaternion represents an
-			 * identity rotation (ie. a rotation which maps
-			 * a unit vector to itself.
+			 * Return whether this unit quaternion represents
+			 * an identity rotation (ie. a rotation which maps
+			 * a unit vector to itself).
 			 */
 			bool
 			isIdentity() const { return (w() == 1.0); }
@@ -218,6 +221,45 @@ namespace GPlatesMaths
 		     || q1.y() != q2.y()
 		     || q1.z() != q2.z()
 		     || q1.w() != q2.w());
+	}
+
+
+	/**
+	 * NOTE that the negative of a quaternion is NOT the same as
+	 * its conjugate or inverse.
+	 */
+	inline UnitQuaternion3D
+	operator-(UnitQuaternion3D q) {
+
+		return UnitQuaternion3D(-q.s(), -q.v());
+	}
+
+
+	/**
+	 * Return whether these two unit quaternions represent
+	 * equivalent rotations.
+	 */
+	inline bool
+	representEquivRotations(UnitQuaternion3D q1, UnitQuaternion3D q2) {
+
+		/*
+		 * A rotation is defined by an axis of rotation and an angle
+		 * through which points are rotated about this axis.  Define
+		 * 'theta' to be the angle of rotation, and 'U' to be a unit
+		 * vector pointing in the direction of the axis of rotation.
+		 * Together, U and theta are used to define a unit quaternion
+		 * which describes the rotation.  [Assume theta is contained
+		 * in the half-open range (pi, pi].]
+		 *
+		 * It may be observed that a rotation of theta about U is
+		 * equivalent to a rotation of (2 pi - theta) about (-U).
+		 * Accordingly, the quaternion 'Q1' (defined by theta and U)
+		 * describes a rotation equivalent to that described by the
+		 * quaternion 'Q2' (defined by (2 pi - theta) and (-U)).
+		 *
+		 * In fact, it may be shown that Q2 is equivalent to (-Q1).
+		 */
+		return (q1 == q2 || q1 == -q2);
 	}
 
 
