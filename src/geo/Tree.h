@@ -67,7 +67,7 @@ namespace GPlatesGeo
 	 *   of having the sorting criterion as a template parameter (such
 	 *   as I have at the moment), and having it as a parameter to the
 	 *   constructor.  A decision needs to be made as to which of these
-	 *   to support.
+	 *   to support (maybe both?).
 	 */
 	template<typename ElemType, typename Compare = std::less<ElemType> >
 	class Tree
@@ -205,6 +205,15 @@ namespace GPlatesGeo
 			iterator
 			insert(const_reference elem) { return _elements.insert(elem); }
 
+			/**
+			 * Insert a copy of @a elem, using @a pos as a hint, and
+			 * return the position of the new element.
+			 */
+			iterator
+			insert(iterator pos, const_reference elem) {
+				return _elements.insert(pos, elem);
+			}
+			
 			/**
 			 * Insert a copy of all elements in the range [begin, end).
 			 */
