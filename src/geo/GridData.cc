@@ -1,5 +1,7 @@
 /* $Id$ */
 
+#define FAST_GRID_INIT
+
 /**
  * \file 
  * File specific comments.
@@ -8,7 +10,7 @@
  *   $Author$
  *   $Date$
  * 
- * Copyright (C) 2003 The GPlates Consortium
+ * Copyright (C) 2004 The GPlates Consortium
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License,
@@ -34,23 +36,22 @@
 #include "state/Layout.h"
 
 
-using namespace GPlatesGeo;
-
-GridData::GridData(const DataType_t& dt, const RotationGroupId_t& id,
-	const TimeWindow& tw, const Attributes_t& attrs, 
-	const GPlatesMaths::PointOnSphere &origin,
-	const GPlatesMaths::PointOnSphere &sc_step,
-	const GPlatesMaths::PointOnSphere &gc_step)
+GPlatesGeo::GridData::GridData
+			(const DataType_t &dt, const RotationGroupId_t &id,
+			const TimeWindow &tw, const Attributes_t &attrs, 
+			const GPlatesMaths::PointOnSphere &origin,
+			const GPlatesMaths::PointOnSphere &sc_step,
+			const GPlatesMaths::PointOnSphere &gc_step)
 	: DrawableData (dt, id, tw, attrs),
 	  _lattice (GPlatesMaths::GridOnSphere::Create
-	            (origin, sc_step, gc_step))
+		    (origin, sc_step, gc_step))
 {
 	grid = new Grid;
 	grid->offset = 0;
 	grid->length = 0;
 }
 
-GridData::~GridData ()
+GPlatesGeo::GridData::~GridData ()
 {
 	if (grid->length < 1)
 		return;
@@ -68,7 +69,7 @@ GridData::~GridData ()
 	delete grid;
 }
 
-void GridData::Add (const GridElement *element, index_t x1, index_t x2)
+void GPlatesGeo::GridData::Add (GridElement *element, index_t x1, index_t x2)
 {
 	index_t new_len;
 	GridRowPtr *new_rows;
@@ -81,11 +82,20 @@ void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 		// expand to right
 		new_len = x1 - grid->offset + 1;
 		new_rows = new GridRowPtr[new_len];
+#ifndef FAST_GRID_INIT
 		for (index_t i = 0; i < new_len; ++i)
 			new_rows[i] = 0;
+#else
+		memset (new_rows, 0, new_len * sizeof (GridRowPtr));
+#endif
 		if (grid->length > 0) {
+#ifndef FAST_GRID_INIT
 			for (index_t i = 0; i < grid->length; ++i)
 				new_rows[i] = grid->rows[i];
+#else
+			memcpy (new_rows, grid->rows, grid->length *
+							sizeof (GridRowPtr));
+#endif
 			delete[] grid->rows;
 		}
 		grid->length = new_len;
@@ -94,10 +104,16 @@ void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 		// expand to left
 		new_len = grid->length + grid->offset - x1;
 		new_rows = new GridRowPtr[new_len];
+#ifndef FAST_GRID_INIT
 		for (index_t i = 0; i < new_len; ++i)
 			new_rows[i] = 0;
 		for (index_t i = 0; i < grid->length; ++i)
 			new_rows[i + (grid->offset - x1)] = grid->rows[i];
+#else
+		memset (new_rows, 0, new_len * sizeof (GridRowPtr));
+		memcpy (&new_rows[grid->offset - x1], grid->rows, grid->length *
+							sizeof (GridRowPtr));
+#endif
 		delete[] grid->rows;
 		grid->length = new_len;
 		grid->rows = new_rows;
@@ -119,11 +135,20 @@ void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 		// expand to right
 		new_len = x2 - row->offset + 1;
 		new_elems = new GridElementPtr[new_len];
+#ifndef FAST_GRID_INIT
 		for (index_t i = 0; i < new_len; ++i)
 			new_elems[i] = 0;
+#else
+		memset (new_elems, 0, new_len * sizeof (GridElementPtr));
+#endif
 		if (row->length > 0) {
+#ifndef FAST_GRID_INIT
 			for (index_t i = 0; i < row->length; ++i)
 				new_elems[i] = row->data[i];
+#else
+			memcpy (new_elems, row->data, row->length *
+						sizeof (GridElementPtr));
+#endif
 			delete[] row->data;
 		}
 		row->length = new_len;
@@ -132,36 +157,49 @@ void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 		// expand to left
 		new_len = row->length + row->offset - x2;
 		new_elems = new GridElementPtr[new_len];
+#ifndef FAST_GRID_INIT
 		for (index_t i = 0; i < new_len; ++i)
 			new_elems[i] = 0;
 		for (index_t i = 0; i < row->length; ++i)
 			new_elems[i + (row->offset - x2)] = row->data[i];
+#else
+		memset (new_elems, 0, new_len * sizeof (GridElementPtr));
+		memcpy (&new_elems[row->offset - x2], row->data,
+					row->length * sizeof (GridElementPtr));
+#endif
 		delete[] row->data;
 		row->length = new_len;
 		row->data = new_elems;
 		row->offset = x2;
 	}
 
-	//if (row->data[x2 - row->offset]) {
+	if (row->data[x2 - row->offset]) {
 		// already something there!
 		// TODO: throw exception?
-	//	return;
-	//}
+		delete element;
+		return;
+	}
 
 	row->data[x2 - row->offset] = element;
 }
 
 
-void GridData::Draw () const
+void GPlatesGeo::GridData::Draw () const
 {
 	// TODO
 	//GPlatesState::Layout::InsertLineDataPos(this, _line);
 }
 
 
-void GridData::RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const
+void GPlatesGeo::GridData::RotateAndDraw (const GPlatesMaths::FiniteRotation
+								&rot) const
 {
 	// TODO
 	//GPlatesMaths::PolyLineOnSphere rot_line = (rot * _line);
 	//GPlatesState::Layout::InsertLineDataPos(this, rot_line);
+}
+
+void GPlatesGeo::GridData::getDimensions (index_t &x_size, index_t &ysize) const
+{
+	// TODO
 }

@@ -72,13 +72,16 @@ namespace GPlatesGeo
 			/**
 			 * Add @a elem to the grid.
 			 */
-			void Add (const GridElement *element, index_t x1, index_t x2);
+			void Add (GridElement *element, index_t x1, index_t x2);
 
 			virtual void Accept (Visitor& visitor) const
 					{ visitor.Visit(*this); }
 
 			void Draw () const;
 			void RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const;
+
+			void getDimensions (index_t &x_size, index_t &ysize) const;
+
 		private:
 			GPlatesMaths::GridOnSphere _lattice;
 
