@@ -26,24 +26,48 @@
 #ifndef _GPLATES_GLOBAL_FPDATA_H_
 #define _GPLATES_GLOBAL_FPDATA_H_
 
+#include <iostream>
+
 namespace GPlatesGlobal
 {
 	/**
-	 * This class is used to represent any static floating-point data
-	 * used in the project.  By "static" is meant "will not change",
-	 * ie. no arithmetic or other mathematical operations will be
-	 * performed upon it.  For this reason, no arithmetic operators
-	 * will be provided for it, and no mathematical functions (sin,
-	 * cos, tan, sqrt, etc) will be implemented for it.
+	 * Instances of this class are used to represent static floating-point 
+	 * data used in the project.  By "static" is meant "will not change",
+	 * ie. no arithmetic or other mathematical operations will be performed
+	 * upon it;  any instance of this class is effectively nothing more
+	 * than a storage-unit for fp data.
 	 *
-	 * It <i>will</i> have mathematical comparison operations and
-	 * I/O operators, but this should be all it needs.
+	 * For this reason, no arithmetic operators will be provided for it,
+	 * and no mathematical functions (sin, cos, tan, sqrt, etc) will be
+	 * implemented for it.
+	 *
+	 * It <i>will</i> have mathematical comparison operations and I/O
+	 * operators, but this should be all it needs.  This class attempts 
+	 * to avoid the problems associated with standard floating-point
+	 * comparisons by providing "almost exact" comparisons instead of the
+	 * "exact" comparisons provided by the standard floating-point types.
 	 */
 	class FPData
 	{
+			static const double Epsilon;
+			static const double NegativeEpsilon;
+
+			/*
+			 * these functions are friends,
+			 * to be able to access the above two members.
+			 */
+			friend bool operator==(FPData, FPData);
+			friend bool operator!=(FPData, FPData);
+			friend bool operator<=(FPData, FPData);
+			friend bool operator>=(FPData, FPData);
+			friend bool operator<(FPData, FPData);
+			friend bool operator>(FPData, FPData);
+
 			double _dval;
 
 		public:
+			FPData() : _dval(0.0) {  }
+
 			FPData(double d) : _dval(d) {  }
 
 			double dval() const { return _dval; }
@@ -51,62 +75,98 @@ namespace GPlatesGlobal
 
 
 	inline bool
-	operator==(FPData fpd1, FPData fpd2) {
+	operator==(FPData f1, FPData f2) {
 
-		return (fpd1.dval() == fpd2.dval());
+		/*
+		 * Allow difference between f1 and f2 to fall into a range
+		 * instead of insisting upon an exact value.
+		 * That range will be [-e, e].
+		 */
+		double d = f1.dval() - f2.dval();
+		return (FPData::NegativeEpsilon <= d && d <= FPData::Epsilon);
 	}
 
 
 	inline bool
-	operator!=(FPData fpd1, FPData fpd2) {
+	operator!=(FPData f1, FPData f2) {
 
-		return (fpd1.dval() != fpd2.dval());
+		/*
+		 * Difference between f1 and f2 must lie *outside* range.
+		 * This is necessary to maintain the logical invariant
+		 * (a == b) iff not (a != b)
+		 */
+		double d = f1.dval() - f2.dval();
+		return (FPData::NegativeEpsilon > d || d > FPData::Epsilon);
 	}
 
 
 	inline bool
-	operator<=(FPData fpd1, FPData fpd2) {
+	operator<=(FPData f1, FPData f2) {
 
-		return (fpd1.dval() <= fpd2.dval());
+		/*
+		 * According to the logical invariant
+		 * (a == b) implies (a <= b), the set of pairs (f1, f2) which
+		 * cause this boolean comparison to evaluate to true must be
+		 * a superset of the set of pairs which cause the equality
+		 * comparison to return true.
+		 */
+		double d = f1.dval() - f2.dval();
+		return (d <= FPData::Epsilon);
 	}
 
 
 	inline bool
-	operator>=(FPData fpd1, FPData fpd2) {
+	operator>=(FPData f1, FPData f2) {
 
-		return (fpd1.dval() >= fpd2.dval());
+		/*
+		 * According to the logical invariant
+		 * (a == b) implies (a >= b), the set of pairs (f1, f2) which
+		 * cause this boolean comparison to evaluate to true must be
+		 * a superset of the set of pairs which cause the equality
+		 * comparison to return true.
+		 */
+		double d = f1.dval() - f2.dval();
+		return (FPData::NegativeEpsilon <= d);
 	}
 
 
 	inline bool
-	operator>(FPData fpd1, FPData fpd2) {
+	operator>(FPData f1, FPData f2) {
 
-		return (fpd1.dval() > fpd2.dval());
+		/*
+		 * (a > b) must be the logical inverse of (a <= b).
+		 */
+		double d = f1.dval() - f2.dval();
+		return (d > FPData::Epsilon);
 	}
 
 
 	inline bool
-	operator<(FPData fpd1, FPData fpd2) {
+	operator<(FPData f1, FPData f2) {
 
-		return (fpd1.dval() < fpd2.dval());
+		/*
+		 * (a < b) must be the logical inverse of (a >= b).
+		 */
+		double d = f1.dval() - f2.dval();
+		return (FPData::NegativeEpsilon > d);
 	}
 
 
 	inline std::ostream &
-	operator<<(std::ostream &os, FPData fpd) {
+	operator<<(std::ostream &os, FPData f) {
 
-		os << fpd.dval();
+		os << f.dval();
 		return os;
 	}
 
 
-	inline std::ostream &
-	operator>>(std::ostream &os, FPData &fpd) {
+	inline std::istream &
+	operator>>(std::istream &is, FPData &f) {
 
 		double d;
-		os >> d;
-		fpd = FPData(d);
-		return os;
+		is >> d;
+		f = FPData(d);
+		return is;
 	}
 }
 
