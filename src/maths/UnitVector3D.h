@@ -62,25 +62,27 @@ namespace GPlatesMaths
 				     const real_t &z_comp)
 				: DirVector3D (x_comp, y_comp, z_comp, 1.0)
 			{
-				AssertInvariantHolds ();
+				AssertInvariant ();
 			}
 
 			UnitVector3D (const Vector3D &v) : DirVector3D (v, 1.0)
 			{
-				AssertInvariantHolds ();
+				AssertInvariant ();
 			}
 
-			UnitVector3D &operator= (const Vector3D &v)
+			UnitVector3D &
+			operator= (const Vector3D &v)
 			{
 				_x = v.x ();
 				_y = v.x ();
 				_z = v.x ();
 
-				AssertInvariantHolds ();
+				AssertInvariant ();
 				return *this;
 			}
 
-			virtual real_t magnitude() const { return 1.0; }
+			virtual real_t
+			magnitude() const { return 1.0; }
 
 			virtual UnitVector3D
 			normalise() const {
@@ -88,7 +90,41 @@ namespace GPlatesMaths
 				return *this;
 			}
 
+			static inline UnitVector3D
+			xBasis() {
+
+				return UnitVector3D(1.0, 0.0, 0.0, 1.0);
+			}
+
+			static inline UnitVector3D
+			yBasis() {
+
+				return UnitVector3D(0.0, 1.0, 0.0, 1.0);
+			}
+
+			static inline UnitVector3D
+			zBasis() {
+
+				return UnitVector3D(0.0, 0.0, 1.0, 1.0);
+			}
+
 		protected:
+			/**
+			 * Super-secret backdoor constructor for the
+			 * @a xBasis, @a yBasis and @a zBasis functions.
+			 * The magnitude @a mag will be ignored.
+			 *
+			 * Those components had better define a unit vector!
+			 */
+			explicit
+			UnitVector3D(const real_t &x_comp,
+			             const real_t &y_comp,
+			             const real_t &z_comp,
+			             const real_t &mag) :
+
+				DirVector3D (x_comp, y_comp, z_comp, 1.0) {  }
+
+
 			/** 
 			 * Assert the class invariant.
 			 * @throw ViolatedUnitVectorInvariantException
@@ -97,14 +133,23 @@ namespace GPlatesMaths
 			 * Since this is invoked by constructors,
 			 * it should not be a virtual function.
 			 */
-			void AssertInvariantHolds () const;
+			void AssertInvariant () const;
 	};
 
-	inline bool collinear (const UnitVector3D &s1, const UnitVector3D &s2)
+
+	inline bool
+	collinear (const UnitVector3D &s1, const UnitVector3D &s2)
 	{
 		real_t adp = abs (dot (s1, s2));
 		return (adp >= 1.0);
 	}
+
+
+	/**
+	 * Given the unit vector @a u, generate a unit vector perpendicular
+	 * to it.
+	 */
+	UnitVector3D generatePerpendicular(const UnitVector3D &u);
 }
 
 #endif  // _GPLATES_MATHS_UNITVECTOR3D_H_
