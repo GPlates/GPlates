@@ -25,11 +25,13 @@
 
 #include <iomanip>
 #include <utility>
+#include <algorithm>
 #include <sstream>
 #include <iterator>
 #include "PlatesDataTypes.h"
 #include "PlatesParserUtils.h"
 #include "InvalidDataException.h"
+#include "FileFormatException.h"
 
 
 using namespace GPlatesFileIO;
@@ -363,7 +365,21 @@ PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
 	age_disappear = attemptToReadFloat(lb, iss, "age of disappearance");
 
 	// Ignore the 4th item on the line: the data type code for ridges
-	attemptToReadString(lb, iss, "data type code for ridges");
+	std::string 
+	 datatype = attemptToReadString(lb, iss, "data type code for ridges");
+
+	if (datatype.size() > 2) {
+
+		/*
+		 * We have a case where the datatype and its code are not
+		 * seperated by whitespace.  So we need to put back the 
+		 * numerical part which was read into this string.
+		 */
+		std::string::size_type i = 2; // this should be where the int starts.
+		for ( ; i < datatype.size(); ++i)
+			iss.putback(datatype[i]);
+	}
+	// The stream should now be in a position to read the code number.
 
 	// Ignore the 5th item on the line: the data type code number
 	attemptToReadInt(lb, iss, "data type code number");
@@ -373,6 +389,12 @@ PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
 
 	// Ignore the 7th item on the line: the colour code number
 	attemptToReadInt(lb, iss, "colour code number");
+
+/*
+ * This is not supported in all versions of PLATES, and it serves
+ * no purpose anyhow, since there is a magical terminating point 
+ * that allows us to find the end of a line string.
+ */
 #if 0
 	// Get the 8th item on the line: the number of points in the polyline
 	int number_of_points = attemptToReadInt(lb, iss, "number of points");

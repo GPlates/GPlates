@@ -40,6 +40,8 @@
 #include "fileio/PlatesBoundaryParser.h"
 #include "fileio/GPlatesReader.h"
 #include "fileio/FileIOException.h"
+#include "fileio/FileFormatException.h"
+#include "geo/PointData.h"
 #include "geo/LineData.h"
 #include "global/types.h"  /* rid_t */
 
@@ -170,13 +172,54 @@ GetLineDataListFromPolyLine(const PlatesParser::PolyLine& line,
 	}
 }
 
+static PointData*
+GetPointDataFromPolyLine(const PlatesParser::PolyLine& line)
+{
+	using namespace GPlatesMaths;
+
+	// FIXME: This should be factored out from here and 
+	// GetLineDataFromPolyLine.
+	GPlatesGlobal::rid_t plate_id = line._header._plate_id;
+	TimeWindow lifetime = line._header._lifetime;
+
+	// Get an iterator to the first and only point in the line.
+	std::list< PlatesParser::BoundaryLatLonPoint >::const_iterator 
+		point = line._points.begin();
+
+	LatLonPoint 
+		llp = ConvertPlatesParserLatLonToMathsLatLon(point->first);
+	PointOnSphere
+		pos = OperationsOnSphere::convertLatLonPointToPointOnSphere(llp);
+	return new PointData(GeologicalData::NO_DATATYPE, plate_id,
+		lifetime, GeologicalData::NO_ATTRIBUTES, pos);
+}
 
 static void
 AddLinesFromPlate(DataGroup* data, const PlatesParser::Plate& plate)
 {
 	using namespace PlatesParser;
 
+	if (plate._polylines.size() <= 0) {
+
+		/* 
+		 * Some how we got this far with an plate.  Better
+		 * throw a reggie, well a FileFormatException anyway.
+		 */
+		std::ostringstream oss;
+		oss << "No data found on plate with ID: "
+		 << plate._plate_id << std::endl;
+		throw FileFormatException(oss.str().c_str());
+	}
+
 	std::list<PolyLine>::const_iterator iter = plate._polylines.begin();
+
+	// A polyline with a single point is actually PointData.
+	if (plate._polylines.size() == 1) {
+
+		PointData* pd = GetPointDataFromPolyLine(*iter);
+		data->Add(pd);
+		return;
+	}
 
 	for ( ; iter != plate._polylines.end(); ++iter) {
 		std::list< LineData* > ld;
