@@ -26,6 +26,7 @@
 
 #include <algorithm>  /* transform */
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iterator>
@@ -135,12 +136,21 @@ namespace
 			return;
 		}
 
-		msg << "Loading data file with title:\n";
-		NcAtt *att_title = ncf.get_att ("title");
-		if (att_title)
+		int i;
+		for (i = 0; i < ncf.num_atts (); ++i)
+			if (strcmp (ncf.get_att (i)->as_string (0), "title"))
+				break;
+		if (i >= ncf.num_atts ()) {
+			Dialogs::InfoMessage ("netCDF File",
+				"Data file doesn't have a title;"
+				"trying to continue anyway.");
+		} else {
+			msg << "Loading data file with title:\n";
+			NcAtt *att_title = ncf.get_att (i);
 			msg << "    \"" << att_title->as_string (0) << "\"\n";
-
-		Dialogs::InfoMessage ("netCDF File", msg.str ().c_str ());
+			Dialogs::InfoMessage ("netCDF File",
+							msg.str ().c_str ());
+		}
 
 		// TODO: actually load netCDF data
 	}
