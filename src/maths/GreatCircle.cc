@@ -32,6 +32,7 @@
 using namespace GPlatesMaths;
 
 GreatCircle::GreatCircle (const UnitVector3D &v1, const UnitVector3D &v2)
+		: _normal (1, 0, 0)
 {
 	if (dot (v1, v2) == 0.0) {
 		std::ostringstream oss;

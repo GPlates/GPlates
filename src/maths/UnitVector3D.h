@@ -57,9 +57,9 @@ namespace GPlatesMaths
 			 * @param z_comp The z-component.
 			 */
 			explicit
-			UnitVector3D(const real_t &x_comp = 1,
-				     const real_t &y_comp = 0,
-				     const real_t &z_comp = 0)
+			UnitVector3D(const real_t &x_comp,
+				     const real_t &y_comp,
+				     const real_t &z_comp)
 				: DirVector3D (x_comp, y_comp, z_comp)
 			{
 				// Already called from DirVector3D ctor
