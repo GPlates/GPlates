@@ -38,6 +38,11 @@ namespace GPlatesMaths
 {
 	using namespace GPlatesGlobal;
 
+	/// \f$ \pi \f$, the ratio of the circumference to the diameter of a circle
+	static const double PI = 3.14159265358979323846264338;
+	/// \f$ \frac{\pi}{2} \f$
+	static const double PI_2 = 1.57079632679489661923;
+
 	/**
 	 * An instance of this class is a floating-point approximation
 	 * to an element of the field of real numbers.  The difference
@@ -316,24 +321,16 @@ namespace GPlatesMaths
 		return Real(std::tan(r.dval()));
 	}
 
-
-	/*
-	 * FIXME: This is often defined in the C Standard Library -- but is it
-	 * *always* defined *everywhere*, and to the *same precision*?
-	 */
-	const double MATHVALUE_PI = 3.14159265358979323846;
-
-
 	inline Real
 	degreesToRadians(Real rdeg) {
 
-		return Real((MATHVALUE_PI / 180.0) * rdeg);
+		return Real((PI / 180.0) * rdeg);
 	}
 
 	inline Real
 	radiansToDegrees(Real drad) {
 
-		return Real((180.0 / MATHVALUE_PI) * drad);
+		return Real((180.0 / PI) * drad);
 	}
 
 	inline std::ostream &

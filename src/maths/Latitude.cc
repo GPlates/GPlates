@@ -21,23 +21,18 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <sstream>
 #include "Latitude.h"
 #include "Colatitude.h"
+#include "Real.h"
 #include "ViolatedClassInvariantException.h"
 
 
-/*
- * FIXME: This is often defined in the C Standard Library -- but is it
- * *always* defined *everywhere*, and to the *same precision*?
- */
-#define MATHVALUE_PI_ON_2 (1.57079632679489661923)
-
-
 GPlatesMaths::Latitude::Latitude(const Colatitude &colat) :
-	_rval(MATHVALUE_PI_ON_2 - colat.rval()) {  }
+	_rval(GPlatesMaths::PI_2 - colat.rval()) {  }
 
 
 void
@@ -46,7 +41,7 @@ GPlatesMaths::Latitude::AssertInvariant() {
 	/*
 	 * First, perform "almost exact" comparisons for the invariant.
 	 */
-	if (_rval < -MATHVALUE_PI_ON_2 || _rval > MATHVALUE_PI_ON_2) {
+	if (_rval < -GPlatesMaths::PI_2 || _rval > GPlatesMaths::PI_2) {
 
 		/*
 		 * Even allowing some flexibility of comparison,
@@ -63,14 +58,14 @@ GPlatesMaths::Latitude::AssertInvariant() {
 	 * Now, clean up after any violations which would be caused by
 	 * "almost valid" values.
 	 */
-	if (_rval.isPreciselyLessThan(-MATHVALUE_PI_ON_2)) {
+	if (_rval.isPreciselyLessThan(-GPlatesMaths::PI_2)) {
 
 		// It was just slightly less than -pi/2.  Clamp it.
-		_rval = -MATHVALUE_PI_ON_2;
+		_rval = -GPlatesMaths::PI_2;
 
-	} else if (_rval.isPreciselyGreaterThan(MATHVALUE_PI_ON_2)) {
+	} else if (_rval.isPreciselyGreaterThan(GPlatesMaths::PI_2)) {
 
 		// It was just slightly greater than pi/2.  Clamp it.
-		_rval = MATHVALUE_PI_ON_2;
+		_rval = GPlatesMaths::PI_2;
 	}
 }

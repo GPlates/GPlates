@@ -164,8 +164,8 @@ GPlatesMaths::OperationsOnSphere::convertPointOnSphereToLatLonPoint
 	
 	real_t lon = atan2(y.dval(), x.dval());
 	
-	if (lon <= real_t(-MATHVALUE_PI))
-		lon = real_t(MATHVALUE_PI);
+	if (lon <= real_t(-GPlatesMaths::PI))
+		lon = real_t(GPlatesMaths::PI);
 
 	lat = radiansToDegrees(lat);
 	lon = radiansToDegrees(lon);

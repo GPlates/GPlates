@@ -21,24 +21,18 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #include <sstream>
 #include "Colatitude.h"
 #include "Latitude.h"
+#include "Real.h"
 #include "ViolatedClassInvariantException.h"
 
 
-/*
- * FIXME: These are often defined in the C Standard Library -- but are they
- * *always* defined *everywhere*, and to the *same precision*?
- */
-#define MATHVALUE_PI      (3.14159265358979323846)
-#define MATHVALUE_PI_ON_2 (1.57079632679489661923)
-
-
 GPlatesMaths::Colatitude::Colatitude(const Latitude &lat) :
-	_rval(MATHVALUE_PI_ON_2 - lat.rval()) {  }
+	_rval(GPlatesMaths::PI_2 - lat.rval()) {  }
 
 
 void
@@ -47,7 +41,7 @@ GPlatesMaths::Colatitude::AssertInvariant() {
 	/*
 	 * First, perform "almost exact" comparisons for the invariant.
 	 */
-	if (_rval < 0 || _rval > MATHVALUE_PI) {
+	if (_rval < 0 || _rval > GPlatesMaths::PI) {
 
 		/*
 		 * Even allowing some flexibility of comparison,
@@ -69,9 +63,9 @@ GPlatesMaths::Colatitude::AssertInvariant() {
 		// It was just slightly less than 0.  Clamp it.
 		_rval = 0;
 
-	} else if (_rval.isPreciselyGreaterThan(MATHVALUE_PI)) {
+	} else if (_rval.isPreciselyGreaterThan(GPlatesMaths::PI)) {
 
 		// It was just slightly greater than pi.  Clamp it.
-		_rval = MATHVALUE_PI;
+		_rval = GPlatesMaths::PI;
 	}
 }

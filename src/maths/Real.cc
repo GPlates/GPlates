@@ -94,13 +94,6 @@ GPlatesMaths::sqrt(Real r) {
 }
 
 
-/*
- * FIXME: This is often defined in the C Standard Library -- but is it
- * *always* defined *everywhere*, and to the *same precision*?
- */
-#define MATHVALUE_PI_ON_2 (1.57079632679489661923)
-
-
 /**
  * Calculate the arc sine of the Real r, which must lie in the valid domain
  * of the arc sine function, the range [-1, 1].
@@ -131,12 +124,12 @@ GPlatesMaths::asin(Real r) {
 
 		// it was just slightly less than minus one
 		// -- return asin of minus one
-		return Real(-MATHVALUE_PI_ON_2);
+		return Real(-GPlatesMaths::PI_2);
 	}
 	if (isGreaterThanOne(r)) {
 
 		// it was just slightly greater than one -- return asin of one
-		return Real(MATHVALUE_PI_ON_2);
+		return Real(GPlatesMaths::PI_2);
 	}
 	return Real(std::asin(r.dval()));
 }
@@ -172,12 +165,12 @@ GPlatesMaths::acos(Real r) {
 
 		// it was just slightly less than minus one
 		// -- return asin of minus one
-		return Real(-MATHVALUE_PI_ON_2);
+		return Real(-GPlatesMaths::PI_2);
 	}
 	if (isGreaterThanOne(r)) {
 
 		// it was just slightly greater than one -- return asin of one
-		return Real(MATHVALUE_PI_ON_2);
+		return Real(GPlatesMaths::PI_2);
 	}
 	return Real(std::acos(r.dval()));
 }
