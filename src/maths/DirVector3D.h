@@ -119,7 +119,7 @@ namespace GPlatesMaths
 
 
 	inline real_t
-	operator*(DirVector3D v1, DirVector3D v2) {
+	dot(DirVector3D v1, DirVector3D v2) {
 
 		return (v1.x() * v2.x()
 		      + v1.y() * v2.y()

@@ -51,7 +51,7 @@ UnitQuaternion3D::AssertInvariantHolds() const {
 	 * Calculate magnitude of quaternion to ensure that it actually _is_ 1.
 	 * For efficiency, don't bother sqrting yet.
 	 */
-	real_t mag_sqrd = (_s * _s) + (_v * _v);
+	real_t mag_sqrd = (_s * _s) + dot(_v, _v);
 	if (mag_sqrd != 1.0) {
 
 		// invariant has been violated
@@ -70,7 +70,7 @@ GPlatesMaths::operator*(UnitQuaternion3D q1, UnitQuaternion3D q2) {
 	Vector3D v1 = q1.v();
 	Vector3D v2 = q2.v();
 
-	real_t   scalar_part = s1 * s2 - v1 * v2;
+	real_t   scalar_part = s1 * s2 - dot(v1, v2);
 	Vector3D vector_part = s1 * v2 + s2 * v1 + cross(v1, v2);
 
 	return UnitQuaternion3D(scalar_part, vector_part);

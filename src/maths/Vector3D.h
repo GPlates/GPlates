@@ -146,7 +146,7 @@ namespace GPlatesMaths
 
 
 	inline real_t
-	operator*(Vector3D v1, Vector3D v2) {
+	dot(Vector3D v1, Vector3D v2) {
 
 		return (v1.x() * v2.x()
 		      + v1.y() * v2.y()
