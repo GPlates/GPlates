@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema targetNamespace="http://www.opengis.net/gml" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:gml="http://www.opengis.net/gml" elementFormDefault="qualified" version="3.0.1">
+  <xsd:annotation>
+    <xsd:appinfo source="urn:opengis:specification:gml:schema-xsd:direction:v3.0.1">direction.xsd</xsd:appinfo>
+    <xsd:documentation>
+			This schema defines "direction" element and type.
+    </xsd:documentation>
+  </xsd:annotation>
+  <!-- ==============================================================
+       includes and imports
+	============================================================== -->
+  <xsd:include schemaLocation="geometryBasic0d1d.xsd"/>
+  <!-- ============================================================== -->
+  <!--===================================================================  -->
+  <xsd:element name="direction" type="gml:DirectionPropertyType"/>
+  <!--===================================================================  -->
+  <xsd:complexType name="DirectionPropertyType">
+    <xsd:annotation>
+      <xsd:documentation/>
+    </xsd:annotation>
+    <xsd:choice>
+      <xsd:element ref="gml:DirectionVector"/>
+      <xsd:element ref="gml:CompassPoint"/>
+      <xsd:element name="DirectionKeyword" type="gml:CodeType"/>
+      <xsd:element name="DirectionString" type="gml:StringOrRefType"/>
+    </xsd:choice>
+    <xsd:attributeGroup ref="gml:AssociationAttributeGroup"/>
+  </xsd:complexType>
+  <!--===================================================================  -->
+  <xsd:element name="DirectionVector" type="gml:DirectionVectorType"/>
+  <!--===================================================================  -->
+  <xsd:complexType name="DirectionVectorType">
+    <xsd:annotation>
+      <xsd:documentation>Direction expressed as a vector, either using components, or using angles.  </xsd:documentation>
+    </xsd:annotation>
+    <xsd:choice>
+      <xsd:element ref="gml:vector"/>
+      <xsd:sequence>
+        <xsd:element name="horizontalAngle" type="gml:AngleType"/>
+        <xsd:element name="verticalAngle" type="gml:AngleType"/>
+      </xsd:sequence>
+    </xsd:choice>
+  </xsd:complexType>
+  <!--===================================================================  -->
+  <xsd:element name="CompassPoint" type="gml:CompassPointEnumeration"/>
+  <!--===================================================================  -->
+  <xsd:simpleType name="CompassPointEnumeration">
+    <xsd:restriction base="string">
+      <xsd:enumeration value="N"/>
+      <xsd:enumeration value="NNE"/>
+      <xsd:enumeration value="NE"/>
+      <xsd:enumeration value="ENE"/>
+      <xsd:enumeration value="E"/>
+      <xsd:enumeration value="ESE"/>
+      <xsd:enumeration value="SE"/>
+      <xsd:enumeration value="SSE"/>
+      <xsd:enumeration value="S"/>
+      <xsd:enumeration value="SSW"/>
+      <xsd:enumeration value="SW"/>
+      <xsd:enumeration value="WSW"/>
+      <xsd:enumeration value="W"/>
+      <xsd:enumeration value="WNW"/>
+      <xsd:enumeration value="NW"/>
+      <xsd:enumeration value="NNW"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <!--===================================================================  -->
+</xsd:schema>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema targetNamespace="http://www.opengis.net/gml" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gml="http://www.opengis.net/gml" xmlns:sch="http://www.ascc.net/xml/schematron" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" version="3.0.1">
+  <xsd:annotation>
+    <xsd:appinfo source="urn:opengis:specification:gml:schema-xsd:gml:v3.0.1">gml.xsd</xsd:appinfo>
+    <xsd:documentation>
+		    	Copyright (c) 2002 OGC, All Rights Reserved.
+			Top level GML schema
+		</xsd:documentation>
+  </xsd:annotation>
+  <!-- ====================================================================== -->
+  <xsd:include schemaLocation="dynamicFeature.xsd"/>
+  <xsd:include schemaLocation="topology.xsd"/>
+  <xsd:include schemaLocation="coverage.xsd"/>
+  <xsd:include schemaLocation="coordinateReferenceSystems.xsd"/>
+  <xsd:include schemaLocation="observation.xsd"/>
+  <xsd:include schemaLocation="defaultStyle.xsd"/>
+  <!-- ====================================================================== -->
+</xsd:schema>
