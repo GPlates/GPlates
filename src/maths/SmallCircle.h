@@ -100,6 +100,10 @@ namespace GPlatesMaths
 			real_t
 			colatitude () const { return acos (_cos_colat); }
 
+			/**
+			 * Evaluate whether the point @a pt lies on this
+			 * small circle.
+			 */
 			bool
 			contains (const PointOnSphere &pt) const {
 
@@ -118,6 +122,10 @@ namespace GPlatesMaths
 				std::vector<PointOnSphere> &points) const;
 
 		protected:
+			/**
+			 * Assert the class invariant: that the cosine of the
+			 * colatitude lies within the range [-1, 1].
+			 */
 			void AssertInvariantHolds () const;
 
 		private:
