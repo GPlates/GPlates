@@ -44,15 +44,16 @@ QuadricError(GLenum error)
 	std::cerr << "Quadric Error: " << gluErrorString(error) << std::endl;
 	exit(1);
 }
+
 Globe::Globe(Colour colour, GLfloat radius, GLint slices, GLint stacks)
-	: _colour(colour), _radius(radius), _slices(slices), 
-	  _stacks(stacks), _meridian(0.0), _elevation(0.0)
+	: _colour(colour), _radius(radius), _meridian(0.0), _elevation(0.0),
+	  _grid(180.0f/stacks, 360.0f/slices)
 {
 	_sphere = gluNewQuadric();
-	gluQuadricNormals(_sphere, GLU_NONE);	// Don't generate normals
+	gluQuadricNormals(_sphere, GLU_SMOOTH);	// Generate normals for lighting
 	gluQuadricTexture(_sphere, GL_FALSE);	// Don't generate texture coords
-	gluQuadricDrawStyle(_sphere, GLU_LINE);	// Draw wireframe
-	gluQuadricCallback(_sphere, GLU_ERROR, 
+	gluQuadricDrawStyle(_sphere, GLU_FILL);	// Draw solid sphere
+	gluQuadricCallback(_sphere, GLU_ERROR,  // Catch errors.
 		reinterpret_cast<void (*)()>(&QuadricError));
 }
 
@@ -156,15 +157,30 @@ Globe::Paint()
 		// rotate everything (around z) according to meridian rotation
 		glRotatef(_meridian, 0.0, 0.0, 1.0);
 
-		// Set the globe's colour.
+		// Set the sphere's colour.
+		glColor3fv(Colour(0.2, 0.2, 0.2));
+		
+		/*
+		 * Draw sphere.
+		 * DepthRange calls push the sphere back in the depth buffer a bit to
+		 * avoid Z-fighting with the LineData.
+		 */
+		glDepthRange(0.02, 1.0);
+		gluSphere(_sphere, _radius, 36, 18);
+
+		// Set the grid's colour.
 		glColor3fv(_colour);
 		
-		// Draw globe.
-		// DepthRange calls push the globe back in the depth buffer a bit to
-		// avoid Z-fighting with the NURBS.
-		glDepthRange(0.1, 1.0);
-		gluSphere(_sphere, _radius, _slices, _stacks);
-		glDepthRange(0.0, 0.9);
+		/*
+		 * Draw grid.
+		 * DepthRange calls push the grid back in the depth buffer a bit to
+		 * avoid Z-fighting with the LineData.
+		 */
+		glDepthRange(0.01, 1.0);
+		_grid.Paint();
+
+		// Restore DepthRange
+		glDepthRange(0.0, 1.0);
 
 		glPointSize(5.0f);
 		

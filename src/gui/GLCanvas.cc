@@ -66,7 +66,6 @@ GLCanvas::OnPaint(wxPaintEvent&)
 	glRotatef(-90.0, 1.0, 0.0, 0.0);
 	glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-	using namespace GPlatesGeo;
 	_globe.Paint();
 
 	SwapBuffers();
@@ -105,7 +104,7 @@ void
 GLCanvas::SetView()
 {
 	static const GLfloat ORTHO_RATIO = 1.2;
-	static const GLfloat Z_NEAR = 0.1;
+	static const GLfloat Z_NEAR = 0.5;
 
 	// Always fill up the all of the available space.
 	int width, height;
@@ -125,13 +124,13 @@ GLCanvas::SetView()
 	{
 		// Width is limiting factor
 		factor = zoom_ratio * fheight / fwidth;
-		glOrtho(-zoom_ratio, zoom_ratio, -factor, factor, Z_NEAR, eye_dist);
+		glOrtho(-zoom_ratio, zoom_ratio, -factor, factor, Z_NEAR, eye_dist+3.0);
 	}
 	else
 	{
 		// height is limiting factor
 		factor = zoom_ratio * fwidth / fheight;
-		glOrtho(-factor, factor, -zoom_ratio, zoom_ratio, Z_NEAR, eye_dist);
+		glOrtho(-factor, factor, -zoom_ratio, zoom_ratio, Z_NEAR, eye_dist+3.0);
 	}
 	
 	glMatrixMode(GL_MODELVIEW);

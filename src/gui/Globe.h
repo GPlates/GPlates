@@ -28,6 +28,7 @@
 
 #include "OpenGL.h"
 #include "Colour.h"
+#include "SphericalGrid.h"
 #include "geo/DataGroup.h"
 
 namespace GPlatesGui
@@ -42,15 +43,8 @@ namespace GPlatesGui
 
 			~Globe() { 
 				
-				gluDeleteNurbsRenderer(_nurbs_renderer);
 				gluDeleteQuadric(_sphere);
 			}
-
-			GLint&
-			GetSlices() { return _slices; }
-
-			GLint&
-			GetStacks() { return _stacks; }
 
 			GLfloat&
 			GetMeridian() { return _meridian; }
@@ -73,14 +67,14 @@ namespace GPlatesGui
 			static const GLfloat DEFAULT_RADIUS;
 
 			/**
-			 * One slice every 5 degrees.
+			 * One slice every 30 degrees.
 			 */
-			static const GLint DEFAULT_SLICES = 36;
+			static const GLint DEFAULT_SLICES = 12;
 
 			/**
-			 * One stack every 5 degrees.
+			 * One stack every 30 degrees.
 			 */
-			static const GLint DEFAULT_STACKS = 18;
+			static const GLint DEFAULT_STACKS = 6;
 
 			Colour _colour;
 
@@ -89,18 +83,11 @@ namespace GPlatesGui
 			 */
 			GLfloat _radius;
 
-			/**
-			 * The stacks and slices determine the 'resolution' of 
-			 * the rendered Globe.
-			 */
-			GLint _slices;
-			GLint _stacks;
-
-			GLUquadricObj *_sphere;
-			GLUnurbsObj *_nurbs_renderer;
-
 			GLfloat _meridian;
 			GLfloat _elevation;
+
+			GLUquadricObj *_sphere;	/*< The solid earth. */
+			SphericalGrid  _grid;	/*< Lines of lat and lon on surface. */ 
 
 			void
 			NormaliseMeridianElevation();
