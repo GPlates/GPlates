@@ -71,6 +71,7 @@ namespace GPlatesGui
 		
 			wxStatusBar* _status_bar;
 			GLCanvas*	 _canvas;
+			wxString _last_load_dir, _last_save_dir;
 
 			DECLARE_EVENT_TABLE()
 	};

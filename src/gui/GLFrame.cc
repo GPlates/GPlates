@@ -110,6 +110,9 @@ GLFrame::GLFrame(wxFrame* parent,
 		exit(1);
 	}
 
+	_last_load_dir = "";
+	_last_save_dir = "";
+
 	CreateMenuBar(this);
 	_canvas = new GLCanvas(this);
 	_canvas->SetCurrent();
@@ -156,10 +159,9 @@ GLFrame::OnExit(wxCommandEvent&)
 void
 GLFrame::OnOpenData(wxCommandEvent&)
 {
-	static wxString default_dir = _("");
 	wxFileDialog filedlg(this, 
 						 _("Select a data file..."),
-						 default_dir,  // default dir  = none
+						 _last_load_dir,
 						 _(""),  // default file = none
 						 _("GPlates Data files (*.gpml)|*.gpml|"
 						 "PLATES Data files (*.dat)|*.dat|"
@@ -168,7 +170,7 @@ GLFrame::OnOpenData(wxCommandEvent&)
 
 	if (filedlg.ShowModal() == wxID_OK) {
 		std::string selected_file;
-		default_dir = filedlg.GetDirectory();
+		_last_load_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath().mb_str();
 		GPlatesControls::File::OpenData(selected_file);
 	}
@@ -178,10 +180,9 @@ GLFrame::OnOpenData(wxCommandEvent&)
 void
 GLFrame::OnSaveData(wxCommandEvent&)
 {
-	static wxString default_dir = _("");
 	wxFileDialog filedlg(this, 
 						 _("Designate a file name..."),
-						 default_dir,  // default dir  = none
+						 _last_save_dir,
 						 _(""),  // default file = none
 						 _("GPlates Data files (*.gpml)|*.gpml|"
 						 "All files (*.*)|*.*"),  // wildcard
@@ -189,7 +190,7 @@ GLFrame::OnSaveData(wxCommandEvent&)
 
 	if (filedlg.ShowModal() == wxID_OK) {
 		std::string selected_file;
-		default_dir = filedlg.GetDirectory();
+		_last_save_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath().mb_str();
 		GPlatesControls::File::SaveData(selected_file);
 	}
@@ -200,10 +201,9 @@ GLFrame::OnSaveData(wxCommandEvent&)
 void
 GLFrame::OnOpenRotation(wxCommandEvent&)
 {
-	static wxString default_dir = _("");
 	wxFileDialog filedlg(this, 
 						 _("Select a rotation file..."),
-						 default_dir,  // default dir  = none
+						 _last_load_dir,
 						 _(""),  // default file = none
 						 _("PLATES Rotation files (*.rot)|*.rot|"
 						 "All files (*.*)|*.*"),  // wildcard
@@ -211,7 +211,7 @@ GLFrame::OnOpenRotation(wxCommandEvent&)
 
 	if (filedlg.ShowModal() == wxID_OK) {
 		std::string selected_file;
-		default_dir = filedlg.GetDirectory();
+		_last_load_dir = filedlg.GetDirectory();
 		selected_file = filedlg.GetPath().mb_str();
 		GPlatesControls::File::OpenRotation(selected_file);
 	}
