@@ -25,14 +25,11 @@
 
 #include "View.h"
 
-using namespace GPlatesControls;
-
 std::string
-View::DocumentMetadata()
+GPlatesControls::View::DocumentMetadata()
 {
 	return "";
 }
 
 // Corresponds to extern declertion in View.h
-View::FrameRedisplay
-View::Redisplay;
+GPlatesControls::View::FrameRedisplay GPlatesControls::View::Redisplay;

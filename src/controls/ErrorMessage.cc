@@ -27,10 +27,8 @@
 #include <wx/wx.h>
 #include "Dialogs.h"
 
-using namespace GPlatesControls;
-
 void
-Dialogs::ErrorMessage(const char* title,
+GPlatesControls::Dialogs::ErrorMessage(const char* title,
 					  const char* message,
 					  const char* result)
 {

@@ -214,7 +214,7 @@ namespace
 }
 
 void
-File::OpenData(const std::string& filename)
+GPlatesControls::File::OpenData(const std::string& filename)
 {
 	enum { UNKNOWN, GPML, PLATES } filetype = UNKNOWN;
 
@@ -367,7 +367,7 @@ ConvertPlatesRotationDataToRotationMap(const
 
 
 void
-File::OpenRotation(const std::string& filename)
+GPlatesControls::File::OpenRotation(const std::string& filename)
 {
 	std::ifstream f(filename.c_str());
 	if ( ! f) {
@@ -401,13 +401,13 @@ File::OpenRotation(const std::string& filename)
 
 
 void
-File::Quit(const GPlatesGlobal::integer_t& exit_status)
+GPlatesControls::File::Quit(const GPlatesGlobal::integer_t& exit_status)
 {
 	exit(exit_status);
 }
 
 void
-File::SaveData(const std::string& filepath)
+GPlatesControls::File::SaveData(const std::string& filepath)
 {
 	std::ofstream outfile(filepath.c_str());
 	if ( ! outfile) {
