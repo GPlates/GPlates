@@ -31,6 +31,8 @@
 
 namespace GPlatesGui
 {
+	class MainWindow;
+
 	class GPlatesApp: public wxApp
 	{
 		public:
@@ -41,6 +43,11 @@ namespace GPlatesGui
 			 * application-initialisation code in here.
 			 */
 			bool OnInit();
+
+			int OnExit ();
+
+		private:
+			MainWindow *_main_win;
 	};
 }
 
