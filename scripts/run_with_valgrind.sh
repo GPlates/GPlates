@@ -21,5 +21,6 @@ if ! test -x gplates; then
 fi
 
 echo "Running with valgrind, output to \"$OUTPUT\"..."
-valgrind -v --leak-check=yes --num-callers=8 --suppressions=$SUPPS \
+valgrind --tool=memcheck -v --leak-check=yes --num-callers=8 \
+	--suppressions=$SUPPS \
 	./gplates 2> $OUTPUT
