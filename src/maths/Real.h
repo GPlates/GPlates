@@ -109,6 +109,20 @@ namespace GPlatesMaths
 				_dval /= other._dval;
 				return *this;
 			}
+
+
+			bool
+			isPreciselyGreaterThan(double d) const {
+
+				return (_dval > d);
+			}
+
+
+			bool
+			isPreciselyLessThan(double d) const {
+
+				return (_dval < d);
+			}
 	};
 
 
