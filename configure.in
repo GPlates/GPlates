@@ -160,24 +160,22 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([
 # OpenGL and GLU
 # How we compile the OpenGL headers dependent upon the type of the build system.
 AC_MSG_CHECKING([OpenGL header location])
+gl_headers=""
 case "$build" in
 	*-apple-darwin* )
 		AC_MSG_RESULT([Mac OS X OpenGL framework])
-		AC_CHECK_HEADERS([OpenGL/gl.h OpenGL/glu.h], [], AC_MSG_ERROR([
-!!
-!!  Failed to find the OpenGL headers.  Make sure the OpenGL
-!!  development package is installed on your system.
-!!]))
+		gl_headers="OpenGL/gl.h OpenGL/glu.h"
 	;;
 	* )
 		AC_MSG_RESULT([UNIX-style include directory])
-		AC_CHECK_HEADERS([GL/gl.h GL/glu.h], [], AC_MSG_ERROR([
+		gl_headers="GL/gl.h GL/glu.h"
+	;;
+esac
+AC_CHECK_HEADERS([$gl_headers], [], AC_MSG_ERROR([
 !!
 !!  Failed to find the OpenGL headers.  Make sure the OpenGL
 !!  development package is installed on your system.
 !!]))
-	;;
-esac
 
 # eXpat XML Parser
 # XXX: I had to alter my local copy of expat.h because it makes
