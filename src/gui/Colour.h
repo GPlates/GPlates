@@ -61,23 +61,6 @@ namespace GPlatesGui
 				   const GLfloat& alpha = 1.0);
 
 			/**
-			 * Construct a colour with the given red, green and
-			 * blue components.
-			 * 
-			 * The parameters should be in the range 0 - 255 
-			 * (0x0 - 0xFF) inclusive.  Values outside this
-			 * range will not be clamped, since OpenGL does its
-			 * own clamping.
-			 *
-			 * @note This method is provided for convenience, it is
-			 *   the less efficient way to construct a colour.
-			 */
-			explicit
-			Colour(const GLuint& red   = 0x00, 
-				   const GLuint& green = 0x00,
-				   const GLuint& blue  = 0x00
-				   const GLuint& alpha = 0xFF);
-			/**
 			 * Accessor methods.
 			 */
 			GLfloat
