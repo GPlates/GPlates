@@ -42,7 +42,8 @@ GPlatesGui::AnimationTimesDialog::AnimationTimesDialog(wxWindow* parent) :
 		 "(in units of \"millions of years ago\").\n\n"
 		 "Additionally, you may vary the time-delta\n"
 		 "between successive frames of the animation\n"
-		 "(in units of \"millions of years\").\n")),
+		 "(in units of \"millions of years\").\n\n"
+		 "The time-delta must be greater than zero.\n")),
 		0, wxALL, BORDER_SIZE);
 
 	// A text entry thingo with a text note to the left
