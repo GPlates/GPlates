@@ -33,7 +33,7 @@ using namespace GPlatesMaths;
 void
 DirVector3D::AssertInvariantHolds() const {
 
-	if (_mag == 0.0) {
+	if (_mag <= 0.0) {
 
 		// invariant has been violated
 		std::ostringstream oss("DirVector3D has magnitude ");
