@@ -63,6 +63,14 @@ namespace GPlatesMaths
 	};
 
 
+	inline bool
+	operator==(LatLonPoint p1, LatLonPoint p2) {
+
+		return ((p1.latitude() == p2.latitude()) &&
+		        (p1.longitude() == p2.longitude()));
+	}
+
+
 	namespace OperationsOnSphere
 	{
 		UnitVector3D convertLatLongToUnitVector(const real_t& latitude,
