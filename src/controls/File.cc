@@ -93,11 +93,11 @@ ConvertPlatesParserLatLonToMathsLatLon(const PlatesParser::LatLonPoint& point)
 	 * to be different to the range used by PLATES, which seems to be 
 	 * [-180.0, 180.0].
 	 */
-	GPlatesMaths::real_t lat = point._lat;
-	GPlatesMaths::real_t lon = point._lon;
+	GPlatesMaths::real_t lat(point._lat);
+	GPlatesMaths::real_t lon(point._lon);
 	if (lon == -180.0) lon = 180.0;
 
-	return GPlatesMaths::LatLonPoint::CreateLatLonPoint(lat, lon)
+	return GPlatesMaths::LatLonPoint::CreateLatLonPoint(lat, lon);
 }
 
 
