@@ -45,7 +45,9 @@ namespace GPlatesFileIO
 			LineBuffer(std::istream &istr, const char *fname)
 			 : _istr(istr), _fname(fname), _line_num(0) {  }
 
+
 			~LineBuffer() {  }
+
 
 			/**
 			 * Get a line from the istream.
@@ -70,6 +72,20 @@ namespace GPlatesFileIO
 				return (_istr.getline(str, count));
 			}
 
+
+			/**
+			 * Return bool of whether EOF has been encountered.
+			 *
+			 * Note that in C++ I/O, the state of the stream is
+			 * not set to 'eof' until a read has been attempted,
+			 * and failed due to reaching EOF.  Thus, generally
+			 * the 'failbit' will be set at the same time as
+			 * the 'eofbit'.
+			 */
+			bool
+			eof() const { return _istr.eof(); }
+
+
 			/**
 			 * Reset the failbit in the istream, if it is set.
 			 */
@@ -88,11 +104,13 @@ namespace GPlatesFileIO
 				}
 			}
 
+
 			/**
 			 * Return the line number of the line you just read.
 			 */
 			unsigned
 			lineNum() const { return _line_num; }
+
 
 			void
 			writeTo(std::ostream &ostr) const {
