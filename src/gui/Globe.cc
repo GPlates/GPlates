@@ -28,50 +28,26 @@
 #include <iostream>
 #include <cstdlib>
 #include <algorithm>
+
 #include "Globe.h"
-#include "maths/types.h"
-#include "maths/GreatCircleArc.h"
 #include "state/Layout.h"
 
-using namespace GPlatesGui;
+
 using namespace GPlatesMaths;
 using namespace GPlatesState;
 
-
-void
-Globe::NormaliseMeridianElevation()
-{
-	if (_elevation < 0.0) {
-		// get back into [0, 360) range 
-		_elevation += 360.0;
-	} else if (_elevation >= 360.0) {
-		// cut back a revolution
-		_elevation -= 360.0;
-	}
-	if (_meridian < 0.0) {
-		// get back into [0, 360) range
-		_meridian += 360.0;
-	} else if (_meridian >= 360.0) {
-		// cut back a revolution
-		_meridian -= 360.0;
-	}
-}
 
 static void
 CallVertexWithPoint(const PointOnSphere& p)
 {
 	UnitVector3D uv = p.unitvector();
-
-	glVertex3d(
-		uv.x().dval(),
-		uv.y().dval(),
-		uv.z().dval()
-	);
+	glVertex3d(uv.x().dval(), uv.y().dval(), uv.z().dval());
 }
+
 
 static void
 CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin, 
-				   const PolyLineOnSphere::const_iterator& end)
+                   const PolyLineOnSphere::const_iterator& end)
 {
 	PolyLineOnSphere::const_iterator iter = begin;
 
@@ -81,6 +57,7 @@ CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin,
 			CallVertexWithPoint(iter->endPoint());
 	glEnd();
 }
+
 
 static void
 PaintPointDataPos(const Layout::PointDataPos& pointdata)
@@ -92,6 +69,8 @@ PaintPointDataPos(const Layout::PointDataPos& pointdata)
 
 namespace
 {
+	using namespace GPlatesGui;
+
 	/**
 	 * XXX: Hack to get Colours working.
 	 */
@@ -110,6 +89,7 @@ namespace
 	ColourMapInit _CMAP;
 }
 
+
 static void
 PaintLineDataPos(const Layout::LineDataPos& linedata)
 {
@@ -120,9 +100,10 @@ PaintLineDataPos(const Layout::LineDataPos& linedata)
 	if (iter != COLOUR_MAP.end())
 		glColor3fv(*iter->second);
 	else
-		glColor3fv(Colour::BLACK);
+		glColor3fv(GPlatesGui::Colour::BLACK);
 	CallVertexWithLine(line.begin(), line.end());
 }
+
 
 static void
 PaintPoints()
@@ -147,35 +128,54 @@ PaintLines()
 	for_each(lines_begin, lines_end, PaintLineDataPos);
 }
 
+
 void
-Globe::Paint()
+GPlatesGui::Globe::SetNewHandlePos(const PointOnSphere &pos)
+{
+	_handle_pos = pos;
+}
+
+
+void
+GPlatesGui::Globe::UpdateHandlePos(const PointOnSphere &pos)
+{
+	Rotation rot = CreateRotation(_handle_pos, pos);
+
+	_cumul_rot = rot * _cumul_rot;
+	_rev_cumul_rot = _cumul_rot.reverse();
+	_handle_pos = pos;
+}
+
+
+PointOnSphere
+GPlatesGui::Globe::Orient(const PointOnSphere &pos)
+{
+	return (_rev_cumul_rot * pos);
+}
+
+
+void
+GPlatesGui::Globe::Paint()
 {
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
-		// Ensure that the meridian and elevation are in the acceptable 
-		// range.
-		NormaliseMeridianElevation();
-
 		// rotate everything to get a nice almost-equatorial shot
 //		glRotatef(-80.0, 1.0, 0.0, 0.0);
 
-		// rotate everything (around x) according to elevation rotation
-		// FIXME: This should be combined with the previous rotation so
-		//  only one is submitted.
-		glRotatef(_elevation, 0.0, 1.0, 0.0);
-
-		// rotate everything (around z) according to meridian rotation
-		glRotatef(_meridian, 0.0, 0.0, 1.0);
+		UnitVector3D axis = _cumul_rot.axis();
+		real_t angle_in_deg = radiansToDegrees(_cumul_rot.angle());
+		glRotatef(angle_in_deg.dval(),
+		           axis.x().dval(), axis.y().dval(), axis.z().dval());
 
 		// Set the sphere's colour.
-		glColor3fv(Colour(0.35, 0.35, 0.35));
+		glColor3fv(GPlatesGui::Colour(0.35, 0.35, 0.35));
 		
 		/*
 		 * Draw sphere.
-		 * DepthRange calls push the sphere back in the depth buffer a bit to
-		 * avoid Z-fighting with the LineData.
+		 * DepthRange calls push the sphere back in the depth buffer
+		 * a bit to avoid Z-fighting with the LineData.
 		 */
-		glDepthRange(0.02, 1.0);
+		glDepthRange(0.1, 1.0);
 		_sphere.Paint();
 
 		// Set the grid's colour.
@@ -183,8 +183,8 @@ Globe::Paint()
 		
 		/*
 		 * Draw grid.
-		 * DepthRange calls push the grid back in the depth buffer a bit to
-		 * avoid Z-fighting with the LineData.
+		 * DepthRange calls push the grid back in the depth buffer
+		 * a bit to avoid Z-fighting with the LineData.
 		 */
 		glDepthRange(0.01, 1.0);
 		_grid.Paint();
@@ -197,10 +197,10 @@ Globe::Paint()
 		/* 
 		 * Paint the data.
 		 */
-		glColor3fv(Colour::GREEN);
+		glColor3fv(GPlatesGui::Colour::GREEN);
 		PaintPoints();
 		
-		glColor3fv(Colour::BLACK);
+		glColor3fv(GPlatesGui::Colour::BLACK);
 		PaintLines();
 
 	glPopMatrix();

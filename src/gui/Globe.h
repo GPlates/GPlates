@@ -28,10 +28,12 @@
 #ifndef _GPLATES_GUI_GLOBE_H_
 #define _GPLATES_GUI_GLOBE_H_
 
-#include "OpenGL.h"
 #include "Colour.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
+#include "maths/UnitVector3D.h"
+#include "maths/PointOnSphere.h"
+#include "maths/Rotation.h"
 #include "geo/DataGroup.h"
 
 namespace GPlatesGui
@@ -39,40 +41,35 @@ namespace GPlatesGui
 	class Globe
 	{
 		public:
-			Globe()
-			 : _meridian(0.0), _elevation(0.0),
-			   _sphere(Colour(0.35, 0.35, 0.35)),
-			   _grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON,
-			    Colour::WHITE) {  }
+			Globe() :
+			 _sphere(Colour(0.35, 0.35, 0.35)),
+			 _grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON, Colour::WHITE),
+			 _handle_pos(GPlatesMaths::UnitVector3D::xBasis()),
+			 _cumul_rot(GPlatesMaths::Rotation::Create(
+			             GPlatesMaths::UnitVector3D::zBasis(),
+			             0.0)),
+			 _rev_cumul_rot(GPlatesMaths::Rotation::Create(
+			                GPlatesMaths::UnitVector3D::zBasis(),
+			                0.0)) {  }
 
 			~Globe() {  }
-
-			GLfloat&
-			GetMeridian() { return _meridian; }
-
-			GLfloat&
-			GetElevation() { return _elevation; }
 
 			// currently does nothing.
 			void
 			SetTransparency(bool trans = true) {  }
 
+			void SetNewHandlePos(const
+			 GPlatesMaths::PointOnSphere &pos);
+
+			void UpdateHandlePos(const
+			 GPlatesMaths::PointOnSphere &pos);
+
+			GPlatesMaths::PointOnSphere Orient(const
+			 GPlatesMaths::PointOnSphere &pos);
+
 			void Paint();
 
 		private:
-			/**
-			 * One circle of latitude every 30 degrees.
-			 */
-			static const unsigned NUM_CIRCLES_LAT = 5;
-
-			/**
-			 * One circle of longitude every 30 degrees.
-			 */
-			static const unsigned NUM_CIRCLES_LON = 6;
-
-			GLfloat _meridian;
-			GLfloat _elevation;
-
 			/**
 			 * The solid earth.
 			 */
@@ -83,7 +80,32 @@ namespace GPlatesGui
 			 */
 			SphericalGrid _grid;
 
-			void NormaliseMeridianElevation();
+			/**
+			 * The current position of the "handle".
+			 * Move this handle to spin the globe.
+			 */
+			GPlatesMaths::PointOnSphere _handle_pos;
+
+			/**
+			 * The accumulated rotation of the globe.
+			 */
+			GPlatesMaths::Rotation _cumul_rot;
+
+			/**
+			 * The REVERSE of the accumulated rotation of the globe.
+			 * [Used by the frequently-used @a Orient function.]
+			 */
+			GPlatesMaths::Rotation _rev_cumul_rot;
+
+			/**
+			 * One circle of latitude every 30 degrees.
+			 */
+			static const unsigned NUM_CIRCLES_LAT = 5;
+
+			/**
+			 * One circle of longitude every 30 degrees.
+			 */
+			static const unsigned NUM_CIRCLES_LON = 6;
 	};
 }
 
