@@ -40,9 +40,13 @@ DataGroup::DataGroup(const DataType_t& dt, const RotationGroupId_t& id,
 
 DataGroup::~DataGroup()
 {
+	std::cout << "1 >>> " << __PRETTY_FUNCTION__ << std::endl;
+
 	Children_t::iterator iter = _children.begin();
 	for ( ; iter != _children.end(); ++iter)
 		delete *iter;
+	
+	std::cout << "2 >>> " << __PRETTY_FUNCTION__ << std::endl;
 }
 
 void

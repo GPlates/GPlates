@@ -24,6 +24,8 @@
  */
 
 #include <string>
+#include <iostream>
+#include <iomanip>
 
 #include <cstring>
 #include "XMLParser.h"
@@ -39,40 +41,60 @@ StartElementHandler(void* userdata,
 					const XML_Char*  name,
 					const XML_Char** attrs)
 {
-	Element* result = new Element;
-	result->_name = new std::string(name);
+	std::cout << "Entered\t" << __PRETTY_FUNCTION__ << std::endl;
+	Element* result = new Element(static_cast<const char*>(name));
 	
-	result->_attributes = new XMLParser::Element::AttributeList;
-	const XML_Char* attr = *attrs;
-	for ( ; attr; attr += 2) {
+	std::cout << "\tElement name: " << *result->_name << std::endl;
+	for (size_t i = 0; attrs[i]; i += 2) {
 		result->_attributes->push_back(
-			std::make_pair(std::string(attr), std::string(attr + 1)));
+			std::make_pair(std::string(attrs[i]), 
+						   std::string(attrs[i + 1])));
 	}
 	
-	Element* current = *static_cast<Element**>(userdata);
-	result->_parent = current;
-	current = result;
+	Element** current = static_cast<Element**>(userdata);
+	result->_parent = *current;
+	*current = result;
+	std::cout << "Left\t" << __PRETTY_FUNCTION__ << std::endl;
 }
 
-void
+static void
 EndElementHandler(void* userdata, const XML_Char* name)
 {
+	std::cout << "Entered\t" << __PRETTY_FUNCTION__ << std::endl;
+	std::cout << "\tElement name: " << name << std::endl;
+
 	Element* current = *static_cast<Element**>(userdata);
+
+#if 0	
+	GPlatesGlobal::Assert(std::string(name) == *current->_name, 
+		std::string("Broken stack."));
+#endif
+	
 	if (current->_parent)  { // Parent is NULL for the root only.
 		// Add current element to the list of its parent's elements.
 		current->_parent->_children->push_back(current);
 
 		// Return to parent.
-		current = current->_parent;
+		Element** newcurr = static_cast<Element**>(userdata);
+		*newcurr = current->_parent;
 	}
+	std::cout << "Left\t" << __PRETTY_FUNCTION__ << std::endl;
 }
 
-void
+static void
 CharacterDataHandler(void* userdata, const XML_Char* str, int len)
 {
-	const std::string content(str, len);
+	std::cout << "Entered\t" << __PRETTY_FUNCTION__ << std::endl;
+
+	const std::string content(str, str+len);
+	
 	Element* current = *static_cast<Element**>(userdata);
+	if (!current) // document not started yet
+		return;
+	
 	*current->_content += content;
+	
+	std::cout << "Left\t" << __PRETTY_FUNCTION__ << std::endl;
 }
 
 
@@ -82,9 +104,15 @@ XMLParser::XMLParser()
 
 XMLParser::~XMLParser()
 {
+	std::cout << "1 >>> " << __PRETTY_FUNCTION__ << std::endl;
+
 	delete _root;
 	
+	std::cout << "2 >>> " << __PRETTY_FUNCTION__ << std::endl;
+
 	XML_ParserFree(_parser);
+
+	std::cout << "3 >>> " << __PRETTY_FUNCTION__ << std::endl;
 }
 
 Element*
@@ -113,29 +141,35 @@ XMLParser::Parse(std::istream& istr)
 						  &StartElementHandler,
 						  &EndElementHandler);
 	XML_SetCharacterDataHandler(_parser, &CharacterDataHandler);
-	XML_SetUserData(_parser, &_root);
+	XML_SetUserData(_parser, static_cast<void *>(&_root));
 
 	static const size_t BUFFER_SIZE = 8192;
-	int done;
+	bool done;
 	char buf[BUFFER_SIZE];
-	while (istr.read(&buf[0], BUFFER_SIZE)) {
+	do {
+		std::memset(&buf[0], 0, BUFFER_SIZE*sizeof(char));
+		istr.read(&buf[0], BUFFER_SIZE-1);  // -1: space for \0.
 		size_t len = std::strlen(&buf[0]);
-		done = len < BUFFER_SIZE;
+		done = (len < BUFFER_SIZE-1);  // done if we did not fill all of buf
 		if (XML_Parse(_parser, buf, len, done) == 0) {
 			std::cerr << XML_ErrorString(XML_GetErrorCode(_parser))
 				<< " at line " << XML_GetCurrentLineNumber(_parser)
 				<< std::endl;
 			exit(-1);
 		}
-	}
-	GPlatesGlobal::Assert(done, 
-		std::string("Error: Parse loop exited before finish."));
+	} while (!done);
+
+#if 0
+	GPlatesGlobal::Assert(istr.eof(), 
+		std::string("Error: Parse loop exited before EOF."));
+#endif
 	
 	return _root;
 }
 
 XMLParser::Element::~Element()
 {
+	std::cout << ">>> " << __PRETTY_FUNCTION__ << std::endl;
 	if (_name)
 		delete _name;
 	if (_attributes)

@@ -130,9 +130,19 @@ GetCoord(const Element* element)
 static PointData
 GetPointData(const Element* element)
 {
-	// FIXME doesn't check for <coord> element.
+	const ElementList* list = element->_children;
+	ElementList::const_iterator iter = list->begin();
+
+	for ( ; iter != list->end(); ++iter)
+		if (*(*iter)->_name == "coord")
+			break;
+	
+	if (iter == list->end()) {
+		std::cerr << "Empty coord." << std::endl;
+		exit(-1);
+	}
 	return PointData(GeologicalData::NO_DATATYPE, GeologicalData::NO_ROTATIONGROUP, GeologicalData::NO_ATTRIBUTES,
-		GetCoord(element));
+		GetCoord(*iter));
 }
 
 static PolyLineOnSphere
@@ -162,6 +172,11 @@ GetLineData(const Element* element)
 		if (*(*iter)->_name == "coordlist")
 			break;
 	
+	if (iter == list->end()) {
+		std::cerr << "Empty coordlist." << std::endl;
+		exit(-1);
+	}
+
 	return LineData(GeologicalData::NO_DATATYPE, GeologicalData::NO_ROTATIONGROUP, GeologicalData::NO_ATTRIBUTES,
 		GetCoordList(*iter));
 }
@@ -222,8 +237,8 @@ GPlatesReader::Read()
 
 	root = parser.Parse(_istr);
 	
-	return (root ? 
-		GetRootDataGroup(root) :
-		// Parse failed, return empty DataGroup.
-		DataGroup(GeologicalData::NO_DATATYPE, GeologicalData::NO_ROTATIONGROUP, GeologicalData::NO_ATTRIBUTES));
+	if (root)
+		return GetRootDataGroup(root);
+	// Parse failed, return empty DataGroup.
+	return DataGroup(GeologicalData::NO_DATATYPE, GeologicalData::NO_ROTATIONGROUP, GeologicalData::NO_ATTRIBUTES);
 }

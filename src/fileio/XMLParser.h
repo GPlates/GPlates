@@ -68,9 +68,10 @@ namespace GPlatesFileIO
 		typedef std::list<Attribute> 		 AttributeList;
 		typedef std::list<Element*> 		 ElementList;
 
-		Element()
-			: _name(NULL), _attributes(NULL), _parent(NULL), 
-			  _children(NULL), _content(NULL) {  }
+		Element(const char* name)
+			: _name(new std::string(name)), _attributes(new AttributeList), 
+			  _parent(NULL), _children(new ElementList), 
+			  _content(new std::string) {  }
 
 		~Element();
 		
