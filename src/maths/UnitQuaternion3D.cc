@@ -24,6 +24,8 @@
  */
 
 #include <sstream>
+#include <cmath>
+
 #include "UnitQuaternion3D.h"
 #include "IndeterminateResultException.h"
 #include "ViolatedUnitQuatInvariantException.h"
