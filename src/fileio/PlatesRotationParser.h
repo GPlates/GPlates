@@ -28,7 +28,6 @@
 
 #include <iostream>
 #include <string>
-#include <map>
 
 #include "global/types.h"
 #include "PlatesDataTypes.h"
