@@ -30,7 +30,8 @@
 #include "InvalidOperationException.h"
 
 
-using namespace GPlatesMaths;
+// using namespace GPlatesMaths;
+namespace GPlatesMaths {
 
 
 FiniteRotation
@@ -127,3 +128,6 @@ operator*(const FiniteRotation &r, const PolyLineOnSphere &p) {
 	}
 	return rot_p;
 }
+
+
+} // end GPlatesMaths
