@@ -162,7 +162,7 @@ GLFrame::OnOpenData(wxCommandEvent&)
 	wxFileDialog filedlg(this, 
 						 _("Select a data file..."),
 						 _last_load_dir,
-						 _(""),  // default file = none
+						 "",  // no default file
 						 _("GPlates Data files (*.gpml)|*.gpml|"
 						 "PLATES Data files (*.dat)|*.dat|"
 						 "All files (*.*)|*.*"),  // wildcard
@@ -183,7 +183,7 @@ GLFrame::OnSaveData(wxCommandEvent&)
 	wxFileDialog filedlg(this, 
 						 _("Designate a file name..."),
 						 _last_save_dir,
-						 _(""),  // default file = none
+						 "",  // no default file
 						 _("GPlates Data files (*.gpml)|*.gpml|"
 						 "All files (*.*)|*.*"),  // wildcard
 						 wxSAVE | wxOVERWRITE_PROMPT);  // A 'Save' dialog box
@@ -204,7 +204,7 @@ GLFrame::OnOpenRotation(wxCommandEvent&)
 	wxFileDialog filedlg(this, 
 						 _("Select a rotation file..."),
 						 _last_load_dir,
-						 _(""),  // default file = none
+						 "",  // no default file
 						 _("PLATES Rotation files (*.rot)|*.rot|"
 						 "All files (*.*)|*.*"),  // wildcard
 						 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
