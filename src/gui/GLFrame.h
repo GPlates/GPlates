@@ -59,6 +59,7 @@ namespace GPlatesGui
 
 			//   Reconstruct events
 			void OnReconstructTime(wxCommandEvent&);
+			void OnReconstructPresent(wxCommandEvent&);
 			void OnReconstructAnimation(wxCommandEvent&);
 
 		private:

@@ -30,6 +30,7 @@
 #include <wx/wx.h>
 #include "OpenGL.h"
 #include "GLFrame.h"
+#include "ReconstructTimeDialog.h"
 #include "controls/File.h"
 #include "controls/View.h"
 #include "controls/Reconstruct.h"
@@ -49,6 +50,7 @@ enum {
 	MENU_VIEW_METADATA,
 	
 	MENU_RECONSTRUCT_TIME,
+	MENU_RECONSTRUCT_PRESENT,
 	MENU_RECONSTRUCT_ANIMATION
 };
 
@@ -58,25 +60,28 @@ CreateMenuBar(GLFrame* frame)
 {
 	wxMenu* filemenu = new wxMenu;
 	filemenu->Append(MENU_FILE_OPENDATA, 
-					 "Open &Data\tCtrl-O", 
+					 "Open &Data...\tCtrl-O", 
 					 "Open a data file");
 	filemenu->Append(MENU_FILE_OPENROTATION, 
-					 "Open &Rotation\tCtrl-R", 
+					 "Open &Rotation...\tCtrl-R", 
 					 "Open a rotation file");
 	filemenu->AppendSeparator();
 	filemenu->Append(MENU_FILE_EXIT, "&Quit\tCtrl-Q", "Exit GPlates");
 
 	wxMenu* viewmenu = new wxMenu;
 	viewmenu->Append(MENU_VIEW_METADATA,
-					 "&View Metadata\tCtrl-V",
+					 "&View Metadata...\tCtrl-V",
 					 "View the document's metadata");
 
 	wxMenu* reconstructmenu = new wxMenu;
 	reconstructmenu->Append(MENU_RECONSTRUCT_TIME,
-							"Particular &Time\tCtrl-T",
+							"Particular &Time...\tCtrl-T",
 							"Reconstruct the data at a particular time");
+	reconstructmenu->Append(MENU_RECONSTRUCT_PRESENT,
+							"&Present Time...\tCtrl-P",
+							"Reconstruct the data at the present");
 	reconstructmenu->Append(MENU_RECONSTRUCT_ANIMATION,
-							"&Animation\tCtrl-A",
+							"&Animation...\tCtrl-A",
 							"Animate the reconstruction of the data between "
 							"two times.");
 	
@@ -173,15 +178,24 @@ GLFrame::OnViewMetadata(wxCommandEvent&)
 void
 GLFrame::OnReconstructTime(wxCommandEvent&)
 {	
-	GPlatesMaths::real_t time;
-	GPlatesControls::Reconstruct::Time(time);
+	ReconstructTimeDialog dialog(this);
+
+	if (dialog.ShowModal() == wxID_OK)
+		GPlatesControls::Reconstruct::Time(dialog.GetInput());
+}
+
+void
+GLFrame::OnReconstructPresent(wxCommandEvent&)
+{
+	GPlatesControls::Reconstruct::Present();
 }
 
 void
 GLFrame::OnReconstructAnimation(wxCommandEvent&)
 {
 	GPlatesMaths::real_t begin_time, end_time;
-	GPlatesControls::Reconstruct::Animation(begin_time, end_time);
+	GPlatesGlobal::integer_t nsteps;
+	GPlatesControls::Reconstruct::Animation(begin_time, end_time, nsteps);
 }
 
 BEGIN_EVENT_TABLE(GLFrame, wxFrame)
@@ -195,5 +209,6 @@ BEGIN_EVENT_TABLE(GLFrame, wxFrame)
 	EVT_MENU(MENU_VIEW_METADATA, GLFrame::OnViewMetadata)
 		
 	EVT_MENU(MENU_RECONSTRUCT_TIME, GLFrame::OnReconstructTime)
+	EVT_MENU(MENU_RECONSTRUCT_PRESENT, GLFrame::OnReconstructPresent)
 	EVT_MENU(MENU_RECONSTRUCT_ANIMATION, GLFrame::OnReconstructAnimation)
 END_EVENT_TABLE()
