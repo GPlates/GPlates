@@ -27,6 +27,8 @@
 #define _GPLATES_MATHS_VECTOR3D_H_
 
 #include "types.h"  /* real_t */
+#include "UnitVector3D.h"
+
 
 namespace GPlatesMaths
 {
@@ -56,6 +58,15 @@ namespace GPlatesMaths
 				// Calculate magnitude of vector.
 				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
 			}
+
+			/**
+			 * Create a regular vector from a unit vector.
+			 * This represents a relaxation of the unit-vector
+			 * invariant.
+			 */
+			explicit
+			Vector3D(const UnitVector3D &uv)
+			 : _x(uv.x()), _y(uv.y()), _z(uv.z()), _mag(1.0) {  }
 
 			real_t
 			x() const { return _x; }
@@ -123,6 +134,15 @@ namespace GPlatesMaths
 		return Vector3D(v1.x() + v2.x(),
 		                v1.y() + v2.y(),
 		                v1.z() + v2.z());
+	}
+
+
+	inline Vector3D
+	operator-(Vector3D v1, Vector3D v2) {
+
+		return Vector3D(v1.x() - v2.x(),
+		                v1.y() - v2.y(),
+		                v1.z() - v2.z());
 	}
 
 
