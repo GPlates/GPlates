@@ -36,8 +36,12 @@ namespace GPlatesGlobal
 	 *
 	 *   Assert(assertion, SomeException(args...));
 	 *
-	 * If `assertion' is not true, `SomeException' is thrown
-	 * with arguments `args...'.
+	 * If @a assertion is not true, @a SomeException is thrown
+	 * with arguments @a args... .
+	 *
+	 * @param assertion is the expression to test as the assertion condition.
+	 * @param ex_to_throw is the constructor call of the exception to throw
+	 * if the assertion condition is not true.
 	 */
 	template< typename E >
 	inline void

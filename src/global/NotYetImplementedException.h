@@ -34,12 +34,13 @@ namespace GPlatesGlobal
 	/**
 	 * Should be thrown when a function that has not YET been
 	 * implemented is called.
+	 * @param fname is the name of the function which is not yet implemented.
 	 */
 	class NotYetImplementedException : public Exception
 	{
 		public:
-			NotYetImplementedException(const char *msg)
-				: _msg(msg) {  }
+			NotYetImplementedException(const char *fname)
+				: _fname(fname) {  }
 
 			virtual
 			~NotYetImplementedException() {  }
@@ -52,10 +53,10 @@ namespace GPlatesGlobal
 			}
 
 			virtual std::string
-			Message() const { return _msg; }
+			Message() const { return _fname; }
 
 		private:
-			std::string _msg;
+			std::string _fname;
 	};
 }
 

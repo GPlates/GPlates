@@ -31,12 +31,16 @@
 namespace GPlatesMaths
 {
 	/**
-	 * @todo Get Jimmy to write this comment.
+	 * The Exception thrown when coordinate invariants are violated.
 	 */
 	class ViolatedCoordinateInvariantException
 		: public MathematicalException
 	{
 		public:
+			/**
+			 * @param msg is a description of the conditions
+			 * which cause the invariant to be violated.
+			 */
 			ViolatedCoordinateInvariantException(const char *msg)
 				: _msg(msg) {  }
 
