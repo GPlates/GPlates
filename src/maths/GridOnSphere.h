@@ -21,6 +21,7 @@
  *
  * Authors:
  *   James Boyden <jboyden@geosci.usyd.edu.au>
+ *   Dave Symonds <ds@geosci.usyd.edu.au>
  */
 
 #ifndef _GPLATES_MATHS_GRIDONSPHERE_H_
@@ -45,6 +46,9 @@ namespace GPlatesMaths
 	 * actually <em>store</em> geographical data: rather, it acts as a
 	 * template, storing the information which allows it to calculate
 	 * where a particular grid element will be located.
+	 *
+	 * @image html fig_grid.png
+	 * @image latex fig_grid.eps
 	 */
 	class GridOnSphere
 	{
