@@ -52,10 +52,10 @@ namespace GPlatesGlobal
 	typedef int integer_t;
 
 	/** 
-	 * The index for the subscript operator. 
-	 * index_t has integral semantics.  
+	 * The index for the subscript operator.
+	 * index_t has integral semantics, but is always non-negative.
 	 */
-	typedef int index_t;
+	typedef unsigned int index_t;
 }
 
 #endif  // _GPLATES_GLOBAL_TYPES_H_
