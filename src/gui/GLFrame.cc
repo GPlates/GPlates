@@ -86,14 +86,25 @@ void
 GLFrame::OnMouseMove(wxMouseEvent& evt)
 {
 	std::ostringstream oss;
-	oss << "Current window coordinate of mouse: (" << evt.GetX() << ", " << evt.GetY() << ")";
+	oss << "Current window coordinate of mouse: (" 
+		<< evt.GetX() << ", " << evt.GetY() << ")";
 	SetStatusText(wxString(oss.str().c_str()));
 }
 
 void
 GLFrame::OnOpenData(wxCommandEvent& evt)
 {
-	std::cout << "Menu activated: File->Open Data" << std::endl;
+	wxFileDialog* filedlg = 
+		new wxFileDialog(this, 
+						 "Select a data file...",
+						 "",  // default dir  = none
+						 "",  // default file = none
+						 "GPlates Data files (*.gpml)|*.gpml|"
+						 "PLATES Data files (*.dat)|*.dat"
+						 "All files (*.*)|*.*",  // wildcard
+						 wxOPEN | wxFILE_MUST_EXIST);  // An 'Open' dialog box
+	filedlg->Show();
+	std::cout << "You selected: " << filedlg->GetFilename() << std::endl;
 }
 
 void
