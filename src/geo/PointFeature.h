@@ -35,13 +35,13 @@ namespace GPlatesGeo {
 		public:
 
 			virtual
-			~PointFeature();
+			~PointFeature() {  }
 
 			/**
 			 * XXX This method probably isn't necessary in the long
 			 * run.  It is included here to allow the construction of
-			 * PointOnSphere objects until someone writes the
-			 * reconstruction calculation code.
+			 * ReconstructedPointOnSphere objects until someone writes 
+			 * the reconstruction calculation code.
 			 */
 			GPlatesMaths::PointOnSphere
 			get_point() const { 
