@@ -1,5 +1,4 @@
-/* src/global/config.h.in.  Generated from configure.in by autoheader.  
- * Modified by Hamish. */
+/* src/global/config.h.in */
 
 /* TestUI is available */
 #undef HAVE_TESTUI
@@ -21,3 +20,6 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
+
+/* Define to the copyright string. */
+#undef COPYRIGHT_STRING

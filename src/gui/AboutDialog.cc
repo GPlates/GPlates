@@ -38,9 +38,8 @@ AboutDialog::AboutDialog(wxWindow* parent)
 	sizer->Add (new wxStaticText (this, -1, wxString (PACKAGE_STRING)),
 		0, wxALIGN_CENTER, BORDER_SIZE);
 	wxString msg;
-	msg = _(
-	    "Copyright (C) 2003 The GPlates Consortium\n"
-	    "\n"
+	msg = COPYRIGHT_STRING "\n\n";
+	msg += _(
 	    "This program is free software; you can redistribute it and/or\n"
 	    "modify it under the terms of the GNU General Public License,\n"
 	    "version 2, as published by the Free Software Foundation.\n"

@@ -6,6 +6,9 @@ AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_HEADERS(src/global/config.h)
 
+AC_DEFINE([COPYRIGHT_STRING],
+	  ["Copyright (c) 2003-2004 The GPlates Consortium"],[])
+
 # Check C++ compiler
 # Setting CXXFLAGS is necessary to circumvent autoconf using its
 #  own (namely CXXFLAGS="-g -O2").
@@ -15,6 +18,7 @@ AC_PROG_MAKE_SET
 CHECK_GNU_MAKE
 AC_PROG_INSTALL
 AC_LANG_CPLUSPLUS
+
 
 # What system are we on?
 AC_PATH_PROG(unamepath, uname)
