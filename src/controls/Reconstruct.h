@@ -43,7 +43,7 @@ namespace GPlatesControls
 		/**
 		 * Reset the construction back to the present day.
 		 */
-		inline void
+		void
 		Present();
 
 		/**
