@@ -137,22 +137,91 @@ namespace
 		}
 
 		int i;
+		NcAtt *att_title = 0;
 		for (i = 0; i < ncf.num_atts (); ++i)
-			if (strcmp (ncf.get_att (i)->as_string (0), "title"))
+			if (strcmp (ncf.get_att (i)->as_string (0), "title")) {
+				att_title = ncf.get_att (i);
 				break;
-		if (i >= ncf.num_atts ()) {
+			}
+		if (!att_title) {
 			Dialogs::InfoMessage ("netCDF File",
 				"Data file doesn't have a title;"
 				"trying to continue anyway.");
 		} else {
 			msg << "Loading data file with title:\n";
-			NcAtt *att_title = ncf.get_att (i);
 			msg << "    \"" << att_title->as_string (0) << "\"\n";
 			Dialogs::InfoMessage ("netCDF File",
 							msg.str ().c_str ());
+			delete att_title;
 		}
 
-		// TODO: actually load netCDF data
+#if 1
+		const char *vars[] = { "x_range", "y_range", "z_range",
+					"spacing", "dimension", "z" };
+		const char *types[] = { "**", "ncByte", "ncChar", "ncShort",
+					"ncInt", "ncFloat", "ncDouble" };
+		for (i = 0; i < sizeof (vars) / sizeof (vars[0]); ++i) {
+			NcVar *var = ncf.get_var (vars[i]);
+			std::cerr << vars[i] << ": a " << var->num_dims ()
+				<< "-D " << types[var->type ()]
+				<< " variable with " << var->num_atts ()
+				<< " attributes and " << var->num_vals ()
+				<< " values.\n";
+			std::cerr << "\tAttributes: ";
+			for (int j = 0; j < var->num_atts (); ++j) {
+				NcAtt *att = var->get_att (j);
+				std::cerr << att->name () << " ("
+					<< types[att->type ()] << ") = ";
+				switch (att->type ()) {
+					case ncChar:
+						std::cerr << '"'
+							<< att->as_string (0)
+							<< '"';
+						break;
+					case ncInt:
+						std::cerr << att->as_int (0);
+						break;
+					case ncFloat:
+						std::cerr << att->as_float (0);
+						break;
+					case ncDouble:
+						std::cerr << att->as_double (0);
+						break;
+					default:
+						std::cerr << "?!?";
+				}
+				std::cerr << ";";
+				delete att;
+			}
+			std::cerr << "\n";
+			std::cerr << "\tValues: ";
+			NcValues *vals = var->values ();
+			if (var->num_vals () < 10)
+				vals->print (std::cerr);
+			else
+				std::cerr << "(too many - " << var->num_vals ()
+					<< ")";
+			std::cerr << "\n";
+			delete vals;
+		}
+#endif
+
+		double x_min, x_max, x_step, y_min, y_max, y_step;
+		NcValues *vals;
+		// TODO: _much_ more error checking needed here
+
+		vals = ncf.get_var ("x_range")->values ();
+		x_min = vals->as_double (0);
+		x_max = vals->as_double (1);
+		delete vals;
+		vals = ncf.get_var ("y_range")->values ();
+		y_min = vals->as_double (0);
+		y_max = vals->as_double (1);
+		delete vals;
+		vals = ncf.get_var ("spacing")->values ();
+		x_step = vals->as_double (0);
+		y_step = vals->as_double (1);
+		delete vals;
 	}
 
 	using namespace GPlatesState;
