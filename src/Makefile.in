@@ -49,8 +49,6 @@ subdir_clean:
 $(PROGNAME):	$(OBJS) $(EXTRA_LIBS)
 	@CXX@ $(LDFLAGS) $^ $(LIBS) -o $@
 
-include Rules
-
 dep:	subdir_dep
 
 subdir_dep:
@@ -65,3 +63,5 @@ dist:	Makefile $(DISTFILES)
 		ln $$file $(distdir) 2>/dev/null || \
 			cp -p $$file $(distdir); \
 	done
+
+include Rules

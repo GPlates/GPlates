@@ -10,7 +10,7 @@ dep:
 	@@CXX@ -MM $(INCLUDES) $(OBJS:.o=.cc) > depend.1
 	@echo "done!"
 
-# This is a GNU-ism - probably will need dropping
-ifeq (depend.1, $(wildcard depend.1))
-include depend.1
-endif
+# This is a GNU-ism - cleverly ignored when not using GNU make
+@ifGNUmake@ifeq (depend.1, $(wildcard depend.1))
+@ifGNUmake@include depend.1
+@ifGNUmake@endif

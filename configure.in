@@ -9,6 +9,7 @@ AC_CONFIG_SRCDIR(src/geo/GeologicalData.h)
 # Check C++ compiler
 AC_PROG_CXX
 AC_PROG_MAKE_SET
+CHECK_GNU_MAKE
 AC_PROG_INSTALL
 
 # What system are we on?
