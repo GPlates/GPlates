@@ -77,6 +77,22 @@ namespace GPlatesMaths
 			real_t _lat,  /**< Latitude coordinate. */
 			       _long;  /**< Longitude coordinate. */
 	};
+
+
+	inline bool
+	operator==(PointOnSphere p1, PointOnSphere p2) {
+
+		return (p1.GetLatitude() == p2.GetLatitude()
+		     && p1.GetLongitude() == p2.GetLongitude());
+	}
+
+
+	inline bool
+	operator!=(PointOnSphere p1, PointOnSphere p2) {
+
+		return (p1.GetLatitude() != p2.GetLatitude()
+		     || p1.GetLongitude() != p2.GetLongitude());
+	}
 }
 
 #endif  // _GPLATES_MATHS_POINTONSPHERE_H_
