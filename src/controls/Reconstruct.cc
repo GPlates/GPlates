@@ -21,36 +21,86 @@
  *
  * Authors:
  *   Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
+ *   James Boyden <jboyden@geosci.usyd.edu.au>
  */
 
 #include "Reconstruct.h"
 #include "Dialogs.h"
+#include "state/Data.h"
+
 
 using namespace GPlatesControls;
 
 void
 Reconstruct::Time(const GPlatesMaths::real_t&)
 {
-	Dialogs::ErrorMessage(
-		"Construction not implemented.",
-		
-		"The functionality you requested (construction) is "
-		"not yet implemented.",
+	/*
+	 * NOTE: remember that this can be optimised if the time is 0.0:
+	 * still need to check which data is defined at 0.0, but no need
+	 * to rotate (since GPML and PLATES data are defined by their
+	 * position at time 0.0).
+	 */
 
-		"No construction could be made.");
+	if (GPlatesState::Data::GetDataGroup() == NULL) {
+
+		Dialogs::ErrorMessage("No data to reconstruct",
+		 "Cannot perform a reconstruction, since there is no"
+		 " data loaded.",
+		 "Cannot perform reconstruction.");
+
+		return;
+	}
+	if (GPlatesState::Data::GetRotHistories() == NULL) {
+
+		Dialogs::ErrorMessage("No rotation data",
+		 "Cannot perform a reconstruction, since there is no"
+		 " rotation data loaded.",
+		 "Cannot perform reconstruction.");
+
+		return;
+	}
 }
 
-void
-Reconstruct::Animation(const GPlatesMaths::real_t&, 
-					   const GPlatesMaths::real_t&,
-					   const GPlatesGlobal::integer_t&)
-{
-	Dialogs::ErrorMessage(
-		"Animation not implemented.",
-		
-		"The functionality you requested (animation) is "
-		"not yet implemented.",
 
-		"No animation could be constructed.");
-		
+void
+Reconstruct::Present() {
+
+	if (GPlatesState::Data::GetDataGroup() == NULL) {
+
+		Dialogs::ErrorMessage("No data to reconstruct",
+		 "Cannot perform a reconstruction, since there is no"
+		 " data loaded.",
+		 "Cannot perform reconstruction.");
+
+		return;
+	}
+	// Do not need rotation data
+
+	// Reconstruct to a time of 0.0
+}
+
+
+void
+Reconstruct::Animation(const GPlatesMaths::real_t &start_time,
+	const GPlatesMaths::real_t &end_time,
+	const GPlatesGlobal::integer_t &nsteps)
+{
+	if (GPlatesState::Data::GetDataGroup() == NULL) {
+
+		Dialogs::ErrorMessage("No data to reconstruct",
+		 "Cannot perform a reconstruction, since there is no"
+		 " data loaded.",
+		 "Cannot perform reconstruction.");
+
+		return;
+	}
+	if (GPlatesState::Data::GetRotHistories() == NULL) {
+
+		Dialogs::ErrorMessage("No rotation data",
+		 "Cannot perform a reconstruction, since there is no"
+		 " rotation data loaded.",
+		 "Cannot perform reconstruction.");
+
+		return;
+	}
 }

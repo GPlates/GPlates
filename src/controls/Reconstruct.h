@@ -36,33 +36,26 @@ namespace GPlatesControls
 		/**
 		 * Reconstruct the positions of the data at time @a time
 		 * using the loaded rotation file.
-		 *
-		 * XXX: should emit some kind of error if there is no rotation
-		 * data to reconstruct with.
 		 */
 		void
 		Time(const GPlatesMaths::real_t& time);
 
 		/**
-		 * Reset the construction back to the present day.  This
-		 * is equivalent to calling Time with a parameter of 0.0.
+		 * Reset the construction back to the present day.
 		 */
 		inline void
-		Present() { Time(0.0); }
+		Present();
 
 		/**
 		 * Display an animation of the positions of the data as
 		 * they move from time @a start_time to time @a end_time.
 		 * @a start_time and @a end_time are measured in millions
 		 * of years ago.
-		 *
-		 * XXX: should emit some kind of error if there is no rotation
-		 * data to reconstruct with.
 		 */
 		void
 		Animation(const GPlatesMaths::real_t& start_time,
-				  const GPlatesMaths::real_t& end_time,
-				  const GPlatesGlobal::integer_t& nsteps);
+		          const GPlatesMaths::real_t& end_time,
+		          const GPlatesGlobal::integer_t& nsteps);
 	}
 }
 
