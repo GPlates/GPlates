@@ -72,7 +72,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	 *
 	 * To do this, we calculate the cross product.
 	 */
-	DirVector3D v = cross(u1, u2);
+	Vector3D v = cross (u1, u2);
 
 	/*
 	 * Since u1 and u2 are unit vectors, the magnitude of v will be
@@ -82,7 +82,7 @@ GreatCircleArc::CreateGreatCircleArc(UnitVector3D u1, UnitVector3D u2) {
 	 * Note that the magnitude of v cannot be _equal_ to zero,
 	 * since the vectors are neither parallel nor antiparallel.
 	 */
-	UnitVector3D rot_axis = v.normalise();
+	UnitVector3D rot_axis = normalise (v);
 
 	return GreatCircleArc(u1, u2, rot_axis);
 }

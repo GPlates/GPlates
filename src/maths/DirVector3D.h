@@ -77,8 +77,23 @@ namespace GPlatesMaths
 				AssertInvariantHolds();
 			}
 
+			DirVector3D (const Vector3D &v) : Vector3D (v)
+			{
+				_mag = sqrt((_x * _x) + (_y * _y) + (_z * _z));
+				AssertInvariantHolds ();
+			}
+
 			real_t
 			magnitude() const { return _mag; }
+
+			DirVector3D &operator= (const Vector3D &v)
+			{
+				_x = v.x ();
+				_y = v.y ();
+				_z = v.z ();
+				AssertInvariantHolds ();
+				return *this;
+			}
 
 		protected:
 			/** 

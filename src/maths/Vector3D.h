@@ -27,6 +27,7 @@
 #ifndef _GPLATES_MATHS_VECTOR3D_H_
 #define _GPLATES_MATHS_VECTOR3D_H_
 
+#include <ostream>
 #include "types.h"  /* real_t */
 
 
@@ -69,6 +70,8 @@ namespace GPlatesMaths
 			magnitude() const {
 				return sqrt((_x * _x) + (_y * _y) + (_z * _z));
 			}
+
+			Vector3D normalise () const;
 
 		protected:
 			real_t _x,  /**< x-component. */
@@ -148,6 +151,11 @@ namespace GPlatesMaths
 		                v1.z() - v2.z());
 	}
 
+	inline std::ostream &operator<< (std::ostream &os, const Vector3D &v)
+	{
+		os << "(" << v.x() << ", " << v.y() << ", " << v.z() << ")";
+		return os;
+	}
 
 	/**
 	 * This algorithm for testing whether two vectors are parallel
@@ -160,14 +168,14 @@ namespace GPlatesMaths
 	 * On a Pentium IV processor, this should cost about
 	 * (7 + 5 * 2) + (3 * 9) + 2 = 46 clock cycles.
 	 */
-	bool parallel(const Vector3D &s1, const Vector3D &s2);
+	bool parallel (const Vector3D &s1, const Vector3D &s2);
 
 
 	/**
 	 * On a Pentium IV processor, this should cost about
 	 * (7 + 5 * 2) + (5 + 2 * 2) = 26 clock cycles.
 	 */
-	Vector3D cross(const Vector3D &s1, const Vector3D &s2);
+	Vector3D cross (const Vector3D &s1, const Vector3D &s2);
 }
 
 #endif  // _GPLATES_MATHS_VECTOR3D_H_

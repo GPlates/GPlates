@@ -57,13 +57,28 @@ namespace GPlatesMaths
 			 * @param z_comp The z-component.
 			 */
 			explicit
-			UnitVector3D(const real_t &x_comp,
-				     const real_t &y_comp,
-				     const real_t &z_comp)
+			UnitVector3D(const real_t &x_comp = 1,
+				     const real_t &y_comp = 0,
+				     const real_t &z_comp = 0)
 				: DirVector3D (x_comp, y_comp, z_comp)
 			{
 				// Already called from DirVector3D ctor
 				// AssertInvariantHolds ();
+			}
+
+			UnitVector3D (const Vector3D &v) : DirVector3D (v)
+			{
+				// Already called from DirVector3D ctor
+				// AssertInvariantHolds ();
+			}
+
+			UnitVector3D &operator= (const Vector3D &v)
+			{
+				_x = v.x ();
+				_y = v.x ();
+				_z = v.x ();
+				AssertInvariantHolds ();
+				return *this;
 			}
 
 		protected:
