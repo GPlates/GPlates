@@ -101,7 +101,7 @@ GPlatesMaths::sqrt(Real r) {
 #define MATHVALUE_PI_ON_2 (1.57079632679489661923)
 
 
-/*
+/**
  * Calculate the arc sine of the Real r, which must lie in the valid domain
  * of the arc sine function, the range [-1, 1].
  *
@@ -139,4 +139,45 @@ GPlatesMaths::asin(Real r) {
 		return Real(MATHVALUE_PI_ON_2);
 	}
 	return Real(std::asin(r.dval()));
+}
+
+
+/**
+ * Calculate the arc cosine of the Real r, which must lie in the valid domain
+ * of the arc cosine function, the range [-1, 1].
+ *
+ * Don't forget: the arc cosine will be returned in radians, not degrees!
+ */
+Real
+GPlatesMaths::acos(Real r) {
+
+	// First, perform "almost exact" comparisons for bounds of domain.
+	if (r < -1.0 || r > 1.0) {
+
+		/*
+		 * Even allowing some flexibility of comparison, 
+		 * the argument which falls outside the domain of asin.
+		 */
+		std::ostringstream 
+		 oss("function 'acos' invoked with invalid argument ");
+		oss << r;
+		throw FunctionDomainException(oss.str().c_str());
+	}
+
+	/*
+	 * Now, clean up after any errors which are caused by "almost valid"
+	 * arguments.
+	 */
+	if (isLessThanMinusOne(r)) {
+
+		// it was just slightly less than minus one
+		// -- return asin of minus one
+		return Real(-MATHVALUE_PI_ON_2);
+	}
+	if (isGreaterThanOne(r)) {
+
+		// it was just slightly greater than one -- return asin of one
+		return Real(MATHVALUE_PI_ON_2);
+	}
+	return Real(std::acos(r.dval()));
 }

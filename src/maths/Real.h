@@ -299,6 +299,7 @@ namespace GPlatesMaths
 
 	Real sqrt(Real r);
 	Real asin(Real r);
+	Real acos(Real r);
 }
 
 #endif  // _GPLATES_MATHS_REAL_H_
