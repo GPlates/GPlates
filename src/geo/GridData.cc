@@ -81,23 +81,24 @@ void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 		// expand to right
 		new_len = x1 - grid->offset + 1;
 		new_rows = new GridRowPtr[new_len];
+		for (index_t i = 0; i < new_len; ++i)
+			new_rows[i] = 0;
 		if (grid->length > 0) {
-			memcpy (new_rows, grid->rows,
-					grid->length * sizeof (GridRowPtr));
+			for (index_t i = 0; i < grid->length; ++i)
+				new_rows[i] = grid->rows[i];
 			delete[] grid->rows;
 		}
-		memset (&new_rows[grid->length], 0,
-				(new_len - grid->length) * sizeof (GridRowPtr));
 		grid->length = new_len;
 		grid->rows = new_rows;
 	} else if (x1 < grid->offset) {
 		// expand to left
 		new_len = grid->length + grid->offset - x1;
 		new_rows = new GridRowPtr[new_len];
-		memcpy (&new_rows[grid->offset - x1], grid->rows,
-					grid->length * sizeof (GridRowPtr));
+		for (index_t i = 0; i < new_len; ++i)
+			new_rows[i] = 0;
+		for (index_t i = 0; i < grid->length; ++i)
+			new_rows[i + (grid->offset - x1)] = grid->rows[i];
 		delete[] grid->rows;
-		memset (new_rows, 0, (grid->offset - x1) * sizeof (GridRowPtr));
 		grid->length = new_len;
 		grid->rows = new_rows;
 		grid->offset = x1;
@@ -118,33 +119,34 @@ void GridData::Add (const GridElement *element, index_t x1, index_t x2)
 		// expand to right
 		new_len = x2 - row->offset + 1;
 		new_elems = new GridElementPtr[new_len];
+		for (index_t i = 0; i < new_len; ++i)
+			new_elems[i] = 0;
 		if (row->length > 0) {
-			memcpy (new_elems, row->data,
-					row->length * sizeof (GridElementPtr));
+			for (index_t i = 0; i < row->length; ++i)
+				new_elems[i] = row->data[i];
 			delete[] row->data;
 		}
-		memset (&new_elems[row->length], 0,
-				(new_len - row->length) * sizeof (GridElementPtr));
 		row->length = new_len;
 		row->data = new_elems;
-	} else if (x2 < grid->offset) {
+	} else if (x2 < row->offset) {
 		// expand to left
 		new_len = row->length + row->offset - x2;
 		new_elems = new GridElementPtr[new_len];
-		memcpy (&new_elems[row->offset - x2], row->data,
-					row->length * sizeof (GridElementPtr));
+		for (index_t i = 0; i < new_len; ++i)
+			new_elems[i] = 0;
+		for (index_t i = 0; i < row->length; ++i)
+			new_elems[i + (row->offset - x2)] = row->data[i];
 		delete[] row->data;
-		memset (new_elems, 0, (row->offset - x2) * sizeof (GridElementPtr));
 		row->length = new_len;
 		row->data = new_elems;
 		row->offset = x2;
 	}
 
-	if (row->data[x2 - row->offset]) {
+	//if (row->data[x2 - row->offset]) {
 		// already something there!
 		// TODO: throw exception?
-		return;
-	}
+	//	return;
+	//}
 
 	row->data[x2 - row->offset] = element;
 }

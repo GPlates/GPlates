@@ -203,7 +203,7 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 	num_y = index_t ((y_max - y_min) / y_step + 1);
 
 	///////////////////////////////////////////////////////////
-	// BIG FIXME: The actual ordering of data in the grid is
+	// BIG NOTE: The actual ordering of data in the grid is
 	//	starting from the top-left, working to the right,
 	//	then down a row, etc. For example,
 	//			1  2  3  4
@@ -279,19 +279,24 @@ GPlatesGeo::GridData *GPlatesFileIO::NetCDFReader::Read (NcFile *ncf,
 			if (isnan (z[j]))
 				continue;
 
+			// Hack to get around stupid netCDF bug
+			index_t real_i = cnt % num_x,
+				real_j = num_y - (cnt / num_x) - 1;
+			//std::cerr << cnt << "=>" << real_j << "\n";
+
 			GPlatesGeo::GeologicalData::Attributes_t attr =
 				GPlatesGeo::GeologicalData::NO_ATTRIBUTES;
 			// TODO: insert properly when StringValue is
 			//	actually useful (value is in z[j])
 			GPlatesGeo::GridElement *elt =
 					new GPlatesGeo::GridElement (attr);
-			gdata->Add (elt, i, j);
+			gdata->Add (elt, real_i, real_j);
 
 #ifdef DEBUG_INSERTIONS
 			double lat, lon;
-			pos (gdata->resolve (i, real_j), lat, lon);
+			pos (gdata->resolve (real_i, real_j), lat, lon);
 			std::cerr << std::setprecision (2) << std::fixed
-				<< "Adding '" << z[i] << "' to (lat="
+				<< "Adding '" << z[j] << "' to (lat="
 				<< lat << ", long=" << lon << ").\n";
 #endif
 		}
