@@ -46,7 +46,7 @@ DataGroup::Add(GeologicalData* child) throw()
 }  
 
 void
-DataGroup::Remove(GeologicalData* child)
+DataGroup::Remove(GeologicalData* child) throw()
 {
 	if (child == NULL)
 		return;

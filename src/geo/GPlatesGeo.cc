@@ -46,5 +46,5 @@ inline std::istream&
 operator>>(std::istream& is, GeneralisedData& data)
 {
 	data.ReadIn(is);
-	return os;
+	return is;
 }

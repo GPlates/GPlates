@@ -23,8 +23,10 @@
  *   Hamish Law <hlaw@es.usyd.edu.au>
  */
 
-#ifndef _GPLATES_GENERALISEDDATA_H_
-#define _GPLATES_GENERALISEDDATA_H_
+#ifndef _GPLATES_GEO_GENERALISEDDATA_H_
+#define _GPLATES_GEO_GENERALISEDDATA_H_
+
+#include <iostream>
 
 namespace GPlatesGeo
 {
@@ -83,4 +85,4 @@ namespace GPlatesGeo
 	operator>>(std::istream& is, GeneralisedData& data);
 }
 
-#endif  // _GPLATES_GENERALISEDDATA_H_
+#endif  // _GPLATES_GEO_GENERALISEDDATA_H_

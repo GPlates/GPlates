@@ -26,14 +26,14 @@
 #ifndef _GPLATES_MATHS_MATHEMATICALEXCEPTION_H_
 #define _GPLATES_MATHS_MATHEMATICALEXCEPTION_H_
 
-#include "Exception.h"
+#include "global/Exception.h"
 
 namespace GPlatesMaths
 {
 	/**
 	 * The (pure virtual) base class of all mathematical exceptions.
 	 */
-	class MathematicalException : public Exception
+	class MathematicalException : public GPlatesGlobal::Exception
 	{
 		public:
 			virtual

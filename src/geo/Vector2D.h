@@ -31,14 +31,14 @@
 #include "GeneralisedData.h"
 #include "global/types.h"  /* real_t */
 
-namespace GPlatesMaths
+namespace GPlatesGeo
 {
 	using namespace GPlatesGlobal;
 
 	/** 
 	 * A two-dimensional variable.
 	 */
-	class Vector2D : GeneralisedData
+	class Vector2D : public GeneralisedData
 	{
 		public:
 			/**

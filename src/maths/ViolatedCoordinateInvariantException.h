@@ -26,13 +26,12 @@
 #ifndef _GPLATES_MATHS_VIOLATEDCOORDINATEINVARIANTEXCEPTION_H_
 #define _GPLATES_MATHS_VIOLATEDCOORDINATEINVARIANTEXCEPTION_H_
 
-#include "Exception.h"
+#include "MathematicalException.h"
 
-namespace GPlatesGlobal
+namespace GPlatesMaths
 {
 	/**
-	 * Should be thrown when a function that has not YET been
-	 * implemented is called.
+	 * @todo Get Jimmy to write this comment.
 	 */
 	class ViolatedCoordinateInvariantException
 		: public MathematicalException

@@ -29,14 +29,16 @@
 #define _GPLATES_MATHS_TYPES_H_
 
 #include <utility>  // std::pair
-#include "Vector2D.h"
+#include "geo/Vector2D.h"
 
 namespace GPlatesMaths
 {
 	/**
 	 * A two-dimensional basis.
+	 * This typedef is a placeholder for what will be a fully
+	 * fleshed-out class in the end.
 	 */
-	typedef std::pair<Vector2D, Vector2D> Basis2D_t;
+	typedef std::pair<GPlatesGeo::Vector2D, GPlatesGeo::Vector2D> Basis2D_t;
 }
 
 #endif  // _GPLATES_MATHS_TYPES_H_

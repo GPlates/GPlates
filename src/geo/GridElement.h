@@ -23,15 +23,15 @@
  *   Hamish Law <hlaw@es.usyd.edu.au>
  */
 
-#ifndef _GPLATES_GRIDELEMENT_H_
-#define _GPLATES_GRIDELEMENT_H_
+#ifndef _GPLATES_GEO_GRIDELEMENT_H_
+#define _GPLATES_GEO_GRIDELEMENT_H_
 
-#include "Grid.h"
-#include "maths/GlobalDefinitions.h"
+#include "GridData.h"
+#include "global/types.h"  /* index_t */
 
 namespace GPlatesGeo
 {
-	class Grid::GridElement
+	class GridData::GridElement
 	{
 		public:
 			GridElement(index_t row, index_t col) 
@@ -39,8 +39,8 @@ namespace GPlatesGeo
 
 		private:
 			index_t _row, _col;
-			GeologicalData::Attributes_t _attributes;
+			Attributes_t _attributes;
 	};
 }
 
-#endif  // _GPLATES_GRIDELEMENT_H_
+#endif  // _GPLATES_GEO_GRIDELEMENT_H_

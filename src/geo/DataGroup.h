@@ -91,7 +91,7 @@ namespace GPlatesGeo
 			 *   pattern (p163).
 			 */
 			virtual void
-			Remove(GeologicalData* child);
+			Remove(GeologicalData* child) throw();
 
 			/**
 			 * Enumerative access to the children.

@@ -53,7 +53,7 @@ namespace GPlatesMaths
 			explicit 
 			PointOnSphere(const real_t& lat = 0.0,
 			              const real_t& lon = 0.0)
-				: _lat(lat), _lon(lon) {
+				: _lat(lat), _long(lon) {
 				
 				AssertInvariantHolds();
 			}
@@ -69,7 +69,7 @@ namespace GPlatesMaths
 
 		private:
 			real_t _lat,  /**< Latitude coordinate. */
-			       _lon;  /**< Longitude coordinate. */
+			       _long;  /**< Longitude coordinate. */
 	};
 }
 

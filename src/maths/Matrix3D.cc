@@ -32,7 +32,7 @@ using namespace GPlatesMaths;
 Matrix3D
 Matrix3D::CreateRotationMatrix(const PointOnSphere& E, const real_t& phi)
 {
-	Matrix m;
+	Matrix3D m;
 
 	// ...
 	

@@ -25,7 +25,7 @@
  */
 
 #ifndef _GPLATES_GLOBAL_EXCEPTION_H_
-#define _GPLATES_EXCEPTION_H_
+#define _GPLATES_GLOBAL_EXCEPTION_H_
 
 #include <iostream>
 #include <string>

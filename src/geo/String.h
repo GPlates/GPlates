@@ -23,8 +23,8 @@
  *   Hamish Law <hlaw@es.usyd.edu.au>
  */
 
-#ifndef _GPLATES_STRING_H_
-#define _GPLATES_STRING_H_
+#ifndef _GPLATES_GEO_STRING_H_
+#define _GPLATES_GEO_STRING_H_
 
 #include <string>
 #include <iostream>
@@ -67,4 +67,4 @@ namespace GPlatesGeo
 	};
 }
 
-#endif  // _GPLATES_STRING_H_
+#endif  // _GPLATES_GEO_STRING_H_

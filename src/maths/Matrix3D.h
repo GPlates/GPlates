@@ -27,6 +27,8 @@
 #ifndef _GPLATES_MATHS_MATRIX3D_H_
 #define _GPLATES_MATHS_MATRIX3D_H_
 
+#include "PointOnSphere.h"
+#include "Rotation.h"
 #include "global/types.h"  /* real_t */
 
 namespace GPlatesMaths
@@ -102,8 +104,8 @@ namespace GPlatesMaths
 			/** 
 			 * Private to prevent construction.
 			 */
-			Matrix() { }
+			Matrix3D() { }
 	};
 }
 
-#endif  // _GPLATES_MATRIX3D_H_
+#endif  // _GPLATES_MATHS_MATRIX3D_H_

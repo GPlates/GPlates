@@ -86,6 +86,9 @@ namespace GPlatesGeo
 			 * A child management method, for use with DataGroup.
 			 * @throws UnsupportedFunctionException is thrown if the object 
 			 *   is not of type DataGroup.
+			 * @warning The message given to UnsupportedFunctionException
+			 *   when it is thrown will be the same when it is thrown 
+			 *   from subclasses - this will be inaccurate in some cases.
 			 * @role Component::Add(Component) in the Composite design pattern 
 			 *   (p163).
 			 * @remark We are going for transparency (as opposed to 
@@ -101,6 +104,7 @@ namespace GPlatesGeo
 			 * A child management method, for use with DataGroup.
 			 * @throws UnsupportedFunction is thrown if the object is not of
 			 *   type DataGroup.
+			 * @warning See warning for Add().
 			 * @role Component::Remove(Component) in the Composite design 
 			 *   pattern (p163).
 			 * @remark See remark under Add() for notes on this declaration.

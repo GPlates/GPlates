@@ -36,11 +36,11 @@ GeologicalData::GeologicalData(const DataType_t& dt,
 inline void
 GeologicalData::Add(GeologicalData*) throw(UnsupportedFunctionException)
 {
-	throw UnsupportedFunctionException();
+	throw UnsupportedFunctionException("GeologicalData::Add()");
 }
 
 inline void
 GeologicalData::Remove(GeologicalData*) throw(UnsupportedFunctionException)
 {
-	throw UnsupportedFunctionException();
+	throw UnsupportedFunctionException("GeologicalData::Remove()");
 }

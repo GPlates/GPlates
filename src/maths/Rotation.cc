@@ -24,12 +24,13 @@
  */
 
 #include "Rotation.h"
+#include "global/NotYetImplementedException.h"
 
 using namespace GPlatesMaths;
 
 PointOnSphere
 Rotation::ApplyTo(const PointOnSphere& point) const {
 
-	throw NotYetImplementedException("Rotation::ApplyTo");
+	throw GPlatesGlobal::NotYetImplementedException("Rotation::ApplyTo");
 	return PointOnSphere();
 }

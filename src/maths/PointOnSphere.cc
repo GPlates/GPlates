@@ -36,12 +36,12 @@ PointOnSphere::AssertInvariantHolds() const {
 
 		std::ostringstream oss("PointOnSphere latitude is ");
 		oss << _lat;
-		throw ViolatedCoordinateInvariantException(oss.str());
+		throw ViolatedCoordinateInvariantException(oss.str().c_str());
 
 	} else if (180.0 < _long || _long < -180.0) {
 
 		std::ostringstream oss("PointOnSphere longitude is ");
 		oss << _long;
-		throw ViolatedCoordinateInvariantException(oss.str());
+		throw ViolatedCoordinateInvariantException(oss.str().c_str());
 	}
 }

@@ -28,7 +28,7 @@
 #define _GPLATES_GEO_GRIDDATA_H_
 
 #include "GeologicalData.h"
-#include "maths/Vector2D.h"
+#include "Vector2D.h"
 #include "maths/types.h"  /* Basis2D_t */
 
 namespace GPlatesGeo
@@ -59,7 +59,7 @@ namespace GPlatesGeo
 
 		private:
 			Grid_t _grid;
-			GPlatesMaths::Vector2D _origin;
+			Vector2D _origin;
 			GPlatesMaths::Basis2D_t _basis;
 	};
 }

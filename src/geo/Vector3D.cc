@@ -29,7 +29,7 @@
 using namespace GPlatesGeo;
 
 inline
-Vector3D::Vector3D(const real_t& x, const real_t& y, const real_t& z);
+Vector3D::Vector3D(const real_t& x, const real_t& y, const real_t& z)
 	: GeneralisedData(), _x(x), _y(y), _z(z) 
 { }
 
