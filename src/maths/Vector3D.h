@@ -68,12 +68,20 @@ namespace GPlatesMaths
 			real_t
 			z() const { return _z; }
 
+			/**
+			 * Returns the square of the magnitude; that is,
+			 * \f$ ( x^2 + y^2 + z^2 ) \f$
+			 */
 			real_t
 			magSqrd() const {
 
 				return ((_x * _x) + (_y * _y) + (_z * _z));
 			}
 
+			/**
+			 * Returns the magnitude of the vector; that is,
+			 * \f$ \sqrt{x^2 + y^2 + z^2} \f$
+			 */
 			virtual real_t
 			magnitude() const {
 
