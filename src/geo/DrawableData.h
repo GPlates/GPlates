@@ -42,12 +42,24 @@ namespace GPlatesGeo
 			RotateAndDraw(const GPlatesMaths::FiniteRotation &)
 			 const = 0;
 
+			static GPlatesMaths::real_t
+			ProximityToPointOnSphere(
+			 const DrawableData *data,
+			 const GPlatesMaths::PointOnSphere &pos) {
+
+				return data->proximity(pos);
+			}
+
 		protected:
 			DrawableData(const DataType_t& dt,
 			             const RotationGroupId_t& rg,
 			             const TimeWindow& tw,
 			             const Attributes_t& attrs)
 			 : GeologicalData(dt, rg, tw, attrs) {  }
+
+			virtual GPlatesMaths::real_t
+			proximity(const GPlatesMaths::PointOnSphere &pos) 
+			 const = 0;
 	};
 }
 

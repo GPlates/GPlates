@@ -53,6 +53,15 @@ namespace GPlatesGeo
 			RotateAndDraw(const GPlatesMaths::FiniteRotation &)
 			 const;
 
+		protected:
+			virtual GPlatesMaths::real_t
+			proximity(const GPlatesMaths::PointOnSphere &pos) 
+			 const {
+
+				return GPlatesMaths::dot(
+				 _point.unitvector(), pos.unitvector());
+			}
+
 		private:
 			/** 
 			 * The location of the data.

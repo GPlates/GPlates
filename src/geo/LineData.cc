@@ -46,3 +46,39 @@ LineData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) const {
 	GPlatesMaths::PolyLineOnSphere rot_line = (rot * _line);
 	GPlatesState::Layout::InsertLineDataPos(this, rot_line);
 }
+
+
+GPlatesMaths::real_t
+GPlatesGeo::LineData::proximity(
+ const GPlatesMaths::PointOnSphere &pos) const {
+
+	/* 
+	 * XXX This is only a stub calculation.
+	 */
+
+	using namespace GPlatesMaths;
+
+	/*
+	 * For each great circle arc...
+	 */
+	PolyLineOnSphere::const_iterator 
+	 i = _line.begin(), end = _line.end();
+
+	for ( ; i != end; ++i) {
+		
+		/*
+		 * Project pos onto *i.
+		 */
+		
+		/*
+		 * If proj(pos) is outside *i, return 
+		 *   min(dist(pos, i->startPoint), dist(pos, i->endPoint))
+		 */
+
+		/* Else (proj(pos) is inside *i), return
+		 *   dist(pos, proj(pos))
+		 */
+	}
+	
+	return dot(pos.unitvector(), _line.begin()->startPoint().unitvector());
+}

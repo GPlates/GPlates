@@ -81,6 +81,11 @@ namespace GPlatesGeo
 			RotateAndDraw(const GPlatesMaths::FiniteRotation &)
 			 const;
 
+		protected:
+			virtual GPlatesMaths::real_t
+			proximity(const GPlatesMaths::PointOnSphere &pos) 
+			 const;
+			
 		private:
 			GPlatesMaths::PolyLineOnSphere _line;
 	};
