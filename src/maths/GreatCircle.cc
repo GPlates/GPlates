@@ -31,9 +31,10 @@
 
 GPlatesMaths::GreatCircle::GreatCircle (const PointOnSphere &p1,
  const PointOnSphere &p2)
- : _normal (calcNormal(p1.unitvector(), p2.unitvector())) {  }
+ : Axial (calcNormal(p1.unitvector(), p2.unitvector())) {  }
 
 
+#if 0
 GPlatesMaths::UnitVector3D
 GPlatesMaths::GreatCircle::intersection (const GreatCircle &other) const
 {
@@ -51,6 +52,7 @@ GPlatesMaths::GreatCircle::intersection (const GreatCircle &other) const
 	}
 	return x.normalise();
 }
+#endif
 
 
 GPlatesMaths::UnitVector3D

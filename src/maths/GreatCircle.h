@@ -28,6 +28,7 @@
 #define _GPLATES_MATHS_GREATCIRCLE_H_
 
 #include "types.h"
+#include "Axial.h"
 #include "UnitVector3D.h"
 #include "PointOnSphere.h"
 #include "Vector3D.h"
@@ -37,7 +38,7 @@ namespace GPlatesMaths
 	/** 
 	 * A great circle of a unit sphere.
 	 */
-	class GreatCircle
+	class GreatCircle : public Axial
 	{
 		public:
 			/**
@@ -45,7 +46,7 @@ namespace GPlatesMaths
 			 * @param axis The axis vector.
 			 */
 			GreatCircle (const UnitVector3D &axis)
-				: _normal (axis) { }
+				: Axial (axis) { }
 
 			/**
 			 * Create a great circle, given two points on it.
@@ -55,8 +56,10 @@ namespace GPlatesMaths
 			GreatCircle (const PointOnSphere &p1,
 			             const PointOnSphere &p2);
 
-			UnitVector3D normal () const { return _normal; }
+			UnitVector3D
+			normal () const { return axisvector(); }
 
+#if 0  // No longer needed
 			/**
 			 * Computes one intersection point of this GreatCircle
 			 * with another. The other intersection point is the
@@ -65,10 +68,9 @@ namespace GPlatesMaths
 			 */
 			UnitVector3D intersection (const GreatCircle &other)
 			 const;
+#endif
 
 		private:
-			UnitVector3D _normal;
-
 			/**
 			 * Given two unit vectors, @a v1 and @a v2, calculate
 			 * the normal of the great circle they define.
