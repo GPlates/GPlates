@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <string>
 #include "FPData.h"
+#include "InternalRGID.h"
 
 
 namespace GPlatesGlobal
@@ -39,6 +40,11 @@ namespace GPlatesGlobal
 	 * A floating-point type used to store static (ie. unchanging) data.
 	 */
 	typedef FPData fpdata_t;
+
+	/**
+	 * The type used for internal rotation-group IDs.
+	 */
+	typedef InternalRGID int_rgid_t;
 
 	/** 
 	 * The integral type.
@@ -50,13 +56,6 @@ namespace GPlatesGlobal
 	 * index_t has integral semantics.  
 	 */
 	typedef int index_t;
-
-	/**
-	 * The type used for rotation-group IDs.
-	 * In the old PLATES software, this was an integral type;
-	 * in GPlates, it will be an ASCII string
-	 */
-	typedef std::string rgid_t;
 }
 
 #endif  // _GPLATES_GLOBAL_TYPES_H_
