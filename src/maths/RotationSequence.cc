@@ -28,6 +28,7 @@
 #include "RotationSequence.h"
 #include "StageRotation.h"  /* interpolate */
 #include "InvalidOperationException.h"
+#include "global/ControlFlowException.h"
 
 
 using namespace GPlatesMaths;
@@ -130,7 +131,7 @@ RotationSequence::finiteRotationAtTime(real_t t) const {
 		}
 	}
 
-	if (t > (*curr_rot).time()) {
+	if (t > (*prev_rot).time()) {
 
 		std::ostringstream oss("Attempted to obtain a finite rotation "
 		 "for the time ");
@@ -142,8 +143,16 @@ RotationSequence::finiteRotationAtTime(real_t t) const {
 	}
 
 	/*
-	 * It should never be possible to reach the end of this function,
-	 * but we'll put a return statement here to satisfy the compiler.
+	 * It should not be possible to reach the end of this function:
+	 * Logically, 't' must be one of:
+	 *  - more recent than this rotation sequence -> exception
+	 *  - more distant than this rotation sequence -> exception
+	 *  - within the time-span of this rotation sequence -> return
+	 *     a finite rotation
+	 *
+	 * So, if control flow gets to the end of this function, the
+	 * programmer has made a mistake.
 	 */
-	return (*seq_end);
+	throw ControlFlowException("Reached the end of the function "
+	 "RotationSequence::finiteRotationAtTime");
 }
