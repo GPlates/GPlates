@@ -85,12 +85,12 @@ Globe::NormaliseMeridianElevation()
 }
 
 
-// FIXME: Use GPlatesMaths::GreatCircleArc
 static void
-DrawArc(const UnitVector3D& a, const UnitVector3D& b, 
- GLUnurbsObj *renderer)
+DrawArc(const GreatCircleArc& arc, GLUnurbsObj *renderer)
 {
 	using GPlatesMaths::sqrt;
+
+	UnitVector3D a, b;
 
 	// The knot vector has (degree + length(ctrl_points) - 1)
 	// elements.
@@ -141,19 +141,19 @@ DrawArc(const UnitVector3D& a, const UnitVector3D& b,
 void
 Globe::Paint()
 {
-		
+	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
 		// Ensure that the meridian and elevation are in the acceptable 
 		// range.
 		NormaliseMeridianElevation();
 
 		// rotate everything to get a nice almost-equatorial shot
-		glRotatef(-80.0, 1.0, 0.0, 0.0);
+//		glRotatef(-80.0, 1.0, 0.0, 0.0);
 
 		// rotate everything (around x) according to elevation rotation
 		// FIXME: This should be combined with the previous rotation so
 		//  only one is submitted.
-		glRotatef(_elevation, 1.0, 0.0, 0.0);
+		glRotatef(_elevation, 0.0, 1.0, 0.0);
 
 		// rotate everything (around z) according to meridian rotation
 		glRotatef(_meridian, 0.0, 0.0, 1.0);
@@ -162,13 +162,16 @@ Globe::Paint()
 		glColor3fv(_colour);
 		
 		// Draw globe.
+		// DepthRange calls push the globe back in the depth buffer a bit to
+		// avoid Z-fighting with the NURBS.
+		glDepthRange(0.1, 1.0);
 		gluSphere(_sphere, _radius, _slices, _stacks);
+		glDepthRange(0.0, 0.9);
 
-		// XXX: Draw NURBS (temporary measure)
-		DrawArc(UnitVector3D(1.0, 0.0, 0.0), UnitVector3D(0.0, 0.0, 1.0), _nurbs_renderer);
-		DrawArc(UnitVector3D(1.0, 0.0, 0.0), UnitVector3D(0.0, 1.0, 0.0), _nurbs_renderer);
-		real_t tmp = real_t(1.0) / sqrt(real_t(2.0));
-		DrawArc(UnitVector3D(tmp, tmp, 0.0), UnitVector3D(0.0, tmp, tmp), _nurbs_renderer);
+		// Draw NURBS
+		list<GreatCircleArc>::iterator iter, end = arcs.end();
+		for ( ; iter != end; ++iter)
+			DrawArc(*iter, _nurbs_renderer);
 		
 	glPopMatrix();
 }

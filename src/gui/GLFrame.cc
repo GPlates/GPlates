@@ -40,6 +40,8 @@ GLFrame::GLFrame(wxFrame* parent, const wxString& title,
 		std::cerr << "Failed to create status bar." << std::endl;
 		exit(1);
 	}
+	SetStatusText("Guten Abend", 0);
+	SetStatusText("Dietmar", 1);
 
 	_canvas = new GLCanvas(this, wxSize(640,640));
 	_canvas->InitGL();

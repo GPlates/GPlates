@@ -26,6 +26,7 @@
 #include <cmath>  /* fabsf() */
 #include "GLCanvas.h"
 #include "Colour.h"
+#include "maths/UnitVector3D.h"
 
 using namespace GPlatesGui;
 
@@ -47,12 +48,22 @@ GLCanvas::OnPaint(wxPaintEvent&)
 	if (!GetContext())
 		return;
 	SetCurrent();
+	// FIXME FIXME FIXME: Need to find out when the context is 
+	// created and set the size after that.
 	wxSizeEvent evt(GetSize());
 	OnSize(evt);
 	
 	ClearCanvas();
 	glLoadIdentity();
 	glTranslatef(eyex, eyey, eyez);
+
+	// Set up our coordinate system (standard mathematical one):
+	//   Z points up
+	//   Y points right
+	//   X points out of screen
+	glRotatef(-90.0, 1.0, 0.0, 0.0);
+	glRotatef(-90.0, 0.0, 0.0, 1.0);
+
 	_globe.Paint();
 
 	SwapBuffers();
@@ -68,12 +79,13 @@ GLCanvas::InitGL()
 	
 }
 
-static GLfloat ORTHO_RATIO = 1.2;
-
 void
 GLCanvas::OnSize(wxSizeEvent& evt)
 {
 	wxGLCanvas::OnSize(evt);
+
+	static const GLfloat ORTHO_RATIO = 1.2;
+	static const GLfloat Z_NEAR = 0.1;
 	int width, height;
 
 	GetClientSize(&width, &height);
@@ -85,21 +97,94 @@ GLCanvas::OnSize(wxSizeEvent& evt)
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-
+	
 	GLfloat fwidth = static_cast<GLfloat>(width);
 	GLfloat fheight = static_cast<GLfloat>(height);
 	GLfloat eye_dist = static_cast<GLfloat>(fabsf(eyez));
-	GLfloat aspect = (width <= height) ? fheight/fwidth : fwidth/fheight;
-	
-	glOrtho(-ORTHO_RATIO, ORTHO_RATIO, -ORTHO_RATIO*aspect, 
-	 ORTHO_RATIO*aspect, 0.1, eye_dist);
+	GLfloat zoom_ratio = _zoom_factor * ORTHO_RATIO;
+	GLfloat factor;
 
+	if (width <= height)
+	{
+		// Width is limiting factor
+		factor = zoom_ratio * fheight / fwidth;
+		glOrtho(-zoom_ratio, zoom_ratio, -factor, factor, Z_NEAR, eye_dist);
+	}
+	else
+	{
+		// height is limiting factor
+		factor = zoom_ratio * fwidth / fheight;
+		glOrtho(-factor, factor, -zoom_ratio, zoom_ratio, Z_NEAR, eye_dist);
+	}
+	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+}
+
+#if 0
+/*
+ * FIXME: There ought to be a more efficient way of doing this.
+ */
+static GPlatesMaths::DirVector3D
+GetWorldCoordFromWindow(const GLdouble& winx, const GLdouble& winy)
+{
+	GLdouble modelmatrix[16], projmatrix[16], viewport[16];
+	GLdouble objx, objy, objz;  // World coordinates.
+	
+	glGetDoublev(GL_MODELVIEW_MATRIX, &modelmatrix[0]);
+	glGetDoublev(GL_PROJECTION_MATRIX, &projmatrix[0]);
+	glGetDoublev(GL_VIEWPORT_MATRIX, &viewport[0]);
+	
+	gluUnProject(winx, winy, 0.0, modelmatrix, projmatrix, viewport, 
+		&objx, &objy, &objz);
+	
+	return GPlatesMaths::DirVector3D(real_t(objx), real_t(objy), real_t(objz));
+}
+#endif
+
+#include <iostream>
+
+void
+GLCanvas::OnSpin(wxMouseEvent& evt)
+{
+	// XXX: Eek!  Non-reentrant!
+	static GLfloat last_x = 0.0, last_y = 0.0, last_zoom = 0.0;
+	static const GLfloat TOLERANCE = 5.0, ZOOM_TOLERANCE = 200.0;
+
+	GLfloat& meridian = _globe.GetMeridian();
+	GLfloat& elevation = _globe.GetElevation();
+
+	if (evt.LeftIsDown())
+	{
+		if (evt.Dragging())
+		{
+			meridian  += (evt.GetX() - last_x)/TOLERANCE;
+			elevation += (evt.GetY() - last_y)/TOLERANCE;
+			Refresh();  // Send a "Repaint" event.
+		}
+		last_x = evt.GetX();
+		last_y = evt.GetY();
+	}
+	else if (evt.RightIsDown())
+	{
+		// Zoom.
+		if (evt.Dragging())
+		{
+			_zoom_factor += (evt.GetY() - last_zoom)/ZOOM_TOLERANCE;
+
+			wxSizeEvent tmp(GetSize());
+			OnSize(tmp);
+	
+			Refresh();
+		}
+		last_zoom = evt.GetY();
+	}
 }
 
 BEGIN_EVENT_TABLE(GLCanvas, wxGLCanvas)
 	EVT_SIZE(GLCanvas::OnSize)
 	EVT_PAINT(GLCanvas::OnPaint)
 	EVT_ERASE_BACKGROUND(GLCanvas::OnEraseBackground)
+//	EVT_LEFT_DCLICK(GLCanvas::OnReposition)
+	EVT_MOUSE_EVENTS(GLCanvas::OnSpin)
 END_EVENT_TABLE()

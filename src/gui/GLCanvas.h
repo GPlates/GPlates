@@ -37,19 +37,46 @@ namespace GPlatesGui
 		public:
 			GLCanvas(wxWindow* parent, const wxSize& size = wxDefaultSize,
 					 const wxPoint& position = wxDefaultPosition)
-
-				: wxGLCanvas(parent, -1, position, size) {  }
-
+				: wxGLCanvas(parent, -1, position, size), _zoom_factor(1.0) {  }
+												// Zoom factor == 1.0 => no zoom
 			void InitGL();
 
-			void OnPaint(wxPaintEvent&);
-			void OnSize(wxSizeEvent&);
-			void OnEraseBackground(wxEraseEvent&) {
-				std::cerr << "In \'" << __PRETTY_FUNCTION__ << "\'" << std::endl;
-			}
+			/**
+			 * Paint the picture.
+			 */
+			void
+			OnPaint(wxPaintEvent&);
+
+			/**
+			 * Set the dimensions of our picture.
+			 * Called on startup and when the user resizes the window.
+			 */
+			void 
+			OnSize(wxSizeEvent&);
+
+			/**
+			 * According to the wxWindows docs, declaring this function to
+			 * be empty eliminates flicker on some platforms (mainly win32).
+			 */
+			void 
+			OnEraseBackground(wxEraseEvent&) {  }
+
+			/**
+			 * Double clicking the left mouse button repositions the view
+			 * to centre on the point clicked.
+			 */
+			void
+			OnReposition(wxMouseEvent&);
+			
+			/**
+			 * Right mouse button is responsible for Z axis spins.
+			 */
+			void
+			OnSpin(wxMouseEvent&);
 
 		private:
 			Globe _globe;
+			GLfloat _zoom_factor;
 
 			DECLARE_EVENT_TABLE()
 	};
