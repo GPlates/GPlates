@@ -9,7 +9,7 @@ INCLUDES = -I..
 CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 
-OBJS = Exception.o FPData.o
+OBJS = Exception.o FPData.o InternalInconsistencyException.o
 
 LIBNAME = libglobal.a
 
