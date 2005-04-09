@@ -17,7 +17,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
 #ifndef GPLATES_PATTERNS_PUBLISHERTEMPLATE_H
@@ -32,13 +31,13 @@ namespace GPlatesPatterns {
 
 	/**
 	 * These base classes are intended to simplify the implementation of
-	 * the "Gang of Four" Observer pattern (aka the Publisher-Subscriber
-	 * pattern).
+	 * the Observer pattern (aka the Publisher-Subscriber pattern)
+	 * (Gamma95).
 	 *
 	 * @section Overview
 	 *
 	 * - The publisher/subscriber relationship is made typesafe by the use
-	 *    of "mixin-style" base classes (see p.31 of Meyers98).
+	 *    of "mixin-style" base classes (Meyers98, p:31).
 	 * - The subscription/unsubscription operations may be performed upon
 	 *    either the publisher or subscriber (the effect will be
 	 *    equivalent).
@@ -86,15 +85,24 @@ namespace GPlatesPatterns {
 	 *     @a PublisherTemplate< T >::Subscriber::unsubscribe for more
 	 *     details).
 	 *
-	 * @section References and Thanks
+	 * @section Bibliography
 	 *
-	 *  - Scott Meyers, <i>Effective C++: 50 Specific Ways to Improve Your
-	 *     Programs and Designs</i>, 2nd ed., Addison-Wesley, 1998.
-	 *  - Nicolai M. Josuttis, <i>The C++ Standard Library: A Tutorial and
-	 *     Reference</i>, Addison-Wesley, 1999.
-	 *  - Herb Sutter, <i>Exceptional C++: 47 Engineering Puzzles,
-	 *     Programming Problems, and Solutions</i>, Addison Wesley Longman,
-	 *     2000.
+	 * The following references are either cited in the documentation or
+	 * played a significant role in the design and implementation of these
+	 * classes:
+	 *  - Gamma95: Erich Gamma, Richard Helm, Ralph Johnson, and John
+	 *     Vlissides, <i>Design Patterns: Elements of Reusable
+	 *     Object-Oriented Software</i>, Addison-Wesley, 1995.
+	 *  - Josuttis99: Nicolai M. Josuttis, <i>The C++ Standard Library: A
+	 *     Tutorial and Reference</i>, Addison-Wesley, 1999.
+	 *  - Meyers98: Scott Meyers, <i>Effective C++: 50 Specific Ways to
+	 *     Improve Your Programs and Designs</i>, 2nd ed., Addison-Wesley,
+	 *     1998.
+	 *  - Sutter00: Herb Sutter, <i>Exceptional C++: 47 Engineering
+	 *     Puzzles, Programming Problems, and Solutions</i>, Addison Wesley
+	 *     Longman, 2000.
+	 *
+	 * @section Thanks
 	 *
 	 * The author would also like to thank the inventors of coffee for
 	 * their invaluable contribution to the development of this code.
