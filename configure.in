@@ -1,14 +1,14 @@
 # $Id$
 # Configure script for GPlates
 
-AC_INIT([GPlates], [0.5], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
+AC_INIT([GPlates], [0.7], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
 package_is_beta="yes"		# change this to "no" for releases
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_HEADERS(src/global/config.h)
 
 AC_DEFINE([COPYRIGHT_STRING],
-	  ["Copyright (c) 2003-2004 The GPlates Consortium"],[])
+	  ["Copyright (C) 2003,2004,2005 The GPlates Consortium"],[])
 
 # Check the canonical build-system type (sets the variable "$build").
 AC_CANONICAL_BUILD
