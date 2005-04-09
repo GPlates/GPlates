@@ -34,7 +34,7 @@ namespace GPlatesPatterns {
 	 * the Observer pattern (aka the Publisher-Subscriber pattern)
 	 * (Gamma95).
 	 *
-	 * @section Overview
+	 * @section overview Overview
 	 *
 	 * - The publisher/subscriber relationship is made typesafe by the use
 	 *    of "mixin-style" base classes (Meyers98, p:31).
@@ -49,7 +49,7 @@ namespace GPlatesPatterns {
 	 *    program state will remain unchanged) and exception-neutral (any
 	 *    exceptions are propagated to the caller).
 	 *
-	 * @section Usage
+	 * @section usage Usage
 	 *
 	 * To become a publisher-type, a class X must:
 	 *  - publicly inherit from GPlatesPatterns::PublisherTemplate< X >
@@ -70,7 +70,7 @@ namespace GPlatesPatterns {
 	 * @attention Note that a class may be both a publisher @em and a
 	 * subscriber to a @em different publisher.
 	 *
-	 * @section Details
+	 * @section details Details
 	 *
 	 *  - Publishers do not advertise an explicit ordering of their
 	 *     subscribers.
@@ -85,24 +85,24 @@ namespace GPlatesPatterns {
 	 *     @a PublisherTemplate< T >::Subscriber::unsubscribe for more
 	 *     details).
 	 *
-	 * @section Bibliography
+	 * @section bibliography Bibliography
 	 *
 	 * The following references are either cited in the documentation or
-	 * played a significant role in the design and implementation of these
-	 * classes:
-	 *  - Gamma95: Erich Gamma, Richard Helm, Ralph Johnson, and John
-	 *     Vlissides, <i>Design Patterns: Elements of Reusable
-	 *     Object-Oriented Software</i>, Addison-Wesley, 1995.
-	 *  - Josuttis99: Nicolai M. Josuttis, <i>The C++ Standard Library: A
-	 *     Tutorial and Reference</i>, Addison-Wesley, 1999.
-	 *  - Meyers98: Scott Meyers, <i>Effective C++: 50 Specific Ways to
-	 *     Improve Your Programs and Designs</i>, 2nd ed., Addison-Wesley,
-	 *     1998.
-	 *  - Sutter00: Herb Sutter, <i>Exceptional C++: 47 Engineering
-	 *     Puzzles, Programming Problems, and Solutions</i>, Addison Wesley
-	 *     Longman, 2000.
+	 * have played a significant role in the design and implementation of
+	 * these classes:
+	 *  - Gamma95:  Erich Gamma, Richard Helm, Ralph Johnson, and John
+	 *     Vlissides, <i>Design Patterns:  Elements of Reusable
+	 *     Object-Oriented Software</i>.  Addison-Wesley, 1995.
+	 *  - Josuttis99:  Nicolai M. Josuttis, <i>The C++ Standard Library:  A
+	 *     Tutorial and Reference</i>.  Addison-Wesley, 1999.
+	 *  - Meyers98:  Scott Meyers, <i>Effective C++:  50 Specific Ways to
+	 *     Improve Your Programs and Designs (2nd Edition)</i>.
+	 *     Addison-Wesley, 1998.
+	 *  - Sutter00:  Herb Sutter, <i>Exceptional C++:  47 Engineering
+	 *     Puzzles, Programming Problems, and Solutions</i>.  Addison
+	 *     Wesley Longman, 2000.
 	 *
-	 * @section Thanks
+	 * @section thanks Thanks
 	 *
 	 * The author would also like to thank the inventors of coffee for
 	 * their invaluable contribution to the development of this code.
