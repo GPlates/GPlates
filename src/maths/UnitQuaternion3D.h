@@ -35,42 +35,50 @@ namespace GPlatesMaths
 	/**
 	 * A unit quaternion with three-dimensional operations.
 	 *
+	 * @section Overview
+	 *
 	 * Unit quaternions are used in this context to efficiently calculate
 	 * rotations about arbitrarily-oriented rotation axes.
 	 *
-	 * The references used during the design and implementation of this
-	 * class include:
-	 *  - Eric W. Weisstein, <i>Quaternion</i>.  From MathWorld, A Wolfram
-	 *     Web Resource:
-	 *      http://mathworld.wolfram.com/Quaternion.html
-	 *  - Eric W. Weisstein, <i>Division Algebra</i>.  From MathWorld, A
-	 *     Wolfram Web Resource:
-	 *      http://mathworld.wolfram.com/DivisionAlgebra.html
-	 *  - Jack B. Kuipers, <i>Quaternions and Rotation Sequences</i>,
-	 *     Princeton University Press, 2002.
-	 *  - Wikipedia, <i>Quaternion</i>:
-	 *      http://en.wikipedia.org/wiki/Quaternion
-	 *  - Wikipedia, <i>Quaternions and spatial rotation</i>:
-	 *      http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
-	 *
-	 * To quote briefly from Wikipedia (at some point in time in the past):
+	 * To quote from Wikipedia (Wikipedia05a, Wikipedia05b):
 	 *
 	 * @par
-	 *   Quaternions are sometimes used in computer graphics (and
-	 *   associated geometric analysis) to represent rotations or
-	 *   orientations of objects in 3d space.  The advantages are:
-	 *   non-singular representation (compared with Euler angles for
-	 *   example), more compact (and faster) than matrices.
+	 *   Quaternions are often used in computer graphics (and associated
+	 *   geometric analysis) to represent rotations (see quaternions and
+	 *   spatial rotation) and orientations of objects in 3d space. They
+	 *   are smaller than other representations such as matrices, and
+	 *   operations on them such as composition can be computed more
+	 *   efficiently.
+	 *
+	 * @par
+	 *   The representation of a rotation as a quaternion (4 numbers) is
+	 *   more compact than the representation as an orthogonal matrix (9
+	 *   numbers). Furthermore, for a given axis and angle, one can easily
+	 *   construct the corresponding quaternion, and conversely, for a
+	 *   given quaternion one can easily read off the axis and the angle.
+	 *   Both of these are much harder with matrices or Euler angles.
+	 *
+	 * @par
+	 *   In computer games and other applications, one is often interested
+	 *   in smooth rotations, meaning that the scene should slowly rotate
+	 *   and not in a single step. This can be accomplished by choosing a
+	 *   curve in the quaternions, with one endpoint being the identity
+	 *   transformation 1 and the other being the intended total rotation.
+	 *   This is more problematic with other representations of rotations.
+	 *
+	 * @section Details
+	 *
+	 * To quote a little more from Wikipedia (Wikipedia05a):
 	 *
 	 * @par
 	 *   The set of all unit quaternions forms a 3-dimensional sphere S^3
-	 *   and a group (even a Lie group) under multiplication.  S^3 is the
-	 *   double cover of the group SO(3,R) of real orthogonal 3x3 matrices
-	 *   of determinant 1 since two unit quaternions correspond to every
+	 *   and a group (a Lie group) under multiplication.  S^3 is the double
+	 *   cover of the group SO(3,R) of real orthogonal 3x3 matrices of
+	 *   determinant 1 since two unit quaternions correspond to every
 	 *   rotation under the above correspondence.
 	 *
-	 * Quaternions form a "non-commutative division algebra".  In practical
-	 * terms, this tells us:
+	 * Quaternions form a "noncommutative division algebra" (Weisstein05b).
+	 * In practical terms, this tells us (Weisstein05a):
 	 *  - multiplication is associative but NOT commutative.
 	 *  - there exists a multiplicative identity.
 	 *  - for every non-zero element there exists a multiplicative inverse.
@@ -89,6 +97,34 @@ namespace GPlatesMaths
 	 *
 	 * @invariant
 	 *  - magnitude (norm) of quaternion is identical to 1
+	 *
+	 * @section Bibliography
+	 *
+	 * The following references are either cited in the documentation or
+	 * played a significant role in the design and implementation of this
+	 * class:
+	 *  - Kuipers02: Jack B. Kuipers, <i>Quaternions and Rotation
+	 *     Sequences</i>, Princeton University Press, 2002.
+	 *  - Weisstein05a: Eric W. Weisstein, "Division Algebra".  From
+	 *     <i>MathWorld</i> -- A Wolfram Web Resource [online].
+	 *     http://mathworld.wolfram.com/DivisionAlgebra.html  [Accessed 9
+	 *     April 2005]
+	 *  - Weisstein05b: Eric W. Weisstein, "Quaternion".  From
+	 *     <i>MathWorld</i> -- A Wolfram Web Resource [online].
+	 *     http://mathworld.wolfram.com/Quaternion.html  [Accessed 9 April
+	 *     2005]
+	 *  - Wikipedia05a: Wikipedia, "Quaternion".  From <i>Wikipedia</i>
+	 *     [online].  http://en.wikipedia.org/wiki/Quaternion  [Accessed 9
+	 *     April 2005]
+	 *  - Wikipedia05b: Wikipedia, "Quaternions and spatial rotation".
+	 *     From <i>Wikipedia</i> [online].
+	 *     http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+	 *     [Accessed 9 April 2005]
+	 *
+	 * CVS informs us that this class was first committed in September
+	 * 2003, by which time all these references (with the exception of
+	 * Kuipers02) had already been consulted.  However, they were not
+	 * properly cited until the 9th of April, 2005.
 	 */
 	class UnitQuaternion3D {
 
