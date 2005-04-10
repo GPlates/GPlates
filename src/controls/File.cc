@@ -496,7 +496,7 @@ ConvertPlatesParserFinRotToGPlatesMathsFinRot(const
 	GPlatesMaths::real_t angle =
 	 ConvertPlatesParserAngleToGPlatesMathsAngle(pp_fin_rot._rot._angle);
 
-	return GPlatesMaths::FiniteRotation::Create(pole, angle, time);
+	return GPlatesMaths::FiniteRotation::create(pole, angle, time);
 }
 
 
