@@ -59,8 +59,8 @@
  *
  *  - Benson04:  Calum Benson, Adam Elman, Seth Nickell, and Colin Z Robertson,
  *     <i>GNOME Human Interface Guidelines 2.0</i> [online].
- *     http://developer.gnome.org/projects/gup/hig/2.0/  [Accessed 9 April
- *     2005]
+ *     http://developer.gnome.org/projects/gup/hig/2.0/  [Most-recently
+ *     accessed 9 April 2005]
  *  - Cox03:  Allan Cox and Robert Brian Hart, <i>Plate Tectonics:  How It
  *     Works</i>.  Blackwell Scientific Publications, 2003 reprint.
  *  - Foley96:  James D. Foley, Andries van Dam, Steven K. Feiner, and John F.
