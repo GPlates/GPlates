@@ -41,6 +41,7 @@ namespace GPlatesMaths
 			 * Create a great circle, given its axis.
 			 * @param axis The axis vector.
 			 */
+			explicit
 			GreatCircle (const UnitVector3D &axis)
 				: Axial (axis) { }
 
