@@ -71,7 +71,7 @@ GPlatesMaths::UnitQuaternion3D::get_rotation_params() const {
 const GPlatesMaths::UnitQuaternion3D
 GPlatesMaths::UnitQuaternion3D::create_rotation(
  const UnitVector3D &axis,
- real_t angle) {
+ const real_t &angle) {
 
 	real_t theta_on_two = angle / 2.0;
 
@@ -117,8 +117,8 @@ GPlatesMaths::operator*(
  const UnitQuaternion3D &q1,
  const UnitQuaternion3D &q2) {
 
-	real_t s1 = q1.scalar_part();
-	real_t s2 = q2.scalar_part();
+	const real_t &s1 = q1.scalar_part();
+	const real_t &s2 = q2.scalar_part();
 
 	const Vector3D &v1 = q1.vector_part();
 	const Vector3D &v2 = q2.vector_part();

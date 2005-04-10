@@ -17,11 +17,10 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
-#ifndef _GPLATES_MATHS_STAGEROTATION_H_
-#define _GPLATES_MATHS_STAGEROTATION_H_
+#ifndef GPLATES_MATHS_STAGEROTATION_H
+#define GPLATES_MATHS_STAGEROTATION_H
 
 #include "UnitQuaternion3D.h"
 #include "FiniteRotation.h"
@@ -30,9 +29,6 @@
 
 namespace GPlatesMaths
 {
-	using namespace GPlatesGlobal;
-
-
 	/** 
 	 * Represents a so-called "stage rotation" of plate tectonics.
 	 *
@@ -48,8 +44,8 @@ namespace GPlatesMaths
 	 * 4-dimensional rotation-space, a stage rotation is a displacement
 	 * between two points.
 	 */
-	class StageRotation
-	{
+	class StageRotation {
+
 		public:
 
 			/**
@@ -57,18 +53,23 @@ namespace GPlatesMaths
 			 * unit quaternion and the given change in time.
 			 * The change in time is in Millions of years.
 			 */
-			StageRotation(const UnitQuaternion3D &uq,
-			              const real_t &time_delta)
-			 : _quat(uq), _time_delta(time_delta) {  }
+			StageRotation(
+			 const UnitQuaternion3D &uq,
+			 const real_t &time_delta) :
+			 m_unit_quat(uq),
+			 m_time_delta(time_delta) {  }
 
+			const UnitQuaternion3D &
+			unit_quat() const {
 
-			UnitQuaternion3D
-			quat() const { return _quat; }
+				return m_unit_quat;
+			}
 
+			const real_t &
+			timeDelta() const {
 
-			real_t
-			timeDelta() const { return _time_delta; }
-
+				return m_time_delta;
+			}
 
 			/**
 			 * Apply this stage rotation to a finite rotation.
@@ -81,19 +82,21 @@ namespace GPlatesMaths
 			 *
 			 * This operation is not supposed to be symmetrical.
 			 */
-			FiniteRotation
-			operator*(const FiniteRotation &r) const {
+			const FiniteRotation
+			operator*(
+			 const FiniteRotation &r) const {
 
-				UnitQuaternion3D res_uq = quat() * r.quat();
+				UnitQuaternion3D res_uq =
+				 unit_quat() * r.unit_quat();
 				real_t res_time = r.time() + timeDelta();
 
-				return FiniteRotation::Create(res_uq, res_time);
+				return FiniteRotation::create(res_uq, res_time);
 			}
 
 		private:
 
-			UnitQuaternion3D _quat;
-			real_t           _time_delta;  // Millions of years
+			UnitQuaternion3D m_unit_quat;
+			real_t           m_time_delta;  // Millions of years
 	};
 
 
@@ -135,10 +138,14 @@ namespace GPlatesMaths
 	 * is currently supposed to be reading the symbols from left-to-right
 	 * or right-to-left).
 	 */
-	inline StageRotation
-	subtractFiniteRots(const FiniteRotation &r1, const FiniteRotation &r2) {
+	inline
+	const StageRotation
+	subtractFiniteRots(
+	 const FiniteRotation &r1,
+	 const FiniteRotation &r2) {
 
-		UnitQuaternion3D res_uq = r2.quat().get_inverse() * r1.quat();
+		UnitQuaternion3D res_uq =
+		 r2.unit_quat().get_inverse() * r1.unit_quat();
 		real_t time_delta = r1.time() - r2.time();
 
 		return StageRotation(res_uq, time_delta);
@@ -165,8 +172,10 @@ namespace GPlatesMaths
 	 * @throws IndeterminateResultException if the time delta of @a sr
 	 *   is zero.  @code sr.timeDelta() == 0 @endcode
 	 */
-	StageRotation
-	scaleToNewTimeDelta(StageRotation sr, real_t new_time_delta);
+	const StageRotation
+	scaleToNewTimeDelta(
+	 const StageRotation &sr,
+	 const real_t &new_time_delta);
 
 
 	/**
@@ -182,10 +191,12 @@ namespace GPlatesMaths
 	 *
 	 * Note to CG programmers: this is a "slerp".
 	 */
-	FiniteRotation
-	interpolate(const FiniteRotation &more_recent,
-	            const FiniteRotation &more_distant,
-	            const real_t &t);
+	const FiniteRotation
+	interpolate(
+	 const FiniteRotation &more_recent,
+	 const FiniteRotation &more_distant,
+	 const real_t &t);
+
 }
 
-#endif  // _GPLATES_MATHS_STAGEROTATION_H_
+#endif  // GPLATES_MATHS_STAGEROTATION_H

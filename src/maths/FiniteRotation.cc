@@ -17,9 +17,9 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
+#include <iostream>
 #include <sstream>
 
 #include "FiniteRotation.h"
@@ -30,7 +30,7 @@
 namespace {
 
 	inline
-	GPlatesMaths::real_t
+	const GPlatesMaths::real_t
 	calculate_d_value(
 	 const GPlatesMaths::UnitQuaternion3D &uq) {
 
@@ -42,7 +42,7 @@ namespace {
 
 
 	inline
-	GPlatesMaths::Vector3D
+	const GPlatesMaths::Vector3D
 	calculate_e_value(
 	 const GPlatesMaths::UnitQuaternion3D &uq) {
 
@@ -55,8 +55,8 @@ namespace {
 }
 
 
-GPlatesMaths::FiniteRotation
-GPlatesMaths::FiniteRotation::Create(
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::create(
  const PointOnSphere &euler_pole,
  const real_t &rotation_angle,
  const real_t &point_in_time) {
@@ -73,8 +73,8 @@ GPlatesMaths::FiniteRotation::Create(
 }
 
 
-GPlatesMaths::FiniteRotation
-GPlatesMaths::FiniteRotation::Create(
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::create(
  const UnitQuaternion3D &uq,
  const real_t &point_in_time) {
 
@@ -86,22 +86,23 @@ GPlatesMaths::FiniteRotation::Create(
 }
 
 
-GPlatesMaths::UnitVector3D
+const GPlatesMaths::UnitVector3D
 GPlatesMaths::FiniteRotation::operator*(
  const UnitVector3D &uv) const {
 
 	Vector3D v(uv);
+	const Vector3D &uq_v = m_unit_quat.vector_part();
 
 	Vector3D v_rot =
-	 _d * v +
-	 (2.0 * dot(_quat.vector_part(), v)) * _quat.vector_part() +
-	 cross(_e, v);
+	 m_d * v +
+	 (2.0 * dot(uq_v, v)) * uq_v +
+	 cross(m_e, v);
 
 	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z());
 }
 
 
-GPlatesMaths::FiniteRotation
+const GPlatesMaths::FiniteRotation
 GPlatesMaths::operator*(
  const FiniteRotation &r1,
  const FiniteRotation &r2) {
@@ -110,30 +111,34 @@ GPlatesMaths::operator*(
 
 		// these FiniteRotations are not of the same point in time.
 		std::ostringstream oss;
-		oss << "Mismatched times in composition of FiniteRotations:\n"
-		 << r1.time() << " vs. " << r2.time() << ".";
+		oss
+		 << "Mismatched times in composition of FiniteRotations:\n"
+		 << r1.time()
+		 << " vs. "
+		 << r2.time()
+		 << ".";
 
 		throw InvalidOperationException(oss.str().c_str());
 	}
 
-	UnitQuaternion3D resultant_uq = r1.quat() * r2.quat();
-	return FiniteRotation::Create(resultant_uq, r1.time());
+	UnitQuaternion3D resultant_uq = r1.unit_quat() * r2.unit_quat();
+	return FiniteRotation::create(resultant_uq, r1.time());
 }
 
 
-GPlatesMaths::PolyLineOnSphere
+const GPlatesMaths::PolyLineOnSphere
 GPlatesMaths::operator*(
  const FiniteRotation &r,
  const PolyLineOnSphere &p) {
 
 	PolyLineOnSphere rot_p;
 
-	for (PolyLineOnSphere::const_iterator it = p.begin();
-	     it != p.end();
-	     ++it) {
+	PolyLineOnSphere::const_iterator
+	 iter = p.begin(),
+	 end = p.end();
 
-		rot_p.push_back(r * (*it));
-	}
+	for ( ; iter != end; ++iter) rot_p.push_back(r * (*iter));
+
 	return rot_p;
 }
 
@@ -145,7 +150,7 @@ GPlatesMaths::operator<<(
 
 	os << "(time = " << fr.time() << "; rot = ";
 
-	UnitQuaternion3D uq = fr.quat();
+	UnitQuaternion3D uq = fr.unit_quat();
 	if (represents_identity_rotation(uq)) {
 
 		os << "identity";

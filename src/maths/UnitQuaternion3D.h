@@ -35,7 +35,7 @@ namespace GPlatesMaths
 	/**
 	 * A unit quaternion with three-dimensional operations.
 	 *
-	 * @section Overview
+	 * @section overview Overview
 	 *
 	 * Unit quaternions are used in this context to efficiently calculate
 	 * rotations about arbitrarily-oriented rotation axes.
@@ -66,7 +66,7 @@ namespace GPlatesMaths
 	 *   transformation 1 and the other being the intended total rotation.
 	 *   This is more problematic with other representations of rotations.
 	 *
-	 * @section Details
+	 * @section details Details
 	 *
 	 * To quote a little more from Wikipedia (Wikipedia05a):
 	 *
@@ -98,26 +98,26 @@ namespace GPlatesMaths
 	 * @invariant
 	 *  - magnitude (norm) of quaternion is identical to 1
 	 *
-	 * @section Bibliography
+	 * @section bibliography Bibliography
 	 *
 	 * The following references are either cited in the documentation or
-	 * played a significant role in the design and implementation of this
-	 * class:
-	 *  - Kuipers02: Jack B. Kuipers, <i>Quaternions and Rotation
+	 * have played a significant role in the design and implementation of
+	 * this class:
+	 *  - Kuipers02:  Jack B. Kuipers, <i>Quaternions and Rotation
 	 *     Sequences</i>, Princeton University Press, 2002.
-	 *  - Weisstein05a: Eric W. Weisstein, "Division Algebra".  From
+	 *  - Weisstein05a:  Eric W. Weisstein, "Division Algebra".  
 	 *     <i>MathWorld</i> -- A Wolfram Web Resource [online].
 	 *     http://mathworld.wolfram.com/DivisionAlgebra.html  [Accessed 9
 	 *     April 2005]
-	 *  - Weisstein05b: Eric W. Weisstein, "Quaternion".  From
-	 *     <i>MathWorld</i> -- A Wolfram Web Resource [online].
+	 *  - Weisstein05b:  Eric W. Weisstein, "Quaternion".  <i>MathWorld</i>
+	 *     -- A Wolfram Web Resource [online].
 	 *     http://mathworld.wolfram.com/Quaternion.html  [Accessed 9 April
 	 *     2005]
-	 *  - Wikipedia05a: Wikipedia, "Quaternion".  From <i>Wikipedia</i>
+	 *  - Wikipedia05a:  Wikipedia, "Quaternion".  <i>Wikipedia</i>
 	 *     [online].  http://en.wikipedia.org/wiki/Quaternion  [Accessed 9
 	 *     April 2005]
-	 *  - Wikipedia05b: Wikipedia, "Quaternions and spatial rotation".
-	 *     From <i>Wikipedia</i> [online].
+	 *  - Wikipedia05b:  Wikipedia, "Quaternions and spatial rotation".
+	 *     <i>Wikipedia</i> [online].
 	 *     http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
 	 *     [Accessed 9 April 2005]
 	 *
@@ -238,7 +238,7 @@ namespace GPlatesMaths
 		{
 			RotationParams(
 			 const UnitVector3D &rot_axis,
-			 real_t rot_angle) :
+			 const real_t &rot_angle) :
 			 axis(rot_axis),
 			 angle(rot_angle) {  }
 
@@ -269,7 +269,7 @@ namespace GPlatesMaths
 		const UnitQuaternion3D
 		create_rotation(
 		 const UnitVector3D &axis, 
-		 real_t angle);
+		 const real_t &angle);
 
 	 protected:
 
@@ -286,7 +286,7 @@ namespace GPlatesMaths
 		 * check the invariant.
 		 */
 		UnitQuaternion3D(
-		 real_t s,
+		 const real_t &s,
 		 const Vector3D &v) :
 		 m_scalar_part(s),
 		 m_vector_part(v) {  }

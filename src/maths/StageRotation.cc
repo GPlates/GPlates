@@ -28,10 +28,10 @@
 #include "Vector3D.h"
 
 
-GPlatesMaths::StageRotation
+const GPlatesMaths::StageRotation
 GPlatesMaths::scaleToNewTimeDelta(
- StageRotation sr,
- real_t new_time_delta) {
+ const StageRotation &sr,
+ const real_t &new_time_delta) {
 
 	/*
 	 * The basic algorithm used in this function is:
@@ -46,7 +46,7 @@ GPlatesMaths::scaleToNewTimeDelta(
 	 * Ensure that the quaternion of the stage rotation argument does not
 	 * represent an identity rotation.
 	 */
-	if (represents_identity_rotation(sr.quat())) {
+	if (represents_identity_rotation(sr.unit_quat())) {
 
 		throw IndeterminateResultException("Attempted to scale a "
 		 "stage rotation whose quaternion represents the identity "
@@ -54,7 +54,7 @@ GPlatesMaths::scaleToNewTimeDelta(
 	}
 
 	UnitQuaternion3D::RotationParams params =
-	 sr.quat().get_rotation_params();
+	 sr.unit_quat().get_rotation_params();
 
 	/*
 	 * Ensure that the time delta of the stage rotation argument is not
@@ -79,7 +79,7 @@ GPlatesMaths::scaleToNewTimeDelta(
 }
 
 
-GPlatesMaths::FiniteRotation
+const GPlatesMaths::FiniteRotation
 GPlatesMaths::interpolate(
  const FiniteRotation &more_recent, 
  const FiniteRotation &more_distant,
@@ -91,10 +91,10 @@ GPlatesMaths::interpolate(
 	 * [ http://mathworld.wolfram.com/Minuend.html ].
 	 */
 	StageRotation sr = subtractFiniteRots(more_distant, more_recent);
-	if (represents_identity_rotation(sr.quat())) {
+	if (represents_identity_rotation(sr.unit_quat())) {
 
 		// the quaternions of the rotations were equivalent
-		return FiniteRotation::Create(more_recent.quat(), t);
+		return FiniteRotation::create(more_recent.unit_quat(), t);
 	}
 
 	real_t new_time_delta = t - more_recent.time();
