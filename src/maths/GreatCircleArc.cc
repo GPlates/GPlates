@@ -45,18 +45,30 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2) {
 	if (dp >= 1.0) {
 
 		// parallel => start-point same as end-point => no arc
-		std::ostringstream oss("Attempted to calculate a great-circle "
-		 "arc from duplicate endpoints ");
-		oss << u1 << " and " << u2 << ".";
+		std::ostringstream oss;
+
+		oss
+		 << "Attempted to calculate a great-circle "
+		 << "arc from duplicate endpoints "
+		 << u1
+		 << " and "
+		 << u2
+		 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
 	if (dp <= -1.0) {
 
 		// antiparallel => start-point and end-point antipodal =>
 		// indeterminate arc
-		std::ostringstream oss("Attempted to calculate a great-circle "
-		 "arc from antipodal endpoints ");
-		oss << u1 << " and " << u2 << ".";
+		std::ostringstream oss;
+
+		oss
+		 << "Attempted to calculate a great-circle "
+		 << "arc from antipodal endpoints "
+		 << u1
+		 << " and "
+		 << u2
+		 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
 
@@ -98,17 +110,29 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2,
 	if (dp >= 1.0) {
 
 		// start-point same as end-point => no arc
-		std::ostringstream oss("Attempted to calculate a great-circle "
-		 "arc from duplicate endpoints ");
-		oss << u1 << " and " << u2 << ".";
+		std::ostringstream oss;
+		
+		oss
+		 << "Attempted to calculate a great-circle "
+		 << "arc from duplicate endpoints "
+		 << u1
+		 << " and "
+		 << u2
+		 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
 	if (dp <= -1.0) {
 
 		// start-point and end-point antipodal => indeterminate arc
-		std::ostringstream oss("Attempted to calculate a great-circle "
-		 "arc from antipodal endpoints ");
-		oss << u1 << " and " << u2 << ".";
+		std::ostringstream oss;
+		
+		oss
+		 << "Attempted to calculate a great-circle "
+		 << "arc from antipodal endpoints "
+		 << u1
+		 << " and "
+		 << u2
+		 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
 
