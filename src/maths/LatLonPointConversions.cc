@@ -24,6 +24,7 @@
 #include "LatLonPointConversions.h"
 #include "InvalidLatLonException.h"
 #include "InvalidPolyLineException.h"
+#include "IndeterminateResultException.h"
 #include "GreatCircleArc.h"
 #include "PointOnSphere.h"
 
@@ -116,8 +117,24 @@ GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere
 	for (++it; it != llpl.end(); ++it) {
 
 		PointOnSphere p2 = convertLatLonPointToPointOnSphere(*it);
-		GreatCircleArc g = GreatCircleArc::CreateGreatCircleArc(p1, p2);
-		plos.push_back(g);
+
+		// FIXME HACK HACK HACK HACK HACK
+		// This should be handled in the PLATES-format reader.
+		try {
+
+			GreatCircleArc g =
+			 GreatCircleArc::CreateGreatCircleArc(p1, p2);
+			plos.push_back(g);
+
+		} catch (const IndeterminateResultException &e) {
+
+			std::cerr
+			 << "Caught Exception: "
+			 << e
+			 << "\nProbably caused by a bozotic PLATES-format "
+			 << ".dat file...\nDropping this arc segment."
+			 << std::endl;
+		}
 
 		p1 = p2;
 	}
