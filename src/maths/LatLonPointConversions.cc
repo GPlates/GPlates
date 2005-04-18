@@ -109,6 +109,33 @@ GPlatesMaths::LatLonPointConversions::convertLatLonPointToPointOnSphere(
 }
 
 
+const GPlatesMaths::LatLonPoint 
+GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
+ const PointOnSphere& point) {
+
+	const real_t
+	 &x = point.unitvector().x(),
+	 &y = point.unitvector().y(),
+	 &z = point.unitvector().z();
+
+	// arcsin(theta) is defined for all theta in [-PI/2, PI/2].
+	real_t lat = asin(z);
+
+	// Radius of the small circle of latitude.
+//	real_t rad_sc = cos(lat);
+//	real_t lon = (rad_sc == 0.0 ? 0.0 : asin(y/rad_sc));
+	
+	real_t lon = atan2(y.dval(), x.dval());
+
+	if (lon <= real_t(-GPlatesMaths::PI)) lon = real_t(GPlatesMaths::PI);
+
+	return
+	 LatLonPoint::LatLonPoint(
+	  radiansToDegrees(lat),
+	  radiansToDegrees(lon));
+}
+
+
 const GPlatesMaths::PolyLineOnSphere
 GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(
  const std::list< LatLonPoint > &llpl) {
@@ -164,28 +191,34 @@ GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(
 }
 
 
-const GPlatesMaths::LatLonPoint 
-GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
- const PointOnSphere& point) {
+const std::list< GPlatesMaths::LatLonPoint >
+GPlatesMaths::LatLonPointConversions::convertPolyLineOnSphereToLatLonPointList(
+ const PolyLineOnSphere &polyline) {
 
-	const real_t
-	 &x = point.unitvector().x(),
-	 &y = point.unitvector().y(),
-	 &z = point.unitvector().z();
+	std::list< GPlatesMaths::LatLonPoint > llpl;
 
-	// arcsin(theta) is defined for all theta in [-PI/2, PI/2].
-	real_t lat = asin(z);
+	PolyLineOnSphere::const_iterator
+	 iter = polyline.begin(),
+	 end = polyline.end();
 
-	// Radius of the small circle of latitude.
-//	real_t rad_sc = cos(lat);
-//	real_t lon = (rad_sc == 0.0 ? 0.0 : asin(y/rad_sc));
-	
-	real_t lon = atan2(y.dval(), x.dval());
+	if (iter == end) {
 
-	if (lon <= real_t(-GPlatesMaths::PI)) lon = real_t(GPlatesMaths::PI);
+		// This PolyLine contains no segments.
+		// FIXME: Should we, uh, like, COMPLAIN about this?...
+		// It's probably invalid...
+		return llpl;
+	}
 
-	return
-	 LatLonPoint::LatLonPoint(
-	  radiansToDegrees(lat),
-	  radiansToDegrees(lon));
+	// The first LatLonPoint in the list will be the start-point of the
+	// first GreatCircleArc...
+	llpl.push_back(convertPointOnSphereToLatLonPoint(iter->startPoint()));
+
+	for ( ; iter != end; ++iter) {
+
+		// ... all the rest will be the end-points of GreatCircleArcs.
+		llpl.push_back(
+		 convertPointOnSphereToLatLonPoint(iter->endPoint()));
+	}
+
+	return llpl;
 }

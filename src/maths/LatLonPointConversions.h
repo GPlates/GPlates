@@ -127,6 +127,11 @@ namespace GPlatesMaths {
 		const PolyLineOnSphere
 		convertLatLonPointListToPolyLineOnSphere(
 		 const std::list< LatLonPoint > &);
+
+		const std::list< LatLonPoint >
+		convertPolyLineOnSphereToLatLonPointList(
+		 const PolyLineOnSphere &);
+
 	}
 
 	/// The north pole (latitude \f$ 90^\circ \f$)
