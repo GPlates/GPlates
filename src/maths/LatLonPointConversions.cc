@@ -20,7 +20,9 @@
  *
  */
 
+#include <iostream>
 #include <sstream>
+
 #include "LatLonPointConversions.h"
 #include "InvalidLatLonException.h"
 #include "InvalidPolyLineException.h"
@@ -28,11 +30,12 @@
 #include "GreatCircleArc.h"
 #include "PointOnSphere.h"
 
-using namespace GPlatesMaths;
 
-GPlatesMaths::LatLonPoint::LatLonPoint (const real_t &lat, const real_t &lon)
-	: _lat(lat), _lon(lon)
-{
+GPlatesMaths::LatLonPoint::LatLonPoint(
+ const real_t &lat,
+ const real_t &lon) :
+ m_lat(lat),
+ m_lon(lon) {
 
 	if ( ! LatLonPoint::isValidLat(lat)) {
 
@@ -56,23 +59,42 @@ GPlatesMaths::LatLonPoint::LatLonPoint (const real_t &lat, const real_t &lon)
 
 
 bool
-GPlatesMaths::LatLonPoint::isValidLat(const real_t &val) {
+GPlatesMaths::LatLonPoint::isValidLat(
+ const real_t &val) {
 
 	return (-90.0 <= val && val <= 90.0);
 }
 
 
 bool
-GPlatesMaths::LatLonPoint::isValidLon(const real_t &val) {
+GPlatesMaths::LatLonPoint::isValidLon(
+ const real_t &val) {
 
 	return (-180.0 < val && val <= 180.0);
 }
 
 
-PointOnSphere
-GPlatesMaths::LatLonPointConversions::convertLatLonPointToPointOnSphere
-						(const LatLonPoint &llp)
-{
+std::ostream &
+GPlatesMaths::operator<<(
+ std::ostream &os,
+ const LatLonPoint &p) {
+
+	// TODO: use N/S/E/W notation?
+	os
+	 << "(lat: "
+	 << p.latitude()
+	 << ", lon: "
+	 << p.longitude()
+	 << ")";
+
+	return os;
+}
+
+
+const GPlatesMaths::PointOnSphere
+GPlatesMaths::LatLonPointConversions::convertLatLonPointToPointOnSphere(
+ const LatLonPoint &llp) {
+
 	real_t lat_angle = degreesToRadians(llp.latitude());
 	real_t long_angle = degreesToRadians(llp.longitude());
 
@@ -87,10 +109,10 @@ GPlatesMaths::LatLonPointConversions::convertLatLonPointToPointOnSphere
 }
 
 
-PolyLineOnSphere
-GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere
-				(const std::list< LatLonPoint > &llpl)
-{
+const GPlatesMaths::PolyLineOnSphere
+GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(
+ const std::list< LatLonPoint > &llpl) {
+
 	if (llpl.size() == 0) {
 
 		// not enough points to create even a single great circle arc.
@@ -142,27 +164,28 @@ GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere
 }
 
 
-LatLonPoint 
-GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint
-					(const PointOnSphere& point)
-{
-	const real_t &x = point.unitvector().x(),
-				 &y = point.unitvector().y(),
-				 &z = point.unitvector().z();
+const GPlatesMaths::LatLonPoint 
+GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
+ const PointOnSphere& point) {
 
-	// arcsin(theta) is defined for all theta in [-pi/2,pi/2].
+	const real_t
+	 &x = point.unitvector().x(),
+	 &y = point.unitvector().y(),
+	 &z = point.unitvector().z();
+
+	// arcsin(theta) is defined for all theta in [-PI/2, PI/2].
 	real_t lat = asin(z);
+
 	// Radius of the small circle of latitude.
 //	real_t rad_sc = cos(lat);
 //	real_t lon = (rad_sc == 0.0 ? 0.0 : asin(y/rad_sc));
 	
 	real_t lon = atan2(y.dval(), x.dval());
-	
-	if (lon <= real_t(-GPlatesMaths::PI))
-		lon = real_t(GPlatesMaths::PI);
 
-	lat = radiansToDegrees(lat);
-	lon = radiansToDegrees(lon);
-	
-	return LatLonPoint::LatLonPoint(lat, lon);
+	if (lon <= real_t(-GPlatesMaths::PI)) lon = real_t(GPlatesMaths::PI);
+
+	return
+	 LatLonPoint::LatLonPoint(
+	  radiansToDegrees(lat),
+	  radiansToDegrees(lon));
 }
