@@ -118,6 +118,9 @@ namespace GPlatesPatterns {
 		/**
 		 * This class is the abstract base class of all subscribers to
 		 * publishers of type PublisherTemplate< X >.
+		 *
+		 * (For more information, read the class-comment for
+		 * PublisherTemplate.)
 		 */
 		class Subscriber {
 
