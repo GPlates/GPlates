@@ -152,6 +152,16 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([
 !!     http://expat.sourceforge.net
 !!]))
 
+# GDAL (Geospatial Data Abstraction Library -- contains OGR)
+AC_CHECK_LIB([gdal], [main], [], AC_MSG_ERROR([
+!!
+!!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
+!!  shared library installed.  It may be obtained from your operating system
+!!  vendor (recommended) or you may install a binary or compile it from source
+!!  obtained from
+!!     http://www.remotesensing.org/gdal/
+!!]))
+
 
 ##
 # Header dependencies.
