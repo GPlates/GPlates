@@ -18,26 +18,40 @@
  */
 
 /** 
- * @mainpage GPlates Developers' Manual
+ * @mainpage GPlates Source Code Documentation
  * 
  * @section introduction Introduction
  *
- * Welcome to the GPlates Developers' Manual.
+ * Welcome to the <a href="http://www.gplates.org/">GPlates</a> source code
+ * documentation.  We hope you enjoy your stay.
  *
  * @section contact Contact
  *
- * <b>Email</b>:
- *  - James Boyden <jboyden (at) geosci.usyd.edu.au>
- *  - Mark Turner <mturner (at) gps.caltech.edu>
+ *  - James Boyden: jboyden (at) geosci.usyd.edu.au
+ *  - Mark Turner: mturner (at) gps.caltech.edu
+ *
+ * @section cppguidelines C++ Programming Guidelines
+ *
+ * It is strongly recommended that before you attempt to commence any serious
+ * C++ programming work (whether on GPlates or any other project), you read the
+ * book <i>Effective C++</i> (Meyers98).  This book provides invaluable,
+ * easy-to-remember, practical guidelines for programming in C++ -- ignore its
+ * wisdom at your peril!  If you've already read <i>Effective C++</i>, you may
+ * be interested in <i>Exceptional C++</i> (Sutter00) -- the sections on
+ * exception safety and the Pimpl idiom are particularly useful.  See the
+ * Bibliography below for more details.
  * 
- * <b>Snail Mail</b>:
- * @par
- *   James Boyden<br>
- *   University of Sydney Institute of Marine Science<br>
- *   Edgeworth David Building F05<br>
- *   School of Geosciences<br>
- *   The University of Sydney, NSW 2006<br>
- *   AUSTRALIA<br>
+ * @section stdlib C++ Standard Library
+ * 
+ * The canonical reference for the C++ standard library (in particular, the
+ * STL) is the book <i>The C++ Standard Library</i> (Josuttis99).  See the
+ * Bibliography below for more details.
+ *
+ * @section patterns Design Patterns
+ *
+ * All the references to design patterns in the GPlates documentation refer to
+ * the book <i>Design Patterns</i> (Gamma95).  See the Bibliography below for
+ * more details.
  *
  * @section wxwidgets WxWidgets
  *
@@ -46,17 +60,15 @@
  * currently requires version 2.4, release
  * <a href="http://www.wxwidgets.org/manuals/2.4.2/wx.htm">2.4.2</a> or above.
  *
- * @section patterns Design Patterns
- *
- * All the references to design patterns in the GPlates documentation refer to
- * the book <i>Design Patterns</i> (Gamma95).  See the Bibliography below for
- * more details.
- *
  * @section bibliography Bibliography
  *
- * The following references have played a significant role in the design or
- * implementation of the project:
+ * The following references have played a role in the design or implementation
+ * of the project:
  *
+ *  - Abrahams02:  David Abrahams, <i>Exception-Safety in Generic
+ *     Components</i> [online].
+ *     http://www.boost.org/more/generic_exception_safety.html  [Most-recently
+ *     accessed 24 October 2005]
  *  - Benson04:  Calum Benson, Adam Elman, Seth Nickell, and Colin Z Robertson,
  *     <i>GNOME Human Interface Guidelines 2.0</i> [online].
  *     http://developer.gnome.org/projects/gup/hig/2.0/  [Most-recently
