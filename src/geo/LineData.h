@@ -44,12 +44,6 @@ namespace GPlatesGeo
 				 const std::string &second_header_line,
 			         const Attributes_t&, 
 			         const GPlatesMaths::PolyLineOnSphere&);
-
-			/** 
-			 * Add an arc to the end of the line.
-			 */
-			virtual void
-			Add(const GPlatesMaths::GreatCircleArc& arc) { _line.push_back(arc); }
 			
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }

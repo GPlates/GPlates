@@ -22,12 +22,12 @@
 
 #include <iostream>
 #include <sstream>
+#include <algorithm>  /* std::transform, std::back_inserter */
 
 #include "LatLonPointConversions.h"
 #include "InvalidLatLonException.h"
 #include "InvalidPolyLineException.h"
 #include "IndeterminateResultException.h"
-#include "GreatCircleArc.h"
 #include "PointOnSphere.h"
 
 
@@ -138,53 +138,17 @@ GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
 
 const GPlatesMaths::PolyLineOnSphere
 GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(
- const std::list< LatLonPoint > &llpl) {
+ const std::list< LatLonPoint > &llp_list) {
 
-	if (llpl.size() == 0) {
+	std::list< PointOnSphere > pos_list;
+	std::transform(llp_list.begin(), llp_list.end(),
+	 std::back_inserter(pos_list),
+	 convertLatLonPointToPointOnSphere);
+	PolyLineOnSphere polyline = PolyLineOnSphere::create(pos_list);
 
-		// not enough points to create even a single great circle arc.
-		std::ostringstream oss("Attempted to create a poly-line "
-		 "from 0 points.");
+	// Yeah, this function is pretty short, but don't try to inline it; the
+	// invocation of 'PolyLineOnSphere::create' is going to lead to a whole
+	// bunch of inlined template code.
 
-		throw InvalidPolyLineException(oss.str().c_str());
-	}
-	if (llpl.size() == 1) {
-
-		// not enough points to create even a single great circle arc.
-		std::ostringstream oss("Attempted to create a poly-line "
-		 "from only 1 point.");
-
-		throw InvalidPolyLineException(oss.str().c_str());
-	}
-	// else, we know that there will be *at least* two points
-
-	PolyLineOnSphere plos;
-
-	std::list< LatLonPoint >::const_iterator it = llpl.begin();
-	PointOnSphere p1 = convertLatLonPointToPointOnSphere(*it);
-
-	for (++it; it != llpl.end(); ++it) {
-
-		PointOnSphere p2 = convertLatLonPointToPointOnSphere(*it);
-
-		// FIXME HACK HACK HACK HACK HACK
-		// This should be handled in the PLATES-format reader.
-		try {
-
-			GreatCircleArc g = GreatCircleArc::create(p1, p2);
-			plos.push_back(g);
-
-		} catch (const IndeterminateResultException &e) {
-
-			std::cerr
-			 << "Caught Exception: "
-			 << e
-			 << "\nProbably caused by a bozotic PLATES-format "
-			 << ".dat file...\nDropping this arc segment."
-			 << std::endl;
-		}
-
-		p1 = p2;
-	}
-	return plos;
+	return polyline;
 }

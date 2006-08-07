@@ -120,6 +120,13 @@ namespace GPlatesMaths {
 		 *
 		 * @throws InvalidPolyLineException if @a llpl contains less 
 		 *   than two LatLonPoints.
+		 *
+		 * This function is strongly exception-safe and exception
+		 * neutral.
+		 *
+		 * If a pair of identical adjacent points is found, the second
+		 * will be silently elided; this occurs sometimes when parsing
+		 * otherwise-valid PLATES "line data" files.
 		 */
 		const PolyLineOnSphere
 		convertLatLonPointListToPolyLineOnSphere(

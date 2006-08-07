@@ -77,14 +77,6 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * FIXME:  Remove this.  It allows corruption of the internals.
-		 *
-		 * The type used to iterate over the sequence of arcs.
-		 */
-		typedef seq_type::iterator iterator;
-
-
-		/**
 		 * The type used to const_iterate over the sequence of arcs.
 		 */
 		typedef seq_type::const_iterator const_iterator;
@@ -112,9 +104,6 @@ namespace GPlatesMaths {
 		 * least one element (and thus, at least two vertices).  This
 		 * assumption should be fulfilled by the PolyLineOnSphere
 		 * invariant.
-		 *
-		 * FIXME:  Remove the public PolyLineOnSphere default ctor, to
-		 * ensure that this is indeed the case.
 		 */
 		class VertexConstIterator: public std::iterator<
 		 std::bidirectional_iterator_tag, PointOnSphere > {
@@ -478,29 +467,6 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Use of this constructor is deprecated.  In future, all
-		 * construction should be performed using the static 'create'
-		 * functions.
-		 *
-		 * FIXME:  Make this function private.
-		 */
-		PolyLineOnSphere() {  }
-
-
-		/** 
-		* Return the number of points in this PolyLineOnSphere
-		* number = 1 + the size of the sequcne of GreatCircleArc
-		*
-		* FIXME:  This function is deprecated.  Remove it.
-		* Use @a number_of_vertices instead.
-		*/
-		int
-		number_of_points() const {
-			return 1 + d_seq.size();
-		}
-
-
-		/**
 		 * Return the "begin" const_iterator to iterate over the
 		 * sequence of GreatCircleArc which defines this polyline.
 		 */
@@ -512,31 +478,11 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * FIXME:  Remove this.  It allows corruption of the internals.
-		 */
-		iterator
-		begin() {
-			
-			return d_seq.begin();
-		}
-
-
-		/**
 		 * Return the "end" const_iterator to iterate over the
 		 * sequence of GreatCircleArc which defines this polyline.
 		 */
 		const_iterator
 		end() const {
-			
-			return d_seq.end();
-		}
-
-
-		/**
-		 * FIXME:  Remove this.  It allows corruption of the internals.
-		 */
-		iterator
-		end() {
 			
 			return d_seq.end();
 		}
@@ -609,23 +555,6 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Use of this function is deprecated.  In future, all
-		 * construction should be performed using the static 'create'
-		 * functions.
-		 *
-		 * FIXME:  Make this function private.
-		 *
-		 * Appends a copy of @a g to the end.
-		 */
-		void
-		push_back(
-		 const GreatCircleArc &g) {
-
-			d_seq.push_back(g);
-		}
-
-
-		/**
 		 * Swap the contents of this polyline with @a other.
 		 *
 		 * This function does not throw.
@@ -671,6 +600,9 @@ namespace GPlatesMaths {
 
 	 private:
 
+		PolyLineOnSphere() {  }
+
+
 		/**
 		 * Populate the empty polyline @a poly with the collection of 
 		 * points @a coll, using the points to define vertices of the
@@ -685,6 +617,7 @@ namespace GPlatesMaths {
 		populate(
 		 PolyLineOnSphere &poly,
 		 const C &coll);
+
 
 		/**
 		 * Attempt to create a line-segment defined by the points @a p1
