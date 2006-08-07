@@ -17,7 +17,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
 #ifndef GPLATES_MATHS_UNITQUATERNION3D_H
@@ -30,8 +29,8 @@
 #include "UnitVector3D.h"
 
 
-namespace GPlatesMaths
-{
+namespace GPlatesMaths {
+
 	/**
 	 * A unit quaternion with three-dimensional operations.
 	 *
@@ -103,6 +102,9 @@ namespace GPlatesMaths
 	 * The following references are either cited in the documentation or
 	 * have played a significant role in the design and implementation of
 	 * this class:
+	 *  - Burger89:  Peter Burger and Duncan Gillies, <i>Interactive
+	 *     Computer Graphics: Functional, Procedural and Device-Level
+	 *     Methods</i>.  Addison-Wesley, 1989.
 	 *  - Kuipers02:  Jack B. Kuipers, <i>Quaternions and Rotation
 	 *     Sequences</i>, Princeton University Press, 2002.
 	 *  - Weisstein05a:  Eric W. Weisstein, "Division Algebra".  
@@ -122,9 +124,9 @@ namespace GPlatesMaths
 	 *     [Accessed 9 April 2005]
 	 *
 	 * CVS informs us that this class was first committed in September
-	 * 2003, by which time all these references (with the exception of
-	 * Kuipers02) had already been consulted.  However, they were not
-	 * properly cited until the 9th of April, 2005.
+	 * 2003, by which time all the online references had already been
+	 * consulted.  However, they were not properly cited until the 9th
+	 * of April, 2005.
 	 */
 	class UnitQuaternion3D {
 
@@ -234,8 +236,37 @@ namespace GPlatesMaths
 		}
 
 
-		struct RotationParams
-		{
+		/**
+		 * Calculate the square of the <em>actual</em> norm of this
+		 * quaternion (rather than just assuming it is equal to 1).
+		 */
+		const real_t
+		get_actual_norm_sqrd() const {
+
+			/*
+			 * This is equivalent to:
+			 *  (scalar_part() * scalar_part()) +
+			 *  dot(vector_part(), vector_part())
+			 */
+			return (w()*w() + x()*x() + y()*y() + z()*z());
+		}
+
+
+		/**
+		 * This struct is used to contain the reverse-engineered
+		 * rotation parameters of an arbitrary (ie, not necessarily
+		 * user-specified; possibly machine-calculated by interpolation
+		 * or other means) unit-quaternion.
+		 *
+		 * Not much happens with this struct once it's been created
+		 * (its members are quickly accessed and the struct instance
+		 * is discarded), but it was felt that it was slightly better
+		 * design (more type-safe, more self-documenting, etc.) to
+		 * provide an explicit type for the rotation parameters (rather
+		 * than using, say, a std::pair<,>).
+		 */
+		struct RotationParams {
+
 			RotationParams(
 			 const UnitVector3D &rot_axis,
 			 const real_t &rot_angle) :
@@ -244,6 +275,7 @@ namespace GPlatesMaths
 
 			UnitVector3D axis;
 			real_t angle;  // in radians
+
 		};
 
 
@@ -259,6 +291,32 @@ namespace GPlatesMaths
 
 
 		/**
+		 * This struct is used to contain the short-lived
+		 * in-general,-not-a-unit-quaternion object created during the
+		 * spherical linear interpolation between two unit-quaternions.
+		 * 
+		 * Not much happens with this struct once it's been created 
+		 * (its members are quickly accessed and the struct instance
+		 * is discarded), but it was felt that it was slightly better 
+		 * design (more type-safe, more self-documenting, etc.) to 
+		 * provide an explicit type for the non-unit-quaternion (rather
+		 * than using, say, a std::pair<,>).
+		 */
+		struct NonUnitQuaternion {
+
+			NonUnitQuaternion(
+			 const real_t &scalar_part,
+			 const Vector3D &vector_part) :
+			 d_scalar_part(scalar_part),
+			 d_vector_part(vector_part) {  }
+
+			real_t d_scalar_part;
+			Vector3D d_vector_part;
+
+		};
+
+
+		/**
 		 * Create a unit quaternion to represent the following rotation
 		 * around the given unit vector @a axis, by the given rotation
 		 * angle @a angle.
@@ -270,6 +328,17 @@ namespace GPlatesMaths
 		create_rotation(
 		 const UnitVector3D &axis, 
 		 const real_t &angle);
+
+
+		/**
+		 * Attempt to create a unit quaternion from @a q.
+		 * 
+		 * This function will enforce the invariant.
+		 */
+		static
+		const UnitQuaternion3D
+		create(
+		 const NonUnitQuaternion &q);
 
 	 protected:
 
@@ -284,28 +353,17 @@ namespace GPlatesMaths
 		 * that the scalar and vector with which it is supplied will
 		 * maintain the invariant.  Again, this constructor does NOT
 		 * check the invariant.
+		 *
+		 * Update, 2005-07-28:  OK, slight change of plans -- this
+		 * function @em is going to check the invariant, but if it (the
+		 * invariant) is not intact, it (the function) won't throw an
+		 * exception; rather, it will @em renormalise the quaternion.
+		 *
+		 * FIXME: Do this invariant check and renormalisation properly.
 		 */
 		UnitQuaternion3D(
 		 const real_t &s,
-		 const Vector3D &v) :
-		 m_scalar_part(s),
-		 m_vector_part(v) {  }
-
-
-		/**
-		 * Calculate the square of the <em>actual</em> norm of this
-		 * quaternion (rather than just assuming it is equal to 1).
-		 *
-		 * This operation is used in the assertion of the class
-		 * invariant.
-		 */
-		const real_t
-		get_actual_norm_sqrd() const {
-
-			return
-			 (scalar_part() * scalar_part() +
-			  dot(vector_part(), vector_part()));
-		}
+		 const Vector3D &v);
 
 
 		/** 
@@ -338,6 +396,7 @@ namespace GPlatesMaths
 	 const UnitQuaternion3D &q1,
 	 const UnitQuaternion3D &q2) {
 
+		// FIXME:  Should this become a dot-product, like the vectors?
 		return (q1.x() == q2.x()
 		     && q1.y() == q2.y()
 		     && q1.z() == q2.z()
@@ -358,6 +417,7 @@ namespace GPlatesMaths
 	 const UnitQuaternion3D &q1,
 	 const UnitQuaternion3D &q2) {
 
+		// FIXME:  Should this become a dot-product, like the vectors?
 		return (q1.x() != q2.x()
 		     || q1.y() != q2.y()
 		     || q1.z() != q2.z()
@@ -451,6 +511,46 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Take the (4D, hypersphere) dot-product of the non-unit-quaternions
+	 * @a q1 and @a q2.
+	 */
+	inline
+	const real_t
+	dot(
+	 const UnitQuaternion3D::NonUnitQuaternion &q1,
+	 const UnitQuaternion3D::NonUnitQuaternion &q2) {
+
+		const real_t   &s1 = q1.d_scalar_part, &s2 = q2.d_scalar_part;
+		const Vector3D &v1 = q1.d_vector_part, &v2 = q2.d_vector_part;
+
+		return ((s1 * s2) + dot(v1, v2));
+	}
+
+
+	/**
+	 * Take the (4D, hypersphere) dot-product of the unit-quaternions @a q1
+	 * and @a q2.
+	 */
+	inline
+	const real_t
+	dot(
+	 const UnitQuaternion3D &q1,
+	 const UnitQuaternion3D &q2) {
+
+		/*
+		 * This is equivalent to:
+		 *  (q1.scalar_part() * q2.scalar_part()) +
+		 *  dot(q1.vector_part(), q2.vector_part())
+		 */
+		return
+		 (q1.w() * q2.w() +
+		  q1.x() * q2.x() +
+		  q1.y() * q2.y() +
+		  q1.z() * q2.z());
+	}
+
+
+	/**
 	 * Multiply the two quaternions @a q1 and @a q2.
 	 *
 	 * NOTE that quaternion multiplication is <em>NOT</em> commutative.
@@ -461,10 +561,68 @@ namespace GPlatesMaths
 	 const UnitQuaternion3D &q2);
 
 
+	/**
+	 * Multiply the scalar @a c by the unit-quaternion @a q, producing a
+	 * <em>non</em>-unit-quaternion result.
+	 *
+	 * This operation is commutative (hence the symmetrical version below).
+	 */
+	inline
+	const UnitQuaternion3D::NonUnitQuaternion
+	operator*(
+	 const real_t &c,
+	 const UnitQuaternion3D &q) {
+
+		real_t   s = c * q.scalar_part();
+		Vector3D v = c * q.vector_part();
+
+		return UnitQuaternion3D::NonUnitQuaternion(s, v);
+	}
+
+
+	/**
+	 * Multiply the scalar @a c by the unit-quaternion @a q, producing a
+	 * <em>non</em>-unit-quaternion result.
+	 *
+	 * This operation is commutative (hence the symmetrical version below).
+	 */
+	inline
+	const UnitQuaternion3D::NonUnitQuaternion
+	operator*(
+	 const UnitQuaternion3D &q,
+	 const real_t &c) {
+
+		return (c * q);
+	}
+
+
+	/**
+	 * Add the two non-unit-quaternions @a q1 and @a q2, producing a
+	 * non-unit-quaternion result.
+	 */
+	inline
+	const UnitQuaternion3D::NonUnitQuaternion
+	operator+(
+	 const UnitQuaternion3D::NonUnitQuaternion &q1,
+	 const UnitQuaternion3D::NonUnitQuaternion &q2) {
+
+		real_t   s = q1.d_scalar_part + q2.d_scalar_part;
+		Vector3D v = q1.d_vector_part + q2.d_vector_part;
+
+		return UnitQuaternion3D::NonUnitQuaternion(s, v);
+	}
+
+
 	std::ostream &
 	operator<<(
 	 std::ostream &os,
 	 const UnitQuaternion3D &u);
+
+
+	std::ostream &
+	operator<<(
+	 std::ostream &os,
+	 const UnitQuaternion3D::NonUnitQuaternion &q);
 
 }
 

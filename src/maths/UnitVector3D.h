@@ -61,7 +61,7 @@ namespace GPlatesMaths
 				     const real_t &z_comp)
 				: DirVector3D (x_comp, y_comp, z_comp, 1.0)
 			{
-				AssertInvariant ();
+				AssertInvariant (__LINE__);
 			}
 
 			/**
@@ -70,7 +70,7 @@ namespace GPlatesMaths
 			 */
 			UnitVector3D (const Vector3D &v) : DirVector3D (v, 1.0)
 			{
-				AssertInvariant ();
+				AssertInvariant (__LINE__);
 			}
 
 			virtual
@@ -87,7 +87,7 @@ namespace GPlatesMaths
 				_y = v.x ();
 				_z = v.x ();
 
-				AssertInvariant ();
+				AssertInvariant (__LINE__);
 				return *this;
 			}
 
@@ -143,7 +143,7 @@ namespace GPlatesMaths
 			 * Since this is invoked by constructors,
 			 * it should not be a virtual function.
 			 */
-			void AssertInvariant () const;
+			void AssertInvariant (int line) const;
 	};
 
 

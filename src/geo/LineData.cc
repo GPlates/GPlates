@@ -27,21 +27,25 @@
 using namespace GPlatesGeo;
 
 LineData::LineData(const DataType_t& dt, const RotationGroupId_t& id,
-	const TimeWindow& tw, const Attributes_t& attrs, 
+	const TimeWindow& tw,
+	const std::string &first_header_line,
+	const std::string &second_header_line,
+	const Attributes_t& attrs, 
 	const GPlatesMaths::PolyLineOnSphere& line)
-	: DrawableData(dt, id, tw, attrs), _line(line)
+	: DrawableData(dt, id, tw, first_header_line, second_header_line,
+	   attrs), _line(line)
 {  }
 
 
 void
-LineData::Draw() const {
+LineData::Draw() {
 
 	GPlatesState::Layout::InsertLineDataPos(this, _line);
 }
 
 
 void
-LineData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) const {
+LineData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) {
 
 	GPlatesMaths::PolyLineOnSphere rot_line = (rot * _line);
 	GPlatesState::Layout::InsertLineDataPos(this, rot_line);

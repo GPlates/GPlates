@@ -23,6 +23,7 @@
 #ifndef _GPLATES_GEO_DRAWABLEDATA_H_
 #define _GPLATES_GEO_DRAWABLEDATA_H_
 
+#include <string>
 #include "GeologicalData.h"
 #include "maths/FiniteRotation.h"
 
@@ -36,11 +37,34 @@ namespace GPlatesGeo
 	{
 		public:
 			virtual void
-			Draw() const = 0;
+			Draw() = 0;
 
 			virtual void
-			RotateAndDraw(const GPlatesMaths::FiniteRotation &)
-			 const = 0;
+			RotateAndDraw(const GPlatesMaths::FiniteRotation &) = 0;
+
+			const std::string &
+			FirstHeaderLine() const {
+
+				return _first_header_line;
+			}
+
+			const std::string &
+			SecondHeaderLine() const {
+
+				return _second_header_line;
+			}
+
+			bool
+			ShouldBePainted() const {
+
+				return _should_be_painted;
+			}
+
+			void
+			SetShouldBePainted(bool should_be_painted) {
+
+				_should_be_painted = should_be_painted;
+			}
 
 			static GPlatesMaths::real_t
 			ProximityToPointOnSphere(
@@ -54,12 +78,29 @@ namespace GPlatesGeo
 			DrawableData(const DataType_t& dt,
 			             const RotationGroupId_t& rg,
 			             const TimeWindow& tw,
-			             const Attributes_t& attrs)
-			 : GeologicalData(dt, rg, tw, attrs) {  }
+				     const std::string &first_header_line,
+				     const std::string &second_header_line,
+			             const Attributes_t& attrs) :
+			 GeologicalData(dt, rg, tw, attrs),
+			 _first_header_line(first_header_line),
+			 _second_header_line(second_header_line),
+			 _should_be_painted(true) {  }
 
 			virtual GPlatesMaths::real_t
 			proximity(const GPlatesMaths::PointOnSphere &pos) 
 			 const = 0;
+
+		private:
+
+			std::string _first_header_line, _second_header_line;
+
+			/*
+			 * Should this item of data be painted when the globe
+			 * and its contents are painted onto the screen?  This
+			 * is a hack to enable items to be temporarily made
+			 * invisible.
+			 */
+			bool _should_be_painted;
 	};
 }
 

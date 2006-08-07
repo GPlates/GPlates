@@ -51,6 +51,8 @@ namespace GPlatesGeo
 			GridData (const DataType_t&,
 				  const RotationGroupId_t&,
 				  const TimeWindow&,
+				  const std::string &first_header_line,
+				  const std::string &second_header_line,
 				  const Attributes_t&,
 				  const GPlatesMaths::PointOnSphere &origin,
 				  const GPlatesMaths::PointOnSphere &sc_step,
@@ -76,8 +78,8 @@ namespace GPlatesGeo
 			virtual void Accept (Visitor& visitor) const
 					{ visitor.Visit(*this); }
 
-			void Draw () const;
-			void RotateAndDraw (const GPlatesMaths::FiniteRotation &rot) const;
+			void Draw ();
+			void RotateAndDraw (const GPlatesMaths::FiniteRotation &rot);
 
 			const GridElement *get (index_t x, index_t y) const;
 			void getDimensions (index_t &x_sz, index_t &y_sz) const;

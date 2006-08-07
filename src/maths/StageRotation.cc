@@ -79,6 +79,7 @@ GPlatesMaths::scaleToNewTimeDelta(
 }
 
 
+#if 0  // Replaced by "FiniteRotation.{h,cc}:interpolate".
 const GPlatesMaths::FiniteRotation
 GPlatesMaths::interpolate(
  const FiniteRotation &more_recent, 
@@ -103,3 +104,4 @@ GPlatesMaths::interpolate(
 
 	return interp;
 }
+#endif

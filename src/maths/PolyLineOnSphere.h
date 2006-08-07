@@ -53,6 +53,14 @@ namespace GPlatesMaths
 			end() const { return _seq.end(); }
 
 
+			bool
+			is_close_to(
+			 const PointOnSphere &test_point,
+			 const real_t &closeness_inclusion_threshold,
+			 const real_t &latitude_exclusion_threshold,
+			 real_t &closeness) const;
+
+
 			void
 			push_back(const GreatCircleArc &g) {
 

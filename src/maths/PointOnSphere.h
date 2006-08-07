@@ -51,6 +51,12 @@ namespace GPlatesMaths
 			UnitVector3D
 			unitvector() const { return _uv; }
 
+			bool
+			is_close_to(
+			 const PointOnSphere &test_point,
+			 const real_t &closeness_inclusion_threshold,
+			 real_t &closeness) const;
+
 		private:
 			UnitVector3D _uv;
 	};
@@ -71,6 +77,7 @@ namespace GPlatesMaths
 
 	/**
 	 * True iff points are equal or antipodal
+	 * FIXME:  This function name sucks.  Fix it.
 	 */
 	inline bool diametric (const PointOnSphere &s1, const PointOnSphere &s2)
 	{

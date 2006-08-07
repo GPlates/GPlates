@@ -35,11 +35,15 @@
 
 GPlatesGeo::GridData::GridData
 			(const DataType_t &dt, const RotationGroupId_t &id,
-			const TimeWindow &tw, const Attributes_t &attrs, 
+			const TimeWindow &tw,
+			const std::string &first_header_line,
+			const std::string &second_header_line,
+			const Attributes_t &attrs, 
 			const GPlatesMaths::PointOnSphere &origin,
 			const GPlatesMaths::PointOnSphere &sc_step,
 			const GPlatesMaths::PointOnSphere &gc_step)
-	: DrawableData (dt, id, tw, attrs),
+	: DrawableData (dt, id, tw, first_header_line, second_header_line,
+	   attrs),
 	  _lattice (GPlatesMaths::GridOnSphere::Create
 		    (origin, sc_step, gc_step))
 {
@@ -192,7 +196,7 @@ void GPlatesGeo::GridData::Add (GridElement *element, index_t x1, index_t x2)
 }
 
 
-void GPlatesGeo::GridData::Draw () const
+void GPlatesGeo::GridData::Draw ()
 {
 	// TODO
 	//GPlatesState::Layout::InsertLineDataPos(this, _line);
@@ -200,7 +204,7 @@ void GPlatesGeo::GridData::Draw () const
 
 
 void GPlatesGeo::GridData::RotateAndDraw (const GPlatesMaths::FiniteRotation
-								&rot) const
+								&rot)
 {
 	// TODO
 	//GPlatesMaths::PolyLineOnSphere rot_line = (rot * _line);

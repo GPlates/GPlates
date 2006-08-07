@@ -25,6 +25,7 @@
 #include <cmath>
 
 #include "UnitQuaternion3D.h"
+#include "HighPrecision.h"
 #include "IndeterminateResultException.h"
 #include "ViolatedClassInvariantException.h"
 
@@ -79,6 +80,93 @@ GPlatesMaths::UnitQuaternion3D::create_rotation(
 	Vector3D vector_part = sin(theta_on_two) * Vector3D(axis);
 
 	return UnitQuaternion3D(scalar_part, vector_part);
+}
+
+
+const GPlatesMaths::UnitQuaternion3D
+GPlatesMaths::UnitQuaternion3D::create(
+ const NonUnitQuaternion &q) {
+
+	// Assert the invariant.
+#if 0  // Until precision suckiness is fixed.  (Hint, sucka: FIXME.)
+	real_t norm_sqrd = dot(q, q);
+	if (norm_sqrd != 1.0) {  // FIXME: adjust precision of F.P.-comparison.
+
+		std::ostringstream oss;
+
+		oss
+		 << "Attempted to create a unit quaternion from a quaternion "
+		 << "of magnitude\n"
+		 << sqrt(norm_sqrd)  // FIXME: use HighPrecision ?
+		 << ": "
+		 << q
+		 << ".";
+
+		throw ViolatedClassInvariantException(oss.str().c_str());
+	}
+#else  // FIXME: this sucks.  There should be two thresholds (strict & relaxed)
+	real_t norm = sqrt(dot(q, q));
+	if (norm != 1.0) {  // FIXME: adjust precision of F.P.-comparison.
+
+		// Just to be on the safe side...
+		if (norm == 0.0) {
+
+			std::ostringstream oss;
+
+			oss
+			 << "Unable to renormalise the non-unit-quaternion "
+			 << q
+			 << " because its norm is 0.";
+
+			throw IndeterminateResultException(oss.str().c_str());
+		}
+		real_t one_on_norm = 1.0 / norm;
+
+		return
+		 UnitQuaternion3D(
+		  one_on_norm * q.d_scalar_part,
+		  one_on_norm * q.d_vector_part);
+	}
+#endif
+	return UnitQuaternion3D(q.d_scalar_part, q.d_vector_part);
+}
+
+
+GPlatesMaths::UnitQuaternion3D::UnitQuaternion3D(
+ const real_t &s,
+ const Vector3D &v) :
+ m_scalar_part(s),
+ m_vector_part(v) {
+
+	// Check the invariant.
+	real_t norm_sqrd = get_actual_norm_sqrd();
+	if (norm_sqrd != 1.0) {  // FIXME: adjust precision of F.P.-comparison.
+
+#if 0
+		std::cerr
+		 << "Useful analysis info: renormalising unit-quaternion."
+		 << "\nUnit-quaternion was "
+		 << (*this)
+		 << " with norm = "
+		 << HighPrecision< real_t >(sqrt(norm_sqrd))
+		 << ".\n";
+#endif
+
+		// The invariant is not intact.  So, renormalise.
+		real_t one_on_norm = 1.0 / sqrt(norm_sqrd);
+
+		m_scalar_part *= one_on_norm;
+		m_vector_part = one_on_norm * m_vector_part;
+
+#if 0
+		std::cerr
+		 << "Unit-quaternion is now "
+		 << (*this)
+		 << " with norm = "
+		 << HighPrecision< real_t >(sqrt(norm_sqrd))
+		 << ".\n";
+#endif
+	}
 }
 
 
@@ -141,6 +229,22 @@ GPlatesMaths::operator<<(
 	 << q.x() << ", "
 	 << q.y() << ", "
 	 << q.z() << ")";
+
+	return os;
+}
+
+
+std::ostream &
+GPlatesMaths::operator<<(
+ std::ostream &os,
+ const UnitQuaternion3D::NonUnitQuaternion &q) {
+
+	os
+	 << "["
+	 << q.d_scalar_part
+	 << ", "
+	 << q.d_vector_part
+	 << "]";
 
 	return os;
 }

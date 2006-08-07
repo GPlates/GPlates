@@ -21,7 +21,9 @@
  */
 
 #include <iostream>
+#include <vector>
 #include <cmath>  /* fabsf, pow */
+#include <wx/utils.h>  /* ::wxBell, ::wxUsleep */
 #include "GLCanvas.h"
 #include "EventIDs.h"
 #include "maths/types.h"
@@ -32,6 +34,7 @@
 #include "fileio/GPlatesReader.h"
 #include "global/Exception.h"
 #include "controls/Lifetime.h"
+#include "state/Layout.h"
 
 
 /**
@@ -318,21 +321,156 @@ GPlatesGui::GLCanvas::OnSpin(wxMouseEvent& evt)
 #endif
 
 
+namespace {
+
+	void
+	SetShouldBePainted(
+	 std::vector< GPlatesGeo::DrawableData * > &items,
+	 bool should_be_painted) {
+
+		std::vector< GPlatesGeo::DrawableData * >::iterator
+		 iter = items.begin(),
+		 end = items.end();
+
+		for ( ; iter != end; ++iter) {
+
+			(*iter)->SetShouldBePainted(should_be_painted);
+		}
+	}
+
+
+	void
+	RepaintTheCanvas(
+	 GPlatesGui::GLCanvas *the_canvas) {
+
+		wxPaintEvent ev;
+		the_canvas->OnPaint(ev);
+	}
+
+
+	/*
+	 * It is assumed that the number of elements in @a sorted_results is
+	 * greater than zero.
+	 */
+	void
+	HandleSelectedItems(
+	 GPlatesGui::GLCanvas *the_canvas,
+	 std::priority_queue< GPlatesState::Layout::CloseDatum >
+	  &sorted_results) {
+
+		using namespace GPlatesState;
+
+		std::cout
+		 << "\n---------->> Found "
+		 << sorted_results.size()
+		 << " piece";
+		if (sorted_results.size() > 1) {
+
+			// The plural of "piece" is "pieces".
+			std::cout << "s";
+		}
+		std::cout
+		 << " of data:"
+		 << std::endl;
+
+		std::vector< GPlatesGeo::DrawableData * > do_not_paint;
+		do_not_paint.reserve(sorted_results.size());
+
+		while ( ! sorted_results.empty()) {
+
+			const Layout::CloseDatum &item = sorted_results.top();
+			GPlatesGeo::DrawableData *datum = item.m_datum;
+
+			std::cout
+			 << "\n"
+			 << datum->FirstHeaderLine()
+			 << "\n"
+			 << datum->SecondHeaderLine()
+			 << std::endl;
+
+			do_not_paint.push_back(datum);
+			sorted_results.pop();
+		}
+
+		SetShouldBePainted(do_not_paint, false);
+		RepaintTheCanvas(the_canvas);
+		::wxUsleep(100);
+		SetShouldBePainted(do_not_paint, true);
+		RepaintTheCanvas(the_canvas);
+	}
+
+}
+
+
+void
+GPlatesGui::GLCanvas::HandleRightMouseClick(long mouse_x, long mouse_y) {
+
+	using namespace GPlatesState;
+
+	GPlatesMaths::real_t y = getUniverseCoordY(mouse_x);
+	GPlatesMaths::real_t z = getUniverseCoordZ(mouse_y);
+
+	GPlatesMaths::PointOnSphere p = virtualGlobePosition(y, z);
+
+	// Compensate for rotated globe
+	GPlatesMaths::PointOnSphere rotated_p = _globe.Orient(p);
+
+	/*
+	 * Say we pick an epsilon zone radius of 2 pixels around the click pos.
+	 * That's a diameter of 4 pixels.  The value of '_smaller_dim' is the
+	 * value of whichever of width or height of the canvas is smaller; the
+	 * smaller dimension of the canvas will play a role in determining the
+	 * size of the globe.  The value of 'zoom_factor' starts at 1 for no
+	 * zoom, then increases to 1.12202, 1.25893, etc.  The product
+	 * (_smaller_dim * zoom_factor) gives the current size of the globe in
+	 * (floating-point) pixels, taking into account canvas size and zoom.
+	 *
+	 * So, (4.0 / (_smaller_dim * zoom_factor)) is the ratio of the
+	 * diameter of the epsilon zone to the diameter of the globe.  We want
+	 * to convert this to an angle, so we should put this value through an
+	 * inverse-sine function to convert from the on-screen projection size
+	 * of the epsilon to the angle at the centre of the globe, but for
+	 * arguments this small (less than 0.01), 'asin(x)' is practically
+	 * equal to 'x' anyway.  (No, really: try it!)
+	 *
+	 * Take the cosine, and we have the dot-product-related closeness
+	 * inclusion threshold.
+	 */
+	GLdouble diameter_ratio =
+	 4.0 / (_smaller_dim * m_viewport_zoom.zoom_factor());
+	double closeness_inclusion_threshold =
+	 cos(static_cast< double >(diameter_ratio));
+
+	std::priority_queue< Layout::CloseDatum > sorted_results;
+	Layout::find_close_data(sorted_results, rotated_p,
+	 closeness_inclusion_threshold);
+	if (sorted_results.size() > 0) {
+
+		HandleSelectedItems(this, sorted_results);
+
+	} else ::wxBell();
+}
+
+
 void
 GPlatesGui::GLCanvas::OnMouseEvent(wxMouseEvent &evt) {
 
 	try {
 
-		if (evt.RightDown()) {
+		if (evt.LeftDown()) {
+
+			// Update, 2005-08-10:  Swapped L and R button actions.
 
 			// The right mouse button was just pressed down.
-			long x = evt.GetX();
-			long y = evt.GetY();
-			PopupMenu(_popup_menu, x, y);
+			long mouse_x = evt.GetX();
+			long mouse_y = evt.GetY();
+			HandleRightMouseClick(mouse_x, mouse_y);
 			return;
 		}
 
-		if (evt.LeftDown()) {
+		if (evt.RightDown()) {
+
+			// Update, 2005-08-10:  Swapped L and R button actions.
 
 			// The state of the left mouse button just changed to
 			// "down".  The effect of this change is determined by
@@ -345,7 +483,9 @@ GPlatesGui::GLCanvas::OnMouseEvent(wxMouseEvent &evt) {
 			return;
 		}
 
-		if (evt.LeftIsDown()) {
+		if (evt.RightIsDown()) {
+
+			// Update, 2005-08-10:  Swapped L and R button actions.
 
 			// Some event occurred with the left mouse button
 			// depressed.  The effect of this event is determined

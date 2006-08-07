@@ -146,6 +146,30 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Return whether the two supplied real numbers @a r1 and @a r2 are
+	 * equal to within a slightly stricter tolerance than the standard
+	 * equality tolerance, aka @a Real::Epsilon.
+	 *
+	 * This function is used by @a GPlatesMaths::FiniteRotation::operator*
+	 * and will hopefully be the first in a new generation of comparison
+	 * functions whose tolerances are tailored to the specific situation
+	 * in which they will be used, thus providing more robust and more
+	 * correct code.
+	 *
+	 * FIXME:  "Make it so."
+	 */
+	inline
+	bool
+	are_slightly_more_strictly_equal(
+	 const Real &r1,
+	 const Real &r2) {
+
+		double d = r1.dval() - r2.dval();
+		return (-9.99e-13 <= d && d <= 9.99e-13);
+	}
+
+
+	/**
 	 * On a Pentium IV processor, this should cost about
 	 * (5 [FSUB] + (2 + 1) [2*FCOM] + 1 [OR]) = 9 clock cycles.
 	 */

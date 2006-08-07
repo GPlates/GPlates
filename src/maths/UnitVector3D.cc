@@ -27,7 +27,7 @@
 
 
 void
-GPlatesMaths::UnitVector3D::AssertInvariant () const
+GPlatesMaths::UnitVector3D::AssertInvariant (int line) const
 {
 	/*
 	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
@@ -38,8 +38,13 @@ GPlatesMaths::UnitVector3D::AssertInvariant () const
 
 		// invariant has been violated
 		std::ostringstream oss;
-		oss << "UnitVector3D has magnitude-squared of "
-		 << HighPrecision< real_t >(mag_sqrd) << ".";
+		oss
+		 << "UnitVector3D has magnitude-squared of "
+		 << HighPrecision< real_t >(mag_sqrd)
+		 << "\n(this assertion was invoked on line "
+		 << line
+		 << "of the header file).";
+
 		throw ViolatedUnitVectorInvariantException(oss.str().c_str());
 	}
 }

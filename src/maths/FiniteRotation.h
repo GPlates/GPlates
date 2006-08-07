@@ -177,6 +177,23 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Calculate and return the finite rotation which is the interpolation
+	 * of the two finite rotations @a r1 and @a r2 to the time @a t.
+	 *
+	 * If the time of @a r1 is equal to the time of @a t2, throw an
+	 * @a IndeterminateResultException.
+	 *
+	 * This operation uses the awesome power of SLERP (spherical linear
+	 * interpolation) of quaternions.
+	 */
+	const FiniteRotation
+	interpolate(
+	 const FiniteRotation &r1,
+	 const FiniteRotation &r2,
+	 const real_t &t);
+
+
+	/**
 	 * Compare two finite rotations by their time.
 	 *
 	 * This operation provides a strict weak ordering, which enables

@@ -142,6 +142,7 @@ namespace GPlatesGui
 				MOUSE_EVENT_DCLICK
 			};
 
+			void HandleRightMouseClick(long mouse_x, long mouse_y);
 			void HandleLeftMouseEvent(enum mouse_event_type type);
 
 			void HandleWheelRotation(int delta);

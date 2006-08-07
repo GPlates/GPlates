@@ -127,7 +127,9 @@ namespace
 			 LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(llpl);
 			
 			result.push_back(new LineData(GeologicalData::NO_DATATYPE, 
-				plate_id, lifetime, GeologicalData::NO_ATTRIBUTES, polyline));
+				plate_id, lifetime, line._header._first_line,
+				line._header._second_line,
+				GeologicalData::NO_ATTRIBUTES, polyline));
 		}
 	}
 
@@ -150,7 +152,10 @@ namespace
 		PointOnSphere
 			pos = LatLonPointConversions::convertLatLonPointToPointOnSphere(llp);
 		return new PointData(GeologicalData::NO_DATATYPE, plate_id,
-			lifetime, GeologicalData::NO_ATTRIBUTES, pos);
+			lifetime,
+			line._header._first_line,
+			line._header._second_line,
+			GeologicalData::NO_ATTRIBUTES, pos);
 	}
 
 	void

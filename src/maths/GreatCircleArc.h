@@ -66,6 +66,7 @@ namespace GPlatesMaths {
 		       test_parameter_status(
 			const PointOnSphere &p1,
 			const PointOnSphere &p2);
+
 			/**
 			 * Make a great circle arc beginning at @a p1 and
 			 * ending at @a p2.
@@ -114,6 +115,14 @@ namespace GPlatesMaths {
 				
 				return d_rot_axis;
 			}
+
+
+			bool
+			is_close_to(
+			 const PointOnSphere &test_point,
+			 const real_t &closeness_inclusion_threshold,
+			 const real_t &latitude_exclusion_threshold,
+			 real_t &closeness) const;
 
 		protected:
 

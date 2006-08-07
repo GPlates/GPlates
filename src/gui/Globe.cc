@@ -56,22 +56,27 @@ CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin,
 
 
 static void
-PaintPointDataPos(const Layout::PointDataPos& pointdata)
+PaintPointDataPos(Layout::PointDataPos& pointdata)
 {
-	const PointOnSphere& point = pointdata.second;
+	GPlatesGeo::PointData *datum = pointdata.first;
+	if ( ! datum->ShouldBePainted()) return;
+	PointOnSphere& point = pointdata.second;
 	CallVertexWithPoint(point);
 }
 
 
 static void
-PaintLineDataPos(const Layout::LineDataPos& linedata)
+PaintLineDataPos(Layout::LineDataPos& linedata)
 {
 	using namespace GPlatesGui;
+
+	GPlatesGeo::LineData *datum = linedata.first;
+	if ( ! datum->ShouldBePainted()) return;
 
 	const PlatesColourTable &ctab = *(PlatesColourTable::Instance());
 	const PolyLineOnSphere& line = linedata.second;
 
-	GPlatesGlobal::rid_t rgid = linedata.first->GetRotationGroupId();
+	GPlatesGlobal::rid_t rgid = datum->GetRotationGroupId();
 	PlatesColourTable::const_iterator it = ctab.lookup(rgid);
 	if (it != ctab.end()) {
 
@@ -86,7 +91,7 @@ PaintLineDataPos(const Layout::LineDataPos& linedata)
 static void
 PaintPoints()
 {
-	Layout::PointDataLayout::const_iterator 
+	Layout::PointDataLayout::iterator 
 		points_begin = Layout::PointDataLayoutBegin(),
 		points_end   = Layout::PointDataLayoutEnd();
 
@@ -99,7 +104,7 @@ PaintPoints()
 static void
 PaintLines()
 {
-	Layout::LineDataLayout::const_iterator 
+	Layout::LineDataLayout::iterator 
 		lines_begin = Layout::LineDataLayoutBegin(),
 		lines_end   = Layout::LineDataLayoutEnd();
 	

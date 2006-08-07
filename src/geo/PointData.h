@@ -37,6 +37,8 @@ namespace GPlatesGeo
 			PointData(const DataType_t &,
 			          const RotationGroupId_t &,
 			          const TimeWindow &,
+				  const std::string &first_header_line,
+				  const std::string &second_header_line,
 			          const Attributes_t &,
 			          const GPlatesMaths::PointOnSphere &);
 
@@ -47,11 +49,10 @@ namespace GPlatesGeo
 			GetPointOnSphere() const { return _point; }
 
 			void
-			Draw() const;
+			Draw();
 
 			void
-			RotateAndDraw(const GPlatesMaths::FiniteRotation &)
-			 const;
+			RotateAndDraw(const GPlatesMaths::FiniteRotation &);
 
 		protected:
 			virtual GPlatesMaths::real_t

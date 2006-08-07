@@ -27,21 +27,25 @@
 using namespace GPlatesGeo;
 
 PointData::PointData(const DataType_t& dt, const RotationGroupId_t& id,
-	const TimeWindow& tw, const Attributes_t& attrs, 
+	const TimeWindow& tw,
+	const std::string &first_header_line,
+	const std::string &second_header_line,
+	const Attributes_t& attrs, 
 	const GPlatesMaths::PointOnSphere& point)
-	: DrawableData(dt, id, tw, attrs), _point(point)
+	: DrawableData(dt, id, tw, first_header_line, second_header_line,
+	   attrs), _point(point)
 { }
 
 
 void
-PointData::Draw() const {
+PointData::Draw() {
 
 	GPlatesState::Layout::InsertPointDataPos(this, _point);
 }
 
 
 void
-PointData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) const {
+PointData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) {
 
 	GPlatesMaths::PointOnSphere rot_point = (rot * _point);
 	GPlatesState::Layout::InsertPointDataPos(this, rot_point);

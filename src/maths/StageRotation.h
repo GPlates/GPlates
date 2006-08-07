@@ -178,6 +178,7 @@ namespace GPlatesMaths
 	 const real_t &new_time_delta);
 
 
+#if 0  // Replaced by "FiniteRotation.{h,cc}:interpolate".
 	/**
 	 * Calculate and return the finite rotation which is the interpolation
 	 * of the two finite rotations @a more_recent and @a more_distant to
@@ -196,6 +197,7 @@ namespace GPlatesMaths
 	 const FiniteRotation &more_recent,
 	 const FiniteRotation &more_distant,
 	 const real_t &t);
+#endif
 
 }
 

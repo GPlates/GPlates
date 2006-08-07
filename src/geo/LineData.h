@@ -40,6 +40,8 @@ namespace GPlatesGeo
 			LineData(const DataType_t&, 
 			         const RotationGroupId_t&,
 			         const TimeWindow&,
+				 const std::string &first_header_line,
+				 const std::string &second_header_line,
 			         const Attributes_t&, 
 			         const GPlatesMaths::PolyLineOnSphere&);
 
@@ -75,11 +77,10 @@ namespace GPlatesGeo
 			End() const { return _line.end(); }
 
 			void
-			Draw() const;
+			Draw();
 
 			void
-			RotateAndDraw(const GPlatesMaths::FiniteRotation &)
-			 const;
+			RotateAndDraw(const GPlatesMaths::FiniteRotation &);
 
 		protected:
 			virtual GPlatesMaths::real_t

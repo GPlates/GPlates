@@ -50,9 +50,44 @@ namespace GPlatesGui
 			PlatesColourTable();
 
 		private:
+			/**
+			 * The singleton instance.
+			 */
 			static PlatesColourTable *_instance;
 
+			/**
+			 * A mapping of Plate ID (aka "rid_t", for "rotation
+			 * ID type") to a Colour object representing the colour
+			 * for that ID, or NULL if there is no colour defined
+			 * for that ID.
+			 *
+			 * Implemented as an array of pointers-to-Colour,
+			 * intended to be indexed by an ID.  Each
+			 * pointer-to-Colour should point to a Colour object in
+			 * @a _colours, or be NULL when there is no colour
+			 * defined for that ID.
+			 *
+			 * Since @a _highest_known_rid contains the highest
+			 * known ID, the length of this array will be @a
+			 * _highest_known_rid + 1 (since, for example, an index
+			 * of 3 requires an array of at least 3 + 1 == 4).
+			 */
 			Colour **_id_table;
+
+			/**
+			 * The highest Plate ID (aka "rid_t", for "rotation
+			 * ID type") entered in the ID table.
+			 */
+			GPlatesGlobal::rid_t _highest_known_rid;
+
+			/**
+			 * An array of Colour objects.  Each of these Colour
+			 * objects represents the defined colour corresponding
+			 * to some Plate ID (aka "rid_t", for "rotation ID
+			 * type"), but this array doesn't worry about this
+			 * ID -> Colour mapping (that's what @a _id_table is
+			 * for); it just holds the Colour objects.
+			 */
 			Colour  *_colours;
 	};
 }

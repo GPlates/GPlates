@@ -263,6 +263,7 @@ namespace
 		return new PointData(GetDataType(element), 
 			 GetRotationGroupId(element), 
 			 GetTimeWindow(element),
+			 "", "",  // These are only used by the PLATES format.
 			 GetAttributes(element),
 			 LatLonPointConversions::
 			  convertLatLonPointToPointOnSphere(
@@ -319,10 +320,11 @@ namespace
 		}
 
 		return new LineData(GetDataType(element), 
-						GetRotationGroupId(element), 
-						GetTimeWindow(element),
-						GetAttributes(element),
-						GetCoordList(*list.begin()));
+			GetRotationGroupId(element), 
+			GetTimeWindow(element),
+			"", "",  // These are only used by the PLATES format.
+			GetAttributes(element),
+			GetCoordList(*list.begin()));
 	}
 
 	
