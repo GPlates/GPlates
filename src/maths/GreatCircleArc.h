@@ -17,7 +17,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
 #ifndef GPLATES_MATHS_GREATCIRCLEARC_H
@@ -43,10 +42,30 @@ namespace GPlatesMaths {
 	 *    (this is an effect of the dot and cross products of vectors:
 	 *    The angle between any two vectors is defined always to lie
 	 *    in the range [0, PI] radians).
+	 *
+	 * Use the static member function 'test_parameter_status' to test
+	 * in advance whether the endpoints are going to be valid.
 	 */
 	class GreatCircleArc {
 
 		public:
+
+		       enum ParameterStatus {
+
+			       VALID,
+			       INVALID_IDENTICAL_ENDPOINTS,
+			       INVALID_ANTIPODAL_ENDPOINTS
+		       };
+
+		       /**
+			* Test in advance whether the supplied great circle arc
+			* creation parameters would be valid or not.
+			*/
+		       static
+		       ParameterStatus
+		       test_parameter_status(
+			const PointOnSphere &p1,
+			const PointOnSphere &p2);
 			/**
 			 * Make a great circle arc beginning at @a p1 and
 			 * ending at @a p2.

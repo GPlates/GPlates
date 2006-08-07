@@ -28,8 +28,8 @@
 #include "InvalidOperationException.h"
 
 
-GPlatesMaths::GreatCircleArc
-GPlatesMaths::GreatCircleArc::create(
+GPlatesMaths::GreatCircleArc::ParameterStatus
+GPlatesMaths::GreatCircleArc::test_parameter_status(
  const PointOnSphere &p1,
  const PointOnSphere &p2) {
 
@@ -38,36 +38,58 @@ GPlatesMaths::GreatCircleArc::create(
 
 	real_t dp = dot(u1, u2);
 
-	/*
-	 * First, we ensure that these two unit vectors do in fact define
-	 * a single unique great-circle arc.
-	 */
 	if (dp >= 1.0) {
 
 		// parallel => start-point same as end-point => no arc
-		std::ostringstream oss;
-
-		oss
-		 << "Attempted to calculate a great-circle arc from "
-		 << "duplicate endpoints "
-		 << u1
-		 << " and "
-		 << u2
-		 << ".";
-		throw IndeterminateResultException(oss.str().c_str());
+		return INVALID_IDENTICAL_ENDPOINTS;
 	}
 	if (dp <= -1.0) {
 
 		// antiparallel => start-point and end-point antipodal =>
 		// indeterminate arc
+		return INVALID_ANTIPODAL_ENDPOINTS;
+	}
+
+	return VALID;
+}
+
+
+GPlatesMaths::GreatCircleArc
+GPlatesMaths::GreatCircleArc::create(
+ const PointOnSphere &p1,
+ const PointOnSphere &p2) {
+
+	ParameterStatus ps = test_parameter_status(p1, p2);
+
+	/*
+	 * First, we ensure that these two endpoints do in fact define a single
+	 * unique great-circle arc.
+	 */
+	if (ps == INVALID_IDENTICAL_ENDPOINTS) {
+
+		// start-point same as end-point => no arc
+		std::ostringstream oss;
+
+		oss
+		 << "Attempted to calculate a great-circle arc from "
+		 << "duplicate endpoints "
+		 << p1
+		 << " and "
+		 << p2
+		 << ".";
+		throw IndeterminateResultException(oss.str().c_str());
+	}
+	if (ps == INVALID_ANTIPODAL_ENDPOINTS) {
+
+		// start-point and end-point antipodal => indeterminate arc
 		std::ostringstream oss;
 
 		oss
 		 << "Attempted to calculate a great-circle arc from "
 		 << "antipodal endpoints "
-		 << u1
+		 << p1
 		 << " and "
-		 << u2
+		 << p2
 		 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
@@ -78,6 +100,9 @@ GPlatesMaths::GreatCircleArc::create(
 	 *
 	 * To do this, we calculate the cross product.
 	 */
+	const UnitVector3D &u1 = p1.unitvector();
+	const UnitVector3D &u2 = p2.unitvector();
+
 	Vector3D v = cross(u1, u2);
 
 	/*
@@ -100,16 +125,13 @@ GPlatesMaths::GreatCircleArc::create(
  const PointOnSphere &p2,
  const UnitVector3D &rot_axis) {
 
-	const UnitVector3D &u1 = p1.unitvector();
-	const UnitVector3D &u2 = p2.unitvector();
-
-	real_t dp = dot(u1, u2);
+	ParameterStatus ps = test_parameter_status(p1, p2);
 
 	/*
-	 * First, we ensure that these two unit vectors do in fact define
-	 * a single unique great-circle arc.
+	 * First, we ensure that these two endpoints do in fact define a single
+	 * unique great-circle arc.
 	 */
-	if (dp >= 1.0) {
+	if (ps == INVALID_IDENTICAL_ENDPOINTS) {
 
 		// start-point same as end-point => no arc
 		std::ostringstream oss;
@@ -117,13 +139,13 @@ GPlatesMaths::GreatCircleArc::create(
 		oss
 		 << "Attempted to calculate a great-circle arc from "
 		 << "duplicate endpoints "
-		 << u1
+		 << p1
 		 << " and "
-		 << u2
+		 << p2
 		 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
-	if (dp <= -1.0) {
+	if (ps == INVALID_ANTIPODAL_ENDPOINTS) {
 
 		// start-point and end-point antipodal => indeterminate arc
 		std::ostringstream oss;
@@ -131,9 +153,9 @@ GPlatesMaths::GreatCircleArc::create(
 		oss
 		 << "Attempted to calculate a great-circle arc from "
 		 << "antipodal endpoints "
-		 << u1
+		 << p1
 		 << " and "
-		 << u2
+		 << p2
 		 << ".";
 		throw IndeterminateResultException(oss.str().c_str());
 	}
@@ -146,6 +168,9 @@ GPlatesMaths::GreatCircleArc::create(
 	 * To do this, we calculate the cross product.
 	 * (We use the Vector3D cross product, which is faster).
 	 */
+	const UnitVector3D &u1 = p1.unitvector();
+	const UnitVector3D &u2 = p2.unitvector();
+
 	Vector3D v = cross(Vector3D(u1), Vector3D(u2));
 	if ( ! collinear(v, Vector3D(rot_axis))) {
 
