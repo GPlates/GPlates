@@ -17,8 +17,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- *
  */
 
 #include <iostream>
@@ -30,8 +28,6 @@
 #include "GPlatesApp.h"
 #include "MainWindow.h"
 #include "controls/Lifetime.h"
-
-using namespace GPlatesGui;
 
 namespace {
 
@@ -54,8 +50,8 @@ namespace {
 }
 
 bool
-GPlatesApp::OnInit()
-{
+GPlatesGui::GPlatesApp::OnInit() {
+
 #ifdef PACKAGE_IS_BETA
 	// Warning message for beta versions
 	wxMessageDialog dlg (0,
@@ -83,8 +79,8 @@ GPlatesApp::OnInit()
 		 * Note that '_(str)' is a gettext-style macro alias for
 		 * 'wxGetTranslation(str)'.
 		 */
-		d_main_win = new MainWindow
-				(NULL, _(PACKAGE_STRING), wxSize (600, 500));
+		d_main_win =
+		 new MainWindow(NULL, _(PACKAGE_STRING), wxSize (600, 500));
 		d_main_win->Show(TRUE);
 		SetTopWindow(d_main_win);
 		GPlatesControls::Lifetime::init(d_main_win);
@@ -118,9 +114,16 @@ GPlatesApp::OnInit()
 	return TRUE;
 }
 
-int GPlatesApp::OnExit ()
-{
+int
+GPlatesGui::GPlatesApp::OnExit() {
+
+	std::cerr << "In GPlatesGui::GPlatesApp::OnExit" << std::endl; 
+
 	delete d_main_win;
+
+	std::cerr
+	 << "Just deleted Main Window in GPlatesGui::GPlatesApp::OnExit"
+	 << std::endl;
 
 	return 0;
 }
