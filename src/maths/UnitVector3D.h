@@ -147,6 +147,32 @@ namespace GPlatesMaths
 	};
 
 
+	/**
+	 * Evaluate whether the unit-vectors @a v1 and @a v2 are parallel.
+	 */
+	inline
+	bool
+	unit_vectors_are_parallel(
+	 const UnitVector3D &v1,
+	 const UnitVector3D &v2) {
+
+		return (dot(v1, v2) >= 1.0);
+	}
+
+
+	/**
+	 * Evaluate whether the unit-vectors @a v1 and @a v2 are antiparallel.
+	 */
+	inline
+	bool
+	unit_vectors_are_antiparallel(
+	 const UnitVector3D &v1,
+	 const UnitVector3D &v2) {
+
+		return (dot(v1, v2) <= -1.0);
+	}
+
+
 	inline bool
 	collinear (const UnitVector3D &s1, const UnitVector3D &s2)
 	{

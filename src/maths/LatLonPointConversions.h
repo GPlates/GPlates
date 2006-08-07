@@ -50,8 +50,7 @@ namespace GPlatesMaths {
 			/**
 			 * Return whether a given value is a valid latitude.
 			 *
-			 * GPlates uses the range [-90.0, 90.0].  Thankfully,
-			 * the PLATES formats appear to use the same thing.
+			 * GPlates uses the range [-90.0, 90.0].
 			 */
 			static
 			bool
@@ -61,10 +60,8 @@ namespace GPlatesMaths {
 			/**
 			 * Return whether a given value is a valid longitude.
 			 *
-			 * GPlates uses the half-open range (-180.0, 180.0].
-			 * Note that this is different to the range accepted by
-			 * the PLATES formats (All Hail PLATES!), which seems
-			 * to be [-360.0, 360.0].
+			 * GPlates uses the half-open range (-180.0, 180.0] for
+			 * output, but accepts [-360.0, 360.0] as input.
 			 */
 			static
 			bool

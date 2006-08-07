@@ -17,7 +17,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
 #include <sstream>
@@ -322,4 +321,93 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 			   closeness_inclusion_threshold.dval()));
 		}
 	}
+}
+
+
+bool
+GPlatesMaths::arcs_are_near_each_other(
+ const GreatCircleArc &arc1,
+ const GreatCircleArc &arc2) {
+
+	real_t
+	 arc1_start_dot_arc2_start =
+	  dot(arc1.start_point().unitvector(), arc2.start_point().unitvector()),
+	 arc1_start_dot_arc2_end =
+	  dot(arc1.start_point().unitvector(), arc2.end_point().unitvector()),
+	 arc1_end_dot_arc2_start =
+	  dot(arc1.end_point().unitvector(), arc2.start_point().unitvector());
+
+	/*
+	 * arc1 and arc2 are "near" each other if one of the following is true:
+	 *  - arc2.start is closer to arc1.start than arc1.end is;
+	 *  - arc2.end is closer to arc1.start than arc1.end is;
+	 *  - arc1.start is closer to arc2.start than arc2.end is;
+	 *  - arc1.end is closer to arc2.start than arc2.end is.
+	 */
+	return
+	 (arc1_start_dot_arc2_start >= arc1.dot_of_endpoints() ||
+	  arc1_start_dot_arc2_end >= arc1.dot_of_endpoints() ||
+	  arc1_start_dot_arc2_start >= arc2.dot_of_endpoints() ||
+	  arc1_end_dot_arc2_start >= arc2.dot_of_endpoints());
+}
+
+
+bool
+GPlatesMaths::arcs_are_directed_equivalent(
+ const GreatCircleArc &arc1,
+ const GreatCircleArc &arc2) {
+
+	const PointOnSphere
+	 &arc1_start = arc1.start_point(),
+	 &arc1_end = arc1.end_point(),
+	 &arc2_start = arc2.start_point(),
+	 &arc2_end = arc2.end_point();
+
+	return (points_are_coincident(arc1_start, arc2_start) &&
+		points_are_coincident(arc1_end, arc2_end));
+}
+
+
+bool
+GPlatesMaths::arcs_are_undirected_equivalent(
+ const GreatCircleArc &arc1,
+ const GreatCircleArc &arc2) {
+
+	if ( ! arcs_lie_on_same_great_circle(arc1, arc2)) {
+
+		// There is no way the arcs can be equivalent.
+		return false;
+	}
+
+	const PointOnSphere
+	 &arc1_start = arc1.start_point(),
+	 &arc1_end = arc1.end_point(),
+	 &arc2_start = arc2.start_point(),
+	 &arc2_end = arc2.end_point();
+
+	return ((points_are_coincident(arc1_start, arc2_start) &&
+		 points_are_coincident(arc1_end, arc2_end)) ||
+		(points_are_coincident(arc1_start, arc2_end) &&
+		 points_are_coincident(arc1_end, arc2_start)));
+}
+
+
+std::pair< GPlatesMaths::PointOnSphere, GPlatesMaths::PointOnSphere >
+GPlatesMaths::calculate_intersections_of_extended_arcs(
+ const GreatCircleArc &arc1,
+ const GreatCircleArc &arc2) {
+
+	if (arcs_lie_on_same_great_circle(arc1, arc2)) {
+
+		throw
+		 IndeterminateResultException("Attempted to calculate the "
+		  "unique intersection points\n of identical great-circles.");
+	}
+	Vector3D v = cross(arc1.rotation_axis(), arc2.rotation_axis());
+	UnitVector3D normalised_v = v.get_normalisation();
+
+	PointOnSphere inter_point1(normalised_v);
+	PointOnSphere inter_point2( -normalised_v);
+
+	return std::make_pair(inter_point1, inter_point2);
 }

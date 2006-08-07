@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef _GPLATES_MATHS_GREATCIRCLE_H_
-#define _GPLATES_MATHS_GREATCIRCLE_H_
+#ifndef GPLATES_MATHS_GREATCIRCLE_H
+#define GPLATES_MATHS_GREATCIRCLE_H
 
 #include "types.h"
 #include "Axial.h"
@@ -34,16 +34,17 @@ namespace GPlatesMaths
 	/** 
 	 * A great circle of a unit sphere.
 	 */
-	class GreatCircle : public Axial
-	{
+	class GreatCircle: public Axial {
+
 		public:
 			/**
 			 * Create a great circle, given its axis.
 			 * @param axis The axis vector.
 			 */
 			explicit
-			GreatCircle (const UnitVector3D &axis)
-				: Axial (axis) { }
+			GreatCircle(
+			 const UnitVector3D &axis) :
+			 Axial(axis) { }
 
 			/**
 			 * Create a great circle, given two points on it.
@@ -52,22 +53,35 @@ namespace GPlatesMaths
 			 *
 			 * @throws IndeterminateResultException if @a p1 and 
 			 *   @a p2 are either coincident or antipodal.
+			 *
+			 * FIXME: This should become a 'create' function.
 			 */
-			GreatCircle (const PointOnSphere &p1,
-			             const PointOnSphere &p2);
+			GreatCircle(
+			 const PointOnSphere &p1,
+			 const PointOnSphere &p2);
 
+
+			/**
+			 * FIXME: This should return a reference to a const.
+			 * Fix Axial::axisvector ('Axial::axis_vector') also.
+			 */
 			UnitVector3D
-			normal () const { return axisvector(); }
+			normal() const {
+				
+				return axisvector();
+			}
+
 
 			/**
 			 * Evaluate whether the point @a pt lies on this
 			 * great circle.
 			 */
 			bool
-			contains (const PointOnSphere &pt) const {
+			contains(
+			 const PointOnSphere &pt) const {
 
-				return perpendicular (axisvector (),
-				                   pt.unitvector ());
+				return
+				 perpendicular(axisvector(), pt.unitvector());
 			}
 
 #if 0  // No longer needed
@@ -82,6 +96,7 @@ namespace GPlatesMaths
 #endif
 
 		private:
+
 			/**
 			 * Given two unit vectors, @a v1 and @a v2, calculate
 			 * the normal of the great circle they define.
@@ -90,6 +105,9 @@ namespace GPlatesMaths
 			 * 
 			 * @throws IndeterminateResultException if the vectors 
 			 *   @a v1 and @a v2 are either parallel or antiparallel.
+			 *
+			 * FIXME: This should be moved into "UnitVector.h",
+			 * gaining an extra const char * 'invoked_by' param.
 			 */
 			static UnitVector3D calcNormal(const UnitVector3D &u1,
 			                               const UnitVector3D &u2);

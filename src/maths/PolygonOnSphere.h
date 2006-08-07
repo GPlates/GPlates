@@ -20,53 +20,53 @@
  *
  */
 
-#ifndef GPLATES_MATHS_POLYLINEONSPHERE_H
-#define GPLATES_MATHS_POLYLINEONSPHERE_H
+#ifndef GPLATES_MATHS_POLYGONONSPHERE_H
+#define GPLATES_MATHS_POLYGONONSPHERE_H
 
 #include <list>
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
 #include <utility>  /* pair */
 #include <memory>  /* auto_ptr */
 #include "GreatCircleArc.h"
-#include "InvalidPolyLineException.h"
+#include "InvalidPolygonException.h"
 
 namespace GPlatesMaths {
 
 	/** 
-	 * Represents a polyline on the surface of a sphere. 
+	 * Represents a polygon on the surface of a sphere. 
 	 *
 	 * Internally, this is stored as a sequence of GreatCircleArc.  You
 	 * can iterate over this sequence of GreatCircleArc in the usual manner
 	 * using the const_iterators returned by the functions @a begin and
 	 * @a end.
 	 *
-	 * You can also iterate over the @em vertices of the polyline using the
+	 * You can also iterate over the @em vertices of the polygon using the
 	 * vertex_const_iterators returned by the functions @a vertex_begin and
-	 * @a vertex_end.  For instance, to copy all the vertices of a polyline
+	 * @a vertex_end.  For instance, to copy all the vertices of a polygon
 	 * into a list of PointOnSphere, you would use the code snippet:
 	 * @code
-	 * std::list< PointOnSphere > the_list(polyline.vertex_begin(),
-	 *                                     polyline.vertex_end());
+	 * std::list< PointOnSphere > the_list(polygon.vertex_begin(),
+	 *                                     polygon.vertex_end());
 	 * @endcode
 	 *
-	 * You can create a polyline by invoking either the static member
-	 * function @a PolyLineOnSphere::create or the static member function
-	 * @a PolyLineOnSphere::create_on_heap, passing it a sequential STL
+	 * You can create a polygon by invoking either the static member
+	 * function @a PolygonOnSphere::create or the static member function
+	 * @a PolygonOnSphere::create_on_heap, passing it a sequential STL
 	 * container (list, vector, ...) of PointOnSphere to define the
-	 * vertices of the polyline.  The sequence of points must contain at
-	 * least two distinct elements, enabling the creation of a polyline
-	 * composed of at least one well-defined segment.  The requirements
+	 * vertices of the polygon.  The sequence of points must contain at
+	 * least three distinct elements, enabling the creation of a polygon
+	 * composed of at least three well-defined segments.  The requirements
 	 * upon the sequence of points are described in greater detail in the
 	 * comment for the static member function
-	 * @a PolyLineOnSphere::evaluate_construction_parameter_validity.
+	 * @a PolygonOnSphere::evaluate_construction_parameter_validity.
 	 *
 	 * Say you have a sequence of PointOnSphere: [A, B, C, D].  If you pass
-	 * this sequence to the @a PolyLineOnSphere::create function, it will
-	 * create a polyline composed of 3 segments: A->B, B->C, C->D.  If you
-	 * subsequently iterate through the vertices of this polyline, you will
-	 * get the same sequence of points back again: A, B, C, D.
+	 * this sequence to the @a PolygonOnSphere::create function, it will
+	 * create a polygon composed of 4 segments: A->B, B->C, C->D and D->A. 
+	 * If you subsequently iterate through the vertices of this polygon,
+	 * you will get the same sequence of points back again: A, B, C, D.
 	 */
-	class PolyLineOnSphere {
+	class PolygonOnSphere {
 
 	 public:
 
@@ -77,75 +77,50 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * FIXME:  Remove this.  It allows corruption of the internals.
-		 *
-		 * The type used to iterate over the sequence of arcs.
-		 */
-		typedef seq_type::iterator iterator;
-
-
-		/**
 		 * The type used to const_iterate over the sequence of arcs.
 		 */
 		typedef seq_type::const_iterator const_iterator;
 
 
 		/**
-		 * The type used to describe collection sizes.
-		 */
-		typedef seq_type::size_type size_type;
-
-
-		/**
 		 * This class enables const_iteration over the vertices of a
-		 * PolyLineOnSphere.
+		 * PolygonOnSphere.
 		 *
 		 * An instance of this class @em actually iterates over the
-		 * sequence of GreatCircleArc by which a PolyLineOnSphere is
+		 * sequence of GreatCircleArc by which a PolygonOnSphere is
 		 * implemented, but it pretends it's iterating over a sequence
-		 * of PointOnSphere by additionally keeping track of whether
-		 * it's pointing at the "start-point" or "end-point" of the
-		 * current GreatCircleArc.
+		 * of PointOnSphere.
 		 *
 		 * It is assumed that the sequence of GreatCircleArc over
 		 * which this iterator is iterating will always contain at
-		 * least one element (and thus, at least two vertices).  This
-		 * assumption should be fulfilled by the PolyLineOnSphere
+		 * least three elements (and thus, at least three vertices). 
+		 * This assumption should be fulfilled by the PolygonOnSphere
 		 * invariant.
-		 *
-		 * FIXME:  Remove the public PolyLineOnSphere default ctor, to
-		 * ensure that this is indeed the case.
 		 */
 		class VertexConstIterator: public std::iterator<
 		 std::bidirectional_iterator_tag, PointOnSphere > {
 		
-			enum StartOrEnd {
-
-				START,
-				END
-			};
-
-			typedef PolyLineOnSphere::const_iterator
+			typedef PolygonOnSphere::const_iterator
 			 gca_const_iterator;
 
 		  public:
 
 			/**
-			 * Create the "begin" vertex iterator for @a poly.
+			 * Create the "begin" vertex const_iterator for @a poly.
 			 */
 			static
 			VertexConstIterator
 			create_begin(
-			 const PolyLineOnSphere &poly);
+			 const PolygonOnSphere &poly);
 
 
 			/**
-			 * Create the "end" vertex iterator for @a poly.
+			 * Create the "end" vertex const_iterator for @a poly.
 			 */
 			static
 			VertexConstIterator
 			create_end(
-			 const PolyLineOnSphere &poly);
+			 const PolygonOnSphere &poly);
 
 
 			/**
@@ -168,17 +143,13 @@ namespace GPlatesMaths {
 			 * iterator:
 			 *  - comparison for equality to another iterator;
 			 *  - comparison for inequality to another iterator;
-			 *  - being assigned-to by another iterator.
-			 *
-			 * The following operations are no-ops for an
-			 * uninitialised iterator:
-			 *  - increment
-			 *  - decrement
+			 *  - being assigned-to by another iterator;
+			 *  - increment;
+			 *  - decrement.
 			 */
 			VertexConstIterator() :
 			 d_poly_ptr(NULL), 
-			 d_curr_gca(), 
-			 d_gca_start_or_end(END) {  }
+			 d_curr_gca() {  }
 
 
 			/**
@@ -187,8 +158,7 @@ namespace GPlatesMaths {
 			VertexConstIterator(
 			 const VertexConstIterator &other) :
 			 d_poly_ptr(other.d_poly_ptr),
-			 d_curr_gca(other.d_curr_gca),
-			 d_gca_start_or_end(other.d_gca_start_or_end) {  }
+			 d_curr_gca(other.d_curr_gca) {  }
 
 
 			/**
@@ -203,18 +173,6 @@ namespace GPlatesMaths {
 
 
 			/**
-			 * Return whether this iterator is pointing at the
-			 * "start-point" or "end-point" of the current
-			 * GreatCircleArc.
-			 */
-			StartOrEnd
-			gca_start_or_end() const {
-
-				return d_gca_start_or_end;
-			}
-
-
-			/**
 			 * Assign @a other to this.
 			 */
 			VertexConstIterator &
@@ -223,7 +181,6 @@ namespace GPlatesMaths {
 
 				d_poly_ptr = other.d_poly_ptr;
 				d_curr_gca = other.d_curr_gca;
-				d_gca_start_or_end = other.d_gca_start_or_end;
 
 				return *this;
 			}
@@ -306,12 +263,10 @@ namespace GPlatesMaths {
 			 * Gee, why do you think this is private?
 			 */
 			VertexConstIterator(
-			 const PolyLineOnSphere &poly,
-			 gca_const_iterator curr_gca_,
-			 StartOrEnd gca_start_or_end_) :
+			 const PolygonOnSphere &poly,
+			 gca_const_iterator curr_gca_) :
 			 d_poly_ptr(&poly),
-			 d_curr_gca(curr_gca_),
-			 d_gca_start_or_end(gca_start_or_end_) {  }
+			 d_curr_gca(curr_gca_) {  }
 
 
 			/**
@@ -325,11 +280,6 @@ namespace GPlatesMaths {
 			/**
 			 * This function performs the magic which is used to
 			 * increment this iterator.
-			 *
-			 * If this iterator is uninitialised (ie, it was either
-			 * default-constructed or assigned-to by an iterator
-			 * which was default-constructed) this function will be
-			 * a no-op.
 			 */
 			void
 			increment();
@@ -338,20 +288,13 @@ namespace GPlatesMaths {
 			/**
 			 * This function performs the magic which is used to
 			 * decrement this iterator.
-			 *
-			 * If this iterator is uninitialised (ie, it was either
-			 * default-constructed or assigned-to by an iterator
-			 * which was default-constructed) this function will be
-			 * a no-op.
 			 */
 			void
 			decrement();
 
-			const PolyLineOnSphere *d_poly_ptr;
+			const PolygonOnSphere *d_poly_ptr;
 
 			gca_const_iterator d_curr_gca;
-
-			StartOrEnd d_gca_start_or_end;
 
 		};
 
@@ -371,8 +314,7 @@ namespace GPlatesMaths {
 		enum ConstructionParameterValidity {
 
 			VALID,
-			INVALID_INSUFFICIENT_POINTS,
-			INVALID_INSUFFICIENT_UNIQUE_POINTS,
+			INVALID_INSUFFICIENT_DISTINCT_POINTS,
 			INVALID_DUPLICATE_SEGMENT_ENDPOINTS,
 			INVALID_ANTIPODAL_SEGMENT_ENDPOINTS
 		};
@@ -383,7 +325,7 @@ namespace GPlatesMaths {
 		 *
 		 * What this actually means in plain(er) English is that you
 		 * can use this function to check whether you would be able to
-		 * construct a polyline instance from a given set of parameters
+		 * construct a polygon instance from a given set of parameters
 		 * (ie, your collection of points in @a coll).
 		 *
 		 * If you pass this function what turns out to be invalid
@@ -394,7 +336,7 @@ namespace GPlatesMaths {
 		 *
 		 * It's not terribly difficult to obtain a collection which
 		 * qualifias as valid parameters (no duplicate or antipodal
-		 * adjacent points; at least two distinct points in the
+		 * adjacent points; at least three distinct points in the
 		 * collection -- nothing particularly unreasonable) but the
 		 * creation functions are fairly unsympathetic if your
 		 * parameters @em do turn out to be invalid.
@@ -428,7 +370,7 @@ namespace GPlatesMaths {
 
 		/**
 		 * Evaluate the validity of the points @a p1 and @a p2 for use
-		 * in the creation of a polyline line-segment.
+		 * in the creation of a polygon line-segment.
 		 *
 		 * You won't ever @em need to call this function
 		 * (@a evaluate_construction_parameter_validity will do all the
@@ -443,7 +385,7 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Create a new PolyLineOnSphere instance from the sequence of
+		 * Create a new PolygonOnSphere instance from the sequence of
 		 * points @a coll.
 		 *
 		 * @a coll should be a sequential STL container (list, vector,
@@ -454,13 +396,13 @@ namespace GPlatesMaths {
 		 */
 		template< typename C >
 		static
-		PolyLineOnSphere
+		PolygonOnSphere
 		create(
 		 const C &coll);
 
 
 		/**
-		 * Create a new PolyLineOnSphere instance on the heap from the
+		 * Create a new PolygonOnSphere instance on the heap from the
 		 * sequence of points @a coll, and return an auto_ptr which
 		 * points to the newly-created instance.
 		 *
@@ -472,37 +414,14 @@ namespace GPlatesMaths {
 		 */
 		template< typename C >
 		static
-		std::auto_ptr< PolyLineOnSphere >
+		std::auto_ptr< PolygonOnSphere >
 		create_on_heap(
 		 const C &coll);
 
 
 		/**
-		 * Use of this constructor is deprecated.  In future, all
-		 * construction should be performed using the static 'create'
-		 * functions.
-		 *
-		 * FIXME:  Make this function private.
-		 */
-		PolyLineOnSphere() {  }
-
-
-		/** 
-		* Return the number of points in this PolyLineOnSphere
-		* number = 1 + the size of the sequcne of GreatCircleArc
-		*
-		* FIXME:  This function is deprecated.  Remove it.
-		* Use @a number_of_vertices instead.
-		*/
-		int
-		number_of_points() const {
-			return 1 + d_seq.size();
-		}
-
-
-		/**
 		 * Return the "begin" const_iterator to iterate over the
-		 * sequence of GreatCircleArc which defines this polyline.
+		 * sequence of GreatCircleArc which defines this polygon.
 		 */
 		const_iterator
 		begin() const {
@@ -512,18 +431,8 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * FIXME:  Remove this.  It allows corruption of the internals.
-		 */
-		iterator
-		begin() {
-			
-			return d_seq.begin();
-		}
-
-
-		/**
 		 * Return the "end" const_iterator to iterate over the
-		 * sequence of GreatCircleArc which defines this polyline.
+		 * sequence of GreatCircleArc which defines this polygon.
 		 */
 		const_iterator
 		end() const {
@@ -533,28 +442,8 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * FIXME:  Remove this.  It allows corruption of the internals.
-		 */
-		iterator
-		end() {
-			
-			return d_seq.end();
-		}
-
-
-		/**
-		 * Return the number of segments in this polyline.
-		 */
-		size_type
-		number_of_segments() const {
-
-			return d_seq.size();
-		}
-
-
-		/**
 		 * Return the "begin" const_iterator to iterate over the
-		 * vertices of this polyline.
+		 * vertices of this polygon.
 		 */
 		vertex_const_iterator
 		vertex_begin() const {
@@ -565,7 +454,7 @@ namespace GPlatesMaths {
 
 		/**
 		 * Return the "end" const_iterator to iterate over the
-		 * vertices of this polyline.
+		 * vertices of this polygon.
 		 */
 		vertex_const_iterator
 		vertex_end() const {
@@ -575,71 +464,23 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Return the number of vertices in this polyline.
-		 */
-		size_type
-		number_of_vertices() const {
-
-			return (d_seq.size() + 1);
-		}
-
-
-		/**
-		 * Return the start-point of this polyline.
-		 */
-		const PointOnSphere &
-		start_point() const {
-
-			const GreatCircleArc &first_gca = *(begin());
-
-			return first_gca.start_point();
-		}
-
-
-		/**
-		 * Return the end-point of this polyline.
-		 */
-		const PointOnSphere &
-		end_point() const {
-
-			const GreatCircleArc &last_gca = *(--(end()));
-
-			return last_gca.end_point();
-		}
-
-
-		/**
-		 * Use of this function is deprecated.  In future, all
-		 * construction should be performed using the static 'create'
-		 * functions.
-		 *
-		 * FIXME:  Make this function private.
-		 *
-		 * Appends a copy of @a g to the end.
-		 */
-		void
-		push_back(
-		 const GreatCircleArc &g) {
-
-			d_seq.push_back(g);
-		}
-
-
-		/**
-		 * Swap the contents of this polyline with @a other.
+		 * Swap the contents of this polygon with @a other.
 		 *
 		 * This function does not throw.
 		 */
 		void
 		swap(
-		 PolyLineOnSphere &other) {
+		 PolygonOnSphere &other) {
 
 			d_seq.swap(other.d_seq);
 		}
 
 
 		/**
-		 * Evaluate whether @a test_point is "close" to this polyline.
+		 * Evaluate whether @a test_point is "close" to this polygon.
+		 *
+		 * Note: This function currently only tests whether
+		 * @a test_point is "close" to the polygon @em boundary.
 		 *
 		 * The measure of what is "close" is provided by
 		 * @a closeness_inclusion_threshold.
@@ -654,7 +495,7 @@ namespace GPlatesMaths {
 		 * which can easily be determined to have no chance of being
 		 * "close"), leaving only plausible test-points to proceed to
 		 * the more expensive proximity tests.  If you imagine a
-		 * line-segment of this polyline as an arc along the equator,
+		 * line-segment of this polygon as an arc along the equator,
 		 * then there will be a threshold latitude above and below the
 		 * equator, beyond which there is no chance of a test-point
 		 * being "close" to that segment.
@@ -672,9 +513,27 @@ namespace GPlatesMaths {
 	 private:
 
 		/**
-		 * Populate the empty polyline @a poly with the collection of 
+		 * The default constructor should never be invoked directly by
+		 * client code; only through the static 'create' functions.
+		 */
+		PolygonOnSphere() {  }
+
+
+		/**
+		 * Appends a copy of @a g to the end.
+		 */
+		void
+		push_back(
+		 const GreatCircleArc &g) {
+
+			d_seq.push_back(g);
+		}
+
+
+		/**
+		 * Populate the empty polygon @a poly with the collection of 
 		 * points @a coll, using the points to define vertices of the
-		 * polyline.
+		 * polygon.
 		 *
 		 * This function is strongly exception-safe and
 		 * exception-neutral.
@@ -683,8 +542,9 @@ namespace GPlatesMaths {
 		static
 		void
 		populate(
-		 PolyLineOnSphere &poly,
+		 PolygonOnSphere &poly,
 		 const C &coll);
+
 
 		/**
 		 * Attempt to create a line-segment defined by the points @a p1
@@ -701,26 +561,50 @@ namespace GPlatesMaths {
 		 const PointOnSphere &p2,
 		 bool should_silently_drop_dups = true);
 
+
+		/**
+		 * The minimum number of (distinct) collection points to be
+		 * passed into a 'create' function to enable creation of a
+		 * closed, well-defined polygon.
+		 */
+		static const unsigned MIN_NUM_COLLECTION_POINTS;
+
 		seq_type d_seq;
 
 	};
 
 
 	inline
-	PolyLineOnSphere::VertexConstIterator
-	PolyLineOnSphere::VertexConstIterator::create_begin(
-	 const PolyLineOnSphere &poly) {
+	PolygonOnSphere::VertexConstIterator
+	PolygonOnSphere::VertexConstIterator::create_begin(
+	 const PolygonOnSphere &poly) {
 
-		return VertexConstIterator(poly, poly.begin(), START);
+		return VertexConstIterator(poly, poly.begin());
 	}
 	
 
 	inline
-	PolyLineOnSphere::VertexConstIterator
-	PolyLineOnSphere::VertexConstIterator::create_end(
-	 const PolyLineOnSphere &poly) {
+	PolygonOnSphere::VertexConstIterator
+	PolygonOnSphere::VertexConstIterator::create_end(
+	 const PolygonOnSphere &poly) {
 
-		return VertexConstIterator(poly, poly.end(), END);
+		return VertexConstIterator(poly, poly.end());
+	}
+
+
+	inline
+	void
+	PolygonOnSphere::VertexConstIterator::increment() {
+
+		++d_curr_gca;
+	}
+
+
+	inline
+	void
+	PolygonOnSphere::VertexConstIterator::decrement() {
+
+		--d_curr_gca;
 	}
 
 
@@ -730,12 +614,10 @@ namespace GPlatesMaths {
 	inline
 	bool
 	operator==(
-	 const PolyLineOnSphere::VertexConstIterator &i1,
-	 const PolyLineOnSphere::VertexConstIterator &i2) {
+	 const PolygonOnSphere::VertexConstIterator &i1,
+	 const PolygonOnSphere::VertexConstIterator &i2) {
 
-		return
-		 (i1.curr_gca() == i2.curr_gca() &&
-		  i1.gca_start_or_end() == i2.gca_start_or_end());
+		return (i1.curr_gca() == i2.curr_gca());
 	}
 
 
@@ -745,57 +627,31 @@ namespace GPlatesMaths {
 	inline
 	bool
 	operator!=(
-	 const PolyLineOnSphere::VertexConstIterator &i1,
-	 const PolyLineOnSphere::VertexConstIterator &i2) {
+	 const PolygonOnSphere::VertexConstIterator &i1,
+	 const PolygonOnSphere::VertexConstIterator &i2) {
 
-		return
-		 (i1.curr_gca() != i2.curr_gca() ||
-		  i1.gca_start_or_end() != i2.gca_start_or_end());
+		return (i1.curr_gca() != i2.curr_gca());
 	}
 
 
-	/**
-	 * Determine whether the two polylines @a poly1 and @a poly2 are
-	 * equivalent when the directedness of the polyline segments is taken
-	 * into account.
-	 */
-	bool
-	polylines_are_directed_equivalent(
-	 const PolyLineOnSphere &poly1,
-	 const PolyLineOnSphere &poly2);
-
-
-	/**
-	 * Determine whether the two polylines @a poly1 and @a poly2 are
-	 * equivalent when the directedness of the polyline segments is
-	 * ignored.
-	 *
-	 * By this test, a polyline whose segments are [A, B, C, D] would be
-	 * equivalent to polylines [A, B, C, D] or [D', C', B', A'], where 
-	 * A' is the reverse of A, B' the reverse of B, and so on.
-	 */
-	bool
-	polylines_are_undirected_equivalent(
-	 const PolyLineOnSphere &poly1,
-	 const PolyLineOnSphere &poly2);
-
-
 	template< typename C >
-	PolyLineOnSphere::ConstructionParameterValidity
-	PolyLineOnSphere::evaluate_construction_parameter_validity(
+	PolygonOnSphere::ConstructionParameterValidity
+	PolygonOnSphere::evaluate_construction_parameter_validity(
 	 const C &coll,
 	 std::pair< typename C::const_iterator, typename
 	  C::const_iterator > &invalid_points,
 	 bool should_silently_drop_dups) {
 
 		typename C::size_type num_points = coll.size();
-		if (num_points < 2) {
+		if (num_points < MIN_NUM_COLLECTION_POINTS) {
 
 			// The collection does not contain enough points to
-			// create even one line-segment.
-			return INVALID_INSUFFICIENT_POINTS;
+			// create a closed, well-defined polygon.
+			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
+		// This for-loop is identical to the corresponding code in
+		// PolyLineOnSphere.
 		typename C::const_iterator
 		 prev,
 		 iter = coll.begin(),
@@ -818,10 +674,9 @@ namespace GPlatesMaths {
 				// Keep looping.
 				break;
 
-			 case INVALID_INSUFFICIENT_POINTS:
-			 case INVALID_INSUFFICIENT_UNIQUE_POINTS:
+			 case INVALID_INSUFFICIENT_DISTINCT_POINTS:
 
-				// These values shouldn't be returned.
+				// This value shouldn't be returned.
 				// FIXME:  Can this be checked at compile-time?
 				// (Perhaps with use of template magic, to
 				// avoid the need to check at run-time and
@@ -856,11 +711,70 @@ namespace GPlatesMaths {
 				return v;
 			}
 		}
+
+		// Now, an additional check, for the last->first point
+		// wrap-around.
+		iter = coll.begin();
+		{
+			const PointOnSphere &p1 = *prev;
+			const PointOnSphere &p2 = *iter;
+
+			ConstructionParameterValidity v =
+			 evaluate_segment_endpoint_validity(p1, p2);
+
+			// Using a switch-statement, along with GCC's
+			// "-Wswitch" option (implicitly enabled by "-Wall"),
+			// will help to ensure that no cases are missed.
+			switch (v) {
+
+			 case VALID:
+
+				// Exit the switch-statement.
+				break;
+
+			 case INVALID_INSUFFICIENT_DISTINCT_POINTS:
+
+				// This value shouldn't be returned.
+				// FIXME:  Can this be checked at compile-time?
+				// (Perhaps with use of template magic, to
+				// avoid the need to check at run-time and
+				// throw an exception if the assertion fails.)
+				break;
+
+			 case INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
+
+				if (should_silently_drop_dups) {
+
+					// You heard the man:  We should
+					// silently drop duplicates.  But we
+					// still need to keep track of the
+					// number of (usable) points.
+					--num_points;
+
+				} else {
+
+					invalid_points.first = prev;
+					invalid_points.second = iter;
+
+					return v;
+				}
+				// Exit the switch-statement.
+				break;
+
+			 case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+
+				invalid_points.first = prev;
+				invalid_points.second = iter;
+
+				return v;
+			}
+		}
+
 		// Check the number of (usable) points again, now that we've
 		// abjusted for duplicates.
-		if (num_points < 2) {
+		if (num_points < MIN_NUM_COLLECTION_POINTS) {
 
-			return INVALID_INSUFFICIENT_UNIQUE_POINTS;
+			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
 		// If we got this far, we couldn't find anything wrong with the
@@ -870,22 +784,22 @@ namespace GPlatesMaths {
 
 
 	template< typename C >
-	PolyLineOnSphere
-	PolyLineOnSphere::create(
+	PolygonOnSphere
+	PolygonOnSphere::create(
 	 const C &coll) {
 
-		PolyLineOnSphere p;
+		PolygonOnSphere p;
 		populate(p, coll);
 		return p;
 	}
 
 
 	template< typename C >
-	std::auto_ptr< PolyLineOnSphere >
-	PolyLineOnSphere::create_on_heap(
+	std::auto_ptr< PolygonOnSphere >
+	PolygonOnSphere::create_on_heap(
 	 const C &coll) {
 
-		std::auto_ptr< PolyLineOnSphere > ptr(new PolyLineOnSphere());
+		std::auto_ptr< PolygonOnSphere > ptr(new PolygonOnSphere());
 		populate(*ptr, coll);
 		return ptr;
 	}
@@ -893,18 +807,18 @@ namespace GPlatesMaths {
 
 	template< typename C >
 	void
-	PolyLineOnSphere::populate(
-	 PolyLineOnSphere &poly,
+	PolygonOnSphere::populate(
+	 PolygonOnSphere &poly,
 	 const C &coll) {
 
-		if (coll.size() < 2) {
+		if (coll.size() < MIN_NUM_COLLECTION_POINTS) {
 
 			// The collection does not contain enough points to
-			// create even one line-segment.
+			// create a closed, well-defined polygon.
 			// FIXME:  I don't like throwing in a header-file.
-			throw InvalidPolyLineException("Attempted to create a "
-			 "polyline from an insufficient number (ie, less than "
-			 "2) of endpoints.");
+			throw InvalidPolygonException("Attempted to create a "
+			 "polygon from an insufficient number (ie, less than "
+			 "3) of endpoints.");
 		}
 
 		// There's no real need to put all the new line-segments into a
@@ -913,6 +827,8 @@ namespace GPlatesMaths {
 		// little easier to follow.
 		seq_type tmp_seq;
 
+		// This for-loop is identical to the corresponding code in
+		// PolyLineOnSphere.
 		typename C::const_iterator
 		 prev,
 		 iter = coll.begin(),
@@ -924,19 +840,28 @@ namespace GPlatesMaths {
 
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
 		}
+		// Now, an additional step, for the last->first point
+		// wrap-around.
+		iter = coll.begin();
+		{
+			const PointOnSphere &p1 = *prev;
+			const PointOnSphere &p2 = *iter;
 
-		if (tmp_seq.size() == 0) {
+			create_segment_and_append_to_seq(tmp_seq, p1, p2);
+		}
 
-			// No line-segments were created, which must mean that
-			// all points in the collection were identical.
+		if (tmp_seq.size() < MIN_NUM_COLLECTION_POINTS) {
+
+			// Not enough line-segments were created to create a
+			// closed, well-defined polygon.
 			// FIXME:  I don't like throwing in a header-file.
-			throw InvalidPolyLineException("Attempted to create a "
-			 "polyline from an insufficient number (ie, less than "
-			 "2) of unique endpoints.");
+			throw InvalidPolygonException("Attempted to create a "
+			 "polygon from an insufficient number (ie, less than "
+			 "3) of distinct endpoints.");
 		}
 		poly.d_seq.splice(poly.d_seq.end(), tmp_seq);
 	}
 
 }
 
-#endif  // GPLATES_MATHS_POLYLINEONSPHERE_H
+#endif  // GPLATES_MATHS_POLYGONONSPHERE_H

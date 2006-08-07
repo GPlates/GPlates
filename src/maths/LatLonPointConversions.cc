@@ -70,7 +70,7 @@ bool
 GPlatesMaths::LatLonPoint::isValidLon(
  const real_t &val) {
 
-	return (-180.0 < val && val <= 180.0);
+	return (-360.0 <= val && val <= 360.0);
 }
 
 

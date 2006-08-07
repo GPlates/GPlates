@@ -31,7 +31,6 @@
 #include "GreatCircle.h"
 #include "SmallCircle.h"
 #include "GridOnSphere.h"
-#include "PolyLineOnSphere.h"
 #include "types.h"  /* real_t */
 
 
@@ -334,15 +333,30 @@ namespace GPlatesMaths
 	}
 
 
+	class PolyLineOnSphere;
+
 	/**
-	 * Apply the given rotation to the given poly-line-on-sphere.
+	 * Apply the given rotation to the given polyline.
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
 	const PolyLineOnSphere
 	operator*(
 	 const FiniteRotation &r,
-	 const PolyLineOnSphere &p);
+	 const PolyLineOnSphere &polyline);
+
+
+	class PolygonOnSphere;
+
+	/**
+	 * Apply the given rotation to the given polygon.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const PolygonOnSphere
+	operator*(
+	 const FiniteRotation &r,
+	 const PolygonOnSphere &polygon);
 
 
 	std::ostream &

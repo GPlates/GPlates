@@ -21,15 +21,19 @@
  */
 
 #include <sstream>
-#include "PolyLineOnSphere.h"
+#include "PolygonOnSphere.h"
 #include "HighPrecision.h"
-#include "InvalidPolyLineException.h"
+#include "InvalidPolygonException.h"
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
 
 
-GPlatesMaths::PolyLineOnSphere::ConstructionParameterValidity
-GPlatesMaths::PolyLineOnSphere::evaluate_segment_endpoint_validity(
+const unsigned
+GPlatesMaths::PolygonOnSphere::MIN_NUM_COLLECTION_POINTS = 3;
+
+
+GPlatesMaths::PolygonOnSphere::ConstructionParameterValidity
+GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
  const PointOnSphere &p1,
  const PointOnSphere &p2) {
 
@@ -60,7 +64,7 @@ GPlatesMaths::PolyLineOnSphere::evaluate_segment_endpoint_validity(
 
 
 bool
-GPlatesMaths::PolyLineOnSphere::is_close_to(
+GPlatesMaths::PolygonOnSphere::is_close_to(
  const PointOnSphere &test_point,
  const real_t &closeness_inclusion_threshold,
  const real_t &latitude_exclusion_threshold,
@@ -131,7 +135,7 @@ GPlatesMaths::PolyLineOnSphere::is_close_to(
 
 
 void
-GPlatesMaths::PolyLineOnSphere::create_segment_and_append_to_seq(
+GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
  seq_type &seq, 
  const PointOnSphere &p1,
  const PointOnSphere &p2,
@@ -165,16 +169,16 @@ GPlatesMaths::PolyLineOnSphere::create_segment_and_append_to_seq(
 			std::ostringstream oss;
 
 			oss
-			 << "Attempted to create a polyline line-segment from "
+			 << "Attempted to create a polygon line-segment from "
 			 << "duplicate endpoints "
 			 << p1
 			 << " and "
 			 << p2
 			 << ".";
-			throw InvalidPolyLineException(oss.str().c_str());
+			throw InvalidPolygonException(oss.str().c_str());
 			// FIXME: Should be
-			// 'PolylineSegmentConstructionException', a derived
-			// class of 'PolylineConstructionException'.
+			// 'PolygonSegmentConstructionException', a derived
+			// class of 'PolygonConstructionException'.
 		}
 
 	 case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
@@ -185,16 +189,16 @@ GPlatesMaths::PolyLineOnSphere::create_segment_and_append_to_seq(
 			std::ostringstream oss;
 
 			oss
-			 << "Attempted to create a polyline line-segment from "
+			 << "Attempted to create a polygon line-segment from "
 			 << "antipodal endpoints "
 			 << p1
 			 << " and "
 			 << p2
 			 << ".";
-			throw InvalidPolyLineException(oss.str().c_str());
+			throw InvalidPolygonException(oss.str().c_str());
 			// FIXME: Should be
-			// 'PolylineSegmentConstructionException', a derived
-			// class of 'PolylineConstructionException'.
+			// 'PolygonSegmentConstructionException', a derived
+			// class of 'PolygonConstructionException'.
 		}
 	}
 
@@ -207,7 +211,7 @@ GPlatesMaths::PolyLineOnSphere::create_segment_and_append_to_seq(
 
 
 const GPlatesMaths::PointOnSphere &
-GPlatesMaths::PolyLineOnSphere::VertexConstIterator::current_point() const {
+GPlatesMaths::PolygonOnSphere::VertexConstIterator::current_point() const {
 
 	if (d_poly_ptr == NULL) {
 
@@ -215,140 +219,5 @@ GPlatesMaths::PolyLineOnSphere::VertexConstIterator::current_point() const {
 		throw GPlatesGlobal::UninitialisedIteratorException(
 		 "Attempted to dereference an uninitialised iterator.");
 	}
-
-	if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == START) {
-
-		return d_curr_gca->start_point();
-
-	} else {
-
-		return d_curr_gca->end_point();
-	}
-}
-
-
-void
-GPlatesMaths::PolyLineOnSphere::VertexConstIterator::increment() {
-
-	if (d_poly_ptr == NULL) {
-
-		// This iterator is uninitialised, so this function will be a
-		// no-op.
-		return;
-	}
-
-	if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == START) {
-
-		d_gca_start_or_end = END;
-
-	} else {
-
-		++d_curr_gca;
-	}
-}
-
-
-void
-GPlatesMaths::PolyLineOnSphere::VertexConstIterator::decrement() {
-
-	if (d_poly_ptr == NULL) {
-
-		// This iterator is uninitialised, so this function will be a
-		// no-op.
-		return;
-	}
-
-	if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == END) {
-
-		d_gca_start_or_end = START;
-
-	} else {
-
-		--d_curr_gca;
-	}
-}
-
-
-bool
-GPlatesMaths::polylines_are_directed_equivalent(
- const PolyLineOnSphere &poly1,
- const PolyLineOnSphere &poly2) {
-
-	if (poly1.number_of_vertices() != poly2.number_of_vertices()) {
-
-		// There is no way the two polylines can be equivalent.
-		return false;
-	}
-	// Else, we know the two polylines contain the same number of vertices,
-	// so we only need to check the end-of-sequence conditions for 'poly1'
-	// in our iteration.
-
-	PolyLineOnSphere::vertex_const_iterator
-	 poly1_iter = poly1.vertex_begin(),
-	 poly1_end = poly1.vertex_end(),
-	 poly2_iter = poly2.vertex_begin(),
-	 poly2_end = poly2.vertex_end();
-	for ( ; poly1_iter != poly1_end; ++poly1_iter, ++poly2_iter) {
-
-		if ( ! points_are_coincident(*poly1_iter, *poly2_iter)) {
-
-			return false;
-		}
-	}
-	return true;
-}
-
-
-bool
-GPlatesMaths::polylines_are_undirected_equivalent(
- const PolyLineOnSphere &poly1,
- const PolyLineOnSphere &poly2) {
-
-	if (poly1.number_of_vertices() != poly2.number_of_vertices()) {
-
-		// There is no way the two polylines can be equivalent.
-		return false;
-	}
-	// Else, we know the two polylines contain the same number of vertices,
-	// so we only need to check the end-of-sequence conditions for 'poly1'
-	// in our iteration.
-
-	PolyLineOnSphere::vertex_const_iterator
-	 poly1_iter = poly1.vertex_begin(),
-	 poly1_end = poly1.vertex_end(),
-	 poly2_iter = poly2.vertex_begin();
-	for ( ; poly1_iter != poly1_end; ++poly1_iter, ++poly2_iter) {
-
-		if ( ! points_are_coincident(*poly1_iter, *poly2_iter)) {
-
-			break;
-		}
-	}
-	// So, we're out of the loop.  Why?  Did we make it through all the
-	// polyline's vertices (in which case, the polylines are equivalent),
-	// or did we break before the end (in which case, we need to try the
-	// reverse)?
-	if (poly1_iter == poly1_end) {
-
-		// We made it all the way through the vertices, so the
-		// polylines are equivalent.
-		return true;
-	}
-
-	// Let's try comparing 'poly1' with the reverse of 'poly2'.
-	std::list< PointOnSphere >
-	 rev(poly2.vertex_begin(), poly2.vertex_end());
-	rev.reverse();
-
-	std::list< PointOnSphere >::const_iterator rev_iter = rev.begin();
-	for (poly1_iter = poly1.vertex_begin();
-	     poly1_iter != poly1_end;
-	     ++poly1_iter, ++rev_iter) {
-
-		if ( ! points_are_coincident(*poly1_iter, *rev_iter)) {
-
-			return false;
-		}
-	}
-	return true;
+	return d_curr_gca->start_point();
 }
