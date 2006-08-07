@@ -24,7 +24,6 @@
 #define GPLATES_MATHS_GREATCIRCLE_H
 
 #include "types.h"
-#include "Axial.h"
 #include "UnitVector3D.h"
 #include "PointOnSphere.h"
 #include "Vector3D.h"
@@ -34,7 +33,7 @@ namespace GPlatesMaths
 	/** 
 	 * A great circle of a unit sphere.
 	 */
-	class GreatCircle: public Axial {
+	class GreatCircle {
 
 		public:
 			/**
@@ -44,7 +43,7 @@ namespace GPlatesMaths
 			explicit
 			GreatCircle(
 			 const UnitVector3D &axis) :
-			 Axial(axis) { }
+			 _axis(axis) { }
 
 			/**
 			 * Create a great circle, given two points on it.
@@ -59,11 +58,20 @@ namespace GPlatesMaths
 			GreatCircle(
 			 const PointOnSphere &p1,
 			 const PointOnSphere &p2);
+			
+
+			/**
+			 * The unit vector indicating the direction of the axis
+			 * of this great circle.
+			 * FIXME: This should return a reference to a const.
+			 * FIXME: s/axisvector/axis/
+			 */
+			UnitVector3D
+			axisvector() const { return _axis; }
 
 
 			/**
-			 * FIXME: This should return a reference to a const.
-			 * Fix Axial::axisvector ('Axial::axis_vector') also.
+			 * FIXME: Remove this.
 			 */
 			UnitVector3D
 			normal() const {
@@ -111,6 +119,9 @@ namespace GPlatesMaths
 			 */
 			static UnitVector3D calcNormal(const UnitVector3D &u1,
 			                               const UnitVector3D &u2);
+
+			UnitVector3D _axis;
+
 	};
 
 	inline GreatCircle

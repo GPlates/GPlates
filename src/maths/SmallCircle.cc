@@ -33,7 +33,7 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 				std::vector<PointOnSphere> &points) const
 {
 	// If small circle and great circle are parallel, no intersections
-	if (collinear (_axisvector, other.axisvector ()))
+	if (collinear (_axis, other.axisvector ()))
 		return 0;
 
 	// Since the axes are not collinear, the planes that the circles live
@@ -41,7 +41,7 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 
 	// A is one point on the line through the intersection points, and
 	// B is the direction vector, so the line equation is: x = A + Bt
-	Vector3D B = cross (other.axisvector (), _axisvector);
+	Vector3D B = cross (other.axisvector (), _axis);
 	real_t scale = _cos_colat / B.magSqrd ();
 	Vector3D A = cross (B, other.axisvector ()) * scale;
 

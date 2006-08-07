@@ -26,6 +26,7 @@
 #include "FunctionDomainException.h"
 #include "ViolatedClassInvariantException.h"
 #include "LatLonPointConversions.h"
+#include "Rotation.h"
 #include "Vector3D.h"
 
 
@@ -209,6 +210,23 @@ GPlatesMaths::GridOnSphere::calcDelta(const UnitVector3D &orig,
 }
 
 
+namespace {
+
+	GPlatesMaths::PointOnSphere
+	rotate_point_about_axis(
+	 const GPlatesMaths::PointOnSphere &p,
+	 const GPlatesMaths::UnitVector3D &rot_axis,
+	 const GPlatesMaths::real_t &rot_angle) {
+
+		using namespace GPlatesMaths;
+
+		Rotation r = Rotation::Create(rot_axis, rot_angle);
+		return PointOnSphere(r * p);
+	}
+
+}
+
+
 GPlatesMaths::PointOnSphere
 GPlatesMaths::GridOnSphere::resolve(index_t x, index_t y) const {
 
@@ -232,13 +250,16 @@ GPlatesMaths::GridOnSphere::resolve(index_t x, index_t y) const {
 	 * of longitude, ie. about the axis of the great circle of longitude).
 	 */
 	PointOnSphere rot_orig =
-	 _line_of_lon.rotateAboutAxis(_origin, y * _delta_along_lon);
+	 rotate_point_about_axis(_origin, _line_of_lon.axisvector(),
+	  y * _delta_along_lon);
 
 	/*
 	 * Next, rotate the rotated-origin to the appropriate longitude
 	 * (about the axis of the small circle of latitude).
 	 */
-	return _line_of_lat.rotateAboutAxis(rot_orig, x * _delta_along_lat);
+	return
+	 rotate_point_about_axis(rot_orig, _line_of_lat.axisvector(),
+	  x * _delta_along_lat);
 }
 
 

@@ -24,7 +24,6 @@
 #define _GPLATES_MATHS_SMALLCIRCLE_H_
 
 #include <vector>
-#include "Axial.h"
 #include "types.h"
 #include "GreatCircle.h"
 #include "PointOnSphere.h"
@@ -42,7 +41,7 @@ namespace GPlatesMaths
 	 * colatitudes are exactly pi (which are technically great circles).
 	 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
 	 */
-	class SmallCircle : public Axial
+	class SmallCircle
 	{
 		public:
 			/**
@@ -59,7 +58,7 @@ namespace GPlatesMaths
 			 */
 			SmallCircle (const UnitVector3D &axis,
 			             const Colatitude &theta)
-				: Axial (axis) {
+				: _axis (axis) {
 
 				_cos_colat = cos (theta);
 				AssertInvariantHolds ();
@@ -72,7 +71,7 @@ namespace GPlatesMaths
 			 */
 			SmallCircle (const UnitVector3D &axis,
 			             const PointOnSphere &pt)
-				: Axial (axis) {
+				: _axis (axis) {
 
 				_cos_colat = dot (normal(), pt.unitvector ());
 				AssertInvariantHolds ();
@@ -91,11 +90,24 @@ namespace GPlatesMaths
 			 */
 			SmallCircle (const UnitVector3D &axis,
 			             const real_t &cos_theta)
-				: Axial (axis), _cos_colat (cos_theta) {
+				: _axis (axis), _cos_colat (cos_theta) {
 
 				AssertInvariantHolds ();
 			}
 
+
+			/**
+			 * The unit vector indicating the direction of the axis
+			 * of this great circle.
+			 * FIXME: This should return a reference to a const.
+			 * FIXME: s/axisvector/axis/
+			 */
+			UnitVector3D
+			axisvector() const { return _axis; }
+
+			/**
+			 * FIXME: Remove this.
+			 */
 			UnitVector3D
 			normal () const { return axisvector(); }
 
@@ -137,6 +149,9 @@ namespace GPlatesMaths
 			void AssertInvariantHolds () const;
 
 		private:
+
+			UnitVector3D _axis;
+
 			/**
 			 * The cosine of the colatitude.
 			 */

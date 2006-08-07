@@ -27,7 +27,7 @@
 
 GPlatesMaths::GreatCircle::GreatCircle (const PointOnSphere &p1,
  const PointOnSphere &p2)
- : Axial (calcNormal(p1.unitvector(), p2.unitvector())) {  }
+ : _axis (calcNormal(p1.unitvector(), p2.unitvector())) {  }
 
 
 #if 0
