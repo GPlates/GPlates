@@ -20,17 +20,17 @@
  *
  */
 
-#ifndef _GPLATES_GUI_GPLATESAPP_H_
-#define _GPLATES_GUI_GPLATESAPP_H_
+#ifndef GPLATES_GUI_GPLATESAPP_H
+#define GPLATES_GUI_GPLATESAPP_H
 
 #include <wx/app.h>
 
-namespace GPlatesGui
-{
+namespace GPlatesGui {
+
 	class MainWindow;
 
-	class GPlatesApp: public wxApp
-	{
+	class GPlatesApp: public wxApp {
+
 		public:
 			/**
 			 * This function is called by wxWindows during the
@@ -40,11 +40,12 @@ namespace GPlatesGui
 			 */
 			bool OnInit();
 
-			int OnExit ();
+			int OnExit();
 
 		private:
-			MainWindow *_main_win;
+
+			MainWindow *d_main_win;
 	};
 }
 
-#endif  // _GPLATES_GUI_GPLATESAPP_H_
+#endif  // GPLATES_GUI_GPLATESAPP_H

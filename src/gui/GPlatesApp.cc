@@ -83,11 +83,11 @@ GPlatesApp::OnInit()
 		 * Note that '_(str)' is a gettext-style macro alias for
 		 * 'wxGetTranslation(str)'.
 		 */
-		_main_win = new MainWindow
+		d_main_win = new MainWindow
 				(NULL, _(PACKAGE_STRING), wxSize (600, 500));
-		_main_win->Show (TRUE);
-		SetTopWindow (_main_win);
-		GPlatesControls::Lifetime::init(_main_win);
+		d_main_win->Show(TRUE);
+		SetTopWindow(d_main_win);
+		GPlatesControls::Lifetime::init(d_main_win);
 
 	} catch (const GPlatesGlobal::Exception &e) {
 
@@ -120,7 +120,7 @@ GPlatesApp::OnInit()
 
 int GPlatesApp::OnExit ()
 {
-	delete _main_win;
+	delete d_main_win;
 
 	return 0;
 }
