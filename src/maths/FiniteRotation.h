@@ -256,13 +256,12 @@ namespace GPlatesMaths
 	 const FiniteRotation &r,
 	 const GreatCircleArc &g) {
 
-		PointOnSphere start = r * g.startPoint();
-		PointOnSphere end   = r * g.endPoint();
+		PointOnSphere start = r * g.start_point();
+		PointOnSphere end   = r * g.end_point();
 
-		UnitVector3D rot_axis = r * g.rotationAxis();
+		UnitVector3D rot_axis = r * g.rotation_axis();
 
-		return
-		 GreatCircleArc::CreateGreatCircleArc(start, end, rot_axis);
+		return GreatCircleArc::create(start, end, rot_axis);
 	}
 
 

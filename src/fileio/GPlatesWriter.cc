@@ -118,9 +118,9 @@ namespace
 			<< "<coordlist>" << std::endl;
 
 		PolyLineOnSphere::const_iterator iter = begin;
-		WriteCoord(os, PointOnSphere(iter->startPoint()), indent + 1);
+		WriteCoord(os, PointOnSphere(iter->start_point()), indent + 1);
 		for ( ; iter != end; ++iter)
-			WriteCoord(os, PointOnSphere(iter->endPoint()), indent + 1);
+			WriteCoord(os, PointOnSphere(iter->end_point()), indent + 1);
 
 		os << Indent(indent)
 			<< "</coordlist>" << std::endl;

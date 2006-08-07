@@ -72,7 +72,7 @@ GPlatesGeo::LineData::proximity(
 		
 		/*
 		 * If proj(pos) is outside *i, return 
-		 *   min(dist(pos, i->startPoint), dist(pos, i->endPoint))
+		 *   min(dist(pos, i->start_point), dist(pos, i->end_point))
 		 */
 
 		/* Else (proj(pos) is inside *i), return
@@ -80,5 +80,5 @@ GPlatesGeo::LineData::proximity(
 		 */
 	}
 	
-	return dot(pos.unitvector(), _line.begin()->startPoint().unitvector());
+	return dot(pos.unitvector(), _line.begin()->start_point().unitvector());
 }

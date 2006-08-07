@@ -20,19 +20,19 @@
  *
  */
 
-#ifndef _GPLATES_MATHS_GREATCIRCLEARC_H_
-#define _GPLATES_MATHS_GREATCIRCLEARC_H_
+#ifndef GPLATES_MATHS_GREATCIRCLEARC_H
+#define GPLATES_MATHS_GREATCIRCLEARC_H
 
 #include "types.h"  /* real_t */
 #include "PointOnSphere.h"
 #include "UnitVector3D.h"
 
-namespace GPlatesMaths
-{
+namespace GPlatesMaths {
+
 	/** 
 	 * A great-circle arc on the surface of a sphere.
 	 * It has no public constructors.  To create an instance,
-	 * use the 'CreateGreatCircleArc' static member function.
+	 * use the 'create' static member functions.
 	 *
 	 * Note:
 	 * - no great circle arc may have duplicate points as the start-
@@ -41,15 +41,15 @@ namespace GPlatesMaths
 	 *    the arc is not clearly specified).
 	 * - no great circle may span an angle greater than pi radians
 	 *    (this is an effect of the dot and cross products of vectors:
-	 *    the angle between any two vectors is defined to always lie
-	 *    in the range [0, pi] radians).
+	 *    The angle between any two vectors is defined always to lie
+	 *    in the range [0, PI] radians).
 	 */
-	class GreatCircleArc
-	{
+	class GreatCircleArc {
+
 		public:
 			/**
-			 * Make a great circle arc beginning at @a p1 and ending
-			 * at @a p2.
+			 * Make a great circle arc beginning at @a p1 and
+			 * ending at @a p2.
 			 *
 			 * @throws IndeterminateResultException when one of the 
 			 *   following occurs:
@@ -57,41 +57,62 @@ namespace GPlatesMaths
 			 *   - @a p1 and @a p2 are antipodal (that is, they are
 			 *     diametrically opposite on the globe).
 			 */
-			static GreatCircleArc
-			CreateGreatCircleArc(PointOnSphere p1,
-			                     PointOnSphere p2);
+			static
+			GreatCircleArc
+			create(
+			 const PointOnSphere &p1,
+			 const PointOnSphere &p2);
 
 			/**
 			 * @overload
 			 *
 			 * @throws InvalidOperationException when @a rot_axis
-			 *   is not collinear with the cross product of the vectors
-			 *   pointing from the origin to @a p1 and @a p2 respectively.
+			 *   is not collinear with the cross product of the
+			 *   vectors pointing from the origin to @a p1 and
+			 *   @a p2 respectively.
 			 */
-			static GreatCircleArc
-			CreateGreatCircleArc(PointOnSphere p1,
-			                     PointOnSphere p2,
-			                     UnitVector3D rot_axis);
+			static
+			GreatCircleArc
+			create(
+			 const PointOnSphere &p1,
+			 const PointOnSphere &p2,
+			 const UnitVector3D &rot_axis);
 
-			PointOnSphere
-			startPoint() const { return _p1; }
+			const PointOnSphere &
+			start_point() const {
+				
+				return d_p1;
+			}
 
-			PointOnSphere
-			endPoint() const { return _p2; }
+			const PointOnSphere &
+			end_point() const {
+				
+				return d_p2;
+			}
 
-			UnitVector3D
-			rotationAxis() const { return _rot_axis; }
+			const UnitVector3D &
+			rotation_axis() const {
+				
+				return d_rot_axis;
+			}
 
 		protected:
-			GreatCircleArc(PointOnSphere p1, PointOnSphere p2,
-			               UnitVector3D rot_axis)
-				: _p1(p1), _p2(p2),
-				  _rot_axis(rot_axis) {  }
+
+			GreatCircleArc(
+			 const PointOnSphere &p1,
+			 const PointOnSphere &p2,
+			 const UnitVector3D &rot_axis) :
+			 d_p1(p1),
+			 d_p2(p2),
+			 d_rot_axis(rot_axis) {  }
 
 		private:
-			PointOnSphere _p1, _p2;
-			UnitVector3D _rot_axis;
+
+			PointOnSphere d_p1;
+			PointOnSphere d_p2;
+			UnitVector3D d_rot_axis;
+
 	};
 }
 
-#endif  // _GPLATES_MATHS_GREATCIRCLEARC_H_
+#endif  // GPLATES_MATHS_GREATCIRCLEARC_H

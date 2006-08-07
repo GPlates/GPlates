@@ -48,9 +48,9 @@ CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin,
 	PolyLineOnSphere::const_iterator iter = begin;
 
 	glBegin(GL_LINE_STRIP);
-		CallVertexWithPoint(iter->startPoint());
+		CallVertexWithPoint(iter->start_point());
 		for ( ; iter != end; ++iter)
-			CallVertexWithPoint(iter->endPoint());
+			CallVertexWithPoint(iter->end_point());
 	glEnd();
 }
 

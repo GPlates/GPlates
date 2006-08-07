@@ -171,8 +171,7 @@ GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(
 		// This should be handled in the PLATES-format reader.
 		try {
 
-			GreatCircleArc g =
-			 GreatCircleArc::CreateGreatCircleArc(p1, p2);
+			GreatCircleArc g = GreatCircleArc::create(p1, p2);
 			plos.push_back(g);
 
 		} catch (const IndeterminateResultException &e) {
@@ -211,13 +210,13 @@ GPlatesMaths::LatLonPointConversions::convertPolyLineOnSphereToLatLonPointList(
 
 	// The first LatLonPoint in the list will be the start-point of the
 	// first GreatCircleArc...
-	llpl.push_back(convertPointOnSphereToLatLonPoint(iter->startPoint()));
+	llpl.push_back(convertPointOnSphereToLatLonPoint(iter->start_point()));
 
 	for ( ; iter != end; ++iter) {
 
 		// ... all the rest will be the end-points of GreatCircleArcs.
 		llpl.push_back(
-		 convertPointOnSphereToLatLonPoint(iter->endPoint()));
+		 convertPointOnSphereToLatLonPoint(iter->end_point()));
 	}
 
 	return llpl;

@@ -28,13 +28,13 @@
 #include "InvalidOperationException.h"
 
 
-using namespace GPlatesMaths;
+GPlatesMaths::GreatCircleArc
+GPlatesMaths::GreatCircleArc::create(
+ const PointOnSphere &p1,
+ const PointOnSphere &p2) {
 
-GreatCircleArc
-GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2) {
-
-	UnitVector3D u1 = p1.unitvector();
-	UnitVector3D u2 = p2.unitvector();
+	const UnitVector3D &u1 = p1.unitvector();
+	const UnitVector3D &u2 = p2.unitvector();
 
 	real_t dp = dot(u1, u2);
 
@@ -48,8 +48,8 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2) {
 		std::ostringstream oss;
 
 		oss
-		 << "Attempted to calculate a great-circle "
-		 << "arc from duplicate endpoints "
+		 << "Attempted to calculate a great-circle arc from "
+		 << "duplicate endpoints "
 		 << u1
 		 << " and "
 		 << u2
@@ -63,8 +63,8 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2) {
 		std::ostringstream oss;
 
 		oss
-		 << "Attempted to calculate a great-circle "
-		 << "arc from antipodal endpoints "
+		 << "Attempted to calculate a great-circle arc from "
+		 << "antipodal endpoints "
 		 << u1
 		 << " and "
 		 << u2
@@ -78,7 +78,7 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2) {
 	 *
 	 * To do this, we calculate the cross product.
 	 */
-	Vector3D v = cross (u1, u2);
+	Vector3D v = cross(u1, u2);
 
 	/*
 	 * Since u1 and u2 are unit vectors, the magnitude of v will be
@@ -94,12 +94,14 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2) {
 }
 
 
-GreatCircleArc
-GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2,
-	UnitVector3D rot_axis) {
+GPlatesMaths::GreatCircleArc
+GPlatesMaths::GreatCircleArc::create(
+ const PointOnSphere &p1,
+ const PointOnSphere &p2,
+ const UnitVector3D &rot_axis) {
 
-	UnitVector3D u1 = p1.unitvector();
-	UnitVector3D u2 = p2.unitvector();
+	const UnitVector3D &u1 = p1.unitvector();
+	const UnitVector3D &u2 = p2.unitvector();
 
 	real_t dp = dot(u1, u2);
 
@@ -113,8 +115,8 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2,
 		std::ostringstream oss;
 		
 		oss
-		 << "Attempted to calculate a great-circle "
-		 << "arc from duplicate endpoints "
+		 << "Attempted to calculate a great-circle arc from "
+		 << "duplicate endpoints "
 		 << u1
 		 << " and "
 		 << u2
@@ -127,8 +129,8 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2,
 		std::ostringstream oss;
 		
 		oss
-		 << "Attempted to calculate a great-circle "
-		 << "arc from antipodal endpoints "
+		 << "Attempted to calculate a great-circle arc from "
+		 << "antipodal endpoints "
 		 << u1
 		 << " and "
 		 << u2
@@ -148,9 +150,17 @@ GreatCircleArc::CreateGreatCircleArc(PointOnSphere p1, PointOnSphere p2,
 	if ( ! collinear(v, Vector3D(rot_axis))) {
 
 		// 'rot_axis' is not the axis which rotates 'u1' into 'u2'
-		std::ostringstream oss("Attempted to calculate a great-circle "
-		 "arc from an invalid triple of vectors (");
-		oss << u1 << " and " << u2 << " around " << rot_axis << ").";
+		std::ostringstream oss;
+		
+		oss
+		 << "Attempted to calculate a great-circle arc from "
+		 << "an invalid triple of vectors ("
+		 << u1
+		 << " and "
+		 << u2
+		 << " around "
+		 << rot_axis
+		 << ").";
 		throw InvalidOperationException(oss.str().c_str());
 	}
 
