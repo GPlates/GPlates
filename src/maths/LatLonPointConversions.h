@@ -128,9 +128,24 @@ namespace GPlatesMaths {
 		convertLatLonPointListToPolyLineOnSphere(
 		 const std::list< LatLonPoint > &);
 
-		const std::list< LatLonPoint >
-		convertPolyLineOnSphereToLatLonPointList(
-		 const PolyLineOnSphere &);
+		/**
+		 * Populate the supplied (presumably empty) sequence of
+		 * LatLonPoints using the supplied PolyLineOnSphere.
+		 *
+		 * It is presumed that the sequence of LatLonPoints is empty --
+		 * or its contents unimportant -- since its contents, if any,
+		 * will be swapped out into a temporary sequence and discarded
+		 * at the end of the function.
+		 *
+		 * This function is strongly exception-safe.  *sigh*  If only
+		 * the same could be said for the rest of this crap (and yes,
+		 * I wrote most of it).
+		 */
+		template< typename S >
+		void
+		populate_lat_lon_point_sequence(
+		 S &sequence,
+		 const PolyLineOnSphere &polyline);
 
 	}
 
@@ -144,6 +159,44 @@ namespace GPlatesMaths {
 	 LatLonPointConversions::convertLatLonPointToPointOnSphere(
 	  LatLonPoint(-90.0, 0.0));
 
+}
+
+
+template< typename S >
+void
+GPlatesMaths::LatLonPointConversions::populate_lat_lon_point_sequence(
+ S &sequence,
+ const PolyLineOnSphere &polyline) {
+
+	S tmp_seq;
+
+	PolyLineOnSphere::const_iterator
+	 iter = polyline.begin(),
+	 end = polyline.end();
+
+	if (iter == end) {
+
+		// This PolyLine contains no segments.
+		// FIXME: Should we, uh, like, COMPLAIN about this?...
+		// It's probably invalid...
+		return;
+	}
+
+	// The first LatLonPoint in the list will be the start-point of the
+	// first GreatCircleArc...
+	tmp_seq.push_back(
+	 convertPointOnSphereToLatLonPoint(iter->start_point()));
+
+	for ( ; iter != end; ++iter) {
+
+		// ... and all the rest of the LatLonPoints will be end-points.
+		tmp_seq.push_back(
+		 convertPointOnSphereToLatLonPoint(iter->end_point()));
+	}
+
+	// OK, if we made it to here without throwing an exception, we're safe.
+	// Let's swap the contents into the target sequence.
+	sequence.swap(tmp_seq);  // This won't throw.
 }
 
 #endif  // GPLATES_MATHS_LATLONPOINTCONVERSIONS_H

@@ -188,36 +188,3 @@ GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(
 	}
 	return plos;
 }
-
-
-const std::list< GPlatesMaths::LatLonPoint >
-GPlatesMaths::LatLonPointConversions::convertPolyLineOnSphereToLatLonPointList(
- const PolyLineOnSphere &polyline) {
-
-	std::list< GPlatesMaths::LatLonPoint > llpl;
-
-	PolyLineOnSphere::const_iterator
-	 iter = polyline.begin(),
-	 end = polyline.end();
-
-	if (iter == end) {
-
-		// This PolyLine contains no segments.
-		// FIXME: Should we, uh, like, COMPLAIN about this?...
-		// It's probably invalid...
-		return llpl;
-	}
-
-	// The first LatLonPoint in the list will be the start-point of the
-	// first GreatCircleArc...
-	llpl.push_back(convertPointOnSphereToLatLonPoint(iter->start_point()));
-
-	for ( ; iter != end; ++iter) {
-
-		// ... all the rest will be the end-points of GreatCircleArcs.
-		llpl.push_back(
-		 convertPointOnSphereToLatLonPoint(iter->end_point()));
-	}
-
-	return llpl;
-}
