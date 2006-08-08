@@ -28,7 +28,6 @@
 #include "GreatCircle.h"
 #include "PointOnSphere.h"
 #include "UnitVector3D.h"
-#include "Colatitude.h"
 #include "Vector3D.h"
 
 namespace GPlatesMaths
@@ -38,31 +37,13 @@ namespace GPlatesMaths
 	 *
 	 * Degenerate circles (ie. circles whose colatitudes are 0 or pi,
 	 * resulting in point-like circles) are allowed, as are circles whose
-	 * colatitudes are exactly pi (which are technically great circles).
+	 * "colatitudes" around the "North Pole" of their axes are exactly pi
+	 * (which are technically great circles).
 	 * @invariant \f$ \theta \in \left[ 0, \pi \right] \f$
 	 */
 	class SmallCircle
 	{
 		public:
-			/**
-			 * Create a small circle, given its axis and an angle.
-			 * @param axis The axis of the circle.
-			 * @param theta Angle between axis and circumference
-			 *   (aka the "colatitude").  In radians, as always.
-			 *
-			 * @image html fig_small_circle.png
-			 * @image latex fig_small_circle.eps width=2.3in
-			 *
-			 * @throws ViolatedClassInvariantException if
-			 *   @p abs(@p cos(@a theta)) > 1.
-			 */
-			SmallCircle (const UnitVector3D &axis,
-			             const Colatitude &theta)
-				: _axis (axis) {
-
-				_cos_colat = cos (theta);
-				AssertInvariantHolds ();
-			}
 
 			/**
 			 * Create a small circle, given its axis and a point.
@@ -70,27 +51,32 @@ namespace GPlatesMaths
 			 * @param pt A point through which the circle must pass.
 			 */
 			SmallCircle (const UnitVector3D &axis,
-			             const PointOnSphere &pt)
-				: _axis (axis) {
+			             const PointOnSphere &p)
+				: _axis (axis),
+				  _cos_colat(dot(axis, p.unitvector ())) {
 
-				_cos_colat = dot (normal(), pt.unitvector ());
 				AssertInvariantHolds ();
 			}
 
 			/**
 			 * Create a small circle, given its axis and the cosine
-			 * of an angle.
+			 * of the "colatitude" of the small circle around the
+			 * "North Pole" of its axis.
+			 *
 			 * @param axis The axis of the circle.
-			 * @param cos_theta The cosine of the angle between
+			 * @param cos_colat The cosine of the angle between
 			 *   axis and circumference (aka the "colatitude").
 			 *   Obviously, it must lie in the range [-1, 1].
 			 * 
+			 * @image html fig_small_circle.png
+			 * @image latex fig_small_circle.eps width=2.3in
+			 *
 			 * @throws ViolatedClassInvariantException if
-			 *   @p abs(@a cosi_theta)) > 1.
+			 *   @p abs(@a cos_colat)) > 1.
 			 */
 			SmallCircle (const UnitVector3D &axis,
-			             const real_t &cos_theta)
-				: _axis (axis), _cos_colat (cos_theta) {
+			             const real_t &cos_colat)
+				: _axis (axis), _cos_colat (cos_colat) {
 
 				AssertInvariantHolds ();
 			}
@@ -152,10 +138,8 @@ namespace GPlatesMaths
 
 			UnitVector3D _axis;
 
-			/**
-			 * The cosine of the colatitude.
-			 */
 			real_t _cos_colat;
+
 	};
 }
 
