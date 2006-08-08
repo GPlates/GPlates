@@ -20,6 +20,7 @@
  *
  */
 
+#include <list>
 #include <sstream>
 #include "PolyLineOnSphere.h"
 #include "HighPrecision.h"

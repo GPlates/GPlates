@@ -23,7 +23,7 @@
 #ifndef GPLATES_MATHS_POLYLINEONSPHERE_H
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
-#include <list>
+#include <vector>
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
 #include <utility>  /* pair */
 #include <memory>  /* auto_ptr */
@@ -72,8 +72,22 @@ namespace GPlatesMaths {
 
 		/**
 		 * The type of the sequence of great circle arcs.
+		 *
+		 * Implementation detail:  We are using 'std::vector' as the
+		 * sequence type (rather than, say, 'std::list') to provide a
+		 * speed-up in memory-allocation (we use 'std::vector::reserve'
+		 * at creation time to avoid expensive reallocations as arcs
+		 * are appended one-by-one; after that, because the contents of
+		 * the sequence are never altered, the size of the vector will
+		 * never change), a speed-up in iteration (for what it's worth,
+		 * a pointer-increment rather than a 'node = node->next'-style
+		 * operation) and a decrease (hopefully) in memory-usage (by
+		 * avoiding a whole bunch of unnecessary links).  (We should,
+		 * however, be able to get away without relying upon the
+		 * "random-access"ness of vector iterators; forward iterators
+		 * should be enough.)
 		 */
-		typedef std::list< GreatCircleArc > seq_type;
+		typedef std::vector< GreatCircleArc > seq_type;
 
 
 		/**
@@ -604,9 +618,11 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Populate the empty polyline @a poly with the collection of 
-		 * points @a coll, using the points to define vertices of the
-		 * polyline.
+		 * Generate a sequence of polyline segments from the collection
+		 * of points @a coll, using the points to define the endpoints
+		 * and vertices of the segments, then swap this new sequence of
+		 * segments into the polyline @a poly, discarding any sequence
+		 * of segments which may have been there before.
 		 *
 		 * This function is strongly exception-safe and
 		 * exception-neutral.
@@ -614,7 +630,7 @@ namespace GPlatesMaths {
 		template< typename C >
 		static
 		void
-		populate(
+		generate_segments_and_swap(
 		 PolyLineOnSphere &poly,
 		 const C &coll);
 
@@ -808,7 +824,7 @@ namespace GPlatesMaths {
 	 const C &coll) {
 
 		PolyLineOnSphere p;
-		populate(p, coll);
+		generate_segments_and_swap(p, coll);
 		return p;
 	}
 
@@ -819,14 +835,14 @@ namespace GPlatesMaths {
 	 const C &coll) {
 
 		std::auto_ptr< PolyLineOnSphere > ptr(new PolyLineOnSphere());
-		populate(*ptr, coll);
+		generate_segments_and_swap(*ptr, coll);
 		return ptr;
 	}
 
 
 	template< typename C >
 	void
-	PolyLineOnSphere::populate(
+	PolyLineOnSphere::generate_segments_and_swap(
 	 PolyLineOnSphere &poly,
 	 const C &coll) {
 
@@ -840,11 +856,11 @@ namespace GPlatesMaths {
 			 "2) of endpoints.");
 		}
 
-		// There's no real need to put all the new line-segments into a
-		// temporary sequence (rather than putting them directly into
-		// 'd_seq'), but doing it this way might make the code logic a
-		// little easier to follow.
+		// Make it easier to provide strong exception safety by
+		// appending the new segments to a temporary sequence (rather
+		// than putting them directly into 'd_seq').
 		seq_type tmp_seq;
+		tmp_seq.reserve(coll.size() - 1);
 
 		typename C::const_iterator
 		 prev,
@@ -867,7 +883,7 @@ namespace GPlatesMaths {
 			 "polyline from an insufficient number (ie, less than "
 			 "2) of unique endpoints.");
 		}
-		poly.d_seq.splice(poly.d_seq.end(), tmp_seq);
+		poly.d_seq.swap(tmp_seq);
 	}
 
 }
