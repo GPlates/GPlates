@@ -20,9 +20,16 @@
  *
  */
 
+#include <ostream>
+
 #include "IndeterminateResultException.h"
 #include "Vector3D.h"
 #include "UnitVector3D.h"
+
+
+GPlatesMaths::Vector3D::Vector3D(
+ const UnitVector3D &u) :
+ _x(u.x()), _y(u.y()), _z(u.z()) {  }
 
 
 GPlatesMaths::UnitVector3D
@@ -38,12 +45,29 @@ GPlatesMaths::Vector3D::get_normalisation() const
 }
 
 
-GPlatesMaths::Vector3D
-GPlatesMaths::cross(const Vector3D &v1, const Vector3D &v2)
-{
-	real_t x_comp = v1.y () * v2.z () - v1.z () * v2.y ();
-	real_t y_comp = v1.z () * v2.x () - v1.x () * v2.z ();
-	real_t z_comp = v1.x () * v2.y () - v1.y () * v2.x ();
+const GPlatesMaths::Vector3D
+GPlatesMaths::cross(
+ const Vector3D &v1,
+ const Vector3D &v2) {
 
-	return Vector3D (x_comp, y_comp, z_comp);
+	return GenericVectorOps3D::ReturnType< Vector3D >::cross(v1, v2);
+}
+
+
+const GPlatesMaths::Vector3D
+GPlatesMaths::operator*(
+ const real_t &s,
+ const Vector3D &v) {
+
+	return GenericVectorOps3D::ReturnType< Vector3D >::scale(s, v);
+}
+
+
+std::ostream &
+GPlatesMaths::operator<<(
+ std::ostream &os,
+ const Vector3D &v) {
+
+	os << "(" << v.x() << ", " << v.y() << ", " << v.z() << ")";
+	return os;
 }

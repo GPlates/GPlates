@@ -17,18 +17,18 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
 #ifndef _GPLATES_MATHS_VECTOR3D_H_
 #define _GPLATES_MATHS_VECTOR3D_H_
 
-#include <ostream>
+#include <iosfwd>
+
 #include "types.h"  /* real_t */
+#include "GenericVectorOps3D.h"
 
+namespace GPlatesMaths {
 
-namespace GPlatesMaths
-{
 	class UnitVector3D;
 
 	/** 
@@ -48,14 +48,17 @@ namespace GPlatesMaths
 			 * @param y_comp The y-component.
 			 * @param z_comp The z-component.
 			 */
-			explicit 
 			Vector3D(const real_t& x_comp,
 			         const real_t& y_comp,
 			         const real_t& z_comp)
 			 : _x(x_comp), _y(y_comp), _z(z_comp) {  }
 
 
-			virtual
+			explicit
+			Vector3D(
+			 const UnitVector3D &u);
+
+
 			~Vector3D() {  }
 
 
@@ -82,7 +85,7 @@ namespace GPlatesMaths
 			 * Returns the magnitude of the vector; that is,
 			 * \f$ \sqrt{x^2 + y^2 + z^2} \f$
 			 */
-			virtual real_t
+			real_t
 			magnitude() const {
 
 				return sqrt(magSqrd());
@@ -95,13 +98,23 @@ namespace GPlatesMaths
 			 * @throws IndeterminateResultException if @a this has zero
 			 *   magnitude.
 			 */
-			virtual UnitVector3D get_normalisation () const;
+			UnitVector3D get_normalisation () const;
 
 		protected:
 			real_t _x,  /**< x-component. */
 			       _y,  /**< y-component. */
 			       _z;  /**< z-component. */
 	};
+
+
+	inline
+	const real_t
+	dot(
+	 const Vector3D &v1,
+	 const Vector3D &v2) {
+
+		return GenericVectorOps3D::dot(v1, v2);
+	}
 
 
 	inline bool
@@ -122,35 +135,28 @@ namespace GPlatesMaths
 	}
 
 
-	inline real_t
-	dot(const Vector3D &v1, const Vector3D &v2) {
+	inline
+	const Vector3D
+	operator-(
+	 const Vector3D &v) {
 
-		real_t x_dot = v1.x() * v2.x();
-		real_t y_dot = v1.y() * v2.y();
-		real_t z_dot = v1.z() * v2.z();
-
-		return (x_dot + y_dot + z_dot);
+		return GenericVectorOps3D::negate(v);
 	}
 
 
-	inline Vector3D
-	operator-(const Vector3D &v) {
-
-		return Vector3D(-v.x(), -v.y(), -v.z());
-	}
-
-
-	inline Vector3D
-	operator*(real_t r, const Vector3D &v) {
-
-		return Vector3D(r * v.x(), r * v.y(), r * v.z());
-	}
+	const Vector3D
+	operator*(
+	 const real_t &s,
+	 const Vector3D &v);
 
 
-	inline Vector3D
-	operator*(const Vector3D &v, real_t r) {
+	inline
+	const Vector3D
+	operator*(
+	 const Vector3D &v,
+	 const real_t &s) {
 
-		return (r * v);
+		return (s * v);
 	}
 
 
@@ -172,12 +178,10 @@ namespace GPlatesMaths
 	}
 
 
-	inline std::ostream &
-	operator<< (std::ostream &os, const Vector3D &v)
-	{
-		os << "(" << v.x() << ", " << v.y() << ", " << v.z() << ")";
-		return os;
-	}
+	std::ostream &
+	operator<<(
+	 std::ostream &os,
+	 const Vector3D &v);
 
 
 	/**
@@ -198,11 +202,13 @@ namespace GPlatesMaths
 	/**
 	 * Test whether two vectors are perpendicular.
 	 */
-	inline bool
-	perpendicular (const Vector3D &v1, const Vector3D &v2)
-	{
-		real_t dp = dot (v1, v2);
-		return (abs (dp) <= 0.0);
+	inline
+	bool
+	perpendicular(
+	 const Vector3D &v1,
+	 const Vector3D &v2) {
+
+		return GenericVectorOps3D::perpendicular(v1, v2);
 	}
 
 
@@ -223,7 +229,10 @@ namespace GPlatesMaths
 	}
 
 
-	Vector3D cross (const Vector3D &s1, const Vector3D &s2);
+	const Vector3D
+	cross(
+	 const Vector3D &v1,
+	 const Vector3D &v2);
 }
 
 #endif  // _GPLATES_MATHS_VECTOR3D_H_

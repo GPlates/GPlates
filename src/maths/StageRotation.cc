@@ -24,7 +24,6 @@
 
 #include "StageRotation.h"
 #include "IndeterminateResultException.h"
-#include "DirVector3D.h"
 #include "Vector3D.h"
 
 

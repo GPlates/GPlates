@@ -149,8 +149,8 @@ GPlatesMaths::GridOnSphere::calcDeltaAlongLat(const UnitVector3D &orig,
 	 * Now calculate the orthogonal projections of 'orig' and 'next' from
 	 * 'north'.
 	 */
-	Vector3D orig_orth = orig - par;
-	Vector3D next_orth = next - par;
+	Vector3D orig_orth = Vector3D(orig) - par;
+	Vector3D next_orth = Vector3D(next) - par;
 
 	/*
 	 * Since 'orig' and 'next' are neither parallel nor antiparallel
@@ -169,7 +169,7 @@ GPlatesMaths::GridOnSphere::calcDelta(const UnitVector3D &orig,
 
 	real_t   dp = dot(orig, next);
 	Vector3D xp = cross(orig, next);
-	real_t   tp = dot(xp, axis);
+	real_t   tp = dot(xp, Vector3D(axis));
 
 	if (tp > 0.0) {
 

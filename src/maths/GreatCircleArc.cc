@@ -21,7 +21,6 @@
 
 #include <sstream>
 #include "GreatCircleArc.h"
-#include "DirVector3D.h"
 #include "Vector3D.h"
 #include "IndeterminateResultException.h"
 #include "InvalidOperationException.h"
@@ -211,7 +210,8 @@ namespace {
 		 * The projection of 'u_test_point' perpendicular to the
 		 * direction of 'rotation_axis'.
 		 */
-		GPlatesMaths::Vector3D perp = u_test_point - proj;
+		GPlatesMaths::Vector3D perp =
+		 GPlatesMaths::Vector3D(u_test_point) - proj;
 
 		return perp.get_normalisation();
 	}

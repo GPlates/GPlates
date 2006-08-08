@@ -56,15 +56,18 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 	if (discr <= 0.0) {
 		// only one intersection point
 		real_t t = -b / (2 * a);
-		points.push_back (PointOnSphere (A + B * t));
+		UnitVector3D u(A + B * t);
+		points.push_back (PointOnSphere (u));
 		return 1;
 	}
 
 	// two intersection points
 	real_t pm = sqrt (discr);
 	real_t t1 = (-b - pm) / (2 * a), t2 = (-b + pm) / (2 * a);
-	points.push_back (PointOnSphere (A + B * t1));
-	points.push_back (PointOnSphere (A + B * t2));
+	UnitVector3D u1(A + B * t1);
+	points.push_back (PointOnSphere (u1));
+	UnitVector3D u2(A + B * t2);
+	points.push_back (PointOnSphere (u2));
 
 	return 2;
 }

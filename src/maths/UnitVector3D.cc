@@ -20,10 +20,33 @@
  *
  */
 
+#include <ostream>
 #include <sstream>
 #include "UnitVector3D.h"
 #include "HighPrecision.h"
 #include "ViolatedUnitVectorInvariantException.h"
+
+
+GPlatesMaths::UnitVector3D::UnitVector3D(
+ const real_t &x_comp,
+ const real_t &y_comp,
+ const real_t &z_comp) :
+ d_x(x_comp),
+ d_y(y_comp),
+ d_z(z_comp) {
+
+	AssertInvariant(__LINE__);
+}
+
+
+GPlatesMaths::UnitVector3D::UnitVector3D(
+ const Vector3D &v) :
+ d_x(v.x()),
+ d_y(v.y()),
+ d_z(v.z()) {
+
+	AssertInvariant(__LINE__);
+}
 
 
 void
@@ -33,7 +56,7 @@ GPlatesMaths::UnitVector3D::AssertInvariant (int line) const
 	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
 	 * For efficiency, don't bother sqrting yet.
 	 */
-	real_t mag_sqrd = (_x * _x) + (_y * _y) + (_z * _z);
+	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
 	if (mag_sqrd != 1.0) {
 
 		// invariant has been violated
@@ -138,4 +161,50 @@ GPlatesMaths::generatePerpendicular(const UnitVector3D &u) {
 			 cross(u, UnitVector3D::zBasis()).get_normalisation();
 		}
 	}
+}
+
+
+const GPlatesMaths::Vector3D
+GPlatesMaths::cross(
+ const UnitVector3D &u1,
+ const UnitVector3D &u2) {
+
+	return GenericVectorOps3D::ReturnType< Vector3D >::cross(u1, u2);
+}
+
+
+const GPlatesMaths::Vector3D
+GPlatesMaths::cross(
+ const UnitVector3D &u,
+ const Vector3D &v) {
+
+	return GenericVectorOps3D::ReturnType< Vector3D >::cross(u, v);
+}
+
+
+const GPlatesMaths::Vector3D
+GPlatesMaths::cross(
+ const Vector3D &v,
+ const UnitVector3D &u) {
+
+	return GenericVectorOps3D::ReturnType< Vector3D >::cross(v, u);
+}
+
+
+const GPlatesMaths::Vector3D
+GPlatesMaths::operator*(
+ const real_t &s,
+ const UnitVector3D &u) {
+
+	return GenericVectorOps3D::ReturnType< Vector3D >::scale(s, u);
+}
+
+
+std::ostream &
+GPlatesMaths::operator<<(
+ std::ostream &os,
+ const UnitVector3D &u) {
+
+	os << "(" << u.x() << ", " << u.y() << ", " << u.z() << ")";
+	return os;
 }

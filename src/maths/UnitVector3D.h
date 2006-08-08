@@ -23,10 +23,11 @@
 #ifndef _GPLATES_MATHS_UNITVECTOR3D_H_
 #define _GPLATES_MATHS_UNITVECTOR3D_H_
 
-#include <iostream>
+#include <iosfwd>
+
 #include "types.h"  /* real_t */
-#include "DirVector3D.h"
 #include "Vector3D.h"
+#include "GenericVectorOps3D.h"
 
 
 namespace GPlatesMaths
@@ -42,7 +43,7 @@ namespace GPlatesMaths
 	 * @invariant
 	 *  - magnitude of vector is identical to 1
 	 */
-	class UnitVector3D : public DirVector3D
+	class UnitVector3D
 	{
 		public:
 			/**
@@ -54,97 +55,146 @@ namespace GPlatesMaths
 			 *
 			 * @throw ViolatedUnitVectorInvariantException if the
 			 *   resulting vector does not have unit magnitude.
+			 *
+			 * FIXME:  This should become a 'create' function,
+			 * invoking a private ctor.
 			 */
+			UnitVector3D(
+			 const real_t &x_comp,
+			 const real_t &y_comp,
+			 const real_t &z_comp);
+
+
 			explicit
-			UnitVector3D(const real_t &x_comp,
-				     const real_t &y_comp,
-				     const real_t &z_comp)
-				: DirVector3D (x_comp, y_comp, z_comp, 1.0)
-			{
-				AssertInvariant (__LINE__);
-			}
+			UnitVector3D(
+			 const Vector3D &v);
 
-			/**
-			 * @throw ViolatedUnitVectorInvariantException if @a v
-			 *   does not have unit magnitude.
-			 */
-			UnitVector3D (const Vector3D &v) : DirVector3D (v, 1.0)
-			{
-				AssertInvariant (__LINE__);
-			}
 
-			virtual
+			// FIXME:  Add a magnitude-checking cctor.
+
+
 			~UnitVector3D() {  }
 
-			/**
-			 * @throw ViolatedUnitVectorInvariantException if @a v
-			 *   does not have unit magnitude.
-			 */
+
+			const real_t &
+			x() const {
+
+				return d_x;
+			}
+
+
+			const real_t &
+			y() const {
+
+				return d_y;
+			}
+
+
+			const real_t &
+			z() const {
+
+				return d_z;
+			}
+
+
 			UnitVector3D &
-			operator= (const Vector3D &v)
-			{
-				_x = v.x ();
-				_y = v.x ();
-				_z = v.x ();
+			operator=(
+			 const UnitVector3D &u) {
 
-				AssertInvariant (__LINE__);
+				d_x = u.x();
+				d_y = u.y();
+				d_z = u.z();
+
+				// FIXME: Check for accumulated magnitude errs.
 				return *this;
 			}
 
-			virtual real_t
-			magnitude() const { return 1.0; }
 
-			virtual UnitVector3D
-			get_normalisation() const {
-
-				return *this;
-			}
-
-			static inline UnitVector3D
+			static inline
+			UnitVector3D
 			xBasis() {
 
-				return UnitVector3D(1.0, 0.0, 0.0, 1.0);
+				return UnitVector3D(1.0, 0.0, 0.0);
 			}
 
-			static inline UnitVector3D
+			static inline
+			UnitVector3D
 			yBasis() {
 
-				return UnitVector3D(0.0, 1.0, 0.0, 1.0);
+				return UnitVector3D(0.0, 1.0, 0.0);
 			}
 
-			static inline UnitVector3D
+
+			static inline
+			UnitVector3D
 			zBasis() {
 
-				return UnitVector3D(0.0, 0.0, 1.0, 1.0);
+				return UnitVector3D(0.0, 0.0, 1.0);
 			}
 
-		protected:
-			/**
-			 * Super-secret backdoor constructor for the
-			 * @a xBasis, @a yBasis and @a zBasis functions.
-			 * The magnitude @a mag will be ignored.
-			 *
-			 * Those components had better define a unit vector!
-			 */
-			explicit
-			UnitVector3D(const real_t &x_comp,
-			             const real_t &y_comp,
-			             const real_t &z_comp,
-			             const real_t &mag) :
-
-				DirVector3D (x_comp, y_comp, z_comp, 1.0) {  }
-
+		private:
 
 			/** 
 			 * Assert the class invariant.
 			 * @throw ViolatedUnitVectorInvariantException
 			 *   if the invariant has been violated.
-			 *
-			 * Since this is invoked by constructors,
-			 * it should not be a virtual function.
 			 */
 			void AssertInvariant (int line) const;
+
+			real_t d_x, d_y, d_z;
+
 	};
+
+
+	inline
+	const real_t
+	dot(
+	 const UnitVector3D &u1,
+	 const UnitVector3D &u2) {
+
+		return GenericVectorOps3D::dot(u1, u2);
+	}
+
+
+	inline
+	bool
+	operator==(
+	 const UnitVector3D &u1,
+	 const UnitVector3D &u2) {
+
+		return (dot(u1, u2) >= 1.0);
+	}
+
+
+	inline
+	bool
+	operator!=(
+	 const UnitVector3D &u1,
+	 const UnitVector3D &u2) {
+
+		return (dot(u1, u2) < 1.0);
+	}
+
+
+	inline
+	bool
+	perpendicular(
+	 const UnitVector3D &u1,
+	 const UnitVector3D &u2) {
+	
+		return GenericVectorOps3D::perpendicular(u1, u2);
+	}
+
+
+	inline
+	bool
+	parallel(
+	 const UnitVector3D &u,
+	 const Vector3D &v) {
+
+		real_t dot_prod = GenericVectorOps3D::dot(u, v);
+		return (dot_prod >= v.magnitude());
+	}
 
 
 	/**
@@ -153,10 +203,10 @@ namespace GPlatesMaths
 	inline
 	bool
 	unit_vectors_are_parallel(
-	 const UnitVector3D &v1,
-	 const UnitVector3D &v2) {
+	 const UnitVector3D &u1,
+	 const UnitVector3D &u2) {
 
-		return (dot(v1, v2) >= 1.0);
+		return (dot(u1, u2) >= 1.0);
 	}
 
 
@@ -166,10 +216,10 @@ namespace GPlatesMaths
 	inline
 	bool
 	unit_vectors_are_antiparallel(
-	 const UnitVector3D &v1,
-	 const UnitVector3D &v2) {
+	 const UnitVector3D &u1,
+	 const UnitVector3D &u2) {
 
-		return (dot(v1, v2) <= -1.0);
+		return (dot(u1, u2) <= -1.0);
 	}
 
 
@@ -181,11 +231,61 @@ namespace GPlatesMaths
 	}
 
 
+	inline
+	const UnitVector3D
+	operator-(
+	 const UnitVector3D &u) {
+
+		return GenericVectorOps3D::negate(u);
+	}
+
+
+	const Vector3D
+	operator*(
+	 const real_t &s, 
+	 const UnitVector3D &u);
+
+
+	inline 
+	const Vector3D
+	operator*(
+	 const UnitVector3D &u,
+	 const real_t &s) {
+	
+		return (s * u);
+	}
+
+
 	/**
 	 * Given the unit vector @a u, generate a unit vector perpendicular
 	 * to it.
 	 */
 	UnitVector3D generatePerpendicular(const UnitVector3D &u);
+
+
+	std::ostream &
+	operator<<(
+	 std::ostream &os,
+	 const UnitVector3D &u);
+
+
+	const Vector3D
+	cross(
+	 const UnitVector3D &u1,
+	 const UnitVector3D &u2);
+
+
+	const Vector3D
+	cross(
+	 const UnitVector3D &u,
+	 const Vector3D &v);
+
+
+	const Vector3D
+	cross(
+	 const Vector3D &v,
+	 const UnitVector3D &u);
+
 }
 
 #endif  // _GPLATES_MATHS_UNITVECTOR3D_H_
