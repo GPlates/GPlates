@@ -48,7 +48,7 @@ namespace GPlatesMaths
 			/**
 			 * Create a small circle, given its axis and a point.
 			 * @param axis The axis of the circle.
-			 * @param pt A point through which the circle must pass.
+			 * @param p A point through which the circle must pass.
 			 */
 			SmallCircle (const UnitVector3D &axis,
 			             const PointOnSphere &p)
