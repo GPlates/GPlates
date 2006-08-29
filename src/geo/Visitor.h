@@ -41,6 +41,9 @@ namespace GPlatesGeo
 	class Visitor
 	{
 		public:
+			virtual
+			~Visitor() { }
+
 			virtual void
 			Visit(PointData&) { }
 
