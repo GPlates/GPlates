@@ -72,7 +72,7 @@ GPlatesGeo::GridData::~GridData ()
 	delete grid;
 }
 
-void GPlatesGeo::GridData::Add (GridElement *element, index_t x1, index_t x2)
+void GPlatesGeo::GridData::Add_Elem (GridElement *element, index_t x1, index_t x2)
 {
 	index_t new_len;
 	GridRowPtr *new_rows;

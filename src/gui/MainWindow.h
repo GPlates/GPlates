@@ -147,8 +147,16 @@ namespace GPlatesGui
 
 			/**
 			 * Create a new wxToolBar and return it.
+			 *
+			 * 2006-08-30: Appended an underscore to the end of the
+			 * function name so that it doesn't hide the virtual
+			 * function of the same name in the base class.
+			 *
+			 * Note that this class is going to be re-written, so
+			 * there's no need to bother inventing a new naming
+			 * scheme.
 			 */
-			wxToolBar *CreateToolBar(long style = 0);
+			wxToolBar *CreateToolBar_(long style = 0);
 
 			static wxAcceleratorTable DefaultAccelTab();
 

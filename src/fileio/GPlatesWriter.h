@@ -46,6 +46,8 @@ namespace GPlatesFileIO
 			virtual
 			~GPlatesWriter() {  }
 
+			using GPlatesGeo::Visitor::Visit;
+			
 			virtual void
 			Visit(const GPlatesGeo::PointData&);
 			

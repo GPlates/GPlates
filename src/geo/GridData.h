@@ -73,7 +73,7 @@ namespace GPlatesGeo
 			/**
 			 * Add @a elem to the grid.
 			 */
-			void Add (GridElement *element, index_t x1, index_t x2);
+			void Add_Elem (GridElement *element, index_t x1, index_t x2);
 
 			virtual void Accept (Visitor& visitor) const
 					{ visitor.Visit(*this); }

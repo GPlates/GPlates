@@ -263,7 +263,7 @@ GPlatesGui::MainWindow::MainWindow(wxFrame* parent, const wxString& title,
 	}
 	SetMenuBar(_menu_bar);
 
-	_tool_bar = CreateToolBar(wxTB_HORIZONTAL);
+	_tool_bar = CreateToolBar_(wxTB_HORIZONTAL);
 	if ( ! _tool_bar) {
 
 		std::cerr << "Failed to create tool bar." << std::endl;
@@ -639,7 +639,7 @@ GPlatesGui::MainWindow::CreateMenuBar(long style)
 
 
 wxToolBar *
-GPlatesGui::MainWindow::CreateToolBar(long style)
+GPlatesGui::MainWindow::CreateToolBar_(long style)
 {
 	wxToolBar *tool_bar = wxFrame::CreateToolBar(style);
 
