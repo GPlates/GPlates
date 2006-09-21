@@ -24,7 +24,7 @@
 
 #include <list>
 #include "PointOnSphere.h"
-#include "PolyLineOnSphere.h"
+#include "PolylineOnSphere.h"
 #include "GreatCircleArc.h"
 
 namespace GPlatesMaths {
@@ -93,10 +93,10 @@ namespace GPlatesMaths {
 		 */
 		std::list< PointOnSphere >::size_type
 		partition_intersecting_polylines(
-		 const PolyLineOnSphere &polyline1,
-		 const PolyLineOnSphere &polyline2,
+		 const PolylineOnSphere &polyline1,
+		 const PolylineOnSphere &polyline2,
 		 std::list< PointOnSphere > &intersection_points,
-		 std::list< PolyLineOnSphere > &partitioned_polylines);
+		 std::list< PolylineOnSphere > &partitioned_polylines);
 
 
 		/**
@@ -139,7 +139,7 @@ namespace GPlatesMaths {
 		 */
 		bool
 		polyline_set_is_self_intersecting(
-		 const std::list< PolyLineOnSphere > &polyline_set,
+		 const std::list< PolylineOnSphere > &polyline_set,
 		 std::list< PointOnSphere > &intersection_points,
 		 std::list< GreatCircleArc > &overlap_segments);
 

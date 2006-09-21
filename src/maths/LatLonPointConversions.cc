@@ -26,7 +26,7 @@
 
 #include "LatLonPointConversions.h"
 #include "InvalidLatLonException.h"
-#include "InvalidPolyLineException.h"
+#include "InvalidPolylineException.h"
 #include "IndeterminateResultException.h"
 #include "PointOnSphere.h"
 
@@ -136,18 +136,18 @@ GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
 }
 
 
-const GPlatesMaths::PolyLineOnSphere
-GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(
+const GPlatesMaths::PolylineOnSphere
+GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolylineOnSphere(
  const std::list< LatLonPoint > &llp_list) {
 
 	std::list< PointOnSphere > pos_list;
 	std::transform(llp_list.begin(), llp_list.end(),
 	 std::back_inserter(pos_list),
 	 convertLatLonPointToPointOnSphere);
-	PolyLineOnSphere polyline = PolyLineOnSphere::create(pos_list);
+	PolylineOnSphere polyline = PolylineOnSphere::create(pos_list);
 
 	// Yeah, this function is pretty short, but don't try to inline it; the
-	// invocation of 'PolyLineOnSphere::create' is going to lead to a whole
+	// invocation of 'PolylineOnSphere::create' is going to lead to a whole
 	// bunch of inlined template code.
 
 	return polyline;

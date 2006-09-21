@@ -17,12 +17,12 @@
  * GNU General Public License for more details.
  */
 
-#include "ReconstructedPolyLineFeature.h"
-#include "PolyLineFeature.h"
+#include "ReconstructedPolylineFeature.h"
+#include "PolylineFeature.h"
 
-GPlatesGeo::ReconstructedPolyLineFeature::ReconstructedPolyLineFeature(
+GPlatesGeo::ReconstructedPolylineFeature::ReconstructedPolylineFeature(
  const GPlatesMaths::FiniteRotationSnapshotTable &table,
- PolyLineFeature &polyline_feature) 
+ PolylineFeature &polyline_feature) 
  : ReconstructedFeature(table),
    m_polyline_feature(&polyline_feature), 
    m_reconstructed_polyline(polyline_feature.get_polyline())  /* FIXME rotate m_reconstructed_polyline */

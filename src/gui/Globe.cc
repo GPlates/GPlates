@@ -42,10 +42,10 @@ CallVertexWithPoint(const PointOnSphere& p)
 
 
 static void
-CallVertexWithLine(const PolyLineOnSphere::const_iterator& begin, 
-                   const PolyLineOnSphere::const_iterator& end)
+CallVertexWithLine(const PolylineOnSphere::const_iterator& begin, 
+                   const PolylineOnSphere::const_iterator& end)
 {
-	PolyLineOnSphere::const_iterator iter = begin;
+	PolylineOnSphere::const_iterator iter = begin;
 
 	glBegin(GL_LINE_STRIP);
 		CallVertexWithPoint(iter->start_point());
@@ -74,7 +74,7 @@ PaintLineDataPos(Layout::LineDataPos& linedata)
 	if ( ! datum->ShouldBePainted()) return;
 
 	const PlatesColourTable &ctab = *(PlatesColourTable::Instance());
-	const PolyLineOnSphere& line = linedata.second;
+	const PolylineOnSphere& line = linedata.second;
 
 	GPlatesGlobal::rid_t rgid = datum->GetRotationGroupId();
 	PlatesColourTable::const_iterator it = ctab.lookup(rgid);

@@ -27,7 +27,7 @@
 #include <list>
 
 #include "PointOnSphere.h"
-#include "PolyLineOnSphere.h"
+#include "PolylineOnSphere.h"
 
 
 namespace GPlatesMaths {
@@ -118,7 +118,7 @@ namespace GPlatesMaths {
 		 * The list must contain at least TWO LatLonPoints.
 		 * No two successive LatLonPoints may be equivalent.
 		 *
-		 * @throws InvalidPolyLineException if @a llpl contains less 
+		 * @throws InvalidPolylineException if @a llpl contains less 
 		 *   than two LatLonPoints.
 		 *
 		 * This function is strongly exception-safe and exception
@@ -128,13 +128,13 @@ namespace GPlatesMaths {
 		 * will be silently elided; this occurs sometimes when parsing
 		 * otherwise-valid PLATES "line data" files.
 		 */
-		const PolyLineOnSphere
-		convertLatLonPointListToPolyLineOnSphere(
+		const PolylineOnSphere
+		convertLatLonPointListToPolylineOnSphere(
 		 const std::list< LatLonPoint > &);
 
 		/**
 		 * Populate the supplied (presumably empty) sequence of
-		 * LatLonPoints using the supplied PolyLineOnSphere.
+		 * LatLonPoints using the supplied PolylineOnSphere.
 		 *
 		 * It is presumed that the sequence of LatLonPoints is empty --
 		 * or its contents unimportant -- since its contents, if any,
@@ -149,7 +149,7 @@ namespace GPlatesMaths {
 		void
 		populate_lat_lon_point_sequence(
 		 S &sequence,
-		 const PolyLineOnSphere &polyline);
+		 const PolylineOnSphere &polyline);
 
 	}
 
@@ -170,17 +170,17 @@ template< typename S >
 void
 GPlatesMaths::LatLonPointConversions::populate_lat_lon_point_sequence(
  S &sequence,
- const PolyLineOnSphere &polyline) {
+ const PolylineOnSphere &polyline) {
 
 	S tmp_seq;
 
-	PolyLineOnSphere::const_iterator
+	PolylineOnSphere::const_iterator
 	 iter = polyline.begin(),
 	 end = polyline.end();
 
 	if (iter == end) {
 
-		// This PolyLine contains no segments.
+		// This Polyline contains no segments.
 		// FIXME: Should we, uh, like, COMPLAIN about this?...
 		// It's probably invalid...
 		return;

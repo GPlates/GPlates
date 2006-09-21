@@ -30,7 +30,7 @@
 #include "geo/PointData.h"
 #include "geo/LineData.h"
 #include "maths/PointOnSphere.h"
-#include "maths/PolyLineOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 
 namespace GPlatesState
@@ -120,7 +120,7 @@ namespace GPlatesState
 			 GPlatesMaths::PointOnSphere > PointDataPos;
 
 			typedef std::pair< GPlatesGeo::LineData *,
-			 GPlatesMaths::PolyLineOnSphere > LineDataPos;
+			 GPlatesMaths::PolylineOnSphere > LineDataPos;
 
 			typedef std::list< PointDataPos > PointDataLayout;
 			typedef std::list< LineDataPos > LineDataLayout;
@@ -170,7 +170,7 @@ namespace GPlatesState
 
 			static void
 			InsertLineDataPos(GPlatesGeo::LineData *data,
-			 const GPlatesMaths::PolyLineOnSphere &position) {
+			 const GPlatesMaths::PolylineOnSphere &position) {
 
 				EnsureLineDataLayoutExists();
 				_line_data_layout->push_back(

@@ -651,7 +651,7 @@ namespace GPlatesMaths {
 		}
 
 		// This for-loop is identical to the corresponding code in
-		// PolyLineOnSphere.
+		// PolylineOnSphere.
 		typename C::const_iterator
 		 prev,
 		 iter = coll.begin(),
@@ -828,7 +828,7 @@ namespace GPlatesMaths {
 		seq_type tmp_seq;
 
 		// This for-loop is identical to the corresponding code in
-		// PolyLineOnSphere.
+		// PolylineOnSphere.
 		typename C::const_iterator
 		 prev,
 		 iter = coll.begin(),

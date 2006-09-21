@@ -28,7 +28,7 @@
 #define GPLATES_MATHS_POLYLINEEQUIVALENCEPREDICATES_H
 
 #include <algorithm>  /* unary_function */
-#include "PolyLineOnSphere.h"
+#include "PolylineOnSphere.h"
 
 namespace GPlatesMaths {
 
@@ -42,17 +42,17 @@ namespace GPlatesMaths {
 	 * of the polyline instance!
 	 */
 	class PolylineIsDirectedEquivalentRef:
-	 public std::unary_function< PolyLineOnSphere, bool > {
+	 public std::unary_function< PolylineOnSphere, bool > {
 
 	 public:
 
 		PolylineIsDirectedEquivalentRef(
-		 const PolyLineOnSphere &poly) :
+		 const PolylineOnSphere &poly) :
 		 d_poly_ptr(&poly) {  }
 
 		bool
 		operator()(
-		 const PolyLineOnSphere &other_poly) const {
+		 const PolylineOnSphere &other_poly) const {
 
 			return
 			 polylines_are_directed_equivalent(*d_poly_ptr,
@@ -61,7 +61,7 @@ namespace GPlatesMaths {
 
 	 private:
 
-		const PolyLineOnSphere *d_poly_ptr;
+		const PolylineOnSphere *d_poly_ptr;
 
 	};
 
@@ -76,17 +76,17 @@ namespace GPlatesMaths {
 	 * of the polyline instance!
 	 */
 	class PolylineIsUndirectedEquivalentRef:
-	 public std::unary_function< PolyLineOnSphere, bool > {
+	 public std::unary_function< PolylineOnSphere, bool > {
 
 	 public:
 
 		PolylineIsUndirectedEquivalentRef(
-		 const PolyLineOnSphere &poly) :
+		 const PolylineOnSphere &poly) :
 		 d_poly_ptr(&poly) {  }
 
 		bool
 		operator()(
-		 const PolyLineOnSphere &other_poly) const {
+		 const PolylineOnSphere &other_poly) const {
 
 			return
 			 polylines_are_undirected_equivalent(*d_poly_ptr,
@@ -95,7 +95,7 @@ namespace GPlatesMaths {
 
 	 private:
 
-		const PolyLineOnSphere *d_poly_ptr;
+		const PolylineOnSphere *d_poly_ptr;
 
 	};
 

@@ -74,8 +74,8 @@ class PointIsCoincident:
 
 bool
 sets_of_polyline_are_undirected_equivalent(
- const std::list< GPlatesMaths::PolyLineOnSphere > &s1,
- const std::list< GPlatesMaths::PolyLineOnSphere > &s2) {
+ const std::list< GPlatesMaths::PolylineOnSphere > &s1,
+ const std::list< GPlatesMaths::PolylineOnSphere > &s2) {
 
 	if (s1.size() != s2.size()) {
 
@@ -83,14 +83,14 @@ sets_of_polyline_are_undirected_equivalent(
 		return false;
 	}
 
-	std::list< GPlatesMaths::PolyLineOnSphere > s2_dup(s2);
-	std::list< GPlatesMaths::PolyLineOnSphere >::const_iterator
+	std::list< GPlatesMaths::PolylineOnSphere > s2_dup(s2);
+	std::list< GPlatesMaths::PolylineOnSphere >::const_iterator
 	 s1_iter = s1.begin(),
 	 s1_end = s1.end();
 	for ( ; s1_iter != s1_end; ++s1_iter) {
 
 		GPlatesMaths::PolylineIsUndirectedEquivalentRef pred(*s1_iter);
-		std::list< GPlatesMaths::PolyLineOnSphere >::iterator found =
+		std::list< GPlatesMaths::PolylineOnSphere >::iterator found =
 		 std::find_if(s2_dup.begin(), s2_dup.end(), pred);
 		if (found != s2_dup.end()) {
 
@@ -246,9 +246,9 @@ namespace GPlatesMaths {
 	std::ostream &
 	operator<<(
 	 std::ostream &os,
-	 const PolyLineOnSphere &p) {
+	 const PolylineOnSphere &p) {
 
-		os << "PolyLineOnSphere:\n";
+		os << "PolylineOnSphere:\n";
 
 		std::copy(p.vertex_begin(), p.vertex_end(),
 		 PointOnSphereOstreamIterator(std::cout, "\n"));
@@ -282,7 +282,7 @@ class PointOnSphereAppender {
 };
 
 
-GPlatesMaths::PolyLineOnSphere
+GPlatesMaths::PolylineOnSphere
 make_poly(
  const Point *array) {
 
@@ -293,13 +293,13 @@ make_poly(
 
 		points.push_back(Point_to_PointOnSphere(*array));
 	}
-	return PolyLineOnSphere::create(points);
+	return PolylineOnSphere::create(points);
 }
 
 
 void
 make_polys(
- std::list< GPlatesMaths::PolyLineOnSphere > &polys,
+ std::list< GPlatesMaths::PolylineOnSphere > &polys,
  const Point *array) {
 
 	using namespace GPlatesMaths;
@@ -320,7 +320,7 @@ make_polys(
 			if (points.size() > 0) {
 
 				polys.push_back(
-				 PolyLineOnSphere::create(points));
+				 PolylineOnSphere::create(points));
 				points.clear();
 			}
 			break;
@@ -371,19 +371,19 @@ partition_and_verify(
 
 	using namespace GPlatesMaths;
 
-	PolyLineOnSphere poly1 = make_poly(input_polyline1_point_array);
-	PolyLineOnSphere poly2 = make_poly(input_polyline2_point_array);
+	PolylineOnSphere poly1 = make_poly(input_polyline1_point_array);
+	PolylineOnSphere poly2 = make_poly(input_polyline2_point_array);
 
 	std::list< PointOnSphere > expected_intersection_points;
 	make_points(expected_intersection_points,
 	 expected_intersection_points_point_array);
 
-	std::list< PolyLineOnSphere > expected_partitioned_polylines;
+	std::list< PolylineOnSphere > expected_partitioned_polylines;
 	make_polys(expected_partitioned_polylines,
 	 expected_partitioned_polylines_point_array);
 
 	std::list< PointOnSphere > actual_intersection_points;
-	std::list< PolyLineOnSphere > actual_partitioned_polylines;
+	std::list< PolylineOnSphere > actual_partitioned_polylines;
 
 	std::list< PointOnSphere >::size_type num_intersections =
 	 PolylineIntersections::partition_intersecting_polylines(poly1, poly2,
@@ -446,12 +446,12 @@ partition_and_verify(
 		std::cout << "Expected Partitioned Polylines --\n";
 		std::copy(expected_partitioned_polylines.begin(),
 		 expected_partitioned_polylines.end(),
-		 std::ostream_iterator< PolyLineOnSphere >(std::cout, "\n"));
+		 std::ostream_iterator< PolylineOnSphere >(std::cout, "\n"));
 
 		std::cout << "\nActual Partitioned Polylines --\n";
 		std::copy(actual_partitioned_polylines.begin(),
 		 actual_partitioned_polylines.end(),
-		 std::ostream_iterator< PolyLineOnSphere >(std::cout, "\n"));
+		 std::ostream_iterator< PolylineOnSphere >(std::cout, "\n"));
 
 		return TestResults::FAIL;
 	}

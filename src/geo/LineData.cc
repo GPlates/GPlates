@@ -31,7 +31,7 @@ LineData::LineData(const DataType_t& dt, const RotationGroupId_t& id,
 	const std::string &first_header_line,
 	const std::string &second_header_line,
 	const Attributes_t& attrs, 
-	const GPlatesMaths::PolyLineOnSphere& line)
+	const GPlatesMaths::PolylineOnSphere& line)
 	: DrawableData(dt, id, tw, first_header_line, second_header_line,
 	   attrs), _line(line)
 {  }
@@ -47,7 +47,7 @@ LineData::Draw() {
 void
 LineData::RotateAndDraw(const GPlatesMaths::FiniteRotation &rot) {
 
-	GPlatesMaths::PolyLineOnSphere rot_line = (rot * _line);
+	GPlatesMaths::PolylineOnSphere rot_line = (rot * _line);
 	GPlatesState::Layout::InsertLineDataPos(this, rot_line);
 }
 
@@ -65,7 +65,7 @@ GPlatesGeo::LineData::proximity(
 	/*
 	 * For each great circle arc...
 	 */
-	PolyLineOnSphere::const_iterator 
+	PolylineOnSphere::const_iterator 
 	 i = _line.begin(), end = _line.end();
 
 	for ( ; i != end; ++i) {

@@ -22,15 +22,15 @@
 
 #include <list>
 #include <sstream>
-#include "PolyLineOnSphere.h"
+#include "PolylineOnSphere.h"
 #include "HighPrecision.h"
-#include "InvalidPolyLineException.h"
+#include "InvalidPolylineException.h"
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
 
 
-GPlatesMaths::PolyLineOnSphere::ConstructionParameterValidity
-GPlatesMaths::PolyLineOnSphere::evaluate_segment_endpoint_validity(
+GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity
+GPlatesMaths::PolylineOnSphere::evaluate_segment_endpoint_validity(
  const PointOnSphere &p1,
  const PointOnSphere &p2) {
 
@@ -61,7 +61,7 @@ GPlatesMaths::PolyLineOnSphere::evaluate_segment_endpoint_validity(
 
 
 bool
-GPlatesMaths::PolyLineOnSphere::is_close_to(
+GPlatesMaths::PolylineOnSphere::is_close_to(
  const PointOnSphere &test_point,
  const real_t &closeness_inclusion_threshold,
  const real_t &latitude_exclusion_threshold,
@@ -132,7 +132,7 @@ GPlatesMaths::PolyLineOnSphere::is_close_to(
 
 
 void
-GPlatesMaths::PolyLineOnSphere::create_segment_and_append_to_seq(
+GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
  seq_type &seq, 
  const PointOnSphere &p1,
  const PointOnSphere &p2,
@@ -172,7 +172,7 @@ GPlatesMaths::PolyLineOnSphere::create_segment_and_append_to_seq(
 			 << " and "
 			 << p2
 			 << ".";
-			throw InvalidPolyLineException(oss.str().c_str());
+			throw InvalidPolylineException(oss.str().c_str());
 			// FIXME: Should be
 			// 'PolylineSegmentConstructionException', a derived
 			// class of 'PolylineConstructionException'.
@@ -192,7 +192,7 @@ GPlatesMaths::PolyLineOnSphere::create_segment_and_append_to_seq(
 			 << " and "
 			 << p2
 			 << ".";
-			throw InvalidPolyLineException(oss.str().c_str());
+			throw InvalidPolylineException(oss.str().c_str());
 			// FIXME: Should be
 			// 'PolylineSegmentConstructionException', a derived
 			// class of 'PolylineConstructionException'.
@@ -208,7 +208,7 @@ GPlatesMaths::PolyLineOnSphere::create_segment_and_append_to_seq(
 
 
 const GPlatesMaths::PointOnSphere &
-GPlatesMaths::PolyLineOnSphere::VertexConstIterator::current_point() const {
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::current_point() const {
 
 	if (d_poly_ptr == NULL) {
 
@@ -229,7 +229,7 @@ GPlatesMaths::PolyLineOnSphere::VertexConstIterator::current_point() const {
 
 
 void
-GPlatesMaths::PolyLineOnSphere::VertexConstIterator::increment() {
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::increment() {
 
 	if (d_poly_ptr == NULL) {
 
@@ -250,7 +250,7 @@ GPlatesMaths::PolyLineOnSphere::VertexConstIterator::increment() {
 
 
 void
-GPlatesMaths::PolyLineOnSphere::VertexConstIterator::decrement() {
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::decrement() {
 
 	if (d_poly_ptr == NULL) {
 
@@ -272,8 +272,8 @@ GPlatesMaths::PolyLineOnSphere::VertexConstIterator::decrement() {
 
 bool
 GPlatesMaths::polylines_are_directed_equivalent(
- const PolyLineOnSphere &poly1,
- const PolyLineOnSphere &poly2) {
+ const PolylineOnSphere &poly1,
+ const PolylineOnSphere &poly2) {
 
 	if (poly1.number_of_vertices() != poly2.number_of_vertices()) {
 
@@ -284,7 +284,7 @@ GPlatesMaths::polylines_are_directed_equivalent(
 	// so we only need to check the end-of-sequence conditions for 'poly1'
 	// in our iteration.
 
-	PolyLineOnSphere::vertex_const_iterator
+	PolylineOnSphere::vertex_const_iterator
 	 poly1_iter = poly1.vertex_begin(),
 	 poly1_end = poly1.vertex_end(),
 	 poly2_iter = poly2.vertex_begin(),
@@ -302,8 +302,8 @@ GPlatesMaths::polylines_are_directed_equivalent(
 
 bool
 GPlatesMaths::polylines_are_undirected_equivalent(
- const PolyLineOnSphere &poly1,
- const PolyLineOnSphere &poly2) {
+ const PolylineOnSphere &poly1,
+ const PolylineOnSphere &poly2) {
 
 	if (poly1.number_of_vertices() != poly2.number_of_vertices()) {
 
@@ -314,7 +314,7 @@ GPlatesMaths::polylines_are_undirected_equivalent(
 	// so we only need to check the end-of-sequence conditions for 'poly1'
 	// in our iteration.
 
-	PolyLineOnSphere::vertex_const_iterator
+	PolylineOnSphere::vertex_const_iterator
 	 poly1_iter = poly1.vertex_begin(),
 	 poly1_end = poly1.vertex_end(),
 	 poly2_iter = poly2.vertex_begin();

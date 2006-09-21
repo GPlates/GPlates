@@ -47,7 +47,7 @@ namespace {
 
 
 	using GPlatesMaths::PointOnSphere;
-	using GPlatesMaths::PolyLineOnSphere;
+	using GPlatesMaths::PolylineOnSphere;
 	using GPlatesMaths::GreatCircleArc;
 
 	typedef std::list< GreatCircleArc > ArcList;
@@ -1494,7 +1494,7 @@ namespace {
 	 */
 	void
 	generate_polylines_from_arc_seqs(
-	 std::list< PolyLineOnSphere > &partitioned_polys,
+	 std::list< PolylineOnSphere > &partitioned_polys,
 	 std::vector< ArcList::iterator > &begins,
 	 std::vector< ArcList::iterator > &ends) {
 
@@ -1521,7 +1521,7 @@ namespace {
 			}
 
 			partitioned_polys.push_back(
-			 PolyLineOnSphere::create(points));
+			 PolylineOnSphere::create(points));
 		}
 	}
 
@@ -1548,7 +1548,7 @@ namespace {
 	 ArcList &arcs2,
 	 IntersectionNodeList &inter_nodes,
 	 std::list< ArcList::iterator > &overlap_arcs_in_2,
-	 std::list< PolyLineOnSphere > &partitioned_polys) {
+	 std::list< PolylineOnSphere > &partitioned_polys) {
 
 		/*
 		 * We need two vectors here, because 'ends[i]' won't always
@@ -1601,10 +1601,10 @@ namespace {
 
 std::list< PointOnSphere >::size_type
 GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
- const PolyLineOnSphere &polyline1,
- const PolyLineOnSphere &polyline2,
+ const PolylineOnSphere &polyline1,
+ const PolylineOnSphere &polyline2,
  std::list< PointOnSphere > &intersection_points,
- std::list< PolyLineOnSphere > &partitioned_polylines) {
+ std::list< PolylineOnSphere > &partitioned_polylines) {
 
 	std::list< IntersectionNode > inter_nodes;
 
@@ -1704,7 +1704,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
 	if (num_intersections_found != 0) {
 
 		std::list< PointOnSphere > tmp_intersection_points;
-		std::list< PolyLineOnSphere > tmp_partitioned_polylines;
+		std::list< PolylineOnSphere > tmp_partitioned_polylines;
 
 		generate_partitioned_polylines(polyline1_arcs, polyline2_arcs,
 		 inter_nodes, overlap_arcs_in_2, tmp_partitioned_polylines);
@@ -1731,7 +1731,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
 
 bool
 GPlatesMaths::PolylineIntersections::polyline_set_is_self_intersecting(
- const std::list< PolyLineOnSphere > &polyline_set,
+ const std::list< PolylineOnSphere > &polyline_set,
  std::list< PointOnSphere > &intersection_points,
  std::list< GreatCircleArc > &overlap_segments) {
 

@@ -41,21 +41,21 @@ namespace GPlatesFileIO
 		void ReadInPlateBoundaryData(const char *filename,
 		 std::istream &input_stream, PlatesDataMap &plates_data);
 
-		void ReadPolyLine(LineBuffer &lb, PlatesDataMap &plates_data);
+		void ReadPolyline(LineBuffer &lb, PlatesDataMap &plates_data);
 
-		void AppendPolyLineToPlatesData(PlatesDataMap &plates_data,
-		 const plate_id_t &plate_id, const PolyLine &pl);
+		void AppendPolylineToPlatesData(PlatesDataMap &plates_data,
+		 const plate_id_t &plate_id, const Polyline &pl);
 
-		void ReadFirstLineOfPolyLineHeader(LineBuffer &lb,
+		void ReadFirstLineOfPolylineHeader(LineBuffer &lb,
 		 std::string &str);
 
-		void ReadSecondLineOfPolyLineHeader(LineBuffer &lb,
+		void ReadSecondLineOfPolylineHeader(LineBuffer &lb,
 		 std::string &str);
 
-		void ReadPolyLinePoints(LineBuffer &lb,
+		void ReadPolylinePoints(LineBuffer &lb,
 		 std::list< BoundaryLatLonPoint > &points);
 
-		std::string ReadPolyLinePoint(LineBuffer &lb);
+		std::string ReadPolylinePoint(LineBuffer &lb);
 	}
 }
 

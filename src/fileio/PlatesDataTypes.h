@@ -183,11 +183,11 @@ namespace GPlatesFileIO
 		};
 
 
-		struct PolyLineHeader
+		struct PolylineHeader
 		{
 			public:
 
-				static PolyLineHeader
+				static PolylineHeader
 				ParseLines(const LineBuffer &lb,
 				 const std::string &first_line,
 				 const std::string &second_line);
@@ -220,7 +220,7 @@ namespace GPlatesFileIO
 
 			protected:
 
-				PolyLineHeader(const std::string &first_line,
+				PolylineHeader(const std::string &first_line,
 				 const std::string &second_line,
 				 const plate_id_t &plate_id,
 				 const GPlatesGeo::TimeWindow &lifetime,
@@ -234,14 +234,14 @@ namespace GPlatesFileIO
 		};
 
 
-		struct PolyLine
+		struct Polyline
 		{
-			PolyLineHeader           _header;
+			PolylineHeader           _header;
 			std::list< BoundaryLatLonPoint > _points;
 
 			// no default constructor
 
-			PolyLine(const PolyLineHeader &header)
+			Polyline(const PolylineHeader &header)
 			 : _header(header) {  }
 		};
 
@@ -249,7 +249,7 @@ namespace GPlatesFileIO
 		struct Plate
 		{
 			plate_id_t            _plate_id;
-			std::list< PolyLine > _polylines;
+			std::list< Polyline > _polylines;
 
 			// no default constructor
 

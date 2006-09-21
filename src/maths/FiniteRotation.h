@@ -333,17 +333,17 @@ namespace GPlatesMaths
 	}
 
 
-	class PolyLineOnSphere;
+	class PolylineOnSphere;
 
 	/**
 	 * Apply the given rotation to the given polyline.
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const PolyLineOnSphere
+	const PolylineOnSphere
 	operator*(
 	 const FiniteRotation &r,
-	 const PolyLineOnSphere &polyline);
+	 const PolylineOnSphere &polyline);
 
 
 	class PolygonOnSphere;

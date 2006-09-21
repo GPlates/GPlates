@@ -28,7 +28,7 @@
 #include <utility>  /* pair */
 #include <memory>  /* auto_ptr */
 #include "GreatCircleArc.h"
-#include "InvalidPolyLineException.h"
+#include "InvalidPolylineException.h"
 
 namespace GPlatesMaths {
 
@@ -50,23 +50,23 @@ namespace GPlatesMaths {
 	 * @endcode
 	 *
 	 * You can create a polyline by invoking either the static member
-	 * function @a PolyLineOnSphere::create or the static member function
-	 * @a PolyLineOnSphere::create_on_heap, passing it a sequential STL
+	 * function @a PolylineOnSphere::create or the static member function
+	 * @a PolylineOnSphere::create_on_heap, passing it a sequential STL
 	 * container (list, vector, ...) of PointOnSphere to define the
 	 * vertices of the polyline.  The sequence of points must contain at
 	 * least two distinct elements, enabling the creation of a polyline
 	 * composed of at least one well-defined segment.  The requirements
 	 * upon the sequence of points are described in greater detail in the
 	 * comment for the static member function
-	 * @a PolyLineOnSphere::evaluate_construction_parameter_validity.
+	 * @a PolylineOnSphere::evaluate_construction_parameter_validity.
 	 *
 	 * Say you have a sequence of PointOnSphere: [A, B, C, D].  If you pass
-	 * this sequence to the @a PolyLineOnSphere::create function, it will
+	 * this sequence to the @a PolylineOnSphere::create function, it will
 	 * create a polyline composed of 3 segments: A->B, B->C, C->D.  If you
 	 * subsequently iterate through the vertices of this polyline, you will
 	 * get the same sequence of points back again: A, B, C, D.
 	 */
-	class PolyLineOnSphere {
+	class PolylineOnSphere {
 
 	 public:
 
@@ -104,10 +104,10 @@ namespace GPlatesMaths {
 
 		/**
 		 * This class enables const_iteration over the vertices of a
-		 * PolyLineOnSphere.
+		 * PolylineOnSphere.
 		 *
 		 * An instance of this class @em actually iterates over the
-		 * sequence of GreatCircleArc by which a PolyLineOnSphere is
+		 * sequence of GreatCircleArc by which a PolylineOnSphere is
 		 * implemented, but it pretends it's iterating over a sequence
 		 * of PointOnSphere by additionally keeping track of whether
 		 * it's pointing at the "start-point" or "end-point" of the
@@ -116,7 +116,7 @@ namespace GPlatesMaths {
 		 * It is assumed that the sequence of GreatCircleArc over
 		 * which this iterator is iterating will always contain at
 		 * least one element (and thus, at least two vertices).  This
-		 * assumption should be fulfilled by the PolyLineOnSphere
+		 * assumption should be fulfilled by the PolylineOnSphere
 		 * invariant.
 		 */
 		class VertexConstIterator: public std::iterator<
@@ -128,7 +128,7 @@ namespace GPlatesMaths {
 				END
 			};
 
-			typedef PolyLineOnSphere::const_iterator
+			typedef PolylineOnSphere::const_iterator
 			 gca_const_iterator;
 
 		  public:
@@ -139,7 +139,7 @@ namespace GPlatesMaths {
 			static
 			VertexConstIterator
 			create_begin(
-			 const PolyLineOnSphere &poly);
+			 const PolylineOnSphere &poly);
 
 
 			/**
@@ -148,7 +148,7 @@ namespace GPlatesMaths {
 			static
 			VertexConstIterator
 			create_end(
-			 const PolyLineOnSphere &poly);
+			 const PolylineOnSphere &poly);
 
 
 			/**
@@ -309,7 +309,7 @@ namespace GPlatesMaths {
 			 * Gee, why do you think this is private?
 			 */
 			VertexConstIterator(
-			 const PolyLineOnSphere &poly,
+			 const PolylineOnSphere &poly,
 			 gca_const_iterator curr_gca_,
 			 StartOrEnd gca_start_or_end_) :
 			 d_poly_ptr(&poly),
@@ -350,7 +350,7 @@ namespace GPlatesMaths {
 			void
 			decrement();
 
-			const PolyLineOnSphere *d_poly_ptr;
+			const PolylineOnSphere *d_poly_ptr;
 
 			gca_const_iterator d_curr_gca;
 
@@ -446,7 +446,7 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Create a new PolyLineOnSphere instance from the sequence of
+		 * Create a new PolylineOnSphere instance from the sequence of
 		 * points @a coll.
 		 *
 		 * @a coll should be a sequential STL container (list, vector,
@@ -457,13 +457,13 @@ namespace GPlatesMaths {
 		 */
 		template< typename C >
 		static
-		PolyLineOnSphere
+		PolylineOnSphere
 		create(
 		 const C &coll);
 
 
 		/**
-		 * Create a new PolyLineOnSphere instance on the heap from the
+		 * Create a new PolylineOnSphere instance on the heap from the
 		 * sequence of points @a coll, and return an auto_ptr which
 		 * points to the newly-created instance.
 		 *
@@ -475,7 +475,7 @@ namespace GPlatesMaths {
 		 */
 		template< typename C >
 		static
-		std::auto_ptr< PolyLineOnSphere >
+		std::auto_ptr< PolylineOnSphere >
 		create_on_heap(
 		 const C &coll);
 
@@ -575,7 +575,7 @@ namespace GPlatesMaths {
 		 */
 		void
 		swap(
-		 PolyLineOnSphere &other) {
+		 PolylineOnSphere &other) {
 
 			d_seq.swap(other.d_seq);
 		}
@@ -614,7 +614,7 @@ namespace GPlatesMaths {
 
 	 private:
 
-		PolyLineOnSphere() {  }
+		PolylineOnSphere() {  }
 
 
 		/**
@@ -631,7 +631,7 @@ namespace GPlatesMaths {
 		static
 		void
 		generate_segments_and_swap(
-		 PolyLineOnSphere &poly,
+		 PolylineOnSphere &poly,
 		 const C &coll);
 
 
@@ -656,18 +656,18 @@ namespace GPlatesMaths {
 
 
 	inline
-	PolyLineOnSphere::VertexConstIterator
-	PolyLineOnSphere::VertexConstIterator::create_begin(
-	 const PolyLineOnSphere &poly) {
+	PolylineOnSphere::VertexConstIterator
+	PolylineOnSphere::VertexConstIterator::create_begin(
+	 const PolylineOnSphere &poly) {
 
 		return VertexConstIterator(poly, poly.begin(), START);
 	}
 	
 
 	inline
-	PolyLineOnSphere::VertexConstIterator
-	PolyLineOnSphere::VertexConstIterator::create_end(
-	 const PolyLineOnSphere &poly) {
+	PolylineOnSphere::VertexConstIterator
+	PolylineOnSphere::VertexConstIterator::create_end(
+	 const PolylineOnSphere &poly) {
 
 		return VertexConstIterator(poly, poly.end(), END);
 	}
@@ -679,8 +679,8 @@ namespace GPlatesMaths {
 	inline
 	bool
 	operator==(
-	 const PolyLineOnSphere::VertexConstIterator &i1,
-	 const PolyLineOnSphere::VertexConstIterator &i2) {
+	 const PolylineOnSphere::VertexConstIterator &i1,
+	 const PolylineOnSphere::VertexConstIterator &i2) {
 
 		return
 		 (i1.curr_gca() == i2.curr_gca() &&
@@ -694,8 +694,8 @@ namespace GPlatesMaths {
 	inline
 	bool
 	operator!=(
-	 const PolyLineOnSphere::VertexConstIterator &i1,
-	 const PolyLineOnSphere::VertexConstIterator &i2) {
+	 const PolylineOnSphere::VertexConstIterator &i1,
+	 const PolylineOnSphere::VertexConstIterator &i2) {
 
 		return
 		 (i1.curr_gca() != i2.curr_gca() ||
@@ -710,8 +710,8 @@ namespace GPlatesMaths {
 	 */
 	bool
 	polylines_are_directed_equivalent(
-	 const PolyLineOnSphere &poly1,
-	 const PolyLineOnSphere &poly2);
+	 const PolylineOnSphere &poly1,
+	 const PolylineOnSphere &poly2);
 
 
 	/**
@@ -725,13 +725,13 @@ namespace GPlatesMaths {
 	 */
 	bool
 	polylines_are_undirected_equivalent(
-	 const PolyLineOnSphere &poly1,
-	 const PolyLineOnSphere &poly2);
+	 const PolylineOnSphere &poly1,
+	 const PolylineOnSphere &poly2);
 
 
 	template< typename C >
-	PolyLineOnSphere::ConstructionParameterValidity
-	PolyLineOnSphere::evaluate_construction_parameter_validity(
+	PolylineOnSphere::ConstructionParameterValidity
+	PolylineOnSphere::evaluate_construction_parameter_validity(
 	 const C &coll,
 	 std::pair< typename C::const_iterator, typename
 	  C::const_iterator > &invalid_points,
@@ -819,22 +819,22 @@ namespace GPlatesMaths {
 
 
 	template< typename C >
-	PolyLineOnSphere
-	PolyLineOnSphere::create(
+	PolylineOnSphere
+	PolylineOnSphere::create(
 	 const C &coll) {
 
-		PolyLineOnSphere p;
+		PolylineOnSphere p;
 		generate_segments_and_swap(p, coll);
 		return p;
 	}
 
 
 	template< typename C >
-	std::auto_ptr< PolyLineOnSphere >
-	PolyLineOnSphere::create_on_heap(
+	std::auto_ptr< PolylineOnSphere >
+	PolylineOnSphere::create_on_heap(
 	 const C &coll) {
 
-		std::auto_ptr< PolyLineOnSphere > ptr(new PolyLineOnSphere());
+		std::auto_ptr< PolylineOnSphere > ptr(new PolylineOnSphere());
 		generate_segments_and_swap(*ptr, coll);
 		return ptr;
 	}
@@ -842,8 +842,8 @@ namespace GPlatesMaths {
 
 	template< typename C >
 	void
-	PolyLineOnSphere::generate_segments_and_swap(
-	 PolyLineOnSphere &poly,
+	PolylineOnSphere::generate_segments_and_swap(
+	 PolylineOnSphere &poly,
 	 const C &coll) {
 
 		if (coll.size() < 2) {
@@ -851,7 +851,7 @@ namespace GPlatesMaths {
 			// The collection does not contain enough points to
 			// create even one line-segment.
 			// FIXME:  I don't like throwing in a header-file.
-			throw InvalidPolyLineException("Attempted to create a "
+			throw InvalidPolylineException("Attempted to create a "
 			 "polyline from an insufficient number (ie, less than "
 			 "2) of endpoints.");
 		}
@@ -879,7 +879,7 @@ namespace GPlatesMaths {
 			// No line-segments were created, which must mean that
 			// all points in the collection were identical.
 			// FIXME:  I don't like throwing in a header-file.
-			throw InvalidPolyLineException("Attempted to create a "
+			throw InvalidPolylineException("Attempted to create a "
 			 "polyline from an insufficient number (ie, less than "
 			 "2) of unique endpoints.");
 		}

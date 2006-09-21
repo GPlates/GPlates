@@ -31,7 +31,7 @@ namespace GPlatesMaths
 	 * The Exception thrown when an attempt is made to create an
 	 * invalid poly-line.
 	 */
-	class InvalidPolyLineException
+	class InvalidPolylineException
 		: public MathematicalException
 	{
 		public:
@@ -39,17 +39,17 @@ namespace GPlatesMaths
 			 * @param msg is a description of the conditions
 			 * which cause the poly-line to be invalid.
 			 */
-			InvalidPolyLineException(const char *msg)
+			InvalidPolylineException(const char *msg)
 				: _msg(msg) {  }
 
 			virtual
-			~InvalidPolyLineException() {  }
+			~InvalidPolylineException() {  }
 
 		protected:
 			virtual const char *
 			ExceptionName() const {
 
-				return "InvalidPolyLineException";
+				return "InvalidPolylineException";
 			}
 
 			virtual std::string

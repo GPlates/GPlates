@@ -36,7 +36,7 @@ namespace GPlatesMaths
 	/** 
 	 * Represents a grid of points on the surface of a sphere. 
 	 *
-	 * Similarly to the classes 'PointOnSphere' and 'PolyLineOnSphere',
+	 * Similarly to the classes 'PointOnSphere' and 'PolylineOnSphere',
 	 * this class deals only with geographical positions, not geo-data;
 	 * in contrast to its aforementioned siblings, this class does not
 	 * actually <em>store</em> geographical data: rather, it acts as a

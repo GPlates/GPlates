@@ -272,14 +272,14 @@ namespace
 
 	
 	/**
-	 * Create a new PolyLineOnSphere object from the given @a element.
+	 * Create a new PolylineOnSphere object from the given @a element.
 	 *
 	 * @pre @a element must refer to a \<coordlist> element.
 	 * @throw FileFormatException Thrown if there is less than two
 	 *   \<coord> elements in the \<coordlist>, since we need at least
-	 *   two coordinates to specify a PolyLineOnSphere.
+	 *   two coordinates to specify a PolylineOnSphere.
 	 */
-	PolyLineOnSphere
+	PolylineOnSphere
 	GetCoordList(Element_ptr element)
 	{
 		const ElementList& nodes = element->GetChildren("coord");
@@ -297,7 +297,7 @@ namespace
 			std::back_inserter(coordlist), &GetLatLonPoint);
 
 		return LatLonPointConversions::
-				convertLatLonPointListToPolyLineOnSphere(coordlist);
+				convertLatLonPointListToPolylineOnSphere(coordlist);
 	}
 
 	

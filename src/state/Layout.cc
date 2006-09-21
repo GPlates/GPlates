@@ -82,7 +82,7 @@ namespace {
 
 		for ( ; iter != end; ++iter) {
 
-			GPlatesMaths::PolyLineOnSphere &the_polyline =
+			GPlatesMaths::PolylineOnSphere &the_polyline =
 			 iter->second;
 			GPlatesGeo::DrawableData *the_datum =
 			 iter->first;

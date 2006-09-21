@@ -25,7 +25,7 @@
 #include "FiniteRotation.h"
 #include "HighPrecision.h"
 #include "Vector3D.h"
-#include "PolyLineOnSphere.h"
+#include "PolylineOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "LatLonPointConversions.h"
 #include "InvalidOperationException.h"
@@ -152,20 +152,20 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesMaths::PolyLineOnSphere
+const GPlatesMaths::PolylineOnSphere
 GPlatesMaths::operator*(
  const FiniteRotation &r,
- const PolyLineOnSphere &polyline) {
+ const PolylineOnSphere &polyline) {
 
 	std::list< PointOnSphere > rotated_points;
 
-	PolyLineOnSphere::vertex_const_iterator
+	PolylineOnSphere::vertex_const_iterator
 	 iter = polyline.vertex_begin(),
 	 end = polyline.vertex_end();
 
 	for ( ; iter != end; ++iter) rotated_points.push_back(r * (*iter));
 
-	return PolyLineOnSphere::create(rotated_points);
+	return PolylineOnSphere::create(rotated_points);
 }
 
 

@@ -207,7 +207,7 @@ void GPlatesGeo::GridData::RotateAndDraw (const GPlatesMaths::FiniteRotation
 								&rot)
 {
 	// TODO
-	//GPlatesMaths::PolyLineOnSphere rot_line = (rot * _line);
+	//GPlatesMaths::PolylineOnSphere rot_line = (rot * _line);
 	//GPlatesState::Layout::InsertLineDataPos(this, rot_line);
 }
 

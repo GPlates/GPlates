@@ -29,7 +29,7 @@
 #include "geo/PointData.h"
 #include "geo/LineData.h"
 #include "geo/DataGroup.h"
-#include "maths/PolyLineOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 
 using namespace GPlatesFileIO;
@@ -110,14 +110,14 @@ namespace
 
 	void
 	WriteCoordList(std::ostream& os,
-				   const PolyLineOnSphere::const_iterator& begin, 
-				   const PolyLineOnSphere::const_iterator& end, 
+				   const PolylineOnSphere::const_iterator& begin, 
+				   const PolylineOnSphere::const_iterator& end, 
 				   int indent)
 	{
 		os << Indent(indent)
 			<< "<coordlist>" << std::endl;
 
-		PolyLineOnSphere::const_iterator iter = begin;
+		PolylineOnSphere::const_iterator iter = begin;
 		WriteCoord(os, PointOnSphere(iter->start_point()), indent + 1);
 		for ( ; iter != end; ++iter)
 			WriteCoord(os, PointOnSphere(iter->end_point()), indent + 1);
@@ -155,7 +155,7 @@ GPlatesWriter::Visit(const LineData& data)
 	// Print attributes.
 	WriteAttributes(_accum, data, _indent + 1);
 
-	// Print PolyLine
+	// Print Polyline
 	WriteCoordList(_accum, data.Begin(), data.End(), _indent + 1);
 	
 	_accum << Indent(_indent)

@@ -21,34 +21,34 @@
 #define GPLATES_GEO_RECONSTRUCTEDPOLYLINEFEATURE_H
 
 #include "ReconstructedFeature.h"
-#include "PolyLineFeature.h"
-#include "maths/PolyLineOnSphere.h"
+#include "PolylineFeature.h"
+#include "maths/PolylineOnSphere.h"
 
 namespace GPlatesGeo {
 
-	class ReconstructedPolyLineFeature : public ReconstructedFeature {
+	class ReconstructedPolylineFeature : public ReconstructedFeature {
 
 		public:
 
-			ReconstructedPolyLineFeature(
+			ReconstructedPolylineFeature(
 			 const GPlatesMaths::FiniteRotationSnapshotTable &table,
-			 PolyLineFeature &polyline_feature);
+			 PolylineFeature &polyline_feature);
 
 			virtual
-			~ReconstructedPolyLineFeature() {  }
+			~ReconstructedPolylineFeature() {  }
 
 		private:
 
 			/**
-			 * The PolyLineFeature for which this is the reconstruction.
+			 * The PolylineFeature for which this is the reconstruction.
 			 */
-			PolyLineFeature *m_polyline_feature;
+			PolylineFeature *m_polyline_feature;
 
 			/**
 			 * The reconstruction of the geometry of m_point_feature
 			 * according to m_finite_rotation_table.
 			 */
-			GPlatesMaths::PolyLineOnSphere m_reconstructed_polyline;
+			GPlatesMaths::PolylineOnSphere m_reconstructed_polyline;
 
 	};
 }

@@ -12,7 +12,7 @@ LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 OBJS = DataGroup.o GeologicalData.o GridData.o LineData.o PointData.o \
 	TimeWindow.o \
 	PointFeature.o ReconstructedPointFeature.o \
-	PolyLineFeature.o ReconstructedPolyLineFeature.o
+	PolylineFeature.o ReconstructedPolylineFeature.o
 
 LIBNAME = libgeo.a
 

@@ -325,8 +325,8 @@ LatLonPoint::isValidLon(const fpdata_t &val) {
 }
 
 
-PolyLineHeader
-PolyLineHeader::ParseLines(const LineBuffer &lb,
+PolylineHeader
+PolylineHeader::ParseLines(const LineBuffer &lb,
 	const std::string &first_line,
 	const std::string &second_line) {
 
@@ -337,13 +337,13 @@ PolyLineHeader::ParseLines(const LineBuffer &lb,
 	ParseSecondLine(lb, second_line, plate_id, age_appear, age_disappear,
 	 num_points);
 
-	return PolyLineHeader(first_line, second_line, plate_id,
+	return PolylineHeader(first_line, second_line, plate_id,
 	 GPlatesGeo::TimeWindow(age_appear, age_disappear), num_points);
 }
 
 
 void
-PolyLineHeader::ParseSecondLine(const LineBuffer &lb,
+PolylineHeader::ParseSecondLine(const LineBuffer &lb,
 	const std::string &line,
 	plate_id_t &plate_id,
 	fpdata_t &age_appear,

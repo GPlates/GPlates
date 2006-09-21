@@ -21,34 +21,34 @@
 #define GPLATES_GEO_POLYLINEFEATURE_H
 
 #include "Feature.h"
-#include "maths/PolyLineOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 namespace GPlatesGeo {
 
 	/**
 	 * A Feature with polyline geometry.
 	 */
-	class PolyLineFeature : public Feature {
+	class PolylineFeature : public Feature {
 		
 		public:
 
 			template< typename properties_iterator >
-			PolyLineFeature(
+			PolylineFeature(
 			 properties_iterator begin,
 			 properties_iterator end,
-			 const GPlatesMaths::PolyLineOnSphere &polyline)
+			 const GPlatesMaths::PolylineOnSphere &polyline)
 			 : Feature(begin, end), m_polyline(polyline) {  }
 
 			virtual
-			~PolyLineFeature();
+			~PolylineFeature();
 
 			/**
 			 * XXX This method probably isn't necessary in the long
 			 * run.  It is included here to allow the construction of
-			 * ReconstructedPolyLineOnSphere objects until someone writes 
+			 * ReconstructedPolylineOnSphere objects until someone writes 
 			 * the reconstruction calculation code.
 			 */
-			GPlatesMaths::PolyLineOnSphere
+			GPlatesMaths::PolylineOnSphere
 			get_polyline() const { 
 				
 				return m_polyline;
@@ -62,9 +62,9 @@ namespace GPlatesGeo {
 		private:
 
 			/**
-			 * The geometry of this PolyLineFeature.
+			 * The geometry of this PolylineFeature.
 			 */
-			GPlatesMaths::PolyLineOnSphere m_polyline;
+			GPlatesMaths::PolylineOnSphere m_polyline;
 	};
 }
 

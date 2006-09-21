@@ -67,8 +67,8 @@ namespace
 
 
 	void
-	ConvertPolyLineToListOfLatLonPointLists(
-		const PlatesParser::PolyLine& line,
+	ConvertPolylineToListOfLatLonPointLists(
+		const PlatesParser::Polyline& line,
 		LLLPL_t& plate_segments)
 	{
 		std::list< PlatesParser::LatLonPoint > llpl;
@@ -96,8 +96,8 @@ namespace
 	}
 
 	void
-	GetLineDataListFromPolyLine(
-		const PlatesParser::PolyLine& line, 
+	GetLineDataListFromPolyline(
+		const PlatesParser::Polyline& line, 
 		std::list< LineData* >& result)
 	{
 		using namespace GPlatesMaths;
@@ -108,7 +108,7 @@ namespace
 		// Filter line._points such that it is split up according to PlotterCode.
 
 		LLLPL_t plate_segments;
-		ConvertPolyLineToListOfLatLonPointLists(line, plate_segments);
+		ConvertPolylineToListOfLatLonPointLists(line, plate_segments);
 
 		LLLPL_t::const_iterator iter = plate_segments.begin();
 		for ( ; iter != plate_segments.end(); ++iter)
@@ -123,8 +123,8 @@ namespace
 			if (llpl.size() <= 1)
 				continue;
 			
-			PolyLineOnSphere polyline =
-			 LatLonPointConversions::convertLatLonPointListToPolyLineOnSphere(llpl);
+			PolylineOnSphere polyline =
+			 LatLonPointConversions::convertLatLonPointListToPolylineOnSphere(llpl);
 			
 			result.push_back(new LineData(GeologicalData::NO_DATATYPE, 
 				plate_id, lifetime, line._header._first_line,
@@ -134,12 +134,12 @@ namespace
 	}
 
 	PointData*
-	GetPointDataFromPolyLine(const PlatesParser::PolyLine& line)
+	GetPointDataFromPolyline(const PlatesParser::Polyline& line)
 	{
 		using namespace GPlatesMaths;
 
 		// FIXME: This should be factored out from here and 
-		// GetLineDataFromPolyLine.
+		// GetLineDataFromPolyline.
 		GPlatesGlobal::rid_t plate_id = line._header._plate_id;
 		TimeWindow lifetime = line._header._lifetime;
 
@@ -175,20 +175,20 @@ namespace
 			throw FileFormatException(oss.str().c_str());
 		}
 
-		std::list<PolyLine>::const_iterator iter = plate._polylines.begin();
+		std::list<Polyline>::const_iterator iter = plate._polylines.begin();
 
 		for ( ; iter != plate._polylines.end(); ++iter)
 		{
 			// A polyline with a single point is actually PointData.
 			if (iter->_points.size() == 1)
 			{
-				PointData* pd = GetPointDataFromPolyLine(*iter);
+				PointData* pd = GetPointDataFromPolyline(*iter);
 				data->Add(pd);
 				continue;
 			}
 
 			std::list< LineData* > ld;
-			GetLineDataListFromPolyLine(*iter, ld);
+			GetLineDataListFromPolyline(*iter, ld);
 
 			std::list< LineData* >::iterator jter = ld.begin();
 			for ( ; jter != ld.end(); ++jter)

@@ -44,24 +44,24 @@ ReadInPlateBoundaryData(const char *filename, std::istream &input_stream,
 	// Each file can contain multiple polylines.
 	while ( ! lb.eof()) {
 
-		ReadPolyLine(lb, plates_data);
+		ReadPolyline(lb, plates_data);
 	}
 }
 
 
 /**
- * Given a LineBuffer, read a single PolyLine and store it.
+ * Given a LineBuffer, read a single Polyline and store it.
  */
 void 
-ReadPolyLine(LineBuffer &lb, PlatesDataMap &plates_data) {
+ReadPolyline(LineBuffer &lb, PlatesDataMap &plates_data) {
 
 	std::string first_line;
-	ReadFirstLineOfPolyLineHeader(lb, first_line);
+	ReadFirstLineOfPolylineHeader(lb, first_line);
 
 	/*
 	 * Note that, if we had already read the last polyline
 	 * before this function was invoked, then the 'getline' in the
-	 * just-invoked 'ReadFirstLineOfPolyLineHeader' would have
+	 * just-invoked 'ReadFirstLineOfPolylineHeader' would have
 	 * failed as it reached EOF.
 	 *
 	 * Hence, we should now test for EOF.
@@ -72,29 +72,29 @@ ReadPolyLine(LineBuffer &lb, PlatesDataMap &plates_data) {
 	}
 
 	std::string second_line;
-	ReadSecondLineOfPolyLineHeader(lb, second_line);
+	ReadSecondLineOfPolylineHeader(lb, second_line);
 
-	PolyLineHeader header =
-	 PolyLineHeader::ParseLines(lb, first_line, second_line);
+	PolylineHeader header =
+	 PolylineHeader::ParseLines(lb, first_line, second_line);
 
 	/*
 	 * The rest of this polyline will consist of the actual points.
 	 */
-	PolyLine polyline(header);
-	ReadPolyLinePoints(lb, polyline._points);
+	Polyline polyline(header);
+	ReadPolylinePoints(lb, polyline._points);
 
 	/*
 	 * Having read the whole polyline, we now insert it into its
 	 * containing plate -- where a plate is identified by its plate_id.
 	 */
 	plate_id_t plate_id = header._plate_id;
-	AppendPolyLineToPlatesData(plates_data, plate_id, polyline);
+	AppendPolylineToPlatesData(plates_data, plate_id, polyline);
 }
 
 
 void
-AppendPolyLineToPlatesData(PlatesDataMap &plates_data,
-	const plate_id_t &plate_id, const PolyLine &pl) {
+AppendPolylineToPlatesData(PlatesDataMap &plates_data,
+	const plate_id_t &plate_id, const Polyline &pl) {
 
 	/*
 	 * If this is the first polyline read for this plate_id, the plate
@@ -149,7 +149,7 @@ static const size_t POLYLINE_HEADER_LINE_LEN = 120;
  * Hence, we need to test whether we have reached EOF before we complain.
  */
 void
-ReadFirstLineOfPolyLineHeader(LineBuffer &lb, std::string &str) {
+ReadFirstLineOfPolylineHeader(LineBuffer &lb, std::string &str) {
 
 	static char buf[POLYLINE_HEADER_LINE_LEN + 1];
 
@@ -176,7 +176,7 @@ ReadFirstLineOfPolyLineHeader(LineBuffer &lb, std::string &str) {
 
 
 void
-ReadSecondLineOfPolyLineHeader(LineBuffer &lb, std::string &str) {
+ReadSecondLineOfPolylineHeader(LineBuffer &lb, std::string &str) {
 
 	static char buf[POLYLINE_HEADER_LINE_LEN + 1];
 
@@ -195,13 +195,13 @@ ReadSecondLineOfPolyLineHeader(LineBuffer &lb, std::string &str) {
 
 
 void
-ReadPolyLinePoints(LineBuffer &lb, std::list< BoundaryLatLonPoint > &points) {
+ReadPolylinePoints(LineBuffer &lb, std::list< BoundaryLatLonPoint > &points) {
     
 	/*
 	 * The number of points to expect was specified in the polyline header.
 	 * We have asserted that it must be at least 2.  Read the first point.
 	 */
-	std::string first_line = ReadPolyLinePoint(lb);
+	std::string first_line = ReadPolylinePoint(lb);
 	BoundaryLatLonPoint first_point =
 	 LatLonPoint::ParseBoundaryLine(lb, first_line, PlotterCodes::PEN_UP);
 	points.push_back(first_point);
@@ -212,7 +212,7 @@ ReadPolyLinePoints(LineBuffer &lb, std::list< BoundaryLatLonPoint > &points) {
 	 */
 	for ( ; ; ) {
 
-		std::string line = ReadPolyLinePoint(lb);
+		std::string line = ReadPolylinePoint(lb);
 		BoundaryLatLonPoint point =
 		 LatLonPoint::ParseBoundaryLine(lb, line,
 		  PlotterCodes::PEN_EITHER);
@@ -240,7 +240,7 @@ static const size_t POLYLINE_POINT_LINE_LEN = 40;
 
 
 std::string
-ReadPolyLinePoint(LineBuffer &lb) {
+ReadPolylinePoint(LineBuffer &lb) {
 
 	static char buf[POLYLINE_POINT_LINE_LEN + 1];
 

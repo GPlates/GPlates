@@ -26,7 +26,7 @@
 #include <vector>
 #include "DrawableData.h"
 #include "maths/PointOnSphere.h"
-#include "maths/PolyLineOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 namespace GPlatesGeo
 {
@@ -43,7 +43,7 @@ namespace GPlatesGeo
 				 const std::string &first_header_line,
 				 const std::string &second_header_line,
 			         const Attributes_t&, 
-			         const GPlatesMaths::PolyLineOnSphere&);
+			         const GPlatesMaths::PolylineOnSphere&);
 			
 			virtual void
 			Accept(Visitor& visitor) const { visitor.Visit(*this); }
@@ -54,20 +54,20 @@ namespace GPlatesGeo
 			 * @warning Access to this iterator will allow the client
 			 *   to put the object into an illegal state (num points < 2).
 			 */
-			GPlatesMaths::PolyLineOnSphere::iterator
+			GPlatesMaths::PolylineOnSphere::iterator
 			Begin() { return _line.begin(); }
 
-			GPlatesMaths::PolyLineOnSphere::iterator
+			GPlatesMaths::PolylineOnSphere::iterator
 			End() { return _line.end(); }
 #endif
 			/**
 			 * Restricted enumerative access the PointData constituting
 			 * this line.
 			 */
-			GPlatesMaths::PolyLineOnSphere::const_iterator
+			GPlatesMaths::PolylineOnSphere::const_iterator
 			Begin() const { return _line.begin(); }
 
-			GPlatesMaths::PolyLineOnSphere::const_iterator
+			GPlatesMaths::PolylineOnSphere::const_iterator
 			End() const { return _line.end(); }
 
 			void
@@ -82,7 +82,7 @@ namespace GPlatesGeo
 			 const;
 			
 		private:
-			GPlatesMaths::PolyLineOnSphere _line;
+			GPlatesMaths::PolylineOnSphere _line;
 	};
 }
 

@@ -17,14 +17,14 @@
  * GNU General Public License for more details.
  */
 
-#include "PolyLineFeature.h"
-#include "ReconstructedPolyLineFeature.h"
+#include "PolylineFeature.h"
+#include "ReconstructedPolylineFeature.h"
 
 GPlatesGeo::ReconstructedFeature *
-GPlatesGeo::PolyLineFeature::reconstruct(
+GPlatesGeo::PolylineFeature::reconstruct(
  const GPlatesMaths::FiniteRotationSnapshotTable &table) {
 
 	// ...
-	return new ReconstructedPolyLineFeature(table, *this);
+	return new ReconstructedPolylineFeature(table, *this);
 }
 
