@@ -100,6 +100,10 @@ fi
 #	AC_MSG_ERROR([compiler doesn't support RTTI])
 #fi
 
+# Boost.
+# The following macro performs all the necessary checks, including complaining
+# to the user if Boost 1.20.0 or later is not found.
+AX_BOOST_BASE
 
 ## 
 # Library dependencies.
