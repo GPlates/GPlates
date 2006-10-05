@@ -8,7 +8,7 @@ AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_HEADERS(src/global/config.h)
 
 AC_DEFINE([COPYRIGHT_STRING],
-	  ["Copyright (C) 2003,2004,2005 The GPlates Consortium"],[])
+	  ["Copyright (C) 2003,2006 The University of Sydney"],[])
 
 # Check the canonical build-system type (sets the variable "$build").
 AC_CANONICAL_BUILD
@@ -16,7 +16,11 @@ AC_CANONICAL_BUILD
 # Check the canonical host-system type (sets the variable "$host").
 AC_CANONICAL_HOST
 
-# Check C++ compiler
+
+##
+# C++ compiler and build system.
+##
+
 # Setting CXXFLAGS is necessary to circumvent autoconf using its
 #  own (namely CXXFLAGS="-g -O2").
 #CXXFLAGS=""
@@ -26,9 +30,11 @@ CHECK_GNU_MAKE
 AC_PROG_INSTALL
 AC_LANG(C++)
 
-##################################
-# System-dependant options
-##################################
+
+##
+# System-dependant options.
+##
+
 # Debugging format; will be appended to "-g", and passed to the compiler
 debug_format=""
 case "$build" in
@@ -40,7 +46,11 @@ case "$build" in
 	;;
 esac
 
-# Check for required features
+
+##
+# Required C++ language features.
+##
+
 AC_CXX_BOOL
 if test "$ac_cv_cxx_bool" != yes; then
 	AC_MSG_ERROR([bool is not a built-in type])
@@ -94,16 +104,12 @@ if test "$ac_cv_cxx_have_stl" != yes; then
 	AC_MSG_ERROR([no C++ STL present])
 fi
 
-# XXX: We don't *really* need this.
+# We don't *really* need this...
 #AC_CXX_RTTI
 #if test "$ac_cv_cxx_rtti" != yes; then
 #	AC_MSG_ERROR([compiler doesn't support RTTI])
 #fi
 
-# Boost.
-# The following macro performs all the necessary checks, including complaining
-# to the user if Boost 1.20.0 or later is not found.
-AX_BOOST_BASE
 
 ## 
 # Library dependencies.
@@ -116,12 +122,12 @@ case "$host" in
 		AC_MSG_RESULT([link with Mac OS X OpenGL framework])
 		AC_CXX_LINK_OPENGL_FRAMEWORK
 		if test "$ac_cv_cxx_can_link_opengl_framework" != yes; then
-			AC_MSG_ERROR([
+			AC_MSG_ERROR([[
 !!
 !!  You don't appear to have the OpenGL framework installed.
 !!  It may be obtained from your Apple Developer Tools CD, or from
 !!     http://developer.apple.com/tools/
-!!])
+!!]])
 		fi
 	;;
 	* )
@@ -141,25 +147,37 @@ case "$host" in
 	;;
 esac
 
-# wxWidgets
-# ???
-# need to make sure wxGLCanvas was enabled.
-
-# We using Expat, which is included in contrib/src
-# XXX: Only compile eXpat if it does not already exist?
-# XXX: For now, place the obligation of eXpat installation
-#  on the user.
-AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([
+# Expat
+AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 !!
-!!  You don't appear to have the libxml++ shared library 
-!!  installed.  It may be obtained from 
+!!  You don't appear to have the Expat XML parser shared library installed.
+!!  Your operating system vendor may provide a pre-compiled package, or you
+!!  can download the source from
 !!     http://expat.sourceforge.net
-!!]))
+!!]]))
+
+# wxWidgets
+# Need to make sure wxGLCanvas is enabled.
+# ???
+
+# ICU
+AC_CHECK_LIB([icui18n], [main], [], AC_MSG_ERROR([[
+!!
+!!  You don't appear to have the International Components for Unicode (ICU)
+!!  shared library installed.  Your operating system vendor may provide a
+!!  pre-compiled package, or you can download the source from
+!!     http://icu.sourceforge.net/
+!!]]))
 
 
 ##
 # Header dependencies.
 ##
+
+# Boost
+# The following macro performs all the necessary checks, including complaining
+# to the user if Boost 1.20.0 or later is not found.
+AX_BOOST_BASE
 
 # OpenGL and GLU
 # How we compile the OpenGL headers dependent upon the type of the build system.
@@ -177,26 +195,35 @@ case "$build" in
 esac
 AC_CHECK_HEADERS([$gl_headers], [], AC_MSG_ERROR([
 !!
-!!  Failed to find the OpenGL headers.  Make sure the OpenGL
-!!  development package is installed on your system.
+!!  You don't appear to have the OpenGL (GL) development headers
+!!  installed.  Your operating system vendor may provide a development
+!!  package which includes these headers.
 !!]))
 
-# eXpat XML Parser
-# XXX: I had to alter my local copy of expat.h because it makes
-#  forward references to enums which gcc-2.95 doesn't like.
-AC_CHECK_HEADERS([expat.h], [], AC_MSG_ERROR([
+# Expat
+AC_CHECK_HEADERS([expat.h], [], AC_MSG_ERROR([[
 !!
-!!  Failed to find the eXpat headers.  Make sure the eXpat
-!!  development package is installed on your system.
-!!]))
+!!  You don't appear to have the Expat XML parser development headers
+!!  installed.  Your operating system vendor may provide a development
+!!  package which includes these headers, or you can download the source
+!!  from
+!!     http://expat.sourceforge.net
+!!]]))
 
-# netCDF
-#AC_PATH_NETCDF([], AC_MSG_ERROR([
-#!!
-#!!  Failed to find the netCDF C++ library. Make sure that the netCDF
-#!!  development package is installed on your system.
-#!!]))
+# ICU
+AC_CHECK_HEADERS([unicode/unistr.h], [], AC_MSG_ERROR([[
+!!
+!!  You don't appear to have the International Components for Unicode (ICU)
+!!  development headers installed.  Your operating system vendor may provide
+!!  a development package which includes these headers, or you can download
+!!  the source from
+!!     http://icu.sourceforge.net/
+!!]]))
 
+
+##
+# Other software dependencies.
+##
 
 # Check for dot (from graphviz package) for doxygen.conf
 # WARNING: does not verify this is the _real_ dot program we want

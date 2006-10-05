@@ -571,18 +571,19 @@ AC_DEFUN([AX_BOOST_BASE],
 			if test "$_version" = "0" ; then
 				AC_MSG_ERROR([[
 !!
-!!  You don't appear to have the Boost C++ development library installed.
-!!  Your operating system vendor may provide pre-compiled package, or you
-!!  can download the source from
-!!     http://boost.org/
+!!  You don't appear to have the Boost C++ library development headers
+!!  installed.  Your operating system vendor may provide a development
+!!  package which includes these headers, or you can download the source
+!!  from
+!!     http://www.boost.org/
 !!]])
 			else
 				AC_MSG_ERROR([[
 !!
-!!  The version of the Boost library installed on your system seems to be
-!!  too old ($_version).  Your operating system vendor may provide a newer
-!!  version, or you can download the source from
-!!     http://boost.org/
+!!  The version of the Boost C++ library installed on your system seems
+!!  to be too old ($_version).  Your operating system vendor may provide
+!!  a newer version, or you can download the source from
+!!     http://www.boost.org/
 !!]])
 			fi
 		else
