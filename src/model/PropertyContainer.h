@@ -19,24 +19,29 @@
  * GNU General Public License for more details.
  */
 
-#ifndef GPLATES_MODEL_FEATUREREVISION_H
-#define GPLATES_MODEL_FEATUREREVISION_H
+#ifndef GPLATES_MODEL_PROPERTYCONTAINER_H
+#define GPLATES_MODEL_PROPERTYCONTAINER_H
 
-#include <vector>
+#include <unicode/unistr.h>
 #include <boost/intrusive_ptr.hpp>
-#include "base/RevisionId.h"
+// #include "base/RevisionId.h"
 
 
 namespace GPlatesModel {
 
-	// forward references
-	class AbstractPropertyContainer;
-
-	class FeatureRevision {
+	class PropertyContainer {
 
 	public:
 
 		typedef long ref_count_type;
+
+		virtual
+		~PropertyContainer()
+		{ }
+
+		virtual
+		boost::intrusive_ptr<PropertyContainer>
+		clone() const = 0;
 
 		ref_count_type
 		ref_count() const {
@@ -53,23 +58,40 @@ namespace GPlatesModel {
 			--d_ref_count;
 		}
 
+		const UnicodeString &
+		name() const {
+			return d_name;
+		}
+
+		// FIXME: visitor accept method
+
+	protected:
+
+		explicit
+		PropertyContainer(const UnicodeString &name_) :
+				d_ref_count(0),
+				d_name(name_)
+		{ }
+
 	private:
 
 		ref_count_type d_ref_count;
-		GPlatesBase::RevisionId d_revision_id;
-		std::vector<boost::intrusive_ptr<AbstractPropertyContainer> > d_props;
+		UnicodeString d_name;
+
+		PropertyContainer &
+		operator=(PropertyContainer &);
 
 	};
 
 
 	void
-	intrusive_ptr_add_ref(FeatureRevision *p) {
+	intrusive_ptr_add_ref(PropertyContainer *p) {
 		p->increment_ref_count();
 	}
 
 
 	void
-	intrusive_ptr_release(FeatureRevision *p) {
+	intrusive_ptr_release(PropertyContainer *p) {
 		p->decrement_ref_count();
 		if (p->ref_count() == 0) {
 			delete p;
@@ -78,4 +100,4 @@ namespace GPlatesModel {
 
 }
 
-#endif  // GPLATES_MODEL_FEATUREREVISION_H
+#endif  // GPLATES_MODEL_PROPERTYCONTAINER_H
