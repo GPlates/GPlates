@@ -25,7 +25,6 @@
 #include <unicode/unistr.h>
 #include <boost/intrusive_ptr.hpp>
 #include "model/PropertyContainer.h"
-// #include "base/RevisionId.h"
 
 
 namespace GPlatesModel {
@@ -40,8 +39,8 @@ namespace GPlatesModel {
 
 		static
 		boost::intrusive_ptr<PropertyContainer>
-		create(const UnicodeString &name_) {
-			boost::intrusive_ptr<PropertyContainer> ptr(new SingleValuedPropertyContainer(name_));
+		create(const UnicodeString &property_name_) {
+			boost::intrusive_ptr<PropertyContainer> ptr(new SingleValuedPropertyContainer(property_name_));
 			return ptr;
 		}
 
@@ -56,8 +55,8 @@ namespace GPlatesModel {
 	protected:
 
 		explicit
-		SingleValuedPropertyContainer(const UnicodeString &name_) :
-				PropertyContainer(name_),
+		SingleValuedPropertyContainer(const UnicodeString &property_name_) :
+				PropertyContainer(property_name_),
 				d_value(NULL),
 				d_value_is_optional(false)
 		{ }

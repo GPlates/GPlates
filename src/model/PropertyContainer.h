@@ -24,7 +24,6 @@
 
 #include <unicode/unistr.h>
 #include <boost/intrusive_ptr.hpp>
-// #include "base/RevisionId.h"
 
 
 namespace GPlatesModel {
@@ -59,8 +58,8 @@ namespace GPlatesModel {
 		}
 
 		const UnicodeString &
-		name() const {
-			return d_name;
+		property_name() const {
+			return d_property_name;
 		}
 
 		// FIXME: visitor accept method
@@ -68,15 +67,15 @@ namespace GPlatesModel {
 	protected:
 
 		explicit
-		PropertyContainer(const UnicodeString &name_) :
+		PropertyContainer(const UnicodeString &property_name_) :
 				d_ref_count(0),
-				d_name(name_)
+				d_property_name(property_name_)
 		{ }
 
 	private:
 
 		ref_count_type d_ref_count;
-		UnicodeString d_name;
+		UnicodeString d_property_name;
 
 		PropertyContainer &
 		operator=(PropertyContainer &);
