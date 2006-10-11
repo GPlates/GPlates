@@ -23,8 +23,8 @@
 #define GPLATES_MODEL_FEATUREHANDLE_H
 
 #include <boost/intrusive_ptr.hpp>
-#include "base/FeatureId.h"
-#include "base/FeatureType.h"
+#include "FeatureId.h"
+#include "FeatureType.h"
 
 namespace GPlatesModel {
 
@@ -34,12 +34,35 @@ namespace GPlatesModel {
 	class FeatureHandle {
 
 	public:
+		explicit
+		FeatureHandle(
+				const FeatureType &feature_type_) :
+			d_curr_rev(NULL),
+			d_feature_type(feature_type_) {  }
+
+		const FeatureId &
+		feature_id() const {
+			return d_feature_id;
+		}
+
+		// The feature-id should not be changed after the parsing of the XML has completed.
+		FeatureId &
+		feature_id() {
+			return d_feature_id;
+		}
+
+		const FeatureType &
+		feature_type() const {
+			return d_feature_type;
+		}
+
+		// No non-const 'feature_type':  The feature-type should never be changed.
 
 	private:
 
 		boost::intrusive_ptr<FeatureRevision> d_curr_rev;
-		GPlatesBase::FeatureId d_feature_id;
-		GPlatesBase::FeatureType d_feature_type;
+		FeatureId d_feature_id;
+		FeatureType d_feature_type;
 
 	};
 
