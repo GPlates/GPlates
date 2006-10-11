@@ -34,10 +34,11 @@ namespace GPlatesModel {
 	class FeatureHandle {
 
 	public:
-		explicit
 		FeatureHandle(
+				const FeatureId &feature_id_,
 				const FeatureType &feature_type_) :
-			d_curr_rev(NULL),
+			d_current_revision(NULL),
+			d_feature_id(feature_id_),
 			d_feature_type(feature_type_) {  }
 
 		const FeatureId &
@@ -45,11 +46,7 @@ namespace GPlatesModel {
 			return d_feature_id;
 		}
 
-		// The feature-id should not be changed after the parsing of the XML has completed.
-		FeatureId &
-		feature_id() {
-			return d_feature_id;
-		}
+		// No non-const 'feature_id':  The feature-ID should never be changed.
 
 		const FeatureType &
 		feature_type() const {
@@ -58,9 +55,20 @@ namespace GPlatesModel {
 
 		// No non-const 'feature_type':  The feature-type should never be changed.
 
+		boost::intrusive_ptr<FeatureRevision> &
+		current_revision() {
+			return d_current_revision;
+		}
+
+		void
+		swap_revision(
+				boost::intrusive_ptr<FeatureRevision> &rev) {
+			d_current_revision.swap(rev);
+		}
+
 	private:
 
-		boost::intrusive_ptr<FeatureRevision> d_curr_rev;
+		boost::intrusive_ptr<FeatureRevision> d_current_revision;
 		FeatureId d_feature_id;
 		FeatureType d_feature_type;
 
