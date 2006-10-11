@@ -1,11 +1,11 @@
-/* $Id: PropertyName.h 880 2006-10-09 08:16:28Z matty $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2006-10-09 18:16:28 +1000 (Mon, 09 Oct 2006) $
+ *   $Date$
  * 
  * Copyright (C) 2006 The GPlates Consortium
  *
