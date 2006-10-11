@@ -23,7 +23,7 @@
 
 
 bool
-FeatureType::is_loaded(
+GPlatesModel::FeatureType::is_loaded(
 		const UnicodeString &s) {
 	return StringSet::instance(StringSetInstantiations::FEATURE_TYPE)->contains(s);
 }

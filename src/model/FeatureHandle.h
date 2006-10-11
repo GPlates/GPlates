@@ -37,7 +37,7 @@ namespace GPlatesModel {
 
 	private:
 
-		boost::intrusive_ptr< FeatureRevision > d_curr_rev;
+		boost::intrusive_ptr<FeatureRevision> d_curr_rev;
 		GPlatesBase::FeatureId d_feature_id;
 		GPlatesBase::FeatureType d_feature_type;
 

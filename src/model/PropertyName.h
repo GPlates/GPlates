@@ -66,7 +66,7 @@ namespace GPlatesModel {
 		explicit
 		PropertyName(
 				const UnicodeString &name) :
-				d_ss_iter(StringSet::instance(StringSetInstantiations::PROPERTY_NAME)->insert(name))
+			d_ss_iter(StringSet::instance(StringSetInstantiations::PROPERTY_NAME)->insert(name))
 		{ }
 
 		/**
@@ -84,7 +84,7 @@ namespace GPlatesModel {
 		bool
 		is_equal_to(
 				const PropertyName &other) const {
-			return (d_ss_iter == other.d_ss_iter);
+			return d_ss_iter == other.d_ss_iter;
 		}
 
 	private:
@@ -106,7 +106,7 @@ namespace GPlatesModel {
 	operator!=(
 			const PropertyName &pn1,
 			const PropertyName &pn2) {
-		return ( ! pn1.is_equal_to(pn2));
+		return ! pn1.is_equal_to(pn2);
 	}
 
 }

@@ -23,7 +23,7 @@
 
 
 bool
-PropertyName::is_loaded(
+GPlatesModel::PropertyName::is_loaded(
 		const UnicodeString &s) {
 	return StringSet::instance(StringSetInstantiations::PROPERTY_NAME)->contains(s);
 }

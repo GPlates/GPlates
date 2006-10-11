@@ -56,9 +56,9 @@ namespace GPlatesModel {
 
 		explicit
 		SingleValuedPropertyContainer(const UnicodeString &property_name_) :
-				PropertyContainer(property_name_),
-				d_value(NULL),
-				d_value_is_optional(false)
+			PropertyContainer(property_name_),
+			d_value(NULL),
+			d_value_is_optional(false)
 		{ }
 
 	private:

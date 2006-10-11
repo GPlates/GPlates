@@ -43,7 +43,7 @@ namespace GPlatesModel {
 	 * Since StringSet uses a 'std::set' for storage, testing whether an arbitrary Unicode
 	 * string is a member of the StringSet has O(log n) cost.  Further, since all loaded
 	 * feature types are stored within the StringSet, it is inexpensive to test whether a
-	 * desired feature type even exists, without needing to iterate through all properties of
+	 * desired feature type is even loaded, without needing to iterate through all properties of
 	 * all features.
 	 */
 	class FeatureType {
@@ -66,7 +66,7 @@ namespace GPlatesModel {
 		explicit
 		FeatureType(
 				const UnicodeString &type) :
-				d_ss_iter(StringSet::instance(StringSetInstantiations::FEATURE_TYPE)->insert(type))
+			d_ss_iter(StringSet::instance(StringSetInstantiations::FEATURE_TYPE)->insert(type))
 		{ }
 
 		/**
@@ -84,7 +84,7 @@ namespace GPlatesModel {
 		bool
 		is_equal_to(
 				const FeatureType &other) const {
-			return (d_ss_iter == other.d_ss_iter);
+			return d_ss_iter == other.d_ss_iter;
 		}
 
 	private:
@@ -96,17 +96,17 @@ namespace GPlatesModel {
 
 	bool
 	operator==(
-			const FeatureType &pn1,
-			const FeatureType &pn2) {
-		return pn1.is_equal_to(pn2);
+			const FeatureType &ft1,
+			const FeatureType &ft2) {
+		return ft1.is_equal_to(ft2);
 	}
 
 
 	bool
 	operator!=(
-			const FeatureType &pn1,
-			const FeatureType &pn2) {
-		return ( ! pn1.is_equal_to(pn2));
+			const FeatureType &ft1,
+			const FeatureType &ft2) {
+		return ! ft1.is_equal_to(ft2);
 	}
 
 }
