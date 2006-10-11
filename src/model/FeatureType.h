@@ -23,7 +23,7 @@
 #define GPLATES_MODEL_FEATURETYPE_H
 
 #include <unicode/unistr.h>
-#include "StringSet.h"
+#include "StringSetSingletons.h"
 
 
 namespace GPlatesModel {
@@ -43,8 +43,8 @@ namespace GPlatesModel {
 	 * Since StringSet uses a 'std::set' for storage, testing whether an arbitrary Unicode
 	 * string is a member of the StringSet has O(log n) cost.  Further, since all loaded
 	 * feature types are stored within the StringSet, it is inexpensive to test whether a
-	 * desired feature type is even loaded, without needing to iterate through all properties of
-	 * all features.
+	 * desired feature type is even loaded, without needing to iterate through all properties
+	 * of all features.
 	 */
 	class FeatureType {
 
@@ -66,7 +66,7 @@ namespace GPlatesModel {
 		explicit
 		FeatureType(
 				const UnicodeString &type) :
-			d_ss_iter(StringSet::instance(StringSetInstantiations::FEATURE_TYPE)->insert(type))
+			d_ss_iter(StringSetSingletons::feature_type_instance().insert(type))
 		{ }
 
 		/**
@@ -89,7 +89,7 @@ namespace GPlatesModel {
 
 	private:
 
-		StringSet::iterator d_ss_iter;
+		GPlatesUtil::StringSet::SharedIterator d_ss_iter;
 
 	};
 

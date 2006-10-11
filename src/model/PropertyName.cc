@@ -25,5 +25,5 @@
 bool
 GPlatesModel::PropertyName::is_loaded(
 		const UnicodeString &s) {
-	return StringSet::instance(StringSetInstantiations::PROPERTY_NAME)->contains(s);
+	return StringSetSingletons::property_name_instance().contains(s);
 }

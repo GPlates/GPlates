@@ -25,5 +25,5 @@
 bool
 GPlatesModel::FeatureType::is_loaded(
 		const UnicodeString &s) {
-	return StringSet::instance(StringSetInstantiations::FEATURE_TYPE)->contains(s);
+	return StringSetSingletons::feature_type_instance().contains(s);
 }

@@ -23,7 +23,7 @@
 #define GPLATES_MODEL_PROPERTYNAME_H
 
 #include <unicode/unistr.h>
-#include "StringSet.h"
+#include "StringSetSingletons.h"
 
 
 namespace GPlatesModel {
@@ -43,8 +43,8 @@ namespace GPlatesModel {
 	 * Since StringSet uses a 'std::set' for storage, testing whether an arbitrary Unicode
 	 * string is a member of the StringSet has O(log n) cost.  Further, since all loaded
 	 * property names are stored within the StringSet, it is inexpensive to test whether a
-	 * desired property name even exists, without needing to iterate through all properties of
-	 * all features.
+	 * desired property name is even loaded, without needing to iterate through all properties
+	 * of all features.
 	 */
 	class PropertyName {
 
@@ -66,7 +66,7 @@ namespace GPlatesModel {
 		explicit
 		PropertyName(
 				const UnicodeString &name) :
-			d_ss_iter(StringSet::instance(StringSetInstantiations::PROPERTY_NAME)->insert(name))
+			d_ss_iter(StringSetSingletons::property_name_instance().insert(name))
 		{ }
 
 		/**
@@ -89,7 +89,7 @@ namespace GPlatesModel {
 
 	private:
 
-		StringSet::iterator d_ss_iter;
+		GPlatesUtil::StringSet::SharedIterator d_ss_iter;
 
 	};
 
