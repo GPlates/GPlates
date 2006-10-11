@@ -52,9 +52,9 @@ namespace GPlatesModel {
 			++d_ref_count;
 		}
 
-		void
+		ref_count_type
 		decrement_ref_count() {
-			--d_ref_count;
+			return --d_ref_count;
 		}
 
 		const UnicodeString &
@@ -68,8 +68,8 @@ namespace GPlatesModel {
 
 		explicit
 		PropertyContainer(const UnicodeString &property_name_) :
-				d_ref_count(0),
-				d_property_name(property_name_)
+			d_ref_count(0),
+			d_property_name(property_name_)
 		{ }
 
 	private:
@@ -77,6 +77,10 @@ namespace GPlatesModel {
 		ref_count_type d_ref_count;
 		UnicodeString d_property_name;
 
+		// This operator should never be defined, because we don't want/need to allow
+		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
+		// (which will in turn use the copy-constructor); all "assignment" should really
+		// only be assignment of one intrusive_ptr to another.
 		PropertyContainer &
 		operator=(PropertyContainer &);
 
@@ -91,8 +95,7 @@ namespace GPlatesModel {
 
 	void
 	intrusive_ptr_release(PropertyContainer *p) {
-		p->decrement_ref_count();
-		if (p->ref_count() == 0) {
+		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}
 	}

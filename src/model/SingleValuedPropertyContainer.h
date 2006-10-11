@@ -29,13 +29,16 @@
 
 namespace GPlatesModel {
 
-	// forward references
+	// Forward declaration for intrusive-pointer.
 	class PropertyValue;
 
 	class SingleValuedPropertyContainer :
 			public PropertyContainer {
 
 	public:
+
+		virtual
+		~SingleValuedPropertyContainer() {  }
 
 		static
 		boost::intrusive_ptr<PropertyContainer>
@@ -44,6 +47,7 @@ namespace GPlatesModel {
 			return ptr;
 		}
 
+		virtual
 		boost::intrusive_ptr<PropertyContainer>
 		clone() const {
 			boost::intrusive_ptr<PropertyContainer> dup(new SingleValuedPropertyContainer(*this));
@@ -54,6 +58,8 @@ namespace GPlatesModel {
 
 	protected:
 
+		// This operator should not be public, because we don't want to allow instantiation
+		// of this type on the stack.
 		explicit
 		SingleValuedPropertyContainer(const UnicodeString &property_name_) :
 			PropertyContainer(property_name_),
@@ -67,6 +73,10 @@ namespace GPlatesModel {
 		std::map<UnicodeString, UnicodeString> d_xml_attributes;
 		bool d_value_is_optional;
 
+		// This operator should never be defined, because we don't want/need to allow
+		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
+		// (which will in turn use the copy-constructor); all "assignment" should really
+		// only be assignment of one intrusive_ptr to another.
 		SingleValuedPropertyContainer &
 		operator=(SingleValuedPropertyContainer &);
 

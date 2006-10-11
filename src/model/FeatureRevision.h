@@ -29,7 +29,7 @@
 
 namespace GPlatesModel {
 
-	// forward references
+	// Forward declaration for intrusive-pointer.
 	class AbstractPropertyContainer;
 
 	class FeatureRevision {
@@ -48,9 +48,9 @@ namespace GPlatesModel {
 			++d_ref_count;
 		}
 
-		void
+		ref_count_type
 		decrement_ref_count() {
-			--d_ref_count;
+			return --d_ref_count;
 		}
 
 	private:
@@ -70,8 +70,7 @@ namespace GPlatesModel {
 
 	void
 	intrusive_ptr_release(FeatureRevision *p) {
-		p->decrement_ref_count();
-		if (p->ref_count() == 0) {
+		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}
 	}
