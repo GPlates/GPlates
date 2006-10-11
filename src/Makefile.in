@@ -8,7 +8,7 @@ SUBDIRS = controls fileio geo global gui maths state util
 DISTFILES = Rules.in Makefile.in *.cc
 
 INCLUDES = -I.
-CXXFLAGS = @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
+CXXFLAGS = @CPPFLAGS@ @CXXFLAGS@ $(INCLUDES) @EXTRA_CFLAGS@
 LDFLAGS = @LDFLAGS@ @EXTRA_LDFLAGS@
 INSTALL = @INSTALL@
 
@@ -17,7 +17,7 @@ INSTALL = @INSTALL@
 #	maths/libmaths.a
 EXTRA_LIBS = gui/libgui.a controls/libcontrols.a fileio/libfileio.a \
 	geo/libgeo.a controls/libcontrols.a state/libstate.a \
-	maths/libmaths.a global/libglobal.a util/libutil.a
+	maths/libmaths.a global/libglobal.a # util/libutil.a
 
 LIBS = @LIBS@ 
 #			  @NETCDF_LIBS@

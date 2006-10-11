@@ -59,3 +59,5 @@ dist:	Makefile
 	rm -rf $(distdir)
 
 @ifGNUmake@.PHONY: all doc install uninstall clean dep dist
+
+am--refresh:

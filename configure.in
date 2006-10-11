@@ -3,6 +3,8 @@
 
 AC_INIT([GPlates], [0.7], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
 package_is_beta="yes"		# change this to "no" for releases
+AC_CONFIG_AUX_DIR(config)
+AM_INIT_AUTOMAKE
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_HEADERS(src/global/config.h)
@@ -27,6 +29,7 @@ AC_CANONICAL_HOST
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 CHECK_GNU_MAKE
+AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_LANG(C++)
 
@@ -291,11 +294,14 @@ if test "$probe_wxwid" != "no"; then
 		WX_GL_LIBS=`$WX_CONFIG_WITH_ARGS --gl-libs`
 
 		AC_DEFINE([HAVE_WXWIN],[],[wxWidgets is available.])
-		EXTRA_CFLAGS="$EXTRA_CFLAGS $WX_CXXFLAGS"
+		CPPFLAGS="$CPPFLAGS $WX_CPPFLAGS"
+		CXXFLAGS="$CXXFLAGS $WX_CXXFLAGS_ONLY"
+		CFLAGS="$CFLAGS $WX_CFLAGS_ONLY"
 		LIBS="$LIBS $WX_LIBS $WX_GL_LIBS"
 		found_wxwid="yes"
 	fi
 fi
+
 
 AC_SUBST(EXTRA_CFLAGS)
 AC_SUBST(EXTRA_LDFLAGS)
@@ -330,7 +336,8 @@ AC_OUTPUT(Makefile
 	src/gui/Makefile
 	src/maths/Makefile
 	src/controls/Makefile
-	src/state/Makefile)
+	src/state/Makefile
+	src/util/Makefile)
 
 
 
