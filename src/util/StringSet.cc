@@ -37,3 +37,25 @@ GPlatesUtil::StringSet::SharedIterator::~SharedIterator()
 		d_collection_ptr->erase(d_iter);
 	}
 }
+
+
+GPlatesUtil::StringSet::SharedIterator
+GPlatesUtil::StringSet::insert(
+		const UnicodeString &s)
+{
+	UnicodeStringAndRefCount elem(s);
+	collection_type::iterator iter = d_strings.find(elem);
+	if (iter != d_strings.end())
+	{
+		// The element already exists in the set.
+		SharedIterator sh_iter(iter, d_strings);
+		return sh_iter;
+	}
+	else
+	{
+		std::pair< collection_type::iterator, bool > insertion = d_strings.insert(elem);
+		// Now the element exists in the set.
+		SharedIterator sh_iter(insertion.first, d_strings);
+		return sh_iter;
+	}
+}

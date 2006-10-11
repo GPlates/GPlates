@@ -34,13 +34,13 @@ namespace GPlatesUtil {
 		struct UnicodeStringAndRefCount
 		{
 			UnicodeString d_str;
-			long d_ref_count;
+			mutable long d_ref_count;
 
 			explicit
 			UnicodeStringAndRefCount(
 					const UnicodeString &str) :
-					d_str(str),
-					d_ref_count(0) {  }
+				d_str(str),
+				d_ref_count(0) {  }
 
 			bool
 			operator<(
@@ -50,6 +50,9 @@ namespace GPlatesUtil {
 			}
 		};
 
+		typedef std::set< UnicodeStringAndRefCount > collection_type;
+		typedef collection_type::size_type size_type;
+
 		class SharedIterator
 		{
 		public:
@@ -57,18 +60,18 @@ namespace GPlatesUtil {
 					d_collection_ptr(NULL) {  }
 
 			SharedIterator(
-					std::set< UnicodeStringAndRefCount >::iterator iter,
-					std::set< UnicodeStringAndRefCount > &collection) :
-					d_iter(iter),
-					d_collection_ptr(&collection)
+					collection_type::iterator iter,
+					collection_type &collection) :
+				d_iter(iter),
+				d_collection_ptr(&collection)
 			{
 				increment_ref_count();
 			}
 
 			SharedIterator(
 					const SharedIterator &other) :
-					d_iter(other.d_iter),
-					d_collection_ptr(other.d_collection_ptr)
+				d_iter(other.d_iter),
+				d_collection_ptr(other.d_collection_ptr)
 			{
 				increment_ref_count();
 			}
@@ -110,37 +113,19 @@ namespace GPlatesUtil {
 				return access_target();
 			}
 
-			UnicodeString &
-			operator*()
-			{
-				return access_target();
-			}
-
 			const UnicodeString *
 			operator->() const
-			{
-				return &(access_target());
-			}
-
-			UnicodeString *
-			operator->()
 			{
 				return &(access_target());
 			}
 		private:
 			// The iterator is only meaningful if the pointer is non-NULL (which means
 			// that the shared iterator was *not* default-constructed).
-			std::set< UnicodeStringAndRefCount >::iterator d_iter;
-			std::set< UnicodeStringAndRefCount > *d_collection_ptr;
+			collection_type::iterator d_iter;
+			collection_type *d_collection_ptr;
 
 			const UnicodeString &
 			access_target() const
-			{
-				return d_iter->d_str;
-			}
-
-			UnicodeString &
-			access_target()
 			{
 				return d_iter->d_str;
 			}
@@ -159,6 +144,27 @@ namespace GPlatesUtil {
 		};
 
 		StringSet() {  }
+
+		size_type
+		size() const
+		{
+			return d_strings.size();
+		}
+
+		bool
+		contains(
+				const UnicodeString &s) const
+		{
+			UnicodeStringAndRefCount tmp(s);
+			return (d_strings.find(tmp) != d_strings.end());
+		}
+
+		SharedIterator
+		insert(
+				const UnicodeString &s);
+
+	private:
+		collection_type d_strings;
 	};
 }
 
