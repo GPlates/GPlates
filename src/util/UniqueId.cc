@@ -49,6 +49,7 @@ namespace
 		logname = ::getenv("LOGNAME");
 		if (logname == NULL)
 		{
+			// No environment variable "LOGNAME" found.
 			return std::string("");
 		}
 		else
@@ -63,6 +64,7 @@ namespace
 		struct utsname u;
 		if (::uname(&u) != 0)
 		{
+			// The invocation of '::uname' failed.
 			return std::string("");
 		}
 		else
@@ -71,13 +73,10 @@ namespace
 		}
 	}
 
-	const std::string
+	unsigned long
 	get_pid_component()
 	{
-		std::ostringstream oss;
-
-		oss << ::getpid();
-		return oss.str();
+		return static_cast< unsigned long >(::getpid());
 	}
 }
 
