@@ -23,20 +23,26 @@
 #define GPLATES_UTIL_UNIQUEID_H
 
 #include <string>
-// FIXME:  This should be done in a platform-independent manner, using Qt functions.
 
 namespace GPlatesUtil
 {
+	/**
+	 * This class provides a static member function to generate a reasonably-unique string
+	 * identifier.
+	 *
+	 * The class itself is a singleton, and client code should not attempt to instantiate it;
+	 * just use the static member function @a generate.
+	 */
 	class UniqueId
 	{
 	public:
-		typedef long counter_type;
-
 		static
 		const std::string
 		generate();
 
 	private:
+		typedef long counter_type;
+
 		static UniqueId *s_instance;
 
 		static
