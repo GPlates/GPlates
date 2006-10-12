@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
-#include "base/RevisionId.h"
+#include "RevisionId.h"
 
 
 namespace GPlatesModel {
@@ -56,7 +56,7 @@ namespace GPlatesModel {
 	private:
 
 		ref_count_type d_ref_count;
-		GPlatesBase::RevisionId d_revision_id;
+		RevisionId d_revision_id;
 		std::vector<boost::intrusive_ptr<AbstractPropertyContainer> > d_props;
 
 	};
