@@ -19,8 +19,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef GPLATES_MODEL_SINGLEVALUEDPROPERTY_H
-#define GPLATES_MODEL_SINGLEVALUEDPROPERTY_H
+#ifndef GPLATES_MODEL_SINGLEVALUEDPROPERTYCONTAINER_H
+#define GPLATES_MODEL_SINGLEVALUEDPROPERTYCONTAINER_H
 
 #include <unicode/unistr.h>
 #include <boost/intrusive_ptr.hpp>
@@ -84,4 +84,4 @@ namespace GPlatesModel {
 
 }
 
-#endif  // GPLATES_MODEL_SINGLEVALUEDPROPERTY_H
+#endif  // GPLATES_MODEL_SINGLEVALUEDPROPERTYCONTAINER_H
