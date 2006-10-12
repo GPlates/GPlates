@@ -24,13 +24,11 @@
 
 #include <unicode/unistr.h>
 #include <boost/intrusive_ptr.hpp>
-#include "model/PropertyContainer.h"
+#include "PropertyContainer.h"
+#include "PropertyValue.h"
 
 
 namespace GPlatesModel {
-
-	// Forward declaration for intrusive-pointer.
-	class PropertyValue;
 
 	class SingleValuedPropertyContainer :
 			public PropertyContainer {
@@ -41,9 +39,15 @@ namespace GPlatesModel {
 		~SingleValuedPropertyContainer() {  }
 
 		static
-		boost::intrusive_ptr<PropertyContainer>
-		create(const UnicodeString &property_name_) {
-			boost::intrusive_ptr<PropertyContainer> ptr(new SingleValuedPropertyContainer(property_name_));
+		boost::intrusive_ptr<SingleValuedPropertyContainer>
+		create(
+				const UnicodeString &property_name_,
+				boost::intrusive_ptr<PropertyValue> value_,
+				const std::map<UnicodeString, UnicodeString> xml_attributes_,
+				bool value_is_optional_) {
+			boost::intrusive_ptr<SingleValuedPropertyContainer> ptr(
+					new SingleValuedPropertyContainer(
+							property_name_, value_, xml_attributes_, value_is_optional_));
 			return ptr;
 		}
 
@@ -61,10 +65,15 @@ namespace GPlatesModel {
 		// This operator should not be public, because we don't want to allow instantiation
 		// of this type on the stack.
 		explicit
-		SingleValuedPropertyContainer(const UnicodeString &property_name_) :
+		SingleValuedPropertyContainer(
+				const UnicodeString &property_name_,
+				boost::intrusive_ptr<PropertyValue> value_,
+				const std::map<UnicodeString, UnicodeString> xml_attributes_,
+				bool value_is_optional_) :
 			PropertyContainer(property_name_),
-			d_value(NULL),
-			d_value_is_optional(false)
+			d_value(value_),
+			d_xml_attributes(xml_attributes_),
+			d_value_is_optional(value_is_optional_)
 		{ }
 
 	private:
@@ -78,7 +87,7 @@ namespace GPlatesModel {
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive_ptr to another.
 		SingleValuedPropertyContainer &
-		operator=(SingleValuedPropertyContainer &);
+		operator=(const SingleValuedPropertyContainer &);
 
 	};
 

@@ -35,8 +35,38 @@ namespace GPlatesModel {
 	class FeatureRevision {
 
 	public:
-
 		typedef long ref_count_type;
+
+		~FeatureRevision()
+		{  }
+
+		static
+		boost::intrusive_ptr<FeatureRevision>
+		create() {
+			boost::intrusive_ptr<FeatureRevision> ptr(new FeatureRevision());
+			return ptr;
+		}
+
+		static
+		boost::intrusive_ptr<FeatureRevision>
+		create(
+				const RevisionId &revision_id) {
+			boost::intrusive_ptr<FeatureRevision> ptr(new FeatureRevision(revision_id));
+			return ptr;
+		}
+
+		boost::intrusive_ptr<FeatureRevision>
+		clone() const {
+			boost::intrusive_ptr<FeatureRevision> dup(new FeatureRevision(*this));
+			return dup;
+		}
+
+		const RevisionId &
+		revision_id() const {
+			return d_revision_id;
+		}
+
+		// No non-const 'revision_id':  The revision-ID should never be changed.
 
 		ref_count_type
 		ref_count() const {
@@ -58,6 +88,28 @@ namespace GPlatesModel {
 		ref_count_type d_ref_count;
 		RevisionId d_revision_id;
 		std::vector<boost::intrusive_ptr<PropertyContainer> > d_props;
+
+		// This operator should not be public, because we don't want to allow instantiation
+		// of this type on the stack.
+		FeatureRevision() :
+			d_ref_count(0),
+			d_revision_id()
+		{  }
+
+		// This operator should not be public, because we don't want to allow instantiation
+		// of this type on the stack.
+		FeatureRevision(
+				const RevisionId &revision_id) :
+			d_ref_count(0),
+			d_revision_id(revision_id)
+		{  }
+
+		// This operator should never be defined, because we don't want/need to allow
+		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
+		// (which will in turn use the copy-constructor); all "assignment" should really
+		// only be assignment of one intrusive_ptr to another.
+		FeatureRevision &
+		operator=(const FeatureRevision &);
 
 	};
 

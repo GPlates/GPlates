@@ -19,87 +19,65 @@
  * GNU General Public License for more details.
  */
 
-#ifndef GPLATES_MODEL_PROPERTYCONTAINER_H
-#define GPLATES_MODEL_PROPERTYCONTAINER_H
+#ifndef GPLATES_MODEL_GPMLPLATEID_H
+#define GPLATES_MODEL_GPMLPLATEID_H
 
-#include <unicode/unistr.h>
 #include <boost/intrusive_ptr.hpp>
+#include "PropertyValue.h"
+#include "PlateId.h"
 
 
 namespace GPlatesModel {
 
-	class PropertyContainer {
+	class GpmlPlateId :
+			public PropertyValue {
 
 	public:
 
-		typedef long ref_count_type;
+		virtual
+		~GpmlPlateId() {  }
+
+		static
+		boost::intrusive_ptr<GpmlPlateId>
+		create(
+				const PlateId &plate_id) {
+			boost::intrusive_ptr<GpmlPlateId> ptr(new GpmlPlateId(plate_id));
+			return ptr;
+		}
 
 		virtual
-		~PropertyContainer()
-		{ }
-
-		virtual
-		boost::intrusive_ptr<PropertyContainer>
-		clone() const = 0;
-
-		ref_count_type
-		ref_count() const {
-			return d_ref_count;
-		}
-
-		void
-		increment_ref_count() {
-			++d_ref_count;
-		}
-
-		ref_count_type
-		decrement_ref_count() {
-			return --d_ref_count;
-		}
-
-		const UnicodeString &
-		property_name() const {
-			return d_property_name;
+		boost::intrusive_ptr<PropertyValue>
+		clone() const {
+			boost::intrusive_ptr<PropertyValue> dup(new GpmlPlateId(*this));
+			return dup;
 		}
 
 		// FIXME: visitor accept method
 
 	protected:
 
+		// This operator should not be public, because we don't want to allow instantiation
+		// of this type on the stack.
 		explicit
-		PropertyContainer(const UnicodeString &property_name_) :
-			d_ref_count(0),
-			d_property_name(property_name_)
-		{ }
+		GpmlPlateId(
+				const PlateId &plate_id):
+			PropertyValue(),
+			d_plate_id(plate_id)
+		{  }
 
 	private:
 
-		ref_count_type d_ref_count;
-		UnicodeString d_property_name;
+		PlateId d_plate_id;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive_ptr to another.
-		PropertyContainer &
-		operator=(const PropertyContainer &);
+		GpmlPlateId &
+		operator=(const GpmlPlateId &);
 
 	};
 
-
-	void
-	intrusive_ptr_add_ref(PropertyContainer *p) {
-		p->increment_ref_count();
-	}
-
-
-	void
-	intrusive_ptr_release(PropertyContainer *p) {
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
-#endif  // GPLATES_MODEL_PROPERTYCONTAINER_H
+#endif  // GPLATES_MODEL_GPMLPLATEID_H
