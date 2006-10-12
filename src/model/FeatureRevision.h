@@ -30,7 +30,7 @@
 namespace GPlatesModel {
 
 	// Forward declaration for intrusive-pointer.
-	class AbstractPropertyContainer;
+	class PropertyContainer;
 
 	class FeatureRevision {
 
@@ -57,7 +57,7 @@ namespace GPlatesModel {
 
 		ref_count_type d_ref_count;
 		RevisionId d_revision_id;
-		std::vector<boost::intrusive_ptr<AbstractPropertyContainer> > d_props;
+		std::vector<boost::intrusive_ptr<PropertyContainer> > d_props;
 
 	};
 
