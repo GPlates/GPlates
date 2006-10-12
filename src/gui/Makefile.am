@@ -1,5 +1,7 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
+EXTRA_DIST		= plates.clr.inc
+
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LIBRARIES	= libgui.a
