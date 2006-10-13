@@ -28,16 +28,44 @@
 
 namespace GPlatesModel {
 
+	/**
+	 * A revision ID acts as a persistent unique identifier for a single revision of a feature.
+	 *
+	 * Revision IDs enable features to reference specific revisions of other features.
+	 *
+	 * To enable the construction and representation of a "unique" identifier (actually, it's
+	 * at best a "reasonably unique" identifier), revision IDs are currently based upon
+	 * strings.
+	 *
+	 * To enable revision IDs to serve as XML IDs (which might one day be useful) without
+	 * becoming too complicated for us programmers, all revision ID strings must conform to the
+	 * regexp "[A-Za-z_][-A-Za-z_0-9.]*", which is a subset of the NCName production which
+	 * defines the set of string values which are valid for the XML ID type:
+	 *  - http://www.w3.org/TR/2004/REC-xmlschema-2-20041028/#ID
+	 *  - http://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName
+	 */
 	class RevisionId {
 
 	public:
 
+		RevisionId() :
+			d_id(GPlatesUtil::UniqueId::generate()) {  }
+
+		/**
+		 * Construct a revision ID from a 'std::string'.
+		 *
+		 * The string should conform to the regexp "[A-Za-z_][-A-Za-z_0-9.]*" (see the
+		 * class comment for RevisionId for justification).  (Note however that this
+		 * constructor won't verify the contents of the input string.)  Since all of the
+		 * characters produced by this regexp are ASCII characters, the input string is a
+		 * 'std::string' rather than, say, a UnicodeString.
+		 *
+		 * This constructor is intended for use when parsing features from file which
+		 * already possess a revision ID.
+		 */
 		RevisionId(
 				const std::string &id) :
 			d_id(id) {  }
-
-		RevisionId() :
-			d_id(GPlatesUtil::UniqueId::generate()) {  }
 
 		/**
 		 * Determine whether another RevisionId instance contains the same revision ID
