@@ -93,10 +93,11 @@ GPlatesUtil::UniqueId::generate()
 	std::ostringstream oss;
 
 	// Note that the order is important:  The counter should be "gotten" first, to regenerate
-	// the time component if necessary.  (Also, the order is important because this is the
-	// order in which the components should occur in the ID.)
-	oss << s_instance->get_counter_component() << "_";
-	oss << s_instance->get_time_component() << "_";
+	// the time component if necessary.
+	counter_type counter_component = s_instance->get_counter_component();
+	oss << "G-";
+	oss << s_instance->get_time_component() << ".";
+	oss << counter_component << "-";
 	oss << s_instance->get_username_hostname_pid_component();
 
 	return oss.str();
@@ -111,8 +112,8 @@ GPlatesUtil::UniqueId::create_instance()
 {
 	std::ostringstream oss;
 
-	oss << ::get_username_component() << "@";
-	oss << ::get_hostname_component() << ":";
+	oss << ::get_username_component() << ".";
+	oss << ::get_hostname_component() << ".";
 	oss << ::get_pid_component();
 
 	// FIXME:  We should hash the resulting string in 'oss' to hide any "bad" characters ("bad"

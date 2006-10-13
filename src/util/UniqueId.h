@@ -36,6 +36,10 @@ namespace GPlatesUtil
 	class UniqueId
 	{
 	public:
+		/**
+		 * The output of this function conforms to the regexp "[A-Za-z_][-A-Za-z_0-9.]*",
+		 * which means that the output can serve as an XML ID.
+		 */
 		static
 		const std::string
 		generate();
