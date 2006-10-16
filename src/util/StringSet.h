@@ -76,7 +76,24 @@ namespace GPlatesUtil {
 				increment_ref_count();
 			}
 
-			~SharedIterator();
+			~SharedIterator()
+			{
+				decrement_ref_count();
+			}
+
+			SharedIterator &
+			operator=(
+					const SharedIterator &other)
+			{
+				if (&other != this)
+				{
+					decrement_ref_count();
+					d_iter = other.d_iter;
+					d_collection_ptr = other.d_collection_ptr;
+					increment_ref_count();
+				}
+				return *this;
+			}
 
 			bool
 			operator==(
@@ -119,8 +136,10 @@ namespace GPlatesUtil {
 				return &(access_target());
 			}
 		private:
-			// The iterator is only meaningful if the pointer is non-NULL (which means
-			// that the shared iterator was *not* default-constructed).
+			// The iterator is only meaningful if the collection-ptr is non-NULL (which
+			// means that the shared iterator was neither default-constructed, nor
+			// copy-constructed/copy-assigned from an iterator which was
+			// default-constructed).
 			collection_type::iterator d_iter;
 			collection_type *d_collection_ptr;
 
@@ -131,16 +150,10 @@ namespace GPlatesUtil {
 			}
 
 			void
-			increment_ref_count()
-			{
-				++(d_iter->d_ref_count);
-			}
+			increment_ref_count();
 
-			long
-			decrement_ref_count()
-			{
-				return --(d_iter->d_ref_count);
-			}
+			void
+			decrement_ref_count();
 		};
 
 		StringSet() {  }

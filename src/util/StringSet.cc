@@ -22,16 +22,31 @@
 #include "StringSet.h"
 
 
-GPlatesUtil::StringSet::SharedIterator::~SharedIterator()
+void
+GPlatesUtil::StringSet::SharedIterator::increment_ref_count()
 {
 	if (d_collection_ptr == NULL)
 	{
-		// This iterator was either default-constructed or copy-assigned from an iterator
-		// which was default constructed.  Whichever it was, this iterator doesn't point to
-		// anything valid.
+		// This iterator was either default-constructed, or copy-constructed/copy-assigned
+		// from an iterator which was default-constructed.  Whichever it was, this iterator
+		// doesn't point to anything valid.
 		return;
 	}
-	if (decrement_ref_count() == 0)
+	++(d_iter->d_ref_count);
+}
+
+
+void
+GPlatesUtil::StringSet::SharedIterator::decrement_ref_count()
+{
+	if (d_collection_ptr == NULL)
+	{
+		// This iterator was either default-constructed, or copy-constructed/copy-assigned
+		// from an iterator which was default-constructed.  Whichever it was, this iterator
+		// doesn't point to anything valid.
+		return;
+	}
+	if (--(d_iter->d_ref_count) == 0)
 	{
 		// There are no more references to the element in the set.
 		d_collection_ptr->erase(d_iter);
