@@ -41,7 +41,7 @@ namespace GPlatesModel {
 		static
 		boost::intrusive_ptr<SingleValuedPropertyContainer>
 		create(
-				const UnicodeString &property_name_,
+				const PropertyName &property_name_,
 				boost::intrusive_ptr<PropertyValue> value_,
 				const std::map<UnicodeString, UnicodeString> xml_attributes_,
 				bool value_is_optional_) {
@@ -62,11 +62,10 @@ namespace GPlatesModel {
 
 	protected:
 
-		// This operator should not be public, because we don't want to allow instantiation
-		// of this type on the stack.
-		explicit
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
 		SingleValuedPropertyContainer(
-				const UnicodeString &property_name_,
+				const PropertyName &property_name_,
 				boost::intrusive_ptr<PropertyValue> value_,
 				const std::map<UnicodeString, UnicodeString> xml_attributes_,
 				bool value_is_optional_) :
@@ -74,6 +73,19 @@ namespace GPlatesModel {
 			d_value(value_),
 			d_xml_attributes(xml_attributes_),
 			d_value_is_optional(value_is_optional_)
+		{ }
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		//
+		// Note that this should act exactly the same as the default (auto-generated)
+		// copy-constructor, except it should not be public.
+		SingleValuedPropertyContainer(
+				const SingleValuedPropertyContainer &other) :
+			PropertyContainer(other),
+			d_value(other.d_value),
+			d_xml_attributes(other.d_xml_attributes),
+			d_value_is_optional(other.d_value_is_optional)
 		{ }
 
 	private:

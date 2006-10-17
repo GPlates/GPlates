@@ -38,14 +38,34 @@ namespace GPlatesModel {
 		~PropertyValue()
 		{ }
 
+		/**
+		 * Construct a PropertyValue instance.
+		 *
+		 * Since this class is an abstract class, this constructor can never be invoked
+		 * other than explicitly in the initialiser lists of derived classes. 
+		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
+		 * explicitly, since this class contains members which need to be initialised.
+		 */
+		PropertyValue() :
+			d_ref_count(0)
+		{ }
+
+		/**
+		 * Construct a PropertyValue instance which is a copy of @a other.
+		 *
+		 * Since this class is an abstract class, this constructor can never be invoked
+		 * other than explicitly in the initialiser lists of derived classes. 
+		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
+		 * explicitly, since this class contains members which need to be initialised.
+		 */
+		PropertyValue(
+				const PropertyValue &other) :
+			d_ref_count(other.d_ref_count)
+		{ }
+
 		virtual
 		boost::intrusive_ptr<PropertyValue>
 		clone() const = 0;
-
-		ref_count_type
-		ref_count() const {
-			return d_ref_count;
-		}
 
 		void
 		increment_ref_count() {
@@ -57,12 +77,6 @@ namespace GPlatesModel {
 			return --d_ref_count;
 		}
 
-	protected:
-
-		PropertyValue() :
-			d_ref_count(0)
-		{ }
-
 	private:
 
 		ref_count_type d_ref_count;
@@ -72,19 +86,24 @@ namespace GPlatesModel {
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive_ptr to another.
 		PropertyValue &
-		operator=(const PropertyValue &);
+		operator=(
+				const PropertyValue &);
 
 	};
 
 
+	inline
 	void
-	intrusive_ptr_add_ref(PropertyValue *p) {
+	intrusive_ptr_add_ref(
+			PropertyValue *p) {
 		p->increment_ref_count();
 	}
 
 
+	inline
 	void
-	intrusive_ptr_release(PropertyValue *p) {
+	intrusive_ptr_release(
+			PropertyValue *p) {
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}

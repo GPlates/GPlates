@@ -94,6 +94,7 @@ namespace GPlatesModel {
 	};
 
 
+	inline
 	bool
 	operator==(
 			const FeatureType &ft1,
@@ -102,6 +103,7 @@ namespace GPlatesModel {
 	}
 
 
+	inline
 	bool
 	operator!=(
 			const FeatureType &ft1,

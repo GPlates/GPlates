@@ -56,13 +56,24 @@ namespace GPlatesModel {
 
 	protected:
 
-		// This operator should not be public, because we don't want to allow instantiation
-		// of this type on the stack.
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
 		explicit
 		GpmlPlateId(
 				const PlateId &plate_id):
 			PropertyValue(),
 			d_plate_id(plate_id)
+		{  }
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		//
+		// Note that this should act exactly the same as the default (auto-generated)
+		// copy-constructor, except it should not be public.
+		GpmlPlateId(
+				const GpmlPlateId &other) :
+			PropertyValue(),
+			d_plate_id(other.d_plate_id)
 		{  }
 
 	private:
