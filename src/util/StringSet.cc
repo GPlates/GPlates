@@ -21,6 +21,32 @@
 
 #include "StringSet.h"
 
+bool
+GPlatesUtil::StringSet::SharedIterator::operator==(
+		const SharedIterator &other) const
+{
+	if (d_collection_ptr != other.d_collection_ptr)
+	{
+		// Since the two instances point at different collections, they cannot be equal.
+		return false;
+	}
+	// else, the two instances point at the same collection (or both have NULL
+	// collection-pointers).
+	
+	if (d_collection_ptr == NULL)
+	{
+		// Both collection-pointers are NULL.  This means that both instances were
+		// default-constructed (or copy-constructed/copy-assigned from instances which were
+		// default-constructed).
+		//
+		// We'll implement this function so that all default-constructed instances compare
+		// equal so that it's possible to determine whether a given instance may be
+		// dereferenced (since default-constructed instances may not be dereferenced).
+		return true;
+	}
+
+	return (d_iter == other.d_iter);
+}
 
 void
 GPlatesUtil::StringSet::SharedIterator::increment_ref_count()

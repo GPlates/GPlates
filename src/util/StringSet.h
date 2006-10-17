@@ -22,6 +22,7 @@
 #ifndef GPLATES_UTIL_STRINGSET_H
 #define GPLATES_UTIL_STRINGSET_H
 
+#include <algorithm>
 #include <set>
 #include <unicode/unistr.h>
 
@@ -85,37 +86,26 @@ namespace GPlatesUtil {
 			operator=(
 					const SharedIterator &other)
 			{
-				if (&other != this)
+				if (this != &other)
 				{
-					decrement_ref_count();
-					d_iter = other.d_iter;
-					d_collection_ptr = other.d_collection_ptr;
-					increment_ref_count();
+					// Use the copy constructor to get a duplicate copy.
+					SharedIterator dup(other);
+					this->swap(dup);
 				}
 				return *this;
 			}
 
+			void
+			swap(
+					SharedIterator &other)
+			{
+				std::swap(d_iter, other.d_iter);
+				std::swap(d_collection_ptr, other.d_collection_ptr);
+			}
+
 			bool
 			operator==(
-					const SharedIterator &other) const
-			{
-				if (d_collection_ptr != other.d_collection_ptr)
-				{
-					return false;
-				}
-				// else, the collection-pointers are equal.
-				if (d_collection_ptr == NULL)
-				{
-					// Both collection-pointers are NULL.  This means that both
-					// shared iterators were default-constructed.
-					//
-					// We'll make it so that all default-constructed shared
-					// iterators compare equal so that it's possible to tell
-					// whether a given shared iterator was default-constructed.
-					return true;
-				}
-				return (d_iter == other.d_iter);
-			}
+					const SharedIterator &other) const;
 
 			bool
 			operator!=(
@@ -178,7 +168,34 @@ namespace GPlatesUtil {
 
 	private:
 		collection_type d_strings;
+
+		// This constructor should never be defined, because we don't want to allow
+		// copy-construction (since the copy-constructed instance might contain strings
+		// with non-zero reference-counts, without SharedIterators referencing them).
+		StringSet(
+				const StringSet &);
+
+		// This operator should never be defined, because we don't want to allow
+		// copy-assignment (since the copy-assigned instance might contain strings with
+		// non-zero reference-counts, without SharedIterators referencing them).
+		StringSet &
+		operator=(
+				const StringSet &);
 	};
+}
+
+
+namespace std
+{
+	template<>
+	inline
+	void
+	swap< GPlatesUtil::StringSet::SharedIterator >(
+			GPlatesUtil::StringSet::SharedIterator &sh_iter1,
+			GPlatesUtil::StringSet::SharedIterator &sh_iter2)
+	{
+		sh_iter1.swap(sh_iter2);
+	}
 }
 
 #endif  // GPLATES_UTIL_STRINGSET_H
