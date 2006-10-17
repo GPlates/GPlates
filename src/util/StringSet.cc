@@ -21,21 +21,21 @@
 
 #include "StringSet.h"
 
+
 bool
 GPlatesUtil::StringSet::SharedIterator::operator==(
 		const SharedIterator &other) const
 {
-	if (d_collection_ptr != other.d_collection_ptr)
+	if (d_impl_ptr != other.d_impl_ptr)
 	{
-		// Since the two instances point at different collections, they cannot be equal.
+		// Since the two instances point at different impls, they cannot be equal.
 		return false;
 	}
-	// else, the two instances point at the same collection (or both have NULL
-	// collection-pointers).
+	// else, the two instances point at the same impl (or both have NULL impl-pointers).
 	
-	if (d_collection_ptr == NULL)
+	if (d_impl_ptr.get() == NULL)
 	{
-		// Both collection-pointers are NULL.  This means that both instances were
+		// Both impl-pointers are NULL.  This means that both instances were
 		// default-constructed (or copy-constructed/copy-assigned from instances which were
 		// default-constructed).
 		//
@@ -51,7 +51,7 @@ GPlatesUtil::StringSet::SharedIterator::operator==(
 void
 GPlatesUtil::StringSet::SharedIterator::increment_ref_count()
 {
-	if (d_collection_ptr == NULL)
+	if (d_impl_ptr.get() == NULL)
 	{
 		// This iterator was either default-constructed, or copy-constructed/copy-assigned
 		// from an iterator which was default-constructed.  Whichever it was, this iterator
@@ -65,7 +65,7 @@ GPlatesUtil::StringSet::SharedIterator::increment_ref_count()
 void
 GPlatesUtil::StringSet::SharedIterator::decrement_ref_count()
 {
-	if (d_collection_ptr == NULL)
+	if (d_impl_ptr.get() == NULL)
 	{
 		// This iterator was either default-constructed, or copy-constructed/copy-assigned
 		// from an iterator which was default-constructed.  Whichever it was, this iterator
@@ -75,7 +75,7 @@ GPlatesUtil::StringSet::SharedIterator::decrement_ref_count()
 	if (--(d_iter->d_ref_count) == 0)
 	{
 		// There are no more references to the element in the set.
-		d_collection_ptr->erase(d_iter);
+		d_impl_ptr->collection().erase(d_iter);
 	}
 }
 
@@ -85,18 +85,18 @@ GPlatesUtil::StringSet::insert(
 		const UnicodeString &s)
 {
 	UnicodeStringAndRefCount elem(s);
-	collection_type::iterator iter = d_strings.find(elem);
-	if (iter != d_strings.end())
+	collection_type::iterator iter = d_impl->collection().find(elem);
+	if (iter != d_impl->collection().end())
 	{
 		// The element already exists in the set.
-		SharedIterator sh_iter(iter, d_strings);
+		SharedIterator sh_iter(iter, d_impl);
 		return sh_iter;
 	}
 	else
 	{
-		std::pair< collection_type::iterator, bool > insertion = d_strings.insert(elem);
+		std::pair< collection_type::iterator, bool > insertion = d_impl->collection().insert(elem);
 		// Now the element exists in the set.
-		SharedIterator sh_iter(insertion.first, d_strings);
+		SharedIterator sh_iter(insertion.first, d_impl);
 		return sh_iter;
 	}
 }

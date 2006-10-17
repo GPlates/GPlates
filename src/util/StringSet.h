@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <set>
+#include <boost/intrusive_ptr.hpp>
 #include <unicode/unistr.h>
 
 
@@ -51,20 +52,79 @@ namespace GPlatesUtil {
 			}
 		};
 
+
 		typedef std::set< UnicodeStringAndRefCount > collection_type;
 		typedef collection_type::size_type size_type;
+
+
+		class StringSetImpl
+		{
+		public:
+			typedef long ref_count_type;
+
+			static
+			boost::intrusive_ptr<StringSetImpl>
+			create()
+			{
+				boost::intrusive_ptr<StringSetImpl> ptr(new StringSetImpl());
+				return ptr;
+			}
+
+			~StringSetImpl()
+			{  }
+
+			void
+			increment_ref_count()
+			{
+				++d_ref_count;
+			}
+
+			ref_count_type
+			decrement_ref_count()
+			{
+				return --d_ref_count;
+			}
+
+			StringSet::collection_type &
+			collection()
+			{
+				return d_collection;
+			}
+
+		private:
+			ref_count_type d_ref_count;
+			StringSet::collection_type d_collection;
+
+			// This constructor should not be public, because we don't want to allow
+			// instantiation of this type on the stack.
+			StringSetImpl() :
+				d_ref_count(0)
+			{  }
+
+			// This constructor should never be defined, because we don't want/need to
+			// allow copy-construction.
+			StringSetImpl(
+					const StringSetImpl &);
+
+			// This operator should never be defined, because we don't want/need to
+			// allow copy-assignment.
+			StringSetImpl &
+			operator=(
+					const StringSetImpl &);
+		};
+
 
 		class SharedIterator
 		{
 		public:
 			SharedIterator() :
-					d_collection_ptr(NULL) {  }
+					d_impl_ptr(NULL) {  }
 
 			SharedIterator(
 					collection_type::iterator iter,
-					collection_type &collection) :
+					boost::intrusive_ptr<StringSetImpl> impl) :
 				d_iter(iter),
-				d_collection_ptr(&collection)
+				d_impl_ptr(impl)
 			{
 				increment_ref_count();
 			}
@@ -72,7 +132,7 @@ namespace GPlatesUtil {
 			SharedIterator(
 					const SharedIterator &other) :
 				d_iter(other.d_iter),
-				d_collection_ptr(other.d_collection_ptr)
+				d_impl_ptr(other.d_impl_ptr)
 			{
 				increment_ref_count();
 			}
@@ -100,7 +160,7 @@ namespace GPlatesUtil {
 					SharedIterator &other)
 			{
 				std::swap(d_iter, other.d_iter);
-				std::swap(d_collection_ptr, other.d_collection_ptr);
+				std::swap(d_impl_ptr, other.d_impl_ptr);
 			}
 
 			bool
@@ -126,12 +186,12 @@ namespace GPlatesUtil {
 				return &(access_target());
 			}
 		private:
-			// The iterator is only meaningful if the collection-ptr is non-NULL (which
-			// means that the shared iterator was neither default-constructed, nor
-			// copy-constructed/copy-assigned from an iterator which was
-			// default-constructed).
+			// The collection-type iterator is only meaningful if the impl-pointer is
+			// non-NULL (which means that the shared iterator instance was neither
+			// default-constructed, nor copy-constructed/copy-assigned from an instance
+			// which was default-constructed).
 			collection_type::iterator d_iter;
-			collection_type *d_collection_ptr;
+			boost::intrusive_ptr<StringSetImpl> d_impl_ptr;
 
 			const UnicodeString &
 			access_target() const
@@ -146,12 +206,14 @@ namespace GPlatesUtil {
 			decrement_ref_count();
 		};
 
-		StringSet() {  }
+		StringSet() :
+			d_impl(StringSetImpl::create())
+		{  }
 
 		size_type
 		size() const
 		{
-			return d_strings.size();
+			return d_impl->collection().size();
 		}
 
 		bool
@@ -159,7 +221,7 @@ namespace GPlatesUtil {
 				const UnicodeString &s) const
 		{
 			UnicodeStringAndRefCount tmp(s);
-			return (d_strings.find(tmp) != d_strings.end());
+			return (d_impl->collection().find(tmp) != d_impl->collection().end());
 		}
 
 		SharedIterator
@@ -167,7 +229,7 @@ namespace GPlatesUtil {
 				const UnicodeString &s);
 
 	private:
-		collection_type d_strings;
+		boost::intrusive_ptr<StringSetImpl> d_impl;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction (since the copy-constructed instance might contain strings
@@ -182,6 +244,27 @@ namespace GPlatesUtil {
 		operator=(
 				const StringSet &);
 	};
+
+
+	inline
+	void
+	intrusive_ptr_add_ref(
+			StringSet::StringSetImpl *p)
+	{
+		p->increment_ref_count();
+	}
+
+
+	inline
+	void
+	intrusive_ptr_release(
+			StringSet::StringSetImpl *p)
+	{
+		if (p->decrement_ref_count() == 0)
+		{
+			delete p;
+		}
+	}
 }
 
 
@@ -190,7 +273,7 @@ namespace std
 	template<>
 	inline
 	void
-	swap< GPlatesUtil::StringSet::SharedIterator >(
+	swap<GPlatesUtil::StringSet::SharedIterator>(
 			GPlatesUtil::StringSet::SharedIterator &sh_iter1,
 			GPlatesUtil::StringSet::SharedIterator &sh_iter2)
 	{
