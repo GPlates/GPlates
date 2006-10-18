@@ -30,6 +30,71 @@
 
 namespace GPlatesUtil {
 
+	/**
+	 * A set of UnicodeString instances.
+	 *
+	 * @par Abstraction (black box) description:
+	 *  -# The StringSet class represents a set (an unordered collection of unique, immutable
+	 * elements) of UnicodeString instances.
+	 *  -# The @a size member function returns the number of UnicodeString instances contained
+	 * within a StringSet instance.
+	 *  -# It is possible to determine whether a StringSet instance contains a particular
+	 * UnicodeString instance, without modifying the contents of the class, using the
+	 * @a contains member function.  This member function will return @c true if the supplied
+	 * UnicodeString instance is contained within the StringSet instance; @c false otherwise.
+	 *  -# The elements contained within a StringSet instance are accessed through
+	 * SharedIterator instances.  To obtain a SharedIterator instance which points to a
+	 * particular UnicodeString instance within a StringSet instance, use the @a insert member
+	 * function.  If the supplied UnicodeString instance was not already contained within the
+	 * StringSet instance, it will be inserted (or an exception will be thrown in the case of
+	 * memory exhaustion).  The SharedIterator instance which is returned will point to an
+	 * element of the StringSet instance matching the supplied UnicodeString instance.
+	 *  -# A UnicodeString instance is only contained within a StringSet instance as long as
+	 * there is one or more SharedIterator instances which reference it.  When there are no
+	 * more SharedIterator instances referencing an element of the StringSet instance, the
+	 * element will be automatically removed.
+	 *
+	 * @par Implementation (white box) description:
+	 * (This description complements the abstraction description.)
+	 *  -# The conceptual StringSet is implemented using two classes: StringSet and
+	 * StringSetImpl. A StringSet instance contains a pointer-to-StringSetImpl (the
+	 * "impl-pointer") which points to a StringSetImpl instance allocated in the StringSet's
+	 * constructor.  The StringSet instance wraps the StringSetImpl, providing an interface to
+	 * manipulate its contents.  The StringSet instance also assumes part of the responsibility
+	 * for the management of the lifetime of the StringSetImpl.
+	 *  -# A StringSetImpl instance contains a @c std::set of UnicodeString instances, each
+	 * with an associated reference-count.  The UnicodeString instance and associated
+	 * reference-count together compose an element of the @c std::set, although only the
+	 * UnicodeString instance is accessible by clients of StringSet (the reference-count is not
+	 * part of the class abstraction).  The reference-count of an element is the number of
+	 * SharedIterator instances which currently reference that element.
+	 *  -# Since a UnicodeString instance is only contained within the conceptual StringSet
+	 * instance as long as there are one or more SharedIterator instances which reference the
+	 * StringSet element, every element in StringSetImpl's @c std::set has a reference-count
+	 * which is greater than zero.  When the reference-count reaches zero, the element is
+	 * removed.
+	 *
+	 * @par Abstraction invariants:
+	 *  -# The class contains the set of UnicodeStrings which have been inserted by client code
+	 * (using the @a insert member function), for which the number of SharedIterator instances
+	 * pointing to each element has not reached zero since the element's UnicodeString was last
+	 * inserted.
+	 *  -# All SharedIterator instances which point to elements of the class are valid (ie,
+	 * they may be dereferenced to access an element of the class).
+	 *
+	 * @par Implementation invariants:
+	 * (These collectively imply the abstraction invariants.)
+	 *  -# The impl-pointer is not NULL:  It points to a StringSetImpl instance which is not
+	 * pointed-to by the impl-pointer of any other StringSet instance.
+	 *  -# The reference-count of each element corresponds to the number of SharedIterator
+	 * instances referencing that element.
+	 *  -# The @c std::set contains at most one element for any UnicodeString instance.  (Note
+	 * that this is not automatically implied by the uniqueness of elements in the @a std::set,
+	 * since an element of the @c std::set is a UnicodeString instance and a reference-count.)
+	 *  -# The location in memory of the element for a particular UnicodeString will not change
+	 * as long as the reference count of that element is greater than zero.
+	 *  -# The class does not contain any elements which have a reference-count less than one.
+	 */
 	class StringSet
 	{
 	public:
