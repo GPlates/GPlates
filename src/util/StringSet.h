@@ -39,9 +39,10 @@ namespace GPlatesUtil {
 	 *  -# The @a size member function returns the number of UnicodeString instances contained
 	 * within a StringSet instance.
 	 *  -# It is possible to determine whether a StringSet instance contains a particular
-	 * UnicodeString instance, without modifying the contents of the class, using the
-	 * @a contains member function.  This member function will return @c true if the supplied
-	 * UnicodeString instance is contained within the StringSet instance; @c false otherwise.
+	 * UnicodeString instance, without modifying the contents of the StringSet instance, using
+	 * the @a contains member function.  This member function will return @c true if the
+	 * supplied UnicodeString instance is contained within the StringSet instance; @c false
+	 * otherwise.
 	 *  -# The elements contained within a StringSet instance are accessed through
 	 * SharedIterator instances.  To obtain a SharedIterator instance which points to a
 	 * particular UnicodeString instance within a StringSet instance, use the @a insert member
@@ -271,16 +272,39 @@ namespace GPlatesUtil {
 			decrement_ref_count();
 		};
 
+		/**
+		 * Construct a new, empty StringSet instance.
+		 */
 		StringSet() :
 			d_impl(StringSetImpl::create())
 		{  }
 
+		/**
+		 * Return the number of UnicodeString instances contained within the StringSet
+		 * instance.
+		 *
+		 * @pre True.
+		 *
+		 * @post Return-value is the number of elements in the StringSet instance.
+		 */
 		size_type
 		size() const
 		{
 			return d_impl->collection().size();
 		}
 
+		/**
+		 * Determine whether the StringSet instance contains the UnicodeString instance
+		 * @a s, without modifying the contents of the StringSet instance.
+		 * 
+		 * @return @c true if @a s is contained within the StringSet instance; @c false
+		 * otherwise.
+		 *
+		 * @pre True.
+		 *
+		 * @post Return-value is @c true if the StringSet instance contains an element for
+		 * the UnicodeString instance @a s; @c false otherwise.
+		 */
 		bool
 		contains(
 				const UnicodeString &s) const
@@ -289,6 +313,23 @@ namespace GPlatesUtil {
 			return (d_impl->collection().find(tmp) != d_impl->collection().end());
 		}
 
+		/**
+		 * Obtain a SharedIterator instance which points to the UnicodeString instance
+		 * @a s within a StringSet instance.
+		 *
+		 * If the UnicodeString instance @a s is not yet contained within the StringSet
+		 * instance, it will be inserted (or an exception will be thrown in the case of
+		 * memory exhaustion).
+		 *
+		 * @return The SharedIterator instance which points to the element of the StringSet
+		 * instance which matches the UnicodeString instance @a s.
+		 *
+		 * @pre True.
+		 *
+		 * @post An element for the UnicodeString instance @a s exists in the StringSet
+		 * instance, or an exception has been thrown.  Return-value is a SharedIterator
+		 * instance which points to the element for the UnicodeString instance @a s.
+		 */
 		SharedIterator
 		insert(
 				const UnicodeString &s);
