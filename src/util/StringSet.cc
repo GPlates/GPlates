@@ -35,13 +35,10 @@ GPlatesUtil::StringSet::SharedIterator::operator==(
 	
 	if (d_impl_ptr.get() == NULL)
 	{
-		// Both impl-pointers are NULL.  This means that both instances were
-		// default-constructed (or copy-constructed/copy-assigned from instances which were
-		// default-constructed).
+		// Both impl-pointers are NULL.  This means that both instances are uninitialised.
 		//
-		// We'll implement this function so that all default-constructed instances compare
-		// equal so that it's possible to determine whether a given instance may be
-		// dereferenced (since default-constructed instances may not be dereferenced).
+		// We'll implement this function so that all uninitialised instances compare equal
+		// so that it's possible to determine whether a given instance may be dereferenced.
 		return true;
 	}
 
@@ -53,9 +50,7 @@ GPlatesUtil::StringSet::SharedIterator::increment_ref_count()
 {
 	if (d_impl_ptr.get() == NULL)
 	{
-		// This iterator was either default-constructed, or copy-constructed/copy-assigned
-		// from an iterator which was default-constructed.  Whichever it was, this iterator
-		// doesn't point to anything valid.
+		// This instance is uninitialised.
 		return;
 	}
 	++(d_iter->d_ref_count);
@@ -67,9 +62,7 @@ GPlatesUtil::StringSet::SharedIterator::decrement_ref_count()
 {
 	if (d_impl_ptr.get() == NULL)
 	{
-		// This iterator was either default-constructed, or copy-constructed/copy-assigned
-		// from an iterator which was default-constructed.  Whichever it was, this iterator
-		// doesn't point to anything valid.
+		// This instance is uninitialised.
 		return;
 	}
 	if (--(d_iter->d_ref_count) == 0)

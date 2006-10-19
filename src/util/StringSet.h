@@ -358,9 +358,7 @@ namespace GPlatesUtil {
 			}
 		private:
 			// The collection-type iterator is only meaningful if the impl-pointer is
-			// non-NULL (which means that the shared iterator instance was neither
-			// default-constructed, nor copy-constructed/copy-assigned from an instance
-			// which was default-constructed).
+			// non-NULL (which means that the shared iterator instance is initialised).
 			collection_type::iterator d_iter;
 			boost::intrusive_ptr<StringSetImpl> d_impl_ptr;
 
