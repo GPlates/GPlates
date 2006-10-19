@@ -54,11 +54,15 @@ namespace GPlatesUtil {
 	 * there is one or more SharedIterator instances which reference it.  When there are no
 	 * more SharedIterator instances referencing an element of the StringSet instance, the
 	 * element will be automatically removed.
+	 *  -# A StringSet instance is neither copy-constructable nor copy-assignable, as the
+	 * copy-constructed/copy-assigned instance might then contain UnicodeString instances with
+	 * non-zero reference-counts, without SharedIterators associated with that StringSet
+	 * instance referencing them.
 	 *
 	 * @par Implementation (white box) description:
 	 * (This description complements the abstraction description.)
 	 *  -# The conceptual StringSet is implemented using two classes: StringSet and
-	 * StringSetImpl. A StringSet instance contains a pointer-to-StringSetImpl (the
+	 * StringSetImpl.  A StringSet instance contains a pointer-to-StringSetImpl (the
 	 * "impl-pointer") which points to a StringSetImpl instance allocated in the StringSet's
 	 * constructor.  The StringSet instance wraps the StringSetImpl, providing an interface to
 	 * manipulate its contents.  The StringSet instance also assumes part of the responsibility
@@ -76,12 +80,12 @@ namespace GPlatesUtil {
 	 * removed.
 	 *
 	 * @par Abstraction invariants:
-	 *  -# The class contains the set of UnicodeStrings which have been inserted by client code
-	 * (using the @a insert member function), for which the number of SharedIterator instances
-	 * pointing to each element has not reached zero since the element's UnicodeString was last
-	 * inserted.
-	 *  -# All SharedIterator instances which point to elements of the class are valid (ie,
-	 * they may be dereferenced to access an element of the class).
+	 *  -# The StringSet instance contains the set of UnicodeStrings which have been inserted
+	 * by client code (using the @a insert member function), for which the number of
+	 * SharedIterator instances pointing to each element has not reached zero since the
+	 * element's UnicodeString was last inserted.
+	 *  -# All SharedIterator instances which point to elements of the StringSet instance are
+	 * valid (ie, they may be dereferenced to access an element of the class).
 	 *
 	 * @par Implementation invariants:
 	 * (These collectively imply the abstraction invariants.)
@@ -99,17 +103,30 @@ namespace GPlatesUtil {
 	class StringSet
 	{
 	public:
+		/**
+		 * This is the element which is contained in the 'std::set' inside StringSetImpl.
+		 */
 		struct UnicodeStringAndRefCount
 		{
 			UnicodeString d_str;
 			mutable long d_ref_count;
 
+			/**
+			 * Construct a UnicodeStringAndRefCount instance for the UnicodeString
+			 * instance @a str.
+			 */
 			explicit
 			UnicodeStringAndRefCount(
 					const UnicodeString &str) :
 				d_str(str),
 				d_ref_count(0) {  }
 
+			/**
+			 * Provide a "less than" comparison for UnicodeStringAndRefCount instances.
+			 *
+			 * A "less than" comparison is used by 'std::set' to position elements in
+			 * its internal balanced binary tree.
+			 */
 			bool
 			operator<(
 					const UnicodeStringAndRefCount &other) const
@@ -123,6 +140,11 @@ namespace GPlatesUtil {
 		typedef collection_type::size_type size_type;
 
 
+		/**
+		 * A set of UnicodeString instances, each with an associated reference-count.
+		 *
+		 * See the class comment for StringSet for more information.
+		 */
 		class StringSetImpl
 		{
 		public:
@@ -180,6 +202,89 @@ namespace GPlatesUtil {
 		};
 
 
+		/**
+		 * A reference to an element of a StringSet instance.
+		 *
+		 * @par Abstraction (black box) description:
+		 *  -# The SharedIterator class represents a reference to an element of a StringSet
+		 * instance.  It models (a subset of) the interface of a pointer.  An instance may
+		 * be: default-constructed (resulting in an uninitialised reference); constructed
+		 * with parameters (resulting in an initialised reference); copy-constructed
+		 * (resulting in: another reference to the element which is referenced by the
+		 * original SharedIterator instance, if the original instance was initialised; or
+		 * another uninitialised instance, if the original SharedIterator instance was
+		 * uninitialised); copy-assigned; swapped with another instance; and compared for
+		 * equality or inequality with another instance.  An instance which is initialised
+		 * may be dereferenced to access the (const) UnicodeString instance contained as
+		 * the StringSet element.
+		 *  -# All the instances which reference a given element of StringSet are
+		 * collectively responsible for managing that element:  When there are no more
+		 * instances referencing a given element, the element is removed from the
+		 * StringSet.
+		 *  -# A SharedIterator which is initialised will remain valid (able to be
+		 * dereferenced) even if the StringSet instance itself no longer exists.
+		 *
+		 * @par Implementation (white box) description:
+		 * (This description complements the abstraction description.)
+		 *  -# An instance of SharedIterator contains an iterator into the collection
+		 * contained within the StringSetImpl instance of the SharedIterator's StringSet.
+		 * It also contains a pointer-to-StringSetImpl.
+		 *  -# If a SharedIterator instance was default-constructed, the contained iterator
+		 * will be uninitialised and the pointer-to-StringSetImpl will be NULL.  Thus, by
+		 * examining the pointer-to-StringSetImpl, it may be determined whether an instance
+		 * was default-constructed or not.
+		 *  -# If a SharedIterator instance was constructed with parameters, it will have
+		 * been passed an iterator which is assumed to point into the @c std::set contained
+		 * within a StringSetImpl, and a pointer-to-StringSetImple which is assumed to
+		 * point to the StringSetImpl instance containing the @c std::set.  The
+		 * SharedIterator instance will assume part of the responsibility for the
+		 * management of the lifetime of the StringSetImpl instance.
+		 *  -# Each element contained within the @c std::set inside a StringSetImpl
+		 * instance is a UnicodeString instance with an associated reference-count.  When
+		 * a SharedIterator instance is constructed with parameters, it is assumed to be
+		 * referencing the an element within the @c std::set; the reference-count of the
+		 * element will be incremented.
+		 *  -# When a SharedIterator instance is copy-constructed, if the original
+		 * SharedIterator instance references an element within the @c std::set, the
+		 * newly-instantiated SharedIterator instance will reference that same element, and
+		 * the reference-count of the element will be incremented.  If the original
+		 * SharedIterator instance is uninitialised, the newly-instantiated instance will
+		 * be uninitialised also.
+		 *  -# When a SharedIterator instance is destroyed, if it referenced an element of
+		 * the @c std::set, the reference-count of the element will be decremented; if the
+		 * SharedIterator instance held the last reference to the element, the element will
+		 * be removed from the @c std::set.  If the SharedIterator instance was the last
+		 * SharedIterator or StringSet instance responsible for managing the lifetime of
+		 * the StringSetImpl instance, the StringSetImpl instance will also be
+		 * de-allocated.
+		 *  -# When a SharedIterator instance is copy-assigned to another instance, the
+		 * copy-assignment function acts to handle the increment/decrement of the number of
+		 * references to elements of the @c std::set :  if a SharedIterator instance is
+		 * being assigned to itself, there will be no net change in the number of
+		 * references; if the l-value of the assignment referenced an element before the
+		 * assignment, that reference will be undone (the reference-count will be
+		 * decremented); if the r-value of the assignment references an element, the
+		 * reference-count of the element will be incremented.  If the r-value of the
+		 * assignment is an uninitialised instance, the l-value will become an
+		 * uninitialised instance also.
+		 *  -# Swapping two SharedIterator instances will result in no net change in the
+		 * number of references to the elements referenced by the SharedIterator instances.
+		 *  -# Comparing two SharedIterator instances for equality will return @c true if
+		 * both instances are uninitialised, to enable client-code to determine whether an
+		 * instance was initialised or not.  Aside from this, equality will describe
+		 * whether the two SharedIterator instances reference the same element of the same
+		 * StringSet instance or not.
+		 *  -# Dereferencing a SharedIterator instance is only valid if the instance is
+		 * initialised.
+		 *
+		 * @par Abstraction invariants:
+		 *  -# A SharedIterator instance is either initialised (in which case it references
+		 * a UnicodeString element of a StringSet instance) or uninitialised (in which case
+		 * it does not reference anything).
+		 *  -# A SharedIterator instance which is initialised may be dereferenced to access
+		 * a (const) UnicodeString element of a StringSet instance; a SharedIterator
+		 * instance which is uninitialised may not be dereferenced.
+		 */
 		class SharedIterator
 		{
 		public:
