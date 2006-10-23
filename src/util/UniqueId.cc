@@ -81,7 +81,7 @@ namespace
 }
 
 
-const std::string
+const UnicodeString
 GPlatesUtil::UniqueId::generate()
 {
 	if (s_instance == NULL)
@@ -95,12 +95,12 @@ GPlatesUtil::UniqueId::generate()
 	// Note that the order is important:  The counter should be "gotten" first, to regenerate
 	// the time component if necessary.
 	counter_type counter_component = s_instance->get_counter_component();
-	oss << "G-";
+	oss << "GPlates-";
 	oss << s_instance->get_time_component() << ".";
 	oss << counter_component << "-";
 	oss << s_instance->get_username_hostname_pid_component();
 
-	return oss.str();
+	return UnicodeString(oss.str().c_str());
 }
 
 

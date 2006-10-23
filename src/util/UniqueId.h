@@ -23,6 +23,7 @@
 #define GPLATES_UTIL_UNIQUEID_H
 
 #include <string>
+#include <unicode/unistr.h>
 
 namespace GPlatesUtil
 {
@@ -37,11 +38,25 @@ namespace GPlatesUtil
 	{
 	public:
 		/**
-		 * The output of this function conforms to the regexp "[A-Za-z_][-A-Za-z_0-9.]*",
-		 * which means that the output can serve as an XML ID.
+		 * Generate a unique string identifier.
+		 *
+		 * To enable the result of this function to serve as XML IDs (which might one day
+		 * be useful) without becoming too complicated for us programmers, the resultant
+		 * string will conform to the regexp "[A-Za-z_][-A-Za-z_0-9.]*", which is a subset
+		 * of the NCName production which defines the set of string values which are valid
+		 * for the XML ID type:
+		 *  - http://www.w3.org/TR/2004/REC-xmlschema-2-20041028/#ID
+		 *  - http://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName
+		 *
+		 * @return A unique string identifier.
+		 *
+		 * @pre True.
+		 *
+		 * @post Return-value is a unique string identifier which conforms to the regexp
+		 * "[A-Za-z_][-A-Za-z_0-9.]*", or an exception has been thrown.
 		 */
 		static
-		const std::string
+		const UnicodeString
 		generate();
 
 	private:

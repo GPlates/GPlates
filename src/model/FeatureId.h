@@ -22,7 +22,7 @@
 #ifndef GPLATES_MODEL_FEATUREID_H
 #define GPLATES_MODEL_FEATUREID_H
 
-#include <string>
+#include <unicode/unistr.h>
 #include "util/UniqueId.h"
 
 
@@ -36,10 +36,9 @@ namespace GPlatesModel {
 	 * To enable the construction and representation of a "unique" identifier (actually, it's
 	 * at best a "reasonably unique" identifier), feature IDs are currently based upon strings.
 	 *
-	 * To enable feature IDs to serve as XML IDs (which might one day be useful) without
-	 * becoming too complicated for us programmers, all feature ID strings must conform to the
-	 * regexp "[A-Za-z_][-A-Za-z_0-9.]*", which is a subset of the NCName production which
-	 * defines the set of string values which are valid for the XML ID type:
+	 * To enable feature IDs to serve as XML IDs (which might one day be useful), all feature
+	 * ID strings must conform to the NCName production which defines the set of string values
+	 * which are valid for the XML ID type:
 	 *  - http://www.w3.org/TR/2004/REC-xmlschema-2-20041028/#ID
 	 *  - http://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName
 	 */
@@ -51,19 +50,17 @@ namespace GPlatesModel {
 			d_id(GPlatesUtil::UniqueId::generate()) {  }
 
 		/**
-		 * Construct a feature ID from a 'std::string'.
+		 * Construct a feature ID from a UnicodeString instance.
 		 *
-		 * The string should conform to the regexp "[A-Za-z_][-A-Za-z_0-9.]*" (see the
-		 * class comment for FeatureId for justification).  (Note however that this
-		 * constructor won't verify the contents of the input string.)  Since all of the
-		 * characters produced by this regexp are ASCII characters, the input string is a
-		 * 'std::string' rather than, say, a UnicodeString.
+		 * The string should conform to the XML NCName production (see the class comment
+		 * for FeatureId for justification).  (Note however that this constructor won't
+		 * validate the contents of the input string.)
 		 *
 		 * This constructor is intended for use when parsing features from file which
 		 * already possess a feature ID.
 		 */
 		FeatureId(
-				const std::string &id) :
+				const UnicodeString &id) :
 			d_id(id) {  }
 
 		/**
@@ -78,7 +75,7 @@ namespace GPlatesModel {
 
 	private:
 
-		std::string d_id;
+		UnicodeString d_id;
 
 	};
 
