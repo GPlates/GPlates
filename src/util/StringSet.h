@@ -104,7 +104,7 @@ namespace GPlatesUtil {
 	{
 	public:
 		/**
-		 * This is the element which is contained in the 'std::set' inside StringSetImpl.
+		 * This is the element which is contained in the @c std::set inside StringSetImpl.
 		 */
 		struct UnicodeStringAndRefCount
 		{
@@ -284,13 +284,40 @@ namespace GPlatesUtil {
 		 *  -# A SharedIterator instance which is initialised may be dereferenced to access
 		 * a (const) UnicodeString element of a StringSet instance; a SharedIterator
 		 * instance which is uninitialised may not be dereferenced.
+		 *
+		 * @par Implementation invariants:
+		 * (These collectively imply the abstraction invariants.)
+		 *  -# Either the pointer-to-StringSetImpl is NULL, or it points to the
+		 * StringSetImpl instance contained within a StringSet instance and the iterator
+		 * points to an element of the @a std::set contained within the StringSetImpl
+		 * instance.
+		 *  -# If the pointer-to-StringSetImpl is non-NULL, the StringSetImpl instance will
+		 * have a reference-count which is one greater than it would be if the
+		 * pointer-to-StringSetImpl were not pointing to that StringSetImpl instance, and
+		 * the UnicodeString element of the @c std::set will have a reference-count which
+		 * is one greater than it would be if the iterator did not reference it.
 		 */
 		class SharedIterator
 		{
 		public:
+			/**
+			 * Construct a new SharedIterator instance which is uninitialised.
+			 *
+			 * This function will not throw.
+			 */
 			SharedIterator() :
 					d_impl_ptr(NULL) {  }
 
+			/**
+			 * Construct a new SharedIterator instance which references a UnicodeString
+			 * element of a StringSet instance.
+			 *
+			 * It is assumed that @a impl is a non-NULL pointer to a StringSetImpl
+			 * instance, and @a iter points to an element of the @a std::set contained
+			 * within the StringSetImpl instance.
+			 *
+			 * This function will not throw.
+			 */
 			SharedIterator(
 					collection_type::iterator iter,
 					boost::intrusive_ptr<StringSetImpl> impl) :
@@ -300,6 +327,11 @@ namespace GPlatesUtil {
 				increment_ref_count();
 			}
 
+			/**
+			 * Construct a copy of @a other.
+			 *
+			 * This function will not throw.
+			 */
 			SharedIterator(
 					const SharedIterator &other) :
 				d_iter(other.d_iter),
@@ -308,11 +340,37 @@ namespace GPlatesUtil {
 				increment_ref_count();
 			}
 
+			/**
+			 * Destroy this SharedIterator instance.
+			 *
+			 * This function will not throw.
+			 */
 			~SharedIterator()
 			{
 				decrement_ref_count();
 			}
 
+			/**
+			 * Copy-assign @a other to this instance.
+			 *
+			 * @a return A reference to this instance.
+			 *
+			 * @pre True.
+			 *
+			 * @post If this instance was assigned to itself, there is no change to the
+			 * reference-count of the referenced element of the StringSet instance (if
+			 * this instance is initialised).  If this instance was not assigned to
+			 * itself and it was initialised before the assignment, the reference-count
+			 * of the referenced element of the StringSet instance is one less than it
+			 * was before the assignment.  If this instance was not assigned to itself
+			 * and @a other was initialised before the assignment, the reference-count
+			 * of the referenced element contained within @a other is one greater than
+			 * it was before the assignment.  If this instance was not assigned to
+			 * itself and @a other was uninitialised before the assignment, this
+			 * instance is now uninitialised.
+			 *
+			 * This function will not throw.
+			 */
 			SharedIterator &
 			operator=(
 					const SharedIterator &other)
@@ -326,6 +384,19 @@ namespace GPlatesUtil {
 				return *this;
 			}
 
+			/**
+			 * Swap the internals of this instance with @a other.
+			 *
+			 * @pre True.
+			 *
+			 * @post This instance now references the UnicodeString element which was
+			 * referenced by @a other, if @a other was initialised; else, this instance
+			 * is now uninitialised.  @a other now references the UnicodeString element
+			 * which was referenced by this instance, if this instance was initialised;
+			 * else @a other is now uninitialised.
+			 *
+			 * This function will not throw.
+			 */
 			void
 			swap(
 					SharedIterator &other)
@@ -334,10 +405,42 @@ namespace GPlatesUtil {
 				std::swap(d_impl_ptr, other.d_impl_ptr);
 			}
 
+			/**
+			 * Determine whether this instance is equal to @a other.
+			 *
+			 * Two instances are considered equal if both instances are uninitialised,
+			 * or if both instances reference the same element of the same StringSet.
+			 *
+			 * @return @c true if this instance is equal to @a other; @c false
+			 * otherwise.
+			 *
+			 * @pre True.
+			 *
+			 * @post Return-value is @c true if this instance is equal to @a other;
+			 * @c false otherwise.
+			 *
+			 * This function will not throw.
+			 */
 			bool
 			operator==(
 					const SharedIterator &other) const;
 
+			/**
+			 * Determine whether this instance is @em not equal to @a other.
+			 *
+			 * Two instances are considered equal if both instances are uninitialised,
+			 * or if both instances reference the same element of the same StringSet.
+			 *
+			 * @return @c true if this instance is unequal to @a other; @c false
+			 * otherwise.
+			 *
+			 * @pre True.
+			 *
+			 * @post Return-value is @c true if this instance is unequal to @a other;
+			 * @c false otherwise.
+			 *
+			 * This function will not throw.
+			 */
 			bool
 			operator!=(
 					const SharedIterator &other) const
@@ -345,12 +448,44 @@ namespace GPlatesUtil {
 				return ( ! (*this == other));
 			}
 
+			/**
+			 * Dereference this instance to access the UnicodeString element which it
+			 * references.
+			 *
+			 * Note that this operation is only valid if this instance is initialised.
+			 *
+			 * @return A reference to the const UnicodeString element referenced by
+			 * this element.
+			 *
+			 * @pre This instance is initialised.
+			 *
+			 * @post Return-value is a reference to the UnicodeString element
+			 * referenced by this element.
+			 *
+			 * This function will not throw.
+			 */
 			const UnicodeString &
 			operator*() const
 			{
 				return access_target();
 			}
 
+			/**
+			 * Access a member of the UnicodeString element which is referenced by this
+			 * instance.
+			 *
+			 * Note that this operation is only valid if this instance is initialised.
+			 *
+			 * @return A non-NULL pointer to the const UnicodeString element referenced
+			 * by this element.
+			 *
+			 * @pre This instance is initialised.
+			 *
+			 * @post Return-value is a non-NULL pointer to the UnicodeString element
+			 * referenced by this element.
+			 *
+			 * This function will not throw.
+			 */
 			const UnicodeString *
 			operator->() const
 			{
