@@ -512,6 +512,9 @@ namespace GPlatesUtil {
 
 		/**
 		 * Construct a new, empty StringSet instance.
+		 *
+		 * This function might throw in the case of memory exhaustion.  This function is
+		 * strongly exception-safe and exception-neutral.
 		 */
 		StringSet() :
 			d_impl(StringSetImpl::create())
@@ -524,6 +527,8 @@ namespace GPlatesUtil {
 		 * @pre True.
 		 *
 		 * @post Return-value is the number of elements in the StringSet instance.
+		 *
+		 * This function will not throw.
 		 */
 		size_type
 		size() const
@@ -542,6 +547,10 @@ namespace GPlatesUtil {
 		 *
 		 * @post Return-value is @c true if the StringSet instance contains an element for
 		 * the UnicodeString instance @a s; @c false otherwise.
+		 *
+		 * This function might throw whatever the copy-constructor and less-than-comparison
+		 * operator of UnicodeString might throw.  This function is strongly exception-safe
+		 * and exception-neutral.
 		 */
 		bool
 		contains(
@@ -556,8 +565,9 @@ namespace GPlatesUtil {
 		 * @a s within a StringSet instance.
 		 *
 		 * If the UnicodeString instance @a s is not yet contained within the StringSet
-		 * instance, it will be inserted (or an exception will be thrown in the case of
-		 * memory exhaustion).
+		 * instance, it will be inserted (or an exception will be thrown, in the case of
+		 * copy-construction failure or less-than-comparison failure for the UnicodeString
+		 * instance, or memory allocation failure for @c std::set).
 		 *
 		 * @return The SharedIterator instance which points to the element of the StringSet
 		 * instance which matches the UnicodeString instance @a s.
@@ -567,6 +577,11 @@ namespace GPlatesUtil {
 		 * @post An element for the UnicodeString instance @a s exists in the StringSet
 		 * instance, or an exception has been thrown.  Return-value is a SharedIterator
 		 * instance which points to the element for the UnicodeString instance @a s.
+		 *
+		 * This function might throw whatever the copy-constructor and less-than-comparison
+		 * operator of UnicodeString might throw, as well as whatever the @a insert
+		 * function of @c std::set might throw.  This function is strongly exception-safe
+		 * and exception-neutral.
 		 */
 		SharedIterator
 		insert(
