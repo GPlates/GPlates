@@ -22,7 +22,6 @@
 #ifndef GPLATES_MODEL_PROPERTYNAME_H
 #define GPLATES_MODEL_PROPERTYNAME_H
 
-#include <unicode/unistr.h>
 #include "StringSetSingletons.h"
 
 
@@ -92,6 +91,14 @@ namespace GPlatesModel {
 		GPlatesUtil::StringSet::SharedIterator d_ss_iter;
 
 	};
+
+
+	inline
+	bool
+	GPlatesModel::PropertyName::is_loaded(
+			const UnicodeString &s) {
+		return StringSetSingletons::property_name_instance().contains(s);
+	}
 
 
 	inline

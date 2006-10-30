@@ -22,6 +22,7 @@
 #ifndef GPLATES_MODEL_SINGLEVALUEDPROPERTYCONTAINER_H
 #define GPLATES_MODEL_SINGLEVALUEDPROPERTYCONTAINER_H
 
+#include <map>
 #include <unicode/unistr.h>
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyContainer.h"

@@ -20,6 +20,7 @@
  */
 
 #include "StringSetSingletons.h"
+#include "util/StringSet.h"
 
 
 GPlatesUtil::StringSet &

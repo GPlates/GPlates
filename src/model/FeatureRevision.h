@@ -95,9 +95,9 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		FeatureRevision(
-				const RevisionId &revision_id) :
+				const RevisionId &revision_id_) :
 			d_ref_count(0),
-			d_revision_id(revision_id)
+			d_revision_id(revision_id_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow

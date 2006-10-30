@@ -22,7 +22,6 @@
 #ifndef GPLATES_MODEL_FEATURETYPE_H
 #define GPLATES_MODEL_FEATURETYPE_H
 
-#include <unicode/unistr.h>
 #include "StringSetSingletons.h"
 
 
@@ -92,6 +91,14 @@ namespace GPlatesModel {
 		GPlatesUtil::StringSet::SharedIterator d_ss_iter;
 
 	};
+
+
+	inline
+	bool
+	GPlatesModel::FeatureType::is_loaded(
+			const UnicodeString &s) {
+		return StringSetSingletons::feature_type_instance().contains(s);
+	}
 
 
 	inline

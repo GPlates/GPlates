@@ -22,8 +22,8 @@
 #ifndef GPLATES_MODEL_STRINGSETSINGLETONS_H
 #define GPLATES_MODEL_STRINGSETSINGLETONS_H
 
-#include <map>
 #include "util/StringSet.h"
+
 
 namespace GPlatesModel {
 
