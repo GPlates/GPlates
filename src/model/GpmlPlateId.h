@@ -24,7 +24,6 @@
 
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
-#include "PlateId.h"
 
 
 namespace GPlatesModel {
@@ -37,10 +36,15 @@ namespace GPlatesModel {
 		virtual
 		~GpmlPlateId() {  }
 
+		// This creation function is here purely for the simple, hard-coded construction of
+		// features.  It may not be necessary or appropriate later on when we're doing
+		// everything properly, so don't look at this function and think "Uh oh, this
+		// function doesn't look like it should be here, but I'm sure it's here for a
+		// reason..."
 		static
 		boost::intrusive_ptr<GpmlPlateId>
 		create(
-				const PlateId &plate_id) {
+				const unsigned long &plate_id) {
 			boost::intrusive_ptr<GpmlPlateId> ptr(new GpmlPlateId(plate_id));
 			return ptr;
 		}
@@ -60,7 +64,7 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GpmlPlateId(
-				const PlateId &plate_id):
+				const unsigned long &plate_id):
 			PropertyValue(),
 			d_plate_id(plate_id)
 		{  }
@@ -78,7 +82,7 @@ namespace GPlatesModel {
 
 	private:
 
-		PlateId d_plate_id;
+		unsigned long d_plate_id;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
