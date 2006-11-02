@@ -26,7 +26,7 @@
 #include <vector>
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
 #include <utility>  /* pair */
-#include <memory>  /* auto_ptr */
+#include <boost/intrusive_ptr.hpp>
 #include "GreatCircleArc.h"
 #include "InvalidPolylineException.h"
 
@@ -366,6 +366,12 @@ namespace GPlatesMaths {
 
 
 		/**
+		 * The type used for the reference-count.
+		 */
+		typedef long ref_count_type;
+
+
+		/**
 		 * The possible return values from the construction-parameter
 		 * validation functions
 		 * @a evaluate_construction_parameter_validity and
@@ -463,19 +469,17 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Create a new PolylineOnSphere instance on the heap from the
-		 * sequence of points @a coll, and return an auto_ptr which
-		 * points to the newly-created instance.
+		 * Create a new PolylineOnSphere instance on the heap from the sequence of points
+		 * @a coll, and return an intrusive_ptr which points to the newly-created instance.
 		 *
-		 * @a coll should be a sequential STL container (list, vector,
-		 * ...) of PointOnSphere.
+		 * @a coll should be a sequential STL container (list, vector, ...) of
+		 * PointOnSphere.
 		 *
-		 * This function is strongly exception-safe and
-		 * exception-neutral.
+		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		template< typename C >
 		static
-		std::auto_ptr< PolylineOnSphere >
+		boost::intrusive_ptr< PolylineOnSphere >
 		create_on_heap(
 		 const C &coll);
 
@@ -612,6 +616,24 @@ namespace GPlatesMaths {
 		 const real_t &latitude_exclusion_threshold,
 		 real_t &closeness) const;
 
+		/**
+		 * Increment the reference-count of this instance.
+		 */
+		void
+		increment_ref_count() {
+			++d_ref_count;
+		}
+
+
+		/**
+		 * Decrement the reference-count of this instance, and return the new
+		 * reference-count.
+		 */
+		ref_count_type
+		decrement_ref_count() {
+			return --d_ref_count;
+		}
+
 	 private:
 
 		PolylineOnSphere() {  }
@@ -636,11 +658,10 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Attempt to create a line-segment defined by the points @a p1
-		 * and @a p2; append it to @a seq.
+		 * Attempt to create a line-segment defined by the points @a p1 and @a p2; append
+		 * it to @a seq.
 		 *
-		 * This function is strongly exception-safe and
-		 * exception-neutral.
+		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		static
 		void
@@ -650,6 +671,14 @@ namespace GPlatesMaths {
 		 const PointOnSphere &p2,
 		 bool should_silently_drop_dups = true);
 
+		/**
+		 * This is the reference-count used by boost::intrusive_ptr.
+		 */
+		ref_count_type d_ref_count;
+
+		/**
+		 * This is the sequence of polyline segments.
+		 */
 		seq_type d_seq;
 
 	};
@@ -830,11 +859,11 @@ namespace GPlatesMaths {
 
 
 	template< typename C >
-	std::auto_ptr< PolylineOnSphere >
+	boost::intrusive_ptr< PolylineOnSphere >
 	PolylineOnSphere::create_on_heap(
 	 const C &coll) {
 
-		std::auto_ptr< PolylineOnSphere > ptr(new PolylineOnSphere());
+		boost::intrusive_ptr< PolylineOnSphere > ptr(new PolylineOnSphere());
 		generate_segments_and_swap(*ptr, coll);
 		return ptr;
 	}
@@ -884,6 +913,24 @@ namespace GPlatesMaths {
 			 "2) of unique endpoints.");
 		}
 		poly.d_seq.swap(tmp_seq);
+	}
+
+
+	inline
+	void
+	intrusive_ptr_add_ref(
+			PolylineOnSphere *p) {
+		p->increment_ref_count();
+	}
+
+
+	inline
+	void
+	intrusive_ptr_release(
+			PolylineOnSphere *p) {
+		if (p->decrement_ref_count() == 0) {
+			delete p;
+		}
 	}
 
 }
