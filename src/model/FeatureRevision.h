@@ -25,12 +25,10 @@
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 #include "RevisionId.h"
+#include "PropertyContainer.h"
 
 
 namespace GPlatesModel {
-
-	// Forward declaration for intrusive-pointer.
-	class PropertyContainer;
 
 	class FeatureRevision {
 

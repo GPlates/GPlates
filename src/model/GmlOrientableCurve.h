@@ -28,6 +28,11 @@
 
 
 // Forward declaration for intrusive-pointer.
+// Note that, because we want to avoid the inclusion of "maths/PolylineOnSphere.h" into this header
+// file (which is why we have this forward declaration), the constructors and destructor of
+// GmlOrientableCurve cannot be defined in this header file, since the constructors and destructor
+// require the ability to invoke 'intrusive_ptr_add_ref' and 'intrusive_ptr_release', which are
+// only defined in "maths/PolylineOnSphere.h".
 namespace GPlatesMaths {
 
 	class PolylineOnSphere;

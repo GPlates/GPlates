@@ -23,13 +23,11 @@
 #define GPLATES_MODEL_FEATUREHANDLE_H
 
 #include <boost/intrusive_ptr.hpp>
+#include "FeatureRevision.h"
 #include "FeatureId.h"
 #include "FeatureType.h"
 
 namespace GPlatesModel {
-
-	// Forward declaration for intrusive-pointer.
-	class FeatureRevision;
 
 	class FeatureHandle {
 
