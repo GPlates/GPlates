@@ -64,6 +64,14 @@ namespace GPlatesModel {
 			d_id(id) {  }
 
 		/**
+		 * Access the Unicode string of the feature ID for this instance.
+		 */
+		const UnicodeString &
+		get() const {
+			return d_id;
+		}
+
+		/**
 		 * Determine whether another FeatureId instance contains the same feature ID
 		 * as this instance.
 		 */

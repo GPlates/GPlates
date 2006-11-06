@@ -22,10 +22,12 @@
 #ifndef GPLATES_MODEL_FEATUREHANDLE_H
 #define GPLATES_MODEL_FEATUREHANDLE_H
 
+#include <iosfwd>
 #include <boost/intrusive_ptr.hpp>
 #include "FeatureRevision.h"
 #include "FeatureId.h"
 #include "FeatureType.h"
+#include "ConstFeatureVisitor.h"
 
 namespace GPlatesModel {
 
@@ -53,15 +55,28 @@ namespace GPlatesModel {
 
 		// No non-const 'feature_type':  The feature-type should never be changed.
 
-		boost::intrusive_ptr<FeatureRevision> &
+		boost::intrusive_ptr<const FeatureRevision>
+		current_revision() const {
+			return d_current_revision;
+		}
+
+		boost::intrusive_ptr<FeatureRevision>
 		current_revision() {
 			return d_current_revision;
 		}
 
+		// Yes, I'm pretty sure that the parameter should be pass-by-reference rather than
+		// pass-by-value.
 		void
 		swap_revision(
 				boost::intrusive_ptr<FeatureRevision> &rev) {
 			d_current_revision.swap(rev);
+		}
+
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const {
+			visitor.visit_feature_handle(*this);
 		}
 
 	private:
