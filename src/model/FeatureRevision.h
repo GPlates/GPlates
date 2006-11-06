@@ -77,18 +77,18 @@ namespace GPlatesModel {
 		}
 
 		void
-		increment_ref_count() {
+		increment_ref_count() const {
 			++d_ref_count;
 		}
 
 		ref_count_type
-		decrement_ref_count() {
+		decrement_ref_count() const {
 			return --d_ref_count;
 		}
 
 	private:
 
-		ref_count_type d_ref_count;
+		mutable ref_count_type d_ref_count;
 		RevisionId d_revision_id;
 		std::vector<boost::intrusive_ptr<PropertyContainer> > d_properties;
 
@@ -134,7 +134,7 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_add_ref(
-			FeatureRevision *p) {
+			const FeatureRevision *p) {
 		p->increment_ref_count();
 	}
 
@@ -142,7 +142,7 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_release(
-			FeatureRevision *p) {
+			const FeatureRevision *p) {
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}

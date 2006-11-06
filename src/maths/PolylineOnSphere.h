@@ -620,7 +620,7 @@ namespace GPlatesMaths {
 		 * Increment the reference-count of this instance.
 		 */
 		void
-		increment_ref_count() {
+		increment_ref_count() const {
 			++d_ref_count;
 		}
 
@@ -630,7 +630,7 @@ namespace GPlatesMaths {
 		 * reference-count.
 		 */
 		ref_count_type
-		decrement_ref_count() {
+		decrement_ref_count() const {
 			return --d_ref_count;
 		}
 
@@ -674,7 +674,7 @@ namespace GPlatesMaths {
 		/**
 		 * This is the reference-count used by boost::intrusive_ptr.
 		 */
-		ref_count_type d_ref_count;
+		mutable ref_count_type d_ref_count;
 
 		/**
 		 * This is the sequence of polyline segments.
@@ -919,7 +919,7 @@ namespace GPlatesMaths {
 	inline
 	void
 	intrusive_ptr_add_ref(
-			PolylineOnSphere *p) {
+			const PolylineOnSphere *p) {
 		p->increment_ref_count();
 	}
 
@@ -927,7 +927,7 @@ namespace GPlatesMaths {
 	inline
 	void
 	intrusive_ptr_release(
-			PolylineOnSphere *p) {
+			const PolylineOnSphere *p) {
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}

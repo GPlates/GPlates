@@ -72,12 +72,12 @@ namespace GPlatesModel {
 		clone() const = 0;
 
 		void
-		increment_ref_count() {
+		increment_ref_count() const {
 			++d_ref_count;
 		}
 
 		ref_count_type
-		decrement_ref_count() {
+		decrement_ref_count() const {
 			return --d_ref_count;
 		}
 
@@ -90,7 +90,7 @@ namespace GPlatesModel {
 
 	private:
 
-		ref_count_type d_ref_count;
+		mutable ref_count_type d_ref_count;
 		PropertyName d_property_name;
 
 		// This operator should never be defined, because we don't want/need to allow
@@ -107,7 +107,7 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_add_ref(
-			PropertyContainer *p) {
+			const PropertyContainer *p) {
 		p->increment_ref_count();
 	}
 
@@ -115,7 +115,7 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_release(
-			PropertyContainer *p) {
+			const PropertyContainer *p) {
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}

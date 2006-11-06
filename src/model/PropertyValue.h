@@ -68,18 +68,18 @@ namespace GPlatesModel {
 		clone() const = 0;
 
 		void
-		increment_ref_count() {
+		increment_ref_count() const {
 			++d_ref_count;
 		}
 
 		ref_count_type
-		decrement_ref_count() {
+		decrement_ref_count() const {
 			return --d_ref_count;
 		}
 
 	private:
 
-		ref_count_type d_ref_count;
+		mutable ref_count_type d_ref_count;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -95,7 +95,7 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_add_ref(
-			PropertyValue *p) {
+			const PropertyValue *p) {
 		p->increment_ref_count();
 	}
 
@@ -103,7 +103,7 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_release(
-			PropertyValue *p) {
+			const PropertyValue *p) {
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}
