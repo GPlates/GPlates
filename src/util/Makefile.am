@@ -3,4 +3,4 @@
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LIBRARIES	= libutil.a
-libutil_a_SOURCES	=
+libutil_a_SOURCES	= StringSet.cc UniqueId.cc
