@@ -22,7 +22,6 @@
 #ifndef GPLATES_MODEL_FEATUREHANDLE_H
 #define GPLATES_MODEL_FEATUREHANDLE_H
 
-#include <iosfwd>
 #include <boost/intrusive_ptr.hpp>
 #include "FeatureRevision.h"
 #include "FeatureId.h"
