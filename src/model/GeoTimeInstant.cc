@@ -23,21 +23,18 @@
 #include "GeoTimeInstant.h"
 
 
-inline
 const GPlatesModel::GeoTimeInstant
 GPlatesModel::GeoTimeInstant::create_distant_past() {
 	return GeoTimeInstant(INFINITY);
 }
 
 
-inline
 const GPlatesModel::GeoTimeInstant
 GPlatesModel::GeoTimeInstant::create_distant_future() {
 	return GeoTimeInstant(-INFINITY);
 }
 
 
-inline
 bool
 GPlatesModel::GeoTimeInstant::is_distant_past() const {
 	// Return whether the time-position is positive infinity.
@@ -45,7 +42,6 @@ GPlatesModel::GeoTimeInstant::is_distant_past() const {
 }
 
 
-inline
 bool
 GPlatesModel::GeoTimeInstant::is_distant_future() const {
 	// Return whether the time-position is negative infinity.
@@ -53,7 +49,6 @@ GPlatesModel::GeoTimeInstant::is_distant_future() const {
 }
 
 
-inline
 bool
 GPlatesModel::GeoTimeInstant::is_real() const {
 	return std::isfinite(d_time_position);
