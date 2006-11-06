@@ -66,6 +66,16 @@ namespace GPlatesModel {
 
 		// No non-const 'revision_id':  The revision-ID should never be changed.
 
+		const std::vector<boost::intrusive_ptr<PropertyContainer> > &
+		properties() const {
+			return d_properties;
+		}
+
+		std::vector<boost::intrusive_ptr<PropertyContainer> > &
+		properties() {
+			return d_properties;
+		}
+
 		void
 		increment_ref_count() {
 			++d_ref_count;
@@ -80,7 +90,7 @@ namespace GPlatesModel {
 
 		ref_count_type d_ref_count;
 		RevisionId d_revision_id;
-		std::vector<boost::intrusive_ptr<PropertyContainer> > d_props;
+		std::vector<boost::intrusive_ptr<PropertyContainer> > d_properties;
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -107,7 +117,7 @@ namespace GPlatesModel {
 				const FeatureRevision &other) :
 			d_ref_count(other.d_ref_count),
 			d_revision_id(other.d_revision_id),
-			d_props(other.d_props)
+			d_properties(other.d_properties)
 		{  }
 
 		// This operator should never be defined, because we don't want/need to allow

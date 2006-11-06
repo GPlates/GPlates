@@ -23,7 +23,7 @@
 #define GPLATES_MODEL_XSSTRING_H
 
 #include <boost/intrusive_ptr.hpp>
-#include <unicode/icustr.h>
+#include <unicode/unistr.h>
 #include "PropertyValue.h"
 
 
