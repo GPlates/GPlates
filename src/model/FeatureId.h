@@ -80,6 +80,7 @@ namespace GPlatesModel {
 	};
 
 
+	inline
 	bool
 	operator==(
 			const FeatureId &fi1,
@@ -88,6 +89,7 @@ namespace GPlatesModel {
 	}
 
 
+	inline
 	bool
 	operator!=(
 			const FeatureId &fi1,

@@ -81,6 +81,7 @@ namespace GPlatesModel {
 	};
 
 
+	inline
 	bool
 	operator==(
 			const RevisionId &ri1,
@@ -89,6 +90,7 @@ namespace GPlatesModel {
 	}
 
 
+	inline
 	bool
 	operator!=(
 			const RevisionId &ri1,
