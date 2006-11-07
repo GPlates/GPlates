@@ -65,6 +65,14 @@ namespace GPlatesModel {
 			d_id(id) {  }
 
 		/**
+		 * Access the Unicode string of the revision ID for this instance.
+		 */
+		const UnicodeString &
+		get() const {
+			return d_id;
+		}
+
+		/**
 		 * Determine whether another RevisionId instance contains the same revision ID
 		 * as this instance.
 		 */

@@ -26,6 +26,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include "RevisionId.h"
 #include "PropertyContainer.h"
+#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {
@@ -74,6 +75,12 @@ namespace GPlatesModel {
 		std::vector<boost::intrusive_ptr<PropertyContainer> > &
 		properties() {
 			return d_properties;
+		}
+
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const {
+			visitor.visit_feature_revision(*this);
 		}
 
 		void

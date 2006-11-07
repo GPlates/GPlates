@@ -27,6 +27,7 @@ namespace GPlatesModel {
 
 	// Forward declarations for the member functions.
 	class FeatureHandle;
+	class FeatureRevision;
 
 	class ConstFeatureVisitor {
 
@@ -42,6 +43,11 @@ namespace GPlatesModel {
 		void
 		visit_feature_handle(
 				const FeatureHandle &feature_handle) {  }
+
+		virtual
+		void
+		visit_feature_revision(
+				const FeatureRevision &feature_revision) {  }
 
 	private:
 

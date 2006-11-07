@@ -22,6 +22,7 @@
 #ifndef GPLATES_FILEIO_GPMLONEPOINTFIVEOUTPUTVISITOR_H
 #define GPLATES_FILEIO_GPMLONEPOINTFIVEOUTPUTVISITOR_H
 
+#include "XmlOutputInterface.h"
 #include "model/ConstFeatureVisitor.h"
 
 
@@ -31,6 +32,11 @@ namespace GPlatesFileIO {
 
 	public:
 
+		explicit
+		GpmlOnePointFiveOutputVisitor(
+				const XmlOutputInterface &xoi):
+			d_output(xoi) {  }
+
 		virtual
 		~GpmlOnePointFiveOutputVisitor() {  }
 
@@ -38,6 +44,15 @@ namespace GPlatesFileIO {
 		void
 		visit_feature_handle(
 				const GPlatesModel::FeatureHandle &feature_handle);
+
+		virtual
+		void
+		visit_feature_revision(
+				const GPlatesModel::FeatureRevision &feature_revision);
+
+	private:
+
+		XmlOutputInterface d_output;
 
 	};
 
