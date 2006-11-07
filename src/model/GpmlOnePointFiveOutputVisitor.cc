@@ -19,9 +19,8 @@
  * GNU General Public License for more details.
  */
 
-#include <iostream>
-#include <unicode/ustream.h>
 #include "GpmlOnePointFiveOutputVisitor.h"
+#include "XmlStructuredOutputInterface.h"
 #include "model/FeatureHandle.h"
 
 
@@ -34,9 +33,11 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 		return;
 	}
 
-	std::cout << "<" << feature_handle.feature_type().get() << ">\n";
-	std::cout << "\t<gpml:identity>";
-	std::cout << feature_handle.feature_id().get();
-	std::cout << "</gpml:identity>\n";
-	std::cout << "</" << feature_handle.feature_type().get() << ">" << std::endl;
+	XmlStructuredOutputInterface xsoi = XmlStructuredOutputInterface::create_for_stdout();
+
+	xsoi.write_opening_element(feature_handle.feature_type().get());
+	xsoi.write_opening_element("gpml:identity");
+	xsoi.write_string_content_line(feature_handle.feature_id().get());
+	xsoi.write_closing_element("gpml:identity");
+	xsoi.write_closing_element(feature_handle.feature_type().get());
 }
