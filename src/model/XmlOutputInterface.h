@@ -19,8 +19,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef GPLATES_FILEIO_XMLSTRUCTUREDOUTPUTINTERFACE_H
-#define GPLATES_FILEIO_XMLSTRUCTUREDOUTPUTINTERFACE_H
+#ifndef GPLATES_FILEIO_XMLOUTPUTINTERFACE_H
+#define GPLATES_FILEIO_XMLOUTPUTINTERFACE_H
 
 #include <iosfwd>
 #include <unicode/unistr.h>
@@ -29,12 +29,12 @@
 namespace GPlatesFileIO {
 
 	/**
-	 * This class provides a convenient interface for XML-structured output.
+	 * This class provides a convenient interface for XML output.
 	 *
 	 * Client code performs output using XML-oriented functions such as
 	 * @a write_opening_element and @a write_string_content_line.
 	 */
-	class XmlStructuredOutputInterface {
+	class XmlOutputInterface {
 
 	public:
 
@@ -55,21 +55,21 @@ namespace GPlatesFileIO {
 
 		public:
 			ElementPairStackFrame(
-					XmlStructuredOutputInterface &interface,
+					XmlOutputInterface &interface,
 					const UnicodeString &elem_name);
 
 			~ElementPairStackFrame();
 
 		private:
 
-			XmlStructuredOutputInterface *d_interface_ptr;
+			XmlOutputInterface *d_interface_ptr;
 			UnicodeString d_elem_name;
 
 			// This constructor should never be defined, because we don't want to allow
 			// copy-construction.
 			//
 			// (If we prevent copy-construction, an ElementPairStackFrame instance
-			// can't outlive its XmlStructuredOutputInterface, unless you start doing
+			// can't outlive its XmlOutputInterface, unless you start doing
 			// gratuitously stupid things like allocating the ElementPairStackFrame on
 			// the heap, which, incidentally, would defeat the whole purpose of
 			// ElementPairStackFrame.)
@@ -90,7 +90,7 @@ namespace GPlatesFileIO {
 		 * once per level of indentation.
 		 */
 		static
-		const XmlStructuredOutputInterface
+		const XmlOutputInterface
 		create_for_stdout(
 				const UnicodeString &indentation_unit = " ");
 
@@ -198,7 +198,7 @@ namespace GPlatesFileIO {
 
 	protected:
 
-		XmlStructuredOutputInterface(
+		XmlOutputInterface(
 				std::ostream &os,
 				const UnicodeString &indentation_unit):
 			d_os_ptr(&os),
@@ -248,7 +248,7 @@ namespace GPlatesFileIO {
 	template<typename F>
 	inline
 	void
-	XmlStructuredOutputInterface::write_opening_element_with_attributes(
+	XmlOutputInterface::write_opening_element_with_attributes(
 			const UnicodeString &elem_name,
 			F attrs_pair_begin,
 			F attrs_pair_end) {
@@ -270,4 +270,4 @@ namespace GPlatesFileIO {
 
 }
 
-#endif  // GPLATES_FILEIO_XMLSTRUCTUREDOUTPUTINTERFACE_H
+#endif  // GPLATES_FILEIO_XMLOUTPUTINTERFACE_H

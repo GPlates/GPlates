@@ -20,7 +20,7 @@
  */
 
 #include "GpmlOnePointFiveOutputVisitor.h"
-#include "XmlStructuredOutputInterface.h"
+#include "XmlOutputInterface.h"
 #include "model/FeatureHandle.h"
 
 
@@ -33,11 +33,11 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 		return;
 	}
 
-	XmlStructuredOutputInterface xsoi = XmlStructuredOutputInterface::create_for_stdout();
+	XmlOutputInterface xoi = XmlOutputInterface::create_for_stdout();
 
-	XmlStructuredOutputInterface::ElementPairStackFrame f1(xsoi, feature_handle.feature_type().get());
+	XmlOutputInterface::ElementPairStackFrame f1(xoi, feature_handle.feature_type().get());
 	{
-		XmlStructuredOutputInterface::ElementPairStackFrame f2(xsoi, "gpml:identity");
-		xsoi.write_string_content_line(feature_handle.feature_id().get());
+		XmlOutputInterface::ElementPairStackFrame f2(xoi, "gpml:identity");
+		xoi.write_string_content_line(feature_handle.feature_id().get());
 	}
 }

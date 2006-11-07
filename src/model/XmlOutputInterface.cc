@@ -21,11 +21,11 @@
 
 #include <iostream>
 #include <unicode/ustream.h>
-#include "XmlStructuredOutputInterface.h"
+#include "XmlOutputInterface.h"
 
 
-GPlatesFileIO::XmlStructuredOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
-		XmlStructuredOutputInterface &interface,
+GPlatesFileIO::XmlOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
+		XmlOutputInterface &interface,
 		const UnicodeString &elem_name):
 	d_interface_ptr(&interface),
 	d_elem_name(elem_name) {
@@ -33,7 +33,7 @@ GPlatesFileIO::XmlStructuredOutputInterface::ElementPairStackFrame::ElementPairS
 }
 
 
-GPlatesFileIO::XmlStructuredOutputInterface::ElementPairStackFrame::~ElementPairStackFrame() {
+GPlatesFileIO::XmlOutputInterface::ElementPairStackFrame::~ElementPairStackFrame() {
 	// Do not allow any exceptions to leave this destructor.
 	try {
 		d_interface_ptr->write_closing_element(d_elem_name);
@@ -43,15 +43,15 @@ GPlatesFileIO::XmlStructuredOutputInterface::ElementPairStackFrame::~ElementPair
 }
 
 
-const GPlatesFileIO::XmlStructuredOutputInterface
-GPlatesFileIO::XmlStructuredOutputInterface::create_for_stdout(
+const GPlatesFileIO::XmlOutputInterface
+GPlatesFileIO::XmlOutputInterface::create_for_stdout(
 		const UnicodeString &indentation_unit) {
-	return XmlStructuredOutputInterface(std::cout, indentation_unit);
+	return XmlOutputInterface(std::cout, indentation_unit);
 }
 
 
 void
-GPlatesFileIO::XmlStructuredOutputInterface::write_opening_element(
+GPlatesFileIO::XmlOutputInterface::write_opening_element(
 		const UnicodeString &elem_name) {
 	write_indentation();
 	write_unicode_string("<");
@@ -63,7 +63,7 @@ GPlatesFileIO::XmlStructuredOutputInterface::write_opening_element(
 
 
 void
-GPlatesFileIO::XmlStructuredOutputInterface::write_closing_element(
+GPlatesFileIO::XmlOutputInterface::write_closing_element(
 		const UnicodeString &elem_name) {
 	--d_indentation_level;
 
@@ -75,7 +75,7 @@ GPlatesFileIO::XmlStructuredOutputInterface::write_closing_element(
 
 
 void
-GPlatesFileIO::XmlStructuredOutputInterface::write_empty_element(
+GPlatesFileIO::XmlOutputInterface::write_empty_element(
 		const UnicodeString &elem_name) {
 	write_indentation();
 	write_unicode_string("<");
@@ -85,7 +85,7 @@ GPlatesFileIO::XmlStructuredOutputInterface::write_empty_element(
 
 
 void
-GPlatesFileIO::XmlStructuredOutputInterface::write_string_content_line(
+GPlatesFileIO::XmlOutputInterface::write_string_content_line(
 		const UnicodeString &line) {
 	write_indentation();
 	write_unicode_string(line);
@@ -94,7 +94,7 @@ GPlatesFileIO::XmlStructuredOutputInterface::write_string_content_line(
 
 
 void
-GPlatesFileIO::XmlStructuredOutputInterface::write_indentation() {
+GPlatesFileIO::XmlOutputInterface::write_indentation() {
 	if (status() != NO_ERROR) {
 		// Some error has previously occurred.
 		return;
@@ -110,7 +110,7 @@ GPlatesFileIO::XmlStructuredOutputInterface::write_indentation() {
 
 
 void
-GPlatesFileIO::XmlStructuredOutputInterface::write_unicode_string(
+GPlatesFileIO::XmlOutputInterface::write_unicode_string(
 		const UnicodeString &s) {
 
 	// FIXME:  This function should escape any occurrences of '<' or '&' (to "&lt;" and
