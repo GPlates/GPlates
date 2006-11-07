@@ -47,6 +47,43 @@ namespace GPlatesFileIO {
 		};
 
 		/**
+		 * This class provides a convenient means to automate the closing of opened
+		 * elements (and maintain the correct nesting of elements) using a mechanism
+		 * similar to RAII.
+		 */
+		class ElementPairStackFrame {
+
+		public:
+			ElementPairStackFrame(
+					XmlStructuredOutputInterface &interface,
+					const UnicodeString &elem_name);
+
+			~ElementPairStackFrame();
+
+		private:
+
+			XmlStructuredOutputInterface *d_interface_ptr;
+			UnicodeString d_elem_name;
+
+			// This constructor should never be defined, because we don't want to allow
+			// copy-construction.
+			//
+			// (If we prevent copy-construction, an ElementPairStackFrame instance
+			// can't outlive its XmlStructuredOutputInterface, unless you start doing
+			// gratuitously stupid things like allocating the ElementPairStackFrame on
+			// the heap, which, incidentally, would defeat the whole purpose of
+			// ElementPairStackFrame.)
+			ElementPairStackFrame(
+					const ElementPairStackFrame &);
+
+			// This operator should never be defined, because we don't want to allow
+			// copy-assignment.
+			ElementPairStackFrame &
+			operator=(
+					const ElementPairStackFrame &);
+		};
+
+		/**
 		 * Create a new interface instance which will write to the standard output stream.
 		 *
 		 * The parameter @a indentation_unit is the string which is output for indentation,

@@ -35,9 +35,9 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 
 	XmlStructuredOutputInterface xsoi = XmlStructuredOutputInterface::create_for_stdout();
 
-	xsoi.write_opening_element(feature_handle.feature_type().get());
-	xsoi.write_opening_element("gpml:identity");
-	xsoi.write_string_content_line(feature_handle.feature_id().get());
-	xsoi.write_closing_element("gpml:identity");
-	xsoi.write_closing_element(feature_handle.feature_type().get());
+	XmlStructuredOutputInterface::ElementPairStackFrame f1(xsoi, feature_handle.feature_type().get());
+	{
+		XmlStructuredOutputInterface::ElementPairStackFrame f2(xsoi, "gpml:identity");
+		xsoi.write_string_content_line(feature_handle.feature_id().get());
+	}
 }

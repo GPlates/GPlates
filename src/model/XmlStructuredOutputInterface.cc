@@ -24,6 +24,25 @@
 #include "XmlStructuredOutputInterface.h"
 
 
+GPlatesFileIO::XmlStructuredOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
+		XmlStructuredOutputInterface &interface,
+		const UnicodeString &elem_name):
+	d_interface_ptr(&interface),
+	d_elem_name(elem_name) {
+	d_interface_ptr->write_opening_element(d_elem_name);
+}
+
+
+GPlatesFileIO::XmlStructuredOutputInterface::ElementPairStackFrame::~ElementPairStackFrame() {
+	// Do not allow any exceptions to leave this destructor.
+	try {
+		d_interface_ptr->write_closing_element(d_elem_name);
+	} catch (...) {
+		// There's not really anything useful we can do here.
+	}
+}
+
+
 const GPlatesFileIO::XmlStructuredOutputInterface
 GPlatesFileIO::XmlStructuredOutputInterface::create_for_stdout(
 		const UnicodeString &indentation_unit) {
