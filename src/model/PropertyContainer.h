@@ -27,10 +27,12 @@
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
-#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {
+
+	// Forward declaration for the function 'accept_visitor'.
+	class ConstFeatureVisitor;
 
 	class PropertyContainer {
 
