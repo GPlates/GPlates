@@ -28,7 +28,13 @@ namespace GPlatesModel {
 	// Forward declarations for the member functions.
 	class FeatureHandle;
 	class FeatureRevision;
+	class GpmlConstantValue;
+	class GpmlPlateId;
+	class SingleValuedPropertyContainer;
 
+	/**
+	 * A visitor to visit const features.
+	 */
 	class ConstFeatureVisitor {
 
 	public:
@@ -48,6 +54,21 @@ namespace GPlatesModel {
 		void
 		visit_feature_revision(
 				const FeatureRevision &feature_revision) {  }
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GpmlConstantValue &gpml_constant_value) {  }
+
+		virtual
+		void
+		visit_gpml_plate_id(
+				const GpmlPlateId &gpml_plate_id) {  }
+
+		virtual
+		void
+		visit_single_valued_property_container(
+				const SingleValuedPropertyContainer &single_valued_property_container) {  }
 
 	private:
 

@@ -22,6 +22,8 @@
 #include <iostream>
 #include <unicode/ustream.h>
 #include "XmlOutputInterface.h"
+#include "model/XmlAttributeName.h"
+#include "model/XmlAttributeValue.h"
 
 
 GPlatesFileIO::XmlOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
@@ -129,6 +131,44 @@ GPlatesFileIO::XmlOutputInterface::write_unicode_string(
 		return;
 	}
 	*d_os_ptr << s;
+	if ( ! *d_os_ptr) {
+		// There was an error during writing.
+		set_status(WRITE_ERROR);
+	}
+}
+
+
+void
+GPlatesFileIO::XmlOutputInterface::write_attribute_name(
+		const GPlatesModel::XmlAttributeName &xan) {
+
+	// FIXME:  This function should filter out any characters which are not suitable for
+	// attribute names.
+
+	if (status() != NO_ERROR) {
+		// Some error has previously occurred.
+		return;
+	}
+	*d_os_ptr << xan.get();
+	if ( ! *d_os_ptr) {
+		// There was an error during writing.
+		set_status(WRITE_ERROR);
+	}
+}
+
+
+void
+GPlatesFileIO::XmlOutputInterface::write_attribute_value(
+		const GPlatesModel::XmlAttributeValue &xav) {
+
+	// FIXME:  This function should filter out (or transform?) any characters which are not
+	// suitable for attribute values.
+
+	if (status() != NO_ERROR) {
+		// Some error has previously occurred.
+		return;
+	}
+	*d_os_ptr << xav.get();
 	if ( ! *d_os_ptr) {
 		// There was an error during writing.
 		set_status(WRITE_ERROR);

@@ -26,6 +26,13 @@
 #include <unicode/unistr.h>
 
 
+// Forward declarations for the functions 'write_attribute_name' and 'write_attribute_value'.
+namespace GPlatesModel {
+
+	class XmlAttributeName;
+	class XmlAttributeValue;
+}
+
 namespace GPlatesFileIO {
 
 	/**
@@ -54,9 +61,56 @@ namespace GPlatesFileIO {
 		class ElementPairStackFrame {
 
 		public:
+			/**
+			 * Open an element pair.
+			 *
+			 * The element will be named @a elem_name.
+			 */
 			ElementPairStackFrame(
 					XmlOutputInterface &interface,
 					const UnicodeString &elem_name);
+
+			/**
+			 * Open an element pair whose opening element contains attributes.
+			 *
+			 * The element will be named @a elem_name.
+			 *
+			 * The attributes will be accessed through the parameters
+			 * @a attrs_pair_begin and @a attrs_pair_end.  These parameters are assumed
+			 * to be forward iterators, one being the "begin" iterator of an iterable
+			 * range of attributes, the other being the "end" iterator.
+			 *
+			 * The following requirements must be satisfied by the template type @a F
+			 * for the template instantiation of this function to succeed during
+			 * compilation:
+			 *  - The iterator type must possess the operators:
+			 *    - equality-comparison operator;
+			 *    - pre-increment operator;
+			 *    - member-access-through-pointer operator.
+			 *  - The referenced type must possess the members:
+			 *    - @c first (of type reference-to-const-UnicodeString)
+			 *    - @c second (of type reference-to-const-UnicodeString)
+			 *
+			 * The following requirements must be satisfied by the types and values of
+			 * @a attrs_pair_begin and @a attrs_pair_end for this function to execute
+			 * in a meaningful fashion:
+			 *  - @a attrs_pair_begin must be either equal to @a attrs_pair_end (using
+			 *    the type's equality-comparison operator) or incrementable (using the
+			 *    type's pre-increment operator) to be equal to @a attrs_pair_end.
+			 *  - The member-access-through-pointer operator must allow the same
+			 *    element to be accessed more than once.
+			 *
+			 * For example, the iterators of @c std::map<UnicodeString, UnicodeString>
+			 * would fulfil these requirements, as would the iterators of
+			 * @c std::vector<std::pair<UnicodeString, UnicodeString> @c > and
+			 * @c std::list<std::pair<UnicodeString, UnicodeString> @c >.
+			 */
+			template<typename F>
+			ElementPairStackFrame(
+					XmlOutputInterface &interface,
+					const UnicodeString &elem_name,
+					F attrs_pair_begin,
+					F attrs_pair_end);
 
 			~ElementPairStackFrame();
 
@@ -214,6 +268,14 @@ namespace GPlatesFileIO {
 		write_unicode_string(
 				const UnicodeString &s);
 
+		void
+		write_attribute_name(
+				const GPlatesModel::XmlAttributeName &xan);
+
+		void
+		write_attribute_value(
+				const GPlatesModel::XmlAttributeValue &xav);
+
 	private:
 
 		/*
@@ -243,6 +305,19 @@ namespace GPlatesFileIO {
 		Status d_status;
 
 	};
+
+
+	template<typename F>
+	inline
+	XmlOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
+			XmlOutputInterface &interface,
+			const UnicodeString &elem_name,
+			F attrs_pair_begin,
+			F attrs_pair_end):
+		d_interface_ptr(&interface),
+		d_elem_name(elem_name) {
+		d_interface_ptr->write_opening_element_with_attributes(elem_name, attrs_pair_begin, attrs_pair_end);
+	}
 
 
 	template<typename F>

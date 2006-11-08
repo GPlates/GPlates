@@ -97,6 +97,15 @@ namespace GPlatesModel {
 
 		mutable ref_count_type d_ref_count;
 		RevisionId d_revision_id;
+
+		/*
+		 * Note that any of the pointers contained as elements in this vector can be NULL. 
+		 *
+		 * An element which is a NULL pointer indicates that the property, which was
+		 * referenced by that element, has been deleted.  The element is set to a NULL
+		 * pointer rather than removed, so that the indices, which are used to reference
+		 * the other elements in the vector, remain valid.
+		 */
 		std::vector<boost::intrusive_ptr<PropertyContainer> > d_properties;
 
 		// This constructor should not be public, because we don't want to allow

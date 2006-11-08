@@ -27,6 +27,7 @@
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
+#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {
@@ -91,7 +92,10 @@ namespace GPlatesModel {
 			return d_xml_attributes;
 		}
 
-		// FIXME: visitor accept method
+		virtual
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const = 0;
 
 		void
 		increment_ref_count() const {

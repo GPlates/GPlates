@@ -57,7 +57,12 @@ namespace GPlatesModel {
 			return dup;
 		}
 
-		// FIXME: visitor accept method
+		virtual
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const {
+			visitor.visit_single_valued_property_container(*this);
+		}
 
 	protected:
 

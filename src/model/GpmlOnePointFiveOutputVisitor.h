@@ -50,6 +50,21 @@ namespace GPlatesFileIO {
 		visit_feature_revision(
 				const GPlatesModel::FeatureRevision &feature_revision);
 
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesModel::GpmlConstantValue &gpml_constant_value);
+
+		virtual
+		void
+		visit_gpml_plate_id(
+				const GPlatesModel::GpmlPlateId &gpml_plate_id);
+
+		virtual
+		void
+		visit_single_valued_property_container(
+				const GPlatesModel::SingleValuedPropertyContainer &single_valued_property_container);
+
 	private:
 
 		XmlOutputInterface d_output;
