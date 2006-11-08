@@ -146,7 +146,7 @@ namespace GPlatesFileIO {
 		static
 		const XmlOutputInterface
 		create_for_stdout(
-				const UnicodeString &indentation_unit = " ");
+				const UnicodeString &indentation_unit = "\t");
 
 		/**
 		 * Return the status of this instance.
