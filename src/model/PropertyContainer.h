@@ -22,9 +22,11 @@
 #ifndef GPLATES_MODEL_PROPERTYCONTAINER_H
 #define GPLATES_MODEL_PROPERTYCONTAINER_H
 
-#include <unicode/unistr.h>
+#include <map>
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyName.h"
+#include "XmlAttributeName.h"
+#include "XmlAttributeValue.h"
 
 
 namespace GPlatesModel {
@@ -48,9 +50,11 @@ namespace GPlatesModel {
 		 * explicitly, since this class contains members which need to be initialised.
 		 */
 		PropertyContainer(
-				const PropertyName &property_name_) :
+				const PropertyName &property_name_,
+				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_):
 			d_ref_count(0),
-			d_property_name(property_name_)
+			d_property_name(property_name_),
+			d_xml_attributes(xml_attributes_)
 		{ }
 
 		/**
@@ -64,12 +68,30 @@ namespace GPlatesModel {
 		PropertyContainer(
 				const PropertyContainer &other) :
 			d_ref_count(other.d_ref_count),
-			d_property_name(other.d_property_name)
+			d_property_name(other.d_property_name),
+			d_xml_attributes(other.d_xml_attributes)
 		{ }
 
 		virtual
 		boost::intrusive_ptr<PropertyContainer>
 		clone() const = 0;
+
+		const PropertyName &
+		property_name() const {
+			return d_property_name;
+		}
+
+		const std::map<XmlAttributeName, XmlAttributeValue> &
+		xml_attributes() const {
+			return d_xml_attributes;
+		}
+
+		std::map<XmlAttributeName, XmlAttributeValue> &
+		xml_attributes() {
+			return d_xml_attributes;
+		}
+
+		// FIXME: visitor accept method
 
 		void
 		increment_ref_count() const {
@@ -81,17 +103,11 @@ namespace GPlatesModel {
 			return --d_ref_count;
 		}
 
-		const PropertyName &
-		property_name() const {
-			return d_property_name;
-		}
-
-		// FIXME: visitor accept method
-
 	private:
 
 		mutable ref_count_type d_ref_count;
 		PropertyName d_property_name;
+		std::map<XmlAttributeName, XmlAttributeValue> d_xml_attributes;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
