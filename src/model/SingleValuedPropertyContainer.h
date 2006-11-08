@@ -28,6 +28,7 @@
 #include "PropertyContainer.h"
 #include "PropertyValue.h"
 #include "XmlAttributeName.h"
+#include "XmlAttributeValue.h"
 
 
 namespace GPlatesModel {
@@ -45,7 +46,7 @@ namespace GPlatesModel {
 		create(
 				const PropertyName &property_name_,
 				boost::intrusive_ptr<PropertyValue> value_,
-				const std::map<XmlAttributeName, UnicodeString> xml_attributes_,
+				const std::map<XmlAttributeName, XmlAttributeValue> xml_attributes_,
 				bool value_is_optional_) {
 			boost::intrusive_ptr<SingleValuedPropertyContainer> ptr(
 					new SingleValuedPropertyContainer(
@@ -69,7 +70,7 @@ namespace GPlatesModel {
 		SingleValuedPropertyContainer(
 				const PropertyName &property_name_,
 				boost::intrusive_ptr<PropertyValue> value_,
-				const std::map<XmlAttributeName, UnicodeString> xml_attributes_,
+				const std::map<XmlAttributeName, XmlAttributeValue> xml_attributes_,
 				bool value_is_optional_) :
 			PropertyContainer(property_name_),
 			d_value(value_),
@@ -93,7 +94,7 @@ namespace GPlatesModel {
 	private:
 
 		boost::intrusive_ptr<PropertyValue> d_value;
-		std::map<XmlAttributeName, UnicodeString> d_xml_attributes;
+		std::map<XmlAttributeName, XmlAttributeValue> d_xml_attributes;
 		bool d_value_is_optional;
 
 		// This operator should never be defined, because we don't want/need to allow

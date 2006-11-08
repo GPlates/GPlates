@@ -55,7 +55,16 @@ GPlatesModel::StringSetSingletons::xml_attribute_name_instance() {
 	return *s_xml_attribute_name_instance;
 }
 
+GPlatesUtil::StringSet &
+GPlatesModel::StringSetSingletons::xml_attribute_value_instance() {
+	if (s_xml_attribute_value_instance == NULL) {
+		s_xml_attribute_value_instance = new GPlatesUtil::StringSet();
+	}
+	return *s_xml_attribute_value_instance;
+}
+
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_property_name_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_text_content_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_name_instance = NULL;
+GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_value_instance = NULL;
