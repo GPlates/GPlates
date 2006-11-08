@@ -25,6 +25,7 @@
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
+#include "ConstFeatureVisitor.h"
 
 
 // Forward declaration for intrusive-pointer.
@@ -65,7 +66,12 @@ namespace GPlatesModel {
 			return dup;
 		}
 
-		// FIXME: visitor accept method
+		virtual
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const {
+			visitor.visit_gml_orientable_curve(*this);
+		}
 
 	protected:
 

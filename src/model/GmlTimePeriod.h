@@ -25,6 +25,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
 #include "GmlTimeInstant.h"
+#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {
@@ -58,7 +59,12 @@ namespace GPlatesModel {
 			return dup;
 		}
 
-		// FIXME: visitor accept method
+		virtual
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const {
+			visitor.visit_gml_time_period(*this);
+		}
 
 	protected:
 

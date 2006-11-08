@@ -52,6 +52,21 @@ namespace GPlatesFileIO {
 
 		virtual
 		void
+		visit_gml_orientable_curve(
+				const GPlatesModel::GmlOrientableCurve &gml_orientable_curve);
+
+		virtual
+		void
+		visit_gml_time_instant(
+				const GPlatesModel::GmlTimeInstant &gml_time_instant);
+
+		virtual
+		void
+		visit_gml_time_period(
+				const GPlatesModel::GmlTimePeriod &gml_time_period);
+
+		virtual
+		void
 		visit_gpml_constant_value(
 				const GPlatesModel::GpmlConstantValue &gpml_constant_value);
 
@@ -64,6 +79,11 @@ namespace GPlatesFileIO {
 		void
 		visit_single_valued_property_container(
 				const GPlatesModel::SingleValuedPropertyContainer &single_valued_property_container);
+
+		virtual
+		void
+		visit_xs_string(
+				const GPlatesModel::XsString &xs_string);
 
 	private:
 

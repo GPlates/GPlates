@@ -24,6 +24,7 @@
 
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
+#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {
@@ -56,7 +57,12 @@ namespace GPlatesModel {
 			return dup;
 		}
 
-		// FIXME: visitor accept method
+		virtual
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const {
+			visitor.visit_gpml_plate_id(*this);
+		}
 
 	protected:
 

@@ -22,11 +22,13 @@
 #ifndef GPLATES_MODEL_PROPERTYVALUE_H
 #define GPLATES_MODEL_PROPERTYVALUE_H
 
-#include <unicode/unistr.h>
 #include <boost/intrusive_ptr.hpp>
 
 
 namespace GPlatesModel {
+
+	// Forward declaration for the function 'accept_visitor'.
+	class ConstFeatureVisitor;
 
 	class PropertyValue {
 
@@ -66,6 +68,11 @@ namespace GPlatesModel {
 		virtual
 		boost::intrusive_ptr<PropertyValue>
 		clone() const = 0;
+
+		virtual
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const = 0;
 
 		void
 		increment_ref_count() const {

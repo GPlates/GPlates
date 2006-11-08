@@ -28,9 +28,13 @@ namespace GPlatesModel {
 	// Forward declarations for the member functions.
 	class FeatureHandle;
 	class FeatureRevision;
+	class GmlOrientableCurve;
+	class GmlTimeInstant;
+	class GmlTimePeriod;
 	class GpmlConstantValue;
 	class GpmlPlateId;
 	class SingleValuedPropertyContainer;
+	class XsString;
 
 	/**
 	 * A visitor to visit const features.
@@ -57,6 +61,21 @@ namespace GPlatesModel {
 
 		virtual
 		void
+		visit_gml_orientable_curve(
+				const GmlOrientableCurve &gml_orientable_curve) {  }
+
+		virtual
+		void
+		visit_gml_time_instant(
+				const GmlTimeInstant &gml_time_instant) {  }
+
+		virtual
+		void
+		visit_gml_time_period(
+				const GmlTimePeriod &gml_time_period) {  }
+
+		virtual
+		void
 		visit_gpml_constant_value(
 				const GpmlConstantValue &gpml_constant_value) {  }
 
@@ -69,6 +88,11 @@ namespace GPlatesModel {
 		void
 		visit_single_valued_property_container(
 				const SingleValuedPropertyContainer &single_valued_property_container) {  }
+
+		virtual
+		void
+		visit_xs_string(
+				const XsString &xs_string) {  }
 
 	private:
 

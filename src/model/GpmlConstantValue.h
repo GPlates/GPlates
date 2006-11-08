@@ -24,6 +24,7 @@
 
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
+#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {
@@ -56,7 +57,22 @@ namespace GPlatesModel {
 			return dup;
 		}
 
-		// FIXME: visitor accept method
+		boost::intrusive_ptr<const PropertyValue>
+		value() const {
+			return d_value;
+		}
+
+		boost::intrusive_ptr<PropertyValue>
+		value() {
+			return d_value;
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ConstFeatureVisitor &visitor) const {
+			visitor.visit_gpml_constant_value(*this);
+		}
 
 	protected:
 
@@ -82,6 +98,7 @@ namespace GPlatesModel {
 
 	private:
 
+		// FIXME:  Is it valid for this pointer to be NULL?  I don't think so...
 		boost::intrusive_ptr<PropertyValue> d_value;
 
 		// This operator should never be defined, because we don't want/need to allow

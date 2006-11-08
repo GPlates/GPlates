@@ -70,8 +70,33 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_revision(
 
 
 void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_orientable_curve(
+		const GPlatesModel::GmlOrientableCurve &gml_orientable_curve) {
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_time_instant(
+		const GPlatesModel::GmlTimeInstant &gml_time_instant) {
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_time_period(
+		const GPlatesModel::GmlTimePeriod &gml_time_period) {
+}
+
+
+void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_constant_value(
 		const GPlatesModel::GpmlConstantValue &gpml_constant_value) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:ConstantValue");
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:value");
+		if (gpml_constant_value.value() != NULL) {
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+	}
 }
 
 
@@ -87,4 +112,14 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_single_valued_property_conta
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, single_valued_property_container.property_name().get(),
 			single_valued_property_container.xml_attributes().begin(),
 			single_valued_property_container.xml_attributes().end());
+
+	if (single_valued_property_container.value() != NULL) {
+		single_valued_property_container.value()->accept_visitor(*this);
+	}
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_xs_string(
+		const GPlatesModel::XsString &xs_string) {
 }

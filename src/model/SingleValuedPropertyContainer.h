@@ -25,6 +25,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyContainer.h"
 #include "PropertyValue.h"
+#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {
@@ -55,6 +56,21 @@ namespace GPlatesModel {
 		clone() const {
 			boost::intrusive_ptr<PropertyContainer> dup(new SingleValuedPropertyContainer(*this));
 			return dup;
+		}
+
+		boost::intrusive_ptr<const PropertyValue>
+		value() const {
+			return d_value;
+		}
+
+		boost::intrusive_ptr<PropertyValue>
+		value() {
+			return d_value;
+		}
+
+		bool
+		value_is_optional() const {
+			return d_value_is_optional;
 		}
 
 		virtual
@@ -92,6 +108,15 @@ namespace GPlatesModel {
 
 	private:
 
+		/*
+		 * Note that this pointer can be NULL.
+		 *
+		 * It is quite valid for this pointer to be NULL if the property is an optional
+		 * property, and the value is absent.
+		 *
+		 * Of course, even if the property is NOT optional, we may have to handle
+		 * situations in which the value is absent...
+		 */
 		boost::intrusive_ptr<PropertyValue> d_value;
 		bool d_value_is_optional;
 
