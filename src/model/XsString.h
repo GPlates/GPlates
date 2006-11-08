@@ -23,8 +23,8 @@
 #define GPLATES_MODEL_XSSTRING_H
 
 #include <boost/intrusive_ptr.hpp>
-#include <unicode/unistr.h>
 #include "PropertyValue.h"
+#include "TextContent.h"
 
 
 namespace GPlatesModel {
@@ -62,7 +62,7 @@ namespace GPlatesModel {
 		XsString(
 				const UnicodeString &s) :
 			PropertyValue(),
-			d_s(s)
+			d_tc(s)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -73,12 +73,12 @@ namespace GPlatesModel {
 		XsString(
 				const XsString &other) :
 			PropertyValue(other),
-			d_s(other.d_s)
+			d_tc(other.d_tc)
 		{  }
 
 	private:
 
-		UnicodeString d_s;
+		TextContent d_tc;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

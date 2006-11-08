@@ -39,5 +39,14 @@ GPlatesModel::StringSetSingletons::property_name_instance() {
 	return *s_property_name_instance;
 }
 
+GPlatesUtil::StringSet &
+GPlatesModel::StringSetSingletons::text_content_instance() {
+	if (s_text_content_instance == NULL) {
+		s_text_content_instance = new GPlatesUtil::StringSet();
+	}
+	return *s_text_content_instance;
+}
+
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_property_name_instance = NULL;
+GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_text_content_instance = NULL;

@@ -28,7 +28,9 @@
 namespace GPlatesModel {
 
 	class StringSetSingletons {
+
 	public:
+
 		static
 		GPlatesUtil::StringSet &
 		feature_type_instance();
@@ -36,13 +38,20 @@ namespace GPlatesModel {
 		static
 		GPlatesUtil::StringSet &
 		property_name_instance();
+
+		static
+		GPlatesUtil::StringSet &
+		text_content_instance();
+
 	private:
+
 		// This constructor should never be defined, because we don't want to allow
 		// instantiation of this class.
 		StringSetSingletons();
 
 		static GPlatesUtil::StringSet *s_feature_type_instance;
 		static GPlatesUtil::StringSet *s_property_name_instance;
+		static GPlatesUtil::StringSet *s_text_content_instance;
 	};
 
 }
