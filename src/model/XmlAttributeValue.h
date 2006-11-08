@@ -104,18 +104,18 @@ namespace GPlatesModel {
 	inline
 	bool
 	operator==(
-			const XmlAttributeValue &xan1,
-			const XmlAttributeValue &xan2) {
-		return xan1.is_equal_to(xan2);
+			const XmlAttributeValue &xav1,
+			const XmlAttributeValue &xav2) {
+		return xav1.is_equal_to(xav2);
 	}
 
 
 	inline
 	bool
 	operator!=(
-			const XmlAttributeValue &xan1,
-			const XmlAttributeValue &xan2) {
-		return ! xan1.is_equal_to(xan2);
+			const XmlAttributeValue &xav1,
+			const XmlAttributeValue &xav2) {
+		return ! xav1.is_equal_to(xav2);
 	}
 
 }
