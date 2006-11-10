@@ -82,12 +82,38 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_orientable_curve(
 void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_time_instant(
 		const GPlatesModel::GmlTimeInstant &gml_time_instant) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:TimeInstant");
+	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:timePosition");
+
+	const GPlatesModel::GeoTimeInstant &time_position = gml_time_instant.time_position();
+	if (time_position.is_real()) {
+		d_output.write_line_of_decimal_content(time_position.value());
+	} else if (time_position.is_distant_past()) {
+		d_output.write_line_of_string_content("http://gplates.org/times/distantPast");
+	} else if (time_position.is_distant_future()) {
+		d_output.write_line_of_string_content("http://gplates.org/times/distantFuture");
+	}
 }
 
 
 void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_time_period(
 		const GPlatesModel::GmlTimePeriod &gml_time_period) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:TimePeriod");
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:begin");
+		// FIXME:  Should we throw an exception if this value is NULL?
+		if (gml_time_period.begin() != NULL) {
+			gml_time_period.begin()->accept_visitor(*this);
+		}
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:end");
+		// FIXME:  Should we throw an exception if this value is NULL?
+		if (gml_time_period.end() != NULL) {
+			gml_time_period.end()->accept_visitor(*this);
+		}
+	}
 }
 
 
@@ -97,6 +123,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_constant_value(
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:ConstantValue");
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:value");
+		// FIXME:  Should we throw an exception if this value is NULL?
 		if (gpml_constant_value.value() != NULL) {
 			gpml_constant_value.value()->accept_visitor(*this);
 		}
@@ -118,6 +145,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_single_valued_property_conta
 			single_valued_property_container.xml_attributes().begin(),
 			single_valued_property_container.xml_attributes().end());
 
+	// FIXME:  Should we bother checking whether the value is optional?
 	if (single_valued_property_container.value() != NULL) {
 		single_valued_property_container.value()->accept_visitor(*this);
 	}

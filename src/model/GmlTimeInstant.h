@@ -46,8 +46,8 @@ namespace GPlatesModel {
 		static
 		boost::intrusive_ptr<GmlTimeInstant>
 		create(
-				const GeoTimeInstant &geo_time_instant) {
-			boost::intrusive_ptr<GmlTimeInstant> ptr(new GmlTimeInstant(geo_time_instant));
+				const GeoTimeInstant &time_position_) {
+			boost::intrusive_ptr<GmlTimeInstant> ptr(new GmlTimeInstant(time_position_));
 			return ptr;
 		}
 
@@ -56,6 +56,16 @@ namespace GPlatesModel {
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GmlTimeInstant(*this));
 			return dup;
+		}
+
+		const GeoTimeInstant &
+		time_position() const {
+			return d_time_position;
+		}
+
+		GeoTimeInstant &
+		time_position() {
+			return d_time_position;
 		}
 
 		virtual
@@ -71,9 +81,9 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GmlTimeInstant(
-				const GeoTimeInstant &geo_time_instant):
+				const GeoTimeInstant &time_position_):
 			PropertyValue(),
-			d_geo_time_instant(geo_time_instant)
+			d_time_position(time_position_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -84,12 +94,12 @@ namespace GPlatesModel {
 		GmlTimeInstant(
 				const GmlTimeInstant &other) :
 			PropertyValue(),
-			d_geo_time_instant(other.d_geo_time_instant)
+			d_time_position(other.d_time_position)
 		{  }
 
 	private:
 
-		GeoTimeInstant d_geo_time_instant;
+		GeoTimeInstant d_time_position;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

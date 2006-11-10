@@ -67,7 +67,7 @@ namespace GPlatesModel {
 		create_distant_future();
 
 		/**
-		 * Create a GeoTimeInstant instance for a time-position of @a time_position million
+		 * Create a GeoTimeInstant instance for a time-position of @a value million
 		 * years ago.
 		 *
 		 * Note that positive values represent times in the past; negative values represent
@@ -75,8 +75,8 @@ namespace GPlatesModel {
 		 */
 		explicit
 		GeoTimeInstant(
-				const double &time_position_):
-			d_time_position(time_position_)
+				const double &value_):
+			d_value(value_)
 		{  }
 
 		/**
@@ -88,8 +88,8 @@ namespace GPlatesModel {
 		 * Note that this value may not be meaningful if @a is_real returns false.
 		 */
 		const double &
-		time_position() const {
-			return d_time_position;
+		value() const {
+			return d_value;
 		}
 
 		/**
@@ -126,7 +126,7 @@ namespace GPlatesModel {
 		bool
 		is_earlier_than(
 				const GeoTimeInstant &other) const {
-			return d_time_position > other.d_time_position;
+			return d_value > other.d_value;
 		}
 
 		/**
@@ -135,7 +135,7 @@ namespace GPlatesModel {
 		bool
 		is_later_than(
 				const GeoTimeInstant &other) const {
-			return d_time_position < other.d_time_position;
+			return d_value < other.d_value;
 		}
 
 		/**
@@ -148,7 +148,7 @@ namespace GPlatesModel {
 
 	private:
 
-		double d_time_position;
+		double d_value;
 
 	};
 

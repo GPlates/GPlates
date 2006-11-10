@@ -106,6 +106,16 @@ GPlatesFileIO::XmlOutputInterface::write_line_of_integer_content(
 
 
 void
+GPlatesFileIO::XmlOutputInterface::write_line_of_decimal_content(
+		const double &content) {
+	write_indentation();
+	// CHECKME:  Do we need to worry about ensuring the locale is appropriate?
+	*d_os_ptr << content;
+	write_unicode_string("\n");
+}
+
+
+void
 GPlatesFileIO::XmlOutputInterface::write_indentation() {
 	if (status() != NO_ERROR) {
 		// Some error has previously occurred.

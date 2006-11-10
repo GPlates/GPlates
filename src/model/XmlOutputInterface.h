@@ -259,6 +259,15 @@ namespace GPlatesFileIO {
 		write_line_of_integer_content(
 				const long &content);
 
+		/**
+		 * Write a line of decimal content.
+		 *
+		 * The function will indent the line and append a newline.
+		 */
+		void
+		write_line_of_decimal_content(
+				const double &content);
+
 	protected:
 
 		XmlOutputInterface(

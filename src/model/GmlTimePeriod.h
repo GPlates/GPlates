@@ -46,9 +46,9 @@ namespace GPlatesModel {
 		static
 		boost::intrusive_ptr<GmlTimePeriod>
 		create(
-				boost::intrusive_ptr<GmlTimeInstant> begin,
-				boost::intrusive_ptr<GmlTimeInstant> end) {
-			boost::intrusive_ptr<GmlTimePeriod> ptr(new GmlTimePeriod(begin, end));
+				boost::intrusive_ptr<GmlTimeInstant> begin_,
+				boost::intrusive_ptr<GmlTimeInstant> end_) {
+			boost::intrusive_ptr<GmlTimePeriod> ptr(new GmlTimePeriod(begin_, end_));
 			return ptr;
 		}
 
@@ -57,6 +57,26 @@ namespace GPlatesModel {
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GmlTimePeriod(*this));
 			return dup;
+		}
+
+		boost::intrusive_ptr<const GmlTimeInstant>
+		begin() const {
+			return d_begin;
+		}
+
+		boost::intrusive_ptr<const GmlTimeInstant>
+		end() const {
+			return d_end;
+		}
+
+		boost::intrusive_ptr<GmlTimeInstant>
+		begin() {
+			return d_begin;
+		}
+
+		boost::intrusive_ptr<GmlTimeInstant>
+		end() {
+			return d_end;
 		}
 
 		virtual
@@ -72,11 +92,11 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GmlTimePeriod(
-				boost::intrusive_ptr<GmlTimeInstant> begin,
-				boost::intrusive_ptr<GmlTimeInstant> end):
+				boost::intrusive_ptr<GmlTimeInstant> begin_,
+				boost::intrusive_ptr<GmlTimeInstant> end_):
 			PropertyValue(),
-			d_begin(begin),
-			d_end(end)
+			d_begin(begin_),
+			d_end(end_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow

@@ -38,20 +38,20 @@ GPlatesModel::GeoTimeInstant::create_distant_future() {
 bool
 GPlatesModel::GeoTimeInstant::is_distant_past() const {
 	// Return whether the time-position is positive infinity.
-	return (isinf(d_time_position) && (d_time_position > 0));
+	return (isinf(d_value) && (d_value > 0));
 }
 
 
 bool
 GPlatesModel::GeoTimeInstant::is_distant_future() const {
 	// Return whether the time-position is negative infinity.
-	return (isinf(d_time_position) && (d_time_position < 0));
+	return (isinf(d_value) && (d_value < 0));
 }
 
 
 bool
 GPlatesModel::GeoTimeInstant::is_real() const {
-	return std::isfinite(d_time_position);
+	return std::isfinite(d_value);
 }
 
 
@@ -74,5 +74,5 @@ GPlatesModel::GeoTimeInstant::is_coincident_with(
 	 * To double-check:  Do we want infinities to compare equal or unequal?
 	 */
 
-	return (fabs(d_time_position - other.d_time_position) < ::Epsilon);
+	return (fabs(d_value - other.d_value) < ::Epsilon);
 }
