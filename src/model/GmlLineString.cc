@@ -20,7 +20,7 @@
  */
 
 #include <algorithm>  /* std::distance */
-#include "GmlOrientableCurve.h"
+#include "GmlLineString.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/PolylineOnSphere.h"
 
@@ -175,8 +175,8 @@ namespace {
 }
 
 
-boost::intrusive_ptr<GPlatesModel::GmlOrientableCurve>
-GPlatesModel::GmlOrientableCurve::create(
+boost::intrusive_ptr<GPlatesModel::GmlLineString>
+GPlatesModel::GmlLineString::create(
 		const std::vector<double> &gml_pos_list)
 {
 	using namespace ::GPlatesMaths;
@@ -184,7 +184,7 @@ GPlatesModel::GmlOrientableCurve::create(
 	std::vector<PointOnSphere> pos_vector;
 	::populate_point_on_sphere_vector_from_gml_pos_list(pos_vector, gml_pos_list);
 	boost::intrusive_ptr<PolylineOnSphere> polyline_ptr(PolylineOnSphere::create_on_heap(pos_vector));
-	boost::intrusive_ptr<GmlOrientableCurve> orientable_curve_ptr(new GmlOrientableCurve(polyline_ptr));
+	boost::intrusive_ptr<GmlLineString> orientable_curve_ptr(new GmlLineString(polyline_ptr));
 
 	return orientable_curve_ptr;
 }
@@ -193,7 +193,7 @@ GPlatesModel::GmlOrientableCurve::create(
 // We define this constructor in this source file rather than in the header file, because the
 // constructor needs access to the function 'intrusive_ptr_add_ref(PolylineOnSphere *)', which is
 // declared in "maths/PolylineOnSphere.h", which we would rather not include in the header.
-GPlatesModel::GmlOrientableCurve::GmlOrientableCurve(
+GPlatesModel::GmlLineString::GmlLineString(
 		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline):
 	PropertyValue(),
 	d_polyline(polyline)
@@ -203,8 +203,8 @@ GPlatesModel::GmlOrientableCurve::GmlOrientableCurve(
 // We define this constructor in this source file rather than in the header file, because the
 // constructor needs access to the function 'intrusive_ptr_add_ref(PolylineOnSphere *)', which is
 // declared in "maths/PolylineOnSphere.h", which we would rather not include in the header.
-GPlatesModel::GmlOrientableCurve::GmlOrientableCurve(
-		const GmlOrientableCurve &other):
+GPlatesModel::GmlLineString::GmlLineString(
+		const GmlLineString &other):
 	PropertyValue(),
 	d_polyline(other.d_polyline)
 {  }
@@ -213,5 +213,5 @@ GPlatesModel::GmlOrientableCurve::GmlOrientableCurve(
 // We define this destructor in this source file rather than in the header file, because the
 // destructor needs access to the function 'intrusive_ptr_release(PolylineOnSphere *)', which is
 // declared in "maths/PolylineOnSphere.h", which we would rather not include in the header.
-GPlatesModel::GmlOrientableCurve::~GmlOrientableCurve()
+GPlatesModel::GmlLineString::~GmlLineString()
 {  }

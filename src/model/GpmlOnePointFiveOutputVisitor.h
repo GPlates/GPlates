@@ -53,7 +53,7 @@ namespace GPlatesFileIO {
 		virtual
 		void
 		visit_gml_orientable_curve(
-				const GPlatesModel::GmlOrientableCurve &gml_orientable_curve);
+				const GPlatesModel::GmlLineString &gml_orientable_curve);
 
 		virtual
 		void

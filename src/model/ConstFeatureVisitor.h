@@ -28,7 +28,7 @@ namespace GPlatesModel {
 	// Forward declarations for the member functions.
 	class FeatureHandle;
 	class FeatureRevision;
-	class GmlOrientableCurve;
+	class GmlLineString;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
 	class GpmlConstantValue;
@@ -62,7 +62,7 @@ namespace GPlatesModel {
 		virtual
 		void
 		visit_gml_orientable_curve(
-				const GmlOrientableCurve &gml_orientable_curve) {  }
+				const GmlLineString &gml_orientable_curve) {  }
 
 		virtual
 		void

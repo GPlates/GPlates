@@ -22,7 +22,7 @@
 #include "GpmlOnePointFiveOutputVisitor.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
-#include "model/GmlOrientableCurve.h"
+#include "model/GmlLineString.h"
 #include "model/GmlTimeInstant.h"
 #include "model/GmlTimePeriod.h"
 #include "model/GpmlConstantValue.h"
@@ -75,7 +75,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_revision(
 
 void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_orientable_curve(
-		const GPlatesModel::GmlOrientableCurve &gml_orientable_curve) {
+		const GPlatesModel::GmlLineString &gml_orientable_curve) {
 }
 
 

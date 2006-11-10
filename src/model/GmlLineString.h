@@ -19,8 +19,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef GPLATES_MODEL_GMLORIENTABLECURVE_H
-#define GPLATES_MODEL_GMLORIENTABLECURVE_H
+#ifndef GPLATES_MODEL_GMLLINESTRING_H
+#define GPLATES_MODEL_GMLLINESTRING_H
 
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
@@ -31,7 +31,7 @@
 // Forward declaration for intrusive-pointer.
 // Note that, because we want to avoid the inclusion of "maths/PolylineOnSphere.h" into this header
 // file (which is why we have this forward declaration), the constructors and destructor of
-// GmlOrientableCurve cannot be defined in this header file, since the constructors and destructor
+// GmlLineString cannot be defined in this header file, since the constructors and destructor
 // require the ability to invoke 'intrusive_ptr_add_ref' and 'intrusive_ptr_release', which are
 // only defined in "maths/PolylineOnSphere.h".
 namespace GPlatesMaths {
@@ -41,13 +41,13 @@ namespace GPlatesMaths {
 
 namespace GPlatesModel {
 
-	class GmlOrientableCurve :
+	class GmlLineString :
 			public PropertyValue {
 
 	public:
 
 		virtual
-		~GmlOrientableCurve();
+		~GmlLineString();
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -55,14 +55,14 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GmlOrientableCurve>
+		boost::intrusive_ptr<GmlLineString>
 		create(
 				const std::vector<double> &gml_pos_list);
 
 		virtual
 		boost::intrusive_ptr<PropertyValue>
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GmlOrientableCurve(*this));
+			boost::intrusive_ptr<PropertyValue> dup(new GmlLineString(*this));
 			return dup;
 		}
 
@@ -78,7 +78,7 @@ namespace GPlatesModel {
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		explicit
-		GmlOrientableCurve(
+		GmlLineString(
 				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline);
 
 		// This constructor should not be public, because we don't want to allow
@@ -86,8 +86,8 @@ namespace GPlatesModel {
 		//
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
-		GmlOrientableCurve(
-				const GmlOrientableCurve &other);
+		GmlLineString(
+				const GmlLineString &other);
 
 	private:
 
@@ -97,12 +97,12 @@ namespace GPlatesModel {
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive_ptr to another.
-		GmlOrientableCurve &
+		GmlLineString &
 		operator=(
-				const GmlOrientableCurve &);
+				const GmlLineString &);
 
 	};
 
 }
 
-#endif  // GPLATES_MODEL_GMLORIENTABLECURVE_H
+#endif  // GPLATES_MODEL_GMLLINESTRING_H
