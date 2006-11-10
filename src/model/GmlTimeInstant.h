@@ -22,10 +22,13 @@
 #ifndef GPLATES_MODEL_GMLTIMEINSTANT_H
 #define GPLATES_MODEL_GMLTIMEINSTANT_H
 
+#include <map>
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
 #include "GeoTimeInstant.h"
 #include "ConstFeatureVisitor.h"
+#include "XmlAttributeName.h"
+#include "XmlAttributeValue.h"
 
 
 namespace GPlatesModel {
@@ -46,8 +49,10 @@ namespace GPlatesModel {
 		static
 		boost::intrusive_ptr<GmlTimeInstant>
 		create(
-				const GeoTimeInstant &time_position_) {
-			boost::intrusive_ptr<GmlTimeInstant> ptr(new GmlTimeInstant(time_position_));
+				const GeoTimeInstant &time_position_,
+				const std::map<XmlAttributeName, XmlAttributeValue> &time_position_xml_attributes_) {
+			boost::intrusive_ptr<GmlTimeInstant> ptr(new GmlTimeInstant(time_position_,
+					time_position_xml_attributes_));
 			return ptr;
 		}
 
@@ -68,6 +73,16 @@ namespace GPlatesModel {
 			return d_time_position;
 		}
 
+		const std::map<XmlAttributeName, XmlAttributeValue> &
+		time_position_xml_attributes() const {
+			return d_time_position_xml_attributes;
+		}
+
+		std::map<XmlAttributeName, XmlAttributeValue> &
+		time_position_xml_attributes() {
+			return d_time_position_xml_attributes;
+		}
+
 		virtual
 		void
 		accept_visitor(
@@ -81,9 +96,11 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GmlTimeInstant(
-				const GeoTimeInstant &time_position_):
+				const GeoTimeInstant &time_position_,
+				const std::map<XmlAttributeName, XmlAttributeValue> &time_position_xml_attributes_):
 			PropertyValue(),
-			d_time_position(time_position_)
+			d_time_position(time_position_),
+			d_time_position_xml_attributes(time_position_xml_attributes_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -94,12 +111,14 @@ namespace GPlatesModel {
 		GmlTimeInstant(
 				const GmlTimeInstant &other) :
 			PropertyValue(),
-			d_time_position(other.d_time_position)
+			d_time_position(other.d_time_position),
+			d_time_position_xml_attributes(other.d_time_position_xml_attributes)
 		{  }
 
 	private:
 
 		GeoTimeInstant d_time_position;
+		std::map<XmlAttributeName, XmlAttributeValue> d_time_position_xml_attributes;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

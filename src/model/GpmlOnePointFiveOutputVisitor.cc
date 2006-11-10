@@ -83,7 +83,9 @@ void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_time_instant(
 		const GPlatesModel::GmlTimeInstant &gml_time_instant) {
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:TimeInstant");
-	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:timePosition");
+	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:timePosition",
+			gml_time_instant.time_position_xml_attributes().begin(),
+			gml_time_instant.time_position_xml_attributes().end());
 
 	const GPlatesModel::GeoTimeInstant &time_position = gml_time_instant.time_position();
 	if (time_position.is_real()) {
