@@ -39,7 +39,7 @@ namespace GPlatesFileIO {
 	 * This class provides a convenient interface for XML output.
 	 *
 	 * Client code performs output using XML-oriented functions such as
-	 * @a write_opening_element and @a write_string_content_line.
+	 * @a write_opening_element and @a write_line_of_string_content.
 	 */
 	class XmlOutputInterface {
 
@@ -247,8 +247,17 @@ namespace GPlatesFileIO {
 		 * The function will indent the line and append a newline.
 		 */
 		void
-		write_string_content_line(
-				const UnicodeString &line);
+		write_line_of_string_content(
+				const UnicodeString &content);
+
+		/**
+		 * Write a line of integer content.
+		 *
+		 * The function will indent the line and append a newline.
+		 */
+		void
+		write_line_of_integer_content(
+				const long &content);
 
 	protected:
 

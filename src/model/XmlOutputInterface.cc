@@ -87,10 +87,20 @@ GPlatesFileIO::XmlOutputInterface::write_empty_element(
 
 
 void
-GPlatesFileIO::XmlOutputInterface::write_string_content_line(
-		const UnicodeString &line) {
+GPlatesFileIO::XmlOutputInterface::write_line_of_string_content(
+		const UnicodeString &content) {
 	write_indentation();
-	write_unicode_string(line);
+	write_unicode_string(content);
+	write_unicode_string("\n");
+}
+
+
+void
+GPlatesFileIO::XmlOutputInterface::write_line_of_integer_content(
+		const long &content) {
+	write_indentation();
+	// CHECKME:  Do we need to worry about ensuring the locale is appropriate?
+	*d_os_ptr << content;
 	write_unicode_string("\n");
 }
 

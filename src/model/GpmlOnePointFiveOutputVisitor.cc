@@ -22,9 +22,13 @@
 #include "GpmlOnePointFiveOutputVisitor.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
+#include "model/GmlOrientableCurve.h"
+#include "model/GmlTimeInstant.h"
+#include "model/GmlTimePeriod.h"
 #include "model/GpmlConstantValue.h"
 #include "model/GpmlPlateId.h"
 #include "model/SingleValuedPropertyContainer.h"
+#include "model/XsString.h"
 
 
 void
@@ -39,7 +43,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, feature_handle.feature_type().get());
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:identity");
-		d_output.write_string_content_line(feature_handle.feature_id().get());
+		d_output.write_line_of_string_content(feature_handle.feature_id().get());
 	}
 	feature_handle.current_revision()->accept_visitor(*this);
 }
@@ -51,7 +55,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_revision(
 
 	{
 		XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:revision");
-		d_output.write_string_content_line(feature_revision.revision_id().get());
+		d_output.write_line_of_string_content(feature_revision.revision_id().get());
 	}
 
 	// Now visit each of the properties in turn.
@@ -103,6 +107,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_constant_value(
 void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_plate_id(
 		const GPlatesModel::GpmlPlateId &gpml_plate_id) {
+	d_output.write_line_of_integer_content(gpml_plate_id.value());
 }
 
 
@@ -122,4 +127,5 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_single_valued_property_conta
 void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_xs_string(
 		const GPlatesModel::XsString &xs_string) {
+	d_output.write_line_of_string_content(xs_string.value().get());
 }

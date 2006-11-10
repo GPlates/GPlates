@@ -53,6 +53,16 @@ namespace GPlatesModel {
 			return dup;
 		}
 
+		const TextContent &
+		value() const {
+			return d_value;
+		}
+
+		TextContent &
+		value() {
+			return d_value;
+		}
+
 		virtual
 		void
 		accept_visitor(
@@ -68,7 +78,7 @@ namespace GPlatesModel {
 		XsString(
 				const UnicodeString &s) :
 			PropertyValue(),
-			d_tc(s)
+			d_value(s)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -79,12 +89,12 @@ namespace GPlatesModel {
 		XsString(
 				const XsString &other) :
 			PropertyValue(other),
-			d_tc(other.d_tc)
+			d_value(other.d_value)
 		{  }
 
 	private:
 
-		TextContent d_tc;
+		TextContent d_value;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

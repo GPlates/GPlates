@@ -45,8 +45,8 @@ namespace GPlatesModel {
 		static
 		boost::intrusive_ptr<GpmlPlateId>
 		create(
-				const unsigned long &plate_id) {
-			boost::intrusive_ptr<GpmlPlateId> ptr(new GpmlPlateId(plate_id));
+				const unsigned long &value_) {
+			boost::intrusive_ptr<GpmlPlateId> ptr(new GpmlPlateId(value_));
 			return ptr;
 		}
 
@@ -55,6 +55,16 @@ namespace GPlatesModel {
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GpmlPlateId(*this));
 			return dup;
+		}
+
+		const unsigned long &
+		value() const {
+			return d_value;
+		}
+
+		unsigned long &
+		value() {
+			return d_value;
 		}
 
 		virtual
@@ -70,9 +80,9 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GpmlPlateId(
-				const unsigned long &plate_id):
+				const unsigned long &value_):
 			PropertyValue(),
-			d_plate_id(plate_id)
+			d_value(value_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -83,12 +93,12 @@ namespace GPlatesModel {
 		GpmlPlateId(
 				const GpmlPlateId &other) :
 			PropertyValue(),
-			d_plate_id(other.d_plate_id)
+			d_value(other.d_value)
 		{  }
 
 	private:
 
-		unsigned long d_plate_id;
+		unsigned long d_value;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
