@@ -29,6 +29,8 @@
 #include "model/GpmlPlateId.h"
 #include "model/SingleValuedPropertyContainer.h"
 #include "model/XsString.h"
+#include "maths/PolylineOnSphere.h"
+#include "maths/LatLonPointConversions.h"
 
 
 void
@@ -76,6 +78,34 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_revision(
 void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 		const GPlatesModel::GmlLineString &gml_line_string) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:LineString");
+	static std::vector<std::pair<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> > pos_list_xml_attrs;
+	if (pos_list_xml_attrs.empty()) {
+		GPlatesModel::XmlAttributeName attr_name("dimension");
+		GPlatesModel::XmlAttributeValue attr_value("2");
+		pos_list_xml_attrs.push_back(std::make_pair(attr_name, attr_value));
+	}
+	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:posList",
+			pos_list_xml_attrs.begin(),
+			pos_list_xml_attrs.end());
+
+	// It would be slightly "nicer" (ie, avoiding the allocation of a temporary buffer) if we
+	// were to create an iterator which performed this transformation for us automatically, but
+	// (i) that's probably not the most efficient use of our time right now; (ii) it's file
+	// I/O, it's slow anyway; and (iii) we can cut it down to a single memory allocation if we
+	// reserve the size of the vector in advance.
+	boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> polyline_ptr = gml_line_string.polyline();
+	std::vector<double> pos_list(polyline_ptr->number_of_segments() * 2);
+	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = polyline_ptr->vertex_begin();
+	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline_ptr->vertex_end();
+	for ( ; iter != end; ++iter) {
+		GPlatesMaths::LatLonPoint llp =
+				GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*iter);
+
+		pos_list.push_back(llp.latitude().dval());
+		pos_list.push_back(llp.longitude().dval());
+	}
+	d_output.write_line_of_decimal_content(pos_list.begin(), pos_list.end());
 }
 
 

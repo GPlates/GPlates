@@ -37,6 +37,15 @@
 namespace GPlatesMaths {
 
 	class PolylineOnSphere;
+
+	void
+	intrusive_ptr_add_ref(
+			const PolylineOnSphere *p);
+
+	void
+	intrusive_ptr_release(
+			const PolylineOnSphere *p);
+
 }
 
 namespace GPlatesModel {
@@ -66,6 +75,16 @@ namespace GPlatesModel {
 			return dup;
 		}
 
+		boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+		polyline() const {
+			return d_polyline;
+		}
+
+		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+		polyline() {
+			return d_polyline;
+		}
+
 		virtual
 		void
 		accept_visitor(
@@ -79,7 +98,7 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GmlLineString(
-				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline);
+				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_);
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

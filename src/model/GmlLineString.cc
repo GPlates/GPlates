@@ -194,9 +194,9 @@ GPlatesModel::GmlLineString::create(
 // constructor needs access to the function 'intrusive_ptr_add_ref(PolylineOnSphere *)', which is
 // declared in "maths/PolylineOnSphere.h", which we would rather not include in the header.
 GPlatesModel::GmlLineString::GmlLineString(
-		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline):
+		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_):
 	PropertyValue(),
-	d_polyline(polyline)
+	d_polyline(polyline_)
 {  }
 
 

@@ -194,3 +194,11 @@ GPlatesFileIO::XmlOutputInterface::write_attribute_value(
 		set_status(WRITE_ERROR);
 	}
 }
+
+
+void
+GPlatesFileIO::XmlOutputInterface::write_decimal_content(
+		const double &content) {
+	// CHECKME:  Do we need to worry about ensuring the locale is appropriate?
+	*d_os_ptr << content;
+}

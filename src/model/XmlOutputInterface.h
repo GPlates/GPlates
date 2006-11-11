@@ -268,6 +268,38 @@ namespace GPlatesFileIO {
 		write_line_of_decimal_content(
 				const double &content);
 
+		/**
+		 * Write a line of decimal content.
+		 *
+		 * The values will be accessed through the parameters @a content_begin and
+		 * @a content_end.  These parameters are assumed to be forward iterators, one being
+		 * the "begin" iterator of an iterable range of doubles, the other being the "end"
+		 * iterator.
+		 *
+		 * The following requirements must be satisfied by the template type @a F for the
+		 * template instantiation of this function to succeed during compilation:
+		 *  - The iterator type must possess the operators:
+		 *    - equality-comparison operator;
+		 *    - pre-increment operator;
+		 *    - dereference operator.
+		 *  - The referenced type must be a 'double'.
+		 *
+		 * The following requirements must be satisfied by the types and values of
+		 * @a content_begin and @a content_end for this function to execute in a meaningful
+		 * fashion:
+		 *  - @a content_begin must be either equal to @a content_end (using the type's
+		 *    equality-comparison operator) or incrementable (using the type's
+		 *    pre-increment operator) to be equal to @a content_end.
+		 *
+		 * If the range is non-empty, the function will indent the line, write the content,
+		 * and append a newline.  If the range is empty, the function will do nothing.
+		 */
+		template<typename F>
+		void
+		write_line_of_decimal_content(
+				F content_begin,
+				F content_end);
+
 	protected:
 
 		XmlOutputInterface(
@@ -293,6 +325,10 @@ namespace GPlatesFileIO {
 		void
 		write_attribute_value(
 				const GPlatesModel::XmlAttributeValue &xav);
+
+		void
+		write_decimal_content(
+				const double &content);
 
 	private:
 
@@ -359,6 +395,26 @@ namespace GPlatesFileIO {
 		write_unicode_string(">\n");
 
 		++d_indentation_level;
+	}
+
+
+	template<typename F>
+	inline
+	void
+	XmlOutputInterface::write_line_of_decimal_content(
+			F content_begin,
+			F content_end) {
+		if (content_begin == content_end) {
+			// There's nothing to write.
+			return;
+		}
+		write_indentation();
+		write_decimal_content(*content_begin);
+		for (++content_begin; content_begin != content_end; ++content_begin) {
+			write_unicode_string(" ");
+			write_decimal_content(*content_begin);
+		}
+		write_unicode_string("\n");
 	}
 
 }
