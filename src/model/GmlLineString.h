@@ -56,7 +56,8 @@ namespace GPlatesModel {
 	public:
 
 		virtual
-		~GmlLineString();
+		~GmlLineString()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -98,7 +99,11 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GmlLineString(
-				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_);
+				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_):
+			PropertyValue(),
+			d_polyline(polyline_)
+		{  }
+
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -106,7 +111,10 @@ namespace GPlatesModel {
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
 		GmlLineString(
-				const GmlLineString &other);
+				const GmlLineString &other):
+			PropertyValue(),
+			d_polyline(other.d_polyline)
+		{  }
 
 	private:
 

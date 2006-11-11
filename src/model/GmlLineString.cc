@@ -188,30 +188,3 @@ GPlatesModel::GmlLineString::create(
 
 	return line_string_ptr;
 }
-
-
-// We define this constructor in this source file rather than in the header file, because the
-// constructor needs access to the function 'intrusive_ptr_add_ref(PolylineOnSphere *)', which is
-// declared in "maths/PolylineOnSphere.h", which we would rather not include in the header.
-GPlatesModel::GmlLineString::GmlLineString(
-		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_):
-	PropertyValue(),
-	d_polyline(polyline_)
-{  }
-
-
-// We define this constructor in this source file rather than in the header file, because the
-// constructor needs access to the function 'intrusive_ptr_add_ref(PolylineOnSphere *)', which is
-// declared in "maths/PolylineOnSphere.h", which we would rather not include in the header.
-GPlatesModel::GmlLineString::GmlLineString(
-		const GmlLineString &other):
-	PropertyValue(),
-	d_polyline(other.d_polyline)
-{  }
-
-
-// We define this destructor in this source file rather than in the header file, because the
-// destructor needs access to the function 'intrusive_ptr_release(PolylineOnSphere *)', which is
-// declared in "maths/PolylineOnSphere.h", which we would rather not include in the header.
-GPlatesModel::GmlLineString::~GmlLineString()
-{  }
