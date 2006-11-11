@@ -74,8 +74,8 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_revision(
 
 
 void
-GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_orientable_curve(
-		const GPlatesModel::GmlLineString &gml_orientable_curve) {
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
+		const GPlatesModel::GmlLineString &gml_line_string) {
 }
 
 

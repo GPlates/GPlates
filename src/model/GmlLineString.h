@@ -70,7 +70,7 @@ namespace GPlatesModel {
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const {
-			visitor.visit_gml_orientable_curve(*this);
+			visitor.visit_gml_line_string(*this);
 		}
 
 	protected:

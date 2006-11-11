@@ -61,8 +61,8 @@ namespace GPlatesModel {
 
 		virtual
 		void
-		visit_gml_orientable_curve(
-				const GmlLineString &gml_orientable_curve) {  }
+		visit_gml_line_string(
+				const GmlLineString &gml_line_string) {  }
 
 		virtual
 		void

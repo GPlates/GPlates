@@ -184,9 +184,9 @@ GPlatesModel::GmlLineString::create(
 	std::vector<PointOnSphere> pos_vector;
 	::populate_point_on_sphere_vector_from_gml_pos_list(pos_vector, gml_pos_list);
 	boost::intrusive_ptr<PolylineOnSphere> polyline_ptr(PolylineOnSphere::create_on_heap(pos_vector));
-	boost::intrusive_ptr<GmlLineString> orientable_curve_ptr(new GmlLineString(polyline_ptr));
+	boost::intrusive_ptr<GmlLineString> line_string_ptr(new GmlLineString(polyline_ptr));
 
-	return orientable_curve_ptr;
+	return line_string_ptr;
 }
 
 
