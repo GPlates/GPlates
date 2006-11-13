@@ -57,6 +57,11 @@ namespace GPlatesFileIO {
 
 		virtual
 		void
+		visit_gml_orientable_curve(
+				const GPlatesModel::GmlOrientableCurve &gml_orientable_curve);
+
+		virtual
+		void
 		visit_gml_time_instant(
 				const GPlatesModel::GmlTimeInstant &gml_time_instant);
 

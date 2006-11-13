@@ -94,7 +94,6 @@ namespace GPlatesModel {
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
 		GmlTimeInstant(
 				const GeoTimeInstant &time_position_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &time_position_xml_attributes_):

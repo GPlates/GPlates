@@ -29,6 +29,7 @@ namespace GPlatesModel {
 	class FeatureHandle;
 	class FeatureRevision;
 	class GmlLineString;
+	class GmlOrientableCurve;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
 	class GpmlConstantValue;
@@ -63,6 +64,11 @@ namespace GPlatesModel {
 		void
 		visit_gml_line_string(
 				const GmlLineString &gml_line_string) {  }
+
+		virtual
+		void
+		visit_gml_orientable_curve(
+				const GmlOrientableCurve &gml_orientable_curve) {  }
 
 		virtual
 		void

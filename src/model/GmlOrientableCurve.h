@@ -19,24 +19,26 @@
  * GNU General Public License for more details.
  */
 
-#ifndef GPLATES_MODEL_GMLTIMEPERIOD_H
-#define GPLATES_MODEL_GMLTIMEPERIOD_H
+#ifndef GPLATES_MODEL_GMLORIENTABLECURVE_H
+#define GPLATES_MODEL_GMLORIENTABLECURVE_H
 
+#include <map>
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
-#include "GmlTimeInstant.h"
 #include "ConstFeatureVisitor.h"
+#include "XmlAttributeName.h"
+#include "XmlAttributeValue.h"
 
 
 namespace GPlatesModel {
 
-	class GmlTimePeriod :
+	class GmlOrientableCurve :
 			public PropertyValue {
 
 	public:
 
 		virtual
-		~GmlTimePeriod() {  }
+		~GmlOrientableCurve() {  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -44,58 +46,58 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GmlTimePeriod>
+		boost::intrusive_ptr<GmlOrientableCurve>
 		create(
-				boost::intrusive_ptr<GmlTimeInstant> begin_,
-				boost::intrusive_ptr<GmlTimeInstant> end_) {
-			boost::intrusive_ptr<GmlTimePeriod> ptr(new GmlTimePeriod(begin_, end_));
+				boost::intrusive_ptr<PropertyValue> base_curve_,
+				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_) {
+			boost::intrusive_ptr<GmlOrientableCurve> ptr(new GmlOrientableCurve(base_curve_, xml_attributes_));
 			return ptr;
 		}
 
 		virtual
 		boost::intrusive_ptr<PropertyValue>
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GmlTimePeriod(*this));
+			boost::intrusive_ptr<PropertyValue> dup(new GmlOrientableCurve(*this));
 			return dup;
 		}
 
-		boost::intrusive_ptr<const GmlTimeInstant>
-		begin() const {
-			return d_begin;
+		boost::intrusive_ptr<const PropertyValue>
+		base_curve() const {
+			return d_base_curve;
 		}
 
-		boost::intrusive_ptr<const GmlTimeInstant>
-		end() const {
-			return d_end;
+		boost::intrusive_ptr<PropertyValue>
+		base_curve() {
+			return d_base_curve;
 		}
 
-		boost::intrusive_ptr<GmlTimeInstant>
-		begin() {
-			return d_begin;
+		const std::map<XmlAttributeName, XmlAttributeValue> &
+		xml_attributes() const {
+			return d_xml_attributes;
 		}
 
-		boost::intrusive_ptr<GmlTimeInstant>
-		end() {
-			return d_end;
+		std::map<XmlAttributeName, XmlAttributeValue> &
+		xml_attributes() {
+			return d_xml_attributes;
 		}
 
 		virtual
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const {
-			visitor.visit_gml_time_period(*this);
+			visitor.visit_gml_orientable_curve(*this);
 		}
 
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		GmlTimePeriod(
-				boost::intrusive_ptr<GmlTimeInstant> begin_,
-				boost::intrusive_ptr<GmlTimeInstant> end_):
+		GmlOrientableCurve(
+				boost::intrusive_ptr<PropertyValue> base_curve_,
+				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_):
 			PropertyValue(),
-			d_begin(begin_),
-			d_end(end_)
+			d_base_curve(base_curve_),
+			d_xml_attributes(xml_attributes_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -103,27 +105,28 @@ namespace GPlatesModel {
 		//
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
-		GmlTimePeriod(
-				const GmlTimePeriod &other) :
+		GmlOrientableCurve(
+				const GmlOrientableCurve &other) :
 			PropertyValue(),
-			d_begin(other.d_begin),
-			d_end(other.d_end)
+			d_base_curve(other.d_base_curve),
+			d_xml_attributes(d_xml_attributes)
 		{  }
 
 	private:
 
-		boost::intrusive_ptr<GmlTimeInstant> d_begin;
-		boost::intrusive_ptr<GmlTimeInstant> d_end;
+		// FIXME:  Is it valid for this pointer to be NULL?  I don't think so...
+		boost::intrusive_ptr<PropertyValue> d_base_curve;
+		std::map<XmlAttributeName, XmlAttributeValue> d_xml_attributes;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive_ptr to another.
-		GmlTimePeriod &
-		operator=(const GmlTimePeriod &);
+		GmlOrientableCurve &
+		operator=(const GmlOrientableCurve &);
 
 	};
 
 }
 
-#endif  // GPLATES_MODEL_GMLTIMEPERIOD_H
+#endif  // GPLATES_MODEL_GMLORIENTABLECURVE_H

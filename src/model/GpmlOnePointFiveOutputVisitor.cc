@@ -23,6 +23,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
 #include "model/GmlLineString.h"
+#include "model/GmlOrientableCurve.h"
 #include "model/GmlTimeInstant.h"
 #include "model/GmlTimePeriod.h"
 #include "model/GpmlConstantValue.h"
@@ -106,6 +107,20 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 		pos_list.push_back(llp.longitude().dval());
 	}
 	d_output.write_line_of_decimal_content(pos_list.begin(), pos_list.end());
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_orientable_curve(
+		const GPlatesModel::GmlOrientableCurve &gml_orientable_curve) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:OrientableCurve",
+			gml_orientable_curve.xml_attributes().begin(),
+			gml_orientable_curve.xml_attributes().end());
+	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:baseCurve");
+	// FIXME:  Should we throw an exception if this value is NULL?
+	if (gml_orientable_curve.base_curve() != NULL) {
+		gml_orientable_curve.base_curve()->accept_visitor(*this);
+	}
 }
 
 
