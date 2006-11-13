@@ -183,6 +183,10 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_constant_value(
 			gpml_constant_value.value()->accept_visitor(*this);
 		}
 	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
+		d_output.write_line_of_string_content(gpml_constant_value.value_type().get());
+	}
 }
 
 

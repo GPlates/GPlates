@@ -41,6 +41,10 @@ namespace GPlatesModel {
 
 		static
 		GPlatesUtil::StringSet &
+		template_type_parameter_type_instance();
+
+		static
+		GPlatesUtil::StringSet &
 		text_content_instance();
 
 		static
@@ -59,6 +63,7 @@ namespace GPlatesModel {
 
 		static GPlatesUtil::StringSet *s_feature_type_instance;
 		static GPlatesUtil::StringSet *s_property_name_instance;
+		static GPlatesUtil::StringSet *s_template_type_parameter_type_instance;
 		static GPlatesUtil::StringSet *s_text_content_instance;
 		static GPlatesUtil::StringSet *s_xml_attribute_name_instance;
 		static GPlatesUtil::StringSet *s_xml_attribute_value_instance;

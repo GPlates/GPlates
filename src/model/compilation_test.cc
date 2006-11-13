@@ -50,8 +50,10 @@ create_reconstruction_plate_id(
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id =
 			GPlatesModel::GpmlPlateId::create(plate_id);
 
+	UnicodeString template_type_parameter_type_string("gpml:plateId");
+	GPlatesModel::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id_constant_value =
-			GPlatesModel::GpmlConstantValue::create(gpml_plate_id);
+			GPlatesModel::GpmlConstantValue::create(gpml_plate_id, template_type_parameter_type);
 
 	UnicodeString property_name_string("gpml:reconstructionPlateId");
 	GPlatesModel::PropertyName property_name(property_name_string);
@@ -80,8 +82,10 @@ create_centre_line_of(
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_orientable_curve =
 			GPlatesModel::GmlOrientableCurve::create(gml_line_string, xml_attributes);
 
+	UnicodeString template_type_parameter_type_string("gml:OrientableCurve");
+	GPlatesModel::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_orientable_curve_constant_value =
-			GPlatesModel::GpmlConstantValue::create(gml_orientable_curve);
+			GPlatesModel::GpmlConstantValue::create(gml_orientable_curve, template_type_parameter_type);
 
 	UnicodeString property_name_string("gpml:centreLineOf");
 	GPlatesModel::PropertyName property_name(property_name_string);

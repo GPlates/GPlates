@@ -40,6 +40,14 @@ GPlatesModel::StringSetSingletons::property_name_instance() {
 }
 
 GPlatesUtil::StringSet &
+GPlatesModel::StringSetSingletons::template_type_parameter_type_instance() {
+	if (s_template_type_parameter_type_instance == NULL) {
+		s_template_type_parameter_type_instance = new GPlatesUtil::StringSet();
+	}
+	return *s_template_type_parameter_type_instance;
+}
+
+GPlatesUtil::StringSet &
 GPlatesModel::StringSetSingletons::text_content_instance() {
 	if (s_text_content_instance == NULL) {
 		s_text_content_instance = new GPlatesUtil::StringSet();
@@ -65,6 +73,7 @@ GPlatesModel::StringSetSingletons::xml_attribute_value_instance() {
 
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_property_name_instance = NULL;
+GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_template_type_parameter_type_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_text_content_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_name_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_value_instance = NULL;

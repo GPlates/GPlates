@@ -24,6 +24,7 @@
 
 #include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
+#include "TemplateTypeParameterType.h"
 #include "ConstFeatureVisitor.h"
 
 
@@ -45,8 +46,9 @@ namespace GPlatesModel {
 		static
 		boost::intrusive_ptr<GpmlConstantValue>
 		create(
-				boost::intrusive_ptr<PropertyValue> value_) {
-			boost::intrusive_ptr<GpmlConstantValue> ptr(new GpmlConstantValue(value_));
+				boost::intrusive_ptr<PropertyValue> value_,
+				const TemplateTypeParameterType &value_type_) {
+			boost::intrusive_ptr<GpmlConstantValue> ptr(new GpmlConstantValue(value_, value_type_));
 			return ptr;
 		}
 
@@ -67,6 +69,16 @@ namespace GPlatesModel {
 			return d_value;
 		}
 
+		const TemplateTypeParameterType &
+		value_type() const {
+			return d_value_type;
+		}
+
+		TemplateTypeParameterType &
+		value_type() {
+			return d_value_type;
+		}
+
 		virtual
 		void
 		accept_visitor(
@@ -80,9 +92,11 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GpmlConstantValue(
-				boost::intrusive_ptr<PropertyValue> value_):
+				boost::intrusive_ptr<PropertyValue> value_,
+				const TemplateTypeParameterType &value_type_):
 			PropertyValue(),
-			d_value(value_)
+			d_value(value_),
+			d_value_type(value_type_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -93,13 +107,15 @@ namespace GPlatesModel {
 		GpmlConstantValue(
 				const GpmlConstantValue &other) :
 			PropertyValue(),
-			d_value(other.d_value)
+			d_value(other.d_value),
+			d_value_type(other.d_value_type)
 		{  }
 
 	private:
 
 		// FIXME:  Is it valid for this pointer to be NULL?  I don't think so...
 		boost::intrusive_ptr<PropertyValue> d_value;
+		TemplateTypeParameterType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
