@@ -96,7 +96,15 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 	// I/O, it's slow anyway; and (iii) we can cut it down to a single memory allocation if we
 	// reserve the size of the vector in advance.
 	boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> polyline_ptr = gml_line_string.polyline();
-	std::vector<double> pos_list(polyline_ptr->number_of_segments() * 2);
+	std::vector<double> pos_list;
+	// Reserve enough space for the coordinates, to avoid the need to reallocate.
+	//
+	// number of coords = 
+	//   (one for each segment start-point, plus one for the final end-point
+	//   (all other end-points are the start-point of the next segment, so are not counted)),
+	//   times two, since each point is a (lat, lon) duple.
+	pos_list.reserve((polyline_ptr->number_of_segments() + 1) * 2);
+
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = polyline_ptr->vertex_begin();
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline_ptr->vertex_end();
 	for ( ; iter != end; ++iter) {
