@@ -38,7 +38,45 @@ namespace GPlatesModel {
 	class XsString;
 
 	/**
-	 * A visitor to visit const features.
+	 * This class defines an abstract interface for a Visitor to visit const features.
+	 *
+	 * See the Visitor pattern (p.331) in Gamma95 for more information on the design and
+	 * operation of this class.  This class corresponds to the abstract Visitor class in the
+	 * pattern structure.
+	 *
+	 * @par The applicability of this class:
+	 * This Visitor is actually less applicable than you might initially think, since there are
+	 * relatively few situations in which you actually want to treat features as const:  Not
+	 * only will the feature be const when you are iterating through the feature collection or
+	 * traversing the structure of the feature, it will also be const as the target of any
+	 * caching references which were established during the iteration or traversal.
+	 *  - For example, you might think of a "find" operation as an ideal situation in which to
+	 *    treat features as const, since the "find" operation should not modify any of the
+	 *    features.  However, the purpose of the "find" operation is to return a reference to
+	 *    the matching feature(s), which may then be "highlighted" or "selected" in the GUI;
+	 *    the user might then wish to modify one of these features for which he has searched,
+	 *    which would not be possible if the feature were const.
+	 *  - Similarly, the interpolation of total reconstruction sequences or the reconstruction
+	 *    of reconstructable features might seem like non-modifying operations.  However, again
+	 *    the user is presented with a proxy value (a node in a reconstruction tree or a
+	 *    reconstructed feature geometry which is drawn on-screen) with which he will wish to
+	 *    interact, which will result in modification of the original features.
+	 *  - The writing of features to file for "save" operations or debugging purposes seems to
+	 *    be one of the few situations in which features really can be iterated and traversed
+	 *    as const objects.  The const-ness of the features is a useful aspect in this regard,
+	 *    to ensure that the features are not changed during the writing.
+	 *  - In general, you may find the FeatureVisitor class more applicable.
+	 *
+	 * @par Notes on the class implementation:
+	 *  - All the virtual member "visit" functions have (empty) definitions for convenience, so
+	 *    that derivations of this abstract base need only override the "visit" functions which
+	 *    interest them.
+	 *  - The "visit" functions explicitly include the name of the target type in the function
+	 *    name, to avoid the problem of name hiding in derived classes.  (If you declare *any*
+	 *    functions named 'f' in a derived class, the declaration will hide *all* functions
+	 *    named 'f' in the base class; if all the "visit" functions were simply called 'visit'
+	 *    and you wanted to override *any* of them in a derived class, you would have to
+	 *    override them all.)
 	 */
 	class ConstFeatureVisitor {
 
@@ -46,7 +84,7 @@ namespace GPlatesModel {
 
 		// We'll make this function pure virtual so that the class is abstract.  The class
 		// *should* be abstract, but wouldn't be unless we did this, since all the virtual
-		// member functions have (empty) definitions for convenience.
+		// member functions have (empty) definitions.
 		virtual
 		~ConstFeatureVisitor() = 0;
 
