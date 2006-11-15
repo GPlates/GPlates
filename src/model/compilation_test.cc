@@ -36,7 +36,10 @@
 #include "GmlOrientableCurve.h"
 #include "GmlTimePeriod.h"
 #include "GpmlConstantValue.h"
+#include "GpmlFiniteRotationSlerp.h"
+#include "GpmlIrregularSampling.h"
 #include "GpmlPlateId.h"
+#include "GpmlTimeSample.h"
 #include "SingleValuedPropertyContainer.h"
 #include "XsString.h"
 #include "GpmlOnePointFiveOutputVisitor.h"
@@ -45,7 +48,7 @@
 
 boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_reconstruction_plate_id(
-		unsigned long plate_id) {
+		const unsigned long &plate_id) {
 
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id =
 			GPlatesModel::GpmlPlateId::create(plate_id);
@@ -168,7 +171,7 @@ create_name(
 
 GPlatesModel::FeatureHandle
 create_isochron(
-		unsigned long plate_id,
+		const unsigned long &plate_id,
 		const double *points,
 		unsigned num_points,
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_begin,
@@ -205,10 +208,86 @@ create_isochron(
 }
 
 
+struct RotationFileFiveTuple {
+	double time;
+	double lat_of_euler_pole;
+	double lon_of_euler_pole;
+	double rotation_angle;
+	const char *comment;
+};
+
+
+boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+create_total_reconstruction_pole(
+		const RotationFileFiveTuple *five_tuples,
+		unsigned num_five_tuples) {
+
+	std::vector<GPlatesModel::GpmlTimeSample> time_samples;
+	GPlatesModel::TemplateTypeParameterType value_type("gpml:FiniteRotation");
+
+	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
+	GPlatesModel::XmlAttributeName xml_attribute_name("frame");
+	GPlatesModel::XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
+	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
+
+	for (unsigned i = 0; i < num_five_tuples; ++i) {
+		GPlatesModel::GeoTimeInstant geo_time_instant(five_tuples[i].time);
+		boost::intrusive_ptr<GPlatesModel::GmlTimeInstant> gml_time_instant =
+				GPlatesModel::GmlTimeInstant::create(geo_time_instant, xml_attributes);
+
+		UnicodeString comment_string(five_tuples[i].comment);
+		boost::intrusive_ptr<GPlatesModel::XsString> gml_description =
+				GPlatesModel::XsString::create(comment_string);
+
+		time_samples.push_back(GPlatesModel::GpmlTimeSample(NULL, gml_time_instant,
+				gml_description, value_type));
+	}
+
+	boost::intrusive_ptr<GPlatesModel::GpmlInterpolationFunction> gpml_finite_rotation_slerp =
+			GPlatesModel::GpmlFiniteRotationSlerp::create(value_type);
+
+	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_irregular_sampling =
+			GPlatesModel::GpmlIrregularSampling::create(time_samples,
+			gpml_finite_rotation_slerp, value_type);
+
+	UnicodeString property_name_string("gpml:totalReconstructionPole");
+	GPlatesModel::PropertyName property_name(property_name_string);
+	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
+			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
+			gpml_irregular_sampling, xml_attributes2, false);
+
+	return single_valued_property_container;
+}
+
+
+GPlatesModel::FeatureHandle
+create_total_recon_seq(
+		const unsigned long &fixed_plate_id,
+		const unsigned long &moving_plate_id,
+		const RotationFileFiveTuple *five_tuples,
+		unsigned num_five_tuples) {
+
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> total_reconstruction_pole_container =
+			create_total_reconstruction_pole(five_tuples, num_five_tuples);
+
+	boost::intrusive_ptr<GPlatesModel::FeatureRevision> revision = GPlatesModel::FeatureRevision::create();
+	revision->properties().push_back(total_reconstruction_pole_container);
+
+	GPlatesModel::FeatureId feature_id;
+	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
+	GPlatesModel::FeatureType feature_type(feature_type_string);
+	GPlatesModel::FeatureHandle feature_handle(feature_id, feature_type);
+	feature_handle.swap_revision(revision);
+
+	return feature_handle;
+}
+
+
 int
 main() {
 
-	unsigned long plate_id = 501;
+	static const unsigned long plate_id = 501;
 	static const double points[] = {
 		-5.5765,
 		69.2877,
@@ -224,12 +303,28 @@ main() {
 	UnicodeString codespace_of_name("EarthByte");
 
 	GPlatesModel::FeatureHandle isochron =
-			create_isochron(plate_id, points, num_points, geo_time_instant_begin, geo_time_instant_end,
-			description, name, codespace_of_name);
+			create_isochron(plate_id, points, num_points, geo_time_instant_begin,
+			geo_time_instant_end, description, name, codespace_of_name);
 
-	GPlatesFileIO::XmlOutputInterface xoi = GPlatesFileIO::XmlOutputInterface::create_for_stdout();
+	static const unsigned long fixed_plate_id = 511;
+	static const unsigned long moving_plate_id = 501;
+	static const RotationFileFiveTuple five_tuples[] = {
+		{	0.0,	90.0,	0.0,	0.0,	"IND-CIB India-Central Indian Basin"	},
+		{	9.9,	-8.7,	76.9,	2.75,	"IND-CIB AN 5 JYR 7/4/89"	},
+		{	20.2,	-5.2,	74.3,	5.93,	"IND-CIB Royer & Chang 1991"	},
+		{	83.5,	-5.2,	74.3,	5.93,	"IND-CIB switchover"	},
+	};
+	static const unsigned num_five_tuples = sizeof(five_tuples) / sizeof(five_tuples[0]);
+
+	GPlatesModel::FeatureHandle total_recon_seq =
+			create_total_recon_seq(fixed_plate_id, moving_plate_id, five_tuples,
+			num_five_tuples);
+
+	GPlatesFileIO::XmlOutputInterface xoi =
+			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
 	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
 	isochron.accept_visitor(v);
+	total_recon_seq.accept_visitor(v);
 
 	return 0;
 }
