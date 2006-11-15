@@ -70,6 +70,25 @@ create_reconstruction_plate_id(
 
 
 boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+create_reference_frame_plate_id(
+		const unsigned long &plate_id,
+		const char *which_reference_frame) {
+
+	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id =
+			GPlatesModel::GpmlPlateId::create(plate_id);
+
+	UnicodeString property_name_string(which_reference_frame);
+	GPlatesModel::PropertyName property_name(property_name_string);
+	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
+			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
+			gpml_plate_id, xml_attributes, false);
+
+	return single_valued_property_container;
+}
+
+
+boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_centre_line_of(
 		const double *points,
 		unsigned num_points) {
@@ -270,9 +289,15 @@ create_total_recon_seq(
 
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples, num_five_tuples);
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> fixed_reference_frame_container =
+			create_reference_frame_plate_id(fixed_plate_id, "gpml:fixedReferenceFrame");
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> moving_reference_frame_container =
+			create_reference_frame_plate_id(moving_plate_id, "gpml:movingReferenceFrame");
 
 	boost::intrusive_ptr<GPlatesModel::FeatureRevision> revision = GPlatesModel::FeatureRevision::create();
 	revision->properties().push_back(total_reconstruction_pole_container);
+	revision->properties().push_back(fixed_reference_frame_container);
+	revision->properties().push_back(moving_reference_frame_container);
 
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
