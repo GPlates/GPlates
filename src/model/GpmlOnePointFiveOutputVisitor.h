@@ -77,8 +77,23 @@ namespace GPlatesFileIO {
 
 		virtual
 		void
+		visit_gpml_finite_rotation_slerp(
+				const GPlatesModel::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
+
+		virtual
+		void
+		visit_gpml_irregular_sampling(
+				const GPlatesModel::GpmlIrregularSampling &gpml_irregular_sampling);
+
+		virtual
+		void
 		visit_gpml_plate_id(
 				const GPlatesModel::GpmlPlateId &gpml_plate_id);
+
+		virtual
+		void
+		visit_gpml_time_sample(
+				const GPlatesModel::GpmlTimeSample &gpml_time_sample);
 
 		virtual
 		void

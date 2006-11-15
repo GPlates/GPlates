@@ -33,7 +33,10 @@ namespace GPlatesModel {
 	class GmlTimeInstant;
 	class GmlTimePeriod;
 	class GpmlConstantValue;
+	class GpmlFiniteRotationSlerp;
+	class GpmlIrregularSampling;
 	class GpmlPlateId;
+	class GpmlTimeSample;
 	class SingleValuedPropertyContainer;
 	class XsString;
 
@@ -125,8 +128,23 @@ namespace GPlatesModel {
 
 		virtual
 		void
+		visit_gpml_finite_rotation_slerp(
+				const GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp) {  }
+
+		virtual
+		void
+		visit_gpml_irregular_sampling(
+				const GpmlIrregularSampling &gpml_irregular_sampling) {  }
+
+		virtual
+		void
 		visit_gpml_plate_id(
 				const GpmlPlateId &gpml_plate_id) {  }
+
+		virtual
+		void
+		visit_gpml_time_sample(
+				const GpmlTimeSample &gpml_time_sample) {  }
 
 		virtual
 		void

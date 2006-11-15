@@ -27,7 +27,10 @@
 #include "model/GmlTimeInstant.h"
 #include "model/GmlTimePeriod.h"
 #include "model/GpmlConstantValue.h"
+#include "model/GpmlFiniteRotationSlerp.h"
+#include "model/GpmlIrregularSampling.h"
 #include "model/GpmlPlateId.h"
+#include "model/GpmlTimeSample.h"
 #include "model/SingleValuedPropertyContainer.h"
 #include "model/XsString.h"
 #include "maths/PolylineOnSphere.h"
@@ -191,9 +194,77 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_constant_value(
 
 
 void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_finite_rotation_slerp(
+		const GPlatesModel::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:FiniteRotationSlerp");
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
+		d_output.write_line_of_string_content(gpml_finite_rotation_slerp.value_type().get());
+	}
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_irregular_sampling(
+		const GPlatesModel::GpmlIrregularSampling &gpml_irregular_sampling) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:IrregularSampling");
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:timeSamples");
+		std::vector<GPlatesModel::GpmlTimeSample>::const_iterator iter =
+				gpml_irregular_sampling.time_samples().begin();
+		std::vector<GPlatesModel::GpmlTimeSample>::const_iterator end =
+				gpml_irregular_sampling.time_samples().end();
+		for ( ; iter != end; ++iter) {
+			iter->accept_visitor(*this);
+		}
+	}
+	if (gpml_irregular_sampling.interpolation_function() != NULL) {
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:interpolationFunction");
+		gpml_irregular_sampling.interpolation_function()->accept_visitor(*this);
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
+		d_output.write_line_of_string_content(gpml_irregular_sampling.value_type().get());
+	}
+}
+
+
+void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_plate_id(
 		const GPlatesModel::GpmlPlateId &gpml_plate_id) {
 	d_output.write_line_of_integer_content(gpml_plate_id.value());
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_time_sample(
+		const GPlatesModel::GpmlTimeSample &gpml_time_sample) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:TimeSample");
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:value");
+		// FIXME:  Should we throw an exception if this value is NULL?
+		if (gpml_time_sample.value() != NULL) {
+			gpml_time_sample.value()->accept_visitor(*this);
+		}
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:validTime");
+		// FIXME:  Should we throw an exception if this value is NULL?
+		if (gpml_time_sample.valid_time() != NULL) {
+			gpml_time_sample.valid_time()->accept_visitor(*this);
+		}
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:description");
+		// At least we know that this one *is* allowed to be optional...
+		if (gpml_time_sample.description() != NULL) {
+			gpml_time_sample.description()->accept_visitor(*this);
+		}
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
+		d_output.write_line_of_string_content(gpml_time_sample.value_type().get());
+	}
 }
 
 
