@@ -90,7 +90,6 @@ namespace GPlatesModel {
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
 		GpmlConstantValue(
 				boost::intrusive_ptr<PropertyValue> value_,
 				const TemplateTypeParameterType &value_type_):
