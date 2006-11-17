@@ -23,6 +23,7 @@
 #define GPLATES_MATHS_POINTONSPHERE_H
 
 #include <iosfwd>
+#include <boost/intrusive_ptr.hpp>
 #include "UnitVector3D.h"
 
 
@@ -45,10 +46,23 @@ namespace GPlatesMaths {
 
 		public:
 
+			/**
+			 * The type used for the reference-count.
+			 */
+			typedef long ref_count_type;
+
+
+			static
+			boost::intrusive_ptr<PointOnSphere>
+			create_on_heap(
+					const UnitVector3D &uv);
+
+
 			explicit 
 			PointOnSphere(
-			 const UnitVector3D &uv):
-			 d_uv(uv) {  }
+					const UnitVector3D &uv):
+				d_ref_count(0),
+				d_uv(uv) {  }
 
 
 			/**
@@ -79,9 +93,9 @@ namespace GPlatesMaths {
 			 */
 			bool
 			is_close_to(
-			 const PointOnSphere &test_point,
-			 const real_t &closeness_inclusion_threshold,
-			 real_t &closeness) const;
+					const PointOnSphere &test_point,
+					const real_t &closeness_inclusion_threshold,
+					real_t &closeness) const;
 
 
 			/**
@@ -89,13 +103,54 @@ namespace GPlatesMaths {
 			 */
 			bool
 			lies_on_gca(
-			 const GreatCircleArc &gca) const;
+					const GreatCircleArc &gca) const;
+
+
+			/**
+			 * Increment the reference-count of this instance.
+			 */
+			void
+			increment_ref_count() const {
+				++d_ref_count;
+			}
+
+
+			/**
+			 * Decrement the reference-count of this instance.
+			 */
+			ref_count_type
+			decrement_ref_count() const {
+				return --d_ref_count;
+			}
 
 		private:
 
+			/**
+			 * This is the reference-count used by boost::intrusive_ptr.
+			 *
+			 * It is declared "mutable", because it is to be modified by
+			 * 'increment_ref_count' and 'decrement_ref_count', which are const member
+			 * functions.  They are const member functions because they do not modify
+			 * the "abstract state" of the instance; the reference-count is really only
+			 * memory-management book-keeping.
+			 */
+			mutable ref_count_type d_ref_count;
+
+			/**
+			 * This is the 3-D unit vector which defines the position of this point.
+			 */
 			UnitVector3D d_uv;
 
 	};
+
+
+	inline
+	boost::intrusive_ptr<PointOnSphere>
+	PointOnSphere::create_on_heap(
+			const UnitVector3D &uv) {
+		boost::intrusive_ptr<PointOnSphere> ptr(new PointOnSphere(uv));
+		return ptr;
+	}
 
 
 	/**
@@ -104,7 +159,7 @@ namespace GPlatesMaths {
 	inline
 	const PointOnSphere
 	get_antipodal_point(
-	 const PointOnSphere &p) {
+			const PointOnSphere &p) {
 
 		return PointOnSphere( -p.unitvector());
 	}
@@ -146,8 +201,8 @@ namespace GPlatesMaths {
 	inline
 	const real_t
 	calculate_closeness(
-	 const PointOnSphere &p1,
-	 const PointOnSphere &p2) {
+			const PointOnSphere &p1,
+			const PointOnSphere &p2) {
 
 		return dot(p1.unitvector(), p2.unitvector());
 	}
@@ -156,8 +211,8 @@ namespace GPlatesMaths {
 	inline
 	bool
 	operator==(
-	 const PointOnSphere &p1,
-	 const PointOnSphere &p2) {
+			const PointOnSphere &p1,
+			const PointOnSphere &p2) {
 
 		return (p1.unitvector() == p2.unitvector());
 	}
@@ -166,8 +221,8 @@ namespace GPlatesMaths {
 	inline
 	bool
 	operator!=(
-	 const PointOnSphere &p1,
-	 const PointOnSphere &p2) {
+			const PointOnSphere &p1,
+			const PointOnSphere &p2) {
 
 		return (p1.unitvector() != p2.unitvector());
 	}
@@ -179,8 +234,8 @@ namespace GPlatesMaths {
 	inline
 	bool
 	points_are_coincident(
-	 const PointOnSphere &p1,
-	 const PointOnSphere &p2) {
+			const PointOnSphere &p1,
+			const PointOnSphere &p2) {
 
 		return (p1.unitvector() == p2.unitvector());
 	}
@@ -193,8 +248,8 @@ namespace GPlatesMaths {
 	inline
 	bool
 	diametric(
-	 const PointOnSphere &p1,
-	 const PointOnSphere &p2) {
+			const PointOnSphere &p1,
+			const PointOnSphere &p2) {
 
 		return (collinear(p1.unitvector(), p2.unitvector()));
 	}
@@ -202,8 +257,26 @@ namespace GPlatesMaths {
 
 	std::ostream &
 	operator<<(
-	 std::ostream &os,
-	 const PointOnSphere &p);
+			std::ostream &os,
+			const PointOnSphere &p);
+
+
+	inline
+	void
+	intrusive_ptr_add_ref(
+			const PointOnSphere *p) {
+		p->increment_ref_count();
+	}
+
+
+	inline
+	void
+	intrusive_ptr_release(
+			const PointOnSphere *p) {
+		if (p->decrement_ref_count() == 0) {
+			delete p;
+		}
+	}
 
 }
 
