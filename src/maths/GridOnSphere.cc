@@ -41,7 +41,7 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 	 * and the great-circle of longitude (which is defined to be "directed"
 	 * from the South Pole up to the origin).
 	 */
-	SmallCircle line_of_lat(GPlatesMaths::NorthPole.unitvector(), origin);
+	SmallCircle line_of_lat(GPlatesMaths::NorthPole.position_vector(), origin);
 	GreatCircle line_of_lon(GPlatesMaths::SouthPole, origin);
 
 	/*
@@ -94,11 +94,11 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 	 * caused by the boundary of the longitude system.
 	 */
 	real_t delta_along_lat =
-	 calcDeltaAlongLat(origin.unitvector(), next_along_lat.unitvector(),
+	 calcDeltaAlongLat(origin.position_vector(), next_along_lat.position_vector(),
 	                   line_of_lat.axisvector());
 
 	real_t delta_along_lon =
-	 calcDelta(origin.unitvector(), next_along_lon.unitvector(),
+	 calcDelta(origin.position_vector(), next_along_lon.position_vector(),
 	           line_of_lon.axisvector());
 
 	return GridOnSphere(line_of_lat, line_of_lon, origin,
@@ -109,7 +109,7 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 void
 GPlatesMaths::GridOnSphere::EnsureValidOrigin(const PointOnSphere &o) {
 
-	real_t dp = dot(o.unitvector(), GPlatesMaths::NorthPole.unitvector());
+	real_t dp = dot(o.position_vector(), GPlatesMaths::NorthPole.position_vector());
 	if (dp >= 1.0) {
 
 		// origin lies on North pole

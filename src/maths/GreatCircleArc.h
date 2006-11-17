@@ -173,7 +173,7 @@ namespace GPlatesMaths {
 		 d_start_point(p1),
 		 d_end_point(p2),
 		 d_rot_axis(rot_axis),
-		 d_dot_of_endpoints(dot(p1.unitvector(), p2.unitvector())) {  }
+		 d_dot_of_endpoints(dot(p1.position_vector(), p2.position_vector())) {  }
 
 	 private:
 

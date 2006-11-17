@@ -55,14 +55,14 @@ namespace GPlatesMaths {
 			static
 			boost::intrusive_ptr<PointOnSphere>
 			create_on_heap(
-					const UnitVector3D &uv);
+					const UnitVector3D &position_vector_);
 
 
 			explicit 
 			PointOnSphere(
-					const UnitVector3D &uv):
+					const UnitVector3D &position_vector_):
 				d_ref_count(0),
-				d_uv(uv) {  }
+				d_position_vector(position_vector_) {  }
 
 
 			/**
@@ -70,10 +70,10 @@ namespace GPlatesMaths {
 			 * and change the return type to 'const UnitVector3D &'
 			 * as per the style guide.
 			 */
-			UnitVector3D
-			unitvector() const {
+			const UnitVector3D &
+			position_vector() const {
 				
-				return d_uv;
+				return d_position_vector;
 			}
 
 
@@ -137,9 +137,9 @@ namespace GPlatesMaths {
 			mutable ref_count_type d_ref_count;
 
 			/**
-			 * This is the 3-D unit vector which defines the position of this point.
+			 * This is the 3-D unit-vector which defines the position of this point.
 			 */
-			UnitVector3D d_uv;
+			UnitVector3D d_position_vector;
 
 	};
 
@@ -147,8 +147,8 @@ namespace GPlatesMaths {
 	inline
 	boost::intrusive_ptr<PointOnSphere>
 	PointOnSphere::create_on_heap(
-			const UnitVector3D &uv) {
-		boost::intrusive_ptr<PointOnSphere> ptr(new PointOnSphere(uv));
+			const UnitVector3D &position_vector_) {
+		boost::intrusive_ptr<PointOnSphere> ptr(new PointOnSphere(position_vector_));
 		return ptr;
 	}
 
@@ -161,7 +161,7 @@ namespace GPlatesMaths {
 	get_antipodal_point(
 			const PointOnSphere &p) {
 
-		return PointOnSphere( -p.unitvector());
+		return PointOnSphere( -p.position_vector());
 	}
 
 
@@ -204,7 +204,7 @@ namespace GPlatesMaths {
 			const PointOnSphere &p1,
 			const PointOnSphere &p2) {
 
-		return dot(p1.unitvector(), p2.unitvector());
+		return dot(p1.position_vector(), p2.position_vector());
 	}
 
 
@@ -214,7 +214,7 @@ namespace GPlatesMaths {
 			const PointOnSphere &p1,
 			const PointOnSphere &p2) {
 
-		return (p1.unitvector() == p2.unitvector());
+		return (p1.position_vector() == p2.position_vector());
 	}
 
 
@@ -224,7 +224,7 @@ namespace GPlatesMaths {
 			const PointOnSphere &p1,
 			const PointOnSphere &p2) {
 
-		return (p1.unitvector() != p2.unitvector());
+		return (p1.position_vector() != p2.position_vector());
 	}
 
 
@@ -237,7 +237,7 @@ namespace GPlatesMaths {
 			const PointOnSphere &p1,
 			const PointOnSphere &p2) {
 
-		return (p1.unitvector() == p2.unitvector());
+		return (p1.position_vector() == p2.position_vector());
 	}
 
 
@@ -251,7 +251,7 @@ namespace GPlatesMaths {
 			const PointOnSphere &p1,
 			const PointOnSphere &p2) {
 
-		return (collinear(p1.unitvector(), p2.unitvector()));
+		return (collinear(p1.position_vector(), p2.position_vector()));
 	}
 
 

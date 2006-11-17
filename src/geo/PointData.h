@@ -60,7 +60,7 @@ namespace GPlatesGeo
 			 const {
 
 				return GPlatesMaths::dot(
-				 _point.unitvector(), pos.unitvector());
+				 _point.position_vector(), pos.position_vector());
 			}
 
 		private:

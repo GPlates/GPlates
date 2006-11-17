@@ -26,8 +26,8 @@ bool
 GPlatesMaths::PointLiesOnGreatCircleArc::operator()(
  const PointOnSphere &test_point) const {
 
-	const UnitVector3D &start_uv = d_arc_start.unitvector();
-	const UnitVector3D &test_uv = test_point.unitvector();
+	const UnitVector3D &start_uv = d_arc_start.position_vector();
+	const UnitVector3D &test_uv = test_point.position_vector();
 
 	/*
 	 * The normal to the plane which contains the start-point of the arc

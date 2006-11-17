@@ -52,6 +52,6 @@ GPlatesMaths::operator<<(
  std::ostream &os,
  const PointOnSphere &p) {
 
-	os << p.unitvector();
+	os << p.position_vector();
 	return os;
 }

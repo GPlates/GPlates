@@ -31,8 +31,8 @@ GPlatesMaths::GreatCircleArc::test_parameter_status(
  const PointOnSphere &p1,
  const PointOnSphere &p2) {
 
-	const UnitVector3D &u1 = p1.unitvector();
-	const UnitVector3D &u2 = p2.unitvector();
+	const UnitVector3D &u1 = p1.position_vector();
+	const UnitVector3D &u2 = p2.position_vector();
 
 	real_t dp = dot(u1, u2);
 
@@ -98,8 +98,8 @@ GPlatesMaths::GreatCircleArc::create(
 	 *
 	 * To do this, we calculate the cross product.
 	 */
-	const UnitVector3D &u1 = p1.unitvector();
-	const UnitVector3D &u2 = p2.unitvector();
+	const UnitVector3D &u1 = p1.position_vector();
+	const UnitVector3D &u2 = p2.position_vector();
 
 	Vector3D v = cross(u1, u2);
 
@@ -166,8 +166,8 @@ GPlatesMaths::GreatCircleArc::create(
 	 * To do this, we calculate the cross product.
 	 * (We use the Vector3D cross product, which is faster).
 	 */
-	const UnitVector3D &u1 = p1.unitvector();
-	const UnitVector3D &u2 = p2.unitvector();
+	const UnitVector3D &u1 = p1.position_vector();
+	const UnitVector3D &u2 = p2.position_vector();
 
 	Vector3D v = cross(Vector3D(u1), Vector3D(u2));
 	if ( ! collinear(v, Vector3D(rot_axis))) {
@@ -234,7 +234,7 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 
 	// First, a few convenient aliases.
 	const UnitVector3D &n = rotation_axis();  // The "normal" to the GC.
-	const UnitVector3D &t = test_point.unitvector();
+	const UnitVector3D &t = test_point.position_vector();
 
 	real_t closeness_to_poles = abs(dot(t, n));
 
@@ -262,8 +262,8 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 		 */
 
 		// A few more convenient aliases.
-		const UnitVector3D &a = start_point().unitvector();
-		const UnitVector3D &b = end_point().unitvector();
+		const UnitVector3D &a = start_point().position_vector();
+		const UnitVector3D &b = end_point().position_vector();
 
 		// The unit-vector of the "closest point" on the GC.
 		const UnitVector3D c = calculate_u_of_closest(t, n);
@@ -331,11 +331,11 @@ GPlatesMaths::arcs_are_near_each_other(
 
 	real_t
 	 arc1_start_dot_arc2_start =
-	  dot(arc1.start_point().unitvector(), arc2.start_point().unitvector()),
+	  dot(arc1.start_point().position_vector(), arc2.start_point().position_vector()),
 	 arc1_start_dot_arc2_end =
-	  dot(arc1.start_point().unitvector(), arc2.end_point().unitvector()),
+	  dot(arc1.start_point().position_vector(), arc2.end_point().position_vector()),
 	 arc1_end_dot_arc2_start =
-	  dot(arc1.end_point().unitvector(), arc2.start_point().unitvector());
+	  dot(arc1.end_point().position_vector(), arc2.start_point().position_vector());
 
 	/*
 	 * arc1 and arc2 are "near" each other if one of the following is true:

@@ -53,7 +53,7 @@ namespace GPlatesMaths
 			SmallCircle (const UnitVector3D &axis,
 			             const PointOnSphere &p)
 				: _axis (axis),
-				  _cos_colat(dot(axis, p.unitvector ())) {
+				  _cos_colat(dot(axis, p.position_vector())) {
 
 				AssertInvariantHolds ();
 			}
@@ -110,7 +110,7 @@ namespace GPlatesMaths
 			bool
 			contains (const PointOnSphere &pt) const {
 
-				real_t dp = dot (normal(), pt.unitvector ());
+				real_t dp = dot(normal(), pt.position_vector());
 				return (dp == _cos_colat);
 			}
 

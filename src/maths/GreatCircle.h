@@ -89,7 +89,7 @@ namespace GPlatesMaths
 			 const PointOnSphere &pt) const {
 
 				return
-				 perpendicular(axisvector(), pt.unitvector());
+				 perpendicular(axisvector(), pt.position_vector());
 			}
 
 #if 0  // No longer needed

@@ -114,9 +114,9 @@ GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
  const PointOnSphere& point) {
 
 	const real_t
-	 &x = point.unitvector().x(),
-	 &y = point.unitvector().y(),
-	 &z = point.unitvector().z();
+	 &x = point.position_vector().x(),
+	 &y = point.position_vector().y(),
+	 &z = point.position_vector().z();
 
 	// arcsin(theta) is defined for all theta in [-PI/2, PI/2].
 	real_t lat = asin(z);

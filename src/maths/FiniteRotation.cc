@@ -66,7 +66,7 @@ GPlatesMaths::FiniteRotation::create(
  const real_t &rotation_angle,
  const real_t &point_in_time) {
 
-	const UnitVector3D &rotation_axis = euler_pole.unitvector();
+	const UnitVector3D &rotation_axis = euler_pole.position_vector();
 	UnitQuaternion3D uq =
 	 UnitQuaternion3D::create_rotation(rotation_axis, rotation_angle);
 
@@ -317,7 +317,7 @@ GPlatesMaths::operator<<(
 		 uq.get_rotation_params();
 
 		PointOnSphere p(params.axis);  // the point
-		PointOnSphere antip(-p.unitvector());  // the antipodal point
+		PointOnSphere antip( -p.position_vector());  // the antipodal point
 
 		os
 		 << "(pole = "

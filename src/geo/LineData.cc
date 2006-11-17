@@ -84,5 +84,5 @@ GPlatesGeo::LineData::proximity(
 		 */
 	}
 	
-	return dot(pos.unitvector(), _line.begin()->start_point().unitvector());
+	return dot(pos.position_vector(), _line.begin()->start_point().position_vector());
 }

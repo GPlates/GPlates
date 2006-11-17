@@ -256,8 +256,8 @@ namespace GPlatesMaths
 	 const FiniteRotation &r,
 	 const PointOnSphere &p) {
 
-		UnitVector3D rot_uv = r * p.unitvector();
-		return PointOnSphere(rot_uv);
+		UnitVector3D rotated_position_vector = r * p.position_vector();
+		return PointOnSphere(rotated_position_vector);
 	}
 
 

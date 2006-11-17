@@ -36,7 +36,7 @@ using namespace GPlatesState;
 static void
 CallVertexWithPoint(const PointOnSphere& p)
 {
-	UnitVector3D uv = p.unitvector();
+	const UnitVector3D &uv = p.position_vector();
 	glVertex3d(uv.x().dval(), uv.y().dval(), uv.z().dval());
 }
 

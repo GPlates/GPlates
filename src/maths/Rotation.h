@@ -193,7 +193,7 @@ namespace GPlatesMaths
 		const PointOnSphere &final) {
 
 		return
-		 Rotation::Create(initial.unitvector(), final.unitvector());
+		 Rotation::Create(initial.position_vector(), final.position_vector());
 	}
 
 
@@ -205,8 +205,7 @@ namespace GPlatesMaths
 	inline PointOnSphere
 	operator*(const Rotation &r, const PointOnSphere &p) {
 
-		UnitVector3D u = p.unitvector();
-		return PointOnSphere(r * u);
+		return PointOnSphere(r * p.position_vector());
 	}
 }
 
