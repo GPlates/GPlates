@@ -68,7 +68,7 @@ namespace GPlatesMaths {
 	 */
 	class PolylineOnSphere {
 
-	 public:
+	public:
 
 		/**
 		 * The type of the sequence of great circle arcs.
@@ -131,7 +131,7 @@ namespace GPlatesMaths {
 			typedef PolylineOnSphere::const_iterator
 			 gca_const_iterator;
 
-		  public:
+		public:
 
 			/**
 			 * Create the "begin" vertex iterator for @a poly.
@@ -303,7 +303,7 @@ namespace GPlatesMaths {
 				return old;
 			}
 
-		  private:
+		private:
 
 			/**
 			 * Gee, why do you think this is private?
@@ -634,9 +634,10 @@ namespace GPlatesMaths {
 			return --d_ref_count;
 		}
 
-	 private:
+	private:
 
-		PolylineOnSphere() {  }
+		PolylineOnSphere():
+			d_ref_count(0) {  }
 
 
 		/**
@@ -673,6 +674,11 @@ namespace GPlatesMaths {
 
 		/**
 		 * This is the reference-count used by boost::intrusive_ptr.
+		 *
+		 * It is declared "mutable", because it is to be modified by 'increment_ref_count'
+		 * and 'decrement_ref_count', which are const member functions.  They are const
+		 * member functions because they do not modify the "abstract state" of the
+		 * instance; the reference-count is really only memory-management book-keeping.
 		 */
 		mutable ref_count_type d_ref_count;
 
