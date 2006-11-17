@@ -65,11 +65,6 @@ namespace GPlatesMaths {
 				d_position_vector(position_vector_) {  }
 
 
-			/**
-			 * FIXME: change this function name to 'unit_vector'
-			 * and change the return type to 'const UnitVector3D &'
-			 * as per the style guide.
-			 */
 			const UnitVector3D &
 			position_vector() const {
 				
@@ -238,20 +233,6 @@ namespace GPlatesMaths {
 			const PointOnSphere &p2) {
 
 		return (p1.position_vector() == p2.position_vector());
-	}
-
-
-	/**
-	 * True iff points are equal or antipodal
-	 * FIXME:  This function name sucks.  Fix it.
-	 */
-	inline
-	bool
-	diametric(
-			const PointOnSphere &p1,
-			const PointOnSphere &p2) {
-
-		return (collinear(p1.position_vector(), p2.position_vector()));
 	}
 
 
