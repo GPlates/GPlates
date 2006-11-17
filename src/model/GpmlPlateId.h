@@ -22,9 +22,7 @@
 #ifndef GPLATES_MODEL_GPMLPLATEID_H
 #define GPLATES_MODEL_GPMLPLATEID_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
-#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {

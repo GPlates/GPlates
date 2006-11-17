@@ -23,12 +23,13 @@
 #define GPLATES_MODEL_PROPERTYVALUE_H
 
 #include <boost/intrusive_ptr.hpp>
+// Even though we could make do with a forward declaration inside this header, every derived class
+// of 'PropertyValue' will need to #include "ConstFeatureVisitor.h" anyway, so we may as well
+// include it here.
+#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {
-
-	// Forward declaration for the function 'accept_visitor'.
-	class ConstFeatureVisitor;
 
 	class PropertyValue {
 

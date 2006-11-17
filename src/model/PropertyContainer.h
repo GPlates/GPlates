@@ -24,15 +24,16 @@
 
 #include <map>
 #include <boost/intrusive_ptr.hpp>
+// Even though we could make do with a forward declaration inside this header, every derived class
+// of 'PropertyContainer' will need to #include "ConstFeatureVisitor.h" anyway, so we may as well
+// include it here.
+#include "ConstFeatureVisitor.h"
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
 
 
 namespace GPlatesModel {
-
-	// Forward declaration for the function 'accept_visitor'.
-	class ConstFeatureVisitor;
 
 	class PropertyContainer {
 

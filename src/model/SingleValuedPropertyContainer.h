@@ -22,10 +22,8 @@
 #ifndef GPLATES_MODEL_SINGLEVALUEDPROPERTYCONTAINER_H
 #define GPLATES_MODEL_SINGLEVALUEDPROPERTYCONTAINER_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyContainer.h"
 #include "PropertyValue.h"
-#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {

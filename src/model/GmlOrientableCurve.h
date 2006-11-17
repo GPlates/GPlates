@@ -23,9 +23,7 @@
 #define GPLATES_MODEL_GMLORIENTABLECURVE_H
 
 #include <map>
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
-#include "ConstFeatureVisitor.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
 

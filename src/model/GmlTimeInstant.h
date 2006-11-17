@@ -23,10 +23,8 @@
 #define GPLATES_MODEL_GMLTIMEINSTANT_H
 
 #include <map>
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
 #include "GeoTimeInstant.h"
-#include "ConstFeatureVisitor.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
 

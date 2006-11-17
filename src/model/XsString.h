@@ -22,10 +22,8 @@
 #ifndef GPLATES_MODEL_XSSTRING_H
 #define GPLATES_MODEL_XSSTRING_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
 #include "TextContent.h"
-#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {

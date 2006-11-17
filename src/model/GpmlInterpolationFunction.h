@@ -24,7 +24,6 @@
 
 #include "PropertyValue.h"
 #include "TemplateTypeParameterType.h"
-#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {

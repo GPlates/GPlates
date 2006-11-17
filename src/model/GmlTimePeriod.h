@@ -22,10 +22,8 @@
 #ifndef GPLATES_MODEL_GMLTIMEPERIOD_H
 #define GPLATES_MODEL_GMLTIMEPERIOD_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
 #include "GmlTimeInstant.h"
-#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {

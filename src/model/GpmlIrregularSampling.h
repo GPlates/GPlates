@@ -23,12 +23,10 @@
 #define GPLATES_MODEL_GPMLIRREGULARSAMPLING_H
 
 #include <vector>
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
 #include "GpmlTimeSample.h"
 #include "GpmlInterpolationFunction.h"
 #include "TemplateTypeParameterType.h"
-#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {

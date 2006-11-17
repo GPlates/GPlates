@@ -22,10 +22,8 @@
 #ifndef GPLATES_MODEL_GPMLCONSTANTVALUE_H
 #define GPLATES_MODEL_GPMLCONSTANTVALUE_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
 #include "TemplateTypeParameterType.h"
-#include "ConstFeatureVisitor.h"
 
 
 namespace GPlatesModel {

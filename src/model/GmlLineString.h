@@ -23,9 +23,7 @@
 #define GPLATES_MODEL_GMLLINESTRING_H
 
 #include <vector>
-#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
-#include "ConstFeatureVisitor.h"
 
 
 // Forward declaration for intrusive-pointer.
