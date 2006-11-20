@@ -3,9 +3,9 @@
 
 package_is_beta="yes"		# change this to "no" for releases
 
-AC_INIT([GPlates], [0.7], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
+AC_INIT([GPlates], [0.9-pre], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
 AC_PREREQ(2.53)
-AC_DEFINE([COPYRIGHT_STRING], [], ["Copyright (C) 2003-2006 The University of Sydney"])
+AC_DEFINE([COPYRIGHT_STRING], [], ["Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia"])
 
 AC_CONFIG_SRCDIR(src/gplates_main.cc)
 AC_CONFIG_AUX_DIR(config)
