@@ -240,9 +240,9 @@ AC_CHECK_HEADERS([unicode/unistr.h], [], AC_MSG_ERROR([[
 # Other software dependencies.
 ##
 
-# Check for dot (from graphviz package) for doxygen.conf
-# WARNING: does not verify this is the _real_ dot program we want
-AC_CHECK_PROG([HAVE_DOT], [dot], [YES], [NO])
+# Check for "dot" (from the Graphviz package) for doxygen.conf.
+# WARNING:  This does not verify that this is the *real* "dot" program we want.
+AC_CHECK_PROG([HAVE_DOT], [dot], [yes], [no])
 
 
 EXTRA_CFLAGS=""
