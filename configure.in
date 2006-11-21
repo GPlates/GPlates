@@ -166,11 +166,21 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 # ???
 
 # ICU
+# Note that we need to explicitly "test for" every ICU library which is to be
+# linked into the executable, so that a linking directive for each is generated
+# in the "configure" script.
 AC_CHECK_LIB([icui18n], [main], [], AC_MSG_ERROR([[
 !!
 !!  You don't appear to have the International Components for Unicode (ICU)
-!!  shared library installed.  Your operating system vendor may provide a
-!!  pre-compiled package, or you can download the source from
+!!  "i18n" shared library installed.  Your operating system vendor may provide
+!!  a pre-compiled package, or you can download the source from
+!!     http://icu.sourceforge.net/
+!!]]))
+AC_CHECK_LIB([icuio], [main], [], AC_MSG_ERROR([[
+!!
+!!  You don't appear to have the International Components for Unicode (ICU)
+!!  "io" shared library installed.  Your operating system vendor may provide
+!!  a pre-compiled package, or you can download the source from
 !!     http://icu.sourceforge.net/
 !!]]))
 
@@ -331,12 +341,13 @@ AC_OUTPUT(Makefile
 	doc/doxygen.conf
 	doc/Makefile
 	src/Makefile
+	src/controls/Makefile
 	src/fileio/Makefile
 	src/geo/Makefile
 	src/global/Makefile
 	src/gui/Makefile
 	src/maths/Makefile
-	src/controls/Makefile
+	src/model/Makefile
 	src/state/Makefile
 	src/util/Makefile)
 
