@@ -335,21 +335,12 @@ if test "$found_wxwid" = "no"; then
 	exit 1
 fi
 
+# Find all Makefiles
+define(`Makefiles', `esyscmd(find * -name Makefile.am | sed s/.am$//)')
 
 # Write output
-AC_OUTPUT(Makefile
-	doc/doxygen.conf
-	doc/Makefile
-	src/Makefile
-	src/controls/Makefile
-	src/fileio/Makefile
-	src/geo/Makefile
-	src/global/Makefile
-	src/gui/Makefile
-	src/maths/Makefile
-	src/model/Makefile
-	src/state/Makefile
-	src/util/Makefile)
+AC_OUTPUT(Makefiles
+	doc/doxygen.conf)
 
 
 
