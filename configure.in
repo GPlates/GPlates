@@ -245,15 +245,15 @@ AC_CHECK_HEADERS([unicode/unistr.h], [], AC_MSG_ERROR([[
 AC_CHECK_PROG([HAVE_DOT], [dot], [yes], [no])
 
 
-EXTRA_CFLAGS=""
-
 # Using '--enable-dev' changes compile-time flags to be more strict
 turn_on_dev="no"
 AC_ARG_ENABLE(dev, [  --enable-dev            Enable developer flags],
 [
 	turn_on_dev="yes"
-	EXTRA_CFLAGS="$EXTRA_CFLAGS -Wall -pedantic -ansi -W -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wctor-dtor-privacy -Wnon-virtual-dtor -Woverloaded-virtual -Wpointer-arith -Werror -g$debug_format"
-# This warning breaks wxWidgets: -Wold-style-cast 
+	common_flags="-Wall -pedantic -W -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wpointer-arith -Werror"
+	CFLAGS="$CFLAGS $common_flags -ansi"
+	CXXFLAGS="$CXXFLAGS $common_flags -Wctor-dtor-privacy -Wnon-virtual-dtor -Woverloaded-virtual"
+# This C++ warning breaks wxWidgets: -Wold-style-cast 
 ])
 if test "$turn_on_dev" != "yes"; then
 	if test "$package_is_beta" = "yes"; then
@@ -266,7 +266,8 @@ turn_on_opt="no"
 AC_ARG_ENABLE(opt, [  --enable-opt            Enable optimisation flags],
 [
 	turn_on_opt="yes"
-	EXTRA_CFLAGS="$EXTRA_CFLAGS -fshort-enums -fstrength-reduce"
+	CFLAGS="$CFLAGS -fshort-enums -fstrength-reduce"
+	CXXFLAGS="$CXXFLAGS -fshort-enums -fstrength-reduce"
 ])
 
 # Using '--enable-prof' enables profiling flags
@@ -274,8 +275,9 @@ turn_on_prof="no"
 AC_ARG_ENABLE(prof, [  --enable-prof           Enable profiling],
 [
 	turn_on_prof="yes"
-	EXTRA_CFLAGS="$EXTRA_CFLAGS -g -pg"
-	EXTRA_LDFLAGS="-g -pg"
+	CFLAGS="$CFLAGS -g -pg"
+	CXXFLAGS="$CXXFLAGS -g -pg"
+	LDFLAGS="$LDFLAGS -g -pg"
 ])
 
 
@@ -315,10 +317,6 @@ if test "$probe_wxwid" != "no"; then
 fi
 
 
-AC_SUBST(EXTRA_CFLAGS)
-AC_SUBST(EXTRA_LDFLAGS)
-
-
 # Fail if wxWidgets not found
 if test "$found_wxwid" = "no"; then
 	echo "#########################################################"
@@ -335,12 +333,20 @@ if test "$found_wxwid" = "no"; then
 	exit 1
 fi
 
-# Find all Makefiles
-define(`Makefiles', `esyscmd(find * -name Makefile.am | sed s/.am$//)')
-
 # Write output
-AC_OUTPUT(Makefiles
-	doc/doxygen.conf)
+AC_OUTPUT(Makefile
+        doc/doxygen.conf
+        doc/Makefile
+        src/Makefile
+        src/controls/Makefile
+        src/fileio/Makefile
+        src/geo/Makefile
+        src/global/Makefile
+        src/gui/Makefile
+        src/maths/Makefile
+        src/model/Makefile
+        src/state/Makefile
+        src/util/Makefile)
 
 
 
