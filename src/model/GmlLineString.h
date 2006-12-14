@@ -85,9 +85,10 @@ namespace GPlatesModel {
 			return d_polyline;
 		}
 
-		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
-		polyline() {
-			return d_polyline;
+		void
+		set_polyline(
+				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> p) {
+			d_polyline = p;
 		}
 
 		virtual

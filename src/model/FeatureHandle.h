@@ -70,12 +70,10 @@ namespace GPlatesModel {
 			return d_current_revision;
 		}
 
-		// Yes, I'm pretty sure that the parameter should be pass-by-reference rather than
-		// pass-by-value.
 		void
-		swap_revision(
-				boost::intrusive_ptr<FeatureRevision> &rev) {
-			d_current_revision.swap(rev);
+		set_current_revision(
+				boost::intrusive_ptr<FeatureRevision> rev) {
+			d_current_revision = rev;
 		}
 
 		void

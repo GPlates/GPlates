@@ -75,6 +75,12 @@ namespace GPlatesModel {
 			return d_base_curve;
 		}
 
+		void
+		set_base_curve(
+				boost::intrusive_ptr<PropertyValue> bc) {
+			d_base_curve = bc;
+		}
+
 		const std::map<XmlAttributeName, XmlAttributeValue> &
 		xml_attributes() const {
 			return d_xml_attributes;

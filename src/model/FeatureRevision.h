@@ -55,8 +55,8 @@ namespace GPlatesModel {
 		static
 		boost::intrusive_ptr<FeatureRevision>
 		create(
-				const RevisionId &revision_id) {
-			boost::intrusive_ptr<FeatureRevision> ptr(new FeatureRevision(revision_id));
+				const RevisionId &revision_id_) {
+			boost::intrusive_ptr<FeatureRevision> ptr(new FeatureRevision(revision_id_));
 			return ptr;
 		}
 
