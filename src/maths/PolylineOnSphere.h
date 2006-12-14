@@ -487,7 +487,7 @@ namespace GPlatesMaths {
 		 */
 		template< typename C >
 		static
-		boost::intrusive_ptr< PolylineOnSphere >
+		const boost::intrusive_ptr< PolylineOnSphere >
 		create_on_heap(
 		 const C &coll);
 
@@ -873,7 +873,7 @@ namespace GPlatesMaths {
 
 
 	template< typename C >
-	boost::intrusive_ptr< PolylineOnSphere >
+	const boost::intrusive_ptr< PolylineOnSphere >
 	PolylineOnSphere::create_on_heap(
 	 const C &coll) {
 

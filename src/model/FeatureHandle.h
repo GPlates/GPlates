@@ -88,7 +88,7 @@ namespace GPlatesModel {
 		 * This is the overloading of this function for const FeatureHandle instances; it
 		 * returns a pointer to a const FeatureRevision instance.
 		 */
-		boost::intrusive_ptr<const FeatureRevision>
+		const boost::intrusive_ptr<const FeatureRevision>
 		current_revision() const {
 			return d_current_revision;
 		}
@@ -108,7 +108,7 @@ namespace GPlatesModel {
 		 * To switch the FeatureRevision within this FeatureHandle instance, use the
 		 * function @a set_current_revision below.
 		 */
-		boost::intrusive_ptr<FeatureRevision>
+		const boost::intrusive_ptr<FeatureRevision>
 		current_revision() {
 			return d_current_revision;
 		}

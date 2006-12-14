@@ -47,7 +47,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GpmlPlateId>
+		const boost::intrusive_ptr<GpmlPlateId>
 		create(
 				const unsigned long &value_) {
 			boost::intrusive_ptr<GpmlPlateId> ptr(new GpmlPlateId(value_));
@@ -55,7 +55,7 @@ namespace GPlatesModel {
 		}
 
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GpmlPlateId(*this));
 			return dup;

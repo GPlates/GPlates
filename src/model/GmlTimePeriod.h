@@ -48,7 +48,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GmlTimePeriod>
+		const boost::intrusive_ptr<GmlTimePeriod>
 		create(
 				boost::intrusive_ptr<GmlTimeInstant> begin_,
 				boost::intrusive_ptr<GmlTimeInstant> end_) {
@@ -57,28 +57,28 @@ namespace GPlatesModel {
 		}
 
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GmlTimePeriod(*this));
 			return dup;
 		}
 
-		boost::intrusive_ptr<const GmlTimeInstant>
+		const boost::intrusive_ptr<const GmlTimeInstant>
 		begin() const {
 			return d_begin;
 		}
 
-		boost::intrusive_ptr<const GmlTimeInstant>
+		const boost::intrusive_ptr<const GmlTimeInstant>
 		end() const {
 			return d_end;
 		}
 
-		boost::intrusive_ptr<GmlTimeInstant>
+		const boost::intrusive_ptr<GmlTimeInstant>
 		begin() {
 			return d_begin;
 		}
 
-		boost::intrusive_ptr<GmlTimeInstant>
+		const boost::intrusive_ptr<GmlTimeInstant>
 		end() {
 			return d_end;
 		}

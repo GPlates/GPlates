@@ -43,7 +43,7 @@ namespace GPlatesModel {
 		~XsString() {  }
 
 		static
-		boost::intrusive_ptr<XsString>
+		const boost::intrusive_ptr<XsString>
 		create(
 				const UnicodeString &s) {
 			boost::intrusive_ptr<XsString> ptr(new XsString(s));
@@ -51,7 +51,7 @@ namespace GPlatesModel {
 		}
 
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new XsString(*this));
 			return dup;

@@ -48,7 +48,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GpmlConstantValue>
+		const boost::intrusive_ptr<GpmlConstantValue>
 		create(
 				boost::intrusive_ptr<PropertyValue> value_,
 				const TemplateTypeParameterType &value_type_) {
@@ -57,18 +57,18 @@ namespace GPlatesModel {
 		}
 
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GpmlConstantValue(*this));
 			return dup;
 		}
 
-		boost::intrusive_ptr<const PropertyValue>
+		const boost::intrusive_ptr<const PropertyValue>
 		value() const {
 			return d_value;
 		}
 
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		value() {
 			return d_value;
 		}

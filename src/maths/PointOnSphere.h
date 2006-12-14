@@ -59,7 +59,7 @@ namespace GPlatesMaths {
 
 
 			static
-			boost::intrusive_ptr<PointOnSphere>
+			const boost::intrusive_ptr<PointOnSphere>
 			create_on_heap(
 					const UnitVector3D &position_vector_);
 
@@ -146,7 +146,7 @@ namespace GPlatesMaths {
 
 
 	inline
-	boost::intrusive_ptr<PointOnSphere>
+	const boost::intrusive_ptr<PointOnSphere>
 	PointOnSphere::create_on_heap(
 			const UnitVector3D &position_vector_) {
 		boost::intrusive_ptr<PointOnSphere> ptr(new PointOnSphere(position_vector_));

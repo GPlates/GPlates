@@ -52,7 +52,7 @@
 #include "XmlOutputInterface.h"
 
 
-boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_reconstruction_plate_id(
 		const unsigned long &plate_id) {
 
@@ -75,7 +75,7 @@ create_reconstruction_plate_id(
 }
 
 
-boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_reference_frame_plate_id(
 		const unsigned long &plate_id,
 		const char *which_reference_frame) {
@@ -94,7 +94,7 @@ create_reference_frame_plate_id(
 }
 
 
-boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_centre_line_of(
 		const double *points,
 		unsigned num_points) {
@@ -126,7 +126,7 @@ create_centre_line_of(
 }
 
 
-boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_valid_time(
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_begin,
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_end) {
@@ -156,7 +156,7 @@ create_valid_time(
 }
 
 
-boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_description(
 		const UnicodeString &description) {
 
@@ -173,7 +173,7 @@ create_description(
 }
 
 
-boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_name(
 		const UnicodeString &name,
 		const UnicodeString &codespace) {
@@ -242,7 +242,7 @@ struct RotationFileFiveTuple {
 };
 
 
-boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_total_reconstruction_pole(
 		const RotationFileFiveTuple *five_tuples,
 		unsigned num_five_tuples) {

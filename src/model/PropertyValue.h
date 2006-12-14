@@ -85,7 +85,7 @@ namespace GPlatesModel {
 		 * Create a duplicate of this PropertyValue instance.
 		 */
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const = 0;
 
 		/**

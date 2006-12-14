@@ -47,7 +47,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GpmlFiniteRotationSlerp>
+		const boost::intrusive_ptr<GpmlFiniteRotationSlerp>
 		create(
 				const TemplateTypeParameterType &value_type_) {
 			boost::intrusive_ptr<GpmlFiniteRotationSlerp> ptr(new GpmlFiniteRotationSlerp(value_type_));
@@ -55,7 +55,7 @@ namespace GPlatesModel {
 		}
 
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GpmlFiniteRotationSlerp(*this));
 			return dup;

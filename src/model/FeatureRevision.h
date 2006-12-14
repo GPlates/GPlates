@@ -63,7 +63,7 @@ namespace GPlatesModel {
 		 * Create a new FeatureRevision instance with a default-constructed revision ID.
 		 */
 		static
-		boost::intrusive_ptr<FeatureRevision>
+		const boost::intrusive_ptr<FeatureRevision>
 		create() {
 			boost::intrusive_ptr<FeatureRevision> ptr(new FeatureRevision());
 			return ptr;
@@ -73,7 +73,7 @@ namespace GPlatesModel {
 		 * Create a new FeatureRevision instance with a revision ID @a revision_id_.
 		 */
 		static
-		boost::intrusive_ptr<FeatureRevision>
+		const boost::intrusive_ptr<FeatureRevision>
 		create(
 				const RevisionId &revision_id_) {
 			boost::intrusive_ptr<FeatureRevision> ptr(new FeatureRevision(revision_id_));
@@ -83,7 +83,7 @@ namespace GPlatesModel {
 		/**
 		 * Create a duplicate of this FeatureRevision instance.
 		 */
-		boost::intrusive_ptr<FeatureRevision>
+		const boost::intrusive_ptr<FeatureRevision>
 		clone() const {
 			boost::intrusive_ptr<FeatureRevision> dup(new FeatureRevision(*this));
 			return dup;

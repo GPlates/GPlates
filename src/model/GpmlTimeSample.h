@@ -65,32 +65,32 @@ namespace GPlatesModel {
 			d_value_type(other.d_value_type)
 		{  }
 
-		boost::intrusive_ptr<const PropertyValue>
+		const boost::intrusive_ptr<const PropertyValue>
 		value() const {
 			return d_value;
 		}
 
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		value() {
 			return d_value;
 		}
 
-		boost::intrusive_ptr<const GmlTimeInstant>
+		const boost::intrusive_ptr<const GmlTimeInstant>
 		valid_time() const {
 			return d_valid_time;
 		}
 
-		boost::intrusive_ptr<GmlTimeInstant>
+		const boost::intrusive_ptr<GmlTimeInstant>
 		valid_time() {
 			return d_valid_time;
 		}
 
-		boost::intrusive_ptr<const XsString>
+		const boost::intrusive_ptr<const XsString>
 		description() const {
 			return d_description;
 		}
 
-		boost::intrusive_ptr<XsString>
+		const boost::intrusive_ptr<XsString>
 		description() {
 			return d_description;
 		}

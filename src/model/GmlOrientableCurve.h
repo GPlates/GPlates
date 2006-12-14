@@ -62,7 +62,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GmlOrientableCurve>
+		const boost::intrusive_ptr<GmlOrientableCurve>
 		create(
 				boost::intrusive_ptr<PropertyValue> base_curve_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_) {
@@ -74,7 +74,7 @@ namespace GPlatesModel {
 		 * Create a duplicate of this PropertyValue instance.
 		 */
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GmlOrientableCurve(*this));
 			return dup;
@@ -86,7 +86,7 @@ namespace GPlatesModel {
 		 * This is the overloading of this function for const GmlOrientableCurve instances;
 		 * it returns a pointer to a const PropertyValue instance.
 		 */
-		boost::intrusive_ptr<const PropertyValue>
+		const boost::intrusive_ptr<const PropertyValue>
 		base_curve() const {
 			return d_base_curve;
 		}
@@ -109,7 +109,7 @@ namespace GPlatesModel {
 		 * (This overload is provided to allow the referenced PropertyValue instance to
 		 * accept a FeatureVisitor instance.)
 		 */
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		base_curve() {
 			return d_base_curve;
 		}

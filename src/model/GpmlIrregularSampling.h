@@ -51,7 +51,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GpmlIrregularSampling>
+		const boost::intrusive_ptr<GpmlIrregularSampling>
 		create(
 				const std::vector<GpmlTimeSample> &time_samples_,
 				boost::intrusive_ptr<GpmlInterpolationFunction> interp_func,
@@ -61,7 +61,7 @@ namespace GPlatesModel {
 		}
 
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GpmlIrregularSampling(*this));
 			return dup;
@@ -77,12 +77,12 @@ namespace GPlatesModel {
 			return d_time_samples;
 		}
 
-		boost::intrusive_ptr<const GpmlInterpolationFunction>
+		const boost::intrusive_ptr<const GpmlInterpolationFunction>
 		interpolation_function() const {
 			return d_interpolation_function;
 		}
 
-		boost::intrusive_ptr<GpmlInterpolationFunction>
+		const boost::intrusive_ptr<GpmlInterpolationFunction>
 		interpolation_function() {
 			return d_interpolation_function;
 		}

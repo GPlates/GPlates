@@ -157,7 +157,7 @@ namespace GPlatesUtil {
 			typedef long ref_count_type;
 
 			static
-			boost::intrusive_ptr<StringSetImpl>
+			const boost::intrusive_ptr<StringSetImpl>
 			create()
 			{
 				boost::intrusive_ptr<StringSetImpl> ptr(new StringSetImpl());

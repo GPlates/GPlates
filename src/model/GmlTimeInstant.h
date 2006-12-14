@@ -51,7 +51,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GmlTimeInstant>
+		const boost::intrusive_ptr<GmlTimeInstant>
 		create(
 				const GeoTimeInstant &time_position_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &time_position_xml_attributes_) {
@@ -61,7 +61,7 @@ namespace GPlatesModel {
 		}
 
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GmlTimeInstant(*this));
 			return dup;

@@ -82,7 +82,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		boost::intrusive_ptr<GmlLineString>
+		const boost::intrusive_ptr<GmlLineString>
 		create(
 				const std::vector<double> &gml_pos_list);
 
@@ -90,7 +90,7 @@ namespace GPlatesModel {
 		 * Create a duplicate of this PropertyValue instance.
 		 */
 		virtual
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		clone() const {
 			boost::intrusive_ptr<PropertyValue> dup(new GmlLineString(*this));
 			return dup;
@@ -106,7 +106,7 @@ namespace GPlatesModel {
 		 * GPlatesMaths::PolylineOnSphere within this instance, set a new value using the
 		 * function @a set_polyline below.
 		 */
-		boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+		const boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 		polyline() const {
 			return d_polyline;
 		}

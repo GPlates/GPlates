@@ -181,7 +181,7 @@ namespace {
 }
 
 
-boost::intrusive_ptr<GPlatesModel::GmlLineString>
+const boost::intrusive_ptr<GPlatesModel::GmlLineString>
 GPlatesModel::GmlLineString::create(
 		const std::vector<double> &gml_pos_list)
 {

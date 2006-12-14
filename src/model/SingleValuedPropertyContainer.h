@@ -43,7 +43,7 @@ namespace GPlatesModel {
 		~SingleValuedPropertyContainer() {  }
 
 		static
-		boost::intrusive_ptr<SingleValuedPropertyContainer>
+		const boost::intrusive_ptr<SingleValuedPropertyContainer>
 		create(
 				const PropertyName &property_name_,
 				boost::intrusive_ptr<PropertyValue> value_,
@@ -56,18 +56,18 @@ namespace GPlatesModel {
 		}
 
 		virtual
-		boost::intrusive_ptr<PropertyContainer>
+		const boost::intrusive_ptr<PropertyContainer>
 		clone() const {
 			boost::intrusive_ptr<PropertyContainer> dup(new SingleValuedPropertyContainer(*this));
 			return dup;
 		}
 
-		boost::intrusive_ptr<const PropertyValue>
+		const boost::intrusive_ptr<const PropertyValue>
 		value() const {
 			return d_value;
 		}
 
-		boost::intrusive_ptr<PropertyValue>
+		const boost::intrusive_ptr<PropertyValue>
 		value() {
 			return d_value;
 		}

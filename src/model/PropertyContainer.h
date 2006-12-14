@@ -83,7 +83,7 @@ namespace GPlatesModel {
 		{ }
 
 		virtual
-		boost::intrusive_ptr<PropertyContainer>
+		const boost::intrusive_ptr<PropertyContainer>
 		clone() const = 0;
 
 		const PropertyName &
