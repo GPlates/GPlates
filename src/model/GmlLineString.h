@@ -54,6 +54,9 @@ namespace GPlatesMaths {
 
 namespace GPlatesModel {
 
+	/**
+	 * This class implements the PropertyValue which corresponds to "gml:LineString".
+	 */
 	class GmlLineString :
 			public PropertyValue {
 
@@ -63,6 +66,16 @@ namespace GPlatesModel {
 		~GmlLineString()
 		{  }
 
+		/**
+		 * Create a GmlLineString instance from a sequence of longitude and latitude
+		 * coordinates.
+		 *
+		 * This sequence of coordinates corresponds to the contents of the "gml:posList"
+		 * property in a "gml:LineString" feature.  Each pair of coordinates in the
+		 * sequence is expected to be a (lon, lat) duple which describes the position of a
+		 * vertex (or end-point) of the line-string.  (That is, the sequence of coordinates
+		 * will be interpreted as: lon, lat, lon, lat, ...)  This is the form used in GML.
+		 */
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
 		// everything properly, so don't look at this function and think "Uh oh, this
@@ -73,6 +86,9 @@ namespace GPlatesModel {
 		create(
 				const std::vector<double> &gml_pos_list);
 
+		/**
+		 * Create a duplicate of this PropertyValue instance.
+		 */
 		virtual
 		boost::intrusive_ptr<PropertyValue>
 		clone() const {
@@ -80,17 +96,36 @@ namespace GPlatesModel {
 			return dup;
 		}
 
+		/**
+		 * Access the GPlatesMaths::PolylineOnSphere which encodes the geometry of this
+		 * instance.
+		 *
+		 * Note that there is no accessor provided which returns a boost::intrusive_ptr to
+		 * a non-const GPlatesMaths::PolylineOnSphere.  The GPlatesMaths::PolylineOnSphere
+		 * within this instance should not be modified directly; to alter the
+		 * GPlatesMaths::PolylineOnSphere within this instance, set a new value using the
+		 * function @a set_polyline below.
+		 */
 		boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 		polyline() const {
 			return d_polyline;
 		}
 
+		/**
+		 * Set the polyline within this instance to @a p.
+		 */
 		void
 		set_polyline(
 				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> p) {
 			d_polyline = p;
 		}
 
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
 		virtual
 		void
 		accept_visitor(

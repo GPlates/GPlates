@@ -36,9 +36,23 @@
 
 namespace GPlatesModel {
 
+	/**
+	 * A feature handle is the part of a GPML feature which does not change with revisions.
+	 *
+	 * This class represents the part of a GPML feature which does not change with revisions.
+	 * That is, it contains the components of a feature which never change (the feature type
+	 * and the feature ID), as well as acting as an everlasting handle to the FeatureRevision
+	 * which contains the rest of the feature.
+	 *
+	 * A FeatureHandle instance is referenced by a FeatureCollection.
+	 */
 	class FeatureHandle {
 
 	public:
+		/**
+		 * Create a FeatureHandle instance for a feature of feature ID @a feature_id_ and
+		 * feature type @a feature_type_.
+		 */
 		FeatureHandle(
 				const FeatureId &feature_id_,
 				const FeatureType &feature_type_) :
@@ -46,36 +60,74 @@ namespace GPlatesModel {
 			d_feature_id(feature_id_),
 			d_feature_type(feature_type_) {  }
 
+		/**
+		 * Return the feature ID of this feature.
+		 *
+		 * Note that no "setter" is provided:  The feature ID of a feature should never be
+		 * changed.
+		 */
 		const FeatureId &
 		feature_id() const {
 			return d_feature_id;
 		}
 
-		// No non-const 'feature_id':  The feature-ID should never be changed.
-
+		/**
+		 * Return the feature type of this feature.
+		 *
+		 * Note that no "setter" is provided:  The feature type of a feature should never
+		 * be changed.
+		 */
 		const FeatureType &
 		feature_type() const {
 			return d_feature_type;
 		}
 
-		// No non-const 'feature_type':  The feature-type should never be changed.
-
+		/**
+		 * Access the current revision of this feature.
+		 *
+		 * This is the overloading of this function for const FeatureHandle instances; it
+		 * returns a pointer to a const FeatureRevision instance.
+		 */
 		boost::intrusive_ptr<const FeatureRevision>
 		current_revision() const {
 			return d_current_revision;
 		}
 
+		/**
+		 * Access the current revision of this feature.
+		 *
+		 * This is the overloading of this function for non-const FeatureHandle instances;
+		 * it returns a C++ reference to a pointer to a non-const FeatureRevision instance.
+		 *
+		 * Note that, because the copy-assignment operator of FeatureRevision is private,
+		 * the FeatureRevision referenced by the return-value of this function cannot be
+		 * assigned-to, which means that this function does not provide a means to directly
+		 * switch the FeatureRevision within this FeatureHandle instance.  (This
+		 * restriction is intentional.)
+		 *
+		 * To switch the FeatureRevision within this FeatureHandle instance, use the
+		 * function @a set_current_revision below.
+		 */
 		boost::intrusive_ptr<FeatureRevision>
 		current_revision() {
 			return d_current_revision;
 		}
 
+		/**
+		 * Set the current revision of this feature to @a rev.
+		 */
 		void
 		set_current_revision(
 				boost::intrusive_ptr<FeatureRevision> rev) {
 			d_current_revision = rev;
 		}
 
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const {

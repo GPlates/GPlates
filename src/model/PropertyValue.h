@@ -37,10 +37,19 @@
 
 namespace GPlatesModel {
 
+	/**
+	 * This class is the abstract base of all property values.
+	 *
+	 * It provides pure virtual function declarations for cloning and accepting visitors.  It
+	 * also provides the functions to be used by boost::intrusive_ptr for reference-counting.
+	 */
 	class PropertyValue {
 
 	public:
 
+		/**
+		 * The type used to store the reference-count of an instance of this class.
+		 */
 		typedef long ref_count_type;
 
 		virtual
@@ -72,20 +81,40 @@ namespace GPlatesModel {
 			d_ref_count(other.d_ref_count)
 		{ }
 
+		/**
+		 * Create a duplicate of this PropertyValue instance.
+		 */
 		virtual
 		boost::intrusive_ptr<PropertyValue>
 		clone() const = 0;
 
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
 		virtual
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const = 0;
 
+		/**
+		 * Increment the reference-count of this instance.
+		 *
+		 * This function is used by boost::intrusive_ptr.
+		 */
 		void
 		increment_ref_count() const {
 			++d_ref_count;
 		}
 
+		/**
+		 * Decrement the reference-count of this instance, and return the new
+		 * reference-count.
+		 *
+		 * This function is used by boost::intrusive_ptr.
+		 */
 		ref_count_type
 		decrement_ref_count() const {
 			return --d_ref_count;
