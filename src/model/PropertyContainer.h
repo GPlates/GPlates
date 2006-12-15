@@ -86,16 +86,24 @@ namespace GPlatesModel {
 		const boost::intrusive_ptr<PropertyContainer>
 		clone() const = 0;
 
+		// Note that no "setter" is provided:  The property name of a PropertyContainer
+		// instance should never be changed.
 		const PropertyName &
 		property_name() const {
 			return d_property_name;
 		}
 
+		// @b FIXME:  Should this function be replaced with per-index const-access to
+		// elements of the XML attribute map?  (For consistency with the non-const
+		// overload...)
 		const std::map<XmlAttributeName, XmlAttributeValue> &
 		xml_attributes() const {
 			return d_xml_attributes;
 		}
 
+		// @b FIXME:  Should this function be replaced with per-index const-access to
+		// elements of the XML attribute map, as well as per-index assignment (setter) and
+		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::map<XmlAttributeName, XmlAttributeValue> &
 		xml_attributes() {
 			return d_xml_attributes;

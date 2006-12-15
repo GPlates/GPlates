@@ -66,11 +66,6 @@ namespace GPlatesModel {
 			return d_value;
 		}
 
-		unsigned long &
-		value() {
-			return d_value;
-		}
-
 		virtual
 		void
 		accept_visitor(

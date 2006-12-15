@@ -70,9 +70,26 @@ namespace GPlatesModel {
 			return d_value;
 		}
 
+		// Note that, because the copy-assignment operator of PropertyValue is private,
+		// the PropertyValue referenced by the return-value of this function cannot be
+		// assigned-to, which means that this function does not provide a means to directly
+		// switch the PropertyValue within this GpmlTimeSample instance.  (This
+		// restriction is intentional.)
+		//
+		// To switch the PropertyValue within this GpmlTimeSample instance, use the
+		// function @a set_value below.
+		//
+		// (This overload is provided to allow the referenced PropertyValue instance to
+		// accept a FeatureVisitor instance.)
 		const boost::intrusive_ptr<PropertyValue>
 		value() {
 			return d_value;
+		}
+
+		void
+		set_value(
+				boost::intrusive_ptr<PropertyValue> v) {
+			d_value = v;
 		}
 
 		const boost::intrusive_ptr<const GmlTimeInstant>
@@ -80,9 +97,26 @@ namespace GPlatesModel {
 			return d_valid_time;
 		}
 
+		// Note that, because the copy-assignment operator of GmlTimeInstant is private,
+		// the GmlTimeInstant referenced by the return-value of this function cannot be
+		// assigned-to, which means that this function does not provide a means to directly
+		// switch the GmlTimeInstant within this GpmlTimeSample instance.  (This
+		// restriction is intentional.)
+		//
+		// To switch the GmlTimeInstant within this GpmlTimeSample instance, use the
+		// function @a set_valid_time below.
+		//
+		// (This overload is provided to allow the referenced GmlTimeInstant instance to
+		// accept a FeatureVisitor instance.)
 		const boost::intrusive_ptr<GmlTimeInstant>
 		valid_time() {
 			return d_valid_time;
+		}
+
+		void
+		set_valid_time(
+				boost::intrusive_ptr<GmlTimeInstant> vt) {
+			d_valid_time = vt;
 		}
 
 		const boost::intrusive_ptr<const XsString>
@@ -90,18 +124,32 @@ namespace GPlatesModel {
 			return d_description;
 		}
 
+		// Note that, because the copy-assignment operator of XsString is private, the
+		// XsString referenced by the return-value of this function cannot be assigned-to,
+		// which means that this function does not provide a means to directly switch the
+		// XsString within this GpmlTimeSample instance.  (This restriction is
+		// intentional.)
+		//
+		// To switch the XsString within this GpmlTimeSample instance, use the function
+		// @a set_value below.
+		//
+		// (This overload is provided to allow the referenced XsString instance to accept a
+		// FeatureVisitor instance.)
 		const boost::intrusive_ptr<XsString>
 		description() {
 			return d_description;
 		}
 
-		const TemplateTypeParameterType &
-		value_type() const {
-			return d_value_type;
+		void
+		set_description(
+				boost::intrusive_ptr<XsString> d) {
+			d_description = d;
 		}
 
-		TemplateTypeParameterType &
-		value_type() {
+		// Note that no "setter" is provided:  The value type of a GpmlTimeSample instance
+		// should never be changed.
+		const TemplateTypeParameterType &
+		value_type() const {
 			return d_value_type;
 		}
 

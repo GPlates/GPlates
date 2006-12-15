@@ -68,19 +68,53 @@ namespace GPlatesModel {
 			return d_begin;
 		}
 
-		const boost::intrusive_ptr<const GmlTimeInstant>
-		end() const {
-			return d_end;
-		}
-
+		// Note that, because the copy-assignment operator of GmlTimeInstant is private,
+		// the GmlTimeInstant referenced by the return-value of this function cannot be
+		// assigned-to, which means that this function does not provide a means to directly
+		// switch the GmlTimeInstant within this GmlTimePeriod instance.  (This
+		// restriction is intentional.)
+		//
+		// To switch the GmlTimeInstant within this GmlTimePeriod instance, use the
+		// function @a set_begin below.
+		//
+		// (This overload is provided to allow the referenced GmlTimeInstant instance to
+		// accept a FeatureVisitor instance.)
 		const boost::intrusive_ptr<GmlTimeInstant>
 		begin() {
 			return d_begin;
 		}
 
+		void
+		set_begin(
+				boost::intrusive_ptr<GmlTimeInstant> b) {
+			d_begin = b;
+		}
+
+		const boost::intrusive_ptr<const GmlTimeInstant>
+		end() const {
+			return d_end;
+		}
+
+		// Note that, because the copy-assignment operator of GmlTimeInstant is private,
+		// the GmlTimeInstant referenced by the return-value of this function cannot be
+		// assigned-to, which means that this function does not provide a means to directly
+		// switch the GmlTimeInstant within this GmlTimePeriod instance.  (This
+		// restriction is intentional.)
+		//
+		// To switch the GmlTimeInstant within this GmlTimePeriod instance, use the
+		// function @a set_end below.
+		//
+		// (This overload is provided to allow the referenced GmlTimeInstant instance to
+		// accept a FeatureVisitor instance.)
 		const boost::intrusive_ptr<GmlTimeInstant>
 		end() {
 			return d_end;
+		}
+
+		void
+		set_end(
+				boost::intrusive_ptr<GmlTimeInstant> e) {
+			d_end = e;
 		}
 
 		virtual

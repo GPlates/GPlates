@@ -62,11 +62,6 @@ namespace GPlatesModel {
 			return d_value;
 		}
 
-		TextContent &
-		value() {
-			return d_value;
-		}
-
 		virtual
 		void
 		accept_visitor(

@@ -67,11 +67,17 @@ namespace GPlatesModel {
 			return dup;
 		}
 
+		// @b FIXME:  Should this function be replaced with per-index const-access to
+		// elements of the time sample vector?  (For consistency with the non-const
+		// overload...)
 		const std::vector<GpmlTimeSample> &
 		time_samples() const {
 			return d_time_samples;
 		}
 
+		// @b FIXME:  Should this function be replaced with per-index const-access to
+		// elements of the time sample vector, well as per-index assignment (setter) and
+		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::vector<GpmlTimeSample> &
 		time_samples() {
 			return d_time_samples;
@@ -82,18 +88,32 @@ namespace GPlatesModel {
 			return d_interpolation_function;
 		}
 
+		// Note that, because the copy-assignment operator of GpmlInterpolationFunction is
+		// private, the GpmlInterpolationFunction referenced by the return-value of this
+		// function cannot be assigned-to, which means that this function does not provide
+		// a means to directly switch the GpmlInterpolationFunction within this
+		// GpmlIrregularSampling instance.  (This restriction is intentional.)
+		//
+		// To switch the GpmlInterpolationFunction within this GpmlIrregularSampling
+		// instance, use the function @a set_interpolation_function below.
+		//
+		// (This overload is provided to allow the referenced GpmlInterpolationFunction
+		// instance to accept a FeatureVisitor instance.)
 		const boost::intrusive_ptr<GpmlInterpolationFunction>
 		interpolation_function() {
 			return d_interpolation_function;
 		}
 
-		const TemplateTypeParameterType &
-		value_type() const {
-			return d_value_type;
+		void
+		set_interpolation_function(
+				boost::intrusive_ptr<GpmlInterpolationFunction> i) {
+			d_interpolation_function = i;
 		}
 
-		TemplateTypeParameterType &
-		value_type() {
+		// Note that no "setter" is provided:  The value type of a GpmlIrregularSampling
+		// instance should never be changed.
+		const TemplateTypeParameterType &
+		value_type() const {
 			return d_value_type;
 		}
 

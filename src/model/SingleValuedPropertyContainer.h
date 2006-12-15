@@ -67,9 +67,26 @@ namespace GPlatesModel {
 			return d_value;
 		}
 
+		// Note that, because the copy-assignment operator of PropertyValue is private,
+		// the PropertyValue referenced by the return-value of this function cannot be
+		// assigned-to, which means that this function does not provide a means to directly
+		// switch the PropertyValue within this SingleValuedPropertyContainer instance. 
+		// (This restriction is intentional.)
+		//
+		// To switch the PropertyValue within this SingleValuedPropertyContainer instance,
+		// use the function @a set_value below.
+		//
+		// (This overload is provided to allow the referenced PropertyValue instance to
+		// accept a FeatureVisitor instance.)
 		const boost::intrusive_ptr<PropertyValue>
 		value() {
 			return d_value;
+		}
+
+		void
+		set_value(
+				boost::intrusive_ptr<PropertyValue> v) {
+			d_value = v;
 		}
 
 		bool

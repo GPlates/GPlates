@@ -71,13 +71,10 @@ namespace GPlatesModel {
 		virtual
 		~GpmlInterpolationFunction() {  }
 
+		// Note that no "setter" is provided:  The value type of a
+		// GpmlInterpolationFunction instance should never be changed.
 		const TemplateTypeParameterType &
 		value_type() const {
-			return d_value_type;
-		}
-
-		TemplateTypeParameterType &
-		value_type() {
 			return d_value_type;
 		}
 
