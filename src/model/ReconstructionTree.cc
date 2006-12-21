@@ -26,8 +26,12 @@
  */
 
 #include <iostream>
+
+#include <iterator>  /* std::distance */
 #include <deque>
 #include "ReconstructionTree.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 
 void
@@ -164,6 +168,78 @@ GPlatesModel::ReconstructionTree::build_tree(
 		std::cout << " - Moving plate: " << output_iter->first << "\n";
 		std::cout << " - Composed absolute rotation: "
 				<< output_iter->second->composed_absolute_rotation() << std::endl;
+	}
+}
+
+
+const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
+GPlatesModel::ReconstructionTree::reconstruct_point(
+		boost::intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
+		GpmlPlateId::integer_plate_id_type plate_id_of_feature,
+		GpmlPlateId::integer_plate_id_type root_plate_id)
+{
+	// If the range is empty, no matches.  Return NULL pointer?
+	// If the range is of length one, one match.  Ideal!
+	// If the range is of length > one, there is ambiguity.
+	std::pair<map_iterator, map_iterator> range =
+			find_nodes_whose_moving_plate_id_match(plate_id_of_feature, root_plate_id);
+
+	if (range.first == range.second) {
+		// No matches.  Return a NULL pointer?
+		// FIXME:  Should we return a NULL pointer, or a copy of the original geometry?
+		return NULL;
+	}
+	if (std::distance(range.first, range.second) > 1) {
+		// More than one match.  Ambiguity!
+		// For now, let's just use the first match anyway.
+		// FIXME:  Should we verify that all alternatives are equivalent?
+		// FIXME:  Should we complain to the user about this?
+		const GPlatesMaths::FiniteRotation &finite_rotation =
+				range.first->second->composed_absolute_rotation();
+
+		return (finite_rotation * p);
+	} else {
+		// Exactly one match.  Ideal!
+		const GPlatesMaths::FiniteRotation &finite_rotation =
+				range.first->second->composed_absolute_rotation();
+
+		return (finite_rotation * p);
+	}
+}
+
+
+const boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+GPlatesModel::ReconstructionTree::reconstruct_polyline(
+		boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
+		GpmlPlateId::integer_plate_id_type plate_id_of_feature,
+		GpmlPlateId::integer_plate_id_type root_plate_id)
+{
+	// If the range is empty, no matches.  Return NULL pointer?
+	// If the range is of length one, one match.  Ideal!
+	// If the range is of length > one, there is ambiguity.
+	std::pair<map_iterator, map_iterator> range =
+			find_nodes_whose_moving_plate_id_match(plate_id_of_feature, root_plate_id);
+
+	if (range.first == range.second) {
+		// No matches.  Return a NULL pointer?
+		// FIXME:  Should we return a NULL pointer, or a copy of the original geometry?
+		return NULL;
+	}
+	if (std::distance(range.first, range.second) > 1) {
+		// More than one match.  Ambiguity!
+		// For now, let's just use the first match anyway.
+		// FIXME:  Should we verify that all alternatives are equivalent?
+		// FIXME:  Should we complain to the user about this?
+		const GPlatesMaths::FiniteRotation &finite_rotation =
+				range.first->second->composed_absolute_rotation();
+
+		return (finite_rotation * p);
+	} else {
+		// Exactly one match.  Ideal!
+		const GPlatesMaths::FiniteRotation &finite_rotation =
+				range.first->second->composed_absolute_rotation();
+
+		return (finite_rotation * p);
 	}
 }
 

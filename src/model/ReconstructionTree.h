@@ -30,9 +30,35 @@
 
 #include <list>
 #include <map>
+#include <boost/intrusive_ptr.hpp>
 #include "GpmlPlateId.h"
 #include "maths/FiniteRotation.h"
 
+
+// Forward declaration for intrusive-pointer.
+// (We want to avoid the inclusion of "maths/PointOnSphere.h" and "maths/PolylineOnSphere.h" into
+// this header file.)
+namespace GPlatesMaths
+{
+	class PointOnSphere;
+	class PolylineOnSphere;
+
+	void
+	intrusive_ptr_add_ref(
+			const PointOnSphere *p);
+
+	void
+	intrusive_ptr_release(
+			const PointOnSphere *p);
+
+	void
+	intrusive_ptr_add_ref(
+			const PolylineOnSphere *p);
+
+	void
+	intrusive_ptr_release(
+			const PolylineOnSphere *p);
+}
 
 namespace GPlatesModel
 {
@@ -178,6 +204,18 @@ namespace GPlatesModel
 		{
 			return d_rootmost_nodes.end();
 		}
+
+		const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
+		reconstruct_point(
+				boost::intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
+				GpmlPlateId::integer_plate_id_type plate_id_of_feature,
+				GpmlPlateId::integer_plate_id_type root_plate_id);
+
+		const boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+		reconstruct_polyline(
+				boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
+				GpmlPlateId::integer_plate_id_type plate_id_of_feature,
+				GpmlPlateId::integer_plate_id_type root_plate_id);
 
 	private:
 		/*
