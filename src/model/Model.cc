@@ -469,10 +469,10 @@ GPlatesModel::Model::Model()
 
 void
 GPlatesModel::Model::create_reconstruction(
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<
-				GPlatesMaths::PointOnSphere> > &point_reconstructions,
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<
-				GPlatesMaths::PolylineOnSphere> > &polyline_reconstructions,
+		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
+				point_reconstructions,
+		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
+				polyline_reconstructions,
 		const double &time,
 		unsigned long root)
 {
@@ -489,16 +489,8 @@ GPlatesModel::Model::create_reconstruction(
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	recon_tree.build_tree(root);
 
-	// This vector will contain all point reconstructed feature geometries.
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >
-			reconstructed_points;
-
-	// This vector will contain all polyline reconstructed feature geometries.
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >
-			reconstructed_polylines;
-
 	GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(time, root,
-			recon_tree, reconstructed_points, reconstructed_polylines);
+			recon_tree, point_reconstructions, polyline_reconstructions);
 
 	// Populate the vectors with reconstructed feature geometries from our isochrons.
 	std::vector<GPlatesModel::FeatureHandle>::iterator iter3 = d_isochrons.begin();
