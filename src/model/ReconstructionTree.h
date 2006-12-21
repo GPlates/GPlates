@@ -207,17 +207,33 @@ namespace GPlatesModel
 		list_nodes_by_plate_id_map_type d_list_nodes_by_moving_plate_id;
 
 		/*
-		 * Find all nodes whose fixed plate ID matches 'plate_id'.
+		 * Find all nodes whose fixed plate ID matches 'fixed_plate_id'.
+		 *
+		 * The purpose of the pair is similar to the purpose of the return-value of the
+		 * 'multimap::equal_range' member function, but it is a range of elements which
+		 * reference poles whose fixed plate ID is equal to the specified fixed plate ID.
 		 */
 		std::pair<map_iterator, map_iterator>
-		find_nodes_whose_fixed_plate_id_matches(
-				GpmlPlateId::integer_plate_id_type plate_id);
+		find_nodes_whose_fixed_plate_id_match(
+				GpmlPlateId::integer_plate_id_type fixed_plate_id);
 
 		/*
 		 * Demolish the tree, to reset all the containers.
 		 */
 		void
 		demolish_tree();
+
+		/*
+		 * Find all nodes whose moving plate ID matches 'moving_plate_id'.
+		 *
+		 * The purpose of the pair is similar to the purpose of the return-value of the
+		 * 'multimap::equal_range' member function, but it is a range of elements which
+		 * reference poles whose moving plate ID is equal to the specified moving plate ID.
+		 */
+		std::pair<map_iterator, map_iterator>
+		find_nodes_whose_moving_plate_id_match(
+				GpmlPlateId::integer_plate_id_type moving_plate_id,
+				GpmlPlateId::integer_plate_id_type root_plate_id);
 
 	};
 

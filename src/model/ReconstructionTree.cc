@@ -44,22 +44,11 @@ GPlatesModel::ReconstructionTree::insert_total_reconstruction_pole(
 	GpmlPlateId::integer_plate_id_type fixed_plate_id = fixed_plate_->value();
 	GpmlPlateId::integer_plate_id_type moving_plate_id = moving_plate_->value();
 
-#if 0  // FIXME:  This (old code) was written for map, not multimap...
-	list_nodes_by_plate_id_map_type::iterator already_existing_node =
-			d_list_nodes_by_moving_plate_id.find(moving_plate_id);
-	if (already_existing_node != d_list_nodes_by_moving_plate_id.end()) {
-		// A node of this moving plate already exists inside this tree...
-		// FIXME:  Complain, or throw an exception or something.
-		return;
-	}
-#endif
-
 	// Now, let's insert the "original" pole.
 	d_unused_nodes.push_front(ReconstructionTreeNode(fixed_plate_, moving_plate_,
 				pole, ReconstructionTreeNode::PoleTypes::ORIGINAL));
 	list_node_reference_type original_node_ref = d_unused_nodes.begin();
 	d_list_nodes_by_fixed_plate_id.insert(std::make_pair(fixed_plate_id, original_node_ref));
-	d_list_nodes_by_moving_plate_id.insert(std::make_pair(moving_plate_id, original_node_ref));
 
 	// Now, let's insert the "reversed" pole.
 	d_unused_nodes.push_front(ReconstructionTreeNode(moving_plate_, fixed_plate_,
@@ -67,7 +56,6 @@ GPlatesModel::ReconstructionTree::insert_total_reconstruction_pole(
 				ReconstructionTreeNode::PoleTypes::REVERSED));
 	list_node_reference_type reversed_node_ref = d_unused_nodes.begin();
 	d_list_nodes_by_fixed_plate_id.insert(std::make_pair(moving_plate_id, reversed_node_ref));
-	d_list_nodes_by_moving_plate_id.insert(std::make_pair(fixed_plate_id, reversed_node_ref));
 }
 
 
@@ -86,7 +74,7 @@ GPlatesModel::ReconstructionTree::build_tree(
 
 	std::cout << "Looking for poles with fixed plate ID " << root_plate_id << "...\n";
 
-	std::pair<map_iterator, map_iterator> root_range = find_nodes_whose_fixed_plate_id_matches(root_plate_id);
+	std::pair<map_iterator, map_iterator> root_range = find_nodes_whose_fixed_plate_id_match(root_plate_id);
 
 	// Note that this if-statement is not strictly necessary (ie, the code would still function
 	// correctly without it, iterating over empty ranges), but we might want to notify the user
@@ -119,10 +107,15 @@ GPlatesModel::ReconstructionTree::build_tree(
 		GpmlPlateId::integer_plate_id_type moving_plate_id_of_pole =
 				pole_to_be_processed->moving_plate()->value();
 
+		// (Also, before we worry about the tree-children of this pole, let's insert this
+		// pole into the pole-by-moving-plate-ID map.)
+		d_list_nodes_by_moving_plate_id.insert(
+				std::make_pair(moving_plate_id_of_pole, pole_to_be_processed));
+
 		std::cout << "Looking for poles with fixed plate ID " << moving_plate_id_of_pole << "...\n";
 
 		std::pair<map_iterator, map_iterator> range =
-				find_nodes_whose_fixed_plate_id_matches(moving_plate_id_of_pole);
+				find_nodes_whose_fixed_plate_id_match(moving_plate_id_of_pole);
 
 		GpmlPlateId::integer_plate_id_type fixed_plate_id_of_pole =
 				pole_to_be_processed->fixed_plate()->value();
@@ -161,14 +154,38 @@ GPlatesModel::ReconstructionTree::build_tree(
 					::GPlatesMaths::compose(absolute_rot_of_parent, relative_rot_of_child));
 		}
 	}
+
+	// While we're developing this code, let's write out the resulting pole-by-moving-plate-ID
+	// map.
+	std::cout << " * Outputting resulting pole-by-moving-plate-ID map:\n";
+	map_iterator output_iter = d_list_nodes_by_moving_plate_id.begin();
+	map_iterator output_end = d_list_nodes_by_moving_plate_id.end();
+	for ( ; output_iter != output_end; ++output_iter) {
+		std::cout << " - Moving plate: " << output_iter->first << "\n";
+		std::cout << " - Composed absolute rotation: "
+				<< output_iter->second->composed_absolute_rotation() << std::endl;
+	}
 }
 
 
 std::pair<GPlatesModel::ReconstructionTree::map_iterator, GPlatesModel::ReconstructionTree::map_iterator>
-GPlatesModel::ReconstructionTree::find_nodes_whose_fixed_plate_id_matches(
-		GpmlPlateId::integer_plate_id_type plate_id)
+GPlatesModel::ReconstructionTree::find_nodes_whose_fixed_plate_id_match(
+		GpmlPlateId::integer_plate_id_type fixed_plate_id)
 {
-	return d_list_nodes_by_fixed_plate_id.equal_range(plate_id);
+	return d_list_nodes_by_fixed_plate_id.equal_range(fixed_plate_id);
+}
+
+
+std::pair<GPlatesModel::ReconstructionTree::map_iterator, GPlatesModel::ReconstructionTree::map_iterator>
+GPlatesModel::ReconstructionTree::find_nodes_whose_moving_plate_id_match(
+		GpmlPlateId::integer_plate_id_type moving_plate_id,
+		GpmlPlateId::integer_plate_id_type root_plate_id)
+{
+	// Ensure the tree is built, otherwise the pole-by-moving-plate-ID map will be empty!
+	if ( ! tree_is_built()) {
+		build_tree(root_plate_id);
+	}
+	return d_list_nodes_by_moving_plate_id.equal_range(moving_plate_id);
 }
 
 
@@ -204,4 +221,8 @@ GPlatesModel::ReconstructionTree::demolish_tree()
 		d_unused_nodes.splice(d_unused_nodes.begin(),
 				*(pole_to_be_processed.first), pole_to_be_processed.second);
 	}
+
+	// Finally, clear the pole-by-moving-plate-ID map, since this is only valid when the tree
+	// is built.
+	d_list_nodes_by_moving_plate_id.clear();
 }
