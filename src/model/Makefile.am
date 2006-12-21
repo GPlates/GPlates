@@ -5,6 +5,7 @@ INCLUDES		= -I$(top_srcdir)/src
 noinst_LIBRARIES	= libmodel.a
 libmodel_a_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc GeoTimeInstant.cc \
 				GmlLineString.cc GmlPoint.cc GpmlOnePointFiveOutputVisitor.cc \
-				GpmlFiniteRotation.cc ReconstructionTree.cc \
+				GpmlFiniteRotation.cc Model.cc \
+				ReconstructedFeatureGeometryPopulator.cc ReconstructionTree.cc \
 				ReconstructionTreePopulator.cc StringSetSingletons.cc \
-				XmlOutputInterface.cc Model.cc
+				XmlOutputInterface.cc

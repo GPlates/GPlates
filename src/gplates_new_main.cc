@@ -49,6 +49,10 @@
 #include "model/XmlOutputInterface.h"
 #include "model/ReconstructionTree.h"
 #include "model/ReconstructionTreePopulator.h"
+#include "model/ReconstructedFeatureGeometryPopulator.h"
+
+#include "maths/PointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
@@ -551,6 +555,26 @@ main() {
 		recon_tree.build_tree(501);
 		traverse_recon_tree(recon_tree);
 
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >
+				reconstructed_points;
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >
+				reconstructed_polylines;
+
+		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
+				recon_tree, reconstructed_points, reconstructed_polylines);
+
+		isochron1.accept_visitor(rfgp);
+		isochron2.accept_visitor(rfgp);
+		isochron3.accept_visitor(rfgp);
+
+		std::cout << "<> After feature geometry reconstructions, there are\n   "
+				<< reconstructed_points.size()
+				<< " reconstructed point geometries, and\n   "
+				<< reconstructed_polylines.size()
+				<< " reconstructed polyline geometries."
+				<< std::endl;
+
+#if 0
 		std::cout << "\n--> Building tree, root node: 511\n";
 		recon_tree.build_tree(511);
 		traverse_recon_tree(recon_tree);
@@ -562,6 +586,7 @@ main() {
 		std::cout << "\n--> Building tree, root node: 502\n";
 		recon_tree.build_tree(502);
 		traverse_recon_tree(recon_tree);
+#endif
 
 		std::cout << std::endl;
 	}
