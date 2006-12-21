@@ -25,8 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-
 #include "ReconstructedFeatureGeometryPopulator.h"
 #include "ReconstructionTree.h"
 #include "FeatureHandle.h"
@@ -68,9 +66,6 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 
 	// If a feature handle isn't for a feature of type "gpml:Isochron", we're not interested.
 	if (feature_handle.feature_type() == isochron_feature_type) {
-
-		std::cout << "We found an isochron!\n";
-
 		d_accumulator.reset(new ReconstructedFeatureGeometryAccumulator());
 		feature_handle.current_revision()->accept_visitor(*this);
 
@@ -177,8 +172,6 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_plate_id(
 {
 	boost::intrusive_ptr<GpmlPlateId> gpml_plate_id_ptr = &gpml_plate_id;
 	d_accumulator->d_recon_plate_id = gpml_plate_id_ptr;
-
-	std::cout << "Found a plate ID: " << gpml_plate_id.value() << std::endl;
 }
 
 
