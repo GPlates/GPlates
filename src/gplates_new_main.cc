@@ -382,11 +382,24 @@ int
 main() {
 
 	static const unsigned long plate_id = 501;
+	// lon, lat, lon, lat... is how GML likes it.
 	static const double points[] = {
-		-5.5765,
 		69.2877,
+		-5.5765,
+		69.1323,
 		-4.8556,
-		69.1323
+		69.6092,
+		-4.3841,
+		69.2748,
+		-3.9554,
+		69.7079,
+		-3.3680,
+		69.4119,
+		-3.0486,
+		69.5999,
+		-2.6304,
+		68.9400,
+		-1.8446,
 	};
 	static const unsigned num_points = sizeof(points) / sizeof(points[0]);
 	GPlatesModel::GeoTimeInstant geo_time_instant_begin(10.9);
@@ -444,6 +457,11 @@ main() {
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
+	GPlatesFileIO::XmlOutputInterface xoi =
+			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
+	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
+	isochron.accept_visitor(v);
+
 	static const double recon_times_to_test[] = {
 		0.0,
 		10.0,
@@ -462,7 +480,7 @@ main() {
 		GPlatesModel::ReconstructionTree recon_tree;
 		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, recon_tree);
 
-		std::cout << "===> Reconstruction time: " << recon_time << std::endl;
+		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 		total_recon_seq1.accept_visitor(rtp);
 		total_recon_seq2.accept_visitor(rtp);
 		total_recon_seq3.accept_visitor(rtp);
