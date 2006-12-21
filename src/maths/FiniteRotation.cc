@@ -268,6 +268,18 @@ GPlatesMaths::operator*(
 }
 
 
+const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
+GPlatesMaths::operator*(
+		const FiniteRotation &r,
+		boost::intrusive_ptr<const PointOnSphere> p)
+{
+	UnitVector3D rotated_position_vector = r * p->position_vector();
+	boost::intrusive_ptr<GPlatesMaths::PointOnSphere> rotated_point(
+			PointOnSphere::create_on_heap(rotated_position_vector));
+	return rotated_point;
+}
+
+
 const GPlatesMaths::GreatCircleArc
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
@@ -328,6 +340,26 @@ GPlatesMaths::operator*(
 	for ( ; iter != end; ++iter) rotated_points.push_back(r * (*iter));
 
 	return PolylineOnSphere::create(rotated_points);
+}
+
+
+const boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+GPlatesMaths::operator*(
+		const FiniteRotation &r,
+		boost::intrusive_ptr<const PolylineOnSphere> p)
+{
+	std::vector<PointOnSphere> rotated_points;
+	rotated_points.reserve(p->number_of_vertices());
+
+	PolylineOnSphere::vertex_const_iterator iter = p->vertex_begin();
+	PolylineOnSphere::vertex_const_iterator end = p->vertex_end();
+	for ( ; iter != end; ++iter) {
+		rotated_points.push_back(r * (*iter));
+	}
+
+	boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> rotated_polyline(
+			PolylineOnSphere::create_on_heap(rotated_points));
+	return rotated_polyline;
 }
 
 

@@ -29,6 +29,7 @@
 #define GPLATES_MATHS_FINITEROTATION_H
 
 #include <iosfwd>
+#include <boost/intrusive_ptr.hpp>
 
 #include "UnitQuaternion3D.h"
 #include "types.h"  /* real_t */
@@ -47,6 +48,22 @@ namespace GPlatesMaths
 	class GreatCircle;
 	class SmallCircle;
 	class GridOnSphere;
+
+	void
+	intrusive_ptr_add_ref(
+			const PointOnSphere *p);
+
+	void
+	intrusive_ptr_release(
+			const PointOnSphere *p);
+
+	void
+	intrusive_ptr_add_ref(
+			const PolylineOnSphere *p);
+
+	void
+	intrusive_ptr_release(
+			const PolylineOnSphere *p);
 
 
 	/** 
@@ -218,6 +235,17 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Apply the given rotation to the given intrusive-pointer to point-on-sphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const boost::intrusive_ptr<PointOnSphere>
+	operator*(
+			const FiniteRotation &r,
+			boost::intrusive_ptr<const PointOnSphere> p);
+
+
+	/**
 	 * Apply the given rotation to the given great circle arc.
 	 *
 	 * This operation is not supposed to be symmetrical.
@@ -270,6 +298,17 @@ namespace GPlatesMaths
 	operator*(
 	 const FiniteRotation &r,
 	 const PolylineOnSphere &polyline);
+
+
+	/**
+	 * Apply the given rotation to the given intrusive-pointer to polyline.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const boost::intrusive_ptr<PolylineOnSphere>
+	operator*(
+			const FiniteRotation &r,
+			const boost::intrusive_ptr<const PolylineOnSphere> p);
 
 
 	/**
