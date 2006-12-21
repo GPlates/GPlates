@@ -30,6 +30,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <vector>
 #include <iostream>
 
 #include "model/FeatureHandle.h"
@@ -478,6 +479,11 @@ main() {
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
+	std::vector<GPlatesModel::FeatureHandle> isochrons;
+	isochrons.push_back(isochron1);
+	isochrons.push_back(isochron2);
+	isochrons.push_back(isochron3);
+
 	static const unsigned long fixed_plate_id1 = 511;
 	static const unsigned long moving_plate_id1 = 501;
 	static const RotationFileFiveTuple five_tuples1[] = {
@@ -522,12 +528,20 @@ main() {
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
+	std::vector<GPlatesModel::FeatureHandle> total_recon_seqs;
+	total_recon_seqs.push_back(total_recon_seq1);
+	total_recon_seqs.push_back(total_recon_seq2);
+	total_recon_seqs.push_back(total_recon_seq3);
+
 	GPlatesFileIO::XmlOutputInterface xoi =
 			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
 	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
-	isochron1.accept_visitor(v);
-	isochron2.accept_visitor(v);
-	isochron3.accept_visitor(v);
+
+	std::vector<GPlatesModel::FeatureHandle>::iterator iter1 = isochrons.begin();
+	std::vector<GPlatesModel::FeatureHandle>::iterator end1 = isochrons.end();
+	for ( ; iter1 != end1; ++iter1) {
+		iter1->accept_visitor(v);
+	}
 
 	static const double recon_times_to_test[] = {
 		0.0,
@@ -548,9 +562,12 @@ main() {
 		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, recon_tree);
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
-		total_recon_seq1.accept_visitor(rtp);
-		total_recon_seq2.accept_visitor(rtp);
-		total_recon_seq3.accept_visitor(rtp);
+
+		std::vector<GPlatesModel::FeatureHandle>::iterator iter2 = total_recon_seqs.begin();
+		std::vector<GPlatesModel::FeatureHandle>::iterator end2 = total_recon_seqs.end();
+		for ( ; iter2 != end2; ++iter2) {
+			iter2->accept_visitor(rtp);
+		}
 
 		std::cout << "\n--> Building tree, root node: 501\n";
 		recon_tree.build_tree(501);
@@ -564,9 +581,11 @@ main() {
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
 				recon_tree, reconstructed_points, reconstructed_polylines);
 
-		isochron1.accept_visitor(rfgp);
-		isochron2.accept_visitor(rfgp);
-		isochron3.accept_visitor(rfgp);
+		std::vector<GPlatesModel::FeatureHandle>::iterator iter3 = isochrons.begin();
+		std::vector<GPlatesModel::FeatureHandle>::iterator end3 = isochrons.end();
+		for ( ; iter3 != end3; ++iter3) {
+			iter3->accept_visitor(rfgp);
+		}
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
 				<< reconstructed_points.size()
