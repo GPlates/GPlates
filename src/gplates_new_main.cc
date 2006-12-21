@@ -53,6 +53,7 @@
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/LatLonPointConversions.h"
 
 
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
@@ -535,7 +536,7 @@ main() {
 		80.0,
 		83.5,
 		85.0,
-		90,0
+		90.0
 	};
 	static const unsigned num_recon_times_to_test =
 			sizeof(recon_times_to_test) / sizeof(recon_times_to_test[0]);
@@ -573,6 +574,24 @@ main() {
 				<< reconstructed_polylines.size()
 				<< " reconstructed polyline geometries."
 				<< std::endl;
+
+		std::cout << " > The reconstructed polylines are:\n";
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
+				iter = reconstructed_polylines.begin();
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
+				end = reconstructed_polylines.end();
+		for ( ; iter != end; ++iter) {
+			std::vector<GPlatesMaths::LatLonPoint> seq;
+			GPlatesMaths::LatLonPointConversions::populate_lat_lon_point_sequence(seq,
+					*(iter->geometry()));
+			std::vector<GPlatesMaths::LatLonPoint>::iterator iter2 = seq.begin();
+			std::vector<GPlatesMaths::LatLonPoint>::iterator end2 = seq.end();
+			std::cout << "  - Polyline: (" << iter2->latitude() << ", " << iter2->longitude() << ")";
+			for (++iter2 ; iter2 != end2; ++iter2) {
+				std::cout << ", (" << iter2->latitude() << ", " << iter2->longitude() << ")";
+			}
+			std::cout << std::endl;
+		}
 
 #if 0
 		std::cout << "\n--> Building tree, root node: 511\n";
