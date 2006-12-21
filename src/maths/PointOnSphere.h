@@ -64,6 +64,14 @@ namespace GPlatesMaths {
 					const UnitVector3D &position_vector_);
 
 
+			const boost::intrusive_ptr<PointOnSphere>
+			clone_on_heap() const
+			{
+				boost::intrusive_ptr<PointOnSphere> dup(new PointOnSphere(*this));
+				return dup;
+			}
+
+
 			explicit 
 			PointOnSphere(
 					const UnitVector3D &position_vector_):

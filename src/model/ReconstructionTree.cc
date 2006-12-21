@@ -144,9 +144,12 @@ GPlatesModel::ReconstructionTree::reconstruct_point(
 		GpmlPlateId::integer_plate_id_type plate_id_of_feature,
 		GpmlPlateId::integer_plate_id_type root_plate_id)
 {
-	// If the range is empty, no matches.  Return NULL pointer?
-	// If the range is of length one, one match.  Ideal!
-	// If the range is of length > one, there is ambiguity.
+	// If the requested plate ID is the root of the reconstruction tree, return a copy of the
+	// point (as if the point were reconstructed using the identity rotation!).
+	if (plate_id_of_feature == root_plate_id) {
+		return p->clone_on_heap();
+	}
+
 	std::pair<map_iterator, map_iterator> range =
 			find_nodes_whose_moving_plate_id_match(plate_id_of_feature, root_plate_id);
 
@@ -180,9 +183,12 @@ GPlatesModel::ReconstructionTree::reconstruct_polyline(
 		GpmlPlateId::integer_plate_id_type plate_id_of_feature,
 		GpmlPlateId::integer_plate_id_type root_plate_id)
 {
-	// If the range is empty, no matches.  Return NULL pointer?
-	// If the range is of length one, one match.  Ideal!
-	// If the range is of length > one, there is ambiguity.
+	// If the requested plate ID is the root of the reconstruction tree, return a copy of the
+	// polyline (as if the polyline were reconstructed using the identity rotation!).
+	if (plate_id_of_feature == root_plate_id) {
+		return p->clone_on_heap();
+	}
+
 	std::pair<map_iterator, map_iterator> range =
 			find_nodes_whose_moving_plate_id_match(plate_id_of_feature, root_plate_id);
 

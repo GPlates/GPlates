@@ -493,6 +493,18 @@ namespace GPlatesMaths {
 
 
 		/**
+		 * Clone this PolylineOnSphere instance, to create a duplicate instance on the
+		 * heap.
+		 */
+		const boost::intrusive_ptr<PolylineOnSphere>
+		clone_on_heap() const
+		{
+			boost::intrusive_ptr<PolylineOnSphere> dup(new PolylineOnSphere(*this));
+			return dup;
+		}
+
+
+		/**
 		 * Return the "begin" const_iterator to iterate over the
 		 * sequence of GreatCircleArc which defines this polyline.
 		 */
