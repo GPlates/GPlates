@@ -25,8 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-
 #include <iterator>  /* std::distance */
 #include <deque>
 #include "ReconstructionTree.h"
@@ -76,8 +74,6 @@ GPlatesModel::ReconstructionTree::build_tree(
 	// FIFO instead.
 	std::deque<list_node_reference_type> poles_to_be_processed;
 
-	std::cout << "Looking for poles with fixed plate ID " << root_plate_id << "...\n";
-
 	std::pair<map_iterator, map_iterator> root_range = find_nodes_whose_fixed_plate_id_match(root_plate_id);
 
 	// Note that this if-statement is not strictly necessary (ie, the code would still function
@@ -89,15 +85,6 @@ GPlatesModel::ReconstructionTree::build_tree(
 		return;
 	}
 	for (map_iterator root_iter = root_range.first; root_iter != root_range.second; ++root_iter) {
-
-		std::cout << " - FiniteRotation: " << root_iter->second->relative_rotation() << "\n";
-		std::cout << "    with moving plate: " << root_iter->second->moving_plate()->value() << std::endl; 
-		if (root_iter->second->pole_type() == ReconstructionTreeNode::PoleTypes::ORIGINAL) {
-			std::cout << "    which is original.\n";
-		} else {
-			std::cout << "    which is reversed.\n";
-		}
-
 		poles_to_be_processed.push_back(root_iter->second);
 		d_rootmost_nodes.splice(d_rootmost_nodes.end(), d_unused_nodes, root_iter->second);
 	}
@@ -116,8 +103,6 @@ GPlatesModel::ReconstructionTree::build_tree(
 		d_list_nodes_by_moving_plate_id.insert(
 				std::make_pair(moving_plate_id_of_pole, pole_to_be_processed));
 
-		std::cout << "Looking for poles with fixed plate ID " << moving_plate_id_of_pole << "...\n";
-
 		std::pair<map_iterator, map_iterator> range =
 				find_nodes_whose_fixed_plate_id_match(moving_plate_id_of_pole);
 
@@ -135,14 +120,6 @@ GPlatesModel::ReconstructionTree::build_tree(
 				continue;
 			}
 
-			std::cout << " - FiniteRotation: " << iter->second->relative_rotation() << "\n";
-			std::cout << "    with moving plate: " << iter->second->moving_plate()->value() << std::endl; 
-			if (iter->second->pole_type() == ReconstructionTreeNode::PoleTypes::ORIGINAL) {
-				std::cout << "    which is original.\n";
-			} else {
-				std::cout << "    which is reversed.\n";
-			}
-
 			poles_to_be_processed.push_back(iter->second);
 			pole_to_be_processed->tree_children().splice(
 					pole_to_be_processed->tree_children().end(),
@@ -157,17 +134,6 @@ GPlatesModel::ReconstructionTree::build_tree(
 			iter->second->set_composed_absolute_rotation(
 					::GPlatesMaths::compose(absolute_rot_of_parent, relative_rot_of_child));
 		}
-	}
-
-	// While we're developing this code, let's write out the resulting pole-by-moving-plate-ID
-	// map.
-	std::cout << " * Outputting resulting pole-by-moving-plate-ID map:\n";
-	map_iterator output_iter = d_list_nodes_by_moving_plate_id.begin();
-	map_iterator output_end = d_list_nodes_by_moving_plate_id.end();
-	for ( ; output_iter != output_end; ++output_iter) {
-		std::cout << " - Moving plate: " << output_iter->first << "\n";
-		std::cout << " - Composed absolute rotation: "
-				<< output_iter->second->composed_absolute_rotation() << std::endl;
 	}
 }
 

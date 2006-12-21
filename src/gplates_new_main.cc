@@ -444,54 +444,42 @@ main() {
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
-	for (int i = 0; i < 250; ++i) {
-		double recon_time = i / 10.0;
+	static const double recon_times_to_test[] = {
+		0.0,
+		10.0,
+		20.0,
+		80.0,
+		83.5,
+		85.0,
+		90,0
+	};
+	static const unsigned num_recon_times_to_test =
+			sizeof(recon_times_to_test) / sizeof(recon_times_to_test[0]);
+
+	for (unsigned i = 0; i < num_recon_times_to_test; ++i) {
+		double recon_time = recon_times_to_test[i];
+
 		GPlatesModel::ReconstructionTree recon_tree;
 		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, recon_tree);
 
-		std::cout << "--> Reconstruction time: " << recon_time << std::endl;
+		std::cout << "===> Reconstruction time: " << recon_time << std::endl;
 		total_recon_seq1.accept_visitor(rtp);
 		total_recon_seq2.accept_visitor(rtp);
 		total_recon_seq3.accept_visitor(rtp);
 
-		std::cout << "--> Building tree, root node: 501\n";
+		std::cout << "\n--> Building tree, root node: 501\n";
 		recon_tree.build_tree(501);
 		traverse_recon_tree(recon_tree);
-		std::cout << "--> Building tree, root node: 511\n";
+
+		std::cout << "\n--> Building tree, root node: 511\n";
 		recon_tree.build_tree(511);
 		traverse_recon_tree(recon_tree);
-		std::cout << "--> Building tree, root node: 702\n";
+
+		std::cout << "\n--> Building tree, root node: 702\n";
 		recon_tree.build_tree(702);
 		traverse_recon_tree(recon_tree);
-		std::cout << "--> Building tree, root node: 502\n";
-		recon_tree.build_tree(502);
-		traverse_recon_tree(recon_tree);
 
-		std::cout << std::endl;
-	}
-
-	std::cout << "\n---\n\n";
-
-	for (int i = 0; i < 200; ++i) {
-		double recon_time = 75.0 + (i / 10.0);
-		GPlatesModel::ReconstructionTree recon_tree;
-		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, recon_tree);
-
-		std::cout << "--> Reconstruction time: " << recon_time << std::endl;
-		total_recon_seq1.accept_visitor(rtp);
-		total_recon_seq2.accept_visitor(rtp);
-		total_recon_seq3.accept_visitor(rtp);
-
-		std::cout << "--> Building tree, root node: 501\n";
-		recon_tree.build_tree(501);
-		traverse_recon_tree(recon_tree);
-		std::cout << "--> Building tree, root node: 511\n";
-		recon_tree.build_tree(511);
-		traverse_recon_tree(recon_tree);
-		std::cout << "--> Building tree, root node: 702\n";
-		recon_tree.build_tree(702);
-		traverse_recon_tree(recon_tree);
-		std::cout << "--> Building tree, root node: 502\n";
+		std::cout << "\n--> Building tree, root node: 502\n";
 		recon_tree.build_tree(502);
 		traverse_recon_tree(recon_tree);
 
