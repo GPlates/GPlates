@@ -58,6 +58,14 @@ GPlatesFileIO::XmlOutputInterface::create_for_stdout(
 }
 
 
+const GPlatesFileIO::XmlOutputInterface
+GPlatesFileIO::XmlOutputInterface::create_for_stream(
+		std::ostream &output_stream,
+		const UnicodeString &indentation_unit) {
+	return XmlOutputInterface(std::cout, indentation_unit);
+}
+
+
 void
 GPlatesFileIO::XmlOutputInterface::write_opening_element(
 		const UnicodeString &elem_name) {

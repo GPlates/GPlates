@@ -1,9 +1,9 @@
-/* $Id$ */
+/* $Id: gplates_main.cc 968 2006-11-20 03:28:31Z jboyden $ */
 
 /**
  * \file 
- * $Revision$
- * $Date$ 
+ * $Revision: 968 $
+ * $Date: 2006-11-20 14:28:31 +1100 (Mon, 20 Nov 2006) $ 
  * 
  * Copyright (C) 2006 The University of Sydney, Australia
  *
@@ -23,20 +23,30 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "gui/View.h"
-#include "gui-qt/QtInterface.h"
-#include "application/Presenter.h"
+#include "gui/Interface.h"
 
-int
-main(
-        int argc,
-        char *argv[])
+#include "gui-qt/DesignerMainWindow.h"
+
+namespace GPlatesInterface
 {
-    // create the two ends of the application and glue them together
-    GPlatesView::View<GPlatesView::QtInterface> &view = GPlatesView::View<GPlatesView::QtInterface>::get_view();
-    GPlatesPresenter::Presenter &presenter = GPlatesPresenter::Presenter::get_presenter();
-    // FIXME: we'll need to be careful on shutdown as presenter will disappear before view
-    view.attach_presenter(presenter);
-    // hand over control to the interface
-    return view.main();
+	class QtInterface :
+			public Interface
+	{
+	public:
+		// Routines to create Qt-specific widgets go here.
+		
+		void
+		create_main_window(
+				const std::string &title) 
+		{		
+			d_main_window = new QMainWindow(title);
+			
+			d_ui_main_window.setupUi(d_main_window);
+		}
+				
+	private:
+		QMainWindow d_main_window;
+		
+		Ui_MainWindow d_ui_main_window;
+	};
 }

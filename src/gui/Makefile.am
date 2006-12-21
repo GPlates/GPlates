@@ -5,7 +5,7 @@ EXTRA_DIST		= plates.clr.inc
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LIBRARIES	= libgui.a
-libgui_a_SOURCES	= AboutDialog.cc AnimationTimesDialog.cc Colour.cc FPValidator.cc \
-				GLCanvas.cc GPlatesApp.cc Globe.cc MainWindow.cc NurbsRenderer.cc \
-				OpaqueSphere.cc PlatesColourTable.cc Quadrics.cc ReconstructTimeDialog.cc \
-				SimpleGlobeOrientation.cc SphericalGrid.cc ViewportZoom.cc
+libgui_a_SOURCES	= Globe.cc NurbsRenderer.cc OpaqueSphere.cc \
+						PlatesColourTable.cc Quadrics.cc \
+						SimpleGlobeOrientation.cc SphericalGrid.cc \
+						ViewportZoom.cc Colour.cc

@@ -1,0 +1,10 @@
+all: DocumentUi.h GlobeCanvas.h
+	moc GlobeCanvas.h -o GlobeCanvasMoc.cc
+	g++ qt-driver.cc Document.cc GlobeCanvas.cc GlobeCanvasMoc.cc -o qt-demo -I /usr/include/qt4 -lQtOpenGL -lQtCore -lQtGui
+
+DocumentUi.h: qt-main-design.ui
+	uic -o DocumentUi.h qt-main-design.ui
+
+clean:
+	rm -f qt-demo GlobeCanvasMoc.cc DocumentUi.h
+

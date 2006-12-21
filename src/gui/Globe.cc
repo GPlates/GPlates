@@ -88,7 +88,7 @@ PaintLineDataPos(Layout::LineDataPos& linedata)
 		// There is an entry for this RG-ID in the colour table.
 		glColor3fv(*it);
 
-	} else glColor3fv(GPlatesGui::Colour::BLACK);
+	} else glColor3fv(GPlatesGui::Colour::RED);
 	CallVertexWithLine(line.begin(), line.end());
 }
 

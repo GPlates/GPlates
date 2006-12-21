@@ -153,6 +153,20 @@ namespace GPlatesFileIO {
 		const XmlOutputInterface
 		create_for_stdout(
 				const UnicodeString &indentation_unit = "\t");
+		
+		/**
+		 * Create a new interface instance which will write to an output stream.
+		 *
+		 * The parameter @a output_stream is the stream object to use for output.
+		 *
+		 * The parameter @a indentation_unit is the string which is output for indentation,
+		 * once per level of indentation.
+		 */		
+		static
+		const XmlOutputInterface
+		create_for_stream(
+				std::ostream &output_stream,
+				const UnicodeString &indentation_unit = "\t");
 
 		/**
 		 * Return the status of this instance.

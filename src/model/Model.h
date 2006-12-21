@@ -23,20 +23,30 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "gui/View.h"
-#include "gui-qt/QtInterface.h"
-#include "application/Presenter.h"
+#ifndef GPLATES_MODEL_MODEL_H
+#define GPLATES_MODEL_MODEL_H
 
-int
-main(
-        int argc,
-        char *argv[])
+#include <vector>
+#include "model/ModelInterface.h"
+#include "model/ReconstructedFeatureGeometry.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+
+
+namespace GPlatesModel
 {
-    // create the two ends of the application and glue them together
-    GPlatesView::View<GPlatesView::QtInterface> &view = GPlatesView::View<GPlatesView::QtInterface>::get_view();
-    GPlatesPresenter::Presenter &presenter = GPlatesPresenter::Presenter::get_presenter();
-    // FIXME: we'll need to be careful on shutdown as presenter will disappear before view
-    view.attach_presenter(presenter);
-    // hand over control to the interface
-    return view.main();
+	class Model :
+		public ModelInterface
+	{
+	public:
+		virtual
+		void
+		create_reconstruction(
+				std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &point_reconstructions,
+				std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &polyline_reconstructions,
+				const double &time,
+				unsigned long root);
+	};
 }
+
+#endif  // GPLATES_MODEL_MODEL_H

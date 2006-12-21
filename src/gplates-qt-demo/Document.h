@@ -22,21 +22,30 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+ 
+#ifndef GPLATES_GUI_DOCUMENT_H
+#define GPLATES_GUI_DOCUMENT_H
 
-#include "gui/View.h"
-#include "gui-qt/QtInterface.h"
-#include "application/Presenter.h"
+#include "DocumentUi.h"
+#include "GlobeCanvas.h"
 
-int
-main(
-        int argc,
-        char *argv[])
+namespace GPlatesGui
 {
-    // create the two ends of the application and glue them together
-    GPlatesView::View<GPlatesView::QtInterface> &view = GPlatesView::View<GPlatesView::QtInterface>::get_view();
-    GPlatesPresenter::Presenter &presenter = GPlatesPresenter::Presenter::get_presenter();
-    // FIXME: we'll need to be careful on shutdown as presenter will disappear before view
-    view.attach_presenter(presenter);
-    // hand over control to the interface
-    return view.main();
+	class Document : 
+			public QMainWindow, 
+			protected Ui_MainWindow 
+	{
+		Q_OBJECT
+		
+	public:
+		Document();
+		
+	private slots:
+		void 
+		selection_handler(
+				std::vector< GlobeCanvas::line_header_type > &items);
+	};
 }
+
+#endif
+

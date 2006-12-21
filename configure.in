@@ -161,10 +161,6 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 !!     http://expat.sourceforge.net
 !!]]))
 
-# wxWidgets
-# Need to make sure wxGLCanvas is enabled.
-# ???
-
 # ICU
 # Note that we need to explicitly "test for" every ICU library which is to be
 # linked into the executable, so that a linking directive for each is generated
@@ -284,69 +280,50 @@ AC_ARG_ENABLE(prof, [  --enable-prof           Enable profiling],
 AC_MSG_CHECKING([for Plesiosaurs in Loch Ness])
 AC_MSG_RESULT(yes)
 
-AM_OPTIONS_WXCONFIG
+PKG_CHECK_MODULES(QT, [QtCore >= 4.0.1, QtGui >= 4.0.1, QtOpenGL >= 4.0.1])
+dnl Check needed because in some cases the QtGui includedir
+dnl doesn't contain the subsystem dir.
 
-##################################
-# Finding wxWidgets
-##################################
-probe_wxwid="auto"
+QT_INCLUDE_DIR=$($PKG_CONFIG --variable=includedir QtGui)
+EXTRA_QT_INCLUDE_DIR="$QT_INCLUDE_DIR/Qt"
+AC_CHECK_FILE([$QT_INCLUDE_DIR/QWidget],
+		[AC_MSG_NOTICE([No extra QT_INCLUDE_DIR needed])],
+		[AC_CHECK_FILE([$EXTRA_QT_INCLUDE_DIR/QWidget],
+			[QT_CFLAGS="$QT_CFLAGS -I$EXTRA_QT_INCLUDE_DIR",
+				AC_MSG_WARN([QWidget not found])])])
+AC_MSG_NOTICE([Set QT_CFLAGS... $QT_CFLAGS])
+AC_CHECK_PROG(MOC, [moc], [moc])
+AC_CHECK_PROG(UIC, [uic], [uic])
 
-AC_ARG_ENABLE(wxwid,
-	[  --disable-wxwid         Disable probing for wxWidgets],
-	[probe_wxwid=$enableval])
+AC_SUBST(QT_CFLAGS)
+AC_SUBST(QT_LIBS)
 
+CFLAGS="$CFLAGS $QT_CFLAGS"
+CXXFLAGS="$CXXFLAGS $QT_CFLAGS"
+LDFLAGS="$LDFLAGS $QT_LDFLAGS"
+LIBS="$LIBS $QT_LIBS"
 
-found_wxwid="no"
-if test "$probe_wxwid" != "no"; then
-	# Check for wxWidgets
-	AM_PATH_WXCONFIG([2.4.0], [enable_wxwid="yes"], [enable_wxwid="no"])
-
-	if test "$enable_wxwid" = "yes"; then
-		# AM_PATH_WXCONFIG has set up:
-		#	- WX_CXXFLAGS
-		#	- WX_LIBS
-		WX_GL_LIBS=`$WX_CONFIG_WITH_ARGS --gl-libs`
-
-		AC_DEFINE([HAVE_WXWIN],[],[wxWidgets is available.])
-		CPPFLAGS="$CPPFLAGS $WX_CPPFLAGS"
-		CXXFLAGS="$CXXFLAGS $WX_CXXFLAGS_ONLY"
-		CFLAGS="$CFLAGS $WX_CFLAGS_ONLY"
-		LIBS="$LIBS $WX_LIBS $WX_GL_LIBS"
-		found_wxwid="yes"
-	fi
-fi
-
-
-# Fail if wxWidgets not found
-if test "$found_wxwid" = "no"; then
-	echo "#########################################################"
-	echo "#  ERROR: Could not detect the wxWidgets GUI library!   #"
-	echo "#                                                       #"
-	echo "#  If you are attempting to build GPlates on Mac OS X   #"
-	echo "#  (and you compiled wxWidgets yourself and installed   #"
-	echo "#  the library in the default location), you may need   #"
-	echo "#  to add the directory                                 #"
-	echo "#          /usr/local/bin                               #"
-	echo "#  to your PATH environment variable before executing   #"
-	echo "#  this 'configure' script again.                       #"
-	echo "#########################################################"
-	exit 1
-fi
 
 # Write output
 AC_OUTPUT(Makefile
         doc/doxygen.conf
         doc/Makefile
         src/Makefile
+        src/application/Makefile
         src/controls/Makefile
         src/fileio/Makefile
         src/geo/Makefile
         src/global/Makefile
         src/gui/Makefile
+        src/gui-qt/Makefile
         src/maths/Makefile
         src/model/Makefile
         src/state/Makefile
-        src/util/Makefile)
+        src/util/Makefile
+
+        src/gplates-qt-demo/Makefile
+        src/cube-qt-demo/Makefile
+	)
 
 
 

@@ -97,9 +97,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* wxWidgets is available. */
-#undef HAVE_WXWIN
-
 /* Name of package */
 #undef PACKAGE
 

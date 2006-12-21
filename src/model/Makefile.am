@@ -5,4 +5,4 @@ INCLUDES		= -I$(top_srcdir)/src
 noinst_LIBRARIES	= libmodel.a
 libmodel_a_SOURCES	= ConstFeatureVisitor.cc GeoTimeInstant.cc GmlLineString.cc \
 				GpmlOnePointFiveOutputVisitor.cc StringSetSingletons.cc \
-				XmlOutputInterface.cc
+				XmlOutputInterface.cc Model.cc
