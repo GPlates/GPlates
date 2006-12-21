@@ -381,9 +381,9 @@ traverse_recon_tree(
 int
 main() {
 
-	static const unsigned long plate_id = 501;
+	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
-	static const double points[] = {
+	static const double points1[] = {
 		69.2877,
 		-5.5765,
 		69.1323,
@@ -401,17 +401,45 @@ main() {
 		68.9400,
 		-1.8446,
 	};
-	static const unsigned num_points = sizeof(points) / sizeof(points[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin(10.9);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end =
+	static const unsigned num_points1 = sizeof(points1) / sizeof(points1[0]);
+	GPlatesModel::GeoTimeInstant geo_time_instant_begin1(10.9);
+	GPlatesModel::GeoTimeInstant geo_time_instant_end1 =
 			GPlatesModel::GeoTimeInstant::create_distant_future();
-	UnicodeString description("CARLSBERG RIDGE, INDIA-AFRICA ANOMALY 5 ISOCHRON");
-	UnicodeString name("Izzy the Isochron");
-	UnicodeString codespace_of_name("EarthByte");
+	UnicodeString description1("CARLSBERG RIDGE, INDIA-AFRICA ANOMALY 5 ISOCHRON");
+	UnicodeString name1("Izzy the Isochron");
+	UnicodeString codespace_of_name1("EarthByte");
 
-	GPlatesModel::FeatureHandle isochron =
-			create_isochron(plate_id, points, num_points, geo_time_instant_begin,
-			geo_time_instant_end, description, name, codespace_of_name);
+	GPlatesModel::FeatureHandle isochron1 =
+			create_isochron(plate_id1, points1, num_points1, geo_time_instant_begin1,
+			geo_time_instant_end1, description1, name1, codespace_of_name1);
+
+	static const unsigned long plate_id2 = 702;
+	// lon, lat, lon, lat... is how GML likes it.
+	static const double points2[] = {
+		41.9242,
+		-34.9340,
+		42.7035,
+		-33.4482,
+		44.8065,
+		-33.5645,
+		44.9613,
+		-33.0805,
+		45.6552,
+		-33.2601,
+		46.3758,
+		-31.6947,
+	};
+	static const unsigned num_points2 = sizeof(points2) / sizeof(points2[0]);
+	GPlatesModel::GeoTimeInstant geo_time_instant_begin2(83.5);
+	GPlatesModel::GeoTimeInstant geo_time_instant_end2 =
+			GPlatesModel::GeoTimeInstant::create_distant_future();
+	UnicodeString description2("SOUTHWEST INDIAN RIDGE, MADAGASCAR-ANTARCTICA ANOMALY 34 ISOCHRON");
+	UnicodeString name2("Ozzy the Isochron");
+	UnicodeString codespace_of_name2("EarthByte");
+
+	GPlatesModel::FeatureHandle isochron2 =
+			create_isochron(plate_id2, points2, num_points2, geo_time_instant_begin2,
+			geo_time_instant_end2, description2, name2, codespace_of_name2);
 
 	static const unsigned long fixed_plate_id1 = 511;
 	static const unsigned long moving_plate_id1 = 501;
@@ -460,7 +488,8 @@ main() {
 	GPlatesFileIO::XmlOutputInterface xoi =
 			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
 	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
-	isochron.accept_visitor(v);
+	isochron1.accept_visitor(v);
+	isochron2.accept_visitor(v);
 
 	static const double recon_times_to_test[] = {
 		0.0,
