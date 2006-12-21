@@ -18,7 +18,8 @@ gplates_new_LDADD	= gui/libgui.a controls/libcontrols.a fileio/libfileio.a \
 
 gplates_qt_demo_SOURCES	= gplates_qt_demo.cc
 gplates_qt_demo_LDADD	= gplates-qt-demo/libgplates_qt_demo.a model/libmodel.a \
-				maths/libmaths.a gui/libgui.a state/libstate.a
+				maths/libmaths.a gui/libgui.a state/libstate.a \
+				util/libutil.a
 
 cube_qt_demo_SOURCES	= cube_qt_demo.cc
 cube_qt_demo_LDADD	= cube-qt-demo/libcube_qt_demo.a
