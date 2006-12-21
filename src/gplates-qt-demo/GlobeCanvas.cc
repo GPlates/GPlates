@@ -133,6 +133,12 @@ GPlatesGui::GlobeCanvas::draw_point(
 }
 
 void
+GPlatesGui::GlobeCanvas::clear_data()
+{
+	GPlatesState::Layout::Clear();
+}
+
+void
 GPlatesGui::GlobeCanvas::zoom_in() 
 {
 	unsigned zoom_percent = d_viewport_zoom.zoom_percent();

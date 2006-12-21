@@ -58,6 +58,9 @@ namespace GPlatesGui
 		draw_point(
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesGui::Colour &colour);
+				
+		void
+		clear_data();
 		
 		void
 		zoom_in();
