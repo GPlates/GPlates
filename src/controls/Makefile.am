@@ -3,4 +3,4 @@
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LIBRARIES	= libcontrols.a
-libcontrols_a_SOURCES	= AnimationTimer.cc Dialogs.cc File.cc GuiCalls.cc Lifetime.cc Reconstruct.cc View.cc
+libcontrols_a_SOURCES	= AnimationTimer.cc Dialogs.cc File.cc GuiCalls.cc Lifetime.cc View.cc

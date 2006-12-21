@@ -31,9 +31,10 @@
 #include <map>
 #include <boost/intrusive_ptr.hpp>
 // Even though we could make do with a forward declaration inside this header, every derived class
-// of 'PropertyContainer' will need to #include "ConstFeatureVisitor.h" anyway, so we may as well
-// include it here.
+// of 'PropertyContainer' will need to #include "ConstFeatureVisitor.h" and "FeatureVisitor.h"
+// anyway, so we may as well include them here.
 #include "ConstFeatureVisitor.h"
+#include "FeatureVisitor.h"
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
@@ -109,10 +110,27 @@ namespace GPlatesModel {
 			return d_xml_attributes;
 		}
 
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
 		virtual
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const = 0;
+
+		/**
+		 * Accept a FeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				FeatureVisitor &visitor) = 0;
 
 		void
 		increment_ref_count() const {

@@ -271,25 +271,35 @@ namespace GPlatesFileIO {
 				const UnicodeString &content);
 
 		/**
-		 * Write a line of integer content.
+		 * Write a line of content consisting of a single integer.
 		 *
 		 * The function will indent the line and append a newline.
 		 */
 		void
-		write_line_of_integer_content(
+		write_line_of_single_integer_content(
 				const long &content);
 
 		/**
-		 * Write a line of decimal content.
+		 * Write a line of content consisting of a single decimal.
 		 *
 		 * The function will indent the line and append a newline.
 		 */
 		void
-		write_line_of_decimal_content(
+		write_line_of_single_decimal_content(
 				const double &content);
 
 		/**
-		 * Write a line of decimal content.
+		 * Write a line of content consisting of a duple of decimals.
+		 *
+		 * The function will indent the line and append a newline.
+		 */
+		void
+		write_line_of_decimal_duple_content(
+				const double &first,
+				const double &second);
+
+		/**
+		 * Write a line of content consisting of multiple decimals.
 		 *
 		 * The values will be accessed through the parameters @a content_begin and
 		 * @a content_end.  These parameters are assumed to be forward iterators, one being
@@ -316,7 +326,7 @@ namespace GPlatesFileIO {
 		 */
 		template<typename F>
 		void
-		write_line_of_decimal_content(
+		write_line_of_multi_decimal_content(
 				F content_begin,
 				F content_end);
 
@@ -421,7 +431,7 @@ namespace GPlatesFileIO {
 	template<typename F>
 	inline
 	void
-	XmlOutputInterface::write_line_of_decimal_content(
+	XmlOutputInterface::write_line_of_multi_decimal_content(
 			F content_begin,
 			F content_end) {
 		if (content_begin == content_end) {

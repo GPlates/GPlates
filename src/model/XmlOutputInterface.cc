@@ -110,7 +110,7 @@ GPlatesFileIO::XmlOutputInterface::write_line_of_string_content(
 
 
 void
-GPlatesFileIO::XmlOutputInterface::write_line_of_integer_content(
+GPlatesFileIO::XmlOutputInterface::write_line_of_single_integer_content(
 		const long &content) {
 	write_indentation();
 	// CHECKME:  Do we need to worry about ensuring the locale is appropriate?
@@ -120,11 +120,24 @@ GPlatesFileIO::XmlOutputInterface::write_line_of_integer_content(
 
 
 void
-GPlatesFileIO::XmlOutputInterface::write_line_of_decimal_content(
+GPlatesFileIO::XmlOutputInterface::write_line_of_single_decimal_content(
 		const double &content) {
 	write_indentation();
 	// CHECKME:  Do we need to worry about ensuring the locale is appropriate?
 	*d_os_ptr << content;
+	write_unicode_string("\n");
+}
+
+
+void
+GPlatesFileIO::XmlOutputInterface::write_line_of_decimal_duple_content(
+		const double &first,
+		const double &second) {
+	write_indentation();
+	// CHECKME:  Do we need to worry about ensuring the locale is appropriate?
+	*d_os_ptr << first;
+	write_unicode_string(" ");
+	*d_os_ptr << second;
 	write_unicode_string("\n");
 }
 

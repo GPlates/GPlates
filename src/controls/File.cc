@@ -469,10 +469,15 @@ GPlatesControls::File::OpenData(const std::string& filename)
 	ConvertDataGroupToDrawableDataMap(data);
 
 	// Draw the data on the screen in its present-day layout
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 	Reconstruct::Present();
+#endif
 }
 
 
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 static GPlatesMaths::real_t
 ConvertPlatesParserAngleToGPlatesMathsAngle(const fpdata_t &pp_angle) {
 
@@ -501,7 +506,10 @@ ConvertPlatesParserFinRotToGPlatesMathsFinRot(const
 	GPlatesMaths::real_t angle =
 	 ConvertPlatesParserAngleToGPlatesMathsAngle(pp_fin_rot._rot._angle);
 
-	return GPlatesMaths::FiniteRotation::create(pole, angle, time);
+	// Note that finite rotations (in the GPlatesMaths namespace) no longer contain a time --
+	// that is contained in GPlatesModel::TotalReconstructionSequence now (which also contains
+	// a GPlatesMaths::FiniteRotation).
+	return GPlatesMaths::FiniteRotation::create(pole, angle);
 }
 
 
@@ -534,6 +542,7 @@ ConvertPlatesParserRotSeqToGPlatesMathsRotSeq(const
 	}
 	return rot_seq;
 }
+#endif
 
 
 static void
@@ -552,10 +561,13 @@ ConvertPlatesRotationDataToRotationMap(const
 	     ++it) {
 
 		GPlatesGlobal::rid_t moving_plate((*it)._moving_plate);
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 		GPlatesMaths::RotationSequence rot_seq =
 		 ConvertPlatesParserRotSeqToGPlatesMathsRotSeq(*it);
 
 		(*rotation_map)[moving_plate].insert(rot_seq);
+#endif
 	}
 
 	// Release the pointer from the auto_ptr
@@ -643,7 +655,10 @@ void GPlatesControls::File::ImportData(const std::string& filename)
 		ConvertDataGroupToDrawableDataMap(data);
 
 		// Draw the data on the screen in its present-day layout
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 		Reconstruct::Present();
+#endif
 	}
 }
 

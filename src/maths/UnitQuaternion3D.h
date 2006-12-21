@@ -154,7 +154,7 @@ namespace GPlatesMaths {
 	 public:
 
 		/**
-		 * Access quaternion as the duple (scalar, vector).
+		 * Access the scalar part of the quaternion as a duple (scalar, vector).
 		 */
 		const real_t &
 		scalar_part() const {
@@ -164,7 +164,7 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Access quaternion as the duple (scalar, vector).
+		 * Access the vector part of the quaternion as a duple (scalar, vector).
 		 */
 		const Vector3D &
 		vector_part() const {
@@ -174,7 +174,7 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Access quaternion as the real 4-tuple (w, x, y, z).
+		 * Access the w-component of the quaternion as a 4-tuple (w, x, y, z).
 		 */
 		const real_t &
 		w() const {
@@ -184,7 +184,7 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Access quaternion as the real 4-tuple (w, x, y, z).
+		 * Access the x-component of the quaternion as a 4-tuple (w, x, y, z).
 		 */
 		const real_t &
 		x() const {
@@ -194,7 +194,7 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Access quaternion as the real 4-tuple (w, x, y, z).
+		 * Access the y-component of the quaternion as a 4-tuple (w, x, y, z).
 		 */
 		const real_t &
 		y() const {
@@ -204,7 +204,7 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Access quaternion as the real 4-tuple (w, x, y, z).
+		 * Access the z-component of the quaternion as a 4-tuple (w, x, y, z).
 		 */
 		const real_t &
 		z() const {
@@ -216,8 +216,7 @@ namespace GPlatesMaths {
 		/**
 		 * Return the conjugate of this unit quaternion.
 		 *
-		 * This operation is used in the calculation of the
-		 * multiplicative inverse.
+		 * This operation is used in the calculation of the multiplicative inverse.
 		 */
 		const UnitQuaternion3D
 		get_conjugate() const {
@@ -328,12 +327,22 @@ namespace GPlatesMaths {
 		 * angle @a angle.
 		 *
 		 * As always, the rotation angle is in radians.
+		 *
+		 * FIXME:  Rename this to 'create_axis_angle_rotation'.
 		 */
 		static
 		const UnitQuaternion3D
 		create_rotation(
 		 const UnitVector3D &axis, 
 		 const real_t &angle);
+
+
+		/**
+		 * Create a unit quaternion to represent an identity rotation.
+		 */
+		static
+		const UnitQuaternion3D
+		create_identity_rotation();
 
 
 		/**
@@ -474,12 +483,16 @@ namespace GPlatesMaths {
 		 *  s = cos(theta/2)
 		 *    = cos((2 * N + 1) * PI)
 		 *    = cos(2 * N * PI + PI)
-		 *    = cos(2 * N * PI) * cos(PI) -
-		 *       sin(2 * N * PI) * sin(PI)
+		 *    = cos(2 * N * PI) * cos(PI) - sin(2 * N * PI) * sin(PI)
 		 *    = 1 * (-1) - 0 * 0
 		 *    = -1
 		 *
 		 * Thus, (abs(s) = 1) implies an identity rotation.
+		 *
+		 * (Obviously, since this is a *unit* quaternion, if the scalar part is equal to
+		 * one, then the vector part must be the zero vector.  Recall that the norm-sqrd of
+		 * a quaternion is ((s * s) + dot(v, v)); the only way that dot(v, v) can be equal
+		 * to zero is if v is the zero vector.)
 		 */
 		return (abs(q.scalar_part()) == 1.0);
 	}

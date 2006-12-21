@@ -94,10 +94,29 @@ namespace GPlatesModel {
 			return d_value_is_optional;
 		}
 
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
 		virtual
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const {
+			visitor.visit_single_valued_property_container(*this);
+		}
+
+		/**
+		 * Accept a FeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				FeatureVisitor &visitor) {
 			visitor.visit_single_valued_property_container(*this);
 		}
 

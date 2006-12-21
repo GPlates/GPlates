@@ -30,140 +30,97 @@
 
 #include <iosfwd>
 
-#include "UnitVector3D.h"
 #include "UnitQuaternion3D.h"
-#include "PointOnSphere.h"
-#include "GreatCircleArc.h"
-#include "GreatCircle.h"
-#include "SmallCircle.h"
-#include "GridOnSphere.h"
 #include "types.h"  /* real_t */
 
 
 namespace GPlatesMaths
 {
+	// Forward declaration for the member function 'FiniteRotation::operator*'.
+	class UnitVector3D;
+
+	// Forward declarations for the non-member function 'operator*'.
+	class PointOnSphere;
+	class PolylineOnSphere;
+	class PolygonOnSphere;
+	class GreatCircleArc;
+	class GreatCircle;
+	class SmallCircle;
+	class GridOnSphere;
+
+
 	/** 
-	 * Represents a so-called "finite rotation" of plate tectonics.
+	 * This class represents a so-called "finite rotation" of plate tectonics.
 	 *
-	 * Plate tectonics theory states that the motion of plates on the
-	 * surface of the globe can be described by "Euler rotations".
-	 * A finite rotation is the Euler rotation which transforms
-	 * a point on the surface of the sphere from its present-day
-	 * location to its calculated location at some point in the past.
-	 * Thus, a finite rotation is associated with a particular point
-	 * in time, as well as a particular transformation.
+	 * Plate tectonics theory states that the motion of plates on the surface of the globe can
+	 * be described by "finite rotations".
 	 *
-	 * An Euler rotation is a rotation about an "Euler pole" (a pole
-	 * of rotation whose axis extends through the centre of the globe),
-	 * by an angular distance.
+	 * A finite rotation is a rotation about an "Euler pole" (a point on the surface of the
+	 * globe, which is the intersection point of a rotation vector (the semi-axis of rotation)
+	 * which extends from the centre of the globe), by an angular distance.
 	 *
-	 * Euler poles are specified by a point on the surface of the globe.
-	 * [The Euler pole is directed from the centre of the globe to this
-	 * point on the surface, and thus may be considered an axial rotation
-	 * vector.]
+	 * An Euler pole is specified by a point on the surface of the globe.
 	 *
-	 * Rotation angles are specified in radians, with the usual sense of
-	 * rotation:  a positive angle represents an anti-clockwise rotation
-	 * around the rotation vector;  a negative angle corresponds to a
-	 * clockwise rotation.
+	 * A rotation angle is specified in radians, with the usual sense of rotation:  a positive
+	 * angle represents an anti-clockwise rotation around the rotation vector; a negative angle
+	 * corresponds to a clockwise rotation.
 	 */
 	class FiniteRotation {
 
 		public:
 
 			/**
-			 * Create a finite rotation with the given Euler pole
-			 * and rotation angle, for the given point in time.
-			 *
-			 * As always, the rotation angle is in radians; the
-			 * point in time is in Ma (Millions of years ago).
+			 * Create a finite rotation with the Euler pole @a pole and rotation angle
+			 * @a angle.
 			 */
 			static
 			const FiniteRotation
 			create(
-			 const PointOnSphere &euler_pole,
-			 const real_t &rotation_angle,
-			 const real_t &point_in_time);
+					const PointOnSphere &pole,
+					const real_t &angle);
 
 			/**
-			 * Create a finite rotation consisting of the given
-			 * unit quaternion and the given point in time.
-			 *
-			 * The point in time is in Ma (Millions of years ago).
+			 * Create a finite rotation corresponding to the rotation effected by the
+			 * unit quaternion @a uq.
 			 */
 			static
 			const FiniteRotation
 			create(
-			 const UnitQuaternion3D &uq,
-			 const real_t &point_in_time);
+					const UnitQuaternion3D &uq);
 
 			/**
-			 * Return the unit quaternion associated with this
-			 * finite rotation.
+			 * Return a unit quaternion which would effect the rotation of this finite
+			 * rotation.
 			 */
 			const UnitQuaternion3D &
-			unit_quat() const {
-
-				return m_unit_quat;
+			unit_quat() const
+			{
+				return d_unit_quat;
 			}
 
 			/**
-			 * Return the point in time associated with this
-			 * finite rotation.
-			 */
-			const real_t &
-			time() const {
-
-				return m_time;
-			}
-
-			/**
-			 * Apply this rotation to a unit vector @a uv.
-			 *
-			 * Note that this function is a member function for
-			 * two (2) reasons:
-			 *
-			 *  (i) to enable it to access the private member data
-			 *       'm_d' and 'm_e'.
-			 *
-			 *  (ii) to enforce the concept that the operation of
-			 *        a finite rotation is APPLIED TO a vector --
-			 *        it is very much a PREmultiplication, in the
-			 *        style of traditional matrix operations.
+			 * Apply this rotation to a unit vector @a unit_vect.
 			 *
 			 * This operation is not supposed to be symmetrical.
 			 */
 			const UnitVector3D
 			operator*(
-			 const UnitVector3D &uv) const;
+					const UnitVector3D &unit_vect) const;
 
 		protected:
 
+			explicit
 			FiniteRotation(
-			 const UnitQuaternion3D &q,
-			 const real_t &t,
-			 const real_t &d,
-			 const Vector3D &e) :
-			 m_unit_quat(q),
-			 m_time(t),
-			 m_d(d),
-			 m_e(e) {  }
+					const UnitQuaternion3D &unit_quat_);
 
 		private:
 
-			UnitQuaternion3D m_unit_quat;
-			real_t           m_time;  // Millions of years ago
+			// This unit-quaternion is used to effect the rotation operation.
+			UnitQuaternion3D d_unit_quat;
 
-			/*
-			 * And now for the mysterious values of 'm_d' and 'm_e'
-			 *
-			 * These are only used to rotate points on the sphere,
-			 * and are calculated purely for optimisation purposes.
-			 * I don't know whether they have any physical meaning.
-			 * I suspect not.
-			 */
-			real_t   m_d;
-			Vector3D m_e;
+			// These values are used to optimise rotation operations.
+			real_t   d_d;
+			Vector3D d_e;
 
 	};
 
@@ -174,48 +131,48 @@ namespace GPlatesMaths
 	inline
 	const FiniteRotation
 	get_reverse(
-	 const FiniteRotation &r) {
-
-		return
-		 FiniteRotation::create(r.unit_quat().get_inverse(), r.time());
+			const FiniteRotation &r)
+	{
+		return FiniteRotation::create(r.unit_quat().get_inverse());
 	}
 
 
 	/**
-	 * Calculate and return the finite rotation which is the interpolation
-	 * of the two finite rotations @a r1 and @a r2 to the time @a t.
+	 * Calculate the finite rotation which is the interpolation of the finite rotations @a r1
+	 * and @a r2 according to the interpolation parameters @a t1, @a t2 and @a t_target.
 	 *
-	 * If the time of @a r1 is equal to the time of @a t2, throw an
-	 * @a IndeterminateResultException.
+	 * The parameters @a t1 and @a t2 correspond to @a r1 and @a r2, respectively; @a t_target
+	 * corresponds to the result of the interpolation.  The ratio of the difference between
+	 * @a r1 and the interpolated result to the difference between the interpolated result and
+	 * @a r2 will be equal to the ratio of the difference between @a t1 and @a t_target to the
+	 * difference between @a t_target and @a t2.
 	 *
-	 * This operation uses the awesome power of SLERP (spherical linear
-	 * interpolation) of quaternions.
+	 * Obviously, no interpolation can occur if the value of @a t1 is equal to the value of
+	 * @a t2 -- intuitively, because there is no difference between the values; and
+	 * arithmetically, because a divide-by-zero would occur when calculating the ratio of the
+	 * interpolation.
+	 *
+	 * Hence, if the value of @a t1 is equal to the value of @a t2, an
+	 * @a IndeterminateResultException will be thrown.
+	 *
+	 * Note that @em any real-valued floating-point value is acceptable as the value of
+	 * @a t_target, whether between @a t1 and @a t2, equal to either of them, or less-than or
+	 * greater-than both of them.
+	 *
+	 * This operation invokes the awesome power of quaternion SLERP (spherical linear
+	 * interpolation).
 	 */
 	const FiniteRotation
 	interpolate(
-	 const FiniteRotation &r1,
-	 const FiniteRotation &r2,
-	 const real_t &t);
+			const FiniteRotation &r1,
+			const FiniteRotation &r2,
+			const real_t &t1,
+			const real_t &t2,
+			const real_t &t_target);
 
 
 	/**
-	 * Compare two finite rotations by their time.
-	 *
-	 * This operation provides a strict weak ordering, which enables
-	 * finite rotations to be sorted by STL algorithms.
-	 */
-	inline
-	bool
-	operator<(
-	 const FiniteRotation &r1,
-	 const FiniteRotation &r2) {
-
-		return (r1.time() < r2.time());
-	}
-
-
-	/**
-	 * Compose two FiniteRotations of the same point in time.
+	 * Compose two FiniteRotations.
 	 *
 	 * Note: order of composition is important!
 	 * Quaternion multiplication is not commutative!
@@ -242,11 +199,9 @@ namespace GPlatesMaths
 	 * the root of the tree, and the motion of any given plate specified
 	 * relative to the plate root-ward of it), then the finite rotation
 	 * r1 should be one branch root-ward of the finite rotation r2.
-	 *
-	 * @throws InvalidOperationException if @a r1.time() != @a r2.time().
 	 */
 	const FiniteRotation
-	operator*(
+	compose(
 	 const FiniteRotation &r1,
 	 const FiniteRotation &r2);
 
@@ -256,15 +211,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	inline
 	const PointOnSphere
 	operator*(
 	 const FiniteRotation &r,
-	 const PointOnSphere &p) {
-
-		UnitVector3D rotated_position_vector = r * p.position_vector();
-		return PointOnSphere(rotated_position_vector);
-	}
+	 const PointOnSphere &p);
 
 
 	/**
@@ -272,19 +222,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	inline
 	const GreatCircleArc
 	operator*(
 	 const FiniteRotation &r,
-	 const GreatCircleArc &g) {
-
-		PointOnSphere start = r * g.start_point();
-		PointOnSphere end   = r * g.end_point();
-
-		UnitVector3D rot_axis = r * g.rotation_axis();
-
-		return GreatCircleArc::create(start, end, rot_axis);
-	}
+	 const GreatCircleArc &g);
 
 
 	/**
@@ -292,15 +233,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	inline
 	const GreatCircle
 	operator*(
 	 const FiniteRotation &r,
-	 const GreatCircle &g) {
-
-		UnitVector3D axis = r * g.axisvector();
-		return GreatCircle(axis);
-	}
+	 const GreatCircle &g);
 
 
 	/**
@@ -308,15 +244,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	inline
 	const SmallCircle
 	operator*(
 	 const FiniteRotation &r,
-	 const SmallCircle &s) {
-
-		UnitVector3D axis = r * s.axisvector();
-		return SmallCircle(axis, s.cosColatitude());
-	}
+	 const SmallCircle &s);
 
 
 	/**
@@ -324,22 +255,11 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	inline
 	const GridOnSphere
 	operator*(
 	 const FiniteRotation &r,
-	 const GridOnSphere &g) {
+	 const GridOnSphere &g);
 
-		SmallCircle sc = r * g.lineOfLat();
-		GreatCircle gc = r * g.lineOfLon();
-		PointOnSphere p = r * g.origin();
-
-		return
-		 GridOnSphere(sc, gc, p, g.deltaAlongLat(), g.deltaAlongLon());
-	}
-
-
-	class PolylineOnSphere;
 
 	/**
 	 * Apply the given rotation to the given polyline.
@@ -351,8 +271,6 @@ namespace GPlatesMaths
 	 const FiniteRotation &r,
 	 const PolylineOnSphere &polyline);
 
-
-	class PolygonOnSphere;
 
 	/**
 	 * Apply the given rotation to the given polygon.

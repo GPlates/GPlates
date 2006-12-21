@@ -6,7 +6,7 @@ SUBDIRS			= gui maths model state \
 
 INCLUDES		= -I$(top_srcdir)/src
 
-bin_PROGRAMS		= cube_qt_demo gplates_qt_demo
+bin_PROGRAMS		= gplates-new cube_qt_demo gplates_qt_demo
 
 gplates_SOURCES		= gplates_main.cc
 gplates_LDADD		= application/libapplication.a gui/libgui.a

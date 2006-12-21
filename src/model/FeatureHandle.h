@@ -33,6 +33,7 @@
 #include "FeatureId.h"
 #include "FeatureType.h"
 #include "ConstFeatureVisitor.h"
+#include "FeatureVisitor.h"
 
 namespace GPlatesModel {
 
@@ -131,6 +132,18 @@ namespace GPlatesModel {
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const {
+			visitor.visit_feature_handle(*this);
+		}
+
+		/**
+		 * Accept a FeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		void
+		accept_visitor(
+				FeatureVisitor &visitor) {
 			visitor.visit_feature_handle(*this);
 		}
 

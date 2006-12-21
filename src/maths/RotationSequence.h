@@ -155,7 +155,10 @@ namespace GPlatesMaths
 							 * not yet been sorted
 							 * at all).
 							 */
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 							_seq.sort();
+#endif
 							_is_modified = false;
 						}
 					}

@@ -38,6 +38,11 @@ namespace GPlatesModel {
 
 	public:
 
+		/**
+		 * This is the type which is used to contain the plate ID value inside this class.
+		 */
+		typedef unsigned long integer_plate_id_type;
+
 		virtual
 		~GpmlPlateId() {  }
 
@@ -49,7 +54,7 @@ namespace GPlatesModel {
 		static
 		const boost::intrusive_ptr<GpmlPlateId>
 		create(
-				const unsigned long &value_) {
+				const integer_plate_id_type &value_) {
 			boost::intrusive_ptr<GpmlPlateId> ptr(new GpmlPlateId(value_));
 			return ptr;
 		}
@@ -61,15 +66,34 @@ namespace GPlatesModel {
 			return dup;
 		}
 
-		const unsigned long &
+		const integer_plate_id_type &
 		value() const {
 			return d_value;
 		}
 
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
 		virtual
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const {
+			visitor.visit_gpml_plate_id(*this);
+		}
+
+		/**
+		 * Accept a FeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				FeatureVisitor &visitor) {
 			visitor.visit_gpml_plate_id(*this);
 		}
 
@@ -79,7 +103,7 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GpmlPlateId(
-				const unsigned long &value_):
+				const integer_plate_id_type &value_):
 			PropertyValue(),
 			d_value(value_)
 		{  }
@@ -97,7 +121,7 @@ namespace GPlatesModel {
 
 	private:
 
-		unsigned long d_value;
+		integer_plate_id_type d_value;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

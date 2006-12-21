@@ -153,9 +153,27 @@ namespace GPlatesModel {
 			return d_value_type;
 		}
 
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const {
+			visitor.visit_gpml_time_sample(*this);
+		}
+
+		/**
+		 * Accept a FeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		void
+		accept_visitor(
+				FeatureVisitor &visitor) {
 			visitor.visit_gpml_time_sample(*this);
 		}
 

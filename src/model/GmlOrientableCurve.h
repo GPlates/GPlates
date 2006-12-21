@@ -168,6 +168,19 @@ namespace GPlatesModel {
 			visitor.visit_gml_orientable_curve(*this);
 		}
 
+		/**
+		 * Accept a FeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				FeatureVisitor &visitor) {
+			visitor.visit_gml_orientable_curve(*this);
+		}
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow

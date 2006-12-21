@@ -33,6 +33,9 @@
 #include "types.h"  /* real_t */
 
 
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
+
 namespace GPlatesMaths
 {
 	/** 
@@ -206,5 +209,7 @@ namespace GPlatesMaths
 #endif
 
 }
+
+#endif
 
 #endif  // GPLATES_MATHS_STAGEROTATION_H

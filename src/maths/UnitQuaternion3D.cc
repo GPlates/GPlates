@@ -89,6 +89,23 @@ GPlatesMaths::UnitQuaternion3D::create_rotation(
 
 
 const GPlatesMaths::UnitQuaternion3D
+GPlatesMaths::UnitQuaternion3D::create_identity_rotation()
+{
+	/*
+	 * A unit quaternion which encodes an identity rotation is composed of a scalar part which
+	 * is equal to one, and a vector part which is the zero vector.
+	 *
+	 * (For the proof of this statement, read the comment in the function
+	 * '::GPlatesMaths::represents_identity_rotation(const UnitQuaternion3D &)'.)
+	 */
+	real_t   scalar_part = 1.0;
+	Vector3D vector_part = Vector3D(0.0, 0.0, 0.0);
+
+	return UnitQuaternion3D(scalar_part, vector_part);
+}
+
+
+const GPlatesMaths::UnitQuaternion3D
 GPlatesMaths::UnitQuaternion3D::create(
  const NonUnitQuaternion &q) {
 

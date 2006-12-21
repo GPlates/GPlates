@@ -30,6 +30,19 @@
 #include <wx/wx.h>
 #include <wx/datetime.h>
 #include "AboutDialog.h"
+
+// This is a temporary fix (just while we're still using wxWidgets) because <wx/wx.h> includes
+// <wx/defs.h>, which includes <wx/platform.h>, which defines HAVE_BOOL and HAVE_EXPLICIT, which
+// our own configuration file "global/config.h" (whose inclusion immediately follows) also defines.
+// We're not undefining these macros because we're concerned about the values being different, but
+// because the compiler is complaining about the macros being redefined.
+#ifdef HAVE_BOOL
+#undef HAVE_BOOL
+#endif  // HAVE_BOOL
+#ifdef HAVE_EXPLICIT
+#undef HAVE_EXPLICIT
+#endif  // HAVE_EXPLICIT
+
 #include "global/config.h"
 
 

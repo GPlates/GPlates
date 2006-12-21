@@ -30,9 +30,11 @@
 #include "model/FeatureRevision.h"
 #include "model/GmlLineString.h"
 #include "model/GmlOrientableCurve.h"
+#include "model/GmlPoint.h"
 #include "model/GmlTimeInstant.h"
 #include "model/GmlTimePeriod.h"
 #include "model/GpmlConstantValue.h"
+#include "model/GpmlFiniteRotation.h"
 #include "model/GpmlFiniteRotationSlerp.h"
 #include "model/GpmlIrregularSampling.h"
 #include "model/GpmlPlateId.h"
@@ -100,12 +102,13 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 			pos_list_xml_attrs.end());
 
 	// It would be slightly "nicer" (ie, avoiding the allocation of a temporary buffer) if we
-	// were to create an iterator which performed this transformation for us automatically, but
-	// (i) that's probably not the most efficient use of our time right now; (ii) it's file
-	// I/O, it's slow anyway; and (iii) we can cut it down to a single memory allocation if we
-	// reserve the size of the vector in advance.
+	// were to create an iterator which performed the following transformation for us
+	// automatically, but (i) that's probably not the most efficient use of our time right now;
+	// (ii) it's file I/O, it's slow anyway; and (iii) we can cut it down to a single memory
+	// allocation if we make the vector a static local variable and reserve the size of the
+	// vector in advance.
 	boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> polyline_ptr = gml_line_string.polyline();
-	std::vector<double> pos_list;
+	static std::vector<double> pos_list;
 	// Reserve enough space for the coordinates, to avoid the need to reallocate.
 	//
 	// number of coords = 
@@ -123,7 +126,10 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 		pos_list.push_back(llp.latitude().dval());
 		pos_list.push_back(llp.longitude().dval());
 	}
-	d_output.write_line_of_decimal_content(pos_list.begin(), pos_list.end());
+	d_output.write_line_of_multi_decimal_content(pos_list.begin(), pos_list.end());
+
+	// Don't forget to clear the vector when we're done with it!
+	pos_list.clear();
 }
 
 
@@ -142,6 +148,21 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_orientable_curve(
 
 
 void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_point(
+		const GPlatesModel::GmlPoint &gml_point) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:Point");
+	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:pos");
+	// FIXME:  Should we throw an exception if this value is NULL?
+	if (gml_point.point() != NULL) {
+		const GPlatesMaths::PointOnSphere &pos = *gml_point.point();
+		GPlatesMaths::LatLonPoint llp =
+				GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(pos);
+		d_output.write_line_of_decimal_duple_content(llp.longitude().dval(), llp.latitude().dval());
+	}
+}
+
+
+void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_time_instant(
 		const GPlatesModel::GmlTimeInstant &gml_time_instant) {
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:TimeInstant");
@@ -151,7 +172,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_time_instant(
 
 	const GPlatesModel::GeoTimeInstant &time_position = gml_time_instant.time_position();
 	if (time_position.is_real()) {
-		d_output.write_line_of_decimal_content(time_position.value());
+		d_output.write_line_of_single_decimal_content(time_position.value());
 	} else if (time_position.is_distant_past()) {
 		d_output.write_line_of_string_content("http://gplates.org/times/distantPast");
 	} else if (time_position.is_distant_future()) {
@@ -200,6 +221,31 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_constant_value(
 
 
 void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_finite_rotation(
+		const GPlatesModel::GpmlFiniteRotation &gpml_finite_rotation) {
+	if (gpml_finite_rotation.is_zero_rotation()) {
+		d_output.write_empty_element("gpml:ZeroFiniteRotation");
+	} else {
+		XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:AxisAngleFiniteRotation");
+		{
+			XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:eulerPole");
+			boost::intrusive_ptr<GPlatesModel::GmlPoint> gml_point =
+					::GPlatesModel::calculate_euler_pole(gpml_finite_rotation);
+			visit_gml_point(*gml_point);
+		}
+		{
+			XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:angle");
+			GPlatesMaths::real_t angle_in_radians =
+					::GPlatesModel::calculate_angle(gpml_finite_rotation);
+			double angle_in_degrees =
+					::GPlatesMaths::degreesToRadians(angle_in_radians).dval();
+			d_output.write_line_of_single_decimal_content(angle_in_degrees);
+		}
+	}
+}
+
+
+void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_finite_rotation_slerp(
 		const GPlatesModel::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp) {
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:FiniteRotationSlerp");
@@ -238,7 +284,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_irregular_sampling(
 void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_plate_id(
 		const GPlatesModel::GpmlPlateId &gpml_plate_id) {
-	d_output.write_line_of_integer_content(gpml_plate_id.value());
+	d_output.write_line_of_single_integer_content(gpml_plate_id.value());
 }
 
 

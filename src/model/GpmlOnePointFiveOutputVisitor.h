@@ -68,6 +68,11 @@ namespace GPlatesFileIO {
 
 		virtual
 		void
+		visit_gml_point(
+				const GPlatesModel::GmlPoint &gml_point);
+
+		virtual
+		void
 		visit_gml_time_instant(
 				const GPlatesModel::GmlTimeInstant &gml_time_instant);
 
@@ -80,6 +85,11 @@ namespace GPlatesFileIO {
 		void
 		visit_gpml_constant_value(
 				const GPlatesModel::GpmlConstantValue &gpml_constant_value);
+
+		virtual
+		void
+		visit_gpml_finite_rotation(
+				const GPlatesModel::GpmlFiniteRotation &gpml_finite_rotation);
 
 		virtual
 		void

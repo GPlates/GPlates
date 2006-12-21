@@ -440,14 +440,22 @@ GPlatesGui::MainWindow::OnReconstructTime(wxCommandEvent&)
 	ReconstructTimeDialog dialog(this);
 
 	if (dialog.ShowModal() == wxID_OK)
+	{
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 		GPlatesControls::Reconstruct::Time(dialog.GetTime());
+#endif
+	}
 }
 
 
 void
 GPlatesGui::MainWindow::OnReconstructPresent(wxCommandEvent&)
 {
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 	GPlatesControls::Reconstruct::Present();
+#endif
 }
 
 
@@ -464,8 +472,11 @@ GPlatesGui::MainWindow::OnReconstructAnimation(wxCommandEvent&)
 		_last_time_delta = dialog.GetTimeDelta();
 		_last_finish_on_end = dialog.GetFinishOnEnd();
 
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 		GPlatesControls::Reconstruct::Animation(_last_start_time,
 		 _last_end_time, _last_time_delta, _last_finish_on_end);
+#endif
 	}
 }
 

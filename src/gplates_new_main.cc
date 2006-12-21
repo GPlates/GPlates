@@ -30,6 +30,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
 #include "model/GmlLineString.h"
@@ -37,6 +39,7 @@
 #include "model/GmlTimePeriod.h"
 #include "model/GpmlConstantValue.h"
 #include "model/GpmlFiniteRotationSlerp.h"
+#include "model/GpmlFiniteRotation.h"
 #include "model/GpmlIrregularSampling.h"
 #include "model/GpmlPlateId.h"
 #include "model/GpmlTimeSample.h"
@@ -44,6 +47,8 @@
 #include "model/XsString.h"
 #include "model/GpmlOnePointFiveOutputVisitor.h"
 #include "model/XmlOutputInterface.h"
+#include "model/ReconstructionTree.h"
+#include "model/ReconstructionTreePopulator.h"
 
 
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
@@ -250,6 +255,12 @@ create_total_reconstruction_pole(
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
 
 	for (unsigned i = 0; i < num_five_tuples; ++i) {
+		std::pair<double, double> gpml_euler_pole =
+				std::make_pair(five_tuples[i].lon_of_euler_pole, five_tuples[i].lat_of_euler_pole);
+		boost::intrusive_ptr<GPlatesModel::GpmlFiniteRotation> gpml_finite_rotation =
+				GPlatesModel::GpmlFiniteRotation::create(gpml_euler_pole,
+				five_tuples[i].rotation_angle);
+
 		GPlatesModel::GeoTimeInstant geo_time_instant(five_tuples[i].time);
 		boost::intrusive_ptr<GPlatesModel::GmlTimeInstant> gml_time_instant =
 				GPlatesModel::GmlTimeInstant::create(geo_time_instant, xml_attributes);
@@ -258,7 +269,7 @@ create_total_reconstruction_pole(
 		boost::intrusive_ptr<GPlatesModel::XsString> gml_description =
 				GPlatesModel::XsString::create(comment_string);
 
-		time_samples.push_back(GPlatesModel::GpmlTimeSample(NULL, gml_time_instant,
+		time_samples.push_back(GPlatesModel::GpmlTimeSample(gpml_finite_rotation, gml_time_instant,
 				gml_description, value_type));
 	}
 
@@ -309,6 +320,62 @@ create_total_recon_seq(
 }
 
 
+void
+traverse_recon_tree_recursive(
+		GPlatesModel::ReconstructionTree::ReconstructionTreeNode &node)
+{
+	std::cout << " * Children of pole (fixed plate: "
+			<< node.fixed_plate()->value()
+			<< ", moving plate: "
+			<< node.moving_plate()->value()
+			<< ")\n";
+
+	GPlatesModel::ReconstructionTree::list_node_reference_type iter = node.tree_children().begin();
+	GPlatesModel::ReconstructionTree::list_node_reference_type end = node.tree_children().end();
+	for ( ; iter != end; ++iter) {
+		std::cout << " - FiniteRotation: " << iter->relative_rotation() << "\n";
+		std::cout << "    with fixed plate: " << iter->fixed_plate()->value() << std::endl;
+		std::cout << "    and moving plate: " << iter->moving_plate()->value() << std::endl;
+		if (iter->pole_type() ==
+				GPlatesModel::ReconstructionTree::ReconstructionTreeNode::PoleTypes::ORIGINAL) {
+			std::cout << "    which is original.\n";
+		} else {
+			std::cout << "    which is reversed.\n";
+		}
+	}
+	iter = node.tree_children().begin();
+	for ( ; iter != end; ++iter) {
+		::traverse_recon_tree_recursive(*iter);
+	}
+}
+
+
+void
+traverse_recon_tree(
+		GPlatesModel::ReconstructionTree &recon_tree)
+{
+	std::cout << " * Root-most poles:\n";
+
+	GPlatesModel::ReconstructionTree::list_node_reference_type iter = recon_tree.rootmost_nodes_begin();
+	GPlatesModel::ReconstructionTree::list_node_reference_type end = recon_tree.rootmost_nodes_end();
+	for ( ; iter != end; ++iter) {
+		std::cout << " - FiniteRotation: " << iter->relative_rotation() << "\n";
+		std::cout << "    with fixed plate: " << iter->fixed_plate()->value() << std::endl;
+		std::cout << "    and moving plate: " << iter->moving_plate()->value() << std::endl;
+		if (iter->pole_type() ==
+				GPlatesModel::ReconstructionTree::ReconstructionTreeNode::PoleTypes::ORIGINAL) {
+			std::cout << "    which is original.\n";
+		} else {
+			std::cout << "    which is reversed.\n";
+		}
+	}
+	iter = recon_tree.rootmost_nodes_begin();
+	for ( ; iter != end; ++iter) {
+		::traverse_recon_tree_recursive(*iter);
+	}
+}
+
+
 int
 main() {
 
@@ -331,25 +398,103 @@ main() {
 			create_isochron(plate_id, points, num_points, geo_time_instant_begin,
 			geo_time_instant_end, description, name, codespace_of_name);
 
-	static const unsigned long fixed_plate_id = 511;
-	static const unsigned long moving_plate_id = 501;
-	static const RotationFileFiveTuple five_tuples[] = {
+	static const unsigned long fixed_plate_id1 = 511;
+	static const unsigned long moving_plate_id1 = 501;
+	static const RotationFileFiveTuple five_tuples1[] = {
+		//	time	e.lat	e.lon	angle	comment
 		{	0.0,	90.0,	0.0,	0.0,	"IND-CIB India-Central Indian Basin"	},
 		{	9.9,	-8.7,	76.9,	2.75,	"IND-CIB AN 5 JYR 7/4/89"	},
 		{	20.2,	-5.2,	74.3,	5.93,	"IND-CIB Royer & Chang 1991"	},
 		{	83.5,	-5.2,	74.3,	5.93,	"IND-CIB switchover"	},
 	};
-	static const unsigned num_five_tuples = sizeof(five_tuples) / sizeof(five_tuples[0]);
+	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
 
-	GPlatesModel::FeatureHandle total_recon_seq =
-			create_total_recon_seq(fixed_plate_id, moving_plate_id, five_tuples,
-			num_five_tuples);
+	GPlatesModel::FeatureHandle total_recon_seq1 =
+			create_total_recon_seq(fixed_plate_id1, moving_plate_id1, five_tuples1,
+			num_five_tuples1);
 
-	GPlatesFileIO::XmlOutputInterface xoi =
-			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
-	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
-	isochron.accept_visitor(v);
-	total_recon_seq.accept_visitor(v);
+	static const unsigned long fixed_plate_id2 = 702;
+	static const unsigned long moving_plate_id2 = 501;
+	static const RotationFileFiveTuple five_tuples2[] = {
+		//	time	e.lat	e.lon	angle	comment
+		{	83.5,	22.8,	19.1,	-51.28,	"IND-MAD"	},
+		{	88.0,	19.8,	27.2,	-59.16,	" RDM/chris 30/11/2001"	},
+		{	120.4,	24.02,	32.04,	-53.01,	"IND-MAD M0 RDM 21/01/02"	},
+	};
+	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
+
+	GPlatesModel::FeatureHandle total_recon_seq2 =
+			create_total_recon_seq(fixed_plate_id2, moving_plate_id2, five_tuples2,
+			num_five_tuples2);
+
+	static const unsigned long fixed_plate_id3 = 501;
+	static const unsigned long moving_plate_id3 = 502;
+	static const RotationFileFiveTuple five_tuples3[] = {
+		//	time	e.lat	e.lon	angle	comment
+		{	0.0,	0.0,	0.0,	0.0,	"SLK-IND Sri Lanka-India"	},
+		{	75.0,	0.0,	0.0,	0.0,	"SLK-ANT Sri Lanka-Ant"	},
+		{	90.0,	21.97,	72.79,	-10.13,	"SLK-IND M9 FIT CG01/04-"	},
+		{	129.5,	21.97,	72.79,	-10.13,	"SLK-IND M9 FIT CG01/04-for sfs in Enderby"	},
+	};
+	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
+
+	GPlatesModel::FeatureHandle total_recon_seq3 =
+			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
+			num_five_tuples3);
+
+	for (int i = 0; i < 250; ++i) {
+		double recon_time = i / 10.0;
+		GPlatesModel::ReconstructionTree recon_tree;
+		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, recon_tree);
+
+		std::cout << "--> Reconstruction time: " << recon_time << std::endl;
+		total_recon_seq1.accept_visitor(rtp);
+		total_recon_seq2.accept_visitor(rtp);
+		total_recon_seq3.accept_visitor(rtp);
+
+		std::cout << "--> Building tree, root node: 501\n";
+		recon_tree.build_tree(501);
+		traverse_recon_tree(recon_tree);
+		std::cout << "--> Building tree, root node: 511\n";
+		recon_tree.build_tree(511);
+		traverse_recon_tree(recon_tree);
+		std::cout << "--> Building tree, root node: 702\n";
+		recon_tree.build_tree(702);
+		traverse_recon_tree(recon_tree);
+		std::cout << "--> Building tree, root node: 502\n";
+		recon_tree.build_tree(502);
+		traverse_recon_tree(recon_tree);
+
+		std::cout << std::endl;
+	}
+
+	std::cout << "\n---\n\n";
+
+	for (int i = 0; i < 200; ++i) {
+		double recon_time = 75.0 + (i / 10.0);
+		GPlatesModel::ReconstructionTree recon_tree;
+		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, recon_tree);
+
+		std::cout << "--> Reconstruction time: " << recon_time << std::endl;
+		total_recon_seq1.accept_visitor(rtp);
+		total_recon_seq2.accept_visitor(rtp);
+		total_recon_seq3.accept_visitor(rtp);
+
+		std::cout << "--> Building tree, root node: 501\n";
+		recon_tree.build_tree(501);
+		traverse_recon_tree(recon_tree);
+		std::cout << "--> Building tree, root node: 511\n";
+		recon_tree.build_tree(511);
+		traverse_recon_tree(recon_tree);
+		std::cout << "--> Building tree, root node: 702\n";
+		recon_tree.build_tree(702);
+		traverse_recon_tree(recon_tree);
+		std::cout << "--> Building tree, root node: 502\n";
+		recon_tree.build_tree(502);
+		traverse_recon_tree(recon_tree);
+
+		std::cout << std::endl;
+	}
 
 	return 0;
 }
