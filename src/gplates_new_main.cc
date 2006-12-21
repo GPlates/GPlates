@@ -441,6 +441,38 @@ main() {
 			create_isochron(plate_id2, points2, num_points2, geo_time_instant_begin2,
 			geo_time_instant_end2, description2, name2, codespace_of_name2);
 
+	static const unsigned long plate_id3 = 511;
+	// lon, lat, lon, lat... is how GML likes it.
+	static const double points3[] = {
+		76.6320,
+		-18.1374,
+		77.9538,
+		-19.1216,
+		77.7709,
+		-19.4055,
+		80.1582,
+		-20.6289,
+		80.3237,
+		-20.3765,
+		81.1422,
+		-20.7506,
+		80.9199,
+		-21.2669,
+		81.8522,
+		-21.9828,
+	};
+	static const unsigned num_points3 = sizeof(points3) / sizeof(points3[0]);
+	GPlatesModel::GeoTimeInstant geo_time_instant_begin3(40.1);
+	GPlatesModel::GeoTimeInstant geo_time_instant_end3 =
+			GPlatesModel::GeoTimeInstant::create_distant_future();
+	UnicodeString description3("SEIR CROZET AND CIB, CENTRAL INDIAN BASIN-ANTARCTICA ANOMALY 18 ISOCHRON");
+	UnicodeString name3("Uzi the Isochron");
+	UnicodeString codespace_of_name3("EarthByte");
+
+	GPlatesModel::FeatureHandle isochron3 =
+			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
+			geo_time_instant_end3, description3, name3, codespace_of_name3);
+
 	static const unsigned long fixed_plate_id1 = 511;
 	static const unsigned long moving_plate_id1 = 501;
 	static const RotationFileFiveTuple five_tuples1[] = {
@@ -490,6 +522,7 @@ main() {
 	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
 	isochron1.accept_visitor(v);
 	isochron2.accept_visitor(v);
+	isochron3.accept_visitor(v);
 
 	static const double recon_times_to_test[] = {
 		0.0,
