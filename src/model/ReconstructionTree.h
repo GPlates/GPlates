@@ -100,6 +100,13 @@ namespace GPlatesModel
 				return d_composed_absolute_rotation;
 			}
 
+			void
+			set_composed_absolute_rotation(
+					const GPlatesMaths::FiniteRotation &new_car)
+			{
+				d_composed_absolute_rotation = new_car;
+			}
+
 			PoleTypes::PoleType
 			pole_type() const
 			{

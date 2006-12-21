@@ -150,6 +150,15 @@ GPlatesModel::ReconstructionTree::build_tree(
 			pole_to_be_processed->tree_children().splice(
 					pole_to_be_processed->tree_children().end(),
 					d_unused_nodes, iter->second);
+
+			// Finally, set the "composed absolute rotation" of the child pole.
+			const GPlatesMaths::FiniteRotation &absolute_rot_of_parent =
+					pole_to_be_processed->composed_absolute_rotation();
+			const GPlatesMaths::FiniteRotation &relative_rot_of_child =
+					iter->second->relative_rotation();
+
+			iter->second->set_composed_absolute_rotation(
+					::GPlatesMaths::compose(absolute_rot_of_parent, relative_rot_of_child));
 		}
 	}
 }

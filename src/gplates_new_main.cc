@@ -334,7 +334,8 @@ traverse_recon_tree_recursive(
 	GPlatesModel::ReconstructionTree::list_node_reference_type end = node.tree_children().end();
 	for ( ; iter != end; ++iter) {
 		std::cout << " - FiniteRotation: " << iter->relative_rotation() << "\n";
-		std::cout << "    with fixed plate: " << iter->fixed_plate()->value() << std::endl;
+		std::cout << "    with absolute rotation: " << iter->composed_absolute_rotation() << "\n";
+		std::cout << "    and fixed plate: " << iter->fixed_plate()->value() << std::endl;
 		std::cout << "    and moving plate: " << iter->moving_plate()->value() << std::endl;
 		if (iter->pole_type() ==
 				GPlatesModel::ReconstructionTree::ReconstructionTreeNode::PoleTypes::ORIGINAL) {
@@ -360,7 +361,8 @@ traverse_recon_tree(
 	GPlatesModel::ReconstructionTree::list_node_reference_type end = recon_tree.rootmost_nodes_end();
 	for ( ; iter != end; ++iter) {
 		std::cout << " - FiniteRotation: " << iter->relative_rotation() << "\n";
-		std::cout << "    with fixed plate: " << iter->fixed_plate()->value() << std::endl;
+		std::cout << "    with absolute rotation: " << iter->composed_absolute_rotation() << "\n";
+		std::cout << "    and fixed plate: " << iter->fixed_plate()->value() << std::endl;
 		std::cout << "    and moving plate: " << iter->moving_plate()->value() << std::endl;
 		if (iter->pole_type() ==
 				GPlatesModel::ReconstructionTree::ReconstructionTreeNode::PoleTypes::ORIGINAL) {
