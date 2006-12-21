@@ -123,8 +123,8 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 		GPlatesMaths::LatLonPoint llp =
 				GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*iter);
 
-		pos_list.push_back(llp.latitude().dval());
 		pos_list.push_back(llp.longitude().dval());
+		pos_list.push_back(llp.latitude().dval());
 	}
 	d_output.write_line_of_multi_decimal_content(pos_list.begin(), pos_list.end());
 
