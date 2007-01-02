@@ -322,7 +322,6 @@ AC_OUTPUT(Makefile
         src/util/Makefile
 
         src/gplates-qt-demo/Makefile
-        src/cube-qt-demo/Makefile
 	)
 
 
