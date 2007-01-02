@@ -1,12 +1,12 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
 ## SUBDIRS		= application controls fileio geo global gui maths model state util
-SUBDIRS			= gui maths model state \
+SUBDIRS			= gui maths model state util \
 				gplates-qt-demo cube-qt-demo
 
 INCLUDES		= -I$(top_srcdir)/src
 
-bin_PROGRAMS		= gplates-new cube_qt_demo gplates_qt_demo
+bin_PROGRAMS		= cube_qt_demo gplates_qt_demo
 
 gplates_SOURCES		= gplates_main.cc
 gplates_LDADD		= application/libapplication.a gui/libgui.a

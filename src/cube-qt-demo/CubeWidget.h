@@ -9,11 +9,11 @@ class CubeWidget : public QGLWidget {
 	Q_OBJECT
 	
 public:
-	CubeWidget(QWidget *parent = 0);
+	CubeWidget(QWidget *widget_parent = 0);
 	
 protected:
 	virtual void initializeGL();
-	virtual void resizeGL(int width, int height);
+	virtual void resizeGL(int new_width, int new_height);
 	virtual void paintGL();
 		
 	virtual void timeOut();

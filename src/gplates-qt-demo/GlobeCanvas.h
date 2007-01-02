@@ -51,13 +51,14 @@ namespace GPlatesGui
 
 		void
 		draw_polyline(
-				const GPlatesMaths::PolylineOnSphere &polyline,
-				const GPlatesGui::Colour &colour);
+				const GPlatesMaths::PolylineOnSphere &polyline);
 				
 		void
 		draw_point(
-				const GPlatesMaths::PointOnSphere &point,
-				const GPlatesGui::Colour &colour);
+				const GPlatesMaths::PointOnSphere &point);
+				
+		void
+		update_canvas();
 				
 		void
 		clear_data();
@@ -98,6 +99,11 @@ namespace GPlatesGui
 		mouseMoveEvent(
 				QMouseEvent *event);
 				
+		virtual 
+		void 
+		mouseReleaseEvent(
+				QMouseEvent *event);
+				
 		virtual
 		void
 		wheelEvent(
@@ -122,6 +128,9 @@ namespace GPlatesGui
 		void
 		items_selected(
 				std::vector< line_header_type > &items);
+				
+		void
+		left_mouse_button_clicked();
 
 	private:
 		int d_width;

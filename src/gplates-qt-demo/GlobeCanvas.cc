@@ -110,26 +110,30 @@ namespace
 }
 
 GPlatesGui::GlobeCanvas::GlobeCanvas(
-		QWidget *parent):
-	QGLWidget(parent) 
+		QWidget *widget_parent):
+	QGLWidget(widget_parent) 
 {
 	handle_zoom_change();
 }
 
 void
 GPlatesGui::GlobeCanvas::draw_polyline(
-		const GPlatesMaths::PolylineOnSphere &polyline,
-		const GPlatesGui::Colour &colour)
+		const GPlatesMaths::PolylineOnSphere &polyline)
 {
 	GPlatesState::Layout::InsertLineDataPos(NULL, polyline);
 }
 
 void
 GPlatesGui::GlobeCanvas::draw_point(
-		const GPlatesMaths::PointOnSphere &point,
-		const GPlatesGui::Colour &colour)
+		const GPlatesMaths::PointOnSphere &point)
 {
 	GPlatesState::Layout::InsertPointDataPos(NULL, point);
+}
+
+void
+GPlatesGui::GlobeCanvas::update_canvas()
+{
+	updateGL();
 }
 
 void
@@ -181,8 +185,8 @@ GPlatesGui::GlobeCanvas::initializeGL()
 
 void 
 GPlatesGui::GlobeCanvas::resizeGL(
-		int width,
-		int height) 
+		int new_width,
+		int new_height) 
 {
 	try {
 		set_view();
@@ -213,12 +217,12 @@ GPlatesGui::GlobeCanvas::paintGL()
 
 void
 GPlatesGui::GlobeCanvas::mousePressEvent(
-		QMouseEvent *event) 
+		QMouseEvent *press_event) 
 {
-	d_mouse_x = event->x();
-	d_mouse_y = event->y();
+	d_mouse_x = press_event->x();
+	d_mouse_y = press_event->y();
 	
-	switch (event->button()) {
+	switch (press_event->button()) {
 	case Qt::LeftButton:
 		handle_left_mouse_down();
 		break;
@@ -226,25 +230,37 @@ GPlatesGui::GlobeCanvas::mousePressEvent(
 	case Qt::RightButton:
 		handle_right_mouse_down();
 		break;
+		
+	default:
+		break;
 	}
 }
 
 void
 GPlatesGui::GlobeCanvas::mouseMoveEvent(
-		QMouseEvent *event) 
+		QMouseEvent *move_event) 
 {
-	d_mouse_x = event->x();
-	d_mouse_y = event->y();
+	d_mouse_x = move_event->x();
+	d_mouse_y = move_event->y();
 	
-	if (event->buttons() & Qt::RightButton) {
+	if (move_event->buttons() & Qt::RightButton) {
 		handle_right_mouse_drag();
 	}
 }
 
-void GPlatesGui::GlobeCanvas::wheelEvent(
-		QWheelEvent *event) 
+void 
+GPlatesGui::GlobeCanvas::mouseReleaseEvent(
+		QMouseEvent *release_event)
 {
-	handle_wheel_rotation(event->delta());
+	if (release_event->button() == Qt::LeftButton) {
+		emit left_mouse_button_clicked();
+	}
+}
+
+void GPlatesGui::GlobeCanvas::wheelEvent(
+		QWheelEvent *wheel_event) 
+{
+	handle_wheel_rotation(wheel_event->delta());
 }
 
 void
@@ -264,7 +280,7 @@ GPlatesGui::GlobeCanvas::set_view()
 	static const GLdouble depth_near_clipping = 0.5;
 
 	get_dimensions();
-	glViewport(0, 0, (GLsizei)d_width, (GLsizei)d_height);  
+	glViewport(0, 0, static_cast<GLsizei>(d_width), static_cast<GLsizei>(d_height));
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -312,13 +328,13 @@ GPlatesGui::GlobeCanvas::handle_mouse_motion()
 {
 	using namespace GPlatesMaths;
 
-	real_t y = get_universe_coord_y(d_mouse_x);
-	real_t z = get_universe_coord_z(d_mouse_y);
+	real_t y_pos = get_universe_coord_y(d_mouse_x);
+	real_t z_pos = get_universe_coord_z(d_mouse_y);
 
-	real_t discrim = calc_globe_pos_discrim(y, z);
+	real_t discrim = calc_globe_pos_discrim(y_pos, z_pos);
 	
 	if (is_on_globe(discrim)) {
-		PointOnSphere p = on_globe(y, z, discrim);
+		PointOnSphere p = on_globe(y_pos, z_pos, discrim);
 
 		// FIXME: Globe uses wrong naming convention for methods.
 		PointOnSphere rotated_p = d_globe.Orient(p);
@@ -340,10 +356,10 @@ GPlatesGui::GlobeCanvas::handle_right_mouse_down()
 {
 	using namespace GPlatesMaths;
 
-	real_t y = get_universe_coord_y(d_mouse_x);
-	real_t z = get_universe_coord_z(d_mouse_y);
+	real_t y_pos = get_universe_coord_y(d_mouse_x);
+	real_t z_pos = get_universe_coord_z(d_mouse_y);
 
-	PointOnSphere p = virtual_globe_position(y, z);
+	PointOnSphere p = virtual_globe_position(y_pos, z_pos);
 	
 	// FIXME: Globe uses wrong naming convention for methods.
 	d_globe.SetNewHandlePos(p);
@@ -352,13 +368,14 @@ GPlatesGui::GlobeCanvas::handle_right_mouse_down()
 void
 GPlatesGui::GlobeCanvas::handle_left_mouse_down() 
 {
+#if 0
 	using namespace GPlatesState;
 	using namespace GPlatesMaths;
 
-	real_t y = get_universe_coord_y(d_mouse_x);
-	real_t z = get_universe_coord_z(d_mouse_y);
+	real_t y_pos = get_universe_coord_y(d_mouse_x);
+	real_t z_pos = get_universe_coord_z(d_mouse_y);
 
-	PointOnSphere p = virtual_globe_position(y, z);
+	PointOnSphere p = virtual_globe_position(y_pos, z_pos);
 
 	// FIXME: Globe uses wrong naming convention for methods.
 	PointOnSphere rotated_p = d_globe.Orient(p);
@@ -391,6 +408,7 @@ GPlatesGui::GlobeCanvas::handle_left_mouse_down()
 	} else {
 		emit no_items_selected_by_click();
 	}
+#endif
 }
 		
 void
@@ -398,10 +416,10 @@ GPlatesGui::GlobeCanvas::handle_right_mouse_drag()
 {
 	using namespace GPlatesMaths;
 
-	real_t y = get_universe_coord_y(d_mouse_x);
-	real_t z = get_universe_coord_z(d_mouse_y);
+	real_t y_pos = get_universe_coord_y(d_mouse_x);
+	real_t z_pos = get_universe_coord_z(d_mouse_y);
 
-	PointOnSphere p = virtual_globe_position(y, z);
+	PointOnSphere p = virtual_globe_position(y_pos, z_pos);
 	
 	// FIXME: Globe uses wrong naming convention for methods.
 	d_globe.UpdateHandlePos(p);
@@ -432,18 +450,18 @@ GPlatesMaths::real_t
 GPlatesGui::GlobeCanvas::get_universe_coord_y(
 		int screen_x) 
 {
-	GPlatesMaths::real_t y = (2.0 * screen_x - d_width) / d_smaller_dim;
+	GPlatesMaths::real_t y_pos = (2.0 * screen_x - d_width) / d_smaller_dim;
 
-	return (y * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
+	return (y_pos * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
 }
 				
 GPlatesMaths::real_t
 GPlatesGui::GlobeCanvas::get_universe_coord_z(
 		int screen_y) 
 {
-	GPlatesMaths::real_t z = (d_height - 2.0 * screen_y) / d_smaller_dim;
+	GPlatesMaths::real_t z_pos = (d_height - 2.0 * screen_y) / d_smaller_dim;
 	
-	return (z * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
+	return (z_pos * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
 }
 				
 void

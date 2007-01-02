@@ -469,10 +469,8 @@ GPlatesModel::Model::Model()
 
 void
 GPlatesModel::Model::create_reconstruction(
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
-				point_reconstructions,
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
-				polyline_reconstructions,
+		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &point_reconstructions,
+		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &polyline_reconstructions,
 		const double &time,
 		unsigned long root)
 {

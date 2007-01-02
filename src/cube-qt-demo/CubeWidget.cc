@@ -1,7 +1,7 @@
 #include "CubeWidget.h"
 
-CubeWidget::CubeWidget(QWidget * parent)
-	: QGLWidget(parent), rtri(0.0), rquad(0.0)
+CubeWidget::CubeWidget(QWidget *widget_parent)
+	: QGLWidget(widget_parent), rtri(0.0), rquad(0.0)
 {
 	timer = new QTimer( this );
 	
@@ -24,15 +24,15 @@ void CubeWidget::initializeGL()
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 }
 	
-void CubeWidget::resizeGL(int width, int height)
+void CubeWidget::resizeGL(int new_width, int new_height)
 {
-  	height = height ? height : 1;
+  	new_height = new_height ? new_height : 1;
 
-	glViewport(0, 0, (GLint)width, (GLint)height);
+	glViewport(0, 0, static_cast<GLint>(new_width), static_cast<GLint>(new_height));
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(45.0f, (GLfloat)width/(GLfloat)height, 0.1f, 100.0f);
+	gluPerspective(45.0f, static_cast<GLfloat>(new_width)/static_cast<GLfloat>(new_height), 0.1f, 100.0f);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();

@@ -26,8 +26,10 @@
 #ifndef GPLATES_GUI_DOCUMENT_H
 #define GPLATES_GUI_DOCUMENT_H
 
+#include <QtCore/QTimer>
 #include "DocumentUi.h"
 #include "GlobeCanvas.h"
+#include "model/Model.h"
 
 namespace GPlatesGui
 {
@@ -39,11 +41,23 @@ namespace GPlatesGui
 		
 	public:
 		Document();
+
+	private:
+		GlobeCanvas *d_canvas_ptr;
+		GPlatesModel::Model *d_model_ptr;
+		QTimer *d_timer_ptr;
+		double d_time;
 		
 	private slots:
 		void 
 		selection_handler(
 				std::vector< GlobeCanvas::line_header_type > &items);
+				
+		void
+		mouse_click_handler();
+				
+		void
+		animation_step();
 	};
 }
 

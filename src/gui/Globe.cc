@@ -57,15 +57,21 @@ CallVertexWithLine(const PolylineOnSphere::const_iterator& begin,
 		for ( ; iter != end; ++iter)
 			CallVertexWithPoint(iter->end_point());
 	glEnd();
+	
+	glLineWidth(1);
 }
 
 
 static void
 PaintPointDataPos(Layout::PointDataPos& pointdata)
 {
+#if 0
 	GPlatesGeo::PointData *datum = pointdata.first;
 	if ( ! datum->ShouldBePainted()) return;
+#endif
 	PointOnSphere& point = pointdata.second;
+	
+	glColor3fv(GPlatesGui::Colour::FUSCHIA);
 	CallVertexWithPoint(point);
 }
 
@@ -75,6 +81,7 @@ PaintLineDataPos(Layout::LineDataPos& linedata)
 {
 	using namespace GPlatesGui;
 
+#if 0
 	GPlatesGeo::LineData *datum = linedata.first;
 	if ( ! datum->ShouldBePainted()) return;
 
@@ -89,6 +96,13 @@ PaintLineDataPos(Layout::LineDataPos& linedata)
 		glColor3fv(*it);
 
 	} else glColor3fv(GPlatesGui::Colour::RED);
+#endif
+
+	const PolylineOnSphere& line = linedata.second;
+
+	glColor3fv(GPlatesGui::Colour::AQUA);
+	
+	glLineWidth(3);
 	CallVertexWithLine(line.begin(), line.end());
 }
 
@@ -100,6 +114,7 @@ PaintPoints()
 		points_begin = Layout::PointDataLayoutBegin(),
 		points_end   = Layout::PointDataLayoutEnd();
 
+	glPointSize(8);
 	glBegin(GL_POINTS);
 		for_each(points_begin, points_end, PaintPointDataPos);
 	glEnd();

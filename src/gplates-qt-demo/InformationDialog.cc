@@ -26,8 +26,8 @@
 #include "InformationDialog.h"
 
 GPlatesGui::InformationDialog::InformationDialog(
-		const QString &data)
+		const QString &text_data)
 {
 	setupUi(this);
-	textEdit->insertPlainText(data);	
+	textEdit->insertPlainText(text_data);	
 }
