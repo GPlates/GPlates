@@ -2,11 +2,11 @@
 
 ## SUBDIRS		= application controls fileio geo global gui maths model state util
 SUBDIRS			= gui maths model state util \
-				gplates-qt-demo cube-qt-demo
+				gplates-qt-demo
 
 INCLUDES		= -I$(top_srcdir)/src
 
-bin_PROGRAMS		= cube_qt_demo gplates_qt_demo
+bin_PROGRAMS		= gplates_qt_demo
 
 gplates_SOURCES		= gplates_main.cc
 gplates_LDADD		= application/libapplication.a gui/libgui.a
@@ -20,6 +20,3 @@ gplates_qt_demo_SOURCES	= gplates_qt_demo.cc
 gplates_qt_demo_LDADD	= gplates-qt-demo/libgplates_qt_demo.a model/libmodel.a \
 				maths/libmaths.a gui/libgui.a state/libstate.a \
 				util/libutil.a
-
-cube_qt_demo_SOURCES	= cube_qt_demo.cc
-cube_qt_demo_LDADD	= cube-qt-demo/libcube_qt_demo.a
