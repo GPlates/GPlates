@@ -29,6 +29,7 @@
 #include "Viewport.h"
 #include "PresenterEventHandler.h"
 #include "UserEventHandler.h"
+#include "GeometricModel.h"
 
 namespace GPlatesGui
 {
@@ -42,6 +43,8 @@ namespace GPlatesGui
 		PresenterEventHandler *d_presenter_event_handler;
 		
 		UserEventHandler *d_user_event_handler;
+		
+		GeometricModel *d_geometric_model;
 	};
 }
 

@@ -1,9 +1,9 @@
-/* $Id: gplates_main.cc 968 2006-11-20 03:28:31Z jboyden $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 968 $
- * $Date: 2006-11-20 14:28:31 +1100 (Mon, 20 Nov 2006) $ 
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2006 The University of Sydney, Australia
  *
@@ -23,26 +23,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_VIEW
-#define GPLATES_GUI_VIEW
+#ifndef GPLATES_GUI_GEOMETRICMODEL
+#define GPLATES_GUI_GEOMETRICMODEL
 
-#include <set>
-#include "ViewInterface.h"
-#include "Viewport.h"
-#include "AbstractWindow.h"
 #include "GlobeCanvas.h"
 
 namespace GPlatesGui
 {
-	class View : public ViewInterface
+	class GeometricModel
 	{
 	public:
-
+	
 	private:
-		std::set< Viewport * > d_viewports;
-		
-		std::set< AbstractWindow > d_windows;
-		
 		GlobeCanvas *d_canvas;
 	};
 }
