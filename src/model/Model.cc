@@ -52,8 +52,8 @@
 
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_reconstruction_plate_id(
-		const unsigned long &plate_id) {
-
+		const unsigned long &plate_id)
+{
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id =
 			GPlatesModel::GpmlPlateId::create(plate_id);
 
@@ -76,8 +76,8 @@ create_reconstruction_plate_id(
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_reference_frame_plate_id(
 		const unsigned long &plate_id,
-		const char *which_reference_frame) {
-
+		const char *which_reference_frame)
+{
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id =
 			GPlatesModel::GpmlPlateId::create(plate_id);
 
@@ -95,8 +95,8 @@ create_reference_frame_plate_id(
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_centre_line_of(
 		const double *points,
-		unsigned num_points) {
-
+		unsigned num_points)
+{
 	std::vector<double> gml_pos_list(points, points + num_points);
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_line_string =
 			GPlatesModel::GmlLineString::create(gml_pos_list);
@@ -127,8 +127,8 @@ create_centre_line_of(
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_valid_time(
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_begin,
-		const GPlatesModel::GeoTimeInstant &geo_time_instant_end) {
-
+		const GPlatesModel::GeoTimeInstant &geo_time_instant_end)
+{
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
 	GPlatesModel::XmlAttributeName xml_attribute_name("frame");
 	GPlatesModel::XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
@@ -156,8 +156,8 @@ create_valid_time(
 
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_description(
-		const UnicodeString &description) {
-
+		const UnicodeString &description)
+{
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_description = GPlatesModel::XsString::create(description);
 
 	UnicodeString property_name_string("gml:description");
@@ -174,8 +174,8 @@ create_description(
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_name(
 		const UnicodeString &name,
-		const UnicodeString &codespace) {
-
+		const UnicodeString &codespace)
+{
 	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_name = GPlatesModel::XsString::create(name);
 
 	UnicodeString property_name_string("gml:name");
@@ -201,8 +201,8 @@ create_isochron(
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_end,
 		const UnicodeString &description,
 		const UnicodeString &name,
-		const UnicodeString &codespace_of_name) {
-
+		const UnicodeString &codespace_of_name)
+{
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> reconstruction_plate_id_container =
 			create_reconstruction_plate_id(plate_id);
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> centre_line_of_container =
@@ -243,8 +243,8 @@ struct RotationFileFiveTuple {
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_total_reconstruction_pole(
 		const RotationFileFiveTuple *five_tuples,
-		unsigned num_five_tuples) {
-
+		unsigned num_five_tuples)
+{
 	std::vector<GPlatesModel::GpmlTimeSample> time_samples;
 	GPlatesModel::TemplateTypeParameterType value_type("gpml:FiniteRotation");
 
@@ -295,8 +295,8 @@ create_total_recon_seq(
 		const unsigned long &fixed_plate_id,
 		const unsigned long &moving_plate_id,
 		const RotationFileFiveTuple *five_tuples,
-		unsigned num_five_tuples) {
-
+		unsigned num_five_tuples)
+{
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples, num_five_tuples);
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> fixed_reference_frame_container =
@@ -324,22 +324,14 @@ GPlatesModel::Model::Model()
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
 	static const double points1[] = {
-		69.2877,
-		-5.5765,
-		69.1323,
-		-4.8556,
-		69.6092,
-		-4.3841,
-		69.2748,
-		-3.9554,
-		69.7079,
-		-3.3680,
-		69.4119,
-		-3.0486,
-		69.5999,
-		-2.6304,
-		68.9400,
-		-1.8446,
+		69.2877, -5.5765,
+		69.1323, -4.8556,
+		69.6092, -4.3841,
+		69.2748, -3.9554,
+		69.7079, -3.3680,
+		69.4119, -3.0486,
+		69.5999, -2.6304,
+		68.9400, -1.8446,
 	};
 	static const unsigned num_points1 = sizeof(points1) / sizeof(points1[0]);
 	GPlatesModel::GeoTimeInstant geo_time_instant_begin1(10.9);
@@ -356,18 +348,12 @@ GPlatesModel::Model::Model()
 	static const unsigned long plate_id2 = 702;
 	// lon, lat, lon, lat... is how GML likes it.
 	static const double points2[] = {
-		41.9242,
-		-34.9340,
-		42.7035,
-		-33.4482,
-		44.8065,
-		-33.5645,
-		44.9613,
-		-33.0805,
-		45.6552,
-		-33.2601,
-		46.3758,
-		-31.6947,
+		41.9242, -34.9340,
+		42.7035, -33.4482,
+		44.8065, -33.5645,
+		44.9613, -33.0805,
+		45.6552, -33.2601,
+		46.3758, -31.6947,
 	};
 	static const unsigned num_points2 = sizeof(points2) / sizeof(points2[0]);
 	GPlatesModel::GeoTimeInstant geo_time_instant_begin2(83.5);
@@ -384,22 +370,14 @@ GPlatesModel::Model::Model()
 	static const unsigned long plate_id3 = 511;
 	// lon, lat, lon, lat... is how GML likes it.
 	static const double points3[] = {
-		76.6320,
-		-18.1374,
-		77.9538,
-		-19.1216,
-		77.7709,
-		-19.4055,
-		80.1582,
-		-20.6289,
-		80.3237,
-		-20.3765,
-		81.1422,
-		-20.7506,
-		80.9199,
-		-21.2669,
-		81.8522,
-		-21.9828,
+		76.6320, -18.1374,
+		77.9538, -19.1216,
+		77.7709, -19.4055,
+		80.1582, -20.6289,
+		80.3237, -20.3765,
+		81.1422, -20.7506,
+		80.9199, -21.2669,
+		81.8522, -21.9828,
 	};
 	static const unsigned num_points3 = sizeof(points3) / sizeof(points3[0]);
 	GPlatesModel::GeoTimeInstant geo_time_instant_begin3(40.1);
