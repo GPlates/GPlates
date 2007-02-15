@@ -75,10 +75,20 @@ namespace GPlatesModel {
 		 * other than explicitly in the initialiser lists of derived classes. 
 		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
 		 * explicitly, since this class contains members which need to be initialised.
+		 *
+		 * This ctor should only be invoked by the @a clone member function (pure virtual
+		 * in this class; defined in derived classes), which will create a duplicate
+		 * instance and return a new intrusive_ptr reference to the new duplicate.  Since
+		 * initially the only reference to the new duplicate will be the one returned by
+		 * the @a clone function, *before* the new intrusive_ptr is created, the ref-count
+		 * of the new PropertyContainer instance should be zero.
+		 *
+		 * Note that this ctor should act exactly the same as the default (auto-generated)
+		 * copy-ctor, except that it should initialise the ref-count to zero.
 		 */
 		PropertyContainer(
 				const PropertyContainer &other) :
-			d_ref_count(other.d_ref_count),
+			d_ref_count(0),
 			d_property_name(other.d_property_name),
 			d_xml_attributes(other.d_xml_attributes)
 		{ }

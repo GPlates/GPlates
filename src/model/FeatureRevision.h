@@ -210,14 +210,22 @@ namespace GPlatesModel {
 			d_revision_id(revision_id_)
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		/*
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 *
+		 * This ctor should only be invoked by the 'clone' member function, which will
+		 * create a duplicate instance and return a new intrusive_ptr reference to the new
+		 * duplicate.  Since initially the only reference to the new duplicate will be the
+		 * one returned by the 'clone' function, *before* the new intrusive_ptr is created,
+		 * the ref-count of the new FeatureRevision instance should be zero.
+		 *
+		 * Note that this ctor should act exactly the same as the default (auto-generated)
+		 * copy-ctor, except that it should initialise the ref-count to zero.
+		 */
 		FeatureRevision(
 				const FeatureRevision &other) :
-			d_ref_count(other.d_ref_count),
+			d_ref_count(0),
 			d_revision_id(other.d_revision_id),
 			d_properties(other.d_properties)
 		{  }
