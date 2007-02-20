@@ -58,12 +58,24 @@ namespace GPlatesMaths {
 			typedef long ref_count_type;
 
 
+			/**
+			 * Create a new PointOnSphere instance on the heap from the unit vector
+			 * @a position_vector_.
+			 *
+			 * This function is strongly exception-safe and exception-neutral.
+			 */
 			static
 			const boost::intrusive_ptr<PointOnSphere>
 			create_on_heap(
 					const UnitVector3D &position_vector_);
 
 
+			/**
+			 * Clone this PointOnSphere instance, to create a duplicate instance on the
+			 * heap.
+			 *
+			 * This function is strongly exception-safe and exception-neutral.
+			 */
 			const boost::intrusive_ptr<PointOnSphere>
 			clone_on_heap() const
 			{
@@ -72,11 +84,73 @@ namespace GPlatesMaths {
 			}
 
 
+			/**
+			 * Create a new PointOnSphere instance from the unit vector
+			 * @a position_vector_.
+			 *
+			 * FIXME:  We should really prohibit construction of PointOnSphere
+			 * instances on the stack, insisting that they are instead created on the
+			 * heap, referenced by intrusive_ptr.  However, there is a substantial
+			 * amount of existing code which creates PointOnSphere instances on the
+			 * stack, and changing all that code to use intrusive_ptr would take too
+			 * long to justify right now.  But we should do it properly some day...
+			 *
+			 * Trac ticket: http://trac.gplates.org/ticket/3
+			 */
 			explicit 
 			PointOnSphere(
 					const UnitVector3D &position_vector_):
 				d_ref_count(0),
-				d_position_vector(position_vector_) {  }
+				d_position_vector(position_vector_)
+			{  }
+
+
+			/**
+			 * Create a copy-constructed PointOnSphere instance on the stack.
+			 *
+			 * This constructor should act exactly the same as the default
+			 * (auto-generated) copy-constructor would, except that it should
+			 * initialise the ref-count to zero.
+			 *
+			 * FIXME:  We should really prohibit construction of PointOnSphere
+			 * instances on the stack, insisting that they are instead created on the
+			 * heap, referenced by intrusive_ptr.  However, there is a substantial
+			 * amount of existing code which creates PointOnSphere instances on the
+			 * stack, and changing all that code to use intrusive_ptr would take too
+			 * long to justify right now.  But we should do it properly some day...
+			 *
+			 * Trac ticket: http://trac.gplates.org/ticket/3
+			 */
+			PointOnSphere(
+					const PointOnSphere &other):
+				d_ref_count(0),
+				d_position_vector(other.d_position_vector)
+			{  }
+
+
+			/**
+			 * Copy-assign the value of @a other to this.
+			 *
+			 * This function has a nothrow exception-safety guarantee.
+			 *
+			 * This copy-assignment operator should act exactly the same as the default
+			 * (auto-generated) copy-assignment operator would, except that it should
+			 * not assign the ref-count of @a other to this.
+			 *
+			 * It makes sense to define this operator, because: there are already going
+			 * to be instances of PointOnSphere on the stack (see the "FIXME" comment
+			 * in the copy-constructor above); there's no polymorphism involved, so
+			 * there's no concern about polymorphic slicing; and there's no
+			 * class-behavioural or efficiency-related reason why instances of this
+			 * class should not be copy-assignable.
+			 */
+			PointOnSphere &
+			operator=(
+					const PointOnSphere &other)
+			{
+				d_position_vector = other.d_position_vector;
+				return *this;
+			}
 
 
 			const UnitVector3D &
@@ -144,6 +218,7 @@ namespace GPlatesMaths {
 			 * memory-management book-keeping.
 			 */
 			mutable ref_count_type d_ref_count;
+
 
 			/**
 			 * This is the 3-D unit-vector which defines the position of this point.

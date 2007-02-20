@@ -460,14 +460,21 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Create a new PolylineOnSphere instance from the sequence of
-		 * points @a coll.
+		 * Create a new PolylineOnSphere instance from the sequence of points @a coll.
 		 *
-		 * @a coll should be a sequential STL container (list, vector,
-		 * ...) of PointOnSphere.
+		 * @a coll should be a sequential STL container (list, vector, ...) of
+		 * PointOnSphere.
 		 *
-		 * This function is strongly exception-safe and
-		 * exception-neutral.
+		 * This function is strongly exception-safe and exception-neutral.
+		 *
+		 * FIXME:  We should really prohibit construction of PolylineOnSphere instances on
+		 * the stack, insisting that they are instead created on the heap, referenced by
+		 * intrusive_ptr.  However, there is a substantial amount of existing code which
+		 * creates PolylineOnSphere instances on the stack, and changing all that code to
+		 * use intrusive_ptr would take too long to justify right now.  But we should do it
+		 * properly some day...
+		 *
+		 * Trac ticket: http://trac.gplates.org/ticket/3
 		 */
 		template< typename C >
 		static
@@ -493,14 +500,66 @@ namespace GPlatesMaths {
 
 
 		/**
+		 * Create a copy-constructed PolylineOnSphere instance on the stack.
+		 *
+		 * This constructor should act exactly the same as the default (auto-generated)
+		 * copy-constructor would, except that it should initialise the ref-count to zero.
+		 *
+		 * FIXME:  We should really prohibit construction of PolylineOnSphere instances on
+		 * the stack, insisting that they are instead created on the heap, referenced by
+		 * intrusive_ptr.  However, there is a substantial amount of existing code which
+		 * creates PolylineOnSphere instances on the stack, and changing all that code to
+		 * use intrusive_ptr would take too long to justify right now.  But we should do it
+		 * properly some day...
+		 *
+		 * Trac ticket: http://trac.gplates.org/ticket/3
+		 */
+		PolylineOnSphere(
+				const PolylineOnSphere &other) :
+			d_ref_count(0),
+			d_seq(other.d_seq)
+		{  }
+
+
+		/**
 		 * Clone this PolylineOnSphere instance, to create a duplicate instance on the
 		 * heap.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		const boost::intrusive_ptr<PolylineOnSphere>
 		clone_on_heap() const
 		{
 			boost::intrusive_ptr<PolylineOnSphere> dup(new PolylineOnSphere(*this));
 			return dup;
+		}
+
+
+		/**
+		 * Copy-assign the value of @a other to this.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 *
+		 * This copy-assignment operator should act exactly the same as the default
+		 * (auto-generated) copy-assignment operator would, except that it should not
+		 * assign the ref-count of @a other to this.
+		 *
+		 * It makes sense to define this operator, because: there are already going to be
+		 * instances of PolylineOnSphere on the stack (see the "FIXME" comment in the
+		 * copy-constructor above); there's no polymorphism involved, so there's no concern
+		 * about polymorphic slicing; and there's no class-behavioural or
+		 * efficiency-related reason why instances of this class should not be
+		 * copy-assignable.
+		 */
+		PolylineOnSphere &
+		operator=(
+				const PolylineOnSphere &other)
+		{
+			// Use the copy+swap idiom to enable strong exception safety.
+			PolylineOnSphere dup(other);
+			this->swap(dup);
+
+			return *this;
 		}
 
 
@@ -599,8 +658,9 @@ namespace GPlatesMaths {
 		 */
 		void
 		swap(
-		 PolylineOnSphere &other) {
-
+				PolylineOnSphere &other)
+		{
+			// Obviously, we should not swap the ref-counts of the instances.
 			d_seq.swap(other.d_seq);
 		}
 
@@ -656,6 +716,14 @@ namespace GPlatesMaths {
 
 	private:
 
+		/**
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of a polyline without any vertices.
+		 *
+		 * This constructor should act exactly the same as the default (auto-generated)
+		 * default-constructor would, except that it should initialise the ref-count to
+		 * zero.
+		 */
 		PolylineOnSphere():
 			d_ref_count(0) {  }
 
