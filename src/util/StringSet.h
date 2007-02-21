@@ -128,6 +128,22 @@ namespace GPlatesUtil {
 				d_ref_count(0) {  }
 
 			/**
+			 * Create a copy-constructed UnicodeStringAndRefCount instance.
+			 *
+			 * This constructor should act exactly the same as the default
+			 * (auto-generated) copy-constructor would, except that it should
+			 * initialise the ref-count to zero.
+			 *
+			 * This constructor is necessary so that UnicodeStringAndRefCount can be
+			 * stored as an element in @c std::set.
+			 */
+			UnicodeStringAndRefCount(
+					const UnicodeStringAndRefCount &other):
+				d_str(other.d_str),
+				d_ref_count(0)
+			{  }
+
+			/**
 			 * Provide a "less than" comparison for UnicodeStringAndRefCount instances.
 			 *
 			 * A "less than" comparison is used by 'std::set' to position elements in
@@ -139,6 +155,13 @@ namespace GPlatesUtil {
 			{
 				return (d_str < other.d_str);
 			}
+		private:
+			/**
+			 * Do not define the copy-assignment operator.
+			 */
+			UnicodeStringAndRefCount &
+			operator=(
+					const UnicodeStringAndRefCount &);
 		};
 
 
