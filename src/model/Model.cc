@@ -336,14 +336,14 @@ GPlatesModel::Model::Model()
 		68.9400, -1.8446,
 	};
 	static const unsigned num_points1 = sizeof(points1) / sizeof(points1[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin1(10.9);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end1 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
+	GeoTimeInstant geo_time_instant_begin1(10.9);
+	GeoTimeInstant geo_time_instant_end1 =
+			GeoTimeInstant::create_distant_future();
 	UnicodeString description1("CARLSBERG RIDGE, INDIA-AFRICA ANOMALY 5 ISOCHRON");
 	UnicodeString name1("Izzy the Isochron");
 	UnicodeString codespace_of_name1("EarthByte");
 
-	boost::intrusive_ptr<GPlatesModel::FeatureHandle> isochron1 =
+	boost::intrusive_ptr<FeatureHandle> isochron1 =
 			create_isochron(plate_id1, points1, num_points1, geo_time_instant_begin1,
 			geo_time_instant_end1, description1, name1, codespace_of_name1);
 
@@ -358,14 +358,14 @@ GPlatesModel::Model::Model()
 		46.3758, -31.6947,
 	};
 	static const unsigned num_points2 = sizeof(points2) / sizeof(points2[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin2(83.5);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end2 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
+	GeoTimeInstant geo_time_instant_begin2(83.5);
+	GeoTimeInstant geo_time_instant_end2 =
+			GeoTimeInstant::create_distant_future();
 	UnicodeString description2("SOUTHWEST INDIAN RIDGE, MADAGASCAR-ANTARCTICA ANOMALY 34 ISOCHRON");
 	UnicodeString name2("Ozzy the Isochron");
 	UnicodeString codespace_of_name2("EarthByte");
 
-	boost::intrusive_ptr<GPlatesModel::FeatureHandle> isochron2 =
+	boost::intrusive_ptr<FeatureHandle> isochron2 =
 			create_isochron(plate_id2, points2, num_points2, geo_time_instant_begin2,
 			geo_time_instant_end2, description2, name2, codespace_of_name2);
 
@@ -382,14 +382,14 @@ GPlatesModel::Model::Model()
 		81.8522, -21.9828,
 	};
 	static const unsigned num_points3 = sizeof(points3) / sizeof(points3[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin3(40.1);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end3 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
+	GeoTimeInstant geo_time_instant_begin3(40.1);
+	GeoTimeInstant geo_time_instant_end3 =
+			GeoTimeInstant::create_distant_future();
 	UnicodeString description3("SEIR CROZET AND CIB, CENTRAL INDIAN BASIN-ANTARCTICA ANOMALY 18 ISOCHRON");
 	UnicodeString name3("Uzi the Isochron");
 	UnicodeString codespace_of_name3("EarthByte");
 
-	boost::intrusive_ptr<GPlatesModel::FeatureHandle> isochron3 =
+	boost::intrusive_ptr<FeatureHandle> isochron3 =
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
@@ -408,7 +408,7 @@ GPlatesModel::Model::Model()
 	};
 	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
 
-	boost::intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq1 =
+	boost::intrusive_ptr<FeatureHandle> total_recon_seq1 =
 			create_total_recon_seq(fixed_plate_id1, moving_plate_id1, five_tuples1,
 			num_five_tuples1);
 
@@ -422,7 +422,7 @@ GPlatesModel::Model::Model()
 	};
 	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
 
-	boost::intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq2 =
+	boost::intrusive_ptr<FeatureHandle> total_recon_seq2 =
 			create_total_recon_seq(fixed_plate_id2, moving_plate_id2, five_tuples2,
 			num_five_tuples2);
 
@@ -437,7 +437,7 @@ GPlatesModel::Model::Model()
 	};
 	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
 
-	boost::intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq3 =
+	boost::intrusive_ptr<FeatureHandle> total_recon_seq3 =
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
@@ -454,13 +454,13 @@ GPlatesModel::Model::create_reconstruction(
 		const double &time,
 		unsigned long root)
 {
-	GPlatesModel::ReconstructionTree recon_tree;
-	GPlatesModel::ReconstructionTreePopulator rtp(time, recon_tree);
+	ReconstructionTree recon_tree;
+	ReconstructionTreePopulator rtp(time, recon_tree);
 
 	// Populate the reconstruction tree with our total recon seqs.
-	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator iter2 =
+	std::vector<boost::intrusive_ptr<FeatureHandle> >::iterator iter2 =
 			d_total_recon_seqs.begin();
-	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator end2 =
+	std::vector<boost::intrusive_ptr<FeatureHandle> >::iterator end2 =
 			d_total_recon_seqs.end();
 	for ( ; iter2 != end2; ++iter2) {
 		(*iter2)->accept_visitor(rtp);
@@ -469,13 +469,13 @@ GPlatesModel::Model::create_reconstruction(
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	recon_tree.build_tree(root);
 
-	GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(time, root,
+	ReconstructedFeatureGeometryPopulator rfgp(time, root,
 			recon_tree, point_reconstructions, polyline_reconstructions);
 
 	// Populate the vectors with reconstructed feature geometries from our isochrons.
-	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator iter3 =
+	std::vector<boost::intrusive_ptr<FeatureHandle> >::iterator iter3 =
 			d_isochrons.begin();
-	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator end3 =
+	std::vector<boost::intrusive_ptr<FeatureHandle> >::iterator end3 =
 			d_isochrons.end();
 	for ( ; iter3 != end3; ++iter3) {
 		(*iter3)->accept_visitor(rfgp);
