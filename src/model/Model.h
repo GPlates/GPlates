@@ -52,8 +52,8 @@ namespace GPlatesModel
 				const double &time,
 				unsigned long root);
 	private:
-		std::vector<FeatureHandle> d_isochrons;
-		std::vector<FeatureHandle> d_total_recon_seqs;
+		std::vector<boost::intrusive_ptr<FeatureHandle> > d_isochrons;
+		std::vector<boost::intrusive_ptr<FeatureHandle> > d_total_recon_seqs;
 	};
 }
 

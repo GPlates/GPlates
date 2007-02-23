@@ -199,7 +199,7 @@ create_name(
 }
 
 
-GPlatesModel::FeatureHandle
+const boost::intrusive_ptr<GPlatesModel::FeatureHandle>
 create_isochron(
 		const unsigned long &plate_id,
 		const double *points,
@@ -231,8 +231,9 @@ create_isochron(
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:Isochron");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesModel::FeatureHandle feature_handle(feature_type, feature_id);
-	feature_handle.set_current_revision(revision);
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
+			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
+	feature_handle->set_current_revision(revision);
 
 	return feature_handle;
 }
@@ -297,7 +298,7 @@ create_total_reconstruction_pole(
 }
 
 
-GPlatesModel::FeatureHandle
+const boost::intrusive_ptr<GPlatesModel::FeatureHandle>
 create_total_recon_seq(
 		const unsigned long &fixed_plate_id,
 		const unsigned long &moving_plate_id,
@@ -319,8 +320,9 @@ create_total_recon_seq(
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesModel::FeatureHandle feature_handle(feature_type, feature_id);
-	feature_handle.set_current_revision(revision);
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
+			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
+	feature_handle->set_current_revision(revision);
 
 	return feature_handle;
 }
@@ -415,7 +417,7 @@ main() {
 	UnicodeString name1("Izzy the Isochron");
 	UnicodeString codespace_of_name1("EarthByte");
 
-	GPlatesModel::FeatureHandle isochron1 =
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> isochron1 =
 			create_isochron(plate_id1, points1, num_points1, geo_time_instant_begin1,
 			geo_time_instant_end1, description1, name1, codespace_of_name1);
 
@@ -443,7 +445,7 @@ main() {
 	UnicodeString name2("Ozzy the Isochron");
 	UnicodeString codespace_of_name2("EarthByte");
 
-	GPlatesModel::FeatureHandle isochron2 =
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> isochron2 =
 			create_isochron(plate_id2, points2, num_points2, geo_time_instant_begin2,
 			geo_time_instant_end2, description2, name2, codespace_of_name2);
 
@@ -475,11 +477,11 @@ main() {
 	UnicodeString name3("Uzi the Isochron");
 	UnicodeString codespace_of_name3("EarthByte");
 
-	GPlatesModel::FeatureHandle isochron3 =
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> isochron3 =
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
-	std::vector<GPlatesModel::FeatureHandle> isochrons;
+	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> > isochrons;
 	isochrons.push_back(isochron1);
 	isochrons.push_back(isochron2);
 	isochrons.push_back(isochron3);
@@ -495,7 +497,7 @@ main() {
 	};
 	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
 
-	GPlatesModel::FeatureHandle total_recon_seq1 =
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq1 =
 			create_total_recon_seq(fixed_plate_id1, moving_plate_id1, five_tuples1,
 			num_five_tuples1);
 
@@ -509,7 +511,7 @@ main() {
 	};
 	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
 
-	GPlatesModel::FeatureHandle total_recon_seq2 =
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq2 =
 			create_total_recon_seq(fixed_plate_id2, moving_plate_id2, five_tuples2,
 			num_five_tuples2);
 
@@ -524,11 +526,11 @@ main() {
 	};
 	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
 
-	GPlatesModel::FeatureHandle total_recon_seq3 =
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq3 =
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
-	std::vector<GPlatesModel::FeatureHandle> total_recon_seqs;
+	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> > total_recon_seqs;
 	total_recon_seqs.push_back(total_recon_seq1);
 	total_recon_seqs.push_back(total_recon_seq2);
 	total_recon_seqs.push_back(total_recon_seq3);
@@ -537,10 +539,12 @@ main() {
 			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
 	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
 
-	std::vector<GPlatesModel::FeatureHandle>::iterator iter1 = isochrons.begin();
-	std::vector<GPlatesModel::FeatureHandle>::iterator end1 = isochrons.end();
+	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator iter1 =
+			isochrons.begin();
+	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator end1 =
+			isochrons.end();
 	for ( ; iter1 != end1; ++iter1) {
-		iter1->accept_visitor(v);
+		(*iter1)->accept_visitor(v);
 	}
 
 	static const double recon_times_to_test[] = {
@@ -563,10 +567,12 @@ main() {
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
-		std::vector<GPlatesModel::FeatureHandle>::iterator iter2 = total_recon_seqs.begin();
-		std::vector<GPlatesModel::FeatureHandle>::iterator end2 = total_recon_seqs.end();
+		std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator iter2 =
+				total_recon_seqs.begin();
+		std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator end2 =
+				total_recon_seqs.end();
 		for ( ; iter2 != end2; ++iter2) {
-			iter2->accept_visitor(rtp);
+			(*iter2)->accept_visitor(rtp);
 		}
 
 		std::cout << "\n--> Building tree, root node: 501\n";
@@ -581,10 +587,12 @@ main() {
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
 				recon_tree, reconstructed_points, reconstructed_polylines);
 
-		std::vector<GPlatesModel::FeatureHandle>::iterator iter3 = isochrons.begin();
-		std::vector<GPlatesModel::FeatureHandle>::iterator end3 = isochrons.end();
+		std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator iter3 =
+				isochrons.begin();
+		std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator end3 =
+				isochrons.end();
 		for ( ; iter3 != end3; ++iter3) {
-			iter3->accept_visitor(rfgp);
+			(*iter3)->accept_visitor(rfgp);
 		}
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
