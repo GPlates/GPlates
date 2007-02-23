@@ -231,7 +231,7 @@ create_isochron(
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:Isochron");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesModel::FeatureHandle feature_handle(feature_id, feature_type);
+	GPlatesModel::FeatureHandle feature_handle(feature_type, feature_id);
 	feature_handle.set_current_revision(revision);
 
 	return feature_handle;
@@ -319,7 +319,7 @@ create_total_recon_seq(
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesModel::FeatureHandle feature_handle(feature_id, feature_type);
+	GPlatesModel::FeatureHandle feature_handle(feature_type, feature_id);
 	feature_handle.set_current_revision(revision);
 
 	return feature_handle;

@@ -51,26 +51,16 @@ namespace GPlatesModel {
 
 	public:
 		/**
-		 * Create a FeatureHandle instance for a feature of feature ID @a feature_id_ and
-		 * feature type @a feature_type_.
+		 * Create a new FeatureHandle instance with feature type @a feature_type_ and
+		 * feature ID @a feature_id_.
 		 */
 		FeatureHandle(
-				const FeatureId &feature_id_,
-				const FeatureType &feature_type_) :
+				const FeatureType &feature_type_,
+				const FeatureId &feature_id_):
 			d_current_revision(NULL),
-			d_feature_id(feature_id_),
-			d_feature_type(feature_type_) {  }
-
-		/**
-		 * Return the feature ID of this feature.
-		 *
-		 * Note that no "setter" is provided:  The feature ID of a feature should never be
-		 * changed.
-		 */
-		const FeatureId &
-		feature_id() const {
-			return d_feature_id;
-		}
+			d_feature_type(feature_type_),
+			d_feature_id(feature_id_)
+		{  }
 
 		/**
 		 * Return the feature type of this feature.
@@ -81,6 +71,17 @@ namespace GPlatesModel {
 		const FeatureType &
 		feature_type() const {
 			return d_feature_type;
+		}
+
+		/**
+		 * Return the feature ID of this feature.
+		 *
+		 * Note that no "setter" is provided:  The feature ID of a feature should never be
+		 * changed.
+		 */
+		const FeatureId &
+		feature_id() const {
+			return d_feature_id;
 		}
 
 		/**
@@ -150,8 +151,8 @@ namespace GPlatesModel {
 	private:
 
 		boost::intrusive_ptr<FeatureRevision> d_current_revision;
-		FeatureId d_feature_id;
 		FeatureType d_feature_type;
+		FeatureId d_feature_id;
 
 	};
 
