@@ -121,6 +121,44 @@ namespace GPlatesModel
 		 * instances; it returns a pointer to a const FeatureHandle instance.
 		 */
 		const boost::intrusive_ptr<const FeatureHandle>
+		operator[](
+				feature_collection_type::size_type index) const
+		{
+			return access_feature(index);
+		}
+
+		/**
+		 * Access the feature at @a index in the feature collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, a NULL
+		 * pointer will be returned.  If the value of @a index is less-than the return
+		 * value of the @a size function, a NULL pointer @em may be returned (depending
+		 * upon whether that feature-slot is still being used or not).
+		 *
+		 * This is the overloading of this function for non-const FeatureCollectionRevision
+		 * instances; it returns a pointer to a non-const FeatureHandle instance.
+		 */
+		const boost::intrusive_ptr<FeatureHandle>
+		operator[](
+				feature_collection_type::size_type index)
+		{
+			return access_feature(index);
+		}
+
+		/**
+		 * Access the feature at @a index in the feature collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, a NULL
+		 * pointer will be returned.  If the value of @a index is less-than the return
+		 * value of the @a size function, a NULL pointer @em may be returned (depending
+		 * upon whether that feature-slot is still being used or not).
+		 *
+		 * This is the overloading of this function for const FeatureCollectionRevision
+		 * instances; it returns a pointer to a const FeatureHandle instance.
+		 */
+		const boost::intrusive_ptr<const FeatureHandle>
 		access_feature(
 				feature_collection_type::size_type index) const
 		{

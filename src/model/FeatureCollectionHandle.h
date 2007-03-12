@@ -30,6 +30,7 @@
 
 #include <boost/intrusive_ptr.hpp>
 #include "FeatureCollectionRevision.h"
+#include "HandleContainerIterator.h"
 
 namespace GPlatesModel
 {
@@ -50,6 +51,20 @@ namespace GPlatesModel
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
+
+		/**
+		 * The type used for iterating over the collection of feature handles (const).
+		 */
+		typedef HandleContainerIterator<const FeatureCollectionHandle,
+				const std::vector<boost::intrusive_ptr<FeatureHandle> >,
+				boost::intrusive_ptr<const FeatureHandle> > const_iterator;
+
+		/**
+		 * The type used for iterating over the collection of feature handles (non-const).
+		 */
+		typedef HandleContainerIterator<FeatureCollectionHandle,
+				std::vector<boost::intrusive_ptr<FeatureHandle> >,
+				boost::intrusive_ptr<FeatureHandle> > iterator;
 
 		~FeatureCollectionHandle()
 		{  }
@@ -77,6 +92,43 @@ namespace GPlatesModel
 			boost::intrusive_ptr<FeatureCollectionHandle> dup(
 					new FeatureCollectionHandle(*this));
 			return dup;
+		}
+
+		/**
+		 * Return the "begin" const-iterator to iterate over the collection of features.
+		 */
+		const const_iterator
+		begin() const
+		{
+			return const_iterator::create_begin(*this);
+		}
+
+		/**
+		 * Return the "begin" iterator to iterate over the collection of features.
+		 */
+		const iterator
+		begin()
+		{
+			return iterator::create_begin(*this);
+		}
+
+		/**
+		 * Return the "end" const-iterator used during iteration over the collection of
+		 * features.
+		 */
+		const const_iterator
+		end() const
+		{
+			return const_iterator::create_end(*this);
+		}
+
+		/**
+		 * Return the "end" iterator used during iteration over the collection of features.
+		 */
+		const iterator
+		end()
+		{
+			return iterator::create_end(*this);
 		}
 
 		/**
