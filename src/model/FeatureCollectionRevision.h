@@ -35,6 +35,8 @@
 
 namespace GPlatesModel
 {
+	class DummyTransactionHandle;
+
 	/**
 	 * A feature collection revision is the part of a GML feature collection which can change
 	 * with revisions.
@@ -55,6 +57,11 @@ namespace GPlatesModel
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
+
+		/**
+		 * The type used for the collection of features.
+		 */
+		typedef std::vector<boost::intrusive_ptr<FeatureHandle> > feature_collection_type;
 
 		~FeatureCollectionRevision()
 		{  }
@@ -81,6 +88,91 @@ namespace GPlatesModel
 					new FeatureCollectionRevision(*this));
 			return dup;
 		}
+
+		/**
+		 * Return the number of feature-slots currently contained within this feature
+		 * collection.
+		 *
+		 * Note that feature-slots may be empty (ie, the pointer at that position may be
+		 * NULL).  Thus, the number of features actually contained within this feature
+		 * collection may be less than the number of feature-slots.
+		 * 
+		 * This value is intended to be used as an upper (open range) limit on the values
+		 * of the index used to access the features within this collection.  Attempting to
+		 * access a feature at an index which is greater-than or equal-to the number of
+		 * feature-slots will always result in a NULL pointer.
+		 */
+		feature_collection_type::size_type
+		size() const
+		{
+			return d_features.size();
+		}
+
+		/**
+		 * Access the feature at @a index in the feature collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, a NULL
+		 * pointer will be returned.  If the value of @a index is less-than the return
+		 * value of the @a size function, a NULL pointer @em may be returned (depending
+		 * upon whether that feature-slot is still being used or not).
+		 *
+		 * This is the overloading of this function for const FeatureCollectionRevision
+		 * instances; it returns a pointer to a const FeatureHandle instance.
+		 */
+		const boost::intrusive_ptr<const FeatureHandle>
+		access_feature(
+				feature_collection_type::size_type index) const
+		{
+			boost::intrusive_ptr<const FeatureHandle> ptr = NULL;
+			if (index < size()) {
+				ptr = d_features[index];
+			}
+			return ptr;
+		}
+
+		/**
+		 * Access the feature at @a index in the feature collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, a NULL
+		 * pointer will be returned.  If the value of @a index is less-than the return
+		 * value of the @a size function, a NULL pointer @em may be returned (depending
+		 * upon whether that feature-slot is still being used or not).
+		 *
+		 * This is the overloading of this function for non-const FeatureCollectionRevision
+		 * instances; it returns a pointer to a non-const FeatureHandle instance.
+		 */
+		const boost::intrusive_ptr<FeatureHandle>
+		access_feature(
+				feature_collection_type::size_type index)
+		{
+			boost::intrusive_ptr<FeatureHandle> ptr = NULL;
+			if (index < size()) {
+				ptr = d_features[index];
+			}
+			return ptr;
+		}
+
+		/**
+		 * Append @a new_feature to the feature collection.
+		 */
+		void
+		append_feature(
+				boost::intrusive_ptr<FeatureHandle> new_feature,
+				DummyTransactionHandle &transaction);
+
+		/**
+		 * Remove the feature at @a index in the feature collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, this
+		 * function will be a no-op.
+		 */
+		void
+		remove_feature(
+				feature_collection_type::size_type index,
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Increment the reference-count of this instance.
@@ -112,7 +204,7 @@ namespace GPlatesModel
 		 *
 		 * None of these pointers should be NULL.
 		 */
-		std::vector<boost::intrusive_ptr<FeatureHandle> > d_features;
+		feature_collection_type d_features;
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
