@@ -226,7 +226,7 @@ namespace GPlatesModel {
 		 * create a duplicate instance and return a new intrusive_ptr reference to the new
 		 * duplicate.  Since initially the only reference to the new duplicate will be the
 		 * one returned by the 'clone' function, *before* the new intrusive_ptr is created,
-		 * the ref-count of the new FeatureRevision instance should be zero.
+		 * the ref-count of the new FeatureHandle instance should be zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
 		 * copy-ctor, except that it should initialise the ref-count to zero.
