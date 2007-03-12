@@ -28,6 +28,7 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include "model/Model.h"
+#include "model/FeatureCollectionRevision.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
 #include "model/GmlLineString.h"
