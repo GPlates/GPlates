@@ -209,13 +209,13 @@ namespace GPlatesModel
 		 */
 		boost::intrusive_ptr<FeatureCollectionRevision> d_current_revision;
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// FIXME:  This should create a feature revision, rather than initialising to NULL.
+		/**
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 */
 		FeatureCollectionHandle():
 			d_ref_count(0),
-			d_current_revision(NULL)
+			d_current_revision(FeatureCollectionRevision::create())
 		{  }
 
 		/**
