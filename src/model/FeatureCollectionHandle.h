@@ -56,14 +56,14 @@ namespace GPlatesModel
 		 * The type used for iterating over the collection of feature handles (const).
 		 */
 		typedef HandleContainerIterator<const FeatureCollectionHandle,
-				const std::vector<boost::intrusive_ptr<FeatureHandle> >,
+				const FeatureCollectionRevision::feature_collection_type,
 				boost::intrusive_ptr<const FeatureHandle> > const_iterator;
 
 		/**
 		 * The type used for iterating over the collection of feature handles (non-const).
 		 */
 		typedef HandleContainerIterator<FeatureCollectionHandle,
-				std::vector<boost::intrusive_ptr<FeatureHandle> >,
+				FeatureCollectionRevision::feature_collection_type,
 				boost::intrusive_ptr<FeatureHandle> > iterator;
 
 		~FeatureCollectionHandle()
