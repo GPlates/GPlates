@@ -32,8 +32,6 @@
 #include <boost/intrusive_ptr.hpp>
 #include "RevisionId.h"
 #include "PropertyContainer.h"
-#include "ConstFeatureVisitor.h"
-#include "FeatureVisitor.h"
 
 
 namespace GPlatesModel {
@@ -56,6 +54,12 @@ namespace GPlatesModel {
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
+
+		/**
+		 * The type used to contain the properties of this feature revision.
+		 */
+		typedef std::vector<boost::intrusive_ptr<PropertyContainer> >
+				property_container_collection_type;
 
 		~FeatureRevision()
 		{  }
@@ -102,60 +106,36 @@ namespace GPlatesModel {
 		}
 
 		/**
-		 * Return the vector of properties of this feature revision.
+		 * Return the collection of properties of this feature revision.
 		 *
 		 * This is the overloading of this function for const FeatureRevision instances; it
-		 * returns a reference to a const vector, which in turn will only allow const
+		 * returns a reference to a const collection, which in turn will only allow const
 		 * access to its elements.
 		 *
 		 * @b FIXME:  Should this function be replaced with per-index const-access to
-		 * elements of the property container vector (which will return possibly-NULL
+		 * elements of the property container collection (which will return possibly-NULL
 		 * pointers)?  (For consistency with the non-const overload...)
 		 */
-		const std::vector<boost::intrusive_ptr<PropertyContainer> > &
+		const property_container_collection_type &
 		properties() const {
 			return d_properties;
 		}
 
 		/**
-		 * Return the vector of properties of this feature revision.
+		 * Return the collection of properties of this feature revision.
 		 *
-		 * This is the overloading of this function for not-const FeatureRevision
-		 * instances; it returns a reference to a non-const vector, which in turn will
+		 * This is the overloading of this function for non-const FeatureRevision
+		 * instances; it returns a reference to a non-const collection, which in turn will
 		 * allow non-const access to its elements.
 		 *
 		 * @b FIXME:  Should this function be replaced with per-index access to elements of
-		 * the property container vector (which will return possibly-NULL pointers), as
+		 * the property container collection (which will return possibly-NULL pointers), as
 		 * well as per-index assignment (setter) and removal operations?  This would ensure
 		 * that revisioning is correctly handled...
 		 */
-		std::vector<boost::intrusive_ptr<PropertyContainer> > &
+		property_container_collection_type &
 		properties() {
 			return d_properties;
-		}
-
-		/**
-		 * Accept a ConstFeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		void
-		accept_visitor(
-				ConstFeatureVisitor &visitor) const {
-			visitor.visit_feature_revision(*this);
-		}
-
-		/**
-		 * Accept a FeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		void
-		accept_visitor(
-				FeatureVisitor &visitor) {
-			visitor.visit_feature_revision(*this);
 		}
 
 		/**
@@ -201,7 +181,7 @@ namespace GPlatesModel {
 		 * pointer rather than removed, so that the indices, which are used to reference
 		 * the other elements in the vector, remain valid.
 		 */
-		std::vector<boost::intrusive_ptr<PropertyContainer> > d_properties;
+		property_container_collection_type d_properties;
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

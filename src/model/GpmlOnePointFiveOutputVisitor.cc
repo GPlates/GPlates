@@ -49,34 +49,21 @@ void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 		const GPlatesModel::FeatureHandle &feature_handle) {
 
-	// If a feature handle doesn't contain a revision, we pretend the handle doesn't exist.
-	if (feature_handle.current_revision() == NULL) {
-		return;
-	}
-
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, feature_handle.feature_type().get());
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:identity");
 		d_output.write_line_of_string_content(feature_handle.feature_id().get());
 	}
-	feature_handle.current_revision()->accept_visitor(*this);
-}
-
-
-void
-GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_revision(
-		const GPlatesModel::FeatureRevision &feature_revision) {
-
 	{
 		XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:revision");
-		d_output.write_line_of_string_content(feature_revision.revision_id().get());
+		d_output.write_line_of_string_content(feature_handle.revision_id().get());
 	}
 
 	// Now visit each of the properties in turn.
 	std::vector<boost::intrusive_ptr<GPlatesModel::PropertyContainer> >::const_iterator iter =
-			feature_revision.properties().begin();
+			feature_handle.properties().begin();
 	std::vector<boost::intrusive_ptr<GPlatesModel::PropertyContainer> >::const_iterator end =
-			feature_revision.properties().end();
+			feature_handle.properties().end();
 	for ( ; iter != end; ++iter) {
 		// Elements of this properties vector can be NULL pointers.  (See the comment in
 		// "model/FeatureRevision.h" for more details.)

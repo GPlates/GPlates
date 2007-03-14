@@ -107,34 +107,50 @@ namespace GPlatesModel {
 		}
 
 		/**
-		 * Access the current revision of this feature.
+		 * Return the revision ID of the current revision.
 		 *
-		 * This is the overloading of this function for const FeatureHandle instances; it
-		 * returns a pointer to a const FeatureRevision instance.
+		 * Note that no "setter" is provided:  The revision ID of a revision should never
+		 * be changed.
 		 */
-		const boost::intrusive_ptr<const FeatureRevision>
-		current_revision() const {
-			return d_current_revision;
+		const RevisionId &
+		revision_id() const
+		{
+			return current_revision()->revision_id();
 		}
 
 		/**
-		 * Access the current revision of this feature.
+		 * Return the collection of properties of this feature.
 		 *
-		 * This is the overloading of this function for non-const FeatureHandle instances;
-		 * it returns a C++ reference to a pointer to a non-const FeatureRevision instance.
+		 * This is the overloading of this function for const FeatureRevision instances; it
+		 * returns a reference to a const collection, which in turn will only allow const
+		 * access to its elements.
 		 *
-		 * Note that, because the copy-assignment operator of FeatureRevision is private,
-		 * the FeatureRevision referenced by the return-value of this function cannot be
-		 * assigned-to, which means that this function does not provide a means to directly
-		 * switch the FeatureRevision within this FeatureHandle instance.  (This
-		 * restriction is intentional.)
-		 *
-		 * To switch the FeatureRevision within this FeatureHandle instance, use the
-		 * function @a set_current_revision below.
+		 * @b FIXME:  Should this function be replaced with per-index const-access to
+		 * elements of the property container collection (which will return possibly-NULL
+		 * pointers)?  (For consistency with the non-const overload...)
 		 */
-		const boost::intrusive_ptr<FeatureRevision>
-		current_revision() {
-			return d_current_revision;
+		const FeatureRevision::property_container_collection_type &
+		properties() const
+		{
+			return current_revision()->properties();
+		}
+
+		/**
+		 * Return the collection of properties of this feature revision.
+		 *
+		 * This is the overloading of this function for not-const FeatureRevision
+		 * instances; it returns a reference to a non-const collection, which in turn will
+		 * allow non-const access to its elements.
+		 *
+		 * @b FIXME:  Should this function be replaced with per-index access to elements of
+		 * the property container collection (which will return possibly-NULL pointers), as
+		 * well as per-index assignment (setter) and removal operations?  This would ensure
+		 * that revisioning is correctly handled...
+		 */
+		FeatureRevision::property_container_collection_type &
+		properties()
+		{
+			return current_revision()->properties();
 		}
 
 		/**
@@ -258,6 +274,39 @@ namespace GPlatesModel {
 		FeatureHandle &
 		operator=(
 				const FeatureHandle &);
+
+		/**
+		 * Access the current revision of this feature.
+		 *
+		 * This is the overloading of this function for const FeatureHandle instances; it
+		 * returns a pointer to a const FeatureRevision instance.
+		 */
+		const boost::intrusive_ptr<const FeatureRevision>
+		current_revision() const
+		{
+			return d_current_revision;
+		}
+
+		/**
+		 * Access the current revision of this feature.
+		 *
+		 * This is the overloading of this function for non-const FeatureHandle instances;
+		 * it returns a C++ reference to a pointer to a non-const FeatureRevision instance.
+		 *
+		 * Note that, because the copy-assignment operator of FeatureRevision is private,
+		 * the FeatureRevision referenced by the return-value of this function cannot be
+		 * assigned-to, which means that this function does not provide a means to directly
+		 * switch the FeatureRevision within this FeatureHandle instance.  (This
+		 * restriction is intentional.)
+		 *
+		 * To switch the FeatureRevision within this FeatureHandle instance, use the
+		 * function @a set_current_revision.
+		 */
+		const boost::intrusive_ptr<FeatureRevision>
+		current_revision()
+		{
+			return d_current_revision;
+		}
 	};
 
 

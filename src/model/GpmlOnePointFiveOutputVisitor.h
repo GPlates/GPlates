@@ -53,11 +53,6 @@ namespace GPlatesFileIO {
 
 		virtual
 		void
-		visit_feature_revision(
-				const GPlatesModel::FeatureRevision &feature_revision);
-
-		virtual
-		void
 		visit_gml_line_string(
 				const GPlatesModel::GmlLineString &gml_line_string);
 

@@ -33,7 +33,6 @@ namespace GPlatesModel {
 
 	// Forward declarations for the member functions.
 	class FeatureHandle;
-	class FeatureRevision;
 	class GmlLineString;
 	class GmlOrientableCurve;
 	class GmlPoint;
@@ -80,12 +79,6 @@ namespace GPlatesModel {
 		void
 		visit_feature_handle(
 				FeatureHandle &feature_handle)
-		{  }
-
-		virtual
-		void
-		visit_feature_revision(
-				FeatureRevision &feature_revision)
 		{  }
 
 		virtual

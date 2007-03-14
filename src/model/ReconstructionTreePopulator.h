@@ -95,11 +95,6 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_feature_revision(
-				FeatureRevision &feature_revision);
-
-		virtual
-		void
 		visit_gpml_finite_rotation(
 				GpmlFiniteRotation &gpml_finite_rotation);
 

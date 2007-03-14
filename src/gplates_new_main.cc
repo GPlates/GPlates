@@ -227,13 +227,11 @@ create_isochron(
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> name_container =
 			create_name(name, codespace_of_name);
 
-	boost::intrusive_ptr<GPlatesModel::FeatureRevision> revision =
-			feature_handle->current_revision();
-	revision->properties().push_back(reconstruction_plate_id_container);
-	revision->properties().push_back(centre_line_of_container);
-	revision->properties().push_back(valid_time_container);
-	revision->properties().push_back(description_container);
-	revision->properties().push_back(name_container);
+	feature_handle->properties().push_back(reconstruction_plate_id_container);
+	feature_handle->properties().push_back(centre_line_of_container);
+	feature_handle->properties().push_back(valid_time_container);
+	feature_handle->properties().push_back(description_container);
+	feature_handle->properties().push_back(name_container);
 
 	return feature_handle;
 }
@@ -318,11 +316,9 @@ create_total_recon_seq(
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> moving_reference_frame_container =
 			create_reference_frame_plate_id(moving_plate_id, "gpml:movingReferenceFrame");
 
-	boost::intrusive_ptr<GPlatesModel::FeatureRevision> revision =
-			feature_handle->current_revision();
-	revision->properties().push_back(total_reconstruction_pole_container);
-	revision->properties().push_back(fixed_reference_frame_container);
-	revision->properties().push_back(moving_reference_frame_container);
+	feature_handle->properties().push_back(total_reconstruction_pole_container);
+	feature_handle->properties().push_back(fixed_reference_frame_container);
+	feature_handle->properties().push_back(moving_reference_frame_container);
 
 	return feature_handle;
 }

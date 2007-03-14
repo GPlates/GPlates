@@ -28,7 +28,6 @@
 #include "ReconstructedFeatureGeometryPopulator.h"
 #include "ReconstructionTree.h"
 #include "FeatureHandle.h"
-#include "FeatureRevision.h"
 #include "GmlLineString.h"
 #include "GmlOrientableCurve.h"
 #include "GpmlConstantValue.h"
@@ -59,15 +58,24 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 	static FeatureType isochron_feature_type =
 			FeatureType(UnicodeString("gpml:Isochron"));
 
-	// If a feature handle doesn't contain a revision, we pretend the handle doesn't exist.
-	if (feature_handle.current_revision() == NULL) {
-		return;
-	}
-
 	// If a feature handle isn't for a feature of type "gpml:Isochron", we're not interested.
 	if (feature_handle.feature_type() == isochron_feature_type) {
 		d_accumulator.reset(new ReconstructedFeatureGeometryAccumulator());
-		feature_handle.current_revision()->accept_visitor(*this);
+
+		// Now visit each of the properties in turn.
+		std::vector<boost::intrusive_ptr<PropertyContainer> >::iterator iter =
+				feature_handle.properties().begin();
+		std::vector<boost::intrusive_ptr<PropertyContainer> >::iterator end =
+				feature_handle.properties().end();
+		for ( ; iter != end; ++iter) {
+			// Elements of this properties vector can be NULL pointers.  (See the
+			// comment in "model/FeatureRevision.h" for more details.)
+			if (*iter != NULL) {
+				d_accumulator->d_most_recent_propname_read.reset(
+						new PropertyName((*iter)->property_name()));
+				(*iter)->accept_visitor(*this);
+			}
+		}
 
 		// So now we've visited the contents of this Isochron feature.  Let's find out if
 		// we were able to obtain all the information we need.
@@ -112,27 +120,6 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 		}
 
 		d_accumulator.reset(NULL);
-	}
-}
-
-
-void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_revision(
-		FeatureRevision &feature_revision)
-{
-	// Now visit each of the properties in turn.
-	std::vector<boost::intrusive_ptr<PropertyContainer> >::iterator iter =
-			feature_revision.properties().begin();
-	std::vector<boost::intrusive_ptr<PropertyContainer> >::iterator end =
-			feature_revision.properties().end();
-	for ( ; iter != end; ++iter) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) {
-			d_accumulator->d_most_recent_propname_read.reset(
-					new PropertyName((*iter)->property_name()));
-			(*iter)->accept_visitor(*this);
-		}
 	}
 }
 

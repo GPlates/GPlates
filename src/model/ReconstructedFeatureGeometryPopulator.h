@@ -111,11 +111,6 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_feature_revision(
-				FeatureRevision &feature_revision);
-
-		virtual
-		void
 		visit_gml_line_string(
 				GmlLineString &gml_line_string);
 
