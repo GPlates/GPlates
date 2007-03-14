@@ -205,6 +205,12 @@ create_isochron(
 		const UnicodeString &name,
 		const UnicodeString &codespace_of_name)
 {
+	GPlatesModel::FeatureId feature_id;
+	UnicodeString feature_type_string("gpml:Isochron");
+	GPlatesModel::FeatureType feature_type(feature_type_string);
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
+			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
+
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> reconstruction_plate_id_container =
 			create_reconstruction_plate_id(plate_id);
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> centre_line_of_container =
@@ -216,19 +222,13 @@ create_isochron(
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> name_container =
 			create_name(name, codespace_of_name);
 
-	boost::intrusive_ptr<GPlatesModel::FeatureRevision> revision = GPlatesModel::FeatureRevision::create();
+	boost::intrusive_ptr<GPlatesModel::FeatureRevision> revision =
+			feature_handle->current_revision();
 	revision->properties().push_back(reconstruction_plate_id_container);
 	revision->properties().push_back(centre_line_of_container);
 	revision->properties().push_back(valid_time_container);
 	revision->properties().push_back(description_container);
 	revision->properties().push_back(name_container);
-
-	GPlatesModel::FeatureId feature_id;
-	UnicodeString feature_type_string("gpml:Isochron");
-	GPlatesModel::FeatureType feature_type(feature_type_string);
-	boost::intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
-			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
-	feature_handle->set_current_revision(revision);
 
 	return feature_handle;
 }
@@ -300,6 +300,12 @@ create_total_recon_seq(
 		const RotationFileFiveTuple *five_tuples,
 		unsigned num_five_tuples)
 {
+	GPlatesModel::FeatureId feature_id;
+	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
+	GPlatesModel::FeatureType feature_type(feature_type_string);
+	boost::intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
+			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
+
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples, num_five_tuples);
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> fixed_reference_frame_container =
@@ -307,17 +313,11 @@ create_total_recon_seq(
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> moving_reference_frame_container =
 			create_reference_frame_plate_id(moving_plate_id, "gpml:movingReferenceFrame");
 
-	boost::intrusive_ptr<GPlatesModel::FeatureRevision> revision = GPlatesModel::FeatureRevision::create();
+	boost::intrusive_ptr<GPlatesModel::FeatureRevision> revision =
+			feature_handle->current_revision();
 	revision->properties().push_back(total_reconstruction_pole_container);
 	revision->properties().push_back(fixed_reference_frame_container);
 	revision->properties().push_back(moving_reference_frame_container);
-
-	GPlatesModel::FeatureId feature_id;
-	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
-	GPlatesModel::FeatureType feature_type(feature_type_string);
-	boost::intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
-			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
-	feature_handle->set_current_revision(revision);
 
 	return feature_handle;
 }

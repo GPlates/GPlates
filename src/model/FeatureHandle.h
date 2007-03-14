@@ -206,15 +206,15 @@ namespace GPlatesModel {
 		FeatureType d_feature_type;
 		FeatureId d_feature_id;
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// FIXME:  This should create a feature revision, rather than initialising to NULL.
+		/**
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 */
 		FeatureHandle(
 				const FeatureType &feature_type_,
 				const FeatureId &feature_id_) :
 			d_ref_count(0),
-			d_current_revision(NULL),
+			d_current_revision(FeatureRevision::create()),
 			d_feature_type(feature_type_),
 			d_feature_id(feature_id_) {  }
 
