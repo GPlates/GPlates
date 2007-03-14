@@ -2,4 +2,4 @@
 
 set -x
 ./configure --enable-dev && \
-make doc
+( cd doc && make doc )
