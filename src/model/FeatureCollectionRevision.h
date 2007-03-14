@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the class FeatureCollectionRevision.
  *
  * Most recent change:
  *   $Date$
@@ -235,12 +235,15 @@ namespace GPlatesModel
 
 	private:
 
+		/**
+		 * The reference-count of this instance by intrusive-pointers.
+		 */
 		mutable ref_count_type d_ref_count;
 
 		/**
 		 * The collection of features contained within this feature collection.
 		 *
-		 * None of these pointers should be NULL.
+		 * Any of the pointers in this container might be NULL.
 		 */
 		feature_collection_type d_features;
 

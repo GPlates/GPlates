@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the class FeatureHandle.
  *
  * Most recent change:
  *   $Date$
@@ -197,13 +197,26 @@ namespace GPlatesModel {
 
 	private:
 
+		/**
+		 * The reference-count of this instance by intrusive-pointers.
+		 */
 		mutable ref_count_type d_ref_count;
 
 		/**
+		 * The current revision of this feature.
+		 *
 		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
 		boost::intrusive_ptr<FeatureRevision> d_current_revision;
+
+		/**
+		 * The type of this feature.
+		 */
 		FeatureType d_feature_type;
+
+		/**
+		 * The unique feature ID of this feature instance.
+		 */
 		FeatureId d_feature_id;
 
 		/**

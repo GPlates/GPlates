@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the class FeatureRevision.
  *
  * Most recent change:
  *   $Date$
@@ -181,10 +181,19 @@ namespace GPlatesModel {
 
 	private:
 
+		/**
+		 * The reference-count of this instance by intrusive-pointers.
+		 */
 		mutable ref_count_type d_ref_count;
+
+		/**
+		 * The unique revision ID of this feature revision.
+		 */
 		RevisionId d_revision_id;
 
 		/*
+		 * The collection of properties possessed by this feature.
+		 *
 		 * Note that any of the pointers contained as elements in this vector can be NULL. 
 		 *
 		 * An element which is a NULL pointer indicates that the property, which was
