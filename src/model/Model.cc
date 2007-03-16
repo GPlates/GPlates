@@ -27,24 +27,24 @@
 
 #include <boost/intrusive_ptr.hpp>
 
-#include "model/Model.h"
-#include "model/DummyTransactionHandle.h"
-#include "model/FeatureHandle.h"
-#include "model/FeatureRevision.h"
-#include "model/GmlLineString.h"
-#include "model/GmlOrientableCurve.h"
-#include "model/GmlTimePeriod.h"
-#include "model/GpmlConstantValue.h"
-#include "model/GpmlFiniteRotationSlerp.h"
-#include "model/GpmlFiniteRotation.h"
-#include "model/GpmlIrregularSampling.h"
-#include "model/GpmlPlateId.h"
-#include "model/GpmlTimeSample.h"
-#include "model/SingleValuedPropertyContainer.h"
-#include "model/XsString.h"
-#include "model/ReconstructionTree.h"
-#include "model/ReconstructionTreePopulator.h"
-#include "model/ReconstructedFeatureGeometryPopulator.h"
+#include "Model.h"
+#include "DummyTransactionHandle.h"
+#include "FeatureHandle.h"
+#include "FeatureRevision.h"
+#include "GmlLineString.h"
+#include "GmlOrientableCurve.h"
+#include "GmlTimePeriod.h"
+#include "GpmlConstantValue.h"
+#include "GpmlFiniteRotationSlerp.h"
+#include "GpmlFiniteRotation.h"
+#include "GpmlIrregularSampling.h"
+#include "GpmlPlateId.h"
+#include "GpmlTimeSample.h"
+#include "SingleValuedPropertyContainer.h"
+#include "XsString.h"
+#include "ReconstructionTree.h"
+#include "ReconstructionTreePopulator.h"
+#include "ReconstructedFeatureGeometryPopulator.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -319,8 +319,8 @@ create_total_recon_seq(
 
 
 GPlatesModel::Model::Model():
-	d_isochrons(GPlatesModel::FeatureCollectionHandle::create()),
-	d_total_recon_seqs(GPlatesModel::FeatureCollectionHandle::create())
+	d_isochrons(FeatureCollectionHandle::create()),
+	d_total_recon_seqs(FeatureCollectionHandle::create())
 {
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
@@ -392,15 +392,15 @@ GPlatesModel::Model::Model():
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
-	GPlatesModel::DummyTransactionHandle transaction_iso1;
+	DummyTransactionHandle transaction_iso1;
 	d_isochrons->append_feature(isochron1, transaction_iso1);
 	transaction_iso1.commit();
 
-	GPlatesModel::DummyTransactionHandle transaction_iso2;
+	DummyTransactionHandle transaction_iso2;
 	d_isochrons->append_feature(isochron2, transaction_iso2);
 	transaction_iso2.commit();
 
-	GPlatesModel::DummyTransactionHandle transaction_iso3;
+	DummyTransactionHandle transaction_iso3;
 	d_isochrons->append_feature(isochron3, transaction_iso3);
 	transaction_iso3.commit();
 
@@ -448,15 +448,15 @@ GPlatesModel::Model::Model():
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
-	GPlatesModel::DummyTransactionHandle transaction_trs1;
+	DummyTransactionHandle transaction_trs1;
 	d_total_recon_seqs->append_feature(total_recon_seq1, transaction_trs1);
 	transaction_trs1.commit();
 
-	GPlatesModel::DummyTransactionHandle transaction_trs2;
+	DummyTransactionHandle transaction_trs2;
 	d_total_recon_seqs->append_feature(total_recon_seq2, transaction_trs2);
 	transaction_trs2.commit();
 
-	GPlatesModel::DummyTransactionHandle transaction_trs3;
+	DummyTransactionHandle transaction_trs3;
 	d_total_recon_seqs->append_feature(total_recon_seq3, transaction_trs3);
 	transaction_trs3.commit();
 }

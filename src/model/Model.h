@@ -27,9 +27,9 @@
 #define GPLATES_MODEL_MODEL_H
 
 #include <vector>
-#include "model/ModelInterface.h"
-#include "model/FeatureCollectionHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
+#include "ModelInterface.h"
+#include "FeatureCollectionHandle.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
