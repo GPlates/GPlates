@@ -31,6 +31,10 @@
 
 namespace GPlatesModel
 {
+	/**
+	 * A revision-aware iterator to iterate over the container of whatever-handles contained
+	 * within a revisioning collection.
+	 */
 	template<typename H, typename C, typename D>
 	class HandleContainerIterator
 	{
@@ -64,6 +68,8 @@ namespace GPlatesModel
 
 		/**
 		 * This factory function is used to instantiate "begin" iterators.
+		 *
+		 * This function will not throw.
 		 */
 		static
 		const HandleContainerIterator
@@ -75,6 +81,8 @@ namespace GPlatesModel
 
 		/**
 		 * This factory function is used to instantiate "end" iterators.
+		 *
+		 * This function will not throw.
 		 */
 		static
 		const HandleContainerIterator
@@ -87,6 +95,8 @@ namespace GPlatesModel
 
 		/**
 		 * Return the current index.
+		 *
+		 * This function will not throw.
 		 */
 		index_type
 		index() const
@@ -95,7 +105,20 @@ namespace GPlatesModel
 		}
 
 		/**
+		 * Return whether this iterator is valid to be dereferenced.
+		 *
+		 * This function will not throw.
+		 */
+		bool
+		is_valid() const
+		{
+			return index_is_before_end();
+		}
+
+		/**
 		 * Return whether this instance is equal to @a other.
+		 *
+		 * This function will not throw.
 		 */
 		bool
 		operator==(
@@ -107,6 +130,8 @@ namespace GPlatesModel
 
 		/**
 		 * Return whether this instance is not equal to @a other.
+		 *
+		 * This function will not throw.
 		 */
 		bool
 		operator!=(
@@ -119,9 +144,14 @@ namespace GPlatesModel
 		/**
 		 * The dereference operator.
 		 *
+		 * This operator should only be invoked when the iterator is valid (i.e., when
+		 * @a is_valid would return true).
+		 *
 		 * Note that it is a deliberate limitation of this operator, that the return-value
 		 * is not an L-value (ie, it cannot be assigned-to).  This is to ensure that the
 		 * revisioning mechanism is not bypassed.
+		 *
+		 * As long as the iterator is valid, this function will not throw.
 		 */
 		const dereference_type
 		operator*() const
@@ -132,9 +162,14 @@ namespace GPlatesModel
 		/**
 		 * The pointer-indirection-member-access operator.
 		 *
+		 * This operator should only be invoked when the iterator is valid (i.e., when
+		 * @a is_valid would return true).
+		 *
 		 * Note that it is a deliberate limitation of this operator, that when the
 		 * return-value is dereferenced, the result is not an L-value (ie, it cannot be
 		 * assigned-to).  This is to ensure that the revisioning mechanism is not bypassed.
+		 *
+		 * As long as the iterator is valid, this function will not throw.
 		 */
 		const dereference_type *
 		operator->() const
@@ -144,6 +179,8 @@ namespace GPlatesModel
 
 		/**
 		 * The pre-increment operator.
+		 *
+		 * This function will not throw.
 		 */
 		HandleContainerIterator &
 		operator++()
@@ -154,6 +191,8 @@ namespace GPlatesModel
 
 		/**
 		 * The post-increment operator.
+		 *
+		 * This function will not throw.
 		 */
 		const HandleContainerIterator
 		operator++(int)
@@ -165,6 +204,8 @@ namespace GPlatesModel
 	private:
 		/**
 		 * Return the size of the container in the supplied collection_handle_type.
+		 *
+		 * This function will not throw.
 		 */
 		static
 		index_type
@@ -177,6 +218,8 @@ namespace GPlatesModel
 		/**
 		 * Construct an iterator to iterate over the container inside @a collection_handle,
 		 * beginning at @a index.
+		 *
+		 * This constructor will not throw.
 		 */
 		HandleContainerIterator(
 				collection_handle_type &collection_handle,
@@ -193,6 +236,8 @@ namespace GPlatesModel
 		 * This function should only be invoked when the index indicates an element which
 		 * is @em before the end of the container (i.e., when @a index_is_before_end would
 		 * return true).
+		 *
+		 * As long as the index is valid, this function will not throw.
 		 */
 		dereference_type
 		current_element() const
@@ -203,6 +248,8 @@ namespace GPlatesModel
 		/**
 		 * Return whether the index indicates an element which is before the end of the
 		 * container.
+		 *
+		 * This function will not throw.
 		 */
 		bool
 		index_is_before_end() const
@@ -214,6 +261,12 @@ namespace GPlatesModel
 
 		/**
 		 * Return whether the index indicates an element of the container which is NULL.
+		 *
+		 * This function should only be invoked when the index indicates an element which
+		 * is @em before the end of the container (i.e., when @a index_is_before_end would
+		 * return true).
+		 *
+		 * As long as the index is valid, this function will not throw.
 		 */
 		bool
 		index_indicates_null_elem() const
@@ -224,6 +277,8 @@ namespace GPlatesModel
 		/**
 		 * Continue incrementing the index until an element is reached which is not NULL,
 		 * or there's no more container through which to iterate.
+		 *
+		 * This function will not throw.
 		 */
 		void
 		increment_until_non_null_elem()
@@ -239,6 +294,8 @@ namespace GPlatesModel
 
 		/**
 		 * Advance the iterator in response to an increment request.
+		 *
+		 * This function will not throw.
 		 */
 		void
 		advance()
