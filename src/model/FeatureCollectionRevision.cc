@@ -25,7 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "FeatureRevisionCollection.h
+#include "FeatureCollectionRevision.h"
 #include "DummyTransactionHandle.h"
 
 

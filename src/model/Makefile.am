@@ -8,4 +8,4 @@ libmodel_a_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc GeoTimeInstant.cc 
 				GpmlFiniteRotation.cc Model.cc \
 				ReconstructedFeatureGeometryPopulator.cc ReconstructionTree.cc \
 				ReconstructionTreePopulator.cc StringSetSingletons.cc \
-				XmlOutputInterface.cc
+				XmlOutputInterface.cc FeatureCollectionRevision.cc
