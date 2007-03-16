@@ -34,6 +34,8 @@
 
 namespace GPlatesModel
 {
+	class DummyTransactionHandle;
+
 	/**
 	 * A feature collection handle is the part of a GML feature collection which does not
 	 * change with revisions.
@@ -132,7 +134,46 @@ namespace GPlatesModel
 		}
 
 		/**
+		 * Append @a new_feature to th feature collection.
+		 */
+		void
+		append_feature(
+				boost::intrusive_ptr<FeatureHandle> new_feature,
+				DummyTransactionHandle &transaction)
+		{
+			current_revision()->append_feature(new_feature, transaction);
+		}
+
+		/**
+		 * Remove the feature indicated by @a iter in the feature collection.
+		 *
+		 * The results of this operation are only defined if @a iter is before @a end.
+		 */
+		void
+		remove_feature(
+				const_iterator iter,
+				DummyTransactionHandle &transaction)
+		{
+			current_revision()->remove_feature(iter.index(), transaction);
+		}
+
+		/**
+		 * Remove the feature indicated by @a iter in the feature collection.
+		 *
+		 * The results of this operation are only defined if @a iter is before @a end.
+		 */
+		void
+		remove_feature(
+				iterator iter,
+				DummyTransactionHandle &transaction)
+		{
+			current_revision()->remove_feature(iter.index(), transaction);
+		}
+
+		/**
 		 * Access the current revision of this feature collection.
+		 *
+		 * Client code should not need to access the revision directly!
 		 *
 		 * This is the overloading of this function for const FeatureCollectionHandle
 		 * instances; it returns a pointer to a const FeatureCollectionRevision instance.
@@ -145,6 +186,8 @@ namespace GPlatesModel
 
 		/**
 		 * Access the current revision of this feature collection.
+		 *
+		 * Client code should not need to access the revision directly!
 		 *
 		 * This is the overloading of this function for non-const FeatureCollectionHandle
 		 * instances; it returns a C++ reference to a pointer to a non-const
@@ -168,6 +211,8 @@ namespace GPlatesModel
 		/**
 		 * Set the current revision of this feature collection to @a rev.
 		 *
+		 * Client code should not need to access the revision directly!
+		 *
 		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
 		void
@@ -180,6 +225,8 @@ namespace GPlatesModel
 		/**
 		 * Increment the reference-count of this instance.
 		 *
+		 * Client code should not use this function!
+		 *
 		 * This function is used by boost::intrusive_ptr.
 		 */
 		void
@@ -191,6 +238,8 @@ namespace GPlatesModel
 		/**
 		 * Decrement the reference-count of this instance, and return the new
 		 * reference-count.
+		 *
+		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr.
 		 */

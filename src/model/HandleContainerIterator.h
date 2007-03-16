@@ -84,6 +84,84 @@ namespace GPlatesModel
 			return HandleContainerIterator(collection_handle,
 					container_size(collection_handle));
 		}
+
+		/**
+		 * Return the current index.
+		 */
+		index_type
+		index() const
+		{
+			return d_index;
+		}
+
+		/**
+		 * Return whether this instance is equal to @a other.
+		 */
+		bool
+		operator==(
+				const HandleContainerIterator &other) const
+		{
+			return (d_collection_handle_ptr == other.d_collection_handle_ptr &&
+					d_index == other.d_index);
+		}
+
+		/**
+		 * Return whether this instance is not equal to @a other.
+		 */
+		bool
+		operator!=(
+				const HandleContainerIterator &other) const
+		{
+			return (d_collection_handle_ptr != other.d_collection_handle_ptr ||
+					d_index != other.d_index);
+		}
+
+		/**
+		 * The dereference operator.
+		 *
+		 * Note that it is a deliberate limitation of this operator, that the return-value
+		 * is not an L-value (ie, it cannot be assigned-to).  This is to ensure that the
+		 * revisioning mechanism is not bypassed.
+		 */
+		const dereference_type
+		operator*() const
+		{
+			return current_element();
+		}
+
+		/**
+		 * The pointer-indirection-member-access operator.
+		 *
+		 * Note that it is a deliberate limitation of this operator, that when the
+		 * return-value is dereferenced, the result is not an L-value (ie, it cannot be
+		 * assigned-to).  This is to ensure that the revisioning mechanism is not bypassed.
+		 */
+		const dereference_type *
+		operator->() const
+		{
+			return &current_element();
+		}
+
+		/**
+		 * The pre-increment operator.
+		 */
+		HandleContainerIterator &
+		operator++()
+		{
+			advance();
+			return *this;
+		}
+
+		/**
+		 * The post-increment operator.
+		 */
+		const HandleContainerIterator
+		operator++(int)
+		{
+			HandleContainerIterator orig(*this);
+			advance();
+			return orig;
+		}
 	private:
 		/**
 		 * Return the size of the container in the supplied collection_handle_type.
@@ -140,7 +218,7 @@ namespace GPlatesModel
 		bool
 		index_indicates_null_elem() const
 		{
-			return (current_element() == NULL);
+			return ( ! current_element());
 		}
 
 		/**
@@ -150,9 +228,23 @@ namespace GPlatesModel
 		void
 		increment_until_non_null_elem()
 		{
+			// Note that the loop condition is that the index is *before* the end,
+			// rather than *not equal to* the end, to ensure that the loop will neither
+			// run forever nor access memory outside the container, in the event that
+			// the client code increments an end-iterator.
 			while (index_is_before_end() && index_indicates_null_elem()) {
 				++d_index;
 			}
+		}
+
+		/**
+		 * Advance the iterator in response to an increment request.
+		 */
+		void
+		advance()
+		{
+			++d_index;
+			increment_until_non_null_elem();
 		}
 
 		/**

@@ -34,8 +34,11 @@ namespace GPlatesModel
 	 * This struct is a place-holder for the soon-to-be-implemented class TransactionHandle.
 	 */
 	struct DummyTransactionHandle
-	{  };
-
+	{
+		void
+		commit()
+		{  }
+	};
 }
 
 #endif  // GPLATES_MODEL_DUMMYTRANSACTIONHANDLE_H

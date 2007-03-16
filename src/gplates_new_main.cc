@@ -33,6 +33,9 @@
 #include <vector>
 #include <iostream>
 
+#include "model/FeatureCollectionHandle.h"
+#include "model/FeatureCollectionRevision.h"
+#include "model/DummyTransactionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
 #include "model/GmlLineString.h"
@@ -477,10 +480,20 @@ main() {
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
-	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> > isochrons;
-	isochrons.push_back(isochron1);
-	isochrons.push_back(isochron2);
-	isochrons.push_back(isochron3);
+	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> isochrons =
+			GPlatesModel::FeatureCollectionHandle::create();
+
+	GPlatesModel::DummyTransactionHandle transaction_iso1;
+	isochrons->append_feature(isochron1, transaction_iso1);
+	transaction_iso1.commit();
+
+	GPlatesModel::DummyTransactionHandle transaction_iso2;
+	isochrons->append_feature(isochron2, transaction_iso2);
+	transaction_iso2.commit();
+
+	GPlatesModel::DummyTransactionHandle transaction_iso3;
+	isochrons->append_feature(isochron3, transaction_iso3);
+	transaction_iso3.commit();
 
 	static const unsigned long fixed_plate_id1 = 511;
 	static const unsigned long moving_plate_id1 = 501;
@@ -526,19 +539,27 @@ main() {
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
-	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> > total_recon_seqs;
-	total_recon_seqs.push_back(total_recon_seq1);
-	total_recon_seqs.push_back(total_recon_seq2);
-	total_recon_seqs.push_back(total_recon_seq3);
+	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> total_recon_seqs =
+			GPlatesModel::FeatureCollectionHandle::create();
+
+	GPlatesModel::DummyTransactionHandle transaction_trs1;
+	total_recon_seqs->append_feature(total_recon_seq1, transaction_trs1);
+	transaction_trs1.commit();
+
+	GPlatesModel::DummyTransactionHandle transaction_trs2;
+	total_recon_seqs->append_feature(total_recon_seq2, transaction_trs2);
+	transaction_trs2.commit();
+
+	GPlatesModel::DummyTransactionHandle transaction_trs3;
+	total_recon_seqs->append_feature(total_recon_seq3, transaction_trs3);
+	transaction_trs3.commit();
 
 	GPlatesFileIO::XmlOutputInterface xoi =
 			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
 	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
 
-	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator iter1 =
-			isochrons.begin();
-	std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator end1 =
-			isochrons.end();
+	GPlatesModel::FeatureCollectionHandle::iterator iter1 = isochrons->begin();
+	GPlatesModel::FeatureCollectionHandle::iterator end1 = isochrons->end();
 	for ( ; iter1 != end1; ++iter1) {
 		(*iter1)->accept_visitor(v);
 	}
@@ -563,10 +584,8 @@ main() {
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
-		std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator iter2 =
-				total_recon_seqs.begin();
-		std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator end2 =
-				total_recon_seqs.end();
+		GPlatesModel::FeatureCollectionHandle::iterator iter2 = total_recon_seqs->begin();
+		GPlatesModel::FeatureCollectionHandle::iterator end2 = total_recon_seqs->end();
 		for ( ; iter2 != end2; ++iter2) {
 			(*iter2)->accept_visitor(rtp);
 		}
@@ -583,10 +602,8 @@ main() {
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
 				recon_tree, reconstructed_points, reconstructed_polylines);
 
-		std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator iter3 =
-				isochrons.begin();
-		std::vector<boost::intrusive_ptr<GPlatesModel::FeatureHandle> >::iterator end3 =
-				isochrons.end();
+		GPlatesModel::FeatureCollectionHandle::iterator iter3 = isochrons->begin();
+		GPlatesModel::FeatureCollectionHandle::iterator end3 = isochrons->end();
 		for ( ; iter3 != end3; ++iter3) {
 			(*iter3)->accept_visitor(rfgp);
 		}
