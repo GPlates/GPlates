@@ -234,9 +234,7 @@ namespace GPlatesModel
 				index_type index):
 			d_collection_handle_ptr(&collection_handle),
 			d_index(index)
-		{
-			increment_until_non_null_elem();
-		}
+		{  }
 
 		/**
 		 * Access the currently-indicated element.
@@ -268,39 +266,6 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return whether the index indicates an element of the container which is NULL.
-		 *
-		 * This function should only be invoked when the index indicates an element which
-		 * is @em before the end of the container (i.e., when @a index_is_before_end would
-		 * return true).
-		 *
-		 * As long as the index is valid, this function will not throw.
-		 */
-		bool
-		index_indicates_null_elem() const
-		{
-			return ( ! current_element());
-		}
-
-		/**
-		 * Continue incrementing the index until an element is reached which is not NULL,
-		 * or there's no more container through which to iterate.
-		 *
-		 * This function will not throw.
-		 */
-		void
-		increment_until_non_null_elem()
-		{
-			// Note that the loop condition is that the index is *before* the end,
-			// rather than *not equal to* the end, to ensure that the loop will neither
-			// run forever nor access memory outside the container, in the event that
-			// the client code increments an end-iterator.
-			while (index_is_before_end() && index_indicates_null_elem()) {
-				++d_index;
-			}
-		}
-
-		/**
 		 * Advance the iterator in response to an increment request.
 		 *
 		 * This function will not throw.
@@ -309,7 +274,6 @@ namespace GPlatesModel
 		advance()
 		{
 			++d_index;
-			increment_until_non_null_elem();
 		}
 
 		/**
