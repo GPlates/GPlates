@@ -29,13 +29,14 @@
 #include "DummyTransactionHandle.h"
 
 
-void
+GPlatesModel::FeatureCollectionRevision::feature_collection_type::size_type
 GPlatesModel::FeatureCollectionRevision::append_feature(
 		boost::intrusive_ptr<FeatureHandle> new_feature,
 		DummyTransactionHandle &transaction)
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.
 	d_features.push_back(new_feature);
+	return (size() - 1);
 }
 
 

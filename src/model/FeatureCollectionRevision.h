@@ -195,7 +195,7 @@ namespace GPlatesModel
 		/**
 		 * Append @a new_feature to the feature collection.
 		 */
-		void
+		feature_collection_type::size_type
 		append_feature(
 				boost::intrusive_ptr<FeatureHandle> new_feature,
 				DummyTransactionHandle &transaction);

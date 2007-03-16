@@ -67,6 +67,14 @@ namespace GPlatesModel
 		typedef typename handle_container_type::size_type index_type;
 
 		/**
+		 * Make the collection-handle-type a friend.
+		 *
+		 * This is a hack to enable the collection-handle-type to invoke the constructor of
+		 * this class with a specific index value, without abandoning @em all privacy.
+		 */
+		friend class collection_handle_type::this_type;
+
+		/**
 		 * This factory function is used to instantiate "begin" iterators.
 		 *
 		 * This function will not throw.

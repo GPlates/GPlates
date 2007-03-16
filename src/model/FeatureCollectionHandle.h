@@ -50,26 +50,48 @@ namespace GPlatesModel
 	{
 	public:
 		/**
+		 * The type of this class.
+		 *
+		 * This definition is used for template magic.
+		 */
+		typedef FeatureCollectionHandle this_type;
+
+		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
 
 		/**
-		 * The type used for iterating over the collection of feature handles (const).
+		 * The type which contains the revisioning component of a feature collection.
+		 *
+		 * This typedef is used by the HandleContainerIterator.
+		 */
+		typedef FeatureCollectionRevision revision_component_type;
+
+		/**
+		 * The type used for const-iterating over the collection of feature handles.
 		 */
 		typedef HandleContainerIterator<const FeatureCollectionHandle,
-				const FeatureCollectionRevision::feature_collection_type,
+				const revision_component_type::feature_collection_type,
 				boost::intrusive_ptr<const FeatureHandle> > const_iterator;
 
 		/**
-		 * The type used for iterating over the collection of feature handles (non-const).
+		 * The type used for (non-const) iterating over the collection of feature handles.
 		 */
 		typedef HandleContainerIterator<FeatureCollectionHandle,
-				FeatureCollectionRevision::feature_collection_type,
+				revision_component_type::feature_collection_type,
 				boost::intrusive_ptr<FeatureHandle> > iterator;
 
-		~FeatureCollectionHandle()
-		{  }
+		/**
+		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
+		 */
+		static
+		const const_iterator
+		get_const_iterator(
+				iterator iter)
+		{
+			return const_iterator(*(iter.d_collection_handle_ptr), iter.d_index);
+		}
 
 		/**
 		 * Create a new FeatureCollectionHandle instance.
@@ -82,6 +104,9 @@ namespace GPlatesModel
 					new FeatureCollectionHandle());
 			return ptr;
 		}
+
+		~FeatureCollectionHandle()
+		{  }
 
 		/**
 		 * Create a duplicate of this FeatureCollectionHandle instance.
@@ -134,14 +159,18 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Append @a new_feature to th feature collection.
+		 * Append @a new_feature to the feature collection.
+		 *
+		 * An iterator is returned which points to the new element in the collection.
 		 */
-		void
+		const iterator
 		append_feature(
 				boost::intrusive_ptr<FeatureHandle> new_feature,
 				DummyTransactionHandle &transaction)
 		{
-			current_revision()->append_feature(new_feature, transaction);
+			FeatureCollectionRevision::feature_collection_type::size_type new_index =
+					current_revision()->append_feature(new_feature, transaction);
+			return iterator(*this, new_index);
 		}
 
 		/**
