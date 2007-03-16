@@ -28,7 +28,7 @@
 
 #include <vector>
 #include "model/ModelInterface.h"
-#include "model/FeatureHandle.h"
+#include "model/FeatureCollectionHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -36,8 +36,7 @@
 
 namespace GPlatesModel
 {
-	class Model :
-		public ModelInterface
+	class Model: public ModelInterface
 	{
 	public:
 		Model();
@@ -45,15 +44,15 @@ namespace GPlatesModel
 		virtual
 		void
 		create_reconstruction(
-				std::vector<ReconstructedFeatureGeometry< GPlatesMaths::PointOnSphere> > &
+				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
 						point_reconstructions,
-				std::vector<ReconstructedFeatureGeometry< GPlatesMaths::PolylineOnSphere> > &
+				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
 						polyline_reconstructions,
 				const double &time,
 				unsigned long root);
 	private:
-		std::vector<boost::intrusive_ptr<FeatureHandle> > d_isochrons;
-		std::vector<boost::intrusive_ptr<FeatureHandle> > d_total_recon_seqs;
+		boost::intrusive_ptr<FeatureCollectionHandle> d_isochrons;
+		boost::intrusive_ptr<FeatureCollectionHandle> d_total_recon_seqs;
 	};
 }
 
