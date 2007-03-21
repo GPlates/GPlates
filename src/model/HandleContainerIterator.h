@@ -75,7 +75,8 @@ namespace GPlatesModel
 		friend class collection_handle_type::this_type;
 
 		/**
-		 * This factory function is used to instantiate "begin" iterators.
+		 * This factory function is used to instantiate "begin" iterators for a collection
+		 * handle.
 		 *
 		 * This function will not throw.
 		 */
@@ -88,7 +89,8 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * This factory function is used to instantiate "end" iterators.
+		 * This factory function is used to instantiate "end" iterators for a collection
+		 * handle.
 		 *
 		 * This function will not throw.
 		 */
@@ -99,6 +101,28 @@ namespace GPlatesModel
 		{
 			return HandleContainerIterator(collection_handle,
 					container_size(collection_handle));
+		}
+
+		/**
+		 * Default constructor.
+		 *
+		 * Iterator instances which are initialised using the default constructor are not
+		 * valid to be dereferenced.
+		 */
+		HandleContainerIterator():
+			d_collection_handle_ptr(NULL),
+			d_index(0)
+		{  }
+
+		/**
+		 * Return the pointer to the collection handle.
+		 *
+		 * This function will not throw.
+		 */
+		const collection_handle_type *
+		collection_handle_pointer() const
+		{
+			return d_collection_handle_ptr;
 		}
 
 		/**
@@ -120,7 +144,22 @@ namespace GPlatesModel
 		bool
 		is_valid() const
 		{
-			return index_is_within_bounds();
+			return (collection_handle_is_valid() && index_is_within_bounds());
+		}
+
+		/**
+		 * Copy-assignment operator.
+		 *
+		 * This function will not throw.
+		 */
+		HandleContainerIterator &
+		operator=(
+				const HandleContainerIterator &other)
+		{
+			d_collection_handle_ptr = other.d_collection_handle_ptr;
+			d_index = other.d_index;
+
+			return &this;
 		}
 
 		/**
@@ -264,9 +303,8 @@ namespace GPlatesModel
 		/**
 		 * Access the currently-indicated element.
 		 *
-		 * This function should only be invoked when the index indicates an element which
-		 * is within the bounds of the container (i.e., when @a index_is_within_bounds
-		 * would return true).
+		 * This function should only be invoked when the iterator is valid to be
+		 * dereferenced (i.e., when @a is_valid would return true).
 		 *
 		 * As long as the index is valid, this function will not throw.
 		 */
@@ -277,8 +315,21 @@ namespace GPlatesModel
 		}
 
 		/**
+		 * Return whether the collection handle is valid (i.e., whether it is indicated by
+		 * a non-NULL pointer).
+		 */
+		bool
+		collection_handle_is_valid() const
+		{
+			return (d_collection_handle_ptr != NULL);
+		}
+
+		/**
 		 * Return whether the index indicates an element which is within the bounds of the
 		 * container.
+		 *
+		 * This function should only be invoked whin the collection handle is valid (i.e.,
+		 * when @a collection_handle_is_valid would return true).
 		 *
 		 * This function will not throw.
 		 */
