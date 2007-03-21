@@ -120,7 +120,7 @@ namespace GPlatesModel
 		bool
 		is_valid() const
 		{
-			return index_is_before_end();
+			return index_is_within_bounds();
 		}
 
 		/**
@@ -193,7 +193,7 @@ namespace GPlatesModel
 		HandleContainerIterator &
 		operator++()
 		{
-			advance();
+			++d_index;
 			return *this;
 		}
 
@@ -205,9 +205,34 @@ namespace GPlatesModel
 		const HandleContainerIterator
 		operator++(int)
 		{
-			HandleContainerIterator orig(*this);
-			advance();
-			return orig;
+			HandleContainerIterator original(*this);
+			++d_index;
+			return original;
+		}
+
+		/**
+		 * The pre-decrement operator.
+		 *
+		 * This function will not throw.
+		 */
+		HandleContainerIterator &
+		operator--()
+		{
+			--d_index;
+			return *this;
+		}
+
+		/**
+		 * The post-decrement operator.
+		 *
+		 * This function will not throw.
+		 */
+		const HandleContainerIterator
+		operator--(int)
+		{
+			HandleContainerIterator original(*this);
+			--d_index;
+			return original;
 		}
 	private:
 		/**
@@ -240,8 +265,8 @@ namespace GPlatesModel
 		 * Access the currently-indicated element.
 		 *
 		 * This function should only be invoked when the index indicates an element which
-		 * is @em before the end of the container (i.e., when @a index_is_before_end would
-		 * return true).
+		 * is within the bounds of the container (i.e., when @a index_is_within_bounds
+		 * would return true).
 		 *
 		 * As long as the index is valid, this function will not throw.
 		 */
@@ -252,28 +277,18 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return whether the index indicates an element which is before the end of the
+		 * Return whether the index indicates an element which is within the bounds of the
 		 * container.
 		 *
 		 * This function will not throw.
 		 */
 		bool
-		index_is_before_end() const
+		index_is_within_bounds() const
 		{
 			// The index indicates an element which is before the end of the container
 			// when the index is less than the size of the container.
-			return (d_index < container_size(*d_collection_handle_ptr));
-		}
-
-		/**
-		 * Advance the iterator in response to an increment request.
-		 *
-		 * This function will not throw.
-		 */
-		void
-		advance()
-		{
-			++d_index;
+			return ((static_cast<long>(d_index) >= 0) &&
+					(d_index < container_size(*d_collection_handle_ptr)));
 		}
 
 		/**
