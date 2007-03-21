@@ -28,6 +28,8 @@
 #ifndef GPLATES_MODEL_HANDLECONTAINERITERATOR_H
 #define GPLATES_MODEL_HANDLECONTAINERITERATOR_H
 
+#include <iterator>  /* iterator, bidirectional_iterator_tag */
+
 
 namespace GPlatesModel
 {
@@ -36,7 +38,8 @@ namespace GPlatesModel
 	 * within a revisioning collection.
 	 */
 	template<typename H, typename C, typename D>
-	class HandleContainerIterator
+	class HandleContainerIterator:
+			public std::iterator<std::bidirectional_iterator_tag, D>
 	{
 	public:
 		/**
