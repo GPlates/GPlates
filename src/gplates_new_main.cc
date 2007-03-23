@@ -32,7 +32,9 @@
 
 #include <vector>
 #include <iostream>
+#include <utility>  /* std::pair */
 
+#include "model/FeatureStore.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureCollectionRevision.h"
 #include "model/DummyTransactionHandle.h"
@@ -385,9 +387,11 @@ traverse_recon_tree(
 }
 
 
-int
-main() {
-
+const std::pair<GPlatesModel::FeatureStoreRootHandle::iterator,
+		GPlatesModel::FeatureStoreRootHandle::iterator>
+populate_feature_store(
+		boost::intrusive_ptr<GPlatesModel::FeatureStore> feature_store)
+{
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
 	static const double points1[] = {
@@ -483,6 +487,18 @@ main() {
 	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> isochrons =
 			GPlatesModel::FeatureCollectionHandle::create();
 
+	// FIXME:  Should the next four operations occur in any particular order?  Is there any
+	// problem in "committing" features to a feature collection, when the feature collection is
+	// not yet in the feature store root?  Or any problem committing modifications to a
+	// feature, when the feature is not yet in a feature collection?  Any problems to do with
+	// dangling pointers-to-handles, for example, if the handle is destroyed (since it is only
+	// referenced by an intrusive-ptr on the stack) after it is supposedly committed (and there
+	// is thus a TransactionItem which holds a pointer to it)?
+
+	GPlatesModel::DummyTransactionHandle transaction_iso_coll;
+	GPlatesModel::FeatureStoreRootHandle::iterator isochrons_iter =
+			feature_store->root()->append_feature_collection(isochrons, transaction_iso_coll);
+
 	GPlatesModel::DummyTransactionHandle transaction_iso1;
 	isochrons->append_feature(isochron1, transaction_iso1);
 	transaction_iso1.commit();
@@ -542,6 +558,10 @@ main() {
 	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> total_recon_seqs =
 			GPlatesModel::FeatureCollectionHandle::create();
 
+	GPlatesModel::DummyTransactionHandle transaction_trs_coll;
+	GPlatesModel::FeatureStoreRootHandle::iterator total_recon_seqs_iter =
+			feature_store->root()->append_feature_collection(total_recon_seqs, transaction_trs_coll);
+
 	GPlatesModel::DummyTransactionHandle transaction_trs1;
 	total_recon_seqs->append_feature(total_recon_seq1, transaction_trs1);
 	transaction_trs1.commit();
@@ -554,16 +574,32 @@ main() {
 	total_recon_seqs->append_feature(total_recon_seq3, transaction_trs3);
 	transaction_trs3.commit();
 
+	return std::make_pair(isochrons_iter, total_recon_seqs_iter);
+}
+
+
+void
+output_as_gpml(
+		GPlatesModel::FeatureCollectionHandle::iterator begin,
+		GPlatesModel::FeatureCollectionHandle::iterator end)
+{
 	GPlatesFileIO::XmlOutputInterface xoi =
 			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
 	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
 
-	GPlatesModel::FeatureCollectionHandle::iterator iter1 = isochrons->begin();
-	GPlatesModel::FeatureCollectionHandle::iterator end1 = isochrons->end();
-	for ( ; iter1 != end1; ++iter1) {
-		(*iter1)->accept_visitor(v);
+	for ( ; begin != end; ++begin) {
+		(*begin)->accept_visitor(v);
 	}
+}
 
+
+void
+output_reconstructions(
+		GPlatesModel::FeatureCollectionHandle::iterator isochrons_begin,
+		GPlatesModel::FeatureCollectionHandle::iterator isochrons_end,
+		GPlatesModel::FeatureCollectionHandle::iterator total_recon_seqs_begin,
+		GPlatesModel::FeatureCollectionHandle::iterator total_recon_seqs_end)
+{
 	static const double recon_times_to_test[] = {
 		0.0,
 		10.0,
@@ -584,10 +620,9 @@ main() {
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
-		GPlatesModel::FeatureCollectionHandle::iterator iter2 = total_recon_seqs->begin();
-		GPlatesModel::FeatureCollectionHandle::iterator end2 = total_recon_seqs->end();
-		for ( ; iter2 != end2; ++iter2) {
-			(*iter2)->accept_visitor(rtp);
+		GPlatesModel::FeatureCollectionHandle::iterator iter1 = total_recon_seqs_begin;
+		for ( ; iter1 != total_recon_seqs_end; ++iter1) {
+			(*iter1)->accept_visitor(rtp);
 		}
 
 		std::cout << "\n--> Building tree, root node: 501\n";
@@ -602,10 +637,9 @@ main() {
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
 				recon_tree, reconstructed_points, reconstructed_polylines);
 
-		GPlatesModel::FeatureCollectionHandle::iterator iter3 = isochrons->begin();
-		GPlatesModel::FeatureCollectionHandle::iterator end3 = isochrons->end();
-		for ( ; iter3 != end3; ++iter3) {
-			(*iter3)->accept_visitor(rfgp);
+		GPlatesModel::FeatureCollectionHandle::iterator iter2 = isochrons_begin;
+		for ( ; iter2 != isochrons_end; ++iter2) {
+			(*iter2)->accept_visitor(rfgp);
 		}
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
@@ -617,18 +651,18 @@ main() {
 
 		std::cout << " > The reconstructed polylines are:\n";
 		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
-				iter = reconstructed_polylines.begin();
+				iter3 = reconstructed_polylines.begin();
 		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
-				end = reconstructed_polylines.end();
-		for ( ; iter != end; ++iter) {
+				end3 = reconstructed_polylines.end();
+		for ( ; iter3 != end3; ++iter3) {
 			std::vector<GPlatesMaths::LatLonPoint> seq;
 			GPlatesMaths::LatLonPointConversions::populate_lat_lon_point_sequence(seq,
-					*(iter->geometry()));
-			std::vector<GPlatesMaths::LatLonPoint>::iterator iter2 = seq.begin();
-			std::vector<GPlatesMaths::LatLonPoint>::iterator end2 = seq.end();
-			std::cout << "  - Polyline: (" << iter2->latitude() << ", " << iter2->longitude() << ")";
-			for (++iter2 ; iter2 != end2; ++iter2) {
-				std::cout << ", (" << iter2->latitude() << ", " << iter2->longitude() << ")";
+					*(iter3->geometry()));
+			std::vector<GPlatesMaths::LatLonPoint>::iterator iter4 = seq.begin();
+			std::vector<GPlatesMaths::LatLonPoint>::iterator end4 = seq.end();
+			std::cout << "  - Polyline: (" << iter4->latitude() << ", " << iter4->longitude() << ")";
+			for (++iter4 ; iter4 != end4; ++iter4) {
+				std::cout << ", (" << iter4->latitude() << ", " << iter4->longitude() << ")";
 			}
 			std::cout << std::endl;
 		}
@@ -649,6 +683,28 @@ main() {
 
 		std::cout << std::endl;
 	}
+}
+
+
+int
+main()
+{
+	boost::intrusive_ptr<GPlatesModel::FeatureStore> feature_store =
+			GPlatesModel::FeatureStore::create();
+
+	std::pair<GPlatesModel::FeatureStoreRootHandle::iterator,
+			GPlatesModel::FeatureStoreRootHandle::iterator>
+			isochrons_and_total_recon_seqs =
+			::populate_feature_store(feature_store);
+
+	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> isochrons =
+			*(isochrons_and_total_recon_seqs.first);
+	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> total_recon_seqs =
+			*(isochrons_and_total_recon_seqs.second);
+
+	::output_as_gpml(isochrons->begin(), isochrons->end());
+	::output_reconstructions(isochrons->begin(), isochrons->end(), total_recon_seqs->begin(),
+			total_recon_seqs->end());
 
 	return 0;
 }
