@@ -1,6 +1,8 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
+MAINTAINERCLEANFILES	= Makefile.in
+
 INCLUDES		= -I$(top_srcdir)/src
 
-noinst_LIBRARIES	= libutil.a
-libutil_a_SOURCES	= StringSet.cc UniqueId.cc
+noinst_LTLIBRARIES	= libutil.la
+libutil_la_SOURCES	= StringSet.cc UniqueId.cc

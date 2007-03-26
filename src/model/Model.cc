@@ -26,6 +26,7 @@
  */
 
 #include <boost/intrusive_ptr.hpp>
+#include <boost/python.hpp>
 
 #include "Model.h"
 #include "DummyTransactionHandle.h"
@@ -494,3 +495,14 @@ GPlatesModel::Model::create_reconstruction(
 		(*iter3)->accept_visitor(rfgp);
 	}
 }
+
+using namespace boost::python;
+
+void
+GPlatesModel::export_Model()
+{
+	class_<GPlatesModel::Model>("Model", init<>())
+		.def("create_reconstruction", &GPlatesModel::Model::create_reconstruction)
+	;
+}
+

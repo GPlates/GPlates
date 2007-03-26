@@ -26,6 +26,11 @@
 #ifndef GPLATES_GUI_DOCUMENT_H
 #define GPLATES_GUI_DOCUMENT_H
 
+// We need to include this _before_ any Qt headers get included because
+// of a moc preprocessing problems with a feature called 'slots' in the
+// python header file object.h
+#include <boost/python.hpp>
+
 #include <QtCore/QTimer>
 #include "DocumentUi.h"
 #include "GlobeCanvas.h"

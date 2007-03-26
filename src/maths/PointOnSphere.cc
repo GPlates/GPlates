@@ -26,6 +26,7 @@
  */
 
 #include <ostream>
+#include <boost/python.hpp>
 #include "PointOnSphere.h"
 #include "PointLiesOnGreatCircleArc.h"
 
@@ -61,3 +62,16 @@ GPlatesMaths::operator<<(
 	os << p.position_vector();
 	return os;
 }
+
+using namespace boost::python;
+
+void
+GPlatesMaths::export_PointOnSphere()
+{
+	class_<GPlatesMaths::PointOnSphere>("PointOnSphere", no_init)
+		.add_property("position_vector", make_function(
+					&GPlatesMaths::PointOnSphere::position_vector,
+					return_internal_reference<1>()))
+	;
+}
+

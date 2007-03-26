@@ -1,19 +1,34 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
+MAINTAINERCLEANFILES	= Makefile.in
+
 SUBDIRS			= gui maths model state util gplates-qt-demo
 
 INCLUDES		= -I$(top_srcdir)/src
 
 bin_PROGRAMS		= gplates_new gplates_qt_demo
 
-gplates_SOURCES		= gplates_main.cc
-gplates_LDADD		= application/libapplication.a gui/libgui.a
+## gplates_SOURCES		= gplates_main.cc
+## gplates_LDADD		= application/libapplication.a gui/libgui.a
 
 gplates_new_SOURCES	= gplates_new_main.cc
-gplates_new_LDADD	= gui/libgui.a model/libmodel.a state/libstate.a \
-				maths/libmaths.a util/libutil.a
+gplates_new_LDADD	= libgplates_gui.la libgplates_model.la
 
 gplates_qt_demo_SOURCES	= gplates_qt_demo.cc
-gplates_qt_demo_LDADD	= gplates-qt-demo/libgplates_qt_demo.a model/libmodel.a \
-				maths/libmaths.a gui/libgui.a state/libstate.a \
-				util/libutil.a
+gplates_qt_demo_LDADD	= libgplates_model.la libgplates_gui.la \
+				gplates-qt-demo/libgplates_qt_demo.la
+
+lib_LTLIBRARIES			=  libgplates_gui.la \
+					libgplates_model.la \
+					libgplates_util.la
+
+libgplates_gui_la_SOURCES	=
+libgplates_gui_la_LIBADD	= gui/libgui.la \
+					libgplates_util.la
+
+libgplates_model_la_SOURCES	=
+libgplates_model_la_LIBADD	= model/libmodel.la \
+					libgplates_util.la
+
+libgplates_util_la_SOURCES	=
+libgplates_util_la_LIBADD	= maths/libmaths.la state/libstate.la util/libutil.la

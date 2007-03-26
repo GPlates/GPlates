@@ -348,6 +348,8 @@ namespace GPlatesMaths {
 		}
 	}
 
+	void export_PointOnSphere();
+
 }
 
 #endif  // GPLATES_MATHS_POINTONSPHERE_H

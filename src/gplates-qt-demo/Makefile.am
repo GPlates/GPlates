@@ -1,11 +1,13 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
+MAINTAINERCLEANFILES	= Makefile.in
+
 EXTRA_DIST		= plates.clr.inc
 
 INCLUDES		= -I$(top_srcdir)/src
 
-noinst_LIBRARIES		= libgplates_qt_demo.a
-libgplates_qt_demo_a_SOURCES	= Document.cc DocumentUi.h GlobeCanvas.cc \
+noinst_LTLIBRARIES		= libgplates_qt_demo.la
+libgplates_qt_demo_la_SOURCES	= Document.cc DocumentUi.h GlobeCanvas.cc \
 					moc_GlobeCanvas.cc InformationDialog.cc \
 					InformationDialogUi.h moc_Document.cc
 

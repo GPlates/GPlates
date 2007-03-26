@@ -291,6 +291,7 @@ namespace GPlatesMaths
 	 const Vector3D &v,
 	 const UnitVector3D &u);
 
+	void export_UnitVector3D();
 }
 
 #endif  // _GPLATES_MATHS_UNITVECTOR3D_H_

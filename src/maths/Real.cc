@@ -26,6 +26,8 @@
  */
 
 #include <sstream>
+#include <boost/python.hpp>
+
 #include "Real.h"
 #include "FunctionDomainException.h"
 
@@ -186,3 +188,14 @@ GPlatesMaths::acos(GPlatesMaths::Real r) {
 	}
 	return Real(std::acos(r.dval()));
 }
+
+
+using namespace boost::python;
+
+
+void
+GPlatesMaths::export_Real()
+{
+	to_python_converter<GPlatesMaths::Real, GPlatesMaths::Real>();
+}
+

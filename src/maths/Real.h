@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <boost/python.hpp>
 
 #include "global/types.h"
 
@@ -133,6 +134,16 @@ namespace GPlatesMaths
 			isPreciselyLessThan(double d) const {
 
 				return (_dval < d);
+			}
+
+			/**
+			 * Convert a Real into a Python object
+			 */
+			static
+			PyObject *
+			convert(const Real &r)
+			{
+				return boost::python::incref(boost::python::object(r._dval).ptr());
 			}
 	};
 
@@ -407,6 +418,8 @@ namespace GPlatesMaths
 	 * @throws FunctionDomainException if @a r < -1 or @a r > 1.
 	 */
 	Real acos(Real r);
+
+	void export_Real();
 }
 
 #endif  // _GPLATES_MATHS_REAL_H_

@@ -54,6 +54,8 @@ namespace GPlatesModel
 		boost::intrusive_ptr<FeatureCollectionHandle> d_isochrons;
 		boost::intrusive_ptr<FeatureCollectionHandle> d_total_recon_seqs;
 	};
+
+	void export_Model();
 }
 
 #endif  // GPLATES_MODEL_MODEL_H

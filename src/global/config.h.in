@@ -13,6 +13,12 @@
 /* define if the Boost library is available */
 #undef HAVE_BOOST
 
+/* define if the Boost::Python library is available */
+#undef HAVE_BOOST_PYTHON
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
 /* define if the compiler supports dynamic_cast<> */
 #undef HAVE_DYNAMIC_CAST
 

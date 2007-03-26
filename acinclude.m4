@@ -7050,3 +7050,86 @@ done
 SED=$lt_cv_path_SED
 AC_MSG_RESULT([$SED])
 ])
+
+#
+# Check for Python and set up some variables
+#
+AC_DEFUN([AX_PYTHON],
+[AC_MSG_CHECKING(for python build information)
+AC_MSG_RESULT([])
+for python in python2.4 python2.3 python2.2 python2.1 python; do
+AC_CHECK_PROGS(PYTHON_BIN, [$python])
+ax_python_bin=$PYTHON_BIN
+if test x$ax_python_bin != x; then
+   AC_CHECK_LIB($ax_python_bin, main, ax_python_lib=$ax_python_bin, ax_python_lib=no)
+   AC_CHECK_HEADER([$ax_python_bin/Python.h],
+   [[ax_python_header=`locate $ax_python_bin/Python.h | sed -e s,/Python.h,,`]],
+   ax_python_header=no)
+   if test $ax_python_lib != no; then
+     if test $ax_python_header != no; then
+       break;
+     fi
+   fi
+fi
+done
+if test x$ax_python_bin = x; then
+   ax_python_bin=no
+fi
+if test x$ax_python_header = x; then
+   ax_python_header=no
+fi
+if test x$ax_python_lib = x; then
+   ax_python_lib=no
+fi
+
+AC_MSG_RESULT([  results of the Python check:])
+AC_MSG_RESULT([    Binary:      $ax_python_bin])
+AC_MSG_RESULT([    Library:     $ax_python_lib])
+AC_MSG_RESULT([    Include Dir: $ax_python_header])
+
+if test x$ax_python_header != xno; then
+  PYTHON_INCLUDE_DIR=$ax_python_header
+  AC_SUBST(PYTHON_INCLUDE_DIR)
+fi
+if test x$ax_python_lib != xno; then
+  PYTHON_LIB=$ax_python_lib
+  AC_SUBST(PYTHON_LIB)
+fi
+])dnl
+
+#
+# Check for Boost python
+#
+AC_DEFUN([AX_BOOST_PYTHON],
+[AC_REQUIRE([AX_PYTHON])dnl
+AC_CACHE_CHECK(whether the Boost::Python library is available,
+ac_cv_boost_python,
+[AC_LANG_SAVE
+ AC_LANG_CPLUSPLUS
+ CPPFLAGS_SAVE=$CPPFLAGS
+ if test x$PYTHON_INCLUDE_DIR != x; then
+   CPPFLAGS=-I$PYTHON_INCLUDE_DIR $CPPFLAGS
+ fi
+ AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[
+ #include <boost/python/module.hpp>
+ using namespace boost::python;
+ BOOST_PYTHON_MODULE(test) { throw "Boost::Python test."; }]],
+                           [[return 0;]]),
+                           ac_cv_boost_python=yes, ac_cv_boost_python=no)
+ AC_LANG_RESTORE
+ CPPFLAGS=$CPPFLAGS_SAVE
+])
+if test "$ac_cv_boost_python" = "yes"; then
+  AC_DEFINE(HAVE_BOOST_PYTHON,,[define if the Boost::Python library is available])
+  ax_python_lib=boost_python
+  AC_ARG_WITH([boost-python],AS_HELP_STRING([--with-boost-python],[specify the boost python library or suffix to use]),
+  [if test "x$with_boost_python" != "xno"; then
+     ax_python_lib=$with_boost_python
+     ax_boost_python_lib=boost_python-$with_boost_python
+   fi])
+  for ax_lib in $ax_python_lib $ax_boost_python_lib boost_python; do
+    AC_CHECK_LIB($ax_lib, main, [BOOST_PYTHON_LIB=$ax_lib break])
+  done
+  AC_SUBST(BOOST_PYTHON_LIB)
+fi
+])dnl

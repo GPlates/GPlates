@@ -17,6 +17,7 @@
 
 set -x
 aclocal -I config \
+	&& libtoolize --force --copy \
 	&& autoheader \
 	&& automake --gnu --add-missing --copy \
 	&& autoconf

@@ -22,20 +22,14 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-// We need to include this _before_ any Qt headers get included because
-// of a moc preprocessing problems with a feature called 'slots' in the
-// python header file object.h
+
 #include <boost/python.hpp>
+#include "Model.h"
 
-#include <QtGui/QApplication>
-#include "gplates-qt-demo/Document.h"
+using namespace boost::python;
 
-int main(int argc, char* argv[])
+BOOST_PYTHON_MODULE(_model)
 {
-	QApplication application(argc, argv);
-	GPlatesGui::Document document;
-	document.show();
-	return application.exec();
+	GPlatesModel::export_Model();
 }
 

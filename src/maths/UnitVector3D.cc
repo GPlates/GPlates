@@ -27,6 +27,7 @@
 
 #include <ostream>
 #include <sstream>
+#include <boost/python.hpp>
 #include "UnitVector3D.h"
 #include "HighPrecision.h"
 #include "ViolatedUnitVectorInvariantException.h"
@@ -213,3 +214,20 @@ GPlatesMaths::operator<<(
 	os << "(" << u.x() << ", " << u.y() << ", " << u.z() << ")";
 	return os;
 }
+
+
+using namespace boost::python;
+
+
+void
+GPlatesMaths::export_UnitVector3D()
+{
+	/*
+	class_<GPlatesMaths::UnitVector3D>("UnitVector3D", no_init)
+		.add_property("x", make_getter(&GPlatesMaths::UnitVector3D::x, return_value_policy<return_by_value>()))
+		.add_property("y", make_getter(&GPlatesMaths::UnitVector3D::y, return_value_policy<return_by_value>()))
+		.add_property("z", make_getter(&GPlatesMaths::UnitVector3D::z, return_value_policy<return_by_value>()))
+	;
+	*/
+}
+

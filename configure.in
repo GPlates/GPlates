@@ -32,7 +32,7 @@ AC_PROG_CXX
 AC_PROG_MAKE_SET
 CHECK_GNU_MAKE
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_LANG(C++)
 
 
@@ -190,6 +190,10 @@ AC_CHECK_LIB([icuio], [main], [], AC_MSG_ERROR([[
 # to the user if Boost 1.20.0 or later is not found.
 AX_BOOST_BASE
 
+# Ensure python-2.4 and the Boost python libraries
+AX_PYTHON([2.4])
+AX_BOOST_PYTHON
+
 # OpenGL and GLU
 # How we compile the OpenGL headers dependent upon the type of the build system.
 AC_MSG_CHECKING([OpenGL header location])
@@ -247,7 +251,8 @@ AC_ARG_ENABLE(dev, [  --enable-dev            Enable developer flags],
 [
 	turn_on_dev="yes"
 	# removed -Wshadow from common_flags atm because it breaks boost::format :(
-	common_flags="-Wall -pedantic -ansi -W -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wpointer-arith -Werror"
+	# removed -Werror from common_flags atm because it breaks boost::python :(
+	common_flags="-Wall -pedantic -ansi -W -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wpointer-arith"
 	CFLAGS="$CFLAGS $common_flags"
 	CXXFLAGS="$CXXFLAGS $common_flags -Wctor-dtor-privacy -Wnon-virtual-dtor -Woverloaded-virtual -Wno-long-long -Wold-style-cast"
 ])
@@ -295,13 +300,14 @@ AC_MSG_NOTICE([Set QT_CFLAGS... $QT_CFLAGS])
 AC_CHECK_PROG(MOC, [moc], [moc])
 AC_CHECK_PROG(UIC, [uic], [uic])
 
+AC_SUBST(ac_aux_dir)
 AC_SUBST(QT_CFLAGS)
 AC_SUBST(QT_LIBS)
 
-CFLAGS="$CFLAGS $QT_CFLAGS"
-CXXFLAGS="$CXXFLAGS $QT_CFLAGS"
-LDFLAGS="$LDFLAGS $QT_LDFLAGS"
-LIBS="$LIBS $QT_LIBS"
+CFLAGS="$CFLAGS $QT_CFLAGS -I$PYTHON_INCLUDE_DIR"
+CXXFLAGS="$CXXFLAGS $BOOST_CPPFLAGS $QT_CFLAGS -I$PYTHON_INCLUDE_DIR"
+LDFLAGS="$LDFLAGS $BOOST_LDFLAGS $QT_LDFLAGS"
+LIBS="$LIBS $QT_LIBS -l$BOOST_PYTHON_LIB"
 
 
 # Write output
