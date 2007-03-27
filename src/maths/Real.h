@@ -56,108 +56,112 @@ namespace GPlatesMaths
 	 */
 	class Real
 	{
-		public:
-			static const unsigned High_Precision;
+	public:
+		static const unsigned High_Precision;
 
-		private:
-			static const double Epsilon;
-			static const double Negative_Epsilon;
+	private:
+		static const double Epsilon;
+		static const double Negative_Epsilon;
 
-			/*
-			 * these functions are friends,
-			 * to be able to access the above two members.
-			 */
-			friend bool operator==(Real, Real);
-			friend bool operator!=(Real, Real);
-			friend bool operator<=(Real, Real);
-			friend bool operator>=(Real, Real);
-			friend bool operator<(Real, Real);
-			friend bool operator>(Real, Real);
-			
-			friend std::istream &operator>>(std::istream &, Real &);
+		/*
+		 * these functions are friends,
+		 * to be able to access the above two members.
+		 */
+		friend bool operator==(Real, Real);
+		friend bool operator!=(Real, Real);
+		friend bool operator<=(Real, Real);
+		friend bool operator>=(Real, Real);
+		friend bool operator<(Real, Real);
+		friend bool operator>(Real, Real);
+		
+		friend std::istream &operator>>(std::istream &, Real &);
 
-			double _dval;
+		double _dval;
 
-		public:
-			Real() : _dval(0.0) {  }
+	public:
+		Real()
+			: _dval(0.0)
+		{  }
 
-			Real(double d) : _dval(d) {  }
+		Real(double d)
+			: _dval(d)
+		{  }
 
-			explicit
-			Real(fpdata_t fpd) : _dval(fpd.dval()) {  }
+		explicit
+		Real(fpdata_t fpd)
+			: _dval(fpd.dval())
+		{  }
 
-
-			double
-			dval() const {
-
-				return _dval;
-			}
-
-
-			Real &
-			operator+=(Real other) {
-
-				_dval += other._dval;
-				return *this;
-			}
-
-			Real &
-			operator-=(Real other) {
-
-				_dval -= other._dval;
-				return *this;
-			}
-
-			Real &
-			operator*=(Real other) {
-
-				_dval *= other._dval;
-				return *this;
-			}
-
-			Real &
-			operator/=(Real other) {
-
-				_dval /= other._dval;
-				return *this;
-			}
+		double
+		dval() const
+		{
+			return _dval;
+		}
 
 
-			bool
-			isPreciselyGreaterThan(double d) const {
+		Real &
+		operator+=(Real other)
+		{
+			_dval += other._dval;
+			return *this;
+		}
 
-				return (_dval > d);
-			}
+		Real &
+		operator-=(Real other)
+		{
+			_dval -= other._dval;
+			return *this;
+		}
 
+		Real &
+		operator*=(Real other)
+		{
+			_dval *= other._dval;
+			return *this;
+		}
 
-			bool
-			isPreciselyLessThan(double d) const {
+		Real &
+		operator/=(Real other)
+		{
+			_dval /= other._dval;
+			return *this;
+		}
 
-				return (_dval < d);
-			}
+		bool
+		isPreciselyGreaterThan(double d) const
+		{
+			return _dval > d;
+		}
 
-			/**
-			 * Convert a Real into a Python object
-			 */
-			static
-			PyObject *
-			convert(const Real &r)
-			{
-				return boost::python::incref(boost::python::object(r._dval).ptr());
-			}
+		bool
+		isPreciselyLessThan(double d) const
+		{
+			return _dval < d;
+		}
+
+		/**
+		 * Convert a Real into a Python object
+		 */
+		static
+		PyObject *
+		convert(const Real &r)
+		{
+			return boost::python::incref(boost::python::object(r._dval).ptr());
+		}
 	};
 
 
-	inline bool
-	operator==(Real r1, Real r2) {
-
+	inline
+	bool
+	operator==(Real r1, Real r2)
+	{
 		/*
 		 * Allow difference between r1 and r2 to fall into a range
 		 * instead of insisting upon an exact value.
 		 * That range will be [-e, e].
 		 */
 		double d = r1.dval() - r2.dval();
-		return (Real::Negative_Epsilon <= d && d <= Real::Epsilon);
+		return Real::Negative_Epsilon <= d && d <= Real::Epsilon;
 	}
 
 
@@ -177,11 +181,11 @@ namespace GPlatesMaths
 	inline
 	bool
 	are_slightly_more_strictly_equal(
-	 const Real &r1,
-	 const Real &r2) {
-
+			const Real &r1,
+			const Real &r2)
+	{
 		double d = r1.dval() - r2.dval();
-		return (-9.99e-13 <= d && d <= 9.99e-13);
+		return -9.99e-13 <= d && d <= 9.99e-13;
 	}
 
 
@@ -189,16 +193,17 @@ namespace GPlatesMaths
 	 * On a Pentium IV processor, this should cost about
 	 * (5 [FSUB] + (2 + 1) [2*FCOM] + 1 [OR]) = 9 clock cycles.
 	 */
-	inline bool
-	operator!=(Real r1, Real r2) {
-
+	inline
+	bool
+	operator!=(Real r1, Real r2)
+	{
 		/*
 		 * Difference between r1 and r2 must lie *outside* range.
 		 * This is necessary to maintain the logical invariant
 		 * (a == b) iff not (a != b)
 		 */
 		double d = r1.dval() - r2.dval();
-		return (Real::Negative_Epsilon > d || d > Real::Epsilon);
+		return Real::Negative_Epsilon > d || d > Real::Epsilon;
 	}
 
 
@@ -206,9 +211,10 @@ namespace GPlatesMaths
 	 * On a Pentium IV processor, this should cost about
 	 * (5 [FSUB] + 2 [FCOM]) = 7 clock cycles.
 	 */
-	inline bool
-	operator<=(Real r1, Real r2) {
-
+	inline
+	bool
+	operator<=(Real r1, Real r2)
+	{
 		/*
 		 * According to the logical invariant
 		 * (a == b) implies (a <= b), the set of pairs (r1, r2) which
@@ -217,13 +223,14 @@ namespace GPlatesMaths
 		 * comparison to return true.
 		 */
 		double d = r1.dval() - r2.dval();
-		return (d <= Real::Epsilon);
+		return d <= Real::Epsilon;
 	}
 
 
-	inline bool
-	operator>=(Real r1, Real r2) {
-
+	inline
+	bool
+	operator>=(Real r1, Real r2)
+	{
 		/*
 		 * According to the logical invariant
 		 * (a == b) implies (a >= b), the set of pairs (r1, r2) which
@@ -232,32 +239,36 @@ namespace GPlatesMaths
 		 * comparison to return true.
 		 */
 		double d = r1.dval() - r2.dval();
-		return (Real::Negative_Epsilon <= d);
+		return Real::Negative_Epsilon <= d;
 	}
 
 
-	inline bool
-	operator>(Real r1, Real r2) {
-
+	inline
+	bool
+	operator>(Real r1, Real r2)
+	{
 		/*
 		 * (a > b) must be the logical inverse of (a <= b).
 		 */
 		double d = r1.dval() - r2.dval();
-		return (d > Real::Epsilon);
+		return d > Real::Epsilon;
 	}
 
 
-	inline bool
-	operator<(Real r1, Real r2) {
-
+	inline
+	bool
+	operator<(Real r1, Real r2)
+	{
 		/*
 		 * (a < b) must be the logical inverse of (a >= b).
 		 */
 		double d = r1.dval() - r2.dval();
-		return (Real::Negative_Epsilon > d);
+		return Real::Negative_Epsilon > d;
 	}
 
-	inline Real abs (const Real &r1)
+	inline
+	Real
+	abs(const Real &r1)
 	{
 		return Real (fabs (r1.dval ()));
 	}
@@ -267,10 +278,11 @@ namespace GPlatesMaths
 	 * Using the exact value of the Real, return whether it is positive
 	 * (ie. greater than exact zero) or not.
 	 */
-	inline bool
+	inline
+	bool
 	isPositive(Real r) {
 
-		return (r.dval() > 0.0);
+		return r.dval() > 0.0;
 	}
 
 
@@ -278,10 +290,11 @@ namespace GPlatesMaths
 	 * Using the exact value of the Real, return whether it is negative
 	 * (ie. less than exact zero) or not.
 	 */
-	inline bool
-	isNegative(Real r) {
-
-		return (r.dval() < 0.0);
+	inline
+	bool
+	isNegative(Real r)
+	{
+		return r.dval() < 0.0;
 	}
 
 
@@ -289,10 +302,11 @@ namespace GPlatesMaths
 	 * Using the exact value of the Real, return whether it is greater
 	 * than exact one or not.
 	 */
-	inline bool
-	isGreaterThanOne(Real r) {
-
-		return (r.dval() > 1.0);
+	inline
+	bool
+	isGreaterThanOne(Real r)
+	{
+		return r.dval() > 1.0;
 	}
 
 
@@ -300,91 +314,104 @@ namespace GPlatesMaths
 	 * Using the exact value of the Real, return whether it is greater
 	 * than exact minus-one or not.
 	 */
-	inline bool
-	isLessThanMinusOne(Real r) {
-
-		return (r.dval() < -1.0);
+	inline
+	bool
+	isLessThanMinusOne(Real r)
+	{
+		return r.dval() < -1.0;
 	}
 
 
-	inline Real
-	operator+(Real r1, Real r2) {
-
+	inline
+	Real
+	operator+(Real r1, Real r2)
+	{
 		return Real(r1.dval() + r2.dval());
 	}
 
 
-	inline Real
-	operator-(Real r1, Real r2) {
-
+	inline
+	Real
+	operator-(Real r1, Real r2)
+	{
 		return Real(r1.dval() - r2.dval());
 	}
 
 
-	inline Real
-	operator*(Real r1, Real r2) {
-
+	inline
+	Real
+	operator*(Real r1, Real r2)
+	{
 		return Real(r1.dval() * r2.dval());
 	}
 
 
-	inline Real
-	operator/(Real r1, Real r2) {
-
+	inline
+	Real
+	operator/(Real r1, Real r2)
+	{
 		return Real(r1.dval() / r2.dval());
 	}
 
 
-	inline Real
-	operator-(Real r) {
-
+	inline
+	Real
+	operator-(Real r)
+	{
 		return Real(-r.dval());
 	}
 
 
-	inline Real
-	sin(Real r) {
-
+	inline
+	Real
+	sin(Real r)
+	{
 		return Real(std::sin(r.dval()));
 	}
 
 
-	inline Real
-	cos(Real r) {
-
+	inline
+	Real
+	cos(Real r)
+	{
 		return Real(std::cos(r.dval()));
 	}
 
 
-	inline Real
-	tan(Real r) {
-
+	inline
+	Real
+	tan(Real r)
+	{
 		return Real(std::tan(r.dval()));
 	}
 
-	inline Real
-	degreesToRadians(Real rdeg) {
-
+	inline
+	Real
+	degreesToRadians(Real rdeg)
+	{
 		return Real((PI / 180.0) * rdeg);
 	}
 
-	inline Real
-	radiansToDegrees(Real drad) {
-
+	inline
+	Real
+	radiansToDegrees(Real drad)
+	{
 		return Real((180.0 / PI) * drad);
 	}
 
-	inline std::ostream &
-	operator<<(std::ostream &os, Real r) {
-
+	inline
+	std::ostream &
+	operator<<(std::ostream &os, Real r)
+	{
 		os << r.dval();
 		return os;
 	}
 
 
-	inline std::istream &
-	operator>>(std::istream &is, Real& r) {
-
+	inline
+	std::istream &
+	operator>>(std::istream &is, Real& r)
+	{
 		is >> r._dval;
 		return is;
 	}

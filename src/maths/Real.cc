@@ -78,18 +78,16 @@ GPlatesMaths::Real::Negative_Epsilon = -REAL_EPSILON(EXPONENT);
 
 
 GPlatesMaths::Real
-GPlatesMaths::sqrt(GPlatesMaths::Real r) {
-
+GPlatesMaths::sqrt(GPlatesMaths::Real r)
+{
 	// First, perform "almost exact" comparison.
 	if (r < 0.0) {
-
 		/*
 		 * Even allowing some flexibility of comparison,
 		 * the argument is negative, which falls outside
 		 * the domain of sqrt.
 		 */
-		std::ostringstream
-		 oss("function 'sqrt' invoked with invalid argument ");
+		std::ostringstream oss("function 'sqrt' invoked with invalid argument ");
 		oss << r;
 		throw FunctionDomainException(oss.str().c_str());
 	}
@@ -98,8 +96,8 @@ GPlatesMaths::sqrt(GPlatesMaths::Real r) {
 	 * Now, clean up after any errors which are caused by "almost valid"
 	 * arguments.
 	 */
-	if (isNegative(r)) {
-
+	if (isNegative(r))
+	{
 		// it was just slightly less than zero -- return sqrt of zero
 		return Real(0.0);
 
@@ -115,17 +113,15 @@ GPlatesMaths::sqrt(GPlatesMaths::Real r) {
  * Don't forget: the arc sine will be returned in radians, not degrees!
  */
 GPlatesMaths::Real
-GPlatesMaths::asin(GPlatesMaths::Real r) {
-
+GPlatesMaths::asin(GPlatesMaths::Real r)
+{
 	// First, perform "almost exact" comparisons for bounds of domain.
 	if (r < -1.0 || r > 1.0) {
-
 		/*
 		 * Even allowing some flexibility of comparison, 
 		 * the argument which falls outside the domain of asin.
 		 */
-		std::ostringstream 
-		 oss("function 'asin' invoked with invalid argument ");
+		std::ostringstream oss("function 'asin' invoked with invalid argument ");
 		oss << r;
 		throw FunctionDomainException(oss.str().c_str());
 	}
@@ -135,13 +131,11 @@ GPlatesMaths::asin(GPlatesMaths::Real r) {
 	 * arguments.
 	 */
 	if (isLessThanMinusOne(r)) {
-
 		// it was just slightly less than minus one
 		// -- return asin of minus one
 		return Real(-GPlatesMaths::PI_2);
 	}
 	if (isGreaterThanOne(r)) {
-
 		// it was just slightly greater than one -- return asin of one
 		return Real(GPlatesMaths::PI_2);
 	}
@@ -156,17 +150,15 @@ GPlatesMaths::asin(GPlatesMaths::Real r) {
  * Don't forget: the arc cosine will be returned in radians, not degrees!
  */
 GPlatesMaths::Real
-GPlatesMaths::acos(GPlatesMaths::Real r) {
-
+GPlatesMaths::acos(GPlatesMaths::Real r)
+{
 	// First, perform "almost exact" comparisons for bounds of domain.
 	if (r < -1.0 || r > 1.0) {
-
 		/*
 		 * Even allowing some flexibility of comparison, 
 		 * the argument which falls outside the domain of asin.
 		 */
-		std::ostringstream 
-		 oss("function 'acos' invoked with invalid argument ");
+		std::ostringstream oss("function 'acos' invoked with invalid argument ");
 		oss << r;
 		throw FunctionDomainException(oss.str().c_str());
 	}
@@ -175,14 +167,14 @@ GPlatesMaths::acos(GPlatesMaths::Real r) {
 	 * Now, clean up after any errors which are caused by "almost valid"
 	 * arguments.
 	 */
-	if (isLessThanMinusOne(r)) {
-
+	if (isLessThanMinusOne(r))
+	{
 		// it was just slightly less than minus one
 		// -- return asin of minus one
 		return Real(-GPlatesMaths::PI_2);
 	}
-	if (isGreaterThanOne(r)) {
-
+	if (isGreaterThanOne(r))
+	{
 		// it was just slightly greater than one -- return asin of one
 		return Real(GPlatesMaths::PI_2);
 	}
