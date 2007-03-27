@@ -197,5 +197,6 @@ void
 GPlatesMaths::export_Real()
 {
 	to_python_converter<GPlatesMaths::Real, GPlatesMaths::Real>();
+	implicitly_convertible<double, GPlatesMaths::Real>();
 }
 

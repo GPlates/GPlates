@@ -203,15 +203,30 @@ GPlatesMaths::operator<<(
 using namespace boost::python;
 
 
+// This using is so str(self) will find an appropriate operator<<
+using GPlatesMaths::operator<<;
+
+
 void
 GPlatesMaths::export_UnitVector3D()
 {
-	/*
-	class_<GPlatesMaths::UnitVector3D>("UnitVector3D", no_init)
-		.add_property("x", make_getter(&GPlatesMaths::UnitVector3D::x, return_value_policy<return_by_value>()))
-		.add_property("y", make_getter(&GPlatesMaths::UnitVector3D::y, return_value_policy<return_by_value>()))
-		.add_property("z", make_getter(&GPlatesMaths::UnitVector3D::z, return_value_policy<return_by_value>()))
+	class_<GPlatesMaths::UnitVector3D>("UnitVector3D",
+			init<const GPlatesMaths::real_t &, const GPlatesMaths::real_t &, const GPlatesMaths::real_t &>(args("x", "y", "z")))
+		.def(init<const GPlatesMaths::UnitVector3D&>())
+//		.add_property("x", make_getter(&GPlatesMaths::UnitVector3D::x, return_value_policy<return_by_value>()))
+//		.add_property("y", make_getter(&GPlatesMaths::UnitVector3D::y, return_value_policy<return_by_value>()))
+//		.add_property("z", make_getter(&GPlatesMaths::UnitVector3D::z, return_value_policy<return_by_value>()))
+		// no assignment operator equivalent
+		.def("xBasis", &GPlatesMaths::UnitVector3D::xBasis)
+		.staticmethod("xBasis")
+		.def("yBasis", &GPlatesMaths::UnitVector3D::yBasis)
+		.staticmethod("yBasis")
+		.def("zBasis", &GPlatesMaths::UnitVector3D::zBasis)
+		.staticmethod("zBasis")
+		.def(self_ns::str(self))
+		.def(-self)
 	;
-	*/
+//	def("dot", &GPlatesMaths::dot, return_value_policy<return_by_value>());
+	def("unit_vectors_are_parallel", GPlatesMaths::unit_vectors_are_parallel);
 }
 
