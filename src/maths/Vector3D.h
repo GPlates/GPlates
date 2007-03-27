@@ -46,95 +46,111 @@ namespace GPlatesMaths {
 	 */
 	class Vector3D
 	{
-		public:
-			/**
-			 * Create a 3D vector from the specified
-			 * x, y and z components.
-			 * @param x_comp The x-component.
-			 * @param y_comp The y-component.
-			 * @param z_comp The z-component.
-			 */
-			Vector3D(const real_t& x_comp,
-			         const real_t& y_comp,
-			         const real_t& z_comp)
-			 : _x(x_comp), _y(y_comp), _z(z_comp) {  }
+	public:
+		/**
+		 * Create a 3D vector from the specified
+		 * x, y and z components.
+		 * @param x_comp The x-component.
+		 * @param y_comp The y-component.
+		 * @param z_comp The z-component.
+		 */
+		Vector3D(
+				const real_t& x,
+				const real_t& y,
+				const real_t& z) :
+			d_x(x),
+			d_y(y),
+			d_z(z)
+		{  }
 
 
-			explicit
-			Vector3D(
-			 const UnitVector3D &u);
+		explicit
+		Vector3D(const UnitVector3D &u);
 
 
-			~Vector3D() {  }
+		~Vector3D() {  }
 
 
-			const real_t &
-			x() const { return _x; }
+		const real_t &
+		x() const
+		{
+			return d_x;
+		}
 
-			const real_t &
-			y() const { return _y; }
+		const real_t &
+		y() const
+		{
+			return d_y;
+		}
 
-			const real_t &
-			z() const { return _z; }
+		const real_t &
+		z() const
+		{
+			return d_z;
+		}
 
-			/**
-			 * Returns the square of the magnitude; that is,
-			 * \f$ ( x^2 + y^2 + z^2 ) \f$
-			 */
-			real_t
-			magSqrd() const {
+		/**
+		 * Returns the square of the magnitude; that is,
+		 * \f$ ( x^2 + y^2 + z^2 ) \f$
+		 */
+		real_t
+		magSqrd() const
+		{
+			return (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+		}
 
-				return ((_x * _x) + (_y * _y) + (_z * _z));
-			}
+		/**
+		 * Returns the magnitude of the vector; that is,
+		 * \f$ \sqrt{x^2 + y^2 + z^2} \f$
+		 */
+		real_t
+		magnitude() const
+		{
+			return sqrt(magSqrd());
+		}
 
-			/**
-			 * Returns the magnitude of the vector; that is,
-			 * \f$ \sqrt{x^2 + y^2 + z^2} \f$
-			 */
-			real_t
-			magnitude() const {
+		/**
+		 * Generate a vector having the same direction as @a this,
+		 * but which has unit magnitude.
+		 *
+		 * @throws IndeterminateResultException if @a this has zero
+		 *   magnitude.
+		 */
+		UnitVector3D get_normalisation () const;
 
-				return sqrt(magSqrd());
-			}
-
-			/**
-			 * Generate a vector having the same direction as @a this,
-			 * but which has unit magnitude.
-			 *
-			 * @throws IndeterminateResultException if @a this has zero
-			 *   magnitude.
-			 */
-			UnitVector3D get_normalisation () const;
-
-		protected:
-			real_t _x,  /**< x-component. */
-			       _y,  /**< y-component. */
-			       _z;  /**< z-component. */
+	protected:
+		real_t d_x, d_y, d_z;
 	};
 
 
 	inline
 	const real_t
 	dot(
-	 const Vector3D &v1,
-	 const Vector3D &v2) {
-
+		const Vector3D &v1,
+		const Vector3D &v2)
+	{
 		return GenericVectorOps3D::dot(v1, v2);
 	}
 
 
-	inline bool
-	operator==(const Vector3D &v1, const Vector3D &v2) {
-
+	inline
+	bool
+	operator==(
+			const Vector3D &v1,
+			const Vector3D &v2)
+	{
 		return (v1.x() == v2.x()
 		     && v1.y() == v2.y()
 		     && v1.z() == v2.z());
 	}
 
 
-	inline bool
-	operator!=(const Vector3D &v1, const Vector3D &v2) {
-
+	inline
+	bool
+	operator!=(
+			const Vector3D &v1,
+			const Vector3D &v2)
+	{
 		return (v1.x() != v2.x()
 		     || v1.y() != v2.y()
 		     || v1.z() != v2.z());
@@ -144,50 +160,52 @@ namespace GPlatesMaths {
 	inline
 	const Vector3D
 	operator-(
-	 const Vector3D &v) {
-
+			const Vector3D &v)
+	{
 		return GenericVectorOps3D::negate(v);
 	}
 
 
 	const Vector3D
 	operator*(
-	 const real_t &s,
-	 const Vector3D &v);
+			const real_t &s,
+			const Vector3D &v);
 
 
 	inline
 	const Vector3D
 	operator*(
-	 const Vector3D &v,
-	 const real_t &s) {
-
-		return (s * v);
+		const Vector3D &v,
+		const real_t &s)
+	{
+		return s * v;
 	}
 
 
-	inline Vector3D
-	operator+(const Vector3D &v1, const Vector3D &v2) {
-
-		return Vector3D(v1.x() + v2.x(),
-		                v1.y() + v2.y(),
-		                v1.z() + v2.z());
+	inline
+	Vector3D
+	operator+(
+			const Vector3D &v1,
+			const Vector3D &v2)
+	{
+		return Vector3D(v1.x() + v2.x(), v1.y() + v2.y(), v1.z() + v2.z());
 	}
 
 
-	inline Vector3D
-	operator-(const Vector3D &v1, const Vector3D &v2) {
-
-		return Vector3D(v1.x() - v2.x(),
-		                v1.y() - v2.y(),
-		                v1.z() - v2.z());
+	inline
+	Vector3D
+	operator-(
+			const Vector3D &v1,
+			const Vector3D &v2)
+	{
+		return Vector3D(v1.x() - v2.x(), v1.y() - v2.y(), v1.z() - v2.z());
 	}
 
 
 	std::ostream &
 	operator<<(
-	 std::ostream &os,
-	 const Vector3D &v);
+			std::ostream &os,
+			const Vector3D &v);
 
 
 	/**
@@ -198,11 +216,14 @@ namespace GPlatesMaths {
 	 *
 	 * Note that zero vectors are defined to be parallel to everything.
 	 */
-	inline bool
-	parallel(const Vector3D &v1, const Vector3D &v2)
+	inline
+	bool
+	parallel(
+			const Vector3D &v1,
+			const Vector3D &v2)
 	{
 		real_t dp = dot(v1, v2);
-		return (dp >= v1.magnitude () * v2.magnitude ());
+		return dp >= v1.magnitude() * v2.magnitude();
 	}
 
 	/**
@@ -211,9 +232,9 @@ namespace GPlatesMaths {
 	inline
 	bool
 	perpendicular(
-	 const Vector3D &v1,
-	 const Vector3D &v2) {
-
+			const Vector3D &v1,
+			const Vector3D &v2)
+	{
 		return GenericVectorOps3D::perpendicular(v1, v2);
 	}
 
@@ -227,18 +248,21 @@ namespace GPlatesMaths {
 	 *
 	 * Note that zero vectors are defined to be collinear to everything.
 	 */
-	inline bool
-	collinear(const Vector3D &v1, const Vector3D &v2)
+	inline
+	bool
+	collinear(
+			const Vector3D &v1,
+			const Vector3D &v2)
 	{
-		real_t adp = abs (dot (v1, v2));
-		return (adp >= v1.magnitude () * v2.magnitude ());
+		real_t adp = abs(dot(v1, v2));
+		return adp >= v1.magnitude() * v2.magnitude();
 	}
 
 
 	const Vector3D
 	cross(
-	 const Vector3D &v1,
-	 const Vector3D &v2);
+			const Vector3D &v1,
+			const Vector3D &v2);
 }
 
 #endif  // _GPLATES_MATHS_VECTOR3D_H_
