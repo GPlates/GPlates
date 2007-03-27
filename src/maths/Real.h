@@ -446,6 +446,10 @@ namespace GPlatesMaths
 	 */
 	Real acos(Real r);
 
+
+	/**
+	 * This routine exports the Python wrapper class and associated functionality
+	 */
 	void export_Real();
 }
 

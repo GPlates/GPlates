@@ -182,6 +182,11 @@ GPlatesMaths::acos(GPlatesMaths::Real r)
 }
 
 
+/**
+ * Here begin the Python wrappers
+ */
+
+
 using namespace boost::python;
 
 

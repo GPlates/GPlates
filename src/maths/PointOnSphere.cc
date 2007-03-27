@@ -63,7 +63,14 @@ GPlatesMaths::operator<<(
 	return os;
 }
 
+
+/**
+ * Here begin the Python wrappers
+ */
+
+
 using namespace boost::python;
+
 
 void
 GPlatesMaths::export_PointOnSphere()

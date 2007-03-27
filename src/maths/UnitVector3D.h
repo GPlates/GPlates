@@ -290,6 +290,10 @@ namespace GPlatesMaths
 			const Vector3D &v,
 			const UnitVector3D &u);
 
+
+	/**
+	 * This routine exports the Python wrapper class and associated functionality
+	 */
 	void export_UnitVector3D();
 }
 

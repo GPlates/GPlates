@@ -348,8 +348,11 @@ namespace GPlatesMaths {
 		}
 	}
 
-	void export_PointOnSphere();
 
+	/**
+	 * This routine exports the Python wrapper class and associated functionality
+	 */
+	void export_PointOnSphere();
 }
 
 #endif  // GPLATES_MATHS_POINTONSPHERE_H

@@ -200,9 +200,12 @@ GPlatesMaths::operator<<(
 }
 
 
+/**
+ * Here begin the Python wrappers
+ */
+
+
 using namespace boost::python;
-
-
 // This using is so str(self) will find an appropriate operator<<
 using GPlatesMaths::operator<<;
 
