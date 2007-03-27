@@ -34,29 +34,30 @@
 
 
 GPlatesMaths::UnitVector3D::UnitVector3D(
- const real_t &x_comp,
- const real_t &y_comp,
- const real_t &z_comp) :
- d_x(x_comp),
- d_y(y_comp),
- d_z(z_comp) {
-
+		const real_t &x_comp,
+		const real_t &y_comp,
+		const real_t &z_comp) :
+	d_x(x_comp),
+	d_y(y_comp),
+	d_z(z_comp)
+{
 	AssertInvariant(__LINE__);
 }
 
 
 GPlatesMaths::UnitVector3D::UnitVector3D(
- const Vector3D &v) :
- d_x(v.x()),
- d_y(v.y()),
- d_z(v.z()) {
-
+		const Vector3D &v) :
+	d_x(v.x()),
+	d_y(v.y()),
+	d_z(v.z())
+{
 	AssertInvariant(__LINE__);
 }
 
 
 void
-GPlatesMaths::UnitVector3D::AssertInvariant (int line) const
+GPlatesMaths::UnitVector3D::AssertInvariant(
+		int line) const
 {
 	/*
 	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
@@ -64,24 +65,22 @@ GPlatesMaths::UnitVector3D::AssertInvariant (int line) const
 	 */
 	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
 	if (mag_sqrd != 1.0) {
-
 		// invariant has been violated
 		std::ostringstream oss;
-		oss
-		 << "UnitVector3D has magnitude-squared of "
-		 << HighPrecision< real_t >(mag_sqrd)
-		 << "\n(this assertion was invoked on line "
-		 << line
-		 << "of the header file).";
-
+		oss << "UnitVector3D has magnitude-squared of "
+				<< HighPrecision<real_t>(mag_sqrd)
+				<< "\n(this assertion was invoked on line "
+				<< line
+				<< "of the header file).";
 		throw ViolatedUnitVectorInvariantException(oss.str().c_str());
 	}
 }
 
 
 GPlatesMaths::UnitVector3D
-GPlatesMaths::generatePerpendicular(const UnitVector3D &u) {
-
+GPlatesMaths::generatePerpendicular(
+		const UnitVector3D &u)
+{
 	/*
 	 * Let's start with the three Cartesian basis vectors x, y and z.
 	 * Take their dot-products with 'u' to test for orthogonality.
@@ -95,17 +94,14 @@ GPlatesMaths::generatePerpendicular(const UnitVector3D &u) {
 	real_t zdot = u.z();
 
 	if (xdot == 0.0) {
-
 		// Instant winner!  x is perpendicular to 'u'.
 		return UnitVector3D::xBasis();
 	}
 	if (ydot == 0.0) {
-
 		// Instant winner!  y is perpendicular to 'u'.
 		return UnitVector3D::yBasis();
 	}
 	if (zdot == 0.0) {
-
 		// Instant winner!  z is perpendicular to 'u'.
 		return UnitVector3D::zBasis();
 	}
@@ -136,35 +132,23 @@ GPlatesMaths::generatePerpendicular(const UnitVector3D &u) {
 	 * hence, we can safely normalise it.
 	 */
 	if (xdot < ydot) {
-
 		// prefer x over y
 		if (xdot < zdot) {
-
 			// prefer x over both y and z
-			return
-			 cross(u, UnitVector3D::xBasis()).get_normalisation();
+			return cross(u, UnitVector3D::xBasis()).get_normalisation();
 
 		} else {
-
 			// prefer x over y, but z over x
-			return
-			 cross(u, UnitVector3D::zBasis()).get_normalisation();
+			return cross(u, UnitVector3D::zBasis()).get_normalisation();
 		}
-
 	} else {
-
 		// prefer y over x
 		if (ydot < zdot) {
-
 			// prefer y over both x and z
-			return
-			 cross(u, UnitVector3D::yBasis()).get_normalisation();
-
+			return cross(u, UnitVector3D::yBasis()).get_normalisation();
 		} else {
-
 			// prefer y over x, but z over y
-			return
-			 cross(u, UnitVector3D::zBasis()).get_normalisation();
+			return cross(u, UnitVector3D::zBasis()).get_normalisation();
 		}
 	}
 }
@@ -172,45 +156,45 @@ GPlatesMaths::generatePerpendicular(const UnitVector3D &u) {
 
 const GPlatesMaths::Vector3D
 GPlatesMaths::cross(
- const UnitVector3D &u1,
- const UnitVector3D &u2) {
-
-	return GenericVectorOps3D::ReturnType< Vector3D >::cross(u1, u2);
+		const UnitVector3D &u1,
+		const UnitVector3D &u2)
+{
+	return GenericVectorOps3D::ReturnType<Vector3D>::cross(u1, u2);
 }
 
 
 const GPlatesMaths::Vector3D
 GPlatesMaths::cross(
- const UnitVector3D &u,
- const Vector3D &v) {
-
-	return GenericVectorOps3D::ReturnType< Vector3D >::cross(u, v);
+		const UnitVector3D &u,
+		const Vector3D &v)
+{
+	return GenericVectorOps3D::ReturnType<Vector3D>::cross(u, v);
 }
 
 
 const GPlatesMaths::Vector3D
 GPlatesMaths::cross(
- const Vector3D &v,
- const UnitVector3D &u) {
-
-	return GenericVectorOps3D::ReturnType< Vector3D >::cross(v, u);
+		const Vector3D &v,
+		const UnitVector3D &u)
+{
+	return GenericVectorOps3D::ReturnType<Vector3D>::cross(v, u);
 }
 
 
 const GPlatesMaths::Vector3D
 GPlatesMaths::operator*(
- const real_t &s,
- const UnitVector3D &u) {
-
-	return GenericVectorOps3D::ReturnType< Vector3D >::scale(s, u);
+		const real_t &s,
+		const UnitVector3D &u)
+{
+	return GenericVectorOps3D::ReturnType<Vector3D>::scale(s, u);
 }
 
 
 std::ostream &
 GPlatesMaths::operator<<(
- std::ostream &os,
- const UnitVector3D &u) {
-
+		std::ostream &os,
+		const UnitVector3D &u)
+{
 	os << "(" << u.x() << ", " << u.y() << ", " << u.z() << ")";
 	return os;
 }

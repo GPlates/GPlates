@@ -50,103 +50,99 @@ namespace GPlatesMaths
 	 */
 	class UnitVector3D
 	{
-		public:
-			/**
-			 * Create a 3D vector from the specified
-			 * x, y and z components.
-			 * @param x_comp The x-component.
-			 * @param y_comp The y-component.
-			 * @param z_comp The z-component.
-			 *
-			 * @throw ViolatedUnitVectorInvariantException if the
-			 *   resulting vector does not have unit magnitude.
-			 *
-			 * FIXME:  This should become a 'create' function,
-			 * invoking a private ctor.
-			 */
-			UnitVector3D(
-			 const real_t &x_comp,
-			 const real_t &y_comp,
-			 const real_t &z_comp);
+	public:
+		/**
+		 * Create a 3D vector from the specified
+		 * x, y and z components.
+		 * @param x_comp The x-component.
+		 * @param y_comp The y-component.
+		 * @param z_comp The z-component.
+		 *
+		 * @throw ViolatedUnitVectorInvariantException if the
+		 *   resulting vector does not have unit magnitude.
+		 *
+		 * FIXME:  This should become a 'create' function,
+		 * invoking a private ctor.
+		 */
+		UnitVector3D(
+				const real_t &x_comp,
+				const real_t &y_comp,
+				const real_t &z_comp);
 
 
-			explicit
-			UnitVector3D(
-			 const Vector3D &v);
+		explicit
+		UnitVector3D(
+				const Vector3D &v);
 
 
-			// FIXME:  Add a magnitude-checking cctor.
+		// FIXME:  Add a magnitude-checking cctor.
 
 
-			~UnitVector3D() {  }
+		~UnitVector3D() {  }
 
 
-			const real_t &
-			x() const {
-
-				return d_x;
-			}
-
-
-			const real_t &
-			y() const {
-
-				return d_y;
-			}
+		const real_t &
+		x() const {
+			return d_x;
+		}
 
 
-			const real_t &
-			z() const {
-
-				return d_z;
-			}
-
-
-			UnitVector3D &
-			operator=(
-			 const UnitVector3D &u) {
-
-				d_x = u.x();
-				d_y = u.y();
-				d_z = u.z();
-
-				// FIXME: Check for accumulated magnitude errs.
-				return *this;
-			}
+		const real_t &
+		y() const {
+			return d_y;
+		}
 
 
-			static inline
-			UnitVector3D
-			xBasis() {
-
-				return UnitVector3D(1.0, 0.0, 0.0);
-			}
-
-			static inline
-			UnitVector3D
-			yBasis() {
-
-				return UnitVector3D(0.0, 1.0, 0.0);
-			}
+		const real_t &
+		z() const {
+			return d_z;
+		}
 
 
-			static inline
-			UnitVector3D
-			zBasis() {
+		UnitVector3D &
+		operator=(
+				const UnitVector3D &u)
+		{
+			d_x = u.x();
+			d_y = u.y();
+			d_z = u.z();
+			// FIXME: Check for accumulated magnitude errs.
+			return *this;
+		}
 
-				return UnitVector3D(0.0, 0.0, 1.0);
-			}
 
-		private:
+		static inline
+		UnitVector3D
+		xBasis()
+		{
+			return UnitVector3D(1.0, 0.0, 0.0);
+		}
 
-			/** 
-			 * Assert the class invariant.
-			 * @throw ViolatedUnitVectorInvariantException
-			 *   if the invariant has been violated.
-			 */
-			void AssertInvariant (int line) const;
+		static inline
+		UnitVector3D
+		yBasis()
+		{
+			return UnitVector3D(0.0, 1.0, 0.0);
+		}
 
-			real_t d_x, d_y, d_z;
+
+		static inline
+		UnitVector3D
+		zBasis()
+		{
+			return UnitVector3D(0.0, 0.0, 1.0);
+		}
+
+	private:
+
+		/** 
+		 * Assert the class invariant.
+		 * @throw ViolatedUnitVectorInvariantException
+		 *   if the invariant has been violated.
+		 */
+		void AssertInvariant(int line) const;
+
+		real_t d_x, d_y, d_z;
 
 	};
 
@@ -154,9 +150,9 @@ namespace GPlatesMaths
 	inline
 	const real_t
 	dot(
-	 const UnitVector3D &u1,
-	 const UnitVector3D &u2) {
-
+			const UnitVector3D &u1,
+			const UnitVector3D &u2)
+	{
 		return GenericVectorOps3D::dot(u1, u2);
 	}
 
@@ -164,9 +160,9 @@ namespace GPlatesMaths
 	inline
 	bool
 	operator==(
-	 const UnitVector3D &u1,
-	 const UnitVector3D &u2) {
-
+			const UnitVector3D &u1,
+			const UnitVector3D &u2)
+	{
 		return (dot(u1, u2) >= 1.0);
 	}
 
@@ -174,9 +170,9 @@ namespace GPlatesMaths
 	inline
 	bool
 	operator!=(
-	 const UnitVector3D &u1,
-	 const UnitVector3D &u2) {
-
+			const UnitVector3D &u1,
+			const UnitVector3D &u2)
+	{
 		return (dot(u1, u2) < 1.0);
 	}
 
@@ -184,9 +180,9 @@ namespace GPlatesMaths
 	inline
 	bool
 	perpendicular(
-	 const UnitVector3D &u1,
-	 const UnitVector3D &u2) {
-	
+			const UnitVector3D &u1,
+			const UnitVector3D &u2)
+	{
 		return GenericVectorOps3D::perpendicular(u1, u2);
 	}
 
@@ -194,9 +190,9 @@ namespace GPlatesMaths
 	inline
 	bool
 	parallel(
-	 const UnitVector3D &u,
-	 const Vector3D &v) {
-
+			const UnitVector3D &u,
+			const Vector3D &v)
+	{
 		real_t dot_prod = GenericVectorOps3D::dot(u, v);
 		return (dot_prod >= v.magnitude());
 	}
@@ -208,9 +204,9 @@ namespace GPlatesMaths
 	inline
 	bool
 	unit_vectors_are_parallel(
-	 const UnitVector3D &u1,
-	 const UnitVector3D &u2) {
-
+			const UnitVector3D &u1,
+			const UnitVector3D &u2)
+	{
 		return (dot(u1, u2) >= 1.0);
 	}
 
@@ -221,17 +217,19 @@ namespace GPlatesMaths
 	inline
 	bool
 	unit_vectors_are_antiparallel(
-	 const UnitVector3D &u1,
-	 const UnitVector3D &u2) {
-
+			const UnitVector3D &u1,
+			const UnitVector3D &u2)
+	{
 		return (dot(u1, u2) <= -1.0);
 	}
 
 
 	inline bool
-	collinear (const UnitVector3D &s1, const UnitVector3D &s2)
+	collinear(
+			const UnitVector3D &s1,
+			const UnitVector3D &s2)
 	{
-		real_t adp = abs (dot (s1, s2));
+		real_t adp = abs(dot(s1, s2));
 		return (adp >= 1.0);
 	}
 
@@ -239,24 +237,24 @@ namespace GPlatesMaths
 	inline
 	const UnitVector3D
 	operator-(
-	 const UnitVector3D &u) {
-
+			const UnitVector3D &u)
+	{
 		return GenericVectorOps3D::negate(u);
 	}
 
 
 	const Vector3D
 	operator*(
-	 const real_t &s, 
-	 const UnitVector3D &u);
+			const real_t &s, 
+			const UnitVector3D &u);
 
 
 	inline 
 	const Vector3D
 	operator*(
-	 const UnitVector3D &u,
-	 const real_t &s) {
-	
+			const UnitVector3D &u,
+			const real_t &s)
+	{
 		return (s * u);
 	}
 
@@ -265,31 +263,32 @@ namespace GPlatesMaths
 	 * Given the unit vector @a u, generate a unit vector perpendicular
 	 * to it.
 	 */
-	UnitVector3D generatePerpendicular(const UnitVector3D &u);
+	UnitVector3D generatePerpendicular(
+			const UnitVector3D &u);
 
 
 	std::ostream &
 	operator<<(
-	 std::ostream &os,
-	 const UnitVector3D &u);
+			std::ostream &os,
+			const UnitVector3D &u);
 
 
 	const Vector3D
 	cross(
-	 const UnitVector3D &u1,
-	 const UnitVector3D &u2);
+			const UnitVector3D &u1,
+			const UnitVector3D &u2);
 
 
 	const Vector3D
 	cross(
-	 const UnitVector3D &u,
-	 const Vector3D &v);
+			const UnitVector3D &u,
+			const Vector3D &v);
 
 
 	const Vector3D
 	cross(
-	 const Vector3D &v,
-	 const UnitVector3D &u);
+			const Vector3D &v,
+			const UnitVector3D &u);
 
 	void export_UnitVector3D();
 }
