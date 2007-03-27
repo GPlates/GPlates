@@ -263,7 +263,7 @@ namespace GPlatesMaths
 	 * Given the unit vector @a u, generate a unit vector perpendicular
 	 * to it.
 	 */
-	UnitVector3D generatePerpendicular(
+	UnitVector3D generate_perpendicular(
 			const UnitVector3D &u);
 
 

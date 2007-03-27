@@ -116,7 +116,7 @@ GPlatesMaths::Rotation::Create(
 			 * of PI radians about any arbitrary axis orthogonal to
 			 * 'initial'.
 			 */
-			UnitVector3D axis = generatePerpendicular(initial);
+			UnitVector3D axis = generate_perpendicular(initial);
 			return Rotation::Create(axis, PI);
 		}
 

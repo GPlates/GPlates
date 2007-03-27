@@ -78,7 +78,7 @@ GPlatesMaths::UnitVector3D::AssertInvariant(
 
 
 GPlatesMaths::UnitVector3D
-GPlatesMaths::generatePerpendicular(
+GPlatesMaths::generate_perpendicular(
 		const UnitVector3D &u)
 {
 	/*
@@ -242,7 +242,7 @@ GPlatesMaths::export_UnitVector3D()
 	def("unit_vectors_are_antiparallel", GPlatesMaths::unit_vectors_are_antiparallel);
 	bool (*collinear)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::UnitVector3D &) = GPlatesMaths::collinear;
 	def("collinear", collinear);
-	def("generatePerpendicular", GPlatesMaths::generatePerpendicular);
+	def("generate_perpendicular", GPlatesMaths::generate_perpendicular);
 	const GPlatesMaths::Vector3D (*cross1)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::UnitVector3D &) = GPlatesMaths::cross;
 	def("cross", cross1);
 	const GPlatesMaths::Vector3D (*cross2)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::Vector3D &) = GPlatesMaths::cross;
