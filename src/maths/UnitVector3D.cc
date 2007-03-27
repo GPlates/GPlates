@@ -223,10 +223,31 @@ GPlatesMaths::export_UnitVector3D()
 		.add_static_property("xBasis", make_function(&GPlatesMaths::UnitVector3D::xBasis, return_value_policy<return_by_value>()))
 		.add_static_property("yBasis", make_function(&GPlatesMaths::UnitVector3D::yBasis, return_value_policy<return_by_value>()))
 		.add_static_property("zBasis", make_function(&GPlatesMaths::UnitVector3D::zBasis, return_value_policy<return_by_value>()))
-		.def(self_ns::str(self))
+
+		.def(self == other<GPlatesMaths::UnitVector3D>())
+		.def(self != other<GPlatesMaths::UnitVector3D>())
 		.def(-self)
+		.def(other<GPlatesMaths::Real>() * self)
+		.def(self * other<GPlatesMaths::Real>())
+		.def(self_ns::str(self))
 	;
-//	def("dot", &GPlatesMaths::dot, return_value_policy<return_by_value>());
+	// MAGIC! This lets us retrieve a function pointer to a specific version of an overloaded function
+	const GPlatesMaths::real_t (*dot)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::UnitVector3D &) = GPlatesMaths::dot;
+	def("dot", dot);
+	bool (*perpendicular)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::UnitVector3D &) = GPlatesMaths::perpendicular;
+	def("perpendicular", perpendicular);
+	bool (*parallel)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::Vector3D &) = GPlatesMaths::parallel;
+	def("parallel", parallel);
 	def("unit_vectors_are_parallel", GPlatesMaths::unit_vectors_are_parallel);
+	def("unit_vectors_are_antiparallel", GPlatesMaths::unit_vectors_are_antiparallel);
+	bool (*collinear)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::UnitVector3D &) = GPlatesMaths::collinear;
+	def("collinear", collinear);
+	def("generatePerpendicular", GPlatesMaths::generatePerpendicular);
+	const GPlatesMaths::Vector3D (*cross1)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::UnitVector3D &) = GPlatesMaths::cross;
+	def("cross", cross1);
+	const GPlatesMaths::Vector3D (*cross2)(const GPlatesMaths::UnitVector3D &, const GPlatesMaths::Vector3D &) = GPlatesMaths::cross;
+	def("cross", cross2);
+	const GPlatesMaths::Vector3D (*cross3)(const GPlatesMaths::Vector3D &, const GPlatesMaths::UnitVector3D &) = GPlatesMaths::cross;
+	def("cross", cross3);
 }
 
