@@ -116,7 +116,7 @@ namespace GPlatesMaths {
 		 * @throws IndeterminateResultException if @a this has zero
 		 *   magnitude.
 		 */
-		UnitVector3D get_normalisation () const;
+		UnitVector3D get_normalisation() const;
 
 	protected:
 		real_t d_x, d_y, d_z;
@@ -263,6 +263,12 @@ namespace GPlatesMaths {
 	cross(
 			const Vector3D &v1,
 			const Vector3D &v2);
+
+
+	/**
+	 * This routine exports the Python wrapper class and associated functionality
+	 */
+	void export_Vector3D();
 }
 
 #endif  // _GPLATES_MATHS_VECTOR3D_H_

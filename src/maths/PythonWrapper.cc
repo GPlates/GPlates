@@ -34,5 +34,6 @@ BOOST_PYTHON_MODULE(_maths)
 	GPlatesMaths::export_PointOnSphere();
 	GPlatesMaths::export_Real();
 	GPlatesMaths::export_UnitVector3D();
+	GPlatesMaths::export_Vector3D();
 }
 
