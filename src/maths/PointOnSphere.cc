@@ -33,32 +33,29 @@
 
 bool
 GPlatesMaths::PointOnSphere::is_close_to(
- const PointOnSphere &test_point,
- const real_t &closeness_inclusion_threshold,
- real_t &closeness) const {
-
+		const PointOnSphere &test_point,
+		const real_t &closeness_inclusion_threshold,
+		real_t &closeness) const
+{
 	closeness = calculate_closeness(test_point, *this);
-
-	return
-	 (closeness.isPreciselyGreaterThan(
-	   closeness_inclusion_threshold.dval()));
+	return closeness.isPreciselyGreaterThan(closeness_inclusion_threshold.dval());
 }
 
 
 bool
 GPlatesMaths::PointOnSphere::lies_on_gca(
- const GreatCircleArc &gca) const {
-
+		const GreatCircleArc &gca) const
+{
 	PointLiesOnGreatCircleArc test_whether_lies_on_gca(gca);
-	return (test_whether_lies_on_gca(*this));
+	return test_whether_lies_on_gca(*this);
 }
 
 
 std::ostream &
 GPlatesMaths::operator<<(
- std::ostream &os,
- const PointOnSphere &p) {
-
+	std::ostream &os,
+	const PointOnSphere &p)
+{
 	os << p.position_vector();
 	return os;
 }
