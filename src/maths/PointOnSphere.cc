@@ -72,10 +72,24 @@ using namespace boost::python;
 void
 GPlatesMaths::export_PointOnSphere()
 {
-	class_<GPlatesMaths::PointOnSphere>("PointOnSphere", no_init)
+	class_<GPlatesMaths::PointOnSphere>("PointOnSphere", init<const PointOnSphere &>())
+		// .def("create_on_heap", &GPlatesMaths::PointOnSphere::create_on_heap).staticmethod("create_on_heap")
+		// .def("clone_on_heap", &GPlatesMaths::PointOnSphere::clone_on_heap).staticmethod("clone_on_heap")
+		.def(init<const UnitVector3D &>())
+		//.def("assign", &GPlatesMaths::PointOnSphere::operator=)
 		.add_property("position_vector", make_function(
 					&GPlatesMaths::PointOnSphere::position_vector,
 					return_internal_reference<1>()))
+		.def("is_close_to", &GPlatesMaths::PointOnSphere::is_close_to,
+					args("test_point", "closeness_inclusion_threshold", "closeness"))
+		.def("lies_on_gca", &GPlatesMaths::PointOnSphere::lies_on_gca,
+					args("gca"))
+		.def(self == other<GPlatesMaths::PointOnSphere>())
+		.def(self != other<GPlatesMaths::PointOnSphere>())
+		.def(self_ns::str(self))
 	;
+	// def("get_antipodal_point", &GPlatesMaths::get_antipodal_point, args("p"));
+	def("calculate_closeness", &GPlatesMaths::calculate_closeness, args("p1", "p2"));
+	def("points_are_coincident", &GPlatesMaths::points_are_coincident, args("p1", "p2"));
 }
 
