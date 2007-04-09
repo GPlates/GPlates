@@ -78,12 +78,12 @@ GPlatesMaths::export_PointOnSphere()
 		.def(init<const UnitVector3D &>())
 		//.def("assign", &GPlatesMaths::PointOnSphere::operator=)
 		.add_property("position_vector", make_function(
-					&GPlatesMaths::PointOnSphere::position_vector,
-					return_internal_reference<1>()))
+				&GPlatesMaths::PointOnSphere::position_vector,
+				return_internal_reference<1>()))
 		.def("is_close_to", &GPlatesMaths::PointOnSphere::is_close_to,
-					args("test_point", "closeness_inclusion_threshold", "closeness"))
+				args("test_point", "closeness_inclusion_threshold", "closeness"))
 		.def("lies_on_gca", &GPlatesMaths::PointOnSphere::lies_on_gca,
-					args("gca"))
+				args("gca"))
 		.def(self == other<GPlatesMaths::PointOnSphere>())
 		.def(self != other<GPlatesMaths::PointOnSphere>())
 		.def(self_ns::str(self))
