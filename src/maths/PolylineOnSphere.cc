@@ -271,18 +271,16 @@ GPlatesMaths::polylines_are_directed_equivalent(
 
 bool
 GPlatesMaths::polylines_are_undirected_equivalent(
- const PolylineOnSphere &poly1,
- const PolylineOnSphere &poly2) {
-
+		const PolylineOnSphere &poly1,
+		const PolylineOnSphere &poly2)
+{
 	if (poly1.number_of_vertices() != poly2.number_of_vertices()) {
-
 		// There is no way the two polylines can be equivalent.
 		return false;
 	}
 	// Else, we know the two polylines contain the same number of vertices,
 	// so we only need to check the end-of-sequence conditions for 'poly1'
 	// in our iteration.
-
 	PolylineOnSphere::vertex_const_iterator
 			poly1_iter = poly1.vertex_begin(),
 			poly1_end = poly1.vertex_end(),
@@ -301,11 +299,9 @@ GPlatesMaths::polylines_are_undirected_equivalent(
 		// polylines are equivalent.
 		return true;
 	}
-
 	// Let's try comparing 'poly1' with the reverse of 'poly2'.
 	std::list<PointOnSphere> rev(poly2.vertex_begin(), poly2.vertex_end());
 	rev.reverse();
-
 	std::list<PointOnSphere>::const_iterator rev_iter = rev.begin();
 	for (poly1_iter = poly1.vertex_begin();
 			poly1_iter != poly1_end;
