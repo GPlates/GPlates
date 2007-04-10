@@ -183,6 +183,13 @@ namespace GPlatesModel
 		 * Append @a new_feature_collection to the container of feature collections.
 		 *
 		 * An iterator is returned which points to the new element in the container.
+		 *
+		 * After the FeatureCollectionHandle has been appended, the "end" iterator will
+		 * have advanced -- the length of the sequence will have increased by 1, so what
+		 * was the iterator to the last element of the sequence (the "back" of the
+		 * container), will now be the iterator to the second-last element of the sequence;
+		 * what was the "end" iterator will now be the iterator to the last element of the
+		 * sequence.
 		 */
 		const iterator
 		append_feature_collection(
@@ -200,6 +207,9 @@ namespace GPlatesModel
 		 * container.
 		 *
 		 * The results of this operation are only defined if @a iter is before @a end.
+		 *
+		 * The "end" iterator will not be changed by this operation -- the length of the
+		 * sequence will not change, only a feature-collection-slot will become NULL.
 		 */
 		void
 		remove_feature_collection(
@@ -214,6 +224,9 @@ namespace GPlatesModel
 		 * container.
 		 *
 		 * The results of this operation are only defined if @a iter is before @a end.
+		 *
+		 * The "end" iterator will not be changed by this operation -- the length of the
+		 * sequence will not change, only a feature-collection-slot will become NULL.
 		 */
 		void
 		remove_feature_collection(
