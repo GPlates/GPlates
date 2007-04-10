@@ -28,7 +28,7 @@
 
 #include <vector>
 #include "ModelInterface.h"
-#include "FeatureCollectionHandle.h"
+#include "FeatureStore.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -51,8 +51,9 @@ namespace GPlatesModel
 				const double &time,
 				unsigned long root);
 	private:
-		boost::intrusive_ptr<FeatureCollectionHandle> d_isochrons;
-		boost::intrusive_ptr<FeatureCollectionHandle> d_total_recon_seqs;
+		boost::intrusive_ptr<FeatureStore> d_feature_store;
+		FeatureStoreRootHandle::iterator d_isochrons;
+		FeatureStoreRootHandle::iterator d_total_recon_seqs;
 	};
 
 	void export_Model();

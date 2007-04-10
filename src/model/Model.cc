@@ -319,9 +319,21 @@ create_total_recon_seq(
 }
 
 
+GPlatesModel::FeatureStoreRootHandle::iterator
+create_feature_collection(
+		boost::intrusive_ptr<GPlatesModel::FeatureStoreRootHandle> feature_store_root)
+{
+	GPlatesModel::DummyTransactionHandle transaction;
+	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> feature_collection =
+			GPlatesModel::FeatureCollectionHandle::create();
+	return feature_store_root->append_feature_collection(feature_collection, transaction);
+}
+
+
 GPlatesModel::Model::Model():
-	d_isochrons(FeatureCollectionHandle::create()),
-	d_total_recon_seqs(FeatureCollectionHandle::create())
+	d_feature_store(FeatureStore::create()),
+	d_isochrons(::create_feature_collection(d_feature_store->root())),
+	d_total_recon_seqs(::create_feature_collection(d_feature_store->root()))
 {
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
@@ -394,15 +406,15 @@ GPlatesModel::Model::Model():
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
 	DummyTransactionHandle transaction_iso1;
-	d_isochrons->append_feature(isochron1, transaction_iso1);
+	(*d_isochrons)->append_feature(isochron1, transaction_iso1);
 	transaction_iso1.commit();
 
 	DummyTransactionHandle transaction_iso2;
-	d_isochrons->append_feature(isochron2, transaction_iso2);
+	(*d_isochrons)->append_feature(isochron2, transaction_iso2);
 	transaction_iso2.commit();
 
 	DummyTransactionHandle transaction_iso3;
-	d_isochrons->append_feature(isochron3, transaction_iso3);
+	(*d_isochrons)->append_feature(isochron3, transaction_iso3);
 	transaction_iso3.commit();
 
 	static const unsigned long fixed_plate_id1 = 511;
@@ -450,15 +462,15 @@ GPlatesModel::Model::Model():
 			num_five_tuples3);
 
 	DummyTransactionHandle transaction_trs1;
-	d_total_recon_seqs->append_feature(total_recon_seq1, transaction_trs1);
+	(*d_total_recon_seqs)->append_feature(total_recon_seq1, transaction_trs1);
 	transaction_trs1.commit();
 
 	DummyTransactionHandle transaction_trs2;
-	d_total_recon_seqs->append_feature(total_recon_seq2, transaction_trs2);
+	(*d_total_recon_seqs)->append_feature(total_recon_seq2, transaction_trs2);
 	transaction_trs2.commit();
 
 	DummyTransactionHandle transaction_trs3;
-	d_total_recon_seqs->append_feature(total_recon_seq3, transaction_trs3);
+	(*d_total_recon_seqs)->append_feature(total_recon_seq3, transaction_trs3);
 	transaction_trs3.commit();
 }
 
@@ -476,8 +488,8 @@ GPlatesModel::Model::create_reconstruction(
 	ReconstructionTreePopulator rtp(time, recon_tree);
 
 	// Populate the reconstruction tree with our total recon seqs.
-	FeatureCollectionHandle::iterator iter2 = d_total_recon_seqs->begin();
-	FeatureCollectionHandle::iterator end2 = d_total_recon_seqs->end();
+	FeatureCollectionHandle::iterator iter2 = (*d_total_recon_seqs)->begin();
+	FeatureCollectionHandle::iterator end2 = (*d_total_recon_seqs)->end();
 	for ( ; iter2 != end2; ++iter2) {
 		(*iter2)->accept_visitor(rtp);
 	}
@@ -489,8 +501,8 @@ GPlatesModel::Model::create_reconstruction(
 			recon_tree, point_reconstructions, polyline_reconstructions);
 
 	// Populate the vectors with reconstructed feature geometries from our isochrons.
-	FeatureCollectionHandle::iterator iter3 = d_isochrons->begin();
-	FeatureCollectionHandle::iterator end3 = d_isochrons->end();
+	FeatureCollectionHandle::iterator iter3 = (*d_isochrons)->begin();
+	FeatureCollectionHandle::iterator end3 = (*d_isochrons)->end();
 	for ( ; iter3 != end3; ++iter3) {
 		(*iter3)->accept_visitor(rfgp);
 	}
