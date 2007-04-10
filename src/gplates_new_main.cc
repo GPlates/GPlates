@@ -494,6 +494,22 @@ populate_feature_store(
 	// dangling pointers-to-handles, for example, if the handle is destroyed (since it is only
 	// referenced by an intrusive-ptr on the stack) after it is supposedly committed (and there
 	// is thus a TransactionItem which holds a pointer to it)?
+	//
+	// Further thoughts, 2007-04-10:  If the TransactionItem were to hold an *intrusive_ptr*
+	// to a *Handle (rather than a "raw" pointer to a *Handle), then the *Handle could never be
+	// accidentally destroyed before the TransactionItem.  The ref-count of the *Handle
+	// instance could become quite high (if a feature-collection is having many features added
+	// and removed, and is thus referenced by many TransactionItem instances), but hopefully,
+	// since we're using a 'long' to contain the count (a max of at least 2147483647, right?),
+	// there won't be a danger of overflow.
+	//
+	// So now, the next question:  Should the 'create' functions of FeatureCollectionHandle and
+	// FeatureHandle instances require TransactionHandle references to be passed?  And should
+	// functions be added to FeatureStoreRootHandle and FeatureCollectionHandle, to create
+	// empty feature-collections and features (respectively) which are already inside the
+	// FeatureStoreRootHandle or FeatureCollectionHandle instance?  And should client code be
+	// encouraged (or even forced) to use these functions, rather than instantiating
+	// feature-collections and features (respectively) on their own?
 
 	GPlatesModel::DummyTransactionHandle transaction_iso_coll;
 	GPlatesModel::FeatureStoreRootHandle::iterator isochrons_iter =
