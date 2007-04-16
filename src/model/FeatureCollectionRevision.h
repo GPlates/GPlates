@@ -38,17 +38,36 @@ namespace GPlatesModel
 	class DummyTransactionHandle;
 
 	/**
-	 * A feature collection revision is the part of a GML feature collection which can change
-	 * with revisions.
+	 * A feature collection revision contains the revisioned content of a conceptual feature
+	 * collection.
 	 *
-	 * This class represents the part of a GML feature collection which can change with
-	 * revisions.  That is, it contains the collection of features which is able to be modified
-	 * by user-operations.
+	 * The feature collection is the middle layer/component of the three-tiered conceptual
+	 * hierarchy of revisioned objects contained in, and managed by, the feature store:  The
+	 * feature collection aggregates a set of features into a collection which may be loaded,
+	 * saved or unloaded in a single operation.  The feature store contains a single feature
+	 * store root, which in turn contains all the currently-loaded feature collections.  Every
+	 * currently-loaded feature is contained within a currently-loaded feature collection.
 	 *
-	 * A FeatureCollectionRevision instance can be referenced either by a
-	 * FeatureCollectionHandle instance (when the FeatureCollectionRevision represents the
-	 * current state of the feature collection) or by a TransactionItem (when the
-	 * FeatureCollectionRevision represents the past or undone state of a feature collection).
+	 * The conceptual feature collection is implemented in two pieces: FeatureCollectionHandle
+	 * and FeatureCollectionRevision.  A FeatureCollectionRevision instance contains the
+	 * revisioned content of the conceptual feature collection, and is in turn referenced by
+	 * either a FeatureCollectionHandle instance or a TransactionItem instance.
+	 *
+	 * A new instance of FeatureCollectionRevision will be created whenever the conceptual
+	 * feature collection is modified by the addition or removal of feature elements -- a new
+	 * instance of FeatureCollectionRevision is created, because the existing ("current")
+	 * FeatureCollectionRevision instance will not be modified.  The newly-created
+	 * FeatureCollectionRevision instance will then be "scheduled" in a TransactionItem.  When
+	 * the TransactionItem is "committed", the pointer (in the TransactionItem) to the new
+	 * FeatureCollectionRevision instance will be swapped with the pointer (in the
+	 * FeatureCollectionHandle instance) to the "current" instance, so that the "new" instance
+	 * will now become the "current" instance (referenced by the pointer in the
+	 * FeatureCollectionHandle) and the "current" instance will become the "old" instance
+	 * (referenced by the pointer in the now-committed TransactionItem).
+	 *
+	 * Client code should not reference FeatureCollectionRevision instances directly; rather,
+	 * it should always access the "current" instance (whichever FeatureCollectionRevision
+	 * instance it may be) through the feature collection handle.
 	 */
 	class FeatureCollectionRevision
 	{
