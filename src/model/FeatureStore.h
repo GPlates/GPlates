@@ -34,15 +34,15 @@
 namespace GPlatesModel
 {
 	/**
-	 * The feature store contains (indirectly) all the currently-loaded features and feature
-	 * collections, as well as all past and future states (which are reachable by the undo and
-	 * redo operations) of those features and feature collections.
+	 * The feature store contains (directly or indirectly) all the currently-loaded features
+	 * and feature collections, as well as all past and future states (which are reachable by
+	 * the undo and redo operations) of those features and feature collections.
 	 *
-	 * The feature store contains a three-tiered hierarchy of revisioned objects:  The top tier
-	 * is the feature store root, the singleton "root" vertex of the tree of revisioned objects
-	 * contained within the feature store; the feature store root contains all the
-	 * currently-loaded feature collections (each of which corresponds to a single data file);
-	 * each feature collection contains zero or more features.
+	 * The feature store contains a three-tiered conceptual hierarchy of revisioned objects: 
+	 * The top layer/component is the feature store root, the singleton "root" vertex of the
+	 * tree of revisioned objects contained within the feature store; the feature store root
+	 * contains all the currently-loaded feature collections (each of which corresponds to a
+	 * single data file); and each feature collection contains zero or more features.
 	 */
 	class FeatureStore
 	{

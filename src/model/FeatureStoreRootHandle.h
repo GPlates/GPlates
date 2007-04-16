@@ -37,28 +37,29 @@ namespace GPlatesModel
 	class DummyTransactionHandle;
 
 	/**
-	 * A feature store root handle acts as a persistent handle to the revisioned content of
-	 * the feature store root.
+	 * A feature store root handle acts as a persistent handle to the revisioned content of a
+	 * conceptual feature store root.
 	 *
-	 * The feature store root is the top-level component of the three-tiered hierarchy of
-	 * revisioned objects contained in, and managed by, the feature store:  It is the "root"
-	 * vertex of the tree of revisioned objects.  The feature store contains a single feature
-	 * store root, which in turn contains all the currently-loaded feature collections (each of
-	 * which corresponds to a single data file).  Every currently-loaded feature is contained
-	 * within a currently-loaded feature collection.
+	 * The feature store root is the top layer/component of the three-tiered conceptual
+	 * hierarchy of revisioned objects contained in, and managed by, the feature store:  It is
+	 * the "root" node of the tree of revisioned objects.  The feature store contains a single
+	 * feature store root, which in turn contains all the currently-loaded feature collections
+	 * (each of which corresponds to a single data file).  Every currently-loaded feature is
+	 * contained within a currently-loaded feature collection.
 	 *
-	 * A FeatureStoreRootHandle instance manages a FeatureStoreRootRevision instance, which in
-	 * turn contains the revisioned content of the feature store root.  A
-	 * FeatureStoreRootHandle instance is contained within, and managed by, a FeatureStore
-	 * instance.
+	 * The conceptual feature store root is implemented in two pieces: FeatureStoreRootHandle
+	 * and FeatureStoreRootRevision.  A FeatureStoreRootHandle instance contains and manages a
+	 * FeatureStoreRootRevision instance, which in turn contains the revisioned content of the
+	 * conceptual feature store root.  A FeatureStoreRootHandle instance is contained within,
+	 * and managed by, a FeatureStore instance.
 	 *
 	 * A feature store root handle instance is "persistent" in the sense that it will endure,
 	 * in the same memory location, for as long as the conceptual feature store root exists
 	 * (which will be determined by the lifetime of the feature store).  The revisioned content
 	 * of the conceptual feature store root will be contained within a succession of feature
-	 * store root revisions (a new revision will be created as the result of every
-	 * modification), but the handle will act as an enduring means of accessing the current
-	 * revision.
+	 * store root revisions (with a new revision created as the result of every modification),
+	 * but the handle will endure as a persistent means of accessing the current revision and
+	 * the content within it.
 	 */
 	class FeatureStoreRootHandle
 	{

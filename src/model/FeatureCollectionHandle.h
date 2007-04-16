@@ -37,14 +37,35 @@ namespace GPlatesModel
 	class DummyTransactionHandle;
 
 	/**
-	 * A feature collection handle is the part of a GML feature collection which does not
-	 * change with revisions.
+	 * A feature collection handle acts as a persistent handle to the revisioned content of a
+	 * conceptual feature collection.
 	 *
-	 * This class represents the part of a GML feature collection which does not change with
-	 * revisions (currently nothing), as well as acting as an everlasting handle to the
-	 * FeatureCollectionRevision which contains the rest of the feature collection.
+	 * The feature collection is the middle layer/component of the three-tiered conceptual
+	 * hierarchy of revisioned objects contained in, and managed by, the feature store:  The
+	 * feature collection aggregates a set of features into a collection which may be loaded,
+	 * saved or unloaded in a single operation.  The feature store contains a single feature
+	 * store root, which in turn contains all the currently-loaded feature collections.  Every
+	 * currently-loaded feature is contained within a currently-loaded feature collection.
 	 *
-	 * A FeatureCollectionHandle instance is referenced by a FeatureStoreRoot.
+	 * The conceptual feature collection is implemented in two pieces: FeatureCollectionHandle
+	 * and FeatureCollectionRevision.  A FeatureCollectionHandle instance contains and manages
+	 * a FeatureCollectionRevision instance, which in turn contains the revisioned content of
+	 * the conceptual feature collection.  A FeatureCollectionHandle instance is contained
+	 * within, and managed by, a FeatureStoreRootRevision instance.
+	 *
+	 * A feature collection handle instance is "persistent" in the sense that it will endure,
+	 * in the same memory location, for as long as the conceptual feature collection exists
+	 * (which will be determined by the user's choice of when to "flush" deleted features and
+	 * unloaded feature collections, after the feature collection has been unloaded).  The
+	 * revisioned content of the conceptual feature collection will be contained within a
+	 * succession of feature collection revisions (with a new revision created as the result of
+	 * every modification), but the handle will endure as a persistent means of accessing the
+	 * current revision and the content within it.
+	 *
+	 * The name "feature collection" derives from the GML term for a collection of GML features
+	 * -- one GML feature collection corresponds roughly to one data file, although it may be
+	 * the transient result of a database query, for instance, rather than necessarily a file
+	 * saved on disk.
 	 */
 	class FeatureCollectionHandle
 	{

@@ -38,14 +38,34 @@
 namespace GPlatesModel {
 
 	/**
-	 * A feature handle is the part of a GPML feature which does not change with revisions.
+	 * A feature handle acts as a persistent handle to the revisioned content of a conceptual
+	 * feature.
 	 *
-	 * This class represents the part of a GPML feature which does not change with revisions.
-	 * That is, it contains the components of a feature which never change (the feature type
-	 * and the feature ID), as well as acting as an everlasting handle to the FeatureRevision
-	 * which contains the rest of the feature.
+	 * The feature is the bottom layer/component of the three-tiered conceptual hierarchy of
+	 * revisioned objects contained in, and managed by, the feature store:  The feature is an
+	 * abstract model of some geological or plate-tectonic object or concept of interest,
+	 * consisting of a collection of properties and a feature type.  The feature store contains
+	 * a single feature store root, which in turn contains all the currently-loaded feature
+	 * collections.  Every currently-loaded feature is contained within a currently-loaded
+	 * feature collection.
 	 *
-	 * A FeatureHandle instance is referenced by a FeatureCollection.
+	 * The conceptual feature is implemented in two pieces: FeatureHandle and FeatureRevision. 
+	 * A FeatureHandle instance contains and manages a FeatureRevision instance, which in turn
+	 * contains the revisioned content of the conceptual feature (the mutable properties of the
+	 * feature).  A FeatureHandle instance is contained within, and managed by, a
+	 * FeatureCollectionRevision instance.
+	 *
+	 * A feature handle instance is "persistent" in the sense that it will endure, in the same
+	 * memory location, for as long as the conceptual feature exists (which will be determined
+	 * by the user's choice of when to "flush" deleted features and unloaded feature
+	 * collections, after the feature has been deleted or its feature collection has been
+	 * unloaded).  The revisioned content of the conceptual feature will be contained within a
+	 * succession of feature revisions (with a new revision created as the result of every
+	 * modification), but the handle will endure as a persistent means of accessing the current
+	 * revision and the content within it.
+	 *
+	 * The feature handle also contains the properties of a feature which can never change: the
+	 * feature type and the feature ID.
 	 */
 	class FeatureHandle {
 
