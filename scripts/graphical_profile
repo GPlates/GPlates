@@ -1,6 +1,0 @@
-#! /bin/bash
-
-./profile | \
-	aux/filter_gprof.pl | \
-	aux/cgprof-a4 -Tps | \
-	gzip -cv9 > gplates-gprof.ps.gz
