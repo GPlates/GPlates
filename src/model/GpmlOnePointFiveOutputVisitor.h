@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -108,8 +108,8 @@ namespace GPlatesFileIO {
 
 		virtual
 		void
-		visit_single_valued_property_container(
-				const GPlatesModel::SingleValuedPropertyContainer &single_valued_property_container);
+		visit_inline_property_container(
+				const GPlatesModel::InlinePropertyContainer &inline_property_container);
 
 		virtual
 		void

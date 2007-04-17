@@ -12,7 +12,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -49,7 +49,7 @@
 #include "model/GpmlIrregularSampling.h"
 #include "model/GpmlPlateId.h"
 #include "model/GpmlTimeSample.h"
-#include "model/SingleValuedPropertyContainer.h"
+#include "model/InlinePropertyContainer.h"
 #include "model/XsString.h"
 #include "model/GpmlOnePointFiveOutputVisitor.h"
 #include "model/XmlOutputInterface.h"
@@ -60,7 +60,6 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
-
 
 const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_reconstruction_plate_id(
@@ -77,11 +76,11 @@ create_reconstruction_plate_id(
 	UnicodeString property_name_string("gpml:reconstructionPlateId");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
-			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
-			gpml_plate_id_constant_value, xml_attributes, false);
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+			GPlatesModel::InlinePropertyContainer::create(property_name,
+			gpml_plate_id_constant_value, xml_attributes);
 
-	return single_valued_property_container;
+	return inline_property_container;
 }
 
 
@@ -96,11 +95,11 @@ create_reference_frame_plate_id(
 	UnicodeString property_name_string(which_reference_frame);
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
-			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
-			gpml_plate_id, xml_attributes, false);
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+			GPlatesModel::InlinePropertyContainer::create(property_name,
+			gpml_plate_id, xml_attributes);
 
-	return single_valued_property_container;
+	return inline_property_container;
 }
 
 
@@ -128,11 +127,11 @@ create_centre_line_of(
 	UnicodeString property_name_string("gpml:centreLineOf");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
-			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
-			gml_orientable_curve_constant_value, xml_attributes2, false);
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+			GPlatesModel::InlinePropertyContainer::create(property_name,
+			gml_orientable_curve_constant_value, xml_attributes2);
 
-	return single_valued_property_container;
+	return inline_property_container;
 }
 
 
@@ -158,11 +157,11 @@ create_valid_time(
 	UnicodeString property_name_string("gml:validTime");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
-			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
-			gml_time_period, xml_attributes2, false);
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+			GPlatesModel::InlinePropertyContainer::create(property_name,
+			gml_time_period, xml_attributes2);
 
-	return single_valued_property_container;
+	return inline_property_container;
 }
 
 
@@ -175,11 +174,11 @@ create_description(
 	UnicodeString property_name_string("gml:description");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
-			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
-			gml_description, xml_attributes, false);
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+			GPlatesModel::InlinePropertyContainer::create(property_name,
+			gml_description, xml_attributes);
 
-	return single_valued_property_container;
+	return inline_property_container;
 }
 
 
@@ -196,11 +195,11 @@ create_name(
 	GPlatesModel::XmlAttributeName xml_attribute_name("codeSpace");
 	GPlatesModel::XmlAttributeValue xml_attribute_value(codespace);
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
-			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
-			gml_name, xml_attributes, false);
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+			GPlatesModel::InlinePropertyContainer::create(property_name,
+			gml_name, xml_attributes);
 
-	return single_valued_property_container;
+	return inline_property_container;
 }
 
 
@@ -293,11 +292,11 @@ create_total_reconstruction_pole(
 	UnicodeString property_name_string("gpml:totalReconstructionPole");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> single_valued_property_container =
-			GPlatesModel::SingleValuedPropertyContainer::create(property_name,
-			gpml_irregular_sampling, xml_attributes2, false);
+	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+			GPlatesModel::InlinePropertyContainer::create(property_name,
+			gpml_irregular_sampling, xml_attributes2);
 
-	return single_valued_property_container;
+	return inline_property_container;
 }
 
 

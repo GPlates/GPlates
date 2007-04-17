@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -44,7 +44,7 @@ namespace GPlatesModel {
 	class GpmlIrregularSampling;
 	class GpmlPlateId;
 	class GpmlTimeSample;
-	class SingleValuedPropertyContainer;
+	class InlinePropertyContainer;
 	class XsString;
 
 	/**
@@ -149,8 +149,8 @@ namespace GPlatesModel {
 
 		virtual
 		void
-		visit_single_valued_property_container(
-				SingleValuedPropertyContainer &single_valued_property_container)
+		visit_inline_property_container(
+				InlinePropertyContainer &inline_property_container)
 		{  }
 
 		virtual

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,7 +32,7 @@
 #include "GpmlFiniteRotationSlerp.h"
 #include "GpmlIrregularSampling.h"
 #include "GpmlTimeSample.h"
-#include "SingleValuedPropertyContainer.h"
+#include "InlinePropertyContainer.h"
 
 
 namespace
@@ -318,10 +318,11 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_time_sample(
 
 
 void
-GPlatesModel::ReconstructionTreePopulator::visit_single_valued_property_container(
-		SingleValuedPropertyContainer &single_valued_property_container) {
-	// FIXME:  Should we bother checking whether the value is optional?
-	if (single_valued_property_container.value() != NULL) {
-		single_valued_property_container.value()->accept_visitor(*this);
+GPlatesModel::ReconstructionTreePopulator::visit_inline_property_container(
+		InlinePropertyContainer &inline_property_container) {
+	for (GPlatesModel::InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
+			iter != inline_property_container.end(); ++iter) {
+		// FIXME: This should not be NULL.
+		(*iter)->accept_visitor(*this);
 	}
 }

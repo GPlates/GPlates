@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,7 +39,7 @@
 #include "model/GpmlIrregularSampling.h"
 #include "model/GpmlPlateId.h"
 #include "model/GpmlTimeSample.h"
-#include "model/SingleValuedPropertyContainer.h"
+#include "model/InlinePropertyContainer.h"
 #include "model/XsString.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
@@ -306,17 +306,17 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_time_sample(
 	}
 }
 
-
 void
-GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_single_valued_property_container(
-		const GPlatesModel::SingleValuedPropertyContainer &single_valued_property_container) {
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, single_valued_property_container.property_name().get(),
-			single_valued_property_container.xml_attributes().begin(),
-			single_valued_property_container.xml_attributes().end());
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_inline_property_container(
+		const GPlatesModel::InlinePropertyContainer &inline_property_container) {
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, inline_property_container.property_name().get(),
+			inline_property_container.xml_attributes().begin(),
+			inline_property_container.xml_attributes().end());
 
-	// FIXME:  Should we bother checking whether the value is optional?
-	if (single_valued_property_container.value() != NULL) {
-		single_valued_property_container.value()->accept_visitor(*this);
+	for (GPlatesModel::InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
+			iter != inline_property_container.end(); ++iter) {
+		// FIXME: This should not be NULL.
+		(*iter)->accept_visitor(*this);
 	}
 }
 
