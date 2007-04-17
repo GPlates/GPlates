@@ -192,7 +192,7 @@ namespace GPlatesModel
 		 */
 		const iterator
 		append_feature(
-				boost::intrusive_ptr<FeatureHandle> new_feature,
+				GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> new_feature,
 				DummyTransactionHandle &transaction)
 		{
 			FeatureCollectionRevision::feature_collection_type::size_type new_index =

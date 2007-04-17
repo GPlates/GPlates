@@ -28,12 +28,12 @@
 #ifndef GPLATES_MODEL_FEATUREHANDLE_H
 #define GPLATES_MODEL_FEATUREHANDLE_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "FeatureRevision.h"
 #include "FeatureId.h"
 #include "FeatureType.h"
 #include "ConstFeatureVisitor.h"
 #include "FeatureVisitor.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel {
 
@@ -83,12 +83,13 @@ namespace GPlatesModel {
 		 * feature ID @a feature_id_.
 		 */
 		static
-		const boost::intrusive_ptr<FeatureHandle>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureHandle>
 		create(
 				const FeatureType &feature_type_,
 				const FeatureId &feature_id_)
 		{
-			boost::intrusive_ptr<FeatureHandle> ptr(new FeatureHandle(feature_type_, feature_id_));
+			GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> ptr(
+					*(new FeatureHandle(feature_type_, feature_id_)));
 			return ptr;
 		}
 
@@ -97,10 +98,11 @@ namespace GPlatesModel {
 		 *
 		 * Note that this will perform a "shallow copy".
 		 */
-		const boost::intrusive_ptr<FeatureHandle>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureHandle>
 		clone() const
 		{
-			boost::intrusive_ptr<FeatureHandle> dup(new FeatureHandle(*this));
+			GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> dup(
+					*(new FeatureHandle(*this)));
 			return dup;
 		}
 
@@ -175,12 +177,10 @@ namespace GPlatesModel {
 
 		/**
 		 * Set the current revision of this feature to @a rev.
-		 *
-		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
 		void
 		set_current_revision(
-				boost::intrusive_ptr<FeatureRevision> rev) {
+				GPlatesContrib::non_null_intrusive_ptr<FeatureRevision> rev) {
 			d_current_revision = rev;
 		}
 
@@ -211,7 +211,8 @@ namespace GPlatesModel {
 		/**
 		 * Increment the reference-count of this instance.
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const
@@ -223,7 +224,8 @@ namespace GPlatesModel {
 		 * Decrement the reference-count of this instance, and return the new
 		 * reference-count.
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const
@@ -240,10 +242,8 @@ namespace GPlatesModel {
 
 		/**
 		 * The current revision of this feature.
-		 *
-		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
-		boost::intrusive_ptr<FeatureRevision> d_current_revision;
+		GPlatesContrib::non_null_intrusive_ptr<FeatureRevision> d_current_revision;
 
 		/**
 		 * The type of this feature.
@@ -272,10 +272,10 @@ namespace GPlatesModel {
 		 * instantiation of this type on the stack.
 		 *
 		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new intrusive_ptr reference to the new
-		 * duplicate.  Since initially the only reference to the new duplicate will be the
-		 * one returned by the 'clone' function, *before* the new intrusive_ptr is created,
-		 * the ref-count of the new FeatureHandle instance should be zero.
+		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
+		 * the new duplicate.  Since initially the only reference to the new duplicate will
+		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
+		 * is created, the ref-count of the new FeatureHandle instance should be zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
 		 * copy-ctor, except that it should initialise the ref-count to zero.
@@ -290,7 +290,7 @@ namespace GPlatesModel {
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
+		// only be assignment of one intrusive-pointer to another.
 		FeatureHandle &
 		operator=(
 				const FeatureHandle &);
@@ -301,7 +301,7 @@ namespace GPlatesModel {
 		 * This is the overloading of this function for const FeatureHandle instances; it
 		 * returns a pointer to a const FeatureRevision instance.
 		 */
-		const boost::intrusive_ptr<const FeatureRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<const FeatureRevision>
 		current_revision() const
 		{
 			return d_current_revision;
@@ -322,7 +322,7 @@ namespace GPlatesModel {
 		 * To switch the FeatureRevision within this FeatureHandle instance, use the
 		 * function @a set_current_revision.
 		 */
-		const boost::intrusive_ptr<FeatureRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureRevision>
 		current_revision()
 		{
 			return d_current_revision;
