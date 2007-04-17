@@ -483,7 +483,7 @@ populate_feature_store(
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
-	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> isochrons =
+	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureCollectionHandle> isochrons =
 			GPlatesModel::FeatureCollectionHandle::create();
 
 	// FIXME:  Should the next four operations occur in any particular order?  Is there any
@@ -570,7 +570,7 @@ populate_feature_store(
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
-	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> total_recon_seqs =
+	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureCollectionHandle> total_recon_seqs =
 			GPlatesModel::FeatureCollectionHandle::create();
 
 	GPlatesModel::DummyTransactionHandle transaction_trs_coll;

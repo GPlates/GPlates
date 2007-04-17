@@ -28,8 +28,8 @@
 #ifndef GPLATES_MODEL_FEATUREREVISION_H
 #define GPLATES_MODEL_FEATUREREVISION_H
 
-#include <boost/intrusive_ptr.hpp>
 #include <vector>
+#include <boost/intrusive_ptr.hpp>
 #include "RevisionId.h"
 #include "PropertyContainer.h"
 #include "contrib/non_null_intrusive_ptr.h"

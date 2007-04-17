@@ -31,6 +31,7 @@
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 #include "FeatureHandle.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesModel
@@ -91,20 +92,20 @@ namespace GPlatesModel
 		 * This collection contains no features.
 		 */
 		static
-		const boost::intrusive_ptr<FeatureCollectionRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision>
 		create() {
-			boost::intrusive_ptr<FeatureCollectionRevision> ptr(
-					new FeatureCollectionRevision());
+			GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision> ptr(
+					*(new FeatureCollectionRevision()));
 			return ptr;
 		}
 
 		/**
 		 * Create a duplicate of this FeatureCollectionRevision instance.
 		 */
-		const boost::intrusive_ptr<FeatureCollectionRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision>
 		clone() const {
-			boost::intrusive_ptr<FeatureCollectionRevision> dup(
-					new FeatureCollectionRevision(*this));
+			GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision> dup(
+					*(new FeatureCollectionRevision(*this)));
 			return dup;
 		}
 
@@ -181,7 +182,7 @@ namespace GPlatesModel
 		access_feature(
 				feature_collection_type::size_type index) const
 		{
-			boost::intrusive_ptr<const FeatureHandle> ptr = NULL;
+			boost::intrusive_ptr<const FeatureHandle> ptr;
 			if (index < size()) {
 				ptr = d_features[index];
 			}
@@ -204,7 +205,7 @@ namespace GPlatesModel
 		access_feature(
 				feature_collection_type::size_type index)
 		{
-			boost::intrusive_ptr<FeatureHandle> ptr = NULL;
+			boost::intrusive_ptr<FeatureHandle> ptr;
 			if (index < size()) {
 				ptr = d_features[index];
 			}
@@ -234,7 +235,8 @@ namespace GPlatesModel
 		/**
 		 * Increment the reference-count of this instance.
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const {
@@ -245,7 +247,8 @@ namespace GPlatesModel
 		 * Decrement the reference-count of this instance, and return the new
 		 * reference-count.
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const {
@@ -277,10 +280,11 @@ namespace GPlatesModel
 		 * instantiation of this type on the stack.
 		 *
 		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new intrusive_ptr reference to the new
-		 * duplicate.  Since initially the only reference to the new duplicate will be the
-		 * one returned by the 'clone' function, *before* the new intrusive_ptr is created,
-		 * the ref-count of the new FeatureCollectionRevision instance should be zero.
+		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
+		 * the new duplicate.  Since initially the only reference to the new duplicate will
+		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
+		 * is created, the ref-count of the new FeatureCollectionRevision instance should
+		 * be zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
 		 * copy-ctor, except that it should initialise the ref-count to zero.

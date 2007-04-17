@@ -324,7 +324,7 @@ create_feature_collection(
 		boost::intrusive_ptr<GPlatesModel::FeatureStoreRootHandle> feature_store_root)
 {
 	GPlatesModel::DummyTransactionHandle transaction;
-	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> feature_collection =
+	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureCollectionHandle> feature_collection =
 			GPlatesModel::FeatureCollectionHandle::create();
 	return feature_store_root->append_feature_collection(feature_collection, transaction);
 }

@@ -31,11 +31,11 @@
 
 GPlatesModel::FeatureStoreRootRevision::feature_collection_container_type::size_type
 GPlatesModel::FeatureStoreRootRevision::append_feature_collection(
-		boost::intrusive_ptr<FeatureCollectionHandle> new_feature_collection,
+		GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle> new_feature_collection,
 		DummyTransactionHandle &transaction)
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	d_feature_collections.push_back(new_feature_collection);
+	d_feature_collections.push_back(get_intrusive_ptr(new_feature_collection));
 	return (size() - 1);
 }
 

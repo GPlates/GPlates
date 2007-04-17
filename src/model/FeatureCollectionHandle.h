@@ -28,9 +28,9 @@
 #ifndef GPLATES_MODEL_FEATURECOLLECTIONHANDLE_H
 #define GPLATES_MODEL_FEATURECOLLECTIONHANDLE_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "FeatureCollectionRevision.h"
 #include "HandleContainerIterator.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
 {
@@ -118,11 +118,11 @@ namespace GPlatesModel
 		 * Create a new FeatureCollectionHandle instance.
 		 */
 		static
-		const boost::intrusive_ptr<FeatureCollectionHandle>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle>
 		create()
 		{
-			boost::intrusive_ptr<FeatureCollectionHandle> ptr(
-					new FeatureCollectionHandle());
+			GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle> ptr(
+					*(new FeatureCollectionHandle()));
 			return ptr;
 		}
 
@@ -134,11 +134,11 @@ namespace GPlatesModel
 		 *
 		 * Note that this will perform a "shallow copy".
 		 */
-		const boost::intrusive_ptr<FeatureCollectionHandle>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle>
 		clone() const
 		{
-			boost::intrusive_ptr<FeatureCollectionHandle> dup(
-					new FeatureCollectionHandle(*this));
+			GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle> dup(
+					*(new FeatureCollectionHandle(*this)));
 			return dup;
 		}
 
@@ -240,7 +240,7 @@ namespace GPlatesModel
 		 * This is the overloading of this function for const FeatureCollectionHandle
 		 * instances; it returns a pointer to a const FeatureCollectionRevision instance.
 		 */
-		const boost::intrusive_ptr<const FeatureCollectionRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<const FeatureCollectionRevision>
 		current_revision() const
 		{
 			return d_current_revision;
@@ -264,7 +264,7 @@ namespace GPlatesModel
 		 * To switch the FeatureCollectionRevision within this FeatureCollectionHandle
 		 * instance, use the function @a set_current_revision below.
 		 */
-		const boost::intrusive_ptr<FeatureCollectionRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision>
 		current_revision()
 		{
 			return d_current_revision;
@@ -274,12 +274,10 @@ namespace GPlatesModel
 		 * Set the current revision of this feature collection to @a rev.
 		 *
 		 * Client code should not need to access the revision directly!
-		 *
-		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
 		void
 		set_current_revision(
-				boost::intrusive_ptr<FeatureCollectionRevision> rev)
+				GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision> rev)
 		{
 			d_current_revision = rev;
 		}
@@ -289,7 +287,8 @@ namespace GPlatesModel
 		 *
 		 * Client code should not use this function!
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const
@@ -303,7 +302,8 @@ namespace GPlatesModel
 		 *
 		 * Client code should not use this function!
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const
@@ -323,7 +323,7 @@ namespace GPlatesModel
 		 *
 		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
-		boost::intrusive_ptr<FeatureCollectionRevision> d_current_revision;
+		GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision> d_current_revision;
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
