@@ -80,7 +80,7 @@ public:
 
     ~non_null_intrusive_ptr()
     {
-        non_null_intrusive_ptr_release(p_);
+        intrusive_ptr_release(p_);
     }
 
 #if !defined(BOOST_NO_MEMBER_TEMPLATES) || defined(BOOST_MSVC6_MEMBER_TEMPLATES)
