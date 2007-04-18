@@ -28,9 +28,9 @@
 #ifndef GPLATES_MODEL_FEATURESTOREROOTHANDLE_H
 #define GPLATES_MODEL_FEATURESTOREROOTHANDLE_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "FeatureStoreRootRevision.h"
 #include "HandleContainerIterator.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
 {
@@ -116,11 +116,11 @@ namespace GPlatesModel
 		 * Create a new FeatureStoreRootHandle instance.
 		 */
 		static
-		const boost::intrusive_ptr<FeatureStoreRootHandle>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle>
 		create()
 		{
-			boost::intrusive_ptr<FeatureStoreRootHandle> ptr(
-					new FeatureStoreRootHandle());
+			GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle> ptr(
+					*(new FeatureStoreRootHandle()));
 			return ptr;
 		}
 
@@ -132,11 +132,11 @@ namespace GPlatesModel
 		 *
 		 * Note that this will perform a "shallow copy".
 		 */
-		const boost::intrusive_ptr<FeatureStoreRootHandle>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle>
 		clone() const
 		{
-			boost::intrusive_ptr<FeatureStoreRootHandle> dup(
-					new FeatureStoreRootHandle(*this));
+			GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle> dup(
+					*(new FeatureStoreRootHandle(*this)));
 			return dup;
 		}
 
@@ -245,7 +245,7 @@ namespace GPlatesModel
 		 * This is the overloading of this function for const FeatureStoreRootHandle
 		 * instances; it returns a pointer to a const FeatureStoreRootRevision instance.
 		 */
-		const boost::intrusive_ptr<const FeatureStoreRootRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<const FeatureStoreRootRevision>
 		current_revision() const
 		{
 			return d_current_revision;
@@ -269,7 +269,7 @@ namespace GPlatesModel
 		 * To switch the FeatureStoreRootRevision within this FeatureStoreRootHandle
 		 * instance, use the function @a set_current_revision below.
 		 */
-		const boost::intrusive_ptr<FeatureStoreRootRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision>
 		current_revision()
 		{
 			return d_current_revision;
@@ -284,7 +284,7 @@ namespace GPlatesModel
 		 */
 		void
 		set_current_revision(
-				boost::intrusive_ptr<FeatureStoreRootRevision> rev)
+				GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision> rev)
 		{
 			d_current_revision = rev;
 		}
@@ -294,7 +294,8 @@ namespace GPlatesModel
 		 *
 		 * Client code should not use this function!
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const
@@ -308,7 +309,8 @@ namespace GPlatesModel
 		 *
 		 * Client code should not use this function!
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const
@@ -328,7 +330,7 @@ namespace GPlatesModel
 		 *
 		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
-		boost::intrusive_ptr<FeatureStoreRootRevision> d_current_revision;
+		GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision> d_current_revision;
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
@@ -344,10 +346,11 @@ namespace GPlatesModel
 		 * instantiation of this type on the stack.
 		 *
 		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new intrusive_ptr reference to the new
-		 * duplicate.  Since initially the only reference to the new duplicate will be the
-		 * one returned by the 'clone' function, *before* the new intrusive_ptr is created,
-		 * the ref-count of the new FeatureStoreRootHandle instance should be zero.
+		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
+		 * the new duplicate.  Since initially the only reference to the new duplicate will
+		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
+		 * is created, the ref-count of the new FeatureStoreRootHandle instance should be
+		 * zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
 		 * copy-ctor, except that it should initialise the ref-count to zero.

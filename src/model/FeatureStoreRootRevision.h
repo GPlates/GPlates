@@ -31,6 +31,7 @@
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 #include "FeatureCollectionHandle.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesModel
@@ -92,20 +93,20 @@ namespace GPlatesModel
 		 * This collection contains no features.
 		 */
 		static
-		const boost::intrusive_ptr<FeatureStoreRootRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision>
 		create() {
-			boost::intrusive_ptr<FeatureStoreRootRevision> ptr(
-					new FeatureStoreRootRevision());
+			GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision> ptr(
+					*(new FeatureStoreRootRevision()));
 			return ptr;
 		}
 
 		/**
 		 * Create a duplicate of this FeatureStoreRootRevision instance.
 		 */
-		const boost::intrusive_ptr<FeatureStoreRootRevision>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision>
 		clone() const {
-			boost::intrusive_ptr<FeatureStoreRootRevision> dup(
-					new FeatureStoreRootRevision(*this));
+			GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision> dup(
+					*(new FeatureStoreRootRevision(*this)));
 			return dup;
 		}
 
@@ -239,7 +240,8 @@ namespace GPlatesModel
 		/**
 		 * Increment the reference-count of this instance.
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const {
@@ -250,7 +252,8 @@ namespace GPlatesModel
 		 * Decrement the reference-count of this instance, and return the new
 		 * reference-count.
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const {
@@ -284,10 +287,11 @@ namespace GPlatesModel
 		 * instantiation of this type on the stack.
 		 *
 		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new intrusive_ptr reference to the new
-		 * duplicate.  Since initially the only reference to the new duplicate will be the
-		 * one returned by the 'clone' function, *before* the new intrusive_ptr is created,
-		 * the ref-count of the new FeatureStoreRootRevision instance should be zero.
+		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
+		 * the new duplicate.  Since initially the only reference to the new duplicate will
+		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
+		 * is created, the ref-count of the new FeatureStoreRootRevision instance should be
+		 * zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
 		 * copy-ctor, except that it should initialise the ref-count to zero.

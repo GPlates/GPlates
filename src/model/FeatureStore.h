@@ -28,8 +28,8 @@
 #ifndef GPLATES_MODEL_FEATURESTORE_H
 #define GPLATES_MODEL_FEATURESTORE_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "FeatureStoreRootHandle.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
 {
@@ -56,10 +56,11 @@ namespace GPlatesModel
 		 * Create a new FeatureStore instance.
 		 */
 		static
-		const boost::intrusive_ptr<FeatureStore>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureStore>
 		create()
 		{
-			boost::intrusive_ptr<FeatureStore> ptr(new FeatureStore());
+			GPlatesContrib::non_null_intrusive_ptr<FeatureStore> ptr(
+					*(new FeatureStore()));
 			return ptr;
 		}
 
@@ -75,7 +76,7 @@ namespace GPlatesModel
 		 * provide a means to switch the FeatureStoreRootHandle instance within this
 		 * FeatureStore instance.  (This restriction is intentional.)
 		 */
-		const boost::intrusive_ptr<FeatureStoreRootHandle>
+		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle>
 		root()
 		{
 			return d_root;
@@ -86,7 +87,8 @@ namespace GPlatesModel
 		 *
 		 * Client code should not use this function!
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const
@@ -100,7 +102,8 @@ namespace GPlatesModel
 		 *
 		 * Client code should not use this function!
 		 *
-		 * This function is used by boost::intrusive_ptr.
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const
@@ -115,10 +118,8 @@ namespace GPlatesModel
 
 		/**
 		 * The feature store root contained within this feature store.
-		 *
-		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
-		boost::intrusive_ptr<FeatureStoreRootHandle> d_root;
+		GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle> d_root;
 
 		/**
 		 * This constructor should not be public, because we don't want to allow

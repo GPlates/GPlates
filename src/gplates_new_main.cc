@@ -389,7 +389,7 @@ traverse_recon_tree(
 const std::pair<GPlatesModel::FeatureStoreRootHandle::iterator,
 		GPlatesModel::FeatureStoreRootHandle::iterator>
 populate_feature_store(
-		boost::intrusive_ptr<GPlatesModel::FeatureStore> feature_store)
+		GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureStore> feature_store)
 {
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
@@ -704,7 +704,7 @@ output_reconstructions(
 int
 main()
 {
-	boost::intrusive_ptr<GPlatesModel::FeatureStore> feature_store =
+	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureStore> feature_store =
 			GPlatesModel::FeatureStore::create();
 
 	std::pair<GPlatesModel::FeatureStoreRootHandle::iterator,

@@ -321,7 +321,7 @@ create_total_recon_seq(
 
 GPlatesModel::FeatureStoreRootHandle::iterator
 create_feature_collection(
-		boost::intrusive_ptr<GPlatesModel::FeatureStoreRootHandle> feature_store_root)
+		GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureStoreRootHandle> feature_store_root)
 {
 	GPlatesModel::DummyTransactionHandle transaction;
 	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureCollectionHandle> feature_collection =
