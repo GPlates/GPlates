@@ -71,6 +71,18 @@ namespace GPlatesModel {
 
 	public:
 		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<FeatureHandle>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const FeatureHandle>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const FeatureHandle>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
@@ -83,13 +95,12 @@ namespace GPlatesModel {
 		 * feature ID @a feature_id_.
 		 */
 		static
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureHandle>
+		const non_null_ptr_type
 		create(
 				const FeatureType &feature_type_,
 				const FeatureId &feature_id_)
 		{
-			GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> ptr(
-					*(new FeatureHandle(feature_type_, feature_id_)));
+			non_null_ptr_type ptr(*(new FeatureHandle(feature_type_, feature_id_)));
 			return ptr;
 		}
 
@@ -98,11 +109,10 @@ namespace GPlatesModel {
 		 *
 		 * Note that this will perform a "shallow copy".
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureHandle>
+		const non_null_ptr_type
 		clone() const
 		{
-			GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> dup(
-					*(new FeatureHandle(*this)));
+			non_null_ptr_type dup(*(new FeatureHandle(*this)));
 			return dup;
 		}
 
@@ -180,7 +190,7 @@ namespace GPlatesModel {
 		 */
 		void
 		set_current_revision(
-				GPlatesContrib::non_null_intrusive_ptr<FeatureRevision> rev) {
+				FeatureRevision::non_null_ptr_type rev) {
 			d_current_revision = rev;
 		}
 
@@ -243,7 +253,7 @@ namespace GPlatesModel {
 		/**
 		 * The current revision of this feature.
 		 */
-		GPlatesContrib::non_null_intrusive_ptr<FeatureRevision> d_current_revision;
+		FeatureRevision::non_null_ptr_type d_current_revision;
 
 		/**
 		 * The type of this feature.
@@ -301,7 +311,7 @@ namespace GPlatesModel {
 		 * This is the overloading of this function for const FeatureHandle instances; it
 		 * returns a pointer to a const FeatureRevision instance.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<const FeatureRevision>
+		const FeatureRevision::non_null_ptr_to_const_type
 		current_revision() const
 		{
 			return d_current_revision;
@@ -322,7 +332,7 @@ namespace GPlatesModel {
 		 * To switch the FeatureRevision within this FeatureHandle instance, use the
 		 * function @a set_current_revision.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureRevision>
+		const FeatureRevision::non_null_ptr_type
 		current_revision()
 		{
 			return d_current_revision;

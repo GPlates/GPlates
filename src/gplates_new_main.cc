@@ -203,7 +203,7 @@ create_name(
 }
 
 
-const GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle>
+const GPlatesModel::FeatureHandle::non_null_ptr_type
 create_isochron(
 		const unsigned long &plate_id,
 		const double *points,
@@ -217,7 +217,7 @@ create_isochron(
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:Isochron");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
 			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
 
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> reconstruction_plate_id_container =
@@ -300,7 +300,7 @@ create_total_reconstruction_pole(
 }
 
 
-const GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle>
+const GPlatesModel::FeatureHandle::non_null_ptr_type
 create_total_recon_seq(
 		const unsigned long &fixed_plate_id,
 		const unsigned long &moving_plate_id,
@@ -310,7 +310,7 @@ create_total_recon_seq(
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
 			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
 
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> total_reconstruction_pole_container =
@@ -389,7 +389,7 @@ traverse_recon_tree(
 const std::pair<GPlatesModel::FeatureStoreRootHandle::iterator,
 		GPlatesModel::FeatureStoreRootHandle::iterator>
 populate_feature_store(
-		GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureStore> feature_store)
+		GPlatesModel::FeatureStore::non_null_ptr_type feature_store)
 {
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
@@ -419,7 +419,7 @@ populate_feature_store(
 	UnicodeString name1("Izzy the Isochron");
 	UnicodeString codespace_of_name1("EarthByte");
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> isochron1 =
+	GPlatesModel::FeatureHandle::non_null_ptr_type isochron1 =
 			create_isochron(plate_id1, points1, num_points1, geo_time_instant_begin1,
 			geo_time_instant_end1, description1, name1, codespace_of_name1);
 
@@ -447,7 +447,7 @@ populate_feature_store(
 	UnicodeString name2("Ozzy the Isochron");
 	UnicodeString codespace_of_name2("EarthByte");
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> isochron2 =
+	GPlatesModel::FeatureHandle::non_null_ptr_type isochron2 =
 			create_isochron(plate_id2, points2, num_points2, geo_time_instant_begin2,
 			geo_time_instant_end2, description2, name2, codespace_of_name2);
 
@@ -479,11 +479,11 @@ populate_feature_store(
 	UnicodeString name3("Uzi the Isochron");
 	UnicodeString codespace_of_name3("EarthByte");
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> isochron3 =
+	GPlatesModel::FeatureHandle::non_null_ptr_type isochron3 =
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureCollectionHandle> isochrons =
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type isochrons =
 			GPlatesModel::FeatureCollectionHandle::create();
 
 	// FIXME:  Should the next four operations occur in any particular order?  Is there any
@@ -537,7 +537,7 @@ populate_feature_store(
 	};
 	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq1 =
+	GPlatesModel::FeatureHandle::non_null_ptr_type total_recon_seq1 =
 			create_total_recon_seq(fixed_plate_id1, moving_plate_id1, five_tuples1,
 			num_five_tuples1);
 
@@ -551,7 +551,7 @@ populate_feature_store(
 	};
 	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq2 =
+	GPlatesModel::FeatureHandle::non_null_ptr_type total_recon_seq2 =
 			create_total_recon_seq(fixed_plate_id2, moving_plate_id2, five_tuples2,
 			num_five_tuples2);
 
@@ -566,11 +566,11 @@ populate_feature_store(
 	};
 	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> total_recon_seq3 =
+	GPlatesModel::FeatureHandle::non_null_ptr_type total_recon_seq3 =
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureCollectionHandle> total_recon_seqs =
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type total_recon_seqs =
 			GPlatesModel::FeatureCollectionHandle::create();
 
 	GPlatesModel::DummyTransactionHandle transaction_trs_coll;
@@ -704,7 +704,7 @@ output_reconstructions(
 int
 main()
 {
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureStore> feature_store =
+	GPlatesModel::FeatureStore::non_null_ptr_type feature_store =
 			GPlatesModel::FeatureStore::create();
 
 	std::pair<GPlatesModel::FeatureStoreRootHandle::iterator,

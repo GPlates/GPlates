@@ -31,7 +31,7 @@
 
 GPlatesModel::FeatureStoreRootRevision::feature_collection_container_type::size_type
 GPlatesModel::FeatureStoreRootRevision::append_feature_collection(
-		GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle> new_feature_collection,
+		FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
 		DummyTransactionHandle &transaction)
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.

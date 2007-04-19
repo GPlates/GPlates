@@ -74,6 +74,20 @@ namespace GPlatesModel
 	{
 	public:
 		/**
+		 * A convenience typedef for 
+		 * PlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const FeatureCollectionRevision>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const FeatureCollectionRevision>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
@@ -92,20 +106,18 @@ namespace GPlatesModel
 		 * This collection contains no features.
 		 */
 		static
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision>
+		const non_null_ptr_type
 		create() {
-			GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision> ptr(
-					*(new FeatureCollectionRevision()));
+			non_null_ptr_type ptr(*(new FeatureCollectionRevision()));
 			return ptr;
 		}
 
 		/**
 		 * Create a duplicate of this FeatureCollectionRevision instance.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision>
+		const non_null_ptr_type
 		clone() const {
-			GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision> dup(
-					*(new FeatureCollectionRevision(*this)));
+			non_null_ptr_type dup(*(new FeatureCollectionRevision(*this)));
 			return dup;
 		}
 
@@ -217,7 +229,7 @@ namespace GPlatesModel
 		 */
 		feature_collection_type::size_type
 		append_feature(
-				GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> new_feature,
+				FeatureHandle::non_null_ptr_type new_feature,
 				DummyTransactionHandle &transaction);
 
 		/**

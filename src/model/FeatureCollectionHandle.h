@@ -71,6 +71,20 @@ namespace GPlatesModel
 	{
 	public:
 		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const FeatureCollectionHandle>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const FeatureCollectionHandle>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * The type of this class.
 		 *
 		 * This definition is used for template magic.
@@ -118,11 +132,10 @@ namespace GPlatesModel
 		 * Create a new FeatureCollectionHandle instance.
 		 */
 		static
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle>
+		const non_null_ptr_type
 		create()
 		{
-			GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle> ptr(
-					*(new FeatureCollectionHandle()));
+			non_null_ptr_type ptr(*(new FeatureCollectionHandle()));
 			return ptr;
 		}
 
@@ -134,11 +147,10 @@ namespace GPlatesModel
 		 *
 		 * Note that this will perform a "shallow copy".
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle>
+		const non_null_ptr_type
 		clone() const
 		{
-			GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle> dup(
-					*(new FeatureCollectionHandle(*this)));
+			non_null_ptr_type dup(*(new FeatureCollectionHandle(*this)));
 			return dup;
 		}
 
@@ -192,7 +204,7 @@ namespace GPlatesModel
 		 */
 		const iterator
 		append_feature(
-				GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> new_feature,
+				FeatureHandle::non_null_ptr_type new_feature,
 				DummyTransactionHandle &transaction)
 		{
 			FeatureCollectionRevision::feature_collection_type::size_type new_index =
@@ -240,7 +252,7 @@ namespace GPlatesModel
 		 * This is the overloading of this function for const FeatureCollectionHandle
 		 * instances; it returns a pointer to a const FeatureCollectionRevision instance.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<const FeatureCollectionRevision>
+		const FeatureCollectionRevision::non_null_ptr_to_const_type
 		current_revision() const
 		{
 			return d_current_revision;
@@ -264,7 +276,7 @@ namespace GPlatesModel
 		 * To switch the FeatureCollectionRevision within this FeatureCollectionHandle
 		 * instance, use the function @a set_current_revision below.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision>
+		const FeatureCollectionRevision::non_null_ptr_type
 		current_revision()
 		{
 			return d_current_revision;
@@ -277,7 +289,7 @@ namespace GPlatesModel
 		 */
 		void
 		set_current_revision(
-				GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision> rev)
+				FeatureCollectionRevision::non_null_ptr_type rev)
 		{
 			d_current_revision = rev;
 		}
@@ -320,10 +332,8 @@ namespace GPlatesModel
 
 		/**
 		 * The current revision of this feature collection.
-		 *
-		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
-		GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionRevision> d_current_revision;
+		FeatureCollectionRevision::non_null_ptr_type d_current_revision;
 
 		/**
 		 * This constructor should not be public, because we don't want to allow

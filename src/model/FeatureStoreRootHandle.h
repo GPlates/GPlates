@@ -65,6 +65,20 @@ namespace GPlatesModel
 	{
 	public:
 		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const FeatureStoreRootHandle>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const FeatureStoreRootHandle>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * The type of this class.
 		 *
 		 * This definition is used for template magic.
@@ -116,11 +130,10 @@ namespace GPlatesModel
 		 * Create a new FeatureStoreRootHandle instance.
 		 */
 		static
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle>
+		const non_null_ptr_type
 		create()
 		{
-			GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle> ptr(
-					*(new FeatureStoreRootHandle()));
+			non_null_ptr_type ptr(*(new FeatureStoreRootHandle()));
 			return ptr;
 		}
 
@@ -132,11 +145,10 @@ namespace GPlatesModel
 		 *
 		 * Note that this will perform a "shallow copy".
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle>
+		const non_null_ptr_type
 		clone() const
 		{
-			GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle> dup(
-					*(new FeatureStoreRootHandle(*this)));
+			non_null_ptr_type dup(*(new FeatureStoreRootHandle(*this)));
 			return dup;
 		}
 
@@ -194,7 +206,7 @@ namespace GPlatesModel
 		 */
 		const iterator
 		append_feature_collection(
-				GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle> new_feature_collection,
+				FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
 				DummyTransactionHandle &transaction)
 		{
 			FeatureStoreRootRevision::feature_collection_container_type::size_type new_index =
@@ -245,7 +257,7 @@ namespace GPlatesModel
 		 * This is the overloading of this function for const FeatureStoreRootHandle
 		 * instances; it returns a pointer to a const FeatureStoreRootRevision instance.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<const FeatureStoreRootRevision>
+		const FeatureStoreRootRevision::non_null_ptr_to_const_type
 		current_revision() const
 		{
 			return d_current_revision;
@@ -269,7 +281,7 @@ namespace GPlatesModel
 		 * To switch the FeatureStoreRootRevision within this FeatureStoreRootHandle
 		 * instance, use the function @a set_current_revision below.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision>
+		const FeatureStoreRootRevision::non_null_ptr_type
 		current_revision()
 		{
 			return d_current_revision;
@@ -279,12 +291,10 @@ namespace GPlatesModel
 		 * Set the current revision of this feature collection to @a rev.
 		 *
 		 * Client code should not need to access the revision directly!
-		 *
-		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
 		void
 		set_current_revision(
-				GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision> rev)
+				FeatureStoreRootRevision::non_null_ptr_type rev)
 		{
 			d_current_revision = rev;
 		}
@@ -327,10 +337,8 @@ namespace GPlatesModel
 
 		/**
 		 * The current revision of this feature store root.
-		 *
-		 * FIXME:  This pointer should not be allowed to be NULL.
 		 */
-		GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootRevision> d_current_revision;
+		FeatureStoreRootRevision::non_null_ptr_type d_current_revision;
 
 		/**
 		 * This constructor should not be public, because we don't want to allow

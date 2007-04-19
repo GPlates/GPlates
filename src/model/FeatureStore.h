@@ -48,6 +48,18 @@ namespace GPlatesModel
 	{
 	public:
 		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<FeatureStore>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<FeatureStore> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const FeatureStore>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const FeatureStore>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
@@ -56,11 +68,10 @@ namespace GPlatesModel
 		 * Create a new FeatureStore instance.
 		 */
 		static
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureStore>
+		const non_null_ptr_type
 		create()
 		{
-			GPlatesContrib::non_null_intrusive_ptr<FeatureStore> ptr(
-					*(new FeatureStore()));
+			non_null_ptr_type ptr(*(new FeatureStore()));
 			return ptr;
 		}
 
@@ -76,7 +87,7 @@ namespace GPlatesModel
 		 * provide a means to switch the FeatureStoreRootHandle instance within this
 		 * FeatureStore instance.  (This restriction is intentional.)
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle>
+		const FeatureStoreRootHandle::non_null_ptr_type
 		root()
 		{
 			return d_root;
@@ -119,7 +130,7 @@ namespace GPlatesModel
 		/**
 		 * The feature store root contained within this feature store.
 		 */
-		GPlatesContrib::non_null_intrusive_ptr<FeatureStoreRootHandle> d_root;
+		FeatureStoreRootHandle::non_null_ptr_type d_root;
 
 		/**
 		 * This constructor should not be public, because we don't want to allow

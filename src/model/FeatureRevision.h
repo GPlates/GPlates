@@ -75,6 +75,19 @@ namespace GPlatesModel {
 
 	public:
 		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<FeatureRevision>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<FeatureRevision> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const FeatureRevision>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const FeatureRevision>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
@@ -92,10 +105,9 @@ namespace GPlatesModel {
 		 * Create a new FeatureRevision instance with a default-constructed revision ID.
 		 */
 		static
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureRevision>
+		const non_null_ptr_type
 		create() {
-			GPlatesContrib::non_null_intrusive_ptr<FeatureRevision> ptr(
-					*(new FeatureRevision()));
+			non_null_ptr_type ptr(*(new FeatureRevision()));
 			return ptr;
 		}
 
@@ -103,21 +115,19 @@ namespace GPlatesModel {
 		 * Create a new FeatureRevision instance with a revision ID @a revision_id_.
 		 */
 		static
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureRevision>
+		const non_null_ptr_type
 		create(
 				const RevisionId &revision_id_) {
-			GPlatesContrib::non_null_intrusive_ptr<FeatureRevision> ptr(
-					*(new FeatureRevision(revision_id_)));
+			non_null_ptr_type ptr(*(new FeatureRevision(revision_id_)));
 			return ptr;
 		}
 
 		/**
 		 * Create a duplicate of this FeatureRevision instance.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<FeatureRevision>
+		const non_null_ptr_type
 		clone() const {
-			GPlatesContrib::non_null_intrusive_ptr<FeatureRevision> dup(
-					*(new FeatureRevision(*this)));
+			non_null_ptr_type dup(*(new FeatureRevision(*this)));
 			return dup;
 		}
 

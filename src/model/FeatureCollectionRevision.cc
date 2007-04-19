@@ -31,7 +31,7 @@
 
 GPlatesModel::FeatureCollectionRevision::feature_collection_type::size_type
 GPlatesModel::FeatureCollectionRevision::append_feature(
-		GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> new_feature,
+		FeatureHandle::non_null_ptr_type new_feature,
 		DummyTransactionHandle &transaction)
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.

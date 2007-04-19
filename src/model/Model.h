@@ -51,7 +51,7 @@ namespace GPlatesModel
 				const double &time,
 				unsigned long root);
 	private:
-		GPlatesContrib::non_null_intrusive_ptr<FeatureStore> d_feature_store;
+		FeatureStore::non_null_ptr_type d_feature_store;
 		FeatureStoreRootHandle::iterator d_isochrons;
 		FeatureStoreRootHandle::iterator d_total_recon_seqs;
 	};

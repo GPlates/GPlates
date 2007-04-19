@@ -194,7 +194,7 @@ create_name(
 }
 
 
-const GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle>
+const GPlatesModel::FeatureHandle::non_null_ptr_type
 create_isochron(
 		const unsigned long &plate_id,
 		const double *points,
@@ -208,7 +208,7 @@ create_isochron(
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:Isochron");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
 			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
 
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> reconstruction_plate_id_container =
@@ -291,7 +291,7 @@ create_total_reconstruction_pole(
 }
 
 
-const GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle>
+const GPlatesModel::FeatureHandle::non_null_ptr_type
 create_total_recon_seq(
 		const unsigned long &fixed_plate_id,
 		const unsigned long &moving_plate_id,
@@ -301,7 +301,7 @@ create_total_recon_seq(
 	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureHandle> feature_handle =
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
 			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
 
 	boost::intrusive_ptr<GPlatesModel::PropertyContainer> total_reconstruction_pole_container =
@@ -321,10 +321,10 @@ create_total_recon_seq(
 
 GPlatesModel::FeatureStoreRootHandle::iterator
 create_feature_collection(
-		GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureStoreRootHandle> feature_store_root)
+		GPlatesModel::FeatureStoreRootHandle::non_null_ptr_type feature_store_root)
 {
 	GPlatesModel::DummyTransactionHandle transaction;
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesModel::FeatureCollectionHandle> feature_collection =
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
 			GPlatesModel::FeatureCollectionHandle::create();
 	return feature_store_root->append_feature_collection(feature_collection, transaction);
 }
@@ -355,7 +355,7 @@ GPlatesModel::Model::Model():
 	UnicodeString name1("Izzy the Isochron");
 	UnicodeString codespace_of_name1("EarthByte");
 
-	GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> isochron1 =
+	FeatureHandle::non_null_ptr_type isochron1 =
 			create_isochron(plate_id1, points1, num_points1, geo_time_instant_begin1,
 			geo_time_instant_end1, description1, name1, codespace_of_name1);
 
@@ -377,7 +377,7 @@ GPlatesModel::Model::Model():
 	UnicodeString name2("Ozzy the Isochron");
 	UnicodeString codespace_of_name2("EarthByte");
 
-	GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> isochron2 =
+	FeatureHandle::non_null_ptr_type isochron2 =
 			create_isochron(plate_id2, points2, num_points2, geo_time_instant_begin2,
 			geo_time_instant_end2, description2, name2, codespace_of_name2);
 
@@ -401,7 +401,7 @@ GPlatesModel::Model::Model():
 	UnicodeString name3("Uzi the Isochron");
 	UnicodeString codespace_of_name3("EarthByte");
 
-	GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> isochron3 =
+	FeatureHandle::non_null_ptr_type isochron3 =
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
@@ -428,7 +428,7 @@ GPlatesModel::Model::Model():
 	};
 	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
 
-	GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> total_recon_seq1 =
+	FeatureHandle::non_null_ptr_type total_recon_seq1 =
 			create_total_recon_seq(fixed_plate_id1, moving_plate_id1, five_tuples1,
 			num_five_tuples1);
 
@@ -442,7 +442,7 @@ GPlatesModel::Model::Model():
 	};
 	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
 
-	GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> total_recon_seq2 =
+	FeatureHandle::non_null_ptr_type total_recon_seq2 =
 			create_total_recon_seq(fixed_plate_id2, moving_plate_id2, five_tuples2,
 			num_five_tuples2);
 
@@ -457,7 +457,7 @@ GPlatesModel::Model::Model():
 	};
 	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
 
-	GPlatesContrib::non_null_intrusive_ptr<FeatureHandle> total_recon_seq3 =
+	FeatureHandle::non_null_ptr_type total_recon_seq3 =
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
