@@ -92,10 +92,9 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 	// were to create an iterator which performed the following transformation for us
 	// automatically, but (i) that's probably not the most efficient use of our time right now;
 	// (ii) it's file I/O, it's slow anyway; and (iii) we can cut it down to a single memory
-	// allocation if we make the vector a static local variable and reserve the size of the
-	// vector in advance.
+	// allocation if we reserve the size of the vector in advance.
 	boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> polyline_ptr = gml_line_string.polyline();
-	static std::vector<double> pos_list;
+	std::vector<double> pos_list;
 	// Reserve enough space for the coordinates, to avoid the need to reallocate.
 	//
 	// number of coords = 
