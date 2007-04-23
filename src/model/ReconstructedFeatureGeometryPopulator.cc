@@ -167,8 +167,9 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_inline_property_container(
 		InlinePropertyContainer &inline_property_container)
 {
-	for (GPlatesModel::InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
-			iter != inline_property_container.end(); ++iter) {
+	InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
+	InlinePropertyContainer::const_iterator end = inline_property_container.end(); 
+	for ( ; iter != end; ++iter) {
 		(*iter)->accept_visitor(*this);
 	}
 }

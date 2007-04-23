@@ -290,13 +290,16 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_time_sample(
 void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_inline_property_container(
 		const GPlatesModel::InlinePropertyContainer &inline_property_container) {
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, inline_property_container.property_name().get(),
+	XmlOutputInterface::ElementPairStackFrame f1(d_output,
+			inline_property_container.property_name().get(),
 			inline_property_container.xml_attributes().begin(),
 			inline_property_container.xml_attributes().end());
 
-	for (GPlatesModel::InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
-			iter != inline_property_container.end(); ++iter) {
-		// FIXME: This should not be NULL.
+	GPlatesModel::InlinePropertyContainer::const_iterator iter =
+			inline_property_container.begin(); 
+	GPlatesModel::InlinePropertyContainer::const_iterator end =
+			inline_property_container.end(); 
+	for ( ; iter != end; ++iter) {
 		(*iter)->accept_visitor(*this);
 	}
 }
