@@ -33,10 +33,11 @@
 #include "FeatureType.h"
 #include "ConstFeatureVisitor.h"
 #include "FeatureVisitor.h"
+#include "HandleContainerIterator.h"
 #include "contrib/non_null_intrusive_ptr.h"
 
-namespace GPlatesModel {
-
+namespace GPlatesModel
+{
 	/**
 	 * A feature handle acts as a persistent handle to the revisioned content of a conceptual
 	 * feature.
@@ -67,8 +68,8 @@ namespace GPlatesModel {
 	 * The feature handle also contains the properties of a feature which can never change: the
 	 * feature type and the feature ID.
 	 */
-	class FeatureHandle {
-
+	class FeatureHandle
+	{
 	public:
 		/**
 		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<FeatureHandle>.
@@ -123,7 +124,8 @@ namespace GPlatesModel {
 		 * be changed.
 		 */
 		const FeatureType &
-		feature_type() const {
+		feature_type() const
+		{
 			return d_feature_type;
 		}
 
@@ -134,7 +136,8 @@ namespace GPlatesModel {
 		 * changed.
 		 */
 		const FeatureId &
-		feature_id() const {
+		feature_id() const
+		{
 			return d_feature_id;
 		}
 
@@ -190,7 +193,8 @@ namespace GPlatesModel {
 		 */
 		void
 		set_current_revision(
-				FeatureRevision::non_null_ptr_type rev) {
+				FeatureRevision::non_null_ptr_type rev)
+		{
 			d_current_revision = rev;
 		}
 
@@ -202,7 +206,8 @@ namespace GPlatesModel {
 		 */
 		void
 		accept_visitor(
-				ConstFeatureVisitor &visitor) const {
+				ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_feature_handle(*this);
 		}
 
@@ -214,7 +219,8 @@ namespace GPlatesModel {
 		 */
 		void
 		accept_visitor(
-				FeatureVisitor &visitor) {
+				FeatureVisitor &visitor)
+		{
 			visitor.visit_feature_handle(*this);
 		}
 
@@ -275,7 +281,8 @@ namespace GPlatesModel {
 			d_ref_count(0),
 			d_current_revision(FeatureRevision::create()),
 			d_feature_type(feature_type_),
-			d_feature_id(feature_id_) {  }
+			d_feature_id(feature_id_)
+		{  }
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
@@ -295,7 +302,8 @@ namespace GPlatesModel {
 			d_ref_count(0),
 			d_current_revision(other.d_current_revision),
 			d_feature_type(other.d_feature_type),
-			d_feature_id(other.d_feature_id) {  }
+			d_feature_id(other.d_feature_id)
+		{  }
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

@@ -35,8 +35,8 @@
 #include "contrib/non_null_intrusive_ptr.h"
 
 
-namespace GPlatesModel {
-
+namespace GPlatesModel
+{
 	/**
 	 * A feature revision contains the revisioned content of a conceptual feature.
 	 *
@@ -71,8 +71,8 @@ namespace GPlatesModel {
 	 * The feature revision contains all the properties of a feature, except those which can
 	 * never change: the feature type and the feature ID.
 	 */
-	class FeatureRevision {
-
+	class FeatureRevision
+	{
 	public:
 		/**
 		 * A convenience typedef for
@@ -106,7 +106,8 @@ namespace GPlatesModel {
 		 */
 		static
 		const non_null_ptr_type
-		create() {
+		create()
+		{
 			non_null_ptr_type ptr(*(new FeatureRevision()));
 			return ptr;
 		}
@@ -117,7 +118,8 @@ namespace GPlatesModel {
 		static
 		const non_null_ptr_type
 		create(
-				const RevisionId &revision_id_) {
+				const RevisionId &revision_id_)
+		{
 			non_null_ptr_type ptr(*(new FeatureRevision(revision_id_)));
 			return ptr;
 		}
@@ -126,7 +128,8 @@ namespace GPlatesModel {
 		 * Create a duplicate of this FeatureRevision instance.
 		 */
 		const non_null_ptr_type
-		clone() const {
+		clone() const
+		{
 			non_null_ptr_type dup(*(new FeatureRevision(*this)));
 			return dup;
 		}
@@ -138,7 +141,8 @@ namespace GPlatesModel {
 		 * be changed.
 		 */
 		const RevisionId &
-		revision_id() const {
+		revision_id() const
+		{
 			return d_revision_id;
 		}
 
@@ -154,7 +158,8 @@ namespace GPlatesModel {
 		 * pointers)?  (For consistency with the non-const overload...)
 		 */
 		const property_container_collection_type &
-		properties() const {
+		properties() const
+		{
 			return d_properties;
 		}
 
@@ -171,7 +176,8 @@ namespace GPlatesModel {
 		 * that revisioning is correctly handled...
 		 */
 		property_container_collection_type &
-		properties() {
+		properties()
+		{
 			return d_properties;
 		}
 
@@ -182,7 +188,8 @@ namespace GPlatesModel {
 		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		void
-		increment_ref_count() const {
+		increment_ref_count() const
+		{
 			++d_ref_count;
 		}
 
@@ -194,7 +201,8 @@ namespace GPlatesModel {
 		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
 		ref_count_type
-		decrement_ref_count() const {
+		decrement_ref_count() const
+		{
 			return --d_ref_count;
 		}
 
@@ -272,7 +280,8 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_add_ref(
-			const FeatureRevision *p) {
+			const FeatureRevision *p)
+	{
 		p->increment_ref_count();
 	}
 
@@ -280,7 +289,8 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_release(
-			const FeatureRevision *p) {
+			const FeatureRevision *p)
+	{
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}
