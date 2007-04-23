@@ -142,10 +142,7 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_orientable_curve(
 		GmlOrientableCurve &gml_orientable_curve)
 {
-	// FIXME:  Should we throw an exception if this value is NULL?
-	if (gml_orientable_curve.base_curve() != NULL) {
-		gml_orientable_curve.base_curve()->accept_visitor(*this);
-	}
+	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
 
@@ -153,9 +150,7 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_constant_value(
 		GpmlConstantValue &gpml_constant_value)
 {
-	if (gpml_constant_value.value() != NULL) {
-		gpml_constant_value.value()->accept_visitor(*this);
-	}
+	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 
@@ -174,7 +169,6 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_inline_property_conta
 {
 	for (GPlatesModel::InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
 			iter != inline_property_container.end(); ++iter) {
-		// FIXME: This should not be NULL.
 		(*iter)->accept_visitor(*this);
 	}
 }

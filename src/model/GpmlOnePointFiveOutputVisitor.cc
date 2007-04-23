@@ -127,10 +127,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_orientable_curve(
 			gml_orientable_curve.xml_attributes().begin(),
 			gml_orientable_curve.xml_attributes().end());
 	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:baseCurve");
-	// FIXME:  Should we throw an exception if this value is NULL?
-	if (gml_orientable_curve.base_curve() != NULL) {
-		gml_orientable_curve.base_curve()->accept_visitor(*this);
-	}
+	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
 
@@ -139,13 +136,11 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_point(
 		const GPlatesModel::GmlPoint &gml_point) {
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:Point");
 	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:pos");
-	// FIXME:  Should we throw an exception if this value is NULL?
-	if (gml_point.point() != NULL) {
-		const GPlatesMaths::PointOnSphere &pos = *gml_point.point();
-		GPlatesMaths::LatLonPoint llp =
-				GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(pos);
-		d_output.write_line_of_decimal_duple_content(llp.longitude().dval(), llp.latitude().dval());
-	}
+
+	const GPlatesMaths::PointOnSphere &pos = *gml_point.point();
+	GPlatesMaths::LatLonPoint llp =
+			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(pos);
+	d_output.write_line_of_decimal_duple_content(llp.longitude().dval(), llp.latitude().dval());
 }
 
 
@@ -174,17 +169,11 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_time_period(
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:TimePeriod");
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:begin");
-		// FIXME:  Should we throw an exception if this value is NULL?
-		if (gml_time_period.begin() != NULL) {
-			gml_time_period.begin()->accept_visitor(*this);
-		}
+		gml_time_period.begin()->accept_visitor(*this);
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:end");
-		// FIXME:  Should we throw an exception if this value is NULL?
-		if (gml_time_period.end() != NULL) {
-			gml_time_period.end()->accept_visitor(*this);
-		}
+		gml_time_period.end()->accept_visitor(*this);
 	}
 }
 
@@ -195,10 +184,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_constant_value(
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:ConstantValue");
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:value");
-		// FIXME:  Should we throw an exception if this value is NULL?
-		if (gpml_constant_value.value() != NULL) {
-			gpml_constant_value.value()->accept_visitor(*this);
-		}
+		gpml_constant_value.value()->accept_visitor(*this);
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
@@ -257,6 +243,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_irregular_sampling(
 			iter->accept_visitor(*this);
 		}
 	}
+	// The interpolation function is optional.
 	if (gpml_irregular_sampling.interpolation_function() != NULL) {
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:interpolationFunction");
 		gpml_irregular_sampling.interpolation_function()->accept_visitor(*this);
@@ -281,21 +268,15 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_time_sample(
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:TimeSample");
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:value");
-		// FIXME:  Should we throw an exception if this value is NULL?
-		if (gpml_time_sample.value() != NULL) {
-			gpml_time_sample.value()->accept_visitor(*this);
-		}
+		gpml_time_sample.value()->accept_visitor(*this);
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:validTime");
-		// FIXME:  Should we throw an exception if this value is NULL?
-		if (gpml_time_sample.valid_time() != NULL) {
-			gpml_time_sample.valid_time()->accept_visitor(*this);
-		}
+		gpml_time_sample.valid_time()->accept_visitor(*this);
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:description");
-		// At least we know that this one *is* allowed to be optional...
+		// The description is optional.
 		if (gpml_time_sample.description() != NULL) {
 			gpml_time_sample.description()->accept_visitor(*this);
 		}

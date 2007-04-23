@@ -310,10 +310,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_time_sample(
 		GpmlTimeSample &gpml_time_sample) {
-	// FIXME:  Should we throw an exception if this value is NULL?
-	if (gpml_time_sample.value() != NULL) {
-		gpml_time_sample.value()->accept_visitor(*this);
-	}
+	gpml_time_sample.value()->accept_visitor(*this);
 }
 
 
@@ -322,7 +319,6 @@ GPlatesModel::ReconstructionTreePopulator::visit_inline_property_container(
 		InlinePropertyContainer &inline_property_container) {
 	for (GPlatesModel::InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
 			iter != inline_property_container.end(); ++iter) {
-		// FIXME: This should not be NULL.
 		(*iter)->accept_visitor(*this);
 	}
 }
