@@ -42,6 +42,20 @@ namespace GPlatesModel {
 
 	public:
 
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<GpmlIrregularSampling>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlIrregularSampling>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlIrregularSampling>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlIrregularSampling>
+				non_null_ptr_to_const_type;
+
 		virtual
 		~GpmlIrregularSampling() {  }
 
@@ -51,19 +65,20 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GpmlIrregularSampling>
+		const non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeSample> &time_samples_,
-				boost::intrusive_ptr<GpmlInterpolationFunction> interp_func,
+				GpmlInterpolationFunction::non_null_ptr_type interp_func,
 				const TemplateTypeParameterType &value_type_) {
-			boost::intrusive_ptr<GpmlIrregularSampling> ptr(new GpmlIrregularSampling(time_samples_, interp_func, value_type_));
+			non_null_ptr_type ptr(
+					*(new GpmlIrregularSampling(time_samples_, interp_func, value_type_)));
 			return ptr;
 		}
 
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GpmlIrregularSampling(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GpmlIrregularSampling(*this)));
 			return dup;
 		}
 
@@ -83,7 +98,7 @@ namespace GPlatesModel {
 			return d_time_samples;
 		}
 
-		const boost::intrusive_ptr<const GpmlInterpolationFunction>
+		const GpmlInterpolationFunction::non_null_ptr_to_const_type
 		interpolation_function() const {
 			return d_interpolation_function;
 		}
@@ -99,14 +114,14 @@ namespace GPlatesModel {
 		//
 		// (This overload is provided to allow the referenced GpmlInterpolationFunction
 		// instance to accept a FeatureVisitor instance.)
-		const boost::intrusive_ptr<GpmlInterpolationFunction>
+		const GpmlInterpolationFunction::non_null_ptr_type
 		interpolation_function() {
 			return d_interpolation_function;
 		}
 
 		void
 		set_interpolation_function(
-				boost::intrusive_ptr<GpmlInterpolationFunction> i) {
+				GpmlInterpolationFunction::non_null_ptr_type i) {
 			d_interpolation_function = i;
 		}
 
@@ -149,7 +164,7 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		GpmlIrregularSampling(
 				const std::vector<GpmlTimeSample> &time_samples_,
-				boost::intrusive_ptr<GpmlInterpolationFunction> interp_func,
+				GpmlInterpolationFunction::non_null_ptr_type interp_func,
 				const TemplateTypeParameterType &value_type_):
 			PropertyValue(),
 			d_time_samples(time_samples_),
@@ -173,8 +188,7 @@ namespace GPlatesModel {
 	private:
 
 		std::vector<GpmlTimeSample> d_time_samples;
-		// FIXME:  Is it valid for this pointer to be NULL?  I don't think so...
-		boost::intrusive_ptr<GpmlInterpolationFunction> d_interpolation_function;
+		GpmlInterpolationFunction::non_null_ptr_type d_interpolation_function;
 		TemplateTypeParameterType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow

@@ -140,14 +140,14 @@ GPlatesModel::ReconstructionTree::build_tree(
 
 const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
 GPlatesModel::ReconstructionTree::reconstruct_point(
-		boost::intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
+		GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
 		GpmlPlateId::integer_plate_id_type plate_id_of_feature,
 		GpmlPlateId::integer_plate_id_type root_plate_id)
 {
 	// If the requested plate ID is the root of the reconstruction tree, return a copy of the
 	// point (as if the point were reconstructed using the identity rotation!).
 	if (plate_id_of_feature == root_plate_id) {
-		return p->clone_on_heap();
+		return get_intrusive_ptr(p->clone_on_heap());
 	}
 
 	std::pair<map_iterator, map_iterator> range =
@@ -166,27 +166,27 @@ GPlatesModel::ReconstructionTree::reconstruct_point(
 		const GPlatesMaths::FiniteRotation &finite_rotation =
 				range.first->second->composed_absolute_rotation();
 
-		return (finite_rotation * p);
+		return get_intrusive_ptr(finite_rotation * p);
 	} else {
 		// Exactly one match.  Ideal!
 		const GPlatesMaths::FiniteRotation &finite_rotation =
 				range.first->second->composed_absolute_rotation();
 
-		return (finite_rotation * p);
+		return get_intrusive_ptr(finite_rotation * p);
 	}
 }
 
 
 const boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
 GPlatesModel::ReconstructionTree::reconstruct_polyline(
-		boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
+		GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
 		GpmlPlateId::integer_plate_id_type plate_id_of_feature,
 		GpmlPlateId::integer_plate_id_type root_plate_id)
 {
 	// If the requested plate ID is the root of the reconstruction tree, return a copy of the
 	// polyline (as if the polyline were reconstructed using the identity rotation!).
 	if (plate_id_of_feature == root_plate_id) {
-		return p->clone_on_heap();
+		return get_intrusive_ptr(p->clone_on_heap());
 	}
 
 	std::pair<map_iterator, map_iterator> range =
@@ -205,13 +205,13 @@ GPlatesModel::ReconstructionTree::reconstruct_polyline(
 		const GPlatesMaths::FiniteRotation &finite_rotation =
 				range.first->second->composed_absolute_rotation();
 
-		return (finite_rotation * p);
+		return get_intrusive_ptr(finite_rotation * p);
 	} else {
 		// Exactly one match.  Ideal!
 		const GPlatesMaths::FiniteRotation &finite_rotation =
 				range.first->second->composed_absolute_rotation();
 
-		return (finite_rotation * p);
+		return get_intrusive_ptr(finite_rotation * p);
 	}
 }
 

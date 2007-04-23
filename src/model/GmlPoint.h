@@ -57,6 +57,18 @@ namespace GPlatesModel
 	{
 	public:
 
+		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GmlPoint>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GmlPoint> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GmlPoint>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlPoint>
+				non_null_ptr_to_const_type;
+
 		virtual
 		~GmlPoint()
 		{  }
@@ -75,7 +87,7 @@ namespace GPlatesModel
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GmlPoint>
+		const non_null_ptr_type
 		create(
 				const std::pair<double, double> &gml_pos);
 
@@ -83,7 +95,7 @@ namespace GPlatesModel
 		 * Create a GmlPoint instance from a GPlatesMaths::PointOnSphere instance.
 		 */
 		static
-		const boost::intrusive_ptr<GmlPoint>
+		const non_null_ptr_type
 		create(
 				const GPlatesMaths::PointOnSphere &p);
 
@@ -91,10 +103,10 @@ namespace GPlatesModel
 		 * Create a duplicate of this PropertyValue instance.
 		 */
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const
 		{
-			boost::intrusive_ptr<PropertyValue> dup(new GmlPoint(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GmlPoint(*this)));
 			return dup;
 		}
 
@@ -108,7 +120,7 @@ namespace GPlatesModel
 		 * GPlatesMaths::PointOnSphere within this instance, set a new value using the
 		 * function @a set_point below.
 		 */
-		const boost::intrusive_ptr<const GPlatesMaths::PointOnSphere>
+		const GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
 		point() const
 		{
 			return d_point;
@@ -119,7 +131,7 @@ namespace GPlatesModel
 		 */
 		void
 		set_point(
-				boost::intrusive_ptr<GPlatesMaths::PointOnSphere> p)
+				GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> p)
 		{
 			d_point = p;
 		}
@@ -158,7 +170,7 @@ namespace GPlatesModel
 		// instantiation of this type on the stack.
 		explicit
 		GmlPoint(
-				boost::intrusive_ptr<GPlatesMaths::PointOnSphere> point_):
+				GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> point_):
 			PropertyValue(),
 			d_point(point_)
 		{  }
@@ -177,7 +189,7 @@ namespace GPlatesModel
 
 	private:
 
-		boost::intrusive_ptr<GPlatesMaths::PointOnSphere> d_point;
+		GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> d_point;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

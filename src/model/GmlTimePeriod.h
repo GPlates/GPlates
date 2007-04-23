@@ -38,6 +38,18 @@ namespace GPlatesModel {
 			public PropertyValue {
 
 	public:
+		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GmlTimePeriod>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GmlTimePeriod> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GmlTimePeriod>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlTimePeriod>
+				non_null_ptr_to_const_type;
+
 
 		virtual
 		~GmlTimePeriod() {  }
@@ -48,22 +60,22 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GmlTimePeriod>
+		const non_null_ptr_type
 		create(
-				boost::intrusive_ptr<GmlTimeInstant> begin_,
-				boost::intrusive_ptr<GmlTimeInstant> end_) {
-			boost::intrusive_ptr<GmlTimePeriod> ptr(new GmlTimePeriod(begin_, end_));
+				GmlTimeInstant::non_null_ptr_type begin_,
+				GmlTimeInstant::non_null_ptr_type end_) {
+			GmlTimePeriod::non_null_ptr_type ptr(*(new GmlTimePeriod(begin_, end_)));
 			return ptr;
 		}
 
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GmlTimePeriod(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GmlTimePeriod(*this)));
 			return dup;
 		}
 
-		const boost::intrusive_ptr<const GmlTimeInstant>
+		const GmlTimeInstant::non_null_ptr_to_const_type
 		begin() const {
 			return d_begin;
 		}
@@ -79,18 +91,18 @@ namespace GPlatesModel {
 		//
 		// (This overload is provided to allow the referenced GmlTimeInstant instance to
 		// accept a FeatureVisitor instance.)
-		const boost::intrusive_ptr<GmlTimeInstant>
+		const GmlTimeInstant::non_null_ptr_type
 		begin() {
 			return d_begin;
 		}
 
 		void
 		set_begin(
-				boost::intrusive_ptr<GmlTimeInstant> b) {
+				GmlTimeInstant::non_null_ptr_type b) {
 			d_begin = b;
 		}
 
-		const boost::intrusive_ptr<const GmlTimeInstant>
+		const GmlTimeInstant::non_null_ptr_to_const_type
 		end() const {
 			return d_end;
 		}
@@ -106,14 +118,14 @@ namespace GPlatesModel {
 		//
 		// (This overload is provided to allow the referenced GmlTimeInstant instance to
 		// accept a FeatureVisitor instance.)
-		const boost::intrusive_ptr<GmlTimeInstant>
+		const GmlTimeInstant::non_null_ptr_type
 		end() {
 			return d_end;
 		}
 
 		void
 		set_end(
-				boost::intrusive_ptr<GmlTimeInstant> e) {
+				GmlTimeInstant::non_null_ptr_type e) {
 			d_end = e;
 		}
 
@@ -148,8 +160,8 @@ namespace GPlatesModel {
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GmlTimePeriod(
-				boost::intrusive_ptr<GmlTimeInstant> begin_,
-				boost::intrusive_ptr<GmlTimeInstant> end_):
+				GmlTimeInstant::non_null_ptr_type begin_,
+				GmlTimeInstant::non_null_ptr_type end_):
 			PropertyValue(),
 			d_begin(begin_),
 			d_end(end_)
@@ -169,8 +181,8 @@ namespace GPlatesModel {
 
 	private:
 
-		boost::intrusive_ptr<GmlTimeInstant> d_begin;
-		boost::intrusive_ptr<GmlTimeInstant> d_end;
+		GmlTimeInstant::non_null_ptr_type d_begin;
+		GmlTimeInstant::non_null_ptr_type d_end;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

@@ -57,6 +57,17 @@ namespace GPlatesModel {
 			public PropertyValue {
 
 	public:
+		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GmlLineString>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GmlLineString> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GmlLineString>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlLineString>
+				non_null_ptr_to_const_type;
 
 		virtual
 		~GmlLineString()
@@ -78,7 +89,7 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GmlLineString>
+		const non_null_ptr_type
 		create(
 				const std::vector<double> &gml_pos_list);
 
@@ -86,9 +97,9 @@ namespace GPlatesModel {
 		 * Create a duplicate of this PropertyValue instance.
 		 */
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GmlLineString(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GmlLineString(*this)));
 			return dup;
 		}
 
@@ -102,7 +113,7 @@ namespace GPlatesModel {
 		 * GPlatesMaths::PolylineOnSphere within this instance, set a new value using the
 		 * function @a set_polyline below.
 		 */
-		const boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+		const GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 		polyline() const {
 			return d_polyline;
 		}
@@ -112,7 +123,7 @@ namespace GPlatesModel {
 		 */
 		void
 		set_polyline(
-				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> p) {
+				GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> p) {
 			d_polyline = p;
 		}
 
@@ -148,7 +159,7 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		GmlLineString(
-				boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_):
+				GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_):
 			PropertyValue(),
 			d_polyline(polyline_)
 		{  }
@@ -167,7 +178,7 @@ namespace GPlatesModel {
 
 	private:
 
-		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> d_polyline;
+		GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> d_polyline;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

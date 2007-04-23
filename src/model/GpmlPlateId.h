@@ -39,6 +39,18 @@ namespace GPlatesModel {
 	public:
 
 		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GpmlPlateId>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlPlateId> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlPlateId>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlPlateId>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * This is the type which is used to contain the plate ID value inside this class.
 		 */
 		typedef unsigned long integer_plate_id_type;
@@ -52,17 +64,17 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GpmlPlateId>
+		const non_null_ptr_type
 		create(
 				const integer_plate_id_type &value_) {
-			boost::intrusive_ptr<GpmlPlateId> ptr(new GpmlPlateId(value_));
+			GpmlPlateId::non_null_ptr_type ptr(*(new GpmlPlateId(value_)));
 			return ptr;
 		}
 
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GpmlPlateId(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GpmlPlateId(*this)));
 			return dup;
 		}
 

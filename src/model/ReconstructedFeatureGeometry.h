@@ -28,7 +28,7 @@
 #ifndef GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 #define GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 
-#include <boost/intrusive_ptr.hpp>
+#include "contrib/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesModel
@@ -42,15 +42,15 @@ namespace GPlatesModel
 		typedef T geometry_type;
 
 	private:
-		boost::intrusive_ptr<geometry_type> d_geometry_ptr;
+		GPlatesContrib::non_null_intrusive_ptr<geometry_type> d_geometry_ptr;
 
 	public:
 		ReconstructedFeatureGeometry(
-				boost::intrusive_ptr<geometry_type> geometry_ptr) :
+				GPlatesContrib::non_null_intrusive_ptr<geometry_type> geometry_ptr) :
 			d_geometry_ptr(geometry_ptr)
 		{  }
 
-		const boost::intrusive_ptr<const geometry_type>
+		const GPlatesContrib::non_null_intrusive_ptr<const geometry_type>
 		geometry() const
 		{
 			return d_geometry_ptr;

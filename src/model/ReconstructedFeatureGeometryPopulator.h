@@ -29,12 +29,12 @@
 #define GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRYPOPULATOR_H
 
 #include <vector>
-#include <boost/intrusive_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include "FeatureVisitor.h"
 #include "GeoTimeInstant.h"
 #include "GpmlPlateId.h"
 #include "ReconstructedFeatureGeometry.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 
 // Forward declaration for intrusive-pointer.
@@ -76,9 +76,9 @@ namespace GPlatesModel
 		{
 			boost::scoped_ptr<PropertyName> d_most_recent_propname_read;
 			boost::intrusive_ptr<GpmlPlateId> d_recon_plate_id;
-			std::vector<boost::intrusive_ptr<const GPlatesMaths::PointOnSphere> >
+			std::vector<GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> >
 					d_not_yet_reconstructed_points;
-			std::vector<boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> >
+			std::vector<GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> >
 					d_not_yet_reconstructed_polylines;
 
 			ReconstructedFeatureGeometryAccumulator():

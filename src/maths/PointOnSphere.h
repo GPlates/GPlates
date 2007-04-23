@@ -29,8 +29,8 @@
 #define GPLATES_MATHS_POINTONSPHERE_H
 
 #include <iosfwd>
-#include <boost/intrusive_ptr.hpp>
 #include "UnitVector3D.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesMaths {
@@ -53,6 +53,18 @@ namespace GPlatesMaths {
 	public:
 
 		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<PointOnSphere>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<PointOnSphere> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const PointOnSphere>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const PointOnSphere>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * The type used for the reference-count.
 		 */
 		typedef long ref_count_type;
@@ -65,7 +77,7 @@ namespace GPlatesMaths {
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		static
-		const boost::intrusive_ptr<PointOnSphere>
+		const non_null_ptr_type
 		create_on_heap(
 				const UnitVector3D &position_vector_);
 
@@ -76,24 +88,23 @@ namespace GPlatesMaths {
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		const boost::intrusive_ptr<PointOnSphere>
+		const non_null_ptr_type
 		clone_on_heap() const
 		{
-			boost::intrusive_ptr<PointOnSphere> dup(new PointOnSphere(*this));
+			non_null_ptr_type dup(*(new PointOnSphere(*this)));
 			return dup;
 		}
 
 
 		/**
-		 * Create a new PointOnSphere instance from the unit vector
-		 * @a position_vector_.
+		 * Create a new PointOnSphere instance from the unit vector @a position_vector_.
 		 *
-		 * FIXME:  We should really prohibit construction of PointOnSphere
-		 * instances on the stack, insisting that they are instead created on the
-		 * heap, referenced by intrusive_ptr.  However, there is a substantial
-		 * amount of existing code which creates PointOnSphere instances on the
-		 * stack, and changing all that code to use intrusive_ptr would take too
-		 * long to justify right now.  But we should do it properly some day...
+		 * FIXME:  We should really prohibit construction of PointOnSphere instances on the
+		 * stack, insisting that they are instead created on the heap, referenced by
+		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
+		 * which creates PointOnSphere instances on the stack, and changing all that code
+		 * to use non_null_intrusive_ptr would take too long to justify right now.  But we
+		 * should do it properly some day...
 		 *
 		 * Trac ticket: http://trac.gplates.org/ticket/3
 		 */
@@ -108,16 +119,15 @@ namespace GPlatesMaths {
 		/**
 		 * Create a copy-constructed PointOnSphere instance on the stack.
 		 *
-		 * This constructor should act exactly the same as the default
-		 * (auto-generated) copy-constructor would, except that it should
-		 * initialise the ref-count to zero.
+		 * This constructor should act exactly the same as the default (auto-generated)
+		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 *
-		 * FIXME:  We should really prohibit construction of PointOnSphere
-		 * instances on the stack, insisting that they are instead created on the
-		 * heap, referenced by intrusive_ptr.  However, there is a substantial
-		 * amount of existing code which creates PointOnSphere instances on the
-		 * stack, and changing all that code to use intrusive_ptr would take too
-		 * long to justify right now.  But we should do it properly some day...
+		 * FIXME:  We should really prohibit construction of PointOnSphere instances on the
+		 * stack, insisting that they are instead created on the heap, referenced by
+		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
+		 * which creates PointOnSphere instances on the stack, and changing all that code
+		 * to use non_null_intrusive_ptr would take too long to justify right now.  But we
+		 * should do it properly some day...
 		 *
 		 * Trac ticket: http://trac.gplates.org/ticket/3
 		 */
@@ -211,7 +221,7 @@ namespace GPlatesMaths {
 	private:
 
 		/**
-		 * This is the reference-count used by boost::intrusive_ptr.
+		 * This is the reference-count used by GPlatesContrib::non_null_intrusive_ptr.
 		 *
 		 * It is declared "mutable", because it is to be modified by
 		 * 'increment_ref_count' and 'decrement_ref_count', which are const member
@@ -231,11 +241,11 @@ namespace GPlatesMaths {
 
 
 	inline
-	const boost::intrusive_ptr<PointOnSphere>
+	const PointOnSphere::non_null_ptr_type
 	PointOnSphere::create_on_heap(
 			const UnitVector3D &position_vector_)
 	{
-		boost::intrusive_ptr<PointOnSphere> ptr(new PointOnSphere(position_vector_));
+		non_null_ptr_type ptr(*(new PointOnSphere(position_vector_)));
 		return ptr;
 	}
 

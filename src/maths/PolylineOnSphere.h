@@ -34,9 +34,9 @@
 #include <vector>
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
 #include <utility>  /* pair */
-#include <boost/intrusive_ptr.hpp>
 #include "GreatCircleArc.h"
 #include "InvalidPolylineException.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 namespace GPlatesMaths {
 
@@ -77,6 +77,19 @@ namespace GPlatesMaths {
 	class PolylineOnSphere
 	{
 	public:
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<PolylineOnSphere>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<PolylineOnSphere> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const PolylineOnSphere>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const PolylineOnSphere>
+				non_null_ptr_to_const_type;
 
 		/**
 		 * The type of the sequence of great circle arcs.
@@ -464,10 +477,10 @@ namespace GPlatesMaths {
 		 *
 		 * FIXME:  We should really prohibit construction of PolylineOnSphere instances on
 		 * the stack, insisting that they are instead created on the heap, referenced by
-		 * intrusive_ptr.  However, there is a substantial amount of existing code which
-		 * creates PolylineOnSphere instances on the stack, and changing all that code to
-		 * use intrusive_ptr would take too long to justify right now.  But we should do it
-		 * properly some day...
+		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
+		 * which creates PolylineOnSphere instances on the stack, and changing all that
+		 * code to use non_null_intrusive_ptr would take too long to justify right now. 
+		 * But we should do it properly some day...
 		 *
 		 * Trac ticket: http://trac.gplates.org/ticket/3
 		 */
@@ -489,7 +502,7 @@ namespace GPlatesMaths {
 		 */
 		template<typename C>
 		static
-		const boost::intrusive_ptr<PolylineOnSphere>
+		const non_null_ptr_type
 		create_on_heap(
 				const C &coll);
 
@@ -502,10 +515,10 @@ namespace GPlatesMaths {
 		 *
 		 * FIXME:  We should really prohibit construction of PolylineOnSphere instances on
 		 * the stack, insisting that they are instead created on the heap, referenced by
-		 * intrusive_ptr.  However, there is a substantial amount of existing code which
-		 * creates PolylineOnSphere instances on the stack, and changing all that code to
-		 * use intrusive_ptr would take too long to justify right now.  But we should do it
-		 * properly some day...
+		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
+		 * which creates PolylineOnSphere instances on the stack, and changing all that
+		 * code to use noon_null_intrusive_ptr would take too long to justify right now. 
+		 * But we should do it properly some day...
 		 *
 		 * Trac ticket: http://trac.gplates.org/ticket/3
 		 */
@@ -522,10 +535,10 @@ namespace GPlatesMaths {
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		const boost::intrusive_ptr<PolylineOnSphere>
+		const PolylineOnSphere::non_null_ptr_type
 		clone_on_heap() const
 		{
-			boost::intrusive_ptr<PolylineOnSphere> dup(new PolylineOnSphere(*this));
+			PolylineOnSphere::non_null_ptr_type dup(*(new PolylineOnSphere(*this)));
 			return dup;
 		}
 
@@ -756,7 +769,7 @@ namespace GPlatesMaths {
 				bool should_silently_drop_dups = true);
 
 		/**
-		 * This is the reference-count used by boost::intrusive_ptr.
+		 * This is the reference-count used by GPlatesContrib::non_null_intrusive_ptr.
 		 *
 		 * It is declared "mutable", because it is to be modified by 'increment_ref_count'
 		 * and 'decrement_ref_count', which are const member functions.  They are const
@@ -931,11 +944,11 @@ namespace GPlatesMaths {
 
 
 	template<typename C>
-	const boost::intrusive_ptr<PolylineOnSphere>
+	const PolylineOnSphere::non_null_ptr_type
 	PolylineOnSphere::create_on_heap(
 			const C &coll)
 	{
-		boost::intrusive_ptr< PolylineOnSphere > ptr(new PolylineOnSphere());
+		PolylineOnSphere::non_null_ptr_type ptr(*(new PolylineOnSphere()));
 		generate_segments_and_swap(*ptr, coll);
 		return ptr;
 	}

@@ -38,7 +38,7 @@ namespace GPlatesModel {
 			public PropertyContainer {
 
 	public:
-		typedef std::vector<boost::intrusive_ptr<PropertyValue> > container_type;
+		typedef std::vector<PropertyValue::non_null_ptr_type> container_type;
 
 		typedef container_type::iterator iterator;
 		typedef container_type::const_iterator const_iterator;
@@ -64,7 +64,7 @@ namespace GPlatesModel {
 		const boost::intrusive_ptr<InlinePropertyContainer>
 		create(
 				const PropertyName &property_name_,
-				boost::intrusive_ptr<PropertyValue> value_,
+				PropertyValue::non_null_ptr_type value_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_)
 		{
 			boost::intrusive_ptr<InlinePropertyContainer> ptr(
@@ -132,11 +132,11 @@ namespace GPlatesModel {
 
 		InlinePropertyContainer(
 				const PropertyName &property_name_,
-				boost::intrusive_ptr<PropertyValue> value_,
+				PropertyValue::non_null_ptr_type value_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_) :
 			PropertyContainer(property_name_, xml_attributes_)
 		{
-			d_values.push_back(value_); 
+			d_values.push_back(value_);
 		}
 
 		InlinePropertyContainer(

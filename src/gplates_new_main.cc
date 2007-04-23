@@ -65,12 +65,12 @@ const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_reconstruction_plate_id(
 		const unsigned long &plate_id) {
 
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id =
+	GPlatesModel::PropertyValue::non_null_ptr_type gpml_plate_id =
 			GPlatesModel::GpmlPlateId::create(plate_id);
 
 	UnicodeString template_type_parameter_type_string("gpml:plateId");
 	GPlatesModel::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id_constant_value =
+	GPlatesModel::PropertyValue::non_null_ptr_type gpml_plate_id_constant_value =
 			GPlatesModel::GpmlConstantValue::create(gpml_plate_id, template_type_parameter_type);
 
 	UnicodeString property_name_string("gpml:reconstructionPlateId");
@@ -89,7 +89,7 @@ create_reference_frame_plate_id(
 		const unsigned long &plate_id,
 		const char *which_reference_frame) {
 
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_plate_id =
+	GPlatesModel::PropertyValue::non_null_ptr_type gpml_plate_id =
 			GPlatesModel::GpmlPlateId::create(plate_id);
 
 	UnicodeString property_name_string(which_reference_frame);
@@ -109,19 +109,19 @@ create_centre_line_of(
 		unsigned num_points) {
 
 	std::vector<double> gml_pos_list(points, points + num_points);
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_line_string =
+	GPlatesModel::PropertyValue::non_null_ptr_type gml_line_string =
 			GPlatesModel::GmlLineString::create(gml_pos_list);
 
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
 	GPlatesModel::XmlAttributeName xml_attribute_name("orientation");
 	GPlatesModel::XmlAttributeValue xml_attribute_value("+");
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_orientable_curve =
+	GPlatesModel::PropertyValue::non_null_ptr_type gml_orientable_curve =
 			GPlatesModel::GmlOrientableCurve::create(gml_line_string, xml_attributes);
 
 	UnicodeString template_type_parameter_type_string("gml:OrientableCurve");
 	GPlatesModel::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_orientable_curve_constant_value =
+	GPlatesModel::PropertyValue::non_null_ptr_type gml_orientable_curve_constant_value =
 			GPlatesModel::GpmlConstantValue::create(gml_orientable_curve, template_type_parameter_type);
 
 	UnicodeString property_name_string("gpml:centreLineOf");
@@ -145,13 +145,13 @@ create_valid_time(
 	GPlatesModel::XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
 
-	boost::intrusive_ptr<GPlatesModel::GmlTimeInstant> gml_time_instant_begin =
+	GPlatesModel::GmlTimeInstant::non_null_ptr_type gml_time_instant_begin =
 			GPlatesModel::GmlTimeInstant::create(geo_time_instant_begin, xml_attributes);
 
-	boost::intrusive_ptr<GPlatesModel::GmlTimeInstant> gml_time_instant_end =
+	GPlatesModel::GmlTimeInstant::non_null_ptr_type gml_time_instant_end =
 			GPlatesModel::GmlTimeInstant::create(geo_time_instant_end, xml_attributes);
 
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_time_period =
+	GPlatesModel::PropertyValue::non_null_ptr_type gml_time_period =
 			GPlatesModel::GmlTimePeriod::create(gml_time_instant_begin, gml_time_instant_end);
 
 	UnicodeString property_name_string("gml:validTime");
@@ -169,7 +169,7 @@ const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
 create_description(
 		const UnicodeString &description) {
 
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_description = GPlatesModel::XsString::create(description);
+	GPlatesModel::PropertyValue::non_null_ptr_type gml_description = GPlatesModel::XsString::create(description);
 
 	UnicodeString property_name_string("gml:description");
 	GPlatesModel::PropertyName property_name(property_name_string);
@@ -187,7 +187,7 @@ create_name(
 		const UnicodeString &name,
 		const UnicodeString &codespace) {
 
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gml_name = GPlatesModel::XsString::create(name);
+	GPlatesModel::PropertyValue::non_null_ptr_type gml_name = GPlatesModel::XsString::create(name);
 
 	UnicodeString property_name_string("gml:name");
 	GPlatesModel::PropertyName property_name(property_name_string);
@@ -266,26 +266,26 @@ create_total_reconstruction_pole(
 	for (unsigned i = 0; i < num_five_tuples; ++i) {
 		std::pair<double, double> gpml_euler_pole =
 				std::make_pair(five_tuples[i].lon_of_euler_pole, five_tuples[i].lat_of_euler_pole);
-		boost::intrusive_ptr<GPlatesModel::GpmlFiniteRotation> gpml_finite_rotation =
+		GPlatesModel::GpmlFiniteRotation::non_null_ptr_type gpml_finite_rotation =
 				GPlatesModel::GpmlFiniteRotation::create(gpml_euler_pole,
 				five_tuples[i].rotation_angle);
 
 		GPlatesModel::GeoTimeInstant geo_time_instant(five_tuples[i].time);
-		boost::intrusive_ptr<GPlatesModel::GmlTimeInstant> gml_time_instant =
+		GPlatesModel::GmlTimeInstant::non_null_ptr_type gml_time_instant =
 				GPlatesModel::GmlTimeInstant::create(geo_time_instant, xml_attributes);
 
 		UnicodeString comment_string(five_tuples[i].comment);
-		boost::intrusive_ptr<GPlatesModel::XsString> gml_description =
+		GPlatesModel::XsString::non_null_ptr_type gml_description =
 				GPlatesModel::XsString::create(comment_string);
 
 		time_samples.push_back(GPlatesModel::GpmlTimeSample(gpml_finite_rotation, gml_time_instant,
-				gml_description, value_type));
+				get_intrusive_ptr(gml_description), value_type));
 	}
 
-	boost::intrusive_ptr<GPlatesModel::GpmlInterpolationFunction> gpml_finite_rotation_slerp =
+	GPlatesModel::GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
 			GPlatesModel::GpmlFiniteRotationSlerp::create(value_type);
 
-	boost::intrusive_ptr<GPlatesModel::PropertyValue> gpml_irregular_sampling =
+	GPlatesModel::PropertyValue::non_null_ptr_type gpml_irregular_sampling =
 			GPlatesModel::GpmlIrregularSampling::create(time_samples,
 			gpml_finite_rotation_slerp, value_type);
 

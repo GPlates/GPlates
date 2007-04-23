@@ -28,7 +28,6 @@
 #ifndef GPLATES_MODEL_GPMLTIMESAMPLE_H
 #define GPLATES_MODEL_GPMLTIMESAMPLE_H
 
-#include <boost/intrusive_ptr.hpp>
 #include "GmlTimeInstant.h"
 #include "PropertyValue.h"
 #include "XsString.h"
@@ -47,8 +46,8 @@ namespace GPlatesModel {
 	public:
 
 		GpmlTimeSample(
-				boost::intrusive_ptr<PropertyValue> value_,
-				boost::intrusive_ptr<GmlTimeInstant> valid_time_,
+				PropertyValue::non_null_ptr_type value_,
+				GmlTimeInstant::non_null_ptr_type valid_time_,
 				boost::intrusive_ptr<XsString> description_,
 				const TemplateTypeParameterType &value_type_):
 			d_value(value_),
@@ -65,7 +64,7 @@ namespace GPlatesModel {
 			d_value_type(other.d_value_type)
 		{  }
 
-		const boost::intrusive_ptr<const PropertyValue>
+		const PropertyValue::non_null_ptr_to_const_type
 		value() const {
 			return d_value;
 		}
@@ -81,18 +80,18 @@ namespace GPlatesModel {
 		//
 		// (This overload is provided to allow the referenced PropertyValue instance to
 		// accept a FeatureVisitor instance.)
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		value() {
 			return d_value;
 		}
 
 		void
 		set_value(
-				boost::intrusive_ptr<PropertyValue> v) {
+				PropertyValue::non_null_ptr_type v) {
 			d_value = v;
 		}
 
-		const boost::intrusive_ptr<const GmlTimeInstant>
+		const GmlTimeInstant::non_null_ptr_to_const_type
 		valid_time() const {
 			return d_valid_time;
 		}
@@ -108,14 +107,14 @@ namespace GPlatesModel {
 		//
 		// (This overload is provided to allow the referenced GmlTimeInstant instance to
 		// accept a FeatureVisitor instance.)
-		const boost::intrusive_ptr<GmlTimeInstant>
+		const GmlTimeInstant::non_null_ptr_type
 		valid_time() {
 			return d_valid_time;
 		}
 
 		void
 		set_valid_time(
-				boost::intrusive_ptr<GmlTimeInstant> vt) {
+				GmlTimeInstant::non_null_ptr_type vt) {
 			d_valid_time = vt;
 		}
 
@@ -179,11 +178,11 @@ namespace GPlatesModel {
 
 	private:
 
-		// FIXME:  Is it valid for this pointer to be NULL?  I don't think so...
-		boost::intrusive_ptr<PropertyValue> d_value;
-		// FIXME:  Is it valid for this pointer to be NULL?  I don't think so...
-		boost::intrusive_ptr<GmlTimeInstant> d_valid_time;
-		// At least I know that *this* one (the description) is optional...
+		PropertyValue::non_null_ptr_type d_value;
+
+		GmlTimeInstant::non_null_ptr_type d_valid_time;
+
+		// This one is optional.
 		boost::intrusive_ptr<XsString> d_description;
 		TemplateTypeParameterType d_value_type;
 

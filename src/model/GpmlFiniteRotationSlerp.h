@@ -38,6 +38,20 @@ namespace GPlatesModel {
 
 	public:
 
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>
+				non_null_ptr_to_const_type;
+
 		virtual
 		~GpmlFiniteRotationSlerp() {  }
 
@@ -47,17 +61,17 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GpmlFiniteRotationSlerp>
+		const non_null_ptr_type
 		create(
 				const TemplateTypeParameterType &value_type_) {
-			boost::intrusive_ptr<GpmlFiniteRotationSlerp> ptr(new GpmlFiniteRotationSlerp(value_type_));
+			non_null_ptr_type ptr(*(new GpmlFiniteRotationSlerp(value_type_)));
 			return ptr;
 		}
 
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GpmlFiniteRotationSlerp(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GpmlFiniteRotationSlerp(*this)));
 			return dup;
 		}
 

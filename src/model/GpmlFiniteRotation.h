@@ -44,6 +44,20 @@ namespace GPlatesModel
 	{
 	public:
 
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<GpmlFiniteRotation>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlFiniteRotation>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlFiniteRotation>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlFiniteRotation>
+				non_null_ptr_to_const_type;
+
 		virtual
 		~GpmlFiniteRotation()
 		{  }
@@ -66,7 +80,7 @@ namespace GPlatesModel
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GpmlFiniteRotation>
+		const non_null_ptr_type
 		create(
 				const std::pair<double, double> &gpml_euler_pole,
 				const double &gml_angle_in_degrees);
@@ -83,17 +97,17 @@ namespace GPlatesModel
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GpmlFiniteRotation>
+		const non_null_ptr_type
 		create_zero_rotation();
 
 		/**
 		 * Create a duplicate of this PropertyValue instance.
 		 */
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const
 		{
-			boost::intrusive_ptr<PropertyValue> dup(new GpmlFiniteRotation(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GpmlFiniteRotation(*this)));
 			return dup;
 		}
 
@@ -207,7 +221,7 @@ namespace GPlatesModel
 	 * GpmlFiniteRotation instance.  Thus, modifying the target of the return-value will have
 	 * no effect upon the internals of the GpmlFiniteRotation instance.
 	 */
-	const boost::intrusive_ptr<GmlPoint>
+	const GmlPoint::non_null_ptr_type
 	calculate_euler_pole(
 			const GpmlFiniteRotation &fr);
 

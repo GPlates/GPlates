@@ -44,6 +44,20 @@ namespace GPlatesModel {
 
 	public:
 
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<GmlOrientableCurve>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GmlOrientableCurve>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GmlOrientableCurve>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlOrientableCurve>
+				non_null_ptr_to_const_type;
+
 		virtual
 		~GmlOrientableCurve() {  }
 
@@ -62,11 +76,12 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GmlOrientableCurve>
+		const non_null_ptr_type
 		create(
-				boost::intrusive_ptr<PropertyValue> base_curve_,
+				PropertyValue::non_null_ptr_type base_curve_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_) {
-			boost::intrusive_ptr<GmlOrientableCurve> ptr(new GmlOrientableCurve(base_curve_, xml_attributes_));
+			non_null_ptr_type ptr(
+					*(new GmlOrientableCurve(base_curve_, xml_attributes_)));
 			return ptr;
 		}
 
@@ -74,9 +89,10 @@ namespace GPlatesModel {
 		 * Create a duplicate of this PropertyValue instance.
 		 */
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GmlOrientableCurve(*this));
+			PropertyValue::non_null_ptr_type dup(
+					*(new GmlOrientableCurve(*this)));
 			return dup;
 		}
 
@@ -86,7 +102,7 @@ namespace GPlatesModel {
 		 * This is the overloading of this function for const GmlOrientableCurve instances;
 		 * it returns a pointer to a const PropertyValue instance.
 		 */
-		const boost::intrusive_ptr<const PropertyValue>
+		const PropertyValue::non_null_ptr_to_const_type
 		base_curve() const {
 			return d_base_curve;
 		}
@@ -109,7 +125,7 @@ namespace GPlatesModel {
 		 * (This overload is provided to allow the referenced PropertyValue instance to
 		 * accept a FeatureVisitor instance.)
 		 */
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		base_curve() {
 			return d_base_curve;
 		}
@@ -119,7 +135,7 @@ namespace GPlatesModel {
 		 */
 		void
 		set_base_curve(
-				boost::intrusive_ptr<PropertyValue> bc) {
+				PropertyValue::non_null_ptr_type bc) {
 			d_base_curve = bc;
 		}
 
@@ -186,7 +202,7 @@ namespace GPlatesModel {
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GmlOrientableCurve(
-				boost::intrusive_ptr<PropertyValue> base_curve_,
+				PropertyValue::non_null_ptr_type base_curve_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_):
 			PropertyValue(),
 			d_base_curve(base_curve_),
@@ -207,8 +223,7 @@ namespace GPlatesModel {
 
 	private:
 
-		// FIXME:  Is it valid for this pointer to be NULL?  I don't think so...
-		boost::intrusive_ptr<PropertyValue> d_base_curve;
+		PropertyValue::non_null_ptr_type d_base_curve;
 		std::map<XmlAttributeName, XmlAttributeValue> d_xml_attributes;
 
 		// This operator should never be defined, because we don't want/need to allow

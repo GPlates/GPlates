@@ -29,10 +29,10 @@
 #define GPLATES_MATHS_FINITEROTATION_H
 
 #include <iosfwd>
-#include <boost/intrusive_ptr.hpp>
 
 #include "UnitQuaternion3D.h"
 #include "types.h"  /* real_t */
+#include "contrib/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesMaths
@@ -239,10 +239,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const boost::intrusive_ptr<PointOnSphere>
+	const GPlatesContrib::non_null_intrusive_ptr<PointOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			boost::intrusive_ptr<const PointOnSphere> p);
+			GPlatesContrib::non_null_intrusive_ptr<const PointOnSphere> p);
 
 
 	/**
@@ -305,10 +305,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const boost::intrusive_ptr<PolylineOnSphere>
+	const GPlatesContrib::non_null_intrusive_ptr<PolylineOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const boost::intrusive_ptr<const PolylineOnSphere> p);
+			const GPlatesContrib::non_null_intrusive_ptr<const PolylineOnSphere> p);
 
 
 	/**

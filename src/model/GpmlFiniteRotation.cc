@@ -32,7 +32,7 @@
 #include "maths/PointOnSphere.h"
 
 
-const boost::intrusive_ptr<GPlatesModel::GpmlFiniteRotation>
+const GPlatesModel::GpmlFiniteRotation::non_null_ptr_type
 GPlatesModel::GpmlFiniteRotation::create(
 		const std::pair<double, double> &gpml_euler_pole,
 		const double &gml_angle_in_degrees)
@@ -47,19 +47,19 @@ GPlatesModel::GpmlFiniteRotation::create(
 	PointOnSphere p = LatLonPointConversions::convertLatLonPointToPointOnSphere(llp);
 	FiniteRotation fr = FiniteRotation::create(p, degreesToRadians(gml_angle_in_degrees));
 
-	boost::intrusive_ptr<GpmlFiniteRotation> finite_rotation_ptr(new GpmlFiniteRotation(fr));
+	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
 	return finite_rotation_ptr;
 }
 
 
-const boost::intrusive_ptr<GPlatesModel::GpmlFiniteRotation>
+const GPlatesModel::GpmlFiniteRotation::non_null_ptr_type
 GPlatesModel::GpmlFiniteRotation::create_zero_rotation()
 {
 	using namespace ::GPlatesMaths;
 
 	FiniteRotation fr = FiniteRotation::create(UnitQuaternion3D::create_identity_rotation());
 
-	boost::intrusive_ptr<GpmlFiniteRotation> finite_rotation_ptr(new GpmlFiniteRotation(fr));
+	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
 	return finite_rotation_ptr;
 }
 
@@ -71,7 +71,7 @@ GPlatesModel::GpmlFiniteRotation::is_zero_rotation() const
 }
 
 
-const boost::intrusive_ptr<GPlatesModel::GmlPoint>
+const GPlatesModel::GmlPoint::non_null_ptr_type
 GPlatesModel::calculate_euler_pole(
 		const GpmlFiniteRotation &fr)
 {
@@ -80,7 +80,7 @@ GPlatesModel::calculate_euler_pole(
 
 	// If 'fr' is a zero rotation, this will throw an exception.
 	UnitQuaternion3D::RotationParams rp = fr.finite_rotation().unit_quat().get_rotation_params();
-	boost::intrusive_ptr<GmlPoint> euler_pole_ptr = GmlPoint::create(PointOnSphere(rp.axis));
+	GmlPoint::non_null_ptr_type euler_pole_ptr(*(GmlPoint::create(PointOnSphere(rp.axis))));
 	return euler_pole_ptr;
 }
 

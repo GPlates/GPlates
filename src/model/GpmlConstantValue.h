@@ -38,6 +38,18 @@ namespace GPlatesModel {
 			public PropertyValue {
 
 	public:
+		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GpmlConstantValue>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlConstantValue> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlConstantValue>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlConstantValue>
+				non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlConstantValue() {  }
@@ -48,22 +60,22 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GpmlConstantValue>
+		const non_null_ptr_type
 		create(
-				boost::intrusive_ptr<PropertyValue> value_,
+				PropertyValue::non_null_ptr_type value_,
 				const TemplateTypeParameterType &value_type_) {
-			boost::intrusive_ptr<GpmlConstantValue> ptr(new GpmlConstantValue(value_, value_type_));
+			non_null_ptr_type ptr(*(new GpmlConstantValue(value_, value_type_)));
 			return ptr;
 		}
 
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GpmlConstantValue(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GpmlConstantValue(*this)));
 			return dup;
 		}
 
-		const boost::intrusive_ptr<const PropertyValue>
+		const PropertyValue::non_null_ptr_to_const_type
 		value() const {
 			return d_value;
 		}
@@ -79,14 +91,14 @@ namespace GPlatesModel {
 		//
 		// (This overload is provided to allow the referenced PropertyValue instance to
 		// accept a FeatureVisitor instance.)
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		value() {
 			return d_value;
 		}
 
 		void
 		set_value(
-				boost::intrusive_ptr<PropertyValue> v) {
+				PropertyValue::non_null_ptr_type v) {
 			d_value = v;
 		}
 
@@ -128,7 +140,7 @@ namespace GPlatesModel {
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlConstantValue(
-				boost::intrusive_ptr<PropertyValue> value_,
+				PropertyValue::non_null_ptr_type value_,
 				const TemplateTypeParameterType &value_type_):
 			PropertyValue(),
 			d_value(value_),
@@ -149,8 +161,7 @@ namespace GPlatesModel {
 
 	private:
 
-		// FIXME:  Is it valid for this pointer to be NULL?  I don't think so...
-		boost::intrusive_ptr<PropertyValue> d_value;
+		PropertyValue::non_null_ptr_type d_value;
 		TemplateTypeParameterType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow

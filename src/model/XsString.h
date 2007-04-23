@@ -39,21 +39,33 @@ namespace GPlatesModel {
 
 	public:
 
+		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<XsString>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<XsString> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const XsString>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const XsString>
+				non_null_ptr_to_const_type;
+
 		virtual
 		~XsString() {  }
 
 		static
-		const boost::intrusive_ptr<XsString>
+		const non_null_ptr_type
 		create(
 				const UnicodeString &s) {
-			boost::intrusive_ptr<XsString> ptr(new XsString(s));
+			XsString::non_null_ptr_type ptr(*(new XsString(s)));
 			return ptr;
 		}
 
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new XsString(*this));
+			PropertyValue::non_null_ptr_type dup(*(new XsString(*this)));
 			return dup;
 		}
 

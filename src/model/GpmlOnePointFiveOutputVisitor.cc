@@ -93,7 +93,8 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 	// automatically, but (i) that's probably not the most efficient use of our time right now;
 	// (ii) it's file I/O, it's slow anyway; and (iii) we can cut it down to a single memory
 	// allocation if we reserve the size of the vector in advance.
-	boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> polyline_ptr = gml_line_string.polyline();
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_ptr =
+			gml_line_string.polyline();
 	std::vector<double> pos_list;
 	// Reserve enough space for the coordinates, to avoid the need to reallocate.
 	//
@@ -215,7 +216,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_finite_rotation(
 		XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:AxisAngleFiniteRotation");
 		{
 			XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:eulerPole");
-			boost::intrusive_ptr<GPlatesModel::GmlPoint> gml_point =
+			GPlatesModel::GmlPoint::non_null_ptr_type gml_point =
 					::GPlatesModel::calculate_euler_pole(gpml_finite_rotation);
 			visit_gml_point(*gml_point);
 		}

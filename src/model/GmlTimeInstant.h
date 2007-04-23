@@ -42,6 +42,18 @@ namespace GPlatesModel {
 
 	public:
 
+		/**
+		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GmlTimeInstant>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GmlTimeInstant> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GmlTimeInstant>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlTimeInstant>
+				non_null_ptr_to_const_type;
+
 		virtual
 		~GmlTimeInstant() {  }
 
@@ -51,19 +63,20 @@ namespace GPlatesModel {
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
 		static
-		const boost::intrusive_ptr<GmlTimeInstant>
+		const non_null_ptr_type
 		create(
 				const GeoTimeInstant &time_position_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &time_position_xml_attributes_) {
-			boost::intrusive_ptr<GmlTimeInstant> ptr(new GmlTimeInstant(time_position_,
-					time_position_xml_attributes_));
+			non_null_ptr_type ptr(
+					*(new GmlTimeInstant(time_position_,
+							time_position_xml_attributes_)));
 			return ptr;
 		}
 
 		virtual
-		const boost::intrusive_ptr<PropertyValue>
+		const PropertyValue::non_null_ptr_type
 		clone() const {
-			boost::intrusive_ptr<PropertyValue> dup(new GmlTimeInstant(*this));
+			PropertyValue::non_null_ptr_type dup(*(new GmlTimeInstant(*this)));
 			return dup;
 		}
 

@@ -30,7 +30,7 @@
 #include "maths/PointOnSphere.h"
 
 
-const boost::intrusive_ptr<GPlatesModel::GmlPoint>
+const GPlatesModel::GmlPoint::non_null_ptr_type
 GPlatesModel::GmlPoint::create(
 		const std::pair<double, double> &gml_pos)
 {
@@ -43,17 +43,19 @@ GPlatesModel::GmlPoint::create(
 	LatLonPoint llp(lat, lon);
 	PointOnSphere p = LatLonPointConversions::convertLatLonPointToPointOnSphere(llp);
 
-	boost::intrusive_ptr<GmlPoint> point_ptr = new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()));
+	non_null_ptr_type point_ptr(
+			*(new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()))));
 	return point_ptr;
 }
 
 
-const boost::intrusive_ptr<GPlatesModel::GmlPoint>
+const GPlatesModel::GmlPoint::non_null_ptr_type
 GPlatesModel::GmlPoint::create(
 		const GPlatesMaths::PointOnSphere &p)
 {
 	using namespace ::GPlatesMaths;
 
-	boost::intrusive_ptr<GmlPoint> point_ptr = new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()));
+	GmlPoint::non_null_ptr_type point_ptr(
+			*(new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()))));
 	return point_ptr;
 }
