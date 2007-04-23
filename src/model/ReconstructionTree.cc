@@ -34,12 +34,11 @@
 
 void
 GPlatesModel::ReconstructionTree::insert_total_reconstruction_pole(
-		boost::intrusive_ptr<GpmlPlateId> fixed_plate_,
-		boost::intrusive_ptr<GpmlPlateId> moving_plate_,
+		GpmlPlateId::non_null_ptr_type fixed_plate_,
+		GpmlPlateId::non_null_ptr_type moving_plate_,
 		const GPlatesMaths::FiniteRotation &pole)
 {
-	// FIXME:  Do we need to check that 'fixed_plate_' and 'moving_plate' are not NULL?
-	// FIXME:  Do we need to sanity-check that 'fixed_plate_' and 'moving_plate' are not equal?
+	// FIXME:  Do we need to sanity-check that 'fixed_plate_' and 'moving_plate_' are not equal?
 
 	// FIXME:  First, ensure a node of this (fixed plate, moving plate) does not already exist
 	// inside this reconstruction tree.  Do we also need to check it for the reverse?

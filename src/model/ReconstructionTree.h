@@ -91,8 +91,8 @@ namespace GPlatesModel
 			typedef std::list<ReconstructionTreeNode> node_list_type;
 
 			ReconstructionTreeNode(
-					boost::intrusive_ptr<GpmlPlateId> fixed_plate_,
-					boost::intrusive_ptr<GpmlPlateId> moving_plate_,
+					GpmlPlateId::non_null_ptr_type fixed_plate_,
+					GpmlPlateId::non_null_ptr_type moving_plate_,
 					const GPlatesMaths::FiniteRotation &relative_rotation_,
 					PoleTypes::PoleType pole_type_):
 				d_fixed_plate(fixed_plate_),
@@ -102,13 +102,13 @@ namespace GPlatesModel
 				d_pole_type(pole_type_)
 			{  }
 
-			const boost::intrusive_ptr<const GpmlPlateId>
+			const GpmlPlateId::non_null_ptr_to_const_type
 			fixed_plate() const
 			{
 				return d_fixed_plate;
 			}
 
-			const boost::intrusive_ptr<const GpmlPlateId>
+			const GpmlPlateId::non_null_ptr_to_const_type
 			moving_plate() const
 			{
 				return d_moving_plate;
@@ -146,8 +146,8 @@ namespace GPlatesModel
 			}
 
 		private:
-			boost::intrusive_ptr<GpmlPlateId> d_fixed_plate;
-			boost::intrusive_ptr<GpmlPlateId> d_moving_plate;
+			GpmlPlateId::non_null_ptr_type d_fixed_plate;
+			GpmlPlateId::non_null_ptr_type d_moving_plate;
 			GPlatesMaths::FiniteRotation d_relative_rotation;
 			GPlatesMaths::FiniteRotation d_composed_absolute_rotation;
 			PoleTypes::PoleType d_pole_type;
@@ -167,8 +167,8 @@ namespace GPlatesModel
 		// Total reconstruction poles must be inserted before the "tree" can be built.
 		void
 		insert_total_reconstruction_pole(
-				boost::intrusive_ptr<GpmlPlateId> fixed_plate_,
-				boost::intrusive_ptr<GpmlPlateId> moving_plate_,
+				GpmlPlateId::non_null_ptr_type fixed_plate_,
+				GpmlPlateId::non_null_ptr_type moving_plate_,
 				const GPlatesMaths::FiniteRotation &pole);
 
 		bool

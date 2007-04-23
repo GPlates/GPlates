@@ -106,8 +106,8 @@ GPlatesModel::ReconstructionTreePopulator::visit_feature_handle(
 
 		// If we got to here, we have all the information we need.
 		d_recon_tree_ptr->insert_total_reconstruction_pole(
-				d_accumulator->d_fixed_ref_frame,
-				d_accumulator->d_moving_ref_frame,
+				GpmlPlateId::non_null_ptr_type(*d_accumulator->d_fixed_ref_frame),
+				GpmlPlateId::non_null_ptr_type(*d_accumulator->d_moving_ref_frame),
 				*(d_accumulator->d_finite_rotation));
 
 		d_accumulator.reset(NULL);
