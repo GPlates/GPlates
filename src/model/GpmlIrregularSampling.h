@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_GPMLIRREGULARSAMPLING_H
 
 #include <vector>
+#include <boost/intrusive_ptr.hpp>
 #include "PropertyValue.h"
 #include "GpmlTimeSample.h"
 #include "GpmlInterpolationFunction.h"
@@ -68,7 +69,7 @@ namespace GPlatesModel {
 		const non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeSample> &time_samples_,
-				GpmlInterpolationFunction::non_null_ptr_type interp_func,
+				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
 				const TemplateTypeParameterType &value_type_) {
 			non_null_ptr_type ptr(
 					*(new GpmlIrregularSampling(time_samples_, interp_func, value_type_)));
@@ -98,7 +99,7 @@ namespace GPlatesModel {
 			return d_time_samples;
 		}
 
-		const GpmlInterpolationFunction::non_null_ptr_to_const_type
+		const GpmlInterpolationFunction::maybe_null_ptr_to_const_type
 		interpolation_function() const {
 			return d_interpolation_function;
 		}
@@ -114,14 +115,14 @@ namespace GPlatesModel {
 		//
 		// (This overload is provided to allow the referenced GpmlInterpolationFunction
 		// instance to accept a FeatureVisitor instance.)
-		const GpmlInterpolationFunction::non_null_ptr_type
+		const GpmlInterpolationFunction::maybe_null_ptr_type
 		interpolation_function() {
 			return d_interpolation_function;
 		}
 
 		void
 		set_interpolation_function(
-				GpmlInterpolationFunction::non_null_ptr_type i) {
+				GpmlInterpolationFunction::maybe_null_ptr_type i) {
 			d_interpolation_function = i;
 		}
 
@@ -164,7 +165,7 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		GpmlIrregularSampling(
 				const std::vector<GpmlTimeSample> &time_samples_,
-				GpmlInterpolationFunction::non_null_ptr_type interp_func,
+				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
 				const TemplateTypeParameterType &value_type_):
 			PropertyValue(),
 			d_time_samples(time_samples_),
@@ -188,7 +189,7 @@ namespace GPlatesModel {
 	private:
 
 		std::vector<GpmlTimeSample> d_time_samples;
-		GpmlInterpolationFunction::non_null_ptr_type d_interpolation_function;
+		GpmlInterpolationFunction::maybe_null_ptr_type d_interpolation_function;
 		TemplateTypeParameterType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow

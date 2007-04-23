@@ -40,6 +40,32 @@ namespace GPlatesModel {
 	public:
 
 		/**
+		 * A convenience typedef for boost::intrusive_ptr<GpmlInterpolationFunction>.
+		 */
+		typedef boost::intrusive_ptr<GpmlInterpolationFunction>
+				maybe_null_ptr_type;
+
+		/**
+		 * A convenience typedef for boost::intrusive_ptr<const GpmlInterpolationFunction>.
+		 */
+		typedef boost::intrusive_ptr<const GpmlInterpolationFunction>
+				maybe_null_ptr_to_const_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<GpmlInterpolationFunction>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlInterpolationFunction>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlInterpolationFunction>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlInterpolationFunction>
+				non_null_ptr_to_const_type;
+
+		/**
 		 * Construct a GpmlInterpolationFunction instance.
 		 *
 		 * Since this class is an abstract class, this constructor can never be invoked

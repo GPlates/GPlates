@@ -287,7 +287,7 @@ create_total_reconstruction_pole(
 
 	GPlatesModel::PropertyValue::non_null_ptr_type gpml_irregular_sampling =
 			GPlatesModel::GpmlIrregularSampling::create(time_samples,
-			gpml_finite_rotation_slerp, value_type);
+			GPlatesContrib::get_intrusive_ptr(gpml_finite_rotation_slerp), value_type);
 
 	UnicodeString property_name_string("gpml:totalReconstructionPole");
 	GPlatesModel::PropertyName property_name(property_name_string);
