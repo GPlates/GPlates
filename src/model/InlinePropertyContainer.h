@@ -32,11 +32,11 @@
 #include "PropertyValue.h"
 
 
-namespace GPlatesModel {
-
+namespace GPlatesModel
+{
 	class InlinePropertyContainer :
-			public PropertyContainer {
-
+			public PropertyContainer
+	{
 	public:
 		typedef std::vector<PropertyValue::non_null_ptr_type> container_type;
 
@@ -45,7 +45,8 @@ namespace GPlatesModel {
 
 
 		virtual
-		~InlinePropertyContainer() {  }
+		~InlinePropertyContainer()
+		{  }
 
 		static
 		const boost::intrusive_ptr<InlinePropertyContainer>
@@ -128,7 +129,7 @@ namespace GPlatesModel {
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_) :
 			PropertyContainer(property_name_, xml_attributes_),
 			d_values(values_)
-		{ }
+		{  }
 
 		InlinePropertyContainer(
 				const PropertyName &property_name_,
@@ -143,7 +144,7 @@ namespace GPlatesModel {
 				const InlinePropertyContainer &other) :
 			PropertyContainer(other),
 			d_values(other.d_values)
-		{ }
+		{  }
 
 	private:
 		container_type d_values;

@@ -40,17 +40,17 @@
 #include "XmlAttributeValue.h"
 
 
-namespace GPlatesModel {
-
-	class PropertyContainer {
-
+namespace GPlatesModel
+{
+	class PropertyContainer
+	{
 	public:
 
 		typedef long ref_count_type;
 
 		virtual
 		~PropertyContainer()
-		{ }
+		{  }
 
 		/**
 		 * Construct a PropertyContainer instance with the given property name.
@@ -66,7 +66,7 @@ namespace GPlatesModel {
 			d_ref_count(0),
 			d_property_name(property_name_),
 			d_xml_attributes(xml_attributes_)
-		{ }
+		{  }
 
 		/**
 		 * Construct a PropertyContainer instance which is a copy of @a other.
@@ -91,7 +91,7 @@ namespace GPlatesModel {
 			d_ref_count(0),
 			d_property_name(other.d_property_name),
 			d_xml_attributes(other.d_xml_attributes)
-		{ }
+		{  }
 
 		virtual
 		const boost::intrusive_ptr<PropertyContainer>
@@ -100,7 +100,8 @@ namespace GPlatesModel {
 		// Note that no "setter" is provided:  The property name of a PropertyContainer
 		// instance should never be changed.
 		const PropertyName &
-		property_name() const {
+		property_name() const
+		{
 			return d_property_name;
 		}
 
@@ -108,7 +109,8 @@ namespace GPlatesModel {
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
 		const std::map<XmlAttributeName, XmlAttributeValue> &
-		xml_attributes() const {
+		xml_attributes() const
+		{
 			return d_xml_attributes;
 		}
 
@@ -116,7 +118,8 @@ namespace GPlatesModel {
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::map<XmlAttributeName, XmlAttributeValue> &
-		xml_attributes() {
+		xml_attributes()
+		{
 			return d_xml_attributes;
 		}
 
@@ -143,12 +146,14 @@ namespace GPlatesModel {
 				FeatureVisitor &visitor) = 0;
 
 		void
-		increment_ref_count() const {
+		increment_ref_count() const
+		{
 			++d_ref_count;
 		}
 
 		ref_count_type
-		decrement_ref_count() const {
+		decrement_ref_count() const
+		{
 			return --d_ref_count;
 		}
 
@@ -172,7 +177,8 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_add_ref(
-			const PropertyContainer *p) {
+			const PropertyContainer *p)
+	{
 		p->increment_ref_count();
 	}
 
@@ -180,7 +186,8 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_release(
-			const PropertyContainer *p) {
+			const PropertyContainer *p)
+	{
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}
