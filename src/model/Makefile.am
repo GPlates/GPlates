@@ -11,7 +11,7 @@ libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc GeoTimeInstant.cc
 				ReconstructedFeatureGeometryPopulator.cc ReconstructionTree.cc \
 				ReconstructionTreePopulator.cc StringSetSingletons.cc \
 				XmlOutputInterface.cc FeatureCollectionRevision.cc \
-				FeatureStoreRootRevision.cc
+				FeatureStoreRootRevision.cc FeatureRevision.cc
 
 noinst_PROGRAMS		= _model.so
 _model_so_SOURCES	= PythonWrapper.cc

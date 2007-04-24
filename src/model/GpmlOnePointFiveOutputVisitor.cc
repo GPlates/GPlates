@@ -60,10 +60,8 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 	}
 
 	// Now visit each of the properties in turn.
-	std::vector<boost::intrusive_ptr<GPlatesModel::PropertyContainer> >::const_iterator iter =
-			feature_handle.properties().begin();
-	std::vector<boost::intrusive_ptr<GPlatesModel::PropertyContainer> >::const_iterator end =
-			feature_handle.properties().end();
+	GPlatesModel::FeatureHandle::const_iterator iter = feature_handle.properties_begin();
+	GPlatesModel::FeatureHandle::const_iterator end = feature_handle.properties_end();
 	for ( ; iter != end; ++iter) {
 		// Elements of this properties vector can be NULL pointers.  (See the comment in
 		// "model/FeatureRevision.h" for more details.)

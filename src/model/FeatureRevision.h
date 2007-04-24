@@ -37,6 +37,8 @@
 
 namespace GPlatesModel
 {
+	class DummyTransactionHandle;
+
 	/**
 	 * A feature revision contains the revisioned content of a conceptual feature.
 	 *
@@ -147,39 +149,129 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the collection of properties of this feature revision.
+		 * Return the number of property-container-slots currently contained within this
+		 * feature.
 		 *
-		 * This is the overloading of this function for const FeatureRevision instances; it
-		 * returns a reference to a const collection, which in turn will only allow const
-		 * access to its elements.
-		 *
-		 * @b FIXME:  Should this function be replaced with per-index const-access to
-		 * elements of the property container collection (which will return possibly-NULL
-		 * pointers)?  (For consistency with the non-const overload...)
+		 * Note that property-container-slots may be empty (ie, the pointer at that
+		 * position may be NULL).  Thus, the number of property containers actually
+		 * contained within this feature may be less than the number of
+		 * property-container-slots.
+		 * 
+		 * This value is intended to be used as an upper (open range) limit on the values
+		 * of the index used to access the property containers within this feature. 
+		 * Attempting to access a property container at an index which is greater-than or
+		 * equal-to the number of property-container-slots will always result in a NULL
+		 * pointer.
 		 */
-		const property_container_collection_type &
-		properties() const
+		property_container_collection_type::size_type
+		size() const
 		{
-			return d_properties;
+			return d_properties.size();
 		}
 
 		/**
-		 * Return the collection of properties of this feature revision.
+		 * Access the property container at @a index in the feature.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, a NULL
+		 * pointer will be returned.  If the value of @a index is less-than the return
+		 * value of the @a size function, a NULL pointer @em may be returned (depending
+		 * upon whether that property-container-slot is still being used or not).
+		 *
+		 * This is the overloading of this function for const FeatureRevision instances; it
+		 * returns a pointer to a const PropertyContainer instance.
+		 */
+		const boost::intrusive_ptr<const PropertyContainer>
+		operator[](
+				property_container_collection_type::size_type index) const
+		{
+			return access_property_container(index);
+		}
+
+		/**
+		 * Access the property container at @a index in the property container collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, a NULL
+		 * pointer will be returned.  If the value of @a index is less-than the return
+		 * value of the @a size function, a NULL pointer @em may be returned (depending
+		 * upon whether that property-container-slot is still being used or not).
 		 *
 		 * This is the overloading of this function for non-const FeatureRevision
-		 * instances; it returns a reference to a non-const collection, which in turn will
-		 * allow non-const access to its elements.
-		 *
-		 * @b FIXME:  Should this function be replaced with per-index access to elements of
-		 * the property container collection (which will return possibly-NULL pointers), as
-		 * well as per-index assignment (setter) and removal operations?  This would ensure
-		 * that revisioning is correctly handled...
+		 * instances; it returns a pointer to a non-const PropertyContainer instance.
 		 */
-		property_container_collection_type &
-		properties()
+		const boost::intrusive_ptr<PropertyContainer>
+		operator[](
+				property_container_collection_type::size_type index)
 		{
-			return d_properties;
+			return access_property_container(index);
 		}
+
+		/**
+		 * Access the property container at @a index in the property container collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, a NULL
+		 * pointer will be returned.  If the value of @a index is less-than the return
+		 * value of the @a size function, a NULL pointer @em may be returned (depending
+		 * upon whether that property-container-slot is still being used or not).
+		 *
+		 * This is the overloading of this function for const FeatureRevision instances; it
+		 * returns a pointer to a const PropertyContainer instance.
+		 */
+		const boost::intrusive_ptr<const PropertyContainer>
+		access_property_container(
+				property_container_collection_type::size_type index) const
+		{
+			boost::intrusive_ptr<const PropertyContainer> ptr;
+			if (index < size()) {
+				ptr = d_properties[index];
+			}
+			return ptr;
+		}
+
+		/**
+		 * Access the property container at @a index in the property container collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, a NULL
+		 * pointer will be returned.  If the value of @a index is less-than the return
+		 * value of the @a size function, a NULL pointer @em may be returned (depending
+		 * upon whether that property-container-slot is still being used or not).
+		 *
+		 * This is the overloading of this function for non-const FeatureRevision
+		 * instances; it returns a pointer to a non-const PropertyContainer instance.
+		 */
+		const boost::intrusive_ptr<PropertyContainer>
+		access_property_container(
+				property_container_collection_type::size_type index)
+		{
+			boost::intrusive_ptr<PropertyContainer> ptr;
+			if (index < size()) {
+				ptr = d_properties[index];
+			}
+			return ptr;
+		}
+
+		/**
+		 * Append @a new_property_container to the property container collection.
+		 */
+		property_container_collection_type::size_type
+		append_property_container(
+				PropertyContainer::non_null_ptr_type new_property_container,
+				DummyTransactionHandle &transaction);
+
+		/**
+		 * Remove the property_container at @a index in the property container collection.
+		 *
+		 * The value of @a index is expected to be non-negative.  If the value of @a index
+		 * is greater-than or equal-to the return value of the @a size function, this
+		 * function will be a no-op.
+		 */
+		void
+		remove_property_container(
+				property_container_collection_type::size_type index,
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Increment the reference-count of this instance.

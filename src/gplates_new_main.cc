@@ -231,11 +231,25 @@ create_isochron(
 	GPlatesModel::PropertyContainer::non_null_ptr_type name_container =
 			create_name(name, codespace_of_name);
 
-	feature_handle->properties().push_back(get_intrusive_ptr(reconstruction_plate_id_container));
-	feature_handle->properties().push_back(get_intrusive_ptr(centre_line_of_container));
-	feature_handle->properties().push_back(get_intrusive_ptr(valid_time_container));
-	feature_handle->properties().push_back(get_intrusive_ptr(description_container));
-	feature_handle->properties().push_back(get_intrusive_ptr(name_container));
+	GPlatesModel::DummyTransactionHandle pc1;
+	feature_handle->append_property_container(reconstruction_plate_id_container, pc1);
+	pc1.commit();
+
+	GPlatesModel::DummyTransactionHandle pc2;
+	feature_handle->append_property_container(centre_line_of_container, pc2);
+	pc2.commit();
+
+	GPlatesModel::DummyTransactionHandle pc3;
+	feature_handle->append_property_container(valid_time_container, pc3);
+	pc3.commit();
+
+	GPlatesModel::DummyTransactionHandle pc4;
+	feature_handle->append_property_container(description_container, pc4);
+	pc4.commit();
+
+	GPlatesModel::DummyTransactionHandle pc5;
+	feature_handle->append_property_container(name_container, pc5);
+	pc5.commit();
 
 	return feature_handle;
 }
@@ -320,9 +334,17 @@ create_total_recon_seq(
 	GPlatesModel::PropertyContainer::non_null_ptr_type moving_reference_frame_container =
 			create_reference_frame_plate_id(moving_plate_id, "gpml:movingReferenceFrame");
 
-	feature_handle->properties().push_back(get_intrusive_ptr(total_reconstruction_pole_container));
-	feature_handle->properties().push_back(get_intrusive_ptr(fixed_reference_frame_container));
-	feature_handle->properties().push_back(get_intrusive_ptr(moving_reference_frame_container));
+	GPlatesModel::DummyTransactionHandle pc1;
+	feature_handle->append_property_container(total_reconstruction_pole_container, pc1);
+	pc1.commit();
+
+	GPlatesModel::DummyTransactionHandle pc2;
+	feature_handle->append_property_container(fixed_reference_frame_container, pc2);
+	pc2.commit();
+
+	GPlatesModel::DummyTransactionHandle pc3;
+	feature_handle->append_property_container(moving_reference_frame_container, pc3);
+	pc3.commit();
 
 	return feature_handle;
 }
@@ -513,6 +535,7 @@ populate_feature_store(
 	GPlatesModel::DummyTransactionHandle transaction_iso_coll;
 	GPlatesModel::FeatureStoreRootHandle::iterator isochrons_iter =
 			feature_store->root()->append_feature_collection(isochrons, transaction_iso_coll);
+	transaction_iso_coll.commit();
 
 	GPlatesModel::DummyTransactionHandle transaction_iso1;
 	isochrons->append_feature(isochron1, transaction_iso1);

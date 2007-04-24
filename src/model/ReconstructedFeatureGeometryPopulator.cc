@@ -63,10 +63,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 		d_accumulator.reset(new ReconstructedFeatureGeometryAccumulator());
 
 		// Now visit each of the properties in turn.
-		std::vector<boost::intrusive_ptr<PropertyContainer> >::iterator iter =
-				feature_handle.properties().begin();
-		std::vector<boost::intrusive_ptr<PropertyContainer> >::iterator end =
-				feature_handle.properties().end();
+		GPlatesModel::FeatureHandle::iterator iter = feature_handle.properties_begin();
+		GPlatesModel::FeatureHandle::iterator end = feature_handle.properties_end();
 		for ( ; iter != end; ++iter) {
 			// Elements of this properties vector can be NULL pointers.  (See the
 			// comment in "model/FeatureRevision.h" for more details.)

@@ -38,6 +38,8 @@
 
 namespace GPlatesModel
 {
+	class DummyTransactionHandle;
+
 	/**
 	 * A feature handle acts as a persistent handle to the revisioned content of a conceptual
 	 * feature.
@@ -84,9 +86,49 @@ namespace GPlatesModel
 				non_null_ptr_to_const_type;
 
 		/**
+		 * The type of this class.
+		 *
+		 * This definition is used for template magic.
+		 */
+		typedef FeatureHandle this_type;
+
+		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
+
+		/**
+		 * The type which contains the revisioning component of a feature.
+		 *
+		 * This typedef is used by the HandleContainerIterator.
+		 */
+		typedef FeatureRevision revision_component_type;
+
+		/**
+		 * The type used for const-iterating over the collection of property containers.
+		 */
+		typedef HandleContainerIterator<const FeatureHandle,
+				const revision_component_type::property_container_collection_type,
+				boost::intrusive_ptr<const PropertyContainer> > const_iterator;
+
+		/**
+		 * The type used for (non-const) iterating over the collection of property
+		 * containers.
+		 */
+		typedef HandleContainerIterator<FeatureHandle,
+				revision_component_type::property_container_collection_type,
+				boost::intrusive_ptr<PropertyContainer> > iterator;
+
+		/**
+		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
+		 */
+		static
+		const const_iterator
+		get_const_iterator(
+				iterator iter)
+		{
+			return const_iterator(*(iter.d_collection_handle_ptr), iter.d_index);
+		}
 
 		~FeatureHandle()
 		{  }
@@ -154,38 +196,136 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the collection of properties of this feature.
-		 *
-		 * This is the overloading of this function for const FeatureRevision instances; it
-		 * returns a reference to a const collection, which in turn will only allow const
-		 * access to its elements.
-		 *
-		 * @b FIXME:  Should this function be replaced with per-index const-access to
-		 * elements of the property container collection (which will return possibly-NULL
-		 * pointers)?  (For consistency with the non-const overload...)
+		 * Return the "begin" const-iterator to iterate over the collection of property
+		 * containers.
 		 */
-		const FeatureRevision::property_container_collection_type &
-		properties() const
+		const const_iterator
+		properties_begin() const
 		{
-			return current_revision()->properties();
+			return const_iterator::create_begin(*this);
 		}
 
 		/**
-		 * Return the collection of properties of this feature revision.
-		 *
-		 * This is the overloading of this function for not-const FeatureRevision
-		 * instances; it returns a reference to a non-const collection, which in turn will
-		 * allow non-const access to its elements.
-		 *
-		 * @b FIXME:  Should this function be replaced with per-index access to elements of
-		 * the property container collection (which will return possibly-NULL pointers), as
-		 * well as per-index assignment (setter) and removal operations?  This would ensure
-		 * that revisioning is correctly handled...
+		 * Return the "begin" iterator to iterate over the collection of property
+		 * containers.
 		 */
-		FeatureRevision::property_container_collection_type &
-		properties()
+		const iterator
+		properties_begin()
 		{
-			return current_revision()->properties();
+			return iterator::create_begin(*this);
+		}
+
+		/**
+		 * Return the "end" const-iterator used during iteration over the collection of
+		 * property containers.
+		 */
+		const const_iterator
+		properties_end() const
+		{
+			return const_iterator::create_end(*this);
+		}
+
+		/**
+		 * Return the "end" iterator used during iteration over the collection of property
+		 * containers.
+		 */
+		const iterator
+		properties_end()
+		{
+			return iterator::create_end(*this);
+		}
+
+		/**
+		 * Append @a new_property_container to the property container collection.
+		 *
+		 * An iterator is returned which points to the new element in the collection.
+		 *
+		 * After the PropertyContainer has been appended, the "end" iterator will have
+		 * advanced -- the length of the sequence will have increased by 1, so what was the
+		 * iterator to the last element of the sequence (the "back" of the container), will
+		 * now be the iterator to the second-last element of the sequence; what was the
+		 * "end" iterator will now be the iterator to the last element of the sequence.
+		 */
+		const iterator
+		append_property_container(
+				PropertyContainer::non_null_ptr_type new_property_container,
+				DummyTransactionHandle &transaction)
+		{
+			FeatureRevision::property_container_collection_type::size_type new_index =
+					current_revision()->append_property_container(
+							new_property_container, transaction);
+			return iterator(*this, new_index);
+		}
+
+		/**
+		 * Remove the property container indicated by @a iter in the property container
+		 * collection.
+		 *
+		 * The results of this operation are only defined if @a iter is before @a end.
+		 *
+		 * The "end" iterator will not be changed by this operation -- the length of the
+		 * sequence will not change, only a feature-slot will become NULL.
+		 */
+		void
+		remove_property_container(
+				const_iterator iter,
+				DummyTransactionHandle &transaction)
+		{
+			current_revision()->remove_property_container(iter.index(), transaction);
+		}
+
+		/**
+		 * Remove the property container indicated by @a iter in the property container
+		 * collection.
+		 *
+		 * The results of this operation are only defined if @a iter is before @a end.
+		 *
+		 * The "end" iterator will not be changed by this operation -- the length of the
+		 * sequence will not change, only a property container-slot will become NULL.
+		 */
+		void
+		remove_property_container(
+				iterator iter,
+				DummyTransactionHandle &transaction)
+		{
+			current_revision()->remove_property_container(iter.index(), transaction);
+		}
+
+		/**
+		 * Access the current revision of this feature.
+		 *
+		 * Client code should not need to access the revision directly!
+		 *
+		 * This is the overloading of this function for const FeatureHandle instances; it
+		 * returns a pointer to a const FeatureRevision instance.
+		 */
+		const FeatureRevision::non_null_ptr_to_const_type
+		current_revision() const
+		{
+			return d_current_revision;
+		}
+
+		/**
+		 * Access the current revision of this feature.
+		 *
+		 * Client code should not need to access the revision directly!
+		 *
+		 * This is the overloading of this function for non-const FeatureHandle instances;
+		 * it returns a C++ reference to a pointer to a non-const FeatureRevision instance.
+		 *
+		 * Note that, because the copy-assignment operator of FeatureRevision is private,
+		 * the FeatureRevision referenced by the return-value of this function cannot be
+		 * assigned-to, which means that this function does not provide a means to directly
+		 * switch the FeatureRevision within this FeatureHandle instance.  (This
+		 * restriction is intentional.)
+		 *
+		 * To switch the FeatureRevision within this FeatureHandle instance, use the
+		 * function @a set_current_revision below.
+		 */
+		const FeatureRevision::non_null_ptr_type
+		current_revision()
+		{
+			return d_current_revision;
 		}
 
 		/**
@@ -227,6 +367,8 @@ namespace GPlatesModel
 		/**
 		 * Increment the reference-count of this instance.
 		 *
+		 * Client code should not use this function!
+		 *
 		 * This function is used by boost::intrusive_ptr and
 		 * GPlatesContrib::non_null_intrusive_ptr.
 		 */
@@ -239,6 +381,8 @@ namespace GPlatesModel
 		/**
 		 * Decrement the reference-count of this instance, and return the new
 		 * reference-count.
+		 *
+		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
 		 * GPlatesContrib::non_null_intrusive_ptr.
@@ -312,39 +456,6 @@ namespace GPlatesModel
 		FeatureHandle &
 		operator=(
 				const FeatureHandle &);
-
-		/**
-		 * Access the current revision of this feature.
-		 *
-		 * This is the overloading of this function for const FeatureHandle instances; it
-		 * returns a pointer to a const FeatureRevision instance.
-		 */
-		const FeatureRevision::non_null_ptr_to_const_type
-		current_revision() const
-		{
-			return d_current_revision;
-		}
-
-		/**
-		 * Access the current revision of this feature.
-		 *
-		 * This is the overloading of this function for non-const FeatureHandle instances;
-		 * it returns a C++ reference to a pointer to a non-const FeatureRevision instance.
-		 *
-		 * Note that, because the copy-assignment operator of FeatureRevision is private,
-		 * the FeatureRevision referenced by the return-value of this function cannot be
-		 * assigned-to, which means that this function does not provide a means to directly
-		 * switch the FeatureRevision within this FeatureHandle instance.  (This
-		 * restriction is intentional.)
-		 *
-		 * To switch the FeatureRevision within this FeatureHandle instance, use the
-		 * function @a set_current_revision.
-		 */
-		const FeatureRevision::non_null_ptr_type
-		current_revision()
-		{
-			return d_current_revision;
-		}
 	};
 
 
