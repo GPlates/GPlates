@@ -104,7 +104,7 @@ namespace GPlatesModel
 		typedef HandleContainerIterator<const FeatureStoreRootHandle,
 				const revision_component_type::feature_collection_container_type,
 				boost::intrusive_ptr<const FeatureCollectionHandle> >
-				const_iterator;
+				collections_const_iterator;
 
 		/**
 		 * The type used for (non-const) iteration over the feature collections contained
@@ -113,17 +113,18 @@ namespace GPlatesModel
 		typedef HandleContainerIterator<FeatureStoreRootHandle,
 				revision_component_type::feature_collection_container_type,
 				boost::intrusive_ptr<FeatureCollectionHandle> >
-				iterator;
+				collections_iterator;
 
 		/**
 		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
 		 */
 		static
-		const const_iterator
+		const collections_const_iterator
 		get_const_iterator(
-				iterator iter)
+				collections_iterator iter)
 		{
-			return const_iterator(*(iter.d_collection_handle_ptr), iter.d_index);
+			return collections_const_iterator(*(iter.d_collection_handle_ptr),
+					iter.d_index);
 		}
 
 		/**
@@ -156,40 +157,40 @@ namespace GPlatesModel
 		 * Return the "begin" const-iterator to iterate over the feature collections
 		 * contained within this feature store root.
 		 */
-		const const_iterator
-		begin() const
+		const collections_const_iterator
+		collections_begin() const
 		{
-			return const_iterator::create_begin(*this);
+			return collections_const_iterator::create_begin(*this);
 		}
 
 		/**
 		 * Return the "begin" iterator to iterate over the feature collections contained
 		 * within this feature store root.
 		 */
-		const iterator
-		begin()
+		const collections_iterator
+		collections_begin()
 		{
-			return iterator::create_begin(*this);
+			return collections_iterator::create_begin(*this);
 		}
 
 		/**
 		 * Return the "end" const-iterator used during iteration over the feature
 		 * collections contained within this feature store root.
 		 */
-		const const_iterator
-		end() const
+		const collections_const_iterator
+		collections_end() const
 		{
-			return const_iterator::create_end(*this);
+			return collections_const_iterator::create_end(*this);
 		}
 
 		/**
 		 * Return the "end" iterator used during iteration over the feature collections
 		 * contained within this feature store root.
 		 */
-		const iterator
-		end()
+		const collections_iterator
+		collections_end()
 		{
-			return iterator::create_end(*this);
+			return collections_iterator::create_end(*this);
 		}
 
 		/**
@@ -204,7 +205,7 @@ namespace GPlatesModel
 		 * what was the "end" iterator will now be the iterator to the last element of the
 		 * sequence.
 		 */
-		const iterator
+		const collections_iterator
 		append_feature_collection(
 				FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
 				DummyTransactionHandle &transaction)
@@ -212,7 +213,7 @@ namespace GPlatesModel
 			FeatureStoreRootRevision::feature_collection_container_type::size_type new_index =
 					current_revision()->append_feature_collection(new_feature_collection,
 							transaction);
-			return iterator(*this, new_index);
+			return collections_iterator(*this, new_index);
 		}
 
 		/**
@@ -226,7 +227,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_feature_collection(
-				const_iterator iter,
+				collections_const_iterator iter,
 				DummyTransactionHandle &transaction)
 		{
 			current_revision()->remove_feature_collection(iter.index(), transaction);
@@ -243,7 +244,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_feature_collection(
-				iterator iter,
+				collections_iterator iter,
 				DummyTransactionHandle &transaction)
 		{
 			current_revision()->remove_feature_collection(iter.index(), transaction);

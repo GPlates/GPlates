@@ -341,15 +341,15 @@ create_total_recon_seq(
 }
 
 
-GPlatesModel::FeatureStoreRootHandle::iterator
+GPlatesModel::FeatureStoreRootHandle::collections_iterator
 create_feature_collection(
 		GPlatesModel::FeatureStoreRootHandle::non_null_ptr_type feature_store_root)
 {
 	GPlatesModel::DummyTransactionHandle transaction;
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
 			GPlatesModel::FeatureCollectionHandle::create();
-	return feature_store_root->append_feature_collection(feature_collection, transaction);
 	transaction.commit();
+	return feature_store_root->append_feature_collection(feature_collection, transaction);
 }
 
 

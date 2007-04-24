@@ -408,8 +408,8 @@ traverse_recon_tree(
 }
 
 
-const std::pair<GPlatesModel::FeatureStoreRootHandle::iterator,
-		GPlatesModel::FeatureStoreRootHandle::iterator>
+const std::pair<GPlatesModel::FeatureStoreRootHandle::collections_iterator,
+		GPlatesModel::FeatureStoreRootHandle::collections_iterator>
 populate_feature_store(
 		GPlatesModel::FeatureStore::non_null_ptr_type feature_store)
 {
@@ -533,7 +533,7 @@ populate_feature_store(
 	// feature-collections and features (respectively) on their own?
 
 	GPlatesModel::DummyTransactionHandle transaction_iso_coll;
-	GPlatesModel::FeatureStoreRootHandle::iterator isochrons_iter =
+	GPlatesModel::FeatureStoreRootHandle::collections_iterator isochrons_iter =
 			feature_store->root()->append_feature_collection(isochrons, transaction_iso_coll);
 	transaction_iso_coll.commit();
 
@@ -597,7 +597,7 @@ populate_feature_store(
 			GPlatesModel::FeatureCollectionHandle::create();
 
 	GPlatesModel::DummyTransactionHandle transaction_trs_coll;
-	GPlatesModel::FeatureStoreRootHandle::iterator total_recon_seqs_iter =
+	GPlatesModel::FeatureStoreRootHandle::collections_iterator total_recon_seqs_iter =
 			feature_store->root()->append_feature_collection(total_recon_seqs, transaction_trs_coll);
 
 	GPlatesModel::DummyTransactionHandle transaction_trs1;
@@ -731,8 +731,8 @@ main()
 	GPlatesModel::FeatureStore::non_null_ptr_type feature_store =
 			GPlatesModel::FeatureStore::create();
 
-	std::pair<GPlatesModel::FeatureStoreRootHandle::iterator,
-			GPlatesModel::FeatureStoreRootHandle::iterator>
+	std::pair<GPlatesModel::FeatureStoreRootHandle::collections_iterator,
+			GPlatesModel::FeatureStoreRootHandle::collections_iterator>
 			isochrons_and_total_recon_seqs =
 			::populate_feature_store(feature_store);
 

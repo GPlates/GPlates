@@ -52,8 +52,8 @@ namespace GPlatesModel
 				unsigned long root);
 	private:
 		FeatureStore::non_null_ptr_type d_feature_store;
-		FeatureStoreRootHandle::iterator d_isochrons;
-		FeatureStoreRootHandle::iterator d_total_recon_seqs;
+		FeatureStoreRootHandle::collections_iterator d_isochrons;
+		FeatureStoreRootHandle::collections_iterator d_total_recon_seqs;
 	};
 
 	void export_Model();
