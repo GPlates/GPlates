@@ -60,8 +60,10 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 	}
 
 	// Now visit each of the properties in turn.
-	GPlatesModel::FeatureHandle::const_iterator iter = feature_handle.properties_begin();
-	GPlatesModel::FeatureHandle::const_iterator end = feature_handle.properties_end();
+	GPlatesModel::FeatureHandle::properties_const_iterator iter =
+			feature_handle.properties_begin();
+	GPlatesModel::FeatureHandle::properties_const_iterator end =
+			feature_handle.properties_end();
 	for ( ; iter != end; ++iter) {
 		// Elements of this properties vector can be NULL pointers.  (See the comment in
 		// "model/FeatureRevision.h" for more details.)

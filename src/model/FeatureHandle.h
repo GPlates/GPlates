@@ -109,7 +109,8 @@ namespace GPlatesModel
 		 */
 		typedef HandleContainerIterator<const FeatureHandle,
 				const revision_component_type::property_container_collection_type,
-				boost::intrusive_ptr<const PropertyContainer> > const_iterator;
+				boost::intrusive_ptr<const PropertyContainer> >
+				properties_const_iterator;
 
 		/**
 		 * The type used for (non-const) iterating over the collection of property
@@ -117,17 +118,19 @@ namespace GPlatesModel
 		 */
 		typedef HandleContainerIterator<FeatureHandle,
 				revision_component_type::property_container_collection_type,
-				boost::intrusive_ptr<PropertyContainer> > iterator;
+				boost::intrusive_ptr<PropertyContainer> >
+				properties_iterator;
 
 		/**
 		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
 		 */
 		static
-		const const_iterator
+		const properties_const_iterator
 		get_const_iterator(
-				iterator iter)
+				properties_iterator iter)
 		{
-			return const_iterator(*(iter.d_collection_handle_ptr), iter.d_index);
+			return properties_const_iterator(*(iter.d_collection_handle_ptr),
+					iter.d_index);
 		}
 
 		~FeatureHandle()
@@ -199,40 +202,40 @@ namespace GPlatesModel
 		 * Return the "begin" const-iterator to iterate over the collection of property
 		 * containers.
 		 */
-		const const_iterator
+		const properties_const_iterator
 		properties_begin() const
 		{
-			return const_iterator::create_begin(*this);
+			return properties_const_iterator::create_begin(*this);
 		}
 
 		/**
 		 * Return the "begin" iterator to iterate over the collection of property
 		 * containers.
 		 */
-		const iterator
+		const properties_iterator
 		properties_begin()
 		{
-			return iterator::create_begin(*this);
+			return properties_iterator::create_begin(*this);
 		}
 
 		/**
 		 * Return the "end" const-iterator used during iteration over the collection of
 		 * property containers.
 		 */
-		const const_iterator
+		const properties_const_iterator
 		properties_end() const
 		{
-			return const_iterator::create_end(*this);
+			return properties_const_iterator::create_end(*this);
 		}
 
 		/**
 		 * Return the "end" iterator used during iteration over the collection of property
 		 * containers.
 		 */
-		const iterator
+		const properties_iterator
 		properties_end()
 		{
-			return iterator::create_end(*this);
+			return properties_iterator::create_end(*this);
 		}
 
 		/**
@@ -246,7 +249,7 @@ namespace GPlatesModel
 		 * now be the iterator to the second-last element of the sequence; what was the
 		 * "end" iterator will now be the iterator to the last element of the sequence.
 		 */
-		const iterator
+		const properties_iterator
 		append_property_container(
 				PropertyContainer::non_null_ptr_type new_property_container,
 				DummyTransactionHandle &transaction)
@@ -254,7 +257,7 @@ namespace GPlatesModel
 			FeatureRevision::property_container_collection_type::size_type new_index =
 					current_revision()->append_property_container(
 							new_property_container, transaction);
-			return iterator(*this, new_index);
+			return properties_iterator(*this, new_index);
 		}
 
 		/**
@@ -268,7 +271,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_property_container(
-				const_iterator iter,
+				properties_const_iterator iter,
 				DummyTransactionHandle &transaction)
 		{
 			current_revision()->remove_property_container(iter.index(), transaction);
@@ -285,7 +288,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_property_container(
-				iterator iter,
+				properties_iterator iter,
 				DummyTransactionHandle &transaction)
 		{
 			current_revision()->remove_property_container(iter.index(), transaction);
