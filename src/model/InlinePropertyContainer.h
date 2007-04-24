@@ -38,6 +38,21 @@ namespace GPlatesModel
 			public PropertyContainer
 	{
 	public:
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<InlinePropertyContainer>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<InlinePropertyContainer>
+				non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const InlinePropertyContainer>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const InlinePropertyContainer>
+				non_null_ptr_to_const_type;
+
 		typedef std::vector<PropertyValue::non_null_ptr_type> container_type;
 
 		typedef container_type::iterator iterator;
@@ -49,36 +64,36 @@ namespace GPlatesModel
 		{  }
 
 		static
-		const boost::intrusive_ptr<InlinePropertyContainer>
+		const non_null_ptr_type
 		create(
 				const PropertyName &property_name_,
 				const container_type &values_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_)
 		{
-			boost::intrusive_ptr<InlinePropertyContainer> ptr(
-				new InlinePropertyContainer(property_name_, values_, xml_attributes_));
-
+			non_null_ptr_type ptr(
+					*(new InlinePropertyContainer(property_name_, values_,
+							xml_attributes_)));
 			return ptr;
 		}
 
 		static
-		const boost::intrusive_ptr<InlinePropertyContainer>
+		const non_null_ptr_type
 		create(
 				const PropertyName &property_name_,
 				PropertyValue::non_null_ptr_type value_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_)
 		{
-			boost::intrusive_ptr<InlinePropertyContainer> ptr(
-				new InlinePropertyContainer(property_name_, value_, xml_attributes_));
-
+			non_null_ptr_type ptr(
+					*(new InlinePropertyContainer(property_name_, value_, xml_attributes_)));
 			return ptr;
 		}
 
 		virtual
-		const boost::intrusive_ptr<PropertyContainer>
+		const PropertyContainer::non_null_ptr_type
 		clone() const 
 		{
-			boost::intrusive_ptr<PropertyContainer> dup(new InlinePropertyContainer(*this));
+			PropertyContainer::non_null_ptr_type dup(
+					*(new InlinePropertyContainer(*this)));
 			return dup;
 		}
 

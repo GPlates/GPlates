@@ -61,7 +61,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 
-const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const GPlatesModel::PropertyContainer::non_null_ptr_type
 create_reconstruction_plate_id(
 		const unsigned long &plate_id) {
 
@@ -76,7 +76,7 @@ create_reconstruction_plate_id(
 	UnicodeString property_name_string("gpml:reconstructionPlateId");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
 			GPlatesModel::InlinePropertyContainer::create(property_name,
 			gpml_plate_id_constant_value, xml_attributes);
 
@@ -84,7 +84,7 @@ create_reconstruction_plate_id(
 }
 
 
-const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const GPlatesModel::PropertyContainer::non_null_ptr_type
 create_reference_frame_plate_id(
 		const unsigned long &plate_id,
 		const char *which_reference_frame) {
@@ -95,7 +95,7 @@ create_reference_frame_plate_id(
 	UnicodeString property_name_string(which_reference_frame);
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
 			GPlatesModel::InlinePropertyContainer::create(property_name,
 			gpml_plate_id, xml_attributes);
 
@@ -103,7 +103,7 @@ create_reference_frame_plate_id(
 }
 
 
-const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const GPlatesModel::PropertyContainer::non_null_ptr_type
 create_centre_line_of(
 		const double *points,
 		unsigned num_points) {
@@ -127,7 +127,7 @@ create_centre_line_of(
 	UnicodeString property_name_string("gpml:centreLineOf");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
 			GPlatesModel::InlinePropertyContainer::create(property_name,
 			gml_orientable_curve_constant_value, xml_attributes2);
 
@@ -135,7 +135,7 @@ create_centre_line_of(
 }
 
 
-const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const GPlatesModel::PropertyContainer::non_null_ptr_type
 create_valid_time(
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_begin,
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_end) {
@@ -157,7 +157,7 @@ create_valid_time(
 	UnicodeString property_name_string("gml:validTime");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
 			GPlatesModel::InlinePropertyContainer::create(property_name,
 			gml_time_period, xml_attributes2);
 
@@ -165,7 +165,7 @@ create_valid_time(
 }
 
 
-const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const GPlatesModel::PropertyContainer::non_null_ptr_type
 create_description(
 		const UnicodeString &description) {
 
@@ -174,7 +174,7 @@ create_description(
 	UnicodeString property_name_string("gml:description");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
 			GPlatesModel::InlinePropertyContainer::create(property_name,
 			gml_description, xml_attributes);
 
@@ -182,7 +182,7 @@ create_description(
 }
 
 
-const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const GPlatesModel::PropertyContainer::non_null_ptr_type
 create_name(
 		const UnicodeString &name,
 		const UnicodeString &codespace) {
@@ -195,7 +195,7 @@ create_name(
 	GPlatesModel::XmlAttributeName xml_attribute_name("codeSpace");
 	GPlatesModel::XmlAttributeValue xml_attribute_value(codespace);
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
 			GPlatesModel::InlinePropertyContainer::create(property_name,
 			gml_name, xml_attributes);
 
@@ -220,22 +220,22 @@ create_isochron(
 	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
 			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
 
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> reconstruction_plate_id_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type reconstruction_plate_id_container =
 			create_reconstruction_plate_id(plate_id);
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> centre_line_of_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type centre_line_of_container =
 			create_centre_line_of(points, num_points);
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> valid_time_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type valid_time_container =
 			create_valid_time(geo_time_instant_begin, geo_time_instant_end);
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> description_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type description_container =
 			create_description(description);
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> name_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type name_container =
 			create_name(name, codespace_of_name);
 
-	feature_handle->properties().push_back(reconstruction_plate_id_container);
-	feature_handle->properties().push_back(centre_line_of_container);
-	feature_handle->properties().push_back(valid_time_container);
-	feature_handle->properties().push_back(description_container);
-	feature_handle->properties().push_back(name_container);
+	feature_handle->properties().push_back(get_intrusive_ptr(reconstruction_plate_id_container));
+	feature_handle->properties().push_back(get_intrusive_ptr(centre_line_of_container));
+	feature_handle->properties().push_back(get_intrusive_ptr(valid_time_container));
+	feature_handle->properties().push_back(get_intrusive_ptr(description_container));
+	feature_handle->properties().push_back(get_intrusive_ptr(name_container));
 
 	return feature_handle;
 }
@@ -250,7 +250,7 @@ struct RotationFileFiveTuple {
 };
 
 
-const boost::intrusive_ptr<GPlatesModel::PropertyContainer>
+const GPlatesModel::PropertyContainer::non_null_ptr_type
 create_total_reconstruction_pole(
 		const RotationFileFiveTuple *five_tuples,
 		unsigned num_five_tuples) {
@@ -292,7 +292,7 @@ create_total_reconstruction_pole(
 	UnicodeString property_name_string("gpml:totalReconstructionPole");
 	GPlatesModel::PropertyName property_name(property_name_string);
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> inline_property_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
 			GPlatesModel::InlinePropertyContainer::create(property_name,
 			gpml_irregular_sampling, xml_attributes2);
 
@@ -313,16 +313,16 @@ create_total_recon_seq(
 	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
 			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
 
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> total_reconstruction_pole_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples, num_five_tuples);
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> fixed_reference_frame_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type fixed_reference_frame_container =
 			create_reference_frame_plate_id(fixed_plate_id, "gpml:fixedReferenceFrame");
-	boost::intrusive_ptr<GPlatesModel::PropertyContainer> moving_reference_frame_container =
+	GPlatesModel::PropertyContainer::non_null_ptr_type moving_reference_frame_container =
 			create_reference_frame_plate_id(moving_plate_id, "gpml:movingReferenceFrame");
 
-	feature_handle->properties().push_back(total_reconstruction_pole_container);
-	feature_handle->properties().push_back(fixed_reference_frame_container);
-	feature_handle->properties().push_back(moving_reference_frame_container);
+	feature_handle->properties().push_back(get_intrusive_ptr(total_reconstruction_pole_container));
+	feature_handle->properties().push_back(get_intrusive_ptr(fixed_reference_frame_container));
+	feature_handle->properties().push_back(get_intrusive_ptr(moving_reference_frame_container));
 
 	return feature_handle;
 }

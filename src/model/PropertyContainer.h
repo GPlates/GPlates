@@ -29,7 +29,6 @@
 #define GPLATES_MODEL_PROPERTYCONTAINER_H
 
 #include <map>
-#include <boost/intrusive_ptr.hpp>
 // Even though we could make do with a forward declaration inside this header, every derived class
 // of 'PropertyContainer' will need to #include "ConstFeatureVisitor.h" and "FeatureVisitor.h"
 // anyway, so we may as well include them here.
@@ -38,6 +37,7 @@
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
+#include "contrib/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesModel
@@ -45,6 +45,18 @@ namespace GPlatesModel
 	class PropertyContainer
 	{
 	public:
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<PropertyContainer>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<PropertyContainer> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesContrib::non_null_intrusive_ptr<const PropertyContainer>.
+		 */
+		typedef GPlatesContrib::non_null_intrusive_ptr<const PropertyContainer>
+				non_null_ptr_to_const_type;
 
 		typedef long ref_count_type;
 
@@ -78,10 +90,10 @@ namespace GPlatesModel
 		 *
 		 * This ctor should only be invoked by the @a clone member function (pure virtual
 		 * in this class; defined in derived classes), which will create a duplicate
-		 * instance and return a new intrusive_ptr reference to the new duplicate.  Since
-		 * initially the only reference to the new duplicate will be the one returned by
-		 * the @a clone function, *before* the new intrusive_ptr is created, the ref-count
-		 * of the new PropertyContainer instance should be zero.
+		 * instance and return a new non_null_intrusive_ptr reference to the new duplicate.
+		 * Since initially the only reference to the new duplicate will be the one returned
+		 * by the @a clone function, *before* the new non_null_intrusive_ptr is created,
+		 * the ref-count of the new PropertyContainer instance should be zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
 		 * copy-ctor, except that it should initialise the ref-count to zero.
@@ -93,8 +105,11 @@ namespace GPlatesModel
 			d_xml_attributes(other.d_xml_attributes)
 		{  }
 
+		/**
+		 * Create a duplicate of this PropertyContainer instance.
+		 */
 		virtual
-		const boost::intrusive_ptr<PropertyContainer>
+		const non_null_ptr_type
 		clone() const = 0;
 
 		// Note that no "setter" is provided:  The property name of a PropertyContainer
@@ -145,12 +160,25 @@ namespace GPlatesModel
 		accept_visitor(
 				FeatureVisitor &visitor) = 0;
 
+		/**
+		 * Increment the reference-count of this instance.
+		 *
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
+		 */
 		void
 		increment_ref_count() const
 		{
 			++d_ref_count;
 		}
 
+		/**
+		 * Decrement the reference-count of this instance, and return the new
+		 * reference-count.
+		 *
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesContrib::non_null_intrusive_ptr.
+		 */
 		ref_count_type
 		decrement_ref_count() const
 		{

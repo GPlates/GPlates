@@ -67,7 +67,7 @@ namespace GPlatesModel {
 		const non_null_ptr_type
 		create(
 				const integer_plate_id_type &value_) {
-			GpmlPlateId::non_null_ptr_type ptr(*(new GpmlPlateId(value_)));
+			non_null_ptr_type ptr(*(new GpmlPlateId(value_)));
 			return ptr;
 		}
 
