@@ -511,8 +511,8 @@ GPlatesModel::Model::create_reconstruction(
 	ReconstructionTreePopulator rtp(time, recon_tree);
 
 	// Populate the reconstruction tree with our total recon seqs.
-	FeatureCollectionHandle::iterator iter2 = (*d_total_recon_seqs)->begin();
-	FeatureCollectionHandle::iterator end2 = (*d_total_recon_seqs)->end();
+	FeatureCollectionHandle::features_iterator iter2 = (*d_total_recon_seqs)->features_begin();
+	FeatureCollectionHandle::features_iterator end2 = (*d_total_recon_seqs)->features_end();
 	for ( ; iter2 != end2; ++iter2) {
 		(*iter2)->accept_visitor(rtp);
 	}
@@ -524,8 +524,8 @@ GPlatesModel::Model::create_reconstruction(
 			recon_tree, point_reconstructions, polyline_reconstructions);
 
 	// Populate the vectors with reconstructed feature geometries from our isochrons.
-	FeatureCollectionHandle::iterator iter3 = (*d_isochrons)->begin();
-	FeatureCollectionHandle::iterator end3 = (*d_isochrons)->end();
+	FeatureCollectionHandle::features_iterator iter3 = (*d_isochrons)->features_begin();
+	FeatureCollectionHandle::features_iterator end3 = (*d_isochrons)->features_end();
 	for ( ; iter3 != end3; ++iter3) {
 		(*iter3)->accept_visitor(rfgp);
 	}

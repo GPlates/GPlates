@@ -618,8 +618,8 @@ populate_feature_store(
 
 void
 output_as_gpml(
-		GPlatesModel::FeatureCollectionHandle::iterator begin,
-		GPlatesModel::FeatureCollectionHandle::iterator end)
+		GPlatesModel::FeatureCollectionHandle::features_iterator begin,
+		GPlatesModel::FeatureCollectionHandle::features_iterator end)
 {
 	GPlatesFileIO::XmlOutputInterface xoi =
 			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
@@ -633,10 +633,10 @@ output_as_gpml(
 
 void
 output_reconstructions(
-		GPlatesModel::FeatureCollectionHandle::iterator isochrons_begin,
-		GPlatesModel::FeatureCollectionHandle::iterator isochrons_end,
-		GPlatesModel::FeatureCollectionHandle::iterator total_recon_seqs_begin,
-		GPlatesModel::FeatureCollectionHandle::iterator total_recon_seqs_end)
+		GPlatesModel::FeatureCollectionHandle::features_iterator isochrons_begin,
+		GPlatesModel::FeatureCollectionHandle::features_iterator isochrons_end,
+		GPlatesModel::FeatureCollectionHandle::features_iterator total_recon_seqs_begin,
+		GPlatesModel::FeatureCollectionHandle::features_iterator total_recon_seqs_end)
 {
 	static const double recon_times_to_test[] = {
 		0.0,
@@ -658,7 +658,8 @@ output_reconstructions(
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
-		GPlatesModel::FeatureCollectionHandle::iterator iter1 = total_recon_seqs_begin;
+		GPlatesModel::FeatureCollectionHandle::features_iterator iter1 =
+				total_recon_seqs_begin;
 		for ( ; iter1 != total_recon_seqs_end; ++iter1) {
 			(*iter1)->accept_visitor(rtp);
 		}
@@ -675,7 +676,7 @@ output_reconstructions(
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
 				recon_tree, reconstructed_points, reconstructed_polylines);
 
-		GPlatesModel::FeatureCollectionHandle::iterator iter2 = isochrons_begin;
+		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
 			(*iter2)->accept_visitor(rfgp);
 		}
@@ -740,9 +741,9 @@ main()
 	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> total_recon_seqs =
 			*(isochrons_and_total_recon_seqs.second);
 
-	::output_as_gpml(isochrons->begin(), isochrons->end());
-	::output_reconstructions(isochrons->begin(), isochrons->end(), total_recon_seqs->begin(),
-			total_recon_seqs->end());
+	::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
+	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
+			total_recon_seqs->features_begin(), total_recon_seqs->features_end());
 
 	return 0;
 }

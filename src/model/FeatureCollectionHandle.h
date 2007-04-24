@@ -108,24 +108,27 @@ namespace GPlatesModel
 		 */
 		typedef HandleContainerIterator<const FeatureCollectionHandle,
 				const revision_component_type::feature_collection_type,
-				boost::intrusive_ptr<const FeatureHandle> > const_iterator;
+				boost::intrusive_ptr<const FeatureHandle> >
+				features_const_iterator;
 
 		/**
 		 * The type used for (non-const) iterating over the collection of feature handles.
 		 */
 		typedef HandleContainerIterator<FeatureCollectionHandle,
 				revision_component_type::feature_collection_type,
-				boost::intrusive_ptr<FeatureHandle> > iterator;
+				boost::intrusive_ptr<FeatureHandle> >
+				features_iterator;
 
 		/**
 		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
 		 */
 		static
-		const const_iterator
+		const features_const_iterator
 		get_const_iterator(
-				iterator iter)
+				features_iterator iter)
 		{
-			return const_iterator(*(iter.d_collection_handle_ptr), iter.d_index);
+			return features_const_iterator(*(iter.d_collection_handle_ptr),
+					iter.d_index);
 		}
 
 		/**
@@ -157,38 +160,38 @@ namespace GPlatesModel
 		/**
 		 * Return the "begin" const-iterator to iterate over the collection of features.
 		 */
-		const const_iterator
-		begin() const
+		const features_const_iterator
+		features_begin() const
 		{
-			return const_iterator::create_begin(*this);
+			return features_const_iterator::create_begin(*this);
 		}
 
 		/**
 		 * Return the "begin" iterator to iterate over the collection of features.
 		 */
-		const iterator
-		begin()
+		const features_iterator
+		features_begin()
 		{
-			return iterator::create_begin(*this);
+			return features_iterator::create_begin(*this);
 		}
 
 		/**
 		 * Return the "end" const-iterator used during iteration over the collection of
 		 * features.
 		 */
-		const const_iterator
-		end() const
+		const features_const_iterator
+		features_end() const
 		{
-			return const_iterator::create_end(*this);
+			return features_const_iterator::create_end(*this);
 		}
 
 		/**
 		 * Return the "end" iterator used during iteration over the collection of features.
 		 */
-		const iterator
-		end()
+		const features_iterator
+		features_end()
 		{
-			return iterator::create_end(*this);
+			return features_iterator::create_end(*this);
 		}
 
 		/**
@@ -202,14 +205,14 @@ namespace GPlatesModel
 		 * the iterator to the second-last element of the sequence; what was the "end"
 		 * iterator will now be the iterator to the last element of the sequence.
 		 */
-		const iterator
+		const features_iterator
 		append_feature(
 				FeatureHandle::non_null_ptr_type new_feature,
 				DummyTransactionHandle &transaction)
 		{
 			FeatureCollectionRevision::feature_collection_type::size_type new_index =
 					current_revision()->append_feature(new_feature, transaction);
-			return iterator(*this, new_index);
+			return features_iterator(*this, new_index);
 		}
 
 		/**
@@ -222,7 +225,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_feature(
-				const_iterator iter,
+				features_const_iterator iter,
 				DummyTransactionHandle &transaction)
 		{
 			current_revision()->remove_feature(iter.index(), transaction);
@@ -238,7 +241,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_feature(
-				iterator iter,
+				features_iterator iter,
 				DummyTransactionHandle &transaction)
 		{
 			current_revision()->remove_feature(iter.index(), transaction);
