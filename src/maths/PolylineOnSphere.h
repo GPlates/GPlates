@@ -32,8 +32,9 @@
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
 #include <vector>
-#include <iterator>  /* iterator, bidirectional_iterator_tag */
-#include <utility>  /* pair */
+#include <iterator>  /* std::iterator, std::bidirectional_iterator_tag */
+#include <algorithm>  /* std::swap */
+#include <utility>  /* std::pair */
 #include "GreatCircleArc.h"
 #include "InvalidPolylineException.h"
 #include "contrib/non_null_intrusive_ptr.h"
@@ -997,7 +998,8 @@ namespace GPlatesMaths {
 	inline
 	void
 	intrusive_ptr_add_ref(
-			const PolylineOnSphere *p) {
+			const PolylineOnSphere *p)
+	{
 		p->increment_ref_count();
 	}
 
@@ -1005,12 +1007,31 @@ namespace GPlatesMaths {
 	inline
 	void
 	intrusive_ptr_release(
-			const PolylineOnSphere *p) {
+			const PolylineOnSphere *p)
+	{
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}
 	}
+}
 
+
+namespace std
+{
+	/**
+	 * This is a template specialisation of the standard function @a swap.
+	 *
+	 * See Josuttis, section 4.4.2, "Swapping Two Values" for more information.
+	 */
+	template<>
+	inline
+	void
+	swap<GPlatesMaths::PolylineOnSphere>(
+			GPlatesMaths::PolylineOnSphere &p1,
+			GPlatesMaths::PolylineOnSphere &p2)
+	{
+		p1.swap(p2);
+	}
 }
 
 #endif  // GPLATES_MATHS_POLYLINEONSPHERE_H
