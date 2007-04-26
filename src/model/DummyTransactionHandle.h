@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,11 +33,34 @@ namespace GPlatesModel
 	/**
 	 * This struct is a place-holder for the soon-to-be-implemented class TransactionHandle.
 	 */
-	struct DummyTransactionHandle
+	class DummyTransactionHandle
 	{
+	public:
+		DummyTransactionHandle(
+				const char *file,
+				int line):
+			d_file(file),
+			d_line(line),
+			d_has_been_committed_or_aborted(false)
+		{  }
+
+		~DummyTransactionHandle();
+
 		void
 		commit()
-		{  }
+		{
+			d_has_been_committed_or_aborted = true;
+		}
+
+		void
+		abort()
+		{
+			d_has_been_committed_or_aborted = true;
+		}
+	private:
+		const char *d_file;
+		int d_line;
+		bool d_has_been_committed_or_aborted;
 	};
 }
 

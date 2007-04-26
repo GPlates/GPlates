@@ -222,23 +222,23 @@ create_isochron(
 	GPlatesModel::PropertyContainer::non_null_ptr_type name_container =
 			create_name(name, codespace_of_name);
 
-	GPlatesModel::DummyTransactionHandle pc1;
+	GPlatesModel::DummyTransactionHandle pc1(__FILE__, __LINE__);
 	feature_handle->append_property_container(reconstruction_plate_id_container, pc1);
 	pc1.commit();
 
-	GPlatesModel::DummyTransactionHandle pc2;
+	GPlatesModel::DummyTransactionHandle pc2(__FILE__, __LINE__);
 	feature_handle->append_property_container(centre_line_of_container, pc2);
 	pc2.commit();
 
-	GPlatesModel::DummyTransactionHandle pc3;
+	GPlatesModel::DummyTransactionHandle pc3(__FILE__, __LINE__);
 	feature_handle->append_property_container(valid_time_container, pc3);
 	pc3.commit();
 
-	GPlatesModel::DummyTransactionHandle pc4;
+	GPlatesModel::DummyTransactionHandle pc4(__FILE__, __LINE__);
 	feature_handle->append_property_container(description_container, pc4);
 	pc4.commit();
 
-	GPlatesModel::DummyTransactionHandle pc5;
+	GPlatesModel::DummyTransactionHandle pc5(__FILE__, __LINE__);
 	feature_handle->append_property_container(name_container, pc5);
 	pc5.commit();
 
@@ -325,15 +325,15 @@ create_total_recon_seq(
 	GPlatesModel::PropertyContainer::non_null_ptr_type moving_reference_frame_container =
 			create_reference_frame_plate_id(moving_plate_id, "gpml:movingReferenceFrame");
 
-	GPlatesModel::DummyTransactionHandle pc1;
+	GPlatesModel::DummyTransactionHandle pc1(__FILE__, __LINE__);
 	feature_handle->append_property_container(total_reconstruction_pole_container, pc1);
 	pc1.commit();
 
-	GPlatesModel::DummyTransactionHandle pc2;
+	GPlatesModel::DummyTransactionHandle pc2(__FILE__, __LINE__);
 	feature_handle->append_property_container(fixed_reference_frame_container, pc2);
 	pc2.commit();
 
-	GPlatesModel::DummyTransactionHandle pc3;
+	GPlatesModel::DummyTransactionHandle pc3(__FILE__, __LINE__);
 	feature_handle->append_property_container(moving_reference_frame_container, pc3);
 	pc3.commit();
 
@@ -345,7 +345,7 @@ GPlatesModel::FeatureStoreRootHandle::collections_iterator
 create_feature_collection(
 		GPlatesModel::FeatureStoreRootHandle::non_null_ptr_type feature_store_root)
 {
-	GPlatesModel::DummyTransactionHandle transaction;
+	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
 			GPlatesModel::FeatureCollectionHandle::create();
 	transaction.commit();
@@ -428,15 +428,15 @@ GPlatesModel::Model::Model():
 			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
 			geo_time_instant_end3, description3, name3, codespace_of_name3);
 
-	DummyTransactionHandle transaction_iso1;
+	DummyTransactionHandle transaction_iso1(__FILE__, __LINE__);
 	(*d_isochrons)->append_feature(isochron1, transaction_iso1);
 	transaction_iso1.commit();
 
-	DummyTransactionHandle transaction_iso2;
+	DummyTransactionHandle transaction_iso2(__FILE__, __LINE__);
 	(*d_isochrons)->append_feature(isochron2, transaction_iso2);
 	transaction_iso2.commit();
 
-	DummyTransactionHandle transaction_iso3;
+	DummyTransactionHandle transaction_iso3(__FILE__, __LINE__);
 	(*d_isochrons)->append_feature(isochron3, transaction_iso3);
 	transaction_iso3.commit();
 
@@ -484,15 +484,15 @@ GPlatesModel::Model::Model():
 			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
 			num_five_tuples3);
 
-	DummyTransactionHandle transaction_trs1;
+	DummyTransactionHandle transaction_trs1(__FILE__, __LINE__);
 	(*d_total_recon_seqs)->append_feature(total_recon_seq1, transaction_trs1);
 	transaction_trs1.commit();
 
-	DummyTransactionHandle transaction_trs2;
+	DummyTransactionHandle transaction_trs2(__FILE__, __LINE__);
 	(*d_total_recon_seqs)->append_feature(total_recon_seq2, transaction_trs2);
 	transaction_trs2.commit();
 
-	DummyTransactionHandle transaction_trs3;
+	DummyTransactionHandle transaction_trs3(__FILE__, __LINE__);
 	(*d_total_recon_seqs)->append_feature(total_recon_seq3, transaction_trs3);
 	transaction_trs3.commit();
 }
