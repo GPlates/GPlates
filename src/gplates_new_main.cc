@@ -599,6 +599,7 @@ populate_feature_store(
 	GPlatesModel::DummyTransactionHandle transaction_trs_coll(__FILE__, __LINE__);
 	GPlatesModel::FeatureStoreRootHandle::collections_iterator total_recon_seqs_iter =
 			feature_store->root()->append_feature_collection(total_recon_seqs, transaction_trs_coll);
+	transaction_trs_coll.commit();
 
 	GPlatesModel::DummyTransactionHandle transaction_trs1(__FILE__, __LINE__);
 	total_recon_seqs->append_feature(total_recon_seq1, transaction_trs1);
