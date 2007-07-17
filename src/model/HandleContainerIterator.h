@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_HANDLECONTAINERITERATOR_H
 
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
+#include "WeakObserver.h"
 
 
 namespace GPlatesModel
@@ -36,31 +37,70 @@ namespace GPlatesModel
 	/**
 	 * A revision-aware iterator to iterate over the container of whatever-handles contained
 	 * within a revisioning collection.
+	 *
+	 * @par Revision awareness
+	 * By "revision-aware" is meant that instances of this class will not be fooled, by a
+	 * revisioning operation, to point to an old revision of the container.  Each and every
+	 * iterator operation first gets the current revision of the container, before accessing
+	 * the elements of the container (the contained handles).
+	 *
+	 * @par The WeakObserver base
+	 * The base class WeakObserver contains the pointer to the collection handle (which
+	 * contains the handle container over which this iterator is iterating).  The benefit of
+	 * using WeakObserver to contain the pointer-to-collection-handle is that an instance of
+	 * HandleContainerIterator, which is pointing to a particular collection handle, will be
+	 * informed if that collection handle is deactivated (ie, logically deleted) or deallocated
+	 * (ie, deleted in the C++ memory-allocation sense).
+	 *
+	 * @par
+	 * The member function @a is_valid is used to determine whether an iterator instance is
+	 * valid to be dereferenced.
+	 *
+	 * @par The template parameters
+	 * The template parameters are:
+	 *  - @em H: the type of the collection handle (for example, '@c FeatureCollectionHandle '
+	 * or '@c const @c FeatureCollectionHandle ')
+	 *  - @em ConstH: the const-type of the collection handle (for example,
+	 * '@c const @c FeatureCollectionHandle ')
+	 *  - @em C: the type of the handle container (for example,
+	 * '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> ')
+	 *  - @em D: the type to which the iterator will dereference (for example,
+	 * '@c boost::intrusive_ptr@<FeatureHandle@> ' or
+	 * '@c boost::intrusive_ptr@<const @c FeatureHandle@> ')
 	 */
-	template<typename H, typename C, typename D>
+	template<typename H, typename ConstH, typename C, typename D>
 	class HandleContainerIterator:
+			public WeakObserver<H, ConstH>,
 			public std::iterator<std::bidirectional_iterator_tag, D>
 	{
 	public:
 		/**
 		 * This is the type of the collection handle.
 		 *
-		 * (For example, 'FeatureCollectionHandle'.)
+		 * (For example, '@c FeatureCollectionHandle ' or
+		 * '@c const @c FeatureCollectionHandle '.)
 		 */
 		typedef H collection_handle_type;
 
 		/**
+		 * This is the const-type of the collection handle.
+		 *
+		 * (For example, '@c const @c FeatureCollectionHandle '.)
+		 */
+		typedef ConstH const_collection_handle_type;
+
+		/**
 		 * This is the type of the handle container.
 		 *
-		 * (For example, 'std::vector<boost::intrusive_ptr<FeatureHandle> >'.)
+		 * (For example, '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> '.)
 		 */
 		typedef C handle_container_type;
 
 		/**
 		 * This is the type to which the iterator will dereference.
 		 *
-		 * (For example, 'boost::intrusive_ptr<FeatureHandle>' or
-		 * 'boost::intrusive_ptr<const FeatureHandle>'.)
+		 * (For example, '@c boost::intrusive_ptr@<FeatureHandle@> ' or
+		 * '@c boost::intrusive_ptr@<const @c FeatureHandle@> '.)
 		 */
 		typedef D dereference_type;
 
@@ -113,7 +153,6 @@ namespace GPlatesModel
 		 * valid to be dereferenced.
 		 */
 		HandleContainerIterator():
-			d_collection_handle_ptr(NULL),
 			d_index(0)
 		{  }
 
@@ -121,13 +160,19 @@ namespace GPlatesModel
 		 * Return the pointer to the collection handle.
 		 *
 		 * This function will not throw.
+		 *
+		 * Note that we return a non-const instance of collection_handle_type from a const
+		 * member function:  collection_handle_type may already be "const", in which case,
+		 * the "const" would be redundant; OTOH, if collection_handle_type *doesn't*
+		 * include "const", an instance of this class should behave like an STL iterator
+		 * (or a pointer) rather than an STL const-iterator.  We're simply declaring the
+		 * member function "const" to ensure that it may be invoked on const instances too.
 		 */
-		const collection_handle_type *
-		collection_handle_pointer() const
+		collection_handle_type *
+		collection_handle_ptr() const
 		{
-			return d_collection_handle_ptr;
+			return WeakObserver<H, ConstH>::publisher_ptr();
 		}
-
 		/**
 		 * Return the current index.
 		 *
@@ -159,10 +204,10 @@ namespace GPlatesModel
 		operator=(
 				const HandleContainerIterator &other)
 		{
-			d_collection_handle_ptr = other.d_collection_handle_ptr;
+			WeakObserver<H, ConstH>::operator=(other);
 			d_index = other.d_index;
 
-			return &this;
+			return *this;
 		}
 
 		/**
@@ -174,8 +219,8 @@ namespace GPlatesModel
 		operator==(
 				const HandleContainerIterator &other) const
 		{
-			return (d_collection_handle_ptr == other.d_collection_handle_ptr &&
-					d_index == other.d_index);
+			return (collection_handle_ptr() == other.collection_handle_ptr() &&
+					index() == other.index());
 		}
 
 		/**
@@ -187,8 +232,8 @@ namespace GPlatesModel
 		operator!=(
 				const HandleContainerIterator &other) const
 		{
-			return (d_collection_handle_ptr != other.d_collection_handle_ptr ||
-					d_index != other.d_index);
+			return (collection_handle_ptr() != other.collection_handle_ptr() ||
+					index() != other.index());
 		}
 
 		/**
@@ -210,21 +255,21 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * The pointer-indirection-member-access operator.
+		 * The dereference operator.
 		 *
 		 * This operator should only be invoked when the iterator is valid (i.e., when
 		 * @a is_valid would return true).
 		 *
-		 * Note that it is a deliberate limitation of this operator, that when the
-		 * return-value is dereferenced, the result is not an L-value (ie, it cannot be
-		 * assigned-to).  This is to ensure that the revisioning mechanism is not bypassed.
+		 * Note that it is a deliberate limitation of this operator, that the return-value
+		 * is not an L-value (ie, it cannot be assigned-to).  This is to ensure that the
+		 * revisioning mechanism is not bypassed.
 		 *
 		 * As long as the iterator is valid, this function will not throw.
 		 */
-		const dereference_type *
-		operator->() const
+		const dereference_type
+		operator*()
 		{
-			return &current_element();
+			return current_element();
 		}
 
 		/**
@@ -285,9 +330,9 @@ namespace GPlatesModel
 		static
 		index_type
 		container_size(
-				const collection_handle_type &collection_handle_ptr)
+				const collection_handle_type &collection_handle_ptr_)
 		{
-			return collection_handle_ptr.current_revision()->size();
+			return collection_handle_ptr_.current_revision()->size();
 		}
 
 		/**
@@ -299,7 +344,7 @@ namespace GPlatesModel
 		HandleContainerIterator(
 				collection_handle_type &collection_handle,
 				index_type index):
-			d_collection_handle_ptr(&collection_handle),
+			WeakObserver<H, ConstH>(collection_handle),
 			d_index(index)
 		{  }
 
@@ -311,10 +356,24 @@ namespace GPlatesModel
 		 *
 		 * As long as the index is valid, this function will not throw.
 		 */
-		dereference_type
+		const dereference_type
 		current_element() const
 		{
-			return (*(d_collection_handle_ptr->current_revision()))[d_index];
+			return (*(collection_handle_ptr()->current_revision()))[index()];
+		}
+
+		/**
+		 * Access the currently-indicated element.
+		 *
+		 * This function should only be invoked when the iterator is valid to be
+		 * dereferenced (i.e., when @a is_valid would return true).
+		 *
+		 * As long as the index is valid, this function will not throw.
+		 */
+		const dereference_type
+		current_element()
+		{
+			return (*(collection_handle_ptr()->current_revision()))[index()];
 		}
 
 		/**
@@ -324,7 +383,7 @@ namespace GPlatesModel
 		bool
 		collection_handle_is_valid() const
 		{
-			return (d_collection_handle_ptr != NULL);
+			return (collection_handle_ptr() != NULL);
 		}
 
 		/**
@@ -342,14 +401,8 @@ namespace GPlatesModel
 			// The index indicates an element which is before the end of the container
 			// when the index is less than the size of the container.
 			return ((static_cast<long>(d_index) >= 0) &&
-					(d_index < container_size(*d_collection_handle_ptr)));
+					(d_index < container_size(*collection_handle_ptr())));
 		}
-
-		/**
-		 * This is the collection handle which contains the handle container over which
-		 * this iterator is iterating.
-		 */
-		collection_handle_type *d_collection_handle_ptr;
 
 		/**
 		 * This is the current index in the handle container.

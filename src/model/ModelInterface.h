@@ -29,7 +29,10 @@
 #define GPLATES_MODEL_MODELINTERFACE_H
 
 #include <vector>
-#include "model/ReconstructedFeatureGeometry.h"
+#include "FeatureCollectionHandle.h"
+#include "FeatureHandle.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "WeakReference.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
@@ -39,14 +42,108 @@ namespace GPlatesModel
 	class ModelInterface
 	{
 	public:
+		/**
+		 * Create a new, empty feature collection in the feature store.
+		 *
+		 * A valid weak reference to the new feature collection will be returned.
+		 */
+		virtual
+		const FeatureCollectionHandle::weak_ref
+		create_feature_collection() = 0;
+
+		/**
+		 * Create a new feature of feature-type @a feature_type within the feature
+		 * collection referenced by @a target_collection.
+		 *
+		 * The feature ID of this feature will be auto-generated.
+		 *
+		 * A valid weak reference to the new feature will be returned.  As a result of this
+		 * function, the feature collection referenced by @a target_collection will be
+		 * modified.
+		 *
+		 * If the feature collection referenced by @a target_collection was already
+		 * deactivated, or the reference @a target collection was already not valid, before
+		 * @a target_collection was passed as a parameter, this function will throw an
+		 * exception.
+		 */
+		virtual
+		const FeatureHandle::weak_ref
+		create_feature(
+				const FeatureType &feature_type,
+				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
+
+		/**
+		 * Create a new feature of feature-type @a feature_type, with feature ID
+		 * @a feature_id, within @a target_collection.
+		 *
+		 * A valid weak reference to the new feature will be returned.  As a result of this
+		 * function, the feature collection referenced by @a target_collection will be
+		 * modified.
+		 *
+		 * If the feature collection referenced by @a target_collection was already
+		 * deactivated, or the reference @a target collection was already not valid, before
+		 * @a target_collection was passed as a parameter, this function will throw an
+		 * exception.
+		 */
+		virtual
+		const FeatureHandle::weak_ref
+		create_feature(
+				const FeatureType &feature_type,
+				const FeatureId &feature_id,
+				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
+
+#if 0
+		/**
+		 * Remove @a collection from the feature store.
+		 *
+		 * As a result of this operation, the feature collection referenced by
+		 * @a collection will become deactivated.
+		 *
+		 * If the feature collection referenced by @a collection was already deactivated,
+		 * or the reference @a collection was already not valid, before @a collection was
+		 * passed as a parameter, this function will throw an exception.
+		 */
+		virtual
+		void
+		remove_feature_collection(
+				const FeatureCollectionHandle::weak_ref &collection) = 0;
+
+		/**
+		 * Remove @a feature from @a containing_collection.
+		 *
+		 * If @a feature is not actually an element of @a containing_collection, this
+		 * operation will be a no-op.
+		 *
+		 * If @a feature @em is an element of @a containing_collection, @a feature will
+		 * become deactivated, and @a containing_collection will be modified.
+		 *
+		 * If the feature referenced by @a feature was already deactivated, or the
+		 * reference @a feature was already not valid, before @a feature was passed as a
+		 * parameter, this function will throw an exception.
+		 *
+		 * If the feature collection referenced by @a containing_collection was already
+		 * deactivated, or the reference @a containing collection was already not valid,
+		 * before @a containing_collection was passed as a parameter, this function will
+		 * throw an exception.
+		 */
+		virtual
+		void
+		remove_feature(
+				const FeatureHandle::weak_ref &feature,
+				const FeatureCollectionHandle::weak_ref &containing_collection) = 0;
+#endif
+
 		virtual
 		void
 		create_reconstruction(
-				std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &point_reconstructions,
-				std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &polyline_reconstructions,
+				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
+						point_reconstructions,
+				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
+						polyline_reconstructions,
+				const FeatureCollectionHandle::weak_ref &reconstructable_features,
+				const FeatureCollectionHandle::weak_ref &reconstruction_features,
 				const double &time,
-				unsigned long root)
-		= 0;
+				unsigned long root) = 0;
 
 		virtual
 		~ModelInterface()

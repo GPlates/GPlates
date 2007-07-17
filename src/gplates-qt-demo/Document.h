@@ -50,6 +50,8 @@ namespace GPlatesGui
 	private:
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesModel::Model *d_model_ptr;
+		GPlatesModel::FeatureCollectionHandle::weak_ref d_isochrons;
+		GPlatesModel::FeatureCollectionHandle::weak_ref d_total_recon_seqs;
 		QTimer *d_timer_ptr;
 		double d_time;
 		

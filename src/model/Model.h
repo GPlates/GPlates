@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,12 +26,8 @@
 #ifndef GPLATES_MODEL_MODEL_H
 #define GPLATES_MODEL_MODEL_H
 
-#include <vector>
 #include "ModelInterface.h"
 #include "FeatureStore.h"
-#include "ReconstructedFeatureGeometry.h"
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
 
 
 namespace GPlatesModel
@@ -41,19 +37,32 @@ namespace GPlatesModel
 	public:
 		Model();
 
-		virtual
+		const FeatureCollectionHandle::weak_ref
+		create_feature_collection();
+
+		const FeatureHandle::weak_ref
+		create_feature(
+				const FeatureType &feature_type,
+				const FeatureCollectionHandle::weak_ref &target_collection);
+
+		const FeatureHandle::weak_ref
+		create_feature(
+				const FeatureType &feature_type,
+				const FeatureId &feature_id,
+				const FeatureCollectionHandle::weak_ref &target_collection);
+
 		void
 		create_reconstruction(
 				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
 						point_reconstructions,
 				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
 						polyline_reconstructions,
+				const FeatureCollectionHandle::weak_ref &reconstructable_features,
+				const FeatureCollectionHandle::weak_ref &reconstruction_features,
 				const double &time,
 				unsigned long root);
 	private:
 		FeatureStore::non_null_ptr_type d_feature_store;
-		FeatureStoreRootHandle::collections_iterator d_isochrons;
-		FeatureStoreRootHandle::collections_iterator d_total_recon_seqs;
 	};
 
 	void export_Model();

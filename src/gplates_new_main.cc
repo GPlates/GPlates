@@ -40,17 +40,7 @@
 #include "model/DummyTransactionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
-#include "model/GmlLineString.h"
-#include "model/GmlOrientableCurve.h"
-#include "model/GmlTimePeriod.h"
-#include "model/GpmlConstantValue.h"
-#include "model/GpmlFiniteRotationSlerp.h"
-#include "model/GpmlFiniteRotation.h"
-#include "model/GpmlIrregularSampling.h"
-#include "model/GpmlPlateId.h"
-#include "model/GpmlTimeSample.h"
-#include "model/InlinePropertyContainer.h"
-#include "model/XsString.h"
+#include "model/ModelUtility.h"
 #include "model/GpmlOnePointFiveOutputVisitor.h"
 #include "model/XmlOutputInterface.h"
 #include "model/ReconstructionTree.h"
@@ -61,150 +51,11 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-create_reconstruction_plate_id(
-		const unsigned long &plate_id) {
 
-	GPlatesModel::PropertyValue::non_null_ptr_type gpml_plate_id =
-			GPlatesModel::GpmlPlateId::create(plate_id);
-
-	UnicodeString template_type_parameter_type_string("gpml:plateId");
-	GPlatesModel::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
-	GPlatesModel::PropertyValue::non_null_ptr_type gpml_plate_id_constant_value =
-			GPlatesModel::GpmlConstantValue::create(gpml_plate_id, template_type_parameter_type);
-
-	UnicodeString property_name_string("gpml:reconstructionPlateId");
-	GPlatesModel::PropertyName property_name(property_name_string);
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
-			GPlatesModel::InlinePropertyContainer::create(property_name,
-			gpml_plate_id_constant_value, xml_attributes);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-create_reference_frame_plate_id(
-		const unsigned long &plate_id,
-		const char *which_reference_frame) {
-
-	GPlatesModel::PropertyValue::non_null_ptr_type gpml_plate_id =
-			GPlatesModel::GpmlPlateId::create(plate_id);
-
-	UnicodeString property_name_string(which_reference_frame);
-	GPlatesModel::PropertyName property_name(property_name_string);
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
-			GPlatesModel::InlinePropertyContainer::create(property_name,
-			gpml_plate_id, xml_attributes);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-create_centre_line_of(
-		const double *points,
-		unsigned num_points) {
-
-	std::vector<double> gml_pos_list(points, points + num_points);
-	GPlatesModel::PropertyValue::non_null_ptr_type gml_line_string =
-			GPlatesModel::GmlLineString::create(gml_pos_list);
-
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	GPlatesModel::XmlAttributeName xml_attribute_name("orientation");
-	GPlatesModel::XmlAttributeValue xml_attribute_value("+");
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	GPlatesModel::PropertyValue::non_null_ptr_type gml_orientable_curve =
-			GPlatesModel::GmlOrientableCurve::create(gml_line_string, xml_attributes);
-
-	UnicodeString template_type_parameter_type_string("gml:OrientableCurve");
-	GPlatesModel::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
-	GPlatesModel::PropertyValue::non_null_ptr_type gml_orientable_curve_constant_value =
-			GPlatesModel::GpmlConstantValue::create(gml_orientable_curve, template_type_parameter_type);
-
-	UnicodeString property_name_string("gpml:centreLineOf");
-	GPlatesModel::PropertyName property_name(property_name_string);
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
-			GPlatesModel::InlinePropertyContainer::create(property_name,
-			gml_orientable_curve_constant_value, xml_attributes2);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-create_valid_time(
-		const GPlatesModel::GeoTimeInstant &geo_time_instant_begin,
-		const GPlatesModel::GeoTimeInstant &geo_time_instant_end) {
-
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	GPlatesModel::XmlAttributeName xml_attribute_name("frame");
-	GPlatesModel::XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-
-	GPlatesModel::GmlTimeInstant::non_null_ptr_type gml_time_instant_begin =
-			GPlatesModel::GmlTimeInstant::create(geo_time_instant_begin, xml_attributes);
-
-	GPlatesModel::GmlTimeInstant::non_null_ptr_type gml_time_instant_end =
-			GPlatesModel::GmlTimeInstant::create(geo_time_instant_end, xml_attributes);
-
-	GPlatesModel::PropertyValue::non_null_ptr_type gml_time_period =
-			GPlatesModel::GmlTimePeriod::create(gml_time_instant_begin, gml_time_instant_end);
-
-	UnicodeString property_name_string("gml:validTime");
-	GPlatesModel::PropertyName property_name(property_name_string);
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
-			GPlatesModel::InlinePropertyContainer::create(property_name,
-			gml_time_period, xml_attributes2);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-create_description(
-		const UnicodeString &description) {
-
-	GPlatesModel::PropertyValue::non_null_ptr_type gml_description = GPlatesModel::XsString::create(description);
-
-	UnicodeString property_name_string("gml:description");
-	GPlatesModel::PropertyName property_name(property_name_string);
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
-			GPlatesModel::InlinePropertyContainer::create(property_name,
-			gml_description, xml_attributes);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-create_name(
-		const UnicodeString &name,
-		const UnicodeString &codespace) {
-
-	GPlatesModel::PropertyValue::non_null_ptr_type gml_name = GPlatesModel::XsString::create(name);
-
-	UnicodeString property_name_string("gml:name");
-	GPlatesModel::PropertyName property_name(property_name_string);
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	GPlatesModel::XmlAttributeName xml_attribute_name("codeSpace");
-	GPlatesModel::XmlAttributeValue xml_attribute_value(codespace);
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
-			GPlatesModel::InlinePropertyContainer::create(property_name,
-			gml_name, xml_attributes);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::FeatureHandle::non_null_ptr_type
+const GPlatesModel::FeatureHandle::weak_ref
 create_isochron(
+		GPlatesModel::ModelInterface &model,
+		GPlatesModel::FeatureCollectionHandle::weak_ref &target_collection,
 		const unsigned long &plate_id,
 		const double *points,
 		unsigned num_points,
@@ -214,22 +65,21 @@ create_isochron(
 		const UnicodeString &name,
 		const UnicodeString &codespace_of_name)
 {
-	GPlatesModel::FeatureId feature_id;
 	UnicodeString feature_type_string("gpml:Isochron");
 	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
-			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature_handle =
+			model.create_feature(feature_type, target_collection);
 
 	GPlatesModel::PropertyContainer::non_null_ptr_type reconstruction_plate_id_container =
-			create_reconstruction_plate_id(plate_id);
+			GPlatesModel::ModelUtility::create_reconstruction_plate_id(plate_id);
 	GPlatesModel::PropertyContainer::non_null_ptr_type centre_line_of_container =
-			create_centre_line_of(points, num_points);
+			GPlatesModel::ModelUtility::create_centre_line_of(points, num_points);
 	GPlatesModel::PropertyContainer::non_null_ptr_type valid_time_container =
-			create_valid_time(geo_time_instant_begin, geo_time_instant_end);
+			GPlatesModel::ModelUtility::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
 	GPlatesModel::PropertyContainer::non_null_ptr_type description_container =
-			create_description(description);
+			GPlatesModel::ModelUtility::create_description(description);
 	GPlatesModel::PropertyContainer::non_null_ptr_type name_container =
-			create_name(name, codespace_of_name);
+			GPlatesModel::ModelUtility::create_name(name, codespace_of_name);
 
 	GPlatesModel::DummyTransactionHandle pc1(__FILE__, __LINE__);
 	feature_handle->append_property_container(reconstruction_plate_id_container, pc1);
@@ -250,101 +100,6 @@ create_isochron(
 	GPlatesModel::DummyTransactionHandle pc5(__FILE__, __LINE__);
 	feature_handle->append_property_container(name_container, pc5);
 	pc5.commit();
-
-	return feature_handle;
-}
-
-
-struct RotationFileFiveTuple {
-	double time;
-	double lat_of_euler_pole;
-	double lon_of_euler_pole;
-	double rotation_angle;
-	const char *comment;
-};
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-create_total_reconstruction_pole(
-		const RotationFileFiveTuple *five_tuples,
-		unsigned num_five_tuples) {
-
-	std::vector<GPlatesModel::GpmlTimeSample> time_samples;
-	GPlatesModel::TemplateTypeParameterType value_type("gpml:FiniteRotation");
-
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
-	GPlatesModel::XmlAttributeName xml_attribute_name("frame");
-	GPlatesModel::XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-
-	for (unsigned i = 0; i < num_five_tuples; ++i) {
-		std::pair<double, double> gpml_euler_pole =
-				std::make_pair(five_tuples[i].lon_of_euler_pole, five_tuples[i].lat_of_euler_pole);
-		GPlatesModel::GpmlFiniteRotation::non_null_ptr_type gpml_finite_rotation =
-				GPlatesModel::GpmlFiniteRotation::create(gpml_euler_pole,
-				five_tuples[i].rotation_angle);
-
-		GPlatesModel::GeoTimeInstant geo_time_instant(five_tuples[i].time);
-		GPlatesModel::GmlTimeInstant::non_null_ptr_type gml_time_instant =
-				GPlatesModel::GmlTimeInstant::create(geo_time_instant, xml_attributes);
-
-		UnicodeString comment_string(five_tuples[i].comment);
-		GPlatesModel::XsString::non_null_ptr_type gml_description =
-				GPlatesModel::XsString::create(comment_string);
-
-		time_samples.push_back(GPlatesModel::GpmlTimeSample(gpml_finite_rotation, gml_time_instant,
-				get_intrusive_ptr(gml_description), value_type));
-	}
-
-	GPlatesModel::GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
-			GPlatesModel::GpmlFiniteRotationSlerp::create(value_type);
-
-	GPlatesModel::PropertyValue::non_null_ptr_type gpml_irregular_sampling =
-			GPlatesModel::GpmlIrregularSampling::create(time_samples,
-			GPlatesContrib::get_intrusive_ptr(gpml_finite_rotation_slerp), value_type);
-
-	UnicodeString property_name_string("gpml:totalReconstructionPole");
-	GPlatesModel::PropertyName property_name(property_name_string);
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes2;
-	GPlatesModel::PropertyContainer::non_null_ptr_type inline_property_container =
-			GPlatesModel::InlinePropertyContainer::create(property_name,
-			gpml_irregular_sampling, xml_attributes2);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::FeatureHandle::non_null_ptr_type
-create_total_recon_seq(
-		const unsigned long &fixed_plate_id,
-		const unsigned long &moving_plate_id,
-		const RotationFileFiveTuple *five_tuples,
-		unsigned num_five_tuples)
-{
-	GPlatesModel::FeatureId feature_id;
-	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
-	GPlatesModel::FeatureType feature_type(feature_type_string);
-	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
-			GPlatesModel::FeatureHandle::create(feature_type, feature_id);
-
-	GPlatesModel::PropertyContainer::non_null_ptr_type total_reconstruction_pole_container =
-			create_total_reconstruction_pole(five_tuples, num_five_tuples);
-	GPlatesModel::PropertyContainer::non_null_ptr_type fixed_reference_frame_container =
-			create_reference_frame_plate_id(fixed_plate_id, "gpml:fixedReferenceFrame");
-	GPlatesModel::PropertyContainer::non_null_ptr_type moving_reference_frame_container =
-			create_reference_frame_plate_id(moving_plate_id, "gpml:movingReferenceFrame");
-
-	GPlatesModel::DummyTransactionHandle pc1(__FILE__, __LINE__);
-	feature_handle->append_property_container(total_reconstruction_pole_container, pc1);
-	pc1.commit();
-
-	GPlatesModel::DummyTransactionHandle pc2(__FILE__, __LINE__);
-	feature_handle->append_property_container(fixed_reference_frame_container, pc2);
-	pc2.commit();
-
-	GPlatesModel::DummyTransactionHandle pc3(__FILE__, __LINE__);
-	feature_handle->append_property_container(moving_reference_frame_container, pc3);
-	pc3.commit();
 
 	return feature_handle;
 }
@@ -408,102 +163,15 @@ traverse_recon_tree(
 }
 
 
-const std::pair<GPlatesModel::FeatureStoreRootHandle::collections_iterator,
-		GPlatesModel::FeatureStoreRootHandle::collections_iterator>
+const std::pair<GPlatesModel::FeatureCollectionHandle::weak_ref,
+		GPlatesModel::FeatureCollectionHandle::weak_ref>
 populate_feature_store(
-		GPlatesModel::FeatureStore::non_null_ptr_type feature_store)
+		GPlatesModel::ModelInterface &model)
 {
-	static const unsigned long plate_id1 = 501;
-	// lon, lat, lon, lat... is how GML likes it.
-	static const double points1[] = {
-		69.2877,
-		-5.5765,
-		69.1323,
-		-4.8556,
-		69.6092,
-		-4.3841,
-		69.2748,
-		-3.9554,
-		69.7079,
-		-3.3680,
-		69.4119,
-		-3.0486,
-		69.5999,
-		-2.6304,
-		68.9400,
-		-1.8446,
-	};
-	static const unsigned num_points1 = sizeof(points1) / sizeof(points1[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin1(10.9);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end1 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
-	UnicodeString description1("CARLSBERG RIDGE, INDIA-AFRICA ANOMALY 5 ISOCHRON");
-	UnicodeString name1("Izzy the Isochron");
-	UnicodeString codespace_of_name1("EarthByte");
-
-	GPlatesModel::FeatureHandle::non_null_ptr_type isochron1 =
-			create_isochron(plate_id1, points1, num_points1, geo_time_instant_begin1,
-			geo_time_instant_end1, description1, name1, codespace_of_name1);
-
-	static const unsigned long plate_id2 = 702;
-	// lon, lat, lon, lat... is how GML likes it.
-	static const double points2[] = {
-		41.9242,
-		-34.9340,
-		42.7035,
-		-33.4482,
-		44.8065,
-		-33.5645,
-		44.9613,
-		-33.0805,
-		45.6552,
-		-33.2601,
-		46.3758,
-		-31.6947,
-	};
-	static const unsigned num_points2 = sizeof(points2) / sizeof(points2[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin2(83.5);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end2 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
-	UnicodeString description2("SOUTHWEST INDIAN RIDGE, MADAGASCAR-ANTARCTICA ANOMALY 34 ISOCHRON");
-	UnicodeString name2("Ozzy the Isochron");
-	UnicodeString codespace_of_name2("EarthByte");
-
-	GPlatesModel::FeatureHandle::non_null_ptr_type isochron2 =
-			create_isochron(plate_id2, points2, num_points2, geo_time_instant_begin2,
-			geo_time_instant_end2, description2, name2, codespace_of_name2);
-
-	static const unsigned long plate_id3 = 511;
-	// lon, lat, lon, lat... is how GML likes it.
-	static const double points3[] = {
-		76.6320,
-		-18.1374,
-		77.9538,
-		-19.1216,
-		77.7709,
-		-19.4055,
-		80.1582,
-		-20.6289,
-		80.3237,
-		-20.3765,
-		81.1422,
-		-20.7506,
-		80.9199,
-		-21.2669,
-		81.8522,
-		-21.9828,
-	};
-	static const unsigned num_points3 = sizeof(points3) / sizeof(points3[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin3(40.1);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end3 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
-	UnicodeString description3("SEIR CROZET AND CIB, CENTRAL INDIAN BASIN-ANTARCTICA ANOMALY 18 ISOCHRON");
-	UnicodeString name3("Uzi the Isochron");
-	UnicodeString codespace_of_name3("EarthByte");
-
-	GPlatesModel::FeatureHandle::non_null_ptr_type isochron3 =
-			create_isochron(plate_id3, points3, num_points3, geo_time_instant_begin3,
-			geo_time_instant_end3, description3, name3, codespace_of_name3);
+#if 0
+	// The following code is no longer used, but I'm retaining it here because I think it's
+	// important that this question gets a definite answer.  (If I cut the code (and comment), I
+	// know the question will be forgotten.)
 
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type isochrons =
 			GPlatesModel::FeatureCollectionHandle::create();
@@ -548,10 +216,111 @@ populate_feature_store(
 	GPlatesModel::DummyTransactionHandle transaction_iso3(__FILE__, __LINE__);
 	isochrons->append_feature(isochron3, transaction_iso3);
 	transaction_iso3.commit();
+#endif
+
+	GPlatesModel::FeatureCollectionHandle::weak_ref isochrons =
+			model.create_feature_collection();
+	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
+			model.create_feature_collection();
+
+	static const unsigned long plate_id1 = 501;
+	// lon, lat, lon, lat... is how GML likes it.
+	static const double points1[] = {
+		69.2877,
+		-5.5765,
+		69.1323,
+		-4.8556,
+		69.6092,
+		-4.3841,
+		69.2748,
+		-3.9554,
+		69.7079,
+		-3.3680,
+		69.4119,
+		-3.0486,
+		69.5999,
+		-2.6304,
+		68.9400,
+		-1.8446,
+	};
+	static const unsigned num_points1 = sizeof(points1) / sizeof(points1[0]);
+	GPlatesModel::GeoTimeInstant geo_time_instant_begin1(10.9);
+	GPlatesModel::GeoTimeInstant geo_time_instant_end1 =
+			GPlatesModel::GeoTimeInstant::create_distant_future();
+	UnicodeString description1("CARLSBERG RIDGE, INDIA-AFRICA ANOMALY 5 ISOCHRON");
+	UnicodeString name1("Izzy the Isochron");
+	UnicodeString codespace_of_name1("EarthByte");
+
+	GPlatesModel::FeatureHandle::weak_ref isochron1 =
+			create_isochron(model, isochrons, plate_id1, points1, num_points1,
+					geo_time_instant_begin1, geo_time_instant_end1,
+					description1, name1, codespace_of_name1);
+
+	static const unsigned long plate_id2 = 702;
+	// lon, lat, lon, lat... is how GML likes it.
+	static const double points2[] = {
+		41.9242,
+		-34.9340,
+		42.7035,
+		-33.4482,
+		44.8065,
+		-33.5645,
+		44.9613,
+		-33.0805,
+		45.6552,
+		-33.2601,
+		46.3758,
+		-31.6947,
+	};
+	static const unsigned num_points2 = sizeof(points2) / sizeof(points2[0]);
+	GPlatesModel::GeoTimeInstant geo_time_instant_begin2(83.5);
+	GPlatesModel::GeoTimeInstant geo_time_instant_end2 =
+			GPlatesModel::GeoTimeInstant::create_distant_future();
+	UnicodeString description2("SOUTHWEST INDIAN RIDGE, MADAGASCAR-ANTARCTICA ANOMALY 34 ISOCHRON");
+	UnicodeString name2("Ozzy the Isochron");
+	UnicodeString codespace_of_name2("EarthByte");
+
+	GPlatesModel::FeatureHandle::weak_ref isochron2 =
+			create_isochron(model, isochrons, plate_id2, points2, num_points2,
+					geo_time_instant_begin2, geo_time_instant_end2,
+					description2, name2, codespace_of_name2);
+
+	static const unsigned long plate_id3 = 511;
+	// lon, lat, lon, lat... is how GML likes it.
+	static const double points3[] = {
+		76.6320,
+		-18.1374,
+		77.9538,
+		-19.1216,
+		77.7709,
+		-19.4055,
+		80.1582,
+		-20.6289,
+		80.3237,
+		-20.3765,
+		81.1422,
+		-20.7506,
+		80.9199,
+		-21.2669,
+		81.8522,
+		-21.9828,
+	};
+	static const unsigned num_points3 = sizeof(points3) / sizeof(points3[0]);
+	GPlatesModel::GeoTimeInstant geo_time_instant_begin3(40.1);
+	GPlatesModel::GeoTimeInstant geo_time_instant_end3 =
+			GPlatesModel::GeoTimeInstant::create_distant_future();
+	UnicodeString description3("SEIR CROZET AND CIB, CENTRAL INDIAN BASIN-ANTARCTICA ANOMALY 18 ISOCHRON");
+	UnicodeString name3("Uzi the Isochron");
+	UnicodeString codespace_of_name3("EarthByte");
+
+	GPlatesModel::FeatureHandle::weak_ref isochron3 =
+			create_isochron(model, isochrons, plate_id3, points3, num_points3,
+					geo_time_instant_begin3, geo_time_instant_end3,
+					description3, name3, codespace_of_name3);
 
 	static const unsigned long fixed_plate_id1 = 511;
 	static const unsigned long moving_plate_id1 = 501;
-	static const RotationFileFiveTuple five_tuples1[] = {
+	static const GPlatesModel::ModelUtility::TotalReconstructionPoleData five_tuples1[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	0.0,	90.0,	0.0,	0.0,	"IND-CIB India-Central Indian Basin"	},
 		{	9.9,	-8.7,	76.9,	2.75,	"IND-CIB AN 5 JYR 7/4/89"	},
@@ -560,13 +329,13 @@ populate_feature_store(
 	};
 	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
 
-	GPlatesModel::FeatureHandle::non_null_ptr_type total_recon_seq1 =
-			create_total_recon_seq(fixed_plate_id1, moving_plate_id1, five_tuples1,
-			num_five_tuples1);
+	GPlatesModel::FeatureHandle::weak_ref total_recon_seq1 =
+			create_total_recon_seq(model, total_recon_seqs, fixed_plate_id1,
+					moving_plate_id1, five_tuples1, num_five_tuples1);
 
 	static const unsigned long fixed_plate_id2 = 702;
 	static const unsigned long moving_plate_id2 = 501;
-	static const RotationFileFiveTuple five_tuples2[] = {
+	static const GPlatesModel::ModelUtility::TotalReconstructionPoleData five_tuples2[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	83.5,	22.8,	19.1,	-51.28,	"IND-MAD"	},
 		{	88.0,	19.8,	27.2,	-59.16,	" RDM/chris 30/11/2001"	},
@@ -574,13 +343,13 @@ populate_feature_store(
 	};
 	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
 
-	GPlatesModel::FeatureHandle::non_null_ptr_type total_recon_seq2 =
-			create_total_recon_seq(fixed_plate_id2, moving_plate_id2, five_tuples2,
-			num_five_tuples2);
+	GPlatesModel::FeatureHandle::weak_ref total_recon_seq2 =
+			create_total_recon_seq(model, total_recon_seqs, fixed_plate_id2,
+					moving_plate_id2, five_tuples2, num_five_tuples2);
 
 	static const unsigned long fixed_plate_id3 = 501;
 	static const unsigned long moving_plate_id3 = 502;
-	static const RotationFileFiveTuple five_tuples3[] = {
+	static const GPlatesModel::ModelUtility::TotalReconstructionPoleData five_tuples3[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	0.0,	0.0,	0.0,	0.0,	"SLK-IND Sri Lanka-India"	},
 		{	75.0,	0.0,	0.0,	0.0,	"SLK-ANT Sri Lanka-Ant"	},
@@ -589,31 +358,11 @@ populate_feature_store(
 	};
 	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
 
-	GPlatesModel::FeatureHandle::non_null_ptr_type total_recon_seq3 =
-			create_total_recon_seq(fixed_plate_id3, moving_plate_id3, five_tuples3,
-			num_five_tuples3);
+	GPlatesModel::FeatureHandle::weak_ref total_recon_seq3 =
+			create_total_recon_seq(model, total_recon_seqs, fixed_plate_id3,
+					moving_plate_id3, five_tuples3, num_five_tuples3);
 
-	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type total_recon_seqs =
-			GPlatesModel::FeatureCollectionHandle::create();
-
-	GPlatesModel::DummyTransactionHandle transaction_trs_coll(__FILE__, __LINE__);
-	GPlatesModel::FeatureStoreRootHandle::collections_iterator total_recon_seqs_iter =
-			feature_store->root()->append_feature_collection(total_recon_seqs, transaction_trs_coll);
-	transaction_trs_coll.commit();
-
-	GPlatesModel::DummyTransactionHandle transaction_trs1(__FILE__, __LINE__);
-	total_recon_seqs->append_feature(total_recon_seq1, transaction_trs1);
-	transaction_trs1.commit();
-
-	GPlatesModel::DummyTransactionHandle transaction_trs2(__FILE__, __LINE__);
-	total_recon_seqs->append_feature(total_recon_seq2, transaction_trs2);
-	transaction_trs2.commit();
-
-	GPlatesModel::DummyTransactionHandle transaction_trs3(__FILE__, __LINE__);
-	total_recon_seqs->append_feature(total_recon_seq3, transaction_trs3);
-	transaction_trs3.commit();
-
-	return std::make_pair(isochrons_iter, total_recon_seqs_iter);
+	return std::make_pair(isochrons, total_recon_seqs);
 }
 
 
@@ -729,18 +478,17 @@ output_reconstructions(
 int
 main()
 {
-	GPlatesModel::FeatureStore::non_null_ptr_type feature_store =
-			GPlatesModel::FeatureStore::create();
+	GPlatesModel::Model model;
 
-	std::pair<GPlatesModel::FeatureStoreRootHandle::collections_iterator,
-			GPlatesModel::FeatureStoreRootHandle::collections_iterator>
+	std::pair<GPlatesModel::FeatureCollectionHandle::weak_ref,
+			GPlatesModel::FeatureCollectionHandle::weak_ref>
 			isochrons_and_total_recon_seqs =
-			::populate_feature_store(feature_store);
+					::populate_feature_store(model);
 
-	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> isochrons =
-			*(isochrons_and_total_recon_seqs.first);
-	boost::intrusive_ptr<GPlatesModel::FeatureCollectionHandle> total_recon_seqs =
-			*(isochrons_and_total_recon_seqs.second);
+	GPlatesModel::FeatureCollectionHandle::weak_ref isochrons =
+			isochrons_and_total_recon_seqs.first;
+	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
+			isochrons_and_total_recon_seqs.second;
 
 	::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
 	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),

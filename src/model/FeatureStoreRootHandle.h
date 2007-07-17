@@ -102,6 +102,7 @@ namespace GPlatesModel
 		 * this feature store root.
 		 */
 		typedef HandleContainerIterator<const FeatureStoreRootHandle,
+				const FeatureStoreRootHandle,
 				const revision_component_type::feature_collection_container_type,
 				boost::intrusive_ptr<const FeatureCollectionHandle> >
 				collections_const_iterator;
@@ -111,9 +112,15 @@ namespace GPlatesModel
 		 * within this feature store root.
 		 */
 		typedef HandleContainerIterator<FeatureStoreRootHandle,
+				const FeatureStoreRootHandle,
 				revision_component_type::feature_collection_container_type,
 				boost::intrusive_ptr<FeatureCollectionHandle> >
 				collections_iterator;
+
+ 		/**
+		 * The base type of all weak observers of instances of this class.
+		 */
+		typedef WeakObserverBase<const FeatureStoreRootHandle> weak_observer_type;
 
 		/**
 		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
@@ -121,10 +128,13 @@ namespace GPlatesModel
 		static
 		const collections_const_iterator
 		get_const_iterator(
-				collections_iterator iter)
+				const collections_iterator &iter)
 		{
-			return collections_const_iterator(*(iter.d_collection_handle_ptr),
-					iter.d_index);
+			if (iter.collection_handle_ptr() == NULL) {
+				return collections_const_iterator();
+			}
+			return collections_const_iterator(*(iter.collection_handle_ptr()),
+					iter.index());
 		}
 
 		/**
@@ -139,7 +149,13 @@ namespace GPlatesModel
 		}
 
 		~FeatureStoreRootHandle()
-		{  }
+		{
+			weak_observer_type *w = d_first_weak_observer;
+			while (w != NULL) {
+				w->unsubscribe();
+				w = w->next_link_ptr();
+			}
+		}
 
 		/**
 		 * Create a duplicate of this FeatureStoreRootHandle instance.
@@ -300,6 +316,32 @@ namespace GPlatesModel
 			d_current_revision = rev;
 		}
 
+ 		/**
+		 * Access the first weak observer of this instance.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function is used by WeakObserver.
+		 */
+		weak_observer_type *&
+		first_weak_observer() const
+		{
+			return d_first_weak_observer;
+		}
+
+		/**
+		 * Access the last weak observer of this instance.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function is used by WeakObserver.
+		 */
+		weak_observer_type *&
+		last_weak_observer() const
+		{
+			return d_last_weak_observer;
+		}
+
 		/**
 		 * Increment the reference-count of this instance.
 		 *
@@ -341,13 +383,25 @@ namespace GPlatesModel
 		 */
 		FeatureStoreRootRevision::non_null_ptr_type d_current_revision;
 
+ 		/**
+		 * The first weak observer of this instance.
+		 */
+		mutable weak_observer_type *d_first_weak_observer;
+
+		/**
+		 * The last weak observer of this instance.
+		 */
+		mutable weak_observer_type *d_last_weak_observer;
+
 		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
 		FeatureStoreRootHandle():
 			d_ref_count(0),
-			d_current_revision(FeatureStoreRootRevision::create())
+			d_current_revision(FeatureStoreRootRevision::create()),
+			d_first_weak_observer(NULL),
+			d_last_weak_observer(NULL)
 		{  }
 
 		/**
@@ -367,7 +421,9 @@ namespace GPlatesModel
 		FeatureStoreRootHandle(
 				const FeatureStoreRootHandle &other) :
 			d_ref_count(0),
-			d_current_revision(other.d_current_revision)
+			d_current_revision(other.d_current_revision),
+			d_first_weak_observer(NULL),
+			d_last_weak_observer(NULL)
 		{  }
 
 		/**

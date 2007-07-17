@@ -34,6 +34,7 @@
 #include "ConstFeatureVisitor.h"
 #include "FeatureVisitor.h"
 #include "HandleContainerIterator.h"
+#include "WeakReference.h"
 #include "contrib/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
@@ -108,6 +109,7 @@ namespace GPlatesModel
 		 * The type used for const-iterating over the collection of property containers.
 		 */
 		typedef HandleContainerIterator<const FeatureHandle,
+				const FeatureHandle,
 				const revision_component_type::property_container_collection_type,
 				boost::intrusive_ptr<const PropertyContainer> >
 				properties_const_iterator;
@@ -117,9 +119,25 @@ namespace GPlatesModel
 		 * containers.
 		 */
 		typedef HandleContainerIterator<FeatureHandle,
+				const FeatureHandle,
 				revision_component_type::property_container_collection_type,
 				boost::intrusive_ptr<PropertyContainer> >
 				properties_iterator;
+
+		/**
+		 * The base type of all weak observers of instances of this class.
+		 */
+		typedef WeakObserverBase<const FeatureHandle> weak_observer_type;
+
+		/**
+		 * The type used for a weak-ref to a const collection of feature handles.
+		 */
+		typedef WeakReference<const FeatureHandle, const FeatureHandle> const_weak_ref;
+
+		/**
+		 * The type used for a weak-ref to a (non-const) collection of feature handles.
+		 */
+		typedef WeakReference<FeatureHandle, const FeatureHandle> weak_ref;
 
 		/**
 		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
@@ -127,14 +145,37 @@ namespace GPlatesModel
 		static
 		const properties_const_iterator
 		get_const_iterator(
-				properties_iterator iter)
+				const properties_iterator &iter)
 		{
-			return properties_const_iterator(*(iter.d_collection_handle_ptr),
-					iter.d_index);
+			if (iter.collection_handle_ptr() == NULL) {
+				return properties_const_iterator();
+			}
+			return properties_const_iterator(*(iter.collection_handle_ptr()),
+					iter.index());
+		}
+
+		/**
+		 * Translate the non-const weak-ref @a ref to the equivalent const-weak-ref.
+		 */
+		static
+		const const_weak_ref
+		get_const_weak_ref(
+				const weak_ref &ref)
+		{
+			if (ref.handle_ptr() == NULL) {
+				return const_weak_ref();
+			}
+			return const_weak_ref(*(ref.handle_ptr()));
 		}
 
 		~FeatureHandle()
-		{  }
+		{
+			weak_observer_type *w = d_first_weak_observer;
+			while (w != NULL) {
+				w->unsubscribe();
+				w = w->next_link_ptr();
+			}
+		}
 
 		/**
 		 * Create a new FeatureHandle instance with feature type @a feature_type_ and
@@ -160,6 +201,26 @@ namespace GPlatesModel
 		{
 			non_null_ptr_type dup(*(new FeatureHandle(*this)));
 			return dup;
+		}
+
+		/**
+		 * Return a const-weak-ref to this FeatureHandle instance.
+		 */
+		const const_weak_ref
+		reference() const
+		{
+			const_weak_ref ref(*this);
+			return ref;
+		}
+
+		/**
+		 * Return a (non-const) weak-ref to this FeatureHandle instance.
+		 */
+		const weak_ref
+		reference()
+		{
+			weak_ref ref(*this);
+			return ref;
 		}
 
 		/**
@@ -368,6 +429,32 @@ namespace GPlatesModel
 		}
 
 		/**
+		 * Access the first weak observer of this instance.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function is used by WeakObserver.
+		 */
+		weak_observer_type *&
+		first_weak_observer() const
+		{
+			return d_first_weak_observer;
+		}
+
+		/**
+		 * Access the last weak observer of this instance.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function is used by WeakObserver.
+		 */
+		weak_observer_type *&
+		last_weak_observer() const
+		{
+			return d_last_weak_observer;
+		}
+
+		/**
 		 * Increment the reference-count of this instance.
 		 *
 		 * Client code should not use this function!
@@ -419,6 +506,16 @@ namespace GPlatesModel
 		FeatureId d_feature_id;
 
 		/**
+		 * The first weak observer of this instance.
+		 */
+		mutable weak_observer_type *d_first_weak_observer;
+
+		/**
+		 * The last weak observer of this instance.
+		 */
+		mutable weak_observer_type *d_last_weak_observer;
+
+		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
@@ -428,7 +525,9 @@ namespace GPlatesModel
 			d_ref_count(0),
 			d_current_revision(FeatureRevision::create()),
 			d_feature_type(feature_type_),
-			d_feature_id(feature_id_)
+			d_feature_id(feature_id_),
+			d_first_weak_observer(NULL),
+			d_last_weak_observer(NULL)
 		{  }
 
 		/**
@@ -449,7 +548,9 @@ namespace GPlatesModel
 			d_ref_count(0),
 			d_current_revision(other.d_current_revision),
 			d_feature_type(other.d_feature_type),
-			d_feature_id(other.d_feature_id)
+			d_feature_id(other.d_feature_id),
+			d_first_weak_observer(NULL),
+			d_last_weak_observer(NULL)
 		{  }
 
 		// This operator should never be defined, because we don't want/need to allow
