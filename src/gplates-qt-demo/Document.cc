@@ -42,10 +42,8 @@ namespace {
 		GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs, 
 		double time)
 	{
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > point_reconstructions;
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > polyline_reconstructions;
-		model.create_reconstruction(point_reconstructions, polyline_reconstructions, 
-				isochrons, total_recon_seqs, time, 0);
+		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
+				model.create_reconstruction(isochrons, total_recon_seqs, time, 0);
 	}
 
 #if 0
@@ -95,26 +93,29 @@ namespace {
 			GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs,
 			double time)
 	{
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > point_reconstructions;
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > polyline_reconstructions;
-		model_ptr->create_reconstruction(point_reconstructions, polyline_reconstructions, 
-				isochrons, total_recon_seqs, time, 501);
+		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
+				model_ptr->create_reconstruction(isochrons, total_recon_seqs, time,
+						501);
 
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator iter = point_reconstructions.begin();
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator finish = point_reconstructions.end();
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator iter =
+				reconstruction->point_geometries().begin();
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator finish =
+				reconstruction->point_geometries().end();
 		while (iter != finish) {
 			canvas_ptr->draw_point(*iter->geometry());
 			++iter;
 		}
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator iter2 = polyline_reconstructions.begin();
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator finish2 = polyline_reconstructions.end();
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator iter2 =
+				reconstruction->polyline_geometries().begin();
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator finish2 =
+				reconstruction->polyline_geometries().end();
 		while (iter2 != finish2) {
 			canvas_ptr->draw_polyline(*iter2->geometry());
 			++iter2;
 		}
-		//render(point_reconstructions.begin(), point_reconstructions.end(), &GPlatesGui::GlobeCanvas::draw_point, canvas_ptr);
-		//for_each(point_reconstructions.begin(), point_reconstructions.end(), render(canvas_ptr, &GlobeCanvas::draw_point, point_colour))
-		// for_each(polyline_reconstructions.begin(), polyline_reconstructions.end(), polyline_point);
+		//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesGui::GlobeCanvas::draw_point, canvas_ptr);
+		//for_each(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), render(canvas_ptr, &GlobeCanvas::draw_point, point_colour))
+		// for_each(reconstruction->polyline_geometries().begin(), reconstruction->polyline_geometries().end(), polyline_point);
 	}
 	
 	void

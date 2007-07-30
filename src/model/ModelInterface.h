@@ -31,10 +31,8 @@
 #include <vector>
 #include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
-#include "ReconstructedFeatureGeometry.h"
 #include "WeakReference.h"
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
+#include "Reconstruction.h"
 
 
 namespace GPlatesModel
@@ -134,12 +132,8 @@ namespace GPlatesModel
 #endif
 
 		virtual
-		void
+		const Reconstruction::non_null_ptr_type
 		create_reconstruction(
-				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
-						point_reconstructions,
-				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
-						polyline_reconstructions,
 				const FeatureCollectionHandle::weak_ref &reconstructable_features,
 				const FeatureCollectionHandle::weak_ref &reconstruction_features,
 				const double &time,

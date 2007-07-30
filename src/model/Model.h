@@ -51,12 +51,8 @@ namespace GPlatesModel
 				const FeatureId &feature_id,
 				const FeatureCollectionHandle::weak_ref &target_collection);
 
-		void
+		const Reconstruction::non_null_ptr_type
 		create_reconstruction(
-				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
-						point_reconstructions,
-				std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
-						polyline_reconstructions,
 				const FeatureCollectionHandle::weak_ref &reconstructable_features,
 				const FeatureCollectionHandle::weak_ref &reconstruction_features,
 				const double &time,

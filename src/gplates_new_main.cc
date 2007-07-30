@@ -43,6 +43,7 @@
 #include "model/ModelUtility.h"
 #include "model/GpmlOnePointFiveOutputVisitor.h"
 #include "model/XmlOutputInterface.h"
+#include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
 #include "model/ReconstructionTreePopulator.h"
 #include "model/ReconstructedFeatureGeometryPopulator.h"
@@ -403,8 +404,10 @@ output_reconstructions(
 	for (unsigned i = 0; i < num_recon_times_to_test; ++i) {
 		double recon_time = recon_times_to_test[i];
 
-		GPlatesModel::ReconstructionTree recon_tree;
-		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, recon_tree);
+		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
+				GPlatesModel::Reconstruction::create();
+		GPlatesModel::ReconstructionTreePopulator rtp(recon_time,
+				reconstruction->reconstruction_tree());
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
@@ -415,16 +418,13 @@ output_reconstructions(
 		}
 
 		std::cout << "\n--> Building tree, root node: 501\n";
-		recon_tree.build_tree(501);
-		traverse_recon_tree(recon_tree);
-
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >
-				reconstructed_points;
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >
-				reconstructed_polylines;
+		reconstruction->reconstruction_tree().build_tree(501);
+		traverse_recon_tree(reconstruction->reconstruction_tree());
 
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
-				recon_tree, reconstructed_points, reconstructed_polylines);
+				reconstruction->reconstruction_tree(),
+				reconstruction->point_geometries(),
+				reconstruction->polyline_geometries());
 
 		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
@@ -432,17 +432,17 @@ output_reconstructions(
 		}
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
-				<< reconstructed_points.size()
+				<< reconstruction->point_geometries().size()
 				<< " reconstructed point geometries, and\n   "
-				<< reconstructed_polylines.size()
+				<< reconstruction->polyline_geometries().size()
 				<< " reconstructed polyline geometries."
 				<< std::endl;
 
 		std::cout << " > The reconstructed polylines are:\n";
 		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
-				iter3 = reconstructed_polylines.begin();
+				iter3 = reconstruction->polyline_geometries().begin();
 		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
-				end3 = reconstructed_polylines.end();
+				end3 = reconstruction->polyline_geometries().end();
 		for ( ; iter3 != end3; ++iter3) {
 			std::vector<GPlatesMaths::LatLonPoint> seq;
 			GPlatesMaths::LatLonPointConversions::populate_lat_lon_point_sequence(seq,
@@ -458,16 +458,16 @@ output_reconstructions(
 
 #if 0
 		std::cout << "\n--> Building tree, root node: 511\n";
-		recon_tree.build_tree(511);
-		traverse_recon_tree(recon_tree);
+		reconstruction->reconstruction_tree().build_tree(511);
+		traverse_recon_tree(reconstruction->reconstruction_tree());
 
 		std::cout << "\n--> Building tree, root node: 702\n";
-		recon_tree.build_tree(702);
-		traverse_recon_tree(recon_tree);
+		reconstruction->reconstruction_tree().build_tree(702);
+		traverse_recon_tree(reconstruction->reconstruction_tree());
 
 		std::cout << "\n--> Building tree, root node: 502\n";
-		recon_tree.build_tree(502);
-		traverse_recon_tree(recon_tree);
+		reconstruction->reconstruction_tree().build_tree(502);
+		traverse_recon_tree(reconstruction->reconstruction_tree());
 #endif
 
 		std::cout << std::endl;

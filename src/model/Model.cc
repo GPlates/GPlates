@@ -82,19 +82,16 @@ GPlatesModel::Model::create_feature(
 	return feature_handle->reference();
 }
 
-void
+
+const GPlatesModel::Reconstruction::non_null_ptr_type
 GPlatesModel::Model::create_reconstruction(
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
-				point_reconstructions,
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
-				polyline_reconstructions,
 		const FeatureCollectionHandle::weak_ref &reconstructable_features,
 		const FeatureCollectionHandle::weak_ref &reconstruction_features,
 		const double &time,
 		unsigned long root)
 {
-	ReconstructionTree recon_tree;
-	ReconstructionTreePopulator rtp(time, recon_tree);
+	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create();
+	ReconstructionTreePopulator rtp(time, reconstruction->reconstruction_tree());
 
 	// Populate the reconstruction tree with our total recon seqs.
 	FeatureCollectionHandle::features_iterator iter = reconstruction_features->features_begin();
@@ -104,10 +101,12 @@ GPlatesModel::Model::create_reconstruction(
 	}
 
 	// Build the reconstruction tree, using 'root' as the root of the tree.
-	recon_tree.build_tree(root);
+	reconstruction->reconstruction_tree().build_tree(root);
 
 	ReconstructedFeatureGeometryPopulator rfgp(time, root,
-			recon_tree, point_reconstructions, polyline_reconstructions);
+			reconstruction->reconstruction_tree(),
+			reconstruction->point_geometries(),
+			reconstruction->polyline_geometries());
 
 	// Populate the vectors with reconstructed feature geometries from our isochrons.
 	FeatureCollectionHandle::features_iterator iter2 = reconstructable_features->features_begin();
@@ -115,7 +114,10 @@ GPlatesModel::Model::create_reconstruction(
 	for ( ; iter2 != end2; ++iter2) {
 		(*iter2)->accept_visitor(rfgp);
 	}
+
+	return reconstruction;
 }
+
 
 using namespace boost::python;
 
