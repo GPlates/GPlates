@@ -315,7 +315,7 @@ AC_OUTPUT(Makefile
         doc/doxygen.conf
         doc/Makefile
         src/Makefile
-        src/application/Makefile
+        src/presenter/Makefile
         src/controls/Makefile
         src/fileio/Makefile
         src/geo/Makefile
