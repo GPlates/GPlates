@@ -25,13 +25,17 @@
 
 #include <boost/python.hpp>
 #include "PointOnSphere.h"
+#include "PolylineOnSphere.h"
+#include "Real.h"
 #include "UnitVector3D.h"
+#include "Vector3D.h"
 
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(_maths)
 {
 	GPlatesMaths::export_PointOnSphere();
+	GPlatesMaths::export_PolylineOnSphere();
 	GPlatesMaths::export_Real();
 	GPlatesMaths::export_UnitVector3D();
 	GPlatesMaths::export_Vector3D();

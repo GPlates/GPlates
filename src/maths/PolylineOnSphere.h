@@ -1013,6 +1013,13 @@ namespace GPlatesMaths {
 			delete p;
 		}
 	}
+
+
+	/**
+	 * This routine exports the Python wrapper class and associated functionality
+	 */
+	void export_PolylineOnSphere();
+
 }
 
 
@@ -1033,5 +1040,6 @@ namespace std
 		p1.swap(p2);
 	}
 }
+
 
 #endif  // GPLATES_MATHS_POLYLINEONSPHERE_H
