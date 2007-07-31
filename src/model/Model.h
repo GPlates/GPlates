@@ -26,6 +26,9 @@
 #ifndef GPLATES_MODEL_MODEL_H
 #define GPLATES_MODEL_MODEL_H
 
+#include <boost/intrusive_ptr.hpp>
+#include <boost/python.hpp>
+
 #include "ModelInterface.h"
 #include "FeatureStore.h"
 
@@ -55,6 +58,12 @@ namespace GPlatesModel
 		create_reconstruction(
 				const FeatureCollectionHandle::weak_ref &reconstructable_features,
 				const FeatureCollectionHandle::weak_ref &reconstruction_features,
+				const double &time,
+				unsigned long root);
+
+		// A Python wrapper for create_reconstruction
+		boost::python::tuple
+		create_reconstruction_py(
 				const double &time,
 				unsigned long root);
 	private:

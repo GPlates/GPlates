@@ -119,13 +119,40 @@ GPlatesModel::Model::create_reconstruction(
 }
 
 
+boost::python::tuple
+GPlatesModel::Model::create_reconstruction_py(
+		const double &time,
+		unsigned long root)
+{
+	GPlatesModel::FeatureCollectionHandle::weak_ref reconstructable_features = GPlatesModel::Model::create_feature_collection();
+	GPlatesModel::FeatureCollectionHandle::weak_ref reconstruction_features = GPlatesModel::Model::create_feature_collection();
+	GPlatesModel::Reconstruction::non_null_ptr_type reconstruction = create_reconstruction(reconstructable_features, reconstruction_features, time, root);
+	boost::python::list points;
+	boost::python::list polylines;
+	/*
+	for (std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator p = point_reconstructions.begin();
+			p != point_reconstructions.end(); ++p)
+	{
+		points.append(*(p->geometry()));
+	}
+	for (std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator p = polyline_reconstructions.begin();
+			p != polyline_reconstructions.end(); ++p)
+	{
+		polylines.append(*(p->geometry()));
+	}
+	*/
+	return boost::python::make_tuple(points, polylines);
+}
+
+
 using namespace boost::python;
+
 
 void
 GPlatesModel::export_Model()
 {
 	class_<GPlatesModel::Model>("Model", init<>())
-		.def("create_reconstruction", &GPlatesModel::Model::create_reconstruction)
+		.def("create_reconstruction", &GPlatesModel::Model::create_reconstruction_py)
 	;
 }
 

@@ -16,6 +16,6 @@ libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc GeoTimeInstant.cc
 
 noinst_PROGRAMS		= _model.so
 _model_so_SOURCES	= PythonWrapper.cc
-_model_so_LDADD		= libmodel.la
+_model_so_LDADD		= libmodel.la ../maths/libmaths.la ../util/libutil.la
 _model_so_LDFLAGS	= -shared
 
