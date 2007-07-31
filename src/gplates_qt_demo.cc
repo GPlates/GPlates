@@ -23,10 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
+#ifdef HAVE_PYTHON
 // We need to include this _before_ any Qt headers get included because
 // of a moc preprocessing problems with a feature called 'slots' in the
 // python header file object.h
-#include <boost/python.hpp>
+# include <boost/python.hpp>
+#endif
 
 #include <QtGui/QApplication>
 #include "gplates-qt-demo/Document.h"

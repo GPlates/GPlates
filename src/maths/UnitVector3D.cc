@@ -27,7 +27,9 @@
 
 #include <ostream>
 #include <sstream>
-#include <boost/python.hpp>
+#ifdef HAVE_PYTHON
+# include <boost/python.hpp>
+#endif
 #include "UnitVector3D.h"
 #include "HighPrecision.h"
 #include "ViolatedUnitVectorInvariantException.h"
@@ -200,6 +202,7 @@ GPlatesMaths::operator<<(
 }
 
 
+#ifdef HAVE_PYTHON
 /**
  * Here begin the Python wrappers
  */
@@ -250,4 +253,5 @@ GPlatesMaths::export_UnitVector3D()
 	const GPlatesMaths::Vector3D (*cross3)(const GPlatesMaths::Vector3D &, const GPlatesMaths::UnitVector3D &) = GPlatesMaths::cross;
 	def("cross", cross3);
 }
+#endif
 

@@ -26,7 +26,9 @@
  */
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/python.hpp>
+#ifdef HAVE_PYTHON
+# include <boost/python.hpp>
+#endif
 
 #include "Model.h"
 #include "DummyTransactionHandle.h"
@@ -119,6 +121,7 @@ GPlatesModel::Model::create_reconstruction(
 }
 
 
+#ifdef HAVE_PYTHON
 boost::python::tuple
 GPlatesModel::Model::create_reconstruction_py(
 		const double &time,
@@ -155,4 +158,5 @@ GPlatesModel::export_Model()
 		.def("create_reconstruction", &GPlatesModel::Model::create_reconstruction_py)
 	;
 }
+#endif
 

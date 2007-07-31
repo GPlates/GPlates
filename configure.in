@@ -190,9 +190,13 @@ AC_CHECK_LIB([icuio], [main], [], AC_MSG_ERROR([[
 # to the user if Boost 1.20.0 or later is not found.
 AX_BOOST_BASE
 
-# Ensure python-2.4 and the Boost python libraries
-AX_PYTHON([2.4])
-AX_BOOST_PYTHON
+AM_CONDITIONAL(PYTHON, test "$with_python" = yes)
+AC_ARG_WITH(python, [  --with-python           enable Python plugins],
+[
+	# Ensure python-2.4 and the Boost python libraries
+	AX_PYTHON([2.4])
+	AX_BOOST_PYTHON
+])
 
 # OpenGL and GLU
 # How we compile the OpenGL headers dependent upon the type of the build system.
@@ -304,11 +308,16 @@ AC_SUBST(ac_aux_dir)
 AC_SUBST(QT_CFLAGS)
 AC_SUBST(QT_LIBS)
 
-CFLAGS="$CFLAGS $QT_CFLAGS -I$PYTHON_INCLUDE_DIR"
-CXXFLAGS="$CXXFLAGS $BOOST_CPPFLAGS $QT_CFLAGS -I$PYTHON_INCLUDE_DIR"
+CFLAGS="$CFLAGS $QT_CFLAGS"
+CXXFLAGS="$CXXFLAGS $BOOST_CPPFLAGS $QT_CFLAGS"
 LDFLAGS="$LDFLAGS $BOOST_LDFLAGS $QT_LDFLAGS"
-LIBS="$LIBS $QT_LIBS -l$BOOST_PYTHON_LIB"
+LIBS="$LIBS $QT_LIBS"
 
+if test "${with_python+set}" = set; then
+	CFLAGS="$CFLAGS -DHAVE_PYTHON -I$PYTHON_INCLUDE_DIR"
+	CXXFLAGS="$CXXFLAGS -DHAVE_PYTHON -I$PYTHON_INCLUDE_DIR"
+	LIBS="$LIBS -l$BOOST_PYTHON_LIB"
+fi
 
 # Write output
 AC_OUTPUT(Makefile

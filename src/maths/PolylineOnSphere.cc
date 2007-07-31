@@ -30,7 +30,9 @@
 
 #include <list>
 #include <sstream>
-#include <boost/python.hpp>
+#ifdef HAVE_PYTHON
+# include <boost/python.hpp>
+#endif
 #include "PolylineOnSphere.h"
 #include "HighPrecision.h"
 #include "InvalidPolylineException.h"
@@ -316,6 +318,7 @@ GPlatesMaths::polylines_are_undirected_equivalent(
 }
 
 
+#ifdef HAVE_PYTHON
 /**
  * Here begin the Python wrappers
  */
@@ -350,4 +353,5 @@ GPlatesMaths::export_PolylineOnSphere()
 	def("polylines_are_undirected_equivalent", &GPlatesMaths::polylines_are_undirected_equivalent,
 			args("poly1", "poly2"));
 }
+#endif
 

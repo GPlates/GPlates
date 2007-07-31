@@ -26,7 +26,9 @@
  */
 
 #include <ostream>
-#include <boost/python.hpp>
+#ifdef HAVE_PYTHON
+# include <boost/python.hpp>
+#endif
 #include "PointOnSphere.h"
 #include "PointLiesOnGreatCircleArc.h"
 
@@ -61,6 +63,7 @@ GPlatesMaths::operator<<(
 }
 
 
+#ifdef HAVE_PYTHON
 /**
  * Here begin the Python wrappers
  */
@@ -92,4 +95,5 @@ GPlatesMaths::export_PointOnSphere()
 	def("calculate_closeness", &GPlatesMaths::calculate_closeness, args("p1", "p2"));
 	def("points_are_coincident", &GPlatesMaths::points_are_coincident, args("p1", "p2"));
 }
+#endif
 

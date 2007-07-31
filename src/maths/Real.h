@@ -30,7 +30,9 @@
 
 #include <iostream>
 #include <cmath>
-#include <boost/python.hpp>
+#ifdef HAVE_PYTHON
+# include <boost/python.hpp>
+#endif
 
 #include "global/types.h"
 
@@ -139,6 +141,7 @@ namespace GPlatesMaths
 			return _dval < d;
 		}
 
+#ifdef HAVE_PYTHON
 		/**
 		 * Convert a Real into a Python object
 		 */
@@ -148,6 +151,7 @@ namespace GPlatesMaths
 		{
 			return boost::python::incref(boost::python::object(r._dval).ptr());
 		}
+#endif
 	};
 
 

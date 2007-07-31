@@ -27,7 +27,9 @@
 #define GPLATES_MODEL_MODEL_H
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/python.hpp>
+#ifdef HAVE_PYTHON
+# include <boost/python.hpp>
+#endif
 
 #include "ModelInterface.h"
 #include "FeatureStore.h"
@@ -61,11 +63,14 @@ namespace GPlatesModel
 				const double &time,
 				unsigned long root);
 
+#ifdef HAVE_PYTHON
 		// A Python wrapper for create_reconstruction
 		boost::python::tuple
 		create_reconstruction_py(
 				const double &time,
 				unsigned long root);
+#endif
+
 	private:
 		FeatureStore::non_null_ptr_type d_feature_store;
 	};

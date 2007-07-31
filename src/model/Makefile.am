@@ -14,8 +14,10 @@ libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc GeoTimeInstant.cc
 				FeatureStoreRootRevision.cc FeatureRevision.cc \
 				DummyTransactionHandle.cc ModelUtility.cc
 
+if PYTHON
 noinst_PROGRAMS		= _model.so
 _model_so_SOURCES	= PythonWrapper.cc
 _model_so_LDADD		= libmodel.la ../maths/libmaths.la ../util/libutil.la
 _model_so_LDFLAGS	= -shared
+endif
 

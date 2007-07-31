@@ -79,6 +79,7 @@ GPlatesMaths::operator<<(
 }
 
 
+#ifdef HAVE_PYTHON
 /**
  * Here begin the Python wrappers
  */
@@ -123,4 +124,5 @@ GPlatesMaths::export_Vector3D()
 	const GPlatesMaths::Vector3D (*cross)(const GPlatesMaths::Vector3D &, const GPlatesMaths::Vector3D &) = GPlatesMaths::cross;
 	def("cross", cross);
 }
+#endif
 

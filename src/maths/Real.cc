@@ -26,7 +26,9 @@
  */
 
 #include <sstream>
-#include <boost/python.hpp>
+#ifdef HAVE_PYTHON
+# include <boost/python.hpp>
+#endif
 
 #include "Real.h"
 #include "FunctionDomainException.h"
@@ -182,6 +184,7 @@ GPlatesMaths::acos(GPlatesMaths::Real r)
 }
 
 
+#ifdef HAVE_PYTHON
 /**
  * Here begin the Python wrappers
  */
@@ -196,4 +199,4 @@ GPlatesMaths::export_Real()
 	to_python_converter<GPlatesMaths::Real, GPlatesMaths::Real>();
 	implicitly_convertible<double, GPlatesMaths::Real>();
 }
-
+#endif
