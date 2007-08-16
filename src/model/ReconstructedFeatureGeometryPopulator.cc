@@ -55,78 +55,70 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 		FeatureHandle &feature_handle)
 {
-	static FeatureType isochron_feature_type =
-			FeatureType(UnicodeString("gpml:Isochron"));
+	d_accumulator.reset(new ReconstructedFeatureGeometryAccumulator());
 
-	// If a feature handle isn't for a feature of type "gpml:Isochron", we're not interested.
-	if (feature_handle.feature_type() == isochron_feature_type) {
-		d_accumulator.reset(new ReconstructedFeatureGeometryAccumulator());
-
-		// Now visit each of the properties in turn.
-		GPlatesModel::FeatureHandle::properties_iterator iter =
-				feature_handle.properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator end =
-				feature_handle.properties_end();
-		for ( ; iter != end; ++iter) {
-			// Elements of this properties vector can be NULL pointers.  (See the
-			// comment in "model/FeatureRevision.h" for more details.)
-			if (*iter != NULL) {
-				d_accumulator->d_most_recent_propname_read.reset(
-						new PropertyName((*iter)->property_name()));
-				(*iter)->accept_visitor(*this);
-			}
+	// Now visit each of the properties in turn.
+	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
+	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
+	for ( ; iter != end; ++iter) {
+		// Elements of this properties vector can be NULL pointers.  (See the comment in
+		// "model/FeatureRevision.h" for more details.)
+		if (*iter != NULL) {
+			d_accumulator->d_most_recent_propname_read.reset(
+					new PropertyName((*iter)->property_name()));
+			(*iter)->accept_visitor(*this);
 		}
-
-		// So now we've visited the contents of this Isochron feature.  Let's find out if
-		// we were able to obtain all the information we need.
-		if (d_accumulator->d_recon_plate_id == NULL) {
-			// We couldn't obtain the reconstruction plate ID.
-			d_accumulator.reset(NULL);
-			return;
-		}
-
-		// If we got to here, we have all the information we need.
-
-		std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::iterator point_iter =
-				d_accumulator->d_not_yet_reconstructed_points.begin();
-		std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::iterator point_end =
-				d_accumulator->d_not_yet_reconstructed_points.end();
-		for ( ; point_iter != point_end; ++point_iter) {
-			boost::intrusive_ptr<GPlatesMaths::PointOnSphere> reconstructed_point =
-					d_recon_tree_ptr->reconstruct_point(*point_iter,
-					d_accumulator->d_recon_plate_id->value(), d_root_plate_id);
-			if (reconstructed_point == NULL) {
-				// No match for the reconstruction plate ID.
-				continue;
-			} else {
-				// It will be valid to dereference 'reconstructed_point'.
-				GPlatesMaths::PointOnSphere::non_null_ptr_type p(*reconstructed_point);
-				ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> rfg(p);
-				d_reconstructed_points_ptr->push_back(rfg);
-			}
-		}
-
-		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator polyline_iter =
-				d_accumulator->d_not_yet_reconstructed_polylines.begin();
-		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator polyline_end =
-				d_accumulator->d_not_yet_reconstructed_polylines.end();
-		for ( ; polyline_iter != polyline_end; ++polyline_iter) {
-			boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> reconstructed_polyline =
-					d_recon_tree_ptr->reconstruct_polyline(*polyline_iter,
-					d_accumulator->d_recon_plate_id->value(), d_root_plate_id);
-			if (reconstructed_polyline == NULL) {
-				// No match for the reconstruction plate ID.
-				continue;
-			} else {
-				// It will be valid to dereference 'reconstructed_polyline'.
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_type p(*reconstructed_polyline);
-				ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> rfg(p);
-				d_reconstructed_polylines_ptr->push_back(rfg);
-			}
-		}
-
-		d_accumulator.reset(NULL);
 	}
+
+	// So now we've visited the contents of this feature.  Let's find out if we were able to
+	// obtain all the information we need.
+	if (d_accumulator->d_recon_plate_id == NULL) {
+		// We couldn't obtain the reconstruction plate ID.
+		d_accumulator.reset(NULL);
+		return;
+	}
+
+	// If we got to here, we have all the information we need.
+
+	std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::iterator point_iter =
+			d_accumulator->d_not_yet_reconstructed_points.begin();
+	std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::iterator point_end =
+			d_accumulator->d_not_yet_reconstructed_points.end();
+	for ( ; point_iter != point_end; ++point_iter) {
+		boost::intrusive_ptr<GPlatesMaths::PointOnSphere> reconstructed_point =
+				d_recon_tree_ptr->reconstruct_point(*point_iter,
+				d_accumulator->d_recon_plate_id->value(), d_root_plate_id);
+		if (reconstructed_point == NULL) {
+			// No match for the reconstruction plate ID.
+			continue;
+		} else {
+			// It will be valid to dereference 'reconstructed_point'.
+			GPlatesMaths::PointOnSphere::non_null_ptr_type p(*reconstructed_point);
+			ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> rfg(p);
+			d_reconstructed_points_ptr->push_back(rfg);
+		}
+	}
+
+	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator polyline_iter =
+			d_accumulator->d_not_yet_reconstructed_polylines.begin();
+	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator polyline_end =
+			d_accumulator->d_not_yet_reconstructed_polylines.end();
+	for ( ; polyline_iter != polyline_end; ++polyline_iter) {
+		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> reconstructed_polyline =
+				d_recon_tree_ptr->reconstruct_polyline(*polyline_iter,
+				d_accumulator->d_recon_plate_id->value(), d_root_plate_id);
+		if (reconstructed_polyline == NULL) {
+			// No match for the reconstruction plate ID.
+			continue;
+		} else {
+			// It will be valid to dereference 'reconstructed_polyline'.
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_type p(*reconstructed_polyline);
+			ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> rfg(p);
+			d_reconstructed_polylines_ptr->push_back(rfg);
+		}
+	}
+
+	d_accumulator.reset(NULL);
 }
 
 
