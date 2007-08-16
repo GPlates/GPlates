@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,9 +33,13 @@
 # include <boost/python.hpp>
 #endif
 
+#include <string>
 #include <QtCore/QTimer>
 #include "DocumentUi.h"
 #include "GlobeCanvas.h"
+#include "ReconstructToTimeDialog.h"
+#include "SpecifyFixedPlateDialog.h"
+#include "AnimateDialog.h"
 #include "model/Model.h"
 
 namespace GPlatesGui
@@ -47,28 +51,52 @@ namespace GPlatesGui
 		Q_OBJECT
 		
 	public:
-		Document();
+		Document(
+				const std::string &plates_line_fname,
+				const std::string &plates_rot_fname);
+
+		const double &
+		reconstruction_time() const
+		{
+			return d_recon_time;
+		}
+	public slots:
+		void
+		set_reconstruction_time_and_reconstruct(
+				double recon_time);
+
+		void
+		set_reconstruction_root_and_reconstruct(
+				unsigned long recon_root);
+
+		void
+		increment_reconstruction_time_and_reconstruct();
+
+		void
+		decrement_reconstruction_time_and_reconstruct();
 
 	private:
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesModel::Model *d_model_ptr;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_isochrons;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_total_recon_seqs;
-		QTimer *d_timer_ptr;
-		double d_time;
+		double d_recon_time;
+		GPlatesModel::GpmlPlateId::integer_plate_id_type d_recon_root;
+		ReconstructToTimeDialog d_reconstruct_to_time_dialog;
+		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
+		AnimateDialog d_animate_dialog;
+		bool d_animate_dialog_has_been_shown;
 		
 	private slots:
-		void 
-		selection_handler(
-				std::vector< GlobeCanvas::line_header_type > &items);
-				
 		void
-		mouse_click_handler();
-				
+		pop_up_reconstruct_to_time_dialog();
+
 		void
-		animation_step();
+		pop_up_specify_fixed_plate_dialog();
+
+		void
+		pop_up_animate_dialog();
 	};
 }
 
 #endif
-

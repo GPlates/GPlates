@@ -149,7 +149,8 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// FiniteRotation instances.
 	// FIXME:  Should we check this? (by looking at the 'value_type' value of the IrrSampling).
 
-	// It is assumed that an IrregularSampling must contain at least one TimeSample.
+	// It is assumed that an IrregularSampling must contain at least one time sample, however,
+	// that time sample might be disabled.
 
 	// First, deal with times in the future.
 	GeoTimeInstant present_day(0.0);
@@ -160,24 +161,38 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 
 	// Otherwise, the reconstruction time is either the present-day, or in the past.
 	// First, let's see whether the reconstruction time matches the time of the most-recent
-	// TimeSample.
+	// (non-disabled) time sample.
 
-	// It is assumed that this iterator is _not_ the end iterator (cf. assumption about
-	// IrregularSampling instances containing at least one TimeSample).
+	// So, let's get to the most-recent non-disabled time sample.
 	std::vector<GpmlTimeSample>::iterator iter = gpml_irregular_sampling.time_samples().begin();
-	if (d_recon_time.is_later_than(iter->valid_time()->time_position())) {
-		// The requested reconstruction time is later than the time of the most-recent
-		// TimeSample.  Hence, it is not valid to reconstruct to the requested
-		// reconstruction time.
+	std::vector<GpmlTimeSample>::iterator end = gpml_irregular_sampling.time_samples().end();
+	while (iter != end && iter->is_disabled()) {
+		// This time-sample is disabled.  Let's move to the next one.
+		++iter;
+	}
+	if (iter == end) {
+		// There were no non-disabled time samples.  We can't do anything with this
+		// irregular sampling.
 		// FIXME:  Should we complain about this?
 		return;
 	}
+	// else:  'iter' points to the most-recent non-disabled time sample.
+
+	if (d_recon_time.is_later_than(iter->valid_time()->time_position())) {
+		// The requested reconstruction time is later than the time of the most-recent
+		// non-disabled time sample.  Hence, it is not valid to reconstruct to the
+		// requested reconstruction time.
+		// FIXME:  Should we complain about this?
+		return;
+	}
+	// FIXME:  Use approximate floating-point equality for the time position.  Extract the code
+	// 'geo_time_instants_are_approx_equal' from "fileio/PlatesRotationFormatReader.cc".
 	if ( ! d_recon_time.is_earlier_than(iter->valid_time()->time_position())) {
-		// An exact match!  Hence, we can use the FiniteRotation of this TimeSample
+		// An exact match!  Hence, we can use the FiniteRotation of this time sample
 		// directly, without need for interpolation.
 
-		// Let's visit the TimeSample, to collect (what we expect to be) the FiniteRotation
-		// inside it.
+		// Let's visit the time sample, to collect (what we expect to be) the
+		// FiniteRotation inside it.
 		d_accumulator->d_is_expecting_a_finite_rotation = true;
 		iter->accept_visitor(*this);
 
@@ -205,21 +220,28 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// than) this first fence-post.  Now we will compare the reconstruction time with the
 	// remaining rails and posts.
 
-	std::vector<GpmlTimeSample>::iterator end = gpml_irregular_sampling.time_samples().end();
+	// 'prev' is the previous non-disabled time sample.
+	std::vector<GpmlTimeSample>::iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
+		if (iter->is_disabled()) {
+			// This time-sample is disabled.  Let's move to the next one.
+			continue;
+		}
+		// else:  'iter' points to the most-recent non-disabled time sample.
+
 		if (d_recon_time.is_later_than(iter->valid_time()->time_position())) {
 			// The requested reconstruction time is later than (ie, less far in the
-			// past than) the time of the current TimeSample, which must mean that it
-			// lies "on the rail" between the current TimeSample and the TimeSample
+			// past than) the time of the current time sample, which must mean that it
+			// lies "on the rail" between the current time sample and the time sample
 			// before it in the sequence.
 			//
-			// The current TimeSample will be more temporally-distant than the previous
-			// TimeSample.
+			// The current time sample will be more temporally-distant than the
+			// previous time sample.
 
 			std::auto_ptr<GPlatesMaths::FiniteRotation> current_finite_rotation;
 			std::auto_ptr<GPlatesMaths::FiniteRotation> previous_finite_rotation;
 
-			// Let's visit the TimeSample, to collect (what we expect to be) the
+			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
 			iter->accept_visitor(*this);
@@ -233,10 +255,10 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 				return;
 			}
 
-			// Now let's visit the _previous_ TimeSample, to collect (what we expect to
-			// be) the FiniteRotation inside it.
+			// Now let's visit the _previous_ non-disabled time sample, to collect
+			// (what we expect to be) the FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			prev_before(iter)->accept_visitor(*this);
+			prev->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if (d_accumulator->d_finite_rotation.get() != NULL) {
@@ -250,7 +272,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			GPlatesMaths::real_t current_time =
 					iter->valid_time()->time_position().value();
 			GPlatesMaths::real_t previous_time =
-					prev_before(iter)->valid_time()->time_position().value();
+					prev->valid_time()->time_position().value();
 			GPlatesMaths::real_t target_time =
 					d_recon_time.value();
 
@@ -262,11 +284,14 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 
 			return;
 		}
+		// FIXME:  Use approximate floating-point equality for the time position.  Extract
+		// the code 'geo_time_instants_are_approx_equal' from
+		// "fileio/PlatesRotationFormatReader.cc".
 		if ( ! d_recon_time.is_earlier_than(iter->valid_time()->time_position())) {
-			// An exact match!  Hence, we can use the FiniteRotation of this TimeSample
-			// directly, without need for interpolation.
+			// An exact match!  Hence, we can use the FiniteRotation of this time
+			// sample directly, without need for interpolation.
 
-			// Let's visit the TimeSample, to collect (what we expect to be) the
+			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
 			iter->accept_visitor(*this);
@@ -279,6 +304,11 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			}
 			return;
 		}
+
+		// Note that this assignment is not made in ALL circumstances (which is why it
+		// isn't happening inside the increment-expression of the for-loop):  It is only
+		// made when the time sample pointed-to by 'iter' was non-disabled.
+		prev = iter;
 	}
 	// FIXME:  We've passed the last fence-post, and not yet reached the requested recon time. 
 	// Should we complain?

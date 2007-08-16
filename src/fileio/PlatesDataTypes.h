@@ -14,7 +14,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006,
+ * 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,16 +33,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_FILEIO_PLATESDATATYPES_H_
-#define _GPLATES_FILEIO_PLATESDATATYPES_H_
+#ifndef GPLATES_FILEIO_PLATESDATATYPES_H
+#define GPLATES_FILEIO_PLATESDATATYPES_H
 
 #include <list>
 #include <string>
 #include <utility>
 
-#include "LineBuffer.h"
 #include "global/types.h"
-#include "geo/TimeWindow.h"
+#include "LineBuffer.h"
+
+// Eliminate use of GPlatesGeo classes
+#include "model/GeoTimeInstant.h"
 
 namespace GPlatesFileIO
 {
@@ -58,9 +61,10 @@ namespace GPlatesFileIO
 		 * The possible values for the plotter code.
 		 * Don't worry too much about what this means.
 		 */
-		namespace PlotterCodes {
-
-			enum { 
+		namespace PlotterCodes 
+		{
+			enum PlotterCode
+			{ 
 				PEN_EITHER, PEN_TERMINATING_POINT, 
 				PEN_DOWN = 2, PEN_UP = 3
 			};
@@ -69,103 +73,131 @@ namespace GPlatesFileIO
 
 		struct FiniteRotation;
 
-		FiniteRotation ParseRotationLine(const LineBuffer &lb,
-		 const std::string &line);
+		const FiniteRotation 
+		ParseRotationLine(
+				const LineBuffer &lb,
+				const std::string &line);
 
-		struct LatLonPoint;
+		struct BoundaryLatLonPoint;
+
+		struct LatLonPoint
+		{
+			friend 
+			const FiniteRotation
+			ParseRotationLine(
+					const LineBuffer &lb,
+					const std::string &line);
+
+		public:
+			static 
+			const BoundaryLatLonPoint
+			ParseBoundaryLine(
+					const LineBuffer &lb,
+					const std::string &line,
+					int expected_plotter_code);
+
+			static 
+			void
+			ParseTermBoundaryLine(
+					const LineBuffer &lb,
+					const std::string &line,
+					int expected_plotter_code);
+
+			static bool isValidLat(const fpdata_t &val);
+			static bool isValidLon(const fpdata_t &val);
+
+			fpdata_t d_lat, d_lon;
+
+			// no default constructor
+
+		protected:
+			LatLonPoint(
+					const fpdata_t &lat,
+				 	const fpdata_t &lon) :
+				d_lat(lat), 
+				d_lon(lon) 
+			{  }
+		};
 
 		/**
 		 * Store a LatLonPoint with its plotter code.
 		 */
-		typedef std::pair<LatLonPoint, int> BoundaryLatLonPoint;
-
-		struct LatLonPoint
+		struct BoundaryLatLonPoint
 		{
-				friend FiniteRotation
-				ParseRotationLine(const LineBuffer &lb,
-				 const std::string &line);
+			LatLonPoint d_lat_lon_point;
+			PlotterCodes::PlotterCode d_plotter_code;
+			unsigned d_line_number;
 
-			public:
-
-				static BoundaryLatLonPoint
-				ParseBoundaryLine(const LineBuffer &lb,
-				 const std::string &line,
-				 int expected_plotter_code);
-
-				static void
-				ParseTermBoundaryLine(const LineBuffer &lb,
-				 const std::string &line,
-				 int expected_plotter_code);
-
-				static bool isValidLat(const fpdata_t &val);
-				static bool isValidLon(const fpdata_t &val);
-
-				fpdata_t _lat, _lon;
-
-				// no default constructor
-
-			protected:
-
-				LatLonPoint(const fpdata_t &lat,
-				 const fpdata_t &lon)
-				 : _lat(lat), _lon(lon) {  }
+			BoundaryLatLonPoint(
+					const LatLonPoint &lat_lon_point,
+					PlotterCodes::PlotterCode plotter_code,
+					unsigned line_number) :
+				d_lat_lon_point(lat_lon_point),
+				d_plotter_code(plotter_code),
+				d_line_number(line_number)
+			{ }
 		};
 
 
 		struct EulerRotation
 		{
-				friend FiniteRotation
-				ParseRotationLine(const LineBuffer &lb,
-				 const std::string &line);
+			friend 
+			const FiniteRotation
+			ParseRotationLine(
+					const LineBuffer &lb,
+					const std::string &line);
 
-			public:
+		public:
+			LatLonPoint d_pole;
+			fpdata_t d_angle;  // degrees
 
-				LatLonPoint _pole;
-				fpdata_t    _angle;  // degrees
+			// no default constructor
 
-				// no default constructor
-
-			protected:
-
-				EulerRotation(const LatLonPoint &pole,
-				 const fpdata_t &angle)
-				 : _pole(pole), _angle(angle) {  }
+		protected:
+			EulerRotation(
+					const LatLonPoint &pole,
+					const fpdata_t &angle) :
+				d_pole(pole), 
+				d_angle(angle) 
+			{  }
 		};
 
 
 		struct FiniteRotation
 		{
-				friend FiniteRotation
-				ParseRotationLine(const LineBuffer &lb,
-				 const std::string &line);
+			friend 
+			const FiniteRotation
+			ParseRotationLine(
+					const LineBuffer &lb,
+					const std::string &line);
 
 			public:
-
-				fpdata_t      _time;  // Millions of years ago
-				plate_id_t    _moving_plate, _fixed_plate;
-				EulerRotation _rot;
-				std::string   _comment;
+				fpdata_t d_time;  // Millions of years ago
+				plate_id_t d_moving_plate, d_fixed_plate;
+				EulerRotation d_rot;
+				std::string d_comment;
 
 				// no default constructor
 
 			protected:
-
-				FiniteRotation(const fpdata_t &time,
-				 const plate_id_t &moving_plate,
-				 const plate_id_t &fixed_plate,
-				 const EulerRotation &rot,
-				 const std::string &comment)
-				 : _time(time),
-				   _moving_plate(moving_plate),
-				   _fixed_plate(fixed_plate),
-				   _rot(rot),
-				   _comment(comment) {  }
+				FiniteRotation(
+						const fpdata_t &time,
+						const plate_id_t &moving_plate,
+				 		const plate_id_t &fixed_plate,
+				 		const EulerRotation &rot,
+						const std::string &comment) :
+					d_time(time),
+					d_moving_plate(moving_plate),
+					d_fixed_plate(fixed_plate),
+					d_rot(rot),
+					d_comment(comment) 
+				{  }
 		};
 
 
 		struct RotationSequence
 		{
-			plate_id_t _moving_plate, _fixed_plate;
+			plate_id_t d_moving_plate, d_fixed_plate;
 
 			/*
 			 * The elements in this list are finite rotations
@@ -173,95 +205,113 @@ namespace GPlatesFileIO
 			 * plate) pair, and were listed in an uninterrupted
 			 * sequence in the rotation file.
 			 */
-			std::list< FiniteRotation > _seq;
+			std::list< FiniteRotation > d_seq;
 
 			// no default constructor
 
-			RotationSequence(const plate_id_t &moving_plate,
-			 const plate_id_t &fixed_plate,
-			 const FiniteRotation &rot)
-			 : _moving_plate(moving_plate),
-			   _fixed_plate(fixed_plate) {
-
-				_seq.push_back(rot);
+			RotationSequence(
+					const plate_id_t &moving_plate,
+			 		const plate_id_t &fixed_plate,
+			 		const FiniteRotation &rot) :
+				d_moving_plate(moving_plate),
+				d_fixed_plate(fixed_plate) 
+			{
+				d_seq.push_back(rot);
 			}
 		};
 
 
 		struct PolylineHeader
 		{
-			public:
+		public:
+			static 
+			PolylineHeader
+			ParseLines(
+					const LineBuffer &lb,
+					const std::string &first_line,
+					const std::string &second_line);
 
-				static PolylineHeader
-				ParseLines(const LineBuffer &lb,
-				 const std::string &first_line,
-				 const std::string &second_line);
+			static
+			void
+			ParseSecondLine(
+					const LineBuffer &lb,
+					const std::string &line, 
+					plate_id_t &plate_id,
+					fpdata_t &age_appear, 
+					fpdata_t &age_disappear,
+					size_t &num_points);
 
-				static void
-				ParseSecondLine(const LineBuffer &lb,
-				 const std::string &line, plate_id_t &plate_id,
-				 fpdata_t &age_appear, fpdata_t &age_disappear,
-				 size_t &num_points);
+			// store both lines in their original format
+			std::string d_first_line, d_second_line;
 
-				// store both lines in their original format
-				std::string _first_line, _second_line;
+			/*
+			 * the plate id of the plate
+			 * to which this polyline belongs.
+			 */
+			plate_id_t d_plate_id;
 
-				/*
-				 * the plate id of the plate
-				 * to which this polyline belongs.
-				 */
-				plate_id_t _plate_id;
+			/*
+			 * the lifetime of this polyline, from
+			 * age of appearance to age of disappearance.
+			 */
+			GPlatesModel::GeoTimeInstant d_time_instant_begin;
+			GPlatesModel::GeoTimeInstant d_time_instant_end;
 
-				/*
-				 * the lifetime of this polyline, from
-				 * age of appearance to age of disappearance.
-				 */
-				GPlatesGeo::TimeWindow _lifetime;
+			// the number of points in this polyline
+			// note: we think this is out of date
+			// FIXME: double-check whether this is actually used anywhere
+			size_t d_num_points;
 
-				// the number of points in this polyline
-				size_t _num_points;
+			// no default constructor
 
-				// no default constructor
-
-			protected:
-
-				PolylineHeader(const std::string &first_line,
-				 const std::string &second_line,
-				 const plate_id_t &plate_id,
-				 const GPlatesGeo::TimeWindow &lifetime,
-				 size_t num_points)
-
-				 : _first_line(first_line),
-				   _second_line(second_line),
-				   _plate_id(plate_id),
-				   _lifetime(lifetime),
-				   _num_points(num_points) {  }
+		protected:
+			PolylineHeader(
+					const std::string &first_line,
+					const std::string &second_line,
+					const plate_id_t &plate_id,
+					const GPlatesModel::GeoTimeInstant& time_instant_begin,
+					const GPlatesModel::GeoTimeInstant& time_instant_end,
+					size_t num_points) :
+				d_first_line(first_line),
+				d_second_line(second_line),
+				d_plate_id(plate_id),
+				d_time_instant_begin(time_instant_begin),
+				d_time_instant_end(time_instant_end),
+				d_num_points(num_points) 
+			{  }
 		};
 
 
 		struct Polyline
 		{
-			PolylineHeader           _header;
-			std::list< BoundaryLatLonPoint > _points;
+			PolylineHeader d_header;
+			std::list< BoundaryLatLonPoint > d_points;
+			unsigned d_line_number;
 
 			// no default constructor
 
-			Polyline(const PolylineHeader &header)
-			 : _header(header) {  }
+			Polyline(
+					const PolylineHeader &header,
+					unsigned line_number) :
+				d_header(header),
+				d_line_number(line_number)	
+			{  }
 		};
 
 
 		struct Plate
 		{
-			plate_id_t            _plate_id;
-			std::list< Polyline > _polylines;
+			plate_id_t d_plate_id;
+			std::list< Polyline > d_polylines;
 
 			// no default constructor
 
-			Plate(const plate_id_t &plate_id)
-			 : _plate_id(plate_id) {  }
+			Plate(
+					const plate_id_t &plate_id) :
+				d_plate_id(plate_id) 
+			{  }
 		};
 	}
 }
 
-#endif  // _GPLATES_FILEIO_PLATESDATATYPES_H_
+#endif  // GPLATES_FILEIO_PLATESDATATYPES_H

@@ -1,10 +1,21 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
+MAINTAINERCLEANFILES	= Makefile.in
+
 INCLUDES		= -I$(top_srcdir)/src
 
-noinst_LIBRARIES	= libfileio.a
-libfileio_a_SOURCES	= GPlatesReader.cc GPlatesWriter.cc \
-				PlatesBoundaryParser.cc PlatesDataTypes.cc PlatesParserUtils.cc \
-				PlatesPostParseTranslator.cc PlatesRotationParser.cc \
-				XMLParser.cc
-#				TranslationInterface.cc NetCDFReader.cc NetCDFWriter.cc
+noinst_LTLIBRARIES	= libfileio.la
+libfileio_la_SOURCES	= PlatesPostParseTranslator.cc \
+				PlatesLineFormatReader.cc \
+				PlatesRotationFormatReader.cc \
+				PlatesRotationParser.cc PlatesDataTypes.cc \
+				PlatesBoundaryParser.cc PlatesParserUtils.cc \
+				ReadErrorOccurrence.cc
+
+if PYTHON
+noinst_PROGRAMS		= _fileio.so
+_fileio_so_SOURCES	= PythonWrapper.cc
+_fileio_so_LDADD	= libfileio.la
+_fileio_so_LDFLAGS	= -shared
+endif
+

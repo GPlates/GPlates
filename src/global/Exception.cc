@@ -25,12 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 #include "Exception.h"
 
-using namespace GPlatesGlobal;
 
 void
-Exception::Write(std::ostream &os) const {
+GPlatesGlobal::Exception::Write(std::ostream &os) const {
 
 	os << ExceptionName();
 

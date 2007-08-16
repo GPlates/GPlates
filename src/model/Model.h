@@ -61,7 +61,7 @@ namespace GPlatesModel
 				const FeatureCollectionHandle::weak_ref &reconstructable_features,
 				const FeatureCollectionHandle::weak_ref &reconstruction_features,
 				const double &time,
-				unsigned long root);
+				GpmlPlateId::integer_plate_id_type root);
 
 #ifdef HAVE_PYTHON
 		// A Python wrapper for create_reconstruction

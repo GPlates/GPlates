@@ -6,7 +6,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006,
+ * 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,11 +25,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR_
-#define _GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR_
+#ifndef GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR
+#define GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR
 
-#include "geo/DataGroup.h"
+#include "model/ModelInterface.h"
 #include "PlatesBoundaryParser.h"
+#include "PlatesRotationParser.h"
+#include "ReadErrorAccumulation.h"
+
+#include <vector>
 
 namespace GPlatesFileIO
 {
@@ -39,10 +44,20 @@ namespace GPlatesFileIO
 	 */
 	namespace PlatesPostParseTranslator
 	{
-		GPlatesGeo::DataGroup*
-		GetDataGroupFromPlatesDataMap(
-			const PlatesParser::PlatesDataMap& map);
+		GPlatesModel::FeatureCollectionHandle::weak_ref
+		get_features_from_plates_data(
+				GPlatesModel::ModelInterface &model,
+				const PlatesParser::PlatesDataMap &map,
+				const std::string &filename,
+				ReadErrorAccumulation &errors);
+
+		GPlatesModel::FeatureCollectionHandle::weak_ref
+		get_rotation_sequences_from_plates_data(
+				GPlatesModel::ModelInterface &model,
+				const PlatesParser::PlatesRotationData &list,
+				const std::string &filename,
+				ReadErrorAccumulation &errors);
 	}
 }
 
-#endif  /* _GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR_ */
+#endif  /* GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR */

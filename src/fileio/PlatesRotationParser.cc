@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006,
+ * 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -75,8 +76,8 @@ ReadRotation(LineBuffer &lb, PlatesRotationData &rotation_data) {
 
 	FiniteRotation rot = ParseRotationLine(lb, line);
 
-	plate_id_t moving_plate = rot._moving_plate;
-	plate_id_t fixed_plate = rot._fixed_plate;
+	plate_id_t moving_plate = rot.d_moving_plate;
+	plate_id_t fixed_plate = rot.d_fixed_plate;
 
 	/*
 	 * Ignore "commented-out" finite rotations.
@@ -110,11 +111,11 @@ ReadRotation(LineBuffer &lb, PlatesRotationData &rotation_data) {
 	PlatesRotationData::reverse_iterator rit = rotation_data.rbegin();
 	// recall that the rotation data must contain at least one element
 	RotationSequence &last_rot_seq = *(rit);
-	if (last_rot_seq._moving_plate == moving_plate &&
-	    last_rot_seq._fixed_plate == fixed_plate) {
+	if (last_rot_seq.d_moving_plate == moving_plate &&
+	    last_rot_seq.d_fixed_plate == fixed_plate) {
 
 		// another item in this rotation sequence
-		last_rot_seq._seq.push_back(rot);
+		last_rot_seq.d_seq.push_back(rot);
 
 	} else {
 
@@ -125,19 +126,10 @@ ReadRotation(LineBuffer &lb, PlatesRotationData &rotation_data) {
 }
 
 
-/**
- * A reasonable maximum length for each line of the rotation data.
- * This length does not include a terminating character.
- */
-static const size_t ROTATION_LINE_LEN = 511;
-
-
 void
 ReadRotationLine(LineBuffer &lb, std::string &str) {
 
-	static char buf[ROTATION_LINE_LEN + 1];
-
-	if ( ! lb.getline(buf, sizeof(buf))) {
+	if ( ! lb.getline(str)) {
 
 		/*
 		 * For some reason, the read was considered "unsuccessful".
@@ -154,7 +146,6 @@ ReadRotationLine(LineBuffer &lb, std::string &str) {
 
 		throw FileFormatException(oss.str().c_str());
 	}
-	str = std::string(buf);
 }
 
 }  // end namespace PlatesParser

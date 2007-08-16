@@ -49,11 +49,13 @@ namespace GPlatesModel {
 				PropertyValue::non_null_ptr_type value_,
 				GmlTimeInstant::non_null_ptr_type valid_time_,
 				boost::intrusive_ptr<XsString> description_,
-				const TemplateTypeParameterType &value_type_):
+				const TemplateTypeParameterType &value_type_,
+				bool is_disabled_ = false):
 			d_value(value_),
 			d_valid_time(valid_time_),
 			d_description(description_),
-			d_value_type(value_type_)
+			d_value_type(value_type_),
+			d_is_disabled(is_disabled_)
 		{  }
 
 		GpmlTimeSample(
@@ -61,7 +63,8 @@ namespace GPlatesModel {
 			d_value(other.d_value),
 			d_valid_time(other.d_valid_time),
 			d_description(other.d_description),
-			d_value_type(other.d_value_type)
+			d_value_type(other.d_value_type),
+			d_is_disabled(other.d_is_disabled)
 		{  }
 
 		const PropertyValue::non_null_ptr_to_const_type
@@ -152,6 +155,25 @@ namespace GPlatesModel {
 			return d_value_type;
 		}
 
+		bool
+		is_disabled() const
+		{
+			return d_is_disabled;
+		}
+
+		bool
+		is_disabled()
+		{
+			return d_is_disabled;
+		}
+
+		void
+		set_is_disabled(
+				bool is_disabled_)
+		{
+			d_is_disabled = is_disabled_;
+		}
+
 		/**
 		 * Accept a ConstFeatureVisitor instance.
 		 *
@@ -184,8 +206,10 @@ namespace GPlatesModel {
 
 		// This one is optional.
 		boost::intrusive_ptr<XsString> d_description;
+
 		TemplateTypeParameterType d_value_type;
 
+		bool d_is_disabled;
 	};
 
 }

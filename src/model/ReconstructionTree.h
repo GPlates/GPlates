@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the class ReconstructionTree.
  *
  * Most recent change:
  *   $Date$
@@ -65,19 +65,32 @@ namespace GPlatesModel
 	/**
 	 * A reconstruction tree represents the plate-reconstruction hierarchy of total
 	 * reconstruction poles at an instant in time.
+	 *
+	 * Creating a useful tree is a three-step process:
+	 * -# Instantiate ReconstructionTree.
+	 * -# Populate the ReconstructionTree instance by inserting interpolated poles (@a insert
+	 * function).
+	 * -# Build the tree-structure (@a build_tree function), specifying the root of the tree.
 	 */
 	class ReconstructionTree
 	{
 	public:
-		class ReconstructionTreeNode
+		/**
+		 * A reconstruction tree edge corresponds to a total reconstruction pole.
+		 *
+		 * A reconstruction tree edge is a directed edge which links two reconstruction
+		 * tree vertices, each of which corresponds to a plate ID (actually: a plate
+		 * identified by the plate ID).
+		 */
+		class ReconstructionTreeEdge
 		{
 		public:
 			/**
 			 * To enable the tree-building algorithm to construct the fullest-possible
-			 * rotation-tree from the rotation-graph, both the original *and* reversed
-			 * poles are inserted.
+			 * reconstruction-tree from the reconstruction-graph, edges are inserted
+			 * which correspond to both the original *and* reversed poles.
 			 *
-			 * Thus, it will be possible to traverse rotation-graph edges in the
+			 * Thus, it will be possible to traverse reconstruction-graph edges in the
 			 * reverse direction (which is what the user will expect sometimes).
 			 */
 			struct PoleTypes
@@ -88,9 +101,9 @@ namespace GPlatesModel
 				};
 			};
 
-			typedef std::list<ReconstructionTreeNode> node_list_type;
+			typedef std::list<ReconstructionTreeEdge> edge_list_type;
 
-			ReconstructionTreeNode(
+			ReconstructionTreeEdge(
 					GpmlPlateId::non_null_ptr_type fixed_plate_,
 					GpmlPlateId::non_null_ptr_type moving_plate_,
 					const GPlatesMaths::FiniteRotation &relative_rotation_,
@@ -128,9 +141,9 @@ namespace GPlatesModel
 
 			void
 			set_composed_absolute_rotation(
-					const GPlatesMaths::FiniteRotation &new_car)
+					const GPlatesMaths::FiniteRotation &new_rotation)
 			{
-				d_composed_absolute_rotation = new_car;
+				d_composed_absolute_rotation = new_rotation;
 			}
 
 			PoleTypes::PoleType
@@ -139,7 +152,16 @@ namespace GPlatesModel
 				return d_pole_type;
 			}
 
-			node_list_type &
+			/**
+			 * When the tree-structure is being built, the elements of this list are
+			 * the edges which are the "children" of this edge instance.
+			 *
+			 * That is, the edges in this list will be one step further away from the
+			 * root of the tree than this edge instance; and the moving plate of this
+			 * edge instance will be the fixed plate of each of the elements in this
+			 * list.  (Every edge in this list will "hang off" this edge.)
+			 */
+			edge_list_type &
 			tree_children()
 			{
 				return d_tree_children;
@@ -151,19 +173,55 @@ namespace GPlatesModel
 			GPlatesMaths::FiniteRotation d_relative_rotation;
 			GPlatesMaths::FiniteRotation d_composed_absolute_rotation;
 			PoleTypes::PoleType d_pole_type;
-			node_list_type d_tree_children;
+
+			/**
+			 * When the tree-structure is being built, the elements of this list are
+			 * the edges which are the "children" of this edge instance.
+			 *
+			 * That is, the edges in this list will be one step further away from the
+			 * root of the tree than this edge instance; and the moving plate of this
+			 * edge instance will be the fixed plate of each of the elements in this
+			 * list.  (Every edge in this list will "hang off" this edge.)
+			 */
+			edge_list_type d_tree_children;
 		};
 
-		typedef ReconstructionTreeNode::node_list_type node_list_type;
-		typedef node_list_type::iterator list_node_reference_type;
-		typedef std::multimap<GpmlPlateId::integer_plate_id_type, list_node_reference_type>
-				list_nodes_by_plate_id_map_type;
-		typedef list_nodes_by_plate_id_map_type::iterator map_iterator;
+		/**
+		 * This type represents a list of edges of a reconstruction tree.
+		 */
+		typedef ReconstructionTreeEdge::edge_list_type edge_list_type;
+
+		/**
+		 * This type represents an iterator into an edge list.
+		 *
+		 * This type can also be used as a reference to an edge.
+		 */
+		typedef edge_list_type::iterator edge_list_iterator;
+
+		/**
+		 * This type represents a mapping of an integer plate ID type to an
+		 * edge_list_iterator.
+		 */
+		typedef std::multimap<GpmlPlateId::integer_plate_id_type, edge_list_iterator>
+				edge_list_iters_by_plate_id_map_type;
+
+		/**
+		 * This type represents an iterator into an edge_list_iters_by_plate_id_map_type.
+		 */
+		typedef edge_list_iters_by_plate_id_map_type::iterator edge_ref_map_iterator;
+
+		/**
+		 * This type is intended to represent a sub-range of an
+		 * edge_list_iters_by_plate_id_map_type.
+		 *
+		 * It is intended that the first member of the pair is the "begin" iterator of an
+		 * STL container range, and the second member is the "end" iterator.
+		 */
+		typedef std::pair<edge_ref_map_iterator, edge_ref_map_iterator> edge_ref_map_range_type;
 
 		ReconstructionTree()
 		{  }
 
-		// Assumes both @a fixed_plate_ and @a moving_plate_ are non-NULL.
 		// Total reconstruction poles must be inserted before the "tree" can be built.
 		void
 		insert_total_reconstruction_pole(
@@ -174,7 +232,7 @@ namespace GPlatesModel
 		bool
 		tree_is_built() const
 		{
-			return ( ! d_rootmost_nodes.empty());
+			return ( ! d_rootmost_edges.empty());
 		}
 
 		// After all total reconstruction poles have been inserted, you can build the tree
@@ -184,25 +242,29 @@ namespace GPlatesModel
 				GpmlPlateId::integer_plate_id_type root_plate_id);
 
 		/**
-		 * Access the begin iterator of the collection of rootmost nodes.
+		 * Access the begin iterator of the collection of rootmost edges.
 		 *
-		 * Since the "tree" is built out of total reconstruction poles, it is actually
-		 * storing tree-edges rather than tree-nodes.  Hence, the top of the tree will
-		 * actually be a collection of poles, each of which will have a fixed plate ID
-		 * equal to the "root" plate ID of the "tree".
-		 *
-		 * ("tree" is in quotes because it needs a better (less overloaded) name.)
+		 * Since the tree-structure is built out of the edges (total reconstruction poles),
+		 * tree-traversal begins by iterating through a collection of edges, each of which
+		 * has a fixed plate ID which is equal to the "root" plate ID of the tree.
 		 */
-		list_node_reference_type
-		rootmost_nodes_begin()
+		edge_list_iterator
+		rootmost_edges_begin()
 		{
-			return d_rootmost_nodes.begin();
+			return d_rootmost_edges.begin();
 		}
 
-		list_node_reference_type
-		rootmost_nodes_end()
+		/**
+		 * Access the end iterator of the collection of rootmost edges.
+		 *
+		 * Since the tree-structure is built out of the edges (total reconstruction poles),
+		 * tree-traversal begins by iterating through a collection of edges, each of which
+		 * has a fixed plate ID which is equal to the "root" plate ID of the tree.
+		 */
+		edge_list_iterator
+		rootmost_edges_end()
 		{
-			return d_rootmost_nodes.end();
+			return d_rootmost_edges.end();
 		}
 
 		const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
@@ -218,58 +280,69 @@ namespace GPlatesModel
 				GpmlPlateId::integer_plate_id_type root_plate_id);
 
 	private:
-		/*
-		 * This list will be populated by the total reconstruction poles which are
-		 * inserted.  When the "tree" is being built, nodes will be extracted from this
-		 * list and spliced into the lists in the "tree"; any nodes left over will be
-		 * "unused".
-		 */
-		node_list_type d_unused_nodes;
-
-		/*
-		 * This list will remain empty while the reconstruction tree is being populated
-		 * (ie, while total reconstruction poles are being inserted); when the "tree" is
-		 * being built, this will contain the rootmost nodes of the tree (ie, the nodes of
-		 * the tree whose fixed ref-frame is equal to the 'root' of the tree).
-		 */
-		node_list_type d_rootmost_nodes;
-
-		/*
-		 * This map will be used when building the "tree".
-		 */
-		list_nodes_by_plate_id_map_type d_list_nodes_by_fixed_plate_id;
-
-		/*
-		 * This map will be used when the user is querying the "tree".
-		 */
-		list_nodes_by_plate_id_map_type d_list_nodes_by_moving_plate_id;
-
-		/*
-		 * Find all nodes whose fixed plate ID matches 'fixed_plate_id'.
+		/**
+		 * This list will be populated by the edges (total reconstruction poles) which are
+		 * inserted by the clients of this class.
 		 *
-		 * The purpose of the pair is similar to the purpose of the return-value of the
-		 * 'multimap::equal_range' member function, but it is a range of elements which
-		 * reference poles whose fixed plate ID is equal to the specified fixed plate ID.
+		 * When the tree-structure is being built, edges will be extracted from this list
+		 * and spliced into the lists in edges in the tree; any edges left in this list
+		 * will be unused in the tree-structure (hence the name of this data member).
 		 */
-		std::pair<map_iterator, map_iterator>
-		find_nodes_whose_fixed_plate_id_match(
+		edge_list_type d_unused_edges;
+
+		/**
+		 * This list will remain empty while the reconstruction tree is being populated
+		 * (ie, while edges (total reconstruction poles) are being inserted by the clients
+		 * of this class); when the tree-structure is being built, this will contain the
+		 * rootmost edges of the tree (ie, the edges of the tree whose fixed plate is equal
+		 * to the "root" of the tree).
+		 */
+		edge_list_type d_rootmost_edges;
+
+		/**
+		 * This map will be used when building the tree-structure.
+		 *
+		 * FIXME:  What @em exactly is it used for?
+		 */
+		edge_list_iters_by_plate_id_map_type d_edge_refs_by_fixed_plate_id;
+
+		/**
+		 * This map will be used when the user is querying the reconstruction tree.
+		 *
+		 * FIXME:  What @em exactly is it used for?
+		 */
+		edge_list_iters_by_plate_id_map_type d_edge_refs_by_moving_plate_id;
+
+		/**
+		 * Find all edges whose fixed plate ID matches 'fixed_plate_id'.
+		 *
+		 * The function of this return-value (a 'std::pair') is similar to the function of
+		 * the return-value of the 'multimap::equal_range' function (that is, it returns
+		 * the "begin" and "end" iterators of an STL container range):  This return-value
+		 * describes the range of elements in the map, each of which references an edge
+		 * whose fixed plate ID is equal to the specified fixed plate ID.
+		 */
+		edge_ref_map_range_type
+		find_edges_whose_fixed_plate_id_match(
 				GpmlPlateId::integer_plate_id_type fixed_plate_id);
 
-		/*
-		 * Demolish the tree, to reset all the containers.
+		/**
+		 * Demolish the tree-structure, to reset all the containers.
 		 */
 		void
 		demolish_tree();
 
-		/*
-		 * Find all nodes whose moving plate ID matches 'moving_plate_id'.
+		/**
+		 * Find all edges whose moving plate ID matches 'moving_plate_id'.
 		 *
-		 * The purpose of the pair is similar to the purpose of the return-value of the
-		 * 'multimap::equal_range' member function, but it is a range of elements which
-		 * reference poles whose moving plate ID is equal to the specified moving plate ID.
+		 * The function of this return-value (a 'std::pair') is similar to the function of
+		 * the return-value of the 'multimap::equal_range' function (that is, it returns
+		 * the "begin" and "end" iterators of an STL container range):  This return-value
+		 * describes the range of elements in the map, each of which references an edge
+		 * whose moving plate ID is equal to the specified moving plate ID.
 		 */
-		std::pair<map_iterator, map_iterator>
-		find_nodes_whose_moving_plate_id_match(
+		edge_ref_map_range_type
+		find_edges_whose_moving_plate_id_match(
 				GpmlPlateId::integer_plate_id_type moving_plate_id,
 				GpmlPlateId::integer_plate_id_type root_plate_id);
 

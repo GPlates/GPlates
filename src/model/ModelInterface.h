@@ -31,6 +31,7 @@
 #include <vector>
 #include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
+#include "GpmlPlateId.h"
 #include "WeakReference.h"
 #include "Reconstruction.h"
 
@@ -131,13 +132,19 @@ namespace GPlatesModel
 				const FeatureCollectionHandle::weak_ref &containing_collection) = 0;
 #endif
 
+		/**
+		 * FIXME:  Where is the comment for this function?
+		 *
+		 * And while we're at it, do any of those other functions actually throw exceptions
+		 * when they're passed invalid weak_refs?  They should.
+		 */
 		virtual
 		const Reconstruction::non_null_ptr_type
 		create_reconstruction(
 				const FeatureCollectionHandle::weak_ref &reconstructable_features,
 				const FeatureCollectionHandle::weak_ref &reconstruction_features,
 				const double &time,
-				unsigned long root) = 0;
+				GpmlPlateId::integer_plate_id_type root) = 0;
 
 		virtual
 		~ModelInterface()

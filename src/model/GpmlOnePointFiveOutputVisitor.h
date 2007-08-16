@@ -108,6 +108,11 @@ namespace GPlatesFileIO {
 
 		virtual
 		void
+		visit_gpml_old_plates_header(
+				const GPlatesModel::GpmlOldPlatesHeader &gpml_old_plates_header);
+
+		virtual
+		void
 		visit_inline_property_container(
 				const GPlatesModel::InlinePropertyContainer &inline_property_container);
 

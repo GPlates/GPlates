@@ -60,6 +60,18 @@ namespace GPlatesModel {
 		virtual
 		~GpmlIrregularSampling() {  }
 
+		static
+		const non_null_ptr_type
+		create(
+				const GpmlTimeSample &first_time_sample,
+				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
+				const TemplateTypeParameterType &value_type_) {
+			non_null_ptr_type ptr(
+					*(new GpmlIrregularSampling(first_time_sample, interp_func,
+							value_type_)));
+			return ptr;
+		}
+
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
 		// everything properly, so don't look at this function and think "Uh oh, this
@@ -160,6 +172,20 @@ namespace GPlatesModel {
 		}
 
 	protected:
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		GpmlIrregularSampling(
+				const GpmlTimeSample &first_time_sample,
+				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
+				const TemplateTypeParameterType &value_type_):
+			PropertyValue(),
+			d_time_samples(),
+			d_interpolation_function(interp_func),
+			d_value_type(value_type_)
+		{
+			d_time_samples.push_back(first_time_sample);
+		}
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

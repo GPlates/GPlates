@@ -25,10 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_GLOBAL_EXCEPTION_H_
-#define _GPLATES_GLOBAL_EXCEPTION_H_
+#ifndef GPLATES_GLOBAL_EXCEPTION_H
+#define GPLATES_GLOBAL_EXCEPTION_H
 
-#include <iostream>
+#include <iosfwd>
 #include <string>
 
 namespace GPlatesGlobal
@@ -74,4 +74,4 @@ namespace GPlatesGlobal
 	}
 }
 
-#endif  // _GPLATES_GLOBAL_EXCEPTION_H_
+#endif  // GPLATES_GLOBAL_EXCEPTION_H

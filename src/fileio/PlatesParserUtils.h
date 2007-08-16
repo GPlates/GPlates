@@ -44,20 +44,30 @@ namespace GPlatesFileIO
 	{
 		using namespace GPlatesGlobal;
 
-		int attemptToReadInt(const LineBuffer &lb,
-			std::istringstream &iss, const char *desc);
+		int 
+		attemptToReadInt(
+				const LineBuffer &lb,
+				std::istringstream &iss, const char *desc);
 
-		fpdata_t attemptToReadFloat(const LineBuffer &lb,
-			std::istringstream &iss, const char *desc);
+		fpdata_t 
+		attemptToReadFloat(
+				const LineBuffer &lb,
+				std::istringstream &iss, const char *desc);
 
-		std::string attemptToReadString(const LineBuffer &lb,
-			std::istringstream &iss, const char *desc);
+		std::string 
+		attemptToReadString(
+				const LineBuffer &lb,
+				std::istringstream &iss, const char *desc);
 
-		plate_id_t attemptToReadPlateID(const LineBuffer &lb,
-			std::istringstream &iss, const char *desc);
+		plate_id_t
+		attemptToReadPlateID(
+				const LineBuffer &lb,
+				std::istringstream &iss, const char *desc);
 
-		int attemptToReadPlotterCode(const LineBuffer &lb,
-			std::istringstream &iss);
+		PlotterCodes::PlotterCode 
+		attemptToReadPlotterCode(
+				const LineBuffer &lb,
+				std::istringstream &iss);
 	}
 }
 

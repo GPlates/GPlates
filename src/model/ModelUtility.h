@@ -27,6 +27,12 @@
 #define GPLATES_MODEL_MODELUTILITY_H
 
 #include "Model.h"
+#include "InlinePropertyContainer.h"
+#include "PropertyValue.h"
+#include "GmlTimeInstant.h"
+#include "GpmlIrregularSampling.h"
+#include "XsString.h"
+#include "XsBoolean.h"
 #include "GeoTimeInstant.h"
 
 namespace GPlatesModel
@@ -41,29 +47,55 @@ namespace GPlatesModel
 			double rotation_angle;
 			const char *comment;
 		};
-	
+
+
+		const InlinePropertyContainer::non_null_ptr_type
+		append_property_value_to_feature(
+				PropertyValue::non_null_ptr_type property_value,
+				const char *property_name_string,
+				FeatureHandle::weak_ref &feature);
+
+
+		const GmlTimeInstant::non_null_ptr_type
+		create_gml_time_instant(
+				const GeoTimeInstant &geo_time_instant);
+
+
+		const GpmlIrregularSampling::non_null_ptr_type
+		create_gpml_irregular_sampling(
+				const GpmlTimeSample &first_time_sample);
+
+
+		const XsString::non_null_ptr_type
+		create_xs_string(
+				const std::string &str);
+
+		const XsBoolean::non_null_ptr_type
+		create_xs_boolean(
+				bool value);
+
+		// Before this line are the new, hopefully-better-designed functions; after this
+		// line are the old, arbitrary functions which should probably be reviewed (and
+		// should quite possibly be refactored).
+		// FIXME:  Review the following functions and refactor if necessary.
+
 		const PropertyContainer::non_null_ptr_type
 		create_reconstruction_plate_id(
-				const unsigned long &plate_id);
-	
+				unsigned long plate_id);
 	
 		const PropertyContainer::non_null_ptr_type
 		create_reference_frame_plate_id(
-				const unsigned long &plate_id,
+				unsigned long plate_id,
 				const char *which_reference_frame);
-	
 	
 		const PropertyContainer::non_null_ptr_type
 		create_centre_line_of(
-				const double *points,
-				unsigned num_points);
-	
-	
+				const std::vector<double> &points);	
+
 		const PropertyContainer::non_null_ptr_type
 		create_valid_time(
 				const GeoTimeInstant &geo_time_instant_begin,
 				const GeoTimeInstant &geo_time_instant_end);
-	
 	
 		const PropertyContainer::non_null_ptr_type
 		create_description(
@@ -76,18 +108,15 @@ namespace GPlatesModel
 	
 		const PropertyContainer::non_null_ptr_type
 		create_total_reconstruction_pole(
-				const TotalReconstructionPoleData *five_tuples,
-				unsigned num_five_tuples);
-	
+				const std::vector<TotalReconstructionPoleData> &five_tuples);
 	
 		const FeatureHandle::weak_ref
 		create_total_recon_seq(
 				ModelInterface &model,
 				FeatureCollectionHandle::weak_ref &target_collection,
-				const unsigned long &fixed_plate_id,
-				const unsigned long &moving_plate_id,
-				const TotalReconstructionPoleData *five_tuples,
-				unsigned num_five_tuples);
+				unsigned long fixed_plate_id,
+				unsigned long moving_plate_id,
+				const std::vector<TotalReconstructionPoleData> &five_tuples);
 	}
 }
 

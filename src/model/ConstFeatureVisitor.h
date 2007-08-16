@@ -44,8 +44,10 @@ namespace GPlatesModel {
 	class GpmlIrregularSampling;
 	class GpmlPlateId;
 	class GpmlTimeSample;
+	class GpmlOldPlatesHeader;
 	class InlinePropertyContainer;
 	class XsString;
+	class XsBoolean;
 
 	/**
 	 * This class defines an abstract interface for a Visitor to visit const features.
@@ -97,6 +99,11 @@ namespace GPlatesModel {
 		// member functions have (empty) definitions.
 		virtual
 		~ConstFeatureVisitor() = 0;
+
+		virtual
+		void
+		visit_gpml_old_plates_header(
+				const GpmlOldPlatesHeader &gpml_old_plates_header) {  }
 
 		virtual
 		void
@@ -167,6 +174,11 @@ namespace GPlatesModel {
 		void
 		visit_xs_string(
 				const XsString &xs_string) {  }
+
+		virtual
+		void
+		visit_xs_boolean(
+				const XsBoolean &xs_boolean) {  }
 
 	private:
 

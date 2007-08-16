@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007
+ * The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,8 +26,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_FILEIO_LINEBUFFER_H_
-#define _GPLATES_FILEIO_LINEBUFFER_H_
+#ifndef GPLATES_FILEIO_LINEBUFFER_H
+#define GPLATES_FILEIO_LINEBUFFER_H
 
 #include <iostream>
 #include <string>
@@ -34,43 +35,54 @@
 namespace GPlatesFileIO
 {
 	/**
-	 * LineBuffer is a wrapper around a standard istream which allows
-	 * you to associate a filename with that istream, and read from
-	 * the istream in a line-oriented fashion.  It also keeps track of
-	 * the line-number of the line you just read.
+	 * LineBuffer is a wrapper around a standard istream which allows you to associate a
+	 * filename with that istream, and read from the istream in a line-oriented fashion.
+	 *
+	 * It also keeps track of the line-number of the line you just read.
 	 */
-	class LineBuffer {
-
+	class LineBuffer
+	{
 		public:
+			/**
+			 * This is the type used for line-number counting.
+			 */
+			typedef unsigned line_num_type;
 
-			LineBuffer(std::istream &istr, const char *fname)
-			 : _istr(istr), _fname(fname), _line_num(0) {  }
+			// Use std::string parameters for consistency: overhead is minimal.
+			LineBuffer(
+					std::istream &istr,
+					const std::string& fname):
+				d_istr_ptr(&istr),
+				d_fname(fname),
+				d_line_num(0)
+			{  }
 
 
-			~LineBuffer() {  }
+			~LineBuffer()
+			{  }
 
 
 			/**
 			 * Get a line from the istream.
-			 * This member function is designed to behave just like
-			 * the member function of the same name in istream.
+			 *
+			 * This member function is designed to behave just like the member function
+			 * of the same name in istream.
 			 */
 			void *
-			getline(char *str, std::streamsize count) {
+			getline(
+					std::string &str) {
 
-				if ( ! _istr) {
+				if ( ! *d_istr_ptr) {
 					/*
-					 * Input stream _istr is not
-					 * in a usable state, hence
-					 * every stream operation
-					 * is a no-op until the state
-					 * of _istr is reset
-					 * (Josuttis, 13.4.2).
+					 * Input stream *d_istr_ptr is not in a usable state, hence
+					 * every stream operation is a no-op until the state of
+					 * *d_istr_ptr is reset (Josuttis, 13.4.2).
 					 */
-					return _istr;
+					return *d_istr_ptr;
 				}
-				_line_num++;
-				return (_istr.getline(str, count));
+				d_line_num++;
+				// Use global getline instead of istream member.
+				return (std::getline(*d_istr_ptr, str));
 			}
 
 
@@ -84,24 +96,25 @@ namespace GPlatesFileIO
 			 * the 'eofbit'.
 			 */
 			bool
-			eof() const { return _istr.eof(); }
+			eof() const
+			{
+				return d_istr_ptr->eof();
+			}
 
 
 			/**
 			 * Reset the failbit in the istream, if it is set.
 			 */
 			void
-			resetFailbit() {
-
-				// based upon code in Josuttis, 13.4.2
-				if (_istr.rdstate() & std::ios::failbit) {
+			resetFailbit()
+			{
+				// Based upon code in Josuttis, 13.4.2
+				if (d_istr_ptr->rdstate() & std::ios::failbit) {
 					/*
-					 * Input stream _istr has its
-					 * failbit set.  We only want
-					 * to clear the failbit.
+					 * Input stream *d_istr_ptr has its failbit set.  We only
+					 * want to clear the failbit.
 					 */
-				  _istr.clear(_istr.rdstate()
-					 & ~std::ios::failbit);
+					d_istr_ptr->clear(d_istr_ptr->rdstate() & ~std::ios::failbit);
 				}
 			}
 
@@ -109,39 +122,47 @@ namespace GPlatesFileIO
 			/**
 			 * Return the line number of the line you just read.
 			 */
-			unsigned
-			lineNum() const { return _line_num; }
+			line_num_type
+			lineNum() const
+			{
+				return d_line_num;
+			}
 
 
 			void
-			writeTo(std::ostream &ostr) const {
-
-				ostr << "\"" << _fname << "\" [line "
-				     << _line_num << "]";
+			writeTo(
+					std::ostream &ostr) const
+			{
+				ostr << "\"" << d_fname << "\" [line " << d_line_num << "]";
 			}
 
 		protected:
 
-			// protected cctor, to help prevent accidental copying
-			LineBuffer(const LineBuffer &other)
-			 : _istr(other._istr),
-			   _fname(other._fname),
-			   _line_num(other._line_num) {  }
+			// A protected cctor, to help prevent accidental copying.
+			LineBuffer(
+					const LineBuffer &other):
+				d_istr_ptr(other.d_istr_ptr),
+				d_fname(other.d_fname),
+				d_line_num(other.d_line_num)
+			{  }
 
 		private:
 
-			std::istream &_istr;
-			std::string _fname;
-			unsigned _line_num;
+			std::istream *d_istr_ptr;
+			const std::string d_fname;  //  This shouldn't change.
+			line_num_type d_line_num;
 	};
 
 
-	inline std::ostream &
-	operator<<(std::ostream &ostr, const LineBuffer &lbuf) {
-
+	inline
+	std::ostream &
+	operator<<(
+			std::ostream &ostr,
+			const LineBuffer &lbuf)
+	{
 		lbuf.writeTo(ostr);
 		return ostr;
 	}
 }
 
-#endif  // _GPLATES_FILEIO_LINEBUFFER_H_
+#endif  // GPLATES_FILEIO_LINEBUFFER_H

@@ -35,15 +35,74 @@
 #include "GpmlConstantValue.h"
 #include "GpmlFiniteRotationSlerp.h"
 #include "GpmlFiniteRotation.h"
-#include "GpmlIrregularSampling.h"
 #include "GpmlPlateId.h"
 #include "GpmlTimeSample.h"
-#include "InlinePropertyContainer.h"
-#include "XsString.h"
+
+
+const GPlatesModel::InlinePropertyContainer::non_null_ptr_type
+GPlatesModel::ModelUtility::append_property_value_to_feature(
+		PropertyValue::non_null_ptr_type property_value,
+		const char *property_name_string,
+		FeatureHandle::weak_ref &feature)
+{
+	PropertyName property_name(property_name_string);
+	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
+	InlinePropertyContainer::non_null_ptr_type property_container =
+			InlinePropertyContainer::create(property_name, property_value, xml_attributes);
+
+	DummyTransactionHandle transaction(__FILE__, __LINE__);
+	feature->append_property_container(property_container, transaction);
+	transaction.commit();
+
+	return property_container;
+}
+
+
+const GPlatesModel::GmlTimeInstant::non_null_ptr_type
+GPlatesModel::ModelUtility::create_gml_time_instant(
+		const GeoTimeInstant &geo_time_instant)
+{
+	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
+	XmlAttributeName xml_attribute_name("frame");
+	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
+	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
+
+	return GmlTimeInstant::create(geo_time_instant, xml_attributes);
+}
+
+
+const GPlatesModel::GpmlIrregularSampling::non_null_ptr_type
+GPlatesModel::ModelUtility::create_gpml_irregular_sampling(
+		const GpmlTimeSample &first_time_sample)
+{
+	GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
+			GpmlFiniteRotationSlerp::create(first_time_sample.value_type());
+
+	return GpmlIrregularSampling::create(first_time_sample,
+			GPlatesContrib::get_intrusive_ptr(gpml_finite_rotation_slerp),
+			first_time_sample.value_type());
+}
+
+
+const GPlatesModel::XsString::non_null_ptr_type
+GPlatesModel::ModelUtility::create_xs_string(
+		const std::string &str)
+{
+	return XsString::create(UnicodeString(str.c_str()));
+}
+
+
+const GPlatesModel::XsBoolean::non_null_ptr_type
+GPlatesModel::ModelUtility::create_xs_boolean(
+		bool value)
+{
+	return XsBoolean::create(value);
+}
+
 
 const GPlatesModel::PropertyContainer::non_null_ptr_type
 GPlatesModel::ModelUtility::create_reconstruction_plate_id(
-		const unsigned long &plate_id)
+		unsigned long plate_id)
 {
 	PropertyValue::non_null_ptr_type gpml_plate_id =
 			GpmlPlateId::create(plate_id);
@@ -66,7 +125,7 @@ GPlatesModel::ModelUtility::create_reconstruction_plate_id(
 
 const GPlatesModel::PropertyContainer::non_null_ptr_type
 GPlatesModel::ModelUtility::create_reference_frame_plate_id(
-		const unsigned long &plate_id,
+		unsigned long plate_id,
 		const char *which_reference_frame)
 {
 	PropertyValue::non_null_ptr_type gpml_plate_id =
@@ -85,10 +144,8 @@ GPlatesModel::ModelUtility::create_reference_frame_plate_id(
 
 const GPlatesModel::PropertyContainer::non_null_ptr_type
 GPlatesModel::ModelUtility::create_centre_line_of(
-		const double *points,
-		unsigned num_points)
+		const std::vector<double> &gml_pos_list)
 {
-	std::vector<double> gml_pos_list(points, points + num_points);
 	PropertyValue::non_null_ptr_type gml_line_string =
 			GmlLineString::create(gml_pos_list);
 
@@ -182,10 +239,10 @@ GPlatesModel::ModelUtility::create_name(
 	return inline_property_container;
 }
 
+
 const GPlatesModel::PropertyContainer::non_null_ptr_type
 GPlatesModel::ModelUtility::create_total_reconstruction_pole(
-		const TotalReconstructionPoleData *five_tuples,
-		unsigned num_five_tuples)
+		const std::vector<TotalReconstructionPoleData> &five_tuples)
 {
 	std::vector<GpmlTimeSample> time_samples;
 	TemplateTypeParameterType value_type("gpml:FiniteRotation");
@@ -195,18 +252,20 @@ GPlatesModel::ModelUtility::create_total_reconstruction_pole(
 	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
 
-	for (unsigned i = 0; i < num_five_tuples; ++i) {
+	for (std::vector<TotalReconstructionPoleData>::const_iterator iter = five_tuples.begin(); 
+				iter != five_tuples.end(); ++iter) 
+	{
 		std::pair<double, double> gpml_euler_pole =
-				std::make_pair(five_tuples[i].lon_of_euler_pole, five_tuples[i].lat_of_euler_pole);
+				std::make_pair(iter->lon_of_euler_pole, iter->lat_of_euler_pole);
 		GpmlFiniteRotation::non_null_ptr_type gpml_finite_rotation =
 				GpmlFiniteRotation::create(gpml_euler_pole,
-				five_tuples[i].rotation_angle);
+				iter->rotation_angle);
 
-		GeoTimeInstant geo_time_instant(five_tuples[i].time);
+		GeoTimeInstant geo_time_instant(iter->time);
 		GmlTimeInstant::non_null_ptr_type gml_time_instant =
 				GmlTimeInstant::create(geo_time_instant, xml_attributes);
 
-		UnicodeString comment_string(five_tuples[i].comment);
+		UnicodeString comment_string(iter->comment);
 		XsString::non_null_ptr_type gml_description =
 				XsString::create(comment_string);
 
@@ -236,10 +295,9 @@ const GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::ModelUtility::create_total_recon_seq(
 		ModelInterface &model,
 		FeatureCollectionHandle::weak_ref &target_collection,
-		const unsigned long &fixed_plate_id,
-		const unsigned long &moving_plate_id,
-		const TotalReconstructionPoleData *five_tuples,
-		unsigned num_five_tuples)
+		unsigned long fixed_plate_id,
+		unsigned long moving_plate_id,
+		const std::vector<TotalReconstructionPoleData> &five_tuples)
 {
 	UnicodeString feature_type_string("gpml:TotalReconstructionSequence");
 	FeatureType feature_type(feature_type_string);
@@ -247,7 +305,7 @@ GPlatesModel::ModelUtility::create_total_recon_seq(
 			model.create_feature(feature_type, target_collection);
 
 	PropertyContainer::non_null_ptr_type total_reconstruction_pole_container =
-			create_total_reconstruction_pole(five_tuples, num_five_tuples);
+			create_total_reconstruction_pole(five_tuples);
 	PropertyContainer::non_null_ptr_type fixed_reference_frame_container =
 			create_reference_frame_plate_id(fixed_plate_id, "gpml:fixedReferenceFrame");
 	PropertyContainer::non_null_ptr_type moving_reference_frame_container =

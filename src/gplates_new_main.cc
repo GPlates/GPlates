@@ -71,10 +71,12 @@ create_isochron(
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model.create_feature(feature_type, target_collection);
 
+	const std::vector<double> points_vector(points, points + num_points);
+
 	GPlatesModel::PropertyContainer::non_null_ptr_type reconstruction_plate_id_container =
 			GPlatesModel::ModelUtility::create_reconstruction_plate_id(plate_id);
 	GPlatesModel::PropertyContainer::non_null_ptr_type centre_line_of_container =
-			GPlatesModel::ModelUtility::create_centre_line_of(points, num_points);
+			GPlatesModel::ModelUtility::create_centre_line_of(points_vector);
 	GPlatesModel::PropertyContainer::non_null_ptr_type valid_time_container =
 			GPlatesModel::ModelUtility::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
 	GPlatesModel::PropertyContainer::non_null_ptr_type description_container =
@@ -108,29 +110,29 @@ create_isochron(
 
 void
 traverse_recon_tree_recursive(
-		GPlatesModel::ReconstructionTree::ReconstructionTreeNode &node)
+		GPlatesModel::ReconstructionTree::ReconstructionTreeEdge &edge)
 {
 	std::cout << " * Children of pole (fixed plate: "
-			<< node.fixed_plate()->value()
+			<< edge.fixed_plate()->value()
 			<< ", moving plate: "
-			<< node.moving_plate()->value()
+			<< edge.moving_plate()->value()
 			<< ")\n";
 
-	GPlatesModel::ReconstructionTree::list_node_reference_type iter = node.tree_children().begin();
-	GPlatesModel::ReconstructionTree::list_node_reference_type end = node.tree_children().end();
+	GPlatesModel::ReconstructionTree::edge_list_iterator iter = edge.tree_children().begin();
+	GPlatesModel::ReconstructionTree::edge_list_iterator end = edge.tree_children().end();
 	for ( ; iter != end; ++iter) {
 		std::cout << " - FiniteRotation: " << iter->relative_rotation() << "\n";
 		std::cout << "    with absolute rotation: " << iter->composed_absolute_rotation() << "\n";
 		std::cout << "    and fixed plate: " << iter->fixed_plate()->value() << std::endl;
 		std::cout << "    and moving plate: " << iter->moving_plate()->value() << std::endl;
 		if (iter->pole_type() ==
-				GPlatesModel::ReconstructionTree::ReconstructionTreeNode::PoleTypes::ORIGINAL) {
+				GPlatesModel::ReconstructionTree::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
 			std::cout << "    which is original.\n";
 		} else {
 			std::cout << "    which is reversed.\n";
 		}
 	}
-	iter = node.tree_children().begin();
+	iter = edge.tree_children().begin();
 	for ( ; iter != end; ++iter) {
 		::traverse_recon_tree_recursive(*iter);
 	}
@@ -143,21 +145,21 @@ traverse_recon_tree(
 {
 	std::cout << " * Root-most poles:\n";
 
-	GPlatesModel::ReconstructionTree::list_node_reference_type iter = recon_tree.rootmost_nodes_begin();
-	GPlatesModel::ReconstructionTree::list_node_reference_type end = recon_tree.rootmost_nodes_end();
+	GPlatesModel::ReconstructionTree::edge_list_iterator iter = recon_tree.rootmost_edges_begin();
+	GPlatesModel::ReconstructionTree::edge_list_iterator end = recon_tree.rootmost_edges_end();
 	for ( ; iter != end; ++iter) {
 		std::cout << " - FiniteRotation: " << iter->relative_rotation() << "\n";
 		std::cout << "    with absolute rotation: " << iter->composed_absolute_rotation() << "\n";
 		std::cout << "    and fixed plate: " << iter->fixed_plate()->value() << std::endl;
 		std::cout << "    and moving plate: " << iter->moving_plate()->value() << std::endl;
 		if (iter->pole_type() ==
-				GPlatesModel::ReconstructionTree::ReconstructionTreeNode::PoleTypes::ORIGINAL) {
+				GPlatesModel::ReconstructionTree::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
 			std::cout << "    which is original.\n";
 		} else {
 			std::cout << "    which is reversed.\n";
 		}
 	}
-	iter = recon_tree.rootmost_nodes_begin();
+	iter = recon_tree.rootmost_edges_begin();
 	for ( ; iter != end; ++iter) {
 		::traverse_recon_tree_recursive(*iter);
 	}
@@ -329,10 +331,12 @@ populate_feature_store(
 		{	83.5,	-5.2,	74.3,	5.93,	"IND-CIB switchover"	},
 	};
 	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
+	static const std::vector<GPlatesModel::ModelUtility::TotalReconstructionPoleData> five_tuples_vec1(
+				five_tuples1, five_tuples1 + num_five_tuples1);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq1 =
 			create_total_recon_seq(model, total_recon_seqs, fixed_plate_id1,
-					moving_plate_id1, five_tuples1, num_five_tuples1);
+					moving_plate_id1, five_tuples_vec1);
 
 	static const unsigned long fixed_plate_id2 = 702;
 	static const unsigned long moving_plate_id2 = 501;
@@ -343,10 +347,12 @@ populate_feature_store(
 		{	120.4,	24.02,	32.04,	-53.01,	"IND-MAD M0 RDM 21/01/02"	},
 	};
 	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
+	static const std::vector<GPlatesModel::ModelUtility::TotalReconstructionPoleData> five_tuples_vec2(
+				five_tuples2, five_tuples2 + num_five_tuples2);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq2 =
 			create_total_recon_seq(model, total_recon_seqs, fixed_plate_id2,
-					moving_plate_id2, five_tuples2, num_five_tuples2);
+					moving_plate_id2, five_tuples_vec2);
 
 	static const unsigned long fixed_plate_id3 = 501;
 	static const unsigned long moving_plate_id3 = 502;
@@ -358,10 +364,12 @@ populate_feature_store(
 		{	129.5,	21.97,	72.79,	-10.13,	"SLK-IND M9 FIT CG01/04-for sfs in Enderby"	},
 	};
 	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
+	static const std::vector<GPlatesModel::ModelUtility::TotalReconstructionPoleData> five_tuples_vec3(
+				five_tuples3, five_tuples3 + num_five_tuples3);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq3 =
 			create_total_recon_seq(model, total_recon_seqs, fixed_plate_id3,
-					moving_plate_id3, five_tuples3, num_five_tuples3);
+					moving_plate_id3, five_tuples_vec3);
 
 	return std::make_pair(isochrons, total_recon_seqs);
 }

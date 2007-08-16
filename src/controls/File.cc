@@ -6,7 +6,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006,
+ * 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -75,8 +76,8 @@ namespace
 		 * to be different to the range used by PLATES, which seems to be 
 		 * [-360.0, 360.0].
 		 */
-		GPlatesMaths::real_t lat(point._lat);
-		GPlatesMaths::real_t lon(point._lon);
+		GPlatesMaths::real_t lat(point.d_lat);
+		GPlatesMaths::real_t lon(point.d_lon);
 		if (lon <= -180.0) 
 			lon += 360.0;
 		else if (lon > 180.0)
@@ -268,13 +269,13 @@ namespace
 		PlatesParser::PlatesDataMap map;
 		try 
 		{
-			PlatesParser::
+			/*PlatesParser::
 				ReadInPlateBoundaryData(filename.c_str(), file, map);
 			DataGroup *data = 
 				PlatesPostParseTranslator::
 					GetDataGroupFromPlatesDataMap(map);
 
-			GPlatesState::Data::SetDataGroup(data);
+			GPlatesState::Data::SetDataGroup(data);*/
 		} 
 		catch (const FileIOException& e)
 		{
@@ -500,11 +501,11 @@ static GPlatesMaths::FiniteRotation
 ConvertPlatesParserFinRotToGPlatesMathsFinRot(const
 	PlatesParser::FiniteRotation &pp_fin_rot) {
 
-	GPlatesMaths::real_t time(pp_fin_rot._time);
+	GPlatesMaths::real_t time(pp_fin_rot.d_time);
 	GPlatesMaths::PointOnSphere pole =
-	 ConvertPlatesParserLLPToGPlatesMathsPOS(pp_fin_rot._rot._pole);
+	 ConvertPlatesParserLLPToGPlatesMathsPOS(pp_fin_rot.d_rot.d_pole);
 	GPlatesMaths::real_t angle =
-	 ConvertPlatesParserAngleToGPlatesMathsAngle(pp_fin_rot._rot._angle);
+	 ConvertPlatesParserAngleToGPlatesMathsAngle(pp_fin_rot.d_rot.d_angle);
 
 	// Note that finite rotations (in the GPlatesMaths namespace) no longer contain a time --
 	// that is contained in GPlatesModel::TotalReconstructionSequence now (which also contains
@@ -517,17 +518,17 @@ static GPlatesMaths::RotationSequence
 ConvertPlatesParserRotSeqToGPlatesMathsRotSeq(const
 	PlatesParser::RotationSequence &pp_rot_seq) {
 
-	GPlatesGlobal::rid_t fixed_plate(pp_rot_seq._fixed_plate);
-	GPlatesGlobal::rid_t moving_plate(pp_rot_seq._moving_plate);
+	GPlatesGlobal::rid_t fixed_plate(pp_rot_seq.d_fixed_plate);
+	GPlatesGlobal::rid_t moving_plate(pp_rot_seq.d_moving_plate);
 
 	/*
 	 * It is assumed that a PlatesParser RotationSequence will always
 	 * contain at least one PlatesParser::FiniteRotation.
 	 */
 	std::list< PlatesParser::FiniteRotation >::const_iterator it =
-	 pp_rot_seq._seq.begin();
+	 pp_rot_seq.d_seq.begin();
 	std::list< PlatesParser::FiniteRotation >::const_iterator end_it =
-	 pp_rot_seq._seq.end();
+	 pp_rot_seq.d_seq.end();
 
 	GPlatesMaths::FiniteRotation first_fin_rot =
 	 ConvertPlatesParserFinRotToGPlatesMathsFinRot(*it);
@@ -560,7 +561,9 @@ ConvertPlatesRotationDataToRotationMap(const
 	     it != data.end();
 	     ++it) {
 
-		GPlatesGlobal::rid_t moving_plate((*it)._moving_plate);
+		GPlatesGlobal::rid_t moving_plate((*it).d_moving_plate);
+#if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
+	// Ultimately, it should *all* go.
 #if 0  // FIXME:  This is just if-0-ed-out for now, so I don't have to gut the whole program.
 	// Ultimately, it should *all* go.
 		GPlatesMaths::RotationSequence rot_seq =

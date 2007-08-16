@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006,
+ * 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,66 +36,30 @@
 #include "InvalidDataException.h"
 #include "FileFormatException.h"
 
-
-using namespace GPlatesFileIO;
-using namespace GPlatesFileIO::PlatesParser;
-
-
-/**
- * A reasonable maximum length for each line of a rotation header.
- * This length does not include a terminating character.
- *
- * Note that, if the second argument to an invocation of 'getline' is
- * the integer value 'n', this tells 'getline' to expect a character buffer
- * of 'n' characters, so 'getline' will read at most (n - 1) characters into
- * this buffer.  This (n - 1) characters includes the newline, although the
- * newline will not be stored into the buffer.
- *
- * If, during this call, 'getline' encounters a line which contains *more*
- * than (n - 1) characters, it will set the failbit.  Thus, by testing the
- * status of the stream after the invocation of 'getline', we will be aware
- * of the failure in the unlikely event of a line which exceeds this maxiumum.
- */
-static const size_t ROT_LINE_COMMENT_LEN = 80;
-
-
-static std::string
-ReadRestOfLine(const LineBuffer &lb, std::istringstream &iss) {
-
-	static char buf[ROT_LINE_COMMENT_LEN + 1];
-
-	std::istream_iterator< char > iss_it(iss);
-	std::istream_iterator< char > end_it;
-
-	size_t n = 0;
-	for ( ; n < ROT_LINE_COMMENT_LEN && iss_it != end_it; n++, iss_it++) {
-
-		// copy the character into the buffer
-		buf[n] = *iss_it;
+namespace 
+{
+	static 
+	std::string
+	ReadRestOfLine(
+			const GPlatesFileIO::LineBuffer &lb, 
+			std::istringstream &iss) 
+	{
+		std::string buf;
+	
+		// Handle arbitrary length lines.
+		std::getline(iss, buf); 
+	
+		return buf;
 	}
-	buf[n] = '\0';
-
-	/*
-	 * So, we have exited the loop.
-	 * But did we exit because we've reached the end of the line (ok)?
-	 * or because we ran out of space in the buffer (not ok)?
-	 */
-	if (iss_it != end_it) {
-
-		// ran out of space in the buffer
-		std::ostringstream oss;
-		oss << "The comment found in rotation file " << lb
-		 << "\nwas too long:\n" << buf;
-
-		throw InvalidDataException(oss.str().c_str());
-	}
-	return std::string(buf);
 }
 
 
-FiniteRotation
-GPlatesFileIO::PlatesParser::ParseRotationLine(const LineBuffer &lb,
-	const std::string &line) {
+const
+GPlatesFileIO::PlatesParser::FiniteRotation
+GPlatesFileIO::PlatesParser::ParseRotationLine(
+		const LineBuffer &lb,
+		const std::string &line) 
+{
 
 	std::istringstream iss(line);
 
@@ -156,16 +121,18 @@ GPlatesFileIO::PlatesParser::ParseRotationLine(const LineBuffer &lb,
 }
 
 
-BoundaryLatLonPoint
-LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
-	int expected_plotter_code) {
-
+const 
+GPlatesFileIO::PlatesParser::BoundaryLatLonPoint
+GPlatesFileIO::PlatesParser::LatLonPoint::ParseBoundaryLine(
+		const LineBuffer &lb, const std::string &line,
+		int expected_plotter_code)
+{
 	/* 
 	 * This line is composed of two fpdata_t (the lat/lon of the point)
 	 * and an int (a plotter code).
 	 */
 	fpdata_t lat, lon;
-	int plotter_code;
+	PlotterCodes::PlotterCode plotter_code;
 
 	std::istringstream iss(line);
 
@@ -189,8 +156,11 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 	if ((lat == 99.0) && (lon == 99.0) 
 		&& (plotter_code == PlotterCodes::PEN_UP)) {
 
-		return std::make_pair(LatLonPoint(lat, lon), 
-			  static_cast< int >(PlotterCodes::PEN_TERMINATING_POINT));
+		return BoundaryLatLonPoint(
+			LatLonPoint(lat, lon), 
+			PlotterCodes::PEN_TERMINATING_POINT,
+			lb.lineNum()	
+		);
 	}
 
 	if ( ! LatLonPoint::isValidLat(lat)) {
@@ -243,14 +213,20 @@ LatLonPoint::ParseBoundaryLine(const LineBuffer &lb, const std::string &line,
 			throw InvalidDataException(oss.str().c_str());
 		}
 	}
-	return std::make_pair(LatLonPoint(lat, lon), plotter_code);
+	
+	return BoundaryLatLonPoint(
+		LatLonPoint(lat, lon), 
+		plotter_code,
+		lb.lineNum()	
+	);
 }
 
 
 void
-LatLonPoint::ParseTermBoundaryLine(const LineBuffer &lb,
-	const std::string &line, int expected_plotter_code) {
-
+GPlatesFileIO::PlatesParser::LatLonPoint::ParseTermBoundaryLine(
+		const LineBuffer &lb,
+		const std::string &line, int expected_plotter_code) 
+{
 	/* 
 	 * This line is composed of two doubles (the lat/lon of the point)
 	 * and an int (a plotter code).
@@ -311,8 +287,9 @@ LatLonPoint::ParseTermBoundaryLine(const LineBuffer &lb,
  * For the PLATES format, the valid range of latitudes is [-90.0, 90.0].
  */
 bool
-LatLonPoint::isValidLat(const fpdata_t &val) {
-
+GPlatesFileIO::PlatesParser::LatLonPoint::isValidLat(
+		const fpdata_t &val) 
+{
 	return (-90.0 <= val && val <= 90.0);
 }
 
@@ -324,36 +301,43 @@ LatLonPoint::isValidLat(const fpdata_t &val) {
  * which uses the half-open range (-180.0, 180.0].
  */
 bool
-LatLonPoint::isValidLon(const fpdata_t &val) {
-
+GPlatesFileIO::PlatesParser::LatLonPoint::isValidLon(
+		const fpdata_t &val) 
+{
 	return (-360.0 <= val && val <= 360.0);
 }
 
 
-PolylineHeader
-PolylineHeader::ParseLines(const LineBuffer &lb,
-	const std::string &first_line,
-	const std::string &second_line) {
+GPlatesFileIO::PlatesParser::PolylineHeader
+GPlatesFileIO::PlatesParser::PolylineHeader::ParseLines(
+		const LineBuffer &lb,
+		const std::string &first_line,
+		const std::string &second_line) {
 
 	plate_id_t plate_id;
 	fpdata_t age_appear, age_disappear;
 	size_t num_points;
 
 	ParseSecondLine(lb, second_line, plate_id, age_appear, age_disappear,
-	 num_points);
+		num_points);
+
+	// use GeoTimeInstant from model/ instead of TimeWindow from geo/
 
 	return PolylineHeader(first_line, second_line, plate_id,
-	 GPlatesGeo::TimeWindow(age_appear, age_disappear), num_points);
+		GPlatesModel::GeoTimeInstant(age_appear.dval()), 
+		GPlatesModel::GeoTimeInstant(age_disappear.dval()), num_points);
 }
 
 
 void
-PolylineHeader::ParseSecondLine(const LineBuffer &lb,
-	const std::string &line,
-	plate_id_t &plate_id,
-	fpdata_t &age_appear,
-	fpdata_t &age_disappear,
-	size_t &num_points) {
+GPlatesFileIO::PlatesParser::PolylineHeader::ParseSecondLine(
+		const LineBuffer &lb,
+		const std::string &line,
+		plate_id_t &plate_id,
+		fpdata_t &age_appear,
+		fpdata_t &age_disappear,
+		size_t &num_points) 
+{
 
 	std::istringstream iss(line);
 

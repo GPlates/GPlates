@@ -37,98 +37,109 @@
 namespace GPlatesFileIO {
 	namespace PlatesParser {
 
-int
-attemptToReadInt(const LineBuffer &lb, std::istringstream &iss,
-	const char *desc) {
+		int
+		attemptToReadInt(
+				const LineBuffer &lb, 
+				std::istringstream &iss,
+				const char *desc) 
+		{
+			int i;
+		
+			if ( ! (iss >> i)) {
+		
+				// For some reason, unable to read an int
+				std::ostringstream oss;
+				oss << "Unable to extract an int from " << lb
+				<< "\nwhile attempting to parse the " << desc << ".";
+		
+				throw FileFormatException(oss.str().c_str());
+			}
+			return i;
+		}
+		
+		
+		fpdata_t
+		attemptToReadFloat(
+				const LineBuffer &lb, 
+				std::istringstream &iss,
+				const char *desc) 
+		{
+			fpdata_t f;
+		
+			if ( ! (iss >> f)) {
+		
+				// For some reason, unable to read a float
+				std::ostringstream oss;
+				oss << "Unable to extract a float from " << lb
+				<< "\nwhile attempting to parse the " << desc << ".";
+		
+				throw FileFormatException(oss.str().c_str());
+			}
+			return f;
+		}
+		
+		
+		std::string
+		attemptToReadString(
+				const LineBuffer &lb, 
+				std::istringstream &iss,
+				const char *desc) 
+		{
+			std::string s;
+		
+			if ( ! (iss >> s)) {
+		
+				// For some reason, unable to read a string
+				std::ostringstream oss;
+				oss << "Unable to extract a string from " << lb
+				<< "\nwhile attempting to parse the " << desc << ".";
+		
+				throw FileFormatException(oss.str().c_str());
+			}
+			return s;
+		}
+		
+		
+		plate_id_t
+		attemptToReadPlateID(
+				const LineBuffer &lb, 
+				std::istringstream &iss,
+				const char *desc) 
+		{
+			plate_id_t p;
+		
+			if ( ! (iss >> p)) {
+		
+				// For some reason, unable to read a plate id
+				std::ostringstream oss;
+				oss << "Unable to extract a plate id from " << lb
+				<< "\nwhile attempting to parse the " << desc << ".";
+		
+				throw FileFormatException(oss.str().c_str());
+			}
+			return p;
+		}
+		
+		
+		PlotterCodes::PlotterCode
+		attemptToReadPlotterCode(
+				const LineBuffer &lb, 
+				std::istringstream &iss) 
+		{
+			int i;
+		
+			if ( ! (iss >> i)) {
+		
+				// For some reason, unable to read an int
+				std::ostringstream oss;
+				oss << "Unable to extract an integer from " << lb
+				<< "\nwhile attempting to parse the plotter code of a point.";
+		
+				throw FileFormatException(oss.str().c_str());
+			}
 
-	int i;
-
-	if ( ! (iss >> i)) {
-
-		// For some reason, unable to read an int
-		std::ostringstream oss;
-		oss << "Unable to extract an int from " << lb
-		 << "\nwhile attempting to parse the " << desc << ".";
-
-		throw FileFormatException(oss.str().c_str());
-	}
-	return i;
-}
-
-
-fpdata_t
-attemptToReadFloat(const LineBuffer &lb, std::istringstream &iss,
-	const char *desc) {
-
-	fpdata_t f;
-
-	if ( ! (iss >> f)) {
-
-		// For some reason, unable to read a float
-		std::ostringstream oss;
-		oss << "Unable to extract a float from " << lb
-		 << "\nwhile attempting to parse the " << desc << ".";
-
-		throw FileFormatException(oss.str().c_str());
-	}
-	return f;
-}
-
-
-std::string
-attemptToReadString(const LineBuffer &lb, std::istringstream &iss,
-	const char *desc) {
-
-	std::string s;
-
-	if ( ! (iss >> s)) {
-
-		// For some reason, unable to read a string
-		std::ostringstream oss;
-		oss << "Unable to extract a string from " << lb
-		 << "\nwhile attempting to parse the " << desc << ".";
-
-		throw FileFormatException(oss.str().c_str());
-	}
-	return s;
-}
-
-
-plate_id_t
-attemptToReadPlateID(const LineBuffer &lb, std::istringstream &iss,
-	const char *desc) {
-
-	plate_id_t p;
-
-	if ( ! (iss >> p)) {
-
-		// For some reason, unable to read a plate id
-		std::ostringstream oss;
-		oss << "Unable to extract a plate id from " << lb
-		 << "\nwhile attempting to parse the " << desc << ".";
-
-		throw FileFormatException(oss.str().c_str());
-	}
-	return p;
-}
-
-
-int
-attemptToReadPlotterCode(const LineBuffer &lb, std::istringstream &iss) {
-
-	int i;
-
-	if ( ! (iss >> i)) {
-
-		// For some reason, unable to read an int
-		std::ostringstream oss;
-		oss << "Unable to extract an integer from " << lb
-		 << "\nwhile attempting to parse the plotter code of a point.";
-
-		throw FileFormatException(oss.str().c_str());
-	}
-	return i;
-}
+			return static_cast<PlotterCodes::PlotterCode>(i);
+		}
 
 	}  // end namespace PlatesParser
 }  // end namespace GPlatesFileIO

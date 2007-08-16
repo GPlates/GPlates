@@ -5,14 +5,20 @@ MAINTAINERCLEANFILES	= Makefile.in
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libmodel.la
-libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc GeoTimeInstant.cc \
-				GmlLineString.cc GmlPoint.cc GpmlOnePointFiveOutputVisitor.cc \
-				GpmlFiniteRotation.cc Model.cc \
-				ReconstructedFeatureGeometryPopulator.cc ReconstructionTree.cc \
-				ReconstructionTreePopulator.cc StringSetSingletons.cc \
-				XmlOutputInterface.cc FeatureCollectionRevision.cc \
-				FeatureStoreRootRevision.cc FeatureRevision.cc \
-				DummyTransactionHandle.cc ModelUtility.cc
+libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc \
+				GeoTimeInstant.cc GmlLineString.cc \
+				GmlPoint.cc GpmlOnePointFiveOutputVisitor.cc \
+				GpmlFiniteRotation.cc \
+				ReconstructedFeatureGeometryPopulator.cc \
+				Model.cc ReconstructionTree.cc \
+				ReconstructionTreePopulator.cc \
+				StringSetSingletons.cc \
+				XmlOutputInterface.cc \
+				FeatureCollectionRevision.cc \
+				FeatureStoreRootRevision.cc \
+				FeatureRevision.cc \
+				DummyTransactionHandle.cc \
+				ModelUtility.cc
 
 if PYTHON
 noinst_PROGRAMS		= _model.so

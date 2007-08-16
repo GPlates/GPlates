@@ -7,11 +7,14 @@ EXTRA_DIST		= plates.clr.inc
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES		= libgplates_qt_demo.la
-libgplates_qt_demo_la_SOURCES	= Document.cc DocumentUi.h GlobeCanvas.cc \
-					moc_GlobeCanvas.cc InformationDialog.cc \
-					InformationDialogUi.h moc_Document.cc
+libgplates_qt_demo_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
+	Document.cc DocumentUi.h moc_Document.cc \
+	ReconstructToTimeDialog.cc ReconstructToTimeDialogUi.h moc_ReconstructToTimeDialog.cc \
+	SpecifyFixedPlateDialog.cc SpecifyFixedPlateDialogUi.h moc_SpecifyFixedPlateDialog.cc \
+	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc
 
-CLEANFILES		= DocumentUi.h InformationDialogUi.h moc_*.cc
+CLEANFILES		= DocumentUi.h InformationDialogUi.h ReconstructToTimeDialogUi.h \
+				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h moc_*.cc
 
 # This rule lets GNU make create any moc_*.cc from the equivalent *.h
 moc_%.cc: %.h

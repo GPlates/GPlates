@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,14 +30,32 @@
 # include <boost/python.hpp>
 #endif
 
+#include <string>
 #include <QtGui/QApplication>
 #include "gplates-qt-demo/Document.h"
 
 int main(int argc, char* argv[])
 {
 	QApplication application(argc, argv);
-	GPlatesGui::Document document;
+
+	// All the libtool cruft causes the value of 'argv[0]' to be not what the user invoked,
+	// so we'll have to hard-code this for now.
+	const std::string prog_name = "gplates-demo";
+
+	std::string plates_line_fname;
+	std::string plates_rot_fname;
+
+	if (argc >= 3) {
+		plates_line_fname = argv[1];
+		plates_rot_fname = argv[2];
+	} else {
+		std::cerr << prog_name << ": missing line and rotation file operands\n\n";
+		std::cerr << "Usage: " << prog_name << " PLATES_LINE_FILE PLATES_ROTATION_FILE";
+		std::cerr << std::endl;
+		std::exit(1);
+	}
+
+	GPlatesGui::Document document(plates_line_fname, plates_rot_fname);
 	document.show();
 	return application.exec();
 }
-

@@ -6,7 +6,8 @@
  * Most recent change:
  * $Date$
  *
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 
+ * 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,32 +36,20 @@
 #include "global/types.h"
 #include "PlatesDataTypes.h"
 #include "LineBuffer.h"
-
+#include "ReadErrorAccumulation.h"
 
 namespace GPlatesFileIO
 {
 	namespace PlatesParser
 	{
-		typedef std::map< plate_id_t, Plate > PlatesDataMap;
+		typedef std::map<plate_id_t, Plate> PlatesDataMap;
 
-		void ReadInPlateBoundaryData(const char *filename,
-		 std::istream &input_stream, PlatesDataMap &plates_data);
-
-		void ReadPolyline(LineBuffer &lb, PlatesDataMap &plates_data);
-
-		void AppendPolylineToPlatesData(PlatesDataMap &plates_data,
-		 const plate_id_t &plate_id, const Polyline &pl);
-
-		void ReadFirstLineOfPolylineHeader(LineBuffer &lb,
-		 std::string &str);
-
-		void ReadSecondLineOfPolylineHeader(LineBuffer &lb,
-		 std::string &str);
-
-		void ReadPolylinePoints(LineBuffer &lb,
-		 std::list< BoundaryLatLonPoint > &points);
-
-		std::string ReadPolylinePoint(LineBuffer &lb);
+		void 
+		ReadInPlateBoundaryData(
+				const char *filename,
+				std::istream &input_stream, 
+				PlatesDataMap &plates_data,
+				ReadErrorAccumulation errors);
 	}
 }
 

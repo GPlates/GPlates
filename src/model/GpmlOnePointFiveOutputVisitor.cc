@@ -39,6 +39,7 @@
 #include "model/GpmlIrregularSampling.h"
 #include "model/GpmlPlateId.h"
 #include "model/GpmlTimeSample.h"
+#include "model/GpmlOldPlatesHeader.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/XsString.h"
 #include "maths/PolylineOnSphere.h"
@@ -284,6 +285,65 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_time_sample(
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
 		d_output.write_line_of_string_content(gpml_time_sample.value_type().get());
+	}
+}
+
+void
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_old_plates_header(
+		const GPlatesModel::GpmlOldPlatesHeader &gpml_old_plates_header)
+{
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:OldPlatesHeader");
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:regionNumber");
+ 		d_output.write_line_of_single_integer_content(gpml_old_plates_header.region_number());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:referenceNumber");
+ 		d_output.write_line_of_single_integer_content(gpml_old_plates_header.reference_number());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:stringNumber");
+ 		d_output.write_line_of_single_integer_content(gpml_old_plates_header.string_number());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:geographicDescription");
+ 		d_output.write_line_of_string_content(gpml_old_plates_header.geographic_description());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:plateIdNumber");
+ 		d_output.write_line_of_single_integer_content(gpml_old_plates_header.plate_id_number());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:ageOfAppearance");
+ 		d_output.write_line_of_single_decimal_content(gpml_old_plates_header.age_of_appearance());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:ageOfDisappearance");
+ 		d_output.write_line_of_single_decimal_content(gpml_old_plates_header.age_of_disappearance());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:dataTypeCode");
+ 		d_output.write_line_of_string_content(gpml_old_plates_header.data_type_code());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:dataTypeCodeNumber");
+ 		d_output.write_line_of_single_integer_content(gpml_old_plates_header.data_type_code_number());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:dataTypeCodeNumberAdditional");
+ 		d_output.write_line_of_string_content(gpml_old_plates_header.data_type_code_number_additional());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:conjugatePlateIdNumber");
+ 		d_output.write_line_of_single_integer_content(gpml_old_plates_header.conjugate_plate_id_number());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:colourCode");
+ 		d_output.write_line_of_single_integer_content(gpml_old_plates_header.colour_code());
+	}
+	{
+		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:numberOfPoints");
+ 		d_output.write_line_of_single_integer_content(gpml_old_plates_header.number_of_points());
 	}
 }
 

@@ -2,7 +2,7 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-SUBDIRS			= gui maths model state util gplates-qt-demo
+SUBDIRS			= gui maths fileio model state util gplates-qt-demo global
 
 INCLUDES		= -I$(top_srcdir)/src
 
@@ -18,7 +18,7 @@ gplates_qt_demo_SOURCES	= gplates_qt_demo.cc
 gplates_qt_demo_LDADD	= libgplates_model.la libgplates_gui.la \
 				gplates-qt-demo/libgplates_qt_demo.la
 
-lib_LTLIBRARIES			=  libgplates_gui.la \
+lib_LTLIBRARIES			= libgplates_gui.la \
 					libgplates_model.la \
 					libgplates_util.la
 
@@ -31,4 +31,6 @@ libgplates_model_la_LIBADD	= model/libmodel.la \
 					libgplates_util.la
 
 libgplates_util_la_SOURCES	=
-libgplates_util_la_LIBADD	= maths/libmaths.la state/libstate.la util/libutil.la
+libgplates_util_la_LIBADD	= maths/libmaths.la state/libstate.la util/libutil.la \
+					fileio/libfileio.la global/libglobal.la
+

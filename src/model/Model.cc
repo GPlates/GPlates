@@ -90,16 +90,22 @@ GPlatesModel::Model::create_reconstruction(
 		const FeatureCollectionHandle::weak_ref &reconstructable_features,
 		const FeatureCollectionHandle::weak_ref &reconstruction_features,
 		const double &time,
-		unsigned long root)
+		GpmlPlateId::integer_plate_id_type root)
 {
 	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create();
 	ReconstructionTreePopulator rtp(time, reconstruction->reconstruction_tree());
 
-	// Populate the reconstruction tree with our total recon seqs.
-	FeatureCollectionHandle::features_iterator iter = reconstruction_features->features_begin();
-	FeatureCollectionHandle::features_iterator end = reconstruction_features->features_end();
-	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(rtp);
+	// Before we dereference the weak_ref ('reconstruction_features') using 'operator->', let's
+	// be sure that it's valid to dereference.
+	if (reconstruction_features.is_valid()) {
+		// Populate the reconstruction tree with our total recon seqs.
+		FeatureCollectionHandle::features_iterator iter =
+				reconstruction_features->features_begin();
+		FeatureCollectionHandle::features_iterator end =
+				reconstruction_features->features_end();
+		for ( ; iter != end; ++iter) {
+			(*iter)->accept_visitor(rtp);
+		}
 	}
 
 	// Build the reconstruction tree, using 'root' as the root of the tree.
@@ -110,11 +116,17 @@ GPlatesModel::Model::create_reconstruction(
 			reconstruction->point_geometries(),
 			reconstruction->polyline_geometries());
 
-	// Populate the vectors with reconstructed feature geometries from our isochrons.
-	FeatureCollectionHandle::features_iterator iter2 = reconstructable_features->features_begin();
-	FeatureCollectionHandle::features_iterator end2 = reconstructable_features->features_end();
-	for ( ; iter2 != end2; ++iter2) {
-		(*iter2)->accept_visitor(rfgp);
+	// Before we dereference the weak_ref ('reconstructable_features') using 'operator->',
+	// let's be sure that it's valid to dereference.
+	if (reconstructable_features.is_valid()) {
+		// Populate the vectors with reconstructed feature geometries from our isochrons.
+		FeatureCollectionHandle::features_iterator iter =
+				reconstructable_features->features_begin();
+		FeatureCollectionHandle::features_iterator end =
+				reconstructable_features->features_end();
+		for ( ; iter != end; ++iter) {
+			(*iter)->accept_visitor(rfgp);
+		}
 	}
 
 	return reconstruction;
