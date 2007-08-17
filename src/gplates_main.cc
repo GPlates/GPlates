@@ -30,6 +30,7 @@
 # include <boost/python.hpp>
 #endif
 
+#include <iostream>
 #include <string>
 #include <QtGui/QApplication>
 #include "gplates-qt-demo/ViewportWindow.h"
