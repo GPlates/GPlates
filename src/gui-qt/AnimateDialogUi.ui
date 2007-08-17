@@ -390,7 +390,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="widget_current_time" />
+      <widget class="QDoubleSpinBox" name="widget_current_time" >
+       <property name="maximum" >
+        <double>1e+06</double>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="label_current_time_units" >
