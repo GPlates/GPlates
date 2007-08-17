@@ -55,6 +55,8 @@ GPlatesGui::AnimateDialog::AnimateDialog(
 
 	QObject::connect(button_Start, SIGNAL(clicked()),
 			this, SLOT(toggle_animation_playback_state()));
+	QObject::connect(button_Rewind, SIGNAL(clicked()),
+			this, SLOT(rewind()));
 
 	QObject::connect(&d_timer, SIGNAL(timeout()),
 			this, SLOT(react_animation_playback_step()));
@@ -128,6 +130,13 @@ GPlatesGui::AnimateDialog::toggle_animation_playback_state()
 
 		start_animation_playback();
 	}
+}
+
+
+void
+GPlatesGui::AnimateDialog::rewind()
+{
+	widget_current_time->setValue(widget_start_time->value());
 }
 
 

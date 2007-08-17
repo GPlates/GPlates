@@ -75,6 +75,9 @@ namespace GPlatesGui
 		void
 		toggle_animation_playback_state();
 
+		void
+		rewind();
+
 	signals:
 		void
 		current_time_changed(
