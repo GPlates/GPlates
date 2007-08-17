@@ -6,10 +6,10 @@ SUBDIRS			= gui maths fileio model state util gplates-qt-demo global
 
 INCLUDES		= -I$(top_srcdir)/src
 
-bin_PROGRAMS		= gplates_new gplates
+bin_PROGRAMS		= gplates gplates_demo_no_gui
 
-gplates_new_SOURCES	= gplates_new_main.cc
-gplates_new_LDADD	= libgplates_gui.la libgplates_model.la
+gplates_demo_no_gui_SOURCES	= gplates_demo_no_gui_main.cc
+gplates_demo_no_gui_LDADD	= libgplates_gui.la libgplates_model.la
 
 gplates_SOURCES		= gplates_main.cc
 gplates_LDADD		= libgplates_model.la libgplates_gui.la \
