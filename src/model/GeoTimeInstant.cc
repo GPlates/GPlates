@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include "GeoTimeInstant.h"
+#include "util/FloatingPointComparisons.h"
 
 
 const GPlatesModel::GeoTimeInstant
@@ -61,18 +62,6 @@ GPlatesModel::GeoTimeInstant::is_real() const {
 }
 
 
-namespace {
-
-	/*
-	 * See "src/maths/Real.cc" for a hand-wavey justification of this choice of value.
-	 *
-	 * For what it's worth, this represents a precision of about eight-and-three-quarter hours,
-	 * which is not too bad for geological time.
-	 */
-	static const double Epsilon = 1.0e-9;
-}
-
-
 bool
 GPlatesModel::GeoTimeInstant::is_coincident_with(
 		const GeoTimeInstant &other) const {
@@ -80,5 +69,7 @@ GPlatesModel::GeoTimeInstant::is_coincident_with(
 	 * To double-check:  Do we want infinities to compare equal or unequal?
 	 */
 
-	return (fabs(d_value - other.d_value) < ::Epsilon);
+	using namespace GPlatesUtil::FloatingPointComparisons;
+
+	return (geo_times_are_approx_equal(d_value, other.d_value));
 }
