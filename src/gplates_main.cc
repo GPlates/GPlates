@@ -1,7 +1,9 @@
 /* $Id$ */
 
 /**
- * \file 
+ * @file 
+ * Contains the main function of GPlates.
+ *
  * $Revision$
  * $Date$ 
  * 

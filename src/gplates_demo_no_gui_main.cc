@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains the main function of GPlates.
+ * Contains the main function of the GPlates no-GUI demo.
  *
  * This file used to be "model/compilation_test.cc".  It was used during the implementation of the
  * new GPGIM-1.5-based Model, to check that the new Model code compiled without error and ran
