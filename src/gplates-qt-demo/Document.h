@@ -46,7 +46,7 @@ namespace GPlatesGui
 {
 	class Document : 
 			public QMainWindow, 
-			protected Ui_MainWindow 
+			protected Ui_ViewportWindow
 	{
 		Q_OBJECT
 		

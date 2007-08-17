@@ -2,8 +2,8 @@
  <author></author>
  <comment></comment>
  <exportmacro></exportmacro>
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow" >
+ <class>ViewportWindow</class>
+ <widget class="QMainWindow" name="ViewportWindow" >
   <property name="geometry" >
    <rect>
     <x>0</x>
@@ -175,7 +175,7 @@
   <connection>
    <sender>action_Quit</sender>
    <signal>activated()</signal>
-   <receiver>MainWindow</receiver>
+   <receiver>ViewportWindow</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel" >
