@@ -1,52 +1,16 @@
 GPlates README
 ==============
 
-For installation instructions, please see the file INSTALL.
-A copy of the license can be found in the file COPYING.
+This is the source code for the GPlates software.
 
-GPlates provides interactive plate tectonic reconstructions. It
-is designed to enable students of earth sciences to manipulate
-plates on the surface of the globe and create reconstructions
-of likely plate positions in the past. It will also provide
-researchers in the earth sciences field with a powerful tool
-to combine various types of data, such as point, line and
-gridded data, and simulate the changes in this data over time.
+GPlates is open-source software, distributed under the terms of the GNU General
+Public License (version 2, dated June 1991) unless otherwise explicitly stated.
+A copy of the license can be found in the file "COPYING" in this directory.
 
-This version of GPlates is 0.5 beta.  It is the first public
-release of GPlates, and as such will likely contain bugs.
+For up-to-date information about GPlates, you can go to the GPlates website:
+ http://www.gplates.org/
 
-We would be most grateful if you could provide any feedback
-on what you think is good or bad about GPlates, and especially
-to provide information about bugs that you find.  Contact
-details may be found at the end of this file.
+For information about current development, you can go to the GPlates Trac site:
+ http://trac.gplates.org/
 
-Current functionality includes:
- - display of point and line data;
- - mouse-oriented globe spinning and zooming;
- - colour-coding of data with plate id;
- - reconstruction of data at a particular time in the past in
-  accordance with a rotation hierarchy;
- - animation of data through a time interval in accordance with
-  a rotation hierarchy.
- - import of PLATES data and rotation files; and
- - import and export of our files in our own GPML format.
-
-You should check out our website for additional information, 
-including various documentation and sample data files.
- - GPlates [http://www.gplates.org]
-
-Current dependencies:
- - OpenGL [http://www.opengl.org];
- - eXpat XML parser [http://expat.sourceforge.net]; and
- - wxWindows [http://www.wxwindows.org].
-
-If you have any problems installing or running GPlates, feel free 
-to contact either of the primary developers:
- - James Boyden <jboyden@geosci.usyd.edu.au>
- - Hamish Ivey-Law <hlaw@geosci.usyd.edu.au>
-
-If you have any more general questions about GPlates, you may 
-contact one of the developers above or the Project Director:
- - Dietmar Mueller <dietmar@geosci.usyd.edu.au>
-
-Thankyou for using GPlates!
+This README was last updated 2007-08-17 by James Boyden.
