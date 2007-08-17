@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 		std::exit(1);
 	}
 
-	GPlatesGui::Document document(plates_line_fname, plates_rot_fname);
-	document.show();
+	GPlatesGui::ViewportWindow viewport_window(plates_line_fname, plates_rot_fname);
+	viewport_window.show();
 	return application.exec();
 }

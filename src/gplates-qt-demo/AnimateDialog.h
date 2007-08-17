@@ -33,7 +33,7 @@
 
 namespace GPlatesGui
 {
-	class Document;
+	class ViewportWindow;
 
 
 	class AnimateDialog: 
@@ -44,7 +44,7 @@ namespace GPlatesGui
 		
 	public:
 		AnimateDialog(
-				Document &viewport,
+				ViewportWindow &viewport,
 				QWidget *parent = NULL);
 
 		virtual
@@ -104,7 +104,7 @@ namespace GPlatesGui
 		 * This is the viewport which will be queried for the current viewport time
 		 * whenever the user presses a "Use Viewport Time" button.
 		 */
-		Document *d_viewport_ptr;
+		ViewportWindow *d_viewport_ptr;
 
 		/**
 		 * This QTimer instance triggers the frame updates during animation playback.

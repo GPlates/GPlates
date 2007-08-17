@@ -31,7 +31,7 @@
 
 
 GPlatesGui::AnimateDialog::AnimateDialog(
-		Document &viewport,
+		ViewportWindow &viewport,
 		QWidget *parent):
 	QDialog(parent),
 	d_viewport_ptr(&viewport),

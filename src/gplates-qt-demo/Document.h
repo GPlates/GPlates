@@ -44,14 +44,14 @@
 
 namespace GPlatesGui
 {
-	class Document : 
+	class ViewportWindow:
 			public QMainWindow, 
 			protected Ui_ViewportWindow
 	{
 		Q_OBJECT
 		
 	public:
-		Document(
+		ViewportWindow(
 				const std::string &plates_line_fname,
 				const std::string &plates_rot_fname);
 

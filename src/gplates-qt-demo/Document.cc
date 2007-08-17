@@ -109,7 +109,7 @@ namespace
 }
 
 
-GPlatesGui::Document::Document(
+GPlatesGui::ViewportWindow::ViewportWindow(
 		const std::string &plates_line_fname,
 		const std::string &plates_rot_fname):
 	d_recon_time(0.0),
@@ -162,7 +162,7 @@ GPlatesGui::Document::Document(
 
 
 void
-GPlatesGui::Document::set_reconstruction_time_and_reconstruct(
+GPlatesGui::ViewportWindow::set_reconstruction_time_and_reconstruct(
 		double recon_time)
 {
 	d_recon_time = recon_time;
@@ -176,7 +176,7 @@ GPlatesGui::Document::set_reconstruction_time_and_reconstruct(
 
 
 void
-GPlatesGui::Document::set_reconstruction_root_and_reconstruct(
+GPlatesGui::ViewportWindow::set_reconstruction_root_and_reconstruct(
 		unsigned long recon_root)
 {
 	d_recon_root = recon_root;
@@ -188,7 +188,7 @@ GPlatesGui::Document::set_reconstruction_root_and_reconstruct(
 
 
 void
-GPlatesGui::Document::increment_reconstruction_time_and_reconstruct()
+GPlatesGui::ViewportWindow::increment_reconstruction_time_and_reconstruct()
 {
 	double recon_time = d_recon_time + 1.0;
 	if (recon_time <= 1000000.0) {
@@ -204,7 +204,7 @@ GPlatesGui::Document::increment_reconstruction_time_and_reconstruct()
 
 
 void
-GPlatesGui::Document::decrement_reconstruction_time_and_reconstruct()
+GPlatesGui::ViewportWindow::decrement_reconstruction_time_and_reconstruct()
 {
 	double recon_time = d_recon_time - 1.0;
 	// FIXME:  Use approx comparison for equality to zero.
@@ -221,21 +221,21 @@ GPlatesGui::Document::decrement_reconstruction_time_and_reconstruct()
 
 
 void
-GPlatesGui::Document::pop_up_reconstruct_to_time_dialog()
+GPlatesGui::ViewportWindow::pop_up_reconstruct_to_time_dialog()
 {
 	d_reconstruct_to_time_dialog.show();
 }
 
 
 void
-GPlatesGui::Document::pop_up_specify_fixed_plate_dialog()
+GPlatesGui::ViewportWindow::pop_up_specify_fixed_plate_dialog()
 {
 	d_specify_fixed_plate_dialog.show();
 }
 
 
 void
-GPlatesGui::Document::pop_up_animate_dialog()
+GPlatesGui::ViewportWindow::pop_up_animate_dialog()
 {
 	if ( ! d_animate_dialog_has_been_shown) {
 		d_animate_dialog.set_start_time_value_to_viewport_time();
