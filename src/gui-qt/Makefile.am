@@ -6,8 +6,8 @@ EXTRA_DIST		= plates.clr.inc
 
 INCLUDES		= -I$(top_srcdir)/src
 
-noinst_LTLIBRARIES		= libgplates_qt_demo.la
-libgplates_qt_demo_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
+noinst_LTLIBRARIES	= libgui_qt.la
+libgui_qt_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
 	ViewportWindow.cc ViewportWindowUi.h moc_ViewportWindow.cc \
 	ReconstructToTimeDialog.cc ReconstructToTimeDialogUi.h moc_ReconstructToTimeDialog.cc \
 	SpecifyFixedPlateDialog.cc SpecifyFixedPlateDialogUi.h moc_SpecifyFixedPlateDialog.cc \

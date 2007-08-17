@@ -335,8 +335,6 @@ AC_OUTPUT(Makefile
         src/model/Makefile
         src/state/Makefile
         src/util/Makefile
-
-        src/gplates-qt-demo/Makefile
 	)
 
 
