@@ -13,7 +13,7 @@
 set -x
 sh bootstrap.sh
 sh build-everything.sh
-( cd src/gplates-qt-demo && make DocumentUi.h InformationDialogUi.h )
+( cd src/gplates-qt-demo && make ViewportWindowUi.h InformationDialogUi.h )
 ( cd src/gplates-qt-demo && make ReconstructToTimeDialogUi.h SpecifyFixedPlateDialogUi.h )
 ( cd src/gplates-qt-demo && make AnimateDialogUi.h )
 make

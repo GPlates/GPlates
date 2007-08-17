@@ -8,12 +8,12 @@ INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES		= libgplates_qt_demo.la
 libgplates_qt_demo_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
-	Document.cc DocumentUi.h moc_Document.cc \
+	ViewportWindow.cc ViewportWindowUi.h moc_ViewportWindow.cc \
 	ReconstructToTimeDialog.cc ReconstructToTimeDialogUi.h moc_ReconstructToTimeDialog.cc \
 	SpecifyFixedPlateDialog.cc SpecifyFixedPlateDialogUi.h moc_SpecifyFixedPlateDialog.cc \
 	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc
 
-CLEANFILES		= DocumentUi.h InformationDialogUi.h ReconstructToTimeDialogUi.h \
+CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h ReconstructToTimeDialogUi.h \
 				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h moc_*.cc
 
 # This rule lets GNU make create any moc_*.cc from the equivalent *.h

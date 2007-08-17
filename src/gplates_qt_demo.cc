@@ -32,7 +32,7 @@
 
 #include <string>
 #include <QtGui/QApplication>
-#include "gplates-qt-demo/Document.h"
+#include "gplates-qt-demo/ViewportWindow.h"
 
 int main(int argc, char* argv[])
 {

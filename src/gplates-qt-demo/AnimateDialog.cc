@@ -26,7 +26,7 @@
 #include <cmath>
 
 #include "AnimateDialog.h"
-#include "Document.h"
+#include "ViewportWindow.h"
 #include "util/FloatingPointComparisons.h"
 
 

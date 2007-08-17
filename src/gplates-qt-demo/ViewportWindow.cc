@@ -27,7 +27,7 @@
 #include <iostream>
 #include <boost/format.hpp>
 
-#include "Document.h"
+#include "ViewportWindow.h"
 #include "InformationDialog.h"
 
 #include "global/Exception.h"

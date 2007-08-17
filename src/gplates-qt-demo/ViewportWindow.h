@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_DOCUMENT_H
-#define GPLATES_GUI_DOCUMENT_H
+#ifndef GPLATES_GUI_VIEWPORTWINDOW_H
+#define GPLATES_GUI_VIEWPORTWINDOW_H
 
 #ifdef HAVE_PYTHON
 // We need to include this _before_ any Qt headers get included because
@@ -35,7 +35,7 @@
 
 #include <string>
 #include <QtCore/QTimer>
-#include "DocumentUi.h"
+#include "ViewportWindowUi.h"
 #include "GlobeCanvas.h"
 #include "ReconstructToTimeDialog.h"
 #include "SpecifyFixedPlateDialog.h"
@@ -99,4 +99,4 @@ namespace GPlatesGui
 	};
 }
 
-#endif
+#endif  // GPLATES_GUI_VIEWPORTWINDOW_H
