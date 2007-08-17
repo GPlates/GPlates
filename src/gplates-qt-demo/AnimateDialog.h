@@ -141,6 +141,9 @@ namespace GPlatesGui
 		recalculate_slider();
 
 		void
+		start_animation_playback();
+
+		void
 		stop_animation_playback();
 
 		/**

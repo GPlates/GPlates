@@ -27,6 +27,7 @@
 
 #include "AnimateDialog.h"
 #include "Document.h"
+#include "util/FloatingPointComparisons.h"
 
 
 GPlatesGui::AnimateDialog::AnimateDialog(
@@ -75,29 +76,57 @@ GPlatesGui::AnimateDialog::toggle_animation_playback_state()
 	} else {
 		// Otherwise, the animation is not yet playing.
 
-		// First, see whether there's "space" (in the total time interval) for more than a
-		// single frame (which is already being displayed).
+		using namespace GPlatesUtil::FloatingPointComparisons;
+
+		double start_time = widget_start_time->value();
+		double end_time = widget_end_time->value();
+
 		recalculate_increment();
-		double total_time_delta = widget_end_time->value() - widget_start_time->value();
-		if (std::fabs(d_time_increment) > std::fabs(total_time_delta)) {
+		double abs_time_increment = std::fabs(d_time_increment);
+		double abs_total_time_delta = std::fabs(end_time - start_time);
+
+		// Firstly, let's handle the special case in which the time-increment is almost
+		// exactly the same as the total time delta. The time-increment may even be a tiny
+		// amount larger than the total time delta -- which is presumably not what the user
+		// wanted (since the difference is smaller than any difference the user could
+		// specify), and is the presumably the result of the floating-point representation.
+		// In this case, we should allow one frame of animation after this current frame.
+		if (geo_times_are_approx_equal(abs_time_increment - abs_total_time_delta, 0.0)) {
+
+			double current_time = widget_current_time->value();
+			if (geo_times_are_approx_equal(start_time, current_time) ||
+					geo_times_are_approx_equal(end_time, current_time)) {
+
+				widget_current_time->setValue(start_time);
+				start_animation_playback();
+				return;
+			}
+		}
+
+		// That special case aside, see whether there's space (in the total time interval)
+		// for more than a single frame (which is already being displayed).
+		if (abs_time_increment > abs_total_time_delta) {
+
 			// There's no space for more than the single frame which is already being
-			// displayed.
+			// displayed.  So, there's nothing to animate.
 			return;
 		}
 
-		// Otherwise, let's see if we've already reached the end of the animation (or
-		// rather, whether we're as close to the end as we can get with this increment).
-		double remaining_time = widget_end_time->value() - widget_current_time->value();
-		if (std::fabs(d_time_increment) > std::fabs(remaining_time)) {
+		// Otherwise, there's space for more than one frame between the start-time and
+		// end-time, so we'll play an animation.
+
+		// As a special case, let's see if we've already reached the end of the animation
+		// (or rather, whether we're as close to the end of the animation as we can get
+		// with this time-increment).  If we have, we should automatically rewind the time
+		// to the start.
+		double abs_remaining_time = std::fabs(end_time - widget_current_time->value());
+		if (abs_time_increment > abs_remaining_time) {
+
 			// Yes, we've reached the end.  Let's rewind to the start.
-			widget_current_time->setValue(widget_start_time->value());
+			widget_current_time->setValue(start_time);
 		}
 
-		const double num_frames_per_sec = 5.0;
-		double frame_duration_millisecs = (1000.0 / num_frames_per_sec);
-		d_timer.start(static_cast<int>(frame_duration_millisecs));
-
-		button_Start->setText(QObject::tr("Stop"));
+		start_animation_playback();
 	}
 }
 
@@ -134,13 +163,32 @@ GPlatesGui::AnimateDialog::react_current_time_changed(
 void
 GPlatesGui::AnimateDialog::react_animation_playback_step()
 {
-	double remaining_time = widget_end_time->value() - widget_current_time->value();
-	if (std::fabs(d_time_increment) > std::fabs(remaining_time)) {
-		// There's no space for more than the single frame which is already being
-		// displayed.
+	using namespace GPlatesUtil::FloatingPointComparisons;
+
+	double abs_time_increment = std::fabs(d_time_increment);
+	double abs_remaining_time = std::fabs(widget_end_time->value() - widget_current_time->value());
+
+	// Firstly, let's handle the special case in which the time-increment is almost exactly the
+	// same as the total time delta. The time-increment may even be a tiny amount larger than
+	// the remaining time -- which may have been caused by accumulated floating-point error. 
+	// In this case, we should allow one more frame (after the current frame),  but rather than
+	// adding the increment to the current-time, set the current-time directly to the end-time
+	// (or else, the current-time would go past the end-time).
+	if (geo_times_are_approx_equal(abs_time_increment - abs_remaining_time, 0.0)) {
+
+		widget_current_time->setValue(widget_end_time->value());
+		return;
+	}
+
+	// Now let's handle the more general case in which the time increment is larger than the
+	// remaining time.
+	if (abs_time_increment > abs_remaining_time) {
+		// Another frame would take us past the end-time, so stop the animation here.
+
 		stop_animation_playback();
 		return;
 	}
+
 	widget_current_time->setValue(widget_current_time->value() + d_time_increment);
 }
 
@@ -203,6 +251,17 @@ void
 GPlatesGui::AnimateDialog::recalculate_slider()
 {
 	// The slider functionality is not yet implemented.
+}
+
+
+void
+GPlatesGui::AnimateDialog::start_animation_playback()
+{
+	const double num_frames_per_sec = 5.0;
+	double frame_duration_millisecs = (1000.0 / num_frames_per_sec);
+	d_timer.start(static_cast<int>(frame_duration_millisecs));
+
+	button_Start->setText(QObject::tr("Stop"));
 }
 
 
