@@ -115,7 +115,7 @@ namespace GPlatesModel
 		 * This is a hack to enable the collection-handle-type to invoke the constructor of
 		 * this class with a specific index value, without abandoning @em all privacy.
 		 */
-		friend class collection_handle_type::this_type;
+		friend typename collection_handle_type::this_type;
 
 		/**
 		 * This factory function is used to instantiate "begin" iterators for a collection

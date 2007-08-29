@@ -29,11 +29,20 @@
 #define GPLATES_GUI_OPENGL_H
 
 extern "C" {
-#ifdef __APPLE__
+#if defined(__APPLE__)
 /* Assume compilation on Mac OS X. */
+#define __CONVENTION__
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
+#elif defined(__WINDOWS__)
+/* Necessary to include windows.h before including gl.h */
+#include <windows.h>
+#define __CONVENTION__ WINAPI
+#include <GL/gl.h>
+#include <GL/glu.h>
 #else
+/* Other platforms */
+#define __CONVENTION__ 
 #include <GL/gl.h>
 #include <GL/glu.h>
 #endif

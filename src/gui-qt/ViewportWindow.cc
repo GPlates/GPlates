@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#include <unistd.h>
 #include <iostream>
 #include <boost/format.hpp>
 

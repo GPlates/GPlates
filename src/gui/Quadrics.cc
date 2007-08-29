@@ -61,5 +61,5 @@ GPlatesGui::Quadrics::Quadrics() {
 	// Update: Fixed the prototype of the QuadricError callback function 
 	// and removed the varargs ellipsis from the cast type.
 	gluQuadricCallback(_q, GLU_ERROR,
-	 reinterpret_cast< GLvoid (*)() >(&QuadricError));
+	 reinterpret_cast< GLvoid (__CONVENTION__ *)() >(&QuadricError));
 }
