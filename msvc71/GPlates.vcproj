@@ -32,7 +32,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcore4.lib qtopengld4.lib opengl32.lib glu32.lib"
+				AdditionalDependencies="icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcore4.lib qtnetworkd4.lib qtopengld4.lib opengl32.lib glu32.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
