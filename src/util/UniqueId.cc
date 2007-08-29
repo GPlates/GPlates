@@ -27,12 +27,11 @@
 
 #include <sstream>
 
-// FIXME:  This should be done in a more portable manner, using Qt library functions.
 #include <ctime>
 #include <cstdlib>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/utsname.h>
+
+#include <QtCore/QUuid>
+#include <QtNetwork/QHostInfo>
 
 #include "UniqueId.h"
 
@@ -67,22 +66,14 @@ namespace
 	const std::string
 	get_hostname_component()
 	{
-		struct utsname u;
-		if (::uname(&u) != 0)
-		{
-			// The invocation of '::uname' failed.
-			return std::string("");
-		}
-		else
-		{
-			return std::string(u.nodename);
-		}
+		return QHostInfo::localHostName().toStdString();
 	}
 
 	unsigned long
 	get_pid_component()
 	{
-		return static_cast< unsigned long >(::getpid());
+		QUuid uuid = QUuid::createUuid();
+		return uuid.data1;
 	}
 }
 
