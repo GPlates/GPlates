@@ -34,6 +34,8 @@ namespace GPlatesGui
 			public QDialog, 
 			protected Ui_InformationDialog 
 	{
+		Q_OBJECT
+
 	public:
 		InformationDialog(const QString &data);
 	};
