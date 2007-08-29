@@ -63,7 +63,7 @@ namespace
 			GPlatesModel::GmlTimeInstant::non_null_ptr_to_const_type t1,
 			GPlatesModel::GmlTimeInstant::non_null_ptr_to_const_type t2)
 	{
-		return ::geo_time_instants_are_approx_equal(t1->time_position(), t2->time_position());
+		return geo_time_instants_are_approx_equal(t1->time_position(), t2->time_position());
 	}
 
 
@@ -206,7 +206,7 @@ namespace
 
 		// Now, from the remainder of the input line, extract the comment.
 		std::string comment;
-		::extract_comment(iss, comment, data_source, line_num, read_errors);
+		extract_comment(iss, comment, data_source, line_num, read_errors);
 
 		std::pair<double, double> lon_lat_euler_pole(pole_longitude, pole_latitude);
 		PropertyValue::non_null_ptr_type value =
@@ -243,7 +243,7 @@ namespace
 	{
 		using namespace GPlatesFileIO;
 
-		if (::gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
+		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
 			boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(line_num));
 			ReadErrors::Description descr = ReadErrors::SamePlateIdsButDuplicateGeoTime;
 			ReadErrors::Result res = ReadErrors::NewOverlappingSequenceBegun;
@@ -365,7 +365,7 @@ namespace
 			// There are not yet any total reconstruction sequences in the feature
 			// collection, which means that we need to create the first one.
 
-			::create_total_recon_seq(model, rotations, current_total_recon_seq,
+			create_total_recon_seq(model, rotations, current_total_recon_seq,
 					props_in_current_trs, time_sample, fixed_plate_id, moving_plate_id);
 
 			// Since this was the very first pole in the very first sequence, we don't
@@ -401,7 +401,7 @@ namespace
 		// container which can never be empty?
 		GpmlTimeSample &prev_time_sample = gpml_irregular_sampling.time_samples().back();
 
-		if (::gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
+		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
 
@@ -444,12 +444,12 @@ namespace
 					// the fixed and moving plate IDs are 999, since the lines
 					// are just comments.
 					if ( ! (moving_plate_id == 999 && fixed_plate_id == 999)) {
-						::warn_user_about_new_overlapping_sequence(
+						warn_user_about_new_overlapping_sequence(
 								time_sample, prev_time_sample,
 								data_source, line_num, read_errors);
 					}
 				}
-				::create_total_recon_seq(model, rotations, current_total_recon_seq,
+				create_total_recon_seq(model, rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample, fixed_plate_id,
 						moving_plate_id);
 			}
@@ -469,12 +469,12 @@ namespace
 				// EXCEPT that there's no point warning the user if both the fixed
 				// and moving plate IDs are 999, since the lines are just comments.
 				if ( ! (moving_plate_id == 999 && fixed_plate_id == 999)) {
-					::warn_user_about_new_overlapping_sequence(time_sample,
+					warn_user_about_new_overlapping_sequence(time_sample,
 							prev_time_sample, data_source, line_num,
 							read_errors);
 				}
 			}
-			::create_total_recon_seq(model, rotations, current_total_recon_seq,
+			create_total_recon_seq(model, rotations, current_total_recon_seq,
 					props_in_current_trs, time_sample, fixed_plate_id,
 					moving_plate_id);
 		} else {
@@ -508,7 +508,7 @@ namespace
 					props_in_current_trs.d_moving_plate_id != moving_plate_id) {
 				// The sequence has a different fixed ref frame or moving ref frame
 				// to those of the pole, so we need to commence a *new* sequence.
-				::create_total_recon_seq(model, rotations, current_total_recon_seq,
+				create_total_recon_seq(model, rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample, fixed_plate_id,
 						moving_plate_id);
 			} else {
@@ -542,7 +542,7 @@ namespace
 
 			return;
 		}
-		::append_pole_to_data_set(model, rotations, current_total_recon_seq,
+		append_pole_to_data_set(model, rotations, current_total_recon_seq,
 				props_in_current_trs, time_sample, fixed_plate_id,
 				moving_plate_id, data_source, line_num, read_errors);
 	}
@@ -565,7 +565,7 @@ namespace
 		// When this iterator is default-constructed, it is not valid for dereferencing.
 		GPlatesModel::FeatureHandle::weak_ref current_total_recon_seq;
 
-		::TotalReconSeqProperties props_in_current_trs;
+		TotalReconSeqProperties props_in_current_trs;
 
 		while (line_buffer.getline(line_of_input)) {
 			std::istringstream line_stream(line_of_input);
@@ -573,11 +573,11 @@ namespace
 
 			try {
 				GPlatesModel::GpmlTimeSample time_sample =
-						::parse_pole(line_stream, fixed_plate_id, moving_plate_id,
+						parse_pole(line_stream, fixed_plate_id, moving_plate_id,
 								data_source, line_buffer.lineNum(),
 								read_errors);
 
-				::handle_parsed_pole(model, rotations, current_total_recon_seq,
+				handle_parsed_pole(model, rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample,
 						fixed_plate_id, moving_plate_id, data_source,
 						line_buffer.lineNum(), read_errors);

@@ -55,7 +55,8 @@ moc ..\src\gui-qt\InformationDialog.h -o ..\src\gui-qt\moc_InformationDialog.cc
 moc ..\src\gui-qt\ReconstructToTimeDialog.h -o ..\src\gui-qt\moc_ReconstructToTimeDialog.cc
 moc ..\src\gui-qt\SpecifyFixedPlateDialog.h -o ..\src\gui-qt\moc_SpecifyFixedPlateDialog.cc
 moc ..\src\gui-qt\ViewportWindow.h -o ..\src\gui-qt\moc_ViewportWindow.cc
-"/>
+moc ..\src\gui-qt\CubeWidget.h -o ..\src\gui-qt\moc_CubeWidget.cc
+moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -194,6 +195,15 @@ moc ..\src\gui-qt\ViewportWindow.h -o ..\src\gui-qt\moc_ViewportWindow.cc
 				RelativePath="..\src\gui-qt\moc_AnimateDialog.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\moc_CubeWidget.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\moc_GlobeCanvas.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\moc_InformationDialog.cc">
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\moc_ReconstructToTimeDialog.cc">
 			</File>
 			<File
@@ -253,9 +263,6 @@ moc ..\src\gui-qt\ViewportWindow.h -o ..\src\gui-qt\moc_ViewportWindow.cc
 			</File>
 			<File
 				RelativePath="..\src\model\ModelUtility.cc">
-			</File>
-			<File
-				RelativePath="..\src\model\PythonWrapper.cc">
 			</File>
 			<File
 				RelativePath="..\src\model\ReconstructedFeatureGeometryPopulator.cc">
@@ -320,21 +327,6 @@ moc ..\src\gui-qt\ViewportWindow.h -o ..\src\gui-qt\moc_ViewportWindow.cc
 				RelativePath="..\src\maths\PolylineOnSphere.cc">
 			</File>
 			<File
-				RelativePath="..\src\maths\PythonWrapper.cc">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\src\maths\Real.cc">
 			</File>
 			<File
@@ -351,6 +343,57 @@ moc ..\src\gui-qt\ViewportWindow.h -o ..\src\gui-qt\moc_ViewportWindow.cc
 			</File>
 			<File
 				RelativePath="..\src\maths\Vector3D.cc">
+			</File>
+		</Filter>
+		<Filter
+			Name="state"
+			Filter="">
+			<File
+				RelativePath="..\src\state\Data.cc">
+			</File>
+			<File
+				RelativePath="..\src\state\Layout.cc">
+			</File>
+		</Filter>
+		<Filter
+			Name="global"
+			Filter="">
+			<File
+				RelativePath="..\src\global\Exception.cc">
+			</File>
+			<File
+				RelativePath="..\src\global\FPData.cc">
+			</File>
+			<File
+				RelativePath="..\src\global\InternalInconsistencyException.cc">
+			</File>
+		</Filter>
+		<Filter
+			Name="fileio"
+			Filter="">
+			<File
+				RelativePath="..\src\fileio\PlatesBoundaryParser.cc">
+			</File>
+			<File
+				RelativePath="..\src\fileio\PlatesDataTypes.cc">
+			</File>
+			<File
+				RelativePath="..\src\fileio\PlatesLineFormatReader.cc">
+			</File>
+			<File
+				RelativePath="..\src\fileio\PlatesParserUtils.cc">
+			</File>
+			<File
+				RelativePath="..\src\fileio\PlatesPostParseTranslator.cc">
+			</File>
+			<File
+				RelativePath="..\src\fileio\PlatesRotationFormatReader.cc">
+			</File>
+			<File
+				RelativePath="..\src\fileio\PlatesRotationParser.cc">
+			</File>
+			<File
+				RelativePath="..\src\fileio\ReadErrorOccurrence.cc">
 			</File>
 		</Filter>
 	</Files>
