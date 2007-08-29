@@ -133,8 +133,8 @@ namespace GPlatesModel
 			if (iter.collection_handle_ptr() == NULL) {
 				return collections_const_iterator();
 			}
-			return collections_const_iterator(*(iter.collection_handle_ptr()),
-					iter.index());
+			return collections_const_iterator::create_index(
+					*(iter.collection_handle_ptr()), iter.index());
 		}
 
 		/**
@@ -229,7 +229,7 @@ namespace GPlatesModel
 			FeatureStoreRootRevision::feature_collection_container_type::size_type new_index =
 					current_revision()->append_feature_collection(new_feature_collection,
 							transaction);
-			return collections_iterator(*this, new_index);
+			return collections_iterator::create_index(*this, new_index);
 		}
 
 		/**
