@@ -244,11 +244,6 @@ AC_CHECK_HEADERS([unicode/unistr.h], [], AC_MSG_ERROR([[
 # Other software dependencies.
 ##
 
-# Check for "dot" (from the Graphviz package) for doxygen.conf.
-# WARNING:  This does not verify that this is the *real* "dot" program we want.
-AC_CHECK_PROG([HAVE_DOT], [dot], [yes], [no])
-
-
 # Using '--enable-dev' changes compile-time flags to be more strict
 turn_on_dev="no"
 AC_ARG_ENABLE(dev, [  --enable-dev            Enable developer flags],
