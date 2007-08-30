@@ -32,42 +32,51 @@
 
 const GPlatesModel::GeoTimeInstant
 GPlatesModel::GeoTimeInstant::create_distant_past() {
-	return GeoTimeInstant(INFINITY);
+	return GeoTimeInstant(TimePositionTypes::DistantPast);
 }
 
 
 const GPlatesModel::GeoTimeInstant
 GPlatesModel::GeoTimeInstant::create_distant_future() {
-	return GeoTimeInstant(-INFINITY);
+	return GeoTimeInstant(TimePositionTypes::DistantFuture);
 }
 
 
 bool
 GPlatesModel::GeoTimeInstant::is_distant_past() const {
-	// Return whether the time-position is positive infinity.
-	return (isinf(d_value) && (d_value > 0));
+	// Return whether the time-position is in the distant past.
+	return (d_type == TimePositionTypes::DistantPast);
 }
 
 
 bool
 GPlatesModel::GeoTimeInstant::is_distant_future() const {
-	// Return whether the time-position is negative infinity.
-	return (isinf(d_value) && (d_value < 0));
+	// Return whether the time-position is in the distant future.
+	return (d_type == TimePositionTypes::DistantFuture);
 }
 
 
 bool
 GPlatesModel::GeoTimeInstant::is_real() const {
-	return std::isfinite(d_value);
+	return (d_type == TimePositionTypes::Real);
 }
 
 
 bool
 GPlatesModel::GeoTimeInstant::is_coincident_with(
 		const GeoTimeInstant &other) const {
-	/*
-	 * To double-check:  Do we want infinities to compare equal or unequal?
-	 */
+	if (d_type != other.d_type) {
+		// At least one of the time-positions is "distant" (and if both are "distant",
+		// they're not the same sort of "distant"), so there's no chance that these two
+		// time-instants can be equal.
+		return false;
+	}
+
+	// Note:  For now, if we encounter two time-instants which are both in the "distant past",
+	// we're going to consider them equal.  (Even though we don't actually know what the times
+	// in the "distant past" were, I think that it will be appropriate for the program to treat
+	// the two time-instants in the same way, so we'll call them equal.)  Similarly for two
+	// time-instants which are both in the "distant future".
 
 	using namespace GPlatesUtil::FloatingPointComparisons;
 

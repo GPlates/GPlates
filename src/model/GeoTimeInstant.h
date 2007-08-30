@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,8 +29,8 @@
 #define GPLATES_MODEL_GEOTIMEINSTANT_H
 
 
-namespace GPlatesModel {
-
+namespace GPlatesModel
+{
 	/**
 	 * Instances of this class represent an instant in geological time, resolved and refined
 	 * into a form which GPlates can efficiently process.
@@ -40,7 +40,60 @@ namespace GPlatesModel {
 	 *  - time-instants in the "distant past";
 	 *  - time-instants in the "distant future".
 	 */
-	class GeoTimeInstant {
+	class GeoTimeInstant
+	{
+		/*
+		 * Implementation note:
+		 *
+		 * Previously, class GeoTimeInstant contained only a single member datum of type
+		 * 'double'.  The time-positions for the distant past and the distant future were
+		 * represented using the floating-point values for infinity and minus-infinity
+		 * (respectively).
+		 * 
+		 * However, when Glen was porting to Windows (specifically, the Microsoft Visual
+		 * Studio C++ compiler), he pointed out that:
+		 *
+		 * > 1. INFINITY, isinf(), and std::isfinite() are all non-standard: and MSVC
+		 * > does not have them.
+		 * >
+		 * > It does have _finite() and _isnan(), unless we can find some portable way
+		 * > of doing things instead.
+		 * >
+		 * > 2. My understand was that you are not intended to store positive infinity,
+		 * > negative infinity, or NaN in double or float variables - only test
+		 * > variables for them with functions like isnan, isinf (which unfortunately
+		 * > are non-standard).
+		 * >
+		 * > This is because on a particular implementation it is not required that
+		 * > double/float can store these values.
+		 * >
+		 * > Is this correct? If so, the use of INFINITY and -INFINITY in GeoTimeInstant
+		 * > would need to change.
+		 *
+		 * I looked into this issue, and determined that Glen was correct.  Specifically,
+		 *  1. The macros and functions 'INFINITY', 'isinf' and 'isfinite' are part of
+		 *     C99, which of course is not part of the C++ standard.
+		 *  2. While the IEEE 754 floating-point standard does indeed define infinity,
+		 *     etc., the C++ standard doesn't require that a C++ implementation use IEEE
+		 *     754 for floating-point numbers.
+		 *
+		 * For more info, take a look at these links which Google found for me:
+		 *  http://groups.google.com/group/comp.lang.c++/browse_thread/thread/e1cea36d29c4b708/0149a9483297f8e8
+		 *  http://www.thescripts.com/forum/thread165462.html
+		 *  http://gcc.gnu.org/ml/libstdc++/2002-09/msg00038.html
+		 *
+		 * Hence, I modified class GeoTimeInstant to use the TimePositionType enumeration
+		 * instead.
+		 */
+		struct TimePositionTypes
+		{
+			enum TimePositionType
+			{
+				Real,
+				DistantPast,
+				DistantFuture
+			};
+		};
 
 	public:
 
@@ -82,6 +135,7 @@ namespace GPlatesModel {
 		explicit
 		GeoTimeInstant(
 				const double &value_):
+			d_type(TimePositionTypes::Real),
 			d_value(value_)
 		{  }
 
@@ -118,7 +172,8 @@ namespace GPlatesModel {
 		 *
 		 * The term "real" is used here to mean floating-point numbers which are meaningful
 		 * for floating-point calculations (ie, not NaN) and are members of the set of Real
-		 * numbers (ie, not positive-infinite or negative-infinite).
+		 * numbers (ie, not positive-infinity or negative-infinity, which are members of
+		 * the set of Extended Real numbers).
 		 *
 		 * If this function returns true, it implies that both @a is_distant_past and
 		 * @a is_distant_future will return false.
@@ -154,7 +209,24 @@ namespace GPlatesModel {
 
 	private:
 
+		TimePositionTypes::TimePositionType d_type;
 		double d_value;
+
+		/**
+		 * Create a GeoTimeInstant instance for a time-position type @a type_.
+		 *
+		 * This constructor should only be used to instantiate GeoTimeInstant instances in
+		 * which the time-position type is @em not "Real".  Hence, this constructor is
+		 * private:  The static member functions @a create_distant_past and
+		 * @a create_distant_future are used to invoke this constructor with the
+		 * appropriate value.
+		 */
+		explicit
+		GeoTimeInstant(
+				TimePositionTypes::TimePositionType type_):
+			d_type(type_),
+			d_value(0.0)
+		{  }
 
 	};
 
