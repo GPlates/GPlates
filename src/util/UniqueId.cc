@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,92 +35,17 @@
 
 #include "UniqueId.h"
 
-
-namespace
-{
-	const std::string
-	get_time_component()
-	{
-		std::ostringstream oss;
-
-		oss << ::time(NULL);
-		return oss.str();
-	}
-
-	const std::string
-	get_username_component()
-	{
-		char *logname;
-		logname = ::getenv("LOGNAME");
-		if (logname == NULL)
-		{
-			// No environment variable "LOGNAME" found.
-			return std::string("");
-		}
-		else
-		{
-			return std::string(logname);
-		}
-	}
-
-	const std::string
-	get_hostname_component()
-	{
-		return QHostInfo::localHostName().toStdString();
-	}
-
-	unsigned long
-	get_pid_component()
-	{
-		QUuid uuid = QUuid::createUuid();
-		return uuid.data1;
-	}
-}
-
-
 const UnicodeString
-GPlatesUtil::UniqueId::generate()
+GPlatesUtil::generate_unique_id()
 {
-	if (s_instance == NULL)
-	{
-		// Instantiate the singleton.
-		s_instance = UniqueId::create_instance();
-	}
+	QUuid uuid = QUuid::createUuid();
 
-	std::ostringstream oss;
+	char buffer[45];
 
-	// Note that the order is important:  The counter should be "gotten" first, to regenerate
-	// the time component if necessary.
-	counter_type counter_component = s_instance->get_counter_component();
-	oss << "GPlates-";
-	oss << s_instance->get_time_component() << ".";
-	oss << counter_component << "-";
-	oss << s_instance->get_username_hostname_pid_component();
+	sprintf(buffer, "GPlates-%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x", 
+			uuid.data1, uuid.data2, uuid.data3, uuid.data4[0], uuid.data4[1],
+			uuid.data4[2], uuid.data4[3], uuid.data4[4], uuid.data4[5], uuid.data4[6],
+			uuid.data4[7]);
 
-	return UnicodeString(oss.str().c_str());
-}
-
-
-GPlatesUtil::UniqueId *GPlatesUtil::UniqueId::s_instance = NULL;
-
-
-GPlatesUtil::UniqueId *
-GPlatesUtil::UniqueId::create_instance()
-{
-	std::ostringstream oss;
-
-	oss << ::get_username_component() << ".";
-	oss << ::get_hostname_component() << ".";
-	oss << ::get_pid_component();
-
-	// FIXME:  We should hash the resulting string in 'oss' to hide any "bad" characters ("bad"
-	// characters being characters which make XML sad).
-	return new UniqueId(::get_time_component(), oss.str());
-}
-
-
-void
-GPlatesUtil::UniqueId::regenerate_time()
-{
-	d_time_component = ::get_time_component();
+	return UnicodeString(buffer);
 }

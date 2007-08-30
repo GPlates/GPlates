@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -54,7 +54,7 @@ namespace GPlatesModel {
 	public:
 
 		RevisionId() :
-			d_id(GPlatesUtil::UniqueId::generate()) {  }
+			d_id(GPlatesUtil::generate_unique_id()) {  }
 
 		/**
 		 * Construct a revision ID from a UnicodeString instance.
