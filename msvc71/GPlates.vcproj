@@ -32,7 +32,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcore4.lib qtnetworkd4.lib qtopengld4.lib opengl32.lib glu32.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtnetworkd4.lib qtopengld4.lib opengl32.lib glu32.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
@@ -56,7 +56,8 @@ moc ..\src\gui-qt\ReconstructToTimeDialog.h -o ..\src\gui-qt\moc_ReconstructToTi
 moc ..\src\gui-qt\SpecifyFixedPlateDialog.h -o ..\src\gui-qt\moc_SpecifyFixedPlateDialog.cc
 moc ..\src\gui-qt\ViewportWindow.h -o ..\src\gui-qt\moc_ViewportWindow.cc
 moc ..\src\gui-qt\CubeWidget.h -o ..\src\gui-qt\moc_CubeWidget.cc
-moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc"/>
+moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
+"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
