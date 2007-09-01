@@ -100,6 +100,14 @@ GPlatesModel::ModelUtility::create_xs_boolean(
 }
 
 
+const GPlatesModel::StrikeSlipEnumeration::non_null_ptr_type
+GPlatesModel::ModelUtility::create_strike_slip_enumeration(
+		const std::string &value)
+{
+	return StrikeSlipEnumeration::create(UnicodeString(value.c_str()));
+}
+
+
 const GPlatesModel::PropertyContainer::non_null_ptr_type
 GPlatesModel::ModelUtility::create_reconstruction_plate_id(
 		unsigned long plate_id)
@@ -197,23 +205,6 @@ GPlatesModel::ModelUtility::create_valid_time(
 	PropertyContainer::non_null_ptr_type inline_property_container =
 			InlinePropertyContainer::create(property_name,
 			gml_time_period, xml_attributes2);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-GPlatesModel::ModelUtility::create_description(
-		const UnicodeString &description)
-{
-	PropertyValue::non_null_ptr_type gml_description = XsString::create(description);
-
-	UnicodeString property_name_string("gml:description");
-	PropertyName property_name(property_name_string);
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	PropertyContainer::non_null_ptr_type inline_property_container =
-			InlinePropertyContainer::create(property_name,
-			gml_description, xml_attributes);
 
 	return inline_property_container;
 }

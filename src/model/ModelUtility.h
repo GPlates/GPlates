@@ -34,6 +34,7 @@
 #include "XsString.h"
 #include "XsBoolean.h"
 #include "GeoTimeInstant.h"
+#include "StrikeSlipEnumeration.h"
 
 namespace GPlatesModel
 {
@@ -70,9 +71,14 @@ namespace GPlatesModel
 		create_xs_string(
 				const std::string &str);
 
+
 		const XsBoolean::non_null_ptr_type
 		create_xs_boolean(
 				bool value);
+
+		const StrikeSlipEnumeration::non_null_ptr_type
+		create_strike_slip_enumeration(
+				const std::string &value);
 
 		// Before this line are the new, hopefully-better-designed functions; after this
 		// line are the old, arbitrary functions which should probably be reviewed (and
@@ -96,11 +102,7 @@ namespace GPlatesModel
 		create_valid_time(
 				const GeoTimeInstant &geo_time_instant_begin,
 				const GeoTimeInstant &geo_time_instant_end);
-	
-		const PropertyContainer::non_null_ptr_type
-		create_description(
-				const UnicodeString &description);
-	
+		
 		const PropertyContainer::non_null_ptr_type
 		create_name(
 				const UnicodeString &name,

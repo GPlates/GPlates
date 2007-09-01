@@ -43,7 +43,7 @@ namespace GPlatesGui
 	{
 		public:
 			Globe() :
-			 _sphere(Colour(0.35, 0.35, 0.35)),
+			 _sphere(Colour(0.35f, 0.35f, 0.35f)),
 			 _grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON, Colour::WHITE)
 			 {  }
 

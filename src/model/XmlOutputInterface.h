@@ -31,13 +31,8 @@
 #include <iosfwd>
 #include <unicode/unistr.h>
 
-
-// Forward declarations for the functions 'write_attribute_name' and 'write_attribute_value'.
-namespace GPlatesModel {
-
-	class XmlAttributeName;
-	class XmlAttributeValue;
-}
+#include "XmlAttributeName.h"
+#include "XmlAttributeValue.h"
 
 namespace GPlatesFileIO {
 

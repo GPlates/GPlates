@@ -48,6 +48,7 @@ namespace GPlatesModel {
 	class InlinePropertyContainer;
 	class XsString;
 	class XsBoolean;
+	class StrikeSlipEnumeration;
 
 	/**
 	 * This class defines an abstract interface for a Visitor to visit const features.
@@ -179,6 +180,11 @@ namespace GPlatesModel {
 		void
 		visit_xs_boolean(
 				const XsBoolean &xs_boolean) {  }
+
+		virtual
+		void
+		visit_strike_slip_enumeration(
+				const StrikeSlipEnumeration &strike_slip_enumeration) {  }
 
 	private:
 

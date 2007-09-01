@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -61,6 +61,10 @@ namespace GPlatesModel {
 		GPlatesUtil::StringSet &
 		xml_attribute_value_instance();
 
+		static
+		GPlatesUtil::StringSet &
+		strike_slip_enumeration_value_instance();
+
 	private:
 
 		// This constructor should never be defined, because we don't want to allow
@@ -73,6 +77,7 @@ namespace GPlatesModel {
 		static GPlatesUtil::StringSet *s_text_content_instance;
 		static GPlatesUtil::StringSet *s_xml_attribute_name_instance;
 		static GPlatesUtil::StringSet *s_xml_attribute_value_instance;
+		static GPlatesUtil::StringSet *s_strike_slip_enumeration_value_instance;
 	};
 
 }

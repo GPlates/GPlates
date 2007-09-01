@@ -33,12 +33,9 @@
 
 namespace GPlatesUtil
 {
-	// FIXME:  Make this a proper GPlates exception.
-	struct BadConversionException { };
-
 	/**
 	 * Slice the string @a source between the index @a start and the index @a end, convert the
-	 * slice to the type of @a dest and store the result in @a dest.
+	 * slice to template argument Type and return the result in @a dest.
 	 *
 	 * The indices @a start and @a end are used to specify a substring as in the Python "slice"
 	 * notation:  The @a start index is the index of the first character to be included in the
@@ -50,10 +47,10 @@ namespace GPlatesUtil
 	 * @a should_strip_trailing_whitespace, respectively.
 	 */
 	// Might want to provide an overload for UnicodeString which uses unum.h functions instead.
-	template<class T>
-	void
+	template<typename Type, typename Error>
+	Type
  	slice_string(
-		T &dest,
+		const Error &error,
 		const std::string &source,
 		std::string::size_type start,
 		std::string::size_type end = std::string::npos,
@@ -96,9 +93,9 @@ namespace GPlatesUtil
 		}
 
 		try {
-			dest = boost::lexical_cast<T>(result);
+			return boost::lexical_cast<Type>(result);
 		} catch (boost::bad_lexical_cast error) {
-			throw BadConversionException(); 
+			throw error; 
 		}
 	}
 }

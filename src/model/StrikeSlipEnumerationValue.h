@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,43 +25,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_XMLATTRIBUTENAME_H
-#define GPLATES_MODEL_XMLATTRIBUTENAME_H
+#ifndef GPLATES_MODEL_STRIKESLIPENUMERATIONVALUE_H
+#define GPLATES_MODEL_STRIKESLIPENUMERATIONVALUE_H
 
 #include "StringSetSingletons.h"
 #include "StringContent.h"
 
 namespace GPlatesModel {
 
-	class XmlAttributeNameSet {
+	class StrikeSlipEnumerationValueSet {
 
 	public:
 		static
 		GPlatesUtil::StringSet &
 		instance()
 		{
-			return StringSetSingletons::xml_attribute_name_instance();
+			return StringSetSingletons::strike_slip_enumeration_value_instance();
 		}
 
 	private:
-		XmlAttributeNameSet();
-
+		StrikeSlipEnumerationValueSet();
 	};
 
-	typedef StringContent<XmlAttributeNameSet> XmlAttributeName;
-
-
-	/**
-	 * This operator is used when XmlAttributeName instances are used as keys in @c std::map.
-	 */
-	inline
-	bool
-	operator<(
-			const XmlAttributeName &xan1,
-			const XmlAttributeName &xan2) {
-		return (xan1.get() < xan2.get());
-	}
-
+	typedef StringContent<StrikeSlipEnumerationValueSet> StrikeSlipEnumerationValue;
 }
 
-#endif  // GPLATES_MODEL_XMLATTRIBUTENAME_H
+#endif  // GPLATES_MODEL_STRIKESLIPENUMERATIONVALUE_H

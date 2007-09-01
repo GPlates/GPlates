@@ -57,12 +57,7 @@
 
 using namespace GPlatesFileIO;
 
-/*  
- * Conventions used in this file are inconsistent with files 
- * such as PlatesParserUtils.cc but more importantly, inconsistent with
- * the CppStyleGuide.
- */
-
+// Some conventions used in this file are inconsistent with the style guide
 namespace {
 
 	// List of LatLonPoint Lists. 
@@ -97,9 +92,7 @@ namespace {
 		}
 	}
 	
-	// The algorithms from compilation_test.cc (adopted for use here) 
-	//  deal with a vector of double. We decided to use this function temporarily
-	//  to convert the LLLP to a vector.
+	// The Model requires a vector of double, so we convert the LLLP
 	void 
 	convert_LLPL_to_vector(
 			std::vector< double >& result,
@@ -127,7 +120,6 @@ namespace {
 				model.create_feature(feature_type, collection);
 
 		const GPlatesModel::GpmlPlateId::integer_plate_id_type plate_id = header->plate_id_number();
-		const UnicodeString description = header->geographic_description();
 		const GPlatesModel::GeoTimeInstant geo_time_instant_begin(header->age_of_appearance());
 		const GPlatesModel::GeoTimeInstant geo_time_instant_end(header->age_of_disappearance());
 
@@ -137,9 +129,7 @@ namespace {
 				GPlatesModel::ModelUtility::create_centre_line_of(points);
 		const GPlatesModel::PropertyContainer::non_null_ptr_type valid_time_container =
 				GPlatesModel::ModelUtility::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
-		const GPlatesModel::PropertyContainer::non_null_ptr_type description_container =
-				GPlatesModel::ModelUtility::create_description(description);
-
+		
 		GPlatesModel::DummyTransactionHandle pc1(__FILE__, __LINE__);
 		feature_handle->append_property_container(reconstruction_plate_id_container, pc1);
 		pc1.commit();
@@ -152,13 +142,78 @@ namespace {
 		feature_handle->append_property_container(valid_time_container, pc3);
 		pc3.commit();
 	
-		GPlatesModel::DummyTransactionHandle pc4(__FILE__, __LINE__);
-		feature_handle->append_property_container(description_container, pc4);
-		pc4.commit();
+		GPlatesModel::XsString::non_null_ptr_type description = 
+				GPlatesModel::XsString::create(header->geographic_description());
+		
+		GPlatesModel::ModelUtility::append_property_value_to_feature(
+				description, "gml:description", feature_handle);
 
 		GPlatesModel::ModelUtility::append_property_value_to_feature(
 				header->clone(), "gpml:OldPlatesHeader", feature_handle);
 
+		return feature_handle;
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_fault(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::vector<double> &points)
+	{
+		return create_common(model, collection, header, points, "gpml:Fault");
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref
+	create_custom_fault(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::vector<double> &points,
+			const std::string &dip_slip)
+	{
+		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
+			create_fault(model, collection, header, points);
+		
+		const GPlatesModel::StrikeSlipEnumeration::non_null_ptr_type dip_slip_property_value =
+				GPlatesModel::ModelUtility::create_strike_slip_enumeration(dip_slip);
+		GPlatesModel::ModelUtility::append_property_value_to_feature(
+				dip_slip_property_value, "gpml:dipSlip", feature_handle);
+
+		return feature_handle;
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_normal_fault(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::vector<double> &points)
+	{
+		return create_custom_fault(model, collection, header, points, "Extension");
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_reverse_fault(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::vector<double> &points)
+	{
+		return create_custom_fault(model, collection, header, points, "Compression");
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_thrust_fault(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::vector<double> &points)
+	{
+		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
+			create_reverse_fault(model, collection, header, points);
+
+		// FIXME: Set .subcategory to "Thrust"
 		return feature_handle;
 	}
 
@@ -262,24 +317,17 @@ namespace {
 		map["CO"] = create_continental_boundary;
 		map["IS"] = create_isochron;
 		map["IM"] = create_isochron;
+		map["NF"] = create_normal_fault;
 		map["OB"] = create_orogenic_belt;
 		map["OR"] = create_orogenic_belt;
+		map["RF"] = create_reverse_fault;
 		map["RI"] = create_ridge_segment;
+		map["SS"] = create_fault;
+		map["TH"] = create_thrust_fault;
 		map["XR"] = create_extinct_ridge;
 
 		return map;
 	}
-
-
-	struct BadOldPlatesHeader 
-	{
-		BadOldPlatesHeader(
-				ReadErrors::Description description):
-			d_description(description)
-		{ }
-
-		ReadErrors::Description d_description;
-	};
 
 	GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type
 	create_old_plates_header(
@@ -287,107 +335,23 @@ namespace {
 			const std::string &second_line)
 	{
 		typedef GPlatesModel::GpmlPlateId::integer_plate_id_type plate_id_type;
-
-		unsigned int region_number;
-		unsigned int reference_number;
-		unsigned int string_number;
-		std::string geographic_description;
-		plate_id_type plate_id_number;
-		double age_of_appearance;
-		double age_of_disappearance;
-		std::string data_type_code;
-		unsigned int data_type_code_number;
-		std::string data_type_code_number_additional;
-		plate_id_type conjugate_plate_id_number;
-		unsigned int colour_code;
-		unsigned int number_of_points;
-
-		try {
-			GPlatesUtil::slice_string(region_number, first_line, 0, 2);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesRegionNumber);
-		}
-
-		try {
-			GPlatesUtil::slice_string(reference_number, first_line, 2, 4);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesReferenceNumber);
-		}
-
-		try {
-			GPlatesUtil::slice_string(string_number, first_line, 5, 9);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesStringNumber);
-		}
-
-		try {
-			GPlatesUtil::slice_string(geographic_description, first_line, 10);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesGeographicDescription);
-		}
-
-		try {
-			GPlatesUtil::slice_string(plate_id_number, second_line, 1, 4);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesPlateIdNumber);
-		}
-
-		try {
-			GPlatesUtil::slice_string(age_of_appearance, second_line, 5, 11);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesAgeOfAppearance);
-		}
-
-		try {
-			GPlatesUtil::slice_string(age_of_disappearance, second_line, 12, 18);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesAgeOfDisappearance);
-		}
-
-		try {
-			GPlatesUtil::slice_string(data_type_code, second_line, 19, 21);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesDataTypeCode);
-		}
-
-		try {
-			GPlatesUtil::slice_string(data_type_code_number, second_line, 21, 25);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesDataTypeCodeNumber);
-		}
-
-		try {
-			GPlatesUtil::slice_string(data_type_code_number_additional, second_line, 25, 26);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesDataTypeCodeNumberAdditional);
-		}
-
-		try {
-			GPlatesUtil::slice_string(conjugate_plate_id_number, second_line, 26, 29);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesConjugatePlateIdNumber);
-		}
-
-		try {
-			GPlatesUtil::slice_string(colour_code, second_line, 30, 33);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesColourCode);
-		}
-
-		try {
-			GPlatesUtil::slice_string(number_of_points, second_line, 34, 39);
-		} catch (GPlatesUtil::BadConversionException error) {
-			throw BadOldPlatesHeader(ReadErrors::InvalidPlatesNumberOfPoints);
-		}
+		using namespace GPlatesUtil;
 
 		return GPlatesModel::GpmlOldPlatesHeader::create(
-				region_number, reference_number, string_number,	
-				geographic_description.c_str(), plate_id_number, age_of_appearance, 
-				age_of_disappearance, data_type_code.c_str(), data_type_code_number, 
-				data_type_code_number_additional.c_str(), conjugate_plate_id_number, 
-				colour_code, number_of_points);
+			slice_string<unsigned int>(ReadErrors::InvalidPlatesRegionNumber, first_line, 0, 2),
+			slice_string<unsigned int>(ReadErrors::InvalidPlatesReferenceNumber, first_line, 2, 4),
+			slice_string<unsigned int>(ReadErrors::InvalidPlatesStringNumber, first_line, 5, 9),
+			slice_string<std::string>(ReadErrors::InvalidPlatesGeographicDescription, first_line, 10).c_str(),
+			slice_string<plate_id_type>(ReadErrors::InvalidPlatesPlateIdNumber, second_line, 1, 4),
+			slice_string<double>(ReadErrors::InvalidPlatesAgeOfAppearance, second_line, 5, 11),
+			slice_string<double>(ReadErrors::InvalidPlatesAgeOfDisappearance, second_line, 12, 18),
+			slice_string<std::string>(ReadErrors::InvalidPlatesDataTypeCode, second_line, 19, 21).c_str(),
+			slice_string<unsigned int>(ReadErrors::InvalidPlatesDataTypeCodeNumber, second_line, 21, 25),
+			slice_string<std::string>(ReadErrors::InvalidPlatesDataTypeCodeNumberAdditional, second_line, 25, 26).c_str(),
+			slice_string<plate_id_type>(ReadErrors::InvalidPlatesConjugatePlateIdNumber, second_line, 26, 29),
+			slice_string<unsigned int>(ReadErrors::InvalidPlatesColourCode, second_line, 30, 33),
+			slice_string<unsigned int>(ReadErrors::InvalidPlatesNumberOfPoints, second_line, 34, 39));
 	}
-
 
 	void
 	add_plate_data(
@@ -433,9 +397,9 @@ namespace {
 			
 					creation_function(model, collection, old_plates_header, points);
 				}
-			} catch (const BadOldPlatesHeader &error) {
+			} catch (ReadErrors::Description error) {
 				errors.d_recoverable_errors.push_back(ReadErrorOccurrence(source, location,
-						error.d_description, ReadErrors::FeatureDiscarded));
+						error, ReadErrors::FeatureDiscarded));
 			}
 		}
 

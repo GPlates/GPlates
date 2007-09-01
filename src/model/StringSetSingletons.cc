@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -77,9 +77,18 @@ GPlatesModel::StringSetSingletons::xml_attribute_value_instance() {
 	return *s_xml_attribute_value_instance;
 }
 
+GPlatesUtil::StringSet &
+GPlatesModel::StringSetSingletons::strike_slip_enumeration_value_instance() {
+	if (s_strike_slip_enumeration_value_instance == NULL) {
+		s_strike_slip_enumeration_value_instance = new GPlatesUtil::StringSet();
+	}
+	return *s_strike_slip_enumeration_value_instance;
+}
+
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_property_name_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_template_type_parameter_type_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_text_content_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_name_instance = NULL;
 GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_value_instance = NULL;
+GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_strike_slip_enumeration_value_instance = NULL;
