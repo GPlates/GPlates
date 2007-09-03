@@ -62,7 +62,7 @@ create_isochron(
 		unsigned num_points,
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_begin,
 		const GPlatesModel::GeoTimeInstant &geo_time_instant_end,
-		const UnicodeString &description,
+		const UnicodeString &geographic_description,
 		const UnicodeString &name,
 		const UnicodeString &codespace_of_name)
 {
@@ -79,8 +79,6 @@ create_isochron(
 			GPlatesModel::ModelUtility::create_centre_line_of(points_vector);
 	GPlatesModel::PropertyContainer::non_null_ptr_type valid_time_container =
 			GPlatesModel::ModelUtility::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
-	GPlatesModel::PropertyContainer::non_null_ptr_type description_container =
-			GPlatesModel::ModelUtility::create_description(description);
 	GPlatesModel::PropertyContainer::non_null_ptr_type name_container =
 			GPlatesModel::ModelUtility::create_name(name, codespace_of_name);
 
@@ -97,12 +95,14 @@ create_isochron(
 	pc3.commit();
 
 	GPlatesModel::DummyTransactionHandle pc4(__FILE__, __LINE__);
-	feature_handle->append_property_container(description_container, pc4);
+	feature_handle->append_property_container(name_container, pc4);
 	pc4.commit();
-
-	GPlatesModel::DummyTransactionHandle pc5(__FILE__, __LINE__);
-	feature_handle->append_property_container(name_container, pc5);
-	pc5.commit();
+	
+	GPlatesModel::XsString::non_null_ptr_type description = 
+			GPlatesModel::XsString::create(geographic_description);
+		
+	GPlatesModel::ModelUtility::append_property_value_to_feature(
+			description, "gml:description", feature_handle);
 
 	return feature_handle;
 }
