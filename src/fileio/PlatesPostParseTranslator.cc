@@ -72,6 +72,10 @@ namespace {
 
 		std::list<PlatesParser::BoundaryLatLonPoint>::const_iterator 
 			iter = line.d_points.begin();
+
+		if (iter == line.d_points.end()) {
+			throw ReadErrors::MissingPlatesPolylinePoints;
+		}
 			
 		// Handle first point
 		llpl.push_back(iter->d_lat_lon_point);

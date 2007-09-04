@@ -70,6 +70,7 @@ namespace GPlatesFileIO
 
 			UnknownPlatesDataTypeCode,
 			MissingPlatesPolylines,
+			MissingPlatesPolylinePoints,
 
 			// The next constants are for PlatesBoundaryParser
 			InvalidFirstHeaderLine,
