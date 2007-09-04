@@ -964,10 +964,16 @@ namespace GPlatesMaths {
 		if (coll.size() < 2) {
 			// The collection does not contain enough points to
 			// create even one line-segment.
+			
 			// FIXME:  I don't like throwing in a header-file.
-			throw InvalidPolylineException("Attempted to create a "
-					"polyline from an insufficient number (ie, less than "
-					"2) of endpoints.");
+			//throw InvalidPolylineException("Attempted to create a "
+			//		"polyline from an insufficient number (ie, less than "
+			//		"2) of endpoints.");
+
+			// FIXME: Need to uncomment the above and throw instead of
+			//		returning and failing silently, but only when the thrown
+			//		exception is caught and handled.
+			return;
 		}
 
 		// Make it easier to provide strong exception safety by
@@ -986,10 +992,16 @@ namespace GPlatesMaths {
 		if (tmp_seq.size() == 0) {
 			// No line-segments were created, which must mean that
 			// all points in the collection were identical.
+			
 			// FIXME:  I don't like throwing in a header-file.
-			throw InvalidPolylineException("Attempted to create a "
-					"polyline from an insufficient number (ie, less than "
-					"2) of unique endpoints.");
+			//throw InvalidPolylineException("Attempted to create a "
+			//		"polyline from an insufficient number (ie, less than "
+			//		"2) of unique endpoints.");
+
+			// FIXME: Need to uncomment the above and throw instead of
+			//		returning and failing silently, but only when the thrown
+			//		exception is caught and handled.
+			return;
 		}
 		poly.d_seq.swap(tmp_seq);
 	}
