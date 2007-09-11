@@ -100,11 +100,11 @@ GPlatesModel::ModelUtility::create_xs_boolean(
 }
 
 
-const GPlatesModel::StrikeSlipEnumeration::non_null_ptr_type
-GPlatesModel::ModelUtility::create_strike_slip_enumeration(
+const GPlatesModel::GpmlStrikeSlipEnumeration::non_null_ptr_type
+GPlatesModel::ModelUtility::create_gpml_strike_slip_enumeration(
 		const std::string &value)
 {
-	return StrikeSlipEnumeration::create(UnicodeString(value.c_str()));
+	return GpmlStrikeSlipEnumeration::create(UnicodeString(value.c_str()));
 }
 
 

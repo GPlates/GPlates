@@ -34,7 +34,7 @@
 #include "XsString.h"
 #include "XsBoolean.h"
 #include "GeoTimeInstant.h"
-#include "StrikeSlipEnumeration.h"
+#include "GpmlStrikeSlipEnumeration.h"
 
 namespace GPlatesModel
 {
@@ -76,8 +76,8 @@ namespace GPlatesModel
 		create_xs_boolean(
 				bool value);
 
-		const StrikeSlipEnumeration::non_null_ptr_type
-		create_strike_slip_enumeration(
+		const GpmlStrikeSlipEnumeration::non_null_ptr_type
+		create_gpml_strike_slip_enumeration(
 				const std::string &value);
 
 		// Before this line are the new, hopefully-better-designed functions; after this

@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_STRIKESLIPENUMERATION_H
-#define GPLATES_MODEL_STRIKESLIPENUMERATION_H
+#ifndef GPLATES_MODEL_GPMLSTRIKESLIPENUMERATION_H
+#define GPLATES_MODEL_GPMLSTRIKESLIPENUMERATION_H
 
 #include "PropertyValue.h"
 #include "StrikeSlipEnumerationValue.h"
@@ -34,31 +34,32 @@
 
 namespace GPlatesModel {
 
-	class StrikeSlipEnumeration :
+	class GpmlStrikeSlipEnumeration :
 			public PropertyValue {
 
 	public:
 
-		typedef GPlatesContrib::non_null_intrusive_ptr<StrikeSlipEnumeration> non_null_ptr_type;
+		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlStrikeSlipEnumeration> 
+				non_null_ptr_type;
 
-		typedef GPlatesContrib::non_null_intrusive_ptr<const StrikeSlipEnumeration>
+		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlStrikeSlipEnumeration>
 				non_null_ptr_to_const_type;
 
 		virtual
-		~StrikeSlipEnumeration() {  }
+		~GpmlStrikeSlipEnumeration() {  }
 
 		static
 		const non_null_ptr_type
 		create(
 				const UnicodeString &s) {
-			StrikeSlipEnumeration::non_null_ptr_type ptr(*(new StrikeSlipEnumeration(s)));
+			GpmlStrikeSlipEnumeration::non_null_ptr_type ptr(*(new GpmlStrikeSlipEnumeration(s)));
 			return ptr;
 		}
 
 		virtual
 		const PropertyValue::non_null_ptr_type
 		clone() const {
-			PropertyValue::non_null_ptr_type dup(*(new StrikeSlipEnumeration(*this)));
+			PropertyValue::non_null_ptr_type dup(*(new GpmlStrikeSlipEnumeration(*this)));
 			return dup;
 		}
 
@@ -71,27 +72,27 @@ namespace GPlatesModel {
 		void
 		accept_visitor(
 				ConstFeatureVisitor &visitor) const {
-			visitor.visit_strike_slip_enumeration(*this);
+			visitor.visit_gpml_strike_slip_enumeration(*this);
 		}
 
 		virtual
 		void
 		accept_visitor(
 				FeatureVisitor &visitor) {
-			visitor.visit_strike_slip_enumeration(*this);
+			visitor.visit_gpml_strike_slip_enumeration(*this);
 		}
 
 	protected:
 
 		explicit
-		StrikeSlipEnumeration(
+		GpmlStrikeSlipEnumeration(
 				const UnicodeString &s) :
 			PropertyValue(),
 			d_value(s)
 		{  }
 
-		StrikeSlipEnumeration(
-				const StrikeSlipEnumeration &other) :
+		GpmlStrikeSlipEnumeration(
+				const GpmlStrikeSlipEnumeration &other) :
 			PropertyValue(other),
 			d_value(other.d_value)
 		{  }
@@ -100,11 +101,11 @@ namespace GPlatesModel {
 
 		StrikeSlipEnumerationValue d_value;
 
-		StrikeSlipEnumeration &
-		operator=(const StrikeSlipEnumeration &);
+		GpmlStrikeSlipEnumeration &
+		operator=(const GpmlStrikeSlipEnumeration &);
 
 	};
 
 }
 
-#endif  // GPLATES_MODEL_STRIKESLIPENUMERATION_H
+#endif  // GPLATES_MODEL_GPMLSTRIKESLIPENUMERATION_H

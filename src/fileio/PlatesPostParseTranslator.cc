@@ -179,8 +179,8 @@ namespace {
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 			create_fault(model, collection, header, points);
 		
-		const GPlatesModel::StrikeSlipEnumeration::non_null_ptr_type dip_slip_property_value =
-				GPlatesModel::ModelUtility::create_strike_slip_enumeration(dip_slip);
+		const GPlatesModel::GpmlStrikeSlipEnumeration::non_null_ptr_type dip_slip_property_value =
+				GPlatesModel::ModelUtility::create_gpml_strike_slip_enumeration(dip_slip);
 		GPlatesModel::ModelUtility::append_property_value_to_feature(
 				dip_slip_property_value, "gpml:dipSlip", feature_handle);
 
