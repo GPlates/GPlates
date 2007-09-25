@@ -370,7 +370,7 @@ moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
 			Name="fileio"
 			Filter="">
 			<File
-				RelativePath="..\src\fileio\PlatesLineFormatReaderX.cc">
+				RelativePath="..\src\fileio\PlatesLineFormatReader.cc">
 			</File>
 			<File
 				RelativePath="..\src\fileio\PlatesRotationFormatReader.cc">

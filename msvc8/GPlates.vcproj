@@ -488,7 +488,7 @@
 			Name="fileio"
 			>
 			<File
-				RelativePath="..\src\fileio\PlatesLineFormatReaderX.cc"
+				RelativePath="..\src\fileio\PlatesLineFormatReader.cc"
 				>
 			</File>
 			<File

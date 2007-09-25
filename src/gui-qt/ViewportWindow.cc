@@ -35,7 +35,7 @@
 #include "model/DummyTransactionHandle.h"
 #include "fileio/ReadErrorAccumulation.h"
 #include "fileio/ErrorOpeningFileForReadingException.h"
-#include "fileio/PlatesLineFormatReaderX.h"
+#include "fileio/PlatesLineFormatReader.h"
 #include "fileio/PlatesRotationFormatReader.h"
 
 namespace

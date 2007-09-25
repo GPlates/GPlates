@@ -5,7 +5,7 @@ MAINTAINERCLEANFILES	= Makefile.in
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libfileio.la
-libfileio_la_SOURCES	= PlatesLineFormatReaderX.cc \
+libfileio_la_SOURCES	= PlatesLineFormatReader.cc \
 				PlatesRotationFormatReader.cc \
 				ReadErrorOccurrence.cc
 
