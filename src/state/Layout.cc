@@ -48,11 +48,8 @@ namespace {
 
 		for ( ; iter != end; ++iter) {
 
-			GPlatesMaths::PointOnSphere &the_point =
-			 iter->second;
-			GPlatesGeo::DrawableData *the_datum =
-			 iter->first;
-
+			GPlatesMaths::PointOnSphere &the_point = *iter;
+			
 			// Don't bother initialising this.
 			GPlatesMaths::real_t closeness;
 
@@ -60,8 +57,7 @@ namespace {
 			     closeness_inclusion_threshold, closeness)) {
 
 				sorted_results.push(
-				 Layout::CloseDatum(the_datum,
-				 Layout::POINT_DATUM, closeness));
+				 Layout::CloseDatum(Layout::POINT_DATUM, closeness));
 			}
 		}
 	}
@@ -87,10 +83,7 @@ namespace {
 
 		for ( ; iter != end; ++iter) {
 
-			GPlatesMaths::PolylineOnSphere &the_polyline =
-			 iter->second;
-			GPlatesGeo::DrawableData *the_datum =
-			 iter->first;
+			GPlatesMaths::PolylineOnSphere &the_polyline = *iter;
 
 			// Don't bother initialising this.
 			GPlatesMaths::real_t closeness;
@@ -100,8 +93,7 @@ namespace {
 			     latitude_exclusion_threshold, closeness)) {
 
 				sorted_results.push(
-				 Layout::CloseDatum(the_datum,
-				 Layout::LINE_DATUM, closeness));
+				 Layout::CloseDatum(Layout::LINE_DATUM, closeness));
 			}
 		}
 	}

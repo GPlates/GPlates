@@ -29,11 +29,11 @@
 #define GPLATES_MODEL_STRIKESLIPENUMERATIONVALUE_H
 
 #include "StringSetSingletons.h"
-#include "StringContent.h"
+#include "StringContentTypeGenerator.h"
 
 namespace GPlatesModel {
 
-	class StrikeSlipEnumerationValueSet {
+	class StrikeSlipEnumerationValueFactory {
 
 	public:
 		static
@@ -44,10 +44,10 @@ namespace GPlatesModel {
 		}
 
 	private:
-		StrikeSlipEnumerationValueSet();
+		StrikeSlipEnumerationValueFactory();
 	};
 
-	typedef StringContent<StrikeSlipEnumerationValueSet> StrikeSlipEnumerationValue;
+	typedef StringContentTypeGenerator<StrikeSlipEnumerationValueFactory> StrikeSlipEnumerationValue;
 }
 
 #endif  // GPLATES_MODEL_STRIKESLIPENUMERATIONVALUE_H

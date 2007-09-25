@@ -5,11 +5,8 @@ MAINTAINERCLEANFILES	= Makefile.in
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libfileio.la
-libfileio_la_SOURCES	= PlatesPostParseTranslator.cc \
-				PlatesLineFormatReader.cc \
+libfileio_la_SOURCES	= PlatesLineFormatReaderX.cc \
 				PlatesRotationFormatReader.cc \
-				PlatesRotationParser.cc PlatesDataTypes.cc \
-				PlatesBoundaryParser.cc PlatesParserUtils.cc \
 				ReadErrorOccurrence.cc
 
 if PYTHON

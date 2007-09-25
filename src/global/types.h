@@ -31,17 +31,11 @@
 
 #include <cstdlib>
 #include <string>
-#include "FPData.h"
 #include "InternalRID.h"
 
 
 namespace GPlatesGlobal
 {
-	/**
-	 * A floating-point type used to store static (ie. unchanging) data.
-	 */
-	typedef FPData fpdata_t;
-
 	/**
 	 * The type internally for rotation ids.
 	 */

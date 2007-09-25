@@ -89,10 +89,6 @@ namespace GPlatesMaths
 			: _dval(d)
 		{  }
 
-		explicit
-		Real(fpdata_t fpd)
-			: _dval(fpd.dval())
-		{  }
 
 		double
 		dval() const

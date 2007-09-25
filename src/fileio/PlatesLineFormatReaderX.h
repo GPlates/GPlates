@@ -24,39 +24,35 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR
-#define GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR
+#ifndef GPLATES_FILEIO_PLATESLINEFORMATREADER_H
+#define GPLATES_FILEIO_PLATESLINEFORMATREADER_H
 
-#include "model/ModelInterface.h"
-#include "PlatesBoundaryParser.h"
-#include "PlatesRotationParser.h"
+#include <string>
+
+#include "ErrorOpeningFileForReadingException.h"
 #include "ReadErrorAccumulation.h"
+#include "model/ModelInterface.h"
+#include "model/FeatureCollectionHandle.h"
 
-#include <vector>
+namespace GPlatesFileIO {
 
-namespace GPlatesFileIO
-{
-	/**
-	 * Contains the function that translates from the data structure
-	 * output by the PLATES parser into the internal GPlates data
-	 * structure.
-	 */
-	namespace PlatesPostParseTranslator
+	class PlatesLineFormatReader 
 	{
-		GPlatesModel::FeatureCollectionHandle::weak_ref
-		get_features_from_plates_data(
-				GPlatesModel::ModelInterface &model,
-				const PlatesParser::PlatesDataMap &map,
+	public:
+		/**
+		 * Read the PLATES line-format file named @a filename.
+		 *
+		 * If the file cannot be opened for reading, an exception of type
+		 * ErrorOpeningFileForReadingException will be thrown.
+		 */
+		static 
+		const GPlatesModel::FeatureCollectionHandle::weak_ref
+		read_file(
 				const std::string &filename,
-				ReadErrorAccumulation &errors);
-
-		GPlatesModel::FeatureCollectionHandle::weak_ref
-		get_rotation_sequences_from_plates_data(
 				GPlatesModel::ModelInterface &model,
-				const PlatesParser::PlatesRotationData &list,
-				const std::string &filename,
-				ReadErrorAccumulation &errors);
-	}
+				ReadErrorAccumulation &read_errors);
+	};
+	
 }
 
-#endif  /* GPLATES_FILEIO_PLATESPOSTPARSETRANSLATOR */
+#endif // GPLATES_FILEIO_PLATESLINEFORMATREADER_H

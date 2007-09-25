@@ -41,6 +41,9 @@ namespace GPlatesUtil
 	 * notation:  The @a start index is the index of the first character to be included in the
 	 * slice; the @a end index is the first character, after the end of the slice, @em not to
 	 * be included.
+	 * 
+	 * The std::string::npos value can be used for the third parameter ('end') to indicate 
+	 * the slice commences at 'start' and ends at the last character in the string.
 	 *
 	 * Leading and trailing whitespace in the slice are by default stripped; this behaviour can
 	 * be altered by passing 'false' to the parameters @a should_strip_leading_whitespace and
@@ -50,12 +53,12 @@ namespace GPlatesUtil
 	template<typename Type, typename Error>
 	Type
  	slice_string(
-		const Error &error,
-		const std::string &source,
-		std::string::size_type start,
-		std::string::size_type end = std::string::npos,
-		bool should_strip_leading_whitespace = true,
-		bool should_strip_trailing_whitespace = true)
+			const std::string &source,
+			std::string::size_type start,
+			std::string::size_type end,
+			const Error &error,
+			bool should_strip_leading_whitespace = true,
+			bool should_strip_trailing_whitespace = true)
 	{
 		std::string result;
 
@@ -94,7 +97,7 @@ namespace GPlatesUtil
 
 		try {
 			return boost::lexical_cast<Type>(result);
-		} catch (boost::bad_lexical_cast error) {
+		} catch (boost::bad_lexical_cast cast_error) {
 			throw error; 
 		}
 	}

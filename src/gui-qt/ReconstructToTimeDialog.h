@@ -41,7 +41,7 @@ namespace GPlatesGui
 	public:
 		ReconstructToTimeDialog(
 				const double &init_value,
-				QWidget *parent = NULL);
+				QWidget *parent_ = NULL);
 
 		virtual
 		~ReconstructToTimeDialog()

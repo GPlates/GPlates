@@ -249,11 +249,9 @@ turn_on_dev="no"
 AC_ARG_ENABLE(dev, [  --enable-dev            Enable developer flags],
 [
 	turn_on_dev="yes"
-	# removed -Wshadow from common_flags atm because it breaks boost::format :(
-	# removed -Werror from common_flags atm because it breaks boost::python :(
-	common_flags="-Wall -pedantic -ansi -W -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wpointer-arith"
+	common_flags="-Wall -pedantic -ansi -W -Werror -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal -Wno-unused-parameter -Wpointer-arith"
 	CFLAGS="$CFLAGS $common_flags"
-	CXXFLAGS="$CXXFLAGS $common_flags -Wctor-dtor-privacy -Wnon-virtual-dtor -Woverloaded-virtual -Wno-long-long -Wold-style-cast"
+	CXXFLAGS="$CXXFLAGS $common_flags -Wctor-dtor-privacy -Wnon-virtual-dtor -Woverloaded-virtual -Wno-long-long -Wold-style-cast -isystem ../system-fixes"
 ])
 if test "$turn_on_dev" != "yes"; then
 	if test "$package_is_beta" = "yes"; then
@@ -322,13 +320,12 @@ AC_OUTPUT(Makefile
         src/presenter/Makefile
         src/controls/Makefile
         src/fileio/Makefile
-        src/geo/Makefile
         src/global/Makefile
         src/gui/Makefile
         src/gui-qt/Makefile
         src/maths/Makefile
         src/model/Makefile
-        src/state/Makefile
+	src/state/Makefile
         src/util/Makefile
 	)
 

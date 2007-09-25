@@ -67,15 +67,13 @@ namespace GPlatesFileIO
 			InvalidPlatesConjugatePlateIdNumber, 
 			InvalidPlatesColourCode, 
 			InvalidPlatesNumberOfPoints,
-
 			UnknownPlatesDataTypeCode,
-			MissingPlatesPolylines,
-			MissingPlatesPolylinePoints,
-
-			// The next constants are for PlatesBoundaryParser
-			InvalidFirstHeaderLine,
-			InvalidSecondHeaderLine,
-			InvalidPolylinePoint
+			MissingPlatesPolylinePoint,
+			MissingPlatesHeaderSecondLine,
+			InvalidPlatesPolylinePoint,
+			BadPlatesPolylinePlotterCode,
+			BadPlatesPolylineLatitude,
+			BadPlatesPolylineLongitude
 		};
 
 		enum Result
@@ -95,10 +93,7 @@ namespace GPlatesFileIO
 
 			// The following are specific to PLATES line-format reading.
 			UnclassifiedFeatureCreated,
-			FeatureDiscarded,
-
-			// The next constants are for PlatesBoundaryParser
-			PolylineDiscarded
+			FeatureDiscarded
 		};
 	}
 }

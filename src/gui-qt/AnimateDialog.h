@@ -45,7 +45,7 @@ namespace GPlatesGui
 	public:
 		AnimateDialog(
 				ViewportWindow &viewport,
-				QWidget *parent = NULL);
+				QWidget *parent_ = NULL);
 
 		virtual
 		~AnimateDialog()

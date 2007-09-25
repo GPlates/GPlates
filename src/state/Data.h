@@ -31,8 +31,6 @@
 #include <list>
 #include <map>
 
-#include "geo/DataGroup.h"
-#include "geo/DrawableData.h"
 #include "global/types.h"
 #include "maths/RotationHistory.h"
 
@@ -46,10 +44,9 @@ namespace GPlatesState
 	class Data
 	{
 		public:
-			typedef GPlatesGeo::DataGroup GeoData_type;
+			typedef void* GeoData_type;
 
-			typedef std::list< GPlatesGeo::DrawableData * >
-			 DrawableDataSet;
+			typedef std::list< void* > DrawableDataSet;
 
 			typedef std::map< GPlatesGlobal::rid_t,
 			 DrawableDataSet > DrawableMap_type;

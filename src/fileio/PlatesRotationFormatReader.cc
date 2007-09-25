@@ -30,7 +30,7 @@
 #include <fstream>
 #include <sstream>
 #include "PlatesRotationFormatReader.h"
-#include "LineBuffer.h"
+#include "LineReader.h"
 #include "model/ModelUtility.h"
 #include "model/GpmlPlateId.h"
 #include "model/GpmlFiniteRotation.h"
@@ -77,7 +77,7 @@ namespace
 			std::istringstream &iss,
 			std::string &comment,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
-			GPlatesFileIO::LineBuffer::line_num_type line_num,
+			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
@@ -135,7 +135,7 @@ namespace
 			GPlatesModel::GpmlPlateId::integer_plate_id_type &fixed_plate_id,
 			GPlatesModel::GpmlPlateId::integer_plate_id_type &moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
-			GPlatesFileIO::LineBuffer::line_num_type line_num,
+			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
@@ -238,7 +238,7 @@ namespace
 			const GPlatesModel::GpmlTimeSample &time_sample,
 			const GPlatesModel::GpmlTimeSample &prev_time_sample,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
-			GPlatesFileIO::LineBuffer::line_num_type line_num,
+			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
@@ -320,7 +320,7 @@ namespace
 			GPlatesModel::GpmlPlateId::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::GpmlPlateId::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
-			GPlatesFileIO::LineBuffer::line_num_type line_num,
+			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
@@ -528,7 +528,7 @@ namespace
 			GPlatesModel::GpmlPlateId::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::GpmlPlateId::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
-			GPlatesFileIO::LineBuffer::line_num_type line_num,
+			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
@@ -556,7 +556,7 @@ namespace
 	populate_rotations(
 			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
-			GPlatesFileIO::LineBuffer &line_buffer,
+			GPlatesFileIO::LineReader &line_buffer,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
@@ -574,13 +574,13 @@ namespace
 			try {
 				GPlatesModel::GpmlTimeSample time_sample =
 						parse_pole(line_stream, fixed_plate_id, moving_plate_id,
-								data_source, line_buffer.lineNum(),
+								data_source, line_buffer.line_number(),
 								read_errors);
 
 				handle_parsed_pole(model, rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample,
 						fixed_plate_id, moving_plate_id, data_source,
-						line_buffer.lineNum(), read_errors);
+						line_buffer.line_number(), read_errors);
 			} catch (PoleParsingException &e) {
 				// There was some error parsing the pole from the line.
 				continue;
@@ -601,7 +601,7 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	if ( ! input) {
 		throw ErrorOpeningFileForReadingException(filename);
 	}
-	LineBuffer line_buffer(input, filename);
+	LineReader line_buffer(input);
 	boost::shared_ptr<DataSource> data_source(
 			new LocalFileDataSource(filename, DataFormats::PlatesRotation));
 	GPlatesModel::FeatureCollectionHandle::weak_ref rotations =

@@ -113,9 +113,9 @@ namespace GPlatesModel
 		const HandleContainerIterator
 		create_index(
 				collection_handle_type &collection_handle,
-				index_type index)
+				index_type index_)
 		{
-			return HandleContainerIterator(collection_handle, index);
+			return HandleContainerIterator(collection_handle, index_);
 		}
 
 		/**
@@ -344,9 +344,9 @@ namespace GPlatesModel
 		 */
 		HandleContainerIterator(
 				collection_handle_type &collection_handle,
-				index_type index):
+				index_type index_):
 			WeakObserver<H, ConstH>(collection_handle),
-			d_index(index)
+			d_index(index_)
 		{  }
 
 		/**

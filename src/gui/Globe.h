@@ -35,7 +35,6 @@
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
-#include "geo/DataGroup.h"
 
 namespace GPlatesGui
 {

@@ -120,14 +120,14 @@ void
 GPlatesGui::GlobeCanvas::draw_polyline(
 		const GPlatesMaths::PolylineOnSphere &polyline)
 {
-	GPlatesState::Layout::InsertLineDataPos(NULL, polyline);
+	GPlatesState::Layout::InsertLineDataPos(polyline);
 }
 
 void
 GPlatesGui::GlobeCanvas::draw_point(
 		const GPlatesMaths::PointOnSphere &point)
 {
-	GPlatesState::Layout::InsertPointDataPos(NULL, point);
+	GPlatesState::Layout::InsertPointDataPos(point);
 }
 
 void

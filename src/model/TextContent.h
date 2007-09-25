@@ -29,11 +29,11 @@
 #define GPLATES_MODEL_TEXTCONTENT_H
 
 #include "StringSetSingletons.h"
-#include "StringContent.h"
+#include "StringContentTypeGenerator.h"
 
 namespace GPlatesModel {
 
-	class TextContentSet {
+	class TextContentFactory {
 
 	public:
 		static
@@ -44,11 +44,11 @@ namespace GPlatesModel {
 		}
 
 	private:
-		TextContentSet();
+		TextContentFactory();
 
 	};
 
-	typedef StringContent<TextContentSet> TextContent;
+	typedef StringContentTypeGenerator<TextContentFactory> TextContent;
 
 }
 

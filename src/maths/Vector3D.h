@@ -55,12 +55,12 @@ namespace GPlatesMaths {
 		 * @param z_comp The z-component.
 		 */
 		Vector3D(
-				const real_t& x,
-				const real_t& y,
-				const real_t& z) :
-			d_x(x),
-			d_y(y),
-			d_z(z)
+				const real_t& x_,
+				const real_t& y_,
+				const real_t& z_) :
+			d_x(x_),
+			d_y(y_),
+			d_z(z_)
 		{  }
 
 

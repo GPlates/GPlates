@@ -41,7 +41,7 @@ namespace GPlatesGui
 	public:
 		SpecifyFixedPlateDialog(
 				unsigned long init_value,
-				QWidget *parent = NULL);
+				QWidget *parent_ = NULL);
 
 		virtual
 		~SpecifyFixedPlateDialog()

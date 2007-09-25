@@ -69,7 +69,7 @@ PaintPointDataPos(Layout::PointDataPos& pointdata)
 	GPlatesGeo::PointData *datum = pointdata.first;
 	if ( ! datum->ShouldBePainted()) return;
 #endif
-	PointOnSphere& point = pointdata.second;
+	PointOnSphere& point = pointdata;
 	
 	glColor3fv(GPlatesGui::Colour::FUSCHIA);
 	CallVertexWithPoint(point);
@@ -98,7 +98,7 @@ PaintLineDataPos(Layout::LineDataPos& linedata)
 	} else glColor3fv(GPlatesGui::Colour::RED);
 #endif
 
-	const PolylineOnSphere& line = linedata.second;
+	const PolylineOnSphere& line = linedata;
 
 	glColor3fv(GPlatesGui::Colour::AQUA);
 	

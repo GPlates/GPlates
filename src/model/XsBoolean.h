@@ -106,9 +106,9 @@ namespace GPlatesModel {
 		// instantiation of this type on the stack.
 		explicit
 		XsBoolean(
-				bool value) :
+				bool value_) :
 			PropertyValue(),
-			d_value(value)
+			d_value(value_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow

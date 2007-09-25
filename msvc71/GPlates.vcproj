@@ -363,9 +363,6 @@ moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
 				RelativePath="..\src\global\Exception.cc">
 			</File>
 			<File
-				RelativePath="..\src\global\FPData.cc">
-			</File>
-			<File
 				RelativePath="..\src\global\InternalInconsistencyException.cc">
 			</File>
 		</Filter>
@@ -373,25 +370,10 @@ moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
 			Name="fileio"
 			Filter="">
 			<File
-				RelativePath="..\src\fileio\PlatesBoundaryParser.cc">
-			</File>
-			<File
-				RelativePath="..\src\fileio\PlatesDataTypes.cc">
-			</File>
-			<File
-				RelativePath="..\src\fileio\PlatesLineFormatReader.cc">
-			</File>
-			<File
-				RelativePath="..\src\fileio\PlatesParserUtils.cc">
-			</File>
-			<File
-				RelativePath="..\src\fileio\PlatesPostParseTranslator.cc">
+				RelativePath="..\src\fileio\PlatesLineFormatReaderX.cc">
 			</File>
 			<File
 				RelativePath="..\src\fileio\PlatesRotationFormatReader.cc">
-			</File>
-			<File
-				RelativePath="..\src\fileio\PlatesRotationParser.cc">
 			</File>
 			<File
 				RelativePath="..\src\fileio\ReadErrorOccurrence.cc">

@@ -24,21 +24,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "PlatesPostParseTranslator.h"
-#include <cstdlib>
+#include "PlatesLineFormatReaderX.h"
+
 #include <fstream>
 #include <sstream>
-#include <algorithm>  /* transform */
-#include <memory>  /* std::auto_ptr */
-#include <iomanip>
-#include <iterator>
 
 #include "util/StringUtils.h"
-#include "maths/LatLonPointConversions.h"
-#include "fileio/PlatesBoundaryParser.h"
-#include "fileio/FileFormatException.h"
+#include "util/MathUtils.h"
 #include "fileio/ReadErrors.h"
-#include "global/types.h"  /* rid_t */
+#include "fileio/LineReader.h"
 
 #include "model/FeatureRevision.h"
 #include "model/GmlLineString.h"
@@ -55,61 +49,13 @@
 #include "model/DummyTransactionHandle.h"
 #include "model/ModelUtility.h"
 
-using namespace GPlatesFileIO;
-
-// Some conventions used in this file are inconsistent with the style guide
 namespace {
 
-	// List of LatLonPoint Lists. 
-	typedef std::list<std::list<PlatesParser::LatLonPoint> > LLLPL_t;
-
-	void
-	convert_polyline_to_LLLPL(
-			const PlatesParser::Polyline &line,
-			LLLPL_t &plate_segments)
-	{
-		std::list<PlatesParser::LatLonPoint> llpl;
-
-		std::list<PlatesParser::BoundaryLatLonPoint>::const_iterator 
-			iter = line.d_points.begin();
-
-		if (iter == line.d_points.end()) {
-			throw ReadErrors::MissingPlatesPolylinePoints;
-		}
-			
-		// Handle first point
-		llpl.push_back(iter->d_lat_lon_point);
-		++iter;
-
-		for ( ; iter != line.d_points.end(); ++iter) {
-			if (iter->d_plotter_code == PlatesParser::PlotterCodes::PEN_UP) {
-				// We need to split this line, so push_back a copy of the line so far
-				plate_segments.push_back(llpl);
-				llpl.clear();  // start a new segment
-			}
-			llpl.push_back(iter->d_lat_lon_point);
-		}
-		
-		// There should always be one segment left to add.
-		if (llpl.size()) {
-			plate_segments.push_back(llpl);
-		}
+	namespace PlotterCodes {
+		enum PlotterCode {
+			PEN_EITHER, PEN_TERMINATING_POINT, PEN_DOWN, PEN_UP
+		};
 	}
-	
-	// The Model requires a vector of double, so we convert the LLLP
-	void 
-	convert_LLPL_to_vector(
-			std::vector< double >& result,
-			const std::list< PlatesParser::LatLonPoint >& points)
-	{
-		for (std::list< PlatesParser::LatLonPoint>::const_iterator iter = 
-				points.begin(),	end = points.end();	iter != end; ++iter) 
-		{		
-			result.push_back(iter->d_lon.dval());	
-			result.push_back(iter->d_lat.dval());
-		}
-	}
-
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_common(
@@ -153,7 +99,7 @@ namespace {
 				description, "gml:description", feature_handle);
 
 		GPlatesModel::ModelUtility::append_property_value_to_feature(
-				header->clone(), "gpml:OldPlatesHeader", feature_handle);
+				header->clone(), "gpml:oldPlatesHeader", feature_handle);
 
 		return feature_handle;
 	}
@@ -300,13 +246,11 @@ namespace {
 		return create_common(model, collection, header, points, "gpml:Isochron");
 	}
 
-		
-	typedef GPlatesModel::FeatureHandle::weak_ref	
-		(*creation_function_type)(
-		GPlatesModel::ModelInterface &,
-		GPlatesModel::FeatureCollectionHandle::weak_ref &,
-		GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type &,
-		const std::vector<double> &);
+	typedef GPlatesModel::FeatureHandle::weak_ref (*creation_function_type)(
+			GPlatesModel::ModelInterface &,
+			GPlatesModel::FeatureCollectionHandle::weak_ref &,
+			GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type &,
+			const std::vector<double> &);
 
 	typedef std::map<UnicodeString, creation_function_type> creation_map_type;
 	typedef creation_map_type::const_iterator creation_map_const_iterator;
@@ -315,7 +259,6 @@ namespace {
 	build_feature_creation_map()
 	{
 		static creation_map_type map;
-
 		map["CB"] = create_continental_boundary;
 		map["CM"] = create_continental_boundary;
 		map["CO"] = create_continental_boundary;
@@ -329,173 +272,162 @@ namespace {
 		map["SS"] = create_fault;
 		map["TH"] = create_thrust_fault;
 		map["XR"] = create_extinct_ridge;
-
 		return map;
 	}
 
 	GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type
-	create_old_plates_header(
-			const std::string &first_line,
-			const std::string &second_line)
+	read_old_plates_header(
+			GPlatesFileIO::LineReader &in,
+			const std::string &first_line)
 	{
-		typedef GPlatesModel::GpmlPlateId::integer_plate_id_type plate_id_type;
-		using namespace GPlatesUtil;
+		std::string second_line;
+		if ( ! in.getline(second_line)) {
+			throw GPlatesFileIO::ReadErrors::MissingPlatesHeaderSecondLine;
+		}
 
+		typedef GPlatesModel::GpmlPlateId::integer_plate_id_type plate_id_type;
 		return GPlatesModel::GpmlOldPlatesHeader::create(
-			slice_string<unsigned int>(ReadErrors::InvalidPlatesRegionNumber, first_line, 0, 2),
-			slice_string<unsigned int>(ReadErrors::InvalidPlatesReferenceNumber, first_line, 2, 4),
-			slice_string<unsigned int>(ReadErrors::InvalidPlatesStringNumber, first_line, 5, 9),
-			slice_string<std::string>(ReadErrors::InvalidPlatesGeographicDescription, first_line, 10).c_str(),
-			slice_string<plate_id_type>(ReadErrors::InvalidPlatesPlateIdNumber, second_line, 1, 4),
-			slice_string<double>(ReadErrors::InvalidPlatesAgeOfAppearance, second_line, 5, 11),
-			slice_string<double>(ReadErrors::InvalidPlatesAgeOfDisappearance, second_line, 12, 18),
-			slice_string<std::string>(ReadErrors::InvalidPlatesDataTypeCode, second_line, 19, 21).c_str(),
-			slice_string<unsigned int>(ReadErrors::InvalidPlatesDataTypeCodeNumber, second_line, 21, 25),
-			slice_string<std::string>(ReadErrors::InvalidPlatesDataTypeCodeNumberAdditional, second_line, 25, 26).c_str(),
-			slice_string<plate_id_type>(ReadErrors::InvalidPlatesConjugatePlateIdNumber, second_line, 26, 29),
-			slice_string<unsigned int>(ReadErrors::InvalidPlatesColourCode, second_line, 30, 33),
-			slice_string<unsigned int>(ReadErrors::InvalidPlatesNumberOfPoints, second_line, 34, 39));
+				GPlatesUtil::slice_string<unsigned int>(first_line, 0, 2, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesRegionNumber),
+				GPlatesUtil::slice_string<unsigned int>(first_line, 2, 4, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesReferenceNumber),
+				GPlatesUtil::slice_string<unsigned int>(first_line, 5, 9, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesStringNumber),
+				GPlatesUtil::slice_string<std::string>(first_line, 10, std::string::npos, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesGeographicDescription).c_str(),
+				GPlatesUtil::slice_string<plate_id_type>(second_line, 1, 4, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesPlateIdNumber),
+				GPlatesUtil::slice_string<double>(second_line, 5, 11, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfAppearance),
+				GPlatesUtil::slice_string<double>(second_line, 12, 18, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfDisappearance),
+				GPlatesUtil::slice_string<std::string>(second_line, 19, 21, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCode).c_str(),
+				GPlatesUtil::slice_string<unsigned int>(second_line, 21, 25, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumber),
+				GPlatesUtil::slice_string<std::string>(second_line, 25, 26, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumberAdditional).c_str(),
+				GPlatesUtil::slice_string<plate_id_type>(second_line, 26, 29, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesConjugatePlateIdNumber),
+				GPlatesUtil::slice_string<unsigned int>(second_line, 30, 33, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesColourCode),
+				GPlatesUtil::slice_string<unsigned int>(second_line, 34, 39, 
+					GPlatesFileIO::ReadErrors::InvalidPlatesNumberOfPoints));
+	}
+	
+	PlotterCodes::PlotterCode
+	read_polyline_point(
+			GPlatesFileIO::LineReader &in,
+			std::vector<double> &points,
+			PlotterCodes::PlotterCode expected_code)
+	{
+		std::string line;
+		if ( ! in.getline(line)) {
+			throw GPlatesFileIO::ReadErrors::MissingPlatesPolylinePoint;
+		}
+
+		int plotter;
+		double latitude, longitude;
+
+		std::istringstream iss(line);
+		iss >> latitude >> longitude >> plotter;
+		if ( ! iss) { 
+			throw GPlatesFileIO::ReadErrors::InvalidPlatesPolylinePoint;
+		}
+
+		if (expected_code != PlotterCodes::PEN_EITHER && expected_code != plotter) {
+			throw GPlatesFileIO::ReadErrors::MissingPlatesPolylinePoint;
+		} else if (plotter == PlotterCodes::PEN_UP && 
+				GPlatesUtil::are_values_approx_equal(latitude, 99.0) && 
+				GPlatesUtil::are_values_approx_equal(longitude, 99.0))
+		{
+			return PlotterCodes::PEN_TERMINATING_POINT;
+		}
+
+		if (plotter != PlotterCodes::PEN_UP && plotter != PlotterCodes::PEN_DOWN) {
+			throw GPlatesFileIO::ReadErrors::BadPlatesPolylinePlotterCode;
+		} else if ( ! GPlatesUtil::is_value_in_range(latitude, -90.0, +90.0)) {
+			throw GPlatesFileIO::ReadErrors::BadPlatesPolylineLatitude;
+		} else if ( ! GPlatesUtil::is_value_in_range(longitude, -360.0, +360.0)) {
+			throw GPlatesFileIO::ReadErrors::BadPlatesPolylineLongitude;
+		}
+
+		points.push_back(longitude);
+		points.push_back(latitude);
+		return static_cast<PlotterCodes::PlotterCode>(plotter);
 	}
 
 	void
-	add_plate_data(
+	read_features(
 			GPlatesModel::ModelInterface &model, 
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-			const PlatesParser::Plate &plate,
-			const boost::shared_ptr<DataSource> &source,
-			ReadErrorAccumulation &errors)
+			GPlatesFileIO::LineReader &in,
+			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
+			GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
 		static const creation_map_type &map = build_feature_creation_map();
-		const boost::shared_ptr<LocationInDataSource> location(new LineNumberInFile(0));
+		creation_function_type creation_function = create_unclassified_feature;
 
-		typedef std::list<PlatesParser::Polyline>::const_iterator 
-				polyline_iterator_type;
+		std::string first_line;
+		if ( ! in.getline(first_line)) {
+			return; // Do not want to throw here: end of file reached
+		}
 
-		polyline_iterator_type iter;
-		for (iter = plate.d_polylines.begin(); iter != plate.d_polylines.end(); ++iter) {
-			try {
-				GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type old_plates_header =
-						create_old_plates_header(iter->d_header.d_first_line, iter->d_header.d_second_line);
+		GPlatesModel::GpmlOldPlatesHeader::non_null_ptr_type 
+				old_plates_header = read_old_plates_header(in, first_line);
 
-				const boost::shared_ptr<LocationInDataSource> location(
-					new LineNumberInFile(iter->d_line_number));
+		creation_map_const_iterator result = map.find(old_plates_header->data_type_code());	
+		if (result != map.end()) {
+			creation_function = result->second;
+		} else {
+			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
+					new GPlatesFileIO::LineNumberInFile(in.line_number()));
+			errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
+					GPlatesFileIO::ReadErrors::UnknownPlatesDataTypeCode,
+					GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated));
+		}
 
-				creation_map_const_iterator result = map.find(old_plates_header->data_type_code());
-				creation_function_type creation_function = create_unclassified_feature;
-			
-				if (result != map.end()) {
-					creation_function = result->second;
-				} else {
-					errors.d_warnings.push_back(ReadErrorOccurrence(source, location, 
-							ReadErrors::UnknownPlatesDataTypeCode, ReadErrors::UnclassifiedFeatureCreated));
-				}
-	
-				LLLPL_t plate_segments;
-				convert_polyline_to_LLLPL(*iter, plate_segments);
-	
-				for (LLLPL_t::const_iterator i = plate_segments.begin(), 
-						end_segment = plate_segments.end(); i != end_segment; ++i) 
-				{			
-					std::vector<double> points;
-					convert_LLPL_to_vector(points, *i);
-			
-					creation_function(model, collection, old_plates_header, points);
-				}
-			} catch (ReadErrors::Description error) {
-				errors.d_recoverable_errors.push_back(ReadErrorOccurrence(source, location,
-						error, ReadErrors::FeatureDiscarded));
+		std::vector<double> points;
+		read_polyline_point(in, points, PlotterCodes::PEN_UP);
+
+		PlotterCodes::PlotterCode code;
+		do {
+			code = read_polyline_point(in, points, PlotterCodes::PEN_EITHER);
+			if (code == PlotterCodes::PEN_UP || code == PlotterCodes::PEN_TERMINATING_POINT) {
+				creation_function(model, collection, old_plates_header, points);
+				points.clear();
 			}
-		}
-
-		if (iter == plate.d_polylines.begin()) {
-			errors.d_recoverable_errors.push_back(ReadErrorOccurrence(source, location,
-					ReadErrors::MissingPlatesPolylines, ReadErrors::FeatureDiscarded));
-		}
+		} while (code != PlotterCodes::PEN_TERMINATING_POINT);
 	}
+}
 
-
-	void
-	add_rotation_data(
-			GPlatesModel::ModelInterface &model, 
-			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-			const PlatesParser::RotationSequence &rot,
-			ReadErrorAccumulation &errors)
-	{
-		const unsigned long fixed_plate_id = rot.d_fixed_plate;
-		const unsigned long moving_plate_id = rot.d_moving_plate;
-
-		typedef std::vector<GPlatesModel::ModelUtility::TotalReconstructionPoleData> 
-				reconstruction_vector_type;
-
-		reconstruction_vector_type five_tuples;
-
-		for (std::list<PlatesParser::FiniteRotation>::const_iterator iter = rot.d_seq.begin(); 
-				iter != rot.d_seq.end(); ++iter) 
-		{
-			GPlatesModel::ModelUtility::TotalReconstructionPoleData total_recon_pole_data = {
-				iter->d_time.dval(), 
-				iter->d_rot.d_pole.d_lat.dval(), 
-				iter->d_rot.d_pole.d_lon.dval(), 
-				iter->d_rot.d_angle.dval(), 
-				iter->d_comment.c_str()
-			};
-
-			five_tuples.push_back(total_recon_pole_data);
-		}
-
-		GPlatesModel::ModelUtility::create_total_recon_seq(model, collection,
-				fixed_plate_id, moving_plate_id, five_tuples);
-	}
-	
-} // End anonymous namespace
-
-
-namespace GPlatesFileIO
+const GPlatesModel::FeatureCollectionHandle::weak_ref
+GPlatesFileIO::PlatesLineFormatReader::read_file(
+		const std::string &filename,
+		GPlatesModel::ModelInterface &model,
+		ReadErrorAccumulation &read_errors)
 {
-
-namespace PlatesPostParseTranslator
-{
-	GPlatesModel::FeatureCollectionHandle::weak_ref
-	get_features_from_plates_data(
-			GPlatesModel::ModelInterface &model,
-			const PlatesParser::PlatesDataMap &map,
-			const std::string &filename,
-			ReadErrorAccumulation &errors)
-	{
-		boost::shared_ptr<DataSource> source( 
-				new LocalFileDataSource(filename, DataFormats::PlatesLine));
-
-		GPlatesModel::FeatureCollectionHandle::weak_ref collection
-			= model.create_feature_collection();
-
-		for (PlatesParser::PlatesDataMap::const_iterator iter = map.begin(),
-				end = map.end(); iter != end; ++iter) 
-		{ 
-			add_plate_data(model, collection, iter->second, source, errors);
-		}
-
-		return collection;
+	std::ifstream input(filename.c_str());
+	if ( ! input) {
+		throw ErrorOpeningFileForReadingException(filename);
 	}
 
-	GPlatesModel::FeatureCollectionHandle::weak_ref
-	get_rotation_sequences_from_plates_data(
-			GPlatesModel::ModelInterface &model,
-			const PlatesParser::PlatesRotationData &list,
-			const std::string &filename,
-			ReadErrorAccumulation &errors)
-	{
-		GPlatesModel::FeatureCollectionHandle::weak_ref collection
+	boost::shared_ptr<DataSource> source( 
+			new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::PlatesLine));
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection
 			= model.create_feature_collection();
-
-		for (PlatesParser::PlatesRotationData::const_iterator iter = 
-				list.begin(), end = list.end(); iter != end; ++iter) 
-		{
-			add_rotation_data(model, collection, *iter, errors);		
-		}	
-
-		return collection;
-	}
 	
-} // End namespace PlatesPostParseTranslator
+	LineReader in(input);
+	while (in) {
+		try {
+			read_features(model, collection, in, source, read_errors);
+		} catch (GPlatesFileIO::ReadErrors::Description error) {
+			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
+					new GPlatesFileIO::LineNumberInFile(in.line_number()));
+			read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
+					source, location, error, GPlatesFileIO::ReadErrors::FeatureDiscarded));
+		}
+	}
 
-} // End namespace GPlatesFileIO
+	return collection;
+}

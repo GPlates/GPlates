@@ -29,11 +29,11 @@
 #define GPLATES_MODEL_XMLATTRIBUTENAME_H
 
 #include "StringSetSingletons.h"
-#include "StringContent.h"
+#include "StringContentTypeGenerator.h"
 
 namespace GPlatesModel {
 
-	class XmlAttributeNameSet {
+	class XmlAttributeNameFactory {
 
 	public:
 		static
@@ -44,11 +44,11 @@ namespace GPlatesModel {
 		}
 
 	private:
-		XmlAttributeNameSet();
+		XmlAttributeNameFactory();
 
 	};
 
-	typedef StringContent<XmlAttributeNameSet> XmlAttributeName;
+	typedef StringContentTypeGenerator<XmlAttributeNameFactory> XmlAttributeName;
 
 
 	/**

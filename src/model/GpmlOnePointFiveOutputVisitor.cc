@@ -56,7 +56,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 		d_output.write_line_of_string_content(feature_handle.feature_id().get());
 	}
 	{
-		XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:revision");
+		XmlOutputInterface::ElementPairStackFrame f3(d_output, "gpml:revision");
 		d_output.write_line_of_string_content(feature_handle.revision_id().get());
 	}
 

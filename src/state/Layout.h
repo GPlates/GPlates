@@ -32,11 +32,8 @@
 #include <utility>  /* std::pair */
 #include <queue>  /* std::priority_queue */
 
-#include "geo/PointData.h"
-#include "geo/LineData.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
-
 
 namespace GPlatesState
 {
@@ -67,10 +64,8 @@ namespace GPlatesState
 		       struct CloseDatum {  // Datum is the singular, not Data
 
 			       CloseDatum(
-				GPlatesGeo::DrawableData *datum,
 				DatumType datum_type,
 				const GPlatesMaths::real_t &closeness) :
-				m_datum(datum),
 				m_datum_type(datum_type),
 				m_closeness(closeness) {  }
 
@@ -81,8 +76,6 @@ namespace GPlatesState
 				       return (m_closeness.isPreciselyLessThan(
 					        other.m_closeness.dval()));
 			       }
-
-			       GPlatesGeo::DrawableData *m_datum;
 
 			       DatumType m_datum_type;
 
@@ -121,11 +114,9 @@ namespace GPlatesState
 			* End of hackity-hacks.
 			*/
 
-			typedef std::pair< GPlatesGeo::PointData *,
-			 GPlatesMaths::PointOnSphere > PointDataPos;
+			typedef GPlatesMaths::PointOnSphere PointDataPos;
 
-			typedef std::pair< GPlatesGeo::LineData *,
-			 GPlatesMaths::PolylineOnSphere > LineDataPos;
+			typedef GPlatesMaths::PolylineOnSphere LineDataPos;
 
 			typedef std::list< PointDataPos > PointDataLayout;
 			typedef std::list< LineDataPos > LineDataLayout;
@@ -164,22 +155,18 @@ namespace GPlatesState
 
 
 			static void
-			InsertPointDataPos(GPlatesGeo::PointData *data,
-			 const GPlatesMaths::PointOnSphere &position) {
+			InsertPointDataPos(const GPlatesMaths::PointOnSphere &position) {
 
 				EnsurePointDataLayoutExists();
-				_point_data_layout->push_back(
-				 PointDataPos(data, position));
+				_point_data_layout->push_back(position);
 			}
 
 
 			static void
-			InsertLineDataPos(GPlatesGeo::LineData *data,
-			 const GPlatesMaths::PolylineOnSphere &position) {
+			InsertLineDataPos(const GPlatesMaths::PolylineOnSphere &position) {
 
 				EnsureLineDataLayoutExists();
-				_line_data_layout->push_back(
-				 LineDataPos(data, position));
+				_line_data_layout->push_back(position);
 			}
 
 

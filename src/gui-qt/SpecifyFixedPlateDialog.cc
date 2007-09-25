@@ -28,8 +28,8 @@
 
 GPlatesGui::SpecifyFixedPlateDialog::SpecifyFixedPlateDialog(
 		unsigned long init_value,
-		QWidget *parent):
-	QDialog(parent),
+		QWidget *parent_):
+	QDialog(parent_),
 	d_value(init_value)
 {
 	setupUi(this);

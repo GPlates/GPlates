@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_STRINGCONTENT_H
-#define GPLATES_MODEL_STRINGCONTENT_H
+#ifndef GPLATES_MODEL_STRINGCONTENTTYPEGENERATOR_H
+#define GPLATES_MODEL_STRINGCONTENTTYPEGENERATOR_H
 
 
 namespace GPlatesModel {
@@ -52,7 +52,7 @@ namespace GPlatesModel {
 	 * properties of all features.
 	 */
 	template<typename SingletonType>
-	class StringContent {
+	class StringContentTypeGenerator {
 
 	public:
 
@@ -70,7 +70,7 @@ namespace GPlatesModel {
 		 * Instantiate a new StringContent instance for the given string.
 		 */
 		explicit
-		StringContent(
+		StringContentTypeGenerator(
 				const UnicodeString &s) :
 			d_ss_iter(SingletonType::instance().insert(s))
 		{ }
@@ -89,7 +89,7 @@ namespace GPlatesModel {
 		 */
 		bool
 		is_equal_to(
-				const StringContent &other) const {
+				const StringContentTypeGenerator &other) const {
 			return d_ss_iter == other.d_ss_iter;
 		}
 
@@ -103,7 +103,7 @@ namespace GPlatesModel {
 	template<typename SingletonType>
 	inline
 	bool
-	GPlatesModel::StringContent<SingletonType>::is_loaded(
+	GPlatesModel::StringContentTypeGenerator<SingletonType>::is_loaded(
 			const UnicodeString &s) {
 		return SingletonType::instance().contains(s);
 	}
@@ -112,20 +112,20 @@ namespace GPlatesModel {
 	inline
 	bool
 	operator==(
-			const StringContent<SingletonType> &tc1,
-			const StringContent<SingletonType> &tc2) {
-		return tc1.is_equal_to(tc2);
+			const StringContentTypeGenerator<SingletonType> &c1,
+			const StringContentTypeGenerator<SingletonType> &c2) {
+		return c1.is_equal_to(c2);
 	}
 
 	template<typename SingletonType>
 	inline
 	bool
 	operator!=(
-			const StringContent<SingletonType> &tc1,
-			const StringContent<SingletonType> &tc2) {
-		return ! tc1.is_equal_to(tc2);
+			const StringContentTypeGenerator<SingletonType> &c1,
+			const StringContentTypeGenerator<SingletonType> &c2) {
+		return ! c1.is_equal_to(c2);
 	}
 
 }
 
-#endif  // GPLATES_MODEL_STRINGCONTENT_H
+#endif  // GPLATES_MODEL_STRINGCONTENTTYPEGENERATOR_H

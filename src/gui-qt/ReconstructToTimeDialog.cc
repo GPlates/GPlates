@@ -28,8 +28,8 @@
 
 GPlatesGui::ReconstructToTimeDialog::ReconstructToTimeDialog(
 		const double &init_value,
-		QWidget *parent):
-	QDialog(parent),
+		QWidget *parent_):
+	QDialog(parent_),
 	d_value(init_value)
 {
 	setupUi(this);
