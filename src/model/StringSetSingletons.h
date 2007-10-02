@@ -28,7 +28,7 @@
 #ifndef GPLATES_MODEL_STRINGSETSINGLETONS_H
 #define GPLATES_MODEL_STRINGSETSINGLETONS_H
 
-#include "util/StringSet.h"
+#include "utils/StringSet.h"
 
 
 namespace GPlatesModel {
@@ -38,31 +38,31 @@ namespace GPlatesModel {
 	public:
 
 		static
-		GPlatesUtil::StringSet &
+		GPlatesUtils::StringSet &
 		feature_type_instance();
 
 		static
-		GPlatesUtil::StringSet &
+		GPlatesUtils::StringSet &
 		property_name_instance();
 
 		static
-		GPlatesUtil::StringSet &
+		GPlatesUtils::StringSet &
 		template_type_parameter_type_instance();
 
 		static
-		GPlatesUtil::StringSet &
+		GPlatesUtils::StringSet &
 		text_content_instance();
 
 		static
-		GPlatesUtil::StringSet &
+		GPlatesUtils::StringSet &
 		xml_attribute_name_instance();
 
 		static
-		GPlatesUtil::StringSet &
+		GPlatesUtils::StringSet &
 		xml_attribute_value_instance();
 
 		static
-		GPlatesUtil::StringSet &
+		GPlatesUtils::StringSet &
 		strike_slip_enumeration_value_instance();
 
 	private:
@@ -71,13 +71,13 @@ namespace GPlatesModel {
 		// instantiation of this class.
 		StringSetSingletons();
 
-		static GPlatesUtil::StringSet *s_feature_type_instance;
-		static GPlatesUtil::StringSet *s_property_name_instance;
-		static GPlatesUtil::StringSet *s_template_type_parameter_type_instance;
-		static GPlatesUtil::StringSet *s_text_content_instance;
-		static GPlatesUtil::StringSet *s_xml_attribute_name_instance;
-		static GPlatesUtil::StringSet *s_xml_attribute_value_instance;
-		static GPlatesUtil::StringSet *s_strike_slip_enumeration_value_instance;
+		static GPlatesUtils::StringSet *s_feature_type_instance;
+		static GPlatesUtils::StringSet *s_property_name_instance;
+		static GPlatesUtils::StringSet *s_template_type_parameter_type_instance;
+		static GPlatesUtils::StringSet *s_text_content_instance;
+		static GPlatesUtils::StringSet *s_xml_attribute_name_instance;
+		static GPlatesUtils::StringSet *s_xml_attribute_value_instance;
+		static GPlatesUtils::StringSet *s_strike_slip_enumeration_value_instance;
 	};
 
 }

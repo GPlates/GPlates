@@ -31,9 +31,9 @@
 #include <vector>
 #include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
-#include "GpmlPlateId.h"
 #include "WeakReference.h"
 #include "Reconstruction.h"
+#include "types.h"
 
 
 namespace GPlatesModel
@@ -144,7 +144,7 @@ namespace GPlatesModel
 				const FeatureCollectionHandle::weak_ref &reconstructable_features,
 				const FeatureCollectionHandle::weak_ref &reconstruction_features,
 				const double &time,
-				GpmlPlateId::integer_plate_id_type root) = 0;
+				integer_plate_id_type root) = 0;
 
 		virtual
 		~ModelInterface()

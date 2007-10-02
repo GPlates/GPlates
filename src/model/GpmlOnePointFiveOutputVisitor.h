@@ -53,73 +53,73 @@ namespace GPlatesFileIO {
 
 		virtual
 		void
-		visit_gml_line_string(
-				const GPlatesModel::GmlLineString &gml_line_string);
-
-		virtual
-		void
-		visit_gml_orientable_curve(
-				const GPlatesModel::GmlOrientableCurve &gml_orientable_curve);
-
-		virtual
-		void
-		visit_gml_point(
-				const GPlatesModel::GmlPoint &gml_point);
-
-		virtual
-		void
-		visit_gml_time_instant(
-				const GPlatesModel::GmlTimeInstant &gml_time_instant);
-
-		virtual
-		void
-		visit_gml_time_period(
-				const GPlatesModel::GmlTimePeriod &gml_time_period);
-
-		virtual
-		void
-		visit_gpml_constant_value(
-				const GPlatesModel::GpmlConstantValue &gpml_constant_value);
-
-		virtual
-		void
-		visit_gpml_finite_rotation(
-				const GPlatesModel::GpmlFiniteRotation &gpml_finite_rotation);
-
-		virtual
-		void
-		visit_gpml_finite_rotation_slerp(
-				const GPlatesModel::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
-
-		virtual
-		void
-		visit_gpml_irregular_sampling(
-				const GPlatesModel::GpmlIrregularSampling &gpml_irregular_sampling);
-
-		virtual
-		void
-		visit_gpml_plate_id(
-				const GPlatesModel::GpmlPlateId &gpml_plate_id);
-
-		virtual
-		void
-		visit_gpml_time_sample(
-				const GPlatesModel::GpmlTimeSample &gpml_time_sample);
-
-		virtual
-		void
-		visit_gpml_old_plates_header(
-				const GPlatesModel::GpmlOldPlatesHeader &gpml_old_plates_header);
-
-		virtual
-		void
 		visit_inline_property_container(
 				const GPlatesModel::InlinePropertyContainer &inline_property_container);
 
 		virtual
 		void
+		visit_gml_line_string(
+				const GPlatesPropertyValues::GmlLineString &gml_line_string);
+
+		virtual
+		void
+		visit_gml_orientable_curve(
+				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
+
+		virtual
+		void
+		visit_gml_point(
+				const GPlatesPropertyValues::GmlPoint &gml_point);
+
+		virtual
+		void
+		visit_gml_time_instant(
+				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
+
+		virtual
+		void
+		visit_gml_time_period(
+				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+
+		virtual
+		void
+		visit_gpml_finite_rotation(
+				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+
+		virtual
+		void
+		visit_gpml_finite_rotation_slerp(
+				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
+
+		virtual
+		void
+		visit_gpml_irregular_sampling(
+				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+
+		virtual
+		void
+		visit_gpml_old_plates_header(
+				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
+
+		virtual
+		void
+		visit_gpml_plate_id(
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+
+		virtual
+		void
+		visit_gpml_time_sample(
+				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
+
+		virtual
+		void
 		visit_xs_string(
-				const GPlatesModel::XsString &xs_string);
+				const GPlatesPropertyValues::XsString &xs_string);
 
 	private:
 

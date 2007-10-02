@@ -29,7 +29,7 @@
 #define GPLATES_MODEL_REVISIONID_H
 
 #include <unicode/unistr.h>
-#include "util/UniqueId.h"
+#include "utils/UniqueId.h"
 
 
 namespace GPlatesModel {
@@ -54,7 +54,7 @@ namespace GPlatesModel {
 	public:
 
 		RevisionId() :
-			d_id(GPlatesUtil::generate_unique_id()) {  }
+			d_id(GPlatesUtils::generate_unique_id()) {  }
 
 		/**
 		 * Construct a revision ID from a UnicodeString instance.

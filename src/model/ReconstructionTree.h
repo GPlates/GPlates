@@ -30,9 +30,10 @@
 
 #include <list>
 #include <map>
-#include "GpmlPlateId.h"
+#include "types.h"
 #include "maths/FiniteRotation.h"
 #include "contrib/non_null_intrusive_ptr.h"
+#include "property-values/GpmlPlateId.h"
 
 
 // Forward declaration for intrusive-pointer.
@@ -104,8 +105,8 @@ namespace GPlatesModel
 			typedef std::list<ReconstructionTreeEdge> edge_list_type;
 
 			ReconstructionTreeEdge(
-					GpmlPlateId::non_null_ptr_type fixed_plate_,
-					GpmlPlateId::non_null_ptr_type moving_plate_,
+					GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_plate_,
+					GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type moving_plate_,
 					const GPlatesMaths::FiniteRotation &relative_rotation_,
 					PoleTypes::PoleType pole_type_):
 				d_fixed_plate(fixed_plate_),
@@ -115,13 +116,13 @@ namespace GPlatesModel
 				d_pole_type(pole_type_)
 			{  }
 
-			const GpmlPlateId::non_null_ptr_to_const_type
+			const GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type
 			fixed_plate() const
 			{
 				return d_fixed_plate;
 			}
 
-			const GpmlPlateId::non_null_ptr_to_const_type
+			const GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type
 			moving_plate() const
 			{
 				return d_moving_plate;
@@ -168,8 +169,8 @@ namespace GPlatesModel
 			}
 
 		private:
-			GpmlPlateId::non_null_ptr_type d_fixed_plate;
-			GpmlPlateId::non_null_ptr_type d_moving_plate;
+			GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type d_fixed_plate;
+			GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type d_moving_plate;
 			GPlatesMaths::FiniteRotation d_relative_rotation;
 			GPlatesMaths::FiniteRotation d_composed_absolute_rotation;
 			PoleTypes::PoleType d_pole_type;
@@ -202,7 +203,7 @@ namespace GPlatesModel
 		 * This type represents a mapping of an integer plate ID type to an
 		 * edge_list_iterator.
 		 */
-		typedef std::multimap<GpmlPlateId::integer_plate_id_type, edge_list_iterator>
+		typedef std::multimap<integer_plate_id_type, edge_list_iterator>
 				edge_list_iters_by_plate_id_map_type;
 
 		/**
@@ -225,8 +226,8 @@ namespace GPlatesModel
 		// Total reconstruction poles must be inserted before the "tree" can be built.
 		void
 		insert_total_reconstruction_pole(
-				GpmlPlateId::non_null_ptr_type fixed_plate_,
-				GpmlPlateId::non_null_ptr_type moving_plate_,
+				GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_plate_,
+				GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type moving_plate_,
 				const GPlatesMaths::FiniteRotation &pole);
 
 		bool
@@ -239,7 +240,7 @@ namespace GPlatesModel
 		// by specifying a choice of root plate ID.
 		void
 		build_tree(
-				GpmlPlateId::integer_plate_id_type root_plate_id);
+				integer_plate_id_type root_plate_id);
 
 		/**
 		 * Access the begin iterator of the collection of rootmost edges.
@@ -270,14 +271,14 @@ namespace GPlatesModel
 		const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
 		reconstruct_point(
 				GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
-				GpmlPlateId::integer_plate_id_type plate_id_of_feature,
-				GpmlPlateId::integer_plate_id_type root_plate_id);
+				integer_plate_id_type plate_id_of_feature,
+				integer_plate_id_type root_plate_id);
 
 		const boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
 		reconstruct_polyline(
 				GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
-				GpmlPlateId::integer_plate_id_type plate_id_of_feature,
-				GpmlPlateId::integer_plate_id_type root_plate_id);
+				integer_plate_id_type plate_id_of_feature,
+				integer_plate_id_type root_plate_id);
 
 	private:
 		/**
@@ -324,7 +325,7 @@ namespace GPlatesModel
 		 */
 		edge_ref_map_range_type
 		find_edges_whose_fixed_plate_id_match(
-				GpmlPlateId::integer_plate_id_type fixed_plate_id);
+				integer_plate_id_type fixed_plate_id);
 
 		/**
 		 * Demolish the tree-structure, to reset all the containers.
@@ -343,8 +344,8 @@ namespace GPlatesModel
 		 */
 		edge_ref_map_range_type
 		find_edges_whose_moving_plate_id_match(
-				GpmlPlateId::integer_plate_id_type moving_plate_id,
-				GpmlPlateId::integer_plate_id_type root_plate_id);
+				integer_plate_id_type moving_plate_id,
+				integer_plate_id_type root_plate_id);
 
 	};
 

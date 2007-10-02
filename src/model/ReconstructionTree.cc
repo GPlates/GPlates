@@ -69,14 +69,14 @@ namespace
 
 void
 GPlatesModel::ReconstructionTree::insert_total_reconstruction_pole(
-		GpmlPlateId::non_null_ptr_type fixed_plate_,
-		GpmlPlateId::non_null_ptr_type moving_plate_,
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_plate_,
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type moving_plate_,
 		const GPlatesMaths::FiniteRotation &pole)
 {
 	// FIXME:  Do we need to sanity-check that 'fixed_plate_' and 'moving_plate_' are not equal?
 
-	GpmlPlateId::integer_plate_id_type fixed_plate_id = fixed_plate_->value();
-	GpmlPlateId::integer_plate_id_type moving_plate_id = moving_plate_->value();
+	integer_plate_id_type fixed_plate_id = fixed_plate_->value();
+	integer_plate_id_type moving_plate_id = moving_plate_->value();
 
 	// FIXME:  First, ensure an edge of this (fixed plate, moving plate) does not already exist
 	// inside this reconstruction tree.  Do we also need to check it for the reverse?
@@ -132,7 +132,7 @@ GPlatesModel::ReconstructionTree::insert_total_reconstruction_pole(
 
 void
 GPlatesModel::ReconstructionTree::build_tree(
-		GpmlPlateId::integer_plate_id_type root_plate_id)
+		integer_plate_id_type root_plate_id)
 {
 	if (tree_is_built()) {
 		demolish_tree();
@@ -165,7 +165,7 @@ GPlatesModel::ReconstructionTree::build_tree(
 
 		// We want to find all the edges which hang relative to this edge (ie, all the
 		// edges whose fixed plate IDs are equal to the moving plate ID of this edge).
-		GpmlPlateId::integer_plate_id_type moving_plate_id_of_edge =
+		integer_plate_id_type moving_plate_id_of_edge =
 				edge_being_processed->moving_plate()->value();
 
 		// Find any and all other edges with the same moving plate ID.
@@ -193,7 +193,7 @@ GPlatesModel::ReconstructionTree::build_tree(
 		edge_ref_map_range_type potential_children_range =
 				find_edges_whose_fixed_plate_id_match(moving_plate_id_of_edge);
 
-		GpmlPlateId::integer_plate_id_type fixed_plate_id_of_edge =
+		integer_plate_id_type fixed_plate_id_of_edge =
 				edge_being_processed->fixed_plate()->value();
 		// Each of the targets of iter is an edge which has a fixed plate ID which is equal
 		// to the moving plate ID of the current edge.
@@ -234,8 +234,8 @@ GPlatesModel::ReconstructionTree::build_tree(
 const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
 GPlatesModel::ReconstructionTree::reconstruct_point(
 		GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
-		GpmlPlateId::integer_plate_id_type plate_id_of_feature,
-		GpmlPlateId::integer_plate_id_type root_plate_id)
+		integer_plate_id_type plate_id_of_feature,
+		integer_plate_id_type root_plate_id)
 {
 	// If the requested plate ID is the root of the reconstruction tree, return a copy of the
 	// point (as if the point were reconstructed using the identity rotation!).
@@ -273,8 +273,8 @@ GPlatesModel::ReconstructionTree::reconstruct_point(
 const boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
 GPlatesModel::ReconstructionTree::reconstruct_polyline(
 		GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
-		GpmlPlateId::integer_plate_id_type plate_id_of_feature,
-		GpmlPlateId::integer_plate_id_type root_plate_id)
+		integer_plate_id_type plate_id_of_feature,
+		integer_plate_id_type root_plate_id)
 {
 	// If the requested plate ID is the root of the reconstruction tree, return a copy of the
 	// polyline (as if the polyline were reconstructed using the identity rotation!).
@@ -311,7 +311,7 @@ GPlatesModel::ReconstructionTree::reconstruct_polyline(
 
 GPlatesModel::ReconstructionTree::edge_ref_map_range_type
 GPlatesModel::ReconstructionTree::find_edges_whose_fixed_plate_id_match(
-		GpmlPlateId::integer_plate_id_type fixed_plate_id)
+		integer_plate_id_type fixed_plate_id)
 {
 	return d_edge_refs_by_fixed_plate_id.equal_range(fixed_plate_id);
 }
@@ -319,8 +319,8 @@ GPlatesModel::ReconstructionTree::find_edges_whose_fixed_plate_id_match(
 
 GPlatesModel::ReconstructionTree::edge_ref_map_range_type
 GPlatesModel::ReconstructionTree::find_edges_whose_moving_plate_id_match(
-		GpmlPlateId::integer_plate_id_type moving_plate_id,
-		GpmlPlateId::integer_plate_id_type root_plate_id)
+		integer_plate_id_type moving_plate_id,
+		integer_plate_id_type root_plate_id)
 {
 	// Ensure the tree is built, otherwise the edge-by-moving-plate-ID map will be empty!
 	if ( ! tree_is_built()) {

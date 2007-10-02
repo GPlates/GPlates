@@ -29,7 +29,7 @@
 #define GPLATES_MODEL_FEATUREID_H
 
 #include <unicode/unistr.h>
-#include "util/UniqueId.h"
+#include "utils/UniqueId.h"
 
 
 namespace GPlatesModel {
@@ -53,7 +53,7 @@ namespace GPlatesModel {
 	public:
 
 		FeatureId() :
-			d_id(GPlatesUtil::generate_unique_id()) {  }
+			d_id(GPlatesUtils::generate_unique_id()) {  }
 
 		/**
 		 * Construct a feature ID from a UnicodeString instance.

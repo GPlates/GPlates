@@ -28,11 +28,12 @@
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructionTree.h"
 #include "FeatureHandle.h"
-#include "GpmlFiniteRotation.h"
-#include "GpmlFiniteRotationSlerp.h"
-#include "GpmlIrregularSampling.h"
-#include "GpmlTimeSample.h"
 #include "InlinePropertyContainer.h"
+
+#include "property-values/GpmlFiniteRotation.h"
+#include "property-values/GpmlFiniteRotationSlerp.h"
+#include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlTimeSample.h"
 
 
 namespace
@@ -54,7 +55,7 @@ namespace
 GPlatesModel::ReconstructionTreePopulator::ReconstructionTreePopulator(
 		const double &recon_time,
 		ReconstructionTree &recon_tree):
-	d_recon_time(GeoTimeInstant(recon_time)),
+	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_recon_tree_ptr(&recon_tree)
 {  }
 
@@ -63,6 +64,8 @@ void
 GPlatesModel::ReconstructionTreePopulator::visit_feature_handle(
 		FeatureHandle &feature_handle)
 {
+	using namespace GPlatesPropertyValues;
+
 	static FeatureType total_recon_seq_feature_type =
 			FeatureType(UnicodeString("gpml:TotalReconstructionSequence"));
 
@@ -116,8 +119,19 @@ GPlatesModel::ReconstructionTreePopulator::visit_feature_handle(
 
 
 void
+GPlatesModel::ReconstructionTreePopulator::visit_inline_property_container(
+		InlinePropertyContainer &inline_property_container) {
+	InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
+	InlinePropertyContainer::const_iterator end = inline_property_container.end(); 
+	for ( ; iter != end; ++iter) {
+		(*iter)->accept_visitor(*this);
+	}
+}
+
+
+void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation(
-		GpmlFiniteRotation &gpml_finite_rotation) {
+		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation) {
 	if (d_accumulator->d_is_expecting_a_finite_rotation) {
 		// The visitor was expecting a FiniteRotation, which means the structure of the
 		// Total Recon Seq is (more or less) correct.
@@ -132,7 +146,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation(
 
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation_slerp(
-		GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
+		GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
 {
 	// FIXME:  We should use this for something... (Currently, FiniteRotation SLERP is the only
 	// option, so the code below is hard-coded to perform a FiniteRotation SLERP.  But still,
@@ -142,8 +156,10 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation_slerp(
 
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
-		GpmlIrregularSampling &gpml_irregular_sampling)
+		GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
+	using namespace GPlatesPropertyValues;
+
 	// It is assumed that an IrregularSampling instance which has been reached by the visit
 	// function of a ReconstructionTreePopulator instance will only ever contain
 	// FiniteRotation instances.
@@ -186,7 +202,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		return;
 	}
 	// FIXME:  Use approximate floating-point equality for the time position.  Extract the code
-	// 'geo_time_instants_are_approx_equal' from "fileio/PlatesRotationFormatReader.cc".
+	// 'geo_time_instants_are_approx_equal' from "file-io/PlatesRotationFormatReader.cc".
 	if ( ! d_recon_time.is_earlier_than(iter->valid_time()->time_position())) {
 		// An exact match!  Hence, we can use the FiniteRotation of this time sample
 		// directly, without need for interpolation.
@@ -286,7 +302,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		}
 		// FIXME:  Use approximate floating-point equality for the time position.  Extract
 		// the code 'geo_time_instants_are_approx_equal' from
-		// "fileio/PlatesRotationFormatReader.cc".
+		// "file-io/PlatesRotationFormatReader.cc".
 		if ( ! d_recon_time.is_earlier_than(iter->valid_time()->time_position())) {
 			// An exact match!  Hence, we can use the FiniteRotation of this time
 			// sample directly, without need for interpolation.
@@ -317,8 +333,10 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
-		GpmlPlateId &gpml_plate_id)
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
+	using namespace GPlatesPropertyValues;
+
 	static PropertyName property_name_fixed_ref_frame =
 			PropertyName(UnicodeString("gpml:fixedReferenceFrame"));
 	static PropertyName property_name_moving_ref_frame =
@@ -339,17 +357,6 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
 
 void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_time_sample(
-		GpmlTimeSample &gpml_time_sample) {
+		GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {
 	gpml_time_sample.value()->accept_visitor(*this);
-}
-
-
-void
-GPlatesModel::ReconstructionTreePopulator::visit_inline_property_container(
-		InlinePropertyContainer &inline_property_container) {
-	InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
-	InlinePropertyContainer::const_iterator end = inline_property_container.end(); 
-	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(*this);
-	}
 }

@@ -26,69 +26,69 @@
  */
 
 #include "StringSetSingletons.h"
-#include "util/StringSet.h"
+#include "utils/StringSet.h"
 
 
-GPlatesUtil::StringSet &
+GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::feature_type_instance() {
 	if (s_feature_type_instance == NULL) {
-		s_feature_type_instance = new GPlatesUtil::StringSet();
+		s_feature_type_instance = new GPlatesUtils::StringSet();
 	}
 	return *s_feature_type_instance;
 }
 
-GPlatesUtil::StringSet &
+GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::property_name_instance() {
 	if (s_property_name_instance == NULL) {
-		s_property_name_instance = new GPlatesUtil::StringSet();
+		s_property_name_instance = new GPlatesUtils::StringSet();
 	}
 	return *s_property_name_instance;
 }
 
-GPlatesUtil::StringSet &
+GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::template_type_parameter_type_instance() {
 	if (s_template_type_parameter_type_instance == NULL) {
-		s_template_type_parameter_type_instance = new GPlatesUtil::StringSet();
+		s_template_type_parameter_type_instance = new GPlatesUtils::StringSet();
 	}
 	return *s_template_type_parameter_type_instance;
 }
 
-GPlatesUtil::StringSet &
+GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::text_content_instance() {
 	if (s_text_content_instance == NULL) {
-		s_text_content_instance = new GPlatesUtil::StringSet();
+		s_text_content_instance = new GPlatesUtils::StringSet();
 	}
 	return *s_text_content_instance;
 }
 
-GPlatesUtil::StringSet &
+GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::xml_attribute_name_instance() {
 	if (s_xml_attribute_name_instance == NULL) {
-		s_xml_attribute_name_instance = new GPlatesUtil::StringSet();
+		s_xml_attribute_name_instance = new GPlatesUtils::StringSet();
 	}
 	return *s_xml_attribute_name_instance;
 }
 
-GPlatesUtil::StringSet &
+GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::xml_attribute_value_instance() {
 	if (s_xml_attribute_value_instance == NULL) {
-		s_xml_attribute_value_instance = new GPlatesUtil::StringSet();
+		s_xml_attribute_value_instance = new GPlatesUtils::StringSet();
 	}
 	return *s_xml_attribute_value_instance;
 }
 
-GPlatesUtil::StringSet &
+GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::strike_slip_enumeration_value_instance() {
 	if (s_strike_slip_enumeration_value_instance == NULL) {
-		s_strike_slip_enumeration_value_instance = new GPlatesUtil::StringSet();
+		s_strike_slip_enumeration_value_instance = new GPlatesUtils::StringSet();
 	}
 	return *s_strike_slip_enumeration_value_instance;
 }
 
-GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
-GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_property_name_instance = NULL;
-GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_template_type_parameter_type_instance = NULL;
-GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_text_content_instance = NULL;
-GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_name_instance = NULL;
-GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_value_instance = NULL;
-GPlatesUtil::StringSet *GPlatesModel::StringSetSingletons::s_strike_slip_enumeration_value_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_property_name_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_template_type_parameter_type_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_text_content_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_name_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_value_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_strike_slip_enumeration_value_instance = NULL;

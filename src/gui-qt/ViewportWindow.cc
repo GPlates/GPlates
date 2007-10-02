@@ -33,10 +33,10 @@
 #include "maths/LatLonPointConversions.h"
 #include "model/ModelUtility.h"
 #include "model/DummyTransactionHandle.h"
-#include "fileio/ReadErrorAccumulation.h"
-#include "fileio/ErrorOpeningFileForReadingException.h"
-#include "fileio/PlatesLineFormatReader.h"
-#include "fileio/PlatesRotationFormatReader.h"
+#include "file-io/ReadErrorAccumulation.h"
+#include "file-io/ErrorOpeningFileForReadingException.h"
+#include "file-io/PlatesLineFormatReader.h"
+#include "file-io/PlatesRotationFormatReader.h"
 
 namespace
 {
@@ -75,7 +75,7 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref isochrons,
 			GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs,
 			double recon_time,
-			GPlatesModel::GpmlPlateId::integer_plate_id_type recon_root)
+			GPlatesModel::integer_plate_id_type recon_root)
 	{
 		try {
 			GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =

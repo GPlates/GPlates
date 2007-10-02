@@ -28,7 +28,6 @@
 #include <iostream>
 #include <vector>
 #include <cmath>  /* fabsf, pow */
-#include <wx/utils.h>  /* ::wxBell, ::wxUsleep */
 #include "GLCanvas.h"
 #include "EventIDs.h"
 #include "maths/types.h"
@@ -36,7 +35,6 @@
 #include "maths/UnitQuaternion3D.h"
 #include "maths/FiniteRotation.h"
 #include "maths/LatLonPointConversions.h"
-#include "fileio/GPlatesReader.h"
 #include "global/Exception.h"
 #include "controls/Lifetime.h"
 #include "state/Layout.h"

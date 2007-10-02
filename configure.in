@@ -314,19 +314,18 @@ fi
 
 # Write output
 AC_OUTPUT(Makefile
-        doc/doxygen.conf
-        doc/Makefile
-        src/Makefile
-        src/presenter/Makefile
-        src/controls/Makefile
-        src/fileio/Makefile
-        src/global/Makefile
-        src/gui/Makefile
-        src/gui-qt/Makefile
-        src/maths/Makefile
-        src/model/Makefile
+	doc/doxygen.conf
+	doc/Makefile
+	src/Makefile
+	src/file-io/Makefile
+	src/global/Makefile
+	src/gui/Makefile
+	src/gui-qt/Makefile
+	src/maths/Makefile
+	src/model/Makefile
+	src/property-values/Makefile
 	src/state/Makefile
-        src/util/Makefile
+	src/utils/Makefile
 	)
 
 

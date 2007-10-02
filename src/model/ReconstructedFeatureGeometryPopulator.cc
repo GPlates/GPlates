@@ -28,10 +28,11 @@
 #include "ReconstructedFeatureGeometryPopulator.h"
 #include "ReconstructionTree.h"
 #include "FeatureHandle.h"
-#include "GmlLineString.h"
-#include "GmlOrientableCurve.h"
-#include "GpmlConstantValue.h"
 #include "InlinePropertyContainer.h"
+
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlOrientableCurve.h"
+#include "property-values/GpmlConstantValue.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -43,8 +44,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeometr
 		ReconstructionTree &recon_tree,
 		reconstructed_points_type &reconstructed_points,
 		reconstructed_polylines_type &reconstructed_polylines):
-	d_recon_time(GeoTimeInstant(recon_time)),
-	d_root_plate_id(GpmlPlateId::integer_plate_id_type(root_plate_id)),
+	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
+	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_tree_ptr(&recon_tree),
 	d_reconstructed_points_ptr(&reconstructed_points),
 	d_reconstructed_polylines_ptr(&reconstructed_polylines)
@@ -123,39 +124,6 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 
 
 void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
-		GmlLineString &gml_line_string)
-{
-	d_accumulator->d_not_yet_reconstructed_polylines.push_back(gml_line_string.polyline());
-}
-
-
-void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_orientable_curve(
-		GmlOrientableCurve &gml_orientable_curve)
-{
-	gml_orientable_curve.base_curve()->accept_visitor(*this);
-}
-
-
-void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_constant_value(
-		GpmlConstantValue &gpml_constant_value)
-{
-	gpml_constant_value.value()->accept_visitor(*this);
-}
-
-
-void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_plate_id(
-		GpmlPlateId &gpml_plate_id)
-{
-	boost::intrusive_ptr<GpmlPlateId> gpml_plate_id_ptr = &gpml_plate_id;
-	d_accumulator->d_recon_plate_id = gpml_plate_id_ptr;
-}
-
-
-void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_inline_property_container(
 		InlinePropertyContainer &inline_property_container)
 {
@@ -164,4 +132,37 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_inline_property_conta
 	for ( ; iter != end; ++iter) {
 		(*iter)->accept_visitor(*this);
 	}
+}
+
+
+void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
+		GPlatesPropertyValues::GmlLineString &gml_line_string)
+{
+	d_accumulator->d_not_yet_reconstructed_polylines.push_back(gml_line_string.polyline());
+}
+
+
+void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_orientable_curve(
+		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+{
+	gml_orientable_curve.base_curve()->accept_visitor(*this);
+}
+
+
+void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_constant_value(
+		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+{
+	gpml_constant_value.value()->accept_visitor(*this);
+}
+
+
+void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_plate_id(
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+{
+	boost::intrusive_ptr<GPlatesPropertyValues::GpmlPlateId> gpml_plate_id_ptr = &gpml_plate_id;
+	d_accumulator->d_recon_plate_id = gpml_plate_id_ptr;
 }

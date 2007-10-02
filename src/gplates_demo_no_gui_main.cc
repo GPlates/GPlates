@@ -60,8 +60,8 @@ create_isochron(
 		const unsigned long &plate_id,
 		const double *points,
 		unsigned num_points,
-		const GPlatesModel::GeoTimeInstant &geo_time_instant_begin,
-		const GPlatesModel::GeoTimeInstant &geo_time_instant_end,
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end,
 		const UnicodeString &geographic_description,
 		const UnicodeString &name,
 		const UnicodeString &codespace_of_name)
@@ -98,8 +98,8 @@ create_isochron(
 	feature_handle->append_property_container(name_container, pc4);
 	pc4.commit();
 	
-	GPlatesModel::XsString::non_null_ptr_type description = 
-			GPlatesModel::XsString::create(geographic_description);
+	GPlatesPropertyValues::XsString::non_null_ptr_type description = 
+			GPlatesPropertyValues::XsString::create(geographic_description);
 		
 	GPlatesModel::ModelUtility::append_property_value_to_feature(
 			description, "gml:description", feature_handle);
@@ -247,9 +247,9 @@ populate_feature_store(
 		-1.8446,
 	};
 	static const unsigned num_points1 = sizeof(points1) / sizeof(points1[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin1(10.9);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end1 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
+	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin1(10.9);
+	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end1 =
+			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
 	UnicodeString description1("CARLSBERG RIDGE, INDIA-AFRICA ANOMALY 5 ISOCHRON");
 	UnicodeString name1("Izzy the Isochron");
 	UnicodeString codespace_of_name1("EarthByte");
@@ -276,9 +276,9 @@ populate_feature_store(
 		-31.6947,
 	};
 	static const unsigned num_points2 = sizeof(points2) / sizeof(points2[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin2(83.5);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end2 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
+	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin2(83.5);
+	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end2 =
+			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
 	UnicodeString description2("SOUTHWEST INDIAN RIDGE, MADAGASCAR-ANTARCTICA ANOMALY 34 ISOCHRON");
 	UnicodeString name2("Ozzy the Isochron");
 	UnicodeString codespace_of_name2("EarthByte");
@@ -309,9 +309,9 @@ populate_feature_store(
 		-21.9828,
 	};
 	static const unsigned num_points3 = sizeof(points3) / sizeof(points3[0]);
-	GPlatesModel::GeoTimeInstant geo_time_instant_begin3(40.1);
-	GPlatesModel::GeoTimeInstant geo_time_instant_end3 =
-			GPlatesModel::GeoTimeInstant::create_distant_future();
+	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin3(40.1);
+	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end3 =
+			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
 	UnicodeString description3("SEIR CROZET AND CIB, CENTRAL INDIAN BASIN-ANTARCTICA ANOMALY 18 ISOCHRON");
 	UnicodeString name3("Uzi the Isochron");
 	UnicodeString codespace_of_name3("EarthByte");

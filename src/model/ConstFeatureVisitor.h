@@ -29,10 +29,10 @@
 #define GPLATES_MODEL_CONSTFEATUREVISITOR_H
 
 
-namespace GPlatesModel {
-
+namespace GPlatesPropertyValues
+{
 	// Forward declarations for the member functions.
-	class FeatureHandle;
+	// Please keep these ordered alphabetically.
 	class GmlLineString;
 	class GmlOrientableCurve;
 	class GmlPoint;
@@ -42,13 +42,19 @@ namespace GPlatesModel {
 	class GpmlFiniteRotation;
 	class GpmlFiniteRotationSlerp;
 	class GpmlIrregularSampling;
-	class GpmlPlateId;
-	class GpmlTimeSample;
 	class GpmlOldPlatesHeader;
-	class InlinePropertyContainer;
-	class XsString;
-	class XsBoolean;
+	class GpmlPlateId;
 	class GpmlStrikeSlipEnumeration;
+	class GpmlTimeSample;
+	class XsBoolean;
+	class XsString;
+}
+
+namespace GPlatesModel
+{
+	// Forward declarations for the member functions.
+	class FeatureHandle;
+	class InlinePropertyContainer;
 
 	/**
 	 * This class defines an abstract interface for a Visitor to visit const features.
@@ -103,88 +109,90 @@ namespace GPlatesModel {
 
 		virtual
 		void
-		visit_gpml_old_plates_header(
-				const GpmlOldPlatesHeader &gpml_old_plates_header) {  }
-
-		virtual
-		void
 		visit_feature_handle(
 				const FeatureHandle &feature_handle) {  }
-
-		virtual
-		void
-		visit_gml_line_string(
-				const GmlLineString &gml_line_string) {  }
-
-		virtual
-		void
-		visit_gml_orientable_curve(
-				const GmlOrientableCurve &gml_orientable_curve) {  }
-
-		virtual
-		void
-		visit_gml_point(
-				const GmlPoint &gml_point) {  }
-
-		virtual
-		void
-		visit_gml_time_instant(
-				const GmlTimeInstant &gml_time_instant) {  }
-
-		virtual
-		void
-		visit_gml_time_period(
-				const GmlTimePeriod &gml_time_period) {  }
-
-		virtual
-		void
-		visit_gpml_constant_value(
-				const GpmlConstantValue &gpml_constant_value) {  }
-
-		virtual
-		void
-		visit_gpml_finite_rotation(
-				const GpmlFiniteRotation &gpml_finite_rotation) {  }
-
-		virtual
-		void
-		visit_gpml_finite_rotation_slerp(
-				const GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp) {  }
-
-		virtual
-		void
-		visit_gpml_irregular_sampling(
-				const GpmlIrregularSampling &gpml_irregular_sampling) {  }
-
-		virtual
-		void
-		visit_gpml_plate_id(
-				const GpmlPlateId &gpml_plate_id) {  }
-
-		virtual
-		void
-		visit_gpml_time_sample(
-				const GpmlTimeSample &gpml_time_sample) {  }
 
 		virtual
 		void
 		visit_inline_property_container(
 				const InlinePropertyContainer &inline_property_container) {  }
 
-		virtual
-		void
-		visit_xs_string(
-				const XsString &xs_string) {  }
+		// Please keep these property-value types ordered alphabetically.
 
 		virtual
 		void
-		visit_xs_boolean(
-				const XsBoolean &xs_boolean) {  }
+		visit_gml_line_string(
+				const GPlatesPropertyValues::GmlLineString &gml_line_string) {  }
+
+		virtual
+		void
+		visit_gml_orientable_curve(
+				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve) {  }
+
+		virtual
+		void
+		visit_gml_point(
+				const GPlatesPropertyValues::GmlPoint &gml_point) {  }
+
+		virtual
+		void
+		visit_gml_time_instant(
+				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant) {  }
+
+		virtual
+		void
+		visit_gml_time_period(
+				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period) {  }
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value) {  }
+
+		virtual
+		void
+		visit_gpml_finite_rotation(
+				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation) {  }
+
+		virtual
+		void
+		visit_gpml_finite_rotation_slerp(
+				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp) {  }
+
+		virtual
+		void
+		visit_gpml_irregular_sampling(
+				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling) {  }
+
+		virtual
+		void
+		visit_gpml_old_plates_header(
+				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header) {  }
+
+		virtual
+		void
+		visit_gpml_plate_id(
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id) {  }
 
 		virtual
 		void
 		visit_gpml_strike_slip_enumeration(
-				const GpmlStrikeSlipEnumeration &strike_slip_enumeration) {  }
+				const GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration) {  }
+
+		virtual
+		void
+		visit_gpml_time_sample(
+				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {  }
+
+		virtual
+		void
+		visit_xs_boolean(
+				const GPlatesPropertyValues::XsBoolean &xs_boolean) {  }
+
+		virtual
+		void
+		visit_xs_string(
+				const GPlatesPropertyValues::XsString &xs_string) {  }
 
 	private:
 

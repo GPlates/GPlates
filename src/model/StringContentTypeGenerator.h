@@ -95,7 +95,7 @@ namespace GPlatesModel {
 
 	private:
 
-		GPlatesUtil::StringSet::SharedIterator d_ss_iter;
+		GPlatesUtils::StringSet::SharedIterator d_ss_iter;
 
 	};
 

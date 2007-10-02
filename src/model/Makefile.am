@@ -6,9 +6,7 @@ INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libmodel.la
 libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc \
-				GeoTimeInstant.cc GmlLineString.cc \
-				GmlPoint.cc GpmlOnePointFiveOutputVisitor.cc \
-				GpmlFiniteRotation.cc \
+				GpmlOnePointFiveOutputVisitor.cc \
 				ReconstructedFeatureGeometryPopulator.cc \
 				Model.cc ReconstructionTree.cc \
 				ReconstructionTreePopulator.cc \

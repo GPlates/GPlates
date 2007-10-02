@@ -27,7 +27,7 @@
 
 #include "AnimateDialog.h"
 #include "ViewportWindow.h"
-#include "util/FloatingPointComparisons.h"
+#include "utils/FloatingPointComparisons.h"
 
 
 GPlatesGui::AnimateDialog::AnimateDialog(
@@ -78,7 +78,7 @@ GPlatesGui::AnimateDialog::toggle_animation_playback_state()
 	} else {
 		// Otherwise, the animation is not yet playing.
 
-		using namespace GPlatesUtil::FloatingPointComparisons;
+		using namespace GPlatesUtils::FloatingPointComparisons;
 
 		double start_time = widget_start_time->value();
 		double end_time = widget_end_time->value();
@@ -172,7 +172,7 @@ GPlatesGui::AnimateDialog::react_current_time_changed(
 void
 GPlatesGui::AnimateDialog::react_animation_playback_step()
 {
-	using namespace GPlatesUtil::FloatingPointComparisons;
+	using namespace GPlatesUtils::FloatingPointComparisons;
 
 	double abs_time_increment = std::fabs(d_time_increment);
 	double abs_remaining_time = std::fabs(widget_end_time->value() - widget_current_time->value());

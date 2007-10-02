@@ -90,7 +90,7 @@ GPlatesModel::Model::create_reconstruction(
 		const FeatureCollectionHandle::weak_ref &reconstructable_features,
 		const FeatureCollectionHandle::weak_ref &reconstruction_features,
 		const double &time,
-		GpmlPlateId::integer_plate_id_type root)
+		GPlatesModel::integer_plate_id_type root)
 {
 	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create();
 	ReconstructionTreePopulator rtp(time, reconstruction->reconstruction_tree());

@@ -29,14 +29,15 @@
 #include "DummyTransactionHandle.h"
 #include "FeatureHandle.h"
 #include "FeatureRevision.h"
-#include "GmlLineString.h"
-#include "GmlOrientableCurve.h"
-#include "GmlTimePeriod.h"
-#include "GpmlConstantValue.h"
-#include "GpmlFiniteRotationSlerp.h"
-#include "GpmlFiniteRotation.h"
-#include "GpmlPlateId.h"
-#include "GpmlTimeSample.h"
+
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFiniteRotationSlerp.h"
+#include "property-values/GpmlFiniteRotation.h"
+#include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlTimeSample.h"
 
 
 const GPlatesModel::InlinePropertyContainer::non_null_ptr_type
@@ -58,53 +59,53 @@ GPlatesModel::ModelUtility::append_property_value_to_feature(
 }
 
 
-const GPlatesModel::GmlTimeInstant::non_null_ptr_type
+const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
 GPlatesModel::ModelUtility::create_gml_time_instant(
-		const GeoTimeInstant &geo_time_instant)
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant)
 {
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
 	XmlAttributeName xml_attribute_name("frame");
 	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
 
-	return GmlTimeInstant::create(geo_time_instant, xml_attributes);
+	return GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant, xml_attributes);
 }
 
 
-const GPlatesModel::GpmlIrregularSampling::non_null_ptr_type
+const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
 GPlatesModel::ModelUtility::create_gpml_irregular_sampling(
-		const GpmlTimeSample &first_time_sample)
+		const GPlatesPropertyValues::GpmlTimeSample &first_time_sample)
 {
-	GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
-			GpmlFiniteRotationSlerp::create(first_time_sample.value_type());
+	GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
+			GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(first_time_sample.value_type());
 
-	return GpmlIrregularSampling::create(first_time_sample,
+	return GPlatesPropertyValues::GpmlIrregularSampling::create(first_time_sample,
 			GPlatesContrib::get_intrusive_ptr(gpml_finite_rotation_slerp),
 			first_time_sample.value_type());
 }
 
 
-const GPlatesModel::XsString::non_null_ptr_type
+const GPlatesPropertyValues::XsString::non_null_ptr_type
 GPlatesModel::ModelUtility::create_xs_string(
 		const std::string &str)
 {
-	return XsString::create(UnicodeString(str.c_str()));
+	return GPlatesPropertyValues::XsString::create(UnicodeString(str.c_str()));
 }
 
 
-const GPlatesModel::XsBoolean::non_null_ptr_type
+const GPlatesPropertyValues::XsBoolean::non_null_ptr_type
 GPlatesModel::ModelUtility::create_xs_boolean(
 		bool value)
 {
-	return XsBoolean::create(value);
+	return GPlatesPropertyValues::XsBoolean::create(value);
 }
 
 
-const GPlatesModel::GpmlStrikeSlipEnumeration::non_null_ptr_type
+const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type
 GPlatesModel::ModelUtility::create_gpml_strike_slip_enumeration(
 		const std::string &value)
 {
-	return GpmlStrikeSlipEnumeration::create(UnicodeString(value.c_str()));
+	return GPlatesPropertyValues::GpmlStrikeSlipEnumeration::create(UnicodeString(value.c_str()));
 }
 
 
@@ -113,12 +114,12 @@ GPlatesModel::ModelUtility::create_reconstruction_plate_id(
 		unsigned long plate_id)
 {
 	PropertyValue::non_null_ptr_type gpml_plate_id =
-			GpmlPlateId::create(plate_id);
+			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
 
 	UnicodeString template_type_parameter_type_string("gpml:plateId");
-	TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
+	GPlatesPropertyValues::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
 	PropertyValue::non_null_ptr_type gpml_plate_id_constant_value =
-			GpmlConstantValue::create(gpml_plate_id, template_type_parameter_type);
+			GPlatesPropertyValues::GpmlConstantValue::create(gpml_plate_id, template_type_parameter_type);
 
 	UnicodeString property_name_string("gpml:reconstructionPlateId");
 	PropertyName property_name(property_name_string);
@@ -137,7 +138,7 @@ GPlatesModel::ModelUtility::create_reference_frame_plate_id(
 		const char *which_reference_frame)
 {
 	PropertyValue::non_null_ptr_type gpml_plate_id =
-			GpmlPlateId::create(plate_id);
+			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
 
 	UnicodeString property_name_string(which_reference_frame);
 	PropertyName property_name(property_name_string);
@@ -155,19 +156,19 @@ GPlatesModel::ModelUtility::create_centre_line_of(
 		const std::vector<double> &gml_pos_list)
 {
 	PropertyValue::non_null_ptr_type gml_line_string =
-			GmlLineString::create(gml_pos_list);
+			GPlatesPropertyValues::GmlLineString::create(gml_pos_list);
 
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
 	XmlAttributeName xml_attribute_name("orientation");
 	XmlAttributeValue xml_attribute_value("+");
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
 	PropertyValue::non_null_ptr_type gml_orientable_curve =
-			GmlOrientableCurve::create(gml_line_string, xml_attributes);
+			GPlatesPropertyValues::GmlOrientableCurve::create(gml_line_string, xml_attributes);
 
 	UnicodeString template_type_parameter_type_string("gml:OrientableCurve");
-	TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
+	GPlatesPropertyValues::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
 	PropertyValue::non_null_ptr_type gml_orientable_curve_constant_value =
-			GpmlConstantValue::create(gml_orientable_curve, template_type_parameter_type);
+			GPlatesPropertyValues::GpmlConstantValue::create(gml_orientable_curve, template_type_parameter_type);
 
 	UnicodeString property_name_string("gpml:centreLineOf");
 	PropertyName property_name(property_name_string);
@@ -182,22 +183,22 @@ GPlatesModel::ModelUtility::create_centre_line_of(
 
 const GPlatesModel::PropertyContainer::non_null_ptr_type
 GPlatesModel::ModelUtility::create_valid_time(
-		const GeoTimeInstant &geo_time_instant_begin,
-		const GeoTimeInstant &geo_time_instant_end)
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end)
 {
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
 	XmlAttributeName xml_attribute_name("frame");
 	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
 
-	GmlTimeInstant::non_null_ptr_type gml_time_instant_begin =
-			GmlTimeInstant::create(geo_time_instant_begin, xml_attributes);
+	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant_begin =
+			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant_begin, xml_attributes);
 
-	GmlTimeInstant::non_null_ptr_type gml_time_instant_end =
-			GmlTimeInstant::create(geo_time_instant_end, xml_attributes);
+	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant_end =
+			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant_end, xml_attributes);
 
 	PropertyValue::non_null_ptr_type gml_time_period =
-			GmlTimePeriod::create(gml_time_instant_begin, gml_time_instant_end);
+			GPlatesPropertyValues::GmlTimePeriod::create(gml_time_instant_begin, gml_time_instant_end);
 
 	UnicodeString property_name_string("gml:validTime");
 	PropertyName property_name(property_name_string);
@@ -215,7 +216,7 @@ GPlatesModel::ModelUtility::create_name(
 		const UnicodeString &name,
 		const UnicodeString &codespace)
 {
-	PropertyValue::non_null_ptr_type gml_name = XsString::create(name);
+	PropertyValue::non_null_ptr_type gml_name = GPlatesPropertyValues::XsString::create(name);
 
 	UnicodeString property_name_string("gml:name");
 	PropertyName property_name(property_name_string);
@@ -235,8 +236,8 @@ const GPlatesModel::PropertyContainer::non_null_ptr_type
 GPlatesModel::ModelUtility::create_total_reconstruction_pole(
 		const std::vector<TotalReconstructionPoleData> &five_tuples)
 {
-	std::vector<GpmlTimeSample> time_samples;
-	TemplateTypeParameterType value_type("gpml:FiniteRotation");
+	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
+	GPlatesPropertyValues::TemplateTypeParameterType value_type("gpml:FiniteRotation");
 
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
 	XmlAttributeName xml_attribute_name("frame");
@@ -248,27 +249,27 @@ GPlatesModel::ModelUtility::create_total_reconstruction_pole(
 	{
 		std::pair<double, double> gpml_euler_pole =
 				std::make_pair(iter->lon_of_euler_pole, iter->lat_of_euler_pole);
-		GpmlFiniteRotation::non_null_ptr_type gpml_finite_rotation =
-				GpmlFiniteRotation::create(gpml_euler_pole,
+		GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type gpml_finite_rotation =
+				GPlatesPropertyValues::GpmlFiniteRotation::create(gpml_euler_pole,
 				iter->rotation_angle);
 
-		GeoTimeInstant geo_time_instant(iter->time);
-		GmlTimeInstant::non_null_ptr_type gml_time_instant =
-				GmlTimeInstant::create(geo_time_instant, xml_attributes);
+		GPlatesPropertyValues::GeoTimeInstant geo_time_instant(iter->time);
+		GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant =
+				GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant, xml_attributes);
 
 		UnicodeString comment_string(iter->comment);
-		XsString::non_null_ptr_type gml_description =
-				XsString::create(comment_string);
+		GPlatesPropertyValues::XsString::non_null_ptr_type gml_description =
+				GPlatesPropertyValues::XsString::create(comment_string);
 
-		time_samples.push_back(GpmlTimeSample(gpml_finite_rotation, gml_time_instant,
+		time_samples.push_back(GPlatesPropertyValues::GpmlTimeSample(gpml_finite_rotation, gml_time_instant,
 				get_intrusive_ptr(gml_description), value_type));
 	}
 
-	GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
-			GpmlFiniteRotationSlerp::create(value_type);
+	GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
+			GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(value_type);
 
 	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
-			GpmlIrregularSampling::create(time_samples,
+			GPlatesPropertyValues::GpmlIrregularSampling::create(time_samples,
 			GPlatesContrib::get_intrusive_ptr(gpml_finite_rotation_slerp), value_type);
 
 	UnicodeString property_name_string("gpml:totalReconstructionPole");

@@ -81,7 +81,7 @@ namespace GPlatesGui
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_isochrons;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_total_recon_seqs;
 		double d_recon_time;
-		GPlatesModel::GpmlPlateId::integer_plate_id_type d_recon_root;
+		GPlatesModel::integer_plate_id_type d_recon_root;
 		ReconstructToTimeDialog d_reconstruct_to_time_dialog;
 		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
 		AnimateDialog d_animate_dialog;

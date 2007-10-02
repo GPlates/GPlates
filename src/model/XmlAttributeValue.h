@@ -37,7 +37,7 @@ namespace GPlatesModel {
 
 	public:
 		static
-		GPlatesUtil::StringSet &
+		GPlatesUtils::StringSet &
 		instance()
 		{
 			return StringSetSingletons::xml_attribute_value_instance();

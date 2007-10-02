@@ -31,9 +31,9 @@
 #include <vector>
 #include <boost/scoped_ptr.hpp>
 #include "FeatureVisitor.h"
-#include "GeoTimeInstant.h"
-#include "GpmlPlateId.h"
 #include "ReconstructedFeatureGeometry.h"
+#include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlPlateId.h"
 #include "contrib/non_null_intrusive_ptr.h"
 
 
@@ -75,7 +75,7 @@ namespace GPlatesModel
 		struct ReconstructedFeatureGeometryAccumulator
 		{
 			boost::scoped_ptr<PropertyName> d_most_recent_propname_read;
-			boost::intrusive_ptr<GpmlPlateId> d_recon_plate_id;
+			boost::intrusive_ptr<GPlatesPropertyValues::GpmlPlateId> d_recon_plate_id;
 			std::vector<GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> >
 					d_not_yet_reconstructed_points;
 			std::vector<GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> >
@@ -111,33 +111,33 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_inline_property_container(
+				InlinePropertyContainer &inline_property_container);
+
+		virtual
+		void
 		visit_gml_line_string(
-				GmlLineString &gml_line_string);
+				GPlatesPropertyValues::GmlLineString &gml_line_string);
 
 		virtual
 		void
 		visit_gml_orientable_curve(
-				GmlOrientableCurve &gml_orientable_curve);
+				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
 
 		virtual
 		void
 		visit_gpml_constant_value(
-				GpmlConstantValue &gpml_constant_value);
+				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 		virtual
 		void
 		visit_gpml_plate_id(
-				GpmlPlateId &gpml_plate_id);
-
-		virtual
-		void
-		visit_inline_property_container(
-				InlinePropertyContainer &inline_property_container);
+				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 	private:
 
-		const GeoTimeInstant d_recon_time;
-		GpmlPlateId::integer_plate_id_type d_root_plate_id;
+		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
+		GPlatesModel::integer_plate_id_type d_root_plate_id;
 		ReconstructionTree *d_recon_tree_ptr;
 		reconstructed_points_type *d_reconstructed_points_ptr;
 		reconstructed_polylines_type *d_reconstructed_polylines_ptr;

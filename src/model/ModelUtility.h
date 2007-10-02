@@ -29,12 +29,13 @@
 #include "Model.h"
 #include "InlinePropertyContainer.h"
 #include "PropertyValue.h"
-#include "GmlTimeInstant.h"
-#include "GpmlIrregularSampling.h"
-#include "XsString.h"
-#include "XsBoolean.h"
-#include "GeoTimeInstant.h"
-#include "GpmlStrikeSlipEnumeration.h"
+
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GpmlIrregularSampling.h"
+#include "property-values/XsString.h"
+#include "property-values/XsBoolean.h"
+#include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlStrikeSlipEnumeration.h"
 
 namespace GPlatesModel
 {
@@ -57,26 +58,26 @@ namespace GPlatesModel
 				FeatureHandle::weak_ref &feature);
 
 
-		const GmlTimeInstant::non_null_ptr_type
+		const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
 		create_gml_time_instant(
-				const GeoTimeInstant &geo_time_instant);
+				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant);
 
 
-		const GpmlIrregularSampling::non_null_ptr_type
+		const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
 		create_gpml_irregular_sampling(
-				const GpmlTimeSample &first_time_sample);
+				const GPlatesPropertyValues::GpmlTimeSample &first_time_sample);
 
 
-		const XsString::non_null_ptr_type
+		const GPlatesPropertyValues::XsString::non_null_ptr_type
 		create_xs_string(
 				const std::string &str);
 
 
-		const XsBoolean::non_null_ptr_type
+		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type
 		create_xs_boolean(
 				bool value);
 
-		const GpmlStrikeSlipEnumeration::non_null_ptr_type
+		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type
 		create_gpml_strike_slip_enumeration(
 				const std::string &value);
 
@@ -100,8 +101,8 @@ namespace GPlatesModel
 
 		const PropertyContainer::non_null_ptr_type
 		create_valid_time(
-				const GeoTimeInstant &geo_time_instant_begin,
-				const GeoTimeInstant &geo_time_instant_end);
+				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
+				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end);
 		
 		const PropertyContainer::non_null_ptr_type
 		create_name(

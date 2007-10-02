@@ -32,7 +32,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include "FeatureVisitor.h"
-#include "GeoTimeInstant.h"
+#include "property-values/GeoTimeInstant.h"
 
 
 namespace GPlatesMaths
@@ -64,8 +64,8 @@ namespace GPlatesModel
 		struct ReconstructionSequenceAccumulator
 		{
 			boost::scoped_ptr<PropertyName> d_most_recent_propname_read;
-			boost::intrusive_ptr<GpmlPlateId> d_fixed_ref_frame;
-			boost::intrusive_ptr<GpmlPlateId> d_moving_ref_frame;
+			boost::intrusive_ptr<GPlatesPropertyValues::GpmlPlateId> d_fixed_ref_frame;
+			boost::intrusive_ptr<GPlatesPropertyValues::GpmlPlateId> d_moving_ref_frame;
 			std::auto_ptr<GPlatesMaths::FiniteRotation> d_finite_rotation;
 			bool d_is_expecting_a_finite_rotation;
 
@@ -95,37 +95,37 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_inline_property_container(
+				InlinePropertyContainer &inline_property_container);
+
+		virtual
+		void
 		visit_gpml_finite_rotation(
-				GpmlFiniteRotation &gpml_finite_rotation);
+				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
 
 		virtual
 		void
 		visit_gpml_finite_rotation_slerp(
-				GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
+				GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
 
 		virtual
 		void
 		visit_gpml_irregular_sampling(
-				GpmlIrregularSampling &gpml_irregular_sampling);
+				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
 		virtual
 		void
 		visit_gpml_plate_id(
-				GpmlPlateId &gpml_plate_id);
+				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 		virtual
 		void
 		visit_gpml_time_sample(
-				GpmlTimeSample &gpml_time_sample);
-
-		virtual
-		void
-		visit_inline_property_container(
-				InlinePropertyContainer &inline_property_container);
+				GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
 	private:
 
-		const GeoTimeInstant d_recon_time;
+		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 		ReconstructionTree *d_recon_tree_ptr;
 		boost::scoped_ptr<ReconstructionSequenceAccumulator> d_accumulator;
 
