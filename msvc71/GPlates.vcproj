@@ -32,7 +32,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtnetworkd4.lib qtopengld4.lib opengl32.lib glu32.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib opengl32.lib glu32.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
@@ -245,18 +245,6 @@ moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
 				RelativePath="..\src\model\FeatureVisitor.cc">
 			</File>
 			<File
-				RelativePath="..\src\model\GeoTimeInstant.cc">
-			</File>
-			<File
-				RelativePath="..\src\model\GmlLineString.cc">
-			</File>
-			<File
-				RelativePath="..\src\model\GmlPoint.cc">
-			</File>
-			<File
-				RelativePath="..\src\model\GpmlFiniteRotation.cc">
-			</File>
-			<File
 				RelativePath="..\src\model\GpmlOnePointFiveOutputVisitor.cc">
 			</File>
 			<File
@@ -282,16 +270,19 @@ moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
 			</File>
 		</Filter>
 		<Filter
-			Name="util"
+			Name="utils"
 			Filter="">
 			<File
-				RelativePath="..\src\util\FloatingPointComparisons.cc">
+				RelativePath="..\src\utils\CallStackTracker.cc">
 			</File>
 			<File
-				RelativePath="..\src\util\StringSet.cc">
+				RelativePath="..\src\utils\FloatingPointComparisons.cc">
 			</File>
 			<File
-				RelativePath="..\src\util\UniqueId.cc">
+				RelativePath="..\src\utils\StringSet.cc">
+			</File>
+			<File
+				RelativePath="..\src\utils\UniqueId.cc">
 			</File>
 		</Filter>
 		<Filter
@@ -367,16 +358,80 @@ moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
 			</File>
 		</Filter>
 		<Filter
-			Name="fileio"
+			Name="file-io"
 			Filter="">
 			<File
-				RelativePath="..\src\fileio\PlatesLineFormatReader.cc">
+				RelativePath="..\src\file-io\PlatesLineFormatReader.cc">
 			</File>
 			<File
-				RelativePath="..\src\fileio\PlatesRotationFormatReader.cc">
+				RelativePath="..\src\file-io\PlatesRotationFormatReader.cc">
 			</File>
 			<File
-				RelativePath="..\src\fileio\ReadErrorOccurrence.cc">
+				RelativePath="..\src\file-io\ReadErrorOccurrence.cc">
+			</File>
+		</Filter>
+		<Filter
+			Name="property-values"
+			Filter="">
+			<File
+				RelativePath="..\src\property-values\GeoTimeInstant.cc">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GmlLineString.cc">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GmlPoint.cc">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlFiniteRotation.cc">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>

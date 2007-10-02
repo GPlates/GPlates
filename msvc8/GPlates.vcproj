@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtnetworkd4.lib qtopengld4.lib opengl32.lib glu32.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib opengl32.lib glu32.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -328,22 +328,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\model\GeoTimeInstant.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\model\GmlLineString.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\model\GmlPoint.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\model\GpmlFiniteRotation.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\model\GpmlOnePointFiveOutputVisitor.cc"
 				>
 			</File>
@@ -377,18 +361,22 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="util"
+			Name="utils"
 			>
 			<File
-				RelativePath="..\src\util\FloatingPointComparisons.cc"
+				RelativePath="..\src\utils\CallStackTracker.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\util\StringSet.cc"
+				RelativePath="..\src\utils\FloatingPointComparisons.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\util\UniqueId.cc"
+				RelativePath="..\src\utils\StringSet.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utils\UniqueId.cc"
 				>
 			</File>
 		</Filter>
@@ -485,18 +473,38 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="fileio"
+			Name="file-io"
 			>
 			<File
-				RelativePath="..\src\fileio\PlatesLineFormatReader.cc"
+				RelativePath="..\src\file-io\PlatesLineFormatReader.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\fileio\PlatesRotationFormatReader.cc"
+				RelativePath="..\src\file-io\PlatesRotationFormatReader.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\fileio\ReadErrorOccurrence.cc"
+				RelativePath="..\src\file-io\ReadErrorOccurrence.cc"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="property-values"
+			>
+			<File
+				RelativePath="..\src\property-values\GeoTimeInstant.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GmlLineString.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GmlPoint.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlFiniteRotation.cc"
 				>
 			</File>
 		</Filter>
