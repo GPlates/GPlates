@@ -44,20 +44,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="uic ..\src\gui-qt\AnimateDialogUi.ui -o ..\src\gui-qt\AnimateDialogUi.h
-uic ..\src\gui-qt\InformationDialogUi.ui -o ..\src\gui-qt\InformationDialogUi.h
-uic ..\src\gui-qt\ReconstructToTimeDialogUi.ui -o ..\src\gui-qt\ReconstructToTimeDialogUi.h
-uic ..\src\gui-qt\SpecifyFixedPlateDialogUi.ui -o ..\src\gui-qt\SpecifyFixedPlateDialogUi.h
-uic ..\src\gui-qt\ViewportWindowUi.ui -o ..\src\gui-qt\ViewportWindowUi.h
-moc ..\src\gui-qt\AnimateDialog.h -o ..\src\gui-qt\moc_AnimateDialog.cc
-moc ..\src\gui-qt\InformationDialog.h -o ..\src\gui-qt\moc_InformationDialog.cc
-moc ..\src\gui-qt\ReconstructToTimeDialog.h -o ..\src\gui-qt\moc_ReconstructToTimeDialog.cc
-moc ..\src\gui-qt\SpecifyFixedPlateDialog.h -o ..\src\gui-qt\moc_SpecifyFixedPlateDialog.cc
-moc ..\src\gui-qt\ViewportWindow.h -o ..\src\gui-qt\moc_ViewportWindow.cc
-moc ..\src\gui-qt\CubeWidget.h -o ..\src\gui-qt\moc_CubeWidget.cc
-moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
-"/>
+				Name="VCPreBuildEventTool"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -184,13 +171,85 @@ moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
 				RelativePath="..\src\gui-qt\AnimateDialog.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\AnimateDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+"
+						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\AnimateDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+"
+						Outputs="$(InputDir)\$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\CubeWidget.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\CubeWidget.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+"
+						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui-qt\GlobeCanvas.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\GlobeCanvas.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+"
+						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\InformationDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\InformationDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+"
+						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\InformationDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+"
+						Outputs="$(InputDir)\$(InputName).h"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui-qt\moc_AnimateDialog.cc">
@@ -217,10 +276,82 @@ moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc
 				RelativePath="..\src\gui-qt\ReconstructToTimeDialog.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\ReconstructToTimeDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+"
+						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\ReconstructToTimeDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+"
+						Outputs="$(InputDir)\$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialog.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+"
+						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+"
+						Outputs="$(InputDir)\$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\ViewportWindow.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\ViewportWindow.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+"
+						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\ViewportWindowUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+"
+						Outputs="$(InputDir)\$(InputName).h"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter

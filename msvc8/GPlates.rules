@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="Building UI File"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="Building UI Files"
+			DisplayName="Build UI FIles"
+			CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h"
+			Outputs="$(InputDir)\$(InputName).h"
+			FileExtensions="*.ui"
+			ExecutionDescription="Executing UIC on $(InputName)"
+			BatchingSeparator=""
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+		<CustomBuildRule
+			Name="Build MOC Files"
+			DisplayName="Building MOC Files"
+			CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc"
+			Outputs="$(InputDir)\moc_$(InputName).cc"
+			FileExtensions="*.h"
+			ExecutionDescription="Executing MOC on $(InputName)"
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

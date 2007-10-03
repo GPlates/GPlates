@@ -13,6 +13,9 @@
 		/>
 	</Platforms>
 	<ToolFiles>
+		<ToolFile
+			RelativePath=".\GPlates.rules"
+		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
@@ -25,10 +28,16 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="uic ..\src\gui-qt\AnimateDialogUi.ui -o ..\src\gui-qt\AnimateDialogUi.h&#x0D;&#x0A;uic ..\src\gui-qt\InformationDialogUi.ui -o ..\src\gui-qt\InformationDialogUi.h&#x0D;&#x0A;uic ..\src\gui-qt\ReconstructToTimeDialogUi.ui -o ..\src\gui-qt\ReconstructToTimeDialogUi.h&#x0D;&#x0A;uic ..\src\gui-qt\SpecifyFixedPlateDialogUi.ui -o ..\src\gui-qt\SpecifyFixedPlateDialogUi.h&#x0D;&#x0A;uic ..\src\gui-qt\ViewportWindowUi.ui -o ..\src\gui-qt\ViewportWindowUi.h&#x0D;&#x0A;moc ..\src\gui-qt\AnimateDialog.h -o ..\src\gui-qt\moc_AnimateDialog.cc&#x0D;&#x0A;moc ..\src\gui-qt\InformationDialog.h -o ..\src\gui-qt\moc_InformationDialog.cc&#x0D;&#x0A;moc ..\src\gui-qt\ReconstructToTimeDialog.h -o ..\src\gui-qt\moc_ReconstructToTimeDialog.cc&#x0D;&#x0A;moc ..\src\gui-qt\SpecifyFixedPlateDialog.h -o ..\src\gui-qt\moc_SpecifyFixedPlateDialog.cc&#x0D;&#x0A;moc ..\src\gui-qt\ViewportWindow.h -o ..\src\gui-qt\moc_ViewportWindow.cc&#x0D;&#x0A;moc ..\src\gui-qt\CubeWidget.h -o ..\src\gui-qt\moc_CubeWidget.cc&#x0D;&#x0A;moc ..\src\gui-qt\GlobeCanvas.h -o ..\src\gui-qt\moc_GlobeCanvas.cc&#x0D;&#x0A;"
+				CommandLine=""
+			/>
+			<Tool
+				Name="Building UI Files"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="Build MOC Files"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -108,7 +117,13 @@
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
+				Name="Building UI Files"
+			/>
+			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="Build MOC Files"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -248,7 +263,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\AnimateDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\AnimateDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\CubeWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\CubeWidget.h"
 				>
 			</File>
 			<File
@@ -256,7 +283,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\GlobeCanvas.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\InformationDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\InformationDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\InformationDialogUi.ui"
 				>
 			</File>
 			<File
@@ -292,11 +331,35 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\ReconstructToTimeDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\ReconstructToTimeDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialog.cc"
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui-qt\ViewportWindow.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\ViewportWindow.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui-qt\ViewportWindowUi.ui"
 				>
 			</File>
 		</Filter>
