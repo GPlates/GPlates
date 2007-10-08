@@ -7,7 +7,7 @@
 		<CustomBuildRule
 			Name="Building UI Files"
 			DisplayName="Build UI FIles"
-			CommandLine="uic &quot;$(InputDir)$(InputName).ui&quot; -o  &quot;$(InputDir)$(InputName).h&quot;"
+			CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;"
 			Outputs="$(InputDir)/$(InputName).h"
 			FileExtensions="*.ui"
 			ExecutionDescription="Executing UIC on $(InputName)"
@@ -19,7 +19,7 @@
 		<CustomBuildRule
 			Name="Build MOC Files"
 			DisplayName="Building MOC Files"
-			CommandLine="moc &quot;$(InputDir)$(InputName).h&quot; -o &quot;$(InputDir)moc_$(InputName).cc&quot;"
+			CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;"
 			Outputs="$(InputDir)/moc_$(InputName).cc"
 			FileExtensions="*.h"
 			ExecutionDescription="Executing MOC on $(InputName)"
