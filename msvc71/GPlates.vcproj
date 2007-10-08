@@ -177,9 +177,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing MOC on $(InputName)"
-						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
 "
-						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -189,9 +189,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing UIC on $(InputName)"
-						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
 "
-						Outputs="$(InputDir)\$(InputName).h"/>
+						Outputs="$(InputDir)/$(InputName).h"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -204,9 +204,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing MOC on $(InputName)"
-						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
 "
-						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -219,9 +219,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing MOC on $(InputName)"
-						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
 "
-						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -234,9 +234,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing MOC on $(InputName)"
-						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
 "
-						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -246,9 +246,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing UIC on $(InputName)"
-						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
 "
-						Outputs="$(InputDir)\$(InputName).h"/>
+						Outputs="$(InputDir)/$(InputName).h"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -282,9 +282,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing MOC on $(InputName)"
-						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
 "
-						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -294,9 +294,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing UIC on $(InputName)"
-						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
 "
-						Outputs="$(InputDir)\$(InputName).h"/>
+						Outputs="$(InputDir)/$(InputName).h"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -309,9 +309,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing MOC on $(InputName)"
-						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
 "
-						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -321,9 +321,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing UIC on $(InputName)"
-						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
 "
-						Outputs="$(InputDir)\$(InputName).h"/>
+						Outputs="$(InputDir)/$(InputName).h"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -336,9 +336,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing MOC on $(InputName)"
-						CommandLine="moc $(InputDir)\$(InputName).h -o $(InputDir)\moc_$(InputName).cc
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
 "
-						Outputs="$(InputDir)\moc_$(InputName).cc"/>
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -348,9 +348,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Executing UIC on $(InputName)"
-						CommandLine="uic $(InputDir)\$(InputName).ui -o  $(InputDir)\$(InputName).h
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
 "
-						Outputs="$(InputDir)\$(InputName).h"/>
+						Outputs="$(InputDir)/$(InputName).h"/>
 				</FileConfiguration>
 			</File>
 		</Filter>
