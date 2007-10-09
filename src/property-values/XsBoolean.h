@@ -29,7 +29,6 @@
 #define GPLATES_PROPERTYVALUES_XSBOOLEAN_H
 
 #include "model/PropertyValue.h"
-#include "TextContent.h"
 
 
 namespace GPlatesPropertyValues {
@@ -40,15 +39,15 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<XsBoolean>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsBoolean>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<XsBoolean> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsBoolean> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const XsBoolean>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsBoolean>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const XsBoolean>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsBoolean>
 				non_null_ptr_to_const_type;
 
 		virtual

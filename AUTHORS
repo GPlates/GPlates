@@ -1,1 +1,15 @@
-The presence of this file is required to placate automake.
+The GPlates source code contains code written by the following employees
+of the University of Sydney, Australia:
+ James Boyden
+ Mike Dowman
+ James Farrow
+ Glen Fernandes
+ Hamish Ivey-Law
+ David Symonds
+
+The GPlates source code contains code which was originally written by the
+following individuals:
+ James Boyden (from the ReconTreeViewer software)
+ Peter Dimov (from the Boost intrusive_ptr class template)
+
+(The presence of this file is required to placate Automake.)

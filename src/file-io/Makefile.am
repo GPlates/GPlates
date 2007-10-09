@@ -7,6 +7,8 @@ INCLUDES		= -I$(top_srcdir)/src
 noinst_LTLIBRARIES	= libfile_io.la
 libfile_io_la_SOURCES	= PlatesLineFormatReader.cc \
 				PlatesRotationFormatReader.cc \
+				XmlOutputInterface.cc \
+				GpmlOnePointFiveOutputVisitor.cc \
 				ReadErrorOccurrence.cc
 
 if PYTHON

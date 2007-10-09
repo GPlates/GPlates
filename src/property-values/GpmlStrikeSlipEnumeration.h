@@ -39,10 +39,10 @@ namespace GPlatesPropertyValues {
 
 	public:
 
-		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlStrikeSlipEnumeration> 
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlStrikeSlipEnumeration> 
 				non_null_ptr_type;
 
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlStrikeSlipEnumeration>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlStrikeSlipEnumeration>
 				non_null_ptr_to_const_type;
 
 		virtual

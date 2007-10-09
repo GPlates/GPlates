@@ -39,15 +39,15 @@ namespace GPlatesPropertyValues {
 
 	public:
 		/**
-		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GmlTimePeriod>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GmlTimePeriod> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GmlTimePeriod>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlTimePeriod>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>
 				non_null_ptr_to_const_type;
 
 

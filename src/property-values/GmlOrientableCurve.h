@@ -46,16 +46,16 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<GmlOrientableCurve>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GmlOrientableCurve>
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GmlOrientableCurve>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlOrientableCurve>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve>
 				non_null_ptr_to_const_type;
 
 		virtual

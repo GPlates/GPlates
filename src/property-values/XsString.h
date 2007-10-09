@@ -40,15 +40,15 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<XsString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsString>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<XsString> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsString> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const XsString>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsString>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const XsString>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString>
 				non_null_ptr_to_const_type;
 
 		virtual

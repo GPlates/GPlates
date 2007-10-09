@@ -40,13 +40,14 @@
 #include "model/DummyTransactionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
-#include "model/ModelUtility.h"
-#include "model/GpmlOnePointFiveOutputVisitor.h"
-#include "model/XmlOutputInterface.h"
+#include "model/ModelUtils.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
 #include "model/ReconstructionTreePopulator.h"
 #include "model/ReconstructedFeatureGeometryPopulator.h"
+
+#include "file-io/GpmlOnePointFiveOutputVisitor.h"
+#include "file-io/XmlOutputInterface.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -74,36 +75,36 @@ create_isochron(
 	const std::vector<double> points_vector(points, points + num_points);
 
 	GPlatesModel::PropertyContainer::non_null_ptr_type reconstruction_plate_id_container =
-			GPlatesModel::ModelUtility::create_reconstruction_plate_id(plate_id);
-	GPlatesModel::PropertyContainer::non_null_ptr_type centre_line_of_container =
-			GPlatesModel::ModelUtility::create_centre_line_of(points_vector);
+			GPlatesModel::ModelUtils::create_reconstruction_plate_id(plate_id);
+	GPlatesModel::PropertyContainer::non_null_ptr_type center_line_of_container =
+			GPlatesModel::ModelUtils::create_center_line_of(points_vector);
 	GPlatesModel::PropertyContainer::non_null_ptr_type valid_time_container =
-			GPlatesModel::ModelUtility::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
+			GPlatesModel::ModelUtils::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
 	GPlatesModel::PropertyContainer::non_null_ptr_type name_container =
-			GPlatesModel::ModelUtility::create_name(name, codespace_of_name);
+			GPlatesModel::ModelUtils::create_name(name, codespace_of_name);
 
 	GPlatesModel::DummyTransactionHandle pc1(__FILE__, __LINE__);
 	feature_handle->append_property_container(reconstruction_plate_id_container, pc1);
 	pc1.commit();
 
 	GPlatesModel::DummyTransactionHandle pc2(__FILE__, __LINE__);
-	feature_handle->append_property_container(centre_line_of_container, pc2);
+	feature_handle->append_property_container(center_line_of_container, pc2);
 	pc2.commit();
 
 	GPlatesModel::DummyTransactionHandle pc3(__FILE__, __LINE__);
 	feature_handle->append_property_container(valid_time_container, pc3);
 	pc3.commit();
 
+	GPlatesPropertyValues::XsString::non_null_ptr_type description = 
+			GPlatesPropertyValues::XsString::create(geographic_description);
+		
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+			description, "gml:description", feature_handle);
+
 	GPlatesModel::DummyTransactionHandle pc4(__FILE__, __LINE__);
 	feature_handle->append_property_container(name_container, pc4);
 	pc4.commit();
 	
-	GPlatesPropertyValues::XsString::non_null_ptr_type description = 
-			GPlatesPropertyValues::XsString::create(geographic_description);
-		
-	GPlatesModel::ModelUtility::append_property_value_to_feature(
-			description, "gml:description", feature_handle);
-
 	return feature_handle;
 }
 
@@ -323,7 +324,7 @@ populate_feature_store(
 
 	static const unsigned long fixed_plate_id1 = 511;
 	static const unsigned long moving_plate_id1 = 501;
-	static const GPlatesModel::ModelUtility::TotalReconstructionPoleData five_tuples1[] = {
+	static const GPlatesModel::ModelUtils::TotalReconstructionPoleData five_tuples1[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	0.0,	90.0,	0.0,	0.0,	"IND-CIB India-Central Indian Basin"	},
 		{	9.9,	-8.7,	76.9,	2.75,	"IND-CIB AN 5 JYR 7/4/89"	},
@@ -331,7 +332,7 @@ populate_feature_store(
 		{	83.5,	-5.2,	74.3,	5.93,	"IND-CIB switchover"	},
 	};
 	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
-	static const std::vector<GPlatesModel::ModelUtility::TotalReconstructionPoleData> five_tuples_vec1(
+	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPoleData> five_tuples_vec1(
 				five_tuples1, five_tuples1 + num_five_tuples1);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq1 =
@@ -340,14 +341,14 @@ populate_feature_store(
 
 	static const unsigned long fixed_plate_id2 = 702;
 	static const unsigned long moving_plate_id2 = 501;
-	static const GPlatesModel::ModelUtility::TotalReconstructionPoleData five_tuples2[] = {
+	static const GPlatesModel::ModelUtils::TotalReconstructionPoleData five_tuples2[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	83.5,	22.8,	19.1,	-51.28,	"IND-MAD"	},
 		{	88.0,	19.8,	27.2,	-59.16,	" RDM/chris 30/11/2001"	},
 		{	120.4,	24.02,	32.04,	-53.01,	"IND-MAD M0 RDM 21/01/02"	},
 	};
 	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
-	static const std::vector<GPlatesModel::ModelUtility::TotalReconstructionPoleData> five_tuples_vec2(
+	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPoleData> five_tuples_vec2(
 				five_tuples2, five_tuples2 + num_five_tuples2);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq2 =
@@ -356,7 +357,7 @@ populate_feature_store(
 
 	static const unsigned long fixed_plate_id3 = 501;
 	static const unsigned long moving_plate_id3 = 502;
-	static const GPlatesModel::ModelUtility::TotalReconstructionPoleData five_tuples3[] = {
+	static const GPlatesModel::ModelUtils::TotalReconstructionPoleData five_tuples3[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	0.0,	0.0,	0.0,	0.0,	"SLK-IND Sri Lanka-India"	},
 		{	75.0,	0.0,	0.0,	0.0,	"SLK-ANT Sri Lanka-Ant"	},
@@ -364,7 +365,7 @@ populate_feature_store(
 		{	129.5,	21.97,	72.79,	-10.13,	"SLK-IND M9 FIT CG01/04-for sfs in Enderby"	},
 	};
 	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
-	static const std::vector<GPlatesModel::ModelUtility::TotalReconstructionPoleData> five_tuples_vec3(
+	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPoleData> five_tuples_vec3(
 				five_tuples3, five_tuples3 + num_five_tuples3);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq3 =

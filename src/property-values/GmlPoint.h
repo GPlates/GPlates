@@ -58,15 +58,15 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GmlPoint>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPoint>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GmlPoint> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPoint> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GmlPoint>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPoint>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlPoint>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPoint>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -120,7 +120,7 @@ namespace GPlatesPropertyValues
 		 * GPlatesMaths::PointOnSphere within this instance, set a new value using the
 		 * function @a set_point below.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
+		const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
 		point() const
 		{
 			return d_point;
@@ -131,7 +131,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_point(
-				GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> p)
+				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> p)
 		{
 			d_point = p;
 		}
@@ -170,7 +170,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GmlPoint(
-				GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> point_):
+				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> point_):
 			PropertyValue(),
 			d_point(point_)
 		{  }
@@ -189,7 +189,7 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> d_point;
+		GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> d_point;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

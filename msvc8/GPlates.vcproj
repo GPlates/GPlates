@@ -239,6 +239,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\ProximityTests.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\Quadrics.cc"
 				>
 			</File>
@@ -256,110 +260,126 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="gui-qt"
+			Name="qt-widgets"
 			>
 			<File
-				RelativePath="..\src\gui-qt\AnimateDialog.cc"
+				RelativePath="..\src\qt-widgets\AnimateDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\AnimateDialog.h"
+				RelativePath="..\src\qt-widgets\AnimateDialog.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\AnimateDialogUi.ui"
+				RelativePath="..\src\qt-widgets\AnimateDialogUi.ui"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\CubeWidget.cc"
+				RelativePath="..\src\qt-widgets\CubeWidget.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\CubeWidget.h"
+				RelativePath="..\src\qt-widgets\CubeWidget.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\GlobeCanvas.cc"
+				RelativePath="..\src\qt-widgets\GlobeCanvas.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\GlobeCanvas.h"
+				RelativePath="..\src\qt-widgets\GlobeCanvas.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\InformationDialog.cc"
+				RelativePath="..\src\qt-widgets\InformationDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\InformationDialog.h"
+				RelativePath="..\src\qt-widgets\InformationDialog.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\InformationDialogUi.ui"
+				RelativePath="..\src\qt-widgets\InformationDialogUi.ui"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\moc_AnimateDialog.cc"
+				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\moc_CubeWidget.cc"
+				RelativePath="..\src\qt-widgets\moc_CubeWidget.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\moc_GlobeCanvas.cc"
+				RelativePath="..\src\qt-widgets\moc_GlobeCanvas.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\moc_InformationDialog.cc"
+				RelativePath="..\src\qt-widgets\moc_InformationDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\moc_ReconstructToTimeDialog.cc"
+				RelativePath="..\src\qt-widgets\moc_QueryFeaturePropertiesDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\moc_SpecifyFixedPlateDialog.cc"
+				RelativePath="..\src\qt-widgets\moc_ReconstructToTimeDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\moc_ViewportWindow.cc"
+				RelativePath="..\src\qt-widgets\moc_SpecifyFixedPlateDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\ReconstructToTimeDialog.cc"
+				RelativePath="..\src\qt-widgets\moc_ViewportWindow.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\ReconstructToTimeDialog.h"
+				RelativePath="..\src\qt-widgets\QueryFeaturePropertiesDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\ReconstructToTimeDialogUi.ui"
+				RelativePath="..\src\qt-widgets\QueryFeaturePropertiesDialog.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialog.cc"
+				RelativePath="..\src\qt-widgets\QueryFeaturePropertiesDialogUi.ui"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialog.h"
+				RelativePath="..\src\qt-widgets\ReconstructToTimeDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\SpecifyFixedPlateDialogUi.ui"
+				RelativePath="..\src\qt-widgets\ReconstructToTimeDialog.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\ViewportWindow.cc"
+				RelativePath="..\src\qt-widgets\ReconstructToTimeDialogUi.ui"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\ViewportWindow.h"
+				RelativePath="..\src\qt-widgets\SpecifyFixedPlateDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui-qt\ViewportWindowUi.ui"
+				RelativePath="..\src\qt-widgets\SpecifyFixedPlateDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\SpecifyFixedPlateDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ViewportWindow.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ViewportWindow.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ViewportWindowUi.ui"
 				>
 			</File>
 		</Filter>
@@ -391,15 +411,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\model\GpmlOnePointFiveOutputVisitor.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\model\Model.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\model\ModelUtility.cc"
+				RelativePath="..\src\model\ModelUtils.cc"
 				>
 			</File>
 			<File
@@ -418,10 +434,6 @@
 				RelativePath="..\src\model\StringSetSingletons.cc"
 				>
 			</File>
-			<File
-				RelativePath="..\src\model\XmlOutputInterface.cc"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="utils"
@@ -436,6 +448,10 @@
 			</File>
 			<File
 				RelativePath="..\src\utils\StringSet.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utils\UnicodeStringUtils.cc"
 				>
 			</File>
 			<File
@@ -568,6 +584,18 @@
 			</File>
 			<File
 				RelativePath="..\src\property-values\GpmlFiniteRotation.cc"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="feature-visitors"
+			>
+			<File
+				RelativePath="..\src\feature-visitors\PlateIdFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesDialogPopulator.cc"
 				>
 			</File>
 		</Filter>

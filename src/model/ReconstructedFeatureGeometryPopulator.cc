@@ -86,7 +86,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 	std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::iterator point_end =
 			d_accumulator->d_not_yet_reconstructed_points.end();
 	for ( ; point_iter != point_end; ++point_iter) {
-		boost::intrusive_ptr<GPlatesMaths::PointOnSphere> reconstructed_point =
+		boost::intrusive_ptr<const GPlatesMaths::PointOnSphere> reconstructed_point =
 				d_recon_tree_ptr->reconstruct_point(*point_iter,
 				d_accumulator->d_recon_plate_id->value(), d_root_plate_id);
 		if (reconstructed_point == NULL) {
@@ -94,8 +94,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 			continue;
 		} else {
 			// It will be valid to dereference 'reconstructed_point'.
-			GPlatesMaths::PointOnSphere::non_null_ptr_type p(*reconstructed_point);
-			ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> rfg(p);
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p(*reconstructed_point);
+			ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> rfg(p, feature_handle);
 			d_reconstructed_points_ptr->push_back(rfg);
 		}
 	}
@@ -105,7 +105,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator polyline_end =
 			d_accumulator->d_not_yet_reconstructed_polylines.end();
 	for ( ; polyline_iter != polyline_end; ++polyline_iter) {
-		boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere> reconstructed_polyline =
+		boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> reconstructed_polyline =
 				d_recon_tree_ptr->reconstruct_polyline(*polyline_iter,
 				d_accumulator->d_recon_plate_id->value(), d_root_plate_id);
 		if (reconstructed_polyline == NULL) {
@@ -113,8 +113,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 			continue;
 		} else {
 			// It will be valid to dereference 'reconstructed_polyline'.
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_type p(*reconstructed_polyline);
-			ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> rfg(p);
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p(*reconstructed_polyline);
+			ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> rfg(p, feature_handle);
 			d_reconstructed_polylines_ptr->push_back(rfg);
 		}
 	}

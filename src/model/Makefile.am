@@ -6,17 +6,15 @@ INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libmodel.la
 libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc \
-				GpmlOnePointFiveOutputVisitor.cc \
 				ReconstructedFeatureGeometryPopulator.cc \
 				Model.cc ReconstructionTree.cc \
 				ReconstructionTreePopulator.cc \
 				StringSetSingletons.cc \
-				XmlOutputInterface.cc \
 				FeatureCollectionRevision.cc \
 				FeatureStoreRootRevision.cc \
 				FeatureRevision.cc \
 				DummyTransactionHandle.cc \
-				ModelUtility.cc
+				ModelUtils.cc
 
 if PYTHON
 noinst_PROGRAMS		= _model.so

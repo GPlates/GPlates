@@ -46,16 +46,16 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<GpmlFiniteRotation>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlFiniteRotation>
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlFiniteRotation>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlFiniteRotation>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>
 				non_null_ptr_to_const_type;
 
 		virtual

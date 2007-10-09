@@ -53,16 +53,16 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<GpmlInterpolationFunction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlInterpolationFunction>
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlInterpolationFunction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlInterpolationFunction>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction>
 				non_null_ptr_to_const_type;
 
 		/**

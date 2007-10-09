@@ -58,15 +58,15 @@ namespace GPlatesPropertyValues {
 
 	public:
 		/**
-		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GmlLineString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlLineString>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GmlLineString> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GmlLineString>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GmlLineString>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -113,7 +113,7 @@ namespace GPlatesPropertyValues {
 		 * GPlatesMaths::PolylineOnSphere within this instance, set a new value using the
 		 * function @a set_polyline below.
 		 */
-		const GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+		const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 		polyline() const {
 			return d_polyline;
 		}
@@ -123,7 +123,7 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		set_polyline(
-				GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> p) {
+				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> p) {
 			d_polyline = p;
 		}
 
@@ -159,7 +159,7 @@ namespace GPlatesPropertyValues {
 		// instantiation of this type on the stack.
 		explicit
 		GmlLineString(
-				GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_):
+				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_):
 			PropertyValue(),
 			d_polyline(polyline_)
 		{  }
@@ -178,7 +178,7 @@ namespace GPlatesPropertyValues {
 
 	private:
 
-		GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> d_polyline;
+		GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> d_polyline;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

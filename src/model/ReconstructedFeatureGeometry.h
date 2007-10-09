@@ -28,7 +28,8 @@
 #ifndef GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 #define GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 
-#include "contrib/non_null_intrusive_ptr.h"
+#include "FeatureHandle.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesModel
@@ -42,18 +43,28 @@ namespace GPlatesModel
 		typedef T geometry_type;
 
 	private:
-		GPlatesContrib::non_null_intrusive_ptr<geometry_type> d_geometry_ptr;
+		GPlatesUtils::non_null_intrusive_ptr<const geometry_type> d_geometry_ptr;
+
+		FeatureHandle::weak_ref d_feature_ref;
 
 	public:
 		ReconstructedFeatureGeometry(
-				GPlatesContrib::non_null_intrusive_ptr<geometry_type> geometry_ptr) :
-			d_geometry_ptr(geometry_ptr)
+				GPlatesUtils::non_null_intrusive_ptr<const geometry_type> geometry_ptr,
+				FeatureHandle &feature_handle) :
+			d_geometry_ptr(geometry_ptr),
+			d_feature_ref(feature_handle.reference())
 		{  }
 
-		const GPlatesContrib::non_null_intrusive_ptr<const geometry_type>
+		const GPlatesUtils::non_null_intrusive_ptr<const geometry_type>
 		geometry() const
 		{
 			return d_geometry_ptr;
+		}
+
+		const FeatureHandle::weak_ref
+		feature_ref() const
+		{
+			return d_feature_ref;
 		}
 
 		// ...

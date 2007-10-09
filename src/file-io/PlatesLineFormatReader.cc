@@ -38,7 +38,7 @@
 #include "model/FeatureRevision.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/DummyTransactionHandle.h"
-#include "model/ModelUtility.h"
+#include "model/ModelUtils.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -75,18 +75,18 @@ namespace {
 		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end(header->age_of_disappearance());
 
 		const GPlatesModel::PropertyContainer::non_null_ptr_type reconstruction_plate_id_container =
-				GPlatesModel::ModelUtility::create_reconstruction_plate_id(plate_id);
-		const GPlatesModel::PropertyContainer::non_null_ptr_type centre_line_of_container =
-				GPlatesModel::ModelUtility::create_centre_line_of(points);
+				GPlatesModel::ModelUtils::create_reconstruction_plate_id(plate_id);
+		const GPlatesModel::PropertyContainer::non_null_ptr_type center_line_of_container =
+				GPlatesModel::ModelUtils::create_center_line_of(points);
 		const GPlatesModel::PropertyContainer::non_null_ptr_type valid_time_container =
-				GPlatesModel::ModelUtility::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
+				GPlatesModel::ModelUtils::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
 		
 		GPlatesModel::DummyTransactionHandle pc1(__FILE__, __LINE__);
 		feature_handle->append_property_container(reconstruction_plate_id_container, pc1);
 		pc1.commit();
 	
 		GPlatesModel::DummyTransactionHandle pc2(__FILE__, __LINE__);
-		feature_handle->append_property_container(centre_line_of_container, pc2);
+		feature_handle->append_property_container(center_line_of_container, pc2);
 		pc2.commit();
 	
 		GPlatesModel::DummyTransactionHandle pc3(__FILE__, __LINE__);
@@ -96,10 +96,10 @@ namespace {
 		GPlatesPropertyValues::XsString::non_null_ptr_type description = 
 				GPlatesPropertyValues::XsString::create(header->geographic_description());
 		
-		GPlatesModel::ModelUtility::append_property_value_to_feature(
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
 				description, "gml:description", feature_handle);
 
-		GPlatesModel::ModelUtility::append_property_value_to_feature(
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
 				header->clone(), "gpml:oldPlatesHeader", feature_handle);
 
 		return feature_handle;
@@ -127,8 +127,8 @@ namespace {
 			create_fault(model, collection, header, points);
 		
 		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type dip_slip_property_value =
-				GPlatesModel::ModelUtility::create_gpml_strike_slip_enumeration(dip_slip);
-		GPlatesModel::ModelUtility::append_property_value_to_feature(
+				GPlatesModel::ModelUtils::create_gpml_strike_slip_enumeration(dip_slip);
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
 				dip_slip_property_value, "gpml:dipSlip", feature_handle);
 
 		return feature_handle;
@@ -190,8 +190,8 @@ namespace {
 			create_common(model, collection, header, points, "gpml:MidOceanRidge");
 		
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
-				GPlatesModel::ModelUtility::create_xs_boolean(is_active);
-		GPlatesModel::ModelUtility::append_property_value_to_feature(
+				GPlatesModel::ModelUtils::create_xs_boolean(is_active);
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
 				is_active_property_value, "gpml:isActive", feature_handle);
 
 		return feature_handle;

@@ -29,7 +29,7 @@
 #define GPLATES_MODEL_FEATURESTORE_H
 
 #include "FeatureStoreRootHandle.h"
-#include "contrib/non_null_intrusive_ptr.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
 {
@@ -48,15 +48,15 @@ namespace GPlatesModel
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<FeatureStore>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FeatureStore>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<FeatureStore> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStore> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const FeatureStore>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStore>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const FeatureStore>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStore>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -99,7 +99,7 @@ namespace GPlatesModel
 		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesContrib::non_null_intrusive_ptr.
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const
@@ -114,7 +114,7 @@ namespace GPlatesModel
 		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesContrib::non_null_intrusive_ptr.
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const

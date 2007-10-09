@@ -41,16 +41,16 @@ namespace GPlatesModel
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<InlinePropertyContainer>.
+		 * GPlatesUtils::non_null_intrusive_ptr<InlinePropertyContainer>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<InlinePropertyContainer>
+		typedef GPlatesUtils::non_null_intrusive_ptr<InlinePropertyContainer>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const InlinePropertyContainer>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const InlinePropertyContainer>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const InlinePropertyContainer>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const InlinePropertyContainer>
 				non_null_ptr_to_const_type;
 
 		typedef std::vector<PropertyValue::non_null_ptr_type> container_type;

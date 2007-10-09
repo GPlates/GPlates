@@ -1,0 +1,27 @@
+## Makefile.am -- Process this file with automake to produce Makefile.in
+
+MAINTAINERCLEANFILES	= Makefile.in
+
+EXTRA_DIST		= plates.clr.inc
+
+INCLUDES		= -I$(top_srcdir)/src
+
+noinst_LTLIBRARIES	= libqt_widgets.la
+libqt_widgets_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
+	ViewportWindow.cc ViewportWindowUi.h moc_ViewportWindow.cc \
+	ReconstructToTimeDialog.cc ReconstructToTimeDialogUi.h moc_ReconstructToTimeDialog.cc \
+	SpecifyFixedPlateDialog.cc SpecifyFixedPlateDialogUi.h moc_SpecifyFixedPlateDialog.cc \
+	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc \
+	QueryFeaturePropertiesDialog.cc QueryFeaturePropertiesDialogUi.h moc_QueryFeaturePropertiesDialog.cc
+
+CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h ReconstructToTimeDialogUi.h \
+				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h \
+				QueryFeaturePropertiesDialogUi.h moc_*.cc
+
+# This rule lets GNU make create any moc_*.cc from the equivalent *.h
+moc_%.cc: %.h
+	$(MOC) $< -o $@
+
+# This rule lets GNU make create any *.h from the equivalent *.ui
+%.h: %.ui
+	$(UIC) $< -o $@

@@ -33,7 +33,7 @@
 #include "ReconstructionTree.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
-#include "contrib/non_null_intrusive_ptr.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
 {
@@ -46,15 +46,15 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<Reconstruction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<Reconstruction>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<Reconstruction> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<Reconstruction> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const Reconstruction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const Reconstruction>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const Reconstruction>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Reconstruction>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -109,7 +109,7 @@ namespace GPlatesModel
 		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesContrib::non_null_intrusive_ptr.
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const
@@ -124,7 +124,7 @@ namespace GPlatesModel
 		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesContrib::non_null_intrusive_ptr.
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const

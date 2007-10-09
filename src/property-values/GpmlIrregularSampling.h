@@ -45,16 +45,16 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<GpmlIrregularSampling>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlIrregularSampling>
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlIrregularSampling>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlIrregularSampling>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling>
 				non_null_ptr_to_const_type;
 
 		virtual

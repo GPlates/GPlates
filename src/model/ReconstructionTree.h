@@ -32,7 +32,7 @@
 #include <map>
 #include "types.h"
 #include "maths/FiniteRotation.h"
-#include "contrib/non_null_intrusive_ptr.h"
+#include "utils/non_null_intrusive_ptr.h"
 #include "property-values/GpmlPlateId.h"
 
 
@@ -268,16 +268,28 @@ namespace GPlatesModel
 			return d_rootmost_edges.end();
 		}
 
-		const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
+		const boost::intrusive_ptr<const GPlatesMaths::PointOnSphere>
 		reconstruct_point(
-				GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
 				integer_plate_id_type plate_id_of_feature,
 				integer_plate_id_type root_plate_id);
 
-		const boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+		const boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 		reconstruct_polyline(
-				GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
 				integer_plate_id_type plate_id_of_feature,
+				integer_plate_id_type root_plate_id);
+
+		/**
+		 * Get the composed absolute rotation which describes the motion of @a
+		 * moving_plate_id relative to @a root_plate_id.
+		 *
+		 * If the motion of @a moving_plate_id is not described by this tree, the identity
+		 * rotation will be returned.
+		 */
+		const GPlatesMaths::FiniteRotation
+		get_composed_absolute_rotation(
+				integer_plate_id_type moving_plate_id,
 				integer_plate_id_type root_plate_id);
 
 	private:

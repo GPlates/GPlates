@@ -35,7 +35,7 @@
 #include <iostream>
 #include <string>
 #include <QtGui/QApplication>
-#include "gui-qt/ViewportWindow.h"
+#include "qt-widgets/ViewportWindow.h"
 
 int main(int argc, char* argv[])
 {
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 		std::exit(1);
 	}
 
-	GPlatesGui::ViewportWindow viewport_window(plates_line_fname, plates_rot_fname);
+	GPlatesQtWidgets::ViewportWindow viewport_window(plates_line_fname, plates_rot_fname);
 	viewport_window.show();
 	return application.exec();
 }

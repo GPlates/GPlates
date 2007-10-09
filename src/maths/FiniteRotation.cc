@@ -268,13 +268,13 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesContrib::non_null_intrusive_ptr<const PointOnSphere> p)
+		GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> p)
 {
 	UnitVector3D rotated_position_vector = r * p->position_vector();
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> rotated_point(
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> rotated_point(
 			PointOnSphere::create_on_heap(rotated_position_vector));
 	return rotated_point;
 }
@@ -343,10 +343,10 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesContrib::non_null_intrusive_ptr<const PolylineOnSphere> p)
+		GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> p)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
@@ -357,7 +357,7 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesContrib::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> rotated_polyline(
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> rotated_polyline(
 			PolylineOnSphere::create_on_heap(rotated_points));
 	return rotated_polyline;
 }

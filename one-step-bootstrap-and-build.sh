@@ -13,7 +13,7 @@
 set -x
 sh bootstrap.sh
 sh build-everything.sh
-( cd src/gui-qt && make ViewportWindowUi.h InformationDialogUi.h )
-( cd src/gui-qt && make ReconstructToTimeDialogUi.h SpecifyFixedPlateDialogUi.h )
-( cd src/gui-qt && make AnimateDialogUi.h )
+( cd src/qt-widgets && make ViewportWindowUi.h InformationDialogUi.h )
+( cd src/qt-widgets && make ReconstructToTimeDialogUi.h SpecifyFixedPlateDialogUi.h )
+( cd src/qt-widgets && make AnimateDialogUi.h QueryFeaturePropertiesDialogUi.h )
 make

@@ -231,16 +231,21 @@ GPlatesModel::ReconstructionTree::build_tree(
 }
 
 
-const boost::intrusive_ptr<GPlatesMaths::PointOnSphere>
+const boost::intrusive_ptr<const GPlatesMaths::PointOnSphere>
 GPlatesModel::ReconstructionTree::reconstruct_point(
-		GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
+		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
 		integer_plate_id_type plate_id_of_feature,
 		integer_plate_id_type root_plate_id)
 {
-	// If the requested plate ID is the root of the reconstruction tree, return a copy of the
-	// point (as if the point were reconstructed using the identity rotation!).
+	// FIXME: If the supplied 'root_plate_id' is not equal to the actual current root plate ID,
+	// we should rebuild the tree.
+
+	// If the requested plate ID is the root of the reconstruction tree, return the point (as
+	// if the point were reconstructed using the identity rotation!).  Note that since we're
+	// returning an intrusive-pointer to a _const_ instance, we don't need to clone the point
+	// instance.
 	if (plate_id_of_feature == root_plate_id) {
-		return get_intrusive_ptr(p->clone_on_heap());
+		return get_intrusive_ptr(p);
 	}
 
 	edge_ref_map_range_type range =
@@ -270,16 +275,21 @@ GPlatesModel::ReconstructionTree::reconstruct_point(
 }
 
 
-const boost::intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+const boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 GPlatesModel::ReconstructionTree::reconstruct_polyline(
-		GPlatesContrib::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
+		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
 		integer_plate_id_type plate_id_of_feature,
 		integer_plate_id_type root_plate_id)
 {
-	// If the requested plate ID is the root of the reconstruction tree, return a copy of the
-	// polyline (as if the polyline were reconstructed using the identity rotation!).
+	// FIXME: If the supplied 'root_plate_id' is not equal to the actual current root plate ID,
+	// we should rebuild the tree.
+
+	// If the requested plate ID is the root of the reconstruction tree, return the polyline
+	// (as if the polyline were reconstructed using the identity rotation!).  Note that since
+	// we're returning an intrusive-pointer to a _const_ instance, we don't need to clone the
+	// polyline instance.
 	if (plate_id_of_feature == root_plate_id) {
-		return get_intrusive_ptr(p->clone_on_heap());
+		return get_intrusive_ptr(p);
 	}
 
 	edge_ref_map_range_type range =
@@ -305,6 +315,48 @@ GPlatesModel::ReconstructionTree::reconstruct_polyline(
 				range.first->second->composed_absolute_rotation();
 
 		return get_intrusive_ptr(finite_rotation * p);
+	}
+}
+
+
+const GPlatesMaths::FiniteRotation
+GPlatesModel::ReconstructionTree::get_composed_absolute_rotation(
+		integer_plate_id_type moving_plate_id,
+		integer_plate_id_type root_plate_id)
+{
+	// FIXME: If the supplied 'root_plate_id' is not equal to the actual current root plate ID,
+	// we should rebuild the tree.
+
+	// If the moving plate ID is the root of the reconstruction tree, return the identity
+	// rotation.
+	if (moving_plate_id == root_plate_id) {
+		return GPlatesMaths::FiniteRotation::create(
+				GPlatesMaths::UnitQuaternion3D::create_identity_rotation());
+	}
+
+	edge_ref_map_range_type range =
+			find_edges_whose_moving_plate_id_match(moving_plate_id, root_plate_id);
+
+	if (range.first == range.second) {
+		// No matches.  Return the identity rotation.
+		return GPlatesMaths::FiniteRotation::create(
+				GPlatesMaths::UnitQuaternion3D::create_identity_rotation());
+	}
+	if (std::distance(range.first, range.second) > 1) {
+		// More than one match.  Ambiguity!
+		// For now, let's just use the first match anyway.
+		// FIXME:  Should we verify that all alternatives are equivalent?
+		// FIXME:  Should we complain to the user about this?
+		const GPlatesMaths::FiniteRotation &finite_rotation =
+				range.first->second->composed_absolute_rotation();
+
+		return finite_rotation;
+	} else {
+		// Exactly one match.  Ideal!
+		const GPlatesMaths::FiniteRotation &finite_rotation =
+				range.first->second->composed_absolute_rotation();
+
+		return finite_rotation;
 	}
 }
 

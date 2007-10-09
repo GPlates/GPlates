@@ -42,16 +42,16 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<GpmlOldPlatesHeader>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlOldPlatesHeader>
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlOldPlatesHeader>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlOldPlatesHeader>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>
 				non_null_ptr_to_const_type;
 
 		virtual

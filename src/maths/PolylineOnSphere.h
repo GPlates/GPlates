@@ -37,7 +37,7 @@
 #include <utility>  /* std::pair */
 #include "GreatCircleArc.h"
 #include "InvalidPolylineException.h"
-#include "contrib/non_null_intrusive_ptr.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 namespace GPlatesMaths {
 
@@ -81,15 +81,15 @@ namespace GPlatesMaths {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<PolylineOnSphere>.
+		 * GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<PolylineOnSphere> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const PolylineOnSphere>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const PolylineOnSphere>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -770,7 +770,7 @@ namespace GPlatesMaths {
 				bool should_silently_drop_dups = true);
 
 		/**
-		 * This is the reference-count used by GPlatesContrib::non_null_intrusive_ptr.
+		 * This is the reference-count used by GPlatesUtils::non_null_intrusive_ptr.
 		 *
 		 * It is declared "mutable", because it is to be modified by 'increment_ref_count'
 		 * and 'decrement_ref_count', which are const member functions.  They are const

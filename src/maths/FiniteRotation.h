@@ -32,7 +32,7 @@
 
 #include "UnitQuaternion3D.h"
 #include "types.h"  /* real_t */
-#include "contrib/non_null_intrusive_ptr.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesMaths
@@ -239,10 +239,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesContrib::non_null_intrusive_ptr<PointOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<PointOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			GPlatesContrib::non_null_intrusive_ptr<const PointOnSphere> p);
+			GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> p);
 
 
 	/**
@@ -305,10 +305,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesContrib::non_null_intrusive_ptr<PolylineOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesContrib::non_null_intrusive_ptr<const PolylineOnSphere> p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> p);
 
 
 	/**

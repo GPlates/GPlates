@@ -317,13 +317,14 @@ AC_OUTPUT(Makefile
 	doc/doxygen.conf
 	doc/Makefile
 	src/Makefile
+	src/feature-visitors/Makefile
 	src/file-io/Makefile
 	src/global/Makefile
 	src/gui/Makefile
-	src/gui-qt/Makefile
 	src/maths/Makefile
 	src/model/Makefile
 	src/property-values/Makefile
+	src/qt-widgets/Makefile
 	src/state/Makefile
 	src/utils/Makefile
 	)

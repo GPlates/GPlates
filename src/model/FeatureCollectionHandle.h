@@ -31,7 +31,7 @@
 #include "FeatureCollectionRevision.h"
 #include "HandleContainerIterator.h"
 #include "WeakReference.h"
-#include "contrib/non_null_intrusive_ptr.h"
+#include "utils/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
 {
@@ -73,16 +73,16 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle>.
+		 * GPlatesUtils::non_null_intrusive_ptr<FeatureCollectionHandle>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<FeatureCollectionHandle>
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureCollectionHandle>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const FeatureCollectionHandle>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionHandle>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const FeatureCollectionHandle>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionHandle>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -394,7 +394,7 @@ namespace GPlatesModel
 		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesContrib::non_null_intrusive_ptr.
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const
@@ -409,7 +409,7 @@ namespace GPlatesModel
 		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesContrib::non_null_intrusive_ptr.
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const

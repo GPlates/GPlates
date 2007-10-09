@@ -31,7 +31,7 @@
 #include <sstream>
 #include "PlatesRotationFormatReader.h"
 #include "LineReader.h"
-#include "model/ModelUtility.h"
+#include "model/ModelUtils.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlTimeSample.h"
@@ -217,11 +217,11 @@ namespace
 
 		GeoTimeInstant geo_time_instant(geo_time);
 		GmlTimeInstant::non_null_ptr_type valid_time =
-				ModelUtility::create_gml_time_instant(geo_time_instant);
+				ModelUtils::create_gml_time_instant(geo_time_instant);
 
 		boost::intrusive_ptr<XsString> description;
 		if ( ! comment.empty()) {
-			description = (ModelUtility::create_xs_string(comment)).get();
+			description = (ModelUtils::create_xs_string(comment)).get();
 		}
 
 		TemplateTypeParameterType value_type("gpml:FiniteRotation");
@@ -291,20 +291,20 @@ namespace
 		current_total_recon_seq = model.create_feature(feature_type, rotations);
 
 		GpmlIrregularSampling::non_null_ptr_type gpml_irregular_sampling =
-				ModelUtility::create_gpml_irregular_sampling(time_sample);
-		ModelUtility::append_property_value_to_feature(gpml_irregular_sampling,
+				ModelUtils::create_gpml_irregular_sampling(time_sample);
+		ModelUtils::append_property_value_to_feature(gpml_irregular_sampling,
 				"gpml:totalReconstructionPole", current_total_recon_seq);
 		props_in_current_trs.d_irregular_sampling = gpml_irregular_sampling.get();
 
 		GpmlPlateId::non_null_ptr_type fixed_ref_frame =
 				GpmlPlateId::create(fixed_plate_id);
-		ModelUtility::append_property_value_to_feature(fixed_ref_frame,
+		ModelUtils::append_property_value_to_feature(fixed_ref_frame,
 				"gpml:fixedReferenceFrame", current_total_recon_seq);
 		props_in_current_trs.d_fixed_plate_id = fixed_plate_id;
 
 		GpmlPlateId::non_null_ptr_type moving_ref_frame =
 				GpmlPlateId::create(moving_plate_id);
-		ModelUtility::append_property_value_to_feature(moving_ref_frame,
+		ModelUtils::append_property_value_to_feature(moving_ref_frame,
 				"gpml:movingReferenceFrame", current_total_recon_seq);
 		props_in_current_trs.d_moving_plate_id = moving_plate_id;
 	}

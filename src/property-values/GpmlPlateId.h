@@ -40,15 +40,15 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesContrib::non_null_intrusive_ptr<GpmlPlateId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<GpmlPlateId> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesContrib::non_null_intrusive_ptr<const GpmlPlateId>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId>.
 		 */
-		typedef GPlatesContrib::non_null_intrusive_ptr<const GpmlPlateId>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId>
 				non_null_ptr_to_const_type;
 
 		virtual
