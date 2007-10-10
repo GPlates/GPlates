@@ -119,7 +119,8 @@ GPlatesUtils::make_qstring_from_icu_string(
 	//  http://icu-project.org/apiref/icu4c/classCharacterIterator.html#_details
 	UChar code_unit;
 	for (iter.setToStart(); iter.hasNext(); ) {
-		code_unit = iter.nextPostInc();
+		UCharCharacterIterator &iterator = iter;
+		code_unit = iterator.nextPostInc();
 		qstring.append(QChar(code_unit));
 	}
 
