@@ -119,8 +119,12 @@ GPlatesUtils::make_qstring_from_icu_string(
 	//  http://icu-project.org/apiref/icu4c/classCharacterIterator.html#_details
 	UChar code_unit;
 	for (iter.setToStart(); iter.hasNext(); ) {
+		// The (apparently redundant) line of code which follows is actually a small hack
+		// to enable the resolution of the 'nextPostInc' symbol on MSVC7.1.  Without this
+		// hack, linking will fail.  This is apparently due to a bug in MSVC7.1.
 		UCharCharacterIterator &iterator = iter;
 		code_unit = iterator.nextPostInc();
+
 		qstring.append(QChar(code_unit));
 	}
 
