@@ -34,7 +34,7 @@
 #include "DummyTransactionHandle.h"
 #include "FeatureHandle.h"
 #include "FeatureRevision.h"
-#include "ReconstructionTree.h"
+#include "ReconstructionGraph.h"
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructedFeatureGeometryPopulator.h"
 
@@ -92,8 +92,8 @@ GPlatesModel::Model::create_reconstruction(
 		const double &time,
 		GPlatesModel::integer_plate_id_type root)
 {
-	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create();
-	ReconstructionTreePopulator rtp(time, reconstruction->reconstruction_tree());
+	ReconstructionGraph graph(time);
+	ReconstructionTreePopulator rtp(time, graph);
 
 	// Before we dereference the weak_ref ('reconstruction_features') using 'operator->', let's
 	// be sure that it's valid to dereference.
@@ -109,7 +109,8 @@ GPlatesModel::Model::create_reconstruction(
 	}
 
 	// Build the reconstruction tree, using 'root' as the root of the tree.
-	reconstruction->reconstruction_tree().build_tree(root);
+	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
+	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree);
 
 	ReconstructedFeatureGeometryPopulator rfgp(time, root,
 			reconstruction->reconstruction_tree(),

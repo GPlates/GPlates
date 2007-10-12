@@ -30,22 +30,8 @@
 
 #include <utility>  /* std::pair */
 #include "model/PropertyValue.h"
+#include "maths/GeometryForwardDeclarations.h"
 
-
-// Forward declaration for intrusive-pointer.
-// (We want to avoid the inclusion of "maths/PointOnSphere.h" into this header file.)
-namespace GPlatesMaths
-{
-	class PointOnSphere;
-
-	void
-	intrusive_ptr_add_ref(
-			const PointOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PointOnSphere *p);
-}
 
 namespace GPlatesPropertyValues
 {

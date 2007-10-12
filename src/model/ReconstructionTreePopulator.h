@@ -30,20 +30,19 @@
 
 #include <memory>  /* std::auto_ptr */
 #include <boost/intrusive_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <boost/optional.hpp>
+
 #include "FeatureVisitor.h"
+#include "PropertyName.h"
+#include "types.h"
 #include "property-values/GeoTimeInstant.h"
+#include "maths/FiniteRotation.h"
 
-
-namespace GPlatesMaths
-{
-	class FiniteRotation;
-}
 
 namespace GPlatesModel
 {
 	class PropertyName;
-	class ReconstructionTree;
+	class ReconstructionGraph;
 
 	/**
 	 * Populate a ReconstructionTree instance with total reconstruction poles for a particular
@@ -63,17 +62,13 @@ namespace GPlatesModel
 
 		struct ReconstructionSequenceAccumulator
 		{
-			boost::scoped_ptr<PropertyName> d_most_recent_propname_read;
-			boost::intrusive_ptr<GPlatesPropertyValues::GpmlPlateId> d_fixed_ref_frame;
-			boost::intrusive_ptr<GPlatesPropertyValues::GpmlPlateId> d_moving_ref_frame;
-			std::auto_ptr<GPlatesMaths::FiniteRotation> d_finite_rotation;
+			boost::optional<PropertyName> d_most_recent_propname_read;
+			boost::optional<integer_plate_id_type> d_fixed_ref_frame;
+			boost::optional<integer_plate_id_type> d_moving_ref_frame;
+			boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
 			bool d_is_expecting_a_finite_rotation;
 
 			ReconstructionSequenceAccumulator():
-				d_most_recent_propname_read(NULL),
-				d_fixed_ref_frame(NULL),
-				d_moving_ref_frame(NULL),
-				d_finite_rotation(NULL),
 				d_is_expecting_a_finite_rotation(false)
 			{  }
 
@@ -82,7 +77,7 @@ namespace GPlatesModel
 		explicit
 		ReconstructionTreePopulator(
 				const double &recon_time,
-				ReconstructionTree &recon_tree);
+				ReconstructionGraph &graph);
 
 		virtual
 		~ReconstructionTreePopulator()
@@ -126,8 +121,8 @@ namespace GPlatesModel
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
-		ReconstructionTree *d_recon_tree_ptr;
-		boost::scoped_ptr<ReconstructionSequenceAccumulator> d_accumulator;
+		ReconstructionGraph *d_graph_ptr;
+		boost::optional<ReconstructionSequenceAccumulator> d_accumulator;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.

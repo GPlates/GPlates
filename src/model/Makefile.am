@@ -7,7 +7,9 @@ INCLUDES		= -I$(top_srcdir)/src
 noinst_LTLIBRARIES	= libmodel.la
 libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc \
 				ReconstructedFeatureGeometryPopulator.cc \
-				Model.cc ReconstructionTree.cc \
+				Model.cc ReconstructionGraph.cc \
+				ReconstructionTree.cc \
+				ReconstructionTreeEdge.cc \
 				ReconstructionTreePopulator.cc \
 				StringSetSingletons.cc \
 				FeatureCollectionRevision.cc \

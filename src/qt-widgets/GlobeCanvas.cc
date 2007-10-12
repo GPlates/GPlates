@@ -449,7 +449,7 @@ GPlatesQtWidgets::GlobeCanvas::handle_left_mouse_down()
 		GPlatesModel::ReconstructionTree &recon_tree =
 				d_reconstruction_ptr->reconstruction_tree();
 		GPlatesMaths::FiniteRotation absolute_rotation =
-				recon_tree.get_composed_absolute_rotation(recon_plate_id, root_plate_id);
+				recon_tree.get_composed_absolute_rotation(recon_plate_id);
 
 		GPlatesMaths::UnitQuaternion3D uq = absolute_rotation.unit_quat();
 		if (GPlatesMaths::represents_identity_rotation(uq)) {

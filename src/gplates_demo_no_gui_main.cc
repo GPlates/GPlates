@@ -42,6 +42,7 @@
 #include "model/FeatureRevision.h"
 #include "model/ModelUtils.h"
 #include "model/Reconstruction.h"
+#include "model/ReconstructionGraph.h"
 #include "model/ReconstructionTree.h"
 #include "model/ReconstructionTreePopulator.h"
 #include "model/ReconstructedFeatureGeometryPopulator.h"
@@ -111,31 +112,33 @@ create_isochron(
 
 void
 traverse_recon_tree_recursive(
-		GPlatesModel::ReconstructionTree::ReconstructionTreeEdge &edge)
+		GPlatesModel::ReconstructionTreeEdge &edge)
 {
 	std::cout << " * Children of pole (fixed plate: "
-			<< edge.fixed_plate()->value()
+			<< edge.fixed_plate()
 			<< ", moving plate: "
-			<< edge.moving_plate()->value()
+			<< edge.moving_plate()
 			<< ")\n";
 
-	GPlatesModel::ReconstructionTree::edge_list_iterator iter = edge.tree_children().begin();
-	GPlatesModel::ReconstructionTree::edge_list_iterator end = edge.tree_children().end();
+	GPlatesModel::ReconstructionTree::edge_collection_type::iterator iter =
+			edge.children_in_built_tree().begin();
+	GPlatesModel::ReconstructionTree::edge_collection_type::iterator end =
+			edge.children_in_built_tree().end();
 	for ( ; iter != end; ++iter) {
-		std::cout << " - FiniteRotation: " << iter->relative_rotation() << "\n";
-		std::cout << "    with absolute rotation: " << iter->composed_absolute_rotation() << "\n";
-		std::cout << "    and fixed plate: " << iter->fixed_plate()->value() << std::endl;
-		std::cout << "    and moving plate: " << iter->moving_plate()->value() << std::endl;
-		if (iter->pole_type() ==
-				GPlatesModel::ReconstructionTree::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
+		std::cout << " - FiniteRotation: " << (*iter)->relative_rotation() << "\n";
+		std::cout << "    with absolute rotation: " << (*iter)->composed_absolute_rotation() << "\n";
+		std::cout << "    and fixed plate: " << (*iter)->fixed_plate() << std::endl;
+		std::cout << "    and moving plate: " << (*iter)->moving_plate() << std::endl;
+		if ((*iter)->pole_type() ==
+				GPlatesModel::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
 			std::cout << "    which is original.\n";
 		} else {
 			std::cout << "    which is reversed.\n";
 		}
 	}
-	iter = edge.tree_children().begin();
+	iter = edge.children_in_built_tree().begin();
 	for ( ; iter != end; ++iter) {
-		::traverse_recon_tree_recursive(*iter);
+		::traverse_recon_tree_recursive(**iter);
 	}
 }
 
@@ -146,15 +149,17 @@ traverse_recon_tree(
 {
 	std::cout << " * Root-most poles:\n";
 
-	GPlatesModel::ReconstructionTree::edge_list_iterator iter = recon_tree.rootmost_edges_begin();
-	GPlatesModel::ReconstructionTree::edge_list_iterator end = recon_tree.rootmost_edges_end();
+	GPlatesModel::ReconstructionTree::edge_collection_type::iterator iter =
+			recon_tree.rootmost_edges_begin();
+	GPlatesModel::ReconstructionTree::edge_collection_type::iterator end =
+			recon_tree.rootmost_edges_end();
 	for ( ; iter != end; ++iter) {
-		std::cout << " - FiniteRotation: " << iter->relative_rotation() << "\n";
-		std::cout << "    with absolute rotation: " << iter->composed_absolute_rotation() << "\n";
-		std::cout << "    and fixed plate: " << iter->fixed_plate()->value() << std::endl;
-		std::cout << "    and moving plate: " << iter->moving_plate()->value() << std::endl;
-		if (iter->pole_type() ==
-				GPlatesModel::ReconstructionTree::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
+		std::cout << " - FiniteRotation: " << (*iter)->relative_rotation() << "\n";
+		std::cout << "    with absolute rotation: " << (*iter)->composed_absolute_rotation() << "\n";
+		std::cout << "    and fixed plate: " << (*iter)->fixed_plate() << std::endl;
+		std::cout << "    and moving plate: " << (*iter)->moving_plate() << std::endl;
+		if ((*iter)->pole_type() ==
+				GPlatesModel::ReconstructionTreeEdge::PoleTypes::ORIGINAL) {
 			std::cout << "    which is original.\n";
 		} else {
 			std::cout << "    which is reversed.\n";
@@ -162,7 +167,7 @@ traverse_recon_tree(
 	}
 	iter = recon_tree.rootmost_edges_begin();
 	for ( ; iter != end; ++iter) {
-		::traverse_recon_tree_recursive(*iter);
+		::traverse_recon_tree_recursive(**iter);
 	}
 }
 
@@ -413,10 +418,8 @@ output_reconstructions(
 	for (unsigned i = 0; i < num_recon_times_to_test; ++i) {
 		double recon_time = recon_times_to_test[i];
 
-		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
-				GPlatesModel::Reconstruction::create();
-		GPlatesModel::ReconstructionTreePopulator rtp(recon_time,
-				reconstruction->reconstruction_tree());
+		GPlatesModel::ReconstructionGraph graph(recon_time);
+		GPlatesModel::ReconstructionTreePopulator rtp(recon_time, graph);
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
@@ -427,7 +430,10 @@ output_reconstructions(
 		}
 
 		std::cout << "\n--> Building tree, root node: 501\n";
-		reconstruction->reconstruction_tree().build_tree(501);
+		GPlatesModel::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(501);
+		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
+				GPlatesModel::Reconstruction::create(tree);
+
 		traverse_recon_tree(reconstruction->reconstruction_tree());
 
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,

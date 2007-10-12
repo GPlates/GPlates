@@ -70,9 +70,10 @@ namespace GPlatesModel
 		 */
 		static
 		const non_null_ptr_type
-		create()
+		create(
+				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_)
 		{
-			non_null_ptr_type ptr(*(new Reconstruction));
+			non_null_ptr_type ptr(*(new Reconstruction(reconstruction_tree_ptr_)));
 			return ptr;
 		}
 
@@ -100,7 +101,7 @@ namespace GPlatesModel
 		ReconstructionTree &
 		reconstruction_tree()
 		{
-			return d_reconstruction_tree;
+			return *d_reconstruction_tree_ptr;
 		}
 
 		/**
@@ -155,14 +156,17 @@ namespace GPlatesModel
 		 * The plate-reconstruction hierarchy of total reconstruction poles which was used
 		 * to reconstruct the geometries.
 		 */
-		ReconstructionTree d_reconstruction_tree;
+		ReconstructionTree::non_null_ptr_type d_reconstruction_tree_ptr;
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		Reconstruction():
-			d_ref_count(0)
+		explicit
+		Reconstruction(
+				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_):
+			d_ref_count(0),
+			d_reconstruction_tree_ptr(reconstruction_tree_ptr_)
 		{  }
 
 		// This constructor should never be defined, because we don't want to allow

@@ -423,6 +423,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\model\ReconstructionGraph.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\ReconstructionTreeEdge.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\model\ReconstructionTree.cc"
 				>
 			</File>

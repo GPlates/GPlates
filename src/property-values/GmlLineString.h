@@ -30,32 +30,17 @@
 
 #include <vector>
 #include "model/PropertyValue.h"
+#include "maths/GeometryForwardDeclarations.h"
 
 
-// Forward declaration for intrusive-pointer.
-// (We want to avoid the inclusion of "maths/PolylineOnSphere.h" into this header file.)
-namespace GPlatesMaths {
-
-	class PolylineOnSphere;
-
-	void
-	intrusive_ptr_add_ref(
-			const PolylineOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PolylineOnSphere *p);
-
-}
-
-namespace GPlatesPropertyValues {
-
+namespace GPlatesPropertyValues
+{
 	/**
 	 * This class implements the PropertyValue which corresponds to "gml:LineString".
 	 */
 	class GmlLineString:
-			public GPlatesModel::PropertyValue {
-
+			public GPlatesModel::PropertyValue
+	{
 	public:
 		/**
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlLineString>.

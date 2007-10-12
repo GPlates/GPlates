@@ -25,14 +25,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/none.hpp>  // boost::none
+
 #include "ReconstructionTreePopulator.h"
-#include "ReconstructionTree.h"
+#include "ReconstructionGraph.h"
 #include "FeatureHandle.h"
 #include "InlinePropertyContainer.h"
 
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
 
@@ -54,9 +57,9 @@ namespace
 
 GPlatesModel::ReconstructionTreePopulator::ReconstructionTreePopulator(
 		const double &recon_time,
-		ReconstructionTree &recon_tree):
+		ReconstructionGraph &graph):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
-	d_recon_tree_ptr(&recon_tree)
+	d_graph_ptr(&graph)
 {  }
 
 
@@ -66,55 +69,47 @@ GPlatesModel::ReconstructionTreePopulator::visit_feature_handle(
 {
 	using namespace GPlatesPropertyValues;
 
-	static FeatureType total_recon_seq_feature_type =
-			FeatureType(UnicodeString("gpml:TotalReconstructionSequence"));
+	d_accumulator = ReconstructionSequenceAccumulator();
 
-	// If a feature handle isn't for a feature of type "gpml:TotalReconstructionSequence",
-	// we're not interested.
-	if (feature_handle.feature_type() == total_recon_seq_feature_type) {
-		d_accumulator.reset(new ReconstructionSequenceAccumulator());
-
-		// Now visit each of the properties in turn.
-		GPlatesModel::FeatureHandle::properties_iterator iter =
-				feature_handle.properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator end =
-				feature_handle.properties_end();
-		for ( ; iter != end; ++iter) {
-			// Elements of this properties vector can be NULL pointers.  (See the
-			// comment in "model/FeatureRevision.h" for more details.)
-			if (*iter != NULL) {
-				d_accumulator->d_most_recent_propname_read.reset(
-						new PropertyName((*iter)->property_name()));
-				(*iter)->accept_visitor(*this);
-			}
+	// Now visit each of the properties in turn.
+	GPlatesModel::FeatureHandle::properties_iterator iter =
+			feature_handle.properties_begin();
+	GPlatesModel::FeatureHandle::properties_iterator end =
+			feature_handle.properties_end();
+	for ( ; iter != end; ++iter) {
+		// Elements of this properties vector can be NULL pointers.  (See the comment in
+		// "model/FeatureRevision.h" for more details.)
+		if (*iter != NULL) {
+			d_accumulator->d_most_recent_propname_read = (*iter)->property_name();
+			(*iter)->accept_visitor(*this);
 		}
-
-		// So now we've visited the contents of this Total Recon Seq feature.  Let's find
-		// out if we were able to obtain all the information we need.
-		if (d_accumulator->d_fixed_ref_frame == NULL) {
-			// We couldn't obtain the fixed ref-frame.
-			d_accumulator.reset(NULL);
-			return;
-		}
-		if (d_accumulator->d_moving_ref_frame == NULL) {
-			// We couldn't obtain the moving ref-frame.
-			d_accumulator.reset(NULL);
-			return;
-		}
-		if (d_accumulator->d_finite_rotation.get() == NULL) {
-			// We couldn't obtain the finite rotation.
-			d_accumulator.reset(NULL);
-			return;
-		}
-
-		// If we got to here, we have all the information we need.
-		d_recon_tree_ptr->insert_total_reconstruction_pole(
-				GpmlPlateId::non_null_ptr_type(*d_accumulator->d_fixed_ref_frame),
-				GpmlPlateId::non_null_ptr_type(*d_accumulator->d_moving_ref_frame),
-				*(d_accumulator->d_finite_rotation));
-
-		d_accumulator.reset(NULL);
 	}
+
+	// So now we've visited the contents of this Total Recon Seq feature.  Let's find out if we
+	// were able to obtain all the information we need.
+	if ( ! d_accumulator->d_fixed_ref_frame) {
+		// We couldn't obtain the fixed ref-frame.
+		d_accumulator = boost::none;
+		return;
+	}
+	if ( ! d_accumulator->d_moving_ref_frame) {
+		// We couldn't obtain the moving ref-frame.
+		d_accumulator = boost::none;
+		return;
+	}
+	if ( ! d_accumulator->d_finite_rotation) {
+		// We couldn't obtain the finite rotation.
+		d_accumulator = boost::none;
+		return;
+	}
+
+	// If we got to here, we have all the information we need.
+	d_graph_ptr->insert_total_reconstruction_pole(
+			*(d_accumulator->d_fixed_ref_frame),
+			*(d_accumulator->d_moving_ref_frame),
+			*(d_accumulator->d_finite_rotation));
+
+	d_accumulator = boost::none;
 }
 
 
@@ -134,9 +129,8 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_finite_rotation(
 		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation) {
 	if (d_accumulator->d_is_expecting_a_finite_rotation) {
 		// The visitor was expecting a FiniteRotation, which means the structure of the
-		// Total Recon Seq is (more or less) correct.
-		d_accumulator->d_finite_rotation.reset(
-				new GPlatesMaths::FiniteRotation(gpml_finite_rotation.finite_rotation()));
+		// Total Reconstruction Sequence is (more or less) correct.
+		d_accumulator->d_finite_rotation = gpml_finite_rotation.finite_rotation();
 		d_accumulator->d_is_expecting_a_finite_rotation = false;
 	} else {
 		// FIXME:  Should we complain?
@@ -213,9 +207,8 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		iter->accept_visitor(*this);
 
 		// Did the visitor successfully collect the FiniteRotation?
-		if (d_accumulator->d_finite_rotation.get() != NULL) {
-			// Success!
-		} else {
+		if ( ! d_accumulator->d_finite_rotation) {
+			// No, it didn't.
 			// FIXME:  Should we complain?
 		}
 		return;
@@ -254,8 +247,8 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// The current time sample will be more temporally-distant than the
 			// previous time sample.
 
-			std::auto_ptr<GPlatesMaths::FiniteRotation> current_finite_rotation;
-			std::auto_ptr<GPlatesMaths::FiniteRotation> previous_finite_rotation;
+			boost::optional<GPlatesMaths::FiniteRotation> current_finite_rotation;
+			boost::optional<GPlatesMaths::FiniteRotation> previous_finite_rotation;
 
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
@@ -263,12 +256,13 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			iter->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
-			if (d_accumulator->d_finite_rotation.get() != NULL) {
-				// Success!
-				current_finite_rotation = d_accumulator->d_finite_rotation;
-			} else {
+			if ( ! d_accumulator->d_finite_rotation) {
+				// No, it didn't.
 				// FIXME:  Should we complain?
 				return;
+			} else {
+				// Success!
+				current_finite_rotation = d_accumulator->d_finite_rotation;
 			}
 
 			// Now let's visit the _previous_ non-disabled time sample, to collect
@@ -277,12 +271,13 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			prev->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
-			if (d_accumulator->d_finite_rotation.get() != NULL) {
-				// Success!
-				previous_finite_rotation = d_accumulator->d_finite_rotation;
-			} else {
+			if ( ! d_accumulator->d_finite_rotation) {
+				// No, it didn't.
 				// FIXME:  Should we complain?
 				return;
+			} else {
+				// Success!
+				previous_finite_rotation = d_accumulator->d_finite_rotation;
 			}
 
 			GPlatesMaths::real_t current_time =
@@ -292,11 +287,11 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			GPlatesMaths::real_t target_time =
 					d_recon_time.value();
 
-			d_accumulator->d_finite_rotation.reset(
-					new GPlatesMaths::FiniteRotation(
+			d_accumulator->d_finite_rotation =
+					GPlatesMaths::FiniteRotation(
 						GPlatesMaths::interpolate(
 							*previous_finite_rotation, *current_finite_rotation,
-							previous_time, current_time, target_time)));
+							previous_time, current_time, target_time));
 
 			return;
 		}
@@ -313,9 +308,8 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			iter->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
-			if (d_accumulator->d_finite_rotation.get() != NULL) {
-				// Success!
-			} else {
+			if ( ! d_accumulator->d_finite_rotation) {
+				// No, it didn't.
 				// FIXME:  Should we complain?
 			}
 			return;
@@ -335,22 +329,16 @@ void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	using namespace GPlatesPropertyValues;
+	static PropertyName fixed_ref_frame_property_name("gpml:fixedReferenceFrame");
+	static PropertyName moving_ref_frame_property_name("gpml:movingReferenceFrame");
 
-	static PropertyName property_name_fixed_ref_frame =
-			PropertyName(UnicodeString("gpml:fixedReferenceFrame"));
-	static PropertyName property_name_moving_ref_frame =
-			PropertyName(UnicodeString("gpml:movingReferenceFrame"));
-
-	// FIXME:  Should we ensure that 'd_accumulator->d_most_recent_propname_read' is not NULL?
-	if (*(d_accumulator->d_most_recent_propname_read) == property_name_fixed_ref_frame) {
-		// We're dealing with the fixed ref-frame of the Total Recon Seq.
-		boost::intrusive_ptr<GpmlPlateId> gpml_plate_id_ptr = &gpml_plate_id;
-		d_accumulator->d_fixed_ref_frame = gpml_plate_id_ptr;
-	} else if (*(d_accumulator->d_most_recent_propname_read) == property_name_moving_ref_frame) {
-		// We're dealing with the moving ref-frame of the Total Recon Seq.
-		boost::intrusive_ptr<GpmlPlateId> gpml_plate_id_ptr = &gpml_plate_id;
-		d_accumulator->d_moving_ref_frame = gpml_plate_id_ptr;
+	// Note that we're going to assume that we've read a property name...
+	if (*(d_accumulator->d_most_recent_propname_read) == fixed_ref_frame_property_name) {
+		// We're dealing with the fixed ref-frame of the Total Reconstruction Sequence.
+		d_accumulator->d_fixed_ref_frame = gpml_plate_id.value();
+	} else if (*(d_accumulator->d_most_recent_propname_read) == moving_ref_frame_property_name) {
+		// We're dealing with the moving ref-frame of the Total Reconstruction Sequence.
+		d_accumulator->d_moving_ref_frame = gpml_plate_id.value();
 	}
 }
 

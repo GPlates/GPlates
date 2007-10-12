@@ -29,38 +29,15 @@
 #define GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRYPOPULATOR_H
 
 #include <vector>
-#include <boost/scoped_ptr.hpp>
+#include <boost/optional.hpp>
+
 #include "FeatureVisitor.h"
 #include "ReconstructedFeatureGeometry.h"
+#include "types.h"
 #include "property-values/GeoTimeInstant.h"
-#include "property-values/GpmlPlateId.h"
+#include "maths/GeometryForwardDeclarations.h"
 #include "utils/non_null_intrusive_ptr.h"
 
-
-// Forward declaration for intrusive-pointer.
-// (We want to avoid the inclusion of "maths/PointOnSphere.h" and "maths/PolylineOnSphere.h" into
-// this header file.)
-namespace GPlatesMaths
-{
-	class PointOnSphere;
-	class PolylineOnSphere;
-
-	void
-	intrusive_ptr_add_ref(
-			const PointOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PointOnSphere *p);
-
-	void
-	intrusive_ptr_add_ref(
-			const PolylineOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PolylineOnSphere *p);
-}
 
 namespace GPlatesModel
 {
@@ -74,16 +51,14 @@ namespace GPlatesModel
 
 		struct ReconstructedFeatureGeometryAccumulator
 		{
-			boost::scoped_ptr<PropertyName> d_most_recent_propname_read;
-			boost::intrusive_ptr<GPlatesPropertyValues::GpmlPlateId> d_recon_plate_id;
+			boost::optional<PropertyName> d_most_recent_propname_read;
+			boost::optional<integer_plate_id_type> d_recon_plate_id;
 			std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> >
 					d_not_yet_reconstructed_points;
 			std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> >
 					d_not_yet_reconstructed_polylines;
 
-			ReconstructedFeatureGeometryAccumulator():
-				d_most_recent_propname_read(NULL),
-				d_recon_plate_id(NULL)
+			ReconstructedFeatureGeometryAccumulator()
 			{  }
 
 		};
@@ -139,9 +114,9 @@ namespace GPlatesModel
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
 		ReconstructionTree *d_recon_tree_ptr;
-		reconstructed_points_type *d_reconstructed_points_ptr;
-		reconstructed_polylines_type *d_reconstructed_polylines_ptr;
-		boost::scoped_ptr<ReconstructedFeatureGeometryAccumulator> d_accumulator;
+		reconstructed_points_type *d_reconstructed_points_to_populate;
+		reconstructed_polylines_type *d_reconstructed_polylines_to_populate;
+		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.
