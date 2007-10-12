@@ -73,7 +73,8 @@ namespace GPlatesModel
 				unsigned long root_plate_id,
 				ReconstructionTree &recon_tree,
 				reconstructed_points_type &reconstructed_points,
-				reconstructed_polylines_type &reconstructed_polylines);
+				reconstructed_polylines_type &reconstructed_polylines,
+				bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
 		~ReconstructedFeatureGeometryPopulator()
@@ -117,6 +118,7 @@ namespace GPlatesModel
 		reconstructed_points_type *d_reconstructed_points_to_populate;
 		reconstructed_polylines_type *d_reconstructed_polylines_to_populate;
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
+		bool d_should_keep_features_without_recon_plate_id;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.

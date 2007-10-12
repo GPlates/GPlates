@@ -109,6 +109,16 @@ namespace GPlatesModel
 		typedef ReconstructionTreeEdge::edge_collection_type edge_collection_type;
 
 		/**
+		 * This is the enumeration of the circumstances which surround a reconstruction.
+		 */
+		enum ReconstructionCircumstance
+		{
+			ExactlyOnePlateIdMatchFound,
+			NoPlateIdMatchesFound,
+			MultiplePlateIdMatchesFound
+		};
+
+		/**
 		 * Create a new ReconstructionTree instance from the ReconstructionGraph instance
 		 * @a graph, building a tree-structure which has @a root_plate_id as the root.
 		 *
@@ -168,12 +178,14 @@ namespace GPlatesModel
 		find_edges_whose_moving_plate_id_match(
 				integer_plate_id_type plate_id);
 
-		const boost::intrusive_ptr<const GPlatesMaths::PointOnSphere>
+		const std::pair<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>,
+				ReconstructionCircumstance>
 		reconstruct_point(
 				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
 				integer_plate_id_type plate_id_of_feature) const;
 
-		const boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+		const std::pair<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>,
+				ReconstructionCircumstance>
 		reconstruct_polyline(
 				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
 				integer_plate_id_type plate_id_of_feature) const;
@@ -185,7 +197,8 @@ namespace GPlatesModel
 		 * If the motion of @a moving_plate_id is not described by this tree, the identity
 		 * rotation will be returned.
 		 */
-		const GPlatesMaths::FiniteRotation
+		const std::pair<GPlatesMaths::FiniteRotation,
+				ReconstructionCircumstance>
 		get_composed_absolute_rotation(
 				integer_plate_id_type moving_plate_id) const;
 

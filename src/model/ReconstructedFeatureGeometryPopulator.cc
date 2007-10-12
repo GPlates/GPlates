@@ -46,13 +46,150 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeometr
 		unsigned long root_plate_id,
 		ReconstructionTree &recon_tree,
 		reconstructed_points_type &reconstructed_points,
-		reconstructed_polylines_type &reconstructed_polylines):
+		reconstructed_polylines_type &reconstructed_polylines,
+		bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_tree_ptr(&recon_tree),
 	d_reconstructed_points_to_populate(&reconstructed_points),
-	d_reconstructed_polylines_to_populate(&reconstructed_polylines)
+	d_reconstructed_polylines_to_populate(&reconstructed_polylines),
+	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  }
+
+
+namespace
+{
+	/**
+	 * A Reconstructor is an abstract base class which provides member functions which
+	 * reconstruct points and polylines.
+	 */
+	struct Reconstructor
+	{
+		virtual
+		~Reconstructor()
+		{  }
+
+		virtual
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		reconstruct_point(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p) const = 0;
+
+		virtual
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+		reconstruct_polyline(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p) const = 0;
+	};
+
+
+	/**
+	 * This is a reconstructor which uses a supplied ReconstructionTree to reconstruct points
+	 * and polylines according to a supplied plate ID.
+	 */
+	struct ReconstructAccordingToPlateId: public Reconstructor
+	{
+		ReconstructAccordingToPlateId(
+				const GPlatesModel::ReconstructionTree &recon_tree,
+				GPlatesModel::integer_plate_id_type plate_id):
+			d_recon_tree_ptr(&recon_tree),
+			d_plate_id(plate_id)
+		{  }
+
+		virtual
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		reconstruct_point(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p) const
+		{
+			// FIXME:  Do we care about the reconstruction circumstance?
+			// (For example, there may have been no match for the reconstruction plate
+			// ID.)
+			return (d_recon_tree_ptr->reconstruct_point(*p, d_plate_id)).first;
+		}
+
+		virtual
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+		reconstruct_polyline(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p) const
+		{
+			// FIXME:  Do we care about the reconstruction circumstance?
+			// (For example, there may have been no match for the reconstruction plate
+			// ID.)
+			return (d_recon_tree_ptr->reconstruct_polyline(*p, d_plate_id)).first;
+		}
+
+		const GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
+		GPlatesModel::integer_plate_id_type d_plate_id;
+	};
+
+
+	/**
+	 * This is a reconstructor which simply returns the supplied points and polylines, as if
+	 * they had been reconstructed using the identity rotation.
+	 */
+	struct IdentityReconstructor: public Reconstructor
+	{
+		IdentityReconstructor()
+		{  }
+
+		virtual
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		reconstruct_point(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p) const
+		{
+			return p;
+		}
+
+		virtual
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+		reconstruct_polyline(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p) const
+		{
+			return p;
+		}
+	};
+
+
+	void
+	reconstruct_points_and_polylines(
+			GPlatesModel::ReconstructedFeatureGeometryPopulator::reconstructed_points_type *
+					reconstructed_points_to_populate,
+			GPlatesModel::ReconstructedFeatureGeometryPopulator::reconstructed_polylines_type *
+					reconstructed_polylines_to_populate,
+			const std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> > &
+					not_yet_reconstructed_points,
+			const std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> > &
+					not_yet_reconstructed_polylines,
+			GPlatesModel::FeatureHandle &feature_handle,
+			const Reconstructor &reconstructor)
+	{
+		using namespace GPlatesMaths;
+
+		std::vector<PointOnSphere::non_null_ptr_to_const_type>::const_iterator point_iter =
+				not_yet_reconstructed_points.begin();
+		std::vector<PointOnSphere::non_null_ptr_to_const_type>::const_iterator point_end =
+				not_yet_reconstructed_points.end();
+		for ( ; point_iter != point_end; ++point_iter) {
+			PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
+					reconstructor.reconstruct_point(*point_iter);
+
+			GPlatesModel::ReconstructedFeatureGeometry<PointOnSphere> rfg(
+					reconstructed_point, feature_handle);
+			reconstructed_points_to_populate->push_back(rfg);
+		}
+
+		std::vector<PolylineOnSphere::non_null_ptr_to_const_type>::const_iterator polyline_iter =
+				not_yet_reconstructed_polylines.begin();
+		std::vector<PolylineOnSphere::non_null_ptr_to_const_type>::const_iterator polyline_end =
+				not_yet_reconstructed_polylines.end();
+		for ( ; polyline_iter != polyline_end; ++polyline_iter) {
+			PolylineOnSphere::non_null_ptr_to_const_type reconstructed_polyline =
+					reconstructor.reconstruct_polyline(*polyline_iter);
+
+			GPlatesModel::ReconstructedFeatureGeometry<PolylineOnSphere> rfg(
+					reconstructed_polyline, feature_handle);
+			reconstructed_polylines_to_populate->push_back(rfg);
+		}
+	}
+}
 
 
 void
@@ -77,50 +214,37 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 	// obtain all the information we need.
 	if ( ! d_accumulator->d_recon_plate_id) {
 		// We couldn't obtain the reconstruction plate ID.
-		d_accumulator = boost::none;
-		return;
-	}
 
-	// If we got to here, we have all the information we need.
-
-	std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::iterator point_iter =
-			d_accumulator->d_not_yet_reconstructed_points.begin();
-	std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::iterator point_end =
-			d_accumulator->d_not_yet_reconstructed_points.end();
-	for ( ; point_iter != point_end; ++point_iter) {
-		boost::intrusive_ptr<const GPlatesMaths::PointOnSphere> reconstructed_point =
-				d_recon_tree_ptr->reconstruct_point(*point_iter,
-				*(d_accumulator->d_recon_plate_id));
-		if (reconstructed_point == NULL) {
-			// No match for the reconstruction plate ID.
-			continue;
-		} else {
-			// It will be valid to dereference 'reconstructed_point'.
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p(*reconstructed_point);
-			ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> rfg(p, feature_handle);
-			d_reconstructed_points_to_populate->push_back(rfg);
+		// So, how do we react to this situation?  Do we ignore features which don't have a
+		// reconsruction plate ID, or do we "reconstruct" their geometries using the
+		// identity rotation, so the features simply sit still on the globe?  Fortunately,
+		// the client code has already told us how it wants us to behave...
+		if ( ! d_should_keep_features_without_recon_plate_id) {
+			d_accumulator = boost::none;
+			return;
 		}
-	}
+		IdentityReconstructor reconstructor;
 
-	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator polyline_iter =
-			d_accumulator->d_not_yet_reconstructed_polylines.begin();
-	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator polyline_end =
-			d_accumulator->d_not_yet_reconstructed_polylines.end();
-	for ( ; polyline_iter != polyline_end; ++polyline_iter) {
-		boost::intrusive_ptr<const GPlatesMaths::PolylineOnSphere> reconstructed_polyline =
-				d_recon_tree_ptr->reconstruct_polyline(*polyline_iter,
-				*(d_accumulator->d_recon_plate_id));
-		if (reconstructed_polyline == NULL) {
-			// No match for the reconstruction plate ID.
-			continue;
-		} else {
-			// It will be valid to dereference 'reconstructed_polyline'.
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p(*reconstructed_polyline);
-			ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> rfg(p, feature_handle);
-			d_reconstructed_polylines_to_populate->push_back(rfg);
-		}
-	}
+		reconstruct_points_and_polylines(
+				d_reconstructed_points_to_populate,
+				d_reconstructed_polylines_to_populate,
+				d_accumulator->d_not_yet_reconstructed_points,
+				d_accumulator->d_not_yet_reconstructed_polylines,
+				feature_handle,
+				reconstructor);
+	} else {
+		// We obtained the reconstruction plate ID.  We now have all the information we
+		// need to reconstruct according to the reconstruction plate ID.
+		ReconstructAccordingToPlateId reconstructor(*d_recon_tree_ptr, *(d_accumulator->d_recon_plate_id));
 
+		reconstruct_points_and_polylines(
+				d_reconstructed_points_to_populate,
+				d_reconstructed_polylines_to_populate,
+				d_accumulator->d_not_yet_reconstructed_points,
+				d_accumulator->d_not_yet_reconstructed_polylines,
+				feature_handle,
+				reconstructor);
+	}
 	d_accumulator = boost::none;
 }
 

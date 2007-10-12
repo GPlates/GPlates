@@ -448,10 +448,14 @@ GPlatesQtWidgets::GlobeCanvas::handle_left_mouse_down()
 		// absolute rotation in the reconstruction tree.
 		GPlatesModel::ReconstructionTree &recon_tree =
 				d_reconstruction_ptr->reconstruction_tree();
-		GPlatesMaths::FiniteRotation absolute_rotation =
-				recon_tree.get_composed_absolute_rotation(recon_plate_id);
+		std::pair<GPlatesMaths::FiniteRotation,
+				GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
+				absolute_rotation =
+						recon_tree.get_composed_absolute_rotation(recon_plate_id);
 
-		GPlatesMaths::UnitQuaternion3D uq = absolute_rotation.unit_quat();
+		// FIXME:  Do we care about the reconstruction circumstance?
+		// (For example, there may have been no match for the reconstruction plate ID.)
+		GPlatesMaths::UnitQuaternion3D uq = absolute_rotation.first.unit_quat();
 		if (GPlatesMaths::represents_identity_rotation(uq)) {
 			d_query_feature_properties_dialog_ptr->set_euler_pole(QObject::tr("indeterminate"));
 			d_query_feature_properties_dialog_ptr->set_angle(0.0);
