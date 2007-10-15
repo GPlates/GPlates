@@ -26,6 +26,37 @@
  */
 
 #include "FeatureVisitor.h"
+#include "FeatureHandle.h"
+#include "InlinePropertyContainer.h"
 
 
-GPlatesModel::FeatureVisitor::~FeatureVisitor() {  }
+GPlatesModel::FeatureVisitor::~FeatureVisitor()
+{  }
+
+
+void
+GPlatesModel::FeatureVisitor::visit_feature_properties(
+		FeatureHandle &feature_handle)
+{
+	FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
+	FeatureHandle::properties_iterator end = feature_handle.properties_end();
+	for ( ; iter != end; ++iter) {
+		// Elements of this properties vector can be NULL pointers.  (See the comment in
+		// "model/FeatureRevision.h" for more details.)
+		if (*iter != NULL) {
+			(*iter)->accept_visitor(*this);
+		}
+	}
+}
+
+
+void
+GPlatesModel::FeatureVisitor::visit_property_values(
+		InlinePropertyContainer &inline_property_container)
+{
+	InlinePropertyContainer::const_iterator iter = inline_property_container.begin();
+	InlinePropertyContainer::const_iterator end = inline_property_container.end();
+	for ( ; iter != end; ++iter) {
+		(*iter)->accept_visitor(*this);
+	}
+}

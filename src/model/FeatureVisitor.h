@@ -84,17 +84,55 @@ namespace GPlatesModel
 		virtual
 		~FeatureVisitor() = 0;
 
+		/**
+		 * Override this function in your own derived class.
+		 *
+		 * When you override this function in your own derived class, don't forget to
+		 * invoke @a visit_feature_properties in the function body, to visit each of the
+		 * properties in turn.
+		 */
 		virtual
 		void
 		visit_feature_handle(
 				FeatureHandle &feature_handle)
-		{  }
+		{
+			visit_feature_properties(feature_handle);
+		}
 
+		/**
+		 * Invoke this function in @a visit_feature_handle to visit each of the the feature
+		 * properties in turn.
+		 *
+		 * Note that this function is not virtual.  This function should not be overridden.
+		 */
+		void
+		visit_feature_properties(
+				FeatureHandle &feature_handle);
+
+		/**
+		 * Override this function in your own derived class.
+		 *
+		 * When you override this function in your own derived class, don't forget to
+		 * invoke @a visit_property_values in the function body, to visit each of the
+		 * property-values in turn.
+		 */
 		virtual
 		void
 		visit_inline_property_container(
 				InlinePropertyContainer &inline_property_container)
-		{  }
+		{
+			visit_property_values(inline_property_container);
+		}
+
+		/**
+		 * Invoke this function in @a visit_inline_property_container to visit each of the
+		 * property-values in turn.
+		 *
+		 * Note that this function is not virtual.  This function should not be overridden.
+		 */
+		void
+		visit_property_values(
+				InlinePropertyContainer &inline_property_container);
 
 		// Please keep these property-value types ordered alphabetically.
 

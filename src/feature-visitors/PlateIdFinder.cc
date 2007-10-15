@@ -40,17 +40,7 @@ GPlatesFeatureVisitors::PlateIdFinder::visit_feature_handle(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Now visit each of the properties in turn.
-	GPlatesModel::FeatureHandle::properties_const_iterator iter =
-			feature_handle.properties_begin();
-	GPlatesModel::FeatureHandle::properties_const_iterator end =
-			feature_handle.properties_end();
-	for ( ; iter != end; ++iter) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) {
-			(*iter)->accept_visitor(*this);
-		}
-	}
+	visit_feature_properties(feature_handle);
 }
 
 
@@ -81,13 +71,7 @@ GPlatesFeatureVisitors::PlateIdFinder::visit_inline_property_container(
 		}
 	}
 
-	GPlatesModel::InlinePropertyContainer::const_iterator iter =
-			inline_property_container.begin(); 
-	GPlatesModel::InlinePropertyContainer::const_iterator end =
-			inline_property_container.end(); 
-	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(*this);
-	}
+	visit_property_values(inline_property_container);
 }
 
 

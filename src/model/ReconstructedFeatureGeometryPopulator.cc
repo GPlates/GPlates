@@ -199,16 +199,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 	d_accumulator = ReconstructedFeatureGeometryAccumulator();
 
 	// Now visit each of the properties in turn.
-	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
-	for ( ; iter != end; ++iter) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) {
-			d_accumulator->d_most_recent_propname_read = (*iter)->property_name();
-			(*iter)->accept_visitor(*this);
-		}
-	}
+	visit_feature_properties(feature_handle);
 
 	// So now we've visited the contents of this feature.  Let's find out if we were able to
 	// obtain all the information we need.
@@ -253,11 +244,9 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_inline_property_container(
 		InlinePropertyContainer &inline_property_container)
 {
-	InlinePropertyContainer::const_iterator iter = inline_property_container.begin(); 
-	InlinePropertyContainer::const_iterator end = inline_property_container.end(); 
-	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(*this);
-	}
+	d_accumulator->d_most_recent_propname_read = inline_property_container.property_name();
+
+	visit_property_values(inline_property_container);
 }
 
 
