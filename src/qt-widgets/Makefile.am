@@ -2,8 +2,6 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-EXTRA_DIST		= plates.clr.inc
-
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libqt_widgets.la
@@ -12,10 +10,13 @@ libqt_widgets_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
 	ReconstructToTimeDialog.cc ReconstructToTimeDialogUi.h moc_ReconstructToTimeDialog.cc \
 	SpecifyFixedPlateDialog.cc SpecifyFixedPlateDialogUi.h moc_SpecifyFixedPlateDialog.cc \
 	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc \
-	QueryFeaturePropertiesDialog.cc QueryFeaturePropertiesDialogUi.h moc_QueryFeaturePropertiesDialog.cc
+	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
+	QueryFeaturePropertiesDialog.cc QueryFeaturePropertiesDialogUi.h \
+	moc_QueryFeaturePropertiesDialog.cc InformationDialogUi.h LicenseDialog.cc \
+	moc_LicenseDialog.cc
 
 CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h ReconstructToTimeDialogUi.h \
-				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h \
+				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h AboutDialogUi.h \
 				QueryFeaturePropertiesDialogUi.h moc_*.cc
 
 # This rule lets GNU make create any moc_*.cc from the equivalent *.h

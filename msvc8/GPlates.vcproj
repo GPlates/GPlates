@@ -263,6 +263,18 @@
 			Name="qt-widgets"
 			>
 			<File
+				RelativePath="..\src\qt-widgets\AboutDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\AboutDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\AboutDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\AnimateDialog.cc"
 				>
 			</File>
@@ -303,6 +315,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\LicenseDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\LicenseDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_AboutDialog.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
 				>
 			</File>
@@ -316,6 +340,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_InformationDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_LicenseDialog.cc"
 				>
 			</File>
 			<File
@@ -427,11 +455,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\model\ReconstructionTreeEdge.cc"
+				RelativePath="..\src\model\ReconstructionTree.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\model\ReconstructionTree.cc"
+				RelativePath="..\src\model\ReconstructionTreeEdge.cc"
 				>
 			</File>
 			<File
@@ -551,6 +579,10 @@
 			Name="global"
 			>
 			<File
+				RelativePath="..\src\global\Constants.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\global\Exception.cc"
 				>
 			</File>
@@ -604,6 +636,14 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesDialogPopulator.cc"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="qt-resources"
+			>
+			<File
+				RelativePath="..\src\qt-resources\qrc_qt_widgets.cc"
 				>
 			</File>
 		</Filter>

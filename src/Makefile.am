@@ -3,7 +3,8 @@
 MAINTAINERCLEANFILES	= Makefile.in
 
 SUBDIRS			= feature-visitors file-io global gui maths model \
-				property-values qt-widgets state utils
+				property-values qt-resources qt-widgets state \
+				utils
 
 INCLUDES		= -I$(top_srcdir)/src
 
@@ -21,7 +22,9 @@ lib_LTLIBRARIES		= libgplates_gui.la libgplates_app.la \
 				libgplates_model.la libgplates_util.la
 
 libgplates_gui_la_SOURCES	=
-libgplates_gui_la_LIBADD	= gui/libgui.la qt-widgets/libqt_widgets.la
+libgplates_gui_la_LIBADD	= gui/libgui.la \
+					qt-resources/libqt_resources.la \
+					qt-widgets/libqt_widgets.la
 
 libgplates_app_la_SOURCES	=
 libgplates_app_la_LIBADD	= feature-visitors/libfeature_visitors.la \

@@ -1,13 +1,11 @@
 /* $Id$ */
 
 /**
- * @file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * \file 
+ * $Revision$
+ * $Date$ 
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,29 +22,31 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+ 
+#ifndef GPLATES_GUI_LICENSEDIALOG_H
+#define GPLATES_GUI_LICENSEDIALOG_H
 
-#ifndef _GPLATES_GUI_RECONSTRUCTTIMEDIALOG_H_
-#define _GPLATES_GUI_RECONSTRUCTTIMEDIALOG_H_
+#include <QDialog>
+#include "InformationDialogUi.h"
 
-#include <wx/dialog.h>
-#include "global/types.h"
 
-namespace GPlatesGui
+namespace GPlatesQtWidgets
 {
-	class ReconstructTimeDialog : public wxDialog
+	class LicenseDialog: 
+			public QDialog,
+			protected Ui_InformationDialog 
 	{
-		public:
-			explicit
-			ReconstructTimeDialog(wxWindow* parent);
-	
-			GPlatesGlobal::fpdata_t
-			GetTime() const;
+		Q_OBJECT
+		
+	public:
+		explicit
+		LicenseDialog(
+				QWidget *parent_ = NULL);
 
-		private:
-			wxTextCtrl* _time_ctrl;
-
-			wxString _time_ctrl_str;
+		virtual
+		~LicenseDialog()
+		{  }
 	};
 }
 
-#endif  /* _GPLATES_GUI_RECONSTRUCTTIMEDIALOG_H_ */
+#endif  // GPLATES_GUI_LICENSEDIALOG_H

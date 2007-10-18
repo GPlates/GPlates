@@ -1,13 +1,11 @@
 /* $Id$ */
 
 /**
- * @file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * \file 
+ * $Revision$
+ * $Date$ 
  * 
- * Copyright (C) 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,30 +22,37 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+ 
+#ifndef GPLATES_GUI_ABOUTDIALOG_H
+#define GPLATES_GUI_ABOUTDIALOG_H
 
-#ifndef _GPLATES_GUI_ABOUTDIALOG_H_
-#define _GPLATES_GUI_ABOUTDIALOG_H_
+#include <QDialog>
+#include "AboutDialogUi.h"
 
-#include <wx/dialog.h>
-#include <wx/event.h>
-#include "global/types.h"
 
-// forward declarations
-class wxSizer;
-class wxStaticText;
-
-namespace GPlatesGui
+namespace GPlatesQtWidgets
 {
-	class AboutDialog : public wxDialog
-	{
-		public:
-			explicit
-			AboutDialog (wxWindow *parent);
+	class ViewportWindow;
 
-		private:
-			wxSizer *_msizer;
-			wxStaticText *_top;
+
+	class AboutDialog: 
+			public QDialog,
+			protected Ui_AboutDialog 
+	{
+		Q_OBJECT
+		
+	public:
+		explicit
+		AboutDialog(
+				ViewportWindow &viewport,
+				QWidget *parent_ = NULL);
+
+		virtual
+		~AboutDialog()
+		{  }
+	private:
+		ViewportWindow *d_viewport_ptr;
 	};
 }
 
-#endif  /* _GPLATES_GUI_ABOUTDIALOG_H_ */
+#endif  // GPLATES_GUI_ABOUTDIALOG_H

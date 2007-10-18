@@ -29,5 +29,5 @@ GPlatesQtWidgets::InformationDialog::InformationDialog(
 		const QString &text_data)
 {
 	setupUi(this);
-	textEdit->insertPlainText(text_data);	
+	text_information->insertPlainText(text_data);	
 }

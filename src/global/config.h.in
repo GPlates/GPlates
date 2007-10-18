@@ -3,10 +3,6 @@
 /* define if we can link with the OpenGL framework */
 #undef CAN_LINK_OPENGL_FRAMEWORK
 
-/* "Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney,
-   Australia" */
-#undef COPYRIGHT_STRING
-
 /* define if bool is a built-in type */
 #undef HAVE_BOOL
 

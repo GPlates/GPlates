@@ -42,7 +42,6 @@
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
 
-#include "global/types.h"
 #include "model/Reconstruction.h"
 #include "maths/PolylineOnSphere.h"
 
@@ -201,11 +200,11 @@ namespace GPlatesQtWidgets
 		handle_wheel_rotation(
 				int delta);
 
-		GPlatesMaths::real_t
+		double
 		get_universe_coord_y(
 				int screen_x);
 
-		GPlatesMaths::real_t
+		double
 		get_universe_coord_z(
 				int screen_y);
 

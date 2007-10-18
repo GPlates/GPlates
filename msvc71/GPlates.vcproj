@@ -171,6 +171,33 @@
 			Name="qt-widgets"
 			Filter="">
 			<File
+				RelativePath="..\src\qt-widgets\AboutDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\AboutDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\AboutDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\AnimateDialog.cc">
 			</File>
 			<File
@@ -255,6 +282,24 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\LicenseDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\LicenseDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_AboutDialog.cc">
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc">
 			</File>
 			<File
@@ -265,6 +310,9 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_InformationDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_LicenseDialog.cc">
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_QueryFeaturePropertiesDialog.cc">
@@ -421,10 +469,10 @@
 				RelativePath="..\src\model\ReconstructionGraph.cc">
 			</File>
 			<File
-				RelativePath="..\src\model\ReconstructionTreeEdge.cc">
+				RelativePath="..\src\model\ReconstructionTree.cc">
 			</File>
 			<File
-				RelativePath="..\src\model\ReconstructionTree.cc">
+				RelativePath="..\src\model\ReconstructionTreeEdge.cc">
 			</File>
 			<File
 				RelativePath="..\src\model\ReconstructionTreePopulator.cc">
@@ -523,6 +571,9 @@
 			<File
 				RelativePath="..\src\global\InternalInconsistencyException.cc">
 			</File>
+			<File
+				RelativePath="..\src\global\Constants.cc">
+			</File>
 		</Filter>
 		<Filter
 			Name="file-io"
@@ -609,6 +660,13 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesDialogPopulator.cc">
+			</File>
+		</Filter>
+		<Filter
+			Name="qt-resources"
+			Filter="">
+			<File
+				RelativePath="..\src\qt-resources\qrc_qt_widgets.cc">
 			</File>
 		</Filter>
 	</Files>

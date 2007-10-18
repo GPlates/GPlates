@@ -35,11 +35,15 @@
 
 #include <string>
 #include <QtCore/QTimer>
+
 #include "ViewportWindowUi.h"
 #include "GlobeCanvas.h"
 #include "ReconstructToTimeDialog.h"
 #include "SpecifyFixedPlateDialog.h"
 #include "AnimateDialog.h"
+#include "AboutDialog.h"
+#include "LicenseDialog.h"
+
 #include "model/Model.h"
 
 namespace GPlatesQtWidgets
@@ -81,6 +85,9 @@ namespace GPlatesQtWidgets
 		void
 		decrement_reconstruction_time_and_reconstruct();
 
+		void
+		pop_up_license_dialog();
+
 	private:
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesModel::Model *d_model_ptr;
@@ -91,6 +98,8 @@ namespace GPlatesQtWidgets
 		ReconstructToTimeDialog d_reconstruct_to_time_dialog;
 		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
 		AnimateDialog d_animate_dialog;
+		AboutDialog d_about_dialog;
+		LicenseDialog d_license_dialog;
 		bool d_animate_dialog_has_been_shown;
 		
 	private slots:
@@ -102,6 +111,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_animate_dialog();
+
+		void
+		pop_up_about_dialog();
 	};
 }
 

@@ -117,6 +117,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_reconstruct_to_time_dialog(d_recon_time, this),
 	d_specify_fixed_plate_dialog(d_recon_root, this),
 	d_animate_dialog(*this, this),
+	d_about_dialog(*this, this),
+	d_license_dialog(&d_about_dialog),
 	d_animate_dialog_has_been_shown(false)
 {
 	setupUi(this);
@@ -129,26 +131,29 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	QObject::connect(d_canvas_ptr, SIGNAL(items_selected()), this, SLOT(selection_handler()));
 	QObject::connect(d_canvas_ptr, SIGNAL(left_mouse_button_clicked()), this, SLOT(mouse_click_handler()));
 #endif
-	QObject::connect(action_Reconstruct_to_Time, SIGNAL(activated()),
+	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
 			this, SLOT(pop_up_reconstruct_to_time_dialog()));
 	QObject::connect(&d_reconstruct_to_time_dialog, SIGNAL(value_changed(double)),
 			this, SLOT(set_reconstruction_time_and_reconstruct(double)));
 
-	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(activated()),
+	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(triggered()),
 			this, SLOT(pop_up_specify_fixed_plate_dialog()));
 	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
 			this, SLOT(set_reconstruction_root_and_reconstruct(unsigned long)));
 
-	QObject::connect(action_Animate, SIGNAL(activated()),
+	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
 	QObject::connect(&d_animate_dialog, SIGNAL(current_time_changed(double)),
 			this, SLOT(set_reconstruction_time_and_reconstruct(double)));
-	
-	QObject::connect(action_Increment_Reconstruction_Time, SIGNAL(activated()),
+
+	QObject::connect(action_Increment_Reconstruction_Time, SIGNAL(triggered()),
 			this, SLOT(increment_reconstruction_time_and_reconstruct()));
-	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(activated()),
+	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(triggered()),
 			this, SLOT(decrement_reconstruction_time_and_reconstruct()));
 	
+	QObject::connect(action_About, SIGNAL(triggered()),
+			this, SLOT(pop_up_about_dialog()));
+
 	centralwidget = d_canvas_ptr;
 	setCentralWidget(centralwidget);
 
@@ -243,4 +248,18 @@ GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 		d_animate_dialog_has_been_shown = true;
 	}
 	d_animate_dialog.show();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
+{
+	d_about_dialog.show();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
+{
+	d_license_dialog.show();
 }

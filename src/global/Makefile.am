@@ -5,4 +5,4 @@ MAINTAINERCLEANFILES	= Makefile.in
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libglobal.la
-libglobal_la_SOURCES	= Exception.cc InternalInconsistencyException.cc
+libglobal_la_SOURCES	= Exception.cc InternalInconsistencyException.cc Constants.cc

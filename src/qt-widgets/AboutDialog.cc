@@ -1,11 +1,11 @@
-/* $Id: gplates_main.cc 968 2006-11-20 03:28:31Z jboyden $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 968 $
- * $Date: 2006-11-20 14:28:31 +1100 (Mon, 20 Nov 2006) $ 
+ * $Revision$
+ * $Date$ 
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,30 +22,23 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+ 
+#include "AboutDialog.h"
+#include "ViewportWindow.h"
+#include "global/Constants.h"  // the copyright string macro
 
-#ifndef GPLATES_GUI_VIEW
-#define GPLATES_GUI_VIEW
 
-#include <set>
-#include "ViewInterface.h"
-#include "Viewport.h"
-#include "AbstractWindow.h"
-#include "GlobeCanvas.h"
-
-namespace GPlatesGui
+GPlatesQtWidgets::AboutDialog::AboutDialog(
+		ViewportWindow &viewport,
+		QWidget *parent_):
+	QDialog(parent_),
+	d_viewport_ptr(&viewport)
 {
-	class View : public ViewInterface
-	{
-	public:
+	setupUi(this);
 
-	private:
-		std::set< Viewport * > d_viewports;
-		
-		std::set< AbstractWindow > d_windows;
-		
-		GlobeCanvas *d_canvas;
-	};
+	QObject::connect(button_License, SIGNAL(clicked()),
+			d_viewport_ptr, SLOT(pop_up_license_dialog()));
+
+	QString message(QObject::tr(GPlatesGlobal::HtmlCopyrightString));
+	text_Copyright->setHtml(message);
 }
-
-#endif
-
