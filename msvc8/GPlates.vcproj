@@ -31,13 +31,16 @@
 				CommandLine=""
 			/>
 			<Tool
-				Name="Building UI Files"
+				Name="Build MOC Files"
+			/>
+			<Tool
+				Name="Building QRC Files"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
-				Name="Build MOC Files"
+				Name="Building UI Files"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -117,13 +120,16 @@
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
-				Name="Building UI Files"
+				Name="Build MOC Files"
+			/>
+			<Tool
+				Name="Building QRC Files"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
-				Name="Build MOC Files"
+				Name="Building UI Files"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -644,6 +650,10 @@
 			>
 			<File
 				RelativePath="..\src\qt-resources\qrc_qt_widgets.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-resources\qt_widgets.qrc"
 				>
 			</File>
 		</Filter>

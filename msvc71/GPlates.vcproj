@@ -566,13 +566,13 @@
 			Name="global"
 			Filter="">
 			<File
+				RelativePath="..\src\global\Constants.cc">
+			</File>
+			<File
 				RelativePath="..\src\global\Exception.cc">
 			</File>
 			<File
 				RelativePath="..\src\global\InternalInconsistencyException.cc">
-			</File>
-			<File
-				RelativePath="..\src\global\Constants.cc">
 			</File>
 		</Filter>
 		<Filter
@@ -667,6 +667,17 @@
 			Filter="">
 			<File
 				RelativePath="..\src\qt-resources\qrc_qt_widgets.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-resources\qt_widgets.qrc">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing RCC on $(InputName)"
+						CommandLine="rcc &quot;$(InputDir)/$(InputName).qrc&quot; -o &quot;$(InputDir)/qrc_$(InputName).cc&quot;"
+						Outputs="$(InputDir)/qrc_$(InputName).cc"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>
