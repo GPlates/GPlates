@@ -98,35 +98,125 @@ namespace GPlatesQtWidgets
 #endif
 
 	protected:
+		/**
+		 * This is a virtual override of the function in QGLWidget.
+		 *
+		 * To quote the QGLWidget documentation:
+		 *
+		 * This virtual function is called once before the first call to paintGL() or
+		 * resizeGL(), and then once whenever the widget has been assigned a new
+		 * QGLContext.  Reimplement it in a subclass.
+		 *
+		 * This function should set up any required OpenGL context rendering flags,
+		 * defining display lists, etc.
+		 *
+		 * There is no need to call makeCurrent() because this has already been done when
+		 * this function is called.
+		 */
 		virtual 
 		void 
 		initializeGL();
 
+		/**
+		 * This is a virtual override of the function in QGLWidget.
+		 *
+		 * To quote the QGLWidget documentation:
+		 *
+		 * This virtual function is called whenever the widget has been resized.  The new
+		 * size is passed in width and height.  Reimplement it in a subclass.
+		 *
+		 * There is no need to call makeCurrent() because this has already been done when
+		 * this function is called.
+		 */
 		virtual
 		void 
 		resizeGL(
 				int width, 
 				int height);
 
+		/**
+		 * This is a virtual override of the function in QGLWidget.
+		 *
+		 * To quote the QGLWidget documentation:
+		 *
+		 * This virtual function is called whenever the widget needs to be painted.
+		 * Reimplement it in a subclass.
+		 *
+		 * There is no need to call makeCurrent() because this has already been done when
+		 * this function is called.
+		 */
 		virtual
 		void
 		paintGL();
 
+		/**
+		 * This is a virtual override of the function in QWidget.
+		 *
+		 * To quote the QWidget documentation:
+		 *
+		 * This event handler, for event event, can be reimplemented in a subclass to
+		 * receive mouse press events for the widget.
+		 *
+		 * If you create new widgets in the mousePressEvent() the mouseReleaseEvent() may
+		 * not end up where you expect, depending on the underlying window system (or X11
+		 * window manager), the widgets' location and maybe more.
+		 *
+		 * The default implementation implements the closing of popup widgets when you
+		 * click outside the window.  For other widget types it does nothing.
+		 */
 		virtual
 		void
 		mousePressEvent(
 				QMouseEvent *event);
 
+		/**
+		 * This is a virtual override of the function in QWidget.
+		 *
+		 * To quote the QWidget documentation:
+		 *
+		 * This event handler, for event event, can be reimplemented in a subclass to
+		 * receive mouse move events for the widget.
+		 *
+		 * If mouse tracking is switched off, mouse move events only occur if a mouse
+		 * button is pressed while the mouse is being moved.  If mouse tracking is switched
+		 * on, mouse move events occur even if no mouse button is pressed.
+		 *
+		 * QMouseEvent::pos() reports the position of the mouse cursor, relative to this
+		 * widget.  For press and release events, the position is usually the same as the
+		 * position of the last mouse move event, but it might be different if the user's
+		 * hand shakes.  This is a feature of the underlying window system, not Qt.
+		 */
 		virtual 
 		void 
 		mouseMoveEvent(
 				QMouseEvent *event);
 
+		/**
+		 * This is a virtual override of the function in QWidget.
+		 *
+		 * To quote the QWidget documentation:
+		 *
+		 * This event handler, for event event, can be reimplemented in a subclass to
+		 * receive mouse release events for the widget.
+		 */
 		virtual 
 		void 
 		mouseReleaseEvent(
 				QMouseEvent *event);
 
+		/**
+		 * This is a virtual override of the function in QWidget.
+		 *
+		 * To quote the QWidget documentation:
+		 *
+		 * This event handler, for event event, can be reimplemented in a subclass to
+		 * receive wheel events for the widget.
+		 *
+		 * If you reimplement this handler, it is very important that you ignore() the
+		 * event if you do not handle it, so that the widget's parent can interpret it.
+		 *
+		 * The default implementation ignores the event.
+		 */
 		virtual
 		void
 		wheelEvent(
