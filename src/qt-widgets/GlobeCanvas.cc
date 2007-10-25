@@ -82,7 +82,7 @@ namespace
 	 */
 	inline
 	bool
-	is_on_globe(
+	discrim_signifies_on_globe(
 			const double &discrim) 
 	{
 		return (discrim < 1.0);
@@ -97,7 +97,7 @@ namespace
 	 * @a discrim == 1).
 	 */
 	const GPlatesMaths::PointOnSphere
-	on_globe(
+	calc_pos_on_globe(
 			const double &y,
 			const double &z,
 			const double &discrim) 
@@ -124,7 +124,7 @@ namespace
 	 * This assumes that (@a discrim >= 1).
 	 */
 	const GPlatesMaths::PointOnSphere
-	at_intersection_with_globe(
+	calc_pos_at_intersection_with_globe(
 			const double &y,
 			const double &z,
 			const double &discrim) 
@@ -144,20 +144,20 @@ namespace
 	 * on the globe to the position determined by @a y and @a z.
 	 */
 	const GPlatesMaths::PointOnSphere
-	virtual_globe_position(
+	calc_virtual_globe_position(
 			const double &y,
 			const double &z) 
 	{
 		double discrim = calc_globe_pos_discrim(y, z);
 		
-		if (is_on_globe(discrim)) {
+		if (discrim_signifies_on_globe(discrim)) {
 			// Universe coords y and z do in fact determine a position on the globe.
-			return on_globe(y, z, discrim);
+			return calc_pos_on_globe(y, z, discrim);
 		}
 
 		// Universe coords y and z do not determine a position on the globe.  Find the
 		// closest point which *is* on the globe.
-		return at_intersection_with_globe(y, z, discrim);
+		return calc_pos_at_intersection_with_globe(y, z, discrim);
 	}
 	
 }
@@ -168,8 +168,20 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		QWidget *parent_):
 	QGLWidget(parent_),
 	d_view_state_ptr(&view_state),
-	d_query_feature_properties_dialog_ptr(new QueryFeaturePropertiesDialog(this->parentWidget()))
+	d_query_feature_properties_dialog_ptr(new QueryFeaturePropertiesDialog(this->parentWidget())),
+	// The following unit-vector initialisation value is arbitrary.
+	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
+	d_mouse_pointer_is_on_globe(false)
 {
+	// QWidget::setMouseTracking:
+	//   If mouse tracking is disabled (the default), the widget only receives mouse move
+	//   events when at least one mouse button is pressed while the mouse is being moved.
+	//
+	//   If mouse tracking is enabled, the widget receives mouse move events even if no buttons
+	//   are pressed.
+	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
+	setMouseTracking(true);
+
 	handle_zoom_change();
 }
 
@@ -291,18 +303,25 @@ void
 GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 		QMouseEvent *press_event) 
 {
-	d_mouse_x = press_event->x();
-	d_mouse_y = press_event->y();
-	
+	update_mouse_pointer_pos(press_event);
+	d_mouse_press_info =
+			MousePressInfo(
+					press_event->x(),
+					press_event->y(),
+					virtual_mouse_pointer_pos_on_globe(),
+					mouse_pointer_is_on_globe(),
+					press_event->button(),
+					press_event->modifiers());
+
 	switch (press_event->button()) {
 	case Qt::LeftButton:
 		handle_left_mouse_down();
 		break;
-		
+
 	case Qt::RightButton:
 		handle_right_mouse_down();
 		break;
-		
+
 	default:
 		break;
 	}
@@ -313,9 +332,15 @@ void
 GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		QMouseEvent *move_event) 
 {
-	d_mouse_x = move_event->x();
-	d_mouse_y = move_event->y();
-	
+	update_mouse_pointer_pos(move_event);
+
+	if (d_mouse_press_info) {
+		if (abs(move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
+				abs(move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+			d_mouse_press_info->d_is_mouse_drag = true;
+		}
+	}
+
 	if (move_event->buttons() & Qt::RightButton) {
 		handle_right_mouse_drag();
 	}
@@ -326,6 +351,16 @@ void
 GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		QMouseEvent *release_event)
 {
+	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
+			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+		d_mouse_press_info->d_is_mouse_drag = true;
+	}
+	if (d_mouse_press_info->d_is_mouse_drag) {
+		std::cout << "What a drag!" << std::endl;
+	} else {
+		std::cout << "We just clicked!" << std::endl;
+	}
+
 	if (release_event->button() == Qt::LeftButton) {
 		emit left_mouse_button_clicked();
 	}
@@ -342,12 +377,19 @@ void GPlatesQtWidgets::GlobeCanvas::wheelEvent(
 void
 GPlatesQtWidgets::GlobeCanvas::handle_zoom_change() 
 {
-	emit current_zoom_changed(d_viewport_zoom.zoom_percent());
+	emit zoom_changed(d_viewport_zoom.zoom_percent());
 
 	set_view();
+
+	// QWidget::update:
+	//   Updates the widget unless updates are disabled or the widget is hidden.
+	//
+	//   This function does not cause an immediate repaint; instead it schedules a paint event
+	//   for processing when Qt returns to the main event loop.
+	//    -- http://doc.trolltech.com/4.3/qwidget.html#update
 	update();
-	
-	handle_mouse_motion();
+
+	handle_mouse_pointer_pos_change();
 }
 
 		
@@ -357,8 +399,8 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	static const GLdouble depth_near_clipping = 0.5;
 
 	// Always fill up all of the available space.
-	get_dimensions();
-	glViewport(0, 0, static_cast<GLsizei>(d_width), static_cast<GLsizei>(d_height));
+	update_dimensions();
+	glViewport(0, 0, static_cast<GLsizei>(d_canvas_screen_width), static_cast<GLsizei>(d_canvas_screen_height));
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -376,7 +418,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// This is used for the coordinate of the further clipping plane in the depth dimension.
 	GLdouble depth_far_clipping = fabsf(EYE_Z);
 
-	if (d_width <= d_height) {
+	if (d_canvas_screen_width <= d_canvas_screen_height) {
 		glOrtho(-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
@@ -393,46 +435,50 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::get_dimensions() 
+GPlatesQtWidgets::GlobeCanvas::update_dimensions() 
 {
-	d_width = width();
-	d_height = height();
+	d_canvas_screen_width = width();
+	d_canvas_screen_height = height();
 
-	if (d_width <= d_height) {
-		d_smaller_dim = static_cast< GLdouble >(d_width);
-		d_larger_dim = static_cast< GLdouble >(d_height);
+	if (d_canvas_screen_width <= d_canvas_screen_height) {
+		d_smaller_dim = static_cast<GLdouble>(d_canvas_screen_width);
+		d_larger_dim = static_cast<GLdouble>(d_canvas_screen_height);
 	} else {
-		d_smaller_dim = static_cast< GLdouble >(d_height);
-		d_larger_dim = static_cast< GLdouble >(d_width);
+		d_smaller_dim = static_cast<GLdouble>(d_canvas_screen_height);
+		d_larger_dim = static_cast<GLdouble>(d_canvas_screen_width);
 	}
 }
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::handle_mouse_motion() 
+GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
+		QMouseEvent *mouse_event) 
 {
-	using namespace GPlatesMaths;
+	d_mouse_pointer_screen_pos_x = mouse_event->x();
+	d_mouse_pointer_screen_pos_y = mouse_event->y();
 
-	double y_pos = get_universe_coord_y(d_mouse_x);
-	double z_pos = get_universe_coord_z(d_mouse_y);
+	handle_mouse_pointer_pos_change();
+}
 
-	double discrim = calc_globe_pos_discrim(y_pos, z_pos);
-	
-	if (is_on_globe(discrim)) {
-		PointOnSphere p = on_globe(y_pos, z_pos, discrim);
 
-		// FIXME: Globe uses wrong naming convention for methods.
-		PointOnSphere rotated_p = d_globe.Orient(p);
+void
+GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change() 
+{
+	double y_pos = get_universe_coord_y_of_mouse();
+	double z_pos = get_universe_coord_z_of_mouse();
+	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
 
-		// FIXME: LatLonPoint uses wrong naming convention for functions.
-		LatLonPoint llp =
-			LatLonPointConversions::convertPointOnSphereToLatLonPoint(rotated_p);
+	// FIXME: Globe uses wrong naming convention for methods.
+	GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
+	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
 
-		emit current_global_pos_changed(llp.latitude().dval(),
-			llp.longitude().dval());
+	if (oriented_new_pos != d_virtual_mouse_pointer_pos_on_globe ||
+			is_now_on_globe != d_mouse_pointer_is_on_globe) {
 
-	} else {
-		emit current_global_pos_off_globe();
+		d_virtual_mouse_pointer_pos_on_globe = oriented_new_pos;
+		d_mouse_pointer_is_on_globe = is_now_on_globe;
+
+		emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
 	}
 }
 
@@ -442,10 +488,10 @@ GPlatesQtWidgets::GlobeCanvas::handle_right_mouse_down()
 {
 	using namespace GPlatesMaths;
 
-	double y_pos = get_universe_coord_y(d_mouse_x);
-	double z_pos = get_universe_coord_z(d_mouse_y);
+	double y_pos = get_universe_coord_y_of_mouse();
+	double z_pos = get_universe_coord_z_of_mouse();
 
-	PointOnSphere p = virtual_globe_position(y_pos, z_pos);
+	PointOnSphere p = calc_virtual_globe_position(y_pos, z_pos);
 	
 	// FIXME: Globe uses wrong naming convention for methods.
 	d_globe.SetNewHandlePos(p);
@@ -457,9 +503,9 @@ GPlatesQtWidgets::GlobeCanvas::handle_left_mouse_down()
 {
 	using namespace GPlatesGui;
 
-	double y_pos = get_universe_coord_y(d_mouse_x);
-	double z_pos = get_universe_coord_z(d_mouse_y);
-	GPlatesMaths::PointOnSphere click_pos = virtual_globe_position(y_pos, z_pos);
+	double y_pos = get_universe_coord_y_of_mouse();
+	double z_pos = get_universe_coord_z_of_mouse();
+	GPlatesMaths::PointOnSphere click_pos = calc_virtual_globe_position(y_pos, z_pos);
 
 	// Compensate for the rotated globe.
 	// FIXME: Globe uses wrong naming convention for methods.
@@ -532,14 +578,14 @@ GPlatesQtWidgets::GlobeCanvas::handle_left_mouse_down()
 #endif
 
 	if ( ! d_reconstruction_ptr) {
-		emit no_items_selected_by_click();
+		emit no_items_found_by_click();
 		return;
 	}
 	std::priority_queue<ProximityTests::ProximityHit> sorted_hits;
 	ProximityTests::find_close_rfgs(sorted_hits, *d_reconstruction_ptr, rotated_click_pos,
 			proximity_inclusion_threshold);
 	if (sorted_hits.size() == 0) {
-		emit no_items_selected_by_click();
+		emit no_items_found_by_click();
 		return;
 	}
 	GPlatesModel::FeatureHandle::weak_ref feature_ref(sorted_hits.top().d_feature->reference());
@@ -617,7 +663,7 @@ GPlatesQtWidgets::GlobeCanvas::handle_left_mouse_down()
 	d_query_feature_properties_dialog_ptr->show();
 
 	// FIXME:  We should re-enable this.
-	// emit items_selected(items);
+	emit items_found_by_click();
 }
 
 
@@ -626,10 +672,10 @@ GPlatesQtWidgets::GlobeCanvas::handle_right_mouse_drag()
 {
 	using namespace GPlatesMaths;
 
-	double y_pos = get_universe_coord_y(d_mouse_x);
-	double z_pos = get_universe_coord_z(d_mouse_y);
+	double y_pos = get_universe_coord_y_of_mouse();
+	double z_pos = get_universe_coord_z_of_mouse();
 
-	PointOnSphere p = virtual_globe_position(y_pos, z_pos);
+	PointOnSphere p = calc_virtual_globe_position(y_pos, z_pos);
 	
 	// FIXME: Globe uses wrong naming convention for methods.
 	d_globe.UpdateHandlePos(p);
@@ -642,8 +688,9 @@ void
 GPlatesQtWidgets::GlobeCanvas::handle_wheel_rotation(
 		int delta) 
 {
+	// These integer values (8 and 15) are copied from the Qt reference docs for QWheelEvent:
+	//  http://doc.trolltech.com/4.3/qwheelevent.html#delta
 	const int num_degrees = delta / 8;
-	
 	int num_steps = num_degrees / 15;
 
 	if (num_steps > 0) {
@@ -660,10 +707,10 @@ GPlatesQtWidgets::GlobeCanvas::handle_wheel_rotation(
 
 double
 GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y(
-		int screen_x) 
+		int screen_x) const
 {
 	// Scale the screen to a "unit square".
-	double y_pos = (2.0 * screen_x - d_width) / d_smaller_dim;
+	double y_pos = (2.0 * screen_x - d_canvas_screen_width) / d_smaller_dim;
 
 	return (y_pos * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
 }
@@ -671,10 +718,10 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y(
 
 double
 GPlatesQtWidgets::GlobeCanvas::get_universe_coord_z(
-		int screen_y) 
+		int screen_y) const
 {
 	// Scale the screen to a "unit square".
-	double z_pos = (d_height - 2.0 * screen_y) / d_smaller_dim;
+	double z_pos = (d_canvas_screen_height - 2.0 * screen_y) / d_smaller_dim;
 	
 	return (z_pos * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
 }

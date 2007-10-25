@@ -36,16 +36,16 @@
 #include "utils/non_null_intrusive_ptr.h"
 
 
-namespace GPlatesModel {
-
+namespace GPlatesModel
+{
 	/**
 	 * This class is the abstract base of all property values.
 	 *
 	 * It provides pure virtual function declarations for cloning and accepting visitors.  It
 	 * also provides the functions to be used by boost::intrusive_ptr for reference-counting.
 	 */
-	class PropertyValue {
-
+	class PropertyValue
+	{
 	public:
 		/**
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue>.
@@ -64,10 +64,6 @@ namespace GPlatesModel {
 		 */
 		typedef long ref_count_type;
 
-		virtual
-		~PropertyValue()
-		{ }
-
 		/**
 		 * Construct a PropertyValue instance.
 		 *
@@ -78,7 +74,7 @@ namespace GPlatesModel {
 		 */
 		PropertyValue() :
 			d_ref_count(0)
-		{ }
+		{  }
 
 		/**
 		 * Construct a PropertyValue instance which is a copy of @a other.
@@ -101,7 +97,11 @@ namespace GPlatesModel {
 		PropertyValue(
 				const PropertyValue &other) :
 			d_ref_count(0)
-		{ }
+		{  }
+
+		virtual
+		~PropertyValue()
+		{  }
 
 		/**
 		 * Create a duplicate of this PropertyValue instance.
@@ -135,11 +135,14 @@ namespace GPlatesModel {
 		/**
 		 * Increment the reference-count of this instance.
 		 *
+		 * Client code should not use this function!
+		 *
 		 * This function is used by boost::intrusive_ptr and
 		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		void
-		increment_ref_count() const {
+		increment_ref_count() const
+		{
 			++d_ref_count;
 		}
 
@@ -147,16 +150,21 @@ namespace GPlatesModel {
 		 * Decrement the reference-count of this instance, and return the new
 		 * reference-count.
 		 *
+		 * Client code should not use this function!
+		 *
 		 * This function is used by boost::intrusive_ptr and
 		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		ref_count_type
-		decrement_ref_count() const {
+		decrement_ref_count() const
+		{
 			return --d_ref_count;
 		}
 
 	private:
-
+		/**
+		 * The reference-count of this instance by intrusive-pointers.
+		 */
 		mutable ref_count_type d_ref_count;
 
 		// This operator should never be defined, because we don't want/need to allow
@@ -173,7 +181,8 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_add_ref(
-			const PropertyValue *p) {
+			const PropertyValue *p)
+	{
 		p->increment_ref_count();
 	}
 
@@ -181,7 +190,8 @@ namespace GPlatesModel {
 	inline
 	void
 	intrusive_ptr_release(
-			const PropertyValue *p) {
+			const PropertyValue *p)
+	{
 		if (p->decrement_ref_count() == 0) {
 			delete p;
 		}

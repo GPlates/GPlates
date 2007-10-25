@@ -1,5 +1,10 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file>GPlates-logo-transparent.png</file>
+    <file>drag_globe_35.png</file>
+    <file>drag_plate_35.png</file>
+    <file>query_feature_35.png</file>
+    <file>select_plate_35.png</file>
+    <file>spin_globe_35.png</file>
 </qresource>
 </RCC>

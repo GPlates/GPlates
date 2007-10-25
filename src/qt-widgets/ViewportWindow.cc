@@ -25,6 +25,7 @@
  
 #include <iostream>
 #include <boost/format.hpp>
+#include <QLocale>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -154,6 +155,15 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
 
+	QObject::connect(d_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
+			this, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
+
+	QObject::connect(toolButton_Drag_Globe, SIGNAL(clicked()),
+			this, SLOT(choose_drag_globe_tool()));
+
+	QObject::connect(toolButton_Query_Feature, SIGNAL(clicked()),
+			this, SLOT(choose_query_feature_tool()));
+
 	centralwidget = d_canvas_ptr;
 	setCentralWidget(centralwidget);
 
@@ -262,4 +272,53 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
 {
 	d_license_dialog.show();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::update_mouse_pointer_position(
+		const GPlatesMaths::PointOnSphere &new_virtual_pos,
+		bool is_on_globe)
+{
+	GPlatesMaths::LatLonPoint llp =
+			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
+					new_virtual_pos);
+
+	QLocale locale_;
+	QString lat = locale_.toString(llp.latitude().dval(), 'f', 2);
+	QString lon = locale_.toString(llp.longitude().dval(), 'f', 2);
+	QString position_as_string(QObject::tr("(lat: "));
+	position_as_string.append(lat);
+	position_as_string.append(QObject::tr(" ; lon: "));
+	position_as_string.append(lon);
+	position_as_string.append(QObject::tr(")"));
+	if ( ! is_on_globe) {
+		position_as_string.append(QObject::tr(" (off globe)"));
+	}
+
+	statusbar->showMessage(position_as_string);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
+{
+	uncheck_all_tools();
+	toolButton_Drag_Globe->setChecked(true);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_query_feature_tool()
+{
+	uncheck_all_tools();
+	toolButton_Query_Feature->setChecked(true);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
+{
+	toolButton_Drag_Globe->setChecked(false);
+	toolButton_Query_Feature->setChecked(false);
 }

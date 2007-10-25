@@ -225,6 +225,10 @@
 			Name="gui"
 			>
 			<File
+				RelativePath="..\src\gui\CanvasTool.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\Colour.cc"
 				>
 			</File>

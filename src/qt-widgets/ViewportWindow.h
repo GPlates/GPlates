@@ -88,6 +88,17 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_license_dialog();
 
+		void
+		update_mouse_pointer_position(
+				const GPlatesMaths::PointOnSphere &new_virtual_pos,
+				bool is_on_globe);
+
+		void
+		choose_drag_globe_tool();
+
+		void
+		choose_query_feature_tool();
+
 	private:
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesModel::Model *d_model_ptr;
@@ -101,7 +112,9 @@ namespace GPlatesQtWidgets
 		AboutDialog d_about_dialog;
 		LicenseDialog d_license_dialog;
 		bool d_animate_dialog_has_been_shown;
-		
+
+		void
+		uncheck_all_tools();
 	private slots:
 		void
 		pop_up_reconstruct_to_time_dialog();

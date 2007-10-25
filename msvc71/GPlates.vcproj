@@ -137,6 +137,9 @@
 			Name="gui"
 			Filter="">
 			<File
+				RelativePath="..\src\gui\CanvasTool.cc">
+			</File>
+			<File
 				RelativePath="..\src\gui\Colour.cc">
 			</File>
 			<File

@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_GLOBECANVAS_H
-#define GPLATES_GUI_GLOBECANVAS_H
+#ifndef GPLATES_QTWIDGETS_GLOBECANVAS_H
+#define GPLATES_QTWIDGETS_GLOBECANVAS_H
 
 #ifdef HAVE_PYTHON
 // We need to include this _before_ any Qt headers get included because
@@ -38,12 +38,14 @@
 #include <QtOpenGL/qgl.h>
 #include <vector>
 #include <boost/shared_ptr.hpp>
+#include <boost/optional.hpp>
 
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
 
 #include "model/Reconstruction.h"
 #include "maths/PolylineOnSphere.h"
+
 
 namespace GPlatesQtWidgets 
 {
@@ -58,6 +60,35 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
+
+		struct MousePressInfo
+		{
+			MousePressInfo(
+					int mouse_pointer_screen_pos_x,
+					int mouse_pointer_screen_pos_y,
+					const GPlatesMaths::PointOnSphere &mouse_pointer_pos,
+					bool is_on_globe,
+					Qt::MouseButton button,
+					Qt::KeyboardModifiers modifiers):
+				d_mouse_pointer_screen_pos_x(mouse_pointer_screen_pos_x),
+				d_mouse_pointer_screen_pos_y(mouse_pointer_screen_pos_y),
+				d_mouse_pointer_pos(mouse_pointer_pos),
+				d_is_on_globe(is_on_globe),
+				d_button(button),
+				d_modifiers(modifiers),
+				d_is_mouse_drag(false)
+			{  }
+
+			int d_mouse_pointer_screen_pos_x;
+			int d_mouse_pointer_screen_pos_y;
+			GPlatesMaths::PointOnSphere d_mouse_pointer_pos;
+			bool d_is_on_globe;
+			Qt::MouseButton d_button;
+			Qt::KeyboardModifiers d_modifiers;
+			bool d_is_mouse_drag;
+		};
+
+
 		explicit
 		GlobeCanvas(
 				ViewportWindow &view_state,
@@ -84,6 +115,29 @@ namespace GPlatesQtWidgets
 		void
 		clear_data();
 
+		/**
+		 * If the mouse pointer is on the globe, return the position of the mouse pointer
+		 * on the globe.
+		 *
+		 * Otherwise, return the closest position on the globe to the position of the
+		 * mouse pointer in the 3-D "universe".
+		 */
+		const GPlatesMaths::PointOnSphere &
+		virtual_mouse_pointer_pos_on_globe() const
+		{
+			return d_virtual_mouse_pointer_pos_on_globe;
+		}
+
+		/**
+		 * Return whether the mouse pointer is on the globe.
+		 */
+		bool
+		mouse_pointer_is_on_globe() const
+		{
+			return d_mouse_pointer_is_on_globe;
+		}
+
+	public slots:
 		void
 		zoom_in();
 
@@ -92,10 +146,6 @@ namespace GPlatesQtWidgets
 
 		void
 		zoom_reset();
-
-#if 0
-		typedef std::pair< std::string, std::string > line_header_type;
-#endif
 
 	protected:
 		/**
@@ -224,25 +274,19 @@ namespace GPlatesQtWidgets
 
 	signals:
 		void
-		current_global_pos_changed(
-				double latitude,
-				double longtitude);
+		mouse_pointer_position_changed(
+				const GPlatesMaths::PointOnSphere &new_virtual_pos,
+				bool is_on_globe);
 
 		void
-		current_global_pos_off_globe();
+		items_found_by_click();
 
 		void
-		no_items_selected_by_click();
+		no_items_found_by_click();
 
 		void
-		current_zoom_changed(
+		zoom_changed(
 				double zoom_percent);
-
-#if 0
-		void
-		items_selected(
-				std::vector< line_header_type > &items);
-#endif
 
 		void
 		left_mouse_button_clicked();
@@ -253,14 +297,51 @@ namespace GPlatesQtWidgets
 		boost::intrusive_ptr<GPlatesModel::Reconstruction> d_reconstruction_ptr;
 		boost::shared_ptr<QueryFeaturePropertiesDialog> d_query_feature_properties_dialog_ptr;
 
-		int d_width;
-		int d_height;
+		/**
+		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
+		 * on the globe.
+		 *
+		 * Otherwise, this is the closest position on the globe to the position of the
+		 * mouse pointer in the 3-D "universe".
+		 */
+		GPlatesMaths::PointOnSphere d_virtual_mouse_pointer_pos_on_globe;
 
-		long d_mouse_x;
-		long d_mouse_y;
+		/**
+		 * Whether the mouse pointer is on the globe.
+		 */
+		bool d_mouse_pointer_is_on_globe;
 
+		/**
+		 * The x-coord of the mouse pointer position on the screen.
+		 */
+		int d_mouse_pointer_screen_pos_x;
+
+		/**
+		 * The y-coord of the mouse pointer position on the screen.
+		 */
+		int d_mouse_pointer_screen_pos_y;
+
+		/**
+		 * The width of the canvas in integer screen coordinates.
+		 */
+		int d_canvas_screen_width;
+
+		/**
+		 * The height of the canvas in integer screen coordinates.
+		 */
+		int d_canvas_screen_height;
+
+		/**
+		 * The smaller of the dimensions (width/height) of the screen.
+		 */
 		double d_smaller_dim;
+
+		/**
+		 * The larger of the dimensions (width/height) of the screen.
+		 */
 		double d_larger_dim;
+
+		boost::optional<MousePressInfo> d_mouse_press_info;
 
 		GPlatesGui::Globe d_globe;
 		GPlatesGui::ViewportZoom d_viewport_zoom;
@@ -272,10 +353,14 @@ namespace GPlatesQtWidgets
 		set_view();
 
 		void
-		get_dimensions();
+		update_mouse_pointer_pos(
+				QMouseEvent *mouse_event);
 
 		void
-		handle_mouse_motion();
+		update_dimensions();
+
+		void
+		handle_mouse_pointer_pos_change();
 
 		void
 		handle_right_mouse_down();
@@ -290,13 +375,53 @@ namespace GPlatesQtWidgets
 		handle_wheel_rotation(
 				int delta);
 
+		/**
+		 * Get the "universe" y-coordinate of the current mouse pointer position.
+		 *
+		 * Note that this function makes no statement about whether the current mouse
+		 * pointer position is on the globe or not.
+		 */
+		inline
+		double
+		get_universe_coord_y_of_mouse() const
+		{
+			return get_universe_coord_y(d_mouse_pointer_screen_pos_x);
+		}
+
+		/**
+		 * Get the "universe" z-coordinate of the current mouse pointer position.
+		 *
+		 * Note that this function makes no statement about whether the current mouse
+		 * pointer position is on the globe or not.
+		 */
+		inline
+		double
+		get_universe_coord_z_of_mouse() const
+		{
+			return get_universe_coord_z(d_mouse_pointer_screen_pos_y);
+		}
+
+		/**
+		 * Translate the screen x-coordinate @a screen_x to the corresponding "universe"
+		 * y-coordinate.
+		 *
+		 * Note that this function makes no statement about whether the screen position is
+		 * on the globe or not.
+		 */
 		double
 		get_universe_coord_y(
-				int screen_x);
+				int screen_x) const;
 
+		/**
+		 * Translate the screen y-coordinate @a screen_y to the corresponding "universe"
+		 * z-coordinate.
+		 *
+		 * Note that this function makes no statement about whether the screen position is
+		 * on the globe or not.
+		 */
 		double
 		get_universe_coord_z(
-				int screen_y);
+				int screen_y) const;
 
 		void
 		clear_canvas(
@@ -305,4 +430,4 @@ namespace GPlatesQtWidgets
 
 }
 
-#endif
+#endif  // GPLATES_QTWIDGETS_GLOBECANVAS_H
