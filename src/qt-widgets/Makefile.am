@@ -13,11 +13,12 @@ libqt_widgets_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	QueryFeaturePropertiesDialog.cc QueryFeaturePropertiesDialogUi.h \
 	moc_QueryFeaturePropertiesDialog.cc InformationDialogUi.h LicenseDialog.cc \
-	moc_LicenseDialog.cc
+	moc_LicenseDialog.cc \
+	ReconstructionViewWidget.cc ReconstructionViewWidgetUi.h moc_ReconstructionViewWidget.cc
 
 CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h ReconstructToTimeDialogUi.h \
 				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h AboutDialogUi.h \
-				QueryFeaturePropertiesDialogUi.h moc_*.cc
+				QueryFeaturePropertiesDialogUi.h ReconstructionViewWidgetUi.h moc_*.cc
 
 # This rule lets GNU make create any moc_*.cc from the equivalent *.h
 moc_%.cc: %.h

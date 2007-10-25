@@ -297,6 +297,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidgetUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\CubeWidget.cc"
 				>
 			</File>
@@ -338,6 +350,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
 				>
 			</File>
 			<File

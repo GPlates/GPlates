@@ -29,6 +29,7 @@
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
+#include "ReconstructionViewWidget.h"
 
 #include "global/Exception.h"
 #include "maths/LatLonPointConversions.h"
@@ -127,7 +128,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_model_ptr = new GPlatesModel::Model();
 	load_plates_files(*d_model_ptr, d_isochrons, d_total_recon_seqs, plates_line_fname, plates_rot_fname);
 
-	d_canvas_ptr = new GlobeCanvas(*this, this);
+	ReconstructionViewWidget *reconstruction_view_widget = new ReconstructionViewWidget(*this, this);
+	d_canvas_ptr = reconstruction_view_widget->get_globe_canvas();
+	
 #if 0
 	QObject::connect(d_canvas_ptr, SIGNAL(items_selected()), this, SLOT(selection_handler()));
 	QObject::connect(d_canvas_ptr, SIGNAL(left_mouse_button_clicked()), this, SLOT(mouse_click_handler()));
@@ -158,13 +161,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	QObject::connect(d_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
 			this, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
 
-	QObject::connect(toolButton_Drag_Globe, SIGNAL(clicked()),
+	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
 			this, SLOT(choose_drag_globe_tool()));
 
-	QObject::connect(toolButton_Query_Feature, SIGNAL(clicked()),
+	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			this, SLOT(choose_query_feature_tool()));
 
-	centralwidget = d_canvas_ptr;
+	centralwidget = reconstruction_view_widget;
 	setCentralWidget(centralwidget);
 
 	// Render everything on the screen in present-day positions.
@@ -304,7 +307,7 @@ void
 GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 {
 	uncheck_all_tools();
-	toolButton_Drag_Globe->setChecked(true);
+	action_Drag_Globe->setChecked(true);
 }
 
 
@@ -312,13 +315,13 @@ void
 GPlatesQtWidgets::ViewportWindow::choose_query_feature_tool()
 {
 	uncheck_all_tools();
-	toolButton_Query_Feature->setChecked(true);
+	action_Query_Feature->setChecked(true);
 }
 
 
 void
 GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 {
-	toolButton_Drag_Globe->setChecked(false);
-	toolButton_Query_Feature->setChecked(false);
+	action_Drag_Globe->setChecked(false);
+	action_Query_Feature->setChecked(false);
 }
