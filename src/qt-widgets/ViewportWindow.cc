@@ -32,7 +32,11 @@
 #include "ReconstructionViewWidget.h"
 
 #include "global/Exception.h"
+#include "gui/CanvasToolAdapter.h"
+#include "gui/CanvasToolChoice.h"
+#include "gui/FeatureWeakRefSequence.h"
 #include "maths/LatLonPointConversions.h"
+#include "model/Model.h"
 #include "model/DummyTransactionHandle.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
@@ -72,18 +76,16 @@ namespace
 	void
 	render_model(
 			GPlatesQtWidgets::GlobeCanvas *canvas_ptr, 
-			GPlatesModel::Model *model_ptr, 
+			GPlatesModel::ModelInterface *model_ptr, 
+			GPlatesModel::Reconstruction::non_null_ptr_type &reconstruction,
 			GPlatesModel::FeatureCollectionHandle::weak_ref isochrons,
 			GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs,
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root)
 	{
 		try {
-			GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
-					model_ptr->create_reconstruction(isochrons, total_recon_seqs,
+			reconstruction = model_ptr->create_reconstruction(isochrons, total_recon_seqs,
 							recon_time, recon_root);
-
-			canvas_ptr->set_reconstruction(reconstruction);
 
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator iter =
 					reconstruction->point_geometries().begin();
@@ -114,6 +116,8 @@ namespace
 GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 		const std::string &plates_line_fname,
 		const std::string &plates_rot_fname):
+	d_model_ptr(new GPlatesModel::Model()),
+	d_reconstruction_ptr(d_model_ptr->create_empty_reconstruction(0.0, 0)),
 	d_recon_time(0.0),
 	d_recon_root(0),
 	d_reconstruct_to_time_dialog(d_recon_time, this),
@@ -121,11 +125,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_animate_dialog(*this, this),
 	d_about_dialog(*this, this),
 	d_license_dialog(&d_about_dialog),
+	d_query_feature_properties_dialog(this),
 	d_animate_dialog_has_been_shown(false)
 {
 	setupUi(this);
 
-	d_model_ptr = new GPlatesModel::Model();
 	load_plates_files(*d_model_ptr, d_isochrons, d_total_recon_seqs, plates_line_fname, plates_rot_fname);
 
 	ReconstructionViewWidget *reconstruction_view_widget = new ReconstructionViewWidget(*this, this);
@@ -163,7 +167,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
 			this, SLOT(choose_drag_globe_tool()));
-
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			this, SLOT(choose_query_feature_tool()));
 
@@ -174,8 +177,53 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	const QString message(boost::str(boost::format("%1% MYA") % d_recon_time).c_str());
 	statusbar->showMessage(message);
 	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_isochrons, d_total_recon_seqs, 0.0, d_recon_root);
+	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, 0.0, d_recon_root);
 	d_canvas_ptr->update_canvas();
+
+	GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type clicked_features =
+			GPlatesGui::FeatureWeakRefSequence::create();
+
+	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
+	d_canvas_tool_choice_ptr =
+			new GPlatesGui::CanvasToolChoice(
+					d_canvas_ptr->globe(),
+					*d_canvas_ptr,
+					*this,
+					clicked_features,
+					d_query_feature_properties_dialog);
+
+	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
+			d_canvas_tool_choice_ptr, SLOT(choose_reorient_globe_tool()));
+	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
+			d_canvas_tool_choice_ptr, SLOT(choose_query_feature_tool()));
+
+	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
+	d_canvas_tool_adapter_ptr = new GPlatesGui::CanvasToolAdapter(*d_canvas_tool_choice_ptr);
+
+	QObject::connect(d_canvas_ptr, SIGNAL(mouse_clicked(const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
+					Qt::KeyboardModifiers)),
+			d_canvas_tool_adapter_ptr, SLOT(handle_click(const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
+					Qt::KeyboardModifiers)));
+
+	QObject::connect(d_canvas_ptr, SIGNAL(mouse_dragged(const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &, bool,
+					Qt::MouseButton, Qt::KeyboardModifiers)),
+			d_canvas_tool_adapter_ptr, SLOT(handle_drag(const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &, bool,
+					Qt::MouseButton, Qt::KeyboardModifiers)));
+
+	QObject::connect(d_canvas_ptr, SIGNAL(mouse_released_after_drag(const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &, bool,
+					Qt::MouseButton, Qt::KeyboardModifiers)),
+			d_canvas_tool_adapter_ptr, SLOT(handle_release_after_drag(const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &, bool,
+					Qt::MouseButton, Qt::KeyboardModifiers)));
 }
 
 
@@ -188,7 +236,7 @@ GPlatesQtWidgets::ViewportWindow::set_reconstruction_time_and_reconstruct(
 	const QString message(boost::str(boost::format("%1% MYA") % d_recon_time).c_str());
 	statusbar->showMessage(message);
 	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
+	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
 	d_canvas_ptr->update_canvas();
 }
 
@@ -200,7 +248,7 @@ GPlatesQtWidgets::ViewportWindow::set_reconstruction_root_and_reconstruct(
 	d_recon_root = recon_root;
 
 	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
+	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
 	d_canvas_ptr->update_canvas();
 }
 
@@ -216,7 +264,7 @@ GPlatesQtWidgets::ViewportWindow::increment_reconstruction_time_and_reconstruct(
 	const QString message(boost::str(boost::format("%1% MYA") % d_recon_time).c_str());
 	statusbar->showMessage(message);
 	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
+	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
 	d_canvas_ptr->update_canvas();
 }
 
@@ -233,7 +281,8 @@ GPlatesQtWidgets::ViewportWindow::decrement_reconstruction_time_and_reconstruct(
 	const QString message(boost::str(boost::format("%1% MYA") % d_recon_time).c_str());
 	statusbar->showMessage(message);
 	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
+	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time,
+			d_recon_root);
 	d_canvas_ptr->update_canvas();
 }
 

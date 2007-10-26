@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_SPECIFYFIXEDPLATEDIALOG_H
-#define GPLATES_GUI_SPECIFYFIXEDPLATEDIALOG_H
+#ifndef GPLATES_QTWIDGETS_SPECIFYFIXEDPLATEDIALOG_H
+#define GPLATES_QTWIDGETS_SPECIFYFIXEDPLATEDIALOG_H
 
 #include <QDialog>
 #include "SpecifyFixedPlateDialogUi.h"
@@ -73,4 +73,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif
+#endif  // GPLATES_QTWIDGETS_SPECIFYFIXEDPLATEDIALOG_H

@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_LICENSEDIALOG_H
-#define GPLATES_GUI_LICENSEDIALOG_H
+#ifndef GPLATES_QTWIDGETS_LICENSEDIALOG_H
+#define GPLATES_QTWIDGETS_LICENSEDIALOG_H
 
 #include <QDialog>
 #include "InformationDialogUi.h"
@@ -49,4 +49,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif  // GPLATES_GUI_LICENSEDIALOG_H
+#endif  // GPLATES_QTWIDGETS_LICENSEDIALOG_H

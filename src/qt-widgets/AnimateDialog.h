@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_ANIMATEDIALOG_H
-#define GPLATES_GUI_ANIMATEDIALOG_H
+#ifndef GPLATES_QTWIDGETS_ANIMATEDIALOG_H
+#define GPLATES_QTWIDGETS_ANIMATEDIALOG_H
 
 #include <QDialog>
 #include <QTimer>

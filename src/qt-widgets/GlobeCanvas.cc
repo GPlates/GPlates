@@ -29,13 +29,12 @@
 
 #include <vector>
 #include <cmath>
+#include <boost/none.hpp>
 
 #include <QLocale>
 #include <QtGui/QMouseEvent>
 
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
-#include "QueryFeaturePropertiesDialog.h"
-#include "feature-visitors/QueryFeaturePropertiesDialogPopulator.h"
 #include "feature-visitors/PlateIdFinder.h"
 #include "gui/ProximityTests.h"
 
@@ -168,7 +167,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		QWidget *parent_):
 	QGLWidget(parent_),
 	d_view_state_ptr(&view_state),
-	d_query_feature_properties_dialog_ptr(new QueryFeaturePropertiesDialog(this->parentWidget())),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false)
@@ -183,6 +181,88 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	setMouseTracking(true);
 
 	handle_zoom_change();
+}
+
+
+double
+GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
+		const GPlatesMaths::PointOnSphere &click_point) const
+{
+	// Say we pick an epsilon radius of 3 pixels around the click position.  That's an epsilon
+	// diameter of 6 pixels.  (Obviously, the larger this diameter, the more relaxed the
+	// proximity inclusion threshold.)
+	// FIXME:  Do we want this constant to instead be a variable set by a per-user preference,
+	// to enable users to specify their own epsilon radius?  (For example, users with shaky
+	// hands or very high-resolution displays might prefer a larger epsilon radius.)
+	static const GLdouble epsilon_diameter = 6.0;
+
+	// The value of 'd_smaller_dim' is the value of whichever of the width or height of the
+	// canvas is smaller; the smaller dimension of the canvas will play a role in determining
+	// the size of the globe.
+	//
+	// The value of 'zoom_factor' starts at 1 for no zoom, then increases to 1.12202, 1.25893,
+	// etc.  The product (d_smaller_dim * zoom_factor) gives the current size of the globe in
+	// (floating-point) pixels, taking into account canvas size and zoom.
+	//
+	// So, (epsilon_diameter / (d_smaller_dim * zoom_factor)) is the ratio of the diameter of
+	// the epsilon circle to the diameter of the globe.  We want to convert this to an angle,
+	// so we should pipe this value through an inverse-sine function, to convert from the
+	// on-screen projection size of the epsilon circle to the angle at the centre of the globe.
+	// (However, we won't bother with the inverse-sine:  For arguments of as small a magnitude
+	// as these (less than 0.05), the value of asin(x) is practically equal to the value of 'x'
+	// anyway.  No, really -- don't take my word for it -- try it yourself!)
+	//
+	// Then take the cosine, and we have the dot-product-related closeness inclusion threshold.
+
+	// Algorithm modification, 2007-10-16:  If you look at a cross-section of the globe (sliced
+	// vertically) you'll notice that at high latitudes (whether positive or negative), we see
+	// the surface of the globe almost-tangentially.  At these high latitudes, a small
+	// mouse-pointer displacement on-screen will result in a significantly larger mouse-pointer
+	// displacement on the surface of the globe than would the equivalent mouse-pointer
+	// displacement at the Equator.
+	//
+	// Since the mouse-pointer position on-screen will vary by whole pixels, at the high
+	// latitudes of the cross-section it might not even be *possible* to reach a mouse-pointer
+	// position on the globe which is close enough to a geometry to click on it:  Moving by a
+	// single pixel on-screen might cause the mouse-pointer position on the globe to "skip
+	// over" the necessary location on the globe.
+	//
+	// If we generalise this reasoning to the 3-D sphere, we can state that the "problem areas"
+	// of the sphere are those which are "far" from the point which appears at the centre of
+	// the projection of the globe.  Mathematically, if we let 'lambda' be the angular distance
+	// of the current point from the point which appears at the centre of the projection of the
+	// globe, then it is the "high" values of lambda (those which are close to 90 degrees)
+	// which correspond to the high latitudes of the cross-section case.
+	// 
+	// So, let's increase the epsilon diameter proportional to (1 - cos(lambda)) so that it is
+	// still possible to click on geometries at the edge of the globe.
+	//
+	// The value of 3 below is pretty much arbitrary, however.  I just tried different values
+	// till things behaved as I wanted in the GUI.
+
+	// Since our globe is a unit sphere, the x-coordinate of the virtual click point is equal
+	// to the cos of 'lambda'.
+	double cos_lambda = click_point.position_vector().x().dval();
+	double lambda_scaled_epsilon_diameter = epsilon_diameter + 3 * epsilon_diameter * (1 - cos_lambda);
+	GLdouble diameter_ratio =
+			lambda_scaled_epsilon_diameter / (d_smaller_dim * d_viewport_zoom.zoom_factor());
+	double proximity_inclusion_threshold = cos(static_cast<double>(diameter_ratio));
+
+#if 0  // Change 0 to 1 if you want this informative output.
+	std::cout << "\nEpsilon diameter: " << epsilon_diameter << std::endl;
+	std::cout << "cos(lambda): " << cos_lambda << std::endl;
+	std::cout << "Lambda-scaled epsilon diameter: " << lambda_scaled_epsilon_diameter << std::endl;
+	std::cout << "Smaller canvas dim: " << d_smaller_dim << std::endl;
+	std::cout << "Zoom factor: " << d_viewport_zoom.zoom_factor() << std::endl;
+	std::cout << "Globe size: " << (d_smaller_dim * d_viewport_zoom.zoom_factor()) << std::endl;
+	std::cout << "Diameter ratio: " << diameter_ratio << std::endl;
+	std::cout << "asin(diameter ratio): " << asin(diameter_ratio) << std::endl;
+	std::cout << "Proximity inclusion threshold: " << proximity_inclusion_threshold << std::endl;
+	std::cout << "Proximity inclusion threshold from asin(diameter ratio): "
+			<< cos(asin(diameter_ratio)) << std::endl;
+#endif
+
+	return proximity_inclusion_threshold;
 }
 
 
@@ -312,19 +392,6 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 					mouse_pointer_is_on_globe(),
 					press_event->button(),
 					press_event->modifiers());
-
-	switch (press_event->button()) {
-	case Qt::LeftButton:
-		handle_left_mouse_down();
-		break;
-
-	case Qt::RightButton:
-		handle_right_mouse_down();
-		break;
-
-	default:
-		break;
-	}
 }
 
 
@@ -339,10 +406,17 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 				abs(move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
 			d_mouse_press_info->d_is_mouse_drag = true;
 		}
-	}
 
-	if (move_event->buttons() & Qt::RightButton) {
-		handle_right_mouse_drag();
+		if (d_mouse_press_info->d_is_mouse_drag) {
+			emit mouse_dragged(
+					d_mouse_press_info->d_mouse_pointer_pos,
+					d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
+					d_mouse_press_info->d_is_on_globe,
+					virtual_mouse_pointer_pos_on_globe(),
+					mouse_pointer_is_on_globe(),
+					d_mouse_press_info->d_button,
+					d_mouse_press_info->d_modifiers);
+		}
 	}
 }
 
@@ -356,14 +430,23 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		d_mouse_press_info->d_is_mouse_drag = true;
 	}
 	if (d_mouse_press_info->d_is_mouse_drag) {
-		std::cout << "What a drag!" << std::endl;
+		emit mouse_released_after_drag(
+				d_mouse_press_info->d_mouse_pointer_pos,
+				d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
+				d_mouse_press_info->d_is_on_globe,
+				virtual_mouse_pointer_pos_on_globe(),
+				mouse_pointer_is_on_globe(),
+				d_mouse_press_info->d_button,
+				d_mouse_press_info->d_modifiers);
 	} else {
-		std::cout << "We just clicked!" << std::endl;
+		emit mouse_clicked(
+				d_mouse_press_info->d_mouse_pointer_pos,
+				d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
+				d_mouse_press_info->d_is_on_globe,
+				d_mouse_press_info->d_button,
+				d_mouse_press_info->d_modifiers);
 	}
-
-	if (release_event->button() == Qt::LeftButton) {
-		emit left_mouse_button_clicked();
-	}
+	d_mouse_press_info = boost::none;
 }
 
 
@@ -469,218 +552,17 @@ GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
 
 	// FIXME: Globe uses wrong naming convention for methods.
-	GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
 	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
 
-	if (oriented_new_pos != d_virtual_mouse_pointer_pos_on_globe ||
+	if (new_pos != d_virtual_mouse_pointer_pos_on_globe ||
 			is_now_on_globe != d_mouse_pointer_is_on_globe) {
 
-		d_virtual_mouse_pointer_pos_on_globe = oriented_new_pos;
+		d_virtual_mouse_pointer_pos_on_globe = new_pos;
 		d_mouse_pointer_is_on_globe = is_now_on_globe;
 
+		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
 		emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
 	}
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::handle_right_mouse_down() 
-{
-	using namespace GPlatesMaths;
-
-	double y_pos = get_universe_coord_y_of_mouse();
-	double z_pos = get_universe_coord_z_of_mouse();
-
-	PointOnSphere p = calc_virtual_globe_position(y_pos, z_pos);
-	
-	// FIXME: Globe uses wrong naming convention for methods.
-	d_globe.SetNewHandlePos(p);
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::handle_left_mouse_down() 
-{
-	using namespace GPlatesGui;
-
-	double y_pos = get_universe_coord_y_of_mouse();
-	double z_pos = get_universe_coord_z_of_mouse();
-	GPlatesMaths::PointOnSphere click_pos = calc_virtual_globe_position(y_pos, z_pos);
-
-	// Compensate for the rotated globe.
-	// FIXME: Globe uses wrong naming convention for methods.
-	GPlatesMaths::PointOnSphere rotated_click_pos = d_globe.Orient(click_pos);
-
-	// The larger the value of this constant, the more relaxed the proximity inclusion
-	// threshold.  Read the comment preceding 'diameter_ratio' for the purpose of this value.
-	static const GLdouble epsilon_diameter = 6.0;
-
-	// Say we pick an epsilon radius of 3 pixels around the click position.  That's a diameter
-	// of 6 pixels (the value of the constant 'epsilon_diameter' above).
-	//
-	// The value of 'd_smaller_dim' is the value of whichever of the width or height of the
-	// canvas is smaller; the smaller dimension of the canvas will play a role in determining
-	// the size of the globe.
-	//
-	// The value of 'zoom_factor' starts at 1 for no zoom, then increases to 1.12202, 1.25893,
-	// etc.  The product (d_smaller_dim * zoom_factor) gives the current size of the globe in
-	// (floating-point) pixels, taking into account canvas size and zoom.
-	//
-	// So, (epsilon_diameter / (d_smaller_dim * zoom_factor)) is the ratio of the diameter of
-	// the epsilon circle to the diameter of the globe.  We want to convert this to an angle,
-	// so we should pipe this value through an inverse-sine function, to convert from the
-	// on-screen projection size of the epsilon circle to the angle at the centre of the globe
-	// (but for arguments of such small magnitude (less than 0.05), the value of asin(x) is
-	// practically equal to the value of 'x' anyway.  (No really -- try it!)
-	//
-	// Then take the cosine, and we have the dot-product-related closeness inclusion threshold.
-
-	// A new addition, 2007-10-16:  If you look at a cross-section of the globe, sliced
-	// vertically, you'll notice that we only see the high latitutes (whether positive or
-	// negative latitudes) tangentially.  This means that a small mouse-position displacement
-	// on-screen results in a significantly larger mouse-position displacement on the globe.
-	// Thus, at a high latitude, displacing the mouse-position by a single pixel on-screen will
-	// have a more significant displacement on the globe position than it would at the Equator.
-	//
-	// Since the mouse-position on-screen will vary by whole pixels, at the high latitudes it
-	// might not even be possible to reach a mouse-position on the globe which is close enough
-	// to a geometry to click on it -- moving by a single pixel on-screen might cause the
-	// mouse-position on the globe to "skip over" the necessary position on the globe.
-	//
-	// For this reason, let's increase the epsilon diameter proportional to (1 - cos of the
-	// "latitude" (really the angular distance from the centre of the projection of the globe
-	// in its current orientation)), so that it is still possible to click on geometries at the
-	// edge of the globe.
-	//
-	// The value of 3 below is pretty much arbitrary, however.  I just tried different values
-	// till things behaved as I wanted in the GUI.
-
-	// Since our globe is a unit sphere, the x-coordinate of the virtual click point is equal
-	// to the cos of the "latitude" (angular distance from the centre).
-	double cos_lat = click_pos.position_vector().x().dval();
-	double lat_scaled_epsilon_diameter = epsilon_diameter + 3 * epsilon_diameter * (1 - cos_lat);
-	GLdouble diameter_ratio =
-			lat_scaled_epsilon_diameter / (d_smaller_dim * d_viewport_zoom.zoom_factor());
-	double proximity_inclusion_threshold = cos(static_cast<double>(diameter_ratio));
-
-#if 0
-	std::cout << "\nEpsilon diameter: " << epsilon_diameter << std::endl;
-	std::cout << "cos(lat): " << cos_lat << std::endl;
-	std::cout << "Latitude-scaled epsilon diameter: " << lat_scaled_epsilon_diameter << std::endl;
-	std::cout << "Smaller canvas dim: " << d_smaller_dim << std::endl;
-	std::cout << "Zoom factor: " << d_viewport_zoom.zoom_factor() << std::endl;
-	std::cout << "Globe size: " << (d_smaller_dim * d_viewport_zoom.zoom_factor()) << std::endl;
-	std::cout << "Diameter ratio: " << diameter_ratio << std::endl;
-	std::cout << "asin(diameter ratio): " << asin(diameter_ratio) << std::endl;
-	std::cout << "Proximity inclusion threshold: " << proximity_inclusion_threshold << std::endl;
-	std::cout << "Proximity inclusion threshold from asin(diameter ratio): "
-			<< cos(asin(diameter_ratio)) << std::endl;
-#endif
-
-	if ( ! d_reconstruction_ptr) {
-		emit no_items_found_by_click();
-		return;
-	}
-	std::priority_queue<ProximityTests::ProximityHit> sorted_hits;
-	ProximityTests::find_close_rfgs(sorted_hits, *d_reconstruction_ptr, rotated_click_pos,
-			proximity_inclusion_threshold);
-	if (sorted_hits.size() == 0) {
-		emit no_items_found_by_click();
-		return;
-	}
-	GPlatesModel::FeatureHandle::weak_ref feature_ref(sorted_hits.top().d_feature->reference());
-	if ( ! feature_ref.is_valid()) {
-		// FIXME:  How did this happen?  Throw an exception!
-		return;  // FIXME:  Should throw an exception instead.
-	}
-
-	d_query_feature_properties_dialog_ptr->set_feature_type(
-			GPlatesUtils::make_qstring(feature_ref->feature_type()));
-
-	// These next few fields only make sense if the feature is reconstructable, ie. if it has a
-	// reconstruction plate ID.
-	GPlatesModel::PropertyName plate_id_property_name(UnicodeString("gpml:reconstructionPlateId"));
-	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-	plate_id_finder.visit_feature_handle(*feature_ref);
-	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
-		// The feature has a reconstruction plate ID.
-		GPlatesModel::integer_plate_id_type recon_plate_id =
-				*plate_id_finder.found_plate_ids_begin();
-		d_query_feature_properties_dialog_ptr->set_plate_id(recon_plate_id);
-
-		GPlatesModel::integer_plate_id_type root_plate_id =
-				d_view_state_ptr->reconstruction_root();
-		d_query_feature_properties_dialog_ptr->set_root_plate_id(root_plate_id);
-		d_query_feature_properties_dialog_ptr->set_reconstruction_time(
-				d_view_state_ptr->reconstruction_time());
-
-		// Now let's use the reconstruction plate ID of the feature to find the appropriate 
-		// absolute rotation in the reconstruction tree.
-		GPlatesModel::ReconstructionTree &recon_tree =
-				d_reconstruction_ptr->reconstruction_tree();
-		std::pair<GPlatesMaths::FiniteRotation,
-				GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
-				absolute_rotation =
-						recon_tree.get_composed_absolute_rotation(recon_plate_id);
-
-		// FIXME:  Do we care about the reconstruction circumstance?
-		// (For example, there may have been no match for the reconstruction plate ID.)
-		GPlatesMaths::UnitQuaternion3D uq = absolute_rotation.first.unit_quat();
-		if (GPlatesMaths::represents_identity_rotation(uq)) {
-			d_query_feature_properties_dialog_ptr->set_euler_pole(QObject::tr("indeterminate"));
-			d_query_feature_properties_dialog_ptr->set_angle(0.0);
-		} else {
-			using namespace GPlatesMaths;
-			using LatLonPointConversions::convertPointOnSphereToLatLonPoint;
-
-			UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
-
-			PointOnSphere euler_pole(params.axis);
-			LatLonPoint llp = convertPointOnSphereToLatLonPoint(euler_pole);
-
-			// Use the default locale for the floating-point-to-string conversion.
-			// (We need the underscore at the end of the variable name, because
-			// apparently there is already a member of GlobeCanvas named 'locale'.)
-			QLocale locale_;
-			QString euler_pole_lat = locale_.toString(llp.latitude().dval());
-			QString euler_pole_lon = locale_.toString(llp.longitude().dval());
-			QString euler_pole_as_string;
-			euler_pole_as_string.append(euler_pole_lat);
-			euler_pole_as_string.append(QObject::tr(" ; "));
-			euler_pole_as_string.append(euler_pole_lon);
-
-			d_query_feature_properties_dialog_ptr->set_euler_pole(euler_pole_as_string);
-
-			const double &angle = radiansToDegrees(params.angle).dval();
-			d_query_feature_properties_dialog_ptr->set_angle(angle);
-		}
-	}
-
-	GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator populator(
-			d_query_feature_properties_dialog_ptr->property_tree());
-	populator.visit_feature_handle(*feature_ref);
-
-	d_query_feature_properties_dialog_ptr->show();
-
-	// FIXME:  We should re-enable this.
-	emit items_found_by_click();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::handle_right_mouse_drag() 
-{
-	using namespace GPlatesMaths;
-
-	double y_pos = get_universe_coord_y_of_mouse();
-	double z_pos = get_universe_coord_z_of_mouse();
-
-	PointOnSphere p = calc_virtual_globe_position(y_pos, z_pos);
-	
-	// FIXME: Globe uses wrong naming convention for methods.
-	d_globe.UpdateHandlePos(p);
-	
-	updateGL();
 }
 
 

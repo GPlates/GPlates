@@ -222,6 +222,22 @@
 			>
 		</Filter>
 		<Filter
+			Name="canvas-tools"
+			>
+			<File
+				RelativePath="..\src\canvas-tools\QueryFeature.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\QueryFeature.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc"
+				>
+			</File>
+		</Filter>
+		<Filter
 			Name="gui"
 			>
 			<File
@@ -229,7 +245,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\CanvasToolAdapter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\CanvasToolAdapter.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\CanvasToolChoice.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\CanvasToolChoice.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\Colour.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
 				>
 			</File>
 			<File
@@ -266,6 +302,18 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\ViewportZoom.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_CanvasToolAdapter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_CanvasToolChoice.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
 				>
 			</File>
 		</Filter>
@@ -309,14 +357,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\CubeWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\CubeWidget.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\GlobeCanvas.cc"
 				>
 			</File>
@@ -354,10 +394,6 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_CubeWidget.cc"
 				>
 			</File>
 			<File

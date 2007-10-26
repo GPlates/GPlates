@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_VIEWPORTWINDOW_H
-#define GPLATES_GUI_VIEWPORTWINDOW_H
+#ifndef GPLATES_QTWIDGETS_VIEWPORTWINDOW_H
+#define GPLATES_QTWIDGETS_VIEWPORTWINDOW_H
 
 #ifdef HAVE_PYTHON
 // We need to include this _before_ any Qt headers get included because
@@ -43,8 +43,16 @@
 #include "AnimateDialog.h"
 #include "AboutDialog.h"
 #include "LicenseDialog.h"
+#include "QueryFeaturePropertiesDialog.h"
 
-#include "model/Model.h"
+#include "model/ModelInterface.h"
+
+
+namespace GPlatesGui
+{
+	class CanvasToolAdapter;
+	class CanvasToolChoice;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -59,6 +67,12 @@ namespace GPlatesQtWidgets
 				const std::string &plates_line_fname,
 				const std::string &plates_rot_fname);
 
+		GPlatesModel::Reconstruction &
+		reconstruction() const
+		{
+			return *d_reconstruction_ptr;
+		}
+
 		const double &
 		reconstruction_time() const
 		{
@@ -70,6 +84,7 @@ namespace GPlatesQtWidgets
 		{
 			return d_recon_root;
 		}
+
 	public slots:
 		void
 		set_reconstruction_time_and_reconstruct(
@@ -101,7 +116,8 @@ namespace GPlatesQtWidgets
 
 	private:
 		GlobeCanvas *d_canvas_ptr;
-		GPlatesModel::Model *d_model_ptr;
+		GPlatesModel::ModelInterface *d_model_ptr;
+		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_isochrons;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_total_recon_seqs;
 		double d_recon_time;
@@ -111,7 +127,10 @@ namespace GPlatesQtWidgets
 		AnimateDialog d_animate_dialog;
 		AboutDialog d_about_dialog;
 		LicenseDialog d_license_dialog;
+		QueryFeaturePropertiesDialog d_query_feature_properties_dialog;
 		bool d_animate_dialog_has_been_shown;
+		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
+		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;
 
 		void
 		uncheck_all_tools();
@@ -130,4 +149,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif  // GPLATES_GUI_VIEWPORTWINDOW_H
+#endif  // GPLATES_QTWIDGETS_VIEWPORTWINDOW_H

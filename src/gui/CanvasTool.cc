@@ -27,6 +27,7 @@
 
 #include "CanvasTool.h"
 #include "Globe.h"
+#include "qt-widgets/GlobeCanvas.h"
 #include "maths/PointOnSphere.h"
 
 
@@ -37,6 +38,7 @@ GPlatesGui::CanvasTool::~CanvasTool()
 void
 GPlatesGui::CanvasTool::reorient_globe_by_drag_update(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe)
@@ -46,12 +48,14 @@ GPlatesGui::CanvasTool::reorient_globe_by_drag_update(
 		d_is_in_reorientation_op = true;
 	}
 	d_globe_ptr->UpdateHandlePos(current_pos_on_globe);
+	d_globe_canvas_ptr->update_canvas();
 }
 
 
 void
 GPlatesGui::CanvasTool::reorient_globe_by_drag_release(
 		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		bool is_on_globe)
@@ -61,5 +65,6 @@ GPlatesGui::CanvasTool::reorient_globe_by_drag_release(
 		d_is_in_reorientation_op = true;
 	}
 	d_globe_ptr->UpdateHandlePos(current_pos_on_globe);
+	d_globe_canvas_ptr->update_canvas();
 	d_is_in_reorientation_op = false;
 }

@@ -134,13 +134,77 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
 		</Filter>
 		<Filter
+			Name="canvas-tools"
+			Filter="">
+			<File
+				RelativePath="..\src\canvas-tools\QueryFeature.cc">
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\QueryFeature.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc">
+			</File>
+		</Filter>
+		<Filter
 			Name="gui"
 			Filter="">
 			<File
 				RelativePath="..\src\gui\CanvasTool.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui\CanvasToolAdapter.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\CanvasToolAdapter.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\gui\CanvasToolChoice.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\CanvasToolChoice.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui\Colour.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureWeakRefSequence.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\Globe.cc">
@@ -168,6 +232,15 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\ViewportZoom.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_CanvasToolAdapter.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_CanvasToolChoice.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc">
 			</File>
 		</Filter>
 		<Filter
@@ -255,21 +328,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\CubeWidget.cc">
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\CubeWidget.h">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Executing MOC on $(InputName)"
-						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
-"
-						Outputs="$(InputDir)/moc_$(InputName).cc"/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\GlobeCanvas.cc">
 			</File>
 			<File
@@ -334,9 +392,6 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc">
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_CubeWidget.cc">
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_GlobeCanvas.cc">

@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_RECONSTRUCTTOTIMEDIALOG_H
-#define GPLATES_GUI_RECONSTRUCTTOTIMEDIALOG_H
+#ifndef GPLATES_QTWIDGETS_RECONSTRUCTTOTIMEDIALOG_H
+#define GPLATES_QTWIDGETS_RECONSTRUCTTOTIMEDIALOG_H
 
 #include <QDialog>
 #include "ReconstructToTimeDialogUi.h"
@@ -72,4 +72,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif
+#endif  // GPLATES_QTWIDGETS_RECONSTRUCTTOTIMEDIALOG_H

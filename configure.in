@@ -320,6 +320,7 @@ AC_OUTPUT(Makefile
 	doc/doxygen.conf
 	doc/Makefile
 	src/Makefile
+	src/canvas-tools/Makefile
 	src/feature-visitors/Makefile
 	src/file-io/Makefile
 	src/global/Makefile

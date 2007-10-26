@@ -63,6 +63,11 @@ namespace GPlatesModel
 				const double &time,
 				integer_plate_id_type root);
 
+		const Reconstruction::non_null_ptr_type
+		create_empty_reconstruction(
+				const double &time,
+				integer_plate_id_type root);
+
 #ifdef HAVE_PYTHON
 		// A Python wrapper for create_reconstruction
 		boost::python::tuple

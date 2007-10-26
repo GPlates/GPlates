@@ -146,6 +146,21 @@ namespace GPlatesModel
 				const double &time,
 				integer_plate_id_type root) = 0;
 
+		/**
+		 * FIXME:  Where is the comment for this function?
+		 *
+		 * And while we're at it, do any of those other functions actually throw exceptions
+		 * when they're passed invalid weak_refs?  They should.
+		 *
+		 * FIXME:  Remove this function once it is possible to create empty reconstructions
+		 * by simply passing empty lists of feature-collections into the prev function.
+		 */
+		virtual
+		const Reconstruction::non_null_ptr_type
+		create_empty_reconstruction(
+				const double &time,
+				integer_plate_id_type root) = 0;
+
 		virtual
 		~ModelInterface()
 		{  }

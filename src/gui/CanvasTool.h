@@ -34,6 +34,10 @@ namespace GPlatesMaths
 	class PointOnSphere;
 }
 
+namespace GPlatesQtWidgets
+{
+	class GlobeCanvas;
+}
 
 namespace GPlatesGui
 {
@@ -68,9 +72,11 @@ namespace GPlatesGui
 		 */
 		explicit
 		CanvasTool(
-				Globe &globe_):
+				Globe &globe_,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_):
 			d_ref_count(0),
 			d_globe_ptr(&globe_),
+			d_globe_canvas_ptr(&globe_canvas_),
 			d_is_in_reorientation_op(false)
 		{  }
 
@@ -102,6 +108,7 @@ namespace GPlatesGui
 		void
 		handle_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe)
 		{  }
 
@@ -119,6 +126,7 @@ namespace GPlatesGui
 		void
 		handle_left_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe)
@@ -139,6 +147,7 @@ namespace GPlatesGui
 		void
 		handle_left_release_after_drag(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe)
@@ -174,9 +183,16 @@ namespace GPlatesGui
 		}
 
 	protected:
+		GPlatesQtWidgets::GlobeCanvas &
+		globe_canvas() const
+		{
+			return *d_globe_canvas_ptr;
+		}
+
 		void
 		reorient_globe_by_drag_update(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe);
@@ -184,6 +200,7 @@ namespace GPlatesGui
 		void
 		reorient_globe_by_drag_release(
 				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe);
@@ -198,6 +215,11 @@ namespace GPlatesGui
 		 * The globe which will be re-oriented by globe re-orientation operations.
 		 */
 		Globe *d_globe_ptr;
+
+		/**
+		 * The globe canvas which will need to be updated after globe re-orientation.
+		 */
+		GPlatesQtWidgets::GlobeCanvas *d_globe_canvas_ptr;
 
 		/**
 		 * Whether or not this canvas tool is currently in the midst of a globe

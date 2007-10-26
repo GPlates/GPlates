@@ -43,7 +43,6 @@
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
 
-#include "model/Reconstruction.h"
 #include "maths/PolylineOnSphere.h"
 
 
@@ -52,15 +51,12 @@ namespace GPlatesQtWidgets
 	// Remove this when there is a ViewState class.
 	class ViewportWindow;
 
-	class QueryFeaturePropertiesDialog;
-
 	class GlobeCanvas:
 			public QGLWidget 
 	{
 		Q_OBJECT
 
 	public:
-
 		struct MousePressInfo
 		{
 			MousePressInfo(
@@ -94,12 +90,36 @@ namespace GPlatesQtWidgets
 				ViewportWindow &view_state,
 				QWidget *parent_ = 0);
 
-		void
-		set_reconstruction(
-				const GPlatesModel::Reconstruction::non_null_ptr_type &new_recon)
-		{
-			d_reconstruction_ptr = new_recon.get();
-		}
+		/**
+		 * The proximity inclusion threshold is a measure of how close a geometry must be
+		 * to a click-point be considered "hit" by the click.
+		 *
+		 * The proximity inclusion threshold varies with the canvas size and zoom level. 
+		 * It is also dependent upon the position of @a click_point on the globe (since
+		 * positions at the edge of the globe in the current projection are harder to
+		 * target than positions in the centre of the globe).
+		 *
+		 * The fundamental reason for this function derives from the observation that the
+		 * mouse-pointer position on-screen is described by integer coordinates, but the
+		 * geometries on the globe in the 3-D "universe" are described by floating-point
+		 * coordinates which can lie "between" the universe coordinates which correspond to
+		 * the discrete on-screen coordinates.
+		 *
+		 * Hence, even ignoring the issues of usability (ie, whether you want to make the
+		 * user click on some *exact pixel* on-screen) and floating-point comparisons, we
+		 * can't just convert the integer on-screen coordinates of the click-point to
+		 * floating-point universe coordinates and look for hits.
+		 *
+		 * The approach taken by the GPlates GUI is to pick an "epsilon radius" around the
+		 * click-point, then determine which geometries on the globe are "close enough" to
+		 * the click-point (by determining the geometries whose shortest distance from the
+		 * click-point is less than the epsilon radius).  This may be visualised as drawing
+		 * a circle with radius "epsilon" around the click-point on the surface of the
+		 * globe, then determining which geometries pass through the circle.
+		 */
+		double
+		current_proximity_inclusion_threshold(
+				const GPlatesMaths::PointOnSphere &click_point) const;
 
 		void
 		draw_polyline(
@@ -114,6 +134,12 @@ namespace GPlatesQtWidgets
 
 		void
 		clear_data();
+
+		GPlatesGui::Globe &
+		globe()
+		{
+			return d_globe;
+		}
 
 		/**
 		 * If the mouse pointer is on the globe, return the position of the mouse pointer
@@ -279,23 +305,39 @@ namespace GPlatesQtWidgets
 				bool is_on_globe);
 
 		void
-		items_found_by_click();
+		mouse_clicked(
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
 
 		void
-		no_items_found_by_click();
+		mouse_dragged(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+
+		void
+		mouse_released_after_drag(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
 
 		void
 		zoom_changed(
 				double zoom_percent);
 
-		void
-		left_mouse_button_clicked();
-
 	private:
 		ViewportWindow *d_view_state_ptr;
-
-		boost::intrusive_ptr<GPlatesModel::Reconstruction> d_reconstruction_ptr;
-		boost::shared_ptr<QueryFeaturePropertiesDialog> d_query_feature_properties_dialog_ptr;
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
@@ -361,15 +403,6 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_mouse_pointer_pos_change();
-
-		void
-		handle_right_mouse_down();
-
-		void
-		handle_left_mouse_down();
-
-		void
-		handle_right_mouse_drag();
 
 		void
 		handle_wheel_rotation(
