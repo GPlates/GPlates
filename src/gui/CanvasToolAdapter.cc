@@ -61,6 +61,8 @@ GPlatesGui::CanvasToolAdapter::handle_click(
 			break;
 
 		case Qt::ControlModifier:
+			get_tool(*this).handle_ctrl_left_click(click_pos_on_globe,
+					oriented_click_pos_on_globe, is_on_globe);
 			break;
 
 		default:
@@ -107,6 +109,9 @@ GPlatesGui::CanvasToolAdapter::handle_drag(
 			break;
 
 		case Qt::ControlModifier:
+			get_tool(*this).handle_ctrl_left_drag(initial_pos_on_globe,
+					oriented_initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe);
 			break;
 
 		default:
@@ -152,6 +157,9 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 			break;
 
 		case Qt::ControlModifier:
+			get_tool(*this).handle_ctrl_left_release_after_drag(initial_pos_on_globe,
+					oriented_initial_pos_on_globe, was_on_globe,
+					current_pos_on_globe, is_on_globe);
 			break;
 
 		default:

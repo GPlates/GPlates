@@ -33,12 +33,21 @@
 # include <boost/python.hpp>
 #endif
 
+#include <QWidget>
 #include "ReconstructionViewWidgetUi.h"
 
-#include "GlobeCanvas.h"
+
+namespace GPlatesMaths
+{
+	class PointOnSphere;
+}
 
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+	class GlobeCanvas;
+
+
 	class ReconstructionViewWidget:
 			public QWidget, 
 			protected Ui_ReconstructionViewWidget
@@ -49,39 +58,86 @@ namespace GPlatesQtWidgets
 		explicit
 		ReconstructionViewWidget(
 				ViewportWindow &view_state,
-				QWidget *parent_ = 0);
+				QWidget *parent_ = NULL);
 
-		const double &
-		reconstruction_time() const
+		static
+		inline
+		double
+		min_reconstruction_time()
 		{
-			return d_recon_time;
+			// This value denotes the present-day.
+			return 0.0;
 		}
 
-		GlobeCanvas *
-		get_globe_canvas() const
+		static
+		inline
+		double
+		max_reconstruction_time()
 		{
-			return d_canvas_ptr;
+			// This value denotes a time 10000 million years ago.
+			return 10000.0;
+		}
+
+		static
+		bool
+		is_valid_reconstruction_time(
+				const double &time);
+
+		double
+		reconstruction_time() const
+		{
+			return spinbox_reconstruction_time->value();
+		}
+
+		GlobeCanvas &
+		globe_canvas() const
+		{
+			return *d_canvas_ptr;
 		}
 		
 	public slots:
 		void
-		set_reconstruction_time_and_reconstruct(
-				double recon_time);
+		activate_time_spinbox()
+		{
+			spinbox_reconstruction_time->setFocus();
+		}
 
 		void
-		increment_reconstruction_time_and_reconstruct();
+		set_reconstruction_time(
+				double new_recon_time);
 
 		void
-		decrement_reconstruction_time_and_reconstruct();
+		increment_reconstruction_time()
+		{
+			set_reconstruction_time(reconstruction_time() + 1.0);
+		}
+
+		void
+		decrement_reconstruction_time()
+		{
+			set_reconstruction_time(reconstruction_time() - 1.0);
+		}
+
+		void
+		propagate_reconstruction_time()
+		{
+			emit reconstruction_time_changed(reconstruction_time());
+		}
+
+		void
+		update_mouse_pointer_position(
+				const GPlatesMaths::PointOnSphere &new_virtual_pos,
+				bool is_on_globe);
+
+	signals:
+		void
+		reconstruction_time_changed(
+				double new_reconstruction_time);
 
 	private:
 		GlobeCanvas *d_canvas_ptr;
-		double d_recon_time;
-		
+
 	};
 }
 
-
-
 #endif  // GPLATES_QTWIDGETS_RECONSTRUCTIONVIEWWIDGET_H
-

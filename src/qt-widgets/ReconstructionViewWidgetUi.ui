@@ -39,30 +39,12 @@
    </property>
    <item row="0" column="0" >
     <layout class="QHBoxLayout" >
-     <item>
-      <widget class="QLabel" name="label_reconstruct_time" >
-       <property name="text" >
-        <string>Time:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDoubleSpinBox" name="spinbox_reconstruct_time" >
-       <property name="toolTip" >
-        <string>Set reconstruction time  Ctrl+T</string>
-       </property>
-       <property name="maximum" >
-        <double>9999.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_reconstruct_unit" >
-       <property name="text" >
-        <string>Ma</string>
-       </property>
-      </widget>
-     </item>
+     <property name="topMargin" >
+      <number>0</number>
+     </property>
+     <property name="bottomMargin" >
+      <number>0</number>
+     </property>
      <item>
       <spacer>
        <property name="orientation" >
@@ -70,24 +52,110 @@
        </property>
        <property name="sizeHint" >
         <size>
-         <width>481</width>
-         <height>23</height>
+         <width>40</width>
+         <height>20</height>
         </size>
        </property>
       </spacer>
      </item>
      <item>
-      <widget class="Line" name="line_2" >
-       <property name="orientation" >
-        <enum>Qt::Vertical</enum>
+      <widget class="QFrame" name="frame_reconstruction_time" >
+       <property name="minimumSize" >
+        <size>
+         <width>150</width>
+         <height>31</height>
+        </size>
        </property>
+       <property name="frameShape" >
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow" >
+        <enum>QFrame::Raised</enum>
+       </property>
+       <widget class="QLabel" name="label_reconstruction_time" >
+        <property name="geometry" >
+         <rect>
+          <x>3</x>
+          <y>3</y>
+          <width>33</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="text" >
+         <string>Time:</string>
+        </property>
+       </widget>
+       <widget class="QDoubleSpinBox" name="spinbox_reconstruction_time" >
+        <property name="geometry" >
+         <rect>
+          <x>40</x>
+          <y>2</y>
+          <width>79</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip" >
+         <string>Set reconstruction time  Ctrl+T</string>
+        </property>
+        <property name="maximum" >
+         <double>9999.000000000000000</double>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_reconstruction_unit" >
+        <property name="geometry" >
+         <rect>
+          <x>125</x>
+          <y>5</y>
+          <width>18</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text" >
+         <string>Ma</string>
+        </property>
+       </widget>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_cursor_coordinates" >
-       <property name="text" >
-        <string>( 0 , 0 )</string>
+      <widget class="QFrame" name="frame_cursor_coordinates" >
+       <property name="minimumSize" >
+        <size>
+         <width>280</width>
+         <height>31</height>
+        </size>
        </property>
+       <property name="frameShape" >
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow" >
+        <enum>QFrame::Raised</enum>
+       </property>
+       <widget class="QLabel" name="label_cursor_coordinates" >
+        <property name="geometry" >
+         <rect>
+          <x>53</x>
+          <y>3</y>
+          <width>275</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="text" >
+         <string>(lat: ---.-- ; lon: ---.-- ) (off globe)</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_coordinates" >
+        <property name="geometry" >
+         <rect>
+          <x>3</x>
+          <y>7</y>
+          <width>57</width>
+          <height>18</height>
+         </rect>
+        </property>
+        <property name="text" >
+         <string>Coords:</string>
+        </property>
+       </widget>
       </widget>
      </item>
     </layout>

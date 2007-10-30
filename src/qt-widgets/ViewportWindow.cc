@@ -29,13 +29,11 @@
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
-#include "ReconstructionViewWidget.h"
 
 #include "global/Exception.h"
 #include "gui/CanvasToolAdapter.h"
 #include "gui/CanvasToolChoice.h"
 #include "gui/FeatureWeakRefSequence.h"
-#include "maths/LatLonPointConversions.h"
 #include "model/Model.h"
 #include "model/DummyTransactionHandle.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -120,7 +118,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_reconstruction_ptr(d_model_ptr->create_empty_reconstruction(0.0, 0)),
 	d_recon_time(0.0),
 	d_recon_root(0),
-	d_reconstruct_to_time_dialog(d_recon_time, this),
+	d_reconstruction_view_widget(*this, this),
 	d_specify_fixed_plate_dialog(d_recon_root, this),
 	d_animate_dialog(*this, this),
 	d_about_dialog(*this, this),
@@ -132,50 +130,46 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	load_plates_files(*d_model_ptr, d_isochrons, d_total_recon_seqs, plates_line_fname, plates_rot_fname);
 
-	ReconstructionViewWidget *reconstruction_view_widget = new ReconstructionViewWidget(*this, this);
-	d_canvas_ptr = reconstruction_view_widget->get_globe_canvas();
+	d_canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
 	
 #if 0
 	QObject::connect(d_canvas_ptr, SIGNAL(items_selected()), this, SLOT(selection_handler()));
 	QObject::connect(d_canvas_ptr, SIGNAL(left_mouse_button_clicked()), this, SLOT(mouse_click_handler()));
 #endif
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
-			this, SLOT(pop_up_reconstruct_to_time_dialog()));
-	QObject::connect(&d_reconstruct_to_time_dialog, SIGNAL(value_changed(double)),
-			this, SLOT(set_reconstruction_time_and_reconstruct(double)));
+			&d_reconstruction_view_widget, SLOT(activate_time_spinbox()));
+	QObject::connect(&d_reconstruction_view_widget, SIGNAL(reconstruction_time_changed(double)),
+			this, SLOT(reconstruct_to_time(double)));
 
 	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(triggered()),
 			this, SLOT(pop_up_specify_fixed_plate_dialog()));
 	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
-			this, SLOT(set_reconstruction_root_and_reconstruct(unsigned long)));
+			this, SLOT(reconstruct_with_root(unsigned long)));
 
 	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
 	QObject::connect(&d_animate_dialog, SIGNAL(current_time_changed(double)),
-			this, SLOT(set_reconstruction_time_and_reconstruct(double)));
+			&d_reconstruction_view_widget, SLOT(set_reconstruction_time(double)));
 
 	QObject::connect(action_Increment_Reconstruction_Time, SIGNAL(triggered()),
-			this, SLOT(increment_reconstruction_time_and_reconstruct()));
+			&d_reconstruction_view_widget, SLOT(increment_reconstruction_time()));
 	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(triggered()),
-			this, SLOT(decrement_reconstruction_time_and_reconstruct()));
+			&d_reconstruction_view_widget, SLOT(decrement_reconstruction_time()));
 	
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
 
 	QObject::connect(d_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
-			this, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
+			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
 
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
 			this, SLOT(choose_drag_globe_tool()));
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			this, SLOT(choose_query_feature_tool()));
 
-	centralwidget = reconstruction_view_widget;
-	setCentralWidget(centralwidget);
+	setCentralWidget(&d_reconstruction_view_widget);
 
 	// Render everything on the screen in present-day positions.
-	const QString message(boost::str(boost::format("%1% MYA") % d_recon_time).c_str());
-	statusbar->showMessage(message);
 	d_canvas_ptr->clear_data();
 	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, 0.0, d_recon_root);
 	d_canvas_ptr->update_canvas();
@@ -228,69 +222,29 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 
 void
-GPlatesQtWidgets::ViewportWindow::set_reconstruction_time_and_reconstruct(
+GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
 		double recon_time)
 {
 	d_recon_time = recon_time;
-
-	const QString message(boost::str(boost::format("%1% MYA") % d_recon_time).c_str());
-	statusbar->showMessage(message);
-	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
-	d_canvas_ptr->update_canvas();
+	reconstruct();
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::set_reconstruction_root_and_reconstruct(
+GPlatesQtWidgets::ViewportWindow::reconstruct_with_root(
 		unsigned long recon_root)
 {
 	d_recon_root = recon_root;
+	reconstruct();
+}
 
+
+void
+GPlatesQtWidgets::ViewportWindow::reconstruct()
+{
 	d_canvas_ptr->clear_data();
 	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
 	d_canvas_ptr->update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::increment_reconstruction_time_and_reconstruct()
-{
-	double recon_time = d_recon_time + 1.0;
-	if (recon_time <= 1000000.0) {
-		d_recon_time = recon_time;
-	}
-
-	const QString message(boost::str(boost::format("%1% MYA") % d_recon_time).c_str());
-	statusbar->showMessage(message);
-	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
-	d_canvas_ptr->update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::decrement_reconstruction_time_and_reconstruct()
-{
-	double recon_time = d_recon_time - 1.0;
-	// FIXME:  Use approx comparison for equality to zero.
-	if (recon_time >= 0.0) {
-		d_recon_time = recon_time;
-	}
-
-	const QString message(boost::str(boost::format("%1% MYA") % d_recon_time).c_str());
-	statusbar->showMessage(message);
-	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time,
-			d_recon_root);
-	d_canvas_ptr->update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_reconstruct_to_time_dialog()
-{
-	d_reconstruct_to_time_dialog.show();
 }
 
 
@@ -324,31 +278,6 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
 {
 	d_license_dialog.show();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::update_mouse_pointer_position(
-		const GPlatesMaths::PointOnSphere &new_virtual_pos,
-		bool is_on_globe)
-{
-	GPlatesMaths::LatLonPoint llp =
-			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
-					new_virtual_pos);
-
-	QLocale locale_;
-	QString lat = locale_.toString(llp.latitude().dval(), 'f', 2);
-	QString lon = locale_.toString(llp.longitude().dval(), 'f', 2);
-	QString position_as_string(QObject::tr("(lat: "));
-	position_as_string.append(lat);
-	position_as_string.append(QObject::tr(" ; lon: "));
-	position_as_string.append(lon);
-	position_as_string.append(QObject::tr(")"));
-	if ( ! is_on_globe) {
-		position_as_string.append(QObject::tr(" (off globe)"));
-	}
-
-	statusbar->showMessage(position_as_string);
 }
 
 

@@ -90,11 +90,18 @@ namespace GPlatesGui
 		}
 
 	private:
+		/**
+		 * This is the ReorientGlobe tool which the user may choose.
+		 */
 		CanvasTool::non_null_ptr_type d_reorient_globe_tool_ptr;
+
+		/**
+		 * This is the QueryFeature tool which the user may choose.
+		 */
 		CanvasTool::non_null_ptr_type d_query_feature_tool_ptr;
 
 		/**
-		 * The current choice of CanvasTool
+		 * The current choice of CanvasTool.
 		 */
 		CanvasTool::non_null_ptr_type d_tool_choice_ptr;
 

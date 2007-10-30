@@ -38,7 +38,7 @@
 
 #include "ViewportWindowUi.h"
 #include "GlobeCanvas.h"
-#include "ReconstructToTimeDialog.h"
+#include "ReconstructionViewWidget.h"
 #include "SpecifyFixedPlateDialog.h"
 #include "AnimateDialog.h"
 #include "AboutDialog.h"
@@ -87,26 +87,18 @@ namespace GPlatesQtWidgets
 
 	public slots:
 		void
-		set_reconstruction_time_and_reconstruct(
+		reconstruct();
+
+		void
+		reconstruct_to_time(
 				double recon_time);
 
 		void
-		set_reconstruction_root_and_reconstruct(
+		reconstruct_with_root(
 				unsigned long recon_root);
 
 		void
-		increment_reconstruction_time_and_reconstruct();
-
-		void
-		decrement_reconstruction_time_and_reconstruct();
-
-		void
 		pop_up_license_dialog();
-
-		void
-		update_mouse_pointer_position(
-				const GPlatesMaths::PointOnSphere &new_virtual_pos,
-				bool is_on_globe);
 
 		void
 		choose_drag_globe_tool();
@@ -115,29 +107,26 @@ namespace GPlatesQtWidgets
 		choose_query_feature_tool();
 
 	private:
-		GlobeCanvas *d_canvas_ptr;
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_isochrons;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_total_recon_seqs;
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
-		ReconstructToTimeDialog d_reconstruct_to_time_dialog;
+		ReconstructionViewWidget d_reconstruction_view_widget;
 		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
 		AnimateDialog d_animate_dialog;
 		AboutDialog d_about_dialog;
 		LicenseDialog d_license_dialog;
 		QueryFeaturePropertiesDialog d_query_feature_properties_dialog;
 		bool d_animate_dialog_has_been_shown;
+		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
 		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;
 
 		void
 		uncheck_all_tools();
 	private slots:
-		void
-		pop_up_reconstruct_to_time_dialog();
-
 		void
 		pop_up_specify_fixed_plate_dialog();
 
