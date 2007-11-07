@@ -28,6 +28,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #include "ReadErrors.h"
 #include "LineReader.h"
@@ -404,11 +405,12 @@ namespace {
 
 const GPlatesModel::FeatureCollectionHandle::weak_ref
 GPlatesFileIO::PlatesLineFormatReader::read_file(
-		const std::string &filename,
+		const QString &filename,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
-	std::ifstream input(filename.c_str());
+	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
+	std::ifstream input(filename.toAscii().constData());
 	if ( ! input) {
 		throw ErrorOpeningFileForReadingException(filename);
 	}

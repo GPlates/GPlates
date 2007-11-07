@@ -73,7 +73,10 @@ namespace GPlatesFileIO
 			InvalidPlatesPolylinePoint,
 			BadPlatesPolylinePlotterCode,
 			BadPlatesPolylineLatitude,
-			BadPlatesPolylineLongitude
+			BadPlatesPolylineLongitude,
+			
+			// The following are generic to all local files
+			ErrorOpeningFileForReading
 		};
 
 		enum Result
@@ -93,7 +96,10 @@ namespace GPlatesFileIO
 
 			// The following are specific to PLATES line-format reading.
 			UnclassifiedFeatureCreated,
-			FeatureDiscarded
+			FeatureDiscarded,
+			
+			// The following are generic to all local files
+			FileNotLoaded
 		};
 	}
 }

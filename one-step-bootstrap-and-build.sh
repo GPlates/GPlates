@@ -17,4 +17,5 @@ sh build-everything.sh
 ( cd src/qt-widgets && make ReconstructToTimeDialogUi.h SpecifyFixedPlateDialogUi.h )
 ( cd src/qt-widgets && make AnimateDialogUi.h QueryFeaturePropertiesDialogUi.h )
 ( cd src/qt-widgets && make AboutDialogUi.h ReconstructionViewWidgetUi.h )
+( cd src/qt-widgets && make ReadErrorAccumulationDialogUi.h )
 make

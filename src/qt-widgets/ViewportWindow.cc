@@ -26,6 +26,7 @@
 #include <iostream>
 #include <boost/format.hpp>
 #include <QLocale>
+#include <QString>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -49,24 +50,50 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &reconstructable_features,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &reconstruction_features,
 			const std::string &plates_line_fname,
-			const std::string &plates_rot_fname)
+			const std::string &plates_rot_fname,
+			GPlatesQtWidgets::ReadErrorAccumulationDialog &read_errors_dialog)
 	{
-		GPlatesFileIO::ReadErrorAccumulation read_errors;
+		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
 
 		// FIXME:  Handle this ErrorOpeningFileForReadingException properly.
 		try
 		{
 			reconstructable_features =
 					GPlatesFileIO::PlatesLineFormatReader::read_file(
-							plates_line_fname, model, read_errors);
+							QString(plates_line_fname.c_str()), model, read_errors);
 
 			reconstruction_features =
 					GPlatesFileIO::PlatesRotationFormatReader::read_file(
-							plates_rot_fname, model, read_errors);
+							QString(plates_rot_fname.c_str()), model, read_errors);
 		}
 		catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
 		{
-			std::cerr << "Unable to open file '" << e.filename() << "' for reading." << std::endl;
+			// FIXME: Include this into ReadErrorAccumulationDialog's d_tree_item_failures_to_begin_ptr
+			std::cerr << "Unable to open file '" << e.filename().toStdString() << "' for reading." << std::endl;
+			
+			// FIXME: A bit of a sucky conversion from ErrorOpeningFileForReadingException to
+			// ReadErrorOccurrence, but hey, this whole function will be rewritten when we add
+			// QFileDialog support.
+			// FIXME: I suspect I'm Missing The Point with these shared_ptrs.
+			boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
+					new GPlatesFileIO::LocalFileDataSource(e.filename(), GPlatesFileIO::DataFormats::Unspecified));
+			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
+					new GPlatesFileIO::LineNumberInFile(0));
+			read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
+					e_source,
+					e_location,
+					GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
+					GPlatesFileIO::ReadErrors::FileNotLoaded));
+		}
+		
+		if ( ! read_errors.is_empty())
+		{
+			read_errors_dialog.update();
+			read_errors_dialog.show();
+		}
+		else
+		{
+			std::cerr << "All files read successfully." << std::endl;
 		}
 	}
 
@@ -124,11 +151,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_about_dialog(*this, this),
 	d_license_dialog(&d_about_dialog),
 	d_query_feature_properties_dialog(this),
+	d_read_errors_dialog(this),
 	d_animate_dialog_has_been_shown(false)
 {
 	setupUi(this);
 
-	load_plates_files(*d_model_ptr, d_isochrons, d_total_recon_seqs, plates_line_fname, plates_rot_fname);
+	load_plates_files(*d_model_ptr, d_isochrons, d_total_recon_seqs, plates_line_fname, plates_rot_fname, d_read_errors_dialog);
 
 	d_canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
 	
@@ -166,6 +194,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			this, SLOT(choose_drag_globe_tool()));
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			this, SLOT(choose_query_feature_tool()));
+
+	QObject::connect(action_File_Errors, SIGNAL(triggered()),
+			this, SLOT(pop_up_read_errors_dialog()));
 
 	setCentralWidget(&d_reconstruction_view_widget);
 
@@ -303,3 +334,11 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Drag_Globe->setChecked(false);
 	action_Query_Feature->setChecked(false);
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
+{
+	d_read_errors_dialog.show();
+}
+

@@ -1,0 +1,108 @@
+<ui version="4.0" >
+ <class>ReadErrorAccumulationDialog</class>
+ <widget class="QDialog" name="ReadErrorAccumulationDialog" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>679</width>
+    <height>443</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>File Errors</string>
+  </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_dialog_warning_16.png</iconset>
+  </property>
+  <property name="sizeGripEnabled" >
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" >
+   <item>
+    <widget class="QLabel" name="label_problem" >
+     <property name="text" >
+      <string>There are no warnings or errors for the currently-loaded files.</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTreeWidget" name="treeWidget_errors" >
+     <property name="alternatingRowColors" >
+      <bool>true</bool>
+     </property>
+     <property name="wordWrap" >
+      <bool>true</bool>
+     </property>
+     <property name="columnCount" >
+      <number>1</number>
+     </property>
+     <column>
+      <property name="text" >
+       <string/>
+      </property>
+     </column>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_result" >
+     <property name="text" >
+      <string>0 features loaded, 0 features discarded.</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_ok" >
+       <property name="text" >
+        <string>OK</string>
+       </property>
+       <property name="default" >
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>button_ok</tabstop>
+  <tabstop>treeWidget_errors</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections>
+  <connection>
+   <sender>button_ok</sender>
+   <signal>clicked()</signal>
+   <receiver>ReadErrorAccumulationDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>668</x>
+     <y>432</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>456</x>
+     <y>442</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

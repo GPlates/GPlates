@@ -30,7 +30,7 @@
 #ifndef GPLATES_FILEIO_PLATESROTATIONFORMATREADER_H
 #define GPLATES_FILEIO_PLATESROTATIONFORMATREADER_H
 
-#include <string>
+#include <QString>
 
 #include "ErrorOpeningFileForReadingException.h"
 #include "ReadErrorAccumulation.h"
@@ -55,7 +55,7 @@ namespace GPlatesFileIO
 		static
 		const GPlatesModel::FeatureCollectionHandle::weak_ref
 		read_file(
-				const std::string &filename,
+				const QString &filename,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 	};

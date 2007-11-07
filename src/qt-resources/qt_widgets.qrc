@@ -3,6 +3,12 @@
     <file>GPlates-logo-transparent.png</file>
     <file>drag_globe_35.png</file>
     <file>drag_plate_35.png</file>
+    <file>gnome_dialog_error_16.png</file>
+    <file>gnome_dialog_warning_16.png</file>
+    <file>gnome_folder_16.png</file>
+    <file>gnome_gtk_edit_16.png</file>
+    <file>gnome_help_agent_16.png</file>
+    <file>gplates_logo_16.png</file>
     <file>query_feature_35.png</file>
     <file>select_plate_35.png</file>
     <file>spin_globe_35.png</file>

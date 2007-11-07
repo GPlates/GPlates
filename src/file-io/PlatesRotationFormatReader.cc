@@ -29,6 +29,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <string>
 #include "PlatesRotationFormatReader.h"
 #include "LineReader.h"
 #include "model/ModelUtils.h"
@@ -597,11 +598,11 @@ namespace
 
 const GPlatesModel::FeatureCollectionHandle::weak_ref
 GPlatesFileIO::PlatesRotationFormatReader::read_file(
-		const std::string &filename,
+		const QString &filename,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
-	std::ifstream input(filename.c_str());
+	std::ifstream input(filename.toAscii().constData());
 	if ( ! input) {
 		throw ErrorOpeningFileForReadingException(filename);
 	}

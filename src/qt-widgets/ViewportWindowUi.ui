@@ -24,6 +24,9 @@
   <property name="windowTitle" >
    <string>GPlates</string>
   </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget" />
   <widget class="QMenuBar" name="menubar" >
    <property name="geometry" >
@@ -31,7 +34,7 @@
      <x>0</x>
      <y>0</y>
      <width>675</width>
-     <height>25</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -71,6 +74,7 @@
      <string>&amp;Window</string>
     </property>
     <addaction name="action_Docks" />
+    <addaction name="action_File_Errors" />
    </widget>
    <addaction name="menu_File" />
    <addaction name="menu_Edit" />
@@ -317,6 +321,19 @@
   <action name="action_Docks" >
    <property name="text" >
     <string>&amp;Docks</string>
+   </property>
+  </action>
+  <action name="actionFile_Errors" >
+   <property name="text" >
+    <string>File &amp;Errors...</string>
+   </property>
+  </action>
+  <action name="action_File_Errors" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_dialog_warning_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>File &amp;Errors...</string>
    </property>
   </action>
  </widget>

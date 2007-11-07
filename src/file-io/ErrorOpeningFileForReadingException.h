@@ -31,7 +31,7 @@
 #ifndef GPLATES_FILEIO_ERROROPENINGFILEFORREADINGEXCEPTION_H
 #define GPLATES_FILEIO_ERROROPENINGFILEFORREADINGEXCEPTION_H
 
-#include <string>
+#include <QString>
 
 namespace GPlatesFileIO
 {
@@ -47,14 +47,14 @@ namespace GPlatesFileIO
 		 */
 		explicit
 		ErrorOpeningFileForReadingException(
-				const std::string &filename_):
+				const QString &filename_):
 			d_filename(filename_)
 		{  }
 
 		/**
 		 * Return the filename of the file which couldn't be opened for reading.
 		 */
-		const std::string &
+		const QString &
 		filename() const
 		{
 			return d_filename;
@@ -63,7 +63,7 @@ namespace GPlatesFileIO
 		/**
 		 * The filename of the file which couldn't be opened for reading.
 		 */
-		std::string d_filename;
+		QString d_filename;
 	};
 }
 #endif  // GPLATES_FILEIO_ERROROPENINGFILEFORREADINGEXCEPTION_H

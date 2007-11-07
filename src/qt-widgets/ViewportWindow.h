@@ -44,6 +44,7 @@
 #include "AboutDialog.h"
 #include "LicenseDialog.h"
 #include "QueryFeaturePropertiesDialog.h"
+#include "ReadErrorAccumulationDialog.h"
 
 #include "model/ModelInterface.h"
 
@@ -105,6 +106,10 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_query_feature_tool();
+		
+		void
+		pop_up_read_errors_dialog();
+		
 
 	private:
 		GPlatesModel::ModelInterface *d_model_ptr;
@@ -119,6 +124,7 @@ namespace GPlatesQtWidgets
 		AboutDialog d_about_dialog;
 		LicenseDialog d_license_dialog;
 		QueryFeaturePropertiesDialog d_query_feature_properties_dialog;
+		ReadErrorAccumulationDialog d_read_errors_dialog;
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;

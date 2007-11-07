@@ -40,6 +40,9 @@ GPlatesFileIO::DataFormats::data_format_to_str(
 	case PlatesLine:
 		str = "PLATES \"line\"";
 		break;
+	case Unspecified:
+		str = "unspecified";
+		break;
 	}
 
 	return str;

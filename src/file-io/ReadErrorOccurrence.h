@@ -30,6 +30,7 @@
 #include <string>
 #include <sstream>
 #include <boost/shared_ptr.hpp>
+#include <QFileInfo>
 #include "ReadErrors.h"
 
 namespace GPlatesFileIO
@@ -42,8 +43,18 @@ namespace GPlatesFileIO
 
 		virtual
 		void
-		write(
-				std::ostringstream &target) const = 0;
+		write_short_name(
+				std::ostream &target) const = 0;
+
+		virtual
+		void
+		write_full_name(
+				std::ostream &target) const = 0;
+
+		virtual
+		void
+		write_format(
+				std::ostream &target) const = 0;
 	};
 
 
@@ -52,7 +63,8 @@ namespace GPlatesFileIO
 		enum DataFormat
 		{
 			PlatesRotation,
-			PlatesLine
+			PlatesLine,
+			Unspecified
 		};
 
 		const char *
@@ -64,21 +76,40 @@ namespace GPlatesFileIO
 	struct LocalFileDataSource: public DataSource
 	{
 		LocalFileDataSource(
-				const std::string &filename,
+				const QString &filename,
 				DataFormats::DataFormat data_format):
 			d_filename(filename),
+			d_fileinfo(filename),
 			d_data_format(data_format)
 		{  }
 
 		virtual
 		void
-		write(
-				std::ostringstream &target) const
+		write_short_name(
+				std::ostream &target) const
 		{
-			target << d_filename << " (" << d_data_format << " format)";
+			target << d_fileinfo.fileName().toStdString();
 		}
+
+		virtual
+		void
+		write_full_name(
+				std::ostream &target) const
+		{
+			target << d_filename.toStdString();
+		}
+
+		virtual
+		void
+		write_format(
+				std::ostream &target) const
+		{
+			target << DataFormats::data_format_to_str(d_data_format) << " format";
+		}
+
 	private:
-		std::string d_filename;
+		QString d_filename;
+		QFileInfo d_fileinfo;
 		DataFormats::DataFormat d_data_format;
 	};
 
@@ -92,7 +123,7 @@ namespace GPlatesFileIO
 		virtual
 		void
 		write(
-				std::ostringstream &target) const = 0;
+				std::ostream &target) const = 0;
 	};
 
 
@@ -107,9 +138,9 @@ namespace GPlatesFileIO
 		virtual
 		void
 		write(
-				std::ostringstream &target) const
+				std::ostream &target) const
 		{
-			target << "line " << d_line_num;
+			target << d_line_num;
 		}
 	private:
 		unsigned long d_line_num;
@@ -133,6 +164,27 @@ namespace GPlatesFileIO
 			d_description(description),
 			d_result(result)
 		{  }
+
+		void
+		write_short_name(
+				std::ostream &target) const
+		{
+			d_data_source->write_short_name(target);
+			target << ":";
+			d_location->write(target);
+		}
+
+		void
+		write_full_name(
+				std::ostream &target) const
+		{
+			d_data_source->write_full_name(target);
+			target << ":";
+			d_location->write(target);
+			target << " (";
+			d_data_source->write_format(target);
+			target << ")";
+		}
 
 		boost::shared_ptr<DataSource> d_data_source;
 		boost::shared_ptr<LocationInDataSource> d_location;

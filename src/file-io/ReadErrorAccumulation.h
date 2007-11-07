@@ -35,6 +35,9 @@ namespace GPlatesFileIO
 {
 	struct ReadErrorAccumulation
 	{
+		typedef std::vector<ReadErrorOccurrence> read_error_collection_type;
+		typedef read_error_collection_type::const_iterator read_error_collection_const_iterator;
+		
 		ReadErrorAccumulation()
 		{  }
 
@@ -44,7 +47,7 @@ namespace GPlatesFileIO
 		 *
 		 * There may be any number of warnings in this accumulation.
 		 */
-		std::vector<ReadErrorOccurrence> d_warnings;
+		read_error_collection_type d_warnings;
 
 		/**
 		 * After a recoverable error, reading from file can continue, but some amount of
@@ -53,15 +56,36 @@ namespace GPlatesFileIO
 		 *
 		 * There may be any number of recoverable errors in this accumulation.
 		 */
-		std::vector<ReadErrorOccurrence> d_recoverable_errors;
+		read_error_collection_type d_recoverable_errors;
 
 		/**
 		 * After a terminating error, reading from file (or other data source) simply
 		 * cannot continue.
 		 *
-		 * There may be zero or one terminating errors in this accumulation.
+		 * There can only be zero or one terminating errors per file, but there may be
+		 * multiple terminating errors in this accumulation.
 		 */
-		boost::shared_ptr<ReadErrorOccurrence> d_terminating_error;
+		read_error_collection_type d_terminating_errors;
+		
+		/**
+		 * A failure to begin indicates a fatal error before the parser could access
+		 * any data from the file, e.g. the file does not exist. No data has been loaded.
+		 * No data corruption will occur, but the user must be notified about the problem.
+		 *
+		 * There can only be one failure to begin per file, but there may be any number
+		 * of them in this accumulation.
+		 */
+		read_error_collection_type d_failures_to_begin;
+
+		/**
+		 * Returns whether the ReadErrorAccumulation contains no errors or warnings.
+		 */
+		bool
+		is_empty() const
+		{
+			return (d_warnings.empty() && d_recoverable_errors.empty() &&
+					d_terminating_errors.empty() && d_failures_to_begin.empty());
+		}
 	};
 }
 

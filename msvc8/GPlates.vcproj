@@ -357,6 +357,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\GlobeCanvas.cc"
 				>
 			</File>
@@ -394,6 +406,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ReadErrorAccumulationDialog.cc"
 				>
 			</File>
 			<File
