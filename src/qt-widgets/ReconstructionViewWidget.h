@@ -89,6 +89,12 @@ namespace GPlatesQtWidgets
 			return spinbox_reconstruction_time->value();
 		}
 
+		double
+		zoom_percent() const
+		{
+			return spinbox_zoom_percent->value();
+		}
+
 		GlobeCanvas &
 		globe_canvas() const
 		{
@@ -100,6 +106,7 @@ namespace GPlatesQtWidgets
 		activate_time_spinbox()
 		{
 			spinbox_reconstruction_time->setFocus();
+			spinbox_reconstruction_time->selectAll();
 		}
 
 		void
@@ -128,11 +135,35 @@ namespace GPlatesQtWidgets
 		update_mouse_pointer_position(
 				const GPlatesMaths::PointOnSphere &new_virtual_pos,
 				bool is_on_globe);
+		
+		void
+		activate_zoom_spinbox()
+		{
+			spinbox_zoom_percent->setFocus();
+			spinbox_zoom_percent->selectAll();
+		}
+		
+		void
+		set_zoom(
+				double new_zoom_percent)
+		{
+			spinbox_zoom_percent->setValue(new_zoom_percent);
+		}
+		
+		void
+		propagate_zoom_percent()
+		{
+			emit zoom_changed(zoom_percent());
+		}
 
 	signals:
 		void
 		reconstruction_time_changed(
 				double new_reconstruction_time);
+		
+		void
+		zoom_changed(
+				double new_zoom_percent);
 
 	private:
 		GlobeCanvas *d_canvas_ptr;

@@ -170,8 +170,9 @@ namespace GPlatesFileIO
 				std::ostream &target) const
 		{
 			d_data_source->write_short_name(target);
-			target << ":";
-			d_location->write(target);
+			target << " (";
+			d_data_source->write_format(target);
+			target << ")";
 		}
 
 		void

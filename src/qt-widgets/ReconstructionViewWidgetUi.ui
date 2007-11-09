@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>709</width>
-    <height>590</height>
+    <width>627</width>
+    <height>538</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -39,32 +39,13 @@
    </property>
    <item row="0" column="0" >
     <layout class="QHBoxLayout" >
-     <property name="topMargin" >
-      <number>0</number>
-     </property>
-     <property name="bottomMargin" >
-      <number>0</number>
-     </property>
-     <item>
-      <spacer>
-       <property name="orientation" >
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" >
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
      <item>
       <widget class="QFrame" name="frame_reconstruction_time" >
-       <property name="minimumSize" >
-        <size>
-         <width>150</width>
-         <height>31</height>
-        </size>
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="frameShape" >
         <enum>QFrame::StyledPanel</enum>
@@ -72,57 +53,115 @@
        <property name="frameShadow" >
         <enum>QFrame::Raised</enum>
        </property>
-       <widget class="QLabel" name="label_reconstruction_time" >
-        <property name="geometry" >
-         <rect>
-          <x>3</x>
-          <y>3</y>
-          <width>33</width>
-          <height>27</height>
-         </rect>
+       <layout class="QHBoxLayout" >
+        <property name="spacing" >
+         <number>2</number>
         </property>
-        <property name="text" >
-         <string>Time:</string>
+        <property name="leftMargin" >
+         <number>4</number>
         </property>
-       </widget>
-       <widget class="QDoubleSpinBox" name="spinbox_reconstruction_time" >
-        <property name="geometry" >
-         <rect>
-          <x>40</x>
-          <y>2</y>
-          <width>79</width>
-          <height>27</height>
-         </rect>
+        <property name="topMargin" >
+         <number>1</number>
         </property>
-        <property name="toolTip" >
-         <string>Set reconstruction time  Ctrl+T</string>
+        <property name="rightMargin" >
+         <number>4</number>
         </property>
-        <property name="maximum" >
-         <double>9999.000000000000000</double>
+        <property name="bottomMargin" >
+         <number>1</number>
         </property>
-       </widget>
-       <widget class="QLabel" name="label_reconstruction_unit" >
-        <property name="geometry" >
-         <rect>
-          <x>125</x>
-          <y>5</y>
-          <width>18</width>
-          <height>23</height>
-         </rect>
-        </property>
-        <property name="text" >
-         <string>Ma</string>
-        </property>
-       </widget>
+        <item>
+         <widget class="QLabel" name="label_reconstruction_time" >
+          <property name="text" >
+           <string>Time:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="spinbox_reconstruction_time" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Fixed" hsizetype="Minimum" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize" >
+           <size>
+            <width>90</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip" >
+           <string>Set reconstruction time  Ctrl+T</string>
+          </property>
+          <property name="maximum" >
+           <double>9999.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_reconstruction_unit" >
+          <property name="text" >
+           <string>Ma </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_reconstruction_increment" >
+          <property name="toolTip" >
+           <string>Increment reconstruction time  Ctrl-I</string>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_22.png</iconset>
+          </property>
+          <property name="iconSize" >
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
+          </property>
+          <property name="autoRepeat" >
+           <bool>true</bool>
+          </property>
+          <property name="autoRepeatInterval" >
+           <number>200</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_reconstruction_decrement" >
+          <property name="toolTip" >
+           <string>Decrement reconstruction time  Ctrl-Shift-I</string>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_22.png</iconset>
+          </property>
+          <property name="iconSize" >
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
+          </property>
+          <property name="autoRepeat" >
+           <bool>true</bool>
+          </property>
+          <property name="autoRepeatInterval" >
+           <number>200</number>
+          </property>
+          <property name="flat" >
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
-      <widget class="QFrame" name="frame_cursor_coordinates" >
-       <property name="minimumSize" >
-        <size>
-         <width>280</width>
-         <height>31</height>
-        </size>
+      <widget class="QFrame" name="frame_zoom_amount" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="frameShape" >
         <enum>QFrame::StyledPanel</enum>
@@ -130,32 +169,153 @@
        <property name="frameShadow" >
         <enum>QFrame::Raised</enum>
        </property>
-       <widget class="QLabel" name="label_cursor_coordinates" >
-        <property name="geometry" >
-         <rect>
-          <x>53</x>
-          <y>3</y>
-          <width>275</width>
-          <height>27</height>
-         </rect>
+       <layout class="QHBoxLayout" >
+        <property name="spacing" >
+         <number>2</number>
         </property>
-        <property name="text" >
-         <string>(lat: ---.-- ; lon: ---.-- ) (off globe)</string>
+        <property name="leftMargin" >
+         <number>4</number>
         </property>
-       </widget>
-       <widget class="QLabel" name="label_coordinates" >
-        <property name="geometry" >
-         <rect>
-          <x>3</x>
-          <y>7</y>
-          <width>57</width>
-          <height>18</height>
-         </rect>
+        <property name="topMargin" >
+         <number>1</number>
         </property>
-        <property name="text" >
-         <string>Coords:</string>
+        <property name="rightMargin" >
+         <number>4</number>
         </property>
-       </widget>
+        <property name="bottomMargin" >
+         <number>1</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_zoom_percent" >
+          <property name="text" >
+           <string>Zoom:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="spinbox_zoom_percent" >
+          <property name="toolTip" >
+           <string>Set zoom amount</string>
+          </property>
+          <property name="suffix" >
+           <string>%</string>
+          </property>
+          <property name="decimals" >
+           <number>0</number>
+          </property>
+          <property name="minimum" >
+           <double>100.000000000000000</double>
+          </property>
+          <property name="maximum" >
+           <double>10000.000000000000000</double>
+          </property>
+          <property name="singleStep" >
+           <double>5.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label" >
+          <property name="text" >
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_zoom_in" >
+          <property name="toolTip" >
+           <string>Zoom in</string>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_22.png</iconset>
+          </property>
+          <property name="iconSize" >
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
+          </property>
+          <property name="flat" >
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_zoom_out" >
+          <property name="toolTip" >
+           <string>Zoom out</string>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_22.png</iconset>
+          </property>
+          <property name="iconSize" >
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
+          </property>
+          <property name="flat" >
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_zoom_reset" >
+          <property name="toolTip" >
+           <string>Reset zoom level</string>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_22.png</iconset>
+          </property>
+          <property name="iconSize" >
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
+          </property>
+          <property name="flat" >
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_2" >
+       <property name="frameShape" >
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow" >
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" >
+        <property name="leftMargin" >
+         <number>4</number>
+        </property>
+        <property name="topMargin" >
+         <number>1</number>
+        </property>
+        <property name="rightMargin" >
+         <number>4</number>
+        </property>
+        <property name="bottomMargin" >
+         <number>1</number>
+        </property>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </widget>
      </item>
     </layout>
@@ -170,8 +330,122 @@
      </property>
     </widget>
    </item>
+   <item row="2" column="0" >
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QFrame" name="frame" >
+       <property name="frameShape" >
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow" >
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" >
+        <property name="leftMargin" >
+         <number>4</number>
+        </property>
+        <property name="topMargin" >
+         <number>1</number>
+        </property>
+        <property name="rightMargin" >
+         <number>4</number>
+        </property>
+        <property name="bottomMargin" >
+         <number>1</number>
+        </property>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>20</width>
+            <height>16</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_cursor_coordinates" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize" >
+        <size>
+         <width>300</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="maximumSize" >
+        <size>
+         <width>300</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="frameShape" >
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow" >
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" >
+        <property name="spacing" >
+         <number>2</number>
+        </property>
+        <property name="leftMargin" >
+         <number>4</number>
+        </property>
+        <property name="topMargin" >
+         <number>1</number>
+        </property>
+        <property name="rightMargin" >
+         <number>4</number>
+        </property>
+        <property name="bottomMargin" >
+         <number>1</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_coordinates" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text" >
+           <string>Coords:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_cursor_coordinates" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text" >
+           <string>(lat: ---.-- ; lon: ---.-- ) (off globe)</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections/>
 </ui>

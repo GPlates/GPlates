@@ -141,6 +141,12 @@ namespace GPlatesQtWidgets
 			return d_globe;
 		}
 
+		GPlatesGui::ViewportZoom &
+		viewport_zoom()
+		{
+			return d_viewport_zoom;
+		}
+
 		/**
 		 * If the mouse pointer is on the globe, return the position of the mouse pointer
 		 * on the globe.
@@ -171,7 +177,11 @@ namespace GPlatesQtWidgets
 		zoom_out();
 
 		void
-		zoom_reset();
+		reset_zoom();
+		
+		void
+		set_zoom(
+				double new_zoom_percent);
 
 	protected:
 		/**
@@ -332,6 +342,10 @@ namespace GPlatesQtWidgets
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
+		/**
+		 * This signal should only be emitted if the zoom is actually different to what it
+		 * was.
+		 */
 		void
 		zoom_changed(
 				double zoom_percent);

@@ -299,11 +299,10 @@ GPlatesQtWidgets::GlobeCanvas::clear_data()
 void
 GPlatesQtWidgets::GlobeCanvas::zoom_in() 
 {
-	unsigned zoom_percent = d_viewport_zoom.zoom_percent();
+	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
 
 	d_viewport_zoom.zoom_in();
-	
-	if (zoom_percent != d_viewport_zoom.zoom_percent()) {
+	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
 		handle_zoom_change();
 	}
 }
@@ -312,21 +311,33 @@ GPlatesQtWidgets::GlobeCanvas::zoom_in()
 void
 GPlatesQtWidgets::GlobeCanvas::zoom_out() 
 {
-	unsigned zoom_percent = d_viewport_zoom.zoom_percent();
+	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
 
 	d_viewport_zoom.zoom_out();
-	
-	if (zoom_percent != d_viewport_zoom.zoom_percent()) {
+	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
 		handle_zoom_change();
 	}
 }
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::zoom_reset() 
+GPlatesQtWidgets::GlobeCanvas::reset_zoom() 
 {
 	d_viewport_zoom.reset_zoom();
 	handle_zoom_change();
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::set_zoom(
+		double new_zoom_percent) 
+{
+	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
+
+	d_viewport_zoom.set_zoom(new_zoom_percent);
+	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
+		handle_zoom_change();
+	}
 }
 
 
@@ -402,8 +413,15 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 	update_mouse_pointer_pos(move_event);
 
 	if (d_mouse_press_info) {
-		if (abs(move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
-				abs(move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+		// Call it a drag if EITHER:
+		//  * the mouse moved at least 2 pixels in one direction and 1 pixel in the other;
+		// OR:
+		//  * the mouse moved at least 3 pixels in one direction.
+		//
+		// Otherwise, the user just has shaky hands or a very high-res screen.
+		int mouse_delta_x = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
+		int mouse_delta_y = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
+		if (mouse_delta_x*mouse_delta_x + mouse_delta_y*mouse_delta_y > 4) {
 			d_mouse_press_info->d_is_mouse_drag = true;
 		}
 

@@ -24,6 +24,7 @@
  */
 
 #include <map>
+#include <string>
 #include <sstream>
 #include "ReadErrorAccumulationDialog.h"
 
@@ -31,10 +32,15 @@
 
 namespace
 {
+	// Maps used for error text lookup.
 	typedef std::map<GPlatesFileIO::ReadErrors::Description, QString> description_map_type;
 	typedef description_map_type::const_iterator description_map_const_iterator;
 	typedef std::map<GPlatesFileIO::ReadErrors::Result, QString> result_map_type;
 	typedef result_map_type::const_iterator result_map_const_iterator;
+
+	// Map of Filename -> Error collection for reporting all errors (of a particular type) for each file.
+	typedef std::map<std::string, GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type> file_errors_map_type;
+	typedef file_errors_map_type::const_iterator file_errors_map_const_iterator;
 
 	struct ReadErrorDescription
 	{
@@ -186,6 +192,27 @@ namespace
 		
 		return map;
 	}
+
+	/**
+	 * Takes a read_error_collection_type and creates a map of read_error_collection_types,
+	 * grouped by filename.
+	 */
+	void
+	group_read_errors_by_file(
+			file_errors_map_type &file_errors,
+			const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors)
+	{
+		GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator it = errors.begin();
+		GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator end = errors.end();
+		for (; it != end; ++it) {
+			// Add to map based on filename
+			std::ostringstream source;
+			it->d_data_source->write_full_name(source);
+			
+			file_errors[source.str()].push_back(*it);
+		}
+	}
+	
 }
 
 
@@ -223,13 +250,18 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::clear()
 void
 GPlatesQtWidgets::ReadErrorAccumulationDialog::update()
 {
-	// Populate Recoverable Errors tree
+	// Populate Failures to Begin tree
 	populate_top_level_tree_widget(d_tree_item_failures_to_begin_ptr, tr("Failure to Begin (%1)"),
 			d_read_errors.d_failures_to_begin, QIcon(":/gnome_dialog_error_16.png"));
+
+	// Populate Terminating Errors tree
+	populate_top_level_tree_widget(d_tree_item_terminating_errors_ptr, tr("Terminating Errors (%1)"),
+			d_read_errors.d_terminating_errors, QIcon(":/gnome_dialog_error_16.png"));
 
 	// Populate Recoverable Errors tree
 	populate_top_level_tree_widget(d_tree_item_recoverable_errors_ptr, tr("Recoverable Errors (%1)"),
 			d_read_errors.d_recoverable_errors, QIcon(":/gnome_dialog_error_16.png"));
+
 	// Populate Warnings tree
 	populate_top_level_tree_widget(d_tree_item_warnings_ptr, tr("Warnings (%1)"),
 			d_read_errors.d_warnings, QIcon(":/gnome_dialog_warning_16.png"));
@@ -250,18 +282,64 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::populate_top_level_tree_widget(
 	if ( ! errors.empty()) {
 		tree_item_ptr->setText(0, tree_item_text.arg(errors.size()));
 		tree_item_ptr->setHidden(false);
+		tree_item_ptr->setExpanded(true);
 	}
 	
-	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator it = errors.begin();
-	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator end = errors.end();
+	// Build map of Filename -> Error collection
+	file_errors_map_type file_errors;
+	group_read_errors_by_file(file_errors, errors);
+	
+	// Iterate over map to add file errors of this type grouped by file
+	file_errors_map_const_iterator it = file_errors.begin();
+	file_errors_map_const_iterator end = file_errors.end();
 	for (; it != end; ++it) {
-		create_error_tree(tree_item_ptr, *it, occurrence_icon);
+		create_file_tree_widget(tree_item_ptr, it->second, occurrence_icon);
 	}
 }
 
+
+void
+GPlatesQtWidgets::ReadErrorAccumulationDialog::create_file_tree_widget(
+		QTreeWidgetItem *tree_item_ptr,
+		const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors,
+		const QIcon &occurrence_icon)
+{
+	if (errors.empty()) {
+		return;
+	}
+	// We must refer to the first entry to get the path info we need.
+	const GPlatesFileIO::ReadErrorOccurrence &first_error = errors[0];
+	
+	static const QIcon file_icon(":/gnome_text_file_16.png");
+	static const QIcon path_icon(":/gnome_folder_16.png");
+
+	// Add filename.dat (format)
+	QTreeWidgetItem *file_item = new QTreeWidgetItem(tree_item_ptr);
+	std::ostringstream file_str;
+	first_error.write_short_name(file_str);
+	file_item->setText(0, QString::fromAscii(file_str.str().c_str()));
+ 	file_item->setIcon(0, file_icon);
+	file_item->setExpanded(true);
+	
+	// Add full path to file subitem
+	QTreeWidgetItem *path_item = new QTreeWidgetItem(file_item);
+	std::ostringstream path_str;
+	first_error.d_data_source->write_full_name(path_str);
+	path_item->setText(0, QString::fromAscii(path_str.str().c_str()));
+ 	path_item->setIcon(0, path_icon);
+	
+	// Add error occurrences for this file for this error type:
+	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator it = errors.begin();
+	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator end = errors.end();
+	for (; it != end; ++it) {
+		create_error_tree(file_item, *it, occurrence_icon);
+	}
+}
+
+
 void
 GPlatesQtWidgets::ReadErrorAccumulationDialog::create_error_tree(
-		QTreeWidgetItem *tree_item_ptr,
+		QTreeWidgetItem *parent_item_ptr,
 		const GPlatesFileIO::ReadErrorOccurrence &error,
 		const QIcon &occurrence_icon)
 {
@@ -269,20 +347,14 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_error_tree(
 	static const QIcon description_icon(":/gnome_help_agent_16.png");
 	static const QIcon result_icon(":/gnome_gtk_edit_16.png");
 
-	// Create node with file and file location.
-	QTreeWidgetItem *location_item = new QTreeWidgetItem(tree_item_ptr);
+	// Create node with error location.
+	QTreeWidgetItem *location_item = new QTreeWidgetItem(parent_item_ptr);
 	std::ostringstream location_str;
-	error.write_short_name(location_str);
+	location_str << "Line ";
+	error.d_location->write(location_str);
 	location_item->setText(0, QString::fromAscii(location_str.str().c_str()));
 	location_item->setIcon(0, occurrence_icon);
-	location_item->setExpanded(true);
-
-	// Create node with file info as child of location
-	QTreeWidgetItem *info_item = new QTreeWidgetItem(location_item);
-	std::ostringstream info_str;
-	error.write_full_name(info_str);
-	info_item->setText(0, QString::fromAscii(info_str.str().c_str()));
-	info_item->setIcon(0, info_icon);
+	location_item->setExpanded(false);
 
 	// Create node with description as child of location
 	QTreeWidgetItem *description_item = new QTreeWidgetItem(location_item);
@@ -295,21 +367,6 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_error_tree(
 	result_item->setIcon(0, result_icon);
 }
 
-
-const QString &
-GPlatesQtWidgets::ReadErrorAccumulationDialog::get_description_as_string(
-		GPlatesFileIO::ReadErrors::Description code)
-{
-	static const QString description_not_found = QObject::tr("(Text not found for error description code.)");
-	static const description_map_type &map = build_description_map();
-	
-	description_map_const_iterator r = map.find(code);
-	if (r != map.end()) {
-		return r->second;
-	} else {
-		return description_not_found;
-	}
-}
 
 const QString
 GPlatesQtWidgets::ReadErrorAccumulationDialog::build_summary_string()
@@ -386,6 +443,23 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_summary_string()
 	
 	return summary;
 }
+
+
+const QString &
+GPlatesQtWidgets::ReadErrorAccumulationDialog::get_description_as_string(
+		GPlatesFileIO::ReadErrors::Description code)
+{
+	static const QString description_not_found = QObject::tr("(Text not found for error description code.)");
+	static const description_map_type &map = build_description_map();
+	
+	description_map_const_iterator r = map.find(code);
+	if (r != map.end()) {
+		return r->second;
+	} else {
+		return description_not_found;
+	}
+}
+
 
 const QString &
 GPlatesQtWidgets::ReadErrorAccumulationDialog::get_result_as_string(

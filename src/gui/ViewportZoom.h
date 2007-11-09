@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,42 +28,44 @@
 #ifndef GPLATES_GUI_VIEWPORTZOOM_H
 #define GPLATES_GUI_VIEWPORTZOOM_H
 
-namespace GPlatesGui {
-
+namespace GPlatesGui
+{
 	/**
-	 * This class encapsulates the behaviour of the zooming-in and -out of
-	 * the Viewport.
+	 * This class encapsulates the behaviour of the zooming-in and zooming-out of the Viewport.
 	 */
-	class ViewportZoom {
+	class ViewportZoom
+	{
+	public:
 
-		static const double m_min_zoom_power;
+		static const int s_min_zoom_level;
 
-		static const double m_max_zoom_power;
+		static const int s_max_zoom_level;
 
-		static const double m_zoom_power_delta;
+		static const int s_initial_zoom_level;
 
-		static const double m_initial_zoom_power;
+		static const double s_min_zoom_percent;
 
-	 public:
+		static const double s_max_zoom_percent;
 
 		ViewportZoom() :
-		 m_zoom_power(m_initial_zoom_power) {
-
-			update_zoom_params();
+			d_zoom_level(s_initial_zoom_level)
+		{
+			update_zoom_percent_from_level();
 		}
 
-		~ViewportZoom() {  }
+		~ViewportZoom()
+		{  }
 
-		unsigned
-		zoom_percent() const {
-
-			return m_zoom_percent;
+		double
+		zoom_percent() const
+		{
+			return d_zoom_percent;
 		}
 
 		double
-		zoom_factor() const {
-
-			return m_zoom_factor;
+		zoom_factor() const
+		{
+			return (d_zoom_percent / 100.0);
 		}
 
 		void
@@ -75,28 +77,63 @@ namespace GPlatesGui {
 		void
 		reset_zoom();
 
-	 private:
+		void
+		set_zoom(
+				double new_zoom_percent);
+
+	private:
 
 		void
-		update_zoom_params();
+		update_zoom_percent_from_level();
 
 		/**
-		 * The zoom power affects the zoom thusly:
-		 *  zoom_percent = pow(10.0, (zoom_power + 1))
+		 * Zoom level affects the zoom thusly:
+		 *  zoom_power := zoom_level * zoom_delta + 1.0
 		 *
-		 * The zoom power must lie within the range [1.0, 2.0].
-		 * Thus (in particular):
+		 * The zoom level is an integer value which lies within the range [0, MAX_LEVEL].
+		 * (The value of MAX_LEVEL is determined by the max zoom power.)
+		 *
+		 * Observe that:
+		 *  - zoom level of 0 => zoom power of 1.0 => no "zoom".
+		 *  - zoom level of MAX_LEVEL => zoom power of 3.0 => 100x "zoom".
+		 *
+		 * The zoom power affects the zoom thusly:
+		 *  zoom_percent := pow(10.0, (zoom_power + 1))
+		 *
+		 * The zoom power is a floating-point value which lies within the range [1.0, 3.0].
+		 * (The value 3.0 is determined by the max zoom percent of 10000.0.)
+		 *
+		 * Observe that:
 		 * - zoom power of 1.0 => zoom percent of 100.0 => no "zoom".
-		 * - zoom power of 2.0 => zoom percent of 1000.0 => 10x "zoom".
+		 * - zoom power of 3.0 => zoom percent of 10000.0 => 100x "zoom".
+		 *
+		 * The zoom power will be incremented in deltas of 0.05, meaning there will be 40
+		 * deltas between the minimum zoom power and the maximum zoom power.
 		 */
-		double   m_zoom_power;
+		int d_zoom_level;
 
-		unsigned m_zoom_percent;
+		/**
+		 * This is the intuitive "zoom percent".
+		 *
+		 * GPlates allows zoom percents in the range [100.0, 10000.0].
+		 */
+		double d_zoom_percent;
 
-		double   m_zoom_factor;
-
+		/**
+		 * Whether the current zoom percent is in sync with the current zoom level value.
+		 *
+		 * When the client code zooms in, zooms out or resets the zoom, the zoom level is
+		 * incremented, decremented or reset; then the zoom percent is updated from the
+		 * zoom level.  This means the zoom percent is in sync with the current zoom level
+		 * value.
+		 *
+		 * On the other hand, when the client code specifies the zoom percent specifically,
+		 * the zoom level is bypassed (since most zoom percent values do not correspond to
+		 * any zoom level value), which means the zoom percent is _not_ in sync with the
+		 * current zoom level value.
+		 */
+		bool d_zoom_percent_is_synced_with_level;
 	};
-
 }
 
 #endif  /* GPLATES_GUI_VIEWPORTZOOM_H */

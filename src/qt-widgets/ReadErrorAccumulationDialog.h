@@ -64,6 +64,10 @@ namespace GPlatesQtWidgets
 		void
 		update();
 
+		/**
+		 * Populates one of the Failure to Begin, Terminating Errors, Recoverable Errors or Warnings
+		 * tree items, unhiding it as necessary.
+		 */
 		void
 		populate_top_level_tree_widget(
 				QTreeWidgetItem *tree_item_ptr,
@@ -71,11 +75,28 @@ namespace GPlatesQtWidgets
 				const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors,
 				const QIcon &occurrence_icon);
 		
+		/**
+		 * Creates a tree widget item for the file entry and all errors beneath it.
+		 * Assumes that the error collection passed to it is composed of errors for that file only.
+		 */
+		void
+		create_file_tree_widget(
+				QTreeWidgetItem *tree_item_ptr,
+				const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors,
+				const QIcon &occurrence_icon);
+
+		/**
+		 * Adds tree widget nodes for each error in the given collection to the parent QTreeWidgetItem.
+		 */
 		void
 		create_error_tree(
-				QTreeWidgetItem *tree_item_ptr,
+				QTreeWidgetItem *parent_item_ptr,
 				const GPlatesFileIO::ReadErrorOccurrence &error,
 				const QIcon &occurrence_icon);
+
+
+		const QString
+		build_summary_string();
 
 		/**
 		 * Converts a Description enum to a translated QString.
@@ -84,9 +105,6 @@ namespace GPlatesQtWidgets
 		const QString &
 		get_description_as_string(
 				GPlatesFileIO::ReadErrors::Description code);
-
-		const QString
-		build_summary_string();
 
 		/**
 		 * Converts a Result enum to a translated QString.
