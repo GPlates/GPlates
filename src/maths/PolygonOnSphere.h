@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2005, 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,15 +28,18 @@
 #ifndef GPLATES_MATHS_POLYGONONSPHERE_H
 #define GPLATES_MATHS_POLYGONONSPHERE_H
 
-#include <list>
-#include <iterator>  /* iterator, bidirectional_iterator_tag */
-#include <utility>  /* pair */
-#include <memory>  /* auto_ptr */
+#include <vector>
+#include <iterator>  // std::iterator, std::bidirectional_iterator_tag
+#include <algorithm>  // std::swap
+#include <utility>  // std::pair
+
 #include "GreatCircleArc.h"
 #include "InvalidPolygonException.h"
+#include "utils/non_null_intrusive_ptr.h"
 
-namespace GPlatesMaths {
 
+namespace GPlatesMaths
+{
 	/** 
 	 * Represents a polygon on the surface of a sphere. 
 	 *
@@ -71,20 +74,53 @@ namespace GPlatesMaths {
 	 * If you subsequently iterate through the vertices of this polygon,
 	 * you will get the same sequence of points back again: A, B, C, D.
 	 */
-	class PolygonOnSphere {
+	class PolygonOnSphere
+	{
+	public:
 
-	 public:
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<PolygonOnSphere>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<PolygonOnSphere> non_null_ptr_type;
+
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere>
+				non_null_ptr_to_const_type;
+
 
 		/**
 		 * The type of the sequence of great circle arcs.
+		 *
+		 * Implementation detail:  We are using 'std::vector' as the sequence type (rather
+		 * than, say, 'std::list') to provide a speed-up in memory-allocation (we use
+		 * 'std::vector::reserve' at creation time to avoid expensive reallocations as arcs
+		 * are appended one-by-one; after that, because the contents of the sequence are
+		 * never altered, the size of the vector will never change), a speed-up in
+		 * iteration (for what it's worth, a pointer-increment rather than a
+		 * 'node = node->next'-style operation) and a decrease (hopefully) in memory-usage
+		 * (by avoiding a whole bunch of unnecessary links).
+		 *
+		 * (We should, however, be able to get away without relying upon the
+		 * "random-access"ness of vector iterators; forward iterators should be enough.)
 		 */
-		typedef std::list< GreatCircleArc > seq_type;
+		typedef std::vector<GreatCircleArc> seq_type;
 
 
 		/**
 		 * The type used to const_iterate over the sequence of arcs.
 		 */
 		typedef seq_type::const_iterator const_iterator;
+
+
+		/**
+		 * The type used to describe collection sizes.
+		 */
+		typedef seq_type::size_type size_type;
 
 
 		/**
@@ -102,21 +138,26 @@ namespace GPlatesMaths {
 		 * This assumption should be fulfilled by the PolygonOnSphere
 		 * invariant.
 		 */
-		class VertexConstIterator: public std::iterator<
-		 std::bidirectional_iterator_tag, PointOnSphere > {
+		class VertexConstIterator:
+				public std::iterator<std::bidirectional_iterator_tag, PointOnSphere>
+		{
 		
-			typedef PolygonOnSphere::const_iterator
-			 gca_const_iterator;
+			typedef PolygonOnSphere::const_iterator gca_const_iterator;
 
-		  public:
+		public:
 
 			/**
 			 * Create the "begin" vertex const_iterator for @a poly.
+			 *
+			 * Note that it's intentional that the instance returned is non-const: If
+			 * the instance were const, it would not be possible to write an expression
+			 * like '++(polygon.vertex_begin())' to access the second vertex of the
+			 * polygon.
 			 */
 			static
 			VertexConstIterator
 			create_begin(
-			 const PolygonOnSphere &poly);
+					const PolygonOnSphere &poly);
 
 
 			/**
@@ -125,7 +166,7 @@ namespace GPlatesMaths {
 			static
 			VertexConstIterator
 			create_end(
-			 const PolygonOnSphere &poly);
+					const PolygonOnSphere &poly);
 
 
 			/**
@@ -148,11 +189,14 @@ namespace GPlatesMaths {
 			 * iterator:
 			 *  - comparison for equality to another iterator;
 			 *  - comparison for inequality to another iterator;
-			 *  - being assigned-to by another iterator;
+			 *  - being assigned-to by another iterator.
+			 *
+			 * The following operations are no-ops for an
+			 * uninitialised iterator:
 			 *  - increment;
 			 *  - decrement.
 			 */
-			VertexConstIterator() :
+			VertexConstIterator():
 			 d_poly_ptr(NULL), 
 			 d_curr_gca() {  }
 
@@ -161,9 +205,10 @@ namespace GPlatesMaths {
 			 * Copy-construct a vertex iterator.
 			 */
 			VertexConstIterator(
-			 const VertexConstIterator &other) :
-			 d_poly_ptr(other.d_poly_ptr),
-			 d_curr_gca(other.d_curr_gca) {  }
+					const VertexConstIterator &other):
+				d_poly_ptr(other.d_poly_ptr),
+				d_curr_gca(other.d_curr_gca)
+			{  }
 
 
 			/**
@@ -171,8 +216,8 @@ namespace GPlatesMaths {
 			 * current GreatCircleArc.
 			 */
 			gca_const_iterator
-			curr_gca() const {
-
+			curr_gca() const
+			{
 				return d_curr_gca;
 			}
 
@@ -182,8 +227,8 @@ namespace GPlatesMaths {
 			 */
 			VertexConstIterator &
 			operator=(
-			 const VertexConstIterator &other) {
-
+					const VertexConstIterator &other)
+			{
 				d_poly_ptr = other.d_poly_ptr;
 				d_curr_gca = other.d_curr_gca;
 
@@ -196,8 +241,8 @@ namespace GPlatesMaths {
 			 * currently-pointed-at PointOnSphere.
 			 */
 			const PointOnSphere &
-			operator*() const {
-
+			operator*() const
+			{
 				return current_point();
 			}
 
@@ -207,8 +252,8 @@ namespace GPlatesMaths {
 			 * currently being pointed-at by this iterator.
 			 */
 			const PointOnSphere *
-			operator->() const {
-
+			operator->() const
+			{
 				return &(current_point());
 			}
 
@@ -217,10 +262,9 @@ namespace GPlatesMaths {
 			 * Pre-increment this iterator.
 			 */
 			VertexConstIterator &
-			operator++() {
-
+			operator++()
+			{
 				increment();
-
 				return *this;
 			}
 
@@ -229,11 +273,10 @@ namespace GPlatesMaths {
 			 * Post-increment this iterator.
 			 */
 			const VertexConstIterator
-			operator++(int) {
-
+			operator++(int)
+			{
 				VertexConstIterator old = *this;
 				increment();
-
 				return old;
 			}
 
@@ -242,10 +285,9 @@ namespace GPlatesMaths {
 			 * Pre-decrement this iterator.
 			 */
 			VertexConstIterator &
-			operator--() {
-
+			operator--()
+			{
 				decrement();
-
 				return *this;
 			}
 
@@ -254,24 +296,30 @@ namespace GPlatesMaths {
 			 * Post-decrement this iterator.
 			 */
 			const VertexConstIterator
-			operator--(int) {
-
+			operator--(int)
+			{
 				VertexConstIterator old = *this;
 				decrement();
-
 				return old;
 			}
 
-		  private:
+		private:
 
 			/**
-			 * Gee, why do you think this is private?
+			 * Construct a VertexConstIterator instance to iterate over the vertices of
+			 * @a poly.
+			 *
+			 * The current position of the iterator is described by @a curr_gca_.
+			 *
+			 * This constructor should only be invoked by the @a create_begin and
+			 * @a create_end static member functions.
 			 */
 			VertexConstIterator(
-			 const PolygonOnSphere &poly,
-			 gca_const_iterator curr_gca_) :
-			 d_poly_ptr(&poly),
-			 d_curr_gca(curr_gca_) {  }
+					const PolygonOnSphere &poly,
+					gca_const_iterator curr_gca_):
+				d_poly_ptr(&poly),
+				d_curr_gca(curr_gca_)
+			{  }
 
 
 			/**
@@ -297,8 +345,21 @@ namespace GPlatesMaths {
 			void
 			decrement();
 
+
+			/**
+			 * This is the PolygonOnSphere instance which is being
+			 * traversed by this iterator.
+			 *
+			 * This pointer will be NULL in an uninitialised
+			 * (default-constructed) iterator.
+			 */
 			const PolygonOnSphere *d_poly_ptr;
 
+
+			/**
+			 * This points to the current GreatCircleArc in the
+			 * PolygonOnSphere.
+			 */
 			gca_const_iterator d_curr_gca;
 
 		};
@@ -311,13 +372,19 @@ namespace GPlatesMaths {
 
 
 		/**
+		 * The type used for the reference-count.
+		 */
+		typedef long ref_count_type;
+
+
+		/**
 		 * The possible return values from the construction-parameter
 		 * validation functions
 		 * @a evaluate_construction_parameter_validity and
 		 * @a evaluate_segment_endpoint_validity.
 		 */
-		enum ConstructionParameterValidity {
-
+		enum ConstructionParameterValidity
+		{
 			VALID,
 			INVALID_INSUFFICIENT_DISTINCT_POINTS,
 			INVALID_DUPLICATE_SEGMENT_ENDPOINTS,
@@ -361,16 +428,16 @@ namespace GPlatesMaths {
 		 * whether or not duplicate adjacent points should silently be
 		 * dropped instead of causing an exception to be thrown.  (Dup
 		 * adjacent points are a not-uncommon occurrence when reading
-		 * PLATES data files.  All Hail PLATES!)
+		 * PLATES4 data files.  All Hail PLATES4!)
 		 */
-		template< typename C >
+		template<typename C>
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
-		 const C &coll,
-		 std::pair< typename C::const_iterator, typename
-		  C::const_iterator > &invalid_points,
-		 bool should_silently_drop_dups = true);
+				const C &coll,
+				std::pair<typename C::const_iterator, typename C::const_iterator> &
+						invalid_points,
+				bool should_silently_drop_dups = true);
 
 
 		/**
@@ -385,43 +452,48 @@ namespace GPlatesMaths {
 		static
 		ConstructionParameterValidity
 		evaluate_segment_endpoint_validity(
-		 const PointOnSphere &p1,
-		 const PointOnSphere &p2);
+				const PointOnSphere &p1,
+				const PointOnSphere &p2);
 
 
 		/**
-		 * Create a new PolygonOnSphere instance from the sequence of
-		 * points @a coll.
+		 * Create a new PolygonOnSphere instance from the sequence of points @a coll.
 		 *
-		 * @a coll should be a sequential STL container (list, vector,
-		 * ...) of PointOnSphere.
+		 * @a coll should be a sequential STL container (list, vector, ...) of
+		 * PointOnSphere.
 		 *
-		 * This function is strongly exception-safe and
-		 * exception-neutral.
+		 * This function is strongly exception-safe and exception-neutral.
+		 *
+		 * FIXME:  We should really prohibit construction of PolygonOnSphere instances on
+		 * the stack, insisting that they are instead created on the heap, referenced by
+		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
+		 * which creates PolygonOnSphere instances on the stack, and changing all that code
+		 * to use non_null_intrusive_ptr would take too long to justify right now.  But we
+		 * should do it properly some day...
+		 *
+		 * Trac ticket: http://trac.gplates.org/ticket/3
 		 */
-		template< typename C >
+		template<typename C>
 		static
-		PolygonOnSphere
+		const PolygonOnSphere
 		create(
-		 const C &coll);
+				const C &coll);
 
 
 		/**
-		 * Create a new PolygonOnSphere instance on the heap from the
-		 * sequence of points @a coll, and return an auto_ptr which
-		 * points to the newly-created instance.
+		 * Create a new PolygonOnSphere instance on the heap from the sequence of points
+		 * @a coll, and return an intrusive_ptr which points to the newly-created instance.
 		 *
-		 * @a coll should be a sequential STL container (list, vector,
-		 * ...) of PointOnSphere.
+		 * @a coll should be a sequential STL container (list, vector, ...) of
+		 * PointOnSphere.
 		 *
-		 * This function is strongly exception-safe and
-		 * exception-neutral.
+		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		template< typename C >
+		template<typename C>
 		static
-		std::auto_ptr< PolygonOnSphere >
+		const non_null_ptr_type
 		create_on_heap(
-		 const C &coll);
+				const C &coll);
 
 
 		/**
@@ -429,8 +501,8 @@ namespace GPlatesMaths {
 		 * sequence of GreatCircleArc which defines this polygon.
 		 */
 		const_iterator
-		begin() const {
-			
+		begin() const
+		{
 			return d_seq.begin();
 		}
 
@@ -440,9 +512,19 @@ namespace GPlatesMaths {
 		 * sequence of GreatCircleArc which defines this polygon.
 		 */
 		const_iterator
-		end() const {
-			
+		end() const
+		{
 			return d_seq.end();
+		}
+
+
+		/**
+		 * Return the number of segments in this polygon.
+		 */
+		size_type
+		number_of_segments() const
+		{
+			return d_seq.size();
 		}
 
 
@@ -451,8 +533,8 @@ namespace GPlatesMaths {
 		 * vertices of this polygon.
 		 */
 		vertex_const_iterator
-		vertex_begin() const {
-
+		vertex_begin() const
+		{
 			return vertex_const_iterator::create_begin(*this);
 		}
 
@@ -462,9 +544,30 @@ namespace GPlatesMaths {
 		 * vertices of this polygon.
 		 */
 		vertex_const_iterator
-		vertex_end() const {
-
+		vertex_end() const
+		{
 			return vertex_const_iterator::create_end(*this);
+		}
+
+
+		/**
+		 * Return the number of vertices in this polygon.
+		 */
+		size_type
+		number_of_vertices() const
+		{
+			return d_seq.size();
+		}
+
+
+		/**
+		 * Return the start-point of this polygon.
+		 */
+		const PointOnSphere &
+		start_point() const
+		{
+			const GreatCircleArc &first_gca = *(begin());
+			return first_gca.start_point();
 		}
 
 
@@ -475,8 +578,9 @@ namespace GPlatesMaths {
 		 */
 		void
 		swap(
-		 PolygonOnSphere &other) {
-
+				PolygonOnSphere &other)
+		{
+			// Obviously, we should not swap the ref-counts of the instances.
 			d_seq.swap(other.d_seq);
 		}
 
@@ -510,45 +614,92 @@ namespace GPlatesMaths {
 		 */
 		bool
 		is_close_to(
-		 const PointOnSphere &test_point,
-		 const real_t &closeness_inclusion_threshold,
-		 const real_t &latitude_exclusion_threshold,
-		 real_t &closeness) const;
-
-	 private:
-
-		/**
-		 * The default constructor should never be invoked directly by
-		 * client code; only through the static 'create' functions.
-		 */
-		PolygonOnSphere() {  }
+				const PointOnSphere &test_point,
+				const real_t &closeness_inclusion_threshold,
+				const real_t &latitude_exclusion_threshold,
+				real_t &closeness) const;
 
 
 		/**
-		 * Appends a copy of @a g to the end.
+		 * Increment the reference-count of this instance.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		void
-		push_back(
-		 const GreatCircleArc &g) {
-
-			d_seq.push_back(g);
+		increment_ref_count() const
+		{
+			++d_ref_count;
 		}
 
 
 		/**
-		 * Populate the empty polygon @a poly with the collection of 
-		 * points @a coll, using the points to define vertices of the
-		 * polygon.
+		 * Decrement the reference-count of this instance, and return the new
+		 * reference-count.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesUtils::non_null_intrusive_ptr.
+		 */
+		ref_count_type
+		decrement_ref_count() const
+		{
+			return --d_ref_count;
+		}
+
+	 private:
+
+		/**
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of a polygon without any vertices.
+		 *
+		 * This constructor should never be invoked directly by client code; only through
+		 * the static 'create' functions.
+		 *
+		 * This constructor should act exactly the same as the default (auto-generated)
+		 * default-constructor would, except that it should initialise the ref-count to
+		 * zero.
+		 */
+		PolygonOnSphere():
+			d_ref_count(0)
+		{  }
+
+
+		/**
+		 * Create a copy-constructed PolygonOnSphere instance.
+		 *
+		 * This constructor should act exactly the same as the default (auto-generated)
+		 * copy-constructor would, except that it should initialise the ref-count to zero.
+		 *
+		 * This constructor should never be invoked directly by client code; only through
+		 * static 'create' functions.
+		 */
+		PolygonOnSphere(
+				const PolygonOnSphere &other):
+			d_ref_count(0),
+			d_seq(other.d_seq)
+		{  }
+
+
+		/**
+		 * Generate a sequence of polygon segments from the collection
+		 * of points @a coll, using the points to define the vertices
+		 * of the segments, then swap this new sequence of segments
+		 * into the polygon @a poly, discarding any sequence of
+		 * segments which may have been there before.
 		 *
 		 * This function is strongly exception-safe and
 		 * exception-neutral.
 		 */
-		template< typename C >
+		template<typename C>
 		static
 		void
-		populate(
-		 PolygonOnSphere &poly,
-		 const C &coll);
+		generate_segments_and_swap(
+				PolygonOnSphere &poly,
+				const C &coll);
 
 
 		/**
@@ -561,19 +712,32 @@ namespace GPlatesMaths {
 		static
 		void
 		create_segment_and_append_to_seq(
-		 seq_type &seq,
-		 const PointOnSphere &p1,
-		 const PointOnSphere &p2,
-		 bool should_silently_drop_dups = true);
+				seq_type &seq,
+				const PointOnSphere &p1,
+				const PointOnSphere &p2,
+				bool should_silently_drop_dups = true);
 
 
 		/**
-		 * The minimum number of (distinct) collection points to be
-		 * passed into a 'create' function to enable creation of a
-		 * closed, well-defined polygon.
+		 * This is the minimum number of (distinct) collection points
+		 * to be passed into a 'create' function to enable creation of
+		 * a closed, well-defined polygon.
 		 */
-		static const unsigned MIN_NUM_COLLECTION_POINTS;
+		static const unsigned s_min_num_collection_points;
 
+		/**
+		 * This is the reference-count used by GPlatesUtils::non_null_intrusive_ptr.
+		 *
+		 * It is declared "mutable", because it is to be modified by 'increment_ref_count'
+		 * and 'decrement_ref_count', which are const member functions.  They are const
+		 * member functions because they do not modify the "abstract state" of the
+		 * instance; the reference-count is really only memory-management book-keeping.
+		 */
+		mutable ref_count_type d_ref_count;
+
+		/**
+		 * This is the sequence of polygon segments.
+		 */
 		seq_type d_seq;
 
 	};
@@ -582,8 +746,8 @@ namespace GPlatesMaths {
 	inline
 	PolygonOnSphere::VertexConstIterator
 	PolygonOnSphere::VertexConstIterator::create_begin(
-	 const PolygonOnSphere &poly) {
-
+			const PolygonOnSphere &poly)
+	{
 		return VertexConstIterator(poly, poly.begin());
 	}
 	
@@ -591,25 +755,29 @@ namespace GPlatesMaths {
 	inline
 	PolygonOnSphere::VertexConstIterator
 	PolygonOnSphere::VertexConstIterator::create_end(
-	 const PolygonOnSphere &poly) {
-
+			const PolygonOnSphere &poly)
+	{
 		return VertexConstIterator(poly, poly.end());
 	}
 
 
 	inline
 	void
-	PolygonOnSphere::VertexConstIterator::increment() {
-
-		++d_curr_gca;
+	PolygonOnSphere::VertexConstIterator::increment()
+	{
+		if (d_poly_ptr != NULL) {
+			++d_curr_gca;
+		}
 	}
 
 
 	inline
 	void
-	PolygonOnSphere::VertexConstIterator::decrement() {
-
-		--d_curr_gca;
+	PolygonOnSphere::VertexConstIterator::decrement()
+	{
+		if (d_poly_ptr != NULL) {
+			--d_curr_gca;
+		}
 	}
 
 
@@ -619,9 +787,9 @@ namespace GPlatesMaths {
 	inline
 	bool
 	operator==(
-	 const PolygonOnSphere::VertexConstIterator &i1,
-	 const PolygonOnSphere::VertexConstIterator &i2) {
-
+			const PolygonOnSphere::VertexConstIterator &i1,
+			const PolygonOnSphere::VertexConstIterator &i2)
+	{
 		return (i1.curr_gca() == i2.curr_gca());
 	}
 
@@ -632,24 +800,23 @@ namespace GPlatesMaths {
 	inline
 	bool
 	operator!=(
-	 const PolygonOnSphere::VertexConstIterator &i1,
-	 const PolygonOnSphere::VertexConstIterator &i2) {
-
+			const PolygonOnSphere::VertexConstIterator &i1,
+			const PolygonOnSphere::VertexConstIterator &i2)
+	{
 		return (i1.curr_gca() != i2.curr_gca());
 	}
 
 
-	template< typename C >
+	template<typename C>
 	PolygonOnSphere::ConstructionParameterValidity
 	PolygonOnSphere::evaluate_construction_parameter_validity(
-	 const C &coll,
-	 std::pair< typename C::const_iterator, typename
-	  C::const_iterator > &invalid_points,
-	 bool should_silently_drop_dups) {
-
+			const C &coll,
+			std::pair<typename C::const_iterator, typename C::const_iterator> &
+					invalid_points,
+			bool should_silently_drop_dups)
+	{
 		typename C::size_type num_points = coll.size();
-		if (num_points < MIN_NUM_COLLECTION_POINTS) {
-
+		if (num_points < s_min_num_collection_points) {
 			// The collection does not contain enough points to
 			// create a closed, well-defined polygon.
 			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
@@ -657,17 +824,12 @@ namespace GPlatesMaths {
 
 		// This for-loop is identical to the corresponding code in
 		// PolylineOnSphere.
-		typename C::const_iterator
-		 prev,
-		 iter = coll.begin(),
-		 end = coll.end();
+		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
 		for (prev = iter++ ; iter != end; prev = iter++) {
-
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 
-			ConstructionParameterValidity v =
-			 evaluate_segment_endpoint_validity(p1, p2);
+			ConstructionParameterValidity v = evaluate_segment_endpoint_validity(p1, p2);
 
 			// Using a switch-statement, along with GCC's
 			// "-Wswitch" option (implicitly enabled by "-Wall"),
@@ -691,7 +853,6 @@ namespace GPlatesMaths {
 			 case INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
 
 				if (should_silently_drop_dups) {
-
 					// You heard the man:  We should
 					// silently drop duplicates.  But we
 					// still need to keep track of the
@@ -699,10 +860,8 @@ namespace GPlatesMaths {
 					--num_points;
 
 				} else {
-
 					invalid_points.first = prev;
 					invalid_points.second = iter;
-
 					return v;
 				}
 				// Keep looping.
@@ -749,18 +908,14 @@ namespace GPlatesMaths {
 			 case INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
 
 				if (should_silently_drop_dups) {
-
 					// You heard the man:  We should
 					// silently drop duplicates.  But we
 					// still need to keep track of the
 					// number of (usable) points.
 					--num_points;
-
 				} else {
-
 					invalid_points.first = prev;
 					invalid_points.second = iter;
-
 					return v;
 				}
 				// Exit the switch-statement.
@@ -777,8 +932,7 @@ namespace GPlatesMaths {
 
 		// Check the number of (usable) points again, now that we've
 		// abjusted for duplicates.
-		if (num_points < MIN_NUM_COLLECTION_POINTS) {
-
+		if (num_points < s_min_num_collection_points) {
 			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
@@ -788,61 +942,59 @@ namespace GPlatesMaths {
 	}
 
 
-	template< typename C >
-	PolygonOnSphere
+	template<typename C>
+	const PolygonOnSphere
 	PolygonOnSphere::create(
-	 const C &coll) {
-
+			const C &coll)
+	{
 		PolygonOnSphere p;
-		populate(p, coll);
+		generate_segments_and_swap(p, coll);
 		return p;
 	}
 
 
-	template< typename C >
-	std::auto_ptr< PolygonOnSphere >
+	template<typename C>
+	const PolygonOnSphere::non_null_ptr_type
 	PolygonOnSphere::create_on_heap(
-	 const C &coll) {
-
-		std::auto_ptr< PolygonOnSphere > ptr(new PolygonOnSphere());
-		populate(*ptr, coll);
+			const C &coll)
+	{
+		PolygonOnSphere::non_null_ptr_type ptr(*(new PolygonOnSphere()));
+		generate_segments_and_swap(*ptr, coll);
 		return ptr;
 	}
 
 
-	template< typename C >
+	template<typename C>
 	void
-	PolygonOnSphere::populate(
-	 PolygonOnSphere &poly,
-	 const C &coll) {
-
-		if (coll.size() < MIN_NUM_COLLECTION_POINTS) {
-
+	PolygonOnSphere::generate_segments_and_swap(
+			PolygonOnSphere &poly,
+	 		const C &coll)
+	{
+		if (coll.size() < s_min_num_collection_points) {
 			// The collection does not contain enough points to
 			// create a closed, well-defined polygon.
+
 			// FIXME:  I don't like throwing in a header-file.
 			throw InvalidPolygonException("Attempted to create a "
 			 "polygon from an insufficient number (ie, less than "
 			 "3) of endpoints.");
 		}
 
-		// There's no real need to put all the new line-segments into a
-		// temporary sequence (rather than putting them directly into
-		// 'd_seq'), but doing it this way might make the code logic a
-		// little easier to follow.
+		// Make it easier to provide strong exception safety by
+		// appending the new segments to a temporary sequence (rather
+		// than putting them directly into 'd_seq').
 		seq_type tmp_seq;
+		// Observe that the number of points used to define a polygon (which will become
+		// the number of vertices in the polygon) is also the number of segments in the
+		// polygon.
+		tmp_seq.reserve(coll.size());
 
 		// This for-loop is identical to the corresponding code in
 		// PolylineOnSphere.
-		typename C::const_iterator
-		 prev,
-		 iter = coll.begin(),
-		 end = coll.end();
+		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
 		for (prev = iter++ ; iter != end; prev = iter++) {
-
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
 		}
 		// Now, an additional step, for the last->first point
@@ -851,11 +1003,12 @@ namespace GPlatesMaths {
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
 		}
 
-		if (tmp_seq.size() < MIN_NUM_COLLECTION_POINTS) {
+		// Observe that the minimum number of collection points for a polygon (3) is also
+		// the minimum number of segments for a polygon.
+		if (tmp_seq.size() < s_min_num_collection_points) {
 
 			// Not enough line-segments were created to create a
 			// closed, well-defined polygon.
@@ -864,9 +1017,47 @@ namespace GPlatesMaths {
 			 "polygon from an insufficient number (ie, less than "
 			 "3) of distinct endpoints.");
 		}
-		poly.d_seq.splice(poly.d_seq.end(), tmp_seq);
+		poly.d_seq.swap(tmp_seq);
 	}
 
+
+	inline
+	void
+	intrusive_ptr_add_ref(
+			const PolygonOnSphere *p)
+	{
+		p->increment_ref_count();
+	}
+
+
+	inline
+	void
+	intrusive_ptr_release(
+			const PolygonOnSphere *p)
+	{
+		if (p->decrement_ref_count() == 0) {
+			delete p;
+		}
+	}
+
+}
+
+namespace std
+{
+	/**
+	 * This is a template specialisation of the standard function @swap.
+	 *
+	 * See Josuttis, section 4.4.2, "Swapping Two Values", for more information.
+	 */
+	template<>
+	inline
+	void
+	swap<GPlatesMaths::PolygonOnSphere>(
+			GPlatesMaths::PolygonOnSphere &p1,
+			GPlatesMaths::PolygonOnSphere &p2)
+	{
+		p1.swap(p2);
+	}
 }
 
 #endif  // GPLATES_MATHS_POLYGONONSPHERE_H

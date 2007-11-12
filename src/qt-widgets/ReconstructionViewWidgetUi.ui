@@ -108,7 +108,7 @@
         <item>
          <widget class="QPushButton" name="button_reconstruction_increment" >
           <property name="toolTip" >
-           <string>Increment reconstruction time  Ctrl-I</string>
+           <string>Increment reconstruction time  Ctrl+I</string>
           </property>
           <property name="icon" >
            <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_22.png</iconset>
@@ -130,7 +130,7 @@
         <item>
          <widget class="QPushButton" name="button_reconstruction_decrement" >
           <property name="toolTip" >
-           <string>Decrement reconstruction time  Ctrl-Shift-I</string>
+           <string>Decrement reconstruction time  Ctrl+Shift+I</string>
           </property>
           <property name="icon" >
            <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_22.png</iconset>
@@ -195,7 +195,7 @@
         <item>
          <widget class="QDoubleSpinBox" name="spinbox_zoom_percent" >
           <property name="toolTip" >
-           <string>Set zoom amount</string>
+           <string>Set zoom percent  Ctrl+M</string>
           </property>
           <property name="suffix" >
            <string>%</string>
@@ -224,7 +224,7 @@
         <item>
          <widget class="QPushButton" name="button_zoom_in" >
           <property name="toolTip" >
-           <string>Zoom in</string>
+           <string>Zoom in  +</string>
           </property>
           <property name="icon" >
            <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_22.png</iconset>
@@ -243,7 +243,7 @@
         <item>
          <widget class="QPushButton" name="button_zoom_out" >
           <property name="toolTip" >
-           <string>Zoom out</string>
+           <string>Zoom out  -</string>
           </property>
           <property name="icon" >
            <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_22.png</iconset>
@@ -262,7 +262,7 @@
         <item>
          <widget class="QPushButton" name="button_zoom_reset" >
           <property name="toolTip" >
-           <string>Reset zoom level</string>
+           <string>Reset zoom level  1</string>
           </property>
           <property name="icon" >
            <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_22.png</iconset>

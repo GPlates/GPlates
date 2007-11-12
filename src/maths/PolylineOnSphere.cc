@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *  (under the name "PolyLineOnSphere.cc")
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *  (under the name "PolylineOnSphere.cc")
  *
  * This file is part of GPlates.
@@ -38,6 +38,10 @@
 #include "InvalidPolylineException.h"
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
+
+
+const unsigned
+GPlatesMaths::PolylineOnSphere::s_min_num_collection_points = 2;
 
 
 GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity

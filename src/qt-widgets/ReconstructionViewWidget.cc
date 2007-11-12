@@ -49,20 +49,26 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	spinbox_reconstruction_time->setValue(0.0);
 	QObject::connect(spinbox_reconstruction_time, SIGNAL(editingFinished()),
 			this, SLOT(propagate_reconstruction_time()));
+	QObject::connect(spinbox_reconstruction_time, SIGNAL(editingFinished()),
+			d_canvas_ptr, SLOT(setFocus()));
+
 	QObject::connect(button_reconstruction_increment, SIGNAL(clicked()),
 			this, SLOT(increment_reconstruction_time()));
 	QObject::connect(button_reconstruction_decrement, SIGNAL(clicked()),
 			this, SLOT(decrement_reconstruction_time()));
 
+	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
+			this, SLOT(propagate_zoom_percent()));
+	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
+			d_canvas_ptr, SLOT(setFocus()));
+			
 	QObject::connect(button_zoom_in, SIGNAL(clicked()),
 			d_canvas_ptr, SLOT(zoom_in()));
 	QObject::connect(button_zoom_out, SIGNAL(clicked()),
 			d_canvas_ptr, SLOT(zoom_out()));
 	QObject::connect(button_zoom_reset, SIGNAL(clicked()),
 			d_canvas_ptr, SLOT(reset_zoom()));
-	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
-			this, SLOT(propagate_zoom_percent()));
-			
+
 	QObject::connect(d_canvas_ptr, SIGNAL(zoom_changed(double)),
 			this, SLOT(set_zoom(double)));
 	QObject::connect(this, SIGNAL(zoom_changed(double)),

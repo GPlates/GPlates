@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2005, 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,33 +34,32 @@
 
 
 const unsigned
-GPlatesMaths::PolygonOnSphere::MIN_NUM_COLLECTION_POINTS = 3;
+GPlatesMaths::PolygonOnSphere::s_min_num_collection_points = 3;
 
 
 GPlatesMaths::PolygonOnSphere::ConstructionParameterValidity
 GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
- const PointOnSphere &p1,
- const PointOnSphere &p2) {
-
-	GreatCircleArc::ParameterStatus s =
-	 GreatCircleArc::test_parameter_status(p1, p2);
+		const PointOnSphere &p1,
+		const PointOnSphere &p2)
+{
+	GreatCircleArc::ParameterStatus s = GreatCircleArc::test_parameter_status(p1, p2);
 
 	// Using a switch-statement, along with GCC's "-Wswitch" option
 	// (implicitly enabled by "-Wall"), will help to ensure that no cases
 	// are missed.
 	switch (s) {
 
-	 case GreatCircleArc::VALID:
+	case GreatCircleArc::VALID:
 
 		// Continue after switch block so that we don't get warnings
 		// about "control reach[ing] end of non-void function".
 		break;
 
-	 case GreatCircleArc::INVALID_IDENTICAL_ENDPOINTS:
+	case GreatCircleArc::INVALID_IDENTICAL_ENDPOINTS:
 
 		return INVALID_DUPLICATE_SEGMENT_ENDPOINTS;
 
-	 case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
+	case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
 
 		return INVALID_ANTIPODAL_SEGMENT_ENDPOINTS;
 	}
@@ -70,15 +69,14 @@ GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
 
 bool
 GPlatesMaths::PolygonOnSphere::is_close_to(
- const PointOnSphere &test_point,
- const real_t &closeness_inclusion_threshold,
- const real_t &latitude_exclusion_threshold,
- real_t &closeness) const {
-
+		const PointOnSphere &test_point,
+		const real_t &closeness_inclusion_threshold,
+		const real_t &latitude_exclusion_threshold,
+		real_t &closeness) const
+{
 	// First, ensure the parameters are valid.
 	if (((closeness_inclusion_threshold * closeness_inclusion_threshold) +
-	     (latitude_exclusion_threshold * latitude_exclusion_threshold))
-	    != 1.0) {
+	     (latitude_exclusion_threshold * latitude_exclusion_threshold)) != 1.0) {
 
 		/*
 		 * Well, *duh*, they *should* equal 1.0: those two thresholds
@@ -86,8 +84,8 @@ GPlatesMaths::PolygonOnSphere::is_close_to(
 		 * of a right-angled triangle inscribed in a unit circle.
 		 */
 		real_t calculated_hypotenuse =
-		 closeness_inclusion_threshold * closeness_inclusion_threshold +
-		 latitude_exclusion_threshold * latitude_exclusion_threshold;
+				closeness_inclusion_threshold * closeness_inclusion_threshold +
+				latitude_exclusion_threshold * latitude_exclusion_threshold;
 
 		std::ostringstream oss;
 		oss
@@ -99,8 +97,7 @@ GPlatesMaths::PolygonOnSphere::is_close_to(
 		 << HighPrecision< real_t >(calculated_hypotenuse)
 		 << ")\nrather than the expected value of 1.";
 
-		throw
-		 GPlatesGlobal::InvalidParametersException(oss.str().c_str());
+		throw GPlatesGlobal::InvalidParametersException(oss.str().c_str());
 	}
 
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
@@ -141,34 +138,30 @@ GPlatesMaths::PolygonOnSphere::is_close_to(
 
 void
 GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
- seq_type &seq, 
- const PointOnSphere &p1,
- const PointOnSphere &p2,
- bool should_silently_drop_dups) {
-
-	GreatCircleArc::ParameterStatus s =
-	 GreatCircleArc::test_parameter_status(p1, p2);
+		seq_type &seq, 
+		const PointOnSphere &p1,
+		const PointOnSphere &p2,
+		bool should_silently_drop_dups)
+{
+	GreatCircleArc::ParameterStatus s = GreatCircleArc::test_parameter_status(p1, p2);
 
 	// Using a switch-statement, along with GCC's "-Wswitch" option
 	// (implicitly enabled by "-Wall"), will help to ensure that no cases
 	// are missed.
 	switch (s) {
 
-	 case GreatCircleArc::VALID:
+	case GreatCircleArc::VALID:
 
 		// Continue after switch.
 		break;
 
-	 case GreatCircleArc::INVALID_IDENTICAL_ENDPOINTS:
+	case GreatCircleArc::INVALID_IDENTICAL_ENDPOINTS:
 
 		if (should_silently_drop_dups) {
-
 			// You heard the man:  We should silently drop
 			// duplicates, instead of throwing an exception.
 			return;
-
 		} else {
-
 			// The start-point was the same as the end-point
 			// => no segment.
 			std::ostringstream oss;
@@ -186,7 +179,7 @@ GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
 			// class of 'PolygonConstructionException'.
 		}
 
-	 case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
+	case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
 
 		{
 			// The start-point and the end-point are antipodal
@@ -216,8 +209,8 @@ GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
 
 
 const GPlatesMaths::PointOnSphere &
-GPlatesMaths::PolygonOnSphere::VertexConstIterator::current_point() const {
-
+GPlatesMaths::PolygonOnSphere::VertexConstIterator::current_point() const
+{
 	if (d_poly_ptr == NULL) {
 
 		// I think the exception message sums it up pretty nicely...

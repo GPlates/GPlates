@@ -32,15 +32,17 @@
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
 #include <vector>
-#include <iterator>  /* std::iterator, std::bidirectional_iterator_tag */
-#include <algorithm>  /* std::swap */
-#include <utility>  /* std::pair */
+#include <iterator>  // std::iterator, std::bidirectional_iterator_tag
+#include <algorithm>  // std::swap
+#include <utility>  // std::pair
+
 #include "GreatCircleArc.h"
 #include "InvalidPolylineException.h"
 #include "utils/non_null_intrusive_ptr.h"
 
-namespace GPlatesMaths {
 
+namespace GPlatesMaths
+{
 	/** 
 	 * Represents a polyline on the surface of a sphere. 
 	 *
@@ -85,12 +87,14 @@ namespace GPlatesMaths {
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere> non_null_ptr_type;
 
+
 		/**
 		 * A convenience typedef for
 		 * GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>
 				non_null_ptr_to_const_type;
+
 
 		/**
 		 * The type of the sequence of great circle arcs.
@@ -141,8 +145,8 @@ namespace GPlatesMaths {
 		 * assumption should be fulfilled by the PolylineOnSphere
 		 * invariant.
 		 */
-		class VertexConstIterator :
-			public std::iterator<std::bidirectional_iterator_tag, PointOnSphere>
+		class VertexConstIterator:
+				public std::iterator<std::bidirectional_iterator_tag, PointOnSphere>
 		{
 
 			enum StartOrEnd {
@@ -156,6 +160,11 @@ namespace GPlatesMaths {
 
 			/**
 			 * Create the "begin" vertex iterator for @a poly.
+			 *
+			 * Note that it's intentional that the instance returned is non-const: If
+			 * the instance were const, it would not be possible to write an expression
+			 * like '++(polyline.vertex_begin())' to access the second vertex of the
+			 * polyline.
 			 */
 			static
 			VertexConstIterator
@@ -165,6 +174,11 @@ namespace GPlatesMaths {
 
 			/**
 			 * Create the "end" vertex iterator for @a poly.
+			 *
+			 * Note that it's intentional that the instance returned is non-const: If
+			 * the instance were const, it would not be possible to write an expression
+			 * like '--(polyline.vertex_end())' to access the last vertex of the
+			 * polyline.
 			 */
 			static
 			VertexConstIterator
@@ -196,10 +210,10 @@ namespace GPlatesMaths {
 			 *
 			 * The following operations are no-ops for an
 			 * uninitialised iterator:
-			 *  - increment
-			 *  - decrement
+			 *  - increment;
+			 *  - decrement.
 			 */
-			VertexConstIterator() :
+			VertexConstIterator():
 				d_poly_ptr(NULL), 
 				d_curr_gca(), 
 				d_gca_start_or_end(END)
@@ -210,7 +224,7 @@ namespace GPlatesMaths {
 			 * Copy-construct a vertex iterator.
 			 */
 			VertexConstIterator(
-					const VertexConstIterator &other) :
+					const VertexConstIterator &other):
 				d_poly_ptr(other.d_poly_ptr),
 				d_curr_gca(other.d_curr_gca),
 				d_gca_start_or_end(other.d_gca_start_or_end)
@@ -250,6 +264,7 @@ namespace GPlatesMaths {
 				d_poly_ptr = other.d_poly_ptr;
 				d_curr_gca = other.d_curr_gca;
 				d_gca_start_or_end = other.d_gca_start_or_end;
+
 				return *this;
 			}
 
@@ -324,7 +339,15 @@ namespace GPlatesMaths {
 		private:
 
 			/**
-			 * Gee, why do you think this is private?
+			 * Construct a VertexConstIterator instance to iterate over the vertices of
+			 * @a poly.
+			 *
+			 * The current position of the iterator is described by @a curr_gca_ and
+			 * @a gca_start_or_end_.  Note that not all combinations of @a curr_gca_
+			 * and @a gca_start_or_end_ are valid.
+			 *
+			 * This constructor should only be invoked by the @a create_begin and
+			 * @a create_end static member functions.
 			 */
 			VertexConstIterator(
 					const PolylineOnSphere &poly,
@@ -369,10 +392,29 @@ namespace GPlatesMaths {
 			void
 			decrement();
 
+
+			/**
+			 * This is the PolylineOnSphere instance which is being
+			 * traversed by this iterator.
+			 *
+			 * This pointer will be NULL in an uninitialised
+			 * (default-constructed) iterator.
+			 */
 			const PolylineOnSphere *d_poly_ptr;
 
+
+			/**
+			 * This points to the current GreatCircleArc in the
+			 * PolylineOnSphere.
+			 */
 			gca_const_iterator d_curr_gca;
 
+
+			/**
+			 * This keeps track of whether this iterator is
+			 * pointing at the "start-point" or "end-point" of the
+			 * current GreatCircleArc.
+			 */
 			StartOrEnd d_gca_start_or_end;
 
 		};
@@ -396,10 +438,10 @@ namespace GPlatesMaths {
 		 * @a evaluate_construction_parameter_validity and
 		 * @a evaluate_segment_endpoint_validity.
 		 */
-		enum ConstructionParameterValidity {
+		enum ConstructionParameterValidity
+		{
 			VALID,
-			INVALID_INSUFFICIENT_POINTS,
-			INVALID_INSUFFICIENT_UNIQUE_POINTS,
+			INVALID_INSUFFICIENT_DISTINCT_POINTS,
 			INVALID_DUPLICATE_SEGMENT_ENDPOINTS,
 			INVALID_ANTIPODAL_SEGMENT_ENDPOINTS
 		};
@@ -441,14 +483,15 @@ namespace GPlatesMaths {
 		 * whether or not duplicate adjacent points should silently be
 		 * dropped instead of causing an exception to be thrown.  (Dup
 		 * adjacent points are a not-uncommon occurrence when reading
-		 * PLATES data files.  All Hail PLATES!)
+		 * PLATES4 data files.  All Hail PLATES4!)
 		 */
-		template< typename C >
+		template<typename C>
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
 				const C &coll,
-				std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points,
+				std::pair<typename C::const_iterator, typename C::const_iterator> &
+						invalid_points,
 				bool should_silently_drop_dups = true);
 
 
@@ -487,7 +530,7 @@ namespace GPlatesMaths {
 		 */
 		template<typename C>
 		static
-		PolylineOnSphere
+		const PolylineOnSphere
 		create(
 				const C &coll);
 
@@ -524,7 +567,7 @@ namespace GPlatesMaths {
 		 * Trac ticket: http://trac.gplates.org/ticket/3
 		 */
 		PolylineOnSphere(
-				const PolylineOnSphere &other) :
+				const PolylineOnSphere &other):
 			d_ref_count(0),
 			d_seq(other.d_seq)
 		{  }
@@ -604,8 +647,11 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Return the "begin" const_iterator to iterate over the
-		 * vertices of this polyline.
+		 * Return the "begin" const_iterator to iterate over the vertices of this polyline.
+		 *
+		 * Note that it's intentional that the instance returned is non-const: If the
+		 * instance were const, it would not be possible to write an expression like
+		 * '++(polyline.vertex_begin())' to access the second vertex of the polyline.
 		 */
 		vertex_const_iterator
 		vertex_begin() const
@@ -615,8 +661,11 @@ namespace GPlatesMaths {
 
 
 		/**
-		 * Return the "end" const_iterator to iterate over the
-		 * vertices of this polyline.
+		 * Return the "end" const_iterator to iterate over the vertices of this polyline.
+		 *
+		 * Note that it's intentional that the instance returned is non-const: If the
+		 * instance were const, it would not be possible to write an expression like
+		 * '--(polyline.vertex_begin())' to access the last vertex of the polyline.
 		 */
 		vertex_const_iterator
 		vertex_end() const
@@ -702,8 +751,14 @@ namespace GPlatesMaths {
 				const real_t &latitude_exclusion_threshold,
 				real_t &closeness) const;
 
+
 		/**
 		 * Increment the reference-count of this instance.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		void
 		increment_ref_count() const
@@ -715,6 +770,11 @@ namespace GPlatesMaths {
 		/**
 		 * Decrement the reference-count of this instance, and return the new
 		 * reference-count.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function is used by boost::intrusive_ptr and
+		 * GPlatesUtils::non_null_intrusive_ptr.
 		 */
 		ref_count_type
 		decrement_ref_count() const
@@ -728,11 +788,14 @@ namespace GPlatesMaths {
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of a polyline without any vertices.
 		 *
+		 * This constructor should never be invoked directly by client code; only through
+		 * the static 'create' functions.
+		 *
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * default-constructor would, except that it should initialise the ref-count to
 		 * zero.
 		 */
-		PolylineOnSphere() :
+		PolylineOnSphere():
 			d_ref_count(0)
 		{  }
 
@@ -768,6 +831,14 @@ namespace GPlatesMaths {
 				const PointOnSphere &p1,
 				const PointOnSphere &p2,
 				bool should_silently_drop_dups = true);
+
+
+		/**
+		 * This is the minimum number of (distinct) collection points
+		 * to be passed into a 'create' function to enable creation of
+		 * a closed, well-defined polygon.
+		 */
+		static const unsigned s_min_num_collection_points;
 
 		/**
 		 * This is the reference-count used by GPlatesUtils::non_null_intrusive_ptr.
@@ -867,16 +938,14 @@ namespace GPlatesMaths {
 			bool should_silently_drop_dups)
 	{
 		typename C::size_type num_points = coll.size();
-		if (num_points < 2)
-		{
+		if (num_points < s_min_num_collection_points) {
 			// The collection does not contain enough points to
 			// create even one line-segment.
-			return INVALID_INSUFFICIENT_POINTS;
+			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
 		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
-		for (prev = iter++ ; iter != end; prev = iter++)
-		{
+		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 
@@ -888,12 +957,13 @@ namespace GPlatesMaths {
 			switch (v) {
 
 			case VALID:
+
 				// Keep looping.
 				break;
 
-			case INVALID_INSUFFICIENT_POINTS:
-			case INVALID_INSUFFICIENT_UNIQUE_POINTS:
-				// These values shouldn't be returned.
+			case INVALID_INSUFFICIENT_DISTINCT_POINTS:
+
+				// This value shouldn't be returned.
 				// FIXME:  Can this be checked at compile-time?
 				// (Perhaps with use of template magic, to
 				// avoid the need to check at run-time and
@@ -901,6 +971,7 @@ namespace GPlatesMaths {
 				break;
 
 			case INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
+
 				if (should_silently_drop_dups) {
 					// You heard the man:  We should
 					// silently drop duplicates.  But we
@@ -916,6 +987,7 @@ namespace GPlatesMaths {
 				break;
 
 			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+
 				invalid_points.first = prev;
 				invalid_points.second = iter;
 				return v;
@@ -924,7 +996,7 @@ namespace GPlatesMaths {
 		// Check the number of (usable) points again, now that we've
 		// abjusted for duplicates.
 		if (num_points < 2) {
-			return INVALID_INSUFFICIENT_UNIQUE_POINTS;
+			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
 		// If we got this far, we couldn't find anything wrong with the
@@ -934,7 +1006,7 @@ namespace GPlatesMaths {
 
 
 	template<typename C>
-	PolylineOnSphere
+	const PolylineOnSphere
 	PolylineOnSphere::create(
 			const C &coll)
 	{
@@ -955,13 +1027,13 @@ namespace GPlatesMaths {
 	}
 
 
-	template< typename C >
+	template<typename C>
 	void
 	PolylineOnSphere::generate_segments_and_swap(
 			PolylineOnSphere &poly,
 			const C &coll)
 	{
-		if (coll.size() < 2) {
+		if (coll.size() < s_min_num_collection_points) {
 			// The collection does not contain enough points to
 			// create even one line-segment.
 			
@@ -980,6 +1052,10 @@ namespace GPlatesMaths {
 		// appending the new segments to a temporary sequence (rather
 		// than putting them directly into 'd_seq').
 		seq_type tmp_seq;
+		// Observe that the number of points used to define a polyline (which will become
+		// the number of vertices in the polyline, counting the begin-point and end-point
+		// of the polyline as vertices) is one greater than the number of segments in the
+		// polyline.
 		tmp_seq.reserve(coll.size() - 1);
 
 		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
@@ -1034,13 +1110,12 @@ namespace GPlatesMaths {
 
 }
 
-
 namespace std
 {
 	/**
 	 * This is a template specialisation of the standard function @a swap.
 	 *
-	 * See Josuttis, section 4.4.2, "Swapping Two Values" for more information.
+	 * See Josuttis, section 4.4.2, "Swapping Two Values", for more information.
 	 */
 	template<>
 	inline
@@ -1052,6 +1127,5 @@ namespace std
 		p1.swap(p2);
 	}
 }
-
 
 #endif  // GPLATES_MATHS_POLYLINEONSPHERE_H

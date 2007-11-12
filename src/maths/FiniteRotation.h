@@ -312,14 +312,14 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Apply the given rotation to the given polygon.
+	 * Apply the given rotation to the given intrusive-pointer to polygon.
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const PolygonOnSphere
+	const GPlatesUtils::non_null_intrusive_ptr<PolygonOnSphere>
 	operator*(
-	 const FiniteRotation &r,
-	 const PolygonOnSphere &polygon);
+			const FiniteRotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> p);
 
 
 	std::ostream &

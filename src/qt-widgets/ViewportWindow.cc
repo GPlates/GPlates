@@ -184,6 +184,16 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(decrement_reconstruction_time()));
 	
+	QObject::connect(action_Set_Zoom, SIGNAL(triggered()),
+			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
+
+	QObject::connect(action_Zoom_In, SIGNAL(triggered()),
+			d_canvas_ptr, SLOT(zoom_in()));
+	QObject::connect(action_Zoom_Out, SIGNAL(triggered()),
+			d_canvas_ptr, SLOT(zoom_out()));
+	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
+			d_canvas_ptr, SLOT(reset_zoom()));
+	
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
 
