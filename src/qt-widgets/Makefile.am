@@ -12,8 +12,9 @@ libqt_widgets_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
 	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc \
 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	QueryFeaturePropertiesDialog.cc QueryFeaturePropertiesDialogUi.h \
-	moc_QueryFeaturePropertiesDialog.cc InformationDialogUi.h LicenseDialog.cc \
-	moc_LicenseDialog.cc \
+	moc_QueryFeaturePropertiesDialog.cc \
+	InformationDialog.cc InformationDialogUi.h moc_InformationDialog.cc \
+	LicenseDialog.cc moc_LicenseDialog.cc \
 	ReconstructionViewWidget.cc ReconstructionViewWidgetUi.h moc_ReconstructionViewWidget.cc \
 	ReadErrorAccumulationDialog.cc ReadErrorAccumulationDialogUi.h moc_ReadErrorAccumulationDialog.cc  
 

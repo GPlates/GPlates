@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>675</width>
+    <width>560</width>
     <height>600</height>
    </rect>
   </property>
@@ -33,8 +33,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>675</width>
-     <height>25</height>
+     <width>560</width>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -112,7 +112,7 @@
    <addaction name="action_Drag_Globe" />
    <addaction name="action_Query_Feature" />
   </widget>
-  <widget class="QDockWidget" name="dockWidget_Information" >
+  <widget class="QDockWidget" name="dockWidget_information" >
    <property name="sizePolicy" >
     <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
      <horstretch>0</horstretch>
@@ -143,11 +143,17 @@
       <number>2</number>
      </property>
      <item>
-      <widget class="QTabWidget" name="tabWidget_Information" >
+      <widget class="QTabWidget" name="tabWidget_information" >
+       <property name="minimumSize" >
+        <size>
+         <width>0</width>
+         <height>100</height>
+        </size>
+       </property>
        <property name="currentIndex" >
         <number>0</number>
        </property>
-       <widget class="QWidget" name="tab_Clicked" >
+       <widget class="QWidget" name="tab_clicked" >
         <attribute name="title" >
          <string>Clicked</string>
         </attribute>
@@ -165,11 +171,18 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QListView" name="listView" />
+          <widget class="QListWidget" name="list_clicked" >
+           <property name="sizePolicy" >
+            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="tab_Selected" >
+       <widget class="QWidget" name="tab_selected" >
         <attribute name="title" >
          <string>Selected</string>
         </attribute>
@@ -187,7 +200,14 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QListView" name="listView_2" />
+          <widget class="QListWidget" name="list_selected" >
+           <property name="sizePolicy" >
+            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -239,6 +259,9 @@
    </property>
   </action>
   <action name="action_Quit" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_application_exit_16.png</iconset>
+   </property>
    <property name="text" >
     <string>&amp;Quit</string>
    </property>
@@ -249,6 +272,9 @@
   <action name="action_About" >
    <property name="enabled" >
     <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_gtk_about_16.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;About</string>
@@ -268,6 +294,9 @@
    </property>
   </action>
   <action name="action_Increment_Reconstruction_Time" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_16.png</iconset>
+   </property>
    <property name="text" >
     <string>&amp;Increment Reconstruction Time</string>
    </property>
@@ -276,6 +305,9 @@
    </property>
   </action>
   <action name="action_Decrement_Reconstruction_Time" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_16.png</iconset>
+   </property>
    <property name="text" >
     <string>&amp;Decrement Reconstruction Time</string>
    </property>
@@ -329,13 +361,11 @@
    </property>
   </action>
   <action name="action_Docks" >
+   <property name="enabled" >
+    <bool>false</bool>
+   </property>
    <property name="text" >
     <string>&amp;Docks</string>
-   </property>
-  </action>
-  <action name="actionFile_Errors" >
-   <property name="text" >
-    <string>File &amp;Errors...</string>
    </property>
   </action>
   <action name="action_File_Errors" >
@@ -355,6 +385,9 @@
    </property>
   </action>
   <action name="action_Zoom_In" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_16.png</iconset>
+   </property>
    <property name="text" >
     <string>Zoom &amp;In</string>
    </property>
@@ -363,6 +396,9 @@
    </property>
   </action>
   <action name="action_Zoom_Out" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_16.png</iconset>
+   </property>
    <property name="text" >
     <string>Zoom &amp;Out</string>
    </property>
@@ -371,6 +407,9 @@
    </property>
   </action>
   <action name="action_Reset_Zoom_Level" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_16.png</iconset>
+   </property>
    <property name="text" >
     <string>&amp;Reset Zoom Level</string>
    </property>

@@ -26,8 +26,21 @@
 #include "InformationDialog.h"
 
 GPlatesQtWidgets::InformationDialog::InformationDialog(
-		const QString &text_data)
+		const QString &text_data,
+		QWidget *parent_):
+	QDialog(parent_)
 {
 	setupUi(this);
 	text_information->insertPlainText(text_data);	
+}
+
+GPlatesQtWidgets::InformationDialog::InformationDialog(
+		const QString &text_data,
+		const QString &text_title,
+		QWidget *parent_):
+	QDialog(parent_)
+{
+	setupUi(this);
+	text_information->setText(text_data);
+	setWindowTitle(text_title);
 }

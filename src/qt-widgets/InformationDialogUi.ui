@@ -5,12 +5,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>393</width>
-    <height>336</height>
+    <width>442</width>
+    <height>353</height>
    </rect>
   </property>
   <property name="windowTitle" >
-   <string>Information Dialog</string>
+   <string>Information</string>
+  </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_gtk_about_16.png</iconset>
   </property>
   <layout class="QVBoxLayout" >
    <property name="spacing" >
@@ -98,7 +101,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections>
   <connection>
    <sender>button_Close</sender>

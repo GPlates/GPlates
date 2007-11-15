@@ -37,7 +37,16 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
-		InformationDialog(const QString &data);
+		explicit
+		InformationDialog(
+			const QString &data,
+			QWidget* parent_ = NULL);
+
+		explicit
+		InformationDialog(
+			const QString &data,
+			const QString &title,
+			QWidget* parent_ = NULL);
 	};
 }
 

@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>679</width>
-    <height>443</height>
+    <width>680</width>
+    <height>451</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -20,11 +20,58 @@
   </property>
   <layout class="QVBoxLayout" >
    <item>
-    <widget class="QLabel" name="label_problem" >
-     <property name="text" >
-      <string>There are no warnings or errors for the currently-loaded files.</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_problem" >
+       <property name="text" >
+        <string>There are no warnings or errors for the currently-loaded files.</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_help" >
+       <property name="toolTip" >
+        <string>What does this mean?</string>
+       </property>
+       <property name="icon" >
+        <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+       </property>
+       <property name="iconSize" >
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_expand_all" >
+       <property name="text" >
+        <string>&amp;Expand All</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_collapse_all" >
+       <property name="text" >
+        <string>&amp;Collapse All</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QTreeWidget" name="treeWidget_errors" >

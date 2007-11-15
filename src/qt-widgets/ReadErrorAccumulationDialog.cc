@@ -38,7 +38,7 @@ namespace
 	typedef std::map<GPlatesFileIO::ReadErrors::Result, QString> result_map_type;
 	typedef result_map_type::const_iterator result_map_const_iterator;
 
-	// Map of Filename -> Error collection for reporting all errors (of a particular type) for each file.
+	// Map of Filename -> Error collection for reporting all errors of a particular type for each file.
 	typedef std::map<std::string, GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type> file_errors_map_type;
 	typedef file_errors_map_type::const_iterator file_errors_map_const_iterator;
 
@@ -55,10 +55,10 @@ namespace
 	};
 	
 	/**
-	 * This table is sourced from http://trac.gplates.org/wiki/ReadErrorMessages
+	 * This table is sourced from http://trac.gplates.org/wiki/ReadErrorMessages .
 	 */
 	static ReadErrorDescription description_table[] = {
-		// Errors from PLATES Line Format files
+		// Errors from PLATES Line Format files:
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesRegionNumber,
 				QT_TR_NOOP("Invalid 'Region Number' encountered when parsing PLATES line format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesReferenceNumber,
@@ -100,7 +100,7 @@ namespace
 		{ GPlatesFileIO::ReadErrors::BadPlatesPolylineLongitude,
 				QT_TR_NOOP("The longtitude in a PLATES poly line point was invalid (not between -360 and 360).") },
 		
-		// Errors from PLATES Rotation Format files
+		// Errors from PLATES Rotation Format files:
 		{ GPlatesFileIO::ReadErrors::CommentMovingPlateIdAfterNonCommentSequence,
 				QT_TR_NOOP("A commented-out pole was found after a non-commented-out sequence.") },
 		{ GPlatesFileIO::ReadErrors::ErrorReadingFixedPlateId,
@@ -126,22 +126,22 @@ namespace
 		{ GPlatesFileIO::ReadErrors::SamePlateIdsButEarlierGeoTime,
 				QT_TR_NOOP("Consecutive poles had the same plate IDs and overlapping geo-times.") },
 		
-		// Generic file-related errors
+		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
 				QT_TR_NOOP("Error opening the file for reading.") },
 	};
 	
 	/**
-	 * This table is sourced from http://trac.gplates.org/wiki/ReadErrorMessages
+	 * This table is sourced from http://trac.gplates.org/wiki/ReadErrorMessages .
 	 */
 	static ReadErrorResult result_table[] = {
-		// Errors from PLATES Line Format files
+		// Errors from PLATES Line Format files:
 		{ GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated,
 				QT_TR_NOOP("Because the 'Data Type Code' was not known, Unclassified Features will be created.") },
 		{ GPlatesFileIO::ReadErrors::FeatureDiscarded,
 				QT_TR_NOOP("The feature was discarded due to errors encountered when parsing.") },
 
-		// Errors from PLATES Rotation Format files
+		// Errors from PLATES Rotation Format files:
 		{ GPlatesFileIO::ReadErrors::EmptyCommentCreated,
 				QT_TR_NOOP("An empty comment was created.") },
 		{ GPlatesFileIO::ReadErrors::ExclMarkInsertedAtCommentStart,
@@ -153,7 +153,7 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PoleDiscarded,
 				QT_TR_NOOP("The pole was discarded.") },
 
-		// Generic file-related errors
+		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,
 				QT_TR_NOOP("The file was not loaded.") },
 	};
@@ -205,7 +205,7 @@ namespace
 		GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator it = errors.begin();
 		GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator end = errors.end();
 		for (; it != end; ++it) {
-			// Add to map based on filename
+			// Add the error to the map based on filename.
 			std::ostringstream source;
 			it->d_data_source->write_full_name(source);
 			
@@ -218,29 +218,40 @@ namespace
 
 GPlatesQtWidgets::ReadErrorAccumulationDialog::ReadErrorAccumulationDialog(
 		QWidget *parent_):
-	QDialog(parent_)
+	QDialog(parent_),
+	d_information_dialog(s_information_dialog_text, s_information_dialog_title, this)
 {
 	setupUi(this);
 	clear();
+	
+	QObject::connect(button_help, SIGNAL(clicked()),
+			this, SLOT(pop_up_help_dialog()));
+
+	QObject::connect(button_expand_all, SIGNAL(clicked()),
+			this, SLOT(expandAll()));
+	QObject::connect(button_collapse_all, SIGNAL(clicked()),
+			this, SLOT(collapseAll()));
 }
 
 
 void
 GPlatesQtWidgets::ReadErrorAccumulationDialog::clear()
 {
-	// Failures to Begin (n)
+	label_problem->setText(tr("There are no warnings or errors for the currently-loaded files."));
+	treeWidget_errors->clear();
+	// Add the "Failures to Begin (n)" item.
 	d_tree_item_failures_to_begin_ptr = new QTreeWidgetItem(treeWidget_errors);
 	d_tree_item_failures_to_begin_ptr->setHidden(true);
 	treeWidget_errors->addTopLevelItem(d_tree_item_failures_to_begin_ptr);
-	// Terminating Errors (n)
+	// Add the "Terminating Errors (n)" item.
 	d_tree_item_terminating_errors_ptr = new QTreeWidgetItem(treeWidget_errors);
 	d_tree_item_terminating_errors_ptr->setHidden(true);
 	treeWidget_errors->addTopLevelItem(d_tree_item_terminating_errors_ptr);
-	// Recoverable Errors (n)
+	// Add the "Recoverable Errors (n)" item.
 	d_tree_item_recoverable_errors_ptr = new QTreeWidgetItem(treeWidget_errors);
 	d_tree_item_recoverable_errors_ptr->setHidden(true);
 	treeWidget_errors->addTopLevelItem(d_tree_item_recoverable_errors_ptr);
-	// Warnings (n)
+	// Add the "Warnings (n)" item.
 	d_tree_item_warnings_ptr = new QTreeWidgetItem(treeWidget_errors);
 	d_tree_item_warnings_ptr->setHidden(true);
 	treeWidget_errors->addTopLevelItem(d_tree_item_warnings_ptr);
@@ -250,26 +261,87 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::clear()
 void
 GPlatesQtWidgets::ReadErrorAccumulationDialog::update()
 {
-	// Populate Failures to Begin tree
+	// Populate the Failures to Begin tree.
 	populate_top_level_tree_widget(d_tree_item_failures_to_begin_ptr, tr("Failure to Begin (%1)"),
 			d_read_errors.d_failures_to_begin, QIcon(":/gnome_dialog_error_16.png"));
 
-	// Populate Terminating Errors tree
+	// Populate the Terminating Errors tree.
 	populate_top_level_tree_widget(d_tree_item_terminating_errors_ptr, tr("Terminating Errors (%1)"),
 			d_read_errors.d_terminating_errors, QIcon(":/gnome_dialog_error_16.png"));
 
-	// Populate Recoverable Errors tree
+	// Populate the Recoverable Errors tree.
 	populate_top_level_tree_widget(d_tree_item_recoverable_errors_ptr, tr("Recoverable Errors (%1)"),
 			d_read_errors.d_recoverable_errors, QIcon(":/gnome_dialog_error_16.png"));
 
-	// Populate Warnings tree
+	// Populate the Warnings tree.
 	populate_top_level_tree_widget(d_tree_item_warnings_ptr, tr("Warnings (%1)"),
 			d_read_errors.d_warnings, QIcon(":/gnome_dialog_warning_16.png"));
 
-	// Update labels
+	// Update labels.
 	QString summary_str = build_summary_string();
 	label_problem->setText(summary_str);
 }
+
+
+const QString GPlatesQtWidgets::ReadErrorAccumulationDialog::s_information_dialog_text = QObject::tr(
+		"<html><body>\n"
+		"Read errors fall into four categories: <ul> <li>failures to begin</li> "
+		"<li>terminating errors</li> <li>recoverable errors</li> <li>warnings</li> </ul>\n"
+		"\n"
+		"<h3>Failure To Begin:</h3>\n"
+		"<ul>\n"
+		"<li> A failure to begin has occurred when GPlates is not even able to start reading "
+		"data from the data source. </li>\n"
+		"<li> Examples of failures to begin might include: the file cannot be located on disk "
+		"or opened for reading; the database cannot be accessed; no network connection "
+		"could be established. </li>\n"
+		"<li> In the event of a failure to begin, GPlates will not be able to load any data "
+		"from the data source. </li>\n"
+		"</ul>\n"
+		"<h3>Terminating Error:</h3>\n"
+		"<ul>\n"
+		"<li> A terminating error halts the reading of data in such a way that GPlates is "
+		"unable to read any more data from the data source. </li>\n"
+		"<li> Examples of terminating errors might include: a file-system error; a broken "
+		"network connection. </li>\n"
+		"<li> When a terminating error occurs, GPlates will retain the data it has already "
+		"read, but will not be able to read any more data from the data source. </li>\n"
+		"</ul>\n"
+		"<h3>Recoverable Error:</h3>\n"
+		"<ul>\n"
+		"<li> A recoverable error is an error from which GPlates is able to recover (generally "
+		"an error in the data), although some amount of data had to be discarded because "
+		"it was invalid or malformed. </li>\n"
+		"<li> Examples of recoverable errors might include: corrupted data; the wrong type of "
+		"data encountered in an attribute field (for example, text where an integer was "
+		"expected). </li>\n"
+		"<li> When a terminating error occurs, GPlates will retain the data it has already "
+		"successfully read; discard the invalid or malformed data (which will result in "
+		"some data loss); and continue reading from the data source. GPlates will discard "
+		"the smallest possible amount of data, and will inform you exactly what was discarded. "
+		"</li>\n"
+		"</ul>\n"
+		"<h3>Warning:</h3>\n"
+		"<ul>\n"
+		"<li> A warning is a notification of a problem which has not caused data loss, but "
+		"which has resulted in GPlates handling the situation in an arbitrary or "
+		"questionable manner. </li>\n"
+		"<li> Examples of warnings might include: warnings about ambiguous data (in which the "
+		"developers have had to choose one particular way of handling the data); warnings "
+		"about deprecated syntax or a deprecated file format (which may be permanently "
+		"disabled in the future).</li>\n"
+		"<li> A warning will not have resulted in any data loss, but the user may wish to "
+		"investigate the warning, in order to verify that GPlates handled the ambiguous "
+		"data in an appropriate fashion; to upgrade the file format of the data; or to be "
+		"aware that other programs may handle the ambiguous data differently. </li>\n"
+		"</ul>\n"
+		"<i>Please be aware that all software needs to respond to situations such as these; "
+		"GPlates is simply informing you when these situations occur! The integrity of your "
+		"data is important to us!</i>\n"
+		"</body></html>\n");
+
+const QString GPlatesQtWidgets::ReadErrorAccumulationDialog::s_information_dialog_title = QObject::tr(
+		"Read error types");
 
 void
 GPlatesQtWidgets::ReadErrorAccumulationDialog::populate_top_level_tree_widget(
@@ -278,18 +350,18 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::populate_top_level_tree_widget(
 		const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors,
 		const QIcon &occurrence_icon)
 {
-	// Un-hide the top-level item if it has content to add, and update the text
+	// Un-hide the top-level item if it has content to add, and update the text.
 	if ( ! errors.empty()) {
 		tree_item_ptr->setText(0, tree_item_text.arg(errors.size()));
 		tree_item_ptr->setHidden(false);
 		tree_item_ptr->setExpanded(true);
 	}
 	
-	// Build map of Filename -> Error collection
+	// Build map of Filename -> Error collection.
 	file_errors_map_type file_errors;
 	group_read_errors_by_file(file_errors, errors);
 	
-	// Iterate over map to add file errors of this type grouped by file
+	// Iterate over map to add file errors of this type grouped by file.
 	file_errors_map_const_iterator it = file_errors.begin();
 	file_errors_map_const_iterator end = file_errors.end();
 	for (; it != end; ++it) {
@@ -313,7 +385,7 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_file_tree_widget(
 	static const QIcon file_icon(":/gnome_text_file_16.png");
 	static const QIcon path_icon(":/gnome_folder_16.png");
 
-	// Add filename.dat (format)
+	// Add the "filename.dat (format)" item.
 	QTreeWidgetItem *file_item = new QTreeWidgetItem(tree_item_ptr);
 	std::ostringstream file_str;
 	first_error.write_short_name(file_str);
@@ -321,14 +393,14 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_file_tree_widget(
  	file_item->setIcon(0, file_icon);
 	file_item->setExpanded(true);
 	
-	// Add full path to file subitem
+	// Add the full path subitem.
 	QTreeWidgetItem *path_item = new QTreeWidgetItem(file_item);
 	std::ostringstream path_str;
 	first_error.d_data_source->write_full_name(path_str);
 	path_item->setText(0, QString::fromAscii(path_str.str().c_str()));
  	path_item->setIcon(0, path_icon);
 	
-	// Add error occurrences for this file for this error type:
+	// Add all error occurrences for this file, for this error type.
 	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator it = errors.begin();
 	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator end = errors.end();
 	for (; it != end; ++it) {
@@ -352,18 +424,24 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_error_tree(
 	std::ostringstream location_str;
 	location_str << "Line ";
 	error.d_location->write(location_str);
+	location_str << " [" << error.d_description << "; " <<
+			error.d_result << "]";
 	location_item->setText(0, QString::fromAscii(location_str.str().c_str()));
 	location_item->setIcon(0, occurrence_icon);
 	location_item->setExpanded(false);
 
-	// Create node with description as child of location
+	// Create leaf node with description as child of location.
 	QTreeWidgetItem *description_item = new QTreeWidgetItem(location_item);
-	description_item->setText(0, get_description_as_string(error.d_description));
+	description_item->setText(0, QString("[%1] %2")
+			.arg(error.d_description)
+			.arg(get_description_as_string(error.d_description)));
 	description_item->setIcon(0, description_icon);
 
-	// Create node with result as child of location
+	// Create leaf node with result as child of location.
 	QTreeWidgetItem *result_item = new QTreeWidgetItem(location_item);
-	result_item->setText(0, get_result_as_string(error.d_result));
+	result_item->setText(0, QString("[%1] %2")
+			.arg(error.d_result)
+			.arg(get_result_as_string(error.d_result)));
 	result_item->setIcon(0, result_icon);
 }
 
@@ -376,10 +454,13 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_summary_string()
 	size_t num_recoverable_errors = d_read_errors.d_recoverable_errors.size();
 	size_t num_warnings = d_read_errors.d_warnings.size();
 	
-	// Work out errors first - prefix can be affected by quantity of first error listed.
+	/*
+	 * Firstly, work out what errors need to be summarised.
+	 * The prefix of the sentence is affected by the quantity of the first error listed.
+	 */
 	QString prefix(tr("There were"));
 	QString errors("");
-	// failures?
+	// Build sentence fragment for failures.
 	if (num_failures > 0) {
 		if (errors.isEmpty()) {
 			errors.append(" ");
@@ -396,7 +477,7 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_summary_string()
 			errors.append(tr("%1 failure").arg(num_failures));
 		}
 	}
-	// errors?
+	// Build sentence fragment for errors.
 	if (num_recoverable_errors > 0) {
 		if (errors.isEmpty()) {
 			errors.append(" ");
@@ -413,7 +494,7 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_summary_string()
 			errors.append(tr("%1 error").arg(num_recoverable_errors));
 		}
 	}
-	// warnings?
+	// Build sentence fragment for warnings.
 	if (num_warnings > 0) {
 		if (errors.isEmpty()) {
 			errors.append(" ");
@@ -430,12 +511,12 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_summary_string()
 			errors.append(tr("%1 warning").arg(num_warnings));
 		}
 	}
-	// nothing wrong?
+	// Build sentence fragment for no problems.
 	if (errors.isEmpty()) {
 		errors.append(tr(" no problems"));
 	}
 	
-	// Build final summary string
+	// Finally, build the whole summary string.
 	QString summary("");
 	summary.append(prefix);
 	summary.append(errors);

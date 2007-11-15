@@ -12,6 +12,9 @@
   <property name="windowTitle" >
    <string>Query Feature Properties</string>
   </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_help_agent_16.png</iconset>
+  </property>
   <layout class="QVBoxLayout" >
    <item>
     <layout class="QHBoxLayout" >
@@ -262,7 +265,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections>
   <connection>
    <sender>button_Close</sender>

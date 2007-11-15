@@ -33,11 +33,12 @@
 # include <boost/python.hpp>
 #endif
 
-#include "ReadErrorAccumulationDialogUi.h"
 #include <QObject>
 #include <QString>
 
+#include "ReadErrorAccumulationDialogUi.h"
 #include "file-io/ReadErrorAccumulation.h"
+#include "InformationDialog.h"
 
 namespace GPlatesQtWidgets
 {
@@ -63,6 +64,57 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		update();
+
+		// Accessors
+
+		const GPlatesFileIO::ReadErrorAccumulation &
+		read_errors() const
+		{
+			return d_read_errors;
+		}
+
+		GPlatesFileIO::ReadErrorAccumulation &
+		read_errors()
+		{
+			return d_read_errors;
+		}
+	
+	public slots:
+	
+		void pop_up_help_dialog()
+		{
+			d_information_dialog.show();
+		}
+		
+		void expandAll()
+		{
+			treeWidget_errors->expandAll();
+		}
+		
+		void collapseAll()
+		{
+			treeWidget_errors->collapseAll();
+			d_tree_item_failures_to_begin_ptr->setExpanded(true);
+			d_tree_item_terminating_errors_ptr->setExpanded(true);
+			d_tree_item_recoverable_errors_ptr->setExpanded(true);
+			d_tree_item_warnings_ptr->setExpanded(true);
+		}
+		
+	private:
+		/**
+		 * Top-level QTreeWidgetItems which will be managed by the QTreeWidget.
+		 * We store a pointer to them in order to add children.
+		 */
+		QTreeWidgetItem *d_tree_item_failures_to_begin_ptr;
+		QTreeWidgetItem *d_tree_item_terminating_errors_ptr;
+		QTreeWidgetItem *d_tree_item_recoverable_errors_ptr;
+		QTreeWidgetItem *d_tree_item_warnings_ptr;
+		
+		InformationDialog d_information_dialog;
+		static const QString s_information_dialog_text;
+		static const QString s_information_dialog_title;
+
+		GPlatesFileIO::ReadErrorAccumulation d_read_errors;
 
 		/**
 		 * Populates one of the Failure to Begin, Terminating Errors, Recoverable Errors or Warnings
@@ -113,29 +165,6 @@ namespace GPlatesQtWidgets
 		const QString &
 		get_result_as_string(
 				GPlatesFileIO::ReadErrors::Result code);
-
-		// Accessors
-
-		const GPlatesFileIO::ReadErrorAccumulation &
-		read_errors() const
-		{
-			return d_read_errors;
-		}
-
-		GPlatesFileIO::ReadErrorAccumulation &
-		read_errors()
-		{
-			return d_read_errors;
-		}
-		
-	private:
-		// The top-level QTreeWidgetItems will be managed by the QTreeWidget
-		QTreeWidgetItem *d_tree_item_failures_to_begin_ptr;
-		QTreeWidgetItem *d_tree_item_terminating_errors_ptr;
-		QTreeWidgetItem *d_tree_item_recoverable_errors_ptr;
-		QTreeWidgetItem *d_tree_item_warnings_ptr;
-		
-		GPlatesFileIO::ReadErrorAccumulation d_read_errors;
 	};
 }
 
