@@ -36,6 +36,7 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlFiniteRotation.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
@@ -43,7 +44,7 @@
 const GPlatesModel::InlinePropertyContainer::non_null_ptr_type
 GPlatesModel::ModelUtils::append_property_value_to_feature(
 		PropertyValue::non_null_ptr_type property_value,
-		const char *property_name_string,
+		const UnicodeString &property_name_string,
 		FeatureHandle::weak_ref &feature)
 {
 	PropertyName property_name(property_name_string);
@@ -56,6 +57,63 @@ GPlatesModel::ModelUtils::append_property_value_to_feature(
 	transaction.commit();
 
 	return property_container;
+}
+
+
+const GPlatesModel::InlinePropertyContainer::non_null_ptr_type
+GPlatesModel::ModelUtils::append_property_value_to_feature(
+		PropertyValue::non_null_ptr_type property_value,
+		const UnicodeString &property_name_string,
+		const UnicodeString &attribute_name_string,
+		const UnicodeString &attribute_value_string,
+		FeatureHandle::weak_ref &feature)
+{
+	PropertyName property_name(property_name_string);
+	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
+	XmlAttributeName xml_attribute_name(attribute_name_string);
+	XmlAttributeValue xml_attribute_value(attribute_value_string);
+	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
+	InlinePropertyContainer::non_null_ptr_type property_container =
+			InlinePropertyContainer::create(property_name, property_value, xml_attributes);
+
+	DummyTransactionHandle transaction(__FILE__, __LINE__);
+	feature->append_property_container(property_container, transaction);
+	transaction.commit();
+
+	return property_container;
+}
+
+
+const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
+GPlatesModel::ModelUtils::create_gml_orientable_curve(
+		const GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string,
+		bool reverse_orientation)
+{
+	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
+	XmlAttributeName xml_attribute_name("orientation");
+	XmlAttributeValue xml_attribute_value(reverse_orientation ? "-" : "+");
+	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
+	return GPlatesPropertyValues::GmlOrientableCurve::create(gml_line_string, xml_attributes);
+}
+
+
+const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
+GPlatesModel::ModelUtils::create_gml_time_period(
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end)
+{
+	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
+	XmlAttributeName xml_attribute_name("frame");
+	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
+	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
+
+	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant_begin =
+			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant_begin, xml_attributes);
+
+	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant_end =
+			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant_end, xml_attributes);
+
+	return GPlatesPropertyValues::GmlTimePeriod::create(gml_time_instant_begin, gml_time_instant_end);
 }
 
 
@@ -72,163 +130,15 @@ GPlatesModel::ModelUtils::create_gml_time_instant(
 }
 
 
-const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
-GPlatesModel::ModelUtils::create_gpml_irregular_sampling(
-		const GPlatesPropertyValues::GpmlTimeSample &first_time_sample)
+const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
+GPlatesModel::ModelUtils::create_gpml_constant_value(
+		const PropertyValue::non_null_ptr_type property_value,
+		const UnicodeString &template_type_parameter_type_string)
 {
-	GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
-			GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(first_time_sample.value_type());
-
-	return GPlatesPropertyValues::GpmlIrregularSampling::create(first_time_sample,
-			GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
-			first_time_sample.value_type());
-}
-
-
-const GPlatesPropertyValues::XsString::non_null_ptr_type
-GPlatesModel::ModelUtils::create_xs_string(
-		const std::string &str)
-{
-	return GPlatesPropertyValues::XsString::create(UnicodeString(str.c_str()));
-}
-
-
-const GPlatesPropertyValues::XsBoolean::non_null_ptr_type
-GPlatesModel::ModelUtils::create_xs_boolean(
-		bool value)
-{
-	return GPlatesPropertyValues::XsBoolean::create(value);
-}
-
-
-const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type
-GPlatesModel::ModelUtils::create_gpml_strike_slip_enumeration(
-		const std::string &value)
-{
-	return GPlatesPropertyValues::GpmlStrikeSlipEnumeration::create(UnicodeString(value.c_str()));
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-GPlatesModel::ModelUtils::create_reconstruction_plate_id(
-		unsigned long plate_id)
-{
-	PropertyValue::non_null_ptr_type gpml_plate_id =
-			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
-
-	UnicodeString template_type_parameter_type_string("gpml:plateId");
-	GPlatesPropertyValues::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
-	PropertyValue::non_null_ptr_type gpml_plate_id_constant_value =
-			GPlatesPropertyValues::GpmlConstantValue::create(gpml_plate_id, template_type_parameter_type);
-
-	UnicodeString property_name_string("gpml:reconstructionPlateId");
-	PropertyName property_name(property_name_string);
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	PropertyContainer::non_null_ptr_type inline_property_container =
-			InlinePropertyContainer::create(property_name,
-			gpml_plate_id_constant_value, xml_attributes);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-GPlatesModel::ModelUtils::create_reference_frame_plate_id(
-		unsigned long plate_id,
-		const char *which_reference_frame)
-{
-	PropertyValue::non_null_ptr_type gpml_plate_id =
-			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
-
-	UnicodeString property_name_string(which_reference_frame);
-	PropertyName property_name(property_name_string);
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	PropertyContainer::non_null_ptr_type inline_property_container =
-			InlinePropertyContainer::create(property_name,
-			gpml_plate_id, xml_attributes);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-GPlatesModel::ModelUtils::create_center_line_of(
-		const std::vector<double> &gml_pos_list)
-{
-	PropertyValue::non_null_ptr_type gml_line_string =
-			GPlatesPropertyValues::GmlLineString::create(gml_pos_list);
-
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	XmlAttributeName xml_attribute_name("orientation");
-	XmlAttributeValue xml_attribute_value("+");
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	PropertyValue::non_null_ptr_type gml_orientable_curve =
-			GPlatesPropertyValues::GmlOrientableCurve::create(gml_line_string, xml_attributes);
-
-	UnicodeString template_type_parameter_type_string("gml:OrientableCurve");
-	GPlatesPropertyValues::TemplateTypeParameterType template_type_parameter_type(template_type_parameter_type_string);
-	PropertyValue::non_null_ptr_type gml_orientable_curve_constant_value =
-			GPlatesPropertyValues::GpmlConstantValue::create(gml_orientable_curve, template_type_parameter_type);
-
-	UnicodeString property_name_string("gpml:centerLineOf");
-	PropertyName property_name(property_name_string);
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes2;
-	PropertyContainer::non_null_ptr_type inline_property_container =
-			InlinePropertyContainer::create(property_name,
-			gml_orientable_curve_constant_value, xml_attributes2);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-GPlatesModel::ModelUtils::create_valid_time(
-		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
-		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end)
-{
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	XmlAttributeName xml_attribute_name("frame");
-	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-
-	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant_begin =
-			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant_begin, xml_attributes);
-
-	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant_end =
-			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant_end, xml_attributes);
-
-	PropertyValue::non_null_ptr_type gml_time_period =
-			GPlatesPropertyValues::GmlTimePeriod::create(gml_time_instant_begin, gml_time_instant_end);
-
-	UnicodeString property_name_string("gml:validTime");
-	PropertyName property_name(property_name_string);
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes2;
-	PropertyContainer::non_null_ptr_type inline_property_container =
-			InlinePropertyContainer::create(property_name,
-			gml_time_period, xml_attributes2);
-
-	return inline_property_container;
-}
-
-
-const GPlatesModel::PropertyContainer::non_null_ptr_type
-GPlatesModel::ModelUtils::create_name(
-		const UnicodeString &name,
-		const UnicodeString &codespace)
-{
-	PropertyValue::non_null_ptr_type gml_name = GPlatesPropertyValues::XsString::create(name);
-
-	UnicodeString property_name_string("gml:name");
-	PropertyName property_name(property_name_string);
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	XmlAttributeName xml_attribute_name("codeSpace");
-	XmlAttributeValue xml_attribute_value(codespace);
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	PropertyContainer::non_null_ptr_type inline_property_container =
-			InlinePropertyContainer::create(property_name,
-			gml_name, xml_attributes);
-
-	return inline_property_container;
+	GPlatesPropertyValues::TemplateTypeParameterType template_type_parameter_type(
+			template_type_parameter_type_string);
+	return GPlatesPropertyValues::GpmlConstantValue::create(property_value,
+			template_type_parameter_type);
 }
 
 
@@ -298,22 +208,20 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 
 	PropertyContainer::non_null_ptr_type total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples);
-	PropertyContainer::non_null_ptr_type fixed_reference_frame_container =
-			create_reference_frame_plate_id(fixed_plate_id, "gpml:fixedReferenceFrame");
-	PropertyContainer::non_null_ptr_type moving_reference_frame_container =
-			create_reference_frame_plate_id(moving_plate_id, "gpml:movingReferenceFrame");
 
 	DummyTransactionHandle pc1(__FILE__, __LINE__);
 	feature_handle->append_property_container(total_reconstruction_pole_container, pc1);
 	pc1.commit();
 
-	DummyTransactionHandle pc2(__FILE__, __LINE__);
-	feature_handle->append_property_container(fixed_reference_frame_container, pc2);
-	pc2.commit();
+	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_ref_frame(
+			GPlatesPropertyValues::GpmlPlateId::create(fixed_plate_id));
+	GPlatesModel::ModelUtils::append_property_value_to_feature(fixed_ref_frame,
+			"gpml:fixedReferenceFrame", feature_handle);
 
-	DummyTransactionHandle pc3(__FILE__, __LINE__);
-	feature_handle->append_property_container(moving_reference_frame_container, pc3);
-	pc3.commit();
+	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type moving_ref_frame(
+			GPlatesPropertyValues::GpmlPlateId::create(moving_plate_id));
+	GPlatesModel::ModelUtils::append_property_value_to_feature(moving_ref_frame,
+			"gpml:movingReferenceFrame", feature_handle);
 
 	return feature_handle;
 }

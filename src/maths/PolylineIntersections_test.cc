@@ -178,8 +178,7 @@ Point_to_PointOnSphere(
 	using namespace GPlatesMaths;
 
 	LatLonPoint llp(p.lat, p.lon);
-	PointOnSphere pos =
-	 LatLonPointConversions::convertLatLonPointToPointOnSphere(llp);
+	PointOnSphere pos = make_point_on_sphere(llp);
 
 	return pos;
 }
@@ -233,8 +232,7 @@ PointOnSphereOstreamIterator::operator=(
 
 	using namespace GPlatesMaths;
 
-	LatLonPoint llp =
-	 LatLonPointConversions::convertPointOnSphereToLatLonPoint(p);
+	LatLonPoint llp = make_lat_lon_point(p);
 
 	(*d_os_ptr)
 	 << "("

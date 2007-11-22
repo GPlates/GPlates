@@ -103,8 +103,7 @@ namespace
 	void
 	WriteCoord(std::ostream& os, const PointOnSphere& point, int indent)
 	{
-		LatLonPoint llp = LatLonPointConversions::
-			convertPointOnSphereToLatLonPoint(point);
+		LatLonPoint llp = make_lat_lon_point(point);
 
 		os << Indent(indent)
 			<< "<coord>" 

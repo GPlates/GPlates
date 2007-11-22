@@ -5,7 +5,7 @@ MAINTAINERCLEANFILES	= Makefile.in
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libcanvas_tools.la
-libcanvas_tools_la_SOURCES	= QueryFeature.cc moc_QueryFeature.cc
+libcanvas_tools_la_SOURCES	= QueryFeature.cc moc_QueryFeature.cc ZoomGlobe.cc
 
 CLEANFILES		= moc_*.cc
 

@@ -1499,7 +1499,7 @@ namespace {
 	 */
 	void
 	generate_polylines_from_arc_seqs(
-	 std::list< PolylineOnSphere > &partitioned_polys,
+	 std::list< PolylineOnSphere::non_null_ptr_type > &partitioned_polys,
 	 std::vector< ArcList::iterator > &begins,
 	 std::vector< ArcList::iterator > &ends) {
 
@@ -1525,8 +1525,7 @@ namespace {
 				points.push_back(arc_seq_iter->end_point());
 			}
 
-			partitioned_polys.push_back(
-			 PolylineOnSphere::create(points));
+			partitioned_polys.push_back(PolylineOnSphere::create_on_heap(points));
 		}
 	}
 
@@ -1553,7 +1552,7 @@ namespace {
 	 ArcList &arcs2,
 	 IntersectionNodeList &inter_nodes,
 	 std::list< ArcList::iterator > &overlap_arcs_in_2,
-	 std::list< PolylineOnSphere > &partitioned_polys) {
+	 std::list< PolylineOnSphere::non_null_ptr_type > &partitioned_polys) {
 
 		/*
 		 * We need two vectors here, because 'ends[i]' won't always
@@ -1609,7 +1608,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
  const PolylineOnSphere &polyline1,
  const PolylineOnSphere &polyline2,
  std::list< PointOnSphere > &intersection_points,
- std::list< PolylineOnSphere > &partitioned_polylines) {
+ std::list< PolylineOnSphere::non_null_ptr_type > &partitioned_polylines) {
 
 	std::list< IntersectionNode > inter_nodes;
 
@@ -1709,7 +1708,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
 	if (num_intersections_found != 0) {
 
 		std::list< PointOnSphere > tmp_intersection_points;
-		std::list< PolylineOnSphere > tmp_partitioned_polylines;
+		std::list< PolylineOnSphere::non_null_ptr_type > tmp_partitioned_polylines;
 
 		generate_partitioned_polylines(polyline1_arcs, polyline2_arcs,
 		 inter_nodes, overlap_arcs_in_2, tmp_partitioned_polylines);
@@ -1736,7 +1735,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
 
 bool
 GPlatesMaths::PolylineIntersections::polyline_set_is_self_intersecting(
- const std::list< PolylineOnSphere > &polyline_set,
+ const std::list< PolylineOnSphere::non_null_ptr_type > &polyline_set,
  std::list< PointOnSphere > &intersection_points,
  std::list< GreatCircleArc > &overlap_segments) {
 

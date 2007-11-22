@@ -30,12 +30,13 @@
 #include "InlinePropertyContainer.h"
 #include "PropertyValue.h"
 
-#include "property-values/GmlTimeInstant.h"
-#include "property-values/GpmlIrregularSampling.h"
-#include "property-values/XsString.h"
-#include "property-values/XsBoolean.h"
 #include "property-values/GeoTimeInstant.h"
-#include "property-values/GpmlStrikeSlipEnumeration.h"
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GpmlConstantValue.h"
+
 
 namespace GPlatesModel
 {
@@ -54,8 +55,29 @@ namespace GPlatesModel
 		const InlinePropertyContainer::non_null_ptr_type
 		append_property_value_to_feature(
 				PropertyValue::non_null_ptr_type property_value,
-				const char *property_name_string,
+				const UnicodeString &property_name_string,
 				FeatureHandle::weak_ref &feature);
+
+
+		const InlinePropertyContainer::non_null_ptr_type
+		append_property_value_to_feature(
+				PropertyValue::non_null_ptr_type property_value,
+				const UnicodeString &property_name_string,
+				const UnicodeString &attribute_name_string,
+				const UnicodeString &attribute_value_string,
+				FeatureHandle::weak_ref &feature);
+
+
+		const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
+		create_gml_orientable_curve(
+				const GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string,
+				bool reverse_orientation = false);
+
+
+		const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
+		create_gml_time_period(
+				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
+				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end);
 
 
 		const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
@@ -63,52 +85,17 @@ namespace GPlatesModel
 				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant);
 
 
-		const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
-		create_gpml_irregular_sampling(
-				const GPlatesPropertyValues::GpmlTimeSample &first_time_sample);
+		const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
+		create_gpml_constant_value(
+				const PropertyValue::non_null_ptr_type property_value,
+				const UnicodeString &template_type_parameter_type_string);
 
-
-		const GPlatesPropertyValues::XsString::non_null_ptr_type
-		create_xs_string(
-				const std::string &str);
-
-
-		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type
-		create_xs_boolean(
-				bool value);
-
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type
-		create_gpml_strike_slip_enumeration(
-				const std::string &value);
 
 		// Before this line are the new, hopefully-better-designed functions; after this
 		// line are the old, arbitrary functions which should probably be reviewed (and
 		// should quite possibly be refactored).
 		// FIXME:  Review the following functions and refactor if necessary.
 
-		const PropertyContainer::non_null_ptr_type
-		create_reconstruction_plate_id(
-				unsigned long plate_id);
-	
-		const PropertyContainer::non_null_ptr_type
-		create_reference_frame_plate_id(
-				unsigned long plate_id,
-				const char *which_reference_frame);
-	
-		const PropertyContainer::non_null_ptr_type
-		create_center_line_of(
-				const std::vector<double> &points);	
-
-		const PropertyContainer::non_null_ptr_type
-		create_valid_time(
-				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
-				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end);
-		
-		const PropertyContainer::non_null_ptr_type
-		create_name(
-				const UnicodeString &name,
-				const UnicodeString &codespace);
-	
 		const PropertyContainer::non_null_ptr_type
 		create_total_reconstruction_pole(
 				const std::vector<TotalReconstructionPoleData> &five_tuples);

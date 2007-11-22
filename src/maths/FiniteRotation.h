@@ -290,17 +290,6 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Apply the given rotation to the given polyline.
-	 *
-	 * This operation is not supposed to be symmetrical.
-	 */
-	const PolylineOnSphere
-	operator*(
-	 const FiniteRotation &r,
-	 const PolylineOnSphere &polyline);
-
-
-	/**
 	 * Apply the given rotation to the given intrusive-pointer to polyline.
 	 *
 	 * This operation is not supposed to be symmetrical.

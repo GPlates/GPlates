@@ -66,13 +66,13 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::Globe &globe,
+				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type external_hit_sequence_ptr,
 				GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_)
 		{
-			QueryFeature::non_null_ptr_type ptr(*(new QueryFeature(globe, globe_canvas_,
+			QueryFeature::non_null_ptr_type ptr(*(new QueryFeature(globe_, globe_canvas_,
 					view_state_, external_hit_sequence_ptr, qfp_dialog_)));
 			return ptr;
 		}
@@ -96,12 +96,12 @@ namespace GPlatesCanvasTools
 		// instantiation of this type on the stack.
 		explicit
 		QueryFeature(
-				GPlatesGui::Globe &globe,
+				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type external_hit_sequence_ptr,
 				GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_):
-			CanvasTool(globe, globe_canvas_),
+			CanvasTool(globe_, globe_canvas_),
 			d_view_state_ptr(&view_state_),
 			d_external_hit_sequence_ptr(external_hit_sequence_ptr),
 			d_qfp_dialog_ptr(&qfp_dialog_)

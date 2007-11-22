@@ -84,6 +84,12 @@ namespace GPlatesGui
 		}
 
 		void
+		choose_zoom_globe_tool()
+		{
+			change_tool_if_necessary(d_zoom_globe_tool_ptr);
+		}
+
+		void
 		choose_query_feature_tool()
 		{
 			change_tool_if_necessary(d_query_feature_tool_ptr);
@@ -94,6 +100,11 @@ namespace GPlatesGui
 		 * This is the ReorientGlobe tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_reorient_globe_tool_ptr;
+
+		/**
+		 * This is the ZoomGlobe tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_zoom_globe_tool_ptr;
 
 		/**
 		 * This is the QueryFeature tool which the user may choose.

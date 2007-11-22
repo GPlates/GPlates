@@ -34,181 +34,97 @@
 #include <iosfwd>
 #include <list>
 
-#include "PointOnSphere.h"
-#include "PolylineOnSphere.h"
 
+namespace GPlatesMaths
+{
+	class PointOnSphere;
 
-namespace GPlatesMaths {
+	class LatLonPoint
+	{
+	public:
 
-	class LatLonPoint {
+		/**
+		 * Make a point in the standard spherical coordinate
+		 * system.
+		 * @throws InvalidLatLonException when
+		 *   @p isValidLat( @a lat ) would return false or
+		 *   @p isValidLon( @a lon ) would return false.
+		 */
+		LatLonPoint(
+				const double &lat,
+				const double &lon);
 
-		public:
+		/**
+		 * Return whether a given value is a valid latitude.
+		 *
+		 * GPlates uses the range [-90.0, 90.0].
+		 */
+		static
+		bool
+		is_valid_latitude(
+				const double &val);
 
-			/**
-			 * Make a point in the standard spherical coordinate
-			 * system.
-			 * @throws InvalidLatLonException when
-			 *   @p isValidLat( @a lat ) returns false or
-			 *   @p isValidLon( @a lon ) returns false.
-			 */
-			LatLonPoint(
-			 const real_t &lat,
-			 const real_t &lon);
+		/**
+		 * Return whether a given value is a valid longitude.
+		 *
+		 * GPlates uses the half-open range (-180.0, 180.0] for
+		 * output, but accepts [-360.0, 360.0] as input.
+		 */
+		static
+		bool
+		is_valid_longitude(
+				const double &val);
 
-			/**
-			 * Return whether a given value is a valid latitude.
-			 *
-			 * GPlates uses the range [-90.0, 90.0].
-			 */
-			static
-			bool
-			isValidLat(
-			 const real_t &val);
+		const double &
+		latitude() const
+		{
+			return d_latitude;
+		}
 
-			/**
-			 * Return whether a given value is a valid longitude.
-			 *
-			 * GPlates uses the half-open range (-180.0, 180.0] for
-			 * output, but accepts [-360.0, 360.0] as input.
-			 */
-			static
-			bool
-			isValidLon(
-			 const real_t &val);
+		const double &
+		longitude() const
+		{
+			return d_longitude;
+		}
 
-			real_t
-			latitude() const {
-				
-				return m_lat;
-			}
+	private:
 
-			real_t
-			longitude() const {
-				
-				return m_lon;
-			}
+		/**
+		 * The latitude of the point, in degrees.
+		 */
+		double d_latitude;
 
-		private:
+		/**
+		 * The longitude of the point, in degrees.
+		 */
+		double d_longitude;
 
-			real_t m_lat, m_lon;  // in degrees
+		// Declare this operator private (but don't define it) so it can never be invoked.
+		bool
+		operator==(
+				const LatLonPoint &);
 
+		// Declare this operator private (but don't define it) so it can never be invoked.
+		bool
+		operator!=(
+				const LatLonPoint &);
 	};
-
-
-	inline
-	bool
-	operator==(
-	 const LatLonPoint &p1,
-	 const LatLonPoint &p2) {
-
-		return ((p1.latitude() == p2.latitude()) &&
-		        (p1.longitude() == p2.longitude()));
-	}
 
 
 	std::ostream &
 	operator<<(
-	 std::ostream &os,
-	 const LatLonPoint &p);
+			std::ostream &os,
+			const LatLonPoint &p);
 
 
-	namespace LatLonPointConversions {
-
-		const PointOnSphere
-		convertLatLonPointToPointOnSphere(
-		 const LatLonPoint &);
-
-		const LatLonPoint 
-		convertPointOnSphereToLatLonPoint(
-		 const PointOnSphere &);
-						
-		/**
-		 * The list must contain at least TWO LatLonPoints.
-		 * No two successive LatLonPoints may be equivalent.
-		 *
-		 * @throws InvalidPolylineException if @a llpl contains less 
-		 *   than two LatLonPoints.
-		 *
-		 * This function is strongly exception-safe and exception
-		 * neutral.
-		 *
-		 * If a pair of identical adjacent points is found, the second
-		 * will be silently elided; this occurs sometimes when parsing
-		 * otherwise-valid PLATES "line data" files.
-		 */
-		const PolylineOnSphere
-		convertLatLonPointListToPolylineOnSphere(
-		 const std::list< LatLonPoint > &);
-
-		/**
-		 * Populate the supplied (presumably empty) sequence of
-		 * LatLonPoints using the supplied PolylineOnSphere.
-		 *
-		 * It is presumed that the sequence of LatLonPoints is empty --
-		 * or its contents unimportant -- since its contents, if any,
-		 * will be swapped out into a temporary sequence and discarded
-		 * at the end of the function.
-		 *
-		 * This function is strongly exception-safe.  *sigh*  If only
-		 * the same could be said for the rest of this crap (and yes,
-		 * I wrote most of it).
-		 */
-		template< typename S >
-		void
-		populate_lat_lon_point_sequence(
-		 S &sequence,
-		 const PolylineOnSphere &polyline);
-
-	}
-
-	/// The north pole (latitude \f$ 90^\circ \f$)
-	static const PointOnSphere NorthPole =
-	 LatLonPointConversions::convertLatLonPointToPointOnSphere(
-	  LatLonPoint(90.0, 0.0));
-
-	/// The south pole (latitude \f$ -90^\circ \f$)
-	static const PointOnSphere SouthPole =
-	 LatLonPointConversions::convertLatLonPointToPointOnSphere(
-	  LatLonPoint(-90.0, 0.0));
-
-}
+	const PointOnSphere
+	make_point_on_sphere(
+			const LatLonPoint &);
 
 
-template< typename S >
-void
-GPlatesMaths::LatLonPointConversions::populate_lat_lon_point_sequence(
- S &sequence,
- const PolylineOnSphere &polyline) {
-
-	S tmp_seq;
-
-	PolylineOnSphere::const_iterator
-	 iter = polyline.begin(),
-	 end = polyline.end();
-
-	if (iter == end) {
-
-		// This Polyline contains no segments.
-		// FIXME: Should we, uh, like, COMPLAIN about this?...
-		// It's probably invalid...
-		return;
-	}
-
-	// The first LatLonPoint in the list will be the start-point of the
-	// first GreatCircleArc...
-	tmp_seq.push_back(
-	 convertPointOnSphereToLatLonPoint(iter->start_point()));
-
-	for ( ; iter != end; ++iter) {
-
-		// ... and all the rest of the LatLonPoints will be end-points.
-		tmp_seq.push_back(
-		 convertPointOnSphereToLatLonPoint(iter->end_point()));
-	}
-
-	// OK, if we made it to here without throwing an exception, we're safe.
-	// Let's swap the contents into the target sequence.
-	sequence.swap(tmp_seq);  // This won't throw.
+	const LatLonPoint 
+	make_lat_lon_point(
+			const PointOnSphere &);
 }
 
 #endif  // GPLATES_MATHS_LATLONPOINTCONVERSIONS_H

@@ -326,23 +326,6 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesMaths::PolylineOnSphere
-GPlatesMaths::operator*(
- const FiniteRotation &r,
- const PolylineOnSphere &polyline) {
-
-	std::list< PointOnSphere > rotated_points;
-
-	PolylineOnSphere::vertex_const_iterator
-	 iter = polyline.vertex_begin(),
-	 end = polyline.vertex_end();
-
-	for ( ; iter != end; ++iter) rotated_points.push_back(r * (*iter));
-
-	return PolylineOnSphere::create(rotated_points);
-}
-
-
 const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
@@ -397,19 +380,16 @@ GPlatesMaths::operator<<(
 
 	} else {
 
-		using LatLonPointConversions::convertPointOnSphereToLatLonPoint;
-
-		UnitQuaternion3D::RotationParams params =
-		 uq.get_rotation_params();
+		UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
 
 		PointOnSphere p(params.axis);  // the point
 		PointOnSphere antip( -p.position_vector());  // the antipodal point
 
 		os
 		 << "(pole = "
-		 << convertPointOnSphereToLatLonPoint(p)
+		 << make_lat_lon_point(p)
 		 << " (which is antipodal to "
-		 << convertPointOnSphereToLatLonPoint(antip)
+		 << make_lat_lon_point(antip)
 		 << "); angle = "
 		 << radiansToDegrees(params.angle)
 		 << " deg)";

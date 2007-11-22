@@ -48,6 +48,12 @@ namespace GPlatesGui
 
 			~Globe() {  }
 
+			SimpleGlobeOrientation &
+			orientation()
+			{
+				return m_globe_orientation;
+			}
+
 			// currently does nothing.
 			void
 			SetTransparency(bool trans = true) {  }

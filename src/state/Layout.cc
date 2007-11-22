@@ -48,7 +48,7 @@ namespace {
 
 		for ( ; iter != end; ++iter) {
 
-			GPlatesMaths::PointOnSphere &the_point = *iter;
+			const GPlatesMaths::PointOnSphere &the_point = **iter;
 			
 			// Don't bother initialising this.
 			GPlatesMaths::real_t closeness;
@@ -83,7 +83,7 @@ namespace {
 
 		for ( ; iter != end; ++iter) {
 
-			GPlatesMaths::PolylineOnSphere &the_polyline = *iter;
+			const GPlatesMaths::PolylineOnSphere &the_polyline = **iter;
 
 			// Don't bother initialising this.
 			GPlatesMaths::real_t closeness;

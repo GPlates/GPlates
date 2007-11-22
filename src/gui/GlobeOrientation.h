@@ -32,23 +32,24 @@
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 
-namespace GPlatesGui {
 
+namespace GPlatesGui
+{
 	/**
 	 * This class is an abstract interface for globe orientations.
 	 */
-	class GlobeOrientation {
-
-	 public:
-
+	class GlobeOrientation
+	{
+	public:
 		virtual
-		~GlobeOrientation() {  }
+		~GlobeOrientation()
+		{  }
 
 		/**
 		 * Return the axis of the accumulated rotation of the globe.
 		 */
 		virtual
-		GPlatesMaths::UnitVector3D
+		const GPlatesMaths::UnitVector3D &
 		rotation_axis() const = 0;
 
 		/**
@@ -57,7 +58,7 @@ namespace GPlatesGui {
 		 * As always, the rotation angle is in radians.
 		 */
 		virtual
-		GPlatesMaths::real_t
+		const GPlatesMaths::real_t &
 		rotation_angle() const = 0;
 
 		/**
@@ -65,17 +66,25 @@ namespace GPlatesGui {
 		 * to the supplied point.
 		 */
 		virtual
-		GPlatesMaths::PointOnSphere
+		const GPlatesMaths::PointOnSphere
 		reverse_orient_point(
-		 const GPlatesMaths::PointOnSphere &pos) const = 0;
+				const GPlatesMaths::PointOnSphere &pos) const = 0;
 
 		/**
 		 * Set a new handle at the given position.
+		 *
+		 * The model which this class provides for globe-reorientation is the following:
+		 * You place a "handle" on the globe at some position, then move the handle to
+		 * re-orient the globe.
+		 *
+		 * The position of the handle conveniently coincides with the position at which the
+		 * mouse-button is pressed to start a drag motion, and the subsequent motion of the
+		 * handle follows the motion of the mouse pointer.
 		 */
 		virtual
 		void
 		set_new_handle_at_pos(
-		 const GPlatesMaths::PointOnSphere &pos) = 0;
+				const GPlatesMaths::PointOnSphere &pos) = 0;
 
 		/**
 		 * Move the already-set handle to the given position, changing
@@ -84,10 +93,8 @@ namespace GPlatesGui {
 		virtual
 		void
 		move_handle_to_pos(
-		 const GPlatesMaths::PointOnSphere &pos) = 0;
-
+				const GPlatesMaths::PointOnSphere &pos) = 0;
 	};
-
 }
 
-#endif  /* GPLATES_GUI_GLOBEORIENTATION_H */
+#endif  // GPLATES_GUI_GLOBEORIENTATION_H

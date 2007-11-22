@@ -35,6 +35,8 @@
 #include "model/ModelUtils.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlFiniteRotation.h"
+#include "property-values/GpmlFiniteRotationSlerp.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/TemplateTypeParameterType.h"
 #include "utils/FloatingPointComparisons.h"
@@ -222,7 +224,7 @@ namespace
 
 		boost::intrusive_ptr<XsString> description;
 		if ( ! comment.empty()) {
-			description = (ModelUtils::create_xs_string(comment)).get();
+			description = (XsString::create(comment.c_str())).get();
 		}
 
 		TemplateTypeParameterType value_type("gpml:FiniteRotation");
@@ -291,8 +293,12 @@ namespace
 		FeatureType feature_type("gpml:TotalReconstructionSequence");
 		current_total_recon_seq = model.create_feature(feature_type, rotations);
 
+		GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
+				GpmlFiniteRotationSlerp::create(time_sample.value_type());
 		GpmlIrregularSampling::non_null_ptr_type gpml_irregular_sampling =
-				ModelUtils::create_gpml_irregular_sampling(time_sample);
+				GpmlIrregularSampling::create(time_sample,
+						GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
+						time_sample.value_type());
 		ModelUtils::append_property_value_to_feature(gpml_irregular_sampling,
 				"gpml:totalReconstructionPole", current_total_recon_seq);
 		props_in_current_trs.d_irregular_sampling = gpml_irregular_sampling.get();

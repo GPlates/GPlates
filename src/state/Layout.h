@@ -114,9 +114,9 @@ namespace GPlatesState
 			* End of hackity-hacks.
 			*/
 
-			typedef GPlatesMaths::PointOnSphere PointDataPos;
+			typedef GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type PointDataPos;
 
-			typedef GPlatesMaths::PolylineOnSphere LineDataPos;
+			typedef GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type LineDataPos;
 
 			typedef std::list< PointDataPos > PointDataLayout;
 			typedef std::list< LineDataPos > LineDataLayout;
@@ -155,7 +155,7 @@ namespace GPlatesState
 
 
 			static void
-			InsertPointDataPos(const GPlatesMaths::PointOnSphere &position) {
+			InsertPointDataPos(const PointDataPos &position) {
 
 				EnsurePointDataLayoutExists();
 				_point_data_layout->push_back(position);
@@ -163,7 +163,7 @@ namespace GPlatesState
 
 
 			static void
-			InsertLineDataPos(const GPlatesMaths::PolylineOnSphere &position) {
+			InsertLineDataPos(const LineDataPos &position) {
 
 				EnsureLineDataLayoutExists();
 				_line_data_layout->push_back(position);

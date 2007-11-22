@@ -25,13 +25,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_MATHS_ROTATION_H_
-#define _GPLATES_MATHS_ROTATION_H_
+#ifndef GPLATES_MATHS_ROTATION_H
+#define GPLATES_MATHS_ROTATION_H
 
 #include "UnitVector3D.h"
 #include "UnitQuaternion3D.h"
 #include "PointOnSphere.h"
-#include "types.h"  /* real_t */
+#include "types.h"  // real_t
 
 
 namespace GPlatesMaths
@@ -54,123 +54,164 @@ namespace GPlatesMaths
 	 */
 	class Rotation
 	{
-			/*
-			 * Declare this as a friend to enable it to use
-			 * the protected creation function.
-			 */
-			friend Rotation operator*(const Rotation &r1,
-			                          const Rotation &r2);
+		/*
+		 * Declare this as a friend to enable it to use
+		 * the protected creation function.
+		 */
+		friend
+		const Rotation
+		operator*(
+				const Rotation &r1,
+				const Rotation &r2);
 
-		public:
-			/**
-			 * Create a rotation with the given rotation axis
-			 * and rotation angle.
-			 *
-			 * As always, the rotation angle is in radians.
-			 */
-			static Rotation
-			Create(const UnitVector3D &rotation_axis,
-			       const real_t &rotation_angle);
-
-
-			/**
-			 * Create a rotation which transforms @a initial
-			 * to @a final.
-			 */
-			static Rotation
-			Create(const UnitVector3D &initial,
-			       const UnitVector3D &final);
+	public:
+		/**
+		 * Create a rotation with the given rotation axis
+		 * and rotation angle.
+		 *
+		 * As always, the rotation angle is in radians.
+		 */
+		static
+		const Rotation
+		create(
+				const UnitVector3D &rotation_axis,
+				const real_t &rotation_angle);
 
 
-			UnitVector3D
-			axis() const { return _axis; }
+		/**
+		 * Create a rotation which transforms @a initial to @a final.
+		 */
+		static inline
+		const Rotation
+		create(
+				const PointOnSphere &initial,
+				const PointOnSphere &final)
+		{
+			return Rotation::create(initial.position_vector(), final.position_vector());
+		}
 
 
-			real_t
-			angle() const { return _angle; }
+		/**
+		 * Create a rotation which transforms @a initial to @a final.
+		 */
+		static
+		const Rotation
+		create(
+				const UnitVector3D &initial,
+				const UnitVector3D &final);
 
 
-			UnitQuaternion3D
-			quat() const { return _quat; }
+		const UnitVector3D &
+		axis() const
+		{
+			return d_axis;
+		}
 
 
-			/**
-			 * Return the reverse of this rotation.
-			 */
-			Rotation
-			reverse() const {
-
-				UnitQuaternion3D rev_quat =
-				 quat().get_inverse();
-				UnitVector3D rev_axis = -axis();
-
-				return
-				 Rotation::Create(rev_quat, rev_axis, angle());
-			}
+		const real_t &
+		angle() const
+		{
+			return d_angle;
+		}
 
 
-			/**
-			 * Apply this rotation to a unit vector.
-			 *
-			 * Note that this function is a member function for
-			 * two (2) reasons:
-			 *
-			 *  (i) to enable it to access the private member data
-			 *       '_d' and '_e'.
-			 *
-			 *  (ii) to enforce the concept that the operation of
-			 *        a finite rotation is APPLIED TO a vector --
-			 *        it is very much a PREmultiplication, in the
-			 *        style of traditional matrix operations.
-			 *
-			 * This operation is not supposed to be symmetrical.
-			 */
-			UnitVector3D
-			operator*(const UnitVector3D &uv) const;
-
-		protected:
-			/**
-			 * Create the rotation described by the supplied
-			 * quaternion.  The supplied axis and angle
-			 * must match those inside the quaternion.
-			 * This requirement will not be checked!
-			 *
-			 * As always, the rotation angle is in radians.
-			 */
-			static Rotation
-			Create(const UnitQuaternion3D &uq,
-			       const UnitVector3D &rotation_axis,
-			       const real_t &rotation_angle);
+		const UnitQuaternion3D &
+		quat() const
+		{
+			return d_quat;
+		}
 
 
-			Rotation(const UnitVector3D &ax,
-			         const real_t &ang,
-			         const UnitQuaternion3D &q,
-			         const real_t &d,
-			         const Vector3D &e)
+		/**
+		 * Return the reverse of this rotation.
+		 */
+		const Rotation
+		get_reverse() const
+		{
+			UnitQuaternion3D rev_quat = quat().get_inverse();
+			UnitVector3D rev_axis = -axis();
 
-			 : _axis(ax), _angle(ang), _quat(q), _d(d), _e(e) {  }
+			return Rotation::create(rev_quat, rev_axis, angle());
+		}
 
-		private:
-			UnitVector3D     _axis;
-			real_t           _angle;  // in radians
 
-			/**
-			 * The unit quaternion which effects the rotation
-			 * described by the rotation axis and angle.
-			 */
-			UnitQuaternion3D _quat;
+		/**
+		 * Apply this rotation to a unit vector.
+		 *
+		 * Note that this function is a member function for
+		 * two (2) reasons:
+		 *
+		 *  (i) to enable it to access the private member data
+		 *       '_d' and '_e'.
+		 *
+		 *  (ii) to enforce the concept that the operation of
+		 *        a finite rotation is APPLIED TO a vector --
+		 *        it is very much a PREmultiplication, in the
+		 *        style of traditional matrix operations.
+		 *
+		 * This operation is not supposed to be symmetrical.
+		 */
+		const UnitVector3D
+		operator*(
+				const UnitVector3D &uv) const;
 
-			/*
-			 * And now for the mysterious values of '_d' and '_e' !
-			 *
-			 * These are only used to rotate points on the sphere,
-			 * and are calculated purely for optimisation purposes.
-			 * I don't know whether they have any physical meaning.
-			 * I suspect not.
-			 */
-			real_t   _d;
-			Vector3D _e;
+	protected:
+		/**
+		 * Create the rotation described by the supplied
+		 * quaternion.  The supplied axis and angle
+		 * must match those inside the quaternion.
+		 * This requirement will not be checked!
+		 *
+		 * As always, the rotation angle is in radians.
+		 */
+		static
+		const Rotation
+		create(
+				const UnitQuaternion3D &uq,
+				const UnitVector3D &rotation_axis,
+				const real_t &rotation_angle);
+
+
+		Rotation(
+				const UnitVector3D &axis_,
+				const real_t &angle_,
+				const UnitQuaternion3D &quat_,
+				const real_t &d,
+				const Vector3D &e):
+			d_axis(axis_),
+			d_angle(angle_),
+			d_quat(quat_),
+			d_d(d),
+			d_e(e)
+		{  }
+
+	private:
+		/**
+		 * The axis of the rotation.
+		 */
+		UnitVector3D     d_axis;
+
+		/**
+		 * The angle of the rotation, in radians.
+		 */
+		real_t           d_angle;
+
+		/**
+		 * The unit quaternion which effects the rotation
+		 * described by the rotation axis and angle.
+		 */
+		UnitQuaternion3D d_quat;
+
+		/*
+		 * And now for the mysterious values of 'd_d' and 'd_e' !
+		 *
+		 * These are only used to rotate points on the sphere,
+		 * and are calculated purely for optimisation purposes.
+		 * I don't know whether they have any physical meaning.
+		 * I suspect not.
+		 */
+		real_t   d_d;
+		Vector3D d_e;
 	};
 
 
@@ -185,21 +226,10 @@ namespace GPlatesMaths
 	 * composition by premultiplication:  You take 'r2', then apply 'r1'
 	 * to it (in front of it).
 	 */
-	Rotation
-	operator*(const Rotation &r1, const Rotation &r2);
-
-
-	/**
-	 * Create a rotation which transforms the point @a initial
-	 * to the point @a final.
-	 */
-	inline Rotation
-	CreateRotation(const PointOnSphere &initial,
-		const PointOnSphere &final) {
-
-		return
-		 Rotation::Create(initial.position_vector(), final.position_vector());
-	}
+	const Rotation
+	operator*(
+			const Rotation &r1,
+			const Rotation &r2);
 
 
 	/**
@@ -207,11 +237,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	inline PointOnSphere
-	operator*(const Rotation &r, const PointOnSphere &p) {
-
+	inline
+	const PointOnSphere
+	operator*(
+			const Rotation &r,
+			const PointOnSphere &p)
+	{
 		return PointOnSphere(r * p.position_vector());
 	}
 }
 
-#endif  // _GPLATES_MATHS_ROTATION_H_
+#endif  // GPLATES_MATHS_ROTATION_H

@@ -85,6 +85,10 @@ namespace
 					GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
 					GPlatesFileIO::ReadErrors::FileNotLoaded));
 		}
+		catch (GPlatesGlobal::Exception &e)
+		{
+			std::cerr << "Caught exception: " << e << std::endl;
+		}
 		
 		if ( ! read_errors.is_empty())
 		{
@@ -117,7 +121,7 @@ namespace
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator finish =
 					reconstruction->point_geometries().end();
 			while (iter != finish) {
-				canvas_ptr->draw_point(*iter->geometry());
+				canvas_ptr->draw_point(iter->geometry());
 				++iter;
 			}
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator iter2 =
@@ -125,7 +129,7 @@ namespace
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator finish2 =
 					reconstruction->polyline_geometries().end();
 			while (iter2 != finish2) {
-				canvas_ptr->draw_polyline(*iter2->geometry());
+				canvas_ptr->draw_polyline(iter2->geometry());
 				++iter2;
 			}
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
@@ -202,6 +206,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
 			this, SLOT(choose_drag_globe_tool()));
+	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
+			this, SLOT(choose_zoom_globe_tool()));
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			this, SLOT(choose_query_feature_tool()));
 
@@ -229,6 +235,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
 			d_canvas_tool_choice_ptr, SLOT(choose_reorient_globe_tool()));
+	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
+			d_canvas_tool_choice_ptr, SLOT(choose_zoom_globe_tool()));
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			d_canvas_tool_choice_ptr, SLOT(choose_query_feature_tool()));
 
@@ -331,6 +339,14 @@ GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
+{
+	uncheck_all_tools();
+	action_Zoom_Globe->setChecked(true);
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_query_feature_tool()
 {
 	uncheck_all_tools();
@@ -342,6 +358,7 @@ void
 GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 {
 	action_Drag_Globe->setChecked(false);
+	action_Zoom_Globe->setChecked(false);
 	action_Query_Feature->setChecked(false);
 }
 
@@ -351,4 +368,3 @@ GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
 {
 	d_read_errors_dialog.show();
 }
-

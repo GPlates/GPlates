@@ -33,6 +33,14 @@
 #include "PointLiesOnGreatCircleArc.h"
 
 
+const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::north_pole =
+		GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(90.0, 0.0));
+
+
+const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::south_pole =
+		GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(-90.0, 0.0));
+
+
 bool
 GPlatesMaths::PointOnSphere::is_close_to(
 		const PointOnSphere &test_point,

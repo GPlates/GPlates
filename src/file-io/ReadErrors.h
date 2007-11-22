@@ -71,10 +71,11 @@ namespace GPlatesFileIO
 			MissingPlatesPolylinePoint,
 			MissingPlatesHeaderSecondLine,
 			InvalidPlatesPolylinePoint,
-			BadPlatesPolylinePlotterCode,
-			BadPlatesPolylineLatitude,
-			BadPlatesPolylineLongitude,
-			
+			InvalidPlatesPolylinePlotterCode,
+			InvalidPlatesPolylineLatitude,
+			InvalidPlatesPolylineLongitude,
+			AdjacentSkipToPlotterCodes,
+
 			// The following are generic to all local files
 			ErrorOpeningFileForReading
 		};
@@ -97,7 +98,8 @@ namespace GPlatesFileIO
 			// The following are specific to PLATES line-format reading.
 			UnclassifiedFeatureCreated,
 			FeatureDiscarded,
-			
+			NoGeometryCreatedByMovement,
+
 			// The following are generic to all local files
 			FileNotLoaded
 		};

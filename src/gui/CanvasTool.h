@@ -318,6 +318,12 @@ namespace GPlatesGui
 		}
 
 	protected:
+		Globe &
+		globe() const
+		{
+			return *d_globe_ptr;
+		}
+
 		GPlatesQtWidgets::GlobeCanvas &
 		globe_canvas() const
 		{

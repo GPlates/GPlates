@@ -132,6 +132,9 @@ namespace GPlatesQtWidgets
 		}
 
 		void
+		recalc_camera_position();
+
+		void
 		update_mouse_pointer_position(
 				const GPlatesMaths::PointOnSphere &new_virtual_pos,
 				bool is_on_globe);

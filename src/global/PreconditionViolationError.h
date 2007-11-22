@@ -25,28 +25,33 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-#include "Exception.h"
+#ifndef GPLATES_GLOBAL_PRECONDITIONVIOLATIONERROR_H
+#define GPLATES_GLOBAL_PRECONDITIONVIOLATIONERROR_H
+
+#include "global/Exception.h"
 
 
-void
-GPlatesGlobal::Exception::write(
-		std::ostream &os) const
+namespace GPlatesGlobal
 {
-	os << ExceptionName();
+	/**
+	 * This is the base class of all exceptions in GPlates which are used to report that
+	 * erroneous parameters were supplied to a function, violating the precondition of that
+	 * function.
+	 */
+	class PreconditionViolationError:
+			public Exception
+	{
+		public:
+			// FIXME:  This class should have a constructor which accepts:
+			//  - a const char *filename
+			//  - an int line-number
+			//  - a const char *funcname
+			// or possibly an instance of a class (which will look like
+			// CallStackTracker) whose constructor accepts these items).
 
-	// output a message (if it exists)
-	// FIXME:  Surely a message should always exist?  (I can't think of any useful exceptions
-	// which shouldn't contain some specific information.)
-	// FIXME:  Rather than creating a string for the message, there should be a 'write_message'
-	// function which accepts this same ostream.
-	std::string msg = Message();
-	if ( ! msg.empty()) {
-
-		os << "(\"" << msg << "\")";
-	} else {
-		os << ": ";
-		write_message(os);
-	}
+			virtual
+			~PreconditionViolationError() {  }
+	};
 }
 
+#endif  // GPLATES_GLOBAL_PRECONDITIONVIOLATIONERROR_H

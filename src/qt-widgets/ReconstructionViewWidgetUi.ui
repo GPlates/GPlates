@@ -333,7 +333,19 @@
    <item row="2" column="0" >
     <layout class="QHBoxLayout" >
      <item>
-      <widget class="QFrame" name="frame" >
+      <widget class="QFrame" name="frame_camera_coords" >
+       <property name="minimumSize" >
+        <size>
+         <width>16</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="maximumSize" >
+        <size>
+         <width>16777215</width>
+         <height>24</height>
+        </size>
+       </property>
        <property name="frameShape" >
         <enum>QFrame::StyledPanel</enum>
        </property>
@@ -354,6 +366,20 @@
          <number>1</number>
         </property>
         <item>
+         <widget class="QLabel" name="label_camera" >
+          <property name="text" >
+           <string>Camera:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_camera_coords" >
+          <property name="text" >
+           <string>(lat: ---.-- ; lon: ---.-- )</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer>
           <property name="orientation" >
            <enum>Qt::Horizontal</enum>
@@ -370,7 +396,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QFrame" name="frame_cursor_coordinates" >
+      <widget class="QFrame" name="frame_mouse_coords" >
        <property name="sizePolicy" >
         <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
          <horstretch>0</horstretch>
@@ -379,14 +405,14 @@
        </property>
        <property name="minimumSize" >
         <size>
-         <width>300</width>
-         <height>16</height>
+         <width>290</width>
+         <height>24</height>
         </size>
        </property>
        <property name="maximumSize" >
         <size>
-         <width>300</width>
-         <height>16777215</height>
+         <width>290</width>
+         <height>24</height>
         </size>
        </property>
        <property name="frameShape" >
@@ -412,20 +438,14 @@
          <number>1</number>
         </property>
         <item>
-         <widget class="QLabel" name="label_coordinates" >
-          <property name="sizePolicy" >
-           <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
+         <widget class="QLabel" name="label_mouse" >
           <property name="text" >
-           <string>Coords:</string>
+           <string>Mouse: </string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_cursor_coordinates" >
+         <widget class="QLabel" name="label_mouse_coords" >
           <property name="sizePolicy" >
            <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
             <horstretch>0</horstretch>

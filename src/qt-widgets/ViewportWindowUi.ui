@@ -5,13 +5,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>560</width>
+    <width>580</width>
     <height>600</height>
    </rect>
   </property>
   <property name="minimumSize" >
    <size>
-    <width>560</width>
+    <width>580</width>
     <height>600</height>
    </size>
   </property>
@@ -33,8 +33,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>560</width>
-     <height>29</height>
+     <width>580</width>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -110,6 +110,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="action_Drag_Globe" />
+   <addaction name="action_Zoom_Globe" />
    <addaction name="action_Query_Feature" />
   </widget>
   <widget class="QDockWidget" name="dockWidget_information" >
@@ -415,6 +416,23 @@
    </property>
    <property name="shortcut" >
     <string>1</string>
+   </property>
+  </action>
+  <action name="action_Zoom_Globe" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/zoom_globe_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Zoom Globe</string>
+   </property>
+   <property name="toolTip" >
+    <string>Click globe to zoom  Z</string>
+   </property>
+   <property name="shortcut" >
+    <string>Z</string>
    </property>
   </action>
  </widget>

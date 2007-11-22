@@ -152,6 +152,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\canvas-tools\ZoomGlobe.cc">
+			</File>
+			<File
 				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc">
 			</File>
 		</Filter>
@@ -228,6 +231,18 @@
 				RelativePath="..\src\gui\SimpleGlobeOrientation.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui\SimpleGlobeOrientation.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui\SphericalGrid.cc">
 			</File>
 			<File
@@ -241,6 +256,9 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc">
 			</File>
 		</Filter>
 		<Filter
@@ -436,9 +454,6 @@
 				RelativePath="..\src\qt-widgets\moc_QueryFeaturePropertiesDialog.cc">
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_ReconstructToTimeDialog.cc">
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\moc_SpecifyFixedPlateDialog.cc">
 			</File>
 			<File
@@ -461,33 +476,6 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\QueryFeaturePropertiesDialogUi.ui">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Executing UIC on $(InputName)"
-						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
-"
-						Outputs="$(InputDir)/$(InputName).h"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructToTimeDialog.cc">
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructToTimeDialog.h">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Executing MOC on $(InputName)"
-						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
-"
-						Outputs="$(InputDir)/moc_$(InputName).cc"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructToTimeDialogUi.ui">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool

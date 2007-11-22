@@ -119,8 +119,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_line_st
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline_ptr->vertex_end();
 
 	for (unsigned point_number = 1; iter != end; ++iter, ++point_number) {
-		GPlatesMaths::LatLonPoint llp =
-				GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*iter);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
 
 		QLocale locale;
 
@@ -128,8 +127,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_line_st
 		point_id.append(locale.toString(point_number));
 		point_id.append(QObject::tr(" (lat ; lon)"));
 
-		QString lat = locale.toString(llp.latitude().dval());
-		QString lon = locale.toString(llp.longitude().dval());
+		QString lat = locale.toString(llp.latitude());
+		QString lon = locale.toString(llp.longitude());
 		QString point;
 		point.append(lat);
 		point.append(QObject::tr(" ; "));
@@ -169,8 +168,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_point(
 	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:pos");
 
 	const GPlatesMaths::PointOnSphere &pos = *gml_point.point();
-	GPlatesMaths::LatLonPoint llp =
-			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(pos);
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+
 	d_output.write_line_of_decimal_duple_content(llp.longitude().dval(), llp.latitude().dval());
 #endif
 }

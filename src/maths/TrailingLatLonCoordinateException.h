@@ -25,57 +25,51 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MATHS_INVALIDLATLONEXCEPTION_H
-#define GPLATES_MATHS_INVALIDLATLONEXCEPTION_H
+#ifndef GPLATES_MATHS_TRAILINGLATLONCOORDINATEEXCEPTION_H
+#define GPLATES_MATHS_TRAILINGLATLONCOORDINATEEXCEPTION_H
 
 // FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
 #include <ostream>
-#include "global/PreconditionViolationError.h"
+#include "global/ExternalResourceFailureException.h"
 
 
 namespace GPlatesMaths
 {
 	/**
-	 * This is the exception thrown when an attempt is made to instantiate a LatLonPoint using
-	 * either an invalid latitude or an invalid longitude (or both, though this exception can
-	 * only report one problem).
+	 * This is the exception thrown when a sequence of doubles, whose elements are to be paired
+	 * into (lat, lon) coordinate-pairs, encounters a trailing coordinate.
 	 */
-	class InvalidLatLonException:
-			public GPlatesGlobal::PreconditionViolationError
+	class TrailingLatLonCoordinateException:
+			public GPlatesGlobal::ExternalResourceFailureException
 	{
 	public:
-		enum LatOrLon
-		{
-			Latitude,
-			Longitude
-		};
+		typedef unsigned long size_type;
 
 		/**
-		 * @param invalid_value_ is the invalid value.
-		 * @param lat_or_lon_ is whether the invalid value is an invalid latitude or an
-		 * invalid longitude.
+		 * @param trailing_coord_ is the trailing coordinate.
+		 * @param sequence_len_ is the length of the sequence in question.
 		 */
-		InvalidLatLonException(
-				const double &invalid_value_,
-				LatOrLon lat_or_lon_):
-			d_invalid_value(invalid_value_),
-			d_lat_or_lon(lat_or_lon_)
+		TrailingLatLonCoordinateException(
+				const double &trailing_coord_,
+				size_type sequence_len_):
+			d_trailing_coord(trailing_coord_),
+			d_sequence_len(sequence_len_)
 		{  }
 
 		virtual
-		~InvalidLatLonException()
+		~TrailingLatLonCoordinateException()
 		{  }
 
 		const double &
-		invalid_value() const
+		trailing_coord() const
 		{
-			return d_invalid_value;
+			return d_trailing_coord;
 		}
 
-		LatOrLon
-		lat_or_lon() const
+		size_type
+		sequence_len() const
 		{
-			return d_lat_or_lon;
+			return d_sequence_len;
 		}
 	protected:
 		virtual
@@ -83,7 +77,7 @@ namespace GPlatesMaths
 		ExceptionName() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
-			return "InvalidLatLonException";
+			return "TrailingLatLonCoordinateException";
 		}
 
 		virtual
@@ -92,14 +86,13 @@ namespace GPlatesMaths
 				std::ostream &os) const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
-			os << "invalid "
-					<< ((lat_or_lon() == Latitude) ? "latitude" : "longitude")
-					<< " value " << d_invalid_value;
+			os << "trailing coordinate " << d_trailing_coord
+					<< " in sequence of length " << d_sequence_len;
 		}
 	private:
-		const double d_invalid_value;
-		LatOrLon d_lat_or_lon;
+		const double d_trailing_coord;
+		const size_type d_sequence_len;
 	};
 }
 
-#endif  // GPLATES_MATHS_INVALIDLATLONEXCEPTION_H
+#endif  // GPLATES_MATHS_TRAILINGLATLONCOORDINATEEXCEPTION_H

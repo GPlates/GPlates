@@ -90,7 +90,7 @@ namespace GPlatesMaths
 		{  }
 
 
-		double
+		const double &
 		dval() const
 		{
 			return _dval;

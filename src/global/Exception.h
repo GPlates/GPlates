@@ -30,46 +30,82 @@
 
 #include <iosfwd>
 #include <string>
+#include <boost/current_function.hpp>
+
+#define GPLATES_EXCEPTION_SOURCE __FILE__, __LINE__, BOOST_CURRENT_FUNCTION
+
 
 namespace GPlatesGlobal
 {
 	/**
-	 * Generic exception.
+	 * This is the base class of all exceptions in GPlates.
 	 */
 	class Exception
 	{
 		public:
+			// FIXME:  This class should have a constructor which accepts:
+			//  - a const char *filename
+			//  - an int line-number
+			//  - a const char *funcname
+			// or possibly an instance of a class (which will look like
+			// CallStackTracker) whose constructor accepts these items).
+
 			virtual
 			~Exception() {  }
 
 			/**
-			 * Insert the name and message (if it exists) of this
-			 * Exception into the given output stream.
+			 * Write the name and message of an exception into the supplied output
+			 * stream @a os.
+			 *
+			 * It is not intended that these messages be internationalised for users --
+			 * they are purely for debugging output when an exception is caught at the
+			 * base-most frame of the function call stack.
 			 */
 			void
-			Write(std::ostream &os) const;
+			write(
+					std::ostream &os) const;
 
 		protected:
 			/**
 			 * @return The name of this Exception.
+			 *
+			 * FIXME:  This should be renamed to 'exception_name'.
 			 */
-			virtual const char *
+			virtual
+			const char *
 			ExceptionName() const = 0;
 
 			/**
 			 * @return The Exception's message as a string.
+			 *
+			 * FIXME:  Rather than creating a string for the message, there should be a
+			 * 'write_message' function which accepts this same ostream.
 			 */
-			virtual std::string
-			Message() const = 0;
+			virtual
+			std::string
+			Message() const
+			{
+				return std::string();
+			}
+
+			virtual
+			void
+			write_message(
+					std::ostream &os) const
+			{  }
 	};
 
-	/**
-	 * Synonym/shorthand for Exception::Write().
-	 */
-	inline std::ostream &
-	operator<<(std::ostream &os, const Exception &ex) {
 
-		ex.Write(os);
+	/**
+	 * Insert a string representation of the exception @a ex into the output stream @a os.
+	 */
+	inline
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const Exception &ex)
+	{
+		ex.write(os);
 		return os;
 	}
 }

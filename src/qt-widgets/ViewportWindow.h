@@ -105,6 +105,9 @@ namespace GPlatesQtWidgets
 		choose_drag_globe_tool();
 
 		void
+		choose_zoom_globe_tool();
+
+		void
 		choose_query_feature_tool();
 		
 		void

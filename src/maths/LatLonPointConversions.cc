@@ -37,80 +37,67 @@
 #include "InvalidPolylineException.h"
 #include "IndeterminateResultException.h"
 #include "PointOnSphere.h"
+#include "utils/MathUtils.h"
 
 
 GPlatesMaths::LatLonPoint::LatLonPoint(
- const real_t &lat,
- const real_t &lon) :
- m_lat(lat),
- m_lon(lon) {
+		const double &lat,
+		const double &lon):
+	d_latitude(lat),
+	d_longitude(lon)
+{
+	if ( ! LatLonPoint::is_valid_latitude(lat)) {
 
-	if ( ! LatLonPoint::isValidLat(lat)) {
-
-		// not a valid latitude
-		std::ostringstream oss;
-		oss << "Attempted to create a lat/lon point "
-			"using the invalid latitude " << lat;
-
-		throw InvalidLatLonException(oss.str().c_str());
+		// It's not a valid latitude.
+		throw InvalidLatLonException(lat, InvalidLatLonException::Latitude);
 	}
-	if ( ! LatLonPoint::isValidLon(lon)) {
+	if ( ! LatLonPoint::is_valid_longitude(lon)) {
 
-		// not a valid longitude
-		std::ostringstream oss;
-		oss << "Attempted to create a lat/lon point "
-			"using the invalid longitude " << lon;
-
-		throw InvalidLatLonException(oss.str().c_str());
+		// It's not a valid longitude.
+		throw InvalidLatLonException(lon, InvalidLatLonException::Longitude);
 	}
 }
 
 
 bool
-GPlatesMaths::LatLonPoint::isValidLat(
- const real_t &val) {
-
-	return (-90.0 <= val && val <= 90.0);
+GPlatesMaths::LatLonPoint::is_valid_latitude(
+		const double &val)
+{
+	return GPlatesUtils::is_in_range(val, -90.0, 90.0);
 }
 
 
 bool
-GPlatesMaths::LatLonPoint::isValidLon(
- const real_t &val) {
-
-	return (-360.0 <= val && val <= 360.0);
+GPlatesMaths::LatLonPoint::is_valid_longitude(
+		const double &val)
+{
+	return GPlatesUtils::is_in_range(val, -360.0, 360.0);
 }
 
 
 std::ostream &
 GPlatesMaths::operator<<(
- std::ostream &os,
- const LatLonPoint &p) {
-
+		std::ostream &os,
+		const LatLonPoint &p)
+{
 	// TODO: use N/S/E/W notation?
-	os
-	 << "(lat: "
-	 << p.latitude()
-	 << ", lon: "
-	 << p.longitude()
-	 << ")";
-
+	os << "(lat: " << p.latitude() << ", lon: " << p.longitude() << ")";
 	return os;
 }
 
 
 const GPlatesMaths::PointOnSphere
-GPlatesMaths::LatLonPointConversions::convertLatLonPointToPointOnSphere(
- const LatLonPoint &llp) {
+GPlatesMaths::make_point_on_sphere(
+		const LatLonPoint &llp)
+{
+	double lat_angle = GPlatesUtils::convert_deg_to_rad(llp.latitude());
+	double lon_angle = GPlatesUtils::convert_deg_to_rad(llp.longitude());
 
-	real_t lat_angle = degreesToRadians(llp.latitude());
-	real_t long_angle = degreesToRadians(llp.longitude());
+	double radius_of_small_circle_of_latitude = std::cos(lat_angle);
 
-	real_t radius_of_small_circle_of_latitude = cos(lat_angle);
-
-	real_t x_comp = radius_of_small_circle_of_latitude * cos(long_angle);
-	real_t y_comp = radius_of_small_circle_of_latitude * sin(long_angle);
-	real_t z_comp = sin(lat_angle);  // height above equator
+	double x_comp = radius_of_small_circle_of_latitude * std::cos(lon_angle);
+	double y_comp = radius_of_small_circle_of_latitude * std::sin(lon_angle);
+	double z_comp = std::sin(lat_angle);  // height above equator
 
 	UnitVector3D uv = UnitVector3D(x_comp, y_comp, z_comp);
 	return PointOnSphere(uv);
@@ -118,45 +105,22 @@ GPlatesMaths::LatLonPointConversions::convertLatLonPointToPointOnSphere(
 
 
 const GPlatesMaths::LatLonPoint 
-GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
- const PointOnSphere& point) {
-
-	const real_t
-	 &x = point.position_vector().x(),
-	 &y = point.position_vector().y(),
-	 &z = point.position_vector().z();
+GPlatesMaths::make_lat_lon_point(
+		const PointOnSphere& point)
+{
+	const double
+			&x = point.position_vector().x().dval(),
+			&y = point.position_vector().y().dval(),
+			&z = point.position_vector().z().dval();
 
 	// arcsin(theta) is defined for all theta in [-PI/2, PI/2].
-	real_t lat = asin(z);
+	double lat = std::asin(z);
+	double lon = std::atan2(y, x);
+	if (lon < -GPlatesUtils::Pi) {
+		lon = GPlatesUtils::Pi;
+	}
 
-	// Radius of the small circle of latitude.
-//	real_t rad_sc = cos(lat);
-//	real_t lon = (rad_sc == 0.0 ? 0.0 : asin(y/rad_sc));
-	
-	real_t lon = atan2(y.dval(), x.dval());
-
-	if (lon <= real_t(-GPlatesMaths::PI)) lon = real_t(GPlatesMaths::PI);
-
-	return
-	 LatLonPoint::LatLonPoint(
-	  radiansToDegrees(lat),
-	  radiansToDegrees(lon));
-}
-
-
-const GPlatesMaths::PolylineOnSphere
-GPlatesMaths::LatLonPointConversions::convertLatLonPointListToPolylineOnSphere(
- const std::list< LatLonPoint > &llp_list) {
-
-	std::list< PointOnSphere > pos_list;
-	std::transform(llp_list.begin(), llp_list.end(),
-	 std::back_inserter(pos_list),
-	 convertLatLonPointToPointOnSphere);
-	PolylineOnSphere polyline = PolylineOnSphere::create(pos_list);
-
-	// Yeah, this function is pretty short, but don't try to inline it; the
-	// invocation of 'PolylineOnSphere::create' is going to lead to a whole
-	// bunch of inlined template code.
-
-	return polyline;
+	return LatLonPoint::LatLonPoint(
+			GPlatesUtils::convert_rad_to_deg(lat),
+			GPlatesUtils::convert_rad_to_deg(lon));
 }

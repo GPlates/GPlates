@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,22 +25,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "SimpleGlobeOrientation.h"
+#include "ZoomGlobe.h"
+
+#include "qt-widgets/GlobeCanvas.h"
+#include "maths/LatLonPointConversions.h"
 
 
 void
-GPlatesGui::SimpleGlobeOrientation::move_handle_to_pos(
-		const GPlatesMaths::PointOnSphere &pos)
+GPlatesCanvasTools::ZoomGlobe::handle_left_click(
+		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+		bool is_on_globe)
 {
-	if (d_handle_pos == pos) {
-		// There's no difference between the positions, so nothing to do.
-		return;
-	}
-	GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(d_handle_pos, pos);
+	static const GPlatesMaths::PointOnSphere centre_of_canvas =
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
 
-	d_accum_rot = rot * d_accum_rot;
-	d_rev_accum_rot = d_accum_rot.get_reverse();
-	d_handle_pos = pos;
+	// First, re-orient the globe so the click-point is in the centre of the canvas.
+	globe().SetNewHandlePos(click_pos_on_globe);
+	globe().UpdateHandlePos(centre_of_canvas);
 
-	emit orientation_changed();
+	// Now, zoom in.
+	globe_canvas().zoom_in();
 }

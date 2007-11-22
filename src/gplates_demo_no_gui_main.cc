@@ -54,14 +54,17 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 
+#include "property-values/GpmlPlateId.h"
+#include "property-values/XsString.h"
+
 
 const GPlatesModel::FeatureHandle::weak_ref
 create_isochron(
 		GPlatesModel::ModelInterface &model,
 		GPlatesModel::FeatureCollectionHandle::weak_ref &target_collection,
 		const unsigned long &plate_id,
-		const double *points,
-		unsigned num_points,
+		const double *coords,
+		unsigned num_coords,
 		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
 		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end,
 		const UnicodeString &geographic_description,
@@ -73,39 +76,47 @@ create_isochron(
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model.create_feature(feature_type, target_collection);
 
-	const std::vector<double> points_vector(points, points + num_points);
+	const std::vector<double> coords_vector(coords, coords + num_coords);
 
-	GPlatesModel::PropertyContainer::non_null_ptr_type reconstruction_plate_id_container =
-			GPlatesModel::ModelUtils::create_reconstruction_plate_id(plate_id);
-	GPlatesModel::PropertyContainer::non_null_ptr_type center_line_of_container =
-			GPlatesModel::ModelUtils::create_center_line_of(points_vector);
-	GPlatesModel::PropertyContainer::non_null_ptr_type valid_time_container =
-			GPlatesModel::ModelUtils::create_valid_time(geo_time_instant_begin, geo_time_instant_end);
-	GPlatesModel::PropertyContainer::non_null_ptr_type name_container =
-			GPlatesModel::ModelUtils::create_name(name, codespace_of_name);
-
-	GPlatesModel::DummyTransactionHandle pc1(__FILE__, __LINE__);
-	feature_handle->append_property_container(reconstruction_plate_id_container, pc1);
-	pc1.commit();
-
-	GPlatesModel::DummyTransactionHandle pc2(__FILE__, __LINE__);
-	feature_handle->append_property_container(center_line_of_container, pc2);
-	pc2.commit();
-
-	GPlatesModel::DummyTransactionHandle pc3(__FILE__, __LINE__);
-	feature_handle->append_property_container(valid_time_container, pc3);
-	pc3.commit();
-
-	GPlatesPropertyValues::XsString::non_null_ptr_type description = 
-			GPlatesPropertyValues::XsString::create(geographic_description);
-		
+	// Wrap a "gpml:plateId" in a "gpml:ConstantValue" and append it as the
+	// "gpml:reconstructionPlateId" property.
+	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type recon_plate_id =
+			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			description, "gml:description", feature_handle);
+			GPlatesModel::ModelUtils::create_gpml_constant_value(recon_plate_id, "gpml:plateId"),
+			"gpml:reconstructionPlateId", feature_handle);
 
-	GPlatesModel::DummyTransactionHandle pc4(__FILE__, __LINE__);
-	feature_handle->append_property_container(name_container, pc4);
-	pc4.commit();
-	
+	std::list<GPlatesMaths::PointOnSphere> points;
+	GPlatesMaths::populate_point_on_sphere_sequence(points, coords_vector);
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_type polyline =
+			GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+	GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
+			GPlatesPropertyValues::GmlLineString::create(polyline);
+	GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
+			GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
+	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
+			GPlatesModel::ModelUtils::create_gpml_constant_value(
+					gml_orientable_curve, "gml:OrientableCurve");
+
+	GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
+			"gpml:centerLineOf", feature_handle);
+
+	GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time =
+			GPlatesModel::ModelUtils::create_gml_time_period(
+					geo_time_instant_begin, geo_time_instant_end);
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+			gml_valid_time, "gml:validTime", feature_handle);
+
+	GPlatesPropertyValues::XsString::non_null_ptr_type gml_description = 
+			GPlatesPropertyValues::XsString::create(geographic_description);
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+			gml_description, "gml:description", feature_handle);
+
+	GPlatesPropertyValues::XsString::non_null_ptr_type gml_name =
+			GPlatesPropertyValues::XsString::create(name);
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+			gml_name, "gml:name", "codeSpace", codespace_of_name, feature_handle);
+
 	return feature_handle;
 }
 
@@ -234,7 +245,7 @@ populate_feature_store(
 
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
-	static const double points1[] = {
+	static const double coords1[] = {
 		69.2877,
 		-5.5765,
 		69.1323,
@@ -252,7 +263,7 @@ populate_feature_store(
 		68.9400,
 		-1.8446,
 	};
-	static const unsigned num_points1 = sizeof(points1) / sizeof(points1[0]);
+	static const unsigned num_coords1 = sizeof(coords1) / sizeof(coords1[0]);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin1(10.9);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end1 =
 			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
@@ -261,13 +272,13 @@ populate_feature_store(
 	UnicodeString codespace_of_name1("EarthByte");
 
 	GPlatesModel::FeatureHandle::weak_ref isochron1 =
-			create_isochron(model, isochrons, plate_id1, points1, num_points1,
+			create_isochron(model, isochrons, plate_id1, coords1, num_coords1,
 					geo_time_instant_begin1, geo_time_instant_end1,
 					description1, name1, codespace_of_name1);
 
 	static const unsigned long plate_id2 = 702;
 	// lon, lat, lon, lat... is how GML likes it.
-	static const double points2[] = {
+	static const double coords2[] = {
 		41.9242,
 		-34.9340,
 		42.7035,
@@ -281,7 +292,7 @@ populate_feature_store(
 		46.3758,
 		-31.6947,
 	};
-	static const unsigned num_points2 = sizeof(points2) / sizeof(points2[0]);
+	static const unsigned num_coords2 = sizeof(coords2) / sizeof(coords2[0]);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin2(83.5);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end2 =
 			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
@@ -290,13 +301,13 @@ populate_feature_store(
 	UnicodeString codespace_of_name2("EarthByte");
 
 	GPlatesModel::FeatureHandle::weak_ref isochron2 =
-			create_isochron(model, isochrons, plate_id2, points2, num_points2,
+			create_isochron(model, isochrons, plate_id2, coords2, num_coords2,
 					geo_time_instant_begin2, geo_time_instant_end2,
 					description2, name2, codespace_of_name2);
 
 	static const unsigned long plate_id3 = 511;
 	// lon, lat, lon, lat... is how GML likes it.
-	static const double points3[] = {
+	static const double coords3[] = {
 		76.6320,
 		-18.1374,
 		77.9538,
@@ -314,7 +325,7 @@ populate_feature_store(
 		81.8522,
 		-21.9828,
 	};
-	static const unsigned num_points3 = sizeof(points3) / sizeof(points3[0]);
+	static const unsigned num_coords3 = sizeof(coords3) / sizeof(coords3[0]);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin3(40.1);
 	GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end3 =
 			GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
@@ -323,7 +334,7 @@ populate_feature_store(
 	UnicodeString codespace_of_name3("EarthByte");
 
 	GPlatesModel::FeatureHandle::weak_ref isochron3 =
-			create_isochron(model, isochrons, plate_id3, points3, num_points3,
+			create_isochron(model, isochrons, plate_id3, coords3, num_coords3,
 					geo_time_instant_begin3, geo_time_instant_end3,
 					description3, name3, codespace_of_name3);
 
@@ -459,14 +470,18 @@ output_reconstructions(
 		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
 				end3 = reconstruction->polyline_geometries().end();
 		for ( ; iter3 != end3; ++iter3) {
-			std::vector<GPlatesMaths::LatLonPoint> seq;
-			GPlatesMaths::LatLonPointConversions::populate_lat_lon_point_sequence(seq,
-					*(iter3->geometry()));
-			std::vector<GPlatesMaths::LatLonPoint>::iterator iter4 = seq.begin();
-			std::vector<GPlatesMaths::LatLonPoint>::iterator end4 = seq.end();
-			std::cout << "  - Polyline: (" << iter4->latitude() << ", " << iter4->longitude() << ")";
+			GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter4 =
+					iter3->geometry()->vertex_begin();
+			GPlatesMaths::PolylineOnSphere::vertex_const_iterator end4 =
+					iter3->geometry()->vertex_end();
+
+			{
+				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter4);
+				std::cout << "  - Polyline: (" << llp.latitude() << ", " << llp.longitude() << ")";
+			}
 			for (++iter4 ; iter4 != end4; ++iter4) {
-				std::cout << ", (" << iter4->latitude() << ", " << iter4->longitude() << ")";
+				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter4);
+				std::cout << ", (" << llp.latitude() << ", " << llp.longitude() << ")";
 			}
 			std::cout << std::endl;
 		}

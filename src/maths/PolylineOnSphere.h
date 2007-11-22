@@ -60,8 +60,7 @@ namespace GPlatesMaths
 	 *                                     polyline.vertex_end());
 	 * @endcode
 	 *
-	 * You can create a polyline by invoking either the static member
-	 * function @a PolylineOnSphere::create or the static member function
+	 * You can create a polyline by invoking the static member function
 	 * @a PolylineOnSphere::create_on_heap, passing it a sequential STL
 	 * container (list, vector, ...) of PointOnSphere to define the
 	 * vertices of the polyline.  The sequence of points must contain at
@@ -72,10 +71,10 @@ namespace GPlatesMaths
 	 * @a PolylineOnSphere::evaluate_construction_parameter_validity.
 	 *
 	 * Say you have a sequence of PointOnSphere: [A, B, C, D].  If you pass
-	 * this sequence to the @a PolylineOnSphere::create function, it will
-	 * create a polyline composed of 3 segments: A->B, B->C, C->D.  If you
-	 * subsequently iterate through the vertices of this polyline, you will
-	 * get the same sequence of points back again: A, B, C, D.
+	 * this sequence to the @a PolylineOnSphere::create_on_heap function, it
+	 * will create a polyline composed of 3 segments: A->B, B->C, C->D.  If
+	 * you subsequently iterate through the vertices of this polyline, you
+	 * will get the same sequence of points back again: A, B, C, D.
 	 */
 	class PolylineOnSphere
 	{
@@ -512,30 +511,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Create a new PolylineOnSphere instance from the sequence of points @a coll.
-		 *
-		 * @a coll should be a sequential STL container (list, vector, ...) of
-		 * PointOnSphere.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 *
-		 * FIXME:  We should really prohibit construction of PolylineOnSphere instances on
-		 * the stack, insisting that they are instead created on the heap, referenced by
-		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
-		 * which creates PolylineOnSphere instances on the stack, and changing all that
-		 * code to use non_null_intrusive_ptr would take too long to justify right now. 
-		 * But we should do it properly some day...
-		 *
-		 * Trac ticket: http://trac.gplates.org/ticket/3
-		 */
-		template<typename C>
-		static
-		const PolylineOnSphere
-		create(
-				const C &coll);
-
-
-		/**
 		 * Create a new PolylineOnSphere instance on the heap from the sequence of points
 		 * @a coll, and return an intrusive_ptr which points to the newly-created instance.
 		 *
@@ -549,28 +524,6 @@ namespace GPlatesMaths
 		const non_null_ptr_type
 		create_on_heap(
 				const C &coll);
-
-
-		/**
-		 * Create a copy-constructed PolylineOnSphere instance on the stack.
-		 *
-		 * This constructor should act exactly the same as the default (auto-generated)
-		 * copy-constructor would, except that it should initialise the ref-count to zero.
-		 *
-		 * FIXME:  We should really prohibit construction of PolylineOnSphere instances on
-		 * the stack, insisting that they are instead created on the heap, referenced by
-		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
-		 * which creates PolylineOnSphere instances on the stack, and changing all that
-		 * code to use noon_null_intrusive_ptr would take too long to justify right now. 
-		 * But we should do it properly some day...
-		 *
-		 * Trac ticket: http://trac.gplates.org/ticket/3
-		 */
-		PolylineOnSphere(
-				const PolylineOnSphere &other):
-			d_ref_count(0),
-			d_seq(other.d_seq)
-		{  }
 
 
 		/**
@@ -595,13 +548,6 @@ namespace GPlatesMaths
 		 * This copy-assignment operator should act exactly the same as the default
 		 * (auto-generated) copy-assignment operator would, except that it should not
 		 * assign the ref-count of @a other to this.
-		 *
-		 * It makes sense to define this operator, because: there are already going to be
-		 * instances of PolylineOnSphere on the stack (see the "FIXME" comment in the
-		 * copy-constructor above); there's no polymorphism involved, so there's no concern
-		 * about polymorphic slicing; and there's no class-behavioural or
-		 * efficiency-related reason why instances of this class should not be
-		 * copy-assignable.
 		 */
 		PolylineOnSphere &
 		operator=(
@@ -785,11 +731,13 @@ namespace GPlatesMaths
 	private:
 
 		/**
+		 * Create an empty PolylineOnSphere instance.
+		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of a polyline without any vertices.
 		 *
 		 * This constructor should never be invoked directly by client code; only through
-		 * the static 'create' functions.
+		 * the static 'create_on_heap' function.
 		 *
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * default-constructor would, except that it should initialise the ref-count to
@@ -797,6 +745,25 @@ namespace GPlatesMaths
 		 */
 		PolylineOnSphere():
 			d_ref_count(0)
+		{  }
+
+
+		/**
+		 * Create a copy-constructed PolylineOnSphere instance.
+		 *
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 *
+		 * This constructor should never be invoked directly by client code; only through
+		 * the 'clone_on_heap' function.
+		 *
+		 * This constructor should act exactly the same as the default (auto-generated)
+		 * copy-constructor would, except that it should initialise the ref-count to zero.
+		 */
+		PolylineOnSphere(
+				const PolylineOnSphere &other):
+			d_ref_count(0),
+			d_seq(other.d_seq)
 		{  }
 
 
@@ -834,9 +801,8 @@ namespace GPlatesMaths
 
 
 		/**
-		 * This is the minimum number of (distinct) collection points
-		 * to be passed into a 'create' function to enable creation of
-		 * a closed, well-defined polygon.
+		 * This is the minimum number of (distinct) collection points to be passed into the
+		 * 'create_on_heap' function to enable creation of a closed, well-defined polygon.
 		 */
 		static const unsigned s_min_num_collection_points;
 
@@ -1006,17 +972,6 @@ namespace GPlatesMaths
 
 
 	template<typename C>
-	const PolylineOnSphere
-	PolylineOnSphere::create(
-			const C &coll)
-	{
-		PolylineOnSphere p;
-		generate_segments_and_swap(p, coll);
-		return p;
-	}
-
-
-	template<typename C>
 	const PolylineOnSphere::non_null_ptr_type
 	PolylineOnSphere::create_on_heap(
 			const C &coll)
@@ -1037,15 +992,9 @@ namespace GPlatesMaths
 			// The collection does not contain enough points to
 			// create even one line-segment.
 			
-			// FIXME:  I don't like throwing in a header-file.
-			//throw InvalidPolylineException("Attempted to create a "
-			//		"polyline from an insufficient number (ie, less than "
-			//		"2) of endpoints.");
-
-			// FIXME: Need to uncomment the above and throw instead of
-			//		returning and failing silently, but only when the thrown
-			//		exception is caught and handled.
-			return;
+			throw InvalidPolylineException("Attempted to create a "
+					"polyline from an insufficient number (ie, less than "
+					"2) of endpoints.");
 		}
 
 		// Make it easier to provide strong exception safety by
@@ -1069,15 +1018,9 @@ namespace GPlatesMaths
 			// No line-segments were created, which must mean that
 			// all points in the collection were identical.
 			
-			// FIXME:  I don't like throwing in a header-file.
-			//throw InvalidPolylineException("Attempted to create a "
-			//		"polyline from an insufficient number (ie, less than "
-			//		"2) of unique endpoints.");
-
-			// FIXME: Need to uncomment the above and throw instead of
-			//		returning and failing silently, but only when the thrown
-			//		exception is caught and handled.
-			return;
+			throw InvalidPolylineException("Attempted to create a "
+					"polyline from an insufficient number (ie, less than "
+					"2) of unique endpoints.");
 		}
 		poly.d_seq.swap(tmp_seq);
 	}

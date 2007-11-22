@@ -29,12 +29,16 @@
 #define GPLATES_MATHS_POINTONSPHERE_H
 
 #include <iosfwd>
+
 #include "UnitVector3D.h"
+#include "LatLonPointConversions.h"
+#include "TrailingLatLonCoordinateException.h"
+#include "InvalidLatLonCoordinateException.h"
 #include "utils/non_null_intrusive_ptr.h"
 
 
-namespace GPlatesMaths {
-
+namespace GPlatesMaths
+{
 	class GreatCircleArc;
 
 	/** 
@@ -51,6 +55,16 @@ namespace GPlatesMaths {
 	class PointOnSphere
 	{
 	public:
+
+		/**
+		 * This is the North Pole (latitude \f$ 90^\circ \f$).
+		 */
+		static const PointOnSphere north_pole;
+
+		/**
+		 * This is the South Pole (latitude \f$ -90^\circ \f$).
+		 */
+		static const PointOnSphere south_pole;
 
 		/**
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PointOnSphere>.
@@ -99,14 +113,12 @@ namespace GPlatesMaths {
 		/**
 		 * Create a new PointOnSphere instance from the unit vector @a position_vector_.
 		 *
-		 * FIXME:  We should really prohibit construction of PointOnSphere instances on the
-		 * stack, insisting that they are instead created on the heap, referenced by
-		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
-		 * which creates PointOnSphere instances on the stack, and changing all that code
-		 * to use non_null_intrusive_ptr would take too long to justify right now.  But we
-		 * should do it properly some day...
-		 *
-		 * Trac ticket: http://trac.gplates.org/ticket/3
+		 * Note that, in contrast to variable-length geometries like PolylineOnSphere and
+		 * PolygonOnSphere, a PointOnSphere has an internal representation which is fixed
+		 * in size and known in advance (and relatively small, in fact -- only 3 'double's
+		 * and a single 'long'), so memory allocation is not needed when a PointOnSphere
+		 * instance is copied.  For this reason, it's not such a tragedy if PointOnSphere
+		 * instances are instantiated on the stack and copied into containers by value.
 		 */
 		explicit 
 		PointOnSphere(
@@ -122,14 +134,12 @@ namespace GPlatesMaths {
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 *
-		 * FIXME:  We should really prohibit construction of PointOnSphere instances on the
-		 * stack, insisting that they are instead created on the heap, referenced by
-		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
-		 * which creates PointOnSphere instances on the stack, and changing all that code
-		 * to use non_null_intrusive_ptr would take too long to justify right now.  But we
-		 * should do it properly some day...
-		 *
-		 * Trac ticket: http://trac.gplates.org/ticket/3
+		 * Note that, in contrast to variable-length geometries like PolylineOnSphere and
+		 * PolygonOnSphere, a PointOnSphere has an internal representation which is fixed
+		 * in size and known in advance (and relatively small, in fact -- only 3 'double's
+		 * and a single 'long'), so memory allocation is not needed when a PointOnSphere
+		 * instance is copied.  For this reason, it's not such a tragedy if PointOnSphere
+		 * instances are instantiated on the stack and copied into containers by value.
 		 */
 		PointOnSphere(
 				const PointOnSphere &other) :
@@ -146,13 +156,6 @@ namespace GPlatesMaths {
 		 * This copy-assignment operator should act exactly the same as the default
 		 * (auto-generated) copy-assignment operator would, except that it should
 		 * not assign the ref-count of @a other to this.
-		 *
-		 * It makes sense to define this operator, because: there are already going
-		 * to be instances of PointOnSphere on the stack (see the "FIXME" comment
-		 * in the copy-constructor above); there's no polymorphism involved, so
-		 * there's no concern about polymorphic slicing; and there's no
-		 * class-behavioural or efficiency-related reason why instances of this
-		 * class should not be copy-assignable.
 		 */
 		PointOnSphere &
 		operator=(
@@ -338,6 +341,41 @@ namespace GPlatesMaths {
 	}
 
 
+	/**
+	 * Count the number of distinct adjacent points in the sequence @a point_seq of type S
+	 * (which is assumed to be a sequence of PointOnSphere).
+	 */
+	template<typename S>
+	typename S::size_type
+	count_distinct_adjacent_points(
+			const S &point_seq);
+
+
+	/**
+	 * Populate the supplied (presumably empty) destination sequence @a dest_seq of type D
+	 * (which is assumed to be a sequence of type PointOnSphere) from the source sequence
+	 * @a source_seq of type S (which is assumed to be a sequence of double).
+	 *
+	 * The source sequence is assumed to contain doubles in the order used by GML in a
+	 * "gml:posList" property in a "gml:LineString" geometry -- that is, each consecutive pair
+	 * of doubles represents the (longitude, latitude) of a point: lon, lat, lon, lat, ...
+	 *
+	 * Note that this is the reverse of the usual (latitude, longitude) representation used in
+	 * GPlates.
+	 *
+	 * It is presumed that the destination sequence is empty -- or its contents unimportant --
+	 * since its contents, if any, will be swapped out into a temporary sequence and discarded
+	 * at the end of the function.
+	 *
+	 * This function is strongly exception-safe and exception-neutral.
+	 */
+	template<typename S, typename D>
+	void
+	populate_point_on_sphere_sequence(
+			D &dest_seq,
+			const S &source_seq);
+
+
 	std::ostream &
 	operator<<(
 			std::ostream &os,
@@ -368,6 +406,70 @@ namespace GPlatesMaths {
 	 * This routine exports the Python wrapper class and associated functionality
 	 */
 	void export_PointOnSphere();
+}
+
+
+template<typename S>
+typename S::size_type
+GPlatesMaths::count_distinct_adjacent_points(
+		const S &point_seq)
+{
+	// We'll assume that S provides at least forward iterators.
+	typename S::const_iterator iter = point_seq.begin(), end = point_seq.end();
+
+	if (iter == end) {
+		// The container is empty.
+		return 0;
+	}
+	// else, the container is not empty.
+	PointOnSphere recent = *iter;
+	typename S::size_type num_distinct_adjacent_points = 1;
+	for (++iter; iter != end; ++iter) {
+		if (*iter != recent) {
+			++num_distinct_adjacent_points;
+			recent = *iter;
+		}
+	}
+	return num_distinct_adjacent_points;
+}
+
+
+template<typename S, typename D>
+void
+GPlatesMaths::populate_point_on_sphere_sequence(
+		D &dest_seq,
+		const S &source_seq)
+{
+	D tmp_seq;
+
+	// First, verify that the source is of an even length -- otherwise, there will be a
+	// trailing coordinate which cannot be paired.
+	if ((source_seq.size() % 2) != 0) {
+		// Uh oh, it's an odd-length collection.
+		// Note that, since the length of the sequence is odd, the length must be
+		// greater than zero, so there must be at least one element.
+		throw TrailingLatLonCoordinateException(source_seq.back(), source_seq.size());
+	}
+	typename S::const_iterator iter = source_seq.begin(), end = source_seq.end();
+	for (unsigned coord_index = 0; iter != end; ++iter, ++coord_index) {
+		double lon = *iter;
+		if ( ! LatLonPoint::is_valid_longitude(lon)) {
+			throw InvalidLatLonCoordinateException(lon,
+					InvalidLatLonCoordinateException::LongitudeCoord,
+					coord_index);
+		}
+		++iter;
+		double lat = *iter;
+		if ( ! LatLonPoint::is_valid_latitude(lat)) {
+			throw InvalidLatLonCoordinateException(lat,
+					InvalidLatLonCoordinateException::LatitudeCoord,
+					coord_index);
+		}
+		LatLonPoint llp(lat, lon);
+		tmp_seq.push_back(make_point_on_sphere(llp));
+	}
+
+	dest_seq.swap(tmp_seq);
 }
 
 #endif  // GPLATES_MATHS_POINTONSPHERE_H

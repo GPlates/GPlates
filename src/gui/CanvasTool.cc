@@ -48,7 +48,6 @@ GPlatesGui::CanvasTool::reorient_globe_by_drag_update(
 		d_is_in_reorientation_op = true;
 	}
 	d_globe_ptr->UpdateHandlePos(current_pos_on_globe);
-	d_globe_canvas_ptr->update_canvas();
 }
 
 
@@ -65,6 +64,5 @@ GPlatesGui::CanvasTool::reorient_globe_by_drag_release(
 		d_is_in_reorientation_op = true;
 	}
 	d_globe_ptr->UpdateHandlePos(current_pos_on_globe);
-	d_globe_canvas_ptr->update_canvas();
 	d_is_in_reorientation_op = false;
 }

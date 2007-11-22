@@ -270,9 +270,7 @@ namespace
 			 GetTimeWindow(element),
 			 "", "",  // These are only used by the PLATES format.
 			 GetAttributes(element),
-			 LatLonPointConversions::
-			  convertLatLonPointToPointOnSphere(
-					GetLatLonPoint(*list.begin())));
+			 make_point_on_sphere(GetLatLonPoint(*list.begin())));
 	}
 
 	
@@ -301,8 +299,7 @@ namespace
 		std::transform(nodes.begin(), nodes.end(),
 			std::back_inserter(coordlist), &GetLatLonPoint);
 
-		return LatLonPointConversions::
-				convertLatLonPointListToPolylineOnSphere(coordlist);
+		return make_polyline_on_sphere(coordlist);
 	}
 
 	

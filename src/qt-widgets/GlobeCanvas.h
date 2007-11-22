@@ -123,11 +123,11 @@ namespace GPlatesQtWidgets
 
 		void
 		draw_polyline(
-				const GPlatesMaths::PolylineOnSphere &polyline);
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline);
 
 		void
 		draw_point(
-				const GPlatesMaths::PointOnSphere &point);
+				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point);
 
 		void
 		update_canvas();
@@ -170,6 +170,9 @@ namespace GPlatesQtWidgets
 		}
 
 	public slots:
+		void
+		notify_of_orientation_change();
+
 		void
 		zoom_in();
 

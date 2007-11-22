@@ -41,7 +41,7 @@ GPlatesPropertyValues::GmlPoint::create(
 
 	// FIXME:  Check the validity of the lat/lon coords using functions in LatLonPoint.
 	LatLonPoint llp(lat, lon);
-	PointOnSphere p = LatLonPointConversions::convertLatLonPointToPointOnSphere(llp);
+	PointOnSphere p = make_point_on_sphere(llp);
 
 	non_null_ptr_type point_ptr(
 			*(new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()))));

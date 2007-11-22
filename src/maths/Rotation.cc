@@ -33,13 +33,13 @@
 #include "InvalidOperationException.h"
 
 
-namespace {
-
+namespace
+{
 	inline
-	GPlatesMaths::real_t
+	const GPlatesMaths::real_t
 	calculate_d_value(
-	 const GPlatesMaths::UnitQuaternion3D &uq) {
-
+			const GPlatesMaths::UnitQuaternion3D &uq)
+	{
 		const GPlatesMaths::real_t &s = uq.scalar_part();
 		const GPlatesMaths::Vector3D &v = uq.vector_part();
 
@@ -48,26 +48,24 @@ namespace {
 
 
 	inline
-	GPlatesMaths::Vector3D
+	const GPlatesMaths::Vector3D
 	calculate_e_value(
-	 const GPlatesMaths::UnitQuaternion3D &uq) {
-
+			const GPlatesMaths::UnitQuaternion3D &uq)
+	{
 		const GPlatesMaths::real_t &s = uq.scalar_part();
 		const GPlatesMaths::Vector3D &v = uq.vector_part();
 
 		return ((2.0 * s) * v);
 	}
-
 }
 
 
-GPlatesMaths::Rotation
-GPlatesMaths::Rotation::Create(
- const UnitVector3D &rotation_axis,
- const real_t &rotation_angle) {
-
-	UnitQuaternion3D uq =
-	 UnitQuaternion3D::create_rotation(rotation_axis, rotation_angle);
+const GPlatesMaths::Rotation
+GPlatesMaths::Rotation::create(
+		const UnitVector3D &rotation_axis,
+		const real_t &rotation_angle)
+{
+	UnitQuaternion3D uq = UnitQuaternion3D::create_rotation(rotation_axis, rotation_angle);
 
 	// These values are used to optimise rotation of points on the sphere.
 	real_t d = calculate_d_value(uq);
@@ -77,11 +75,11 @@ GPlatesMaths::Rotation::Create(
 }
 
 
-GPlatesMaths::Rotation
-GPlatesMaths::Rotation::Create(
- const UnitVector3D &initial,
- const UnitVector3D &final) {
-
+const GPlatesMaths::Rotation
+GPlatesMaths::Rotation::create(
+		const UnitVector3D &initial,
+		const UnitVector3D &final)
+{
 	real_t dp = dot(initial, final);
 	if (abs(dp) >= 1.0) {
 
@@ -103,7 +101,7 @@ GPlatesMaths::Rotation::Create(
 			 * 
 			 * For simplicity, let's use 'initial' as the axis.
 			 */
-			return Rotation::Create(initial, 0.0);
+			return Rotation::create(initial, 0.0);
 
 		} else {
 
@@ -117,7 +115,7 @@ GPlatesMaths::Rotation::Create(
 			 * 'initial'.
 			 */
 			UnitVector3D axis = generate_perpendicular(initial);
-			return Rotation::Create(axis, PI);
+			return Rotation::create(axis, PI);
 		}
 
 	} else {
@@ -133,31 +131,31 @@ GPlatesMaths::Rotation::Create(
 		 */
 		UnitVector3D axis = cross(initial, final).get_normalisation();
 		real_t angle = acos(dp);
-		return Rotation::Create(axis, angle);
+		return Rotation::create(axis, angle);
 	}
 }
 
 
-GPlatesMaths::UnitVector3D
-GPlatesMaths::Rotation::operator*(const UnitVector3D &uv) const {
-
+const GPlatesMaths::UnitVector3D
+GPlatesMaths::Rotation::operator*(
+		const UnitVector3D &uv) const
+{
 	Vector3D v(uv);
 
-	Vector3D v_rot =
-	 _d * v +
-	 (2.0 * dot(_quat.vector_part(), v)) * _quat.vector_part() +
-	 cross(_e, v);
+	Vector3D v_rot = d_d * v +
+			(2.0 * dot(d_quat.vector_part(), v)) * d_quat.vector_part() +
+			cross(d_e, v);
 
 	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z());
 }
 
 
-GPlatesMaths::Rotation
-GPlatesMaths::Rotation::Create(
- const UnitQuaternion3D &uq,
- const UnitVector3D &rotation_axis,
- const real_t &rotation_angle) {
-
+const GPlatesMaths::Rotation
+GPlatesMaths::Rotation::create(
+		const UnitQuaternion3D &uq,
+		const UnitVector3D &rotation_axis,
+		const real_t &rotation_angle)
+{
 	// These values are used to optimise rotation of points on the sphere.
 	real_t d = calculate_d_value(uq);
 	Vector3D e = calculate_e_value(uq);
@@ -166,9 +164,11 @@ GPlatesMaths::Rotation::Create(
 }
 
 
-GPlatesMaths::Rotation
-GPlatesMaths::operator*(const Rotation &r1, const Rotation &r2) {
-
+const GPlatesMaths::Rotation
+GPlatesMaths::operator*(
+		const Rotation &r1,
+		const Rotation &r2)
+{
 	UnitQuaternion3D resultant_uq = r1.quat() * r2.quat();
 	if (represents_identity_rotation(resultant_uq)) {
 
@@ -178,7 +178,7 @@ GPlatesMaths::operator*(const Rotation &r1, const Rotation &r2) {
 		 *
 		 * For simplicity, let's use the axis of 'r1' as the axis.
 		 */
-		return Rotation::Create(resultant_uq, r1.axis(), 0.0);
+		return Rotation::create(resultant_uq, r1.axis(), 0.0);
 
 	} else {
 
@@ -189,7 +189,6 @@ GPlatesMaths::operator*(const Rotation &r1, const Rotation &r2) {
 		UnitQuaternion3D::RotationParams params =
 		 resultant_uq.get_rotation_params();
 
-		return
-		 Rotation::Create(resultant_uq, params.axis, params.angle);
+		return Rotation::create(resultant_uq, params.axis, params.angle);
 	}
 }

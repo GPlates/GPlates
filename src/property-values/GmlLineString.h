@@ -54,36 +54,31 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>
 				non_null_ptr_to_const_type;
 
+		/**
+		 * A convenience typedef for the internal polyline representation.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+				internal_polyline_type;
+
 		virtual
 		~GmlLineString()
 		{  }
 
 		/**
-		 * Create a GmlLineString instance from a sequence of longitude and latitude
-		 * coordinates.
-		 *
-		 * This sequence of coordinates corresponds to the contents of the "gml:posList"
-		 * property in a "gml:LineString" structural-type.  Each pair of coordinates in the
-		 * sequence is expected to be a (lon, lat) duple which describes the position of a
-		 * vertex (or end-point) of the line-string.  (That is, the sequence of coordinates
-		 * will be interpreted as: lon, lat, lon, lat, ...)  This is the form used in GML.
+		 * Create a GmlLineString instance which contains a copy of @a polyline_.
 		 */
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
-				const std::vector<double> &gml_pos_list);
+				const internal_polyline_type &polyline_);
 
 		/**
 		 * Create a duplicate of this PropertyValue instance.
 		 */
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone() const {
+		clone() const
+		{
 			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GmlLineString(*this)));
 			return dup;
 		}
@@ -98,8 +93,9 @@ namespace GPlatesPropertyValues
 		 * GPlatesMaths::PolylineOnSphere within this instance, set a new value using the
 		 * function @a set_polyline below.
 		 */
-		const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
-		polyline() const {
+		const internal_polyline_type
+		polyline() const
+		{
 			return d_polyline;
 		}
 
@@ -108,7 +104,8 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_polyline(
-				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> p) {
+				const internal_polyline_type &p)
+		{
 			d_polyline = p;
 		}
 
@@ -121,7 +118,8 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gml_line_string(*this);
 		}
 
@@ -134,7 +132,8 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gml_line_string(*this);
 		}
 
@@ -144,7 +143,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GmlLineString(
-				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> polyline_):
+				const internal_polyline_type &polyline_):
 			PropertyValue(),
 			d_polyline(polyline_)
 		{  }
@@ -163,7 +162,7 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> d_polyline;
+		internal_polyline_type d_polyline;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

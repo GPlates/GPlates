@@ -44,7 +44,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 
 	// FIXME:  Check the validity of the lat/lon coords using functions in LatLonPoint.
 	LatLonPoint llp(lat, lon);
-	PointOnSphere p = LatLonPointConversions::convertLatLonPointToPointOnSphere(llp);
+	PointOnSphere p = make_point_on_sphere(llp);
 	FiniteRotation fr = FiniteRotation::create(p, degreesToRadians(gml_angle_in_degrees));
 
 	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));

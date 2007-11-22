@@ -58,49 +58,51 @@ namespace
 	 * This table is sourced from http://trac.gplates.org/wiki/ReadErrorMessages .
 	 */
 	static ReadErrorDescription description_table[] = {
-		// Errors from PLATES Line Format files:
+		// Errors from PLATES line-format files:
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesRegionNumber,
-				QT_TR_NOOP("Invalid 'Region Number' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Region Number' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesReferenceNumber,
-				QT_TR_NOOP("Invalid 'Reference Number' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Reference Number' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesStringNumber,
-				QT_TR_NOOP("Invalid 'String Number' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'String Number' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesGeographicDescription,
-				QT_TR_NOOP("Invalid 'Geographic Description' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Geographic Description' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesPlateIdNumber,
-				QT_TR_NOOP("Invalid 'Plate Id Number' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Plate Id Number' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfAppearance,
-				QT_TR_NOOP("Invalid 'Age Of Appearance' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Age Of Appearance' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesAgeOfDisappearance,
-				QT_TR_NOOP("Invalid 'Age Of Disappearance' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Age Of Disappearance' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCode,
-				QT_TR_NOOP("Invalid 'Data Type Code' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Data Type Code' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumber,
-				QT_TR_NOOP("Invalid 'Data Type Code Number' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Data Type Code Number' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesDataTypeCodeNumberAdditional,
-				QT_TR_NOOP("Invalid 'Data Type Code Number Additional' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Data Type Code Number Additional' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesConjugatePlateIdNumber,
-				QT_TR_NOOP("Invalid 'Conjugate Plate Id Number' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Conjugate Plate Id Number' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesColourCode,
-				QT_TR_NOOP("Invalid 'Colour Code' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Colour Code' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesNumberOfPoints,
-				QT_TR_NOOP("Invalid 'Number Of Points' encountered when parsing PLATES line format header.") },
+				QT_TR_NOOP("Invalid 'Number Of Points' encountered when parsing PLATES line-format header.") },
 		{ GPlatesFileIO::ReadErrors::UnknownPlatesDataTypeCode,
-				QT_TR_NOOP("The 'Data Type Code' in the PLATES header is not recognized by GPlates' PLATES Line Format Reader.") },
+				QT_TR_NOOP("The 'Data Type Code' in the PLATES header is not recognized by GPlates' PLATES line-format reader.") },
 		{ GPlatesFileIO::ReadErrors::MissingPlatesPolylinePoint,
-				QT_TR_NOOP("A poly line point in a PLATES line format file was expected, but not found.") },
+				QT_TR_NOOP("A point in a PLATES line-format file was expected, but not found.") },
 		{ GPlatesFileIO::ReadErrors::MissingPlatesHeaderSecondLine,
-				QT_TR_NOOP("The second line of the PLATES header was not found when parsing a PLATES line format file.") },
+				QT_TR_NOOP("The second line of the PLATES header was not found when parsing a PLATES line-format file.") },
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesPolylinePoint,
-				QT_TR_NOOP("A polyline in a PLATES line format file was invalid (was not of '<latitude> <longtitude> <plotter code>' form).") },
-		{ GPlatesFileIO::ReadErrors::BadPlatesPolylinePlotterCode,
-				QT_TR_NOOP("The plotter code in a PLATES poly line point was invalid (not pen-up or pen-down).") },
-		{ GPlatesFileIO::ReadErrors::BadPlatesPolylineLatitude,
-				QT_TR_NOOP("The latitude in a PLATES poly line point was invalid (not between -90 and 90).") },
-		{ GPlatesFileIO::ReadErrors::BadPlatesPolylineLongitude,
-				QT_TR_NOOP("The longtitude in a PLATES poly line point was invalid (not between -360 and 360).") },
+				QT_TR_NOOP("A point in a PLATES line-format file was malformed (was not of '<latitude> <longtitude> <plotter code>' form).") },
+		{ GPlatesFileIO::ReadErrors::InvalidPlatesPolylinePlotterCode,
+				QT_TR_NOOP("The plotter code of a PLATES line-format point was invalid (not pen-up or pen-down).") },
+		{ GPlatesFileIO::ReadErrors::InvalidPlatesPolylineLatitude,
+				QT_TR_NOOP("The latitude of a PLATES line-format point was invalid (not in the range [-90, 90]).") },
+		{ GPlatesFileIO::ReadErrors::InvalidPlatesPolylineLongitude,
+				QT_TR_NOOP("The longtitude of a PLATES line-format point was invalid (not in the range [-360, 360]).") },
+		{ GPlatesFileIO::ReadErrors::AdjacentSkipToPlotterCodes,
+				QT_TR_NOOP("A 'skip to' plotter code followed immediately after another 'skip to' plotter code.") },
 		
-		// Errors from PLATES Rotation Format files:
+		// Errors from PLATES rotation-format files:
 		{ GPlatesFileIO::ReadErrors::CommentMovingPlateIdAfterNonCommentSequence,
 				QT_TR_NOOP("A commented-out pole was found after a non-commented-out sequence.") },
 		{ GPlatesFileIO::ReadErrors::ErrorReadingFixedPlateId,
@@ -135,13 +137,15 @@ namespace
 	 * This table is sourced from http://trac.gplates.org/wiki/ReadErrorMessages .
 	 */
 	static ReadErrorResult result_table[] = {
-		// Errors from PLATES Line Format files:
+		// Errors from PLATES line-format files:
 		{ GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated,
 				QT_TR_NOOP("Because the 'Data Type Code' was not known, Unclassified Features will be created.") },
 		{ GPlatesFileIO::ReadErrors::FeatureDiscarded,
 				QT_TR_NOOP("The feature was discarded due to errors encountered when parsing.") },
+		{ GPlatesFileIO::ReadErrors::NoGeometryCreatedByMovement,
+				QT_TR_NOOP("No new geometry was created by the 'pen movement'.") },
 
-		// Errors from PLATES Rotation Format files:
+		// Errors from PLATES rotation-format files:
 		{ GPlatesFileIO::ReadErrors::EmptyCommentCreated,
 				QT_TR_NOOP("An empty comment was created.") },
 		{ GPlatesFileIO::ReadErrors::ExclMarkInsertedAtCommentStart,
@@ -336,8 +340,7 @@ const QString GPlatesQtWidgets::ReadErrorAccumulationDialog::s_information_dialo
 		"aware that other programs may handle the ambiguous data differently. </li>\n"
 		"</ul>\n"
 		"<i>Please be aware that all software needs to respond to situations such as these; "
-		"GPlates is simply informing you when these situations occur! The integrity of your "
-		"data is important to us!</i>\n"
+		"GPlates is simply informing you when these situations occur!<i>\n"
 		"</body></html>\n");
 
 const QString GPlatesQtWidgets::ReadErrorAccumulationDialog::s_information_dialog_title = QObject::tr(
@@ -556,6 +559,3 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::get_result_as_string(
 		return result_not_found;
 	}
 }
-
-
-

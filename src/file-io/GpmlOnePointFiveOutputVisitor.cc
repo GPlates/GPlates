@@ -113,11 +113,10 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = polyline_ptr->vertex_begin();
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline_ptr->vertex_end();
 	for ( ; iter != end; ++iter) {
-		GPlatesMaths::LatLonPoint llp =
-				GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*iter);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
 
-		pos_list.push_back(llp.longitude().dval());
-		pos_list.push_back(llp.latitude().dval());
+		pos_list.push_back(llp.longitude());
+		pos_list.push_back(llp.latitude());
 	}
 	d_output.write_line_of_multi_decimal_content(pos_list.begin(), pos_list.end());
 
@@ -144,9 +143,8 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_point(
 	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:pos");
 
 	const GPlatesMaths::PointOnSphere &pos = *gml_point.point();
-	GPlatesMaths::LatLonPoint llp =
-			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(pos);
-	d_output.write_line_of_decimal_duple_content(llp.longitude().dval(), llp.latitude().dval());
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+	d_output.write_line_of_decimal_duple_content(llp.longitude(), llp.latitude());
 }
 
 

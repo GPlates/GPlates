@@ -46,8 +46,8 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 	 * and the great-circle of longitude (which is defined to be "directed"
 	 * from the South Pole up to the origin).
 	 */
-	SmallCircle line_of_lat(GPlatesMaths::NorthPole.position_vector(), origin);
-	GreatCircle line_of_lon(GPlatesMaths::SouthPole, origin);
+	SmallCircle line_of_lat(GPlatesMaths::PointOnSphere::north_pole.position_vector(), origin);
+	GreatCircle line_of_lon(GPlatesMaths::PointOnSphere::south_pole, origin);
 
 	/*
 	 * Ensure that the point 'next_along_lat' lies on the circle of
@@ -114,7 +114,7 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 void
 GPlatesMaths::GridOnSphere::EnsureValidOrigin(const PointOnSphere &o) {
 
-	real_t dp = dot(o.position_vector(), GPlatesMaths::NorthPole.position_vector());
+	real_t dp = dot(o.position_vector(), GPlatesMaths::PointOnSphere::north_pole.position_vector());
 	if (dp >= 1.0) {
 
 		// origin lies on North pole
@@ -225,7 +225,7 @@ namespace {
 
 		using namespace GPlatesMaths;
 
-		Rotation r = Rotation::Create(rot_axis, rot_angle);
+		Rotation r = Rotation::create(rot_axis, rot_angle);
 		return PointOnSphere(r * p);
 	}
 

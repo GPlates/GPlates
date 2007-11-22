@@ -102,19 +102,18 @@ GPlatesCanvasTools::QueryFeature::handle_left_click(
 			qfp_dialog().set_angle(0.0);
 		} else {
 			using namespace GPlatesMaths;
-			using LatLonPointConversions::convertPointOnSphereToLatLonPoint;
 
 			UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
 
 			PointOnSphere euler_pole(params.axis);
-			LatLonPoint llp = convertPointOnSphereToLatLonPoint(euler_pole);
+			LatLonPoint llp = make_lat_lon_point(euler_pole);
 
 			// Use the default locale for the floating-point-to-string conversion.
 			// (We need the underscore at the end of the variable name, because
 			// apparently there is already a member of QueryFeature named 'locale'.)
 			QLocale locale_;
-			QString euler_pole_lat = locale_.toString(llp.latitude().dval());
-			QString euler_pole_lon = locale_.toString(llp.longitude().dval());
+			QString euler_pole_lat = locale_.toString(llp.latitude());
+			QString euler_pole_lon = locale_.toString(llp.longitude());
 			QString euler_pole_as_string;
 			euler_pole_as_string.append(euler_pole_lat);
 			euler_pole_as_string.append(QObject::tr(" ; "));

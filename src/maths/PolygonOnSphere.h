@@ -57,8 +57,7 @@ namespace GPlatesMaths
 	 *                                     polygon.vertex_end());
 	 * @endcode
 	 *
-	 * You can create a polygon by invoking either the static member
-	 * function @a PolygonOnSphere::create or the static member function
+	 * You can create a polygon by invoking the static member function
 	 * @a PolygonOnSphere::create_on_heap, passing it a sequential STL
 	 * container (list, vector, ...) of PointOnSphere to define the
 	 * vertices of the polygon.  The sequence of points must contain at
@@ -69,8 +68,8 @@ namespace GPlatesMaths
 	 * @a PolygonOnSphere::evaluate_construction_parameter_validity.
 	 *
 	 * Say you have a sequence of PointOnSphere: [A, B, C, D].  If you pass
-	 * this sequence to the @a PolygonOnSphere::create function, it will
-	 * create a polygon composed of 4 segments: A->B, B->C, C->D and D->A. 
+	 * this sequence to the @a PolygonOnSphere::create_on_heap function, it
+	 * will create a polygon composed of 4 segments: A->B, B->C, C->D and D->A. 
 	 * If you subsequently iterate through the vertices of this polygon,
 	 * you will get the same sequence of points back again: A, B, C, D.
 	 */
@@ -457,30 +456,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Create a new PolygonOnSphere instance from the sequence of points @a coll.
-		 *
-		 * @a coll should be a sequential STL container (list, vector, ...) of
-		 * PointOnSphere.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 *
-		 * FIXME:  We should really prohibit construction of PolygonOnSphere instances on
-		 * the stack, insisting that they are instead created on the heap, referenced by
-		 * non_null_intrusive_ptr.  However, there is a substantial amount of existing code
-		 * which creates PolygonOnSphere instances on the stack, and changing all that code
-		 * to use non_null_intrusive_ptr would take too long to justify right now.  But we
-		 * should do it properly some day...
-		 *
-		 * Trac ticket: http://trac.gplates.org/ticket/3
-		 */
-		template<typename C>
-		static
-		const PolygonOnSphere
-		create(
-				const C &coll);
-
-
-		/**
 		 * Create a new PolygonOnSphere instance on the heap from the sequence of points
 		 * @a coll, and return an intrusive_ptr which points to the newly-created instance.
 		 *
@@ -494,6 +469,39 @@ namespace GPlatesMaths
 		const non_null_ptr_type
 		create_on_heap(
 				const C &coll);
+
+
+		/**
+		 * Clone this PolygonOnSphere instance, to create a duplicate instance on the heap.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		const PolygonOnSphere::non_null_ptr_type
+		clone_on_heap() const
+		{
+			PolygonOnSphere::non_null_ptr_type dup(*(new PolygonOnSphere(*this)));
+			return dup;
+		}
+
+
+		/**
+		 * Copy-assign the value of @a other to this.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 *
+		 * This copy-assignment operator should act exactly the same as the default
+		 * (auto-generated) copy-assignment operator would, except that it should not
+		 * assign the ref-count of @a other to this.
+		 */
+		PolygonOnSphere &
+		operator=(
+				const PolygonOnSphere &other)
+		{
+			// Use the copy+swap idiom to enable strong exception safety.
+			PolygonOnSphere dup(other);
+			this->swap(dup);
+			return *this;
+		}
 
 
 		/**
@@ -653,11 +661,13 @@ namespace GPlatesMaths
 	 private:
 
 		/**
+		 * Create an empty PolygonOnSphere instance.
+		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of a polygon without any vertices.
 		 *
 		 * This constructor should never be invoked directly by client code; only through
-		 * the static 'create' functions.
+		 * the static 'create_on_heap' function.
 		 *
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * default-constructor would, except that it should initialise the ref-count to
@@ -671,11 +681,14 @@ namespace GPlatesMaths
 		/**
 		 * Create a copy-constructed PolygonOnSphere instance.
 		 *
-		 * This constructor should act exactly the same as the default (auto-generated)
-		 * copy-constructor would, except that it should initialise the ref-count to zero.
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
 		 *
 		 * This constructor should never be invoked directly by client code; only through
-		 * static 'create' functions.
+		 * the 'clone_on_heap' function.
+		 *
+		 * This constructor should act exactly the same as the default (auto-generated)
+		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 */
 		PolygonOnSphere(
 				const PolygonOnSphere &other):
@@ -719,9 +732,8 @@ namespace GPlatesMaths
 
 
 		/**
-		 * This is the minimum number of (distinct) collection points
-		 * to be passed into a 'create' function to enable creation of
-		 * a closed, well-defined polygon.
+		 * This is the minimum number of (distinct) collection points to be passed into the
+		 * 'create_on_heap' function to enable creation of a closed, well-defined polygon.
 		 */
 		static const unsigned s_min_num_collection_points;
 
@@ -939,17 +951,6 @@ namespace GPlatesMaths
 		// If we got this far, we couldn't find anything wrong with the
 		// construction parameters.
 		return VALID;
-	}
-
-
-	template<typename C>
-	const PolygonOnSphere
-	PolygonOnSphere::create(
-			const C &coll)
-	{
-		PolygonOnSphere p;
-		generate_segments_and_swap(p, coll);
-		return p;
 	}
 
 

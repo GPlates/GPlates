@@ -268,7 +268,7 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 
 void
 GPlatesQtWidgets::GlobeCanvas::draw_polyline(
-		const GPlatesMaths::PolylineOnSphere &polyline)
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline)
 {
 	GPlatesState::Layout::InsertLineDataPos(polyline);
 }
@@ -276,7 +276,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_polyline(
 
 void
 GPlatesQtWidgets::GlobeCanvas::draw_point(
-		const GPlatesMaths::PointOnSphere &point)
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point)
 {
 	GPlatesState::Layout::InsertPointDataPos(point);
 }
@@ -293,6 +293,13 @@ void
 GPlatesQtWidgets::GlobeCanvas::clear_data()
 {
 	GPlatesState::Layout::Clear();
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change() 
+{
+	update_canvas();
 }
 
 

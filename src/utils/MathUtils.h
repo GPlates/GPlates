@@ -1,11 +1,11 @@
-/* $Id: StringUtils.h 1485 2007-09-19 04:47:11Z glen $ */
+/* $Id$ */
 
 /**
  * \file
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2007-09-19 14:47:11 +1000 (Wed, 19 Sep 2007) $
+ *   $Date$
  *
  * Copyright (C) 2007 The University of Sydney, Australia
  *
@@ -31,12 +31,13 @@
 #include <limits>
 #include <cmath>
 
+
 namespace GPlatesUtils
 {
 	template<class T>
 	inline
 	bool
-	is_value_in_range(
+	is_in_range(
 			const T &value,
 			const T &minimum,
 			const T &maximum)
@@ -48,11 +49,37 @@ namespace GPlatesUtils
 	template<class T>
 	inline
 	bool
-	are_values_approx_equal(
+	are_almost_exactly_equal(
 			const T &value1,
 			const T &value2)
 	{
 		return std::fabs(value1 - value2) < std::numeric_limits<T>::epsilon();
+	}
+
+
+	/**
+	 * Pi, the ratio of the circumference to the diameter of a circle.
+	 */
+	static const double Pi = 3.14159265358979323846264338;
+
+
+	template<typename T>
+	inline
+	const T
+	convert_deg_to_rad(
+			const T &value_in_degrees)
+	{
+		return T((Pi / 180.0) * value_in_degrees);
+	}
+
+
+	template<typename T>
+	inline
+	const T
+	convert_rad_to_deg(
+			const T &value_in_radians)
+	{
+		return T((180.0 / Pi) * value_in_radians);
 	}
 }
 

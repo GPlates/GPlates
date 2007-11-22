@@ -74,10 +74,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(this, SIGNAL(zoom_changed(double)),
 			d_canvas_ptr, SLOT(set_zoom(double)));
 
+	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
+			d_canvas_ptr, SLOT(notify_of_orientation_change()));
+	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
+			this, SLOT(recalc_camera_position()));
+
 	// Make sure the globe is expanding as much as possible!
 	QSizePolicy globe_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	d_canvas_ptr->setSizePolicy(globe_size_policy);
 	d_canvas_ptr->updateGeometry();
+
+	recalc_camera_position();
 }
 
 
@@ -125,17 +132,37 @@ GPlatesQtWidgets::ReconstructionViewWidget::set_reconstruction_time(
 
 
 void
+GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
+{
+	static const GPlatesMaths::PointOnSphere centre_of_canvas =
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
+
+	GPlatesMaths::PointOnSphere oriented_centre = d_canvas_ptr->globe().Orient(centre_of_canvas);
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(oriented_centre);
+
+	QLocale locale_;
+	QString lat = locale_.toString(llp.latitude(), 'f', 2);
+	QString lon = locale_.toString(llp.longitude(), 'f', 2);
+	QString position_as_string(QObject::tr("(lat: "));
+	position_as_string.append(lat);
+	position_as_string.append(QObject::tr(" ; lon: "));
+	position_as_string.append(lon);
+	position_as_string.append(QObject::tr(")"));
+
+	label_camera_coords->setText(position_as_string);
+}
+
+
+void
 GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 		const GPlatesMaths::PointOnSphere &new_virtual_pos,
 		bool is_on_globe)
 {
-	GPlatesMaths::LatLonPoint llp =
-			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(
-					new_virtual_pos);
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(new_virtual_pos);
 
 	QLocale locale_;
-	QString lat = locale_.toString(llp.latitude().dval(), 'f', 2);
-	QString lon = locale_.toString(llp.longitude().dval(), 'f', 2);
+	QString lat = locale_.toString(llp.latitude(), 'f', 2);
+	QString lon = locale_.toString(llp.longitude(), 'f', 2);
 	QString position_as_string(QObject::tr("(lat: "));
 	position_as_string.append(lat);
 	position_as_string.append(QObject::tr(" ; lon: "));
@@ -145,5 +172,5 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 		position_as_string.append(QObject::tr(" (off globe)"));
 	}
 
-	label_cursor_coordinates->setText(position_as_string);
+	label_mouse_coords->setText(position_as_string);
 }

@@ -233,6 +233,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\canvas-tools\ZoomGlobe.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc"
 				>
 			</File>
@@ -297,6 +301,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\SimpleGlobeOrientation.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\SphericalGrid.cc"
 				>
 			</File>
@@ -314,6 +322,10 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc"
 				>
 			</File>
 		</Filter>
@@ -429,10 +441,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_ReconstructToTimeDialog.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\moc_SpecifyFixedPlateDialog.cc"
 				>
 			</File>
@@ -450,18 +458,6 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\QueryFeaturePropertiesDialogUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructToTimeDialog.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructToTimeDialog.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructToTimeDialogUi.ui"
 				>
 			</File>
 			<File
