@@ -21,7 +21,7 @@
 			DisplayName="Building MOC Files"
 			CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;"
 			Outputs="$(InputDir)/moc_$(InputName).cc"
-			FileExtensions="*.h"
+			FileExtensions="*.moc"
 			ExecutionDescription="Executing MOC on $(InputName)"
 			>
 			<Properties>
@@ -34,7 +34,7 @@
 			Outputs="$(InputDir)/qrc_$(InputName).cc"
 			FileExtensions="*.qrc"
 			ExecutionDescription="Executing RCC on $(InputName)"
-			BatchingSeparator=""			
+			BatchingSeparator=""
 			>
 			<Properties>
 			</Properties>

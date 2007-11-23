@@ -225,19 +225,26 @@
 			Name="canvas-tools"
 			>
 			<File
+				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\canvas-tools\QueryFeature.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\canvas-tools\QueryFeature.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\canvas-tools\ZoomGlobe.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc"
 				>
 			</File>
 		</Filter>
@@ -255,6 +262,13 @@
 			<File
 				RelativePath="..\src\gui\CanvasToolAdapter.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\CanvasToolChoice.cc"
@@ -263,6 +277,13 @@
 			<File
 				RelativePath="..\src\gui\CanvasToolChoice.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\Colour.cc"
@@ -271,9 +292,32 @@
 			<File
 				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\Globe.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_CanvasToolAdapter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_CanvasToolChoice.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc"
 				>
 			</File>
 			<File
@@ -303,6 +347,13 @@
 			<File
 				RelativePath="..\src\gui\SimpleGlobeOrientation.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\SphericalGrid.cc"
@@ -310,22 +361,6 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\ViewportZoom.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\moc_CanvasToolAdapter.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\moc_CanvasToolChoice.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc"
 				>
 			</File>
 		</Filter>
@@ -339,6 +374,13 @@
 			<File
 				RelativePath="..\src\qt-widgets\AboutDialog.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\AboutDialogUi.ui"
@@ -351,33 +393,16 @@
 			<File
 				RelativePath="..\src\qt-widgets\AnimateDialog.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\AnimateDialogUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReconstructionViewWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialog.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialog.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialogUi.ui"
 				>
 			</File>
 			<File
@@ -387,6 +412,13 @@
 			<File
 				RelativePath="..\src\qt-widgets\GlobeCanvas.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\InformationDialog.cc"
@@ -395,6 +427,13 @@
 			<File
 				RelativePath="..\src\qt-widgets\InformationDialog.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\InformationDialogUi.ui"
@@ -407,6 +446,13 @@
 			<File
 				RelativePath="..\src\qt-widgets\LicenseDialog.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_AboutDialog.cc"
@@ -414,14 +460,6 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_ReadErrorAccumulationDialog.cc"
 				>
 			</File>
 			<File
@@ -441,6 +479,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_ReadErrorAccumulationDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_SpecifyFixedPlateDialog.cc"
 				>
 			</File>
@@ -455,9 +501,54 @@
 			<File
 				RelativePath="..\src\qt-widgets\QueryFeaturePropertiesDialog.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\QueryFeaturePropertiesDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -467,6 +558,13 @@
 			<File
 				RelativePath="..\src\qt-widgets\SpecifyFixedPlateDialog.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\SpecifyFixedPlateDialogUi.ui"
@@ -479,6 +577,13 @@
 			<File
 				RelativePath="..\src\qt-widgets\ViewportWindow.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\ViewportWindowUi.ui"
