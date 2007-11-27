@@ -28,6 +28,7 @@
 #include "GlobeCanvas.h"
 
 #include <vector>
+#include <utility>
 #include <cmath>
 #include <boost/none.hpp>
 
@@ -37,6 +38,7 @@
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
 #include "feature-visitors/PlateIdFinder.h"
 #include "gui/ProximityTests.h"
+#include "gui/PlatesColourTable.h"
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -268,9 +270,10 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 
 void
 GPlatesQtWidgets::GlobeCanvas::draw_polyline(
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline)
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+		GPlatesGui::PlatesColourTable::const_iterator colour)
 {
-	GPlatesState::Layout::InsertLineDataPos(polyline);
+	GPlatesState::Layout::InsertLineDataPos(std::make_pair(polyline, colour));
 }
 
 

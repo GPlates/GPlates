@@ -63,6 +63,13 @@ namespace GPlatesGui
 			 	   const GLfloat& blue  = 0.0, 
 				   const GLfloat& alpha = 1.0);
 
+			Colour(const Colour &colour) {
+				_rgba[RED_INDEX] = colour._rgba[RED_INDEX];
+				_rgba[GREEN_INDEX] = colour._rgba[GREEN_INDEX];
+				_rgba[BLUE_INDEX] = colour._rgba[BLUE_INDEX];
+				_rgba[ALPHA_INDEX] = colour._rgba[ALPHA_INDEX];
+			}
+
 			/**
 			 * Accessor methods.
 			 */

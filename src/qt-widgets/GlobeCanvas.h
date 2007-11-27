@@ -42,6 +42,7 @@
 
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
+#include "gui/PlatesColourTable.h"
 
 #include "maths/PolylineOnSphere.h"
 
@@ -123,7 +124,8 @@ namespace GPlatesQtWidgets
 
 		void
 		draw_polyline(
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline);
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+				GPlatesGui::PlatesColourTable::const_iterator colour);
 
 		void
 		draw_point(

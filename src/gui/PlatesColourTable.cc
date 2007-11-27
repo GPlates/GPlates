@@ -48,7 +48,7 @@ GPlatesGui::PlatesColourTable::~PlatesColourTable() {
 
 
 GPlatesGui::PlatesColourTable::const_iterator
-GPlatesGui::PlatesColourTable::lookup(const GPlatesGlobal::rid_t &id) const {
+GPlatesGui::PlatesColourTable::lookup(const GPlatesModel::integer_plate_id_type &id) const {
 
 	// First, ensure that the ID isn't greater than the highest ID in the
 	// ID table (which would result in an out-of-bounds index).
@@ -59,7 +59,7 @@ GPlatesGui::PlatesColourTable::lookup(const GPlatesGlobal::rid_t &id) const {
 	}
 
 	// Now, convert the ID into an index into the 'ID table'.
-	size_t idx = static_cast< size_t >(id.ival());
+	size_t idx = static_cast< size_t >(id);
 	const Colour *colour_ptr = _id_table[idx];
 	if (colour_ptr == NULL) {
 
@@ -76,9 +76,44 @@ namespace
 
 	struct MappingPair
 	{
-		GPlatesGlobal::rid_t id;
+		GPlatesModel::integer_plate_id_type id;
 		Colour colour;
 	};
+
+	GPlatesModel::integer_plate_id_type
+	getHighestID(const MappingPair array[], size_t array_len) {
+
+		GPlatesModel::integer_plate_id_type highest_so_far = 0;
+		for (size_t i = 0; i < array_len; i++) {
+
+			if (array[i].id > highest_so_far) {
+				
+				highest_so_far = array[i].id;
+			}
+		}
+		return highest_so_far;
+	}
+
+
+	void
+	populate(Colour *id_table[], Colour colours[],
+	 const MappingPair array[], size_t array_len) {
+
+		for (size_t array_idx = 0; array_idx < array_len; ++array_idx) {
+
+			// convert the ID into an index into the 'ID table'.
+			size_t id_table_idx =
+			 static_cast< size_t >(array[array_idx].id);
+
+			colours[array_idx] = array[array_idx].colour;
+			id_table[id_table_idx] = &(colours[array_idx]);
+		}
+	}
+}
+
+
+GPlatesGui::PlatesColourTable::PlatesColourTable() :
+ _highest_known_rid(0) /* no default ctor, so must initialise now */ {
 
 	const MappingPair MappingArray[] = {
 
@@ -392,41 +427,6 @@ namespace
 	};
 
 
-	GPlatesGlobal::rid_t
-	getHighestID(const MappingPair array[], size_t array_len) {
-
-		GPlatesGlobal::rid_t highest_so_far = 0;
-		for (size_t i = 0; i < array_len; i++) {
-
-			if (array[i].id > highest_so_far) {
-				
-				highest_so_far = array[i].id;
-			}
-		}
-		return highest_so_far;
-	}
-
-
-	void
-	populate(Colour *id_table[], Colour colours[],
-	 const MappingPair array[], size_t array_len) {
-
-		for (size_t array_idx = 0; array_idx < array_len; ++array_idx) {
-
-			// convert the ID into an index into the 'ID table'.
-			size_t id_table_idx =
-			 static_cast< size_t >(array[array_idx].id.ival());
-
-			colours[array_idx] = array[array_idx].colour;
-			id_table[id_table_idx] = &(colours[array_idx]);
-		}
-	}
-}
-
-
-GPlatesGui::PlatesColourTable::PlatesColourTable() :
- _highest_known_rid(0) /* no default ctor, so must initialise now */ {
-
 	size_t len_mapping_array =
 	 sizeof(MappingArray) / sizeof(MappingArray[0]);
 
@@ -442,7 +442,7 @@ GPlatesGui::PlatesColourTable::PlatesColourTable() :
 	 * this array is of length (_highest_known_rid + 1).
 	 */
 	size_t len_id_table =
-	 static_cast< size_t >(_highest_known_rid.ival() + 1);
+	 static_cast< size_t >(_highest_known_rid + 1);
 	// This next line looks like it's trying to be clever or cryptic, but
 	// that's actually the only valid syntax.
 	_id_table = new Colour *[len_id_table];

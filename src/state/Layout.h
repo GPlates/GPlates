@@ -32,6 +32,7 @@
 #include <utility>  /* std::pair */
 #include <queue>  /* std::priority_queue */
 
+#include "gui/PlatesColourTable.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
@@ -44,17 +45,17 @@ namespace GPlatesState
 	{
 		public:
 
-		       /*
+			/*
 			* The next few structs/functions constitute a hackity
 			* hack hack to get interactive (mouse-clicky) selection
 			* working.
 			*/
 
-		       enum DatumType {
+			enum DatumType {
 
-			       POINT_DATUM,
-			       LINE_DATUM
-		       };
+				POINT_DATUM,
+				LINE_DATUM
+			};
 
 		       /**
 			* This struct is intended to be used as the value_type
@@ -116,7 +117,10 @@ namespace GPlatesState
 
 			typedef GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type PointDataPos;
 
-			typedef GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type LineDataPos;
+			typedef std::pair< 
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+				GPlatesGui::PlatesColourTable::const_iterator > 
+					LineDataPos;
 
 			typedef std::list< PointDataPos > PointDataLayout;
 			typedef std::list< LineDataPos > LineDataLayout;

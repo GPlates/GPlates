@@ -29,7 +29,9 @@
 #define GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 
 #include "FeatureHandle.h"
+#include "feature-visitors/PlateIdFinder.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include <boost/optional.hpp>
 
 
 namespace GPlatesModel
@@ -47,13 +49,26 @@ namespace GPlatesModel
 
 		FeatureHandle::weak_ref d_feature_ref;
 
+		/**
+		 * We cache the plate id here so that it can be extracted by drawing code
+		 * for use with on-screen colouring.
+		 */
+		boost::optional<integer_plate_id_type> d_reconstruction_plate_id;
+
 	public:
 		ReconstructedFeatureGeometry(
 				GPlatesUtils::non_null_intrusive_ptr<const geometry_type> geometry_ptr,
 				FeatureHandle &feature_handle) :
 			d_geometry_ptr(geometry_ptr),
 			d_feature_ref(feature_handle.reference())
-		{  }
+		{
+			GPlatesFeatureVisitors::PlateIdFinder finder(PropertyName("gpml:plateId"));
+			feature_handle.accept_visitor(finder);
+			// Select the first plate id, if we found one.
+			if (finder.found_plate_ids_begin() != finder.found_plate_ids_end()) {
+				d_reconstruction_plate_id = *finder.found_plate_ids_begin();
+			}
+		}
 
 		const GPlatesUtils::non_null_intrusive_ptr<const geometry_type>
 		geometry() const
@@ -67,7 +82,14 @@ namespace GPlatesModel
 			return d_feature_ref;
 		}
 
-		// ...
+		/**
+		 * Return the cached plate id.
+		 */
+		const boost::optional<integer_plate_id_type> &
+		reconstruction_plate_id() const {
+
+			return d_reconstruction_plate_id;
+		}
 	};
 }
 

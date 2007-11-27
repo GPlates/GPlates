@@ -38,98 +38,103 @@ using namespace GPlatesMaths;
 using namespace GPlatesState;
 
 
-static void
-CallVertexWithPoint(const PointOnSphere& p)
-{
-	const UnitVector3D &uv = p.position_vector();
-	glVertex3d(uv.x().dval(), uv.y().dval(), uv.z().dval());
-}
-
-
-static void
-CallVertexWithLine(const PolylineOnSphere::const_iterator& begin, 
-                   const PolylineOnSphere::const_iterator& end)
-{
-	PolylineOnSphere::const_iterator iter = begin;
-
-	glBegin(GL_LINE_STRIP);
-		CallVertexWithPoint(iter->start_point());
-		for ( ; iter != end; ++iter)
-			CallVertexWithPoint(iter->end_point());
-	glEnd();
+namespace {
 	
-	glLineWidth(1);
-}
+	void
+	CallVertexWithPoint(const PointOnSphere& p)
+	{
+		const UnitVector3D &uv = p.position_vector();
+		glVertex3d(uv.x().dval(), uv.y().dval(), uv.z().dval());
+	}
 
 
-static void
-PaintPointDataPos(Layout::PointDataPos& pointdata)
-{
+	void
+	CallVertexWithLine(const PolylineOnSphere::const_iterator& begin, 
+					   const PolylineOnSphere::const_iterator& end)
+	{
+		PolylineOnSphere::const_iterator iter = begin;
+
+		glBegin(GL_LINE_STRIP);
+			CallVertexWithPoint(iter->start_point());
+			for ( ; iter != end; ++iter)
+				CallVertexWithPoint(iter->end_point());
+		glEnd();
+		
+		glLineWidth(1);
+	}
+
+
+	void
+	PaintPointDataPos(Layout::PointDataPos& pointdata)
+	{
 #if 0
-	GPlatesGeo::PointData *datum = pointdata.first;
-	if ( ! datum->ShouldBePainted()) return;
+		GPlatesGeo::PointData *datum = pointdata.first;
+		if ( ! datum->ShouldBePainted()) return;
 #endif
-	const PointOnSphere& point = *pointdata;
-	
-	glColor3fv(GPlatesGui::Colour::FUSCHIA);
-	CallVertexWithPoint(point);
-}
+		const PointOnSphere& point = *pointdata;
+		
+		glColor3fv(GPlatesGui::Colour::FUSCHIA);
+		CallVertexWithPoint(point);
+	}
 
 
-static void
-PaintLineDataPos(Layout::LineDataPos& linedata)
-{
-	using namespace GPlatesGui;
+	void
+	PaintLineDataPos(Layout::LineDataPos& linedata)
+	{
+		using namespace GPlatesGui;
 
 #if 0
-	GPlatesGeo::LineData *datum = linedata.first;
-	if ( ! datum->ShouldBePainted()) return;
+		GPlatesGeo::LineData *datum = linedata.first;
+		if ( ! datum->ShouldBePainted()) return;
 
-	const PlatesColourTable &ctab = *(PlatesColourTable::Instance());
-	const PolylineOnSphere& line = linedata.second;
+		const PlatesColourTable &ctab = *(PlatesColourTable::Instance());
+		const PolylineOnSphere& line = linedata.second;
 
-	GPlatesGlobal::rid_t rgid = datum->GetRotationGroupId();
-	PlatesColourTable::const_iterator it = ctab.lookup(rgid);
-	if (it != ctab.end()) {
+		GPlatesGlobal::rid_t rgid = datum->GetRotationGroupId();
+		PlatesColourTable::const_iterator it = ctab.lookup(rgid);
+		if (it != ctab.end()) {
 
-		// There is an entry for this RG-ID in the colour table.
-		glColor3fv(*it);
+			// There is an entry for this RG-ID in the colour table.
+			glColor3fv(*it);
 
-	} else glColor3fv(GPlatesGui::Colour::RED);
+		} else glColor3fv(GPlatesGui::Colour::RED);
 #endif
 
-	const PolylineOnSphere& line = *linedata;
+		const PolylineOnSphere& line = *linedata.first;
 
-	glColor3fv(GPlatesGui::Colour::AQUA);
-	
-	glLineWidth(3);
-	CallVertexWithLine(line.begin(), line.end());
+		glColor3fv(*linedata.second);
+		
+		glLineWidth(1.5f);
+		CallVertexWithLine(line.begin(), line.end());
+	}
+
+
+
+	void
+	PaintPoints()
+	{
+		Layout::PointDataLayout::iterator 
+			points_begin = Layout::PointDataLayoutBegin(),
+			points_end   = Layout::PointDataLayoutEnd();
+
+		glPointSize(8);
+		glBegin(GL_POINTS);
+			for_each(points_begin, points_end, PaintPointDataPos);
+		glEnd();
+	}
+
+
+	void
+	PaintLines()
+	{
+		Layout::LineDataLayout::iterator 
+			lines_begin = Layout::LineDataLayoutBegin(),
+			lines_end   = Layout::LineDataLayoutEnd();
+		
+		for_each(lines_begin, lines_end, PaintLineDataPos);
+	}
 }
 
-
-static void
-PaintPoints()
-{
-	Layout::PointDataLayout::iterator 
-		points_begin = Layout::PointDataLayoutBegin(),
-		points_end   = Layout::PointDataLayoutEnd();
-
-	glPointSize(8);
-	glBegin(GL_POINTS);
-		for_each(points_begin, points_end, PaintPointDataPos);
-	glEnd();
-}
-
-
-static void
-PaintLines()
-{
-	Layout::LineDataLayout::iterator 
-		lines_begin = Layout::LineDataLayoutBegin(),
-		lines_end   = Layout::LineDataLayoutEnd();
-	
-	for_each(lines_begin, lines_end, PaintLineDataPos);
-}
 
 
 void

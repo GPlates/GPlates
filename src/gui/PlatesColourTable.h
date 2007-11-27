@@ -29,7 +29,7 @@
 #define _GPLATES_GUI_PLATESCOLOURTABLE_H_
 
 #include "Colour.h"
-#include "global/types.h"
+#include "model/types.h"
 
 namespace GPlatesGui
 {
@@ -46,7 +46,7 @@ namespace GPlatesGui
 			end() const { return NULL; }
 
 			const_iterator
-			lookup(const GPlatesGlobal::rid_t &id) const;
+			lookup(const GPlatesModel::integer_plate_id_type &id) const;
 
 		protected:
 			/**
@@ -83,7 +83,7 @@ namespace GPlatesGui
 			 * The highest Plate ID (aka "rid_t", for "rotation
 			 * ID type") entered in the ID table.
 			 */
-			GPlatesGlobal::rid_t _highest_known_rid;
+			GPlatesModel::integer_plate_id_type _highest_known_rid;
 
 			/**
 			 * An array of Colour objects.  Each of these Colour

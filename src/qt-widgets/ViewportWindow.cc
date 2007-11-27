@@ -36,11 +36,13 @@
 #include "gui/CanvasToolChoice.h"
 #include "gui/FeatureWeakRefSequence.h"
 #include "model/Model.h"
+#include "model/types.h"
 #include "model/DummyTransactionHandle.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/PlatesLineFormatReader.h"
 #include "file-io/PlatesRotationFormatReader.h"
+#include "gui/PlatesColourTable.h"
 
 namespace
 {
@@ -129,7 +131,17 @@ namespace
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator finish2 =
 					reconstruction->polyline_geometries().end();
 			while (iter2 != finish2) {
-				canvas_ptr->draw_polyline(iter2->geometry());
+				GPlatesGui::PlatesColourTable::const_iterator colour = GPlatesGui::PlatesColourTable::Instance()->end();
+				if (iter2->reconstruction_plate_id()) {
+					colour = GPlatesGui::PlatesColourTable::Instance()->lookup(*(iter2->reconstruction_plate_id()));
+				}
+
+				if (colour == GPlatesGui::PlatesColourTable::Instance()->end()) {
+					// XXX: For lack of anything better to do, we will colour data that lacks a plate id grey
+					colour = &GPlatesGui::Colour::GREY;
+				}
+
+				canvas_ptr->draw_polyline(iter2->geometry(), colour);
 				++iter2;
 			}
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
