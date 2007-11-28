@@ -47,15 +47,9 @@
     <property name="title" >
      <string>&amp;File</string>
     </property>
+    <addaction name="action_File_Errors" />
+    <addaction name="separator" />
     <addaction name="action_Quit" />
-   </widget>
-   <widget class="QMenu" name="menu_Edit" >
-    <property name="title" >
-     <string>&amp;Edit</string>
-    </property>
-    <addaction name="action_Cut" />
-    <addaction name="action_Copy" />
-    <addaction name="action_Paste" />
    </widget>
    <widget class="QMenu" name="menu_Reconstruction" >
     <property name="title" >
@@ -69,13 +63,6 @@
     <addaction name="separator" />
     <addaction name="action_Animate" />
    </widget>
-   <widget class="QMenu" name="menu_Window" >
-    <property name="title" >
-     <string>&amp;Window</string>
-    </property>
-    <addaction name="action_Docks" />
-    <addaction name="action_File_Errors" />
-   </widget>
    <widget class="QMenu" name="menu_View" >
     <property name="title" >
      <string>&amp;View</string>
@@ -86,10 +73,8 @@
     <addaction name="action_Reset_Zoom_Level" />
    </widget>
    <addaction name="menu_File" />
-   <addaction name="menu_Edit" />
    <addaction name="menu_Reconstruction" />
    <addaction name="menu_View" />
-   <addaction name="menu_Window" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
@@ -374,7 +359,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_dialog_warning_16.png</iconset>
    </property>
    <property name="text" >
-    <string>File &amp;Errors</string>
+    <string>View Read &amp;Errors</string>
    </property>
   </action>
   <action name="action_Set_Zoom" >

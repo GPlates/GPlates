@@ -60,7 +60,7 @@
      <item>
       <widget class="QPushButton" name="button_expand_all" >
        <property name="text" >
-        <string>&amp;Expand All</string>
+        <string>E&amp;xpand All</string>
        </property>
       </widget>
      </item>
@@ -74,27 +74,84 @@
     </layout>
    </item>
    <item>
-    <widget class="QTreeWidget" name="treeWidget_errors" >
-     <property name="alternatingRowColors" >
-      <bool>true</bool>
+    <widget class="QTabWidget" name="tabWidget" >
+     <property name="currentIndex" >
+      <number>0</number>
      </property>
-     <property name="wordWrap" >
-      <bool>true</bool>
-     </property>
-     <property name="columnCount" >
-      <number>1</number>
-     </property>
-     <column>
-      <property name="text" >
-       <string/>
-      </property>
-     </column>
+     <widget class="QWidget" name="tab_by_type" >
+      <attribute name="title" >
+       <string>By &amp;Error</string>
+      </attribute>
+      <layout class="QHBoxLayout" >
+       <property name="leftMargin" >
+        <number>4</number>
+       </property>
+       <property name="topMargin" >
+        <number>4</number>
+       </property>
+       <property name="rightMargin" >
+        <number>4</number>
+       </property>
+       <property name="bottomMargin" >
+        <number>4</number>
+       </property>
+       <item>
+        <widget class="QTreeWidget" name="tree_widget_errors_by_type" >
+         <property name="alternatingRowColors" >
+          <bool>true</bool>
+         </property>
+         <property name="wordWrap" >
+          <bool>true</bool>
+         </property>
+         <column>
+          <property name="text" >
+           <string/>
+          </property>
+         </column>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_by_line" >
+      <attribute name="title" >
+       <string>By &amp;Line</string>
+      </attribute>
+      <layout class="QHBoxLayout" >
+       <property name="leftMargin" >
+        <number>4</number>
+       </property>
+       <property name="topMargin" >
+        <number>4</number>
+       </property>
+       <property name="rightMargin" >
+        <number>4</number>
+       </property>
+       <property name="bottomMargin" >
+        <number>4</number>
+       </property>
+       <item>
+        <widget class="QTreeWidget" name="tree_widget_errors_by_line" >
+         <property name="alternatingRowColors" >
+          <bool>true</bool>
+         </property>
+         <property name="wordWrap" >
+          <bool>true</bool>
+         </property>
+         <column>
+          <property name="text" >
+           <string/>
+          </property>
+         </column>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item>
     <widget class="QLabel" name="label_result" >
      <property name="text" >
-      <string>0 features loaded, 0 features discarded.</string>
+      <string/>
      </property>
     </widget>
    </item>
@@ -116,7 +173,7 @@
      <item>
       <widget class="QPushButton" name="button_ok" >
        <property name="text" >
-        <string>OK</string>
+        <string>Close</string>
        </property>
        <property name="default" >
         <bool>true</bool>
@@ -129,7 +186,6 @@
  </widget>
  <tabstops>
   <tabstop>button_ok</tabstop>
-  <tabstop>treeWidget_errors</tabstop>
  </tabstops>
  <resources>
   <include location="../qt-resources/qt_widgets.qrc" />
