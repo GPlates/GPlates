@@ -115,7 +115,10 @@ namespace GPlatesState
 			* End of hackity-hacks.
 			*/
 
-			typedef GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type PointDataPos;
+			typedef std::pair<
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type,
+				GPlatesGui::PlatesColourTable::const_iterator >
+					PointDataPos;
 
 			typedef std::pair< 
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,

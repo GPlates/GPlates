@@ -97,6 +97,11 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gml_point(
+				GPlatesPropertyValues::GmlPoint &gml_point);
+
+		virtual
+		void
 		visit_gml_orientable_curve(
 				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
 

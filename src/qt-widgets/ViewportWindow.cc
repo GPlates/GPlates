@@ -103,7 +103,6 @@ namespace
 		}
 	}
 
-
 	void
 	render_model(
 			GPlatesQtWidgets::GlobeCanvas *canvas_ptr, 
@@ -123,7 +122,17 @@ namespace
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator finish =
 					reconstruction->point_geometries().end();
 			while (iter != finish) {
-				canvas_ptr->draw_point(iter->geometry());
+				GPlatesGui::PlatesColourTable::const_iterator colour = GPlatesGui::PlatesColourTable::Instance()->end();
+				if (iter->reconstruction_plate_id()) {
+					colour = GPlatesGui::PlatesColourTable::Instance()->lookup(*(iter->reconstruction_plate_id()));
+				}
+
+				if (colour == GPlatesGui::PlatesColourTable::Instance()->end()) {
+					// XXX: For lack of anything better to do, we will colour data that lacks a plate id grey
+					colour = &GPlatesGui::Colour::GREY;
+				}
+
+				canvas_ptr->draw_point(iter->geometry(), colour);
 				++iter;
 			}
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator iter2 =
@@ -144,6 +153,7 @@ namespace
 				canvas_ptr->draw_polyline(iter2->geometry(), colour);
 				++iter2;
 			}
+
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
 			//for_each(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), render(canvas_ptr, &GlobeCanvas::draw_point, point_colour))
 			// for_each(reconstruction->polyline_geometries().begin(), reconstruction->polyline_geometries().end(), polyline_point);

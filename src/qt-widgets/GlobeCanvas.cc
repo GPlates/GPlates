@@ -279,9 +279,10 @@ GPlatesQtWidgets::GlobeCanvas::draw_polyline(
 
 void
 GPlatesQtWidgets::GlobeCanvas::draw_point(
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point)
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point,
+		GPlatesGui::PlatesColourTable::const_iterator colour)
 {
-	GPlatesState::Layout::InsertPointDataPos(point);
+	GPlatesState::Layout::InsertPointDataPos(std::make_pair(point, colour));
 }
 
 

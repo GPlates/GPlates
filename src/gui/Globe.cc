@@ -71,12 +71,11 @@ namespace {
 		GPlatesGeo::PointData *datum = pointdata.first;
 		if ( ! datum->ShouldBePainted()) return;
 #endif
-		const PointOnSphere& point = *pointdata;
+		const PointOnSphere& point = *pointdata.first;
 		
-		glColor3fv(GPlatesGui::Colour::FUSCHIA);
+		glColor3fv(*pointdata.second);
 		CallVertexWithPoint(point);
 	}
-
 
 	void
 	PaintLineDataPos(Layout::LineDataPos& linedata)
@@ -100,14 +99,19 @@ namespace {
 		} else glColor3fv(GPlatesGui::Colour::RED);
 #endif
 
-		const PolylineOnSphere& line = *linedata.first;
+		// XXX: Refactor these OpenGL calls and the ones in PaintPoints.
+		glShadeModel(GL_SMOOTH);
+		glEnable(GL_LINE_SMOOTH);
+		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+		const PolylineOnSphere& line = *linedata.first;
 		glColor3fv(*linedata.second);
 		
 		glLineWidth(1.5f);
 		CallVertexWithLine(line.begin(), line.end());
 	}
-
 
 
 	void
@@ -117,7 +121,13 @@ namespace {
 			points_begin = Layout::PointDataLayoutBegin(),
 			points_end   = Layout::PointDataLayoutEnd();
 
-		glPointSize(8);
+		// XXX: Refactor these OpenGL calls and the ones in PaintLines.
+		glEnable(GL_POINT_SMOOTH);
+		glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glPointSize(8.0f);
 		glBegin(GL_POINTS);
 			for_each(points_begin, points_end, PaintPointDataPos);
 		glEnd();

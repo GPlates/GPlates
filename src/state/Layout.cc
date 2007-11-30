@@ -48,7 +48,7 @@ namespace {
 
 		for ( ; iter != end; ++iter) {
 
-			const GPlatesMaths::PointOnSphere &the_point = **iter;
+			const GPlatesMaths::PointOnSphere &the_point = *(iter->first);
 			
 			// Don't bother initialising this.
 			GPlatesMaths::real_t closeness;
