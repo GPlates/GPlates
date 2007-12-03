@@ -63,5 +63,10 @@ GPlatesGui::NurbsRenderer::NurbsRenderer() {
 	// Update: Fixed the prototype of the NurbsError callback function 
 	// and removed the varargs ellipsis from the cast type.
 	gluNurbsCallback(_nr, GLU_ERROR,
-	 reinterpret_cast< GLvoid (__CONVENTION__ *)() >(&NurbsError));
+#if defined(__APPLE__)
+			// Assume compilation on OS X.
+			reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&NurbsError));
+#else
+			reinterpret_cast< GLvoid (__CONVENTION__ *)() >(&NurbsError));
+#endif
 }
