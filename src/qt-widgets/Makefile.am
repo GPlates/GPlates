@@ -15,7 +15,8 @@ libqt_widgets_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
 	InformationDialog.cc InformationDialogUi.h moc_InformationDialog.cc \
 	LicenseDialog.cc moc_LicenseDialog.cc \
 	ReconstructionViewWidget.cc ReconstructionViewWidgetUi.h moc_ReconstructionViewWidget.cc \
-	ReadErrorAccumulationDialog.cc ReadErrorAccumulationDialogUi.h moc_ReadErrorAccumulationDialog.cc  
+	ReadErrorAccumulationDialog.cc ReadErrorAccumulationDialogUi.h moc_ReadErrorAccumulationDialog.cc \
+	ApplicationState.cc
 
 CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h AboutDialogUi.h \

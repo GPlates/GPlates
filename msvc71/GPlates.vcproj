@@ -319,6 +319,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ApplicationState.cc">
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.cc">
 			</File>
 			<File

@@ -25,41 +25,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_READER_H
-#define GPLATES_FILEIO_READER_H
+#ifndef GPLATES_FILEIO_WRITER_H
+#define GPLATES_FILEIO_WRITER_H
 
-#include "ErrorOpeningFileForReadingException.h"
-#include "ReadErrorAccumulation.h"
 #include "model/ModelInterface.h"
-#include "model/FeatureCollectionHandle.h"
-
 
 namespace GPlatesFileIO
 {
 	class FileInfo;
 
-	/**
-	 * The superclass for each of the classes that will convert some
-	 * format of input source to the internal GPlates representation.
-	 */
-	class Reader
+	class Writer
 	{
 		public:
 			virtual
-			const GPlatesModel::FeatureCollectionHandle::weak_ref
-			read_file(
+			void
+			write(
 					FileInfo &fileinfo,
-					GPlatesModel::ModelInterface &model,
-					ReadErrorAccumulation &read_errors) = 0;
+					GPlatesModel::ModelInterface &model);
+			// XXX: Include some kind of ErrorAccumulation here.
 
 			virtual
-			~Reader()
-			{ }
+			~Writer() { }
 
 		protected:
-			Reader() 
-			{ }
+			Writer() { }
 	};
 }
 
-#endif  // GPLATES_FILEIO_READER_H
+#endif  // GPLATES_FILEIO_WRITER_H

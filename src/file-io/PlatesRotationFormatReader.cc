@@ -604,10 +604,11 @@ namespace
 
 const GPlatesModel::FeatureCollectionHandle::weak_ref
 GPlatesFileIO::PlatesRotationFormatReader::read_file(
-		const QString &filename,
+		FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	std::ifstream input(filename.toAscii().constData());
 	if ( ! input) {
 		throw ErrorOpeningFileForReadingException(filename);
@@ -626,5 +627,6 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		// FIXME:  Handle this exception properly, with logging of the exception, etc.
 	}
 
+	fileinfo.set_feature_collection(rotations);
 	return rotations;
 }

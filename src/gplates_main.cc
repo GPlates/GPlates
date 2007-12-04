@@ -34,8 +34,73 @@
 
 #include <iostream>
 #include <string>
+#include <utility>
+#include <algorithm>
+#include <vector>
+#include <QStringList>
+#include <QTextStream>
 #include <QtGui/QApplication>
 #include "qt-widgets/ViewportWindow.h"
+
+
+namespace {
+
+	// This type is a pair of lists: the first a list of line format files,
+	// the second is a list of rotation files.
+	typedef std::pair<QStringList, QStringList> cmdline_options_type;
+
+	void
+	print_usage(const std::string &progname) {
+
+		std::cerr << "Usage: " << progname 
+			<< " -r PLATES_ROTATION_FILE_1 -r PLATES_ROTATION_FILE_2 ... "\
+				" PLATES_LINE_FILE_1 PLATES_LINE_FILE_2 ..."
+		   	<< std::endl;
+	}
+
+	void
+	print_usage_and_exit(const std::string &progname) {
+
+		print_usage(progname);
+		exit(1);
+	}
+
+	cmdline_options_type
+	process_command_line_options(int argc, char *argv[], 
+			const std::string &progname) {
+
+		static const QString ROTATION_FILE_OPTION = "-r";
+
+		QStringList cmdline;
+		std::copy(&argv[1], &argv[argc], std::back_inserter(cmdline));
+
+		cmdline_options_type res;
+
+		QStringList::iterator iter = cmdline.begin();
+		for ( ; iter != cmdline.end(); ++iter) {
+			if (*iter == ROTATION_FILE_OPTION) {
+				if (++iter != cmdline.end()) {
+					// Next argument after the ROTATION_FILE_OPTION should be
+					// the rotation file name.
+					res.second.push_back(*iter);
+				} else {
+					// We got the ROTATION_FILE_OPTION but there's no associated
+					// rotation file.
+					break;
+				}
+			} else {
+				// We didn't get the ROTATION_FILE_OPTION so this command line
+				// argument must be a plates line format file.
+				res.first.push_back(*iter);
+			}
+		}
+
+		// N.B. We allow the situtation where no rotation files have been specified.
+
+		return res;
+	}
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -45,20 +110,10 @@ int main(int argc, char* argv[])
 	// so we'll have to hard-code this for now.
 	const std::string prog_name = "gplates-demo";
 
-	std::string plates_line_fname;
-	std::string plates_rot_fname;
+	cmdline_options_type cmdline = process_command_line_options(
+			application.argc(), application.argv(), prog_name);
 
-	if (argc >= 3) {
-		plates_line_fname = argv[1];
-		plates_rot_fname = argv[2];
-	} else {
-		std::cerr << prog_name << ": missing line and rotation file operands\n\n";
-		std::cerr << "Usage: " << prog_name << " PLATES_LINE_FILE PLATES_ROTATION_FILE";
-		std::cerr << std::endl;
-		std::exit(1);
-	}
-
-	GPlatesQtWidgets::ViewportWindow viewport_window(plates_line_fname, plates_rot_fname);
+	GPlatesQtWidgets::ViewportWindow viewport_window(cmdline.first, cmdline.second);
 	viewport_window.show();
 	return application.exec();
 }

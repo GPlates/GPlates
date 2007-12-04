@@ -34,8 +34,11 @@
 #endif
 
 #include <string>
+#include <list>
 #include <QtCore/QTimer>
+#include <QStringList>
 
+#include "ApplicationState.h"
 #include "ViewportWindowUi.h"
 #include "GlobeCanvas.h"
 #include "ReconstructionViewWidget.h"
@@ -65,8 +68,8 @@ namespace GPlatesQtWidgets
 		
 	public:
 		ViewportWindow(
-				const std::string &plates_line_fname,
-				const std::string &plates_rot_fname);
+				const QStringList &plates_line_fname,
+				const QStringList &plates_rot_fname);
 
 		GPlatesModel::Reconstruction &
 		reconstruction() const
@@ -113,12 +116,27 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_read_errors_dialog();
 		
+		void
+		load_files(const QStringList &file_names);
 
 	private:
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
-		GPlatesModel::FeatureCollectionHandle::weak_ref d_isochrons;
-		GPlatesModel::FeatureCollectionHandle::weak_ref d_total_recon_seqs;
+
+		//@{
+		// ViewState 
+
+		// XXX: public so that it can be accessed by render_model in ViewportWindow.cc.
+		// This is a code smell -- it should be changed eventually.
+	public:
+		typedef std::list<GPlatesAppState::ApplicationState::file_info_iterator> ActiveFilesCollection;
+
+	private:
+		ActiveFilesCollection d_active_reconstructable_files;
+		ActiveFilesCollection d_active_reconstruction_files;
+
+		//@}
+
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
 		ReconstructionViewWidget d_reconstruction_view_widget;

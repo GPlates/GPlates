@@ -24,9 +24,11 @@
  */
  
 #include <iostream>
+#include <iterator>
 #include <boost/format.hpp>
 #include <QLocale>
 #include <QString>
+#include <QStringList>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -42,37 +44,68 @@
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/PlatesLineFormatReader.h"
 #include "file-io/PlatesRotationFormatReader.h"
+#include "file-io/FileInfo.h"
+#include "file-io/Reader.h"
 #include "gui/PlatesColourTable.h"
 
-namespace
-{
-	void
-	load_plates_files(
-			GPlatesModel::ModelInterface &model, 
-			GPlatesModel::FeatureCollectionHandle::weak_ref &reconstructable_features,
-			GPlatesModel::FeatureCollectionHandle::weak_ref &reconstruction_features,
-			const std::string &plates_line_fname,
-			const std::string &plates_rot_fname,
-			GPlatesQtWidgets::ReadErrorAccumulationDialog &read_errors_dialog)
-	{
-		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
 
-		// FIXME:  Handle this ErrorOpeningFileForReadingException properly.
+void
+GPlatesQtWidgets::ViewportWindow::load_files(
+		const QStringList &file_names)
+{
+	d_read_errors_dialog.clear();
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
+
+	QStringList::const_iterator iter = file_names.begin();
+	QStringList::const_iterator end = file_names.end();
+
+
+	bool have_loaded_new_rotation_file = false;
+
+	for ( ; iter != end; ++iter) {
+
+		GPlatesFileIO::FileInfo file(*iter);
+
 		try
 		{
-			reconstructable_features =
-					GPlatesFileIO::PlatesLineFormatReader::read_file(
-							QString(plates_line_fname.c_str()), model, read_errors);
+			if (file.get_qfileinfo().suffix().endsWith(QString("dat"), Qt::CaseInsensitive))
+			{
+				GPlatesFileIO::PlatesLineFormatReader reader;
+				reader.read_file(file, *d_model_ptr, read_errors);
 
-			reconstruction_features =
-					GPlatesFileIO::PlatesRotationFormatReader::read_file(
-							QString(plates_rot_fname.c_str()), model, read_errors);
+				// All loaded files are added to the set of loaded files.
+				GPlatesAppState::ApplicationState::file_info_iterator new_file =
+					GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+
+				// Line format files are made active by default.
+				d_active_reconstructable_files.push_back(new_file);
+			}
+			else if (file.get_qfileinfo().suffix().endsWith(QString("rot"), Qt::CaseInsensitive))
+			{
+				GPlatesFileIO::PlatesRotationFormatReader reader;
+				reader.read_file(file, *d_model_ptr, read_errors);
+
+				// All loaded files are added to the set of loaded files.
+				GPlatesAppState::ApplicationState::file_info_iterator new_file =
+					GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+
+				if ( ! have_loaded_new_rotation_file) 
+				{
+					// We only want to make the first rotation file active.
+					d_active_reconstruction_files.clear();
+					d_active_reconstruction_files.push_back(new_file);
+					have_loaded_new_rotation_file = true;
+				}
+			} 
+			else
+			{
+				// FIXME: This should be added to the read errors!
+				std::cerr << "Unrecognised file type for file: " 
+					<< file.get_qfileinfo().absoluteFilePath().toStdString() << std::endl;
+			}
 		}
 		catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
 		{
-			// FIXME: Include this into ReadErrorAccumulationDialog's d_tree_item_failures_to_begin_ptr
-			std::cerr << "Unable to open file '" << e.filename().toStdString() << "' for reading." << std::endl;
-			
 			// FIXME: A bit of a sucky conversion from ErrorOpeningFileForReadingException to
 			// ReadErrorOccurrence, but hey, this whole function will be rewritten when we add
 			// QFileDialog support.
@@ -91,31 +124,73 @@ namespace
 		{
 			std::cerr << "Caught exception: " << e << std::endl;
 		}
-		
-		if ( ! read_errors.is_empty())
+	}
+	if ( ! read_errors.is_empty())
+	{
+		d_read_errors_dialog.update();
+		d_read_errors_dialog.show();
+	}
+}
+
+
+namespace
+{
+	void
+	get_features_collection_from_file_info_collection(
+			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_files,
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &features_collection) {
+
+		GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection::iterator
+			iter = active_files.begin(),
+			end = active_files.end();
+		for ( ; iter != end; ++iter)
 		{
-			read_errors_dialog.update();
-			read_errors_dialog.show();
-		}
-		else
-		{
-			std::cerr << "All files read successfully." << std::endl;
+			if ((*iter)->get_feature_collection())
+			{
+				features_collection.push_back(*((*iter)->get_feature_collection()));
+			}
 		}
 	}
+
+
+	GPlatesModel::Reconstruction::non_null_ptr_type 
+	create_reconstruction(
+			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_reconstructable_files,
+			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_reconstruction_files,
+			GPlatesModel::ModelInterface *model_ptr,
+			double recon_time,
+			GPlatesModel::integer_plate_id_type recon_root) {
+
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+			reconstructable_features_collection,
+			reconstruction_features_collection;
+
+		get_features_collection_from_file_info_collection(
+				active_reconstructable_files,
+				reconstructable_features_collection);
+
+		get_features_collection_from_file_info_collection(
+				active_reconstruction_files,
+				reconstruction_features_collection);
+
+		return model_ptr->create_reconstruction(reconstructable_features_collection,
+				reconstruction_features_collection, recon_time, recon_root);
+	}
+
 
 	void
 	render_model(
 			GPlatesQtWidgets::GlobeCanvas *canvas_ptr, 
 			GPlatesModel::ModelInterface *model_ptr, 
 			GPlatesModel::Reconstruction::non_null_ptr_type &reconstruction,
-			GPlatesModel::FeatureCollectionHandle::weak_ref isochrons,
-			GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs,
+			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_reconstructable_files,
+			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_reconstruction_files,
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root)
 	{
 		try {
-			reconstruction = model_ptr->create_reconstruction(isochrons, total_recon_seqs,
-							recon_time, recon_root);
+			reconstruction = create_reconstruction(active_reconstructable_files, 
+					active_reconstruction_files, model_ptr, recon_time, recon_root);
 
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator iter =
 					reconstruction->point_geometries().begin();
@@ -165,8 +240,8 @@ namespace
 
 
 GPlatesQtWidgets::ViewportWindow::ViewportWindow(
-		const std::string &plates_line_fname,
-		const std::string &plates_rot_fname):
+		const QStringList &plates_line_fnames,
+		const QStringList &plates_rot_fnames):
 	d_model_ptr(new GPlatesModel::Model()),
 	d_reconstruction_ptr(d_model_ptr->create_empty_reconstruction(0.0, 0)),
 	d_recon_time(0.0),
@@ -182,7 +257,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 {
 	setupUi(this);
 
-	load_plates_files(*d_model_ptr, d_isochrons, d_total_recon_seqs, plates_line_fname, plates_rot_fname, d_read_errors_dialog);
+	load_files(plates_line_fnames);
+	load_files(plates_rot_fnames);
 
 	d_canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
 	
@@ -240,7 +316,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Render everything on the screen in present-day positions.
 	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, 0.0, d_recon_root);
+	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
+			d_active_reconstruction_files, 0.0, d_recon_root);
 	d_canvas_ptr->update_canvas();
 
 	GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type clicked_features =
@@ -314,7 +391,8 @@ void
 GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
 	d_canvas_ptr->clear_data();
-	::render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_isochrons, d_total_recon_seqs, d_recon_time, d_recon_root);
+	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
+			d_active_reconstruction_files, d_recon_time, d_recon_root);
 	d_canvas_ptr->update_canvas();
 }
 

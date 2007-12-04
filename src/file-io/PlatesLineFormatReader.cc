@@ -555,10 +555,12 @@ namespace
 
 const GPlatesModel::FeatureCollectionHandle::weak_ref
 GPlatesFileIO::PlatesLineFormatReader::read_file(
-		const QString &filename,
+		FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
+
 	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
 	std::ifstream input(filename.toAscii().constData());
 	if ( ! input) {
@@ -582,5 +584,6 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 		}
 	}
 
+	fileinfo.set_feature_collection(collection);
 	return collection;
 }

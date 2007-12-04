@@ -141,8 +141,8 @@ namespace GPlatesModel
 		virtual
 		const Reconstruction::non_null_ptr_type
 		create_reconstruction(
-				const FeatureCollectionHandle::weak_ref &reconstructable_features,
-				const FeatureCollectionHandle::weak_ref &reconstruction_features,
+				const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 				const double &time,
 				integer_plate_id_type root) = 0;
 

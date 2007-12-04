@@ -27,8 +27,8 @@
 #ifndef GPLATES_FILEIO_PLATESLINEFORMATREADER_H
 #define GPLATES_FILEIO_PLATESLINEFORMATREADER_H
 
-#include <QString>
-
+#include "FileInfo.h"
+#include "Reader.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "ReadErrorAccumulation.h"
 #include "model/ModelInterface.h"
@@ -36,21 +36,25 @@
 
 namespace GPlatesFileIO {
 
-	class PlatesLineFormatReader 
+	class PlatesLineFormatReader : public Reader
 	{
 	public:
 		/**
-		 * Read the PLATES line-format file named @a filename.
+		 * Read the PLATES line-format file specified by @a fileinfo.
 		 *
 		 * If the file cannot be opened for reading, an exception of type
 		 * ErrorOpeningFileForReadingException will be thrown.
 		 */
-		static 
+		virtual 
 		const GPlatesModel::FeatureCollectionHandle::weak_ref
 		read_file(
-				const QString &filename,
+				FileInfo &fileinfo,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
+
+		virtual
+		~PlatesLineFormatReader()
+		{ }
 	};
 	
 }

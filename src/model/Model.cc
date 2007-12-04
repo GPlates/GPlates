@@ -34,6 +34,7 @@
 #include "DummyTransactionHandle.h"
 #include "FeatureHandle.h"
 #include "FeatureRevision.h"
+#include "FeatureVisitor.h"
 #include "ReconstructionGraph.h"
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructedFeatureGeometryPopulator.h"
@@ -85,28 +86,53 @@ GPlatesModel::Model::create_feature(
 }
 
 
+namespace 
+{
+	template< typename FeatureCollectionIterator >
+	void
+	visit_feature_collections(
+			FeatureCollectionIterator collections_begin, 
+			FeatureCollectionIterator collections_end,
+			GPlatesModel::FeatureVisitor &visitor) {
+
+		using namespace GPlatesModel;
+
+		// We visit each of the features in each of the feature collections in
+		// the given range.
+		FeatureCollectionIterator collections_iter = collections_begin;
+		for ( ; collections_iter != collections_end; ++collections_iter) {
+
+			FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
+
+			// Before we dereference the weak_ref using 'operator->',
+			// let's be sure that it's valid to dereference.
+			if (feature_collection.is_valid()) {
+				FeatureCollectionHandle::features_iterator iter =
+						feature_collection->features_begin();
+				FeatureCollectionHandle::features_iterator end =
+						feature_collection->features_end();
+				for ( ; iter != end; ++iter) {
+					(*iter)->accept_visitor(visitor);
+				}
+			}
+		}
+	}
+}
+
 const GPlatesModel::Reconstruction::non_null_ptr_type
 GPlatesModel::Model::create_reconstruction(
-		const FeatureCollectionHandle::weak_ref &reconstructable_features,
-		const FeatureCollectionHandle::weak_ref &reconstruction_features,
+		const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 		const double &time,
 		GPlatesModel::integer_plate_id_type root)
 {
 	ReconstructionGraph graph(time);
 	ReconstructionTreePopulator rtp(time, graph);
 
-	// Before we dereference the weak_ref ('reconstruction_features') using 'operator->', let's
-	// be sure that it's valid to dereference.
-	if (reconstruction_features.is_valid()) {
-		// Populate the reconstruction tree with our total recon seqs.
-		FeatureCollectionHandle::features_iterator iter =
-				reconstruction_features->features_begin();
-		FeatureCollectionHandle::features_iterator end =
-				reconstruction_features->features_end();
-		for ( ; iter != end; ++iter) {
-			(*iter)->accept_visitor(rtp);
-		}
-	}
+	visit_feature_collections(
+			reconstruction_features_collection.begin(),
+			reconstruction_features_collection.end(),
+			rtp);
 
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
@@ -117,18 +143,10 @@ GPlatesModel::Model::create_reconstruction(
 			reconstruction->point_geometries(),
 			reconstruction->polyline_geometries());
 
-	// Before we dereference the weak_ref ('reconstructable_features') using 'operator->',
-	// let's be sure that it's valid to dereference.
-	if (reconstructable_features.is_valid()) {
-		// Populate the vectors with reconstructed feature geometries from our isochrons.
-		FeatureCollectionHandle::features_iterator iter =
-				reconstructable_features->features_begin();
-		FeatureCollectionHandle::features_iterator end =
-				reconstructable_features->features_end();
-		for ( ; iter != end; ++iter) {
-			(*iter)->accept_visitor(rfgp);
-		}
-	}
+	visit_feature_collections(
+		reconstructable_features_collection.begin(),
+		reconstructable_features_collection.end(),
+		rfgp);
 
 	return reconstruction;
 }
