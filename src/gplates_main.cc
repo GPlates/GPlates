@@ -114,6 +114,7 @@ int main(int argc, char* argv[])
 			application.argc(), application.argv(), prog_name);
 
 	GPlatesQtWidgets::ViewportWindow viewport_window(cmdline.first, cmdline.second);
+
 	viewport_window.show();
 	return application.exec();
 }

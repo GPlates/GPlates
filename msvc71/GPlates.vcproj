@@ -488,7 +488,7 @@
 "
 						Outputs="$(InputDir)/$(InputName).h"/>
 				</FileConfiguration>
-			</File>
+			</File>			
 			<File
 				RelativePath="..\src\qt-widgets\SpecifyFixedPlateDialog.cc">
 			</File>
@@ -695,6 +695,9 @@
 			</File>
 			<File
 				RelativePath="..\src\file-io\ReadErrorOccurrence.cc">
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapeFileReader.cc">
 			</File>
 		</Filter>
 		<Filter

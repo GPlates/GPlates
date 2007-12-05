@@ -163,6 +163,15 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 !!     http://expat.sourceforge.net
 !!]]))
 
+# GDAL (Geospatial Data Abstraction Library -- contains OGR)
+AC_CHECK_LIB([gdal1.3.2], [main], [], AC_MSG_ERROR([[
+!!
+!!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
+!!  shared library installed.  Your operating system vendor may provide a
+!!  pre-compiled package, or you can download the source from
+!!     http://www.remotesensing.org/gdal/
+!!]]))
+
 # ICU
 # Note that we need to explicitly "test for" every ICU library which is to be
 # linked into the executable, so that a linking directive for each is generated

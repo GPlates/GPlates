@@ -553,6 +553,11 @@ namespace
 
 			return;
 		}
+
+// RJW - temporary fix to allow existing SPlates-style files to function, but which will
+// prevent any 999-lines being stored, and hence edited/exported. 
+		if (moving_plate_id == 999) return;
+
 		append_pole_to_data_set(model, rotations, current_total_recon_seq,
 				props_in_current_trs, time_sample, fixed_plate_id,
 				moving_plate_id, data_source, line_num, read_errors);

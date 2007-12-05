@@ -152,6 +152,64 @@ GPlatesModel::Model::create_reconstruction(
 }
 
 
+const GPlatesModel::Reconstruction::non_null_ptr_type
+GPlatesModel::Model::create_reconstruction_from_vector(
+	const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>& reconstructable_features_vector,
+		const FeatureCollectionHandle::weak_ref &reconstruction_features,
+		const double &time,
+		GPlatesModel::integer_plate_id_type root)
+{
+	ReconstructionGraph graph(time);
+	ReconstructionTreePopulator rtp(time, graph);
+
+	// Before we dereference the weak_ref ('reconstruction_features') using 'operator->', let's
+	// be sure that it's valid to dereference.
+
+		if (reconstruction_features.is_valid()) {
+			// Populate the reconstruction tree with our total recon seqs.
+			FeatureCollectionHandle::features_iterator iter =
+				reconstruction_features->features_begin();
+			FeatureCollectionHandle::features_iterator end =
+				reconstruction_features->features_end();
+			for ( ; iter != end; ++iter) {
+				(*iter)->accept_visitor(rtp);
+			}
+		}
+	
+
+	// Build the reconstruction tree, using 'root' as the root of the tree.
+	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
+	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree);
+
+	ReconstructedFeatureGeometryPopulator rfgp(time, root,
+			reconstruction->reconstruction_tree(),
+			reconstruction->point_geometries(),
+			reconstruction->polyline_geometries());
+
+	// Before we dereference the weak_ref ('reconstructable_features') using 'operator->',
+	// let's be sure that it's valid to dereference.
+
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator it = reconstructable_features_vector.begin();
+	for(; it != reconstructable_features_vector.end(); it++)
+	{
+
+		if (it->is_valid()) {
+		// Populate the vectors with reconstructed feature geometries from our isochrons.
+			FeatureCollectionHandle::features_iterator iter =
+				(*it)->features_begin();
+			FeatureCollectionHandle::features_iterator end =
+				(*it)->features_end();
+			for ( ; iter != end; ++iter) {
+				(*iter)->accept_visitor(rfgp);
+			}
+		}
+	}
+
+	return reconstruction;
+}
+
+
+
 // Remove this function once it is possible to create empty reconstructions by simply passing empty
 // lists of feature-collections into the previous function.
 const GPlatesModel::Reconstruction::non_null_ptr_type

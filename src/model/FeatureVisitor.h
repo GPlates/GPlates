@@ -47,6 +47,8 @@ namespace GPlatesPropertyValues
 	class GpmlStrikeSlipEnumeration;
 	class GpmlTimeSample;
 	class XsBoolean;
+	class XsDouble;
+	class XsInteger;
 	class XsString;
 }
 
@@ -218,6 +220,18 @@ namespace GPlatesModel
 		void
 		visit_xs_boolean(
 				GPlatesPropertyValues::XsBoolean &xs_boolean)
+		{  }
+
+		virtual
+		void
+		visit_xs_double(
+				GPlatesPropertyValues::XsDouble &xs_double)
+		{  }
+
+		virtual
+		void
+		visit_xs_integer(
+				GPlatesPropertyValues::XsInteger &xs_integer)
 		{  }
 
 		virtual

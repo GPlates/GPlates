@@ -64,6 +64,7 @@ namespace GPlatesFileIO
 		{
 			PlatesRotation,
 			PlatesLine,
+			Shapefile,
 			Unspecified
 		};
 

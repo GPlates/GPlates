@@ -121,6 +121,16 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_xs_double(
+				const GPlatesPropertyValues::XsDouble &xs_double);
+
+		virtual
+		void
+		visit_xs_integer(
+				const GPlatesPropertyValues::XsInteger& xs_integer);
+
+		virtual
+		void
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
 

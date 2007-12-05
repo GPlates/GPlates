@@ -35,6 +35,7 @@
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlPoint.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 
@@ -259,19 +260,18 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 }
 
 void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
-		GPlatesPropertyValues::GmlPoint &gml_point)
-{
-	d_accumulator->d_not_yet_reconstructed_points.push_back(gml_point.point());
-}
-
-void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
+void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
+		GPlatesPropertyValues::GmlPoint &gml_point)
+{
+	d_accumulator->d_not_yet_reconstructed_points.push_back(gml_point.point());
+}
 
 void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_constant_value(

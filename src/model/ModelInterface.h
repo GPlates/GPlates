@@ -146,6 +146,27 @@ namespace GPlatesModel
 				const double &time,
 				integer_plate_id_type root) = 0;
 
+
+		/**
+		 * FIXME:  Where is the comment for this function?
+		 * It's here! This is a variation on the "create_reconstruction" method 
+		 * which takes a vector of FeatureCollectionHandles rather than a single 
+		 * FeatureCollectionHandle, and creates a single Reconstruction out of them all. 
+		 *
+		 * And while we're at it, do any of those other functions actually throw exceptions
+		 * when they're passed invalid weak_refs?  They should.
+		 */
+		virtual
+		const Reconstruction::non_null_ptr_type
+		create_reconstruction_from_vector(
+		const std::vector<FeatureCollectionHandle::weak_ref>& reconstructable_features_vector,
+				const FeatureCollectionHandle::weak_ref &reconstruction_features,
+				const double &time,
+				integer_plate_id_type root) = 0;
+
+
+
+
 		/**
 		 * FIXME:  Where is the comment for this function?
 		 *

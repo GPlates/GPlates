@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="GPlates"
 	ProjectGUID="{30E6493E-D095-4EF6-B65E-34FB3A7B8B8A}"
 	RootNamespace="GPlates"
@@ -75,7 +75,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib opengl32.lib glu32.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -161,7 +161,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcore4.lib qtopengld4.lib opengl32.lib glu32.lib"
+				AdditionalDependencies="icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -406,7 +406,8 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\ApplicationState.cc">
+				RelativePath="..\src\qt-widgets\ApplicationState.cc"
+				>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\GlobeCanvas.cc"
@@ -777,7 +778,15 @@
 			Name="file-io"
 			>
 			<File
+				RelativePath="..\src\file-io\FileInfo.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\PlatesLineFormatReader.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\PlatesLineFormatReader.h"
 				>
 			</File>
 			<File
@@ -785,7 +794,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\PlatesRotationFormatReader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\Reader.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\ReadErrorOccurrence.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ReadErrors.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapeFileReader.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapeFileReader.h"
 				>
 			</File>
 		</Filter>
@@ -806,6 +835,10 @@
 			</File>
 			<File
 				RelativePath="..\src\property-values\GpmlFiniteRotation.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlPlateId.h"
 				>
 			</File>
 		</Filter>

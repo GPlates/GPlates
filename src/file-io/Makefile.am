@@ -9,7 +9,8 @@ libfile_io_la_SOURCES	= PlatesLineFormatReader.cc \
 				PlatesRotationFormatReader.cc \
 				XmlOutputInterface.cc \
 				GpmlOnePointFiveOutputVisitor.cc \
-				ReadErrorOccurrence.cc
+				ReadErrorOccurrence.cc \
+				ShapeFileReader.cc
 
 if PYTHON
 noinst_PROGRAMS		= _file_io.so

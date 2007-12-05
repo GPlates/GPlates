@@ -76,6 +76,23 @@ namespace GPlatesFileIO
 			InvalidPlatesPolylineLongitude,
 			AdjacentSkipToPlotterCodes,
 
+			// The following apply to ESRI Shapefile import
+			NoLayersFoundInFile,
+			MultipleLayersInFile,
+			ErrorReadingShapefileLayer,
+			NoFeaturesFoundInShapefile,
+			ErrorReadingShapefileGeometry,
+			TwoPointFiveDGeometryDetected,
+			LessThanTwoPointsInLineString,
+			InteriorRingsInShapefile,
+			UnsupportedGeometryType,
+			NoLatitudeShapeData,
+			NoLongitudeShapeData,
+			InvalidShapefileLatitude,
+			InvalidShapefileLongitude,
+			NoPlateIdFound,
+			InvalidShapefilePlateIdNumber,
+
 			// The following are generic to all local files
 			ErrorOpeningFileForReading
 		};
@@ -99,6 +116,14 @@ namespace GPlatesFileIO
 			UnclassifiedFeatureCreated,
 			FeatureDiscarded,
 			NoGeometryCreatedByMovement,
+
+			// The following are specific to ESRI shapefile reading.
+			MultipleLayersIgnored,
+			GeometryFlattenedTo2D,
+			GeometryIgnored,
+			OnlyExteriorRingRead,
+			NoPlateIdLoadedForFile,
+			NoPlateIdLoadedForFeature,
 
 			// The following are generic to all local files
 			FileNotLoaded

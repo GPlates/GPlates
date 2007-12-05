@@ -24,6 +24,7 @@
  */
 
 #include <QLocale>
+#include <QKeyEvent>
 
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
@@ -39,6 +40,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QWidget(parent_)
 {
 	setupUi(this);
+
+// ensures that this widget accepts keyEvents, so that the keyPressEvent method is processed from start-up,
+// irrespective on which window (if any) the user has clicked. 
+	setFocusPolicy(Qt::StrongFocus);
 
 	d_canvas_ptr = new GlobeCanvas(view_state, this);
 	gridLayout->addWidget(d_canvas_ptr, 1, 0);
@@ -173,4 +178,13 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 	}
 
 	label_mouse_coords->setText(position_as_string);
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::keyPressEvent(
+	QKeyEvent *e)
+{
+// this passes any keyEvents to the ViewportWindow so that the (temporary) file-loading routines are activated.
+	e->ignore();
 }

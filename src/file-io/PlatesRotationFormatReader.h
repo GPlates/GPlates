@@ -31,7 +31,6 @@
 #define GPLATES_FILEIO_PLATESROTATIONFORMATREADER_H
 
 #include "FileInfo.h"
-#include "Reader.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "ReadErrorAccumulation.h"
 #include "model/ModelInterface.h"
@@ -43,7 +42,7 @@ namespace GPlatesFileIO
 	 * A PLATES rotation-format reader is used to read the contents of a PLATES rotation-format
 	 * file and parse it into the contents of a feature collection.
 	 */
-	class PlatesRotationFormatReader : public Reader
+	class PlatesRotationFormatReader
 	{
 	public:
 		/**
@@ -52,16 +51,12 @@ namespace GPlatesFileIO
 		 * If the file cannot be opened for reading, an exception of type
 		 * ErrorOpeningFileForReadingException will be thrown.
 		 */
-		virtual
+		static
 		const GPlatesModel::FeatureCollectionHandle::weak_ref
 		read_file(
 				FileInfo &filename,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
-
-		virtual
-		~PlatesRotationFormatReader() 
-		{ }
 	};
 }
 #endif  // GPLATES_FILEIO_PLATESROTATIONFORMATREADER_H

@@ -26,9 +26,15 @@
 #include <iostream>
 #include <iterator>
 #include <boost/format.hpp>
+
+#include <QFileDialog>
+#include <QKeyEvent>
 #include <QLocale>
 #include <QString>
 #include <QStringList>
+
+
+#include "ogrsf_frmts.h"
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -46,6 +52,7 @@
 #include "file-io/PlatesRotationFormatReader.h"
 #include "file-io/FileInfo.h"
 #include "file-io/Reader.h"
+#include "file-io/ShapeFileReader.h"
 #include "gui/PlatesColourTable.h"
 
 
@@ -70,8 +77,8 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 		{
 			if (file.get_qfileinfo().suffix().endsWith(QString("dat"), Qt::CaseInsensitive))
 			{
-				GPlatesFileIO::PlatesLineFormatReader reader;
-				reader.read_file(file, *d_model_ptr, read_errors);
+			//	GPlatesFileIO::PlatesLineFormatReader reader;
+				GPlatesFileIO::PlatesLineFormatReader::read_file(file, *d_model_ptr, read_errors);
 
 				// All loaded files are added to the set of loaded files.
 				GPlatesAppState::ApplicationState::file_info_iterator new_file =
@@ -82,9 +89,9 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 			}
 			else if (file.get_qfileinfo().suffix().endsWith(QString("rot"), Qt::CaseInsensitive))
 			{
-				GPlatesFileIO::PlatesRotationFormatReader reader;
-				reader.read_file(file, *d_model_ptr, read_errors);
-
+			//	GPlatesFileIO::PlatesRotationFormatReader reader;
+			//	reader.read_file(file, *d_model_ptr, read_errors);
+				GPlatesFileIO::PlatesRotationFormatReader::read_file(file, *d_model_ptr, read_errors);
 				// All loaded files are added to the set of loaded files.
 				GPlatesAppState::ApplicationState::file_info_iterator new_file =
 					GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
@@ -97,6 +104,13 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 					have_loaded_new_rotation_file = true;
 				}
 			} 
+			else if (file.get_qfileinfo().suffix().endsWith(QString("shp"),Qt::CaseInsensitive))
+			{
+				GPlatesFileIO::ShapeFileReader::read_file(file,*d_model_ptr,read_errors);
+				GPlatesAppState::ApplicationState::file_info_iterator new_file =
+					GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+				d_active_reconstructable_files.push_back(new_file);
+			}
 			else
 			{
 				// FIXME: This should be added to the read errors!
@@ -236,7 +250,8 @@ namespace
 			std::cerr << e << std::endl;
 		}
 	}
-}
+
+} // namespace
 
 
 GPlatesQtWidgets::ViewportWindow::ViewportWindow(
@@ -462,9 +477,10 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Query_Feature->setChecked(false);
 }
 
-
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
 {
 	d_read_errors_dialog.show();
 }
+
+

@@ -44,6 +44,8 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlOldPlatesHeader.h"
+#include "property-values/XsDouble.h"
+#include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
 
 #include "maths/PolylineOnSphere.h"
@@ -172,6 +174,40 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_point(
 
 	d_output.write_line_of_decimal_duple_content(llp.longitude().dval(), llp.latitude().dval());
 #endif
+
+	// First, add a branch for the "gml:posList".
+	d_tree_widget_item_stack.back()->setExpanded(true);
+
+	QTreeWidgetItem *pos_list_item = add_child(QObject::tr("gml:position"), QString());
+	d_tree_widget_item_stack.push_back(pos_list_item);
+
+	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
+	// "gml:posList" branch.
+
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*(gml_point.point()));
+#if 0	
+		GPlatesMaths::LatLonPoint llp =
+				GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*(gml_point.point()));
+#endif
+		QLocale locale;
+
+		QString point_id(QObject::tr("#"));
+		
+		point_id.append(QObject::tr(" (lat ; lon)"));
+
+				
+		QString lat = locale.toString(llp.latitude());
+		QString lon = locale.toString(llp.longitude());
+		QString point;
+		point.append(lat);
+		point.append(QObject::tr(" ; "));
+		point.append(lon);
+
+		add_child(point_id, point);
+
+
+	d_tree_widget_item_stack.pop_back();
+
 }
 
 
@@ -370,6 +406,27 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_old_pl
 	add_child(QObject::tr("gpml:numberOfPoints"), QString::number(header.number_of_points()));
 }
 
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_double(
+	const GPlatesPropertyValues::XsDouble& xs_double)
+{
+	static const int which_column = 1;
+	QString qstring = QVariant(xs_double.value()).toString();
+
+	// This assumes that the stack is non-empty.
+	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+}
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_integer(
+	const GPlatesPropertyValues::XsInteger& xs_integer)
+{
+	static const int which_column = 1;
+	QString qstring = QVariant(xs_integer.value()).toString();
+
+	// This assumes that the stack is non-empty.
+	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+}
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_string(
