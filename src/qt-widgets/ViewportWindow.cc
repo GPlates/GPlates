@@ -56,6 +56,30 @@
 #include "gui/PlatesColourTable.h"
 
 
+namespace
+{
+	bool
+	file_name_ends_with(const GPlatesFileIO::FileInfo &file, const QString &suffix)
+	{
+		return file.get_qfileinfo().suffix().endsWith(QString(suffix), Qt::CaseInsensitive);
+	}
+
+
+	bool
+	is_plates_line_format_file(const GPlatesFileIO::FileInfo &file)
+	{
+		return file_name_ends_with(file, "dat") || file_name_ends_with(file, "pla");
+	}
+
+	
+	bool
+	is_plates_rotation_format_file(const GPlatesFileIO::FileInfo &file)
+	{
+		return file_name_ends_with(file, "rot");
+	}
+}
+
+
 void
 GPlatesQtWidgets::ViewportWindow::load_files(
 		const QStringList &file_names)
@@ -66,7 +90,6 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 	QStringList::const_iterator iter = file_names.begin();
 	QStringList::const_iterator end = file_names.end();
 
-
 	bool have_loaded_new_rotation_file = false;
 
 	for ( ; iter != end; ++iter) {
@@ -75,7 +98,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 
 		try
 		{
-			if (file.get_qfileinfo().suffix().endsWith(QString("dat"), Qt::CaseInsensitive))
+			if (is_plates_line_format_file(file))
 			{
 			//	GPlatesFileIO::PlatesLineFormatReader reader;
 				GPlatesFileIO::PlatesLineFormatReader::read_file(file, *d_model_ptr, read_errors);
@@ -87,7 +110,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 				// Line format files are made active by default.
 				d_active_reconstructable_files.push_back(new_file);
 			}
-			else if (file.get_qfileinfo().suffix().endsWith(QString("rot"), Qt::CaseInsensitive))
+			else if (is_plates_rotation_format_file(file))
 			{
 			//	GPlatesFileIO::PlatesRotationFormatReader reader;
 			//	reader.read_file(file, *d_model_ptr, read_errors);
@@ -151,10 +174,10 @@ namespace
 {
 	void
 	get_features_collection_from_file_info_collection(
-			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_files,
+			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_files,
 			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &features_collection) {
 
-		GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection::iterator
+		GPlatesQtWidgets::ViewportWindow::active_files_collection_type::iterator
 			iter = active_files.begin(),
 			end = active_files.end();
 		for ( ; iter != end; ++iter)
@@ -169,8 +192,8 @@ namespace
 
 	GPlatesModel::Reconstruction::non_null_ptr_type 
 	create_reconstruction(
-			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_reconstructable_files,
-			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_reconstruction_files,
+			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
+			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
 			GPlatesModel::ModelInterface *model_ptr,
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root) {
@@ -197,8 +220,8 @@ namespace
 			GPlatesQtWidgets::GlobeCanvas *canvas_ptr, 
 			GPlatesModel::ModelInterface *model_ptr, 
 			GPlatesModel::Reconstruction::non_null_ptr_type &reconstruction,
-			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_reconstructable_files,
-			GPlatesQtWidgets::ViewportWindow::ActiveFilesCollection &active_reconstruction_files,
+			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
+			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root)
 	{
@@ -484,3 +507,22 @@ GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
 }
 
 
+void
+GPlatesQtWidgets::ViewportWindow::deactivate_loaded_file(
+		file_info_iterator loaded_file)
+{
+	// Don't bother checking whether 'loaded_file' is actually an element of
+	// 'd_active_reconstructable_files' and/or 'd_active_reconstruction_files' -- just tell the
+	// lists to remove the value if it *is* an element.
+
+	// list<T>::remove(const T &val) -- remove all elements with value 'val'.
+	// Will not throw (unless element comparisons can throw).
+	// See Josuttis section 6.10.7 "Inserting and Removing Elements".
+	d_active_reconstructable_files.remove(loaded_file);
+	d_active_reconstruction_files.remove(loaded_file);
+
+	// FIXME:  This should not happen here -- in fact, it should be removal of the loaded file
+	// (using 'remove_loaded_file' in ApplicationState) which triggers *this*! -- but until we
+	// have multiple view windows, it doesn't matter.
+	GPlatesAppState::ApplicationState::instance()->remove_loaded_file(loaded_file);
+}

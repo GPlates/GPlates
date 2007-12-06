@@ -45,35 +45,57 @@ namespace GPlatesAppState {
 		typedef std::list<GPlatesFileIO::FileInfo>::iterator file_info_iterator;
 
 		file_info_iterator
-		files_begin() { return d_loaded_files.begin(); }
+		files_begin() 
+		{ 
+			return d_loaded_files.begin();
+		}
 
 		file_info_iterator
-		files_end() { return d_loaded_files.end(); }
+		files_end() 
+		{ 
+			return d_loaded_files.end(); 
+		}
 
 		file_info_iterator
 		push_back_loaded_file(
-				const GPlatesFileIO::FileInfo &file_info) { 
+				const GPlatesFileIO::FileInfo &file_info) 
+		{
 			return d_loaded_files.insert(files_end(), file_info);
 		}
 
+		/**
+		 * Remove @a loaded_file from the collection of loaded files.
+		 *
+		 * This function should be invoked when a feature collection is unloaded by the
+		 * user.
+		 */
 		file_info_iterator
 		remove_loaded_file(
-				file_info_iterator file) {
-			return d_loaded_files.erase(file);
+				file_info_iterator loaded_file)
+		{
+			return d_loaded_files.erase(loaded_file);
+			// FIXME:  This should remove the appropriate feature collection from the
+			// feature store in the Model.
 		}
 
-		~ApplicationState() { delete d_instance; }
+		~ApplicationState() 
+		{
+			delete d_instance;
+		}
 
 		static ApplicationState *
-		instance() {
-			if (d_instance == 0) {
+		instance()
+		{
+			if (d_instance == NULL)
+			{
 				d_instance = new ApplicationState();
 			}
 			return d_instance;
 		}
 
 	private:
-		ApplicationState() { }
+		ApplicationState() 
+		{ }
 
 		std::list<GPlatesFileIO::FileInfo> d_loaded_files;
 		static ApplicationState *d_instance;

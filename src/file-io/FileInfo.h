@@ -62,7 +62,7 @@ namespace GPlatesFileIO {
 
 
 		const QFileInfo &
-		get_qfileinfo()
+		get_qfileinfo() const
 		{
 			return d_file_info;
 		}

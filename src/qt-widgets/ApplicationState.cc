@@ -28,4 +28,4 @@
 #include "ApplicationState.h"
 
 GPlatesAppState::ApplicationState *
-GPlatesAppState::ApplicationState::d_instance = 0;
+GPlatesAppState::ApplicationState::d_instance = NULL;

@@ -112,12 +112,33 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_query_feature_tool();
-		
+
 		void
 		pop_up_read_errors_dialog();
+
+	public:
+		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
+		typedef std::list<file_info_iterator> active_files_collection_type;
 		
 		void
-		load_files(const QStringList &file_names);
+		load_files(
+				const QStringList &file_names);
+
+		/**
+		 * Ensure the @a loaded_file is deactivated.
+		 *
+		 * It is assumed that @a loaded_file is an iterator which references the FileInfo
+		 * instance of a loaded file.  The file is going to be unloaded, so it will be
+		 * removed from the list of files in the application state.  Let's also ensure that
+		 * it is not an "active" file in this class (ie, an element of the collections of
+		 * active reconstructable or reconstruction files).
+		 *
+		 * This function should be invoked when a feature collection is unloaded by the
+		 * user.
+		 */
+		void
+		deactivate_loaded_file(
+				file_info_iterator loaded_file);
 
 	private:
 		GPlatesModel::ModelInterface *d_model_ptr;
@@ -134,14 +155,8 @@ namespace GPlatesQtWidgets
 		//@{
 		// ViewState 
 
-		// XXX: public so that it can be accessed by render_model in ViewportWindow.cc.
-		// This is a code smell -- it should be changed eventually.
-	public:
-		typedef std::list<GPlatesAppState::ApplicationState::file_info_iterator> ActiveFilesCollection;
-
-	private:
-		ActiveFilesCollection d_active_reconstructable_files;
-		ActiveFilesCollection d_active_reconstruction_files;
+		active_files_collection_type d_active_reconstructable_files;
+		active_files_collection_type d_active_reconstruction_files;
 
 		//@}
 
