@@ -18,6 +18,7 @@ gplates_SOURCES		= gplates_main.cc
 gplates_LDADD		= libgplates_gui.la libgplates_app.la \
 				libgplates_model.la libgplates_util.la
 
+
 lib_LTLIBRARIES		= libgplates_gui.la libgplates_app.la \
 				libgplates_model.la libgplates_util.la
 

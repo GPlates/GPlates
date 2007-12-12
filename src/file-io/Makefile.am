@@ -1,4 +1,4 @@
-## Makefile.am -- Process this file with automake to produce Makefile.in
+# Makefile.am -- Process this file with automake to produce Makefile.in
 
 MAINTAINERCLEANFILES	= Makefile.in
 
@@ -10,6 +10,8 @@ libfile_io_la_SOURCES	= PlatesLineFormatReader.cc \
 				XmlOutputInterface.cc \
 				GpmlOnePointFiveOutputVisitor.cc \
 				ReadErrorOccurrence.cc \
+				PlatesLineFormatWriter.cc \
+				PlatesRotationFormatWriter.cc \
 				ShapeFileReader.cc
 
 if PYTHON

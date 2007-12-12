@@ -36,8 +36,8 @@
 /* Define to 1 if you have the `expat' library (-lexpat). */
 #undef HAVE_LIBEXPAT
 
-/* Define to 1 if you have the `gdal1.3.2' library (-lgdal1.3.2). */
-#undef HAVE_LIBGDAL1_3_2
+/* Define to 1 if you have the `gdal' library (-lgdal). */
+#undef HAVE_LIBGDAL
 
 /* Define to 1 if you have the `GL' library (-lGL). */
 #undef HAVE_LIBGL

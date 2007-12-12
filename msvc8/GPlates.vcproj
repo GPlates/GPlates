@@ -666,6 +666,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\utils\StringFormattingUtils.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\utils\StringSet.cc"
 				>
 			</File>
@@ -782,6 +786,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\PlatesLineFormatWriter.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\PlatesLineFormatReader.cc"
 				>
 			</File>
@@ -795,6 +803,14 @@
 			</File>
 			<File
 				RelativePath="..\src\file-io\PlatesRotationFormatReader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\PlatesRotationFormatWriter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\PlatesRotationFormatWriter.h"
 				>
 			</File>
 			<File

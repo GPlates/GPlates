@@ -164,7 +164,7 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 !!]]))
 
 # GDAL (Geospatial Data Abstraction Library -- contains OGR)
-AC_CHECK_LIB([gdal1.3.2], [main], [], AC_MSG_ERROR([[
+AC_CHECK_LIB([gdal], [main], [], AC_MSG_ERROR([[
 !!
 !!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
 !!  shared library installed.  Your operating system vendor may provide a

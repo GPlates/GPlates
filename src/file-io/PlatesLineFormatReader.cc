@@ -46,6 +46,7 @@
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
@@ -328,7 +329,13 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Isochron");
+		GPlatesModel::FeatureHandle::weak_ref feature =
+		   	create_common(model, collection, header, points, "gpml:Isochron");
+		const GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conj_plate_id =
+				GPlatesPropertyValues::GpmlPlateId::create(header->conjugate_plate_id_number());
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
+				conj_plate_id, "gpml:conjugatePlateId", feature);
+		return feature;
 	}
 
 
