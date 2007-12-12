@@ -75,6 +75,8 @@ namespace GPlatesFileIO
 			InvalidPlatesPolylineLatitude,
 			InvalidPlatesPolylineLongitude,
 			AdjacentSkipToPlotterCodes,
+			AmbiguousPlatesIceShelfCode,
+			MoreThanOneDistinctPoint,
 
 			// The following apply to ESRI Shapefile import
 			NoLayersFoundInFile,

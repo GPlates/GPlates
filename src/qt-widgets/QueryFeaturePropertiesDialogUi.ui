@@ -13,7 +13,10 @@
    <string>Query Feature Properties</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_help_agent_16.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/info_sign_16.png</iconset>
+  </property>
+  <property name="sizeGripEnabled" >
+   <bool>true</bool>
   </property>
   <layout class="QVBoxLayout" >
    <item>

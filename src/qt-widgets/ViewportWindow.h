@@ -48,6 +48,7 @@
 #include "LicenseDialog.h"
 #include "QueryFeaturePropertiesDialog.h"
 #include "ReadErrorAccumulationDialog.h"
+#include "ManageFeatureCollectionsDialog.h"
 
 #include "model/ModelInterface.h"
 
@@ -116,9 +117,13 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_read_errors_dialog();
 
+		void
+		pop_up_manage_feature_collections_dialog();
+
 	public:
 		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
 		typedef std::list<file_info_iterator> active_files_collection_type;
+		typedef active_files_collection_type::iterator active_files_iterator;
 		
 		void
 		load_files(
@@ -139,6 +144,11 @@ namespace GPlatesQtWidgets
 		void
 		deactivate_loaded_file(
 				file_info_iterator loaded_file);
+
+		bool
+		is_file_active(
+				file_info_iterator loaded_file);
+			
 
 	private:
 		GPlatesModel::ModelInterface *d_model_ptr;
@@ -169,6 +179,7 @@ namespace GPlatesQtWidgets
 		LicenseDialog d_license_dialog;
 		QueryFeaturePropertiesDialog d_query_feature_properties_dialog;
 		ReadErrorAccumulationDialog d_read_errors_dialog;
+		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;

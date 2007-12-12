@@ -107,6 +107,12 @@ namespace GPlatesQtWidgets
 			d_tree_line_warnings_ptr->setExpanded(true);
 		}
 		
+		void clear_errors()
+		{
+			d_read_errors.clear();
+			clear();
+		}
+		
 	private:
 		/**
 		 * Top-level QTreeWidgetItems which will be managed by the QTreeWidget for "By Error"
@@ -200,7 +206,6 @@ namespace GPlatesQtWidgets
 		 */
 		QTreeWidgetItem *
 		create_occurrence_type_summary_item(
-				QTreeWidgetItem *parent_item_ptr,
 				const GPlatesFileIO::ReadErrorOccurrence &error,
 				const QIcon &occurrence_icon,
 				size_t quantity);
@@ -210,7 +215,6 @@ namespace GPlatesQtWidgets
 		 */
 		QTreeWidgetItem *
 		create_occurrence_file_info_item(
-				QTreeWidgetItem *parent_item_ptr,
 				const GPlatesFileIO::ReadErrorOccurrence &error);
 
 		/**
@@ -218,7 +222,6 @@ namespace GPlatesQtWidgets
 		 */
 		QTreeWidgetItem *
 		create_occurrence_file_path_item(
-				QTreeWidgetItem *parent_item_ptr,
 				const GPlatesFileIO::ReadErrorOccurrence &error);
 
 		/**
@@ -226,7 +229,6 @@ namespace GPlatesQtWidgets
 		 */
 		QTreeWidgetItem *
 		create_occurrence_line_item(
-				QTreeWidgetItem *parent_item_ptr,
 				const GPlatesFileIO::ReadErrorOccurrence &error,
 				const QIcon &occurrence_icon,
 				bool show_short_description);
@@ -236,7 +238,6 @@ namespace GPlatesQtWidgets
 		 */
 		QTreeWidgetItem *
 		create_occurrence_description_item(
-				QTreeWidgetItem *parent_item_ptr,
 				const GPlatesFileIO::ReadErrorOccurrence &error);
 
 		/**
@@ -244,7 +245,6 @@ namespace GPlatesQtWidgets
 		 */
 		QTreeWidgetItem *
 		create_occurrence_result_item(
-				QTreeWidgetItem *parent_item_ptr,
 				const GPlatesFileIO::ReadErrorOccurrence &error);
 
 

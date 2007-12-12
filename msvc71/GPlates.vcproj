@@ -433,6 +433,60 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsActionWidget.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsActionWidget.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsActionWidgetUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_AboutDialog.cc">
 			</File>
 			<File
@@ -452,6 +506,12 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_LicenseDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ManageFeatureCollectionsDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ManageFeatureCollectionsActionWidget.cc">
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_QueryFeaturePropertiesDialog.cc">

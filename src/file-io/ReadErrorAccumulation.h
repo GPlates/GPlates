@@ -37,7 +37,8 @@ namespace GPlatesFileIO
 	{
 		typedef std::vector<ReadErrorOccurrence> read_error_collection_type;
 		typedef read_error_collection_type::const_iterator read_error_collection_const_iterator;
-		
+		typedef read_error_collection_type::size_type size_type;
+
 		ReadErrorAccumulation()
 		{  }
 
@@ -85,6 +86,25 @@ namespace GPlatesFileIO
 		{
 			return (d_warnings.empty() && d_recoverable_errors.empty() &&
 					d_terminating_errors.empty() && d_failures_to_begin.empty());
+		}
+		
+		/**
+		 * The combined size of all read error collections in this ReadErrorAccumulation.
+		 */
+		size_type
+		size() const
+		{
+			return (d_warnings.size() + d_recoverable_errors.size() +
+					d_terminating_errors.size() + d_failures_to_begin.size());
+		}
+		
+		void
+		clear()
+		{
+			d_warnings.clear();
+			d_recoverable_errors.clear();
+			d_terminating_errors.clear();
+			d_failures_to_begin.clear();
 		}
 	};
 }

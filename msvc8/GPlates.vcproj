@@ -459,6 +459,44 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsActionWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsActionWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsActionWidgetUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_AboutDialog.cc"
 				>
 			</File>
@@ -476,6 +514,14 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_LicenseDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ManageFeatureCollectionsDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ManageFeatureCollectionsActionWidget.cc"
 				>
 			</File>
 			<File

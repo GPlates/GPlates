@@ -86,6 +86,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 {
 	d_read_errors_dialog.clear();
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
 
 	QStringList::const_iterator iter = file_names.begin();
 	QStringList::const_iterator end = file_names.end();
@@ -162,9 +163,14 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 			std::cerr << "Caught exception: " << e << std::endl;
 		}
 	}
-	if ( ! read_errors.is_empty())
-	{
-		d_read_errors_dialog.update();
+
+	// Internal state changed, make sure dialogs are up to date.
+	d_read_errors_dialog.update();
+	d_manage_feature_collections_dialog.update();
+
+	// Pop up errors only if appropriate.
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors) {
 		d_read_errors_dialog.show();
 	}
 }
@@ -291,6 +297,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_license_dialog(&d_about_dialog),
 	d_query_feature_properties_dialog(this),
 	d_read_errors_dialog(this),
+	d_manage_feature_collections_dialog(*this, this),
 	d_animate_dialog_has_been_shown(false)
 {
 	setupUi(this);
@@ -347,6 +354,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			this, SLOT(choose_query_feature_tool()));
 
+	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
+			&d_manage_feature_collections_dialog, SLOT(open_file()));
+	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
+			this, SLOT(pop_up_manage_feature_collections_dialog()));
 	QObject::connect(action_File_Errors, SIGNAL(triggered()),
 			this, SLOT(pop_up_read_errors_dialog()));
 
@@ -508,6 +519,13 @@ GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::pop_up_manage_feature_collections_dialog()
+{
+	d_manage_feature_collections_dialog.show();
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::deactivate_loaded_file(
 		file_info_iterator loaded_file)
 {
@@ -526,3 +544,29 @@ GPlatesQtWidgets::ViewportWindow::deactivate_loaded_file(
 	// have multiple view windows, it doesn't matter.
 	GPlatesAppState::ApplicationState::instance()->remove_loaded_file(loaded_file);
 }
+
+
+bool
+GPlatesQtWidgets::ViewportWindow::is_file_active(
+		file_info_iterator loaded_file)
+{
+	active_files_iterator reconstructable_it = d_active_reconstructable_files.begin();
+	active_files_iterator reconstructable_end = d_active_reconstructable_files.end();
+	for (; reconstructable_it != reconstructable_end; ++reconstructable_it) {
+		if (*reconstructable_it == loaded_file) {
+			return true;
+		}
+	}
+
+	active_files_iterator reconstruction_it = d_active_reconstruction_files.begin();
+	active_files_iterator reconstruction_end = d_active_reconstruction_files.end();
+	for (; reconstruction_it != reconstruction_end; ++reconstruction_it) {
+		if (*reconstruction_it == loaded_file) {
+			return true;
+		}
+	}
+
+	// loaded_file not found in any active files lists, must not be active.
+	return false;
+}
+

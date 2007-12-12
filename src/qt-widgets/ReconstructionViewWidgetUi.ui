@@ -195,7 +195,7 @@
         <item>
          <widget class="QDoubleSpinBox" name="spinbox_zoom_percent" >
           <property name="toolTip" >
-           <string>Set zoom percent  Ctrl+M</string>
+           <string>Set zoom percent</string>
           </property>
           <property name="suffix" >
            <string>%</string>

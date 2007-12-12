@@ -127,6 +127,12 @@ namespace
 		{ GPlatesFileIO::ReadErrors::AdjacentSkipToPlotterCodes,
 				QT_TR_NOOP("Adjacent 'skip to' codes"),
 				QT_TR_NOOP("A 'skip to' plotter code followed immediately after another 'skip to' plotter code.") },
+		{ GPlatesFileIO::ReadErrors::AmbiguousPlatesIceShelfCode,
+				QT_TR_NOOP("Data type code 'IS' is deprecated"),
+				QT_TR_NOOP("The data type code 'IS' is no longer used for Isochron (Cenozoic). Use 'IC' instead.") },
+		{ GPlatesFileIO::ReadErrors::MoreThanOneDistinctPoint,
+				QT_TR_NOOP("More than one point"),
+				QT_TR_NOOP("A single distinct point was expected, but more were encountered.") },
 		
 		// Errors from PLATES rotation-format files:
 		{ GPlatesFileIO::ReadErrors::CommentMovingPlateIdAfterNonCommentSequence,
@@ -374,6 +380,8 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::ReadErrorAccumulationDialog(
 			this, SLOT(expandAll()));
 	QObject::connect(button_collapse_all, SIGNAL(clicked()),
 			this, SLOT(collapseAll()));
+	QObject::connect(button_clear, SIGNAL(clicked()),
+			this, SLOT(clear_errors()));
 }
 
 
@@ -428,6 +436,11 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::update()
 	static const QIcon icon_error(":/gnome_dialog_error_16.png");
 	static const QIcon icon_warning(":/gnome_dialog_warning_16.png");
 	
+	// Disabling screen updates to work around Qt slowness when >1000 warnings.
+	// http://doc.trolltech.com/4.3/qwidget.html#updatesEnabled-prop
+	// Not as huge a speedup as I hoped, but every little bit helps.
+	setUpdatesEnabled(false);
+	
 	// Populate the Failures to Begin tree by type.
 	populate_top_level_tree_by_type(d_tree_type_failures_to_begin_ptr, tr("Failure to Begin (%1)"),
 			d_read_errors.d_failures_to_begin, icon_error);
@@ -463,6 +476,10 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::update()
 	// Update labels.
 	QString summary_str = build_summary_string();
 	label_problem->setText(summary_str);
+
+	// Re-enable screen updates after all items have been added.
+	// Re-enabling implicitly calls update() on the widget.
+	setUpdatesEnabled(true);
 }
 
 
@@ -595,10 +612,9 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_file_tree_by_type(
 	// We must refer to the first entry to get the path info we need.
 	const GPlatesFileIO::ReadErrorOccurrence &first_error = errors[0];
 	
-	QTreeWidgetItem *file_info_item = create_occurrence_file_info_item(parent_item_ptr, first_error);
-	file_info_item->setExpanded(true);
+	QTreeWidgetItem *file_info_item = create_occurrence_file_info_item(first_error);
 	
-	create_occurrence_file_path_item(file_info_item, first_error);
+	file_info_item->addChild(create_occurrence_file_path_item(first_error));
 
 	// Build map of Description (enum) -> Error collection.
 	errors_by_type_map_type errors_by_type;
@@ -608,13 +624,18 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_file_tree_by_type(
 	errors_by_type_map_const_iterator it = errors_by_type.begin();
 	errors_by_type_map_const_iterator end = errors_by_type.end();
 	for (; it != end; ++it) {
-		QTreeWidgetItem *summary_item = create_occurrence_type_summary_item(file_info_item,
+		QTreeWidgetItem *summary_item = create_occurrence_type_summary_item(
 				it->second[0], occurrence_icon, it->second.size());
-		summary_item->setExpanded(false);
 		
 		static const QIcon file_line_icon(":/gnome_edit_find_16.png");
 		build_occurrence_line_list(summary_item, it->second, file_line_icon, false);
+		
+		file_info_item->addChild(summary_item);
+		summary_item->setExpanded(false);
 	}
+	
+	parent_item_ptr->addChild(file_info_item);
+	file_info_item->setExpanded(true);	// setExpanded won't have effect until after addChild!
 }
 
 
@@ -630,12 +651,14 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_file_tree_by_line(
 	// We must refer to the first entry to get the path info we need.
 	const GPlatesFileIO::ReadErrorOccurrence &first_error = errors[0];
 	
-	QTreeWidgetItem *file_info_item = create_occurrence_file_info_item(parent_item_ptr, first_error);
-	file_info_item->setExpanded(true);
+	QTreeWidgetItem *file_info_item = create_occurrence_file_info_item(first_error);
 	
-	create_occurrence_file_path_item(file_info_item, first_error);
+	file_info_item->addChild(create_occurrence_file_path_item(first_error));
 
 	build_occurrence_line_list(file_info_item, errors, occurrence_icon, true);
+	
+	parent_item_ptr->addChild(file_info_item);
+	file_info_item->setExpanded(true);	// setExpanded won't have effect until after addChild!
 }
 
 
@@ -651,12 +674,14 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_occurrence_line_list(
 	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator end = errors.end();
 	for (; it != end; ++it) {
 		// For each occurrence, add a Line node with Description and Result nodes as children.
-		QTreeWidgetItem *location_item = create_occurrence_line_item(parent_item_ptr,
+		QTreeWidgetItem *location_item = create_occurrence_line_item(
 				*it, occurrence_icon, show_short_description);
-		location_item->setExpanded(false);
 		
-		create_occurrence_description_item(location_item, *it);
-		create_occurrence_result_item(location_item, *it);
+		location_item->addChild(create_occurrence_description_item(*it));
+		location_item->addChild(create_occurrence_result_item(*it));
+
+		parent_item_ptr->addChild(location_item);
+		location_item->setExpanded(false);
 	}
 }
 
@@ -664,13 +689,12 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::build_occurrence_line_list(
 
 QTreeWidgetItem *
 GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_type_summary_item(
-		QTreeWidgetItem *parent_item_ptr,
 		const GPlatesFileIO::ReadErrorOccurrence &error,
 		const QIcon &occurrence_icon,
 		size_t quantity)
 {
 	// Create node with a summary of the error description and how many there are.
-	QTreeWidgetItem *summary_item = new QTreeWidgetItem(parent_item_ptr);
+	QTreeWidgetItem *summary_item = new QTreeWidgetItem();
 	summary_item->setText(0, QString("[%1] %2 (%3)")
 			.arg(error.d_description)
 			.arg(get_short_description_as_string(error.d_description))
@@ -682,13 +706,12 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_type_summary_it
 
 QTreeWidgetItem *
 GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_file_info_item(
-		QTreeWidgetItem *parent_item_ptr,
 		const GPlatesFileIO::ReadErrorOccurrence &error)
 {
 	static const QIcon file_icon(":/gnome_text_file_16.png");
 
 	// Add the "filename.dat (format)" item.
-	QTreeWidgetItem *file_item = new QTreeWidgetItem(parent_item_ptr);
+	QTreeWidgetItem *file_item = new QTreeWidgetItem();
 	std::ostringstream file_str;
 	error.write_short_name(file_str);
 	file_item->setText(0, QString::fromAscii(file_str.str().c_str()));
@@ -699,13 +722,12 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_file_info_item(
 
 QTreeWidgetItem *
 GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_file_path_item(
-		QTreeWidgetItem *parent_item_ptr,
 		const GPlatesFileIO::ReadErrorOccurrence &error)
 {
 	static const QIcon path_icon(":/gnome_folder_16.png");
 
 	// Add the full path item.
-	QTreeWidgetItem *path_item = new QTreeWidgetItem(parent_item_ptr);
+	QTreeWidgetItem *path_item = new QTreeWidgetItem();
 	std::ostringstream path_str;
 	error.d_data_source->write_full_name(path_str);
 	path_item->setText(0, QString::fromAscii(path_str.str().c_str()));
@@ -716,13 +738,12 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_file_path_item(
 
 QTreeWidgetItem *
 GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_line_item(
-		QTreeWidgetItem *parent_item_ptr,
 		const GPlatesFileIO::ReadErrorOccurrence &error,
 		const QIcon &occurrence_icon,
 		bool show_short_description)
 {
 	// Create node with a single line error occurrence, with a summary of the error description.
-	QTreeWidgetItem *location_item = new QTreeWidgetItem(parent_item_ptr);
+	QTreeWidgetItem *location_item = new QTreeWidgetItem();
 	std::ostringstream location_str;
 	error.d_location->write(location_str);
 	if (show_short_description) {
@@ -744,13 +765,12 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_line_item(
 
 QTreeWidgetItem *
 GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_description_item(
-		QTreeWidgetItem *parent_item_ptr,
 		const GPlatesFileIO::ReadErrorOccurrence &error)
 {
 	static const QIcon description_icon(":/gnome_help_agent_16.png");
 
 	// Create leaf node with full description.
-	QTreeWidgetItem *description_item = new QTreeWidgetItem(parent_item_ptr);
+	QTreeWidgetItem *description_item = new QTreeWidgetItem();
 	description_item->setText(0, QString("[%1] %2")
 			.arg(error.d_description)
 			.arg(get_full_description_as_string(error.d_description)) );
@@ -761,13 +781,12 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_description_ite
 
 QTreeWidgetItem *
 GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_result_item(
-		QTreeWidgetItem *parent_item_ptr,
 		const GPlatesFileIO::ReadErrorOccurrence &error)
 {
 	static const QIcon result_icon(":/gnome_gtk_edit_16.png");
 
 	// Create leaf node with result text.
-	QTreeWidgetItem *result_item = new QTreeWidgetItem(parent_item_ptr);
+	QTreeWidgetItem *result_item = new QTreeWidgetItem();
 	result_item->setText(0, QString("[%1] %2")
 			.arg(error.d_result)
 			.arg(get_result_as_string(error.d_result)) );

@@ -10,6 +10,9 @@
     <file>gnome_folder_16.png</file>
     <file>gnome_gtk_edit_16.png</file>
     <file>gnome_help_agent_16.png</file>
+    <file>gnome_media_eject_22.png</file>
+    <file>gnome_save_22.png</file>
+    <file>gnome_save_as_22.png</file>
     <file>gnome_seek_backward_16.png</file>
     <file>gnome_seek_backward_22.png</file>
     <file>gnome_seek_forward_16.png</file>
@@ -24,7 +27,9 @@
     <file>gplates_logo_16.png</file>
     <file>human_gtk_about_16.png</file>
     <file>human_help_browser_16.png</file>
+    <file>info_sign_16.png</file>
     <file>query_feature_35.png</file>
+    <file>save_a_copy_22.png</file>
     <file>select_plate_35.png</file>
     <file>spin_globe_35.png</file>
     <file>zoom_globe_35.png</file>

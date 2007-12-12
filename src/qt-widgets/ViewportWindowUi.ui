@@ -34,7 +34,7 @@
      <x>0</x>
      <y>0</y>
      <width>580</width>
-     <height>25</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -47,7 +47,9 @@
     <property name="title" >
      <string>&amp;File</string>
     </property>
+    <addaction name="action_Open_Feature_Collection" />
     <addaction name="action_File_Errors" />
+    <addaction name="action_Manage_Feature_Collections" />
     <addaction name="separator" />
     <addaction name="action_Quit" />
    </widget>
@@ -366,9 +368,6 @@
    <property name="text" >
     <string>Set &amp;Zoom...</string>
    </property>
-   <property name="shortcut" >
-    <string>Ctrl+M</string>
-   </property>
   </action>
   <action name="action_Zoom_In" >
    <property name="icon" >
@@ -418,6 +417,22 @@
    </property>
    <property name="shortcut" >
     <string>Z</string>
+   </property>
+  </action>
+  <action name="action_Manage_Feature_Collections" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_folder_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Manage Feature Collections</string>
+   </property>
+  </action>
+  <action name="action_Open_Feature_Collection" >
+   <property name="text" >
+    <string>&amp;Open Feature Collection...</string>
+   </property>
+   <property name="shortcut" >
+    <string>Ctrl+O</string>
    </property>
   </action>
  </widget>
