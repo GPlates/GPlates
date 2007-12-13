@@ -164,7 +164,16 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 !!]]))
 
 # GDAL (Geospatial Data Abstraction Library -- contains OGR)
-AC_CHECK_LIB([gdal], [main], [], AC_MSG_ERROR([[
+#
+# Note that on Ubuntu 7.04 (and maybe other systems; I haven't checked), the
+# GDAL library is not called "gdal", but rather "gdal1.3.2".  Hence, we cannot
+# use the usual AC_CHECK_LIB macro.  Instead, we'll use the AC_SEARCH_LIBS
+# macro to search for the first library which provides the GDAL function
+# 'OGRRegisterAll'.  (Yes, I realise that hard-coding specific library versions
+# sucks, but we don't have the time to research a better solution right now.)
+#
+# #AC_CHECK_LIB([gdal], [main], [], AC_MSG_ERROR([[
+AC_SEARCH_LIBS([OGRRegisterAll], [gdal gdal1.3.2], [], AC_MSG_ERROR([[
 !!
 !!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
 !!  shared library installed.  Your operating system vendor may provide a
