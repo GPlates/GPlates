@@ -34,7 +34,6 @@
 #endif
 
 #include <QWidget>
-#include <QKeyEvent>
 #include "ReconstructionViewWidgetUi.h"
 
 
@@ -101,10 +100,6 @@ namespace GPlatesQtWidgets
 		{
 			return *d_canvas_ptr;
 		}
-		
-		void
-		keyPressEvent(
-				QKeyEvent*);
 
 	public slots:
 		void

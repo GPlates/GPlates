@@ -148,7 +148,8 @@ namespace GPlatesPropertyValues
 		 * Note that this value may not be meaningful if @a is_real returns false.
 		 */
 		const double &
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 
@@ -157,14 +158,20 @@ namespace GPlatesPropertyValues
 		 * otherwise.
 		 */
 		bool
-		is_distant_past() const;
+		is_distant_past() const
+		{
+			return (d_type == TimePositionTypes::DistantPast);
+		}
 
 		/**
 		 * Return true if this instance is a time-instant in the distant future; false
 		 * otherwise.
 		 */
 		bool
-		is_distant_future() const;
+		is_distant_future() const
+		{
+			return (d_type == TimePositionTypes::DistantFuture);
+		}
 
 		/**
 		 * Return true if this instance is a time-instant whose time-position may be
@@ -179,28 +186,49 @@ namespace GPlatesPropertyValues
 		 * @a is_distant_future will return false.
 		 */
 		bool
-		is_real() const;
+		is_real() const
+		{
+			return (d_type == TimePositionTypes::Real);
+		}
 
 		/**
-		 * Return true if this instance is earlier than @a other; false otherwise.
+		 * Return true if this instance is strictly earlier than @a other; false otherwise.
 		 */
 		bool
-		is_earlier_than(
-				const GeoTimeInstant &other) const {
-			return d_value > other.d_value;
-		}
+		is_strictly_earlier_than(
+				const GeoTimeInstant &other) const;
+
+		/**
+		 * Return true if this instance is either earlier than @a other or
+		 * temporally-coincident with @a other; false otherwise.
+		 */
+		bool
+		is_earlier_than_or_coincident_with(
+				const GeoTimeInstant &other) const;
 
 		/**
 		 * Return true if this instance is later than @a other; false otherwise.
 		 */
 		bool
-		is_later_than(
-				const GeoTimeInstant &other) const {
-			return d_value < other.d_value;
+		is_strictly_later_than(
+				const GeoTimeInstant &other) const
+		{
+			return ! is_earlier_than_or_coincident_with(other);
 		}
 
 		/**
-		 * Return true if this instance is temporally-coincident with other; false
+		 * Return true if this instance is either later than @a other or
+		 * temporally-coincident with @a other; false otherwise.
+		 */
+		bool
+		is_later_than_or_coincident_with(
+				const GeoTimeInstant &other) const
+		{
+			return ! is_strictly_earlier_than(other);
+		}
+
+		/**
+		 * Return true if this instance is temporally-coincident with @a other; false
 		 * otherwise.
 		 */
 		bool
@@ -230,6 +258,15 @@ namespace GPlatesPropertyValues
 
 	};
 
+
+	inline
+	bool
+	operator==(
+			const GeoTimeInstant &g1,
+			const GeoTimeInstant &g2)
+	{
+		return g1.is_coincident_with(g2);
+	}
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GEOTIMEINSTANT_H

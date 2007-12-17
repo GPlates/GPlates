@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,14 +25,6 @@
  
 #include "InformationDialog.h"
 
-GPlatesQtWidgets::InformationDialog::InformationDialog(
-		const QString &text_data,
-		QWidget *parent_):
-	QDialog(parent_)
-{
-	setupUi(this);
-	text_information->insertPlainText(text_data);	
-}
 
 GPlatesQtWidgets::InformationDialog::InformationDialog(
 		const QString &text_data,

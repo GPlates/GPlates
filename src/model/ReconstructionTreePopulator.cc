@@ -149,7 +149,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 
 	// First, deal with times in the future.
 	GeoTimeInstant present_day(0.0);
-	if (d_recon_time.is_later_than(present_day)) {
+	if (d_recon_time.is_strictly_later_than(present_day)) {
 		// FIXME:  Not yet implemented.
 		return;
 	}
@@ -173,16 +173,14 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	}
 	// else:  'iter' points to the most-recent non-disabled time sample.
 
-	if (d_recon_time.is_later_than(iter->valid_time()->time_position())) {
+	if (d_recon_time.is_strictly_later_than(iter->valid_time()->time_position())) {
 		// The requested reconstruction time is later than the time of the most-recent
 		// non-disabled time sample.  Hence, it is not valid to reconstruct to the
 		// requested reconstruction time.
 		// FIXME:  Should we complain about this?
 		return;
 	}
-	// FIXME:  Use approximate floating-point equality for the time position.  Extract the code
-	// 'geo_time_instants_are_approx_equal' from "file-io/PlatesRotationFormatReader.cc".
-	if ( ! d_recon_time.is_earlier_than(iter->valid_time()->time_position())) {
+	if (d_recon_time.is_coincident_with((iter->valid_time()->time_position()))) {
 		// An exact match!  Hence, we can use the FiniteRotation of this time sample
 		// directly, without need for interpolation.
 
@@ -223,7 +221,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		}
 		// else:  'iter' points to the most-recent non-disabled time sample.
 
-		if (d_recon_time.is_later_than(iter->valid_time()->time_position())) {
+		if (d_recon_time.is_strictly_later_than(iter->valid_time()->time_position())) {
 			// The requested reconstruction time is later than (ie, less far in the
 			// past than) the time of the current time sample, which must mean that it
 			// lies "on the rail" between the current time sample and the time sample
@@ -280,10 +278,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 
 			return;
 		}
-		// FIXME:  Use approximate floating-point equality for the time position.  Extract
-		// the code 'geo_time_instants_are_approx_equal' from
-		// "file-io/PlatesRotationFormatReader.cc".
-		if ( ! d_recon_time.is_earlier_than(iter->valid_time()->time_position())) {
+		if (d_recon_time.is_coincident_with(iter->valid_time()->time_position())) {
 			// An exact match!  Hence, we can use the FiniteRotation of this time
 			// sample directly, without need for interpolation.
 

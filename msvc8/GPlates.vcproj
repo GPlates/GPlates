@@ -800,10 +800,6 @@
 			Name="state"
 			>
 			<File
-				RelativePath="..\src\state\Data.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\state\Layout.cc"
 				>
 			</File>

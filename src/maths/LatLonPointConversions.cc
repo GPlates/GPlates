@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004 The University of Sydney, Australia
  *  (under the name "OperationsOnSphere.h")
- * Copyright (C) 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2007 The University of Sydney, Australia
  *  (under the name "LatLonPointConversions.h")
  *
  * This file is part of GPlates.

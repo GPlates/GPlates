@@ -36,6 +36,7 @@
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 
@@ -205,6 +206,11 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 
 	// So now we've visited the contents of this feature.  Let's find out if we were able to
 	// obtain all the information we need.
+	if ( ! d_accumulator->d_feature_is_defined_at_recon_time) {
+		// Quick-out: No need to continue.
+		d_accumulator = boost::none;
+		return;
+	}
 	if ( ! d_accumulator->d_recon_plate_id) {
 		// We couldn't obtain the reconstruction plate ID.
 
@@ -246,8 +252,11 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_inline_property_container(
 		InlinePropertyContainer &inline_property_container)
 {
+	if ( ! d_accumulator->d_feature_is_defined_at_recon_time) {
+		// Quick-out: No need to progress any deeper.
+		return;
+	}
 	d_accumulator->d_most_recent_propname_read = inline_property_container.property_name();
-
 	visit_property_values(inline_property_container);
 }
 
@@ -273,6 +282,23 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	d_accumulator->d_not_yet_reconstructed_points.push_back(gml_point.point());
+}
+
+
+void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_time_period(
+		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+{
+	static PropertyName valid_time_property_name("gml:validTime");
+
+	// Note that we're going to assume that we've read a property name...
+	if (*(d_accumulator->d_most_recent_propname_read) == valid_time_property_name) {
+		// This time period is the "valid time" time period.
+		if ( ! gml_time_period.contains(d_recon_time)) {
+			// Oh no!  This feature instance is not defined at the recon time!
+			d_accumulator->d_feature_is_defined_at_recon_time = false;
+		}
+	}
 }
 
 

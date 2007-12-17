@@ -8,6 +8,9 @@
  *   $Date$
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ *  (under the name "GLCanvas.cc")
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ *  (under the name "GlobeCanvas.cc")
  *
  * This file is part of GPlates.
  *

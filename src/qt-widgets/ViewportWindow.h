@@ -186,14 +186,6 @@ namespace GPlatesQtWidgets
 	private:
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
-		GPlatesModel::FeatureCollectionHandle::weak_ref d_isochrons;
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_collections;
-
-	/* until we have a suitable file-collection structure, I will used d_shapefile_collections to
-	 * contain those members of d_collections which happen to be shapefile collections 
-	 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_shapefile_collections;
-		GPlatesModel::FeatureCollectionHandle::weak_ref d_total_recon_seqs;
 
 		//@{
 		// ViewState 

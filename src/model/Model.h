@@ -65,14 +65,6 @@ namespace GPlatesModel
 				integer_plate_id_type root);
 
 		const Reconstruction::non_null_ptr_type
-		create_reconstruction_from_vector(
-		const std::vector<FeatureCollectionHandle::weak_ref>& reconstructable_features_vector,
-				const FeatureCollectionHandle::weak_ref &reconstruction_features,
-				const double &time,
-				integer_plate_id_type root);
-
-
-		const Reconstruction::non_null_ptr_type
 		create_empty_reconstruction(
 				const double &time,
 				integer_plate_id_type root);

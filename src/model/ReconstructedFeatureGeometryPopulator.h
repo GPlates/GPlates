@@ -51,6 +51,17 @@ namespace GPlatesModel
 
 		struct ReconstructedFeatureGeometryAccumulator
 		{
+			/**
+			 * Whether or not the current feature is defined at this reconstruction
+			 * time.
+			 *
+			 * The value of this member defaults to true; it's only set to false if
+			 * both: (i) a "gml:validTime" property is encountered which contains a
+			 * "gml:TimePeriod" structural type; and (ii) the reconstruction time lies
+			 * outside the range of the valid time.
+			 */
+			bool d_feature_is_defined_at_recon_time;
+
 			boost::optional<PropertyName> d_most_recent_propname_read;
 			boost::optional<integer_plate_id_type> d_recon_plate_id;
 			std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> >
@@ -58,7 +69,8 @@ namespace GPlatesModel
 			std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> >
 					d_not_yet_reconstructed_polylines;
 
-			ReconstructedFeatureGeometryAccumulator()
+			ReconstructedFeatureGeometryAccumulator():
+				d_feature_is_defined_at_recon_time(true)
 			{  }
 
 		};
@@ -104,7 +116,12 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_gml_point(
-				GPlatesPropertyValues::GmlPoint& gml_point);
+				GPlatesPropertyValues::GmlPoint &gml_point);
+
+		virtual
+		void
+		visit_gml_time_period(
+				GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
 		virtual
 		void

@@ -24,7 +24,6 @@
  */
 
 #include <QLocale>
-#include <QKeyEvent>
 
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
@@ -178,13 +177,4 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 	}
 
 	label_mouse_coords->setText(position_as_string);
-}
-
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::keyPressEvent(
-	QKeyEvent *e)
-{
-// this passes any keyEvents to the ViewportWindow so that the (temporary) file-loading routines are activated.
-	e->ignore();
 }

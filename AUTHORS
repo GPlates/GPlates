@@ -7,9 +7,16 @@ of the University of Sydney, Australia:
  Hamish Ivey-Law
  David Symonds
 
+The GPlates source code contains code written by the following employees
+of the Geological Survey of Norway:
+ Robin Watson
+
 The GPlates source code contains code which was originally written by the
 following individuals:
  James Boyden (from the ReconTreeViewer software)
  Peter Dimov (from the Boost intrusive_ptr class template)
+
+The GPlates source tree additionally contains icons which were part of the
+artwork for the GNOME desktop environment.
 
 (The presence of this file is required to placate Automake.)

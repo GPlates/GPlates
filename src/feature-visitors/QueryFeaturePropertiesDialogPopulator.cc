@@ -184,30 +184,27 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_point(
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
 
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*(gml_point.point()));
-#if 0	
-		GPlatesMaths::LatLonPoint llp =
-				GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*(gml_point.point()));
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*(gml_point.point()));
+#if 0
+	GPlatesMaths::LatLonPoint llp =
+			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*(gml_point.point()));
 #endif
-		QLocale locale;
+	QLocale locale;
 
-		QString point_id(QObject::tr("#"));
-		
-		point_id.append(QObject::tr(" (lat ; lon)"));
+	QString point_id(QObject::tr("#"));
+	
+	point_id.append(QObject::tr(" (lat ; lon)"));
+			
+	QString lat = locale.toString(llp.latitude());
+	QString lon = locale.toString(llp.longitude());
+	QString point;
+	point.append(lat);
+	point.append(QObject::tr(" ; "));
+	point.append(lon);
 
-				
-		QString lat = locale.toString(llp.latitude());
-		QString lon = locale.toString(llp.longitude());
-		QString point;
-		point.append(lat);
-		point.append(QObject::tr(" ; "));
-		point.append(lon);
-
-		add_child(point_id, point);
-
+	add_child(point_id, point);
 
 	d_tree_widget_item_stack.pop_back();
-
 }
 
 

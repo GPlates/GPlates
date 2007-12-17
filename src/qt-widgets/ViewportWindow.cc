@@ -161,7 +161,6 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 		{
 			if (is_plates_line_format_file(file))
 			{
-			//	GPlatesFileIO::PlatesLineFormatReader reader;
 				GPlatesFileIO::PlatesLineFormatReader::read_file(file, *d_model_ptr, read_errors);
 
 				// All loaded files are added to the set of loaded files.
@@ -173,8 +172,6 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 			}
 			else if (is_plates_rotation_format_file(file))
 			{
-			//	GPlatesFileIO::PlatesRotationFormatReader reader;
-			//	reader.read_file(file, *d_model_ptr, read_errors);
 				GPlatesFileIO::PlatesRotationFormatReader::read_file(file, *d_model_ptr, read_errors);
 				// All loaded files are added to the set of loaded files.
 				GPlatesAppState::ApplicationState::file_info_iterator new_file =

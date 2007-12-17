@@ -28,7 +28,30 @@
 #include "Constants.h"
 
 const char GPlatesGlobal::CopyrightString[] = 
-		"Copyright (C) 2003-2007 The University of Sydney, Australia";
+		"Copyright (C) 2003-2007 The University of Sydney, Australia\n"
+		"Copyright (C) 2007 The Geological Survey of Norway\n"
+		"\n"
+		"The GPlates source code contains code which was originally written by the\n"
+		"following individuals:\n"
+		" * James Boyden (from the ReconTreeViewer software)\n"
+		" * Peter Dimov (from the Boost intrusive_ptr class template)\n"
+		"\n"
+		"The GPlates source tree additionally contains icons which were part of the\n"
+		"artwork for the GNOME desktop environment.";
+
 
 const char GPlatesGlobal::HtmlCopyrightString[] = 
-		"Copyright &copy; 2003-2007 The University of Sydney, Australia";
+		"<html><body>\n"
+		"Copyright &copy; 2003-2007 The University of Sydney, Australia<br />\n"
+		"Copyright &copy; 2007 The Geological Survey of Norway<br />\n"
+		"<br />\n"
+		"\n"
+		"The GPlates source code contains code which was originally written by the\n"
+		"following individuals: <ul>\n"
+		" <li> James Boyden (from the ReconTreeViewer software) </li>\n"
+		" <li> Peter Dimov (from the Boost intrusive_ptr class template) </li>\n"
+		"</ul>\n"
+		"\n"
+		"The GPlates source tree additionally contains icons which were part of the\n"
+		"artwork for the GNOME desktop environment.\n"
+		"</body></html>\n";

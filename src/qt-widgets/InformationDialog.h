@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,12 +37,6 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
-		explicit
-		InformationDialog(
-			const QString &data,
-			QWidget* parent_ = NULL);
-
-		explicit
 		InformationDialog(
 			const QString &data,
 			const QString &title,

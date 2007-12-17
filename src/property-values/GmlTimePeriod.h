@@ -32,11 +32,18 @@
 #include "GmlTimeInstant.h"
 
 
-namespace GPlatesPropertyValues {
-
-	class GmlTimePeriod :
-			public GPlatesModel::PropertyValue {
-
+namespace GPlatesPropertyValues
+{
+	/**
+	 * This class implements the PropertyValue which corresponds to "gml:TimePeriod".
+	 *
+	 * A "gml:TimePeriod" possesses two attributes: a "begin" time instant and an "end" time
+	 * instant; Note that it is an invariant of this class that the "begin" attribute must not
+	 * be later than the "end" attribute.
+	 */
+	class GmlTimePeriod:
+			public GPlatesModel::PropertyValue
+	{
 	public:
 		/**
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod>.
@@ -50,15 +57,23 @@ namespace GPlatesPropertyValues {
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>
 				non_null_ptr_to_const_type;
 
-
 		virtual
-		~GmlTimePeriod() {  }
+		~GmlTimePeriod()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
 		// everything properly, so don't look at this function and think "Uh oh, this
 		// function doesn't look like it should be here, but I'm sure it's here for a
 		// reason..."
+		/**
+		 * Create a GmlTimePeriod instance which begins at @a begin_ and ends at @a end_.
+		 *
+		 * Note that the time instant represented by @a begin_ must not be later than (ie,
+		 * more recent than) the time instant represented by @a end_.
+		 *
+		 * FIXME:  Check this as a precondition, and throw an exception if it's violated.
+		 */
 		static
 		const non_null_ptr_type
 		create(
@@ -75,6 +90,12 @@ namespace GPlatesPropertyValues {
 			return dup;
 		}
 
+		/**
+		 * Return the "begin" attribute of this GmlTimePeriod instance.
+		 *
+		 * Note that it is an invariant of this class that the "begin" attribute must not
+		 * be later than the "end" attribute.
+		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
 		begin() const {
 			return d_begin;
@@ -91,17 +112,35 @@ namespace GPlatesPropertyValues {
 		//
 		// (This overload is provided to allow the referenced GmlTimeInstant instance to
 		// accept a FeatureVisitor instance.)
+		/**
+		 * Return the "begin" attribute of this GmlTimePeriod instance.
+		 *
+		 * Note that it is an invariant of this class that the "begin" attribute must not
+		 * be later than the "end" attribute.
+		 */
 		const GmlTimeInstant::non_null_ptr_type
 		begin() {
 			return d_begin;
 		}
 
+		/**
+		 * Set the "begin" attribute of this GmlTimePeriod instance.
+		 *
+		 * Note that it is an invariant of this class that the "begin" attribute must not
+		 * be later than the "end" attribute.
+		 */
 		void
 		set_begin(
 				GmlTimeInstant::non_null_ptr_type b) {
 			d_begin = b;
 		}
 
+		/**
+		 * Return the "end" attribute of this GmlTimePeriod instance.
+		 *
+		 * Note that it is an invariant of this class that the "end" attribute must not
+		 * be earlier than the "begin" attribute.
+		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
 		end() const {
 			return d_end;
@@ -118,15 +157,42 @@ namespace GPlatesPropertyValues {
 		//
 		// (This overload is provided to allow the referenced GmlTimeInstant instance to
 		// accept a FeatureVisitor instance.)
+		/**
+		 * Return the "end" attribute of this GmlTimePeriod instance.
+		 *
+		 * Note that it is an invariant of this class that the "end" attribute must not
+		 * be earlier than the "begin" attribute.
+		 */
 		const GmlTimeInstant::non_null_ptr_type
 		end() {
 			return d_end;
 		}
 
+		/**
+		 * Set the "end" attribute of this GmlTimePeriod instance.
+		 *
+		 * Note that it is an invariant of this class that the "end" attribute must not
+		 * be earlier than the "begin" attribute.
+		 */
 		void
 		set_end(
 				GmlTimeInstant::non_null_ptr_type e) {
 			d_end = e;
+		}
+
+		/**
+		 * Determine whether @a geo_time lies within the temporal span of this
+		 * GmlTimePeriod instance.
+		 *
+		 * Note that this function @em will consider @a geo_time to lie "within" the
+		 * temporal span, in the event that @a geo_time coincides with either (or both) of
+		 * the bounding times.
+		 */
+		bool
+		contains(
+				const GeoTimeInstant &geo_time) const {
+			return (begin()->time_position().is_earlier_than_or_coincident_with(geo_time) &&
+					geo_time.is_earlier_than_or_coincident_with(end()->time_position()));
 		}
 
 		/**
