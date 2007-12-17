@@ -99,13 +99,6 @@ namespace {
 		} else glColor3fv(GPlatesGui::Colour::RED);
 #endif
 
-		// XXX: Refactor these OpenGL calls and the ones in PaintPoints.
-		glShadeModel(GL_SMOOTH);
-		glEnable(GL_LINE_SMOOTH);
-		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 		const PolylineOnSphere& line = *linedata.first;
 		glColor3fv(*linedata.second);
 		
@@ -120,12 +113,6 @@ namespace {
 		Layout::PointDataLayout::iterator 
 			points_begin = Layout::PointDataLayoutBegin(),
 			points_end   = Layout::PointDataLayoutEnd();
-
-		// XXX: Refactor these OpenGL calls and the ones in PaintLines.
-		glEnable(GL_POINT_SMOOTH);
-		glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glPointSize(8.0f);
 		glBegin(GL_POINTS);
@@ -171,6 +158,16 @@ GPlatesGui::Globe::Orient(const PointOnSphere &pos)
 void
 GPlatesGui::Globe::Paint()
 {
+	// Enable smoothing.
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_POINT_SMOOTH);
+	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+	glEnable(GL_LINE_SMOOTH);
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
 		// rotate everything to get a nice almost-equatorial shot
