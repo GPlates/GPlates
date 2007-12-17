@@ -113,8 +113,11 @@ int main(int argc, char* argv[])
 	cmdline_options_type cmdline = process_command_line_options(
 			application.argc(), application.argv(), prog_name);
 
-	GPlatesQtWidgets::ViewportWindow viewport_window(cmdline.first, cmdline.second);
+	GPlatesQtWidgets::ViewportWindow viewport_window;
 
 	viewport_window.show();
+	viewport_window.load_files(cmdline.first + cmdline.second);
+	viewport_window.reconstruct_to_time(0.0);
+
 	return application.exec();
 }

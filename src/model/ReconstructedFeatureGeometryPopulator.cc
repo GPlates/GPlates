@@ -259,6 +259,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 	d_accumulator->d_not_yet_reconstructed_polylines.push_back(gml_line_string.polyline());
 }
 
+
 void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
@@ -266,12 +267,14 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_orientable_curve(
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
+
 void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	d_accumulator->d_not_yet_reconstructed_points.push_back(gml_point.point());
 }
+
 
 void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_constant_value(

@@ -68,9 +68,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
-		ViewportWindow(
-				const QStringList &plates_line_fname,
-				const QStringList &plates_rot_fname);
+		ViewportWindow();
 
 		GPlatesModel::Reconstruction &
 		reconstruction() const

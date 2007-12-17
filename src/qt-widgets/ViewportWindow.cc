@@ -195,7 +195,6 @@ namespace
 		}
 	}
 
-
 	GPlatesModel::Reconstruction::non_null_ptr_type 
 	create_reconstruction(
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
@@ -283,9 +282,7 @@ namespace
 } // namespace
 
 
-GPlatesQtWidgets::ViewportWindow::ViewportWindow(
-		const QStringList &plates_line_fnames,
-		const QStringList &plates_rot_fnames):
+GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_model_ptr(new GPlatesModel::Model()),
 	d_reconstruction_ptr(d_model_ptr->create_empty_reconstruction(0.0, 0)),
 	d_recon_time(0.0),
@@ -301,9 +298,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_animate_dialog_has_been_shown(false)
 {
 	setupUi(this);
-
-	load_files(plates_line_fnames);
-	load_files(plates_rot_fnames);
 
 	d_canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
 	
