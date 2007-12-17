@@ -30,6 +30,7 @@
 
 #include <iosfwd>
 #include <boost/optional.hpp>
+#include "FileInfo.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
@@ -44,13 +45,18 @@ namespace GPlatesFileIO
 	{
 	public:
 
+		/**
+		 * @pre file_info.is_writable() is true.
+		 */
 		explicit
 		PlatesLineFormatWriter(
-				std::ostream &os):
-			d_output(&os) {  }
+				const FileInfo &file_info);
 
 		virtual
-		~PlatesLineFormatWriter() {  }
+		~PlatesLineFormatWriter()
+		{
+			delete d_output;
+		}
 
 		virtual
 		void

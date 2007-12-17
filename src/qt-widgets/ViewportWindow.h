@@ -127,6 +127,41 @@ namespace GPlatesQtWidgets
 		load_files(
 				const QStringList &file_names);
 
+
+		/**
+		 * Write the feature collection associated to @a file_info to the file
+		 * from which the features were read.
+		 */
+		void
+		save_file(
+				const GPlatesFileIO::FileInfo &file_info);
+
+
+		/**
+		 * Write the feature collection associated to @a features_to_save to the file
+		 * specified by @file_info.
+		 *
+		 * The list of loaded files is updated so as to refer to the recently written file.
+		 */
+		void
+		save_file_as(
+				const GPlatesFileIO::FileInfo &file_info,
+				file_info_iterator features_to_save);
+
+
+		/**
+		 * Write the feature collection associated to @a features_to_save to the file
+		 * specified by @file_info.  Returns a FileInfo object corresponding to the file
+		 * that was written (this will usually be ignored).
+		 *
+		 * The list of loaded files is @b not updated so as to refer to the recently written file.
+		 */
+		GPlatesFileIO::FileInfo
+		save_file_copy(
+				const GPlatesFileIO::FileInfo &file_info,
+				file_info_iterator features_to_save);
+
+
 		/**
 		 * Ensure the @a loaded_file is deactivated.
 		 *

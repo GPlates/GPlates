@@ -30,6 +30,8 @@
 #include <iosfwd>
 #include <boost/optional.hpp>
 #include <list>
+#include <fstream>
+#include "FileInfo.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
@@ -45,11 +47,16 @@ namespace GPlatesFileIO
 
 		explicit
 		PlatesRotationFormatWriter(
-				std::ostream &os):
-			d_output(&os) {  }
+				const FileInfo &file_info)
+		{
+			d_output = new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str());
+		}
 
 		virtual
-		~PlatesRotationFormatWriter() {  }
+		~PlatesRotationFormatWriter() 
+		{
+			delete d_output;
+		}
 
 		virtual
 		void

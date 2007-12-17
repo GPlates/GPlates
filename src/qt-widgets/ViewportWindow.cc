@@ -40,6 +40,7 @@
 #include "InformationDialog.h"
 
 #include "global/Exception.h"
+#include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "gui/CanvasToolAdapter.h"
 #include "gui/CanvasToolChoice.h"
 #include "gui/FeatureWeakRefSequence.h"
@@ -53,30 +54,89 @@
 #include "file-io/FileInfo.h"
 #include "file-io/Reader.h"
 #include "file-io/ShapeFileReader.h"
+#include "file-io/ErrorOpeningFileForWritingException.h"
 #include "gui/PlatesColourTable.h"
 
 
 namespace
 {
 	bool
-	file_name_ends_with(const GPlatesFileIO::FileInfo &file, const QString &suffix)
+	file_name_ends_with(
+			const GPlatesFileIO::FileInfo &file, 
+			const QString &suffix)
 	{
 		return file.get_qfileinfo().suffix().endsWith(QString(suffix), Qt::CaseInsensitive);
 	}
 
 
 	bool
-	is_plates_line_format_file(const GPlatesFileIO::FileInfo &file)
+	is_plates_line_format_file(
+			const GPlatesFileIO::FileInfo &file)
 	{
 		return file_name_ends_with(file, "dat") || file_name_ends_with(file, "pla");
 	}
 
 	
 	bool
-	is_plates_rotation_format_file(const GPlatesFileIO::FileInfo &file)
+	is_plates_rotation_format_file(
+			const GPlatesFileIO::FileInfo &file)
 	{
 		return file_name_ends_with(file, "rot");
 	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::save_file(
+		const GPlatesFileIO::FileInfo &file_info)
+{
+	if ( ! file_info.is_writable()) {
+		throw GPlatesFileIO::ErrorOpeningFileForWritingException(
+				file_info.get_qfileinfo().filePath());
+	}
+
+	if ( ! file_info.get_feature_collection()) {
+		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(
+				"Attempted to write an empty feature collection.");
+	}
+
+	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
+		*file_info.get_feature_collection();
+	boost::shared_ptr< GPlatesModel::ConstFeatureVisitor > writer = file_info.get_writer();
+	GPlatesModel::FeatureCollectionHandle::features_const_iterator
+		iter = feature_collection->features_begin(), 
+		end = feature_collection->features_end();
+	for ( ; iter != end; ++iter) {
+		(*iter)->accept_visitor(*writer);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::save_file_as(
+		const GPlatesFileIO::FileInfo &file_info,
+		file_info_iterator features_to_save)
+{
+	GPlatesFileIO::FileInfo file_copy = save_file_copy(file_info, features_to_save);
+
+	// Update iterator
+	*features_to_save = file_copy;
+}
+
+
+GPlatesFileIO::FileInfo
+GPlatesQtWidgets::ViewportWindow::save_file_copy(
+		const GPlatesFileIO::FileInfo &file_info,
+		file_info_iterator features_to_save)
+{
+	GPlatesFileIO::FileInfo file_copy(file_info.get_qfileinfo().filePath());
+	if ( ! features_to_save->get_feature_collection()) {
+		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(
+				"Attempted to write an empty feature collection.");
+	}
+	file_copy.set_feature_collection(*(features_to_save->get_feature_collection()));
+	save_file(file_copy);
+	return file_copy;
 }
 
 

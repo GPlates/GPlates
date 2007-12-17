@@ -30,6 +30,8 @@
 #include <QString>
 #include <QFileInfo>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
+#include "model/ConstFeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 #include "FileFormat.h"
 
@@ -75,6 +77,17 @@ namespace GPlatesFileIO {
 		}
 
 
+		boost::optional<GPlatesModel::FeatureCollectionHandle::const_weak_ref>
+		get_feature_collection() const
+		{
+			boost::optional<GPlatesModel::FeatureCollectionHandle::const_weak_ref> res;
+			if (d_feature_collection) {
+				res = GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(*d_feature_collection);
+			}
+			return res;
+		}
+
+
 		void
 		set_feature_collection(
 				GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection)
@@ -82,6 +95,17 @@ namespace GPlatesFileIO {
 			d_feature_collection = feature_collection;
 		}
 
+
+		boost::shared_ptr< GPlatesModel::ConstFeatureVisitor >
+		get_writer() const;
+
+
+		bool
+		is_writable() const
+		{
+			QFileInfo dir(get_qfileinfo().path());
+			return dir.permission(QFile::WriteUser);
+		}
 
 	private:
 #if 0

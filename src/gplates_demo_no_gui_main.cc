@@ -521,14 +521,9 @@ main()
 	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
 			isochrons_and_total_recon_seqs.second;
 
-	//::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
-	//::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
-	//		total_recon_seqs->features_begin(), total_recon_seqs->features_end());
+	::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
+	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
+			total_recon_seqs->features_begin(), total_recon_seqs->features_end());
 	
-	GPlatesFileIO::PlatesLineFormatWriter output(std::cout);
-	GPlatesModel::FeatureCollectionHandle::features_iterator iter;
-	for (iter = isochrons->features_begin(); iter != isochrons->features_end(); ++iter)
-		(*iter)->accept_visitor(output);
-
 	return 0;
 }

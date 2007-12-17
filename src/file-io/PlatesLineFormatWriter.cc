@@ -27,6 +27,7 @@
 
 #include "PlatesLineFormatWriter.h"
 #include <ostream>
+#include <fstream>
 #include <vector>
 
 #include "model/FeatureHandle.h"
@@ -157,6 +158,13 @@ namespace {
 			"generate the header for this data.  It came from GPlates, where "\
 			"it had feature type \"" + type + "\" and feature id \"" + id + "\".";
 	}
+}
+
+
+GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
+		const FileInfo &file_info)
+{
+	d_output = new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str());
 }
 
 

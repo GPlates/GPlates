@@ -751,6 +751,9 @@
 			Name="file-io"
 			Filter="">
 			<File
+				RelativePath="..\src\file-io\FileInfo.cc">
+			</File>
+			<File
 				RelativePath="..\src\file-io\PlatesLineFormatWriter.cc">
 			</File>
 			<File

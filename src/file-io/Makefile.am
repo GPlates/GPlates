@@ -12,7 +12,8 @@ libfile_io_la_SOURCES	= PlatesLineFormatReader.cc \
 				ReadErrorOccurrence.cc \
 				PlatesLineFormatWriter.cc \
 				PlatesRotationFormatWriter.cc \
-				ShapeFileReader.cc
+				ShapeFileReader.cc \
+				FileInfo.cc
 
 if PYTHON
 noinst_PROGRAMS		= _file_io.so
