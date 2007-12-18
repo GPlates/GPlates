@@ -91,7 +91,10 @@ namespace {
 				PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION);
 			pen_str = GPlatesUtils::formatted_int_to_string(static_cast<int>(pen),
 				PLATES_PEN_FIELDWIDTH);
-		} catch (const GPlatesUtils::InvalidFormattingParametersException &ex) {
+		} catch (const GPlatesUtils::InvalidFormattingParametersException &) {
+		    // The argument name in the above expression was removed to
+		    // prevent "unreferenced local variable" compiler warnings under MSVC
+
 			throw;
 		}
 

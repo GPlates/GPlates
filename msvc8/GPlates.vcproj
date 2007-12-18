@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="GPlates"
 	ProjectGUID="{30E6493E-D095-4EF6-B65E-34FB3A7B8B8A}"
 	RootNamespace="GPlates"
@@ -53,6 +53,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/D_CRT_SECURE_NO_DEPRECATE"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;__WINDOWS__"
@@ -61,7 +62,7 @@
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -142,12 +143,13 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/D_CRT_SECURE_NO_DEPRECATE"
 				AdditionalIncludeDirectories="..\src"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;__WINDOWS__"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -161,7 +163,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib opengl32.lib glu32.lib gdal_i.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -459,25 +461,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialog.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialog.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialogUi.ui"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsActionWidget.cc"
 				>
 			</File>
@@ -494,6 +477,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsActionWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ManageFeatureCollectionsDialogUi.ui"
 				>
 			</File>
 			<File
@@ -517,11 +519,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_ManageFeatureCollectionsDialog.cc"
+				RelativePath="..\src\qt-widgets\moc_ManageFeatureCollectionsActionWidget.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_ManageFeatureCollectionsActionWidget.cc"
+				RelativePath="..\src\qt-widgets\moc_ManageFeatureCollectionsDialog.cc"
 				>
 			</File>
 			<File
@@ -828,7 +830,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\file-io\FileInfo.h"
+				RelativePath="..\src\file-io\PlatesLineFormatReader.cc"
 				>
 			</File>
 			<File
@@ -836,19 +838,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\file-io\PlatesLineFormatReader.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\file-io\PlatesLineFormatReader.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\file-io\PlatesRotationFormatReader.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\file-io\PlatesRotationFormatReader.h"
 				>
 			</File>
 			<File
@@ -856,27 +846,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\file-io\PlatesRotationFormatWriter.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\file-io\Reader.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\file-io\ReadErrorOccurrence.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\file-io\ReadErrors.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\file-io\ShapeFileReader.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\file-io\ShapeFileReader.h"
 				>
 			</File>
 		</Filter>

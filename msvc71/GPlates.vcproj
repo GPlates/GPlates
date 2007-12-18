@@ -18,6 +18,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/D_CRT_SECURE_NO_DEPRECATE"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;__WINDOWS__"
@@ -26,7 +27,7 @@
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -68,18 +69,19 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/D_CRT_SECURE_NO_DEPRECATE"
 				AdditionalIncludeDirectories="..\src"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;__WINDOWS__"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcore4.lib qtopengld4.lib opengl32.lib glu32.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcore4.lib qtopengld4.lib opengl32.lib glu32.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"

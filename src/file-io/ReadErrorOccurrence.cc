@@ -42,6 +42,7 @@ GPlatesFileIO::DataFormats::data_format_to_str(
 		break;
 	case Shapefile:
 		str = "ESRI Shapefile";
+		break;
 	case Unspecified:
 		str = "unspecified";
 		break;

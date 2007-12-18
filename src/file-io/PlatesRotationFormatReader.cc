@@ -593,7 +593,10 @@ namespace
 						props_in_current_trs, time_sample,
 						fixed_plate_id, moving_plate_id, data_source,
 						line_buffer.line_number(), read_errors);
-			} catch (PoleParsingException &e) {
+			} catch (PoleParsingException &) {
+				// The argument name in the above expression was removed to
+				// prevent "unreferenced local variable" compiler warnings under MSVC
+
 				// There was some error parsing the pole from the line.
 				continue;
 			}
@@ -623,7 +626,10 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	try
 	{
 		populate_rotations(model, rotations, line_buffer, data_source, read_errors);
-	} catch (UnexpectedlyNullIrregularSampling &e) {
+	} catch (PoleParsingException &) {
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+
 		// There was an internal error, after which we can't really proceed.
 		// FIXME:  Handle this exception properly, with logging of the exception, etc.
 	}

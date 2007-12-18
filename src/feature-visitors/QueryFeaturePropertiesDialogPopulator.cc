@@ -408,7 +408,10 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_double(
 	const GPlatesPropertyValues::XsDouble& xs_double)
 {
 	static const int which_column = 1;
-	QString qstring = QVariant(xs_double.value()).toString();
+
+	QLocale locale;
+
+	QString qstring = locale.toString(xs_double.value());
 
 	// This assumes that the stack is non-empty.
 	d_tree_widget_item_stack.back()->setText(which_column, qstring);
@@ -419,7 +422,10 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_integer(
 	const GPlatesPropertyValues::XsInteger& xs_integer)
 {
 	static const int which_column = 1;
-	QString qstring = QVariant(xs_integer.value()).toString();
+
+	QLocale locale;
+
+	QString qstring = locale.toString(xs_integer.value());
 
 	// This assumes that the stack is non-empty.
 	d_tree_widget_item_stack.back()->setText(which_column, qstring);

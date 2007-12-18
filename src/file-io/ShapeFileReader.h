@@ -137,10 +137,10 @@ namespace GPlatesFileIO {
 				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
 
-		const 
-		GPlatesModel::FeatureCollectionHandle::weak_ref
+		void
 		read_features(
 				GPlatesModel::ModelInterface &model,
+				GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors);
 
 		GPlatesModel::FeatureHandle::weak_ref
@@ -178,6 +178,9 @@ namespace GPlatesFileIO {
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location
 			);
 
+		void
+		display_feature_counts();
+
 		OGRwkbGeometryType 
 		get_OGR_type();
 				
@@ -198,6 +201,15 @@ namespace GPlatesFileIO {
 		std::map<int, QString> d_field_names;
 
 		std::vector<QVariant> d_attributes;
+
+		// The total number of geometries, including those from multi-geometries, in the file.
+		unsigned d_total_geometries;
+
+		// The total number of geometries successfully loaded.
+		unsigned d_loaded_geometries;
+
+		// The total number of features in the file.
+		unsigned d_total_features;
 
 	};
 

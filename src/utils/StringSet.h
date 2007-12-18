@@ -28,6 +28,10 @@
 #ifndef GPLATES_UTILS_STRINGSET_H
 #define GPLATES_UTILS_STRINGSET_H
 
+#ifndef GPLATES_ICU_BOOL
+#define GPLATES_ICU_BOOL(b) ((b) != 0)
+#endif
+
 #include <algorithm>
 #include <set>
 #include <boost/intrusive_ptr.hpp>
@@ -153,7 +157,7 @@ namespace GPlatesUtils {
 			operator<(
 					const UnicodeStringAndRefCount &other) const
 			{
-				return (d_str < other.d_str);
+				return GPLATES_ICU_BOOL(d_str < other.d_str);
 			}
 		private:
 			/**
@@ -162,6 +166,7 @@ namespace GPlatesUtils {
 			UnicodeStringAndRefCount &
 			operator=(
 					const UnicodeStringAndRefCount &);
+			
 		};
 
 

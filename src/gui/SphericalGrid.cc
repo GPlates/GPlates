@@ -32,7 +32,7 @@
 
 namespace
 {
-	static const GLfloat WEIGHT = 1.0 / sqrt(2.0);
+	static const GLfloat WEIGHT = static_cast<GLfloat>(1.0 / sqrt(2.0));
 
 	/*
 	 * The offset between successive curve control points.
@@ -114,8 +114,8 @@ GPlatesGui::SphericalGrid::drawLineOfLat(double lat) {
 	 * We want to draw a small circle around the z-axis.
 	 * Calculate the height (above z = 0) and radius of this circle.
 	 */
-	GLfloat height = sin(lat);
-	GLfloat radius = cos(lat);
+	GLfloat height = static_cast<GLfloat>(sin(lat));
+	GLfloat radius = static_cast<GLfloat>(cos(lat));
 
 	GLfloat u_radius = WEIGHT * radius;
 	GLfloat u_height = WEIGHT * height;
@@ -145,12 +145,12 @@ GPlatesGui::SphericalGrid::drawLineOfLon(double lon) {
 	 * We want to draw a great circle which is bisected by the z-axis.
 	 * 'p' is a point on the perimeter of the great circle.
 	 */
-	GLfloat p_x = cos(lon);
-	GLfloat p_y = sin(lon);
+	GLfloat p_x = static_cast<GLfloat>(cos(lon));
+	GLfloat p_y = static_cast<GLfloat>(sin(lon));
 
 	GLfloat u_p_x = WEIGHT * p_x;
 	GLfloat u_p_y = WEIGHT * p_y;
-	GLfloat u_p_z = WEIGHT * 1.0;
+	GLfloat u_p_z = WEIGHT * static_cast<GLfloat>(1.0);
 
 	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
 

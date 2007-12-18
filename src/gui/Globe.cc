@@ -216,7 +216,10 @@ GPlatesGui::Globe::Paint()
 		           axis.x().dval(), axis.y().dval(), axis.z().dval());
 
 		// Set the sphere's colour.
-		glColor3fv(GPlatesGui::Colour(0.35, 0.35, 0.35));
+		glColor3fv(GPlatesGui::Colour(
+				static_cast<GLfloat>(0.35), 
+				static_cast<GLfloat>(0.35), 
+				static_cast<GLfloat>(0.35)));
 		
 		/*
 		 * Draw sphere.

@@ -28,6 +28,10 @@
 #ifndef GPLATES_MODEL_XMLATTRIBUTENAME_H
 #define GPLATES_MODEL_XMLATTRIBUTENAME_H
 
+#ifndef GPLATES_ICU_BOOL
+#define GPLATES_ICU_BOOL(b) ((b) != 0)
+#endif
+
 #include "StringSetSingletons.h"
 #include "StringContentTypeGenerator.h"
 
@@ -59,7 +63,7 @@ namespace GPlatesModel {
 	operator<(
 			const XmlAttributeName &xan1,
 			const XmlAttributeName &xan2) {
-		return (xan1.get() < xan2.get());
+		return GPLATES_ICU_BOOL(xan1.get() < xan2.get());
 	}
 
 }

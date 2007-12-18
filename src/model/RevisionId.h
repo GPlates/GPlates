@@ -28,6 +28,10 @@
 #ifndef GPLATES_MODEL_REVISIONID_H
 #define GPLATES_MODEL_REVISIONID_H
 
+#ifndef GPLATES_ICU_BOOL
+#define GPLATES_ICU_BOOL(b) ((b) != 0)
+#endif
+
 #include <unicode/unistr.h>
 #include "utils/UniqueId.h"
 
@@ -85,7 +89,7 @@ namespace GPlatesModel {
 		bool
 		is_equal_to(
 				const RevisionId &other) const {
-			return d_id == other.d_id;
+			return GPLATES_ICU_BOOL(d_id == other.d_id);
 		}
 
 	private:

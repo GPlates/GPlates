@@ -165,8 +165,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 				QMessageBox::Ok, QMessageBox::Ok);
 				
 	}
-	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &e)
+	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &)
 	{
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Attempted to write an empty feature collection.");
 		QMessageBox::critical(this, tr("Error saving file"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
@@ -204,8 +206,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 				QMessageBox::Ok, QMessageBox::Ok);
 				
 	}
-	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &e)
+	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &)
 	{
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Attempted to write an empty feature collection.");
 		QMessageBox::critical(this, tr("Error saving file"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
@@ -246,8 +250,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 				QMessageBox::Ok, QMessageBox::Ok);
 				
 	}
-	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &e)
+	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &)
 	{
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Attempted to write an empty feature collection.");
 		QMessageBox::critical(this, tr("Error saving file"), message,
 				QMessageBox::Ok, QMessageBox::Ok);

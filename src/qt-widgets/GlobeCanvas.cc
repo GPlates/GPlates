@@ -60,7 +60,7 @@
  *
  * The value of this constant is purely cosmetic.
  */
-static const GLfloat FRAMING_RATIO = 1.07;
+static const GLfloat FRAMING_RATIO = static_cast<GLfloat>(1.07);
 
 static const GLfloat EYE_X = 0.0, EYE_Y = 0.0, EYE_Z = -5.0;
 
@@ -373,7 +373,10 @@ GPlatesQtWidgets::GlobeCanvas::resizeGL(
 {
 	try {
 		set_view();
-	} catch (const GPlatesGlobal::Exception &e) {
+	} catch (const GPlatesGlobal::Exception &){
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+
 		// FIXME: Use new exception system which doesn't involve strings.
 	}
 }
@@ -398,7 +401,10 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		// FIXME: Globe uses wrong naming convention for methods.
 		d_globe.Paint();
 
-	} catch (const GPlatesGlobal::Exception &e) {
+	} catch (const GPlatesGlobal::Exception &){
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+
 		// FIXME: Use new exception system which doesn't involve strings.
 	}
 }
