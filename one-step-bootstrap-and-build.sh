@@ -10,9 +10,11 @@
 # After executing this script, GPlates should be completely built; it should
 # not be necessary to execute any other compilation scripts or commands.
 
+# all parameters passed to ./configure in build-everything.sh
+
 set -x
 sh bootstrap.sh
-sh build-everything.sh
+sh build-everything.sh "$@"
 ( cd src/qt-widgets && make ViewportWindowUi.h InformationDialogUi.h )
 ( cd src/qt-widgets && make SpecifyFixedPlateDialogUi.h )
 ( cd src/qt-widgets && make AnimateDialogUi.h QueryFeaturePropertiesDialogUi.h )

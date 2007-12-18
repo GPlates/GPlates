@@ -83,24 +83,12 @@
        <string>By &amp;Error</string>
       </attribute>
       <layout class="QHBoxLayout" >
-       <property name="leftMargin" >
-        <number>4</number>
-       </property>
-       <property name="topMargin" >
-        <number>4</number>
-       </property>
-       <property name="rightMargin" >
-        <number>4</number>
-       </property>
-       <property name="bottomMargin" >
+       <property name="margin" >
         <number>4</number>
        </property>
        <item>
         <widget class="QTreeWidget" name="tree_widget_errors_by_type" >
          <property name="alternatingRowColors" >
-          <bool>true</bool>
-         </property>
-         <property name="wordWrap" >
           <bool>true</bool>
          </property>
          <column>
@@ -117,24 +105,12 @@
        <string>By &amp;Line</string>
       </attribute>
       <layout class="QHBoxLayout" >
-       <property name="leftMargin" >
-        <number>4</number>
-       </property>
-       <property name="topMargin" >
-        <number>4</number>
-       </property>
-       <property name="rightMargin" >
-        <number>4</number>
-       </property>
-       <property name="bottomMargin" >
+       <property name="margin" >
         <number>4</number>
        </property>
        <item>
         <widget class="QTreeWidget" name="tree_widget_errors_by_line" >
          <property name="alternatingRowColors" >
-          <bool>true</bool>
-         </property>
-         <property name="wordWrap" >
           <bool>true</bool>
          </property>
          <column>

@@ -361,6 +361,17 @@ namespace
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
+	create_continental_fragment(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		return create_common(model, collection, header, points, "gpml:ContinentalFragment", "gpml:outlineOf");
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
 	create_craton(
 			GPlatesModel::ModelInterface &model, 
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
@@ -368,6 +379,17 @@ namespace
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
 		return create_common(model, collection, header, points, "gpml:Craton", "gpml:outlineOf");
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_extended_continental_crust(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		return create_common(model, collection, header, points, "gpml:ExtendedContinentalCrust", "gpml:centerLineOf");
 	}
 
 
@@ -422,6 +444,17 @@ namespace
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
+	create_hot_spot(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		return create_single_point_feature(model, collection, header, points, "gpml:HotSpot", "gpml:position");
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
 	create_hot_spot_trail(
 			GPlatesModel::ModelInterface &model, 
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
@@ -429,6 +462,17 @@ namespace
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
 		return create_common(model, collection, header, points, "gpml:HotSpotTrail", "gpml:unclassifiedGeometry");
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_inferred_paleo_boundary(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		return create_common(model, collection, header, points, "gpml:InferredPaleoBoundary", "gpml:centerLineOf");
 	}
 
 
@@ -501,6 +545,17 @@ namespace
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
 		return create_common(model, collection, header, points, "gpml:SedimentThickness", "gpml:outlineOf");
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_geological_lineation(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		return create_common(model, collection, header, points, "gpml:GeologicalLineation", "gpml:centerLineOf");
 	}
 
 
@@ -614,6 +669,48 @@ namespace
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
+	create_subduction_zone(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points,
+			bool is_active)
+	{
+		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
+				create_common(model, collection, header, points, "gpml:SubductionZone", "gpml:centerLineOf");
+		
+		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
+				GPlatesPropertyValues::XsBoolean::create(is_active);
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
+				is_active_property_value, "gpml:isActive", feature_handle);
+
+		return feature_handle;
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_subduction_zone_active(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		return create_subduction_zone(model, collection, header, points, true);
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_subduction_zone_inactive(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		return create_subduction_zone(model, collection, header, points, false);
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
 	create_suture(
 			GPlatesModel::ModelInterface &model, 
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
@@ -632,6 +729,17 @@ namespace
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
 		return create_common(model, collection, header, points, "gpml:TerraneBoundary", "gpml:centerLineOf");
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_transitional_crust(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		return create_common(model, collection, header, points, "gpml:TransitionalCrust", "gpml:outlineOf");
 	}
 
 
@@ -699,16 +807,18 @@ namespace
 		map["BA"] = create_bathymetry;
 		map["BS"] = create_basin;
 		map["CB"] = create_continental_boundary;
+		map["CF"] = create_continental_fragment;
 		map["CM"] = create_continental_boundary;
 		map["CO"] = create_continental_boundary;
 		map["CR"] = create_craton;
 		map["CS"] = create_coastline;
+		map["EC"] = create_extended_continental_crust;
 		map["FT"] = create_fault;
 		map["FZ"] = create_fracture_zone;
 		map["GR"] = create_grid_mark;
 		map["GV"] = create_gravimetry;
 		map["HF"] = create_heat_flow;
-		map["HS"] = create_hot_spot_trail; // FIXME, should be HotSpot, but PLATES may feed us a line...
+		map["HS"] = create_hot_spot;
 		map["HT"] = create_hot_spot_trail;
 		map["IA"] = create_island_arc_active;
 		map["IC"] = create_isochron;
@@ -716,11 +826,13 @@ namespace
 		map["IP"] = create_isopach;
 		map["IR"] = create_island_arc_inactive;
 		map["IS"] = create_unclassified_feature; // -might- be Ice Shelf, might be Isochron. We don't know.
+		map["LI"] = create_geological_lineation;
 		map["MA"] = create_magnetics;
 		map["NF"] = create_normal_fault;
 		map["OB"] = create_orogenic_belt;
 		map["OP"] = create_ophiolite_belt;
 		map["OR"] = create_orogenic_belt;
+		map["PB"] = create_inferred_paleo_boundary;
 		map["PC"] = create_magnetic_pick;
 		map["PM"] = create_magnetic_pick;
 		map["RA"] = create_island_arc_inactive;
@@ -730,13 +842,16 @@ namespace
 		map["SS"] = create_strike_slip_fault;
 		map["SU"] = create_suture;
 		map["TB"] = create_terrane_boundary;
+		map["TC"] = create_transitional_crust;
 		map["TF"] = create_transform;
 		map["TH"] = create_thrust_fault;
 		map["TO"] = create_topography;
+		map["TR"] = create_subduction_zone_active;
 		map["UN"] = create_unclassified_feature;
 		map["VO"] = create_volcano;
 		map["VP"] = create_large_igneous_province;
 		map["XR"] = create_extinct_ridge;
+		map["XT"] = create_subduction_zone_inactive;
 		return map;
 	}
 

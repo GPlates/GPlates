@@ -81,6 +81,9 @@
   </widget>
   <widget class="QStatusBar" name="statusbar" />
   <widget class="QToolBar" name="toolBar" >
+   <property name="allowedAreas" >
+    <enum>Qt::AllToolBarAreas</enum>
+   </property>
    <property name="orientation" >
     <enum>Qt::Vertical</enum>
    </property>
@@ -91,24 +94,15 @@
     </size>
    </property>
    <attribute name="toolBarArea" >
-    <enum>LeftToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak" >
-    <bool>false</bool>
+    <number>1</number>
    </attribute>
    <addaction name="action_Drag_Globe" />
    <addaction name="action_Zoom_Globe" />
    <addaction name="action_Query_Feature" />
   </widget>
-  <widget class="QDockWidget" name="dockWidget_information" >
-   <property name="sizePolicy" >
-    <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
+  <widget class="QDockWidget" name="dock_information" >
    <property name="features" >
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar|QDockWidget::NoDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::NoDockWidgetFeatures</set>
    </property>
    <property name="allowedAreas" >
     <set>Qt::BottomDockWidgetArea|Qt::NoDockWidgetArea|Qt::TopDockWidgetArea</set>
@@ -116,22 +110,24 @@
    <attribute name="dockWidgetArea" >
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2" >
-    <layout class="QHBoxLayout" >
-     <property name="leftMargin" >
-      <number>2</number>
+   <widget class="QWidget" name="dockWidgetContents" >
+    <layout class="QVBoxLayout" >
+     <property name="margin" >
+      <number>0</number>
      </property>
-     <property name="topMargin" >
-      <number>2</number>
-     </property>
-     <property name="rightMargin" >
-      <number>2</number>
-     </property>
-     <property name="bottomMargin" >
-      <number>2</number>
+     <property name="spacing" >
+      <number>0</number>
      </property>
      <item>
-      <widget class="QTabWidget" name="tabWidget_information" >
+      <widget class="QTabWidget" name="tabWidget" >
+       <property name="sizePolicy" >
+        <sizepolicy>
+         <hsizetype>7</hsizetype>
+         <vsizetype>3</vsizetype>
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize" >
         <size>
          <width>0</width>
@@ -146,22 +142,18 @@
          <string>Clicked</string>
         </attribute>
         <layout class="QHBoxLayout" >
-         <property name="leftMargin" >
+         <property name="margin" >
           <number>2</number>
          </property>
-         <property name="topMargin" >
-          <number>2</number>
-         </property>
-         <property name="rightMargin" >
-          <number>2</number>
-         </property>
-         <property name="bottomMargin" >
-          <number>2</number>
+         <property name="spacing" >
+          <number>6</number>
          </property>
          <item>
-          <widget class="QListWidget" name="list_clicked" >
+          <widget class="QListWidget" name="tab_list_clicked" >
            <property name="sizePolicy" >
-            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
+            <sizepolicy>
+             <hsizetype>7</hsizetype>
+             <vsizetype>13</vsizetype>
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -174,23 +166,19 @@
         <attribute name="title" >
          <string>Selected</string>
         </attribute>
-        <layout class="QHBoxLayout" >
-         <property name="leftMargin" >
+        <layout class="QVBoxLayout" >
+         <property name="margin" >
           <number>2</number>
          </property>
-         <property name="topMargin" >
-          <number>2</number>
-         </property>
-         <property name="rightMargin" >
-          <number>2</number>
-         </property>
-         <property name="bottomMargin" >
-          <number>2</number>
+         <property name="spacing" >
+          <number>6</number>
          </property>
          <item>
-          <widget class="QListWidget" name="list_selected" >
+          <widget class="QListWidget" name="tab_list_selected" >
            <property name="sizePolicy" >
-            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
+            <sizepolicy>
+             <hsizetype>7</hsizetype>
+             <vsizetype>13</vsizetype>
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -421,7 +409,7 @@
   </action>
   <action name="action_Manage_Feature_Collections" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_folder_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_preferences_desktop_16.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Manage Feature Collections</string>

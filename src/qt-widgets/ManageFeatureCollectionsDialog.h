@@ -65,8 +65,37 @@ namespace GPlatesQtWidgets
 		update();
 		
 		/**
+		 * Causes the file referenced by the action widget to be saved with its
+		 * current name. No user interaction is necessary unless an exception
+		 * occurs.
+		 */
+		void
+		save_file(
+				ManageFeatureCollectionsActionWidget *action_widget_ptr);
+
+		/**
+		 * Causes the file referenced by the action widget to be saved with a
+		 * new name. A file save dialog is popped up to request the new name
+		 * from the user. The file info and appropriate table row will be updated.
+		 * Exceptions will be handled with a small error dialog.
+		 */
+		void
+		save_file_as(
+				ManageFeatureCollectionsActionWidget *action_widget_ptr);
+
+		/**
+		 * Causes a copy of the file referenced by the action widget to be saved
+		 * using different name. A file save dialog is popped up to request the new
+		 * name from the user. The file info and appropriate table row will be updated.
+		 * Exceptions will be handled with a small error dialog.
+		 */
+		void
+		save_file_copy(
+				ManageFeatureCollectionsActionWidget *action_widget_ptr);
+
+		/**
 		 * Causes the file referenced by the action widget to be unloaded,
-		 * and removed from the table.
+		 * and removed from the table. No user interaction is necessary.
 		 */
 		void
 		unload_file(
@@ -121,6 +150,12 @@ namespace GPlatesQtWidgets
 		 */
 		ViewportWindow *d_viewport_window_ptr;
 
+		/**
+		 * Holds the path information from the last file opened using the Open File dialog.
+		 * Note that file save dialogs infer their directory based on the path of the file
+		 * being saved.
+		 */
+		QString d_open_file_path;
 	};
 }
 

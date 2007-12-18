@@ -13,7 +13,7 @@
    <string>Manage Feature Collections</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_folder_16.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_preferences_desktop_16.png</iconset>
   </property>
   <property name="sizeGripEnabled" >
    <bool>true</bool>

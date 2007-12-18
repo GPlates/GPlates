@@ -26,9 +26,12 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QFileDialog>
+#include <QMessageBox>
 #include "ApplicationState.h"
-#include "file-io/FileInfo.h"
 #include "ViewportWindow.h"
+#include "file-io/FileInfo.h"
+#include "file-io/ErrorOpeningFileForWritingException.h"
+#include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "ManageFeatureCollectionsActionWidget.h"
 #include "ManageFeatureCollectionsDialog.h"
 
@@ -44,6 +47,58 @@ namespace
 			FILENAME, FORMAT, IN_USE, ACTIONS
 		};
 	}
+	
+	// FIXME: Maybe FileFormat can handle this.
+	const QString &
+	get_filter_for_file(
+			const QFileInfo &qfileinfo)
+	{
+		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
+		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
+		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
+		static const QString filter_all(QObject::tr("All files (*)"));
+		
+		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
+			return filter_line;
+		} else if (qfileinfo.suffix() == "rot") {
+			return filter_rotation;
+		} else if (qfileinfo.suffix() == "shp") {
+			return filter_shapefile;
+		} else {
+			return filter_all;
+		}
+	}
+
+	// FIXME: FileFormat can definitely handle this.
+	const QString &
+	get_format_for_file(
+			const QFileInfo &qfileinfo)
+	{
+		static const QString format_line(QObject::tr("PLATES4 line"));
+		static const QString format_rotation(QObject::tr("PLATES4 rotation"));
+		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
+		static const QString format_unknown(QObject::tr(""));
+		
+		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
+			return format_line;
+		} else if (qfileinfo.suffix() == "rot") {
+			return format_rotation;
+		} else if (qfileinfo.suffix() == "shp") {
+			return format_shapefile;
+		} else {
+			return format_unknown;
+		}
+	}
+	
+	QString
+	get_filters_for_file(
+			GPlatesFileIO::FileInfo &fileinfo)
+	{
+		// FIXME: Need to add appropriate filters for available output formats.
+		QString filters = QObject::tr("%1;;All files (*)")
+				.arg(get_filter_for_file(fileinfo.get_qfileinfo()));
+		return filters;
+	}
 }
 
 
@@ -51,7 +106,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 		ViewportWindow &viewport_window,
 		QWidget *parent_):
 	QDialog(parent_),
-	d_viewport_window_ptr(&viewport_window)
+	d_viewport_window_ptr(&viewport_window),
+	d_open_file_path("")
 {
 	setupUi(this);
 	
@@ -59,7 +115,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	QHeaderView *header = table_feature_collections->horizontalHeader();
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
-	header->resizeSection(ColumnNames::IN_USE, 64);
+	header->resizeSection(ColumnNames::IN_USE, 56);
 	header->resizeSection(ColumnNames::ACTIONS, 146);
 
 	// Enforce minimum row height for the Actions widget's sake.
@@ -84,6 +140,117 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
 	clear_rows();
 	for (; it != end; ++it) {
 		add_row(it);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
+		ManageFeatureCollectionsActionWidget *action_widget_ptr)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			action_widget_ptr->get_file_info_iterator();
+	
+	try
+	{
+		// FIXME: Saving files should not be handled by the viewport window.
+		d_viewport_window_ptr->save_file(*file_it);
+		
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
+	{
+		QString message = tr("An error occurred while saving the file '%1'")
+				.arg(e.filename());
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+				
+	}
+	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &e)
+	{
+		QString message = tr("Error: Attempted to write an empty feature collection.");
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
+		ManageFeatureCollectionsActionWidget *action_widget_ptr)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			action_widget_ptr->get_file_info_iterator();
+	
+	QString filename = QFileDialog::getSaveFileName(d_viewport_window_ptr, tr("Save File As"),
+			file_it->get_qfileinfo().path(), get_filters_for_file(*file_it));
+	if ( filename.isEmpty() ) {
+		return;
+	}
+		
+	// Make a new FileInfo object to tell save_file_as() what the new name should be.
+	GPlatesFileIO::FileInfo new_fileinfo(filename);
+
+	try
+	{
+		// FIXME: Saving files should not be handled by the viewport window.
+		d_viewport_window_ptr->save_file_as(new_fileinfo, file_it);
+		
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
+	{
+		QString message = tr("An error occurred while saving the file '%1'")
+				.arg(e.filename());
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+				
+	}
+	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &e)
+	{
+		QString message = tr("Error: Attempted to write an empty feature collection.");
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+	
+	update();
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
+		ManageFeatureCollectionsActionWidget *action_widget_ptr)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			action_widget_ptr->get_file_info_iterator();
+	
+	QString filename = QFileDialog::getSaveFileName(d_viewport_window_ptr,
+			tr("Save a copy of the file with a different name"),
+			file_it->get_qfileinfo().path(), get_filters_for_file(*file_it));
+	if ( filename.isEmpty() ) {
+		return;
+	}
+		
+	// Make a new FileInfo object to tell save_file_copy() what the copy name should be.
+	GPlatesFileIO::FileInfo new_fileinfo(filename);
+
+	try
+	{
+		// FIXME: Saving files should not be handled by the viewport window.
+		d_viewport_window_ptr->save_file_copy(new_fileinfo, file_it);
+		
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
+	{
+		QString message = tr("An error occurred while saving the file '%1'")
+				.arg(e.filename());
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+				
+	}
+	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &e)
+	{
+		QString message = tr("Error: Attempted to write an empty feature collection.");
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
 	}
 }
 
@@ -118,11 +285,14 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_file()
 			"All files (*)" );
 	
 	QStringList filenames = QFileDialog::getOpenFileNames(d_viewport_window_ptr,
-			tr("Open Files"), "", filters);
+			tr("Open Files"), d_open_file_path, filters);
 	
 	if ( ! filenames.isEmpty() ) {
 		d_viewport_window_ptr->load_files(filenames);
 		d_viewport_window_ptr->reconstruct();
+		
+		QFileInfo last_opened_file(filenames.last());
+		d_open_file_path = last_opened_file.path();
 	}
 }
 
@@ -148,7 +318,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	
 	QString filename_str = qfileinfo.fileName();
 	QString filepath_str = qfileinfo.path();
-	QString format_str = "";		// FIXME: FileInfo not handling file format atm!
+	QString format_str = get_format_for_file(qfileinfo);
 	bool in_use = d_viewport_window_ptr->is_file_active(file_it);
 	
 	// Add blank row.

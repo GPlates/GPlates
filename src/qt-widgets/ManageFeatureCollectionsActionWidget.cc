@@ -47,8 +47,25 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::unload(
-		)
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::save()
+{
+	d_feature_collections_dialog.save_file(this);
+}
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::save_as()
+{
+	d_feature_collections_dialog.save_file_as(this);
+}
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::save_copy()
+{
+	d_feature_collections_dialog.save_file_copy(this);
+}
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::unload()
 {
 	d_feature_collections_dialog.unload_file(this);
 }

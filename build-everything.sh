@@ -14,5 +14,5 @@
 # checkout, following the script "bootstrap.sh".
 
 set -x
-./configure --enable-dev && \
+./configure --enable-dev "$@" && \
 make

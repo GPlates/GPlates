@@ -65,16 +65,13 @@ namespace GPlatesQtWidgets
 	public slots:
 		
 		void
-		save()
-		{  }
+		save();
 		
 		void
-		save_as()
-		{  }
+		save_as();
 		
 		void
-		save_copy()
-		{  }
+		save_copy();
 		
 		void
 		unload();
