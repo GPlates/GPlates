@@ -69,4 +69,12 @@ GPlatesGui::NurbsRenderer::NurbsRenderer() {
 #else
 			reinterpret_cast< GLvoid (__CONVENTION__ *)() >(&NurbsError));
 #endif
+
+	// Increase the resolution so we get smoother curves:
+	//  -  Even though it's the default, we force GLU_SAMPLING_METHOD
+	//    to be GLU_PATH_LENGTH.
+	gluNurbsProperty(_nr, GLU_SAMPLING_METHOD, GLU_PATH_LENGTH);
+	//  -  The default GLU_SAMPLING_TOLERANCE is 50.0 pixels.  The OpenGL
+	//    API notes that this is rather conservative, so we halve it.
+	gluNurbsProperty(_nr, GLU_SAMPLING_TOLERANCE, 25.0);
 }

@@ -27,10 +27,13 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <cmath>
 #include <algorithm>
 
 #include "Globe.h"
 #include "PlatesColourTable.h"
+#include "NurbsRenderer.h"
+#include "maths/Vector3D.h"
 #include "state/Layout.h"
 
 
@@ -39,9 +42,56 @@ using namespace GPlatesState;
 
 
 namespace {
-	
+
+	GPlatesGui::NurbsRenderer nurbs_renderer;
+
+
+	Vector3D
+	calc_ctrl_point(
+			const Vector3D &start_pt,
+			const Vector3D &end_pt)
+	{
+		Vector3D triangle_base_mid = 0.5*(end_pt - start_pt);
+		double triangle_height_sqrd = 3*triangle_base_mid.magSqrd().dval()/16.0;
+
+		Vector3D triangle_base = start_pt + triangle_base_mid;
+		Vector3D triangle_tip = std::sqrt(triangle_height_sqrd) * Vector3D(triangle_base.get_normalisation());
+		return triangle_base + triangle_tip;
+	}
+
 	void
-	CallVertexWithPoint(const PointOnSphere& p)
+	draw_nurbs_arc(
+			const GPlatesMaths::GreatCircleArc &arc)
+	{
+		static const GLint STRIDE = 4;
+		static const GLint ORDER = 3;
+		static const GLsizei NUM_CONTROL_POINTS = 3;
+		static const GLsizei KNOT_SIZE = 6;
+		static GLfloat KNOTS[KNOT_SIZE] = 
+		{
+			0.0, 0.0, 0.0, 
+			1.0, 1.0, 1.0
+		};
+
+		const UnitVector3D &start_pt = arc.start_point().position_vector();
+		const UnitVector3D &end_pt = arc.end_point().position_vector();
+
+		Vector3D mid_ctrl_pt = calc_ctrl_point(Vector3D(start_pt), Vector3D(end_pt));
+
+		GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
+			{ start_pt.x().dval(),        start_pt.y().dval(),        start_pt.z().dval(),    1.0}, 
+			{ 0.5*mid_ctrl_pt.x().dval(), 0.5*mid_ctrl_pt.y().dval(), 0.5*mid_ctrl_pt.z().dval(), 0.5},
+			{ end_pt.x().dval(),          end_pt.y().dval(),          end_pt.z().dval(),      1.0}
+		};
+
+		nurbs_renderer.drawCurve(KNOT_SIZE, &KNOTS[0], STRIDE,
+				&ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
+	}
+	
+
+	void
+	CallVertexWithPoint(
+			const PointOnSphere& p)
 	{
 		const UnitVector3D &uv = p.position_vector();
 		glVertex3d(uv.x().dval(), uv.y().dval(), uv.z().dval());
@@ -49,28 +99,33 @@ namespace {
 
 
 	void
-	CallVertexWithLine(const PolylineOnSphere::const_iterator& begin, 
-					   const PolylineOnSphere::const_iterator& end)
+	CallVertexWithLine(
+			const PolylineOnSphere::const_iterator& begin, 
+			const PolylineOnSphere::const_iterator& end)
 	{
+		// We will draw a NURBS if the two endpoints of the arc are
+		// more than PI/36 radians (= 5 degrees) apart.
+		static const double DISTANCE_THRESHOLD = std::cos(PI/36.0);
+
 		PolylineOnSphere::const_iterator iter = begin;
 
-		glBegin(GL_LINE_STRIP);
-			CallVertexWithPoint(iter->start_point());
-			for ( ; iter != end; ++iter)
-				CallVertexWithPoint(iter->end_point());
-		glEnd();
-		
-		glLineWidth(1);
+		for ( ; iter != end; ++iter) {
+			if (iter->dot_of_endpoints().dval() < DISTANCE_THRESHOLD) {
+				// FIXME: Check for arcs of angle greater than PI/2.
+				draw_nurbs_arc(*iter);
+			} else {
+				glBegin(GL_LINES);
+					CallVertexWithPoint(iter->start_point());
+					CallVertexWithPoint(iter->end_point());
+				glEnd();
+			}
+		}
 	}
 
 
 	void
 	PaintPointDataPos(Layout::PointDataPos& pointdata)
 	{
-#if 0
-		GPlatesGeo::PointData *datum = pointdata.first;
-		if ( ! datum->ShouldBePainted()) return;
-#endif
 		const PointOnSphere& point = *pointdata.first;
 		
 		glColor3fv(*pointdata.second);
@@ -80,25 +135,6 @@ namespace {
 	void
 	PaintLineDataPos(Layout::LineDataPos& linedata)
 	{
-		using namespace GPlatesGui;
-
-#if 0
-		GPlatesGeo::LineData *datum = linedata.first;
-		if ( ! datum->ShouldBePainted()) return;
-
-		const PlatesColourTable &ctab = *(PlatesColourTable::Instance());
-		const PolylineOnSphere& line = linedata.second;
-
-		GPlatesGlobal::rid_t rgid = datum->GetRotationGroupId();
-		PlatesColourTable::const_iterator it = ctab.lookup(rgid);
-		if (it != ctab.end()) {
-
-			// There is an entry for this RG-ID in the colour table.
-			glColor3fv(*it);
-
-		} else glColor3fv(GPlatesGui::Colour::RED);
-#endif
-
 		const PolylineOnSphere& line = *linedata.first;
 		glColor3fv(*linedata.second);
 		
