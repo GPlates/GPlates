@@ -535,7 +535,10 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
 			d_canvas_ptr->globe().SetNewHandlePos(oriented_desired_centre);
 			d_canvas_ptr->globe().UpdateHandlePos(centre_of_canvas);
 			d_canvas_ptr->update_canvas();
-		} catch (GPlatesMaths::InvalidLatLonException &e) {
+		} catch (GPlatesMaths::InvalidLatLonException &) {
+			// The argument name in the above expression was removed to
+			// prevent "unreferenced local variable" compiler warnings under MSVC.
+
 			// User somehow managed to specify an invalid lat,lon. Pretend it didn't happen.
 		}
 	}

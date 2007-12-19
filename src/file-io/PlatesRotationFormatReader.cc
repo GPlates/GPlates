@@ -626,7 +626,7 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	try
 	{
 		populate_rotations(model, rotations, line_buffer, data_source, read_errors);
-	} catch (PoleParsingException &) {
+	} catch (UnexpectedlyNullIrregularSampling &) {
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 

@@ -503,7 +503,7 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 	} // for loop over number of attributes
 
 	if (!plate_id_found){
-		std::cerr << "No plate ID attribute found." << std::endl; 
+		//std::cerr << "No plate ID attribute found." << std::endl; 
 	}
 	if (age_of_appearance && age_of_disappearance){
 		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin(*age_of_appearance);
