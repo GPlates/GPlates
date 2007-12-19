@@ -20,13 +20,15 @@ libqt_widgets_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
 	moc_ManageFeatureCollectionsDialog.cc \
 	ManageFeatureCollectionsActionWidget.cc ManageFeatureCollectionsActionWidgetUi.h \
 	moc_ManageFeatureCollectionsActionWidget.cc \
-	ApplicationState.cc
+	ApplicationState.cc \
+	SetCameraViewpointDialog.cc SetCameraViewpointDialogUi.h \
+	moc_SetCameraViewpointDialog.cc
 
 CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h AboutDialogUi.h \
 				QueryFeaturePropertiesDialogUi.h ReconstructionViewWidgetUi.h \
 				ReadErrorAccumulationDialogUi.h ManageFeatureCollectionsDialogUi.h \
-				ManageFeatureCollectionsActionWidgetUi.h \
+				ManageFeatureCollectionsActionWidgetUi.h SetCameraViewpointDialogUi.h \
 				moc_*.cc
 
 # This rule lets GNU make create any moc_*.cc from the equivalent *.h

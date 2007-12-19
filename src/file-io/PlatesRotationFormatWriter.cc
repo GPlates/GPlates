@@ -46,6 +46,7 @@
 #include "maths/LatLonPointConversions.h"
 #include "maths/UnitQuaternion3D.h"
 #include "utils/StringFormattingUtils.h"
+#include "utils/MathUtils.h"
 #include <unicode/ustream.h>
 #include <boost/none.hpp>
 
@@ -67,13 +68,13 @@ namespace
 
 		(*os) << formatted_int_to_string(moving_plate_id, 3, '0')
 			<< " "
-			<< formatted_real_to_string(time, 5, 1)
+			<< formatted_double_to_string(time, 5, 2, true)
 			<< " "
-			<< formatted_real_to_string(latitude, 6, 2)
+			<< formatted_double_to_string(latitude, 6, 2, true)
 			<< " "
-			<< formatted_real_to_string(longitude, 7, 2)
+			<< formatted_double_to_string(longitude, 7, 2, true)
 			<< " "
-			<< formatted_real_to_string(angle, 7, 2)
+			<< formatted_double_to_string(angle, 7, 2, true)
 			<< "  "
 			<< formatted_int_to_string(fixed_plate_id, 3, '0')
 			<< " !"
@@ -124,7 +125,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 				GPlatesMaths::make_lat_lon_point(GPlatesMaths::PointOnSphere(rot_params.axis));
 
 			print_rotation_line_details(os, moving_plate_id_or_comment, *(iter->time),
-					pole.latitude(), pole.longitude(), rot_params.angle.dval(),
+					pole.latitude(), pole.longitude(), GPlatesUtils::convert_rad_to_deg(rot_params.angle.dval()),
 					*fixed_plate_id, str_comment);
 		}
 	}

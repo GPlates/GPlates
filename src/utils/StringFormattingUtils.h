@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2007 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,13 +33,15 @@
 #include "global/Exception.h"
 
 
-namespace GPlatesUtils {
-
-	class InvalidFormattingParametersException : public GPlatesGlobal::Exception
+namespace GPlatesUtils
+{
+	class InvalidFormattingParametersException:
+			public GPlatesGlobal::Exception
 	{
 		public:
-			InvalidFormattingParametersException(const std::string &message)
-				: d_message(message)
+			InvalidFormattingParametersException(
+					const std::string &message):
+				d_message(message)
 			{ }
 
 		protected:
@@ -75,13 +77,19 @@ namespace GPlatesUtils {
 	 *   !  27.1828!
 	 *   !   1.6180!
 	 */
-	std::string
-	formatted_real_to_string(const GPlatesMaths::Real &val, 
-			unsigned width, unsigned prec);
+	const std::string
+	formatted_double_to_string(
+			const double &val, 
+			unsigned width,
+			unsigned prec,
+			bool elide_trailing_zeroes = false);
 
 
-	std::string
-	formatted_int_to_string(int val, unsigned width, char fill_char = ' ');
+	const std::string
+	formatted_int_to_string(
+			int val,
+			unsigned width,
+			char fill_char = ' ');
 }
 
 #endif // GPLATES_UTILS_STRINGFORMATTINGUTILS_H

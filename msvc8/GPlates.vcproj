@@ -535,6 +535,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_SetCameraViewpointDialog.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
 				>
 			</File>
@@ -582,6 +586,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\SetCameraViewpointDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\SetCameraViewpointDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\SetCameraViewpointDialogUi.ui"
 				>
 			</File>
 			<File

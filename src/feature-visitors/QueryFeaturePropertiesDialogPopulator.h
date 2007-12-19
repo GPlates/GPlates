@@ -116,8 +116,18 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_gpml_strike_slip_enumeration(
+				const GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration);
+
+		virtual
+		void
 		visit_gpml_old_plates_header(
 				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
+
+		virtual
+		void
+		visit_xs_boolean(
+				const GPlatesPropertyValues::XsBoolean &xs_boolean);
 
 		virtual
 		void

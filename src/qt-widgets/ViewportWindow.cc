@@ -44,6 +44,9 @@
 #include "gui/CanvasToolAdapter.h"
 #include "gui/CanvasToolChoice.h"
 #include "gui/FeatureWeakRefSequence.h"
+#include "maths/PointOnSphere.h"
+#include "maths/LatLonPointConversions.h"
+#include "maths/InvalidLatLonException.h"
 #include "model/Model.h"
 #include "model/types.h"
 #include "model/DummyTransactionHandle.h"
@@ -302,8 +305,8 @@ namespace
 				}
 
 				if (colour == GPlatesGui::PlatesColourTable::Instance()->end()) {
-					// XXX: For lack of anything better to do, we will colour data that lacks a plate id grey
-					colour = &GPlatesGui::Colour::GREY;
+					// Anything not in the table in gui/PlatesColourTable.cc uses the 'Olive' colour.
+					colour = &GPlatesGui::Colour::OLIVE;
 				}
 
 				canvas_ptr->draw_point(iter->geometry(), colour);
@@ -320,8 +323,8 @@ namespace
 				}
 
 				if (colour == GPlatesGui::PlatesColourTable::Instance()->end()) {
-					// XXX: For lack of anything better to do, we will colour data that lacks a plate id grey
-					colour = &GPlatesGui::Colour::GREY;
+					// Anything not in the table in gui/PlatesColourTable.cc uses the 'Olive' colour.
+					colour = &GPlatesGui::Colour::OLIVE;
 				}
 
 				canvas_ptr->draw_polyline(iter2->geometry(), colour);
@@ -346,6 +349,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_recon_root(0),
 	d_reconstruction_view_widget(*this, this),
 	d_specify_fixed_plate_dialog(d_recon_root, this),
+	d_set_camera_viewpoint_dialog(*this, this),
 	d_animate_dialog(*this, this),
 	d_about_dialog(*this, this),
 	d_license_dialog(&d_about_dialog),
@@ -371,6 +375,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			this, SLOT(pop_up_specify_fixed_plate_dialog()));
 	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
 			this, SLOT(reconstruct_with_root(unsigned long)));
+
+	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
+			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
 
 	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
@@ -501,6 +508,37 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_specify_fixed_plate_dialog()
 {
 	d_specify_fixed_plate_dialog.show();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
+{
+	static const GPlatesMaths::PointOnSphere centre_of_canvas =
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
+
+	GPlatesMaths::PointOnSphere oriented_centre = d_canvas_ptr->globe().Orient(centre_of_canvas);
+	GPlatesMaths::LatLonPoint cur_llp = GPlatesMaths::make_lat_lon_point(oriented_centre);
+
+	d_set_camera_viewpoint_dialog.set_lat_lon(cur_llp.latitude(), cur_llp.longitude());
+	if (d_set_camera_viewpoint_dialog.exec())
+	{
+		try {
+			GPlatesMaths::LatLonPoint desired_centre(
+					d_set_camera_viewpoint_dialog.latitude(),
+					d_set_camera_viewpoint_dialog.longitude());
+			
+			GPlatesMaths::PointOnSphere oriented_desired_centre = 
+					d_canvas_ptr->globe().orientation().orient_point(
+							GPlatesMaths::make_point_on_sphere(desired_centre));
+
+			d_canvas_ptr->globe().SetNewHandlePos(oriented_desired_centre);
+			d_canvas_ptr->globe().UpdateHandlePos(centre_of_canvas);
+			d_canvas_ptr->update_canvas();
+		} catch (GPlatesMaths::InvalidLatLonException &e) {
+			// User somehow managed to specify an invalid lat,lon. Pretend it didn't happen.
+		}
+	}
 }
 
 

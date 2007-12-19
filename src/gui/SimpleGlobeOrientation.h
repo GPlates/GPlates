@@ -80,6 +80,17 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * Apply the accumulated rotation of the globe to the supplied
+		 * point.
+		 */
+		const GPlatesMaths::PointOnSphere
+		orient_point(
+				const GPlatesMaths::PointOnSphere &pos) const
+		{
+			return (d_accum_rot * pos);
+		}
+
+		/**
 		 * Apply the reverse of the accumulated rotation of the globe
 		 * to the supplied point.
 		 */

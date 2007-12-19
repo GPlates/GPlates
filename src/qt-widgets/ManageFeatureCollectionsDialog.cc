@@ -31,6 +31,7 @@
 #include "ViewportWindow.h"
 #include "file-io/FileInfo.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
+#include "file-io/FileFormatNotSupportedException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "ManageFeatureCollectionsActionWidget.h"
 #include "ManageFeatureCollectionsDialog.h"
@@ -48,27 +49,6 @@ namespace
 		};
 	}
 	
-	// FIXME: Maybe FileFormat can handle this.
-	const QString &
-	get_filter_for_file(
-			const QFileInfo &qfileinfo)
-	{
-		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
-		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
-		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
-		static const QString filter_all(QObject::tr("All files (*)"));
-		
-		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
-			return filter_line;
-		} else if (qfileinfo.suffix() == "rot") {
-			return filter_rotation;
-		} else if (qfileinfo.suffix() == "shp") {
-			return filter_shapefile;
-		} else {
-			return filter_all;
-		}
-	}
-
 	// FIXME: FileFormat can definitely handle this.
 	const QString &
 	get_format_for_file(
@@ -91,13 +71,29 @@ namespace
 	}
 	
 	QString
-	get_filters_for_file(
+	get_output_filters_for_file(
 			GPlatesFileIO::FileInfo &fileinfo)
 	{
-		// FIXME: Need to add appropriate filters for available output formats.
-		QString filters = QObject::tr("%1;;All files (*)")
-				.arg(get_filter_for_file(fileinfo.get_qfileinfo()));
-		return filters;
+		// Appropriate filters for available output formats.
+		// Note that since we cannot write Shapefiles yet, we use PLATES4 line format as
+		// the default when the user clicks "Save a Copy" etc on shapefiles.
+		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
+		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
+		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
+		static const QString filter_all(QObject::tr("All files (*)"));
+		
+		QFileInfo qfileinfo = fileinfo.get_qfileinfo();
+		
+		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
+			return QString(filter_line).append(";;").append(filter_all);
+		} else if (qfileinfo.suffix() == "rot") {
+			return QString(filter_rotation).append(";;").append(filter_all);
+		} else if (qfileinfo.suffix() == "shp") {
+			// No shapefile writing support yet!
+			return QString(filter_line).append(";;").append(filter_all);
+		} else {
+			return filter_all;
+		}
 	}
 }
 
@@ -173,6 +169,14 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 		QMessageBox::critical(this, tr("Error saving file"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
+	catch (GPlatesFileIO::FileFormatNotSupportedException &)
+	{
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+		QString message = tr("Error: Writing files in this format is currently not supported.");
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
 }
 
 
@@ -184,7 +188,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 			action_widget_ptr->get_file_info_iterator();
 	
 	QString filename = QFileDialog::getSaveFileName(d_viewport_window_ptr, tr("Save File As"),
-			file_it->get_qfileinfo().path(), get_filters_for_file(*file_it));
+			file_it->get_qfileinfo().path(), get_output_filters_for_file(*file_it));
 	if ( filename.isEmpty() ) {
 		return;
 	}
@@ -214,6 +218,14 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 		QMessageBox::critical(this, tr("Error saving file"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
+	catch (GPlatesFileIO::FileFormatNotSupportedException &)
+	{
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+		QString message = tr("Error: Writing files in this format is currently not supported.");
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
 	
 	update();
 }
@@ -228,7 +240,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 	
 	QString filename = QFileDialog::getSaveFileName(d_viewport_window_ptr,
 			tr("Save a copy of the file with a different name"),
-			file_it->get_qfileinfo().path(), get_filters_for_file(*file_it));
+			file_it->get_qfileinfo().path(), get_output_filters_for_file(*file_it));
 	if ( filename.isEmpty() ) {
 		return;
 	}
@@ -255,6 +267,14 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Attempted to write an empty feature collection.");
+		QMessageBox::critical(this, tr("Error saving file"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+	catch (GPlatesFileIO::FileFormatNotSupportedException &)
+	{
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+		QString message = tr("Error: Writing files in this format is currently not supported.");
 		QMessageBox::critical(this, tr("Error saving file"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}

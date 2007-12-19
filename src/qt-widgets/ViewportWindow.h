@@ -43,6 +43,7 @@
 #include "GlobeCanvas.h"
 #include "ReconstructionViewWidget.h"
 #include "SpecifyFixedPlateDialog.h"
+#include "SetCameraViewpointDialog.h"
 #include "AnimateDialog.h"
 #include "AboutDialog.h"
 #include "LicenseDialog.h"
@@ -199,6 +200,7 @@ namespace GPlatesQtWidgets
 		GPlatesModel::integer_plate_id_type d_recon_root;
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
+		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
 		AnimateDialog d_animate_dialog;
 		AboutDialog d_about_dialog;
 		LicenseDialog d_license_dialog;
@@ -216,6 +218,9 @@ namespace GPlatesQtWidgets
 	private slots:
 		void
 		pop_up_specify_fixed_plate_dialog();
+
+		void
+		pop_up_set_camera_viewpoint_dialog();
 
 		void
 		pop_up_animate_dialog();

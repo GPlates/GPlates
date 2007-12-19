@@ -38,12 +38,14 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlStrikeSlipEnumeration.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlOldPlatesHeader.h"
+#include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
@@ -402,6 +404,31 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_old_pl
 	add_child(QObject::tr("gpml:colourCode"), QString::number(header.colour_code()));
 	add_child(QObject::tr("gpml:numberOfPoints"), QString::number(header.number_of_points()));
 }
+
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_strike_slip_enumeration(
+		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration)
+{
+	static const int which_column = 1;
+	QString qstring = GPlatesUtils::make_qstring_from_icu_string(strike_slip_enumeration.value().get());
+
+	// This assumes that the stack is non-empty.
+	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+}
+
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_boolean(
+		const GPlatesPropertyValues::XsBoolean &xs_boolean)
+{
+	static const int which_column = 1;
+	QString qstring = QVariant(xs_boolean.value()).toString();
+
+	// This assumes that the stack is non-empty.
+	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+}
+
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_double(

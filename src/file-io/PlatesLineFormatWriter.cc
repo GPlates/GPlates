@@ -78,27 +78,26 @@ namespace {
 		 */
 		static const unsigned PLATES_COORDINATE_PRECISION = 4;
 		static const unsigned PLATES_COORDINATE_FIELDWIDTH = 9;
-		static const unsigned PLATES_PEN_FIELDWIDTH = 2;
+		static const unsigned PLATES_PEN_FIELDWIDTH = 1;
 
 		/* We convert the coordinates to strings first, so that in case an exception
 		 * is thrown, the ostream is not modified.
 		 */
 		std::string lat_str, lon_str, pen_str;
 		try {
-			lat_str = GPlatesUtils::formatted_real_to_string(lat,
+			lat_str = GPlatesUtils::formatted_double_to_string(lat.dval(),
 				PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION);
-			lon_str = GPlatesUtils::formatted_real_to_string(lon,
+			lon_str = GPlatesUtils::formatted_double_to_string(lon.dval(),
 				PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION);
 			pen_str = GPlatesUtils::formatted_int_to_string(static_cast<int>(pen),
 				PLATES_PEN_FIELDWIDTH);
 		} catch (const GPlatesUtils::InvalidFormattingParametersException &) {
-		    // The argument name in the above expression was removed to
-		    // prevent "unreferenced local variable" compiler warnings under MSVC
-
+			// The argument name in the above expression was removed to
+			// prevent "unreferenced local variable" compiler warnings under MSVC
 			throw;
 		}
 
-		(*os) << lat_str << lon_str << pen_str << std::endl;
+		(*os) << lat_str << " " << lon_str << " " << pen_str << std::endl;
 	}
 
 	void
@@ -204,9 +203,9 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 	(*os) << " "
 		<< formatted_int_to_string(old_plates_header.plate_id_number, 3)
 		<< " "
-		<< formatted_real_to_string(old_plates_header.age_of_appearance, 6, 1)
+		<< formatted_double_to_string(old_plates_header.age_of_appearance, 6, 1)
 		<< " "
-		<< formatted_real_to_string(old_plates_header.age_of_disappearance, 6, 1)
+		<< formatted_double_to_string(old_plates_header.age_of_disappearance, 6, 1)
 		<< " "
 		<< old_plates_header.data_type_code
 		<< formatted_int_to_string(old_plates_header.data_type_code_number, 4)

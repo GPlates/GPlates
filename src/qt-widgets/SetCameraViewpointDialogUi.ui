@@ -1,0 +1,259 @@
+<ui version="4.0" >
+ <class>SetCameraViewpointDialog</class>
+ <widget class="QDialog" name="SetCameraViewpointDialog" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>289</width>
+    <height>151</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Set Camera Viewpoint</string>
+  </property>
+  <property name="modal" >
+   <bool>true</bool>
+  </property>
+  <widget class="QWidget" name="layoutWidget" >
+   <property name="geometry" >
+    <rect>
+     <x>60</x>
+     <y>110</y>
+     <width>210</width>
+     <height>29</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" >
+    <property name="margin" >
+     <number>0</number>
+    </property>
+    <property name="spacing" >
+     <number>6</number>
+    </property>
+    <item>
+     <spacer>
+      <property name="orientation" >
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" >
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
+     <widget class="QPushButton" name="button_ok" >
+      <property name="text" >
+       <string>OK</string>
+      </property>
+      <property name="autoDefault" >
+       <bool>true</bool>
+      </property>
+      <property name="default" >
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="button_cancel" >
+      <property name="text" >
+       <string>Cancel</string>
+      </property>
+      <property name="autoDefault" >
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="layoutWidget" >
+   <property name="geometry" >
+    <rect>
+     <x>60</x>
+     <y>40</y>
+     <width>210</width>
+     <height>58</height>
+    </rect>
+   </property>
+   <layout class="QGridLayout" >
+    <property name="margin" >
+     <number>0</number>
+    </property>
+    <property name="spacing" >
+     <number>6</number>
+    </property>
+    <item row="0" column="1" >
+     <widget class="QLabel" name="label_latitude" >
+      <property name="text" >
+       <string>Latitude:</string>
+      </property>
+      <property name="alignment" >
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+      <property name="buddy" >
+       <cstring>spinbox_latitude</cstring>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3" >
+     <spacer>
+      <property name="orientation" >
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" >
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="1" column="2" >
+     <widget class="QDoubleSpinBox" name="spinbox_longitude" >
+      <property name="decimals" >
+       <number>3</number>
+      </property>
+      <property name="maximum" >
+       <double>180.000000000000000</double>
+      </property>
+      <property name="minimum" >
+       <double>-180.000000000000000</double>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1" >
+     <widget class="QLabel" name="label_longitude" >
+      <property name="text" >
+       <string>Longitude:</string>
+      </property>
+      <property name="alignment" >
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+      <property name="buddy" >
+       <cstring>spinbox_longitude</cstring>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2" >
+     <widget class="QDoubleSpinBox" name="spinbox_latitude" >
+      <property name="decimals" >
+       <number>3</number>
+      </property>
+      <property name="maximum" >
+       <double>90.000000000000000</double>
+      </property>
+      <property name="minimum" >
+       <double>-90.000000000000000</double>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QLabel" name="label_use_tab" >
+   <property name="geometry" >
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>261</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>Use the Tab key to cycle between fields.</string>
+   </property>
+   <property name="wordWrap" >
+    <bool>true</bool>
+   </property>
+  </widget>
+ </widget>
+ <tabstops>
+  <tabstop>spinbox_latitude</tabstop>
+  <tabstop>spinbox_longitude</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>spinbox_latitude</sender>
+   <signal>editingFinished()</signal>
+   <receiver>spinbox_longitude</receiver>
+   <slot>setFocus()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>164</x>
+     <y>46</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>178</x>
+     <y>71</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinbox_latitude</sender>
+   <signal>editingFinished()</signal>
+   <receiver>spinbox_longitude</receiver>
+   <slot>selectAll()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>163</x>
+     <y>43</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>163</x>
+     <y>74</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_ok</sender>
+   <signal>clicked()</signal>
+   <receiver>SetCameraViewpointDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>130</x>
+     <y>133</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>135</x>
+     <y>174</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_cancel</sender>
+   <signal>clicked()</signal>
+   <receiver>SetCameraViewpointDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>216</x>
+     <y>130</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>217</x>
+     <y>184</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinbox_longitude</sender>
+   <signal>editingFinished()</signal>
+   <receiver>button_ok</receiver>
+   <slot>setFocus()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>147</x>
+     <y>74</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>148</x>
+     <y>131</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

@@ -69,6 +69,8 @@
     <property name="title" >
      <string>&amp;View</string>
     </property>
+    <addaction name="action_Set_Camera_Viewpoint" />
+    <addaction name="separator" />
     <addaction name="action_Set_Zoom" />
     <addaction name="action_Zoom_In" />
     <addaction name="action_Zoom_Out" />
@@ -421,6 +423,14 @@
    </property>
    <property name="shortcut" >
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="action_Set_Camera_Viewpoint" >
+   <property name="text" >
+    <string>Set Camera &amp;Viewpoint...</string>
+   </property>
+   <property name="shortcut" >
+    <string>Ctrl+L</string>
    </property>
   </action>
  </widget>

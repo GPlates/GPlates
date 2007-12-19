@@ -24,8 +24,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <fstream>
 
+#include <fstream>
+#include <boost/optional.hpp>
 #include <QString>
 #include <QVariant>
 
@@ -424,9 +425,11 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 	const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 	const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
 {
-	double age_of_appearance,age_of_disappearance;
-	bool age_of_appearance_found = false;
-	bool age_of_disappearance_found = false;
+	// Using boost::optional for these doubles allows them to be formally uninitialised,
+	// and allows us to track whether they have been set.
+	// See http://www.boost.org/libs/optional/doc/optional.html
+	boost::optional<double> age_of_appearance;
+	boost::optional<double> age_of_disappearance;
 	bool plate_id_found = false;
 	int n = static_cast<int>(d_attributes.size());
 
@@ -491,11 +494,9 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 		} 
 		else if (sfieldname == "FROMAGE"){
 			age_of_appearance = attribute.toDouble();
-			age_of_appearance_found = true;
 		}
 		else if (sfieldname == "TOAGE"){
 			age_of_disappearance = attribute.toDouble();
-			age_of_disappearance_found = true;
 		}// end if (sfieldname == ".....")
 
 
@@ -504,9 +505,9 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 	if (!plate_id_found){
 		std::cerr << "No plate ID attribute found." << std::endl; 
 	}
-	if (age_of_appearance_found && age_of_disappearance_found){
-		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin(age_of_appearance);
-		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end(age_of_disappearance);
+	if (age_of_appearance && age_of_disappearance){
+		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin(*age_of_appearance);
+		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end(*age_of_disappearance);
 
 		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time = 
 			GPlatesModel::ModelUtils::create_gml_time_period(geo_time_instant_begin,
