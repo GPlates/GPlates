@@ -30,7 +30,7 @@
 #include <QString>
 #include <QVariant>
 
-#include "ogrsf_frmts.h"
+#include "ShapeFileReader.h"
 
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
@@ -44,7 +44,6 @@
 #include "property-values/XsString.h"
 
 #include "ErrorOpeningFileForReadingException.h"
-#include "ShapeFileReader.h"
 
 
 GPlatesFileIO::ShapeFileReader::ShapeFileReader():

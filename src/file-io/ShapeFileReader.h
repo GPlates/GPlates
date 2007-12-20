@@ -28,7 +28,13 @@
 #ifndef GPLATES_FILEIO_SHAPEFILEREADER_H
 #define GPLATES_FILEIO_SHAPEFILEREADER_H
 
-#include "ogrsf_frmts.h"
+// On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
+#include "global/config.h"
+#ifdef HAVE_GDAL_OGRSF_FRMTS_H
+#include <gdal/ogrsf_frmts.h>
+#else
+#include <ogrsf_frmts.h>
+#endif
 
 #include "FileInfo.h"
 #include "ReadErrorAccumulation.h"
@@ -38,8 +44,9 @@
 #include "model/ModelUtils.h"
 #include "model/DummyTransactionHandle.h"
 
-namespace GPlatesFileIO {
-	
+
+namespace GPlatesFileIO
+{
 	const double SHAPE_NO_DATA = -1e38; 
 
 	class ShapeFileReader

@@ -33,9 +33,6 @@
 #include <QString>
 #include <QStringList>
 
-
-#include "ogrsf_frmts.h"
-
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
 

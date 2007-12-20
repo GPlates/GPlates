@@ -173,7 +173,7 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 # sucks, but we don't have the time to research a better solution right now.)
 #
 # #AC_CHECK_LIB([gdal], [main], [], AC_MSG_ERROR([[
-AC_SEARCH_LIBS([OGRRegisterAll], [gdal gdal1.3.2], [], AC_MSG_ERROR([[
+AC_SEARCH_LIBS([OGRRegisterAll], [gdal gdal1.3.2 gdal1.4.0], [], AC_MSG_ERROR([[
 !!
 !!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
 !!  shared library installed.  Your operating system vendor may provide a
@@ -257,6 +257,18 @@ AC_CHECK_HEADERS([unicode/unistr.h], [], AC_MSG_ERROR([[
 !!  a development package which includes these headers, or you can download
 !!  the source from
 !!     http://icu.sourceforge.net/
+!!]]))
+
+# GDAL
+# On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
+# Test for <gdal/ogrsf_frmts.h>, fall back to <ogrsf_frmts.h>.
+AC_CHECK_HEADERS([gdal/ogrsf_frmts.h ogrsf_frmts.h], [break], AC_MSG_ERROR([[
+!!
+!!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
+!!  development headers installed.  Your operating system vendor may provide
+!!  a development package which includes these headers, or you can download
+!!  the source from
+!!     http://www.remotesensing.org/gdal/
 !!]]))
 
 
