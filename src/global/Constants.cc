@@ -28,6 +28,8 @@
 #include "Constants.h"
 
 
+// When you update the version string here, you should also update the version
+// in "configure.in".
 const char GPlatesGlobal::VersionString[] = 
 		"GPlates 0.9";
 
