@@ -39,6 +39,9 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	QObject::connect(button_License, SIGNAL(clicked()),
 			d_viewport_ptr, SLOT(pop_up_license_dialog()));
 
-	QString message(QObject::tr(GPlatesGlobal::HtmlCopyrightString));
-	text_Copyright->setHtml(message);
+	QString version(QObject::tr(GPlatesGlobal::VersionString));
+	label_GPlates->setText(version);
+
+	QString copyright(QObject::tr(GPlatesGlobal::HtmlCopyrightString));
+	text_Copyright->setHtml(copyright);
 }

@@ -27,7 +27,12 @@
 
 #include "Constants.h"
 
-const char GPlatesGlobal::CopyrightString[] = 
+
+const char GPlatesGlobal::VersionString[] = 
+		"GPlates 0.9";
+
+
+const char GPlatesGlobal::CopyrightString[] =
 		"Copyright (C) 2003-2007 The University of Sydney, Australia\n"
 		"Copyright (C) 2007 The Geological Survey of Norway\n"
 		"\n"
@@ -40,7 +45,7 @@ const char GPlatesGlobal::CopyrightString[] =
 		"artwork for the GNOME desktop environment.";
 
 
-const char GPlatesGlobal::HtmlCopyrightString[] = 
+const char GPlatesGlobal::HtmlCopyrightString[] =
 		"<html><body>\n"
 		"Copyright &copy; 2003-2007 The University of Sydney, Australia<br />\n"
 		"Copyright &copy; 2007 The Geological Survey of Norway<br />\n"

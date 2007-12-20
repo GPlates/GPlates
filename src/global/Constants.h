@@ -31,11 +31,11 @@
 
 namespace GPlatesGlobal 
 {
+	extern const char VersionString[];
 
 	extern const char CopyrightString[];
 
 	extern const char HtmlCopyrightString[];
-	
 }
 
 #endif // GPLATES_GLOBAL_CONSTANTS_H
