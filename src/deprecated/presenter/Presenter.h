@@ -1,9 +1,9 @@
-/* $Id: gplates_main.cc 968 2006-11-20 03:28:31Z jboyden $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 968 $
- * $Date: 2006-11-20 14:28:31 +1100 (Mon, 20 Nov 2006) $ 
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2006 The University of Sydney, Australia
  *
