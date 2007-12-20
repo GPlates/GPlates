@@ -56,6 +56,7 @@ namespace
 				iter != fixed_plate_id_match_range.second;
 				++iter) {
 			if (iter->second->moving_plate() == moving_plate_id) {
+#if 0  // Silence these warnings for the release.
 				std::cerr << "Warning: Duplicate edges detected:\n";
 				ReconstructionGraph::edge_ref_type edge =
 						ReconstructionTreeEdge::create(fixed_plate_id,
@@ -67,6 +68,7 @@ namespace
 				std::cerr << "is for the same pole as the existing edge:\n";
 				output_for_debugging(std::cerr, *(iter->second));
 				std::cerr << "Won't add the new edge!\n" << std::endl;
+#endif
 
 				return true;
 			}
@@ -81,6 +83,7 @@ namespace
 				iter != moving_plate_id_match_range.second;
 				++iter) {
 			if (iter->second->moving_plate() == fixed_plate_id) {
+#if 0  // Silence these warnings for the release.
 				std::cerr << "Warning: Duplicate edges detected:\n";
 				ReconstructionGraph::edge_ref_type edge =
 						ReconstructionTreeEdge::create(fixed_plate_id,
@@ -92,6 +95,7 @@ namespace
 				std::cerr << "is for the same pole (reversed) as the existing edge:\n";
 				output_for_debugging(std::cerr, *(iter->second));
 				std::cerr << "Won't add the new edge!\n" << std::endl;
+#endif
 
 				return true;
 			}

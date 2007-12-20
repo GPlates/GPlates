@@ -106,11 +106,13 @@ GPlatesModel::ReconstructionTree::create(
 			// (It could result in an infinite loop.)
 			//
 			// FIXME:  Should we check that the composed absolute rots are the same?
+#if 0  // Silence these warnings for the release.
 			std::cerr << "Warning: Potential cycle detected (may be a cross-over point):\n";
 			output_for_debugging(std::cerr, *edge_being_processed);
 			std::cerr << "forms a cycle with the existing edge(s):\n";
 			output_edges(std::cerr, moving_plate_id_edge_range.first, moving_plate_id_edge_range.second);
 			std::cerr << "Won't process the new edge!\n" << std::endl;
+#endif
 
 			continue;
 		}
