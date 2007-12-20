@@ -1,4 +1,4 @@
-/* $Id: types.h 1540 2007-09-25 07:40:52Z glen $ */
+/* $Id$ */
 
 /**
  * \file 
@@ -6,7 +6,7 @@
  * the code; they are not tied to any particular class.
  *
  * Most recent change:
- *   $Date: 2007-09-25 17:40:52 +1000 (Tue, 25 Sep 2007) $
+ *   $Date$
  * 
  * Copyright (C) 2007 The University of Sydney, Australia
  *

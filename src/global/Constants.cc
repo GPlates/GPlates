@@ -1,11 +1,11 @@
-/* $Id: Exception.cc 1436 2007-08-17 09:26:47Z jboyden $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2007-08-17 19:26:47 +1000 (Fri, 17 Aug 2007) $
+ *   $Date$
  * 
  * Copyright (C) 2007 The University of Sydney, Australia
  *
