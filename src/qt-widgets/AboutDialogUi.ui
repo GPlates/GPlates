@@ -235,7 +235,7 @@
         </font>
        </property>
        <property name="text" >
-        <string>GPlates 0.9 Milestone 2</string>
+        <string>Edit 'GPlatesGlobal::VersionString'</string>
        </property>
       </widget>
      </item>
