@@ -29,7 +29,9 @@ To compile on Linux, execute:
 and then optionally:
 	make install
 
-More information can be found in the file "INSTALL" in this directory.
+More information can be found in the files "DEPS.Linux" and "BUILD.Linux" in
+this directory, in addition to the generic installation instructions in the
+file "INSTALL".
 
 
 Compiling GPlates on Windows
@@ -47,6 +49,8 @@ There is a Visual Studio project file named "GPlates.vcproj" in the folder
 "msvc8".  To compile in Visual Studio:
  1. Open "GPlates.vcproj" in the Visual Studio IDE.
  2. Invoke "Rebuild All" from the Build menu. 
+
+More information can be found in the file "BUILD.Windows" in this directory.
 
 
 GPlates on the Web
