@@ -7,10 +7,54 @@ GPlates is open-source software, distributed under the terms of the GNU General
 Public License (version 2, dated June 1991) unless otherwise explicitly stated.
 A copy of the license can be found in the file "COPYING" in this directory.
 
+
+Compiling GPlates on Linux
+--------------------------
+
+To compile GPlates on Linux, you will need the following programs and libraries
+installed:
+ * g++ 4
+ * make
+ * GL library (the OpenGL shared library)
+ * GLU library (the OpenGL Utility shared library)
+ * Expat library
+ * Qt library (version 4.2 or newer)
+ * ICU library
+ * Boost library headers
+ * Geospatial Data Abstraction Library (GDAL) (1.2.6 or newer)
+
+To compile on Linux, execute:
+	./configure
+	make
+and then optionally:
+	make install
+
+More information can be found in the file "INSTALL" in this directory.
+
+
+Compiling GPlates on Windows
+----------------------------
+
+To compile GPlates on Microsoft Windows, you will need the following programs
+and libraries installed:
+ * Microsoft Visual Studio 8
+ * Qt (version 4.2 or newer)
+ * ICU
+ * Boost
+ * Geospatial Data Abstraction Library (GDAL) (1.2.6 or newer)
+
+There is a Visual Studio project file named "GPlates.vcproj" in the folder
+"msvc8".  To compile in Visual Studio:
+ 1. Open "GPlates.vcproj" in the Visual Studio IDE.
+ 2. Invoke "Rebuild All" from the Build menu. 
+
+
+GPlates on the Web
+------------------
+
 For up-to-date information about GPlates, you can go to the GPlates website:
  http://www.gplates.org/
 
-For information about current development, you can go to the GPlates Trac site:
- http://trac.gplates.org/
 
-This README was last updated 2007-08-17 by James Boyden.
+This README was last updated 2007-12-21 by James Boyden.
+
