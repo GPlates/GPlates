@@ -89,6 +89,9 @@ namespace GPlatesQtWidgets
 			return d_recon_root;
 		}
 
+		void
+		create_svg_file();
+
 	public slots:
 		void
 		reconstruct();
@@ -118,6 +121,12 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_manage_feature_collections_dialog();
+
+		void
+		pop_up_export_geometry_snapshot_dialog()
+		{
+			create_svg_file();
+		}
 
 	public:
 		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;

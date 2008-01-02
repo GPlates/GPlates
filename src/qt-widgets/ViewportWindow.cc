@@ -28,7 +28,6 @@
 #include <boost/format.hpp>
 
 #include <QFileDialog>
-#include <QKeyEvent>
 #include <QLocale>
 #include <QString>
 #include <QStringList>
@@ -55,6 +54,7 @@
 #include "file-io/Reader.h"
 #include "file-io/ShapeFileReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
+#include "gui/SvgExport.h"
 #include "gui/PlatesColourTable.h"
 
 
@@ -396,6 +396,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
 			d_canvas_ptr, SLOT(reset_zoom()));
 	
+	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
+			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
+
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
 
@@ -659,3 +662,20 @@ GPlatesQtWidgets::ViewportWindow::is_file_active(
 	return false;
 }
 
+
+void
+GPlatesQtWidgets::ViewportWindow::create_svg_file()
+{
+	QString filename = QFileDialog::getSaveFileName(this,
+			tr("Save As"), "", tr("SVG file (*.svg)"));
+
+	if (filename.isEmpty()){
+		return;
+	}
+
+	bool result = GPlatesGui::SvgExport::create_svg_output(filename,d_canvas_ptr);
+	if (!result){
+		std::cerr << "Error creating SVG output.." << std::endl;
+	}
+
+}

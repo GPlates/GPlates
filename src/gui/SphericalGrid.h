@@ -56,6 +56,14 @@ namespace GPlatesGui
 		public:
 			void Paint();
 
+			void Paint(GPlatesGui::Colour colour);
+
+			/*
+			 *  paint the circumference for vector output.
+			 */
+			void
+			paint_circumference(GPlatesGui::Colour colour);
+
 		private:
 			void drawLineOfLat(double lat);  // in radians
 			void drawLineOfLon(double lon);

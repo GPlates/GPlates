@@ -256,3 +256,49 @@ GPlatesGui::Globe::Paint()
 
 	glPopMatrix();
 }
+
+void
+GPlatesGui::Globe::paint_vector_output()
+{
+
+	_grid.paint_circumference(GPlatesGui::Colour::GREY);
+
+	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
+	glPushMatrix();
+		// rotate everything to get a nice almost-equatorial shot
+//		glRotatef(-80.0, 1.0, 0.0, 0.0);
+
+		UnitVector3D axis = m_globe_orientation.rotation_axis();
+		real_t angle_in_deg =
+		 radiansToDegrees(m_globe_orientation.rotation_angle());
+		glRotatef(angle_in_deg.dval(),
+		           axis.x().dval(), axis.y().dval(), axis.z().dval());
+
+		// Set the grid's colour.
+		glColor3fv(GPlatesGui::Colour::WHITE);
+		
+		/*
+		 * Draw grid.
+		 * DepthRange calls push the grid back in the depth buffer
+		 * a bit to avoid Z-fighting with the LineData.
+		 */
+		glDepthRange(0.0, 0.9);
+		_grid.Paint(Colour::GREY);
+
+		// Restore DepthRange
+		glDepthRange(0.0, 1.0);
+
+		glPointSize(5.0f);
+		
+		/* 
+		 * Paint the data.
+		 */
+		glColor3fv(GPlatesGui::Colour::GREEN);
+		PaintPoints();
+		
+		glColor3fv(GPlatesGui::Colour::BLACK);
+		PaintLines();
+
+	glPopMatrix();
+}
+

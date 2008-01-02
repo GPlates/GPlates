@@ -12,7 +12,8 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				NurbsRenderer.cc OpaqueSphere.cc \
 				PlatesColourTable.cc ProximityTests.cc \
 				Quadrics.cc SimpleGlobeOrientation.cc \
-				SphericalGrid.cc ViewportZoom.cc \
+				SphericalGrid.cc SvgExport.cc \
+				ViewportZoom.cc \
 				moc_CanvasToolAdapter.cc \
 				moc_CanvasToolChoice.cc \
 				moc_FeatureWeakRefSequence.cc \

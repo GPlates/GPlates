@@ -75,6 +75,8 @@
     <addaction name="action_Zoom_In" />
     <addaction name="action_Zoom_Out" />
     <addaction name="action_Reset_Zoom_Level" />
+    <addaction name="separator" />
+    <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
    <addaction name="menu_File" />
    <addaction name="menu_Reconstruction" />
@@ -407,6 +409,17 @@
    </property>
    <property name="shortcut" >
     <string>Z</string>
+   </property>
+  </action>
+  <action name="action_Export_Geometry_Snapshot" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_applets_screenshooter_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>E&amp;xport Geometry Snapshot...</string>
+   </property>
+   <property name="toolTip" >
+    <string>Save an SVG image of the current view.</string>
    </property>
   </action>
   <action name="action_Manage_Feature_Collections" >

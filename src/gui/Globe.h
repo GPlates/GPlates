@@ -68,6 +68,12 @@ namespace GPlatesGui
 			 GPlatesMaths::PointOnSphere &pos);
 
 			void Paint();
+			
+			/*
+			 * A special version of the globe's Paint() method more suitable
+			 * for vector output
+			 */
+			void paint_vector_output();
 
 		private:
 			/**

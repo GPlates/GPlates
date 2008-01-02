@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib opengl32.lib glu32.lib gdal_i.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib qtsvgd4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -163,7 +163,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib opengl32.lib glu32.lib gdal_i.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib qtsvg4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -307,6 +307,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\GuiException.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\moc_CanvasToolAdapter.cc"
 				>
 			</File>
@@ -359,6 +363,18 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\SphericalGrid.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\SphericalGrid.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\SvgExport.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\SvgExport.h"
 				>
 			</File>
 			<File
@@ -746,6 +762,10 @@
 			</File>
 			<File
 				RelativePath="..\src\utils\UnicodeStringUtils.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utils\UnicodeStringUtils.h"
 				>
 			</File>
 			<File

@@ -141,6 +141,17 @@ namespace GPlatesQtWidgets
 		void
 		clear_data();
 
+		/**
+		 *  Draw the relevant objects for vector output. This is essentially like the 
+		 *	PaintGL method, except that:
+		 *	we will omit drawing the sphere (otherwise we end up with loads of little
+		 *	polygons);
+		 *	we will use the Nurbs renderer routines to draw a circle around the circumference
+		 *	of the sphere (prior to the sphere orientation).
+		 */
+		void
+		draw_vector_output();
+
 		GPlatesGui::Globe &
 		globe()
 		{

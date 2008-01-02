@@ -302,6 +302,30 @@ GPlatesQtWidgets::GlobeCanvas::clear_data()
 	GPlatesState::Layout::Clear();
 }
 
+void
+GPlatesQtWidgets::GlobeCanvas::draw_vector_output()
+{
+
+	try {
+		clear_canvas();
+		glLoadIdentity();
+		glTranslatef(EYE_X,EYE_Y,EYE_Z);
+		// Set up our universe coordinate system (the standard geometric one):
+		//   Z points up
+		//   Y points right
+		//   X points out of the screen
+		glRotatef(-90.0, 1.0, 0.0, 0.0);
+		glRotatef(-90.0, 0.0, 0.0, 1.0);
+
+		// FIXME: Globe uses wrong naming convention for methods.
+		d_globe.paint_vector_output();
+	}
+	catch (const GPlatesGlobal::Exception &){
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+
+	}
+}
 
 void
 GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change() 

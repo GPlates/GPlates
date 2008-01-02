@@ -106,6 +106,23 @@ GPlatesGui::SphericalGrid::Paint() {
 	}
 }
 
+void
+GPlatesGui::SphericalGrid::Paint(GPlatesGui::Colour colour) {
+
+	glColor3fv(colour);
+
+	for (unsigned i = 0; i < _num_circles_lat; i++) {
+
+		double lat = ((i + 1) * _lat_delta) - (pi / 2);
+		drawLineOfLat(lat);
+	}
+
+	for (unsigned j = 0; j < _num_circles_lon; j++) {
+
+		double lon = j * _lon_delta;
+		drawLineOfLon(lon);
+	}
+}
 
 void
 GPlatesGui::SphericalGrid::drawLineOfLat(double lat) {
@@ -169,6 +186,14 @@ GPlatesGui::SphericalGrid::drawLineOfLon(double lon) {
 	 ORDER, GL_MAP1_VERTEX_4);
 }
 
+void
+GPlatesGui::SphericalGrid::paint_circumference(GPlatesGui::Colour colour)
+{
+	glColor3fv(colour);
+
+	drawLineOfLon(pi/2.);
+	drawLineOfLat(-pi/2.);
+}
 
 const double
 GPlatesGui::SphericalGrid::pi = 3.14159265358979323846;
