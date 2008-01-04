@@ -31,6 +31,7 @@
 #include "Colour.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
+#include "NurbsRenderer.h"
 #include "SimpleGlobeOrientation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
@@ -76,6 +77,11 @@ namespace GPlatesGui
 			void paint_vector_output();
 
 		private:
+			/**
+			 * The NurbsRenderer used to draw large GreatCircleArcs.
+			 */
+			NurbsRenderer d_nurbs_renderer;
+
 			/**
 			 * The solid earth.
 			 */

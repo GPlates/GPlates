@@ -29,6 +29,7 @@
 #define _GPLATES_GUI_NURBSRENDERER_H_
 
 #include "OpenGL.h"
+#include "maths/GreatCircleArc.h"
 
 namespace GPlatesGui
 {
@@ -60,7 +61,7 @@ namespace GPlatesGui
 
 		public:
 			/**
-			 * Draw a NURBS curve.
+			 * Draw a general NURBS curve.
 			 *
 			 * The six parameters to this function match the last
 			 * six parameters to the GLU function 'gluNurbsCurve'.
@@ -93,11 +94,27 @@ namespace GPlatesGui
 				gluEndCurve(_nr);
 			}
 
+
+			/**
+			 * Draw a great circle arc on a sphere of radius one.
+			 *
+			 * The angle spanned by the endpoints of the GreatCircleArc
+			 * must be strictly less than PI.
+			 */
+			void
+			draw_great_circle_arc(
+					const GPlatesMaths::GreatCircleArc &arc);
+
 		private:
 			/**
 			 * GLU nurbs renderer object
 			 */
 			GLUnurbsObj *_nr;
+
+			void
+			draw_great_circle_arc_smaller_than_ninety_degrees(
+					const GPlatesMaths::UnitVector3D &start_pt,
+					const GPlatesMaths::UnitVector3D &end_pt);
 	};
 }
 

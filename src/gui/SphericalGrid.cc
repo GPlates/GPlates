@@ -156,7 +156,10 @@ GPlatesGui::SphericalGrid::drawLineOfLat(double lat) {
 
 
 void
-GPlatesGui::SphericalGrid::drawLineOfLon(double lon) {
+GPlatesGui::SphericalGrid::drawLineOfLon(
+		double lon)
+{
+	using namespace GPlatesMaths;
 
 	/*
 	 * We want to draw a great circle which is bisected by the z-axis.
@@ -164,6 +167,17 @@ GPlatesGui::SphericalGrid::drawLineOfLon(double lon) {
 	 */
 	GLfloat p_x = static_cast<GLfloat>(cos(lon));
 	GLfloat p_y = static_cast<GLfloat>(sin(lon));
+
+#if 0
+	// This does the same thing as the code below, but *much* slower.
+	PointOnSphere equatorial_pt(
+			Vector3D(p_x, p_y, 0.0).get_normalisation());
+
+	_nurbs.draw_great_circle_arc(GreatCircleArc::create(PointOnSphere::north_pole, equatorial_pt));
+	_nurbs.draw_great_circle_arc(GreatCircleArc::create(equatorial_pt, PointOnSphere::south_pole));
+	_nurbs.draw_great_circle_arc(GreatCircleArc::create(PointOnSphere::south_pole, get_antipodal_point(equatorial_pt)));
+	_nurbs.draw_great_circle_arc(GreatCircleArc::create(get_antipodal_point(equatorial_pt), PointOnSphere::north_pole));
+#endif
 
 	GLfloat u_p_x = WEIGHT * p_x;
 	GLfloat u_p_y = WEIGHT * p_y;
