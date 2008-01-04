@@ -261,7 +261,7 @@ GPlatesGui::Globe::paint_vector_output()
 		PaintPoints();
 		
 		glColor3fv(GPlatesGui::Colour::BLACK);
-		PaintLines();
+		PaintLines(d_nurbs_renderer);
 
 	glPopMatrix();
 }
