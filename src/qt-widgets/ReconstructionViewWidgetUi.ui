@@ -10,9 +10,7 @@
    </rect>
   </property>
   <property name="sizePolicy" >
-   <sizepolicy>
-    <hsizetype>0</hsizetype>
-    <vsizetype>0</vsizetype>
+   <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -21,26 +19,45 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" >
-   <property name="margin" >
+   <property name="leftMargin" >
     <number>2</number>
    </property>
-   <property name="spacing" >
+   <property name="topMargin" >
     <number>2</number>
    </property>
-   <item row="0" column="0" >
+   <property name="rightMargin" >
+    <number>2</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>2</number>
+   </property>
+   <property name="horizontalSpacing" >
+    <number>2</number>
+   </property>
+   <property name="verticalSpacing" >
+    <number>2</number>
+   </property>
+   <item row="0" column="0" colspan="2" >
     <layout class="QHBoxLayout" >
-     <property name="margin" >
-      <number>0</number>
-     </property>
      <property name="spacing" >
       <number>2</number>
+     </property>
+     <property name="leftMargin" >
+      <number>0</number>
+     </property>
+     <property name="topMargin" >
+      <number>0</number>
+     </property>
+     <property name="rightMargin" >
+      <number>0</number>
+     </property>
+     <property name="bottomMargin" >
+      <number>0</number>
      </property>
      <item>
       <widget class="QFrame" name="frame_reconstruction_time" >
        <property name="sizePolicy" >
-        <sizepolicy>
-         <hsizetype>0</hsizetype>
-         <vsizetype>0</vsizetype>
+        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -52,11 +69,20 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QHBoxLayout" >
-        <property name="margin" >
-         <number>1</number>
-        </property>
         <property name="spacing" >
          <number>2</number>
+        </property>
+        <property name="leftMargin" >
+         <number>1</number>
+        </property>
+        <property name="topMargin" >
+         <number>1</number>
+        </property>
+        <property name="rightMargin" >
+         <number>1</number>
+        </property>
+        <property name="bottomMargin" >
+         <number>1</number>
         </property>
         <item>
          <widget class="QLabel" name="label_reconstruction_time" >
@@ -68,9 +94,7 @@
         <item>
          <widget class="QDoubleSpinBox" name="spinbox_reconstruction_time" >
           <property name="sizePolicy" >
-           <sizepolicy>
-            <hsizetype>0</hsizetype>
-            <vsizetype>0</vsizetype>
+           <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -149,9 +173,7 @@
      <item>
       <widget class="QFrame" name="frame_zoom_amount" >
        <property name="sizePolicy" >
-        <sizepolicy>
-         <hsizetype>0</hsizetype>
-         <vsizetype>0</vsizetype>
+        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -163,11 +185,20 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QHBoxLayout" >
-        <property name="margin" >
-         <number>1</number>
-        </property>
         <property name="spacing" >
          <number>2</number>
+        </property>
+        <property name="leftMargin" >
+         <number>1</number>
+        </property>
+        <property name="topMargin" >
+         <number>1</number>
+        </property>
+        <property name="rightMargin" >
+         <number>1</number>
+        </property>
+        <property name="bottomMargin" >
+         <number>1</number>
         </property>
         <item>
          <widget class="QLabel" name="label_zoom_percent" >
@@ -187,11 +218,11 @@
           <property name="decimals" >
            <number>0</number>
           </property>
-          <property name="maximum" >
-           <double>10000.000000000000000</double>
-          </property>
           <property name="minimum" >
            <double>100.000000000000000</double>
+          </property>
+          <property name="maximum" >
+           <double>10000.000000000000000</double>
           </property>
           <property name="singleStep" >
            <double>5.000000000000000</double>
@@ -274,11 +305,20 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QHBoxLayout" >
-        <property name="margin" >
-         <number>1</number>
-        </property>
         <property name="spacing" >
          <number>2</number>
+        </property>
+        <property name="leftMargin" >
+         <number>1</number>
+        </property>
+        <property name="topMargin" >
+         <number>1</number>
+        </property>
+        <property name="rightMargin" >
+         <number>1</number>
+        </property>
+        <property name="bottomMargin" >
+         <number>1</number>
         </property>
         <item>
          <spacer>
@@ -301,22 +341,66 @@
    <item row="1" column="0" >
     <widget class="QWidget" native="1" name="globe_canvas_place_holder" >
      <property name="sizePolicy" >
-      <sizepolicy>
-       <hsizetype>0</hsizetype>
-       <vsizetype>0</vsizetype>
+      <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
     </widget>
    </item>
-   <item row="2" column="0" >
+   <item row="1" column="1" >
+    <layout class="QVBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_zoom_max" >
+       <property name="text" >
+        <string/>
+       </property>
+       <property name="pixmap" >
+        <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_16.png</pixmap>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="slider_zoom" >
+       <property name="singleStep" >
+        <number>1</number>
+       </property>
+       <property name="orientation" >
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="tickPosition" >
+        <enum>QSlider::NoTicks</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_zoom_min" >
+       <property name="text" >
+        <string/>
+       </property>
+       <property name="pixmap" >
+        <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_16.png</pixmap>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="2" column="0" colspan="2" >
     <layout class="QHBoxLayout" >
-     <property name="margin" >
-      <number>0</number>
-     </property>
      <property name="spacing" >
       <number>2</number>
+     </property>
+     <property name="leftMargin" >
+      <number>0</number>
+     </property>
+     <property name="topMargin" >
+      <number>0</number>
+     </property>
+     <property name="rightMargin" >
+      <number>0</number>
+     </property>
+     <property name="bottomMargin" >
+      <number>0</number>
      </property>
      <item>
       <widget class="QFrame" name="frame_camera_coords" >
@@ -339,10 +423,19 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QHBoxLayout" >
-        <property name="margin" >
+        <property name="spacing" >
          <number>2</number>
         </property>
-        <property name="spacing" >
+        <property name="leftMargin" >
+         <number>2</number>
+        </property>
+        <property name="topMargin" >
+         <number>2</number>
+        </property>
+        <property name="rightMargin" >
+         <number>2</number>
+        </property>
+        <property name="bottomMargin" >
          <number>2</number>
         </property>
         <item>
@@ -378,9 +471,7 @@
      <item>
       <widget class="QFrame" name="frame_mouse_coords" >
        <property name="sizePolicy" >
-        <sizepolicy>
-         <hsizetype>0</hsizetype>
-         <vsizetype>0</vsizetype>
+        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -404,18 +495,25 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QHBoxLayout" >
-        <property name="margin" >
+        <property name="spacing" >
          <number>2</number>
         </property>
-        <property name="spacing" >
+        <property name="leftMargin" >
+         <number>2</number>
+        </property>
+        <property name="topMargin" >
+         <number>2</number>
+        </property>
+        <property name="rightMargin" >
+         <number>2</number>
+        </property>
+        <property name="bottomMargin" >
          <number>2</number>
         </property>
         <item>
          <widget class="QLabel" name="label_mouse" >
           <property name="sizePolicy" >
-           <sizepolicy>
-            <hsizetype>0</hsizetype>
-            <vsizetype>0</vsizetype>
+           <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -428,9 +526,7 @@
         <item>
          <widget class="QLabel" name="label_mouse_coords" >
           <property name="sizePolicy" >
-           <sizepolicy>
-            <hsizetype>5</hsizetype>
-            <vsizetype>0</vsizetype>
+           <sizepolicy vsizetype="Fixed" hsizetype="Preferred" >
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>

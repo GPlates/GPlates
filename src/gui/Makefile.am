@@ -17,7 +17,8 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				moc_CanvasToolAdapter.cc \
 				moc_CanvasToolChoice.cc \
 				moc_FeatureWeakRefSequence.cc \
-				moc_SimpleGlobeOrientation.cc
+				moc_SimpleGlobeOrientation.cc \
+				moc_ViewportZoom.cc
 
 CLEANFILES		= moc_*.cc
 

@@ -190,19 +190,6 @@ namespace GPlatesQtWidgets
 		void
 		notify_of_orientation_change();
 
-		void
-		zoom_in();
-
-		void
-		zoom_out();
-
-		void
-		reset_zoom();
-		
-		void
-		set_zoom(
-				double new_zoom_percent);
-
 	protected:
 		/**
 		 * This is a virtual override of the function in QGLWidget.
@@ -370,6 +357,11 @@ namespace GPlatesQtWidgets
 		zoom_changed(
 				double zoom_percent);
 
+	private slots:
+	
+		void
+		handle_zoom_change();
+
 	private:
 		ViewportWindow *d_view_state_ptr;
 
@@ -421,9 +413,6 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::Globe d_globe;
 		GPlatesGui::ViewportZoom d_viewport_zoom;
-
-		void
-		handle_zoom_change();
 
 		void
 		set_view();

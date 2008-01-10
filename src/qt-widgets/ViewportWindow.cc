@@ -390,11 +390,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
 
 	QObject::connect(action_Zoom_In, SIGNAL(triggered()),
-			d_canvas_ptr, SLOT(zoom_in()));
+			&(d_canvas_ptr->viewport_zoom()), SLOT(zoom_in()));
 	QObject::connect(action_Zoom_Out, SIGNAL(triggered()),
-			d_canvas_ptr, SLOT(zoom_out()));
+			&(d_canvas_ptr->viewport_zoom()), SLOT(zoom_out()));
 	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
-			d_canvas_ptr, SLOT(reset_zoom()));
+			&(d_canvas_ptr->viewport_zoom()), SLOT(reset_zoom()));
 	
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));

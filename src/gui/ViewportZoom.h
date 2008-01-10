@@ -28,13 +28,18 @@
 #ifndef GPLATES_GUI_VIEWPORTZOOM_H
 #define GPLATES_GUI_VIEWPORTZOOM_H
 
+#include <QObject>
+
 namespace GPlatesGui
 {
 	/**
 	 * This class encapsulates the behaviour of the zooming-in and zooming-out of the Viewport.
 	 */
-	class ViewportZoom
+	class ViewportZoom:
+			public QObject
 	{
+		Q_OBJECT
+		
 	public:
 
 		static const int s_min_zoom_level;
@@ -53,6 +58,7 @@ namespace GPlatesGui
 			update_zoom_percent_from_level();
 		}
 
+		virtual
 		~ViewportZoom()
 		{  }
 
@@ -67,6 +73,11 @@ namespace GPlatesGui
 		{
 			return (d_zoom_percent / 100.0);
 		}
+		
+		int
+		zoom_level() const;
+	
+	public slots:
 
 		void
 		zoom_in();
@@ -78,8 +89,21 @@ namespace GPlatesGui
 		reset_zoom();
 
 		void
-		set_zoom(
+		set_zoom_percent(
 				double new_zoom_percent);
+
+		void
+		set_zoom_level(
+				int new_zoom_level);
+		
+	signals:
+	
+		/**
+		 * This signal should only be emitted if the zoom is actually different to what it
+		 * was.
+		 */
+		void
+		zoom_changed();
 
 	private:
 

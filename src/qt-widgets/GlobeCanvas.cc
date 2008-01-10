@@ -185,6 +185,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
 	setMouseTracking(true);
 
+	QObject::connect(&d_viewport_zoom, SIGNAL(zoom_changed()),
+			this, SLOT(handle_zoom_change()));
 	handle_zoom_change();
 }
 
@@ -331,51 +333,6 @@ void
 GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change() 
 {
 	update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::zoom_in() 
-{
-	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
-
-	d_viewport_zoom.zoom_in();
-	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
-		handle_zoom_change();
-	}
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::zoom_out() 
-{
-	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
-
-	d_viewport_zoom.zoom_out();
-	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
-		handle_zoom_change();
-	}
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::reset_zoom() 
-{
-	d_viewport_zoom.reset_zoom();
-	handle_zoom_change();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::set_zoom(
-		double new_zoom_percent) 
-{
-	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
-
-	d_viewport_zoom.set_zoom(new_zoom_percent);
-	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
-		handle_zoom_change();
-	}
 }
 
 
@@ -639,11 +596,11 @@ GPlatesQtWidgets::GlobeCanvas::handle_wheel_rotation(
 
 	if (num_steps > 0) {
 		while (num_steps--) {
-			zoom_in();
+			d_viewport_zoom.zoom_in();
 		}
 	} else {
 		while (num_steps++) {
-			zoom_out();
+			d_viewport_zoom.zoom_out();
 		}
 	}
 }

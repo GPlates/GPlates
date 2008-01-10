@@ -45,5 +45,5 @@ GPlatesCanvasTools::ZoomGlobe::handle_left_click(
 	globe().UpdateHandlePos(centre_of_canvas);
 
 	// Now, zoom in.
-	globe_canvas().zoom_in();
+	globe_canvas().viewport_zoom().zoom_in();
 }

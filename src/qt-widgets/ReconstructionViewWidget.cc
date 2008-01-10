@@ -61,22 +61,31 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(button_reconstruction_decrement, SIGNAL(clicked()),
 			this, SLOT(decrement_reconstruction_time()));
 
+	// Listen for zoom events, everything is now handled through ViewportZoom.
+	GPlatesGui::ViewportZoom &vzoom = d_canvas_ptr->viewport_zoom();
+	QObject::connect(&vzoom, SIGNAL(zoom_changed()),
+			this, SLOT(handle_zoom_change()));
+
+	QObject::connect(button_zoom_in, SIGNAL(clicked()),
+			&vzoom, SLOT(zoom_in()));
+	QObject::connect(button_zoom_out, SIGNAL(clicked()),
+			&vzoom, SLOT(zoom_out()));
+	QObject::connect(button_zoom_reset, SIGNAL(clicked()),
+			&vzoom, SLOT(reset_zoom()));
+
+	// Zoom spinbox.
 	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
 			this, SLOT(propagate_zoom_percent()));
 	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
 			d_canvas_ptr, SLOT(setFocus()));
-			
-	QObject::connect(button_zoom_in, SIGNAL(clicked()),
-			d_canvas_ptr, SLOT(zoom_in()));
-	QObject::connect(button_zoom_out, SIGNAL(clicked()),
-			d_canvas_ptr, SLOT(zoom_out()));
-	QObject::connect(button_zoom_reset, SIGNAL(clicked()),
-			d_canvas_ptr, SLOT(reset_zoom()));
 
-	QObject::connect(d_canvas_ptr, SIGNAL(zoom_changed(double)),
-			this, SLOT(set_zoom(double)));
-	QObject::connect(this, SIGNAL(zoom_changed(double)),
-			d_canvas_ptr, SLOT(set_zoom(double)));
+	// Set up the zoom slider to use appropriate range.
+	slider_zoom->setRange(d_canvas_ptr->viewport_zoom().s_min_zoom_level,
+			d_canvas_ptr->viewport_zoom().s_max_zoom_level);
+	slider_zoom->setValue(d_canvas_ptr->viewport_zoom().s_initial_zoom_level);
+
+	QObject::connect(slider_zoom, SIGNAL(sliderMoved(int)),
+			&vzoom, SLOT(set_zoom_level(int)));
 
 	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
 			d_canvas_ptr, SLOT(notify_of_orientation_change()));
@@ -178,3 +187,21 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 
 	label_mouse_coords->setText(position_as_string);
 }
+
+
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::propagate_zoom_percent()
+{
+	d_canvas_ptr->viewport_zoom().set_zoom_percent(zoom_percent());
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::handle_zoom_change()
+{
+	spinbox_zoom_percent->setValue(d_canvas_ptr->viewport_zoom().zoom_percent());
+	slider_zoom->setValue(d_canvas_ptr->viewport_zoom().zoom_level());
+}
+
+
