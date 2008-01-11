@@ -227,6 +227,9 @@
 				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui\moc_ViewportZoom.cc">
+			</File>
+			<File
 				RelativePath="..\src\gui\NurbsRenderer.cc">
 			</File>
 			<File
@@ -264,6 +267,18 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\ViewportZoom.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\ViewportZoom.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
