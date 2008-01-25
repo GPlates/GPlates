@@ -303,6 +303,21 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\gui\FeatureTableModel.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureTableModel.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui\Globe.cc"
 				>
 			</File>
@@ -320,6 +335,10 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_FeatureTableModel.cc"
 				>
 			</File>
 			<File
@@ -940,11 +959,23 @@
 			Name="feature-visitors"
 			>
 			<File
+				RelativePath="..\src\feature-visitors\GeometryFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\GmlTimePeriodFinder.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\feature-visitors\PlateIdFinder.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesDialogPopulator.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\XsStringFinder.cc"
 				>
 			</File>
 		</Filter>

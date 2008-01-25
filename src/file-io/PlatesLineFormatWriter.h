@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -201,7 +201,8 @@ namespace GPlatesFileIO
 					data_type_code_number_additional(""),
 					conjugate_plate_id_number(999),
 					colour_code(1),
-					number_of_points(1)	{ }
+					number_of_points(1)
+				{ }
 			};
 
 			boost::optional<OldPlatesHeader> old_plates_header;
@@ -213,14 +214,12 @@ namespace GPlatesFileIO
 			boost::optional<GPlatesModel::integer_plate_id_type> conj_plate_id;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_appearance;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_disappearance;
-			boost::optional<
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
 					polyline;
-			boost::optional<
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
 					point;
 
-			boost::optional<GPlatesModel::PropertyName> last_property_seen;
+			boost::optional<GPlatesModel::PropertyName> current_propname;
 
 			/**
 			 * Test whether the accumulator has acquired enough information to

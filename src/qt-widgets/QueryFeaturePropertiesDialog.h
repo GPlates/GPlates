@@ -28,10 +28,13 @@
 
 #include <QDialog>
 #include "QueryFeaturePropertiesDialogUi.h"
+#include "model/FeatureHandle.h"
 
 
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+
 	class QueryFeaturePropertiesDialog: 
 			public QDialog,
 			protected Ui_QueryFeaturePropertiesDialog 
@@ -41,11 +44,18 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		QueryFeaturePropertiesDialog(
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 
 		virtual
 		~QueryFeaturePropertiesDialog()
 		{  }
+
+		const GPlatesQtWidgets::ViewportWindow &
+		view_state() const
+		{
+			return *d_view_state_ptr;
+		}
 
 		void
 		set_feature_type(
@@ -79,9 +89,18 @@ namespace GPlatesQtWidgets
 
 	public slots:
 
+		void
+		display_feature(
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
 	signals:
 
 	private:
+		/**
+		 * This is the view state which is used to obtain the reconstruction root.
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		
 	};
 }
 

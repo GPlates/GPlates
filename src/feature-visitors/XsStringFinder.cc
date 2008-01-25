@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,16 +27,15 @@
 
 #include <algorithm>  // std::find
 
-#include "PlateIdFinder.h"
+#include "XsStringFinder.h"
 
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
-#include "property-values/GpmlConstantValue.h"
-#include "property-values/GpmlPlateId.h"
+#include "property-values/XsString.h"
 
 
 void
-GPlatesFeatureVisitors::PlateIdFinder::visit_feature_handle(
+GPlatesFeatureVisitors::XsStringFinder::visit_feature_handle(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Now visit each of the properties in turn.
@@ -58,7 +57,7 @@ namespace
 
 
 void
-GPlatesFeatureVisitors::PlateIdFinder::visit_inline_property_container(
+GPlatesFeatureVisitors::XsStringFinder::visit_inline_property_container(
 		const GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
@@ -76,16 +75,9 @@ GPlatesFeatureVisitors::PlateIdFinder::visit_inline_property_container(
 
 
 void
-GPlatesFeatureVisitors::PlateIdFinder::visit_gpml_constant_value(
-		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+GPlatesFeatureVisitors::XsStringFinder::visit_xs_string(
+				const GPlatesPropertyValues::XsString &xs_string)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
-}
-
-
-void
-GPlatesFeatureVisitors::PlateIdFinder::visit_gpml_plate_id(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
-{
-	d_found_plate_ids.push_back(gpml_plate_id.value());
+	d_found_strings.push_back(
+			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type(xs_string));
 }

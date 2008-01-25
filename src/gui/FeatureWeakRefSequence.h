@@ -114,7 +114,13 @@ namespace GPlatesGui
 		{
 			return d_sequence.end();
 		}
-
+		
+		GPlatesModel::FeatureHandle::weak_ref
+		at(size_type index) const
+		{
+			return d_sequence.at(index);
+		}
+		
 		void
 		clear()
 		{
@@ -127,7 +133,7 @@ namespace GPlatesGui
 		{
 			d_sequence.push_back(new_elem);
 		}
-
+		
 		/**
 		 * Increment the reference-count of this instance.
 		 *
@@ -156,7 +162,7 @@ namespace GPlatesGui
 		{
 			return --d_ref_count;
 		}
-
+	
 	private:
 		/**
 		 * The reference-count of this instance by intrusive-pointers.

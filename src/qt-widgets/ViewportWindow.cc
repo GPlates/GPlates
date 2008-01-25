@@ -31,6 +31,7 @@
 #include <QLocale>
 #include <QString>
 #include <QStringList>
+#include <QHeaderView>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -350,10 +351,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_animate_dialog(*this, this),
 	d_about_dialog(*this, this),
 	d_license_dialog(&d_about_dialog),
-	d_query_feature_properties_dialog(this),
+	d_query_feature_properties_dialog(*this, this),
 	d_read_errors_dialog(this),
 	d_manage_feature_collections_dialog(*this, this),
-	d_animate_dialog_has_been_shown(false)
+	d_animate_dialog_has_been_shown(false),
+	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel())
 {
 	setupUi(this);
 
@@ -427,8 +429,22 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_active_reconstruction_files, 0.0, d_recon_root);
 	d_canvas_ptr->update_canvas();
 
-	GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type clicked_features =
-			GPlatesGui::FeatureWeakRefSequence::create();
+	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
+	tab_list_clicked->setModel(d_feature_table_model_ptr);
+	tab_list_clicked->verticalHeader()->hide();
+	tab_list_clicked->resizeColumnsToContents();
+	GPlatesGui::FeatureTableModel::set_default_resize_modes(*tab_list_clicked->horizontalHeader());
+	tab_list_clicked->horizontalHeader()->setMinimumSectionSize(60);
+	tab_list_clicked->horizontalHeader()->setMovable(true);
+	tab_list_clicked->horizontalHeader()->setHighlightSections(false);
+	QObject::connect(tab_list_clicked->selectionModel(),
+			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+			d_feature_table_model_ptr,
+			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+	QObject::connect(d_feature_table_model_ptr,
+			SIGNAL(selected_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
+			&d_query_feature_properties_dialog,
+			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref)));
 
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
 	d_canvas_tool_choice_ptr =
@@ -436,7 +452,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_canvas_ptr->globe(),
 					*d_canvas_ptr,
 					*this,
-					clicked_features,
+					*d_feature_table_model_ptr,
 					d_query_feature_properties_dialog);
 
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
@@ -473,6 +489,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					const GPlatesMaths::PointOnSphere &, bool,
 					const GPlatesMaths::PointOnSphere &, bool,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
+
+	QObject::connect(action_Quit, SIGNAL(triggered()), this, SLOT(close()));
 }
 
 
@@ -679,3 +697,29 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file()
 	}
 
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
+{
+	d_specify_fixed_plate_dialog.reject();
+	d_set_camera_viewpoint_dialog.reject();
+	d_animate_dialog.reject();
+	d_about_dialog.reject();
+	d_license_dialog.reject();
+	d_query_feature_properties_dialog.reject();
+	d_read_errors_dialog.reject();
+	d_manage_feature_collections_dialog.reject();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::closeEvent(QCloseEvent *close_event)
+{
+	// For now, always accept the close event.
+	// In the future, ->reject() can be used to postpone closure in the event of
+	// unsaved files, etc.
+	close_event->accept();
+	// If we decide to accept the close event, we should also tidy up after ourselves.
+	close_all_dialogs();
+}
+

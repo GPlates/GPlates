@@ -15,12 +15,6 @@
     <height>600</height>
    </size>
   </property>
-  <property name="maximumSize" >
-   <size>
-    <width>1200</width>
-    <height>1000</height>
-   </size>
-  </property>
   <property name="windowTitle" >
    <string>GPlates</string>
   </property>
@@ -86,7 +80,7 @@
   <widget class="QStatusBar" name="statusbar" />
   <widget class="QToolBar" name="toolBar" >
    <property name="allowedAreas" >
-    <enum>Qt::AllToolBarAreas</enum>
+    <set>Qt::AllToolBarAreas</set>
    </property>
    <property name="orientation" >
     <enum>Qt::Vertical</enum>
@@ -98,7 +92,10 @@
     </size>
    </property>
    <attribute name="toolBarArea" >
-    <number>1</number>
+    <enum>LeftToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak" >
+    <bool>false</bool>
    </attribute>
    <addaction name="action_Drag_Globe" />
    <addaction name="action_Zoom_Globe" />
@@ -116,18 +113,25 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents" >
     <layout class="QVBoxLayout" >
-     <property name="margin" >
+     <property name="spacing" >
       <number>0</number>
      </property>
-     <property name="spacing" >
+     <property name="leftMargin" >
+      <number>0</number>
+     </property>
+     <property name="topMargin" >
+      <number>0</number>
+     </property>
+     <property name="rightMargin" >
+      <number>0</number>
+     </property>
+     <property name="bottomMargin" >
       <number>0</number>
      </property>
      <item>
       <widget class="QTabWidget" name="tabWidget" >
        <property name="sizePolicy" >
-        <sizepolicy>
-         <hsizetype>7</hsizetype>
-         <vsizetype>3</vsizetype>
+        <sizepolicy vsizetype="MinimumExpanding" hsizetype="Expanding" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -146,21 +150,37 @@
          <string>Clicked</string>
         </attribute>
         <layout class="QHBoxLayout" >
-         <property name="margin" >
-          <number>2</number>
-         </property>
          <property name="spacing" >
           <number>6</number>
          </property>
+         <property name="leftMargin" >
+          <number>2</number>
+         </property>
+         <property name="topMargin" >
+          <number>2</number>
+         </property>
+         <property name="rightMargin" >
+          <number>2</number>
+         </property>
+         <property name="bottomMargin" >
+          <number>2</number>
+         </property>
          <item>
-          <widget class="QListWidget" name="tab_list_clicked" >
+          <widget class="QTableView" name="tab_list_clicked" >
            <property name="sizePolicy" >
-            <sizepolicy>
-             <hsizetype>7</hsizetype>
-             <vsizetype>13</vsizetype>
+            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="selectionMode" >
+            <enum>QAbstractItemView::SingleSelection</enum>
+           </property>
+           <property name="selectionBehavior" >
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <property name="horizontalScrollMode" >
+            <enum>QAbstractItemView::ScrollPerPixel</enum>
            </property>
           </widget>
          </item>
@@ -171,18 +191,25 @@
          <string>Selected</string>
         </attribute>
         <layout class="QVBoxLayout" >
-         <property name="margin" >
-          <number>2</number>
-         </property>
          <property name="spacing" >
           <number>6</number>
          </property>
+         <property name="leftMargin" >
+          <number>2</number>
+         </property>
+         <property name="topMargin" >
+          <number>2</number>
+         </property>
+         <property name="rightMargin" >
+          <number>2</number>
+         </property>
+         <property name="bottomMargin" >
+          <number>2</number>
+         </property>
          <item>
-          <widget class="QListWidget" name="tab_list_selected" >
+          <widget class="QTableView" name="tab_list_selected" >
            <property name="sizePolicy" >
-            <sizepolicy>
-             <hsizetype>7</hsizetype>
-             <vsizetype>13</vsizetype>
+            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -450,22 +477,5 @@
  <resources>
   <include location="../qt-resources/qt_widgets.qrc" />
  </resources>
- <connections>
-  <connection>
-   <sender>action_Quit</sender>
-   <signal>triggered()</signal>
-   <receiver>ViewportWindow</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel" >
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel" >
-     <x>190</x>
-     <y>234</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

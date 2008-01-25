@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -56,7 +56,8 @@
 #include <unicode/ustream.h>
 
 
-namespace {
+namespace
+{
 	/* A point on a polyline in the PLATES4 format includes a "draw command"
 	 * after the coordninates of the point.  This is a number (2 or 3) which 
 	 * tells us whether to draw a line (from the previous point) to the point,
@@ -64,14 +65,16 @@ namespace {
 	 */
 	enum pen_pos_t { PEN_DRAW_TO_POINT = 2, PEN_SKIP_TO_POINT = 3 };
 
+
 	void
 	print_plates_coordinate_line(
 			std::ostream *os, 
 			const GPlatesMaths::Real &lat, 
 			const GPlatesMaths::Real &lon,
-			pen_pos_t pen) {
-
-		/* A coordinate in the PLATES4 format is written as decimal number with
+			pen_pos_t pen)
+	{
+		/*
+		 * A coordinate in the PLATES4 format is written as decimal number with
 		 * 4 digits precision after the decimal point, and it must take up 9
 		 * characters altogether (i.e. including the decimal point and maybe
 		 * a sign).
@@ -80,7 +83,8 @@ namespace {
 		static const unsigned PLATES_COORDINATE_FIELDWIDTH = 9;
 		static const unsigned PLATES_PEN_FIELDWIDTH = 1;
 
-		/* We convert the coordinates to strings first, so that in case an exception
+		/*
+		 * We convert the coordinates to strings first, so that in case an exception
 		 * is thrown, the ostream is not modified.
 		 */
 		std::string lat_str, lon_str, pen_str;
@@ -93,12 +97,13 @@ namespace {
 				PLATES_PEN_FIELDWIDTH);
 		} catch (const GPlatesUtils::InvalidFormattingParametersException &) {
 			// The argument name in the above expression was removed to
-			// prevent "unreferenced local variable" compiler warnings under MSVC
+			// prevent "unreferenced local variable" compiler warnings under MSVC.
 			throw;
 		}
 
 		(*os) << lat_str << " " << lon_str << " " << pen_str << std::endl;
 	}
+
 
 	void
 	print_plates_feature_termination_line(
@@ -106,6 +111,7 @@ namespace {
 	{
 		print_plates_coordinate_line(os, 99.0, 99.0, PEN_SKIP_TO_POINT);
 	}
+
 
 	void
 	print_plates_coordinate_line(
@@ -118,11 +124,12 @@ namespace {
 		print_plates_coordinate_line(os, llp.latitude(), llp.longitude(), pen);
 	}
 
+
 	void
 	print_line_string(
 			std::ostream *os,
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline) {
-
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
+	{
 		GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = polyline->vertex_begin();
 		GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline->vertex_end();
 
@@ -144,18 +151,44 @@ namespace {
 			print_plates_coordinate_line(os, *iter, PEN_DRAW_TO_POINT);
 		}
 
-		/* The PLATES4 format dictates that we include a special
+		/*
+		 * The PLATES4 format dictates that we include a special
 		 * "line string has terminated" coordinate at the end of the line
 		 * string.  The coordinate is always exactly "  99.0000   99.0000 3".
 		 */
 		print_plates_feature_termination_line(os);
 	}
 
-	UnicodeString
+
+	/**
+	 * Convert a GeoTimeInstant instance to a double, for output in the PLATES4 line-format.
+	 *
+	 * This may involve the conversion of the GeoTimeInstant concepts of "distant past" and
+	 * "distant future" to the magic numbers 999.0 and -999.0 which are used in the PLATES4
+	 * line-format.
+	 */
+	const double &
+	convert_geotimeinstant_to_double(
+			const GPlatesPropertyValues::GeoTimeInstant &geo_time)
+	{
+		static const double distant_past_magic_number = 999.0;
+		static const double distant_future_magic_number = -999.0;
+
+		if (geo_time.is_distant_past()) {
+			return distant_past_magic_number;
+		} else if (geo_time.is_distant_future()) {
+			return distant_future_magic_number;
+		} else {
+			return geo_time.value();
+		}
+	}
+
+
+	const UnicodeString
 	generate_geog_description(
 			const UnicodeString &type, 
-			const UnicodeString &id) {
-
+			const UnicodeString &id)
+	{
 		return "There was insufficient information to completely "\
 			"generate the header for this data.  It came from GPlates, where "\
 			"it had feature type \"" + type + "\" and feature id \"" + id + "\".";
@@ -171,9 +204,8 @@ GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
 
 
 bool 
-GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatAccumulator::have_sufficient_info_for_output(
-		) const {
-
+GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatAccumulator::have_sufficient_info_for_output() const
+{
 	// To output this feature we need a geometry (a polyline or a point) and plate id.
 	return (polyline || point) && (old_plates_header || plate_id);
 }
@@ -182,11 +214,12 @@ GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatAccumulator::have_suffici
 void
 GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 		std::ostream *os, 
-		const PlatesLineFormatAccumulator::OldPlatesHeader &old_plates_header) {
-
+		const PlatesLineFormatAccumulator::OldPlatesHeader &old_plates_header)
+{
 	using namespace GPlatesUtils;
 
-	/* The magic numbers that appear below are taken from p38 of the PLATES4
+	/*
+	 * The magic numbers that appear below are taken from p38 of the PLATES4
 	 * User's Manual.
 	 */
 
@@ -221,8 +254,8 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle) {
-
+		const GPlatesModel::FeatureHandle &feature_handle)
+{
 	d_accum = PlatesLineFormatAccumulator();
 
 	// These two strings will be used to write the "Geographic description"
@@ -260,11 +293,11 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_feature_handle(
 	}
 	if (d_accum.age_of_appearance) {
 		old_plates_header.age_of_appearance = 
-			d_accum.age_of_appearance->value();
+			convert_geotimeinstant_to_double(*d_accum.age_of_appearance);
 	}
 	if (d_accum.age_of_disappearance) {
 		old_plates_header.age_of_disappearance = 
-			d_accum.age_of_disappearance->value();
+			convert_geotimeinstant_to_double(*d_accum.age_of_disappearance);
 	}
 
 	// Find out if our geometry is a polyline or a point.
@@ -288,9 +321,9 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_feature_handle(
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container) {
-	
-	d_accum.last_property_seen = inline_property_container.property_name();
+		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+{
+	d_accum.current_propname = inline_property_container.property_name();
 
 	visit_property_values(inline_property_container);
 }
@@ -298,108 +331,153 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_inline_property_container(
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_line_string(
-		const GPlatesPropertyValues::GmlLineString &gml_line_string) {
-
+		const GPlatesPropertyValues::GmlLineString &gml_line_string)
+{
 	d_accum.polyline = gml_line_string.polyline();
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_orientable_curve(
-		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve) {
-
+		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+{
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_point(
-		const GPlatesPropertyValues::GmlPoint &gml_point) {
-
+		const GPlatesPropertyValues::GmlPoint &gml_point)
+{
 	d_accum.point = gml_point.point();
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_time_instant(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant) {
+		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+{
+	// Only the "gml:validTime" is meaningful for the ages of appearance and disappearance.
+	static const GPlatesModel::PropertyName validTime("gml:validTime");
+	if (*d_accum.current_propname != validTime) {
+		return;
+	}
 
 	if ( ! d_accum.age_of_appearance) {
 		d_accum.age_of_appearance = gml_time_instant.time_position();
 		d_accum.age_of_disappearance = gml_time_instant.time_position();
+	} else {
+		// The age of appearance was already set, which means that there was already a
+		// "gml:validTime" property which contains a "gml:TimeInstant" or "gml:TimePeriod".
+		// FIXME: Should we warn about this?
 	}
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_time_period(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period) {
+		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+{
+	// Only the "gml:validTime" is meaningful for the ages of appearance and disappearance.
+	static const GPlatesModel::PropertyName validTime("gml:validTime");
+	if (*d_accum.current_propname != validTime) {
+		return;
+	}
 
-	d_accum.age_of_appearance = gml_time_period.begin()->time_position();
-
-	if ( ! gml_time_period.end()->time_position().is_distant_future()) {
+	if ( ! d_accum.age_of_appearance) {
+		d_accum.age_of_appearance = gml_time_period.begin()->time_position();
 		d_accum.age_of_disappearance = gml_time_period.end()->time_position();
+	} else {
+		// The age of appearance was already set, which means that there was already a
+		// "gml:validTime" property which contains a "gml:TimeInstant" or "gml:TimePeriod".
+		// FIXME: Should we warn about this?
 	}
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_constant_value(
-		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value) {
-
+		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+{
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_finite_rotation(
-		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation) {
+		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+{
 
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_finite_rotation_slerp(
-		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp) {
+		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
+{
 
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_irregular_sampling(
-		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling) {
+		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+{
 
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_plate_id(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id) {
+		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+{
+	// This occurs in "gpml:ReconstructableFeature" instances.
+	static const GPlatesModel::PropertyName reconstructionPlateId("gpml:reconstructionPlateId");
 
-	static const GPlatesModel::PropertyName
-		reconstructionPlateId("gpml:reconstructionPlateId"),
-		conjugatePlateId("gpml:conjugatePlateId");
+	// This occurs in "gpml:Isochron" and its instantaneous equivalent.
+	static const GPlatesModel::PropertyName conjugatePlateId("gpml:conjugatePlateId");
 
-	if (*d_accum.last_property_seen == reconstructionPlateId) {
-		d_accum.plate_id = gpml_plate_id.value();
-	} else if (*d_accum.last_property_seen == conjugatePlateId) {
-		d_accum.conj_plate_id = gpml_plate_id.value();
+	// This occurs in "gpml:InstantaneousFeature" instances.
+	static const GPlatesModel::PropertyName reconstructedPlateId("gpml:reconstructedPlateId");
+
+	if (*d_accum.current_propname == reconstructionPlateId) {
+		if ( ! d_accum.plate_id) {
+			d_accum.plate_id = gpml_plate_id.value();
+		} else {
+			// The plate ID was already set, which means that there was already a
+			// "gpml:reconstructionPlateId" property which contains a "gpml:PlateId".
+			// FIXME: Should we warn about this?
+		}
+	} else if (*d_accum.current_propname == conjugatePlateId) {
+		if ( ! d_accum.conj_plate_id) {
+			d_accum.conj_plate_id = gpml_plate_id.value();
+		} else {
+			// The conjugate plate ID was already set, which means that there was
+			// already a "gpml:conjugatePlateId" property which contains a
+			// "gpml:PlateId".
+			// FIXME: Should we warn about this?
+		}
+	} else if (*d_accum.current_propname == reconstructedPlateId) {
+		// Nothing to do here.
 	} else {
-		// FIXME: Encountered a plate id with unrecognized propertyname
+		// We've encountered a plate ID inside an unrecognised property-name.
+		// FIXME:  Should we complain/warn/log about this?
 	}
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_time_sample(
-		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {
-	
+		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
+{
+
 }
+
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_old_plates_header(
-		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header) {
-
+		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
+{
 	d_accum.old_plates_header = PlatesLineFormatAccumulator::OldPlatesHeader(
 			gpml_old_plates_header.region_number(),
 			gpml_old_plates_header.reference_number(),
@@ -416,8 +494,10 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_old_plates_header(
 			gpml_old_plates_header.number_of_points());
 }
 
+
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_xs_string(
-		const GPlatesPropertyValues::XsString &xs_string) {
+		const GPlatesPropertyValues::XsString &xs_string)
+{
 	
 }

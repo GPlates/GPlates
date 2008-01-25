@@ -36,6 +36,7 @@
 #include <string>
 #include <list>
 #include <QtCore/QTimer>
+#include <QCloseEvent>
 #include <QStringList>
 
 #include "ApplicationState.h"
@@ -50,6 +51,8 @@
 #include "QueryFeaturePropertiesDialog.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
+
+#include "gui/FeatureTableModel.h"
 
 #include "model/ModelInterface.h"
 
@@ -221,6 +224,7 @@ namespace GPlatesQtWidgets
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
 		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;
 
+		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// Should be in ViewState.
 
 		void
 		uncheck_all_tools();
@@ -236,6 +240,20 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_about_dialog();
+
+		void
+		close_all_dialogs();
+
+	protected:
+	
+		/**
+		 * A reimplementation of QWidget::closeEvent() to allow closure to be postponed.
+		 * To request program termination in the same manner as using the window manager's
+		 * 'close' button, you should call ViewportWindow::close().
+		 */
+		void
+		closeEvent(QCloseEvent *close_event);
+
 	};
 }
 

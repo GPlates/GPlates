@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -72,15 +72,19 @@ namespace
 		~Reconstructor()
 		{  }
 
-		virtual
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		reconstruct_point(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p) const = 0;
 
 		virtual
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
+		reconstruct_point(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
+				GPlatesModel::FeatureHandle &feature_handle) const = 0;
+
+
+		virtual
+		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
 		reconstruct_polyline(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p) const = 0;
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
+				GPlatesModel::FeatureHandle &feature_handle) const = 0;
 	};
 
 
@@ -97,26 +101,40 @@ namespace
 			d_plate_id(plate_id)
 		{  }
 
-		virtual
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		reconstruct_point(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p) const
-		{
-			// FIXME:  Do we care about the reconstruction circumstance?
-			// (For example, there may have been no match for the reconstruction plate
-			// ID.)
-			return (d_recon_tree_ptr->reconstruct_point(*p, d_plate_id)).first;
-		}
 
 		virtual
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-		reconstruct_polyline(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p) const
+		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
+		reconstruct_point(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
+				GPlatesModel::FeatureHandle &feature_handle) const
 		{
-			// FIXME:  Do we care about the reconstruction circumstance?
-			// (For example, there may have been no match for the reconstruction plate
-			// ID.)
-			return (d_recon_tree_ptr->reconstruct_polyline(*p, d_plate_id)).first;
+			using namespace GPlatesMaths;
+
+			// FIXME:  Do we care about the reconstruction circumstance?  (For example,
+			// there may have been no match for the reconstruction plate ID.)
+			PointOnSphere::non_null_ptr_to_const_type reconstructed_p =
+					(d_recon_tree_ptr->reconstruct_point(*p, d_plate_id)).first;
+
+			return GPlatesModel::ReconstructedFeatureGeometry<PointOnSphere>(
+					reconstructed_p, feature_handle, d_plate_id);
+		}
+
+
+		virtual
+		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
+		reconstruct_polyline(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
+				GPlatesModel::FeatureHandle &feature_handle) const
+		{
+			using namespace GPlatesMaths;
+
+			// FIXME:  Do we care about the reconstruction circumstance?  (For example,
+			// there may have been no match for the reconstruction plate ID.)
+			PolylineOnSphere::non_null_ptr_to_const_type reconstructed_p =
+					(d_recon_tree_ptr->reconstruct_polyline(*p, d_plate_id)).first;
+
+			return GPlatesModel::ReconstructedFeatureGeometry<PolylineOnSphere>(
+					reconstructed_p, feature_handle, d_plate_id);
 		}
 
 		const GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
@@ -133,20 +151,26 @@ namespace
 		IdentityReconstructor()
 		{  }
 
-		virtual
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		reconstruct_point(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p) const
-		{
-			return p;
-		}
 
 		virtual
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-		reconstruct_polyline(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p) const
+		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
+		reconstruct_point(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
+				GPlatesModel::FeatureHandle &feature_handle) const
 		{
-			return p;
+			return GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>(
+					p, feature_handle);
+		}
+
+
+		virtual
+		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
+		reconstruct_polyline(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
+				GPlatesModel::FeatureHandle &feature_handle) const
+		{
+			return GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>(
+					p, feature_handle);
 		}
 	};
 
@@ -171,12 +195,8 @@ namespace
 		std::vector<PointOnSphere::non_null_ptr_to_const_type>::const_iterator point_end =
 				not_yet_reconstructed_points.end();
 		for ( ; point_iter != point_end; ++point_iter) {
-			PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
-					reconstructor.reconstruct_point(*point_iter);
-
-			GPlatesModel::ReconstructedFeatureGeometry<PointOnSphere> rfg(
-					reconstructed_point, feature_handle);
-			reconstructed_points_to_populate->push_back(rfg);
+			reconstructed_points_to_populate->push_back(
+					reconstructor.reconstruct_point(*point_iter, feature_handle));
 		}
 
 		std::vector<PolylineOnSphere::non_null_ptr_to_const_type>::const_iterator polyline_iter =
@@ -184,12 +204,8 @@ namespace
 		std::vector<PolylineOnSphere::non_null_ptr_to_const_type>::const_iterator polyline_end =
 				not_yet_reconstructed_polylines.end();
 		for ( ; polyline_iter != polyline_end; ++polyline_iter) {
-			PolylineOnSphere::non_null_ptr_to_const_type reconstructed_polyline =
-					reconstructor.reconstruct_polyline(*polyline_iter);
-
-			GPlatesModel::ReconstructedFeatureGeometry<PolylineOnSphere> rfg(
-					reconstructed_polyline, feature_handle);
-			reconstructed_polylines_to_populate->push_back(rfg);
+			reconstructed_polylines_to_populate->push_back(
+					reconstructor.reconstruct_polyline(*polyline_iter, feature_handle));
 		}
 	}
 }
@@ -289,7 +305,7 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-	static PropertyName valid_time_property_name("gml:validTime");
+	static const PropertyName valid_time_property_name("gml:validTime");
 
 	// Note that we're going to assume that we've read a property name...
 	if (*(d_accumulator->d_most_recent_propname_read) == valid_time_property_name) {
@@ -314,7 +330,7 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	static PropertyName reconstruction_plate_id_property_name("gpml:reconstructionPlateId");
+	static const PropertyName reconstruction_plate_id_property_name("gpml:reconstructionPlateId");
 
 	// Note that we're going to assume that we've read a property name...
 	if (*(d_accumulator->d_most_recent_propname_read) == reconstruction_plate_id_property_name) {

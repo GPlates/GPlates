@@ -5,7 +5,9 @@ MAINTAINERCLEANFILES	= Makefile.in
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libfeature_visitors.la
-libfeature_visitors_la_SOURCES	= QueryFeaturePropertiesDialogPopulator.cc PlateIdFinder.cc
+libfeature_visitors_la_SOURCES	= QueryFeaturePropertiesDialogPopulator.cc \
+				PlateIdFinder.cc GmlTimePeriodFinder.cc XsStringFinder.cc \
+				GeometryFinder.cc
 
 if PYTHON
 noinst_PROGRAMS		= _feature_visitors.so

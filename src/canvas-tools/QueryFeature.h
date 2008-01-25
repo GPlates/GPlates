@@ -29,7 +29,7 @@
 #include <QObject>
 
 #include "gui/CanvasTool.h"
-#include "gui/FeatureWeakRefSequence.h"
+#include "gui/FeatureTableModel.h"
 
 
 namespace GPlatesQtWidgets
@@ -69,11 +69,11 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type external_hit_sequence_ptr,
+				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_)
 		{
 			QueryFeature::non_null_ptr_type ptr(*(new QueryFeature(globe_, globe_canvas_,
-					view_state_, external_hit_sequence_ptr, qfp_dialog_)));
+					view_state_, clicked_table_model, qfp_dialog_)));
 			return ptr;
 		}
 
@@ -99,11 +99,11 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type external_hit_sequence_ptr,
+				GPlatesGui::FeatureTableModel &clicked_table_model_,
 				GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_):
 			CanvasTool(globe_, globe_canvas_),
 			d_view_state_ptr(&view_state_),
-			d_external_hit_sequence_ptr(external_hit_sequence_ptr),
+			d_clicked_table_model_ptr(&clicked_table_model_),
 			d_qfp_dialog_ptr(&qfp_dialog_)
 		{  }
 
@@ -113,10 +113,10 @@ namespace GPlatesCanvasTools
 			return *d_view_state_ptr;
 		}
 
-		GPlatesGui::FeatureWeakRefSequence &
-		external_hit_sequence() const
+		GPlatesGui::FeatureTableModel &
+		clicked_table_model() const
 		{
-			return *d_external_hit_sequence_ptr;
+			return *d_clicked_table_model_ptr;
 		}
 
 		GPlatesQtWidgets::QueryFeaturePropertiesDialog &
@@ -132,10 +132,10 @@ namespace GPlatesCanvasTools
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
-		 * This is the external sequence of hits which will be updated in the event that
+		 * This is the external table of hits which will be updated in the event that
 		 * the test point hits one or more geometries.
 		 */
-		GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type d_external_hit_sequence_ptr;
+		GPlatesGui::FeatureTableModel *d_clicked_table_model_ptr;
 
 		/**
 		 * This is the dialog box which we will be populating in response to a feature

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -309,8 +309,8 @@ void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	static PropertyName fixed_ref_frame_property_name("gpml:fixedReferenceFrame");
-	static PropertyName moving_ref_frame_property_name("gpml:movingReferenceFrame");
+	static const PropertyName fixed_ref_frame_property_name("gpml:fixedReferenceFrame");
+	static const PropertyName moving_ref_frame_property_name("gpml:movingReferenceFrame");
 
 	// Note that we're going to assume that we've read a property name...
 	if (*(d_accumulator->d_most_recent_propname_read) == fixed_ref_frame_property_name) {

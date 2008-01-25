@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id $ */
 
 /**
  * \file 
@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,42 +25,41 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_PLATEIDFINDER_H
-#define GPLATES_FEATUREVISITORS_PLATEIDFINDER_H
+#ifndef GPLATES_FEATUREVISITORS_GMLTIMEPERIODFINDER_H
+#define GPLATES_FEATUREVISITORS_GMLTIMEPERIODFINDER_H
 
 #include <vector>
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
-#include "model/types.h"
+#include "property-values/GmlTimePeriod.h"
 
 
 namespace GPlatesFeatureVisitors
 {
 	/**
-	 * This const feature visitor finds all plate IDs contained within the feature.
+	 * This const feature visitor finds all gml:TimePeriods contained within the feature.
+	 * The most interesting gml:TimePeriod will probably be contained in the "gpml:validTime" property.
 	 */
-	class PlateIdFinder:
+	class GmlTimePeriodFinder:
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
-		typedef std::vector<GPlatesModel::integer_plate_id_type> plate_id_container_type;
-		typedef plate_id_container_type::const_iterator plate_id_container_const_iterator;
+		typedef std::vector<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type>
+				time_period_container_type;
+		typedef time_period_container_type::const_iterator time_period_container_const_iterator;
 
-
-		// FIXME:  We should also pass the current reconstruction time, so we can correctly
-		// handle time-dependent property values.
-		PlateIdFinder()
+		GmlTimePeriodFinder()
 		{  }
 
 		explicit
-		PlateIdFinder(
+		GmlTimePeriodFinder(
 				const GPlatesModel::PropertyName &property_name_to_allow)
 		{
 			d_property_names_to_allow.push_back(property_name_to_allow);
 		}
 
 		virtual
-		~PlateIdFinder() {  }
+		~GmlTimePeriodFinder() {  }
 
 		void
 		add_property_name_to_allow(
@@ -81,36 +80,31 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+		visit_gml_time_period(
+				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
-		virtual
-		void
-		visit_gpml_plate_id(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
-		plate_id_container_const_iterator
-		found_plate_ids_begin() const
+		time_period_container_const_iterator
+		found_time_periods_begin() const
 		{
-			return d_found_plate_ids.begin();
+			return d_found_time_periods.begin();
 		}
 
-		plate_id_container_const_iterator
-		found_plate_ids_end() const
+		time_period_container_const_iterator
+		found_time_periods_end() const
 		{
-			return d_found_plate_ids.end();
+			return d_found_time_periods.end();
 		}
 
 		void
-		clear_found_plate_ids()
+		clear_found_time_periods()
 		{
-			d_found_plate_ids.clear();
+			d_found_time_periods.clear();
 		}
 
 	private:
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;
-		plate_id_container_type d_found_plate_ids;
+		time_period_container_type d_found_time_periods;
 	};
 }
 
-#endif  // GPLATES_FEATUREVISITORS_PLATEIDFINDER_H
+#endif  // GPLATES_FEATUREVISITORS_GMLTIMEPERIODFINDER_H

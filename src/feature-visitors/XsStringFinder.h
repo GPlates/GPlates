@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,42 +25,41 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_PLATEIDFINDER_H
-#define GPLATES_FEATUREVISITORS_PLATEIDFINDER_H
+#ifndef GPLATES_FEATUREVISITORS_XSSTRINGFINDER_H
+#define GPLATES_FEATUREVISITORS_XSSTRINGFINDER_H
 
 #include <vector>
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
-#include "model/types.h"
+#include "property-values/XsString.h"
 
 
 namespace GPlatesFeatureVisitors
 {
 	/**
-	 * This const feature visitor finds all plate IDs contained within the feature.
+	 * This const feature visitor finds one or more string-valued properties contained within the feature.
 	 */
-	class PlateIdFinder:
+	class XsStringFinder:
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
-		typedef std::vector<GPlatesModel::integer_plate_id_type> plate_id_container_type;
-		typedef plate_id_container_type::const_iterator plate_id_container_const_iterator;
+		typedef std::vector<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type>
+				string_container_type;
+		typedef string_container_type::const_iterator string_container_const_iterator;
 
-
-		// FIXME:  We should also pass the current reconstruction time, so we can correctly
-		// handle time-dependent property values.
-		PlateIdFinder()
+		// FIXME: Add support to provide details of the desired codeSpace.
+		XsStringFinder()
 		{  }
 
 		explicit
-		PlateIdFinder(
+		XsStringFinder(
 				const GPlatesModel::PropertyName &property_name_to_allow)
 		{
 			d_property_names_to_allow.push_back(property_name_to_allow);
 		}
 
 		virtual
-		~PlateIdFinder() {  }
+		~XsStringFinder() {  }
 
 		void
 		add_property_name_to_allow(
@@ -81,36 +80,31 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+		visit_xs_string(
+				const GPlatesPropertyValues::XsString &xs_string);
 
-		virtual
-		void
-		visit_gpml_plate_id(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
-		plate_id_container_const_iterator
-		found_plate_ids_begin() const
+		string_container_const_iterator
+		found_strings_begin() const
 		{
-			return d_found_plate_ids.begin();
+			return d_found_strings.begin();
 		}
 
-		plate_id_container_const_iterator
-		found_plate_ids_end() const
+		string_container_const_iterator
+		found_strings_end() const
 		{
-			return d_found_plate_ids.end();
+			return d_found_strings.end();
 		}
 
 		void
-		clear_found_plate_ids()
+		clear_found_strings()
 		{
-			d_found_plate_ids.clear();
+			d_found_strings.clear();
 		}
 
 	private:
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;
-		plate_id_container_type d_found_plate_ids;
+		string_container_type d_found_strings;
 	};
 }
 
-#endif  // GPLATES_FEATUREVISITORS_PLATEIDFINDER_H
+#endif  // GPLATES_FEATUREVISITORS_XSSTRINGFINDER_H

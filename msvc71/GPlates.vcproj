@@ -212,6 +212,21 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\gui\FeatureTableModel.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureTableModel.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui\Globe.cc">
 			</File>
 			<File
@@ -222,6 +237,9 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_FeatureTableModel.cc">
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc">
@@ -960,10 +978,19 @@
 			Name="feature-visitors"
 			Filter="">
 			<File
+				RelativePath="..\src\feature-visitors\GeometryFinder.cc">
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\GmlTimePeriodFinder.cc">
+			</File>
+			<File
 				RelativePath="..\src\feature-visitors\PlateIdFinder.cc">
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesDialogPopulator.cc">
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\XsStringFinder.cc">
 			</File>
 		</Filter>
 		<Filter
