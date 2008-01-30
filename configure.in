@@ -264,14 +264,19 @@ AC_CHECK_HEADERS([unicode/unistr.h], [], AC_MSG_ERROR([[
 # GDAL
 # On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
 # Test for <gdal/ogrsf_frmts.h>, fall back to <ogrsf_frmts.h>.
-AC_CHECK_HEADERS([gdal/ogrsf_frmts.h ogrsf_frmts.h], [break], AC_MSG_ERROR([[
+AC_CHECK_HEADERS([gdal/ogrsf_frmts.h ogrsf_frmts.h], [break])
+
+# Insist that we found at least one of the headers.
+if test "$ac_cv_header_gdal_ogrsf_frmts_h" != "yes" -a "$ac_cv_header_ogrsf_frmts_h" != "yes"; then
+	AC_MSG_ERROR([[
 !!
 !!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
 !!  development headers installed.  Your operating system vendor may provide
 !!  a development package which includes these headers, or you can download
 !!  the source from
 !!     http://www.remotesensing.org/gdal/
-!!]]))
+!!]])
+fi
 
 
 ##
