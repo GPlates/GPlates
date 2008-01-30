@@ -202,7 +202,7 @@ namespace
 	{
 		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 		QLocale locale;
-		QString point_str = QObject::tr("%1 ; %2")
+		QString point_str = QObject::tr("(%1 ; %2)")
 				.arg(locale.toString(llp.latitude()))
 				.arg(locale.toString(llp.longitude()));
 		return point_str;
@@ -215,12 +215,12 @@ namespace
 		QString begin_str = format_geometry_point(*polyline.vertex_begin());
 		QString end_str = format_geometry_point(*(--polyline.vertex_end()));
 		QString middle_str;
-		if (polyline.number_of_segments() == 1) {
-			middle_str = QObject::tr("%1 segment").arg(polyline.number_of_segments());
-		} else {
-			middle_str = QObject::tr("%1 segments").arg(polyline.number_of_segments());
+		if (polyline.number_of_vertices() == 3) {
+			middle_str = QObject::tr("... 1 vertex ... ");
+		} else if (polyline.number_of_vertices() > 3) {
+			middle_str = QObject::tr("... %1 vertices ... ").arg(polyline.number_of_vertices() - 2);
 		}
-		return QObject::tr("(%1) ... (%3) ... (%2)")
+		return QObject::tr("%1 %3%2")
 				.arg(begin_str)
 				.arg(end_str)
 				.arg(middle_str);
