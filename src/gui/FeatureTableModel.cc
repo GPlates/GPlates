@@ -255,7 +255,8 @@ namespace
 	// The dispatch table for the above functions:
 	
 	static const ColumnHeadingInfo column_heading_info_table[] = {
-		{ QT_TR_NOOP("Feature Type"), QT_TR_NOOP(""), 140, QHeaderView::ResizeToContents,
+		{ QT_TR_NOOP("Feature Type"), QT_TR_NOOP(""),
+				140, QHeaderView::ResizeToContents,
 				get_feature_type, Qt::AlignLeft | Qt::AlignVCenter },
 				
 		{ QT_TR_NOOP("Plate ID"), QT_TR_NOOP("The Plate ID used to reconstruct the feature"),
@@ -271,7 +272,7 @@ namespace
 				get_time_end, Qt::AlignCenter }, 
 				
 		{ QT_TR_NOOP("Name"), QT_TR_NOOP(""),
-				96, QHeaderView::ResizeToContents,
+				96, QHeaderView::Stretch,
 				get_name, Qt::AlignLeft | Qt::AlignVCenter },
 				
 		{ QT_TR_NOOP("Description"), QT_TR_NOOP(""),
@@ -279,7 +280,7 @@ namespace
 				get_description, Qt::AlignLeft | Qt::AlignVCenter },
 				
 		{ QT_TR_NOOP("Geometry (lat ; lon)"), QT_TR_NOOP("Summary of the first geometry associated with the feature"),
-				134, QHeaderView::Stretch,
+				134, QHeaderView::ResizeToContents,
 				get_geometry, Qt::AlignCenter },
 	};
 
