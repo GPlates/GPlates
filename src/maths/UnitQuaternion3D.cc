@@ -53,16 +53,20 @@ GPlatesMaths::UnitQuaternion3D::renormalise_if_necessary() {
 	double norm_sqrd = get_actual_norm_sqrd().dval();
 	if (std::fabs(norm_sqrd - 1.0) > 2.0e-14) {
 		double norm = std::sqrt(norm_sqrd);
+#if 0
 		std::cerr << "Renormalising unit-quat (current deviation from 1.0 = "
 				<< HighPrecision<double>(norm - 1.0) << ")" << std::endl;
+#endif
 
 		double one_on_norm = 1.0 / norm;
 		m_scalar_part *= one_on_norm;
 		m_vector_part = one_on_norm * m_vector_part;
 
+#if 0
 		norm = std::sqrt(get_actual_norm_sqrd().dval());
 		std::cerr << "After renormalisation, deviation from 1.0 = "
 				<< HighPrecision<double>(norm - 1.0) << std::endl;
+#endif
 	}
 }
 
