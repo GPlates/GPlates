@@ -126,7 +126,7 @@ namespace
 		double triangle_base_angle = 0.5 * std::acos(GPlatesMaths::GenericVectorOps3D::dot(start_pt, end_pt).dval());
 		double triangle_height = 0.5 * arc_direction.magnitude().dval() * std::tan(triangle_base_angle);
 
-		GLfloat weight = std::cos(triangle_base_angle);
+		GLfloat weight = static_cast<GLfloat>(std::cos(triangle_base_angle));
 
 		GPlatesMaths::Vector3D triangle_tip = triangle_base_mid + triangle_height * triangle_base_mid.get_normalisation();
 		return std::make_pair(triangle_tip, weight);
@@ -178,9 +178,24 @@ GPlatesGui::NurbsRenderer::draw_great_circle_arc_smaller_than_ninety_degrees(
 	const GLfloat &weight = mid_ctrl_pt_data.second;
 
 	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
-		{ start_pt.x().dval(),        start_pt.y().dval(),        start_pt.z().dval(),    1.0}, 
-		{ weight*mid_ctrl_pt.x().dval(), weight*mid_ctrl_pt.y().dval(), weight*mid_ctrl_pt.z().dval(), weight},
-		{ end_pt.x().dval(),          end_pt.y().dval(),          end_pt.z().dval(),      1.0}
+		{
+			static_cast<GLfloat>(start_pt.x().dval()),
+				static_cast<GLfloat>(start_pt.y().dval()),        
+					static_cast<GLfloat>(start_pt.z().dval()), 
+						1.0
+		}, 
+		{
+			static_cast<GLfloat>(weight*mid_ctrl_pt.x().dval()),
+				static_cast<GLfloat>(weight*mid_ctrl_pt.y().dval()),
+					static_cast<GLfloat>(weight*mid_ctrl_pt.z().dval()), 
+						static_cast<GLfloat>(weight)
+		},
+		{
+			static_cast<GLfloat>(end_pt.x().dval()),
+				static_cast<GLfloat>(end_pt.y().dval()),
+					static_cast<GLfloat>(end_pt.z().dval()),      
+						1.0
+		}
 	};
 
 	drawCurve(KNOT_SIZE, &KNOTS[0], STRIDE,
