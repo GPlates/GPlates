@@ -31,15 +31,15 @@
 // When you update the version string here, you should also update the version
 // in "configure.in".
 const char GPlatesGlobal::VersionString[] = 
-		"GPlates 0.9";
+		"GPlates 0.9.1";
 
 
 const char GPlatesGlobal::CopyrightString[] =
-		"Copyright (C) 2003-2007 The University of Sydney, Australia\n"
-		"Copyright (C) 2007 The Geological Survey of Norway\n"
+		"Copyright (C) 2003-2008 The University of Sydney, Australia\n"
+		"Copyright (C) 2007-2008 The Geological Survey of Norway\n"
 		"\n"
-		"The GPlates source code contains code which was originally written by the\n"
-		"following individuals:\n"
+		"The GPlates source code also contains code which was originally written by\n"
+		"the following individuals:\n"
 		" * James Boyden (from the ReconTreeViewer software)\n"
 		" * Peter Dimov (from the Boost intrusive_ptr class template)\n"
 		"\n"
@@ -49,12 +49,12 @@ const char GPlatesGlobal::CopyrightString[] =
 
 const char GPlatesGlobal::HtmlCopyrightString[] =
 		"<html><body>\n"
-		"Copyright &copy; 2003-2007 The University of Sydney, Australia<br />\n"
-		"Copyright &copy; 2007 The Geological Survey of Norway<br />\n"
+		"Copyright &copy; 2003-2008 The University of Sydney, Australia<br />\n"
+		"Copyright &copy; 2007-2008 The Geological Survey of Norway<br />\n"
 		"<br />\n"
 		"\n"
-		"The GPlates source code contains code which was originally written by the\n"
-		"following individuals: <ul>\n"
+		"The GPlates source code also contains code which was originally written by\n"
+		"the following individuals: <ul>\n"
 		" <li> James Boyden (from the ReconTreeViewer software) </li>\n"
 		" <li> Peter Dimov (from the Boost intrusive_ptr class template) </li>\n"
 		"</ul>\n"

@@ -5,7 +5,7 @@ package_is_beta="yes"		# change this to "no" for releases
 
 # When you update the version here, you should also update 'VersionString'
 # in "src/global/Constants.cc".
-AC_INIT([GPlates], [0.9], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
+AC_INIT([GPlates], [0.9.1], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
 AC_PREREQ(2.53)
 
 # We no longer need this, but I've left it here as a reminder of how to define macro constants.
