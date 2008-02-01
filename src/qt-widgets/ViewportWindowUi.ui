@@ -64,6 +64,14 @@
      <string>&amp;View</string>
     </property>
     <addaction name="action_Set_Camera_Viewpoint" />
+    <addaction name="action_Move_Camera_Up" />
+    <addaction name="action_Move_Camera_Down" />
+    <addaction name="action_Move_Camera_Left" />
+    <addaction name="action_Move_Camera_Right" />
+    <addaction name="separator" />
+    <addaction name="action_Rotate_Camera_Clockwise" />
+    <addaction name="action_Rotate_Camera_Anticlockwise" />
+    <addaction name="action_Reset_Camera_Orientation" />
     <addaction name="separator" />
     <addaction name="action_Set_Zoom" />
     <addaction name="action_Zoom_In" />
@@ -103,10 +111,10 @@
   </widget>
   <widget class="QDockWidget" name="dock_information" >
    <property name="features" >
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar</set>
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar|QDockWidget::NoDockWidgetFeatures</set>
    </property>
    <property name="allowedAreas" >
-    <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
+    <set>Qt::BottomDockWidgetArea|Qt::NoDockWidgetArea|Qt::TopDockWidgetArea</set>
    </property>
    <attribute name="dockWidgetArea" >
     <number>8</number>
@@ -471,6 +479,83 @@
    </property>
    <property name="shortcut" >
     <string>Ctrl+L</string>
+   </property>
+  </action>
+  <action name="action_Move_Camera_Up" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_up_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Camera &amp;Up</string>
+   </property>
+   <property name="shortcut" >
+    <string>Up</string>
+   </property>
+  </action>
+  <action name="action_Move_Camera_Down" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_down_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Camera &amp;Down</string>
+   </property>
+   <property name="shortcut" >
+    <string>Down</string>
+   </property>
+  </action>
+  <action name="action_Move_Camera_Left" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_previous_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Camera &amp;Left</string>
+   </property>
+   <property name="shortcut" >
+    <string>Left</string>
+   </property>
+  </action>
+  <action name="action_Move_Camera_Right" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_next_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Camera &amp;Right</string>
+   </property>
+   <property name="shortcut" >
+    <string>Right</string>
+   </property>
+  </action>
+  <action name="action_Rotate_Camera_Clockwise" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_view_refresh_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Rotate Camera Clock&amp;wise</string>
+   </property>
+   <property name="shortcut" >
+    <string>]</string>
+   </property>
+  </action>
+  <action name="action_Rotate_Camera_Anticlockwise" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_view_refresh_flipped_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Rotate Camera &amp;Anti-clockwise</string>
+   </property>
+   <property name="shortcut" >
+    <string>[</string>
+   </property>
+  </action>
+  <action name="action_Reset_Camera_Orientation" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/reorient_poles_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Reset Camera Orie&amp;ntation</string>
+   </property>
+   <property name="shortcut" >
+    <string>^</string>
    </property>
   </action>
  </widget>

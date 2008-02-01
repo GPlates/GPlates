@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -377,6 +377,20 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
+	QObject::connect(action_Move_Camera_Up, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_up()));
+	QObject::connect(action_Move_Camera_Down, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_down()));
+	QObject::connect(action_Move_Camera_Left, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_left()));
+	QObject::connect(action_Move_Camera_Right, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_right()));
+	QObject::connect(action_Rotate_Camera_Clockwise, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(rotate_camera_clockwise()));
+	QObject::connect(action_Rotate_Camera_Anticlockwise, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(rotate_camera_anticlockwise()));
+	QObject::connect(action_Reset_Camera_Orientation, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(orient_poles_vertically()));
 
 	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
@@ -549,9 +563,10 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
 			GPlatesMaths::PointOnSphere oriented_desired_centre = 
 					d_canvas_ptr->globe().orientation().orient_point(
 							GPlatesMaths::make_point_on_sphere(desired_centre));
-
 			d_canvas_ptr->globe().SetNewHandlePos(oriented_desired_centre);
 			d_canvas_ptr->globe().UpdateHandlePos(centre_of_canvas);
+			
+			d_canvas_ptr->globe().orientation().orient_poles_vertically();
 			d_canvas_ptr->update_canvas();
 		} catch (GPlatesMaths::InvalidLatLonException &) {
 			// The argument name in the above expression was removed to

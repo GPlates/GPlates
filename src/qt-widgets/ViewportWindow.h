@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -234,7 +234,7 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_set_camera_viewpoint_dialog();
-
+		
 		void
 		pop_up_animate_dialog();
 

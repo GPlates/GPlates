@@ -9,6 +9,11 @@
     <file>gnome_dialog_warning_16.png</file>
     <file>gnome_edit_find_16.png</file>
     <file>gnome_folder_16.png</file>
+    <file>gnome_go_down_16.png</file>
+    <file>gnome_go_home_16.png</file>
+    <file>gnome_go_next_16.png</file>
+    <file>gnome_go_previous_16.png</file>
+    <file>gnome_go_up_16.png</file>
     <file>gnome_gtk_edit_16.png</file>
     <file>gnome_help_agent_16.png</file>
     <file>gnome_media_eject_22.png</file>
@@ -29,8 +34,12 @@
     <file>gplates_logo_16.png</file>
     <file>human_gtk_about_16.png</file>
     <file>human_help_browser_16.png</file>
+    <file>human_view_refresh_16.png</file>
+    <file>human_view_refresh_flipped_16.png</file>
     <file>info_sign_16.png</file>
     <file>query_feature_35.png</file>
+    <file>reorient_poles_16.png</file>
+    <file>reorient_poles_22.png</file>
     <file>save_a_copy_22.png</file>
     <file>select_plate_35.png</file>
     <file>spin_globe_35.png</file>

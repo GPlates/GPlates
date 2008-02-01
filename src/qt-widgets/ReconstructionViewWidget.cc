@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -91,6 +91,8 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			d_canvas_ptr, SLOT(notify_of_orientation_change()));
 	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
 			this, SLOT(recalc_camera_position()));
+	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
+			d_canvas_ptr, SLOT(force_mouse_pointer_pos_change()));
 
 	// Make sure the globe is expanding as much as possible!
 	QSizePolicy globe_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);

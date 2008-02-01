@@ -336,6 +336,46 @@ GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change()
 }
 
 
+void
+GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
+{
+	double y_pos = get_universe_coord_y_of_mouse();
+	double z_pos = get_universe_coord_z_of_mouse();
+	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
+
+	// FIXME: Globe uses wrong naming convention for methods.
+	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
+
+	if (new_pos != d_virtual_mouse_pointer_pos_on_globe ||
+			is_now_on_globe != d_mouse_pointer_is_on_globe) {
+
+		d_virtual_mouse_pointer_pos_on_globe = new_pos;
+		d_mouse_pointer_is_on_globe = is_now_on_globe;
+
+		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
+		emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
+	}
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
+{
+	double y_pos = get_universe_coord_y_of_mouse();
+	double z_pos = get_universe_coord_z_of_mouse();
+	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
+
+	// FIXME: Globe uses wrong naming convention for methods.
+	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
+
+	d_virtual_mouse_pointer_pos_on_globe = new_pos;
+	d_mouse_pointer_is_on_globe = is_now_on_globe;
+
+	GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
+	emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
+}
+
+
 void 
 GPlatesQtWidgets::GlobeCanvas::initializeGL() 
 {
@@ -560,28 +600,6 @@ GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 	d_mouse_pointer_screen_pos_y = mouse_event->y();
 
 	handle_mouse_pointer_pos_change();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change() 
-{
-	double y_pos = get_universe_coord_y_of_mouse();
-	double z_pos = get_universe_coord_z_of_mouse();
-	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
-
-	// FIXME: Globe uses wrong naming convention for methods.
-	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
-
-	if (new_pos != d_virtual_mouse_pointer_pos_on_globe ||
-			is_now_on_globe != d_mouse_pointer_is_on_globe) {
-
-		d_virtual_mouse_pointer_pos_on_globe = new_pos;
-		d_mouse_pointer_is_on_globe = is_now_on_globe;
-
-		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
-		emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
-	}
 }
 
 

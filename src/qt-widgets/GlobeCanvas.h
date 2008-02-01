@@ -190,6 +190,12 @@ namespace GPlatesQtWidgets
 		void
 		notify_of_orientation_change();
 
+		void
+		handle_mouse_pointer_pos_change();
+
+		void
+		force_mouse_pointer_pos_change();
+
 	protected:
 		/**
 		 * This is a virtual override of the function in QGLWidget.
@@ -423,9 +429,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_dimensions();
-
-		void
-		handle_mouse_pointer_pos_change();
 
 		void
 		handle_wheel_rotation(

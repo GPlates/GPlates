@@ -35,6 +35,38 @@
 #include "ViolatedClassInvariantException.h"
 
 
+void
+GPlatesMaths::UnitQuaternion3D::renormalise_if_necessary() {
+
+	// Unit-quaternions require renormalisation sometimes, due to the accumulation of
+	// floating-point error (which can occur when unit-quaternions are composed, for example).
+	//
+	// From testing and observation, it seems that, very soon after the actual-norm-squared
+	// deviates from 1.0 by more than 2.0e-14, using the unit-quaternion to rotate a
+	// unit-vector will result in a unit-vector whose actual-magnitude-squared deviates from
+	// 1.0 by 5.0e-14.  (Note that these numbers are fairly arbitrary; a crude justification
+	// for the significance of 1.0e-14 is given in "src/maths/Real.cc".)
+	//
+	// So, to avoid this, let's renormalise this unit-quaternion if its actual-norm-squared
+	// deviates from 1.0 by more than 2.0e-14.
+
+	double norm_sqrd = get_actual_norm_sqrd().dval();
+	if (std::fabs(norm_sqrd - 1.0) > 2.0e-14) {
+		double norm = std::sqrt(norm_sqrd);
+		std::cerr << "Renormalising unit-quat (current deviation from 1.0 = "
+				<< HighPrecision<double>(norm - 1.0) << ")" << std::endl;
+
+		double one_on_norm = 1.0 / norm;
+		m_scalar_part *= one_on_norm;
+		m_vector_part = one_on_norm * m_vector_part;
+
+		norm = std::sqrt(get_actual_norm_sqrd().dval());
+		std::cerr << "After renormalisation, deviation from 1.0 = "
+				<< HighPrecision<double>(norm - 1.0) << std::endl;
+	}
+}
+
+
 const GPlatesMaths::UnitQuaternion3D::RotationParams
 GPlatesMaths::UnitQuaternion3D::get_rotation_params() const {
 
@@ -155,40 +187,12 @@ GPlatesMaths::UnitQuaternion3D::create(
 
 
 GPlatesMaths::UnitQuaternion3D::UnitQuaternion3D(
- const real_t &s,
- const Vector3D &v) :
- m_scalar_part(s),
- m_vector_part(v) {
+		const real_t &s,
+		const Vector3D &v):
+	m_scalar_part(s),
+	m_vector_part(v) {
 
-	// Check the invariant.
-	real_t norm_sqrd = get_actual_norm_sqrd();
-	if (norm_sqrd != 1.0) {  // FIXME: adjust precision of F.P.-comparison.
-
-#if 0
-		std::cerr
-		 << "Useful analysis info: renormalising unit-quaternion."
-		 << "\nUnit-quaternion was "
-		 << (*this)
-		 << " with norm = "
-		 << HighPrecision< real_t >(sqrt(norm_sqrd))
-		 << ".\n";
-#endif
-
-		// The invariant is not intact.  So, renormalise.
-		real_t one_on_norm = 1.0 / sqrt(norm_sqrd);
-
-		m_scalar_part *= one_on_norm;
-		m_vector_part = one_on_norm * m_vector_part;
-
-#if 0
-		std::cerr
-		 << "Unit-quaternion is now "
-		 << (*this)
-		 << " with norm = "
-		 << HighPrecision< real_t >(sqrt(norm_sqrd))
-		 << ".\n";
-#endif
-	}
+	renormalise_if_necessary();
 }
 
 

@@ -258,6 +258,15 @@ namespace GPlatesMaths {
 
 
 		/**
+		 * Renormalise the quaternion if necessary.
+		 *
+		 * (What exactly is "necessary" is decided by this function.)
+		 */
+		void
+		renormalise_if_necessary();
+
+
+		/**
 		 * This struct is used to contain the reverse-engineered
 		 * rotation parameters of an arbitrary (ie, not necessarily
 		 * user-specified; possibly machine-calculated by interpolation
