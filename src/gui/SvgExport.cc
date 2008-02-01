@@ -126,7 +126,7 @@ namespace
 		// array has overflowed.
 		if (num_items < 0) {
 			// do something about this
-			std::cerr << "Negative value returned from glRenderMode(GL_RENDER)." <<  std::endl;
+			//std::cerr << "Negative value returned from glRenderMode(GL_RENDER)." <<  std::endl;
 		}
 
 		return num_items;
@@ -511,7 +511,7 @@ GPlatesGui::SvgExport::create_svg_output(
 		} 
 	
 		if (filled_size < 0) {
-			std::cerr << "Feedback buffer not filled." << std::endl;
+			//std::cerr << "Feedback buffer not filled." << std::endl;
 			return false;
 		}
 		
