@@ -34,7 +34,7 @@ installed:
   • Expat library
   • ICU library
   • Boost library headers
-  • Qt library (version 4.2 or newer)
+  • Qt library (version 4.3 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.2.6 or newer)
 
 Corresponding package dependencies
@@ -175,6 +175,9 @@ This subsection provides more specific information on resolving the program and
 library dependencies on a Fedora Core 5 system.
 
 This information was provided by Robin Watson on the 12th of March, 2007.
+
+Note: This information specifies a Qt 4.2 package (suitable for GPlates 0.9),
+while GPlates 0.9.1 and above require Qt 4.3 and above.
 
 Fedora packages
 
