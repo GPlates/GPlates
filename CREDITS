@@ -193,3 +193,31 @@ following significant aspects of GPlates functionality:
    + ESRI Shapefile parser
    + testing and debugging on Microsoft Windows.
 
+
+GPlates 0.9.1
+=============
+
+GPlates 0.9.1 contained further developments of the GPlates 0.9 functionality
+and GUI.
+
+GPlates 0.9.1 was created (Dec 2007 - Jan 2008) by:
+ * James Boyden [technical lead]
+ * James Clark
+ * Hamish Ivey-Law
+ * Robin Watson
+under the direction of:
+ * Dietmar Muller
+ * Trond Torsvik
+funded by grants from:
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+
+GPlates 0.9.1 compiled and ran on Linux and Microsoft Windows XP.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * James Clark
+   + enhanced zoom, camera positioning and camera orientation controls
+   + the feature table (as a Qt Model-View) in the "Clicked" tab
+ * Robin Watson
+   + SVG export of the orthogonal projection of geometries on the globe
+
