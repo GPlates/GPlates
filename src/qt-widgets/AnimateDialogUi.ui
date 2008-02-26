@@ -170,9 +170,6 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_Reverse_the_Animation" >
-          <property name="enabled" >
-           <bool>false</bool>
-          </property>
           <property name="text" >
            <string>Reverse the Animation</string>
           </property>
@@ -214,7 +211,16 @@
         <property name="spacing" >
          <number>6</number>
         </property>
-        <property name="margin" >
+        <property name="leftMargin" >
+         <number>0</number>
+        </property>
+        <property name="topMargin" >
+         <number>0</number>
+        </property>
+        <property name="rightMargin" >
+         <number>0</number>
+        </property>
+        <property name="bottomMargin" >
          <number>0</number>
         </property>
         <item>
@@ -278,9 +284,6 @@
       </item>
       <item>
        <widget class="QSlider" name="slider_current_time" >
-        <property name="enabled" >
-         <bool>false</bool>
-        </property>
         <property name="orientation" >
          <enum>Qt::Horizontal</enum>
         </property>
@@ -291,7 +294,16 @@
         <property name="spacing" >
          <number>6</number>
         </property>
-        <property name="margin" >
+        <property name="leftMargin" >
+         <number>0</number>
+        </property>
+        <property name="topMargin" >
+         <number>0</number>
+        </property>
+        <property name="rightMargin" >
+         <number>0</number>
+        </property>
+        <property name="bottomMargin" >
          <number>0</number>
         </property>
         <item>
@@ -349,7 +361,16 @@
         <property name="spacing" >
          <number>6</number>
         </property>
-        <property name="margin" >
+        <property name="leftMargin" >
+         <number>0</number>
+        </property>
+        <property name="topMargin" >
+         <number>0</number>
+        </property>
+        <property name="rightMargin" >
+         <number>0</number>
+        </property>
+        <property name="bottomMargin" >
          <number>0</number>
         </property>
         <item>
@@ -361,11 +382,8 @@
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="widget_Frames_per_second" >
-          <property name="enabled" >
-           <bool>false</bool>
-          </property>
           <property name="minimum" >
-           <double>0.000000000000000</double>
+           <double>0.100000000000000</double>
           </property>
           <property name="maximum" >
            <double>100.000000000000000</double>
@@ -392,9 +410,6 @@
       </item>
       <item>
        <widget class="QCheckBox" name="checkbox_Finish_animation_on_end_time" >
-        <property name="enabled" >
-         <bool>false</bool>
-        </property>
         <property name="text" >
          <string>Finish animation exactly on end time.</string>
         </property>
@@ -405,9 +420,6 @@
       </item>
       <item>
        <widget class="QCheckBox" name="checkbox_Loop" >
-        <property name="enabled" >
-         <bool>false</bool>
-        </property>
         <property name="text" >
          <string>Loop.</string>
         </property>
@@ -421,7 +433,16 @@
      <property name="spacing" >
       <number>6</number>
      </property>
-     <property name="margin" >
+     <property name="leftMargin" >
+      <number>0</number>
+     </property>
+     <property name="topMargin" >
+      <number>0</number>
+     </property>
+     <property name="rightMargin" >
+      <number>0</number>
+     </property>
+     <property name="bottomMargin" >
       <number>0</number>
      </property>
      <item>
