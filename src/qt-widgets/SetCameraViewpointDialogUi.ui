@@ -12,6 +12,9 @@
   <property name="windowTitle" >
    <string>Set Camera Viewpoint</string>
   </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+  </property>
   <property name="modal" >
    <bool>true</bool>
   </property>
@@ -25,11 +28,20 @@
     </rect>
    </property>
    <layout class="QHBoxLayout" >
-    <property name="margin" >
-     <number>0</number>
-    </property>
     <property name="spacing" >
      <number>6</number>
+    </property>
+    <property name="leftMargin" >
+     <number>0</number>
+    </property>
+    <property name="topMargin" >
+     <number>0</number>
+    </property>
+    <property name="rightMargin" >
+     <number>0</number>
+    </property>
+    <property name="bottomMargin" >
+     <number>0</number>
     </property>
     <item>
      <spacer>
@@ -79,10 +91,22 @@
     </rect>
    </property>
    <layout class="QGridLayout" >
-    <property name="margin" >
+    <property name="leftMargin" >
      <number>0</number>
     </property>
-    <property name="spacing" >
+    <property name="topMargin" >
+     <number>0</number>
+    </property>
+    <property name="rightMargin" >
+     <number>0</number>
+    </property>
+    <property name="bottomMargin" >
+     <number>0</number>
+    </property>
+    <property name="horizontalSpacing" >
+     <number>6</number>
+    </property>
+    <property name="verticalSpacing" >
      <number>6</number>
     </property>
     <item row="0" column="1" >
@@ -116,11 +140,11 @@
       <property name="decimals" >
        <number>3</number>
       </property>
-      <property name="maximum" >
-       <double>180.000000000000000</double>
-      </property>
       <property name="minimum" >
        <double>-180.000000000000000</double>
+      </property>
+      <property name="maximum" >
+       <double>180.000000000000000</double>
       </property>
      </widget>
     </item>
@@ -142,11 +166,11 @@
       <property name="decimals" >
        <number>3</number>
       </property>
-      <property name="maximum" >
-       <double>90.000000000000000</double>
-      </property>
       <property name="minimum" >
        <double>-90.000000000000000</double>
+      </property>
+      <property name="maximum" >
+       <double>90.000000000000000</double>
       </property>
      </widget>
     </item>
@@ -173,7 +197,9 @@
   <tabstop>spinbox_latitude</tabstop>
   <tabstop>spinbox_longitude</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections>
   <connection>
    <sender>spinbox_latitude</sender>

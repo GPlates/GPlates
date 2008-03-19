@@ -355,6 +355,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_read_errors_dialog(this),
 	d_manage_feature_collections_dialog(*this, this),
 	d_animate_dialog_has_been_shown(false),
+	d_euler_pole_dialog(*this, this),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel())
 {
 	setupUi(this);
@@ -401,6 +402,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&d_reconstruction_view_widget, SLOT(increment_reconstruction_time()));
 	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(decrement_reconstruction_time()));
+
+	QObject::connect(action_Reconstruction_Tree_and_Poles, SIGNAL(triggered()),
+			this, SLOT(pop_up_euler_pole_dialog()));
 	
 	QObject::connect(action_Set_Zoom, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
@@ -533,6 +537,10 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root);
 	d_canvas_ptr->update_canvas();
+
+	if (d_euler_pole_dialog.isVisible()){
+		d_euler_pole_dialog.update();
+	}
 }
 
 
@@ -577,6 +585,13 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
 	}
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_euler_pole_dialog()
+{
+	d_euler_pole_dialog.update();
+
+	d_euler_pole_dialog.show();
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()

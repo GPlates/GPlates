@@ -15,6 +15,7 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				SphericalGrid.cc SvgExport.cc \
 				ViewportZoom.cc \
 				FeatureTableModel.cc \
+				CsvExport.cc \
 				moc_CanvasToolAdapter.cc \
 				moc_CanvasToolChoice.cc \
 				moc_FeatureWeakRefSequence.cc \

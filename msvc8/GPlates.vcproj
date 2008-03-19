@@ -292,7 +292,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
+				RelativePath="..\src\gui\CsvExport.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\CsvExport.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureTableModel.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureTableModel.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -303,11 +315,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\gui\FeatureTableModel.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\FeatureTableModel.h"
+				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -334,11 +342,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
+				RelativePath="..\src\gui\moc_FeatureTableModel.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\moc_FeatureTableModel.cc"
+				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
 				>
 			</File>
 			<File
@@ -462,6 +470,25 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\EulerPoleDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EulerPoleDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EulerPoleDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\GlobeCanvas.cc"
 				>
 			</File>
@@ -557,6 +584,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_EulerPoleDialog.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_GlobeCanvas.cc"
 				>
 			</File>
@@ -585,11 +616,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_SetCameraViewpointDialog.cc"
+				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
+				RelativePath="..\src\qt-widgets\moc_SetCameraViewpointDialog.cc"
 				>
 			</File>
 			<File
@@ -639,25 +670,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\SetCameraViewpointDialog.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\SetCameraViewpointDialog.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\SetCameraViewpointDialogUi.ui"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.cc"
 				>
 			</File>
@@ -674,6 +686,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\ReconstructionViewWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\SetCameraViewpointDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\SetCameraViewpointDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\SetCameraViewpointDialogUi.ui"
 				>
 			</File>
 			<File

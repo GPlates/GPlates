@@ -51,6 +51,7 @@
 #include "QueryFeaturePropertiesDialog.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
+#include "EulerPoleDialog.h"
 
 #include "gui/FeatureTableModel.h"
 
@@ -79,7 +80,7 @@ namespace GPlatesQtWidgets
 		{
 			return *d_reconstruction_ptr;
 		}
-
+	
 		const double &
 		reconstruction_time() const
 		{
@@ -130,6 +131,9 @@ namespace GPlatesQtWidgets
 		{
 			create_svg_file();
 		}
+
+		void
+		pop_up_euler_pole_dialog();
 
 	public:
 		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
@@ -223,6 +227,7 @@ namespace GPlatesQtWidgets
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
 		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;
+		EulerPoleDialog d_euler_pole_dialog;
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// Should be in ViewState.
 
