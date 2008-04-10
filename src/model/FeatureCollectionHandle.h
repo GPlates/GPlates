@@ -29,7 +29,7 @@
 #define GPLATES_MODEL_FEATURECOLLECTIONHANDLE_H
 
 #include "FeatureCollectionRevision.h"
-#include "HandleContainerIterator.h"
+#include "RevisionAwareIterator.h"
 #include "WeakReference.h"
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -100,14 +100,14 @@ namespace GPlatesModel
 		/**
 		 * The type which contains the revisioning component of a feature collection.
 		 *
-		 * This typedef is used by the HandleContainerIterator.
+		 * This typedef is used by the RevisionAwareIterator.
 		 */
 		typedef FeatureCollectionRevision revision_component_type;
 
 		/**
 		 * The type used for const-iterating over the collection of feature handles.
 		 */
-		typedef HandleContainerIterator<const FeatureCollectionHandle,
+		typedef RevisionAwareIterator<const FeatureCollectionHandle,
 				const FeatureCollectionHandle,
 				const revision_component_type::feature_collection_type,
 				boost::intrusive_ptr<const FeatureHandle> >
@@ -116,7 +116,7 @@ namespace GPlatesModel
 		/**
 		 * The type used for (non-const) iterating over the collection of feature handles.
 		 */
-		typedef HandleContainerIterator<FeatureCollectionHandle,
+		typedef RevisionAwareIterator<FeatureCollectionHandle,
 				const FeatureCollectionHandle,
 				revision_component_type::feature_collection_type,
 				boost::intrusive_ptr<FeatureHandle> >

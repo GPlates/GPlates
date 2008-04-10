@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * Contains the definition of the class HandleContainerIterator.
+ * Contains the definition of the class RevisionAwareIterator.
  *
  * Most recent change:
  *   $Date$
@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_HANDLECONTAINERITERATOR_H
-#define GPLATES_MODEL_HANDLECONTAINERITERATOR_H
+#ifndef GPLATES_MODEL_REVISIONAWAREITERATOR_H
+#define GPLATES_MODEL_REVISIONAWAREITERATOR_H
 
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
 #include "WeakObserver.h"
@@ -35,22 +35,25 @@
 namespace GPlatesModel
 {
 	/**
-	 * A revision-aware iterator to iterate over the container of whatever-handles contained
-	 * within a revisioning collection.
+	 * A revision-aware iterator to iterate over the container within a revisioning collection.
+	 *
+	 * This class was originally designed to iterate over the container of feature-handles in a
+	 * feature-collection-handle.  It was later generalised to also iterate over the container
+	 * of feature-collection-handles in the feature-store-root, and later still to iterate over
+	 * the container of property-containers in a feature-handle.
 	 *
 	 * @par Revision awareness
 	 * By "revision-aware" is meant that instances of this class will not be fooled, by a
 	 * revisioning operation, to point to an old revision of the container.  Each and every
 	 * iterator operation first gets the current revision of the container, before accessing
-	 * the elements of the container (the contained handles).
+	 * the elements of the container.
 	 *
 	 * @par The WeakObserver base
-	 * The base class WeakObserver contains the pointer to the collection handle (which
-	 * contains the handle container over which this iterator is iterating).  The benefit of
-	 * using WeakObserver to contain the pointer-to-collection-handle is that an instance of
-	 * HandleContainerIterator, which is pointing to a particular collection handle, will be
-	 * informed if that collection handle is deactivated (ie, logically deleted) or deallocated
-	 * (ie, deleted in the C++ memory-allocation sense).
+	 * The base class WeakObserver contains the pointer to the handle (which contains the
+	 * container over which this iterator is iterating).  The benefit of using WeakObserver to
+	 * contain the pointer-to-handle is that an instance of RevisionAwareIterator, which is
+	 * pointing to a particular handle, will be informed if that handle is deactivated (ie,
+	 * logically deleted) or deallocated (ie, deleted in the C++ memory-allocation sense).
 	 *
 	 * @par
 	 * The member function @a is_valid is used to determine whether an iterator instance is
@@ -58,46 +61,50 @@ namespace GPlatesModel
 	 *
 	 * @par The template parameters
 	 * The template parameters are:
-	 *  - @em H: the type of the collection handle (for example, '@c FeatureCollectionHandle '
-	 * or '@c const @c FeatureCollectionHandle ')
-	 *  - @em ConstH: the const-type of the collection handle (for example,
+	 *  - @em H: the type of the handle of the revisioning collection (for example,
+	 * '@c FeatureCollectionHandle ' or '@c const @c FeatureCollectionHandle ', depending on
+	 * whether the collection should be const or not)
+	 *  - @em ConstH: the const-type of the handle (for example,
 	 * '@c const @c FeatureCollectionHandle ')
-	 *  - @em C: the type of the handle container (for example,
+	 *  - @em C: the type of the container over which this iterator will iterate (for example,
 	 * '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> ')
-	 *  - @em D: the type to which the iterator will dereference (for example,
+	 *  - @em D: the type of the container elements, the type to which the iterator will
+	 * dereference (for example,
 	 * '@c boost::intrusive_ptr@<FeatureHandle@> ' or
 	 * '@c boost::intrusive_ptr@<const @c FeatureHandle@> ')
 	 */
 	template<typename H, typename ConstH, typename C, typename D>
-	class HandleContainerIterator:
+	class RevisionAwareIterator:
 			public WeakObserver<H, ConstH>,
 			public std::iterator<std::bidirectional_iterator_tag, D>
 	{
 	public:
 		/**
-		 * This is the type of the collection handle.
+		 * This is the type of the handle of the revisioning collection.
 		 *
 		 * (For example, '@c FeatureCollectionHandle ' or
-		 * '@c const @c FeatureCollectionHandle '.)
+		 * '@c const @c FeatureCollectionHandle ', depending on whether the collection
+		 * should be const or not.)
 		 */
 		typedef H collection_handle_type;
 
 		/**
-		 * This is the const-type of the collection handle.
+		 * This is the const-type of the handle of the revisioning collection.
 		 *
 		 * (For example, '@c const @c FeatureCollectionHandle '.)
 		 */
 		typedef ConstH const_collection_handle_type;
 
 		/**
-		 * This is the type of the handle container.
+		 * This is the type of the container over which this iterator will iterate.
 		 *
 		 * (For example, '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> '.)
 		 */
-		typedef C handle_container_type;
+		typedef C container_type;
 
 		/**
-		 * This is the type to which the iterator will dereference.
+		 * This is the type of the container elements, the type to which the iterator will
+		 * dereference.
 		 *
 		 * (For example, '@c boost::intrusive_ptr@<FeatureHandle@> ' or
 		 * '@c boost::intrusive_ptr@<const @c FeatureHandle@> '.)
@@ -105,17 +112,17 @@ namespace GPlatesModel
 		typedef D dereference_type;
 
 		/**
-		 * This is the type used to index the elements of the handle container.
+		 * This is the type used to index the elements of the container.
 		 */
-		typedef typename handle_container_type::size_type index_type;
+		typedef typename container_type::size_type index_type;
 
 		static
-		const HandleContainerIterator
+		const RevisionAwareIterator
 		create_index(
 				collection_handle_type &collection_handle,
 				index_type index_)
 		{
-			return HandleContainerIterator(collection_handle, index_);
+			return RevisionAwareIterator(collection_handle, index_);
 		}
 
 		/**
@@ -125,11 +132,11 @@ namespace GPlatesModel
 		 * This function will not throw.
 		 */
 		static
-		const HandleContainerIterator
+		const RevisionAwareIterator
 		create_begin(
 				collection_handle_type &collection_handle)
 		{
-			return HandleContainerIterator(collection_handle, 0);
+			return RevisionAwareIterator(collection_handle, 0);
 		}
 
 		/**
@@ -139,11 +146,11 @@ namespace GPlatesModel
 		 * This function will not throw.
 		 */
 		static
-		const HandleContainerIterator
+		const RevisionAwareIterator
 		create_end(
 				collection_handle_type &collection_handle)
 		{
-			return HandleContainerIterator(collection_handle,
+			return RevisionAwareIterator(collection_handle,
 					container_size(collection_handle));
 		}
 
@@ -153,7 +160,7 @@ namespace GPlatesModel
 		 * Iterator instances which are initialised using the default constructor are not
 		 * valid to be dereferenced.
 		 */
-		HandleContainerIterator():
+		RevisionAwareIterator():
 			d_index(0)
 		{  }
 
@@ -174,6 +181,7 @@ namespace GPlatesModel
 		{
 			return WeakObserver<H, ConstH>::publisher_ptr();
 		}
+
 		/**
 		 * Return the current index.
 		 *
@@ -201,9 +209,9 @@ namespace GPlatesModel
 		 *
 		 * This function will not throw.
 		 */
-		HandleContainerIterator &
+		RevisionAwareIterator &
 		operator=(
-				const HandleContainerIterator &other)
+				const RevisionAwareIterator &other)
 		{
 			WeakObserver<H, ConstH>::operator=(other);
 			d_index = other.d_index;
@@ -218,7 +226,7 @@ namespace GPlatesModel
 		 */
 		bool
 		operator==(
-				const HandleContainerIterator &other) const
+				const RevisionAwareIterator &other) const
 		{
 			return (collection_handle_ptr() == other.collection_handle_ptr() &&
 					index() == other.index());
@@ -231,7 +239,7 @@ namespace GPlatesModel
 		 */
 		bool
 		operator!=(
-				const HandleContainerIterator &other) const
+				const RevisionAwareIterator &other) const
 		{
 			return (collection_handle_ptr() != other.collection_handle_ptr() ||
 					index() != other.index());
@@ -278,7 +286,7 @@ namespace GPlatesModel
 		 *
 		 * This function will not throw.
 		 */
-		HandleContainerIterator &
+		RevisionAwareIterator &
 		operator++()
 		{
 			++d_index;
@@ -290,10 +298,10 @@ namespace GPlatesModel
 		 *
 		 * This function will not throw.
 		 */
-		const HandleContainerIterator
+		const RevisionAwareIterator
 		operator++(int)
 		{
-			HandleContainerIterator original(*this);
+			RevisionAwareIterator original(*this);
 			++d_index;
 			return original;
 		}
@@ -303,7 +311,7 @@ namespace GPlatesModel
 		 *
 		 * This function will not throw.
 		 */
-		HandleContainerIterator &
+		RevisionAwareIterator &
 		operator--()
 		{
 			--d_index;
@@ -315,10 +323,10 @@ namespace GPlatesModel
 		 *
 		 * This function will not throw.
 		 */
-		const HandleContainerIterator
+		const RevisionAwareIterator
 		operator--(int)
 		{
-			HandleContainerIterator original(*this);
+			RevisionAwareIterator original(*this);
 			--d_index;
 			return original;
 		}
@@ -342,7 +350,7 @@ namespace GPlatesModel
 		 *
 		 * This constructor will not throw.
 		 */
-		HandleContainerIterator(
+		RevisionAwareIterator(
 				collection_handle_type &collection_handle,
 				index_type index_):
 			WeakObserver<H, ConstH>(collection_handle),
@@ -406,11 +414,11 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * This is the current index in the handle container.
+		 * This is the current index in the container.
 		 */
 		index_type d_index;
 	};
 
 }
 
-#endif  // GPLATES_MODEL_HANDLECONTAINERITERATOR_H
+#endif  // GPLATES_MODEL_REVISIONAWAREITERATOR_H

@@ -33,7 +33,7 @@
 #include "FeatureType.h"
 #include "ConstFeatureVisitor.h"
 #include "FeatureVisitor.h"
-#include "HandleContainerIterator.h"
+#include "RevisionAwareIterator.h"
 #include "WeakReference.h"
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -101,14 +101,14 @@ namespace GPlatesModel
 		/**
 		 * The type which contains the revisioning component of a feature.
 		 *
-		 * This typedef is used by the HandleContainerIterator.
+		 * This typedef is used by the RevisionAwareIterator.
 		 */
 		typedef FeatureRevision revision_component_type;
 
 		/**
 		 * The type used for const-iterating over the collection of property containers.
 		 */
-		typedef HandleContainerIterator<const FeatureHandle,
+		typedef RevisionAwareIterator<const FeatureHandle,
 				const FeatureHandle,
 				const revision_component_type::property_container_collection_type,
 				boost::intrusive_ptr<const PropertyContainer> >
@@ -118,7 +118,7 @@ namespace GPlatesModel
 		 * The type used for (non-const) iterating over the collection of property
 		 * containers.
 		 */
-		typedef HandleContainerIterator<FeatureHandle,
+		typedef RevisionAwareIterator<FeatureHandle,
 				const FeatureHandle,
 				revision_component_type::property_container_collection_type,
 				boost::intrusive_ptr<PropertyContainer> >

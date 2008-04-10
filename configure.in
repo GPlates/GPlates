@@ -296,6 +296,10 @@ if test "$turn_on_dev" != "yes"; then
 	if test "$package_is_beta" = "yes"; then
 		AC_DEFINE([PACKAGE_IS_BETA],[],[Development version])
 	fi
+
+	# Check for "dot" (from the Graphviz package) to set HAVE_DOT for doxygen.conf.
+	# WARNING:  This does not verify that this is the *real* "dot" program we want.
+	AC_CHECK_PROG([HAVE_DOT], [dot], [yes], [no])
 fi
 
 # Using '--enable-opt' turns on optimisations
