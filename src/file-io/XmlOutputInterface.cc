@@ -31,6 +31,19 @@
 #include "XmlOutputInterface.h"
 
 
+namespace
+{
+	void
+	write_xml_header_line(std::ostream *os)
+	{
+		// This header is required in any XML document.  Note that we have fixed the
+		// encoding at the moment.
+		static const UnicodeString XML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+		*os << XML_HEADER;
+	}
+}
+
+
 GPlatesFileIO::XmlOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
 		XmlOutputInterface &interface,
 		const UnicodeString &elem_name):
@@ -142,6 +155,17 @@ GPlatesFileIO::XmlOutputInterface::write_line_of_decimal_duple_content(
 
 
 void
+GPlatesFileIO::XmlOutputInterface::write_line_of_boolean_content(
+		const bool &content)
+{
+	write_indentation();
+	// CHECKME:  Do we need to worry about ensuring the locale is appropriate?
+	*d_os_ptr << std::boolalpha << content;
+	write_unicode_string("\n");
+}
+
+
+void
 GPlatesFileIO::XmlOutputInterface::write_indentation() {
 	if (status() != NO_ERROR) {
 		// Some error has previously occurred.
@@ -195,7 +219,7 @@ GPlatesFileIO::XmlOutputInterface::write_attribute_name(
 		// Some error has previously occurred.
 		return;
 	}
-	*d_os_ptr << xan.get();
+	*d_os_ptr << xan.build_aliased_name();
 	if ( ! *d_os_ptr) {
 		// There was an error during writing.
 		set_status(WRITE_ERROR);
@@ -227,4 +251,25 @@ GPlatesFileIO::XmlOutputInterface::write_decimal_content(
 		const double &content) {
 	// CHECKME:  Do we need to worry about ensuring the locale is appropriate?
 	*d_os_ptr << content;
+}
+
+
+void
+GPlatesFileIO::XmlOutputInterface::flush_underlying_stream()
+{
+	if (status() == NO_ERROR) {
+		*d_os_ptr << std::flush;
+	}
+}
+
+
+GPlatesFileIO::XmlOutputInterface::XmlOutputInterface(
+		std::ostream &os,
+		const UnicodeString &indentation_unit) :
+	d_os_ptr(&os),
+	d_indentation_unit(indentation_unit),
+	d_indentation_level(0),
+	d_status(NO_ERROR)
+{
+	write_xml_header_line(d_os_ptr);
 }

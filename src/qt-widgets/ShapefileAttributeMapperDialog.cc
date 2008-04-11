@@ -102,8 +102,12 @@ GPlatesQtWidgets::ShapefileAttributeMapperDialog::shapefileChanged(int file_numb
 {
 	attribute_combo_box->clear();
 
-	if(d_collections.empty()) return;
-	if(file_number > d_collections.size()) return;
+	if (d_collections.empty()) {
+		return;
+	}
+	if (file_number > d_collections.size()) {
+		return;
+	}
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = d_collections[file_number];
 
@@ -116,19 +120,20 @@ GPlatesQtWidgets::ShapefileAttributeMapperDialog::shapefileChanged(int file_numb
 	GPlatesModel::FeatureHandle::properties_iterator p_end = (*feature_iter)->properties_end();
 	GPlatesModel::XmlAttributeName targetName("source");
 	GPlatesModel::XmlAttributeValue targetValue("shapefile");
-	for(p_iter; p_iter != p_end; p_iter++)
+	for (p_iter; p_iter != p_end; p_iter++)
 	{
 
 		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes = (*p_iter)->xml_attributes();
 		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>::iterator it = xml_attributes.find(targetName);
-		if(it != xml_attributes.end())
+		if (it != xml_attributes.end())
 		{
 			GPlatesModel::XmlAttributeValue value = it->second;
-			if(value == targetValue) // we've found a shapefile attribute, so stick it in the box.
+			if (value == targetValue) // we've found a shapefile attribute, so stick it in the box.
 			{
 				std::cerr << "found shapefile attribute" << std::endl;
 				GPlatesModel::PropertyName name = (*p_iter)->property_name();
-				QString string = GPlatesUtils::make_qstring_from_icu_string(name.get());
+				QString string = GPlatesUtils::make_qstring_from_icu_string(
+						name.build_aliased_name());
 				attribute_combo_box->addItem(string);
 			}
 		}

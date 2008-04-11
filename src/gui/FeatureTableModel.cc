@@ -76,14 +76,16 @@ namespace
 	get_feature_type(
 			GPlatesModel::FeatureHandle &feature)
 	{
-		return QVariant(GPlatesUtils::make_qstring(feature.feature_type()));
+		return QVariant(GPlatesUtils::make_qstring_from_icu_string(
+					feature.feature_type().build_aliased_name()));
 	}
 	
 	QVariant
 	get_plate_id(
 			GPlatesModel::FeatureHandle &feature)
 	{
-		static const GPlatesModel::PropertyName plate_id_property_name("gpml:reconstructionPlateId");
+		static const GPlatesModel::PropertyName plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
 		plate_id_finder.visit_feature_handle(feature);
 		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
@@ -125,7 +127,8 @@ namespace
 	get_time_begin(
 			GPlatesModel::FeatureHandle &feature)
 	{
-		static const GPlatesModel::PropertyName valid_time_property_name("gml:validTime");
+		static const GPlatesModel::PropertyName valid_time_property_name =
+			GPlatesModel::PropertyName::create_gml("validTime");
 		GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
 		time_period_finder.visit_feature_handle(feature);
 		if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
@@ -145,7 +148,8 @@ namespace
 	get_time_end(
 			GPlatesModel::FeatureHandle &feature)
 	{
-		static const GPlatesModel::PropertyName valid_time_property_name("gml:validTime");
+		static const GPlatesModel::PropertyName valid_time_property_name =
+			GPlatesModel::PropertyName::create_gml("validTime");
 		GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
 		time_period_finder.visit_feature_handle(feature);
 		if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
@@ -166,7 +170,8 @@ namespace
 			GPlatesModel::FeatureHandle &feature)
 	{
 		// FIXME: Need to adapt according to user's current codeSpace setting.
-		static const GPlatesModel::PropertyName name_property_name("gml:name");
+		static const GPlatesModel::PropertyName name_property_name = 
+			GPlatesModel::PropertyName::create_gml("name");
 		GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
 		string_finder.visit_feature_handle(feature);
 		if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
@@ -183,7 +188,8 @@ namespace
 	get_description(
 			GPlatesModel::FeatureHandle &feature)
 	{
-		static const GPlatesModel::PropertyName description_property_name("gml:description");
+		static const GPlatesModel::PropertyName description_property_name =
+			GPlatesModel::PropertyName::create_gml("description");
 		GPlatesFeatureVisitors::XsStringFinder string_finder(description_property_name);
 		string_finder.visit_feature_handle(feature);
 		if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {

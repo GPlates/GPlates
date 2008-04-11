@@ -145,8 +145,10 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_feature_handle(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	static const GPlatesModel::FeatureType
-		gpmlTotalReconstructionSequence("gpml:TotalReconstructionSequence"),
-		gpmlAbsoluteReferenceFrame("gpml:AbsoluteReferenceFrame");
+		gpmlTotalReconstructionSequence = 
+			GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence"),
+		gpmlAbsoluteReferenceFrame =
+			GPlatesModel::FeatureType::create_gpml("gpml:AbsoluteReferenceFrame");
 
 	if ((feature_handle.feature_type() != gpmlTotalReconstructionSequence)
 			&& (feature_handle.feature_type() != gpmlAbsoluteReferenceFrame)) {
@@ -249,8 +251,14 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const GPlatesModel::PropertyName
-		fixedReferenceFrame("gpml:fixedReferenceFrame"),
-		movingReferenceFrame("gpml:movingReferenceFrame");
+		fixedReferenceFrame(
+				GPlatesUtils::XmlNamespaces::GPML_NAMESPACE,
+				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS,
+				QString("fixedReferenceFrame")),
+		movingReferenceFrame(
+				GPlatesUtils::XmlNamespaces::GPML_NAMESPACE,
+				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS,
+				QString("movingReferenceFrame"));
 
 	if (*d_accum.last_property_seen == fixedReferenceFrame) {
 		d_accum.fixed_plate_id = gpml_plate_id.value();

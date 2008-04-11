@@ -8,12 +8,19 @@ noinst_LTLIBRARIES	= libfile_io.la
 libfile_io_la_SOURCES	= PlatesLineFormatReader.cc \
 				PlatesRotationFormatReader.cc \
 				XmlOutputInterface.cc \
+				FeaturePropertiesMap.cc \
+				GpmlReaderUtils.cc \
 				GpmlOnePointFiveOutputVisitor.cc \
+				GpmlOnePointSixOutputVisitor.cc \
+				GpmlOnePointSixReader.cc \
+				PropertyCreationUtils.cc \
 				ReadErrorOccurrence.cc \
 				PlatesLineFormatWriter.cc \
 				PlatesRotationFormatWriter.cc \
 				ShapeFileReader.cc \
-				FileInfo.cc
+				FileInfo.cc \
+				XmlWriter.cc \
+				StructurePropertyCreatorMap.cc
 
 if PYTHON
 noinst_PROGRAMS		= _file_io.so

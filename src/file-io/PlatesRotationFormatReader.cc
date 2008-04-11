@@ -227,7 +227,8 @@ namespace
 			description = (XsString::create(comment.c_str())).get();
 		}
 
-		TemplateTypeParameterType value_type("gpml:FiniteRotation");
+		TemplateTypeParameterType value_type = 
+			TemplateTypeParameterType::create_gpml("FiniteRotation");
 
 		// Finally, as we're creating the GpmlTimeSample, don't forget to check whether the
 		// sample should be disabled.
@@ -290,7 +291,7 @@ namespace
 		using namespace GPlatesPropertyValues;
 
 		// Create a new total reconstruction sequence in the feature collection.
-		FeatureType feature_type("gpml:TotalReconstructionSequence");
+		FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
 		current_total_recon_seq = model.create_feature(feature_type, rotations);
 
 		GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
@@ -300,19 +301,22 @@ namespace
 						GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
 						time_sample.value_type());
 		ModelUtils::append_property_value_to_feature(gpml_irregular_sampling,
-				"gpml:totalReconstructionPole", current_total_recon_seq);
+				GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"), 
+				current_total_recon_seq);
 		props_in_current_trs.d_irregular_sampling = gpml_irregular_sampling.get();
 
 		GpmlPlateId::non_null_ptr_type fixed_ref_frame =
 				GpmlPlateId::create(fixed_plate_id);
 		ModelUtils::append_property_value_to_feature(fixed_ref_frame,
-				"gpml:fixedReferenceFrame", current_total_recon_seq);
+				GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame"), 
+				current_total_recon_seq);
 		props_in_current_trs.d_fixed_plate_id = fixed_plate_id;
 
 		GpmlPlateId::non_null_ptr_type moving_ref_frame =
 				GpmlPlateId::create(moving_plate_id);
 		ModelUtils::append_property_value_to_feature(moving_ref_frame,
-				"gpml:movingReferenceFrame", current_total_recon_seq);
+				GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"), 
+				current_total_recon_seq);
 		props_in_current_trs.d_moving_plate_id = moving_plate_id;
 	}
 

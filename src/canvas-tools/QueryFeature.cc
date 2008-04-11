@@ -61,7 +61,6 @@ GPlatesCanvasTools::QueryFeature::handle_left_click(
 	
 	qfp_dialog().display_feature(feature_ref);
 
-
 	// Update the 'Clicked' FeatureTableModel
 	d_clicked_table_model_ptr->clear();
 	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);

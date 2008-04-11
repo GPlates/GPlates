@@ -53,6 +53,22 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
+GPlatesPropertyValues::GpmlFiniteRotation::create(
+		const GmlPoint::non_null_ptr_type &gpml_euler_pole,
+		const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees)
+{
+	using namespace ::GPlatesMaths;
+
+	FiniteRotation fr = FiniteRotation::create(
+			*gpml_euler_pole->point(),
+			degreesToRadians(gml_angle_in_degrees->quantity()));
+
+	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
+	return finite_rotation_ptr;
+}
+
+
+const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
 {
 	using namespace ::GPlatesMaths;

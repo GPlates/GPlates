@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -95,8 +95,20 @@ namespace GPlatesFileIO
 			NoPlateIdFound,
 			InvalidShapefilePlateIdNumber,
 
+			// The following apply to GPML import
+			DuplicateIdentityProperty,
+			DuplicateRevisionProperty,
+			UnrecognisedFeatureCollectionElement,
+			UnrecognisedFeatureType,
+			IncorrectRootElementName,
+			MissingVersionAttribute,
+			IncorrectVersionAttribute,
+			ParseError,
+			UnexpectedNonEmptyAttributeList,
+
 			// The following are generic to all local files
-			ErrorOpeningFileForReading
+			ErrorOpeningFileForReading,
+			FileIsEmpty
 		};
 
 		enum Result
@@ -126,6 +138,15 @@ namespace GPlatesFileIO
 			OnlyExteriorRingRead,
 			NoPlateIdLoadedForFile,
 			NoPlateIdLoadedForFeature,
+			
+			// The following are specific to GPML reading.
+			ElementIgnored,
+			PropertyIgnored,
+			ParsingStoppedPrematurely,
+			ElementNameChanged,
+			AssumingCorrectVersion,
+			FeatureNotInterpreted,
+			AttributesIgnored,
 
 			// The following are generic to all local files
 			FileNotLoaded

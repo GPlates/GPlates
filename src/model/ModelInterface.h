@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,6 +33,7 @@
 #include "FeatureHandle.h"
 #include "WeakReference.h"
 #include "Reconstruction.h"
+#include "RevisionId.h"
 #include "types.h"
 
 
@@ -89,6 +90,47 @@ namespace GPlatesModel
 		create_feature(
 				const FeatureType &feature_type,
 				const FeatureId &feature_id,
+				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
+
+		/**
+		 * Create a new feature of feature-type @a feature_type, with revision ID
+		 * @a revision_id, within @a target_collection.
+		 *
+		 * A valid weak reference to the new feature will be returned.  As a result of this
+		 * function, the feature collection referenced by @a target_collection will be
+		 * modified.
+		 *
+		 * If the feature collection referenced by @a target_collection was already
+		 * deactivated, or the reference @a target collection was already not valid, before
+		 * @a target_collection was passed as a parameter, this function will throw an
+		 * exception.
+		 */
+		virtual
+		const FeatureHandle::weak_ref
+		create_feature(
+				const FeatureType &feature_type,
+				const RevisionId &revision_id,
+				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
+
+		/**
+		 * Create a new feature of feature-type @a feature_type, with feature ID
+		 * @a feature_id and revision ID @ revision_id, within @a target_collection.
+		 *
+		 * A valid weak reference to the new feature will be returned.  As a result of this
+		 * function, the feature collection referenced by @a target_collection will be
+		 * modified.
+		 *
+		 * If the feature collection referenced by @a target_collection was already
+		 * deactivated, or the reference @a target collection was already not valid, before
+		 * @a target_collection was passed as a parameter, this function will throw an
+		 * exception.
+		 */
+		virtual
+		const FeatureHandle::weak_ref
+		create_feature(
+				const FeatureType &feature_type,
+				const FeatureId &feature_id,
+				const RevisionId &revision_id,
 				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
 
 #if 0

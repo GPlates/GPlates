@@ -305,7 +305,8 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-	static const PropertyName valid_time_property_name("gml:validTime");
+	static const PropertyName valid_time_property_name =
+		PropertyName::create_gml("validTime");
 
 	// Note that we're going to assume that we've read a property name...
 	if (*(d_accumulator->d_most_recent_propname_read) == valid_time_property_name) {
@@ -330,7 +331,8 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	static const PropertyName reconstruction_plate_id_property_name("gpml:reconstructionPlateId");
+	static PropertyName reconstruction_plate_id_property_name =
+		PropertyName::create_gpml("reconstructionPlateId");
 
 	// Note that we're going to assume that we've read a property name...
 	if (*(d_accumulator->d_most_recent_propname_read) == reconstruction_plate_id_property_name) {

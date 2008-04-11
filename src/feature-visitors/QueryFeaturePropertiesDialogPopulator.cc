@@ -84,7 +84,9 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_inline_prop
 		const GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
 	QStringList fields;
-	fields.push_back(GPlatesUtils::make_qstring(inline_property_container.property_name()));
+	fields.push_back(
+			GPlatesUtils::make_qstring_from_icu_string(
+				inline_property_container.property_name().build_aliased_name()));
 	fields.push_back(QString());
 	// FIXME:  This next line could result in memory leaks.
 	QTreeWidgetItem *item = new QTreeWidgetItem(d_tree_widget_ptr, fields);

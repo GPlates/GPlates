@@ -63,6 +63,18 @@ namespace GPlatesModel {
 
 		static
 		GPlatesUtils::StringSet &
+		xml_namespace_instance();
+
+		static
+		GPlatesUtils::StringSet &
+		xml_namespace_alias_instance();
+
+		static
+		GPlatesUtils::StringSet &
+		xml_element_name_instance();
+
+		static
+		GPlatesUtils::StringSet &
 		strike_slip_enumeration_value_instance();
 
 	private:
@@ -77,6 +89,9 @@ namespace GPlatesModel {
 		static GPlatesUtils::StringSet *s_text_content_instance;
 		static GPlatesUtils::StringSet *s_xml_attribute_name_instance;
 		static GPlatesUtils::StringSet *s_xml_attribute_value_instance;
+		static GPlatesUtils::StringSet *s_xml_namespace_instance;
+		static GPlatesUtils::StringSet *s_xml_namespace_alias_instance;
+		static GPlatesUtils::StringSet *s_xml_element_name_instance;
 		static GPlatesUtils::StringSet *s_strike_slip_enumeration_value_instance;
 	};
 

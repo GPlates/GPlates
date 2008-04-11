@@ -39,13 +39,21 @@ namespace GPlatesPropertyValues
 	class GmlTimeInstant;
 	class GmlTimePeriod;
 	class GpmlConstantValue;
+	class GpmlFeatureReference;
 	class GpmlFiniteRotation;
 	class GpmlFiniteRotationSlerp;
+	class GpmlHotSpotTrailMark;
 	class GpmlIrregularSampling;
+	class GpmlMeasure;
 	class GpmlOldPlatesHeader;
+	class GpmlPiecewiseAggregation;
 	class GpmlPlateId;
+	class GpmlPolarityChronId;
+	class GpmlRevisionId;
 	class GpmlStrikeSlipEnumeration;
 	class GpmlTimeSample;
+	class GpmlTimeWindow;
+	class UninterpretedPropertyValue;
 	class XsBoolean;
 	class XsDouble;
 	class XsInteger;
@@ -176,6 +184,12 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_feature_reference(
+				GPlatesPropertyValues::GpmlFeatureReference &gpml_feature_reference)
+		{  }
+
+		virtual
+		void
 		visit_gpml_finite_rotation(
 				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 		{  }
@@ -188,8 +202,20 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_hot_spot_trail_mark(
+				GPlatesPropertyValues::GpmlHotSpotTrailMark &gpml_hot_spot_trail_mark)
+		{  }
+
+		virtual
+		void
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+		{  }
+
+		virtual
+		void
+		visit_gpml_measure(
+				GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 		{  }
 
 		virtual
@@ -200,9 +226,26 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_piecewise_aggregation(
+				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{  }
+
+		virtual
+		void
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 		{  }
+
+		virtual
+		void
+		visit_gpml_polarity_chron_id(
+				GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
+		{  }
+
+		virtual
+		void
+		visit_gpml_revision_id(
+				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) {  }
 
 		virtual
 		void
@@ -214,6 +257,18 @@ namespace GPlatesModel
 		void
 		visit_gpml_time_sample(
 				GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
+		{  }
+
+		virtual
+		void
+		visit_gpml_time_window(
+				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
+		{  }
+
+		virtual
+		void
+		visit_uninterpreted_property_value(
+				GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val) 
 		{  }
 
 		virtual

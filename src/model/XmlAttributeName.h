@@ -28,12 +28,7 @@
 #ifndef GPLATES_MODEL_XMLATTRIBUTENAME_H
 #define GPLATES_MODEL_XMLATTRIBUTENAME_H
 
-#ifndef GPLATES_ICU_BOOL
-#define GPLATES_ICU_BOOL(b) ((b) != 0)
-#endif
-
-#include "StringSetSingletons.h"
-#include "StringContentTypeGenerator.h"
+#include "QualifiedXmlName.h"
 
 namespace GPlatesModel {
 
@@ -52,19 +47,7 @@ namespace GPlatesModel {
 
 	};
 
-	typedef StringContentTypeGenerator<XmlAttributeNameFactory> XmlAttributeName;
-
-
-	/**
-	 * This operator is used when XmlAttributeName instances are used as keys in @c std::map.
-	 */
-	inline
-	bool
-	operator<(
-			const XmlAttributeName &xan1,
-			const XmlAttributeName &xan2) {
-		return GPLATES_ICU_BOOL(xan1.get() < xan2.get());
-	}
+	typedef QualifiedXmlName<XmlAttributeNameFactory> XmlAttributeName;
 
 }
 

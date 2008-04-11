@@ -53,7 +53,7 @@ void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 		const GPlatesModel::FeatureHandle &feature_handle) {
 
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, feature_handle.feature_type().get());
+	XmlOutputInterface::ElementPairStackFrame f1(d_output, feature_handle.feature_type().get_name());
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:identity");
 		d_output.write_line_of_string_content(feature_handle.feature_id().get());
@@ -72,7 +72,7 @@ void
 GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_inline_property_container(
 		const GPlatesModel::InlinePropertyContainer &inline_property_container) {
 	XmlOutputInterface::ElementPairStackFrame f1(d_output,
-			inline_property_container.property_name().get(),
+			inline_property_container.property_name().get_name(),
 			inline_property_container.xml_attributes().begin(),
 			inline_property_container.xml_attributes().end());
 
@@ -86,7 +86,8 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gml_line_string(
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:LineString");
 	static std::vector<std::pair<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> > pos_list_xml_attrs;
 	if (pos_list_xml_attrs.empty()) {
-		GPlatesModel::XmlAttributeName attr_name("dimension");
+		GPlatesModel::XmlAttributeName attr_name = 
+			GPlatesModel::XmlAttributeName::create_gml("dimension");
 		GPlatesModel::XmlAttributeValue attr_value("2");
 		pos_list_xml_attrs.push_back(std::make_pair(attr_name, attr_value));
 	}
@@ -192,7 +193,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_constant_value(
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
-		d_output.write_line_of_string_content(gpml_constant_value.value_type().get());
+		d_output.write_line_of_string_content(gpml_constant_value.value_type().get_name());
 	}
 }
 
@@ -228,7 +229,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_finite_rotation_slerp(
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:FiniteRotationSlerp");
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
-		d_output.write_line_of_string_content(gpml_finite_rotation_slerp.value_type().get());
+		d_output.write_line_of_string_content(gpml_finite_rotation_slerp.value_type().get_name());
 	}
 }
 
@@ -254,7 +255,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_irregular_sampling(
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
-		d_output.write_line_of_string_content(gpml_irregular_sampling.value_type().get());
+		d_output.write_line_of_string_content(gpml_irregular_sampling.value_type().get_name());
 	}
 }
 
@@ -287,7 +288,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_time_sample(
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
-		d_output.write_line_of_string_content(gpml_time_sample.value_type().get());
+		d_output.write_line_of_string_content(gpml_time_sample.value_type().get_name());
 	}
 }
 

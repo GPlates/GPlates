@@ -68,6 +68,21 @@ namespace GPlatesPropertyValues {
 			return ptr;
 		}
 
+		// This creation function is here purely for the simple, hard-coded construction of
+		// features.  It may not be necessary or appropriate later on when we're doing
+		// everything properly, so don't look at this function and think "Uh oh, this
+		// function doesn't look like it should be here, but I'm sure it's here for a
+		// reason..."
+		static
+		const non_null_ptr_type
+		create(
+				GPlatesModel::PropertyValue::non_null_ptr_type value_,
+				const TemplateTypeParameterType &value_type_,
+				const UnicodeString &description_) {
+			non_null_ptr_type ptr(*(new GpmlConstantValue(value_, value_type_, description_)));
+			return ptr;
+		}
+
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
@@ -109,6 +124,18 @@ namespace GPlatesPropertyValues {
 			return d_value_type;
 		}
 
+		const UnicodeString &
+		description() const {
+			return d_description;
+		}
+
+		void
+		set_description(
+				const UnicodeString &new_description) {
+			d_description = new_description;
+		}
+
+
 		/**
 		 * Accept a ConstFeatureVisitor instance.
 		 *
@@ -144,7 +171,20 @@ namespace GPlatesPropertyValues {
 				const TemplateTypeParameterType &value_type_):
 			PropertyValue(),
 			d_value(value_),
-			d_value_type(value_type_)
+			d_value_type(value_type_),
+			d_description("")
+		{  }
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		GpmlConstantValue(
+				GPlatesModel::PropertyValue::non_null_ptr_type value_,
+				const TemplateTypeParameterType &value_type_,
+				const UnicodeString &description_):
+			PropertyValue(),
+			d_value(value_),
+			d_value_type(value_type_),
+			d_description(description_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -156,13 +196,15 @@ namespace GPlatesPropertyValues {
 				const GpmlConstantValue &other) :
 			PropertyValue(),
 			d_value(other.d_value),
-			d_value_type(other.d_value_type)
+			d_value_type(other.d_value_type),
+			d_description(other.d_description)
 		{  }
 
 	private:
 
 		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
 		TemplateTypeParameterType d_value_type;
+		UnicodeString d_description;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

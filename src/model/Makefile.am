@@ -16,7 +16,8 @@ libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc \
 				FeatureStoreRootRevision.cc \
 				FeatureRevision.cc \
 				DummyTransactionHandle.cc \
-				ModelUtils.cc
+				ModelUtils.cc \
+				XmlNode.cc
 
 if PYTHON
 noinst_PROGRAMS		= _model.so

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -55,6 +55,19 @@ namespace GPlatesModel
 		create_feature(
 				const FeatureType &feature_type,
 				const FeatureId &feature_id,
+				const FeatureCollectionHandle::weak_ref &target_collection);
+
+		const FeatureHandle::weak_ref
+		create_feature(
+				const FeatureType &feature_type,
+				const RevisionId &revision_id,
+				const FeatureCollectionHandle::weak_ref &target_collection);
+
+		const FeatureHandle::weak_ref
+		create_feature(
+				const FeatureType &feature_type,
+				const FeatureId &feature_id,
+				const RevisionId &revision_id,
 				const FeatureCollectionHandle::weak_ref &target_collection);
 
 		const Reconstruction::non_null_ptr_type

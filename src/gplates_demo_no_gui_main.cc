@@ -47,9 +47,13 @@
 #include "model/ReconstructionTreePopulator.h"
 #include "model/ReconstructedFeatureGeometryPopulator.h"
 
-#include "file-io/GpmlOnePointFiveOutputVisitor.h"
+#include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/XmlOutputInterface.h"
 #include "file-io/PlatesLineFormatWriter.h"
+
+#include "file-io/GpmlOnePointSixReader.h"
+#include "file-io/ReadErrorAccumulation.h"
+#include "file-io/FileInfo.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -57,6 +61,8 @@
 
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsString.h"
+#include "property-values/TemplateTypeParameterType.h"
+#include "model/XmlNode.h"
 
 
 const GPlatesModel::FeatureHandle::weak_ref
@@ -72,8 +78,7 @@ create_isochron(
 		const UnicodeString &name,
 		const UnicodeString &codespace_of_name)
 {
-	UnicodeString feature_type_string("gpml:Isochron");
-	GPlatesModel::FeatureType feature_type(feature_type_string);
+	GPlatesModel::FeatureType feature_type = GPlatesModel::FeatureType::create_gpml("Isochron");
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model.create_feature(feature_type, target_collection);
 
@@ -84,8 +89,10 @@ create_isochron(
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type recon_plate_id =
 			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesModel::ModelUtils::create_gpml_constant_value(recon_plate_id, "gpml:plateId"),
-			"gpml:reconstructionPlateId", feature_handle);
+			GPlatesModel::ModelUtils::create_gpml_constant_value(recon_plate_id, 
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId")),
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"), 
+			feature_handle);
 
 	std::list<GPlatesMaths::PointOnSphere> points;
 	GPlatesMaths::populate_point_on_sphere_sequence(points, coords_vector);
@@ -97,26 +104,32 @@ create_isochron(
 			GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
 	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 			GPlatesModel::ModelUtils::create_gpml_constant_value(
-					gml_orientable_curve, "gml:OrientableCurve");
+					gml_orientable_curve, 
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
 
-	GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-			"gpml:centerLineOf", feature_handle);
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+			property_value, 
+			GPlatesModel::PropertyName::create_gpml("centerLineOf"), feature_handle);
 
 	GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time =
 			GPlatesModel::ModelUtils::create_gml_time_period(
 					geo_time_instant_begin, geo_time_instant_end);
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_valid_time, "gml:validTime", feature_handle);
+			gml_valid_time, 
+			GPlatesModel::PropertyName::create_gml("validTime"), feature_handle);
 
 	GPlatesPropertyValues::XsString::non_null_ptr_type gml_description = 
 			GPlatesPropertyValues::XsString::create(geographic_description);
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_description, "gml:description", feature_handle);
+			gml_description, 
+			GPlatesModel::PropertyName::create_gml("description"), feature_handle);
 
 	GPlatesPropertyValues::XsString::non_null_ptr_type gml_name =
 			GPlatesPropertyValues::XsString::create(name);
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_name, "gml:name", "codeSpace", codespace_of_name, feature_handle);
+			gml_name, 
+			GPlatesModel::PropertyName::create_gml("name"), 
+			"codeSpace", codespace_of_name, feature_handle);
 
 	return feature_handle;
 }
@@ -398,9 +411,9 @@ output_as_gpml(
 		GPlatesModel::FeatureCollectionHandle::features_iterator begin,
 		GPlatesModel::FeatureCollectionHandle::features_iterator end)
 {
-	GPlatesFileIO::XmlOutputInterface xoi =
-			GPlatesFileIO::XmlOutputInterface::create_for_stdout();
-	GPlatesFileIO::GpmlOnePointFiveOutputVisitor v(xoi);
+	QFile standard_output;
+	standard_output.open(stdout, QIODevice::WriteOnly);
+	GPlatesFileIO::GpmlOnePointSixOutputVisitor v(&standard_output);
 
 	for ( ; begin != end; ++begin) {
 		(*begin)->accept_visitor(v);
@@ -506,8 +519,10 @@ output_reconstructions(
 }
 
 
+#include <QtXml/QDomDocument>
+
 int
-main()
+main(int argc, char *argv[])
 {
 	GPlatesModel::Model model;
 
@@ -522,8 +537,45 @@ main()
 			isochrons_and_total_recon_seqs.second;
 
 	::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
-	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
-			total_recon_seqs->features_begin(), total_recon_seqs->features_end());
+//	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
+//			total_recon_seqs->features_begin(), total_recon_seqs->features_end());
+
+	// Test GPML 1.6 reader.
+	if (argc > 1) {
+
+		std::cout << "Attempting to read \"" << argv[1] << "\"." << std::endl;
+		QString filename = argv[1];
+
+		GPlatesFileIO::FileInfo fileinfo(filename);
+		GPlatesModel::Model new_model;
+		GPlatesFileIO::ReadErrorAccumulation accum;
+
+		const GPlatesModel::FeatureCollectionHandle::weak_ref features =
+			GPlatesFileIO::GpmlOnePointSixReader::read_file(fileinfo, new_model, accum);
+
+		::output_as_gpml(features->features_begin(), features->features_end());
+#if 0
+		QFile file(filename);
+		file.open(QIODevice::ReadOnly | QIODevice::Text);
+		QXmlStreamReader reader(&file);
+		while ( ! reader.atEnd()) {
+			reader.readNext();
+		   	if (reader.isStartElement())
+				break;
+		}
+		if ( ! reader.atEnd()) {
+			GPlatesModel::XmlNode::non_null_ptr_type xml = 
+				GPlatesModel::XmlElementNode::create(reader);
+
+			QFile out;
+			out.open(1, QIODevice::WriteOnly | QIODevice::Text);
+			QXmlStreamWriter writer(&out);
+			writer.setAutoFormatting(true);
+			writer.writeStartDocument("1.0");
+			xml->write_to(writer);
+		}
+#endif
+	}
 	
 	return 0;
 }

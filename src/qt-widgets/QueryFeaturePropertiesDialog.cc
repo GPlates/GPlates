@@ -129,12 +129,13 @@ void
 GPlatesQtWidgets::QueryFeaturePropertiesDialog::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
-	set_feature_type(
-			GPlatesUtils::make_qstring(feature_ref->feature_type()));
+	set_feature_type(GPlatesUtils::make_qstring_from_icu_string(
+			feature_ref->feature_type().build_aliased_name()));
 
 	// These next few fields only make sense if the feature is reconstructable, ie. if it has a
 	// reconstruction plate ID.
-	static const GPlatesModel::PropertyName plate_id_property_name("gpml:reconstructionPlateId");
+	static const GPlatesModel::PropertyName plate_id_property_name =
+		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
 	plate_id_finder.visit_feature_handle(*feature_ref);
 	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {

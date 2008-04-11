@@ -329,16 +329,41 @@ namespace GPlatesFileIO
 				F content_begin,
 				F content_end);
 
+		/**
+		 * Write a line of content which is the string version of the boolean value
+		 * given.
+		 *
+		 * The function will indent the line and append a newline.
+		 */
+		void
+		write_line_of_boolean_content(
+				const bool &content);
+
+		/**
+		 * Flush the underlying stream.  If @c status() returns @c WRITE_ERROR,
+		 * then this method is a no-op.
+		 */
+		void
+		flush_underlying_stream();
+
+
+		/**
+		 * The destructor of XmlOutputInterface flushes the underlying stream
+		 * but does not close it (since XmlOutputInterface is not responsible
+		 * for the output stream as a resource).
+		 */
+		virtual
+		~XmlOutputInterface()
+		{
+			flush_underlying_stream();
+		}
+
+
 	protected:
 
 		XmlOutputInterface(
 				std::ostream &os,
-				const UnicodeString &indentation_unit):
-			d_os_ptr(&os),
-			d_indentation_unit(indentation_unit),
-			d_indentation_level(0),
-			d_status(NO_ERROR)
-		{  }
+				const UnicodeString &indentation_unit);
 
 		void
 		write_indentation();

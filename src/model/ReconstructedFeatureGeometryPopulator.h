@@ -34,6 +34,7 @@
 #include "FeatureVisitor.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "types.h"
+#include "PropertyName.h"
 #include "property-values/GeoTimeInstant.h"
 #include "maths/GeometryForwardDeclarations.h"
 #include "utils/non_null_intrusive_ptr.h"
@@ -41,7 +42,6 @@
 
 namespace GPlatesModel
 {
-	class PropertyName;
 	class ReconstructionTree;
 
 	class ReconstructedFeatureGeometryPopulator:

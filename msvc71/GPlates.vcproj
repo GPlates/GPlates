@@ -892,6 +892,18 @@
 				RelativePath="..\src\file-io\FileInfo.cc">
 			</File>
 			<File
+				RelativePath="..\src\file-io\FeaturePropertiesMap.cc">
+			</File>
+			<File
+				RelativePath="..\src\file-io\GpmlOnePointSixOutputVisitor.cc">
+			</File>
+			<File
+				RelativePath="..\src\file-io\GpmlOnePointSixReader.cc">
+			</File>
+			<File
+				RelativePath="..\src\file-io\GpmlReaderUtils.cc">
+			</File>
+			<File
 				RelativePath="..\src\file-io\PlatesLineFormatWriter.cc">
 			</File>
 			<File
@@ -904,10 +916,19 @@
 				RelativePath="..\src\file-io\PlatesRotationFormatWriter.cc">
 			</File>
 			<File
+				RelativePath="..\src\file-io\PropertyCreationUtils.cc">
+			</File>
+			<File
 				RelativePath="..\src\file-io\ReadErrorOccurrence.cc">
 			</File>
 			<File
 				RelativePath="..\src\file-io\ShapeFileReader.cc">
+			</File>
+			<File
+				RelativePath="..\src\file-io\StructurePropertyCreatorMap.cc">
+			</File>
+			<File
+				RelativePath="..\src\file-io\XmlWriter.cc">
 			</File>
 		</Filter>
 		<Filter

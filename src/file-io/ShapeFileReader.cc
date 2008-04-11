@@ -290,7 +290,8 @@ GPlatesFileIO::ShapeFileReader::create_line_feature_from_list(
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
 
-	GPlatesModel::FeatureType feature_type("gpml:UnclassifiedFeature");
+	GPlatesModel::FeatureType feature_type = 
+		GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
 
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
@@ -303,7 +304,7 @@ GPlatesFileIO::ShapeFileReader::create_line_feature_from_list(
 		GPlatesPropertyValues::GmlLineString::create(polyline);
 
 	GPlatesModel::ModelUtils::append_property_value_to_feature(gml_line_string,
-		"gml:centerLineOf",feature_handle);
+		GPlatesModel::PropertyName::create_gml("centerLineOf"), feature_handle);
 
 	return feature_handle;
 }
@@ -315,7 +316,8 @@ GPlatesFileIO::ShapeFileReader::create_point_feature_from_pair(
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection, 
 	std::pair<double,double> &point)
 {
-	GPlatesModel::FeatureType feature_type("gpml:UnclassifiedFeature");
+	GPlatesModel::FeatureType feature_type =
+		GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model.create_feature(feature_type,collection);
@@ -325,7 +327,7 @@ GPlatesFileIO::ShapeFileReader::create_point_feature_from_pair(
 
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
 		gmlpoint,
-		"gml:position",
+		GPlatesModel::PropertyName::create_gml("position"),
 		feature_handle);
 
 	return feature_handle;
@@ -339,7 +341,8 @@ GPlatesFileIO::ShapeFileReader::create_point_feature_from_point_on_sphere(
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection, 
 	GPlatesMaths::PointOnSphere &point)
 {
-	GPlatesModel::FeatureType feature_type("gpml:UnclassifiedFeature");
+	GPlatesModel::FeatureType feature_type =
+		GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model.create_feature(feature_type,collection);
@@ -349,7 +352,7 @@ GPlatesFileIO::ShapeFileReader::create_point_feature_from_point_on_sphere(
 
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
 		gmlpoint,
-		"gml:position",
+		GPlatesModel::PropertyName::create_gml("position"),
 		feature_handle);
 
 	return feature_handle;
@@ -437,36 +440,45 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 		QString fieldname = d_field_names[count];
 		QVariant attribute = d_attributes[count];
 
-		std::string sfieldname = fieldname.toStdString();
-		
 		QVariant::Type type_ = attribute.type();
 		switch(type_){
 			case QVariant::Int:
 				{
 				int i = attribute.toInt();
-				GPlatesPropertyValues::XsInteger::non_null_ptr_type value = GPlatesPropertyValues::XsInteger::create(i);
-				GPlatesModel::ModelUtils::append_property_value_to_feature(value,sfieldname.c_str(),"source","shapefile",feature_handle);
+				GPlatesPropertyValues::XsInteger::non_null_ptr_type value = 
+					GPlatesPropertyValues::XsInteger::create(i);
+				GPlatesModel::ModelUtils::append_property_value_to_feature(value,
+						// FIXME: Not sure if fieldname really is gpml!
+						GPlatesModel::PropertyName::create_gpml(fieldname),
+						"source", "shapefile", feature_handle);
 				}
 				break;
 			case QVariant::Double:
 				{
 				double d = attribute.toDouble();
-				GPlatesPropertyValues::XsDouble::non_null_ptr_type value = GPlatesPropertyValues::XsDouble::create(d);
-				GPlatesModel::ModelUtils::append_property_value_to_feature(value,sfieldname.c_str(),"source","shapefile",feature_handle);
+				GPlatesPropertyValues::XsDouble::non_null_ptr_type value = 
+					GPlatesPropertyValues::XsDouble::create(d);
+				GPlatesModel::ModelUtils::append_property_value_to_feature(value,
+						// FIXME: Not sure if fieldname really is gpml!
+						GPlatesModel::PropertyName::create_gpml(fieldname),
+						"source", "shapefile", feature_handle);
 				}
 				break;
 			case QVariant::String:
 				{
-				std::string s = attribute.toString().toStdString();
-				GPlatesPropertyValues::XsString::non_null_ptr_type value = GPlatesPropertyValues::XsString::create(UnicodeString(s.c_str()));
-				GPlatesModel::ModelUtils::append_property_value_to_feature(value,sfieldname.c_str(),"source","shapefile",feature_handle);	
+				GPlatesPropertyValues::XsString::non_null_ptr_type value = 
+					GPlatesPropertyValues::XsString::create(
+							GPlatesUtils::make_icu_string_from_qstring(attribute.toString()));
+				GPlatesModel::ModelUtils::append_property_value_to_feature(value,
+						GPlatesModel::PropertyName::create_gpml(fieldname),
+						"source", "shapefile", feature_handle);	
 				}
 				break;
 			default:
 				break;
 		}
 
-		if (sfieldname == "PLATEID1"){
+		if (fieldname == "PLATEID1"){
 			if(plate_id_found){
 				std::cerr << "multiple plate ID attributes found" << std::endl;
 			}
@@ -483,20 +495,21 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 					GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type plate_id = 
 						GPlatesPropertyValues::GpmlPlateId::create(attribute.toInt());
 					GPlatesModel::ModelUtils::append_property_value_to_feature(
-						GPlatesModel::ModelUtils::create_gpml_constant_value(plate_id,"gpml:plateId"),
-						"gpml:reconstructionPlateId",
+						GPlatesModel::ModelUtils::create_gpml_constant_value(plate_id,
+							GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId")),
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 						feature_handle);
 				}
 				plate_id_found = true;
 			}
 
 		} 
-		else if (sfieldname == "FROMAGE"){
+		else if (fieldname == "FROMAGE"){
 			age_of_appearance = attribute.toDouble();
 		}
-		else if (sfieldname == "TOAGE"){
+		else if (fieldname == "TOAGE"){
 			age_of_disappearance = attribute.toDouble();
-		}// end if (sfieldname == ".....")
+		}// end if (fieldname == ".....")
 
 
 	} // for loop over number of attributes
@@ -511,7 +524,8 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time = 
 			GPlatesModel::ModelUtils::create_gml_time_period(geo_time_instant_begin,
 									geo_time_instant_end);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(gml_valid_time, "gml:validTime",
+		GPlatesModel::ModelUtils::append_property_value_to_feature(gml_valid_time, 
+				GPlatesModel::PropertyName::create_gml("validTime"),
 				feature_handle);
 	}
 

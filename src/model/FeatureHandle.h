@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -190,6 +190,37 @@ namespace GPlatesModel
 			non_null_ptr_type ptr(*(new FeatureHandle(feature_type_, feature_id_)));
 			return ptr;
 		}
+
+		/**
+		 * Create a new FeatureHandle instance with feature type @a feature_type_ and
+		 * feature ID @a feature_id_.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const FeatureType &feature_type_,
+				const RevisionId &revision_id_)
+		{
+			non_null_ptr_type ptr(*(new FeatureHandle(feature_type_, revision_id_)));
+			return ptr;
+		}
+
+
+		/**
+		 * Create a new FeatureHandle instance with feature type @a feature_type_ and
+		 * feature ID @a feature_id_.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const FeatureType &feature_type_,
+				const FeatureId &feature_id_,
+				const RevisionId &revision_id_)
+		{
+			non_null_ptr_type ptr(*(new FeatureHandle(feature_type_, feature_id_, revision_id_)));
+			return ptr;
+		}
+
 
 		/**
 		 * Create a duplicate of this FeatureHandle instance.
@@ -529,6 +560,39 @@ namespace GPlatesModel
 			d_first_weak_observer(NULL),
 			d_last_weak_observer(NULL)
 		{  }
+
+
+		/**
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 */
+		FeatureHandle(
+				const FeatureType &feature_type_,
+				const RevisionId &revision_id_) :
+			d_ref_count(0),
+			d_current_revision(FeatureRevision::create(revision_id_)),
+			d_feature_type(feature_type_),
+			d_first_weak_observer(NULL),
+			d_last_weak_observer(NULL)
+		{  }
+
+
+		/**
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 */
+		FeatureHandle(
+				const FeatureType &feature_type_,
+				const FeatureId &feature_id_,
+				const RevisionId &revision_id_) :
+			d_ref_count(0),
+			d_current_revision(FeatureRevision::create(revision_id_)),
+			d_feature_type(feature_type_),
+			d_feature_id(feature_id_),
+			d_first_weak_observer(NULL),
+			d_last_weak_observer(NULL)
+		{  }
+
 
 		/**
 		 * This constructor should not be public, because we don't want to allow

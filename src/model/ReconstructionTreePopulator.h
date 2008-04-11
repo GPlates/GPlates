@@ -41,7 +41,6 @@
 
 namespace GPlatesModel
 {
-	class PropertyName;
 	class ReconstructionGraph;
 
 	/**
