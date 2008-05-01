@@ -8,6 +8,7 @@ noinst_LTLIBRARIES	= libmodel.la
 libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc \
 				ReconstructedFeatureGeometryPopulator.cc \
 				Model.cc ReconstructionGraph.cc \
+				Reconstruction.cc \
 				ReconstructionTree.cc \
 				ReconstructionTreeEdge.cc \
 				ReconstructionTreePopulator.cc \

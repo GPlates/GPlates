@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -75,7 +75,11 @@ namespace GPlatesModel {
 
 		static
 		GPlatesUtils::StringSet &
-		strike_slip_enumeration_value_instance();
+		enumeration_content_instance();
+
+		static
+		GPlatesUtils::StringSet &
+		enumeration_type_instance();
 
 	private:
 
@@ -92,7 +96,8 @@ namespace GPlatesModel {
 		static GPlatesUtils::StringSet *s_xml_namespace_instance;
 		static GPlatesUtils::StringSet *s_xml_namespace_alias_instance;
 		static GPlatesUtils::StringSet *s_xml_element_name_instance;
-		static GPlatesUtils::StringSet *s_strike_slip_enumeration_value_instance;
+		static GPlatesUtils::StringSet *s_enumeration_content_instance;
+		static GPlatesUtils::StringSet *s_enumeration_type_instance;
 	};
 
 }

@@ -27,7 +27,7 @@
 
 #include <QLocale>
 
-#include "QueryFeaturePropertiesDialogPopulator.h"
+#include "QueryFeaturePropertiesWidgetPopulator.h"
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/FeatureRevision.h"
@@ -38,7 +38,7 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
-#include "property-values/GpmlStrikeSlipEnumeration.h"
+#include "property-values/Enumeration.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
@@ -56,23 +56,10 @@
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_feature_handle(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_feature_handle(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_tree_widget_ptr->clear();
-
-	{
-		QStringList fields;
-		fields.push_back(QObject::tr("gpml:identity"));
-		fields.push_back(GPlatesUtils::make_qstring(feature_handle.feature_id()));
-		d_tree_widget_ptr->addTopLevelItem(new QTreeWidgetItem(d_tree_widget_ptr, fields));
-	}
-	{
-		QStringList fields;
-		fields.push_back(QObject::tr("gpml:revision"));
-		fields.push_back(GPlatesUtils::make_qstring(feature_handle.revision_id()));
-		d_tree_widget_ptr->addTopLevelItem(new QTreeWidgetItem(d_tree_widget_ptr, fields));
-	}
 
 	// Now visit each of the properties in turn.
 	visit_feature_properties(feature_handle);
@@ -80,13 +67,12 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_feature_han
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_inline_property_container(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_inline_property_container(
 		const GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
 	QStringList fields;
-	fields.push_back(
-			GPlatesUtils::make_qstring_from_icu_string(
-				inline_property_container.property_name().build_aliased_name()));
+	fields.push_back(GPlatesUtils::make_qstring_from_icu_string(
+			inline_property_container.property_name().build_aliased_name()));
 	fields.push_back(QString());
 	// FIXME:  This next line could result in memory leaks.
 	QTreeWidgetItem *item = new QTreeWidgetItem(d_tree_widget_ptr, fields);
@@ -107,7 +93,19 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_inline_prop
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_line_string(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_enumeration(
+		const GPlatesPropertyValues::Enumeration &enumeration)
+{
+	static const int which_column = 1;
+	QString qstring = GPlatesUtils::make_qstring_from_icu_string(enumeration.value().get());
+
+	// This assumes that the stack is non-empty.
+	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+}
+
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	// First, add a branch for the "gml:posList".
@@ -148,7 +146,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_line_st
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_orientable_curve(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	d_tree_widget_item_stack.back()->setExpanded(true);
@@ -166,7 +164,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_orienta
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_point(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 #if 0
@@ -213,7 +211,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_point(
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_time_instant(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	static const int which_column = 1;
@@ -250,7 +248,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_time_in
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_time_period(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_period(
 		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	d_tree_widget_item_stack.back()->setExpanded(true);
@@ -262,7 +260,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gml_time_pe
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_constant_value(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -270,7 +268,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_consta
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_finite_rotation(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_finite_rotation(
 		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
 #if 0
@@ -298,7 +296,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_finite
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_finite_rotation_slerp(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_finite_rotation_slerp(
 		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
 {
 #if 0
@@ -312,7 +310,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_finite
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_irregular_sampling(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_irregular_sampling(
 		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
 #if 0
@@ -341,7 +339,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_irregu
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_plate_id(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const int which_column = 1;
@@ -353,7 +351,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_plate_
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_time_sample(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 {
 #if 0
@@ -382,7 +380,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_time_s
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_old_plates_header(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_plates_header(
 		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 	d_tree_widget_item_stack.back()->setExpanded(true);
@@ -409,19 +407,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_old_pl
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_gpml_strike_slip_enumeration(
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration)
-{
-	static const int which_column = 1;
-	QString qstring = GPlatesUtils::make_qstring_from_icu_string(strike_slip_enumeration.value().get());
-
-	// This assumes that the stack is non-empty.
-	d_tree_widget_item_stack.back()->setText(which_column, qstring);
-}
-
-
-void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_boolean(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	static const int which_column = 1;
@@ -433,7 +419,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_boolean(
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_double(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_double(
 	const GPlatesPropertyValues::XsDouble& xs_double)
 {
 	static const int which_column = 1;
@@ -447,7 +433,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_double(
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_integer(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_integer(
 	const GPlatesPropertyValues::XsInteger& xs_integer)
 {
 	static const int which_column = 1;
@@ -461,7 +447,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_integer(
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_string(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
 	static const int which_column = 1;
@@ -473,7 +459,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::visit_xs_string(
 
 
 QTreeWidgetItem *
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::add_child(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_child(
 		const QString &name,
 		const QString &value)
 {
@@ -490,7 +476,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::add_child(
 
 
 QTreeWidgetItem *
-GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator::add_child_then_visit_value(
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_child_then_visit_value(
 		const QString &name,
 		const QString &value,
 		const GPlatesModel::PropertyValue &property_value_to_visit)

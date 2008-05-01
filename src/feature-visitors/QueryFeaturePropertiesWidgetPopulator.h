@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_QUERYFEATUREPROPERTIESDIALOGPOPULATOR_H
-#define GPLATES_FEATUREVISITORS_QUERYFEATUREPROPERTIESDIALOGPOPULATOR_H
+#ifndef GPLATES_FEATUREVISITORS_QUERYFEATUREPROPERTIESWIDGETPOPULATOR_H
+#define GPLATES_FEATUREVISITORS_QUERYFEATUREPROPERTIESWIDGETPOPULATOR_H
 
 #include <vector>
 #include <QTreeWidget>
@@ -36,18 +36,18 @@
 
 namespace GPlatesFeatureVisitors
 {
-	class QueryFeaturePropertiesDialogPopulator:
+	class QueryFeaturePropertiesWidgetPopulator:
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
 		explicit
-		QueryFeaturePropertiesDialogPopulator(
+		QueryFeaturePropertiesWidgetPopulator(
 				QTreeWidget &tree_widget):
 			d_tree_widget_ptr(&tree_widget) {  }
 
 		virtual
-		~QueryFeaturePropertiesDialogPopulator() {  }
+		~QueryFeaturePropertiesWidgetPopulator() {  }
 
 		virtual
 		void
@@ -58,6 +58,11 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_inline_property_container(
 				const GPlatesModel::InlinePropertyContainer &inline_property_container);
+
+		virtual
+		void
+		visit_enumeration(
+				const GPlatesPropertyValues::Enumeration &enumeration);
 
 		virtual
 		void
@@ -116,11 +121,6 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_gpml_strike_slip_enumeration(
-				const GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration);
-
-		virtual
-		void
 		visit_gpml_old_plates_header(
 				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
 
@@ -165,4 +165,4 @@ namespace GPlatesFeatureVisitors
 
 }
 
-#endif  // GPLATES_FEATUREVISITORS_QUERYFEATUREPROPERTIESDIALOGPOPULATOR_H
+#endif  // GPLATES_FEATUREVISITORS_QUERYFEATUREPROPERTIESWIDGETPOPULATOR_H

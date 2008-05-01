@@ -25,11 +25,13 @@
 
 #include "FeatureTableModel.h"
 
+#include <QApplication>
 #include <QHeaderView>
 #include <QString>
 #include <QLocale>
 #include <QFont>
 #include <QFontMetrics>
+#include <QDebug>
 
 #include "model/types.h"
 #include "model/FeatureHandle.h"
@@ -344,10 +346,17 @@ namespace
 
 
 GPlatesGui::FeatureTableModel::FeatureTableModel(
+		FeatureFocus &feature_focus,
 		QObject *parent_):
 	QAbstractTableModel(parent_),
+	d_feature_focus(feature_focus),
 	d_sequence_ptr(FeatureWeakRefSequence::create())
-{  }
+{
+	QObject::connect(&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref)),
+			this,
+			SLOT(handle_feature_modified(GPlatesModel::FeatureHandle::weak_ref)));
+}
 
 
 
@@ -378,11 +387,24 @@ GPlatesGui::FeatureTableModel::headerData(
 		Qt::Orientation orientation,
 		int role) const
 {
-	// I'm not particularly happy about font data being stored in the model, but this seems to be 
-	// the way Qt wants to handle it. Also, it's the only way we can return an appropriate vertical
-	// size in the Qt::SizeHintRole for the header!
-	static QFont header_font = QFont("helvetica", 10);
-	static QFontMetrics header_metrics = QFontMetrics(header_font);
+	// The new way we are attempting to return an appropriate vertical
+	// and horizontal size in the Qt::SizeHintRole for the header!
+	QFontMetrics fm = QApplication::fontMetrics();
+	
+#if 1
+	qDebug() << "\nFONT METRICS DEBUGGING:";
+	qDebug() << "QApplication::style() == " << QApplication::style()->metaObject()->className();
+	qDebug() << "QApplication::font().toString() == " << QApplication::font().toString();
+	qDebug() << "QLocale().name() == " << QLocale().name();
+	qDebug() << "fm.ascent() == " << fm.ascent();
+	qDebug() << "fm.descent() == " << fm.descent();
+	qDebug() << "fm.boundingRect(Q) == " << fm.boundingRect('Q');
+	qDebug() << "fm.boundingRect(y) == " << fm.boundingRect('y');
+	qDebug() << "fm.boundingRect(QylLj!|[]`~_) == " << fm.boundingRect("QylLj!|[]`~_");
+	qDebug() << "fm.height() == " << fm.height();
+	qDebug() << "fm.lineSpacing() == " << fm.lineSpacing();
+	qDebug() << "fm.leading() == " << fm.leading();
+#endif
 	
 	// We are only interested in modifying the horizontal header.
 	if (orientation == Qt::Horizontal) {
@@ -394,15 +416,12 @@ GPlatesGui::FeatureTableModel::headerData(
 		} else if (role == Qt::ToolTipRole) {
 			return get_column_tooltip(section);
 			
-		} else if (role == Qt::FontRole) {
-			return header_font;
-			
 		} else if (role == Qt::SizeHintRole) {
 			// Annoyingly, the metrics alone do not appear to be sufficient to supply the height
 			// of the header, so a few pixels are added.
 			// Furthermore, for some reason, the height is now being set correctly but the width
-			// does not update until a call to QTableView::resizeColumnsToContents();
-			return QSize(get_column_width(section), header_metrics.height()+2);
+			// does not updated until a call to QTableView::resizeColumnsToContents();
+			return QSize(get_column_width(section), fm.height()+4);
 			
 		} else {
 			return QVariant();
@@ -464,7 +483,26 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 		return;
 	}
 	
-	emit selected_feature_changed(feature_ref);
+	// When the user clicks a line of the table, we change the currently focused feature.
+	d_feature_focus.set_focused_feature(feature_ref);
+}
+
+
+void
+GPlatesGui::FeatureTableModel::handle_feature_modified(
+		GPlatesModel::FeatureHandle::weak_ref modified_feature_ref)
+{
+	// First, figure out which row of the table (if any) contains the modified feature weakref.
+	FeatureWeakRefSequence::const_iterator it = d_sequence_ptr->begin();
+	FeatureWeakRefSequence::const_iterator end = d_sequence_ptr->end();
+	int row = 0;
+	for ( ; it != end; ++it, ++row) {
+		if (*it == modified_feature_ref) {
+			QModelIndex idx_begin = index(row, 0);
+			QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
+			emit dataChanged(idx_begin, idx_end);
+		}
+	}
 }
 
 

@@ -44,6 +44,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/InvalidLatLonException.h"
+#include "maths/Real.h"
 #include "model/Model.h"
 #include "model/types.h"
 #include "model/DummyTransactionHandle.h"
@@ -346,17 +347,18 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_recon_time(0.0),
 	d_recon_root(0),
 	d_reconstruction_view_widget(*this, this),
+	d_feature_focus(),
 	d_specify_fixed_plate_dialog(d_recon_root, this),
 	d_set_camera_viewpoint_dialog(*this, this),
 	d_animate_dialog(*this, this),
 	d_about_dialog(*this, this),
 	d_license_dialog(&d_about_dialog),
-	d_query_feature_properties_dialog(*this, this),
+	d_feature_properties_dialog(*this, d_feature_focus, this),
 	d_read_errors_dialog(this),
 	d_manage_feature_collections_dialog(*this, this),
 	d_animate_dialog_has_been_shown(false),
 	d_euler_pole_dialog(*this, this),
-	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel())
+	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus))
 {
 	setupUi(this);
 
@@ -431,6 +433,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			this, SLOT(choose_zoom_globe_tool()));
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			this, SLOT(choose_query_feature_tool()));
+	QObject::connect(action_Edit_Feature, SIGNAL(triggered()),
+			this, SLOT(choose_edit_feature_tool()));
 
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
 			&d_manage_feature_collections_dialog, SLOT(open_file()));
@@ -459,10 +463,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
-	QObject::connect(d_feature_table_model_ptr,
-			SIGNAL(selected_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
-			&d_query_feature_properties_dialog,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref)));
+
+	// If the focus is modified, we may need to reconstruct to update the view.
+	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref)),
+			this, SLOT(reconstruct()));
+
 
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
 	d_canvas_tool_choice_ptr =
@@ -471,7 +476,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					*d_canvas_ptr,
 					*this,
 					*d_feature_table_model_ptr,
-					d_query_feature_properties_dialog);
+					d_feature_properties_dialog,
+					d_feature_focus);
 
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
 			d_canvas_tool_choice_ptr, SLOT(choose_reorient_globe_tool()));
@@ -479,6 +485,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_canvas_tool_choice_ptr, SLOT(choose_zoom_globe_tool()));
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
 			d_canvas_tool_choice_ptr, SLOT(choose_query_feature_tool()));
+	QObject::connect(action_Edit_Feature, SIGNAL(triggered()),
+			d_canvas_tool_choice_ptr, SLOT(choose_edit_feature_tool()));
 
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
 	d_canvas_tool_adapter_ptr = new GPlatesGui::CanvasToolAdapter(*d_canvas_tool_choice_ptr);
@@ -516,8 +524,15 @@ void
 GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
 		double recon_time)
 {
+	GPlatesMaths::Real original_recon_time(d_recon_time);
+	
 	d_recon_time = recon_time;
 	reconstruct();
+	
+	// != does not work with doubles, so we must wrap them in Real.
+	if (original_recon_time != GPlatesMaths::Real(d_recon_time)) {
+		emit reconstruction_time_changed(d_recon_time);
+	}
 }
 
 
@@ -644,11 +659,20 @@ GPlatesQtWidgets::ViewportWindow::choose_query_feature_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::choose_edit_feature_tool()
+{
+	uncheck_all_tools();
+	action_Edit_Feature->setChecked(true);
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 {
 	action_Drag_Globe->setChecked(false);
 	action_Zoom_Globe->setChecked(false);
 	action_Query_Feature->setChecked(false);
+	action_Edit_Feature->setChecked(false);
 }
 
 void
@@ -737,7 +761,7 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	d_animate_dialog.reject();
 	d_about_dialog.reject();
 	d_license_dialog.reject();
-	d_query_feature_properties_dialog.reject();
+	d_feature_properties_dialog.reject();
 	d_read_errors_dialog.reject();
 	d_manage_feature_collections_dialog.reject();
 }

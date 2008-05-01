@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,7 @@
 
 #include <QObject>
 
+#include "gui/FeatureFocus.h"
 #include "gui/CanvasTool.h"
 #include "gui/FeatureTableModel.h"
 
@@ -36,7 +37,7 @@ namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
 	class ViewportWindow;
-	class QueryFeaturePropertiesDialog;
+	class FeaturePropertiesDialog;
 }
 
 namespace GPlatesCanvasTools
@@ -46,7 +47,8 @@ namespace GPlatesCanvasTools
 	 */
 	class QueryFeature:
 			// It seems that QObject must be the first base specified here...
-			public QObject, public GPlatesGui::CanvasTool
+			public QObject,
+			public GPlatesGui::CanvasTool
 	{
 		Q_OBJECT
 
@@ -70,10 +72,11 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
-				GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_)
+				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
+				GPlatesGui::FeatureFocus &feature_focus)
 		{
 			QueryFeature::non_null_ptr_type ptr(*(new QueryFeature(globe_, globe_canvas_,
-					view_state_, clicked_table_model, qfp_dialog_)));
+					view_state_, clicked_table_model, fp_dialog_, feature_focus)));
 			return ptr;
 		}
 
@@ -100,11 +103,13 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,
-				GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_):
+				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
+				GPlatesGui::FeatureFocus &feature_focus):
 			CanvasTool(globe_, globe_canvas_),
 			d_view_state_ptr(&view_state_),
 			d_clicked_table_model_ptr(&clicked_table_model_),
-			d_qfp_dialog_ptr(&qfp_dialog_)
+			d_fp_dialog_ptr(&fp_dialog_),
+			d_feature_focus(feature_focus)
 		{  }
 
 		const GPlatesQtWidgets::ViewportWindow &
@@ -119,10 +124,10 @@ namespace GPlatesCanvasTools
 			return *d_clicked_table_model_ptr;
 		}
 
-		GPlatesQtWidgets::QueryFeaturePropertiesDialog &
-		qfp_dialog() const
+		GPlatesQtWidgets::FeaturePropertiesDialog &
+		fp_dialog() const
 		{
-			return *d_qfp_dialog_ptr;
+			return *d_fp_dialog_ptr;
 		}
 
 	private:
@@ -141,8 +146,14 @@ namespace GPlatesCanvasTools
 		 * This is the dialog box which we will be populating in response to a feature
 		 * query.
 		 */
-		GPlatesQtWidgets::QueryFeaturePropertiesDialog *d_qfp_dialog_ptr;
+		GPlatesQtWidgets::FeaturePropertiesDialog *d_fp_dialog_ptr;
 
+		/**
+		 * This is our reference to the Feature Focus, which we use to let the rest of the
+		 * application know what the user just clicked on.
+		 */
+		GPlatesGui::FeatureFocus &d_feature_focus;
+		
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.
 		QueryFeature(

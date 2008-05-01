@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,10 +24,11 @@
  */
  
 #include <QLocale>
-#include "QueryFeaturePropertiesDialog.h"
+#include "QueryFeaturePropertiesWidget.h"
 
+#include "gui/FeatureFocus.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "feature-visitors/QueryFeaturePropertiesDialogPopulator.h"
+#include "feature-visitors/QueryFeaturePropertiesWidgetPopulator.h"
 #include "feature-visitors/PlateIdFinder.h"
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -35,10 +36,11 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::QueryFeaturePropertiesDialog(
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesGui::FeatureFocus &feature_focus,
 		QWidget *parent_):
-	QDialog(parent_),
+	QWidget(parent_),
 	d_view_state_ptr(&view_state_)
 {
 	setupUi(this);
@@ -56,15 +58,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesDialog::QueryFeaturePropertiesDialog(
 
 
 void
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_feature_type(
-		const QString &feature_type)
-{
-	field_Feature_Type->setText(feature_type);
-}
-
-
-void
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_euler_pole(
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::set_euler_pole(
 		const QString &point_position)
 {
 	field_Euler_Pole->setText(point_position);
@@ -72,12 +66,12 @@ GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_euler_pole(
 
 
 void
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_angle(
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::set_angle(
 		const double &angle)
 {
 	// Use the default locale for the floating-point-to-string conversion.
 	// (We need the underscore at the end of the variable name, because apparently there is
-	// already a member of QueryFeaturePropertiesDialog named 'locale'.)
+	// already a member of QueryFeaturePropertiesWidget named 'locale'.)
 	QLocale locale_;
 
 	field_Angle->setText(locale_.toString(angle));
@@ -85,7 +79,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_angle(
 
 
 void
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_plate_id(
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::set_plate_id(
 		unsigned long plate_id)
 {
 	QString s;
@@ -95,7 +89,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_plate_id(
 
 
 void
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_root_plate_id(
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::set_root_plate_id(
 		unsigned long plate_id)
 {
 	QString s;
@@ -105,12 +99,12 @@ GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_root_plate_id(
 
 
 void
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_reconstruction_time(
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::set_reconstruction_time(
 		const double &recon_time)
 {
 	// Use the default locale for the floating-point-to-string conversion.
 	// (We need the underscore at the end of the variable name, because apparently there is
-	// already a member of QueryFeaturePropertiesDialog named 'locale'.)
+	// already a member of QueryFeaturePropertiesWidget named 'locale'.)
 	QLocale locale_;
 
 	field_Recon_Time->setText(locale_.toString(recon_time));
@@ -118,7 +112,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesDialog::set_reconstruction_time(
 
 
 QTreeWidget &
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::property_tree() const
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::property_tree() const
 {
 	return *tree_widget_Properties;
 }
@@ -126,16 +120,13 @@ GPlatesQtWidgets::QueryFeaturePropertiesDialog::property_tree() const
 
 
 void
-GPlatesQtWidgets::QueryFeaturePropertiesDialog::display_feature(
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
-	set_feature_type(GPlatesUtils::make_qstring_from_icu_string(
-			feature_ref->feature_type().build_aliased_name()));
-
 	// These next few fields only make sense if the feature is reconstructable, ie. if it has a
 	// reconstruction plate ID.
-	static const GPlatesModel::PropertyName plate_id_property_name =
-		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	static const GPlatesModel::PropertyName plate_id_property_name = 
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
 	plate_id_finder.visit_feature_handle(*feature_ref);
 	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
@@ -191,9 +182,9 @@ GPlatesQtWidgets::QueryFeaturePropertiesDialog::display_feature(
 		}
 	}
 
-	GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator populator(
+	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
 			property_tree());
 	populator.visit_feature_handle(*feature_ref);
-
-	show();
 }
+
+

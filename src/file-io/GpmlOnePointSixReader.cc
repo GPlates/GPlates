@@ -52,6 +52,7 @@
 #include "model/PropertyName.h"
 #include "model/XmlNode.h"
 
+#include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlTimePeriod.h"
@@ -62,7 +63,6 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlPlateId.h"
-#include "property-values/GpmlStrikeSlipEnumeration.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/XsBoolean.h"

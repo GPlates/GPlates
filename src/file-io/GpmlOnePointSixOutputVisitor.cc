@@ -37,6 +37,7 @@
 #include "utils/UnicodeStringUtils.h"
 #include "utils/XmlNamespaces.h"
 
+#include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
@@ -53,7 +54,6 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlRevisionId.h"
-#include "property-values/GpmlStrikeSlipEnumeration.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/UninterpretedPropertyValue.h"
@@ -179,6 +179,14 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_inline_property_container(
 
 		visit_property_values(inline_property_container);
 	d_output.writeEndElement(pop);
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_enumeration(
+		const GPlatesPropertyValues::Enumeration &enumeration)
+{
+	d_output.writeText(enumeration.value().get());
 }
 
 
@@ -630,14 +638,6 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string) {
 	d_output.writeText(xs_string.value().get());
-}
-
-
-void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_strike_slip_enumeration(
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration)
-{
-	d_output.writeText(strike_slip_enumeration.value().get());
 }
 
 

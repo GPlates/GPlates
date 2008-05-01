@@ -48,11 +48,12 @@
 #include "AnimateDialog.h"
 #include "AboutDialog.h"
 #include "LicenseDialog.h"
-#include "QueryFeaturePropertiesDialog.h"
+#include "FeaturePropertiesDialog.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "EulerPoleDialog.h"
 
+#include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
 
 #include "model/ModelInterface.h"
@@ -92,6 +93,12 @@ namespace GPlatesQtWidgets
 		{
 			return d_recon_root;
 		}
+		
+		const GPlatesQtWidgets::ReconstructionViewWidget &
+		reconstruction_view_widget() const
+		{
+			return d_reconstruction_view_widget;
+		}
 
 		void
 		create_svg_file();
@@ -121,6 +128,9 @@ namespace GPlatesQtWidgets
 		choose_query_feature_tool();
 
 		void
+		choose_edit_feature_tool();
+
+		void
 		pop_up_read_errors_dialog();
 
 		void
@@ -134,6 +144,19 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_euler_pole_dialog();
+	
+	signals:
+		
+		/**
+		 * Emitted when the current reconstruction time has changed and after the reconstruction
+		 * has been performed and the canvas updated.
+		 *
+		 * Note that this signal is emitted ONLY when the new reconstruction time is different
+		 * to the old one - if the ViewportWindow is asked to reconstruct to the current time
+		 * (e.g. after a feature gets a plateid changed), this signal will not be emitted.
+		 */
+		void
+		reconstruction_time_changed(double time);
 
 	public:
 		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
@@ -198,8 +221,7 @@ namespace GPlatesQtWidgets
 		bool
 		is_file_active(
 				file_info_iterator loaded_file);
-			
-
+		
 	private:
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
@@ -215,21 +237,22 @@ namespace GPlatesQtWidgets
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
 		ReconstructionViewWidget d_reconstruction_view_widget;
+		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
 		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
 		AnimateDialog d_animate_dialog;
 		AboutDialog d_about_dialog;
 		LicenseDialog d_license_dialog;
-		QueryFeaturePropertiesDialog d_query_feature_properties_dialog;
+		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
 		ReadErrorAccumulationDialog d_read_errors_dialog;
 		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
-		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;
+		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does.
 		EulerPoleDialog d_euler_pole_dialog;
 
-		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// Should be in ViewState.
+		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 
 		void
 		uncheck_all_tools();

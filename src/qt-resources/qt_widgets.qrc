@@ -1,8 +1,9 @@
-<!DOCTYPE RCC><RCC version="1.0">
-<qresource>
+<RCC>
+<qresource prefix="/" >
     <file>GPlates-logo-transparent.png</file>
     <file>drag_globe_35.png</file>
     <file>drag_plate_35.png</file>
+    <file>edit_feature_35.png</file>
     <file>gnome_applets_screenshooter_16.png</file>
     <file>gnome_application_exit_16.png</file>
     <file>gnome_dialog_error_16.png</file>
@@ -24,6 +25,7 @@
     <file>gnome_seek_backward_22.png</file>
     <file>gnome_seek_forward_16.png</file>
     <file>gnome_seek_forward_22.png</file>
+    <file>gnome_stock_edit_points_16.png</file>
     <file>gnome_text_file_16.png</file>
     <file>gnome_zoom_in_16.png</file>
     <file>gnome_zoom_in_22.png</file>

@@ -28,6 +28,7 @@
 #include <boost/none.hpp>  // boost::none
 
 #include "ReconstructedFeatureGeometryPopulator.h"
+#include "Reconstruction.h"
 #include "ReconstructionTree.h"
 #include "FeatureHandle.h"
 #include "InlinePropertyContainer.h"
@@ -47,12 +48,14 @@
 GPlatesModel::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeometryPopulator(
 		const double &recon_time,
 		unsigned long root_plate_id,
+		Reconstruction &recon,
 		ReconstructionTree &recon_tree,
 		reconstructed_points_type &reconstructed_points,
 		reconstructed_polylines_type &reconstructed_polylines,
 		bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
+	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
 	d_reconstructed_points_to_populate(&reconstructed_points),
 	d_reconstructed_polylines_to_populate(&reconstructed_polylines),
@@ -77,14 +80,16 @@ namespace
 		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
 		reconstruct_point(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle) const = 0;
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const = 0;
 
 
 		virtual
 		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
 		reconstruct_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle) const = 0;
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const = 0;
 	};
 
 
@@ -106,7 +111,8 @@ namespace
 		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
 		reconstruct_point(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle) const
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
 		{
 			using namespace GPlatesMaths;
 
@@ -116,7 +122,7 @@ namespace
 					(d_recon_tree_ptr->reconstruct_point(*p, d_plate_id)).first;
 
 			return GPlatesModel::ReconstructedFeatureGeometry<PointOnSphere>(
-					reconstructed_p, feature_handle, d_plate_id);
+					reconstructed_p, feature_handle, property_iterator, d_plate_id);
 		}
 
 
@@ -124,7 +130,8 @@ namespace
 		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
 		reconstruct_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle) const
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
 		{
 			using namespace GPlatesMaths;
 
@@ -134,7 +141,7 @@ namespace
 					(d_recon_tree_ptr->reconstruct_polyline(*p, d_plate_id)).first;
 
 			return GPlatesModel::ReconstructedFeatureGeometry<PolylineOnSphere>(
-					reconstructed_p, feature_handle, d_plate_id);
+					reconstructed_p, feature_handle, property_iterator, d_plate_id);
 		}
 
 		const GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
@@ -156,10 +163,11 @@ namespace
 		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
 		reconstruct_point(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle) const
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
 		{
 			return GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>(
-					p, feature_handle);
+					p, feature_handle, property_iterator);
 		}
 
 
@@ -167,10 +175,11 @@ namespace
 		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
 		reconstruct_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle) const
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
 		{
 			return GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>(
-					p, feature_handle);
+					p, feature_handle, property_iterator);
 		}
 	};
 
@@ -181,31 +190,34 @@ namespace
 					reconstructed_points_to_populate,
 			GPlatesModel::ReconstructedFeatureGeometryPopulator::reconstructed_polylines_type *
 					reconstructed_polylines_to_populate,
-			const std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> > &
+			const GPlatesModel::ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_points_type &
 					not_yet_reconstructed_points,
-			const std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> > &
+			const GPlatesModel::ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_polylines_type &
 					not_yet_reconstructed_polylines,
 			GPlatesModel::FeatureHandle &feature_handle,
+			GPlatesModel::Reconstruction *recon_ptr,
 			const Reconstructor &reconstructor)
 	{
-		using namespace GPlatesMaths;
+		using namespace GPlatesModel;
 
-		std::vector<PointOnSphere::non_null_ptr_to_const_type>::const_iterator point_iter =
+		ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_points_const_iterator point_iter =
 				not_yet_reconstructed_points.begin();
-		std::vector<PointOnSphere::non_null_ptr_to_const_type>::const_iterator point_end =
+		ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_points_const_iterator point_end =
 				not_yet_reconstructed_points.end();
 		for ( ; point_iter != point_end; ++point_iter) {
 			reconstructed_points_to_populate->push_back(
-					reconstructor.reconstruct_point(*point_iter, feature_handle));
+					reconstructor.reconstruct_point(point_iter->d_point, feature_handle, point_iter->d_property));
+			reconstructed_points_to_populate->back().set_reconstruction_ptr(recon_ptr);
 		}
 
-		std::vector<PolylineOnSphere::non_null_ptr_to_const_type>::const_iterator polyline_iter =
+		ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_polylines_const_iterator polyline_iter =
 				not_yet_reconstructed_polylines.begin();
-		std::vector<PolylineOnSphere::non_null_ptr_to_const_type>::const_iterator polyline_end =
+		ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_polylines_const_iterator polyline_end =
 				not_yet_reconstructed_polylines.end();
 		for ( ; polyline_iter != polyline_end; ++polyline_iter) {
 			reconstructed_polylines_to_populate->push_back(
-					reconstructor.reconstruct_polyline(*polyline_iter, feature_handle));
+					reconstructor.reconstruct_polyline(polyline_iter->d_polyline, feature_handle, polyline_iter->d_property));
+			reconstructed_polylines_to_populate->back().set_reconstruction_ptr(recon_ptr);
 		}
 	}
 }
@@ -246,6 +258,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 				d_accumulator->d_not_yet_reconstructed_points,
 				d_accumulator->d_not_yet_reconstructed_polylines,
 				feature_handle,
+				d_recon_ptr,
 				reconstructor);
 	} else {
 		// We obtained the reconstruction plate ID.  We now have all the information we
@@ -258,9 +271,28 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 				d_accumulator->d_not_yet_reconstructed_points,
 				d_accumulator->d_not_yet_reconstructed_polylines,
 				feature_handle,
+				d_recon_ptr,
 				reconstructor);
 	}
 	d_accumulator = boost::none;
+}
+
+
+void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_properties(
+		FeatureHandle &feature_handle)
+{
+	FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
+	FeatureHandle::properties_iterator end = feature_handle.properties_end();
+	for ( ; iter != end; ++iter) {
+		// Elements of this properties vector can be NULL pointers.  (See the comment in
+		// "model/FeatureRevision.h" for more details.)
+		if (*iter != NULL) {
+			// FIXME: This d_most_recent_property_read thing could go in the {Const,}FeatureVisitor base.
+			d_accumulator->d_most_recent_property_read = iter;
+			(*iter)->accept_visitor(*this);
+		}
+	}
 }
 
 
@@ -281,7 +313,9 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_accumulator->d_not_yet_reconstructed_polylines.push_back(gml_line_string.polyline());
+	FeatureHandle::properties_iterator property = *(d_accumulator->d_most_recent_property_read);
+	d_accumulator->d_not_yet_reconstructed_polylines.push_back(
+			NotYetReconstructedPolyline(property, gml_line_string.polyline()));
 }
 
 
@@ -297,7 +331,9 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_accumulator->d_not_yet_reconstructed_points.push_back(gml_point.point());
+	FeatureHandle::properties_iterator property = *(d_accumulator->d_most_recent_property_read);
+	d_accumulator->d_not_yet_reconstructed_points.push_back(
+			NotYetReconstructedPoint(property, gml_point.point()));
 }
 
 

@@ -30,6 +30,7 @@
 #include <QItemSelection>
 #include <QHeaderView>
 
+#include "gui/FeatureFocus.h"
 #include "gui/FeatureWeakRefSequence.h"
 #include "model/FeatureHandle.h"
 
@@ -65,6 +66,7 @@ namespace GPlatesGui
 	
 		explicit
 		FeatureTableModel(
+				FeatureFocus &feature_focus,
 				QObject *parent_ = NULL);
 		
 		/**
@@ -198,17 +200,13 @@ namespace GPlatesGui
 				const QItemSelection &selected,
 				const QItemSelection &deselected);
 	
-	signals:
-	
-		/**
-		 * Signal emitted when a user has clicked on a row of the table.
-		 */
 		void
-		selected_feature_changed(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+		handle_feature_modified(
+				GPlatesModel::FeatureHandle::weak_ref modified_feature_ref);
 
 	private:
 		
+		FeatureFocus &d_feature_focus;
 		FeatureWeakRefSequence::non_null_ptr_type d_sequence_ptr;
 	
 	};

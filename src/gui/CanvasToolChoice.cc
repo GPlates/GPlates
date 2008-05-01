@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,6 +29,7 @@
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
 #include "canvas-tools/QueryFeature.h"
+#include "canvas-tools/EditFeature.h"
 
 
 GPlatesGui::CanvasToolChoice::CanvasToolChoice(
@@ -36,11 +37,14 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		FeatureTableModel &clicked_table_model,
-		GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_):
+		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
+		GPlatesGui::FeatureFocus &feature_focus):
 	d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(globe_, globe_canvas_)),
 	d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(globe_, globe_canvas_)),
 	d_query_feature_tool_ptr(GPlatesCanvasTools::QueryFeature::create(globe_, globe_canvas_,
-			view_state_, clicked_table_model, qfp_dialog_)),
+			view_state_, clicked_table_model, fp_dialog_, feature_focus)),
+	d_edit_feature_tool_ptr(GPlatesCanvasTools::EditFeature::create(globe_, globe_canvas_,
+			view_state_, clicked_table_model, fp_dialog_, feature_focus)),
 	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	tool_choice().handle_activation();
@@ -59,3 +63,4 @@ GPlatesGui::CanvasToolChoice::change_tool_if_necessary(
 	d_tool_choice_ptr = new_tool_choice;
 	d_tool_choice_ptr->handle_activation();
 }
+

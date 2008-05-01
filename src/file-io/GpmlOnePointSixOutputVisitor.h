@@ -61,6 +61,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_enumeration(
+				const GPlatesPropertyValues::Enumeration &enumeration);
+
+		virtual
+		void
 		visit_gml_line_string(
 				const GPlatesPropertyValues::GmlLineString &gml_line_string);
 
@@ -143,11 +148,6 @@ namespace GPlatesFileIO
 		void
 		visit_gpml_revision_id(
 				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id);
-
-		virtual
-		void
-		visit_gpml_strike_slip_enumeration(
-				const GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration);
 
 		virtual
 		void

@@ -115,6 +115,7 @@
    <addaction name="action_Drag_Globe" />
    <addaction name="action_Zoom_Globe" />
    <addaction name="action_Query_Feature" />
+   <addaction name="action_Edit_Feature" />
   </widget>
   <widget class="QDockWidget" name="dock_information" >
    <property name="features" >
@@ -563,6 +564,23 @@
    </property>
    <property name="shortcut" >
     <string>^</string>
+   </property>
+  </action>
+  <action name="action_Edit_Feature" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/edit_feature_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Edit Feature</string>
+   </property>
+   <property name="toolTip" >
+    <string>Click feature to edit  E</string>
+   </property>
+   <property name="shortcut" >
+    <string>E</string>
    </property>
   </action>
   <action name="action_Reconstruction_Tree_and_Poles" >

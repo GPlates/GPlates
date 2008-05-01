@@ -53,7 +53,7 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlPlateId.h"
-#include "property-values/GpmlStrikeSlipEnumeration.h"
+#include "property-values/Enumeration.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsBoolean.h"
 
@@ -255,9 +255,8 @@ namespace
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 				create_fault(model, collection, header, points);
 		
-		// FIXME: Create a GpmlDipSlipEnumeration, which involves a suprising amount of effort.
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type dip_slip_property_value =
-				GPlatesPropertyValues::GpmlStrikeSlipEnumeration::create("Compression");
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
+				GPlatesPropertyValues::Enumeration::create("gpml:DipSlipEnumeration", "Compression");
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 				dip_slip_property_value, 
 				GPlatesModel::PropertyName::create_gpml("dipSlip"), 
@@ -277,9 +276,8 @@ namespace
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 				create_fault(model, collection, header, points);
 		
-		// FIXME: Create a GpmlDipSlipEnumeration, which involves a suprising amount of effort.
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type dip_slip_property_value =
-				GPlatesPropertyValues::GpmlStrikeSlipEnumeration::create("Extension");
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
+				GPlatesPropertyValues::Enumeration::create("gpml:DipSlipEnumeration", "Extension");
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 				dip_slip_property_value, 
 				GPlatesModel::PropertyName::create_gpml("dipSlip"), 
@@ -320,8 +318,8 @@ namespace
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 				create_fault(model, collection, header, points);
 		
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type strike_slip_property_value =
-				GPlatesPropertyValues::GpmlStrikeSlipEnumeration::create("Unknown");
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type strike_slip_property_value =
+				GPlatesPropertyValues::Enumeration::create("gpml:StrikeSlipEnumeration", "Unknown");
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 				strike_slip_property_value, 
 				GPlatesModel::PropertyName::create_gpml("strikeSlip"), 

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -42,12 +42,54 @@
 
 namespace GPlatesModel
 {
+	class Reconstruction;
 	class ReconstructionTree;
 
 	class ReconstructedFeatureGeometryPopulator:
 			public FeatureVisitor
 	{
 	public:
+		
+		/**
+		 * Struct defined to associate a FeatureHandle::properties_iterator with
+		 * geometry during the reconstruction process so that the iterator can be
+		 * set in the final ReconstructableFeatureGeometry.
+		 */
+		struct NotYetReconstructedPoint
+		{
+			FeatureHandle::properties_iterator d_property;
+			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> d_point;
+			
+			NotYetReconstructedPoint(
+					FeatureHandle::properties_iterator property,
+					GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point):
+				d_property(property),
+				d_point(point)
+			{  }
+		};
+		
+		/**
+		 * Struct defined to associate a FeatureHandle::properties_iterator with
+		 * geometry during the reconstruction process so that the iterator can be
+		 * set in the final ReconstructableFeatureGeometry.
+		 */
+		struct NotYetReconstructedPolyline
+		{
+			FeatureHandle::properties_iterator d_property;
+			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> d_polyline;
+
+			NotYetReconstructedPolyline(
+					FeatureHandle::properties_iterator property,
+					GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> polyline):
+				d_property(property),
+				d_polyline(polyline)
+			{  }
+		};
+		
+		typedef std::vector<NotYetReconstructedPoint> not_yet_reconstructed_points_type;
+		typedef not_yet_reconstructed_points_type::const_iterator not_yet_reconstructed_points_const_iterator;
+		typedef std::vector<NotYetReconstructedPolyline> not_yet_reconstructed_polylines_type;
+		typedef not_yet_reconstructed_polylines_type::const_iterator not_yet_reconstructed_polylines_const_iterator;
 
 		struct ReconstructedFeatureGeometryAccumulator
 		{
@@ -62,19 +104,19 @@ namespace GPlatesModel
 			 */
 			bool d_feature_is_defined_at_recon_time;
 
+			// FIXME: remove d_most_recent_propname_read and access name via d_most_recent_property_read.
 			boost::optional<PropertyName> d_most_recent_propname_read;
+			boost::optional<FeatureHandle::properties_iterator> d_most_recent_property_read;
 			boost::optional<integer_plate_id_type> d_recon_plate_id;
-			std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> >
-					d_not_yet_reconstructed_points;
-			std::vector<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> >
-					d_not_yet_reconstructed_polylines;
+			not_yet_reconstructed_points_type d_not_yet_reconstructed_points;
+			not_yet_reconstructed_polylines_type d_not_yet_reconstructed_polylines;
 
 			ReconstructedFeatureGeometryAccumulator():
 				d_feature_is_defined_at_recon_time(true)
 			{  }
 
 		};
-
+		
 		typedef std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >
 				reconstructed_points_type;
 		typedef std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >
@@ -83,6 +125,7 @@ namespace GPlatesModel
 		ReconstructedFeatureGeometryPopulator(
 				const double &recon_time,
 				unsigned long root_plate_id,
+				Reconstruction &recon,
 				ReconstructionTree &recon_tree,
 				reconstructed_points_type &reconstructed_points,
 				reconstructed_polylines_type &reconstructed_polylines,
@@ -95,6 +138,11 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_feature_handle(
+				FeatureHandle &feature_handle);
+
+		virtual
+		void
+		visit_feature_properties(
 				FeatureHandle &feature_handle);
 
 		virtual
@@ -137,6 +185,7 @@ namespace GPlatesModel
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
+		Reconstruction *d_recon_ptr;
 		ReconstructionTree *d_recon_tree_ptr;
 		reconstructed_points_type *d_reconstructed_points_to_populate;
 		reconstructed_polylines_type *d_reconstructed_polylines_to_populate;

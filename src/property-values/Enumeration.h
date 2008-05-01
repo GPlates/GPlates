@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,87 +25,98 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_PROPERTYVALUES_GPMLSTRIKESLIPENUMERATION_H
-#define GPLATES_PROPERTYVALUES_GPMLSTRIKESLIPENUMERATION_H
+#ifndef GPLATES_PROPERTYVALUES_ENUMERATION_H
+#define GPLATES_PROPERTYVALUES_ENUMERATION_H
 
 #include "model/PropertyValue.h"
-#include "StrikeSlipEnumerationValue.h"
+#include "EnumerationContent.h"
+#include "EnumerationType.h"
 
 
 namespace GPlatesPropertyValues {
 
-	class GpmlStrikeSlipEnumeration :
+	class Enumeration :
 			public GPlatesModel::PropertyValue {
 
 	public:
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlStrikeSlipEnumeration> 
+		typedef GPlatesUtils::non_null_intrusive_ptr<Enumeration> 
 				non_null_ptr_type;
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlStrikeSlipEnumeration>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Enumeration>
 				non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlStrikeSlipEnumeration() {  }
+		~Enumeration() {  }
 
 		static
 		const non_null_ptr_type
 		create(
-				const UnicodeString &s) {
-			GpmlStrikeSlipEnumeration::non_null_ptr_type ptr(*(new GpmlStrikeSlipEnumeration(s)));
+				const UnicodeString &enum_type,
+				const UnicodeString &enum_content) {
+			Enumeration::non_null_ptr_type ptr(*(new Enumeration(enum_type, enum_content)));
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlStrikeSlipEnumeration(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new Enumeration(*this)));
 			return dup;
 		}
 
-		const StrikeSlipEnumerationValue &
+		const EnumerationContent &
 		value() const {
 			return d_value;
+		}
+
+		const EnumerationType &
+		type() const {
+			return d_type;
 		}
 
 		virtual
 		void
 		accept_visitor(
 				GPlatesModel::ConstFeatureVisitor &visitor) const {
-			visitor.visit_gpml_strike_slip_enumeration(*this);
+			visitor.visit_enumeration(*this);
 		}
 
 		virtual
 		void
 		accept_visitor(
 				GPlatesModel::FeatureVisitor &visitor) {
-			visitor.visit_gpml_strike_slip_enumeration(*this);
+			visitor.visit_enumeration(*this);
 		}
 
 	protected:
 
 		explicit
-		GpmlStrikeSlipEnumeration(
-				const UnicodeString &s) :
+		Enumeration(
+				const UnicodeString &enum_type,
+				const UnicodeString &enum_content) :
 			PropertyValue(),
-			d_value(s)
+			d_type(enum_type),
+			d_value(enum_content)
 		{  }
 
-		GpmlStrikeSlipEnumeration(
-				const GpmlStrikeSlipEnumeration &other) :
+		Enumeration(
+				const Enumeration &other) :
 			PropertyValue(other),
+			d_type(other.d_type),
 			d_value(other.d_value)
 		{  }
 
 	private:
 
-		StrikeSlipEnumerationValue d_value;
+		EnumerationType d_type;
+		EnumerationContent d_value;
 
-		GpmlStrikeSlipEnumeration &
-		operator=(const GpmlStrikeSlipEnumeration &);
+		Enumeration &
+		operator=(const Enumeration &);
 
 	};
 
 }
 
-#endif  // GPLATES_PROPERTYVALUES_GPMLSTRIKESLIPENUMERATION_H
+#endif  // GPLATES_PROPERTYVALUES_ENUMERATION_H

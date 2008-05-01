@@ -462,6 +462,7 @@ output_reconstructions(
 		traverse_recon_tree(reconstruction->reconstruction_tree());
 
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
+				*reconstruction,
 				reconstruction->reconstruction_tree(),
 				reconstruction->point_geometries(),
 				reconstruction->polyline_geometries());

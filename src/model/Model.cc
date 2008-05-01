@@ -174,7 +174,7 @@ GPlatesModel::Model::create_reconstruction(
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
 	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree);
 
-	ReconstructedFeatureGeometryPopulator rfgp(time, root,
+	ReconstructedFeatureGeometryPopulator rfgp(time, root, *reconstruction,
 			reconstruction->reconstruction_tree(),
 			reconstruction->point_geometries(),
 			reconstruction->polyline_geometries());

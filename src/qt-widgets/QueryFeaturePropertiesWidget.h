@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,11 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_QUERYFEATUREPROPERTIESDIALOG_H
-#define GPLATES_QTWIDGETS_QUERYFEATUREPROPERTIESDIALOG_H
+#ifndef GPLATES_QTWIDGETS_QUERYFEATUREPROPERTIESWIDGET_H
+#define GPLATES_QTWIDGETS_QUERYFEATUREPROPERTIESWIDGET_H
 
-#include <QDialog>
-#include "QueryFeaturePropertiesDialogUi.h"
+#include <QWidget>
+#include "QueryFeaturePropertiesWidgetUi.h"
+#include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"
 
 
@@ -35,20 +36,21 @@ namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
 
-	class QueryFeaturePropertiesDialog: 
-			public QDialog,
-			protected Ui_QueryFeaturePropertiesDialog 
+	class QueryFeaturePropertiesWidget: 
+			public QWidget,
+			protected Ui_QueryFeaturePropertiesWidget 
 	{
 		Q_OBJECT
 		
 	public:
 		explicit
-		QueryFeaturePropertiesDialog(
+		QueryFeaturePropertiesWidget(
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesGui::FeatureFocus &feature_focus,
 				QWidget *parent_ = NULL);
 
 		virtual
-		~QueryFeaturePropertiesDialog()
+		~QueryFeaturePropertiesWidget()
 		{  }
 
 		const GPlatesQtWidgets::ViewportWindow &
@@ -56,10 +58,6 @@ namespace GPlatesQtWidgets
 		{
 			return *d_view_state_ptr;
 		}
-
-		void
-		set_feature_type(
-				const QString &feature_type);
 
 		/**
 		 * The parameter is a QString to enable us to pass the string "indeterminate".
@@ -89,10 +87,14 @@ namespace GPlatesQtWidgets
 
 	public slots:
 
+		/**
+		 * Updates the query widget to display properties of the given feature.
+		 * Called by FeaturePropertiesDialog after the weak_ref is checked for validity.
+		 */
 		void
 		display_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref);
-
+		
 	signals:
 
 	private:
@@ -100,8 +102,7 @@ namespace GPlatesQtWidgets
 		 * This is the view state which is used to obtain the reconstruction root.
 		 */
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
-		
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_QUERYFEATUREPROPERTIESDIALOG_H
+#endif  // GPLATES_QTWIDGETS_QUERYFEATUREPROPERTIESWIDGET_H

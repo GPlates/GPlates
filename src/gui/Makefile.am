@@ -15,13 +15,19 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				SphericalGrid.cc SvgExport.cc \
 				ViewportZoom.cc \
 				FeatureTableModel.cc \
+				FeaturePropertyTableModel.cc \
+				FeaturePropertyTableDelegate.cc \
+				FeatureFocus.cc \
 				CsvExport.cc \
 				moc_CanvasToolAdapter.cc \
 				moc_CanvasToolChoice.cc \
 				moc_FeatureWeakRefSequence.cc \
 				moc_SimpleGlobeOrientation.cc \
 				moc_ViewportZoom.cc \
-				moc_FeatureTableModel.cc
+				moc_FeatureTableModel.cc \
+				moc_FeaturePropertyTableModel.cc \
+				moc_FeaturePropertyTableDelegate.cc \
+				moc_FeatureFocus.cc
 
 CLEANFILES		= moc_*.cc
 

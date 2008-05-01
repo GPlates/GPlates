@@ -33,6 +33,7 @@ namespace GPlatesPropertyValues
 {
 	// Forward declarations for the member functions.
 	// Please keep these ordered alphabetically.
+	class Enumeration;
 	class GmlLineString;
 	class GmlOrientableCurve;
 	class GmlPoint;
@@ -50,7 +51,6 @@ namespace GPlatesPropertyValues
 	class GpmlPlateId;
 	class GpmlPolarityChronId;
 	class GpmlRevisionId;
-	class GpmlStrikeSlipEnumeration;
 	class GpmlTimeSample;
 	class GpmlTimeWindow;
 	class UninterpretedPropertyValue;
@@ -145,6 +145,12 @@ namespace GPlatesModel
 				InlinePropertyContainer &inline_property_container);
 
 		// Please keep these property-value types ordered alphabetically.
+
+		virtual
+		void
+		visit_enumeration(
+				GPlatesPropertyValues::Enumeration &enumeration)
+		{  }
 
 		virtual
 		void
@@ -246,12 +252,6 @@ namespace GPlatesModel
 		void
 		visit_gpml_revision_id(
 				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) {  }
-
-		virtual
-		void
-		visit_gpml_strike_slip_enumeration(
-				GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration)
-		{  }
 
 		virtual
 		void

@@ -33,7 +33,7 @@
 #include "gui/ProximityTests.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "qt-widgets/QueryFeaturePropertiesDialog.h"
+#include "qt-widgets/FeaturePropertiesDialog.h"
 #include "model/FeatureHandle.h"
 
 
@@ -59,7 +59,10 @@ GPlatesCanvasTools::QueryFeature::handle_left_click(
 		return;  // FIXME:  Should throw an exception instead.
 	}
 	
-	qfp_dialog().display_feature(feature_ref);
+	// Update the focused feature, and pop up the FeaturePropertiesDialog with the Query tab open.
+	d_feature_focus.set_focused_feature(feature_ref);
+	fp_dialog().choose_query_widget();
+	fp_dialog().show();
 
 	// Update the 'Clicked' FeatureTableModel
 	d_clicked_table_model_ptr->clear();

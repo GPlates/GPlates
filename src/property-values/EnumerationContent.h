@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,29 +25,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_PROPERTYVALUES_STRIKESLIPENUMERATIONVALUE_H
-#define GPLATES_PROPERTYVALUES_STRIKESLIPENUMERATIONVALUE_H
+#ifndef GPLATES_PROPERTYVALUES_ENUMERATIONCONTENT_H
+#define GPLATES_PROPERTYVALUES_ENUMERATIONCONTENT_H
 
 #include "model/StringSetSingletons.h"
 #include "model/StringContentTypeGenerator.h"
 
 namespace GPlatesPropertyValues {
 
-	class StrikeSlipEnumerationValueFactory {
+	class EnumerationContentFactory {
 
 	public:
 		static
 		GPlatesUtils::StringSet &
 		instance()
 		{
-			return GPlatesModel::StringSetSingletons::strike_slip_enumeration_value_instance();
+			return GPlatesModel::StringSetSingletons::enumeration_content_instance();
 		}
 
 	private:
-		StrikeSlipEnumerationValueFactory();
+		EnumerationContentFactory();
 	};
 
-	typedef GPlatesModel::StringContentTypeGenerator<StrikeSlipEnumerationValueFactory> StrikeSlipEnumerationValue;
+	typedef GPlatesModel::StringContentTypeGenerator<EnumerationContentFactory> EnumerationContent;
 }
 
-#endif  // GPLATES_PROPERTYVALUES_STRIKESLIPENUMERATIONVALUE_H
+#endif  // GPLATES_PROPERTYVALUES_ENUMERATIONCONTENT_H

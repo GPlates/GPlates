@@ -175,7 +175,7 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 # sucks, but we don't have the time to research a better solution right now.)
 #
 # #AC_CHECK_LIB([gdal], [main], [], AC_MSG_ERROR([[
-AC_SEARCH_LIBS([OGRRegisterAll], [gdal gdal1.3.2 gdal1.4.0], [], AC_MSG_ERROR([[
+AC_SEARCH_LIBS([OGRRegisterAll], [gdal gdal1.3.2 gdal1.4.0 gdal1.5.0], [], AC_MSG_ERROR([[
 !!
 !!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
 !!  shared library installed.  Your operating system vendor may provide a
