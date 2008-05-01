@@ -391,7 +391,7 @@ GPlatesGui::FeatureTableModel::headerData(
 	// and horizontal size in the Qt::SizeHintRole for the header!
 	QFontMetrics fm = QApplication::fontMetrics();
 	
-#if 1
+#if 0
 	qDebug() << "\nFONT METRICS DEBUGGING:";
 	qDebug() << "QApplication::style() == " << QApplication::style()->metaObject()->className();
 	qDebug() << "QApplication::font().toString() == " << QApplication::font().toString();
