@@ -57,6 +57,13 @@ void
 GPlatesQtWidgets::EditFeatureGeometriesWidget::refresh_display()
 {
 	reset();
+	if ( ! d_feature_ref.is_valid()) {
+		// Always check your weak-refs, even if they should be valid because
+		// FeaturePropertiesDialog promised it'd check them, because in this
+		// one case we can also get updated directly when the reconstruction
+		// time changes.
+		return;
+	}
 	
 	GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator populator(
 			d_view_state_ptr->reconstruction(), *tree_geometry);
