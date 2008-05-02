@@ -54,6 +54,9 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
 	field_Plate_ID->setMaximumSize(50, 27);
 	field_Root_Plate_ID->setMaximumSize(50, 27);
 	field_Recon_Time->setMaximumSize(50, 27);
+
+	QObject::connect(d_view_state_ptr, SIGNAL(reconstruction_time_changed(double)),
+			this, SLOT(refresh_display()));
 }
 
 
@@ -123,12 +126,28 @@ void
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
+	d_feature_ref = feature_ref;
+	refresh_display();
+}
+
+
+void
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
+{
+	if ( ! d_feature_ref.is_valid()) {
+		// Always check your weak-refs, even if they should be valid because
+		// FeaturePropertiesDialog promised it'd check them, because in this
+		// one case we can also get updated directly when the reconstruction
+		// time changes.
+		return;
+	}
+	
 	// These next few fields only make sense if the feature is reconstructable, ie. if it has a
 	// reconstruction plate ID.
 	static const GPlatesModel::PropertyName plate_id_property_name = 
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-	plate_id_finder.visit_feature_handle(*feature_ref);
+	plate_id_finder.visit_feature_handle(*d_feature_ref);
 	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
 		// The feature has a reconstruction plate ID.
 		GPlatesModel::integer_plate_id_type recon_plate_id =
@@ -184,7 +203,6 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::display_feature(
 
 	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
 			property_tree());
-	populator.visit_feature_handle(*feature_ref);
+	populator.visit_feature_handle(*d_feature_ref);
 }
-
 

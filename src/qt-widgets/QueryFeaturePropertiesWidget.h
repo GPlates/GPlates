@@ -88,6 +88,14 @@ namespace GPlatesQtWidgets
 	public slots:
 
 		/**
+		 * Updates the dialog to redisplay the geometry of the current Feature.
+		 *
+		 * Called when the current reconstruction time changes.
+		 */
+		void
+		refresh_display();
+
+		/**
 		 * Updates the query widget to display properties of the given feature.
 		 * Called by FeaturePropertiesDialog after the weak_ref is checked for validity.
 		 */
@@ -102,6 +110,11 @@ namespace GPlatesQtWidgets
 		 * This is the view state which is used to obtain the reconstruction root.
 		 */
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+
+		/**
+		 * This is the feature we are displaying. Make sure to check this ref is_valid()!
+		 */
+		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 	};
 }
 
