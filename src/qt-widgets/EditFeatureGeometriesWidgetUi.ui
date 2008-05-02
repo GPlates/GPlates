@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>474</width>
-    <height>575</height>
+    <width>458</width>
+    <height>567</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -46,7 +46,7 @@
      <item>
       <widget class="QLabel" name="label_reconstruction_info" >
        <property name="text" >
-        <string>Relative to the root Plate ID:</string>
+        <string>Reconstructed relative to the root plate ID</string>
        </property>
       </widget>
      </item>
@@ -72,7 +72,7 @@
      <item>
       <widget class="QLabel" name="label_reconstruction_info_2" >
        <property name="text" >
-        <string>At time:</string>
+        <string>at time</string>
        </property>
       </widget>
      </item>
@@ -86,7 +86,7 @@
        </property>
        <property name="maximumSize" >
         <size>
-         <width>48</width>
+         <width>32</width>
          <height>16777215</height>
         </size>
        </property>

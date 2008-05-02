@@ -39,7 +39,7 @@
    <item>
     <widget class="QLabel" name="label" >
      <property name="text" >
-      <string>This geometry was reconstructed using the equivalent rotation:</string>
+      <string>This geometry was reconstructed using the equivalent rotation</string>
      </property>
     </widget>
    </item>
@@ -168,7 +168,7 @@
      <item>
       <widget class="QLabel" name="label_5" >
        <property name="text" >
-        <string>relative to the root plate ID:</string>
+        <string>relative to the root plate ID</string>
        </property>
       </widget>
      </item>
