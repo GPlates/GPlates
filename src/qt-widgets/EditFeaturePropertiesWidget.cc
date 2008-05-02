@@ -201,12 +201,9 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::commit_edit_widget_data()
 	
 	if (d_edit_widget_group_box_ptr->is_edit_widget_active()) {
 		if (d_edit_widget_group_box_ptr->is_dirty()) {
-			qDebug("Committing edit widget value, it is dirty.");
 			d_property_model_ptr->assign_new_property_value(*d_selected_property_iterator,
 					d_edit_widget_group_box_ptr->create_property_value_from_widget());
 			d_edit_widget_group_box_ptr->set_clean();
-		} else {
-			qDebug("Not committing edit widget value, it is clean.");
 		}
 	}
 }
