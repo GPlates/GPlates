@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib qtsvgd4.lib opengl32.lib glu32.lib gdal_i.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib qtsvgd4.lib qtxmld4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -163,7 +163,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib qtsvg4.lib opengl32.lib glu32.lib gdal_i.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib qtsvg4.lib qtxml4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -1276,6 +1276,10 @@
 				RelativePath="..\src\model\StringSetSingletons.cc"
 				>
 			</File>
+			<File
+				RelativePath="..\src\model\XmlNode.cc"
+				>
+			</File>			
 		</Filter>
 		<Filter
 			Name="utils"
@@ -1459,6 +1463,7 @@
 			<File
 				RelativePath="..\src\file-io\XmlWriter.cc"
 				>
+			</File>
 		</Filter>
 		<Filter
 			Name="property-values"
