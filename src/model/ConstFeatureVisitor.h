@@ -37,10 +37,12 @@ namespace GPlatesPropertyValues
 	class GmlLineString;
 	class GmlOrientableCurve;
 	class GmlPoint;
+	class GmlPolygon;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
 	class GpmlConstantValue;
 	class GpmlFeatureReference;
+	class GpmlFeatureSnapshotReference;
 	class GpmlFiniteRotation;
 	class GpmlFiniteRotationSlerp;
 	class GpmlHotSpotTrailMark;
@@ -50,6 +52,7 @@ namespace GPlatesPropertyValues
 	class GpmlPiecewiseAggregation;
 	class GpmlPlateId;
 	class GpmlPolarityChronId;
+	class GpmlPropertyDelegate;
 	class GpmlRevisionId;
 	class GpmlTimeSample;
 	class GpmlTimeWindow;
@@ -191,6 +194,11 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gml_polygon(
+				const GPlatesPropertyValues::GmlPolygon &gml_polygon) {  }
+
+		virtual
+		void
 		visit_gml_time_instant(
 				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant) {  }
 
@@ -208,6 +216,11 @@ namespace GPlatesModel
 		void
 		visit_gpml_feature_reference(
 				const GPlatesPropertyValues::GpmlFeatureReference &gpml_feature_reference) {  }
+
+		virtual
+		void
+		visit_gpml_feature_snapshot_reference(
+				const GPlatesPropertyValues::GpmlFeatureSnapshotReference &gpml_feature_snapshot_reference) {  }
 
 		virtual
 		void
@@ -254,6 +267,11 @@ namespace GPlatesModel
 		void
 		visit_gpml_polarity_chron_id(
 				const GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id) {  }
+
+		virtual
+		void
+		visit_gpml_property_delegate(
+				const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate) {  }
 
 		virtual
 		void

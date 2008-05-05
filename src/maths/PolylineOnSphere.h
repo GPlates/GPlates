@@ -75,6 +75,10 @@ namespace GPlatesMaths
 	 * will create a polyline composed of 3 segments: A->B, B->C, C->D.  If
 	 * you subsequently iterate through the vertices of this polyline, you
 	 * will get the same sequence of points back again: A, B, C, D.
+	 *
+	 * Note that PolylineOnSphere does have mutators (non-const member functions
+	 * which enable the modification of the class internals), in particular
+	 * the copy-assignment operator.
 	 */
 	class PolylineOnSphere
 	{

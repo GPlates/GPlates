@@ -1,0 +1,402 @@
+HOWTO: Add support for a new property type to GPlates
+=====================================================
+
+Every property in GPlates has a type which informs us how to interpret
+it.  Usually, your reasons for adding support for a new property to
+GPlates will be either (i) because the new  WizzBang  feature that you're
+adding to GPlates requires a currently unsupported property type, or
+(ii) you would like to be able to use this new property type as the type
+parameter to an existing templatised property type (if you don't know
+what point (ii) means, then you should probably go and learn more about
+GPGIM and GPML).
+
+Let's suppose you'd like to add support for a property type named
+SignificantOther  to GPlates.  The specification that defines a
+SignificantOther  should be given to you by JB and JC, who themselves
+will most likely "liaise" with Dietmar about the existence and
+fundamental nature of what it means for something to be a
+SignificantOther.  The specification might look something like this:
+
+  SignificantOther  inherits from  AbstractReceptacle
+  It has the following properties:
+  - name: malleability;  type: gpml:measure;
+  - name: existence;  type: gml:TimePeriod;
+  - name: extentOf;  type: TimeDependentPropertyValue<gml:_Geometry>.
+
+[Note, of course, that a property type contains *other* properties.]
+
+For a "real-life" example of the specification of a property type, refer
+to
+
+  http://www.earthbyte.org/Resources/GPGIM/public/#TimeSample
+
+Having acquired this information, the following steps are required to add
+SignificantOther  support to GPlates.
+
+-*-
+
+Adding support for a new property type to GPlates is an involved
+process, so the very first thing you should do is triple-check that you
+*really* need to add it.
+
+In addition, for various reasons a lot of work is required to modify the
+property type once it has been added.  Thus the second thing you should
+do is to triple-check that the specification for the property is
+*correct*!  Changing it later will be a pain in the posterior.
+
+The following tasks are required to add a new property type:
+
+ 1. Add the new property type to the property values hierarchy.
+
+   This task requires the creation of a new class called, in our case,
+   GpmlSignificantOther.
+
+   a) It should be placed in the GPlatesPropertyValues  namespace, all
+   of whose members are in the "src/property-values/" subdirectory of 
+   the GPlates source code.
+   
+   b) It should inherit from GPlatesModel::PropertyValue.
+
+   c) It should provide the following typedefs:
+
+     typedef GPlatesUtils::non_null_intrusive_ptr<GpmlSignificantOther>
+         non_null_ptr_type;
+     typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlSignificantOther> 
+         non_null_ptr_to_const_type;
+
+   d) It should provide a static  create  function that returns a
+   non_null_ptr_type.
+
+   e) It should provide a virtual  clone  method that returns a
+   GPlatesModel::PropertyValue::non_null_ptr_type  which is a copy of
+   this  SignificantOther.
+
+   e) It's constructor(s) should be private.
+
+   f) The copy assignment operator should be declared private, but NOT
+   defined.
+
+   g) You may implement as many or as few data accessing methods as are
+   needed.
+
+   h) Add two methods, both called  accept_visitor,  that take a
+   ConstFeatureVisitor  and a  FeatureVisitor  respectively.
+
+   Here is roughly what the interface to  GpmlSignificantOther  would
+   look like (for a real life example and a guide to implementing the
+   constructors and  create  and  clone  methods, have a look at
+   "src/property-values/GmlTimeInstant.h"):
+
+	class GpmlSignificantOther:
+		public GPlatesModel::PropertyValue {
+
+	public:
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlSignificantOther> 
+			non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlSignificantOther> 
+			non_null_ptr_to_const_type;
+
+		virtual 
+		~GpmlSignificantOther() {  }
+
+		static
+		const non_null_ptr_type
+		create(
+				GpmlMeasure::non_null_ptr_type malleability,
+				GmlTimePeriod::non_null_ptr_type existence,
+				GPlatesModel::PropertyValue::non_null_ptr_type time_dependent_value);
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone();
+
+		const GpmlMeasure::non_null_ptr_to_const_type
+		get_malleability() const {
+			return d_malleability;
+		}
+
+		// Other data accessors can go here.
+
+		virtual
+		void
+		accept_visitor(
+				GPlatesModel::ConstFeatureVisitor &visitor) const {
+			visitor.visit_gpml_significant_other(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				GPlatesModel::FeatureVisitor &visitor) {
+			visitor.visit_gpml_significant_other(*this);
+		}
+
+	private:
+		GpmlMeasure::non_null_ptr_type d_malleability,
+		GmlTimePeriod::non_null_ptr_type d_existence,
+		GPlatesModel::PropertyValue::non_null_ptr_type d_time_dependent_value);
+
+
+		GpmlSignificantOther(
+				GpmlMeasure::non_null_ptr_type malleability,
+				GmlTimePeriod::non_null_ptr_type existence,
+				GPlatesModel::PropertyValue::non_null_ptr_type time_dependent_value);
+
+		GpmlSignificantOther(
+				const GpmlSignificantOther &other);
+
+
+		// Not to be implemented.
+		GpmlSignificantOther &
+		operator=(
+				const GpmlSignificantOther &other);
+	};
+
+
+ 2. Modify ConstFeatureVisitor and FeatureVisitor.
+
+   Every  PropertyValue  must accept visitors (see 1.h above).  The next
+   step is adding knowledge about  SignificantOther  to the existing
+   visitors.  This is done by modifying the classes  ConstFeatureVisitor 
+   and  FeatureVisitor.  In each class you add almost exactly the same
+   thing:
+
+   a) In both files, add a forward declaration for class
+   GpmlSignificantOther  at the beginning of the file.
+
+   b) Add a method called  visit_gpml_significant_other, which takes a
+   const reference to a  GpmlSignificantOther, to the ConstFeatureVisitor.
+   It should look like this:
+
+    virtual
+    void
+    visit_gpml_significant_other(
+    		const GPlatesPropertyValues::GpmlSignificantOther &gpml_significant_other)
+    {  }
+
+   AND: Add a method called  visit_gpml_significant_other, which takes a
+   (non-const) reference to a  GpmlSignificantOther, to the FeatureVisitor.
+   It should look like this:
+
+    virtual
+    void
+    visit_gpml_significant_other(
+    		GPlatesPropertyValues::GpmlSignificantOther &gpml_significant_other)
+    {  }
+
+   Now, of course, any visitor that inherits from  ConstFeatureVisitor
+   or  FeatureVisitor  will not do anything when it encounters a
+   GpmlSignificantOther.  In order to make sure that a visitor does
+   something when it encounters a  GpmlSignificantOther,  you will have
+   to implement the  visit_gpml_significant_other  method in that
+   visitor.
+   
+   NOTE: In particular, the  GpmlOnePointSixOutputVisitor
+   should be modified so that any  SignificantOthers  that are read in
+   are also written out correctly.
+
+
+ 3. Add code to read the property in PropertyCreationUtils.
+
+   The next step is to add a  create_significant_other  function to
+   PropertyCreationUtils.  This has two stages:
+
+   a) The first stage is to add the function prototype to the file
+   "file-io/PropertyCreationUtils.h".  It should look like this:
+
+    GPlatesPropertyValues::GpmlSignificantOther::non_null_ptr_type
+    create_significant_other(
+    		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+   After the function prototype, you must add a call to the  AS_PROP_VAL
+   macro that will generate another function that is needed elsewhere.
+   In our case, we write:
+
+    AS_PROP_VAL(create_significant_other)
+
+   (NOTE: There is no semi-colon at the end of the line.)
+
+   b) The next stage consists in writing the definition of
+   create_significant_other,  which is a method that translates from the
+   given  XmlElementNode  to a pointer to a GpmlSignificantOther.
+   XmlElementNode  supports a stripped-down DOM-like interface to the
+   XML from which you are to interpret the GpmlSignificantOther.  The
+   root of the node will point to the parent of the node in the XML tree
+   that you will be parsing.  Writing the create_significant_other
+   method should be relatively painless provided you stick to the
+   conventions for writing one.  The conventions differ depending on
+   various factors relating to the specification of the new property
+   type.  The basic case will be outlined now, using  SignificantOther
+   as a guiding example.  It will be followed by a list, starting at c)
+   below, of the deviations from the basic case that you will come
+   across.
+
+   (It may be helpful to look at the function  create_time_period  while
+   reading through this section.  See:
+
+     http://trac.gplates.org/browser/gplates/branches/gpml-fileio-2008-01-04/src/file-io/PropertyCreationUtils.cc?rev=2760#L584 )
+   
+   b.i) The very first thing to do is, of course, "repeat" the method
+   signature from the declaration.  So in our case we start with:
+
+    GPlatesPropertyValues::GpmlSignificantOther::non_null_ptr_type
+    GPlatesFileIO::PropertyCreationUtils::create_significant_other(
+    		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+    {
+    	// ...
+    }
+
+   b.ii) Next, we add the following declarations, based on the
+   specification of  SignificantOther  that was acquired earlier.
+
+    static const GPlatesModel::PropertyName
+    		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("SignificantOther"),
+    		MALLEABILITY = GPlatesModel::PropertyName::create_gpml("malleability"),
+    		EXISTENCE = GPlatesModel::PropertyName::create_gpml("existence"),
+    		EXTENT_OF = GPlatesModel::PropertyName::create_gpml("extentOf");
+ 
+   b.iii) Now extract the actual element of interest:
+
+    GPlatesModel::XmlElementNode::non_null_ptr_type
+    	elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+   So  elem  is now an  XmlElementNode  pointer to the root of the XML tree
+   we're interested in.
+
+   b.iv) The next thing to do is read in the properties associated with
+   the  SignificantOther.  In our example, it looks like this:
+
+    GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type
+    	malleability = find_and_create_one(elem, &create_measure, MALLEABILITY);
+    GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
+    	existence = find_and_create_one(elem, &create_time_period, EXISTENCE);
+    GPlatesModel::PropertValue::non_null_ptr_type
+    	extent_of = find_and_create_one(elem, &create_time_dependent_property_value, EXTENT_OF);
+
+   So for each property, we declare a variable whose time is a
+   pointer to that type, and we assign to this variable the result of
+   the function call  find_and_create_one,  to which is passed the root of
+   the XML tree, a function that can create objects of the type
+   associated with the property, and the name of the property.  If there
+   is no function that will create properties of the right type, then
+   you will need to add it (using the instructions in this document) 
+   before you can finish implementing support for GpmlSignificantOther.
+
+  b.v) Finally, we need to create the  SignificantOther pointer.  To do
+   this we simply pass the subproperties we found to the  SignificantOther
+   constructor:
+
+    return GPlatesPropertyValues::GpmlSignificantOther::create(
+    	malleability, existence, extent_of);
+
+   And that should be all you need in most cases.
+
+   c) There exist variations of  find_and_create_one  which
+   provide different cardinality checking of the subproperty(s) it
+   returns.  These are:
+
+     find_and_create_optional(...):  use for optional subproperty
+     find_and_create_zero_or_more(...):  use for zero or more subproperties
+     find_and_create_one_or_more(...):  use for at least one of the subproperty
+
+   The specification of the new property type should tell you how many
+   of a particular subproperty you should expect.
+
+ 
+   d) The second variation that we'll consider is when one of the property 
+   types you need to read in is templatised.  In this case, your
+   property will have at least two properties: a "valueType" and a
+   "value".  The  valueType  property tells you the type of the
+   information found in  value.  The code to read in value will follow
+   the following structure.  First we initialise our variables:
+
+    GPlatesPropertyValues::TemplateTypeParameterType 
+		type = find_and_create(elem, &create_template_type_parameter_type, VALUE_TYPE);
+    GPlatesModel::PropertyValue::non_null_ptr_type
+		value = find_and_create_from_type(elem, type, VALUE);
+
+   So this is much the same as before, except that we are using the
+   special function  find_and_create_from_type  to read the type.
+
+   e) Another variation is when the property type you're creating is a
+   literal type, i.e. a bare value that is stored as a string in a
+   single element.  (For example, <gpml:height>194.5</gpml:height>.) In
+   this case, your method takes a different form to that discussed
+   hitherto.  Suppose you're creating a property called "height" that
+   consists of a decimal number.  In that case your method would look
+   like this:
+
+    GPlatesPropertyValues::GpmlHeight::non_null_ptr_type
+    GPlatesFileIO::PropertyCreationUtils::create_height(
+    		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+    {	
+   		return GPlatesPropertyValues::GpmlHeight::create(create_double(elem));
+    }
+    
+   If you're reading in something other than a decimal value, just
+   switch the call to  create_double  to  create_integer,
+   create_string,  or whatever.  You can find these "primitive"
+   creation functions towards the beginning of the
+   "file-io/PropertyCreationUtils.cc" file.
+
+   f) The final variation is when the property type you're creating is
+   abstract.  Suppose you're creating an abstract type called "Ladder"
+   that has two subtypes "FriendLadder" and "PotentialMateLadder".  The
+   task of the  create_ladder  method is then to work out which subtype
+   to instantiate.  It does this simply by checking which subtype
+   appears in as the value of the property.  So we have:
+
+    GPlatesModel::PropertyValue::non_null_ptr_type
+    GPlatesFileIO::PropertyCreationUtils::create_ladder(
+    		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+    {
+    	static const GPlatesModel::PropertyName
+    		FRIEND_LADDER = GPlatesModel::PropertyName::create_gpml("FriendLadder"),
+    		POTENTIAL_MATE_LADDER = GPlatesModel::PropertyName::create_gpml("PotentialMateLadder");
+    
+    	// There should only be one child in this element...
+    	if (parent->number_of_children() > 1) {
+    		throw GpmlReaderException(parent,
+    			GPlatesFileIO::ReadErrors::TooManyChildrenInElement,
+				EXCEPTION_SOURCE);
+    	}
+    
+    	boost::optional< GPlatesModel::XmlElementNode::non_null_ptr_type > structural_elem;
+    
+    	// Create a FriendLadder if the subtype is a FriendLadder.
+    	structural_elem = parent->get_child_by_name(FRIEND_LADDER);
+    	if (structural_elem) {
+    		return GPlatesModel::PropertyValue::non_null_ptr_type(
+    				create_friend_ladder(*parent));
+    	}
+    
+    	// Create a PotentialMateLadder if the subtype is a PotentialMateLadder.
+    	structural_elem = parent->get_child_by_name(POTENTIAL_MATE_LADDER);
+    	if (structural_elem) {
+    		return GPlatesModel::PropertyValue::non_null_ptr_type(
+    				create_potential_mate_ladder(*parent));
+    	}
+    
+    	// Invalid child encountered!
+    	throw GpmlReaderException(parent,
+    		GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
+    		EXCEPTION_SOURCE);
+    }
+    
+   Note of course that if the property type you are adding inherits from
+   some other type, you will have to update its parent "create_" method
+   so that the parent method correctly delegates creation of your new
+   type when it's encountered in a file.
+ 
+ 4. Add map link in StructurePropertyCreatorMap.
+
+   Open the file "file-io/StructurePropertyCreatorMap.cc".  Add the
+   statement
+
+    d_map[ TemplateTypeParameterType::create_gpml("SignificantOther") ] =
+    	GET_PROP_VAL_NAME(create_significant_other);
+
+   to the  StructurePropertyCreatorMap  constructor implementation.
+
+
+And that should be it!

@@ -68,6 +68,8 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_time_period);
 	d_map[TemplateTypeParameterType::create_gpml("PolarityChronId")] = 
 		GET_PROP_VAL_NAME(create_polarity_chron_id);
+	d_map[TemplateTypeParameterType::create_gpml("PropertyDelegate")] = 
+		GET_PROP_VAL_NAME(create_property_delegate);
 	d_map[TemplateTypeParameterType::create_gpml("OldPlatesHeader")] = 
 		GET_PROP_VAL_NAME(create_old_plates_header);
 	d_map[TemplateTypeParameterType::create_gpml("ConstantValue")] = 
@@ -88,6 +90,8 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_interpolation_function);
 	d_map[TemplateTypeParameterType::create_gpml("FeatureReference")] = 
 		GET_PROP_VAL_NAME(create_feature_reference);
+	d_map[TemplateTypeParameterType::create_gpml("FeatureSnapshotReference")] = 
+		GET_PROP_VAL_NAME(create_feature_snapshot_reference);
 	d_map[TemplateTypeParameterType::create_gml("OrientableCurve")] = 
 		GET_PROP_VAL_NAME(create_orientable_curve);
 	d_map[TemplateTypeParameterType::create_gml("LineString")] = 

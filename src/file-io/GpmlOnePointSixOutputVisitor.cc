@@ -41,11 +41,14 @@
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GpmlPolarityChronId.h"
+#include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFeatureReference.h"
+#include "property-values/GpmlFeatureSnapshotReference.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
@@ -74,10 +77,11 @@ namespace
 		GPlatesModel::XmlAttributeValue> 
 			XmlAttribute;
 
+	template< typename QualifiedNameType >
 	void
 	writeTemplateTypeParameterType(
 			GPlatesFileIO::XmlWriter &writer,
-			const GPlatesPropertyValues::TemplateTypeParameterType &value_type)
+			const QualifiedNameType &value_type)
 	{
 		boost::optional<const UnicodeString &> alias = 
 			value_type.get_namespace_alias();
@@ -89,7 +93,7 @@ namespace
 			// XXX:  This namespace declaration is a hack to get around the
 			// fact that we can't access the current namespace declarations
 			// from QXmlStreamWriter.  It ensures that the namespace of the 
-			// TemplateTypeParameterType about to be written has been
+			// QualifiedNameType about to be written has been
 			// declared.
 			writer.writeNamespace(
 					GPlatesUtils::make_qstring_from_icu_string(value_type.get_namespace()),
@@ -180,6 +184,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_inline_property_container(
 		visit_property_values(inline_property_container);
 	d_output.writeEndElement(pop);
 }
+
 
 
 void
@@ -280,6 +285,63 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_point(
 
 
 void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_polygon(
+		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
+{
+	// FIXME: Update this to the new GmlPolygon which uses interior and exterior rings!
+	d_output.writeStartGmlElement("Polygon");
+
+	static std::vector<std::pair<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> > 
+		pos_list_xml_attrs;
+
+	if (pos_list_xml_attrs.empty()) 
+	{
+		GPlatesModel::XmlAttributeName attr_name =
+			GPlatesModel::XmlAttributeName::create_gml("dimension");
+		GPlatesModel::XmlAttributeValue attr_value("2");
+		pos_list_xml_attrs.push_back(std::make_pair(attr_name, attr_value));
+	}
+	d_output.writeStartGmlElement("posList");
+	d_output.writeAttributes(
+			pos_list_xml_attrs.begin(),
+			pos_list_xml_attrs.end());
+
+	// It would be slightly "nicer" (ie, avoiding the allocation of a temporary buffer) if we
+	// were to create an iterator which performed the following transformation for us
+	// automatically, but (i) that's probably not the most efficient use of our time right now;
+	// (ii) it's file I/O, it's slow anyway; and (iii) we can cut it down to a single memory
+	// allocation if we reserve the size of the vector in advance.
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
+			gml_polygon.exterior();
+	std::vector<double> pos_list;
+	// Reserve enough space for the coordinates, to avoid the need to reallocate.
+	//
+	// number of coords = 
+	//   (one for each segment start-point, plus one for the final end-point
+	//   (all other end-points are the start-point of the next segment, so are not counted)),
+	//   times two, since each point is a (lat, lon) duple.
+	pos_list.reserve((polygon_ptr->number_of_segments() + 1) * 2);
+
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_ptr->vertex_begin();
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
+	for ( ; iter != end; ++iter) 
+	{
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+
+		pos_list.push_back(llp.longitude());
+		pos_list.push_back(llp.latitude());
+	}
+	d_output.writeNumericalSequence(pos_list.begin(), pos_list.end());
+
+	// Don't forget to clear the vector when we're done with it!
+	pos_list.clear();
+
+	d_output.writeEndElement(); // </gml:posList>
+	d_output.writeEndElement(); // </gml:Polygon>
+}
+
+
+void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant) 
 {
@@ -373,6 +435,46 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_feature_reference(
 
 		d_output.writeStartGpmlElement("valueType");
 			writeTemplateTypeParameterType(d_output, gpml_feature_reference.value_type());
+		d_output.writeEndElement();
+	d_output.writeEndElement();
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_feature_snapshot_reference(
+		const GPlatesPropertyValues::GpmlFeatureSnapshotReference &gpml_feature_snapshot_reference)
+{
+	d_output.writeStartGpmlElement("FeatureSnapshotReference");
+		d_output.writeStartGpmlElement("targetFeature");
+			d_output.writeText(gpml_feature_snapshot_reference.feature_id().get());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("targetRevision");
+			d_output.writeText(gpml_feature_snapshot_reference.revision_id().get());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_feature_snapshot_reference.value_type());
+		d_output.writeEndElement();
+	d_output.writeEndElement();
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_property_delegate(
+		const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate)
+{
+	d_output.writeStartGpmlElement("PropertyDelegate");
+		d_output.writeStartGpmlElement("targetFeature");
+			d_output.writeText(gpml_property_delegate.feature_id().get());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("targetProperty");
+			writeTemplateTypeParameterType(d_output, gpml_property_delegate.target_property());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_property_delegate.value_type());
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }

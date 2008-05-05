@@ -112,18 +112,28 @@ namespace
 		if (pc != prop_map.end()) {
 			try {
 				properties.push_back(std::make_pair(node, (pc->second)(node)));
+				return;
+			} catch (const IO::PropertyCreationUtils::GpmlReaderException &ex) {
+				// FIXME: Remove this eventually:
+				std::cerr << "Caught exception originating at " 
+					<< ex.source_location() << std::endl;
+
+				Utils::append_warning(
+						ex.location(), params, ex.description(),
+						IO::ReadErrors::FeatureNotInterpreted);
 			} catch (...) {
-				// FIXME:
-				std::cout << "Some kind of parsing error occurred."
-				  << " Head will now be inserted into sand." << std::endl;
+				// FIXME: Remove this eventually:
+				std::cout << "Caught exception of unknown type!" << std::endl;
+				Utils::append_warning(
+						node, params, 
+						IO::ReadErrors::ParseError,
+						IO::ReadErrors::FeatureNotInterpreted);
 			}
 		} 
-		else {
-			// Read the property value uninterpreted.
-			Model::PropertyValue::non_null_ptr_type prop_val =
-				GPlatesPropertyValues::UninterpretedPropertyValue::create(node);
-			properties.push_back(std::make_pair(node, prop_val));
-		}
+		// Read the property value uninterpreted.
+		Model::PropertyValue::non_null_ptr_type prop_val =
+			GPlatesPropertyValues::UninterpretedPropertyValue::create(node);
+		properties.push_back(std::make_pair(node, prop_val));
 	}
 
 

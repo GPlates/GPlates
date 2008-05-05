@@ -231,6 +231,9 @@ namespace GPlatesModel {
 		typedef ChildCollection::iterator child_iterator;
 		typedef ChildCollection::const_iterator child_const_iterator;
 
+		typedef std::pair<child_const_iterator, boost::optional<non_null_ptr_type> >
+			named_child_const_iterator;
+
 		typedef std::map<QString, QString> AliasToNamespaceMap;
 
 		const PropertyName &
@@ -271,7 +274,7 @@ namespace GPlatesModel {
 		get_child_by_name(
 				const PropertyName &name) const;
 
-		std::pair<child_const_iterator, boost::optional<non_null_ptr_type> >
+		named_child_const_iterator
 		get_next_child_by_name(
 				const PropertyName &name,
 				const child_const_iterator &begin) const;

@@ -70,6 +70,16 @@ namespace GPlatesFileIO
 				const ReadErrors::Description &desc,
 				const ReadErrors::Result &res);
 
+		inline
+		bool
+		append_warning(
+				const GPlatesModel::XmlNode::non_null_ptr_type &current_elem,
+				ReaderParams &params,
+				const ReadErrors::Description &desc,
+				const ReadErrors::Result &res) {
+			return append_warning_if(true, current_elem, params, desc, res);
+		}
+
 		bool
 		append_warning_if(
 				bool condition,
