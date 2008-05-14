@@ -20,7 +20,9 @@ libfile_io_la_SOURCES	= PlatesLineFormatReader.cc \
 				ShapeFileReader.cc \
 				FileInfo.cc \
 				XmlWriter.cc \
-				StructurePropertyCreatorMap.cc
+				StructurePropertyCreatorMap.cc \
+				ShapefileXmlReader.cc \
+				ShapefileXmlWriter.cc
 
 if PYTHON
 noinst_PROGRAMS		= _file_io.so

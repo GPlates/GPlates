@@ -413,7 +413,7 @@ namespace
 }
 
 
-const GPlatesModel::FeatureCollectionHandle::weak_ref
+void
 GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
@@ -475,5 +475,4 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 	}
 
 	fileinfo.set_feature_collection(collection);
-	return collection;
 }

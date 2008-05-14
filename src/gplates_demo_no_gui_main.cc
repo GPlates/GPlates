@@ -551,10 +551,15 @@ main(int argc, char *argv[])
 		GPlatesModel::Model new_model;
 		GPlatesFileIO::ReadErrorAccumulation accum;
 
-		const GPlatesModel::FeatureCollectionHandle::weak_ref features =
-			GPlatesFileIO::GpmlOnePointSixReader::read_file(fileinfo, new_model, accum);
 
-		::output_as_gpml(features->features_begin(), features->features_end());
+		GPlatesFileIO::GpmlOnePointSixReader::read_file(fileinfo, new_model, accum);
+
+		if (fileinfo.get_feature_collection())
+		{
+			boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> features =
+				fileinfo.get_feature_collection();
+			::output_as_gpml((*features)->features_begin(), (*features)->features_end());
+		}
 #if 0
 		QFile file(filename);
 		file.open(QIODevice::ReadOnly | QIODevice::Text);

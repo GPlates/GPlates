@@ -610,7 +610,7 @@ namespace
 }
 
 
-const GPlatesModel::FeatureCollectionHandle::weak_ref
+void
 GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
@@ -639,5 +639,4 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	}
 
 	fileinfo.set_feature_collection(rotations);
-	return rotations;
 }

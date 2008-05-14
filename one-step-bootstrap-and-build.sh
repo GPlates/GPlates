@@ -20,7 +20,8 @@ sh build-everything.sh "$@"
 ( cd src/qt-widgets && make AnimateDialogUi.h QueryFeaturePropertiesWidgetUi.h )
 ( cd src/qt-widgets && make AboutDialogUi.h ReconstructionViewWidgetUi.h )
 ( cd src/qt-widgets && make ReadErrorAccumulationDialogUi.h )
-( cd src/qt-widgets && make ManageFeatureCollectionsDialogUi.h ManageFeatureCollectionsActionWidgetUi.h )
+( cd src/qt-widgets && make ManageFeatureCollectionsDialogUi.h )
+( cd src/qt-widgets && make ManageFeatureCollectionsActionWidgetUi.h )
 ( cd src/qt-widgets && make SetCameraViewpointDialogUi.h EulerPoleDialogUi.h )
 ( cd src/qt-widgets && make EditFeaturePropertiesWidgetUi.h )
 ( cd src/qt-widgets && make EditTimePeriodWidgetUi.h EditOldPlatesHeaderWidgetUi.h )
@@ -31,4 +32,7 @@ sh build-everything.sh "$@"
 ( cd src/qt-widgets && make EditBooleanWidgetUi.h EditPolarityChronIdWidgetUi.h )
 ( cd src/qt-widgets && make EditAngleWidgetUi.h )
 ( cd src/qt-widgets && make FeaturePropertiesDialogUi.h EditFeatureGeometriesWidgetUi.h )
+( cd src/qt-widgets && make ShapefileAttributeMapperDialogUi.h )
+( cd src/qt-widgets && make ShapefileAttributeRemapperDialogUi.h)
+( cd src/qt-widgets && make ShapefileAttributeWidgetUi.h)
 make

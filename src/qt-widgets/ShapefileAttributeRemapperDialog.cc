@@ -36,11 +36,11 @@
 
 #include "ShapefilePropertyMapper.h"
 #include "ShapefileAttributeWidget.h"
-#include "ShapefileAttributeMapperDialog.h"
+#include "ShapefileAttributeRemapperDialog.h"
 
 
 
-GPlatesQtWidgets::ShapefileAttributeMapperDialog::ShapefileAttributeMapperDialog(
+GPlatesQtWidgets::ShapefileAttributeRemapperDialog::ShapefileAttributeRemapperDialog(
 		QWidget *parent_
 ):
 	QDialog(parent_)
@@ -51,26 +51,25 @@ GPlatesQtWidgets::ShapefileAttributeMapperDialog::ShapefileAttributeMapperDialog
 }
 
 void
-GPlatesQtWidgets::ShapefileAttributeMapperDialog::setup(
+GPlatesQtWidgets::ShapefileAttributeRemapperDialog::setup(
 		QString &filename,
 		QStringList &field_names,
 		QMap< QString,QString > &model_to_attribute_map)
 {
-	d_shapefile_attribute_widget = new ShapefileAttributeWidget(this,filename,field_names,model_to_attribute_map,false);
+	d_shapefile_attribute_widget = new ShapefileAttributeWidget(this,filename,field_names,model_to_attribute_map,true);
 	gridLayout->addWidget(d_shapefile_attribute_widget,0,0);
-
 }
 
 
 void
-GPlatesQtWidgets::ShapefileAttributeMapperDialog::accept()
+GPlatesQtWidgets::ShapefileAttributeRemapperDialog::accept()
 {
 	d_shapefile_attribute_widget->accept_fields();	
 	done(QDialog::Accepted);
 }
 
 void
-GPlatesQtWidgets::ShapefileAttributeMapperDialog::reset_fields()
+GPlatesQtWidgets::ShapefileAttributeRemapperDialog::reset_fields()
 {
 	d_shapefile_attribute_widget->reset_fields();
 }

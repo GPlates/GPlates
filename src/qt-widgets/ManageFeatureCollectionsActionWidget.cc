@@ -38,6 +38,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 	setupUi(this);
 
 	// Set up slots for each button
+	QObject::connect(button_edit_configuration, SIGNAL(clicked()), this, SLOT(edit_configuration()));
 	QObject::connect(button_save, SIGNAL(clicked()), this, SLOT(save()));
 	QObject::connect(button_save_as, SIGNAL(clicked()), this, SLOT(save_as()));
 	QObject::connect(button_save_copy, SIGNAL(clicked()), this, SLOT(save_copy()));
@@ -45,6 +46,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 
 }
 
+void
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::edit_configuration()
+{
+	d_feature_collections_dialog.edit_configuration(this);
+}
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::save()
@@ -70,3 +76,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::unload()
 	d_feature_collections_dialog.unload_file(this);
 }
 
+void
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::enable_edit_configuration_button()
+{
+	button_edit_configuration->setEnabled(true);
+}

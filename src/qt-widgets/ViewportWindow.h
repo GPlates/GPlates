@@ -221,7 +221,14 @@ namespace GPlatesQtWidgets
 		bool
 		is_file_active(
 				file_info_iterator loaded_file);
-		
+			
+		/**
+		 * Temporary method for initiating shapefile attribute remapping. 
+		 */
+		void
+		remap_shapefile_attributes(
+			GPlatesFileIO::FileInfo &file_info);
+
 	private:
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
@@ -268,6 +275,8 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_about_dialog();
+
+
 
 		void
 		close_all_dialogs();

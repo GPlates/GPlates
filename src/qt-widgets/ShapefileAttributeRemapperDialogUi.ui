@@ -1,6 +1,6 @@
 <ui version="4.0" >
- <class>ShapefileAttributeMapper</class>
- <widget class="QDialog" name="ShapefileAttributeMapper" >
+ <class>ShapefileAttributeRemapper</class>
+ <widget class="QDialog" name="ShapefileAttributeRemapper" >
   <property name="geometry" >
    <rect>
     <x>0</x>
@@ -50,7 +50,7 @@
      <item>
       <widget class="QPushButton" name="button_cancel" >
        <property name="text" >
-        <string>Cancel Loading</string>
+        <string>Cancel</string>
        </property>
       </widget>
      </item>
@@ -79,7 +79,7 @@
   <connection>
    <sender>button_ok</sender>
    <signal>clicked()</signal>
-   <receiver>ShapefileAttributeMapper</receiver>
+   <receiver>ShapefileAttributeRemapper</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel" >
@@ -95,7 +95,7 @@
   <connection>
    <sender>button_cancel</sender>
    <signal>clicked()</signal>
-   <receiver>ShapefileAttributeMapper</receiver>
+   <receiver>ShapefileAttributeRemapper</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel" >

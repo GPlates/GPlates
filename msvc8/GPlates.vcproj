@@ -227,15 +227,11 @@
 			Name="canvas-tools"
 			>
 			<File
-				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc"
+				RelativePath="..\src\canvas-tools\EditFeature.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\QueryFeature.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\canvas-tools\QueryFeature.h"
+				RelativePath="..\src\canvas-tools\EditFeature.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -250,11 +246,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\EditFeature.cc"
+				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\EditFeature.h"
+				RelativePath="..\src\canvas-tools\QueryFeature.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\QueryFeature.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -319,7 +319,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
+				RelativePath="..\src\gui\FeatureFocus.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureFocus.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -375,11 +379,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\gui\FeatureFocus.cc"
+				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\FeatureFocus.h"
+				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -406,7 +410,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
+				RelativePath="..\src\gui\moc_FeatureFocus.cc"
 				>
 			</File>
 			<File
@@ -422,7 +426,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\moc_FeatureFocus.cc"
+				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
 				>
 			</File>
 			<File
@@ -580,6 +584,276 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\EditAngleWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditAngleWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditAngleWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditBooleanWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditBooleanWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditBooleanWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditDoubleWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditDoubleWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditDoubleWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditEnumerationWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditEnumerationWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditEnumerationWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditIntegerWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditIntegerWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditIntegerWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditOldPlatesHeaderWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditOldPlatesHeaderWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditOldPlatesHeaderWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditPlateIdWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditPlateIdWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditPlateIdWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditPolarityChronIdWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditPolarityChronIdWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditPolarityChronIdWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditStringWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditStringWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditStringWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditTimeInstantWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditTimeInstantWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditTimeInstantWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditTimePeriodWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditTimePeriodWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditTimePeriodWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditWidgetChooser.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditWidgetChooser.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditWidgetGroupBox.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditWidgetGroupBox.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\EulerPoleDialog.cc"
 				>
 			</File>
@@ -596,6 +870,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EulerPoleDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeaturePropertiesDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeaturePropertiesDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeaturePropertiesDialogUi.ui"
 				>
 			</File>
 			<File
@@ -686,6 +979,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_AboutDialog.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_AbstractEditWidget.cc"
 				>
 			</File>
@@ -694,15 +991,71 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_AboutDialog.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_EditAngleWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditBooleanWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditDoubleWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditEnumerationWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditFeatureGeometriesWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditFeaturePropertiesWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditIntegerWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditOldPlatesHeaderWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditPlateIdWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditPolarityChronIdWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditStringWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditTimeInstantWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditTimePeriodWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditWidgetGroupBox.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_EulerPoleDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_FeaturePropertiesDialog.cc"
 				>
 			</File>
 			<File
@@ -726,66 +1079,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_EditOldPlatesHeaderWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditTimePeriodWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditStringWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditEnumerationWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditTimeInstantWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditPlateIdWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditIntegerWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditDoubleWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditBooleanWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditPolarityChronIdWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditAngleWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditWidgetGroupBox.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_FeaturePropertiesDialog.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditFeaturePropertiesWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\moc_EditFeatureGeometriesWidget.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\moc_QueryFeaturePropertiesWidget.cc"
 				>
 			</File>
@@ -794,11 +1087,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_SetCameraViewpointDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
+				RelativePath="..\src\qt-widgets\moc_ShapefileAttributeMapperDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ShapefileAttributeRemapperDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ShapefileAttributeWidget.cc"
 				>
 			</File>
 			<File
@@ -807,295 +1112,6 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_ViewportWindow.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditWidgetChooser.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditWidgetChooser.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditOldPlatesHeaderWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditOldPlatesHeaderWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditOldPlatesHeaderWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditTimePeriodWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditTimePeriodWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditTimePeriodWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditStringWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditStringWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditStringWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditEnumerationWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditEnumerationWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditEnumerationWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditTimeInstantWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditTimeInstantWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditTimeInstantWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditPlateIdWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditPlateIdWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditPlateIdWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditIntegerWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditIntegerWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditIntegerWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditDoubleWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditDoubleWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditDoubleWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditBooleanWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditBooleanWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditBooleanWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditPolarityChronIdWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditPolarityChronIdWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditPolarityChronIdWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditAngleWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditAngleWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditAngleWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditWidgetGroupBox.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditWidgetGroupBox.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\FeaturePropertiesDialog.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\FeaturePropertiesDialog.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\FeaturePropertiesDialogUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidgetUi.ui"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -1137,6 +1153,25 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionViewWidgetUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\SetCameraViewpointDialog.cc"
 				>
 			</File>
@@ -1156,11 +1191,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.cc"
+				RelativePath="..\src\qt-widgets\ShapefileAttributeMapperDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\ReconstructionViewWidget.h"
+				RelativePath="..\src\qt-widgets\ShapefileAttributeMapperDialog.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -1171,7 +1206,53 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\ReconstructionViewWidgetUi.ui"
+				RelativePath="..\src\qt-widgets\ShapefileAttributeMapperDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ShapefileAttributeRemapperDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ShapefileAttributeRemapperDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ShapefileAttributeRemapperDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ShapefileAttributeWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ShapefileAttributeWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ShapefileAttributeWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ShapefilePropertyMapper.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ShapefilePropertyMapper.h"
 				>
 			</File>
 			<File
@@ -1279,7 +1360,7 @@
 			<File
 				RelativePath="..\src\model\XmlNode.cc"
 				>
-			</File>			
+			</File>
 		</Filter>
 		<Filter
 			Name="utils"
@@ -1409,11 +1490,11 @@
 			Name="file-io"
 			>
 			<File
-				RelativePath="..\src\file-io\FileInfo.cc"
+				RelativePath="..\src\file-io\FeaturePropertiesMap.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\file-io\FeaturePropertiesMap.cc"
+				RelativePath="..\src\file-io\FileInfo.cc"
 				>
 			</File>
 			<File
@@ -1449,11 +1530,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\PropertyMapper.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\ReadErrorOccurrence.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\file-io\ShapeFileReader.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapefileXmlReader.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapefileXmlReader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapefileXmlWriter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapefileXmlWriter.h"
 				>
 			</File>
 			<File
@@ -1493,7 +1594,11 @@
 			Name="feature-visitors"
 			>
 			<File
-				RelativePath="..\src\feature-visitors\PropertyValueSetter.cc"
+				RelativePath="..\src\feature-visitors\EditFeatureGeometriesWidgetPopulator.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\FromQvariantConverter.cc"
 				>
 			</File>
 			<File
@@ -1509,7 +1614,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\feature-visitors\EditFeatureGeometriesWidgetPopulator.cc"
+				RelativePath="..\src\feature-visitors\PropertyValueSetter.cc"
 				>
 			</File>
 			<File
@@ -1517,7 +1622,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\feature-visitors\FromQvariantConverter.cc"
+				RelativePath="..\src\feature-visitors\ShapefileAttributeFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\ShapefileAttributeFinder.h"
 				>
 			</File>
 			<File

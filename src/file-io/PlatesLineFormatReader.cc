@@ -1231,7 +1231,7 @@ namespace
 }
 
 
-const GPlatesModel::FeatureCollectionHandle::weak_ref
+void
 GPlatesFileIO::PlatesLineFormatReader::read_file(
 		FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
@@ -1263,5 +1263,4 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	}
 
 	fileinfo.set_feature_collection(collection);
-	return collection;
 }

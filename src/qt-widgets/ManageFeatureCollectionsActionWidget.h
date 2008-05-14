@@ -61,9 +61,14 @@ namespace GPlatesQtWidgets
 			return d_file_info_iterator;
 		}
 	
+		void
+		enable_edit_configuration_button();
 	
 	public slots:
 		
+		void
+		edit_configuration();
+
 		void
 		save();
 		

@@ -94,6 +94,8 @@ namespace GPlatesFileIO
 			InvalidShapefileLongitude,
 			NoPlateIdFound,
 			InvalidShapefilePlateIdNumber,
+			InvalidShapefileAgeOfAppearance,
+			InvalidShapefileAgeOfDisappearance,
 
 			// The following apply to GPML import
 			DuplicateProperty,
@@ -157,6 +159,7 @@ namespace GPlatesFileIO
 			OnlyExteriorRingRead,
 			NoPlateIdLoadedForFile,
 			NoPlateIdLoadedForFeature,
+			AttributeIgnored,
 			
 			// The following are specific to GPML reading.
 			ElementIgnored,

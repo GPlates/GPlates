@@ -23,32 +23,32 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_SHAPEFILEATTRIBUTEMAPPERDIALOG_H
-#define GPLATES_QTWIDGETS_SHAPEFILEATTRIBUTEMAPPERDIALOG_H
+#ifndef GPLATES_QTWIDGETS_SHAPEFILEATTRIBUTEREMAPPERDIALOG_H
+#define GPLATES_QTWIDGETS_SHAPEFILEATTRIBUTEREMAPPERDIALOG_H
 
 #include <QDialog>
 
 #include "model/FeatureCollectionHandle.h"
 
-#include "ShapefileAttributeMapperDialogUi.h"
+#include "ShapefileAttributeRemapperDialogUi.h"
 #include "ShapefileAttributeWidget.h"
 
 
 namespace GPlatesQtWidgets
 {
-	class ShapefileAttributeMapperDialog: 
+	class ShapefileAttributeRemapperDialog: 
 			public QDialog,
-			protected Ui_ShapefileAttributeMapper
+			protected Ui_ShapefileAttributeRemapper
 	{
 		Q_OBJECT
 		
 	public:
 		
-		ShapefileAttributeMapperDialog(
+		ShapefileAttributeRemapperDialog(
 				QWidget *parent_ = NULL);
 
 		virtual
-		~ShapefileAttributeMapperDialog()
+		~ShapefileAttributeRemapperDialog()
 		{  }
 
 		void
@@ -79,4 +79,5 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_SHAPEFILEATTRIBUTEMAPPERDIALOG_H
+#endif  // GPLATES_QTWIDGETS_SHAPEFILEATTRIBUTEREMAPPERDIALOG_H
+

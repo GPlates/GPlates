@@ -218,6 +218,12 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
 				QT_TR_NOOP("Invalid Plate-id."),
 				QT_TR_NOOP("An invalid Plate-id was found.") },
+		{ GPlatesFileIO::ReadErrors::InvalidShapefileAgeOfAppearance,
+				QT_TR_NOOP("Invalid age of appearance."),
+				QT_TR_NOOP("An invalid age of appearance was found.") },
+		{ GPlatesFileIO::ReadErrors::InvalidShapefileAgeOfDisappearance,
+				QT_TR_NOOP("Invalid age of disappearance."),
+				QT_TR_NOOP("An invalid age of disappearance was found.") },
 
 
 
@@ -264,6 +270,8 @@ namespace
 				QT_TR_NOOP("No Plate-ids have been loaded for this file.") },
 		{ GPlatesFileIO::ReadErrors::NoPlateIdLoadedForFeature,
 				QT_TR_NOOP("No Plate-id was read for this feature.") },
+		{ GPlatesFileIO::ReadErrors::AttributeIgnored,
+				QT_TR_NOOP("The attribute was not mapped to a model property.") },
 				
 				
 		// Generic file-related errors:

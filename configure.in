@@ -325,7 +325,7 @@ AC_ARG_ENABLE(prof, [  --enable-prof           Enable profiling],
 AC_MSG_CHECKING([for Plesiosaurs in Loch Ness])
 AC_MSG_RESULT(yes)
 
-PKG_CHECK_MODULES(QT, [QtCore >= 4.3, QtGui >= 4.3, QtOpenGL >= 4.3, QtNetwork >= 4.3, QtSvg >= 4.3])
+PKG_CHECK_MODULES(QT, [QtCore >= 4.3, QtGui >= 4.3, QtOpenGL >= 4.3, QtNetwork >= 4.3, QtSvg >= 4.3, QtXml >= 4.3])
 dnl Check needed because in some cases the QtGui includedir
 dnl doesn't contain the subsystem dir.
 

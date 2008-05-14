@@ -35,6 +35,7 @@
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
+#include "ShapefilePropertyMapper.h"
 
 #include "global/Exception.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
@@ -141,7 +142,6 @@ GPlatesQtWidgets::ViewportWindow::save_file_copy(
 	return file_copy;
 }
 
-
 void
 GPlatesQtWidgets::ViewportWindow::load_files(
 		const QStringList &file_names)
@@ -165,34 +165,48 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 			{
 				GPlatesFileIO::PlatesLineFormatReader::read_file(file, *d_model_ptr, read_errors);
 
-				// All loaded files are added to the set of loaded files.
-				GPlatesAppState::ApplicationState::file_info_iterator new_file =
-					GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+				if (file.get_feature_collection())
+				{
+					// All loaded files are added to the set of loaded files.
+					GPlatesAppState::ApplicationState::file_info_iterator new_file =
+						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
 
-				// Line format files are made active by default.
-				d_active_reconstructable_files.push_back(new_file);
+					// Line format files are made active by default.
+					d_active_reconstructable_files.push_back(new_file);
+				}
 			}
 			else if (is_plates_rotation_format_file(file))
 			{
 				GPlatesFileIO::PlatesRotationFormatReader::read_file(file, *d_model_ptr, read_errors);
-				// All loaded files are added to the set of loaded files.
-				GPlatesAppState::ApplicationState::file_info_iterator new_file =
-					GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+	
 
-				if ( ! have_loaded_new_rotation_file) 
+				if (file.get_feature_collection())
 				{
+					// All loaded files are added to the set of loaded files.
+					GPlatesAppState::ApplicationState::file_info_iterator new_file =
+						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);				
+					
 					// We only want to make the first rotation file active.
-					d_active_reconstruction_files.clear();
-					d_active_reconstruction_files.push_back(new_file);
-					have_loaded_new_rotation_file = true;
+					if ( ! have_loaded_new_rotation_file) 
+					{
+						d_active_reconstruction_files.clear();
+						d_active_reconstruction_files.push_back(new_file);
+						have_loaded_new_rotation_file = true;
+					}
 				}
 			} 
 			else if (file.get_qfileinfo().suffix().endsWith(QString("shp"),Qt::CaseInsensitive))
 			{
+				GPlatesFileIO::ShapeFileReader::set_property_mapper(
+					boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
 				GPlatesFileIO::ShapeFileReader::read_file(file,*d_model_ptr,read_errors);
-				GPlatesAppState::ApplicationState::file_info_iterator new_file =
-					GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
-				d_active_reconstructable_files.push_back(new_file);
+
+				if (file.get_feature_collection())
+				{
+					GPlatesAppState::ApplicationState::file_info_iterator new_file =
+						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+					d_active_reconstructable_files.push_back(new_file);
+				}
 			}
 			else
 			{
@@ -775,5 +789,29 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(QCloseEvent *close_event)
 	close_event->accept();
 	// If we decide to accept the close event, we should also tidy up after ourselves.
 	close_all_dialogs();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
+	GPlatesFileIO::FileInfo &file_info)
+{
+
+	d_read_errors_dialog.clear();
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
+
+	GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(file_info,*d_model_ptr,read_errors);
+
+	d_read_errors_dialog.update();
+
+	// Pop up errors only if appropriate.
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors) {
+		d_read_errors_dialog.show();
+	}
+
+
+	// plate-ids may have changed, so update the reconstruction. 
+	reconstruct();
 }
 

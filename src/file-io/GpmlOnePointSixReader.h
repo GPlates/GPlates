@@ -39,7 +39,7 @@ namespace GPlatesFileIO
 	{
 	public:
 		static
-		const GPlatesModel::FeatureCollectionHandle::weak_ref
+		void
 		read_file(
 				FileInfo &fileinfo,
 				GPlatesModel::ModelInterface &model,

@@ -5,59 +5,68 @@ MAINTAINERCLEANFILES	= Makefile.in
 INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libqt_widgets.la
-libqt_widgets_la_SOURCES	= GlobeCanvas.cc moc_GlobeCanvas.cc \
-	ViewportWindow.cc ViewportWindowUi.h moc_ViewportWindow.cc \
-	SpecifyFixedPlateDialog.cc SpecifyFixedPlateDialogUi.h moc_SpecifyFixedPlateDialog.cc \
-	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc \
-	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
-	QueryFeaturePropertiesWidget.cc QueryFeaturePropertiesWidgetUi.h \
-	moc_QueryFeaturePropertiesWidget.cc \
-	InformationDialog.cc InformationDialogUi.h moc_InformationDialog.cc \
-	LicenseDialog.cc moc_LicenseDialog.cc \
-	ReconstructionViewWidget.cc ReconstructionViewWidgetUi.h moc_ReconstructionViewWidget.cc \
-	ReadErrorAccumulationDialog.cc ReadErrorAccumulationDialogUi.h moc_ReadErrorAccumulationDialog.cc \
-	ManageFeatureCollectionsDialog.cc ManageFeatureCollectionsDialogUi.h \
-	moc_ManageFeatureCollectionsDialog.cc \
-	ManageFeatureCollectionsActionWidget.cc ManageFeatureCollectionsActionWidgetUi.h \
-	moc_ManageFeatureCollectionsActionWidget.cc \
-	ApplicationState.cc \
-	SetCameraViewpointDialog.cc SetCameraViewpointDialogUi.h \
-	moc_SetCameraViewpointDialog.cc \
-	EulerPoleDialog.cc EulerPoleDialogUi.h moc_EulerPoleDialog.cc \
-	EditFeaturePropertiesWidget.cc EditFeaturePropertiesWidgetUi.h \
-	moc_EditFeaturePropertiesWidget.cc \
-	EditTimePeriodWidget.cc EditTimePeriodWidgetUi.h \
-	moc_EditTimePeriodWidget.cc \
-	EditWidgetGroupBox.cc moc_EditWidgetGroupBox.cc \
-	EditWidgetChooser.cc \
-	EditOldPlatesHeaderWidget.cc EditOldPlatesHeaderWidgetUi.h \
-	moc_EditOldPlatesHeaderWidget.cc \
+libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
+	AbstractEditWidget.cc moc_AbstractEditWidget.cc \
 	AddPropertyDialog.cc AddPropertyDialogUi.h \
 	moc_AddPropertyDialog.cc \
-	AbstractEditWidget.cc moc_AbstractEditWidget.cc \
-	EditStringWidget.cc EditStringWidgetUi.h \
-	moc_EditStringWidget.cc \
-	EditEnumerationWidget.cc EditEnumerationWidgetUi.h \
-	moc_EditEnumerationWidget.cc \
-	EditTimeInstantWidget.cc EditTimeInstantWidgetUi.h \
-	moc_EditTimeInstantWidget.cc \
-	EditPlateIdWidget.cc EditPlateIdWidgetUi.h \
-	moc_EditPlateIdWidget.cc \
-	EditIntegerWidget.cc EditIntegerWidgetUi.h \
-	moc_EditIntegerWidget.cc \
-	EditDoubleWidget.cc EditDoubleWidgetUi.h \
-	moc_EditDoubleWidget.cc \
-	EditBooleanWidget.cc EditBooleanWidgetUi.h \
-	moc_EditBooleanWidget.cc \
-	EditPolarityChronIdWidget.cc EditPolarityChronIdWidgetUi.h \
-	moc_EditPolarityChronIdWidget.cc \
+	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc \
+	ApplicationState.cc \
 	EditAngleWidget.cc EditAngleWidgetUi.h \
 	moc_EditAngleWidget.cc \
+	EditBooleanWidget.cc EditBooleanWidgetUi.h \
+	moc_EditBooleanWidget.cc \
+	EditDoubleWidget.cc EditDoubleWidgetUi.h \
+	moc_EditDoubleWidget.cc \
+	EditEnumerationWidget.cc EditEnumerationWidgetUi.h \
+	moc_EditEnumerationWidget.cc \
+	EditFeatureGeometriesWidget.cc EditFeatureGeometriesWidgetUi.h \
+	moc_EditFeatureGeometriesWidget.cc \
+	EditFeaturePropertiesWidget.cc EditFeaturePropertiesWidgetUi.h \
+	moc_EditFeaturePropertiesWidget.cc \
+	EditIntegerWidget.cc EditIntegerWidgetUi.h \
+	moc_EditIntegerWidget.cc \
+	EditOldPlatesHeaderWidget.cc EditOldPlatesHeaderWidgetUi.h \
+	moc_EditOldPlatesHeaderWidget.cc \
+	EditPlateIdWidget.cc EditPlateIdWidgetUi.h \
+	moc_EditPlateIdWidget.cc \
+	EditPolarityChronIdWidget.cc EditPolarityChronIdWidgetUi.h \
+	moc_EditPolarityChronIdWidget.cc \
+	EditStringWidget.cc EditStringWidgetUi.h \
+	moc_EditStringWidget.cc \
+	EditTimeInstantWidget.cc EditTimeInstantWidgetUi.h \
+	moc_EditTimeInstantWidget.cc \
+	EditTimePeriodWidget.cc EditTimePeriodWidgetUi.h \
+	moc_EditTimePeriodWidget.cc \
+	EditWidgetChooser.cc \
+	EditWidgetGroupBox.cc moc_EditWidgetGroupBox.cc \
+	EulerPoleDialog.cc EulerPoleDialogUi.h moc_EulerPoleDialog.cc \
 	FeaturePropertiesDialog.cc FeaturePropertiesDialogUi.h \
 	moc_FeaturePropertiesDialog.cc \
-	EditFeatureGeometriesWidget.cc EditFeatureGeometriesWidgetUi.h \
-	moc_EditFeatureGeometriesWidget.cc
-
+	GlobeCanvas.cc moc_GlobeCanvas.cc \
+	InformationDialog.cc InformationDialogUi.h moc_InformationDialog.cc \
+	LicenseDialog.cc moc_LicenseDialog.cc \
+	ManageFeatureCollectionsActionWidget.cc ManageFeatureCollectionsActionWidgetUi.h \
+	moc_ManageFeatureCollectionsActionWidget.cc \
+	ManageFeatureCollectionsDialog.cc ManageFeatureCollectionsDialogUi.h \
+	moc_ManageFeatureCollectionsDialog.cc \
+	QueryFeaturePropertiesWidget.cc QueryFeaturePropertiesWidgetUi.h \
+	moc_QueryFeaturePropertiesWidget.cc \
+	ReadErrorAccumulationDialog.cc ReadErrorAccumulationDialogUi.h \
+	moc_ReadErrorAccumulationDialog.cc \
+	ReconstructionViewWidget.cc ReconstructionViewWidgetUi.h \
+	moc_ReconstructionViewWidget.cc \
+	SetCameraViewpointDialog.cc SetCameraViewpointDialogUi.h \
+	moc_SetCameraViewpointDialog.cc \
+	ShapefileAttributeMapperDialog.cc ShapefileAttributeMapperDialogUi.h \
+ 	moc_ShapefileAttributeMapperDialog.cc \
+	ShapefileAttributeRemapperDialog.cc ShapefileAttributeRemapperDialogUi.h \
+	moc_ShapefileAttributeRemapperDialog.cc \
+	ShapefileAttributeWidget.cc ShapefileAttributeWidgetUi.h \
+	moc_ShapefileAttributeWidget.cc \
+	ShapefilePropertyMapper.cc \
+	SpecifyFixedPlateDialog.cc SpecifyFixedPlateDialogUi.h \
+	moc_SpecifyFixedPlateDialog.cc \
+	ViewportWindow.cc ViewportWindowUi.h moc_ViewportWindow.cc 
 
 
 CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
@@ -65,7 +74,6 @@ CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				QueryFeaturePropertiesWidgetUi.h ReconstructionViewWidgetUi.h \
 				ReadErrorAccumulationDialogUi.h ManageFeatureCollectionsDialogUi.h \
 				ManageFeatureCollectionsActionWidgetUi.h SetCameraViewpointDialogUi.h \
-				EulerPoleDialogUi.h \
 				EditFeaturePropertiesWidgetUi.h EditTimePeriodWidgetUi.h \
 				EditOldPlatesHeaderWidgetUi.h AddPropertyDialogUi.h \
 				EditStringWidgetUi.h EditEnumerationWidgetUi.h \
@@ -74,6 +82,10 @@ CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				EditBooleanWidgetUi.h EditPolarityChronIdWidgetUi.h \
 				EditAngleWidgetUi.h \
 				FeaturePropertiesDialogUi.h EditFeatureGeometriesWidgetUi.h \
+				ShapefileAttributeMapperDialogUi.h \
+				ShapefileAttributeRemapperDialogUi.h \
+				ShapefileAttributeWidgetUi.h \
+				EulerPoleDialogUi.h
 				moc_*.cc
 
 # This rule lets GNU make create any moc_*.cc from the equivalent *.h
