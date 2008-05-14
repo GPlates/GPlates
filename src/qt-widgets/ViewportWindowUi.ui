@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>580</width>
+    <width>639</width>
     <height>600</height>
    </rect>
   </property>
@@ -27,8 +27,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>580</width>
-     <height>25</height>
+     <width>639</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -42,6 +42,8 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Open_Feature_Collection" />
+    <addaction name="action_Open_Global_Raster" />
+    <addaction name="action_Open_Time_Dependent_Global_Raster_Set" />
     <addaction name="action_File_Errors" />
     <addaction name="action_Manage_Feature_Collections" />
     <addaction name="separator" />
@@ -63,6 +65,8 @@
     <property name="title" >
      <string>&amp;View</string>
     </property>
+    <addaction name="action_Enable_Raster_Display" />
+    <addaction name="separator" />
     <addaction name="action_Set_Camera_Viewpoint" />
     <addaction name="action_Move_Camera_Up" />
     <addaction name="action_Move_Camera_Down" />
@@ -482,6 +486,9 @@
    </property>
   </action>
   <action name="action_Set_Camera_Viewpoint" >
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
    <property name="text" >
     <string>Set Camera &amp;Viewpoint...</string>
    </property>
@@ -586,6 +593,24 @@
   <action name="action_Reconstruction_Tree_and_Poles" >
    <property name="text" >
     <string>Total Reconstruction &amp;Poles</string>
+   </property>
+  </action>
+  <action name="action_Open_Global_Raster" >
+   <property name="text" >
+    <string>Open Global &amp;Raster...</string>
+   </property>
+  </action>
+  <action name="action_Enable_Raster_Display" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Enable Raster Display</string>
+   </property>
+  </action>
+  <action name="action_Open_Time_Dependent_Global_Raster_Set" >
+   <property name="text" >
+    <string>Open Time Dependent Global Raster Set...</string>
    </property>
   </action>
  </widget>

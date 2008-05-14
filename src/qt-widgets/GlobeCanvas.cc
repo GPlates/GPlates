@@ -35,13 +35,16 @@
 #include <cmath>
 #include <boost/none.hpp>
 
+#include <QLinearGradient>
 #include <QLocale>
+#include <QPainter>
 #include <QtGui/QMouseEvent>
 
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
 #include "feature-visitors/PlateIdFinder.h"
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
+#include "gui/Texture.h"
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -188,6 +191,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	QObject::connect(&d_viewport_zoom, SIGNAL(zoom_changed()),
 			this, SLOT(handle_zoom_change()));
 	handle_zoom_change();
+
+    setAttribute(Qt::WA_NoSystemBackground);
 }
 
 
@@ -294,7 +299,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_point(
 void
 GPlatesQtWidgets::GlobeCanvas::update_canvas()
 {
-	updateGL();
+	update();
 }
 
 
@@ -332,7 +337,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_vector_output()
 void
 GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change() 
 {
-	update_canvas();
+	update();
 }
 
 
@@ -380,10 +385,12 @@ void
 GPlatesQtWidgets::GlobeCanvas::initializeGL() 
 {
 	glEnable(GL_DEPTH_TEST);
-	
+
 	// FIXME: Enable polygon offset here or in Globe?
 	
 	clear_canvas();
+
+	d_globe.initialise_texture();
 }
 
 
@@ -406,6 +413,10 @@ GPlatesQtWidgets::GlobeCanvas::resizeGL(
 void 
 GPlatesQtWidgets::GlobeCanvas::paintGL() 
 {
+// This paintGL method should be enabled, and the paintEvent() method disabled, when we wish to draw *without* overpainting
+//	(  http://doc.trolltech.com/4.3/opengl-overpainting.html )
+//
+
 	try {
 		clear_canvas();
 		
@@ -428,6 +439,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 
 		// FIXME: Use new exception system which doesn't involve strings.
 	}
+
 }
 
 
@@ -444,6 +456,7 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 					mouse_pointer_is_on_globe(),
 					press_event->button(),
 					press_event->modifiers());
+
 }
 
 
@@ -655,4 +668,158 @@ GPlatesQtWidgets::GlobeCanvas::clear_canvas(
 
 	// Clear the window to the current clearing colour.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::toggle_raster_image()
+{
+	d_globe.toggle_raster_image();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::enable_raster_display()
+{
+	d_globe.enable_raster_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::disable_raster_display()
+{
+	d_globe.disable_raster_display();
+	update_canvas();
+}
+
+#if 0
+void
+GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
+{
+// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Q overpainting
+//  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
+
+	try {
+
+		qglClearColor(Qt::black);
+
+		QPainter painter;
+		painter.begin(this);
+
+		painter.setRenderHint(QPainter::Antialiasing);
+	
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+		clear_canvas();
+
+		set_view();
+
+		glLoadIdentity();
+		glTranslatef(EYE_X, EYE_Y, EYE_Z);
+
+		// Set up our universe coordinate system (the standard geometric one):
+		//   Z points up
+		//   Y points right
+		//   X points out of the screen
+		glRotatef(-90.0, 1.0, 0.0, 0.0);
+		glRotatef(-90.0, 0.0, 0.0, 1.0);
+
+		// FIXME: Globe uses wrong naming convention for methods.
+		d_globe.Paint();
+
+		glPopAttrib();
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+
+		draw_colour_legend(&painter,d_globe.texture());
+
+		painter.end();
+
+	} catch (const GPlatesGlobal::Exception &){
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+
+		// FIXME: Use new exception system which doesn't involve strings.
+	}
+
+}
+#endif
+
+void
+GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
+	QPainter *painter,
+	GPlatesGui::Texture &texture)
+{
+	if (!(texture.is_enabled() && texture.corresponds_to_data())){
+		return;
+	}
+
+	// The position of the bottom-right of the colour legend w.r.t the bottom right of the window.  
+	QPoint margin(30,30);
+
+	// The size of the colour legend background box.
+	QSize box(80,220);
+
+	// The size of the colour bar. 
+	QSize bar(20,200);
+
+	// The offset of the colour bar w.r.t. the colour legend background box. 
+	QPoint bar_margin(5,
+			static_cast<int>((box.height()-bar.height())/2.0));
+
+
+	// The background box.
+	QRect box_rect(width()- margin.x() - box.width(),
+					height() - margin.y() - box.height(),
+					box.width(),
+					box.height());
+			
+	// The colour bar box.
+	QRect bar_rect(box_rect.topLeft()+bar_margin,
+					bar);
+
+
+	// Draw the gray background box. 
+	painter->setBrush(Qt::gray);
+	painter->drawRect(box_rect);
+
+	QLinearGradient gradient(
+					bar_rect.left() + bar_rect.width()/2,
+					bar_rect.top(),
+					bar_rect.left() + bar_rect.width()/2,
+					bar_rect.bottom());
+
+	gradient.setColorAt(0,Qt::blue);
+	gradient.setColorAt(0.25,Qt::cyan);
+	gradient.setColorAt(0.5,Qt::green);
+	gradient.setColorAt(0.75,Qt::yellow);
+	gradient.setColorAt(1.0,Qt::red);
+
+	// Draw the colour bar. 
+	painter->setBrush(gradient);
+	painter->drawRect(bar_rect);
+
+	// Add text at the bottom, middle, and top of the colour bar. 
+	QString min_string,max_string,med_string;
+	float min = texture.get_min();
+	float max = texture.get_max();
+	float med = (max + min)/2.;
+
+	QLocale locale_;
+	min_string = locale_.toString(min,'g',4);
+	med_string = locale_.toString(med,'g',4);
+	max_string = locale_.toString(max,'g',4);
+
+	painter->setPen(Qt::black);
+	painter->drawText(bar_rect.right()+5, bar_rect.bottom()+2, min_string);
+	painter->drawText(bar_rect.right()+5,
+			static_cast<int>((bar_rect.bottom()+bar_rect.top())/2.0+2),
+			med_string);
+	painter->drawText(bar_rect.right()+5, bar_rect.top()+2, max_string);
+
 }

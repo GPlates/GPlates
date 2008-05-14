@@ -55,6 +55,7 @@
 #include "file-io/PlatesRotationFormatReader.h"
 #include "file-io/FileInfo.h"
 #include "file-io/Reader.h"
+#include "file-io/RasterReader.h"
 #include "file-io/ShapeFileReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "gui/SvgExport.h"
@@ -86,6 +87,7 @@ namespace
 	{
 		return file_name_ends_with(file, "rot");
 	}
+
 }
 
 
@@ -235,6 +237,8 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 		{
 			std::cerr << "Caught exception: " << e << std::endl;
 		}
+
+
 	}
 
 	// Internal state changed, make sure dialogs are up to date.
@@ -372,7 +376,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_manage_feature_collections_dialog(*this, this),
 	d_animate_dialog_has_been_shown(false),
 	d_euler_pole_dialog(*this, this),
-	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus))
+	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
+	d_open_file_path("")
 {
 	setupUi(this);
 
@@ -435,6 +440,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
 
+	QObject::connect(action_Enable_Raster_Display, SIGNAL(triggered()),
+			this, SLOT(enable_raster_display()));
+
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
 
@@ -452,6 +460,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
 			&d_manage_feature_collections_dialog, SLOT(open_file()));
+	QObject::connect(action_Open_Global_Raster, SIGNAL(triggered()),
+			this, SLOT(open_global_raster()));
+	QObject::connect(action_Open_Time_Dependent_Global_Raster_Set, SIGNAL(triggered()),
+			this, SLOT(open_time_dependent_global_raster_set()));
 	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
 			this, SLOT(pop_up_manage_feature_collections_dialog()));
 	QObject::connect(action_File_Errors, SIGNAL(triggered()),
@@ -473,6 +485,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	tab_list_clicked->horizontalHeader()->setMinimumSectionSize(60);
 	tab_list_clicked->horizontalHeader()->setMovable(true);
 	tab_list_clicked->horizontalHeader()->setHighlightSections(false);
+	tab_list_clicked->horizontalHeader()->
 	QObject::connect(tab_list_clicked->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr,
@@ -565,11 +578,18 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	d_canvas_ptr->clear_data();
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root);
-	d_canvas_ptr->update_canvas();
+
 
 	if (d_euler_pole_dialog.isVisible()){
 		d_euler_pole_dialog.update();
 	}
+
+	if (action_Enable_Raster_Display->isChecked() &&
+		!d_time_dependent_raster_map.isEmpty())
+	{	
+		update_time_dependent_raster();
+	}
+	d_canvas_ptr->update_canvas();
 }
 
 
@@ -813,5 +833,135 @@ GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 
 	// plate-ids may have changed, so update the reconstruction. 
 	reconstruct();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_raster_display()
+{
+	if (action_Enable_Raster_Display->isChecked())
+	{
+		d_canvas_ptr->enable_raster_display();
+	}
+	else
+	{
+		d_canvas_ptr->disable_raster_display();
+	}
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::open_global_raster()
+{
+
+	QString filename = QFileDialog::getOpenFileName(0,
+		QObject::tr("Open File"), d_open_file_path, QObject::tr("Image files (*.jpg *.jpeg)") );
+
+	if ( filename.isEmpty()){
+		return;
+	}
+
+	if (load_global_raster(filename))
+	{
+		// If we've successfully loaded a single raster, clear the raster_map.
+		d_time_dependent_raster_map.clear();
+	}
+	QFileInfo last_opened_file(filename);
+	d_open_file_path = last_opened_file.path();
+}
+
+bool
+GPlatesQtWidgets::ViewportWindow::load_global_raster(
+	QString filename)
+{
+	bool result = false;
+	d_read_errors_dialog.clear();
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
+	GPlatesFileIO::FileInfo file_info(filename);
+
+	try{
+
+		GPlatesFileIO::RasterReader::read_file(file_info, d_canvas_ptr->globe().texture(), read_errors);
+		action_Enable_Raster_Display->setChecked(true);
+		result = true;
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
+	{
+		// FIXME: A bit of a sucky conversion from ErrorOpeningFileForReadingException to
+		// ReadErrorOccurrence, but hey, this whole function will be rewritten when we add
+		// QFileDialog support.
+		// FIXME: I suspect I'm Missing The Point with these shared_ptrs.
+		boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
+			new GPlatesFileIO::LocalFileDataSource(e.filename(), GPlatesFileIO::DataFormats::Unspecified));
+		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
+			new GPlatesFileIO::LineNumberInFile(0));
+		read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
+			e_source,
+			e_location,
+			GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
+			GPlatesFileIO::ReadErrors::FileNotLoaded));
+	}
+	catch (GPlatesGlobal::Exception &e)
+	{
+		std::cerr << "Caught GPlates exception: " << e << std::endl;
+	}
+	catch (...)
+	{
+		std::cerr << "Caught exception loading raster file." << std::endl;
+	}
+
+	d_canvas_ptr->update_canvas();
+	d_read_errors_dialog.update();
+
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors) {
+		d_read_errors_dialog.show();
+	}
+	return result;
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::open_time_dependent_global_raster_set()
+{
+	d_read_errors_dialog.clear();
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
+
+	QFileDialog file_dialog(0,QObject::tr("Select folder containing time-dependent file set"),d_open_file_path,NULL);
+	file_dialog.setFileMode(QFileDialog::DirectoryOnly);
+
+	if (file_dialog.exec())
+	{
+		QStringList directory_list = file_dialog.selectedFiles();
+		QString directory = directory_list.at(0);
+
+		GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(d_time_dependent_raster_map,directory,read_errors);
+		
+		QFileInfo last_opened_file(file_dialog.directory().absoluteFilePath(directory_list.last()));
+		d_open_file_path = last_opened_file.path();
+
+		d_read_errors_dialog.update();
+	
+		// Pop up errors only if appropriate.
+		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+		if (num_initial_errors != num_final_errors) {
+			d_read_errors_dialog.show();
+		}
+	}
+
+	if (!d_time_dependent_raster_map.isEmpty())
+	{
+		action_Enable_Raster_Display->setChecked(true);
+		update_time_dependent_raster();
+	}
+
+
+
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
+{
+	QString filename = GPlatesFileIO::RasterReader::get_nearest_raster_filename(d_time_dependent_raster_map,d_recon_time);
+	load_global_raster(filename);
 }
 

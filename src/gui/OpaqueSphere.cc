@@ -27,6 +27,7 @@
 
 #include "OpaqueSphere.h"
 
+
 namespace
 {
 	static const GLdouble RADIUS = 1.0;
@@ -43,6 +44,7 @@ GPlatesGui::OpaqueSphere::OpaqueSphere(const Colour &colour)
 	_quad.setOrientation(GLU_OUTSIDE);
 	_quad.setGenerateTexture(GL_FALSE);
 	_quad.setDrawStyle(GLU_FILL);
+
 }
 
 
@@ -52,3 +54,4 @@ GPlatesGui::OpaqueSphere::Paint() {
 	glColor3fv(_colour);
 	_quad.drawSphere(RADIUS, NUM_SLICES, NUM_STACKS);
 }
+

@@ -489,6 +489,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\Texture.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\Texture.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\ViewportZoom.cc"
 				>
 			</File>
@@ -1498,6 +1506,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\GdalReader.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\GdalReader.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\GpmlOnePointSixOutputVisitor.cc"
 				>
 			</File>
@@ -1531,6 +1547,14 @@
 			</File>
 			<File
 				RelativePath="..\src\file-io\PropertyMapper.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\RasterReader.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\RasterReader.h"
 				>
 			</File>
 			<File
@@ -1587,6 +1611,10 @@
 			</File>
 			<File
 				RelativePath="..\src\property-values\GpmlPlateId.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\InMemoryRaster.h"
 				>
 			</File>
 		</Filter>

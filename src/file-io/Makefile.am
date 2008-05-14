@@ -19,6 +19,8 @@ libfile_io_la_SOURCES	= PlatesLineFormatReader.cc \
 				PlatesRotationFormatWriter.cc \
 				ShapeFileReader.cc \
 				FileInfo.cc \
+				RasterReader.cc \
+				GdalReader.cc \
 				XmlWriter.cc \
 				StructurePropertyCreatorMap.cc \
 				ShapefileXmlReader.cc \

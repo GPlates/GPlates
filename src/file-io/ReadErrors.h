@@ -96,6 +96,16 @@ namespace GPlatesFileIO
 			InvalidShapefilePlateIdNumber,
 			InvalidShapefileAgeOfAppearance,
 			InvalidShapefileAgeOfDisappearance,
+			
+			// The following relate to GDAL-readable Raster files.
+			ErrorReadingGDALBand,
+
+			// The following relate to QImage-readable image files.
+			ErrorReadingQImageFile,
+
+			// The following relate to time-dependent raster file sets.
+			NoRasterSetsFound,
+			MultipleRasterSetsFound,
 
 			// The following apply to GPML import
 			DuplicateProperty,
@@ -160,6 +170,10 @@ namespace GPlatesFileIO
 			NoPlateIdLoadedForFile,
 			NoPlateIdLoadedForFeature,
 			AttributeIgnored,
+
+			// The following relate to time-dependent raster file sets.
+			NoRasterSetsLoaded,
+			OnlyFirstRasterSetLoaded,
 			
 			// The following are specific to GPML reading.
 			ElementIgnored,

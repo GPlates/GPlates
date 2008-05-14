@@ -225,7 +225,23 @@ namespace
 				QT_TR_NOOP("Invalid age of disappearance."),
 				QT_TR_NOOP("An invalid age of disappearance was found.") },
 
+		// Errors relating to GDAL-readable Raster files
+		{ GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
+				QT_TR_NOOP("Error reading GDAL band."),
+				QT_TR_NOOP("Error reading GDAL band.") },
 
+		// Errors relating to QImage-readable image files
+		{ GPlatesFileIO::ReadErrors::ErrorReadingQImageFile,
+				QT_TR_NOOP("Error reading QImage file."),
+				QT_TR_NOOP("Error reading QImage file.") },
+
+		// Errors relating to time-dependent raster file sets
+		{ GPlatesFileIO::ReadErrors::NoRasterSetsFound,
+				QT_TR_NOOP("No raster sets found."),
+				QT_TR_NOOP("No suitable raster files were found in the selected folder.") },
+		{ GPlatesFileIO::ReadErrors::MultipleRasterSetsFound,
+				QT_TR_NOOP("Multiple raster sets found."),
+				QT_TR_NOOP("More than one suitable raster file set was found in the selected folder.") },
 
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
@@ -273,6 +289,11 @@ namespace
 		{ GPlatesFileIO::ReadErrors::AttributeIgnored,
 				QT_TR_NOOP("The attribute was not mapped to a model property.") },
 				
+		// The following apply to time-dependent raster file sets
+		{ GPlatesFileIO::ReadErrors::NoRasterSetsLoaded,
+				QT_TR_NOOP("No raster file set was loaded.") },
+		{ GPlatesFileIO::ReadErrors::OnlyFirstRasterSetLoaded,
+				QT_TR_NOOP("Only the first raster file set was loaded.") },
 				
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,

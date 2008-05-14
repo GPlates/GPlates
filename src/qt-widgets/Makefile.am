@@ -95,3 +95,4 @@ moc_%.cc: %.h
 # This rule lets GNU make create any *.h from the equivalent *.ui
 %.h: %.ui
 	$(UIC) $< -o $@
+

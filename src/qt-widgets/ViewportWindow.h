@@ -103,6 +103,8 @@ namespace GPlatesQtWidgets
 		void
 		create_svg_file();
 
+
+
 	public slots:
 		void
 		reconstruct();
@@ -145,6 +147,12 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_euler_pole_dialog();
 	
+		void
+		open_global_raster();
+
+		void
+		open_time_dependent_global_raster_set();
+
 	signals:
 		
 		/**
@@ -261,8 +269,22 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 
+		//  map a time value to a raster filename
+		QMap<int,QString> d_time_dependent_raster_map;
+
+		// The last path used for opening raster files.
+		QString d_open_file_path; 
+
 		void
 		uncheck_all_tools();
+
+		bool
+		load_global_raster(
+			QString filename);
+
+		void
+		update_time_dependent_raster();
+
 	private slots:
 		void
 		pop_up_specify_fixed_plate_dialog();
@@ -280,6 +302,9 @@ namespace GPlatesQtWidgets
 
 		void
 		close_all_dialogs();
+
+		void
+		enable_raster_display();
 
 	protected:
 	
