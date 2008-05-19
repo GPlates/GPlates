@@ -1,5 +1,4 @@
 /* $Id$ */
-
 /**
  * \file 
  * $Revision$
@@ -76,6 +75,25 @@ namespace
 		} else {
 			return QString("[ Empty PropertyContainer ]");
 		}
+	}
+
+	/**
+	 * This function is necessary to calculate the number of properties that
+	 * are about to be added to the model, to work around a regression
+	 * that affects QTableView in Qt version 4.3.0 (Trolltech Bug #169255).
+	 */
+	int
+	calculate_number_of_properties(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref)
+	{
+		int count = 0;
+		GPlatesModel::FeatureHandle::properties_iterator it = feature_ref->properties_begin();
+		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
+		for (; it != end; ++it)
+		{
+			++count;
+		}
+		return count;
 	}
 }
 
@@ -230,7 +248,15 @@ GPlatesGui::FeaturePropertyTableModel::set_feature_reference(
 	d_feature_ref = feature_ref;
 	
 	layoutAboutToBeChanged();
+	// We also need to call beginRemoveRows() because of a QTableView regression in Qt 4.3.0.
+	int rows_to_be_removed = static_cast<int>(d_property_info_cache.size());
+	if (rows_to_be_removed > 0) {
+		beginRemoveRows(QModelIndex(), 0, rows_to_be_removed - 1);
+	}
 	d_property_info_cache.clear();
+	if (rows_to_be_removed > 0) {
+		endRemoveRows();
+	}
 	layoutChanged();
 	
 	// Always check validity of weak_refs!
@@ -239,6 +265,11 @@ GPlatesGui::FeaturePropertyTableModel::set_feature_reference(
 	}
 
 	layoutAboutToBeChanged();
+	// We also need to call beginInsertRows() because of a QTableView regression in Qt 4.3.0.
+	int rows_to_be_inserted = calculate_number_of_properties(d_feature_ref);
+	if (rows_to_be_inserted > 0) {
+		beginInsertRows(QModelIndex(), 0, rows_to_be_inserted - 1);
+	}
 	GPlatesModel::FeatureHandle::properties_iterator it = d_feature_ref->properties_begin();
 	GPlatesModel::FeatureHandle::properties_iterator end = d_feature_ref->properties_end();
 	for (; it != end; ++it)
@@ -254,6 +285,9 @@ GPlatesGui::FeaturePropertyTableModel::set_feature_reference(
 			FeaturePropertyTableInfo info = { property_name, it, can_convert_inline };
 			d_property_info_cache.push_back(info);
 		}
+	}
+	if (rows_to_be_inserted > 0) {
+		endInsertRows();
 	}
 	layoutChanged();
 }
@@ -344,7 +378,11 @@ GPlatesGui::FeaturePropertyTableModel::delete_property(
 	transaction.commit();
 	
 	// Update our internal cache of the table rows, and let QTableView know.
-	layoutAboutToBeChanged();
+	// We also need to call beginRemoveRows() because of a QTableView regression in Qt 4.3.0.
+	int row_to_be_deleted = get_row_for_property_iterator(property_iterator);
+	if (row_to_be_deleted >= 0) {
+		beginRemoveRows(QModelIndex(), row_to_be_deleted, row_to_be_deleted);
+	}
 	property_info_container_iterator it = d_property_info_cache.begin();
 	property_info_container_iterator end = d_property_info_cache.end();
 	for ( ; it != end; ++it) {
@@ -353,7 +391,9 @@ GPlatesGui::FeaturePropertyTableModel::delete_property(
 			break;
 		}
 	}
-	layoutChanged();
+	if (row_to_be_deleted >= 0) {
+		endRemoveRows();
+	}
 
 	// We have just changed the model. Tell anyone who cares to know.
 	emit feature_modified(d_feature_ref);
@@ -374,7 +414,6 @@ GPlatesGui::FeaturePropertyTableModel::append_property_value_to_feature(
 					d_feature_ref);
 
 	// Search for the iterator which corresponds to this new property container.
-	layoutAboutToBeChanged();
 	GPlatesModel::FeatureHandle::properties_iterator it = d_feature_ref->properties_begin();
 	GPlatesModel::FeatureHandle::properties_iterator end = d_feature_ref->properties_end();
 	for (; it != end; ++it)
@@ -388,11 +427,14 @@ GPlatesGui::FeaturePropertyTableModel::append_property_value_to_feature(
 			(*it)->accept_visitor(qvariant_converter);
 			bool can_convert_inline = qvariant_converter.get_property_value();
 	
+			// We also need to call beginInsertRows() because of a QTableView regression in Qt 4.3.0.
+			int row_to_be_appended = static_cast<int>(d_property_info_cache.size());
+			beginInsertRows(QModelIndex(), row_to_be_appended, row_to_be_appended);
 			FeaturePropertyTableInfo info = { new_property_name, it, can_convert_inline };
 			d_property_info_cache.push_back(info);
+			endInsertRows();
 		}
 	}
-	layoutChanged();
 
 	// We have just changed the model. Tell anyone who cares to know.
 	emit feature_modified(d_feature_ref);
