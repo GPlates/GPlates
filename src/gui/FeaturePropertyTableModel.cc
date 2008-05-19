@@ -91,7 +91,13 @@ namespace
 		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
 		for (; it != end; ++it)
 		{
-			++count;
+			if ( ! feature_ref.is_valid()) {
+				// Feature handles might become invalid at any time!
+				return 0;
+			}
+			if (*it != NULL) {
+				++count;
+			}
 		}
 		return count;
 	}
@@ -274,6 +280,18 @@ GPlatesGui::FeaturePropertyTableModel::set_feature_reference(
 	GPlatesModel::FeatureHandle::properties_iterator end = d_feature_ref->properties_end();
 	for (; it != end; ++it)
 	{
+		if ( ! feature_ref.is_valid()) {
+			// Feature handles might become invalid at any time!
+			// Cleaning up at this point could be a little messy.
+			if (rows_to_be_inserted > 0) {
+				endInsertRows();
+			}
+			layoutChanged();
+			layoutAboutToBeChanged();
+			d_property_info_cache.clear();
+			layoutChanged();
+			return;
+		}
 		if (*it != NULL) {
 			const GPlatesModel::PropertyName property_name = (*it)->property_name();
 			// To work out if property is editable inline, we do a dry-run of the FromQvariantConverter.
