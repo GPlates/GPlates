@@ -25,8 +25,6 @@
 
 #include "EditPolarityChronIdWidget.h"
 
-// FIXME: No GpmlPolarityChronId property-value exists for this widget to edit.
-// #include "property-values/####.h"
 #include "model/ModelUtils.h"
 
 
