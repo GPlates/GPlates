@@ -1,11 +1,11 @@
-/* $Id: ShapeFileReader.h 2464 2008-02-27 13:44:47Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2008-02-27 14:44:47 +0100 (on, 27 feb 2008) $
+ *   $Date$
  * 
  * Copyright (C) 2008, Geological Survey of Norway
  *

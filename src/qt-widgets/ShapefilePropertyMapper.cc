@@ -1,9 +1,9 @@
-/* $Id: ShapefileAttributeMapperDialog.h 2681 2008-03-31 20:32:35Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 2681 $
- * $Date: 2008-03-31 22:32:35 +0200 (ma, 31 mar 2008) $ 
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2008 Geological Survey of Norway
  *

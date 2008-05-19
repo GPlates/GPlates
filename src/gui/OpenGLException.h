@@ -1,11 +1,11 @@
-/* $Id: OpenGLBadAllocException.h 968 2006-11-20 03:28:31Z jboyden $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2006-11-20 04:28:31 +0100 (ma, 20 nov 2006) $
+ *   $Date$
  * 
  * Copyright (C) 2008, Geological Survey of Norway
  *

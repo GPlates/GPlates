@@ -1,11 +1,11 @@
-/* $Id: ToQvariantConverter.h 2828 2008-04-24 07:49:42Z jclark $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2008-04-24 09:49:42 +0200 (to, 24 apr 2008) $
+ *   $Date$
  * 
  * Copyright (C) 2008, Geological Survey of Norway
  *

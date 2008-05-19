@@ -1,11 +1,11 @@
-/* $Id: RasterReader.h 2666 2008-03-30 14:56:17Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2008-03-30 16:56:17 +0200 (sø, 30 mar 2008) $
+ *   $Date$
  * 
  * Copyright (C) 2008, Geological Survey of Norway
  *
