@@ -49,6 +49,7 @@ namespace GPlatesPropertyValues {
 		virtual
 		~Enumeration() {  }
 
+		// FIXME: enum_type should probably be a PropertyName.
 		static
 		const non_null_ptr_type
 		create(
@@ -68,6 +69,21 @@ namespace GPlatesPropertyValues {
 		const EnumerationContent &
 		value() const {
 			return d_value;
+		}
+		
+		/**
+		 * Set the content of this enumeration to @a new_value.
+		 * EnumerationContent can be created by passing a UnicodeString in to
+		 * EnumerationContent's constructor.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const EnumerationContent &new_value) {
+			d_value = new_value;
 		}
 
 		const EnumerationType &

@@ -181,6 +181,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the exterior polygon within this instance to @a r.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_exterior(
@@ -211,12 +215,30 @@ namespace GPlatesPropertyValues
 		
 		/**
 		 * Add an interior polygon @a r to the list of interiors of this instance.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		add_interior(
 				const ring_type &r)
 		{
 			d_interiors.push_back(r);
+		}
+		
+		
+		/**
+		 * Removes all interior rings from this GmlPolygon.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		clear_interiors()
+		{
+			d_interiors.clear();
 		}
 		
 

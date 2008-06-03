@@ -1498,6 +1498,10 @@
 			Name="file-io"
 			>
 			<File
+				RelativePath="..\src\file-io\ExternalProgram.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\FeaturePropertiesMap.cc"
 				>
 			</File>
@@ -1639,10 +1643,6 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\PlateIdFinder.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\feature-visitors\PropertyValueSetter.cc"
 				>
 			</File>
 			<File

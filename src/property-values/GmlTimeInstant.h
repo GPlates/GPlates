@@ -81,11 +81,26 @@ namespace GPlatesPropertyValues {
 			return dup;
 		}
 
+		/**
+		 * Access the GeoTimeInstant which encodes the temporal position of this
+		 * GmlTimeInstant.
+		 *
+		 * Note that there is no accessor provided which returns a non-const
+		 * GeoTimeInstant. This is intentional. To modify this GmlTimeInstant,
+		 * set a new GeoTimeInstant using the method @a set_time_position()
+		 */
 		const GeoTimeInstant &
 		time_position() const {
 			return d_time_position;
 		}
 
+		/**
+		 * Set the temporal position of this GmlTimeInstant to @a tp.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
 		void
 		set_time_position(
 				const GeoTimeInstant &tp) {

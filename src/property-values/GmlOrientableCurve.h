@@ -133,6 +133,10 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * Set the "base curve" of this instance to @a bc.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_base_curve(

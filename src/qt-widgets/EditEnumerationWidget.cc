@@ -28,8 +28,10 @@
 #include "EditEnumerationWidget.h"
 
 #include "property-values/Enumeration.h"
+#include "property-values/EnumerationContent.h"
 #include "model/ModelUtils.h"
 #include "utils/UnicodeStringUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -183,6 +185,7 @@ GPlatesQtWidgets::EditEnumerationWidget::configure_for_property_value_type(
 void
 GPlatesQtWidgets::EditEnumerationWidget::reset_widget_to_default_values()
 {
+	d_enumeration_ptr = NULL;
 	combobox_enumeration->clear();
 	combobox_enumeration->addItems(get_enumeration_string_list(d_property_value_name));
 	set_clean();
@@ -191,8 +194,9 @@ GPlatesQtWidgets::EditEnumerationWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditEnumerationWidget::update_widget_from_enumeration(
-		const GPlatesPropertyValues::Enumeration &enumeration)
+		GPlatesPropertyValues::Enumeration &enumeration)
 {
+	d_enumeration_ptr = &enumeration;
 	// Get the type of Enumeration to use from the Enumeration property value.
 	QString enum_type = GPlatesUtils::make_qstring_from_icu_string(
 			enumeration.type().get());
@@ -226,6 +230,26 @@ GPlatesQtWidgets::EditEnumerationWidget::create_property_value_from_widget() con
 		return property_value;
 	} else {
 		throw PropertyValueNotSupportedException();
+	}
+}
+
+
+bool
+GPlatesQtWidgets::EditEnumerationWidget::update_property_value_from_widget()
+{
+	// Remember that the property value pointer may be NULL!
+	if (d_enumeration_ptr.get() != NULL) {
+		if (is_dirty()) {
+			const QString value = combobox_enumeration->currentText();
+			d_enumeration_ptr->set_value(GPlatesPropertyValues::EnumerationContent(
+					GPlatesUtils::make_icu_string_from_qstring(value)));
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
 	}
 }
 

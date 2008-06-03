@@ -27,6 +27,7 @@
 
 #include "property-values/XsInteger.h"
 #include "model/ModelUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 GPlatesQtWidgets::EditIntegerWidget::EditIntegerWidget(
@@ -46,6 +47,7 @@ GPlatesQtWidgets::EditIntegerWidget::EditIntegerWidget(
 void
 GPlatesQtWidgets::EditIntegerWidget::reset_widget_to_default_values()
 {
+	d_integer_ptr = NULL;
 	spinbox_integer->setValue(0);
 	set_clean();
 }
@@ -53,8 +55,9 @@ GPlatesQtWidgets::EditIntegerWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditIntegerWidget::update_widget_from_integer(
-		const GPlatesPropertyValues::XsInteger &xs_integer)
+		GPlatesPropertyValues::XsInteger &xs_integer)
 {
+	d_integer_ptr = &xs_integer;
 	spinbox_integer->setValue(xs_integer.value());
 	set_clean();
 }
@@ -65,5 +68,23 @@ GPlatesQtWidgets::EditIntegerWidget::create_property_value_from_widget() const
 {
 	return GPlatesPropertyValues::XsInteger::create(
 			spinbox_integer->value());
+}
+
+
+bool
+GPlatesQtWidgets::EditIntegerWidget::update_property_value_from_widget()
+{
+	// Remember that the property value pointer may be NULL!
+	if (d_integer_ptr.get() != NULL) {
+		if (is_dirty()) {
+			d_integer_ptr->set_value(spinbox_integer->value());
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
 }
 

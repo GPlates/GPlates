@@ -2,10 +2,8 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
  *
@@ -25,29 +23,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
-#define GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
+#include <QProcess>
+#include <QDebug>
 
-#include "FileInfo.h"
-#include "ReadErrorAccumulation.h"
 #include "ExternalProgram.h"
-#include "model/ModelInterface.h"
-#include "model/FeatureCollectionHandle.h"
 
-namespace GPlatesFileIO
+
+bool
+GPlatesFileIO::ExternalProgram::test() const
 {
-	class GpmlOnePointSixReader
-	{
-	public:
-		static
-		void
-		read_file(
-				FileInfo &fileinfo,
-				GPlatesModel::ModelInterface &model,
-				ReadErrorAccumulation &read_errors);
-		
-		static const ExternalProgram s_gunzip_program;
-	};
+	QProcess process;
+
+	process.start(command_test(), QIODevice::ReadWrite | QIODevice::Unbuffered);
+	if ( ! process.waitForStarted()) {
+		// Test command failed to start.
+		return false;
+	}
+	process.closeWriteChannel();
+	process.waitForReadyRead(1000);
+	process.readAll();
+	process.waitForFinished(1000);
+	process.close();
+	return true;
 }
 
-#endif  // GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
+

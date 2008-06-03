@@ -27,6 +27,7 @@
 
 #include "property-values/GmlTimeInstant.h"
 #include "model/ModelUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 namespace
@@ -57,6 +58,7 @@ GPlatesQtWidgets::EditTimeInstantWidget::EditTimeInstantWidget(
 void
 GPlatesQtWidgets::EditTimeInstantWidget::reset_widget_to_default_values()
 {
+	d_time_instant_ptr = NULL;
 	spinbox_time_position->setValue(0.0);
 	set_clean();
 }
@@ -64,8 +66,9 @@ GPlatesQtWidgets::EditTimeInstantWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditTimeInstantWidget::update_widget_from_time_instant(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+		GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
+	d_time_instant_ptr = &gml_time_instant;
 	const GPlatesPropertyValues::GeoTimeInstant time = gml_time_instant.time_position();
 	spinbox_time_position->setValue(time.value());
 	set_clean();
@@ -81,5 +84,24 @@ GPlatesQtWidgets::EditTimeInstantWidget::create_property_value_from_widget() con
 	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant =
 			GPlatesModel::ModelUtils::create_gml_time_instant(time);
 	return gml_time_instant;
+}
+
+
+bool
+GPlatesQtWidgets::EditTimeInstantWidget::update_property_value_from_widget()
+{
+	if (d_time_instant_ptr.get() != NULL) {
+		if (is_dirty()) {
+			GPlatesPropertyValues::GeoTimeInstant time = create_geo_time_instant_from_widget(
+					spinbox_time_position);
+			d_time_instant_ptr->set_time_position(time);
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
 }
 

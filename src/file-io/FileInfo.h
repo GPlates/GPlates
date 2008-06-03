@@ -36,7 +36,7 @@
 #include "FileFormat.h"
 
 namespace GPlatesFileIO {
-
+	
 	/**
 	 * Holds information associated with a loaded file.
 	 *
@@ -55,6 +55,13 @@ namespace GPlatesFileIO {
 			NL, CRNL, CR 
 		};
 
+		// FIXME: Factor this into FileFormat, perhaps. Or maybe not, since we can only
+		// really detect 'XML' and 'GZIP' instead of 'GPML' and 'GPML.GZ'.
+		// See FileInfo::identify_by_magic_number();
+		enum FileMagic
+		{
+			UNKNOWN, XML, GZIP
+		};
 
 		explicit
 		FileInfo(
@@ -106,6 +113,15 @@ namespace GPlatesFileIO {
 			QFileInfo dir(get_qfileinfo().path());
 			return dir.permission(QFile::WriteUser);
 		}
+		
+		/**
+		 * Briefly opens the file for reading, and attempts to identify the
+		 * format of the file by it's magic number.
+		 *
+		 * This function can and will throw ErrorOpeningFileForReadingException.
+		 */
+		FileMagic
+		identify_by_magic_number() const;
 
 	private:
 #if 0

@@ -95,6 +95,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "era" attribute of this GpmlPolarityChronId instance.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_era(
@@ -112,6 +116,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "major region" attribute of this GpmlPolarityChronId instance.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_major_region(
@@ -129,6 +137,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "minor region" attribute of this GpmlPolarityChronId instance.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_minor_region(

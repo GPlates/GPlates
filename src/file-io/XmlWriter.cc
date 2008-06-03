@@ -63,12 +63,20 @@ namespace
 }
 
 
+GPlatesFileIO::XmlWriter::XmlWriter():
+	d_writer() 
+{ 
+	d_writer.setAutoFormatting(true);
+}
+
+
 GPlatesFileIO::XmlWriter::XmlWriter(
-		QIODevice *target) :
+		QIODevice *target):
 	d_writer(target) 
 { 
 	d_writer.setAutoFormatting(true);
 }
+
 
 void
 GPlatesFileIO::XmlWriter::writeEndElement(

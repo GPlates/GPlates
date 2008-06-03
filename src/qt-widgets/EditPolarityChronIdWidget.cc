@@ -26,6 +26,7 @@
 #include "EditPolarityChronIdWidget.h"
 
 #include "model/ModelUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 GPlatesQtWidgets::EditPolarityChronIdWidget::EditPolarityChronIdWidget(
@@ -49,6 +50,7 @@ GPlatesQtWidgets::EditPolarityChronIdWidget::EditPolarityChronIdWidget(
 void
 GPlatesQtWidgets::EditPolarityChronIdWidget::reset_widget_to_default_values()
 {
+	d_polarity_chron_id_ptr = NULL;
 	combobox_era->setCurrentIndex(0);
 	spinbox_major->setValue(0);
 	lineedit_minor->clear();
@@ -58,9 +60,11 @@ GPlatesQtWidgets::EditPolarityChronIdWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditPolarityChronIdWidget::update_widget_from_polarity_chron_id(
-		const GPlatesPropertyValues::GpmlPolarityChronId &polarity_chron_id)
+		GPlatesPropertyValues::GpmlPolarityChronId &polarity_chron_id)
 {
 	reset_widget_to_default_values();
+	d_polarity_chron_id_ptr = &polarity_chron_id;
+	
 	const boost::optional<QString> &era = polarity_chron_id.get_era();
 	const boost::optional<unsigned int> &major = polarity_chron_id.get_major_region();
 	const boost::optional<QString> &minor = polarity_chron_id.get_minor_region();
@@ -97,5 +101,24 @@ GPlatesQtWidgets::EditPolarityChronIdWidget::create_property_value_from_widget()
 			combobox_era->currentText(),
 			spinbox_major->value(),
 			lineedit_minor->text());
+}
+
+
+bool
+GPlatesQtWidgets::EditPolarityChronIdWidget::update_property_value_from_widget()
+{
+	if (d_polarity_chron_id_ptr.get() != NULL) {
+		if (is_dirty()) {
+			d_polarity_chron_id_ptr->set_era(combobox_era->currentText());
+			d_polarity_chron_id_ptr->set_major_region(spinbox_major->value());
+			d_polarity_chron_id_ptr->set_minor_region(lineedit_minor->text());
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
 }
 

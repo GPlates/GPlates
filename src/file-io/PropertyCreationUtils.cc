@@ -36,7 +36,9 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "model/types.h"
+#include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/TemplateTypeParameterType.h"
 #include <boost/optional.hpp>
 #include <boost/bind.hpp>
@@ -286,6 +288,17 @@ namespace
 		}
 		return str;
 	}
+	
+	
+	GPlatesPropertyValues::Enumeration::non_null_ptr_type
+	create_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		const UnicodeString &enum_type)
+	{
+		QString enum_value = create_nonempty_string(elem);
+		return GPlatesPropertyValues::Enumeration::create(enum_type, 
+				GPlatesUtils::make_icu_string_from_qstring(enum_value));
+	}
 
 
 	bool
@@ -433,6 +446,8 @@ namespace
 		double lon = 0.0;
 
 		// FIXME: What should I do if one (or both) of these are screwed?
+		// NOTE: We are assuming GPML is using (lat,lon) ordering.
+		// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
 		is >> lat;
 		// FIXME: Check is.status() here!
 		is >> lon;
@@ -467,6 +482,8 @@ namespace
 			double lon = 0.0;
 
 			// FIXME: What should I do if one (or both) of these are screwed?
+			// NOTE: We are assuming GPML is using (lat,lon) ordering.
+			// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
 			is >> lat;
 			// FIXME: Check is.status() here!
 			is >> lon;
@@ -481,18 +498,144 @@ namespace
 						GPlatesMaths::LatLonPoint(lat,lon)));
 		}
 
+		// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
 		std::pair<
 			std::vector<GPlatesMaths::PointOnSphere>::const_iterator, 
 			std::vector<GPlatesMaths::PointOnSphere>::const_iterator>
 				invalid_points;
-		if (polyline_type::evaluate_construction_parameter_validity(points, invalid_points) 
-				!= polyline_type::VALID)
+		// We want to return a different ReadError Description for each possible return
+		// value of evaluate_construction_parameter_validity().
+		polyline_type::ConstructionParameterValidity polyline_validity =
+				polyline_type::evaluate_construction_parameter_validity(points, invalid_points);
+		switch (polyline_validity)
 		{
-			// Incompatible points encountered!
-			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidPointsInPolyline,
-					EXCEPTION_SOURCE);
+		case polyline_type::VALID:
+				// All good.
+				break;
+		
+		case polyline_type::INVALID_INSUFFICIENT_DISTINCT_POINTS:
+				// Not enough points to make even a single (valid) line segment.
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InsufficientDistinctPointsInPolyline,
+						EXCEPTION_SOURCE);
+				break;
+				
+		case polyline_type::INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
+				// Segments of a polyline cannot be defined between two points which are identical.
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::DuplicateAdjacentPointsInPolyline,
+						EXCEPTION_SOURCE);
+				break;
+				
+		case polyline_type::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+				// Segments of a polyline cannot be defined between two points which are antipodal.
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::AntipodalAdjacentPointsInPolyline,
+						EXCEPTION_SOURCE);
+				break;
+
+		default:
+				// Incompatible points encountered! For no defined reason!
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidPointsInPolyline,
+						EXCEPTION_SOURCE);
+				break;
 		}
 		return polyline_type::create_on_heap(points);
+	}
+
+
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_type
+	create_polygon(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		typedef GPlatesMaths::PolygonOnSphere polygon_type;
+
+		QString str = create_nonempty_string(elem);
+
+		// XXX: Currently assuming srsDimension is 2!!
+
+		std::vector<GPlatesMaths::PointOnSphere> points;
+		points.reserve(estimate_number_of_points(str));
+
+		// Transform the text into a sequence of PointOnSphere.
+		QTextStream is(&str, QIODevice::ReadOnly);
+		while ( ! is.atEnd() && (is.status() == QTextStream::Ok))
+		{
+			double lat = 0.0;
+			double lon = 0.0;
+
+			// FIXME: What should I do if one (or both) of these are screwed?
+			// NOTE: We are assuming GPML is using (lat,lon) ordering.
+			// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+			is >> lat;
+			// FIXME: Check is.status() here!
+			is >> lon;
+
+			if ( ! (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
+					GPlatesMaths::LatLonPoint::is_valid_longitude(lon))) {
+				// Bad coordinates!
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
+						EXCEPTION_SOURCE);
+			}
+			points.push_back(GPlatesMaths::make_point_on_sphere(
+						GPlatesMaths::LatLonPoint(lat,lon)));
+		}
+		
+		// GML Polygons require the first and last points of a polygon to be identical,
+		// because the format wasn't verbose enough. GPlates expects that the first
+		// and last points of a PolygonOnSphere are implicitly joined.
+		if (points.size() >= 4) {
+			GPlatesMaths::PointOnSphere &p1 = *(points.begin());
+			GPlatesMaths::PointOnSphere &p2 = *(--points.end());
+			if (p1 == p2) {
+				points.pop_back();
+			} else {
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidPolygonEndPoint,
+						EXCEPTION_SOURCE);
+			}
+		} else {
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InsufficientPointsInPolygon,
+					EXCEPTION_SOURCE);
+		}
+
+		// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
+		std::pair<
+			std::vector<GPlatesMaths::PointOnSphere>::const_iterator, 
+			std::vector<GPlatesMaths::PointOnSphere>::const_iterator>
+				invalid_points;
+		// We want to return a different ReadError Description for each possible return
+		// value of evaluate_construction_parameter_validity().
+		polygon_type::ConstructionParameterValidity polygon_validity =
+				polygon_type::evaluate_construction_parameter_validity(points, invalid_points);
+		switch (polygon_validity)
+		{
+		case polygon_type::VALID:
+				// All good.
+				break;
+		
+		case polygon_type::INVALID_INSUFFICIENT_DISTINCT_POINTS:
+				// Less good - not enough points, although we have already checked for
+				// this earlier in the function. So it must be a problem with coincident points.
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InsufficientDistinctPointsInPolygon,
+						EXCEPTION_SOURCE);
+				break;
+				
+		case polygon_type::INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
+				// Segments of a polygon cannot be defined between two points which are identical.
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::DuplicateAdjacentPointsInPolygon,
+						EXCEPTION_SOURCE);
+				break;
+				
+		case polygon_type::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+				// Segments of a polygon cannot be defined between two points which are antipodal.
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::AntipodalAdjacentPointsInPolygon,
+						EXCEPTION_SOURCE);
+				break;
+
+		default:
+				// Incompatible points encountered! For no defined reason!
+				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidPointsInPolygon,
+						EXCEPTION_SOURCE);
+				break;
+		}
+		return polygon_type::create_on_heap(points);
 	}
 
 
@@ -510,12 +653,39 @@ namespace
 		boost::optional< GPlatesModel::XmlElementNode::non_null_ptr_type >
 			structural_elem = elem->get_child_by_name(prop_name);
 
-		if ((elem->number_of_children() > 1) || (! structural_elem)) {
-			// Could not locate unique structural element!
+		if (elem->number_of_children() > 1) {
+			// Properties with multiple inline structural elements are not (yet) handled!
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::NonUniqueStructuralElement,
+					EXCEPTION_SOURCE);
+		} else if (! structural_elem) {
+			// Could not locate structural element!
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::StructuralElementNotFound,
 					EXCEPTION_SOURCE);
 		}
 		return *structural_elem;
+	}
+
+
+	/**
+	 * This function is used by create_gml_polygon to traverse the LinearRing intermediate junk.
+	 */
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_type
+	create_linear_ring(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+	{
+		static const GPlatesModel::PropertyName 
+			STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("LinearRing"),
+			POS_LIST = GPlatesModel::PropertyName::create_gml("posList");
+	
+		GPlatesModel::XmlElementNode::non_null_ptr_type
+			elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+	
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_type
+			polygon = find_and_create_one(elem, &create_polygon, POS_LIST);
+	
+		// FIXME: We need to give the srsName et al. attributes from the posList 
+		// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
+		return polygon;
 	}
 }
 
@@ -550,6 +720,86 @@ GPlatesFileIO::PropertyCreationUtils::create_xs_double(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
 {
 	return GPlatesPropertyValues::XsDouble::create(create_double(elem));
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_absolute_reference_frame_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:AbsoluteReferenceFrameEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_continental_boundary_crust_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:ContinentalBoundaryCrustEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_continental_boundary_edge_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:ContinentalBoundaryEdgeEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_continental_boundary_side_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:ContinentalBoundarySideEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_dip_side_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:DipSideEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_dip_slip_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:DipSlipEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_fold_plane_annotation_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:FoldPlaneAnnotationEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_slip_component_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:SlipComponentEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_strike_slip_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:StrikeSlipEnumeration");
+}
+
+
+GPlatesPropertyValues::Enumeration::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gpml_subduction_side_enumeration(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+{
+	return create_enumeration(elem, "gpml:SubductionSideEnumeration");
 }
 
 
@@ -1000,13 +1250,43 @@ GPlatesFileIO::PropertyCreationUtils::create_orientable_curve(
 }
 
 
+GPlatesPropertyValues::GmlPolygon::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gml_polygon(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName 
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("Polygon"),
+		INTERIOR = GPlatesModel::PropertyName::create_gml("interior"),
+		EXTERIOR = GPlatesModel::PropertyName::create_gml("exterior");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	// GmlPolygon has exactly one exterior gml:LinearRing
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_type
+		exterior = find_and_create_one(elem, &create_linear_ring, INTERIOR);
+
+	// GmlPolygon has zero or more interior gml:LinearRing
+	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_type> interiors;
+	find_and_create_zero_or_more(elem, &create_linear_ring, EXTERIOR, interiors);
+
+	// FIXME: We need to give the srsName et al. attributes from the posList 
+	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
+	return GPlatesPropertyValues::GmlPolygon::create<
+			std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_type> >(exterior, interiors);
+}
+
+
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_geometry(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
 {
 	static GPlatesModel::PropertyName
 		POINT = GPlatesModel::PropertyName::create_gml("Point"),
-		LINE_STRING = GPlatesModel::PropertyName::create_gml("LineString");
+		LINE_STRING = GPlatesModel::PropertyName::create_gml("LineString"),
+		ORIENTABLE_CURVE = GPlatesModel::PropertyName::create_gml("OrientableCurve"),
+		POLYGON = GPlatesModel::PropertyName::create_gml("Polygon"),
+		CONSTANT_VALUE = GPlatesModel::PropertyName::create_gpml("ConstantValue");
 	
 	if (parent->number_of_children() > 1) {
 		// Too many children!
@@ -1026,7 +1306,39 @@ GPlatesFileIO::PropertyCreationUtils::create_geometry(
 		return GPlatesModel::PropertyValue::non_null_ptr_type(create_line_string(*parent));
 	}
 
-	// Invalid child!
+	structural_elem = parent->get_child_by_name(ORIENTABLE_CURVE);
+	if (structural_elem) {
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_orientable_curve(*parent));
+	}
+	
+	structural_elem = parent->get_child_by_name(POLYGON);
+	if (structural_elem) {
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_gml_polygon(*parent));
+	}
+	
+	// If we reach this point, we have found no valid children for a gml:_Geometry property value.
+	// However, we can still test for a few common things to aid debugging.
+	
+	// Did someone use a gpml:ConstantValue<gml:_Geometry> property where a regular gml:_Geometry
+	// was expected?
+	structural_elem = parent->get_child_by_name(CONSTANT_VALUE);
+	if (structural_elem) {
+#if 0
+		// FIXME: Proper behaviour? I'd prefer to just add a warning to the ReadErrorAccumulation and
+		// handle the ConstantValue by recursing to this function (skipping the ConstantValue),
+		// but for the moment the only way to get word out is exceptions - a non-fatal warning
+		// would need some clever refactoring.
+		throw GpmlReaderException(parent, GPlatesFileIO::ReadErrors::ConstantValueOnNonTimeDependentProperty,
+			EXCEPTION_SOURCE);
+#else
+		// The alternative for now is, just assume the ConstantValue is there for a good reason,
+		// read it, and return it (including whatever it was wrapping, which we should hope was
+		// some geometry!)
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_constant_value(*parent));
+#endif
+	}
+
+	// (Unknown) Invalid child!
 	throw GpmlReaderException(parent, GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
 			EXCEPTION_SOURCE);
 }

@@ -74,10 +74,31 @@ namespace GPlatesPropertyValues {
 			return dup;
 		}
 
+		/**
+		 * Access the integer_plate_id_type contained within this GpmlPlateId.
+		 *
+		 * Note that this does not allow you to directly modify the plate id
+		 * inside this GpmlPlateId. For that, you should use @a set_value.
+		 */
 		const GPlatesModel::integer_plate_id_type &
 		value() const {
 			return d_value;
 		}
+		
+		/**
+		 * Set the plate id contained within this GpmlPlateId to @a p.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const GPlatesModel::integer_plate_id_type &p)
+		{
+			d_value = p;
+		}
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

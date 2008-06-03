@@ -60,6 +60,13 @@ namespace GPlatesQtWidgets
 			return *d_property_model_ptr;
 		}
 
+		/**
+		 * Called by AddPropertyDialog to perform the actual model magic.
+		 */
+		void
+		append_property_value_to_feature(
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value,
+				const GPlatesModel::PropertyName &property_name);
 
 	public slots:
 

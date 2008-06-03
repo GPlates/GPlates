@@ -80,11 +80,26 @@ namespace GPlatesPropertyValues {
 			return dup;
 		}
 
+		/**
+		 * Access the quantity contained in this GpmlMeasure.
+		 *
+		 * Note that this accessor does not allow you to modify the
+		 * double contained in this GpmlMeasure - to do that,
+		 * set a new double value using the method @a set_quantity
+		 * below.
+		 */
 		const double &
 		quantity() const {
 			return d_quantity;
 		}
 
+		/**
+		 * Set the quantity of this GpmlMeasure to @a q.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
 		void
 		set_quantity(
 				const double &q) {

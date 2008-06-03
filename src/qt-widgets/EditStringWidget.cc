@@ -26,8 +26,10 @@
 #include "EditStringWidget.h"
 
 #include "property-values/XsString.h"
+#include "property-values/TextContent.h"
 #include "model/ModelUtils.h"
 #include "utils/UnicodeStringUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 GPlatesQtWidgets::EditStringWidget::EditStringWidget(
@@ -49,6 +51,7 @@ GPlatesQtWidgets::EditStringWidget::EditStringWidget(
 void
 GPlatesQtWidgets::EditStringWidget::reset_widget_to_default_values()
 {
+	d_string_ptr = NULL;
 	label_code_space->hide();
 	combobox_code_space->hide();
 	line_edit->clear();
@@ -58,8 +61,9 @@ GPlatesQtWidgets::EditStringWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditStringWidget::update_widget_from_string(
-		const GPlatesPropertyValues::XsString &xs_string)
+		GPlatesPropertyValues::XsString &xs_string)
 {
+	d_string_ptr = &xs_string;
 	// FIXME: Support codespaces!
 	label_code_space->hide();
 	combobox_code_space->hide();
@@ -77,5 +81,24 @@ GPlatesQtWidgets::EditStringWidget::create_property_value_from_widget() const
 			GPlatesPropertyValues::XsString::create(
 					GPlatesUtils::make_icu_string_from_qstring(value));
 	return property_value;
+}
+
+
+bool
+GPlatesQtWidgets::EditStringWidget::update_property_value_from_widget()
+{
+	if (d_string_ptr.get() != NULL) {
+		if (is_dirty()) {
+			QString value = line_edit->text();
+			d_string_ptr->set_value(GPlatesPropertyValues::TextContent(
+					GPlatesUtils::make_icu_string_from_qstring(value)));
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
 }
 

@@ -27,6 +27,7 @@
 
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "utils/UnicodeStringUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 GPlatesQtWidgets::EditOldPlatesHeaderWidget::EditOldPlatesHeaderWidget(
@@ -71,6 +72,7 @@ GPlatesQtWidgets::EditOldPlatesHeaderWidget::EditOldPlatesHeaderWidget(
 void
 GPlatesQtWidgets::EditOldPlatesHeaderWidget::reset_widget_to_default_values()
 {
+	d_old_plates_header_ptr = NULL;
 	// Line 1
 	spinbox_region_number->setValue(0);
 	spinbox_reference_number->setValue(0);
@@ -94,8 +96,9 @@ GPlatesQtWidgets::EditOldPlatesHeaderWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditOldPlatesHeaderWidget::update_widget_from_old_plates_header(
-		const GPlatesPropertyValues::GpmlOldPlatesHeader &header)
+		GPlatesPropertyValues::GpmlOldPlatesHeader &header)
 {
+	d_old_plates_header_ptr = &header;
 	// Line 1
 	spinbox_region_number->setValue(header.region_number());
 	spinbox_reference_number->setValue(header.reference_number());
@@ -139,5 +142,42 @@ GPlatesQtWidgets::EditOldPlatesHeaderWidget::create_property_value_from_widget()
 					spinbox_colour_code->value(),
 					label_number_of_points->text().toInt());
 	return header;
+}
+
+
+bool
+GPlatesQtWidgets::EditOldPlatesHeaderWidget::update_property_value_from_widget()
+{
+	if (d_old_plates_header_ptr.get() != NULL) {
+		if (is_dirty()) {
+			// FIXME: Some kind of transaction for all of this?
+			// Line 1
+			d_old_plates_header_ptr->set_region_number(spinbox_region_number->value());
+			d_old_plates_header_ptr->set_reference_number(spinbox_reference_number->value());
+			d_old_plates_header_ptr->set_string_number(spinbox_string_number->value());
+			d_old_plates_header_ptr->set_geographic_description(
+					GPlatesUtils::make_icu_string_from_qstring(lineedit_geographic_description->text()));
+			
+			// Line 2
+			d_old_plates_header_ptr->set_plate_id_number(spinbox_plate_id_number->value());
+			d_old_plates_header_ptr->set_age_of_appearance(doublespinbox_age_of_appearance->value());
+			d_old_plates_header_ptr->set_age_of_disappearance(doublespinbox_age_of_disappearance->value());
+			d_old_plates_header_ptr->set_data_type_code(
+					GPlatesUtils::make_icu_string_from_qstring(lineedit_data_type_code->text()));
+			d_old_plates_header_ptr->set_data_type_code_number(spinbox_data_type_code_number->value());
+			d_old_plates_header_ptr->set_data_type_code_number_additional(
+					GPlatesUtils::make_icu_string_from_qstring(lineedit_data_type_code_number_additional->text()));
+			d_old_plates_header_ptr->set_conjugate_plate_id_number(spinbox_conjugate_plate_id_number->value());
+			d_old_plates_header_ptr->set_colour_code(spinbox_colour_code->value());
+			// Not strictly necessary because it cannot be edited:
+			// d_old_plates_header_ptr->set_number_of_points(label_number_of_points->text().toInt());
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
 }
 

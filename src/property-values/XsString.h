@@ -69,10 +69,33 @@ namespace GPlatesPropertyValues {
 			return dup;
 		}
 
+		/**
+		 * Accesses the TextContent contained within this XsString.
+		 *
+		 * Note that this does not allow you to modify the TextContent contained
+		 * within this XsString directly; for that, you should set a new
+		 * TextContent using the @a set_value function below.
+		 */
 		const TextContent &
 		value() const {
 			return d_value;
 		}
+
+		/**
+		 * Set the TextContent contained within this XsString to @a tc.
+		 * TextContent can be created by passing a UnicodeString in to
+		 * TextContent's constructor.
+		 * 
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const TextContent &tc) {
+			d_value = tc;
+		}
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

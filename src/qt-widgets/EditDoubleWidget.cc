@@ -26,6 +26,7 @@
 #include "EditDoubleWidget.h"
 
 #include "property-values/XsDouble.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 GPlatesQtWidgets::EditDoubleWidget::EditDoubleWidget(
@@ -45,6 +46,7 @@ GPlatesQtWidgets::EditDoubleWidget::EditDoubleWidget(
 void
 GPlatesQtWidgets::EditDoubleWidget::reset_widget_to_default_values()
 {
+	d_double_ptr = NULL;
 	spinbox_double->setValue(0.0);
 	set_clean();
 }
@@ -52,8 +54,9 @@ GPlatesQtWidgets::EditDoubleWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditDoubleWidget::update_widget_from_double(
-		const GPlatesPropertyValues::XsDouble &xs_double)
+		GPlatesPropertyValues::XsDouble &xs_double)
 {
+	d_double_ptr = &xs_double;
 	spinbox_double->setValue(xs_double.value());
 	set_clean();
 }
@@ -64,5 +67,23 @@ GPlatesQtWidgets::EditDoubleWidget::create_property_value_from_widget() const
 {
 	return GPlatesPropertyValues::XsDouble::create(
 			spinbox_double->value());
+}
+
+
+bool
+GPlatesQtWidgets::EditDoubleWidget::update_property_value_from_widget()
+{
+	// Remember that the property value pointer may be NULL!
+	if (d_double_ptr.get() != NULL) {
+		if (is_dirty()) {
+			d_double_ptr->set_value(spinbox_double->value());
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
 }
 

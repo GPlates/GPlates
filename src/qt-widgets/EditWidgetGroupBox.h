@@ -134,9 +134,40 @@ namespace GPlatesQtWidgets
 		
 		/**
 		 * Creates an appropriate property value for the currently active edit widget.
+		 * It is the caller's responsibility to insert this into the model, or
+		 * insert it wherever else the caller wishes.
+		 *
+		 * Can throw NoActiveEditWidgetException.
 		 */
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_property_value_from_widget();
+		
+		/**
+		 * Tells the current edit widget (if any) that it should modify the last
+		 * PropertyValue that it loaded data from to match what the user has
+		 * entered. This will update the model directly.
+		 *
+		 * Note that this means (once we have revisioning 100% implemented) calling
+		 * this method will cause a new revision to be propagated up from the current
+		 * PropertyValue being edited; If the caller is displaying other data from
+		 * the same feature (I'm looking at you, EditFeaturePropertiesWidget!), then
+		 * any cached data must be purged and re-populated from the most current
+		 * revision of the Feature.
+		 *
+		 * You cannot use this method without first calling
+		 * activate_appropriate_edit_widget() and providing a properties_iterator;
+		 * otherwise how would the edit widget know what PropertyValue it should
+		 * be modifying?
+		 *
+		 * Can throw NoActiveEditWidgetException, and UninitialisedEditWidgetException.
+		 *
+		 * Returns true only if the edit widget was dirty and the model was altered;
+		 * you should pay attention to this if you plan on calling the FeatureFocus
+		 * method notify_of_focused_feature_modification, because otherwise you'll
+		 * likely end up with infinite Signal/Slot loops.
+		 */
+		bool
+		update_property_value_from_widget();
 		
 		/**
 		 * Checks if the current edit widget is 'dirty' (user has modified fields and
@@ -170,77 +201,77 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		activate_edit_time_instant_widget(
-				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
+				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_time_period_widget(
-				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
+				GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_old_plates_header_widget(
-				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
+				GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_double_widget(
-				const GPlatesPropertyValues::XsDouble &xs_double);
+				GPlatesPropertyValues::XsDouble &xs_double);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_enumeration_widget(
-				const GPlatesPropertyValues::Enumeration &enumeration);
+				GPlatesPropertyValues::Enumeration &enumeration);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_integer_widget(
-				const GPlatesPropertyValues::XsInteger &xs_integer);
+				GPlatesPropertyValues::XsInteger &xs_integer);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_plate_id_widget(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_polarity_chron_id_widget(
-				const GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id);
+				GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_angle_widget(
-				const GPlatesPropertyValues::GpmlMeasure &gpml_measure);
+				GPlatesPropertyValues::GpmlMeasure &gpml_measure);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_string_widget(
-				const GPlatesPropertyValues::XsString &xs_string);
+				GPlatesPropertyValues::XsString &xs_string);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_boolean_widget(
-				const GPlatesPropertyValues::XsBoolean &xs_boolean);
+				GPlatesPropertyValues::XsBoolean &xs_boolean);
 	
 	signals:
 		

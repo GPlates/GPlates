@@ -56,11 +56,36 @@ namespace GPlatesFileIO
 
 		typedef std::vector<NamespaceDeclaration> NamespaceStack;
 
+		
+		/**
+		 * Constructs the XmlWriter without specifying a QIODevice.
+		 * This is provided as a convenience function for GpmlOnePointSixOutputVisitor's
+		 * constructor to use. Do not attempt to write to this XmlWriter without
+		 * first specifying a QIODevice with setDevice()!
+		 */
+		XmlWriter();
+		
+		/**
+		 * Sets the output device, using QXmlStreamWriter::setDevice().
+		 */
+		void
+		setDevice(
+				QIODevice *target)
+		{
+			d_writer.setDevice(target);
+		}
 
-		explicit
+		/**
+		 * Constructs the XmlWriter with a QIODevice target.
+		 * This is the preferred method of constructing an XmlWriter.
+		 *
+		 * Note that the caller is responsible for managing the QIODevice!
+		 * In the case of QFile, this means closing it and ensuring the object
+		 * will be deleted.
+		 */
 		XmlWriter(
 				QIODevice *target);
-
+		
 
 		void
 		writeNamespace(

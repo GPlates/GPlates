@@ -30,14 +30,19 @@
 #include <sstream>
 #include <string>
 
+#include <QFile>
+#include <QProcess>
 #include <QtXml/QXmlStreamReader>
 #include <boost/bind.hpp>
 
+#include "FileInfo.h"
 #include "ReadErrors.h"
 #include "ReadErrorOccurrence.h"
 #include "global/Assert.h"
 #include "PropertyCreationUtils.h"
 #include "FeaturePropertiesMap.h"
+#include "ErrorOpeningPipeFromGzipException.h"
+#include "ErrorOpeningFileForReadingException.h"
 
 #include "utils/StringUtils.h"
 #include "utils/UnicodeStringUtils.h"
@@ -66,6 +71,10 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/XsBoolean.h"
+
+
+const GPlatesFileIO::ExternalProgram
+		GPlatesFileIO::GpmlOnePointSixReader::s_gunzip_program("zcat", "zcat --version");
 
 
 namespace
@@ -339,6 +348,10 @@ namespace
 			Model::FeatureCollectionHandle::weak_ref &collection)
 	{
 		QXmlStreamReader &reader = params.reader;
+		// .atEnd() can not be relied upon when reading a QProcess,
+		// so we must make sure we block for a moment to make sure
+		// the process is ready to feed us data.
+		reader.device()->waitForReadyRead(1000);
 		while ( ! reader.atEnd()) {
 			reader.readNext();
 			if (reader.isEndElement()) {
@@ -349,6 +362,7 @@ namespace
 					Model::XmlElementNode::create(reader, alias_map);
 				read_feature(elem, model, collection, params);
 			}
+			reader.device()->waitForReadyRead(1000);
 		}
 	}
 
@@ -360,17 +374,26 @@ namespace
 	{
 		QXmlStreamReader &reader = params.reader;
 
+		// .atEnd() can not be relied upon when reading a QProcess,
+		// so we must make sure we block for a moment to make sure
+		// the process is ready to feed us data.
+		reader.device()->waitForReadyRead(1000);
 		if (Utils::append_failure_to_begin_if(reader.atEnd(), params, 
 				IO::ReadErrors::FileIsEmpty, IO::ReadErrors::FileNotLoaded)) {
 			return false;
 		}
 
 		// Skip over the <?xml ... ?> stuff.
+		// .atEnd() can not be relied upon when reading a QProcess,
+		// so we must make sure we block for a moment to make sure
+		// the process is ready to feed us data.
+		reader.device()->waitForReadyRead(1000);
 		while ( ! reader.atEnd()) {
 			reader.readNext();
 			if (reader.isStartElement()) {
 				break;
 			}
+			reader.device()->waitForReadyRead(1000);
 		}
 
 		if (Utils::append_failure_to_begin_if(reader.atEnd(), params, 
@@ -419,15 +442,39 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	// Quickly peek at the file to find out what format it is.
+	FileInfo::FileMagic magic = fileinfo.identify_by_magic_number();
+	
 	QString filename(fileinfo.get_qfileinfo().filePath());
+	QXmlStreamReader reader;
+
+	QProcess input_process;
 	QFile input_file(filename);
+	if (magic == FileInfo::GZIP) {
+		// gzipped, assuming gzipped GPML.
+		// Set up the gzip process.
+		input_process.setStandardInputFile(filename);
+		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
+		// In fact, it may need to be a user preference.
+		input_process.start(s_gunzip_program.command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
+		if ( ! input_process.waitForStarted()) {
+			throw ErrorOpeningPipeFromGzipException(s_gunzip_program.command(), filename);
+		}
+		input_process.waitForReadyRead(20000);
+		reader.setDevice(&input_process);
 
-	if ( ! input_file.open(QIODevice::ReadOnly | QIODevice::Text)) 
-	{
-		throw ErrorOpeningFileForReadingException(filename);
+	} else {
+		// Not gzipped, probably XML (although if the magic number doesn't match
+		// XML, we should attempt to read it as XML anyway because to reach this
+		// point, the user has specified a filename matching a GPML extension)
+	
+		if ( ! input_file.open(QIODevice::ReadOnly | QIODevice::Text)) 
+		{
+			throw ErrorOpeningFileForReadingException(filename);
+		}
+		reader.setDevice(&input_file);
 	}
-
-	QXmlStreamReader reader(&input_file);
+	
 
 	boost::shared_ptr<DataSource> source( 
 			new LocalFileDataSource(filename, DataFormats::GpmlOnePointSix));
@@ -442,6 +489,10 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		// FIXME: This try block is temporary; any errors encountered in read_root_element() should
 		// be appended to read_errors.
 		try {
+			// .atEnd() can not be relied upon when reading a QProcess,
+			// so we must make sure we block for a moment to make sure
+			// the process is ready to feed us data.
+			reader.device()->waitForReadyRead(1000);
 			while ( ! reader.atEnd()) {
 				reader.readNext();
 				if (reader.isEndElement()) {
@@ -458,6 +509,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 						ReadErrors::ElementNameChanged);
 					read_feature_member(params, model, alias_map, collection);
 				}
+				reader.device()->waitForReadyRead(1000);
 			}
 		} catch (...) {
 			std::cerr << "Caught some kind of exception." << std::endl;

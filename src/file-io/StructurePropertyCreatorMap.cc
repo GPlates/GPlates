@@ -62,6 +62,28 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_gpml_revision_id);
 	d_map[TemplateTypeParameterType::create_gpml("plateId")] = 
 		GET_PROP_VAL_NAME(create_plate_id);
+	
+	d_map[TemplateTypeParameterType::create_gpml("AbsoluteReferenceFrameEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_absolute_reference_frame_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("ContinentalBoundaryCrustEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_continental_boundary_crust_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("ContinentalBoundaryEdgeEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_continental_boundary_edge_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("ContinentalBoundarySideEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_continental_boundary_side_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("DipSideEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_dip_side_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("DipSlipEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_dip_slip_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("FoldPlaneAnnotationEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_fold_plane_annotation_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("SlipComponentEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_slip_component_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("StrikeSlipEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_strike_slip_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("SubductionSideEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_subduction_side_enumeration);
+
 	d_map[TemplateTypeParameterType::create_gml("TimeInstant")] = 
 		GET_PROP_VAL_NAME(create_time_instant);
 	d_map[TemplateTypeParameterType::create_gml("TimePeriod")] = 
@@ -83,6 +105,8 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 	d_map[TemplateTypeParameterType::create_gpml("AxisAngleFiniteRotation")] = 
 		GET_PROP_VAL_NAME(create_finite_rotation);
 	d_map[TemplateTypeParameterType::create_gpml("ZeroFiniteRotation")] = 
+		GET_PROP_VAL_NAME(create_finite_rotation);
+	d_map[TemplateTypeParameterType::create_gpml("FiniteRotation")] = 
 		GET_PROP_VAL_NAME(create_finite_rotation);
 	d_map[TemplateTypeParameterType::create_gpml("FiniteRotationSlerp")] = 
 		GET_PROP_VAL_NAME(create_finite_rotation_slerp);

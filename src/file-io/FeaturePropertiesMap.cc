@@ -105,6 +105,96 @@ namespace
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
+	get_abstract_geological_plane_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
+		
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("centerLineOf") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("dipSide") ] = 
+			GET_PROP_VAL_NAME(create_gpml_dip_side_enumeration);
+#if 0
+		map[ PropertyName::create_gpml("dipAngle") ] = 
+			GET_PROP_VAL_NAME(create_angle);
+#endif
+		
+		return map;
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_abstract_geological_contact_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_abstract_geological_plane_properties();
+		
+		map[ PropertyName::create_gpml("leftUnit") ] = 
+			GET_PROP_VAL_NAME(create_feature_reference);
+		map[ PropertyName::create_gpml("rightUnit") ] = 
+			GET_PROP_VAL_NAME(create_feature_reference);
+		
+		return map;
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_geological_plane_properties()
+	{
+		return get_abstract_geological_plane_properties();
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_fold_plane_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_abstract_geological_plane_properties();
+		
+		map[ PropertyName::create_gpml("foldAnnotation") ] = 
+			GET_PROP_VAL_NAME(create_gpml_fold_plane_annotation_enumeration);
+		
+		return map;
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_fault_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_abstract_geological_contact_properties();
+		
+		map[ PropertyName::create_gpml("strikeSlip") ] = 
+			GET_PROP_VAL_NAME(create_gpml_strike_slip_enumeration);
+		map[ PropertyName::create_gpml("dipSlip") ] = 
+			GET_PROP_VAL_NAME(create_gpml_dip_slip_enumeration);
+		map[ PropertyName::create_gpml("primarySlipComponent") ] = 
+			GET_PROP_VAL_NAME(create_gpml_slip_component_enumeration);
+		
+		return map;
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_terrane_boundary_properties()
+	{
+		return get_abstract_geological_contact_properties();
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_unconformity_properties()
+	{
+		return get_abstract_geological_contact_properties();
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_unknown_contact_properties()
+	{
+		return get_abstract_geological_contact_properties();
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
 	get_isochron_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
@@ -148,9 +238,9 @@ namespace
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
 
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("centerLineOf") ] = 
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("pick") ] = 
 			GET_PROP_VAL_NAME(create_feature_reference);
 
@@ -248,7 +338,7 @@ namespace
 		map[ PropertyName::create_gpml("position") ] =
 			GET_PROP_VAL_NAME(create_point);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("trail") ] = 
 			GET_PROP_VAL_NAME(create_feature_reference);
 
@@ -264,9 +354,9 @@ namespace
 		map[ PropertyName::create_gpml("position") ] = 
 			GET_PROP_VAL_NAME(create_point);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("outlineOf") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 
 		return map;
 	}
@@ -280,9 +370,9 @@ namespace
 		map[ PropertyName::create_gpml("position") ] = 
 			GET_PROP_VAL_NAME(create_point);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("outlineOf") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 
 		return map;
 	}
@@ -417,6 +507,20 @@ namespace
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
+	get_pseudo_fault_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
+
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("centerLineOf") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
 	get_unclassified_feature_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();
@@ -519,12 +623,10 @@ namespace
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tectonic_section_properties();
 
-#if 0
 		map[ PropertyName::create_gpml("edge") ] =
-			GET_PROP_VAL_NAME(create_continental_boundary_edge_enum);
+			GET_PROP_VAL_NAME(create_gpml_continental_boundary_edge_enumeration);
 		map[ PropertyName::create_gpml("side") ] =
-			GET_PROP_VAL_NAME(create_continental_boundary_side_enum);
-#endif
+			GET_PROP_VAL_NAME(create_gpml_continental_boundary_side_enumeration);
 
 		return map;
 	}
@@ -565,9 +667,9 @@ namespace
 		PropertyCreationUtils::PropertyCreatorMap map = get_abstract_rock_unit_properties();
 
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("outlineOf") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 
 		return map;
 	}
@@ -599,12 +701,10 @@ namespace
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_artificial_feature_properties();
 
-#if 0
 		map[ PropertyName::create_gpml("type") ] =
-			GET_PROP_VAL_NAME(create_continental_boundary_crust_enum);
+			GET_PROP_VAL_NAME(create_gpml_continental_boundary_crust_enumeration);
 		map[ PropertyName::create_gpml("edge") ] =
-			GET_PROP_VAL_NAME(create_continental_boundary_edge_enum);
-#endif
+			GET_PROP_VAL_NAME(create_gpml_continental_boundary_edge_enumeration);
 		map[ PropertyName::create_gpml("boundary") ] =
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 
@@ -618,11 +718,11 @@ namespace
 		PropertyCreationUtils::PropertyCreatorMap map = get_artificial_feature_properties();
 
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("centerLineOf") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("errorBounds") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 
 		return map;
 	}
@@ -634,9 +734,9 @@ namespace
 		PropertyCreationUtils::PropertyCreatorMap map = get_artificial_feature_properties();
 
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("centerLineOf") ] =
-			GET_PROP_VAL_NAME(create_geometry);
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 
 		return map;
 	}
@@ -694,10 +794,8 @@ namespace
 		PropertyCreationUtils::PropertyCreatorMap map = 
 			get_total_reconstruction_sequence_properties();
 
-#if 0
 		map[ PropertyName::create_gpml("type") ] =
-			GET_PROP_VAL_NAME(create_absolute_reference_frame_enum);
-#endif
+			GET_PROP_VAL_NAME(create_gpml_absolute_reference_frame_enumeration);
 
 		return map;
 	}
@@ -706,19 +804,23 @@ namespace
 
 GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 {
+	// FIXME: As-yet unimplemented features of the GPGIM are:
+	// All Instantaneous*
+	// All Topological*
+	
 	// Instantaneous features.
 //	d_map[ FeatureType::create_gpml("InstantaneousClosedPlateBoundary") ] = 
 //		get_instantaneous_closed_plate_boundary_properties();
+
+	// Topological features.
+	d_map[ FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
+		get_topological_closed_plate_boundary_properties();
 
 	// Reconstruction features.
 	d_map[ FeatureType::create_gpml("TotalReconstructionSequence") ] = 
 		get_total_reconstruction_sequence_properties();
 	d_map[ FeatureType::create_gpml("AbsoluteReferenceFrame") ] = 
 		get_absolute_reference_frame_properties();
-
-	// Topological features.
-	d_map[ FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
-		get_topological_closed_plate_boundary_properties();
 	
 	// Artificial features.
 	d_map[ FeatureType::create_gpml("ClosedPlateBoundary") ] =
@@ -733,6 +835,20 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =
 		get_basic_rock_unit_properties();
+		
+	// Abstract Geological Plane & Contact features.
+	d_map[ FeatureType::create_gpml("GeologicalPlane") ] =
+		get_geological_plane_properties();
+	d_map[ FeatureType::create_gpml("FoldPlane") ] =
+		get_fold_plane_properties();
+	d_map[ FeatureType::create_gpml("Fault") ] =
+		get_fault_properties();
+	d_map[ FeatureType::create_gpml("TerraneBoundary") ] =
+		get_terrane_boundary_properties();
+	d_map[ FeatureType::create_gpml("Unconformity") ] =
+		get_unconformity_properties();
+	d_map[ FeatureType::create_gpml("UnknownContact") ] =
+		get_unknown_contact_properties();
 
 	// Tectonic sections.
 	d_map[ FeatureType::create_gpml("MidOceanRidge") ] =
@@ -819,6 +935,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_continental_fragment_properties();
 	d_map[ FeatureType::create_gpml("GeologicalLineation") ] =
 		get_geological_lineation_properties();
+	d_map[ FeatureType::create_gpml("PseudoFault") ] =
+		get_pseudo_fault_properties();
 	d_map[ FeatureType::create_gpml("UnclassifiedFeature") ] =
 		get_unclassified_feature_properties();
 

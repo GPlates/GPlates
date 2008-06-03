@@ -29,6 +29,7 @@
 #include "property-values/GpmlMeasure.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 GPlatesQtWidgets::EditAngleWidget::EditAngleWidget(
@@ -48,6 +49,7 @@ GPlatesQtWidgets::EditAngleWidget::EditAngleWidget(
 void
 GPlatesQtWidgets::EditAngleWidget::reset_widget_to_default_values()
 {
+	d_angle_ptr = NULL;
 	// FIXME: Maybe we can infer which range to limit the input to by the property name.
 	spinbox_double->setValue(0.0);
 	set_clean();
@@ -56,8 +58,9 @@ GPlatesQtWidgets::EditAngleWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditAngleWidget::update_widget_from_angle(
-		const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
+		GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
+	d_angle_ptr = &gpml_measure;
 	spinbox_double->setValue(gpml_measure.quantity());
 	set_clean();
 }
@@ -73,5 +76,23 @@ GPlatesQtWidgets::EditAngleWidget::create_property_value_from_widget() const
 	
 	return GPlatesPropertyValues::GpmlMeasure::create(
 			spinbox_double->value(), uom);
+}
+
+
+bool
+GPlatesQtWidgets::EditAngleWidget::update_property_value_from_widget()
+{
+	// Remember that the property value pointer may be NULL!
+	if (d_angle_ptr.get() != NULL) {
+		if (is_dirty()) {
+			d_angle_ptr->set_quantity(spinbox_double->value());
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
 }
 

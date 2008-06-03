@@ -1,4 +1,5 @@
 /* $Id$ */
+
 /**
  * \file 
  * $Revision$
@@ -24,6 +25,7 @@
 
 #include <QHeaderView>
 #include <QString>
+#include <QDebug>
 #include <vector>
 #include "FeaturePropertyTableModel.h"
 
@@ -35,36 +37,70 @@
 #include "utils/UnicodeStringUtils.h"
 #include "feature-visitors/ToQvariantConverter.h"
 #include "feature-visitors/FromQvariantConverter.h"
-#include "feature-visitors/PropertyValueSetter.h"
 
 
 namespace
 {
-	QString
-	property_value_to_qstring(
-			const GPlatesModel::PropertyValue &property_value)
+	/**
+	 * Returns a simple representation of the first value of a PropertyContainer.
+	 * Note that returning a QVariant allows for the model/view architecture to supply
+	 * QSpinboxes etc as appropriate (for an editable model)
+	 */
+	QVariant
+	property_container_to_simple_qvariant(
+			const GPlatesModel::PropertyContainer &property_container,
+			int role)
 	{
-		GPlatesFeatureVisitors::ToQvariantConverter toqv_converter;
-		property_value.accept_visitor(toqv_converter);
-		if (toqv_converter.found_qvariants_begin() != toqv_converter.found_qvariants_end()) {
-			return (*toqv_converter.found_qvariants_begin()).toString();
+		// For now, just test the actual feature - no modified cache yet.
+		GPlatesFeatureVisitors::ToQvariantConverter qvariant_converter;
+		qvariant_converter.set_desired_role(role);
+		property_container.accept_visitor(qvariant_converter);
+		
+		if (qvariant_converter.found_values_begin() != qvariant_converter.found_values_end()) {
+			// We were able to make a QVariant out of this property value.
+			// FIXME: Note that we are only returning the first result, and not checking for multiple
+			// matching property names.
+			return *qvariant_converter.found_values_begin();
 		} else {
-			return QString("<Unable to convert PropertyValue>");
+			// The property exists, but we were unable to render it in a single cell.
+			return QVariant();
 		}
 	}
+	
 
-	QString
-	property_container_to_qstring(
-			const GPlatesModel::PropertyContainer &property_container)
+	/**
+	 * Returns a more verbose representation of a PropertyContainer.
+	 * Useful for debugging.
+	 */
+	QVariant
+	property_container_to_verbose_qstring(
+			const GPlatesModel::PropertyContainer &property_container,
+			int role)
 	{
+		if (role != Qt::DisplayRole) {
+			return property_container_to_simple_qvariant(property_container, role);
+		}
+		
 		GPlatesFeatureVisitors::ToQvariantConverter toqv_converter;
 		property_container.accept_visitor(toqv_converter);
-		if (toqv_converter.found_qvariants_begin() != toqv_converter.found_qvariants_end()) {
-			QString str = "[";
+		QString str;
+		if (toqv_converter.found_time_dependencies_begin() != toqv_converter.found_time_dependencies_end()) {
 			GPlatesFeatureVisitors::ToQvariantConverter::qvariant_container_const_iterator it =
-					toqv_converter.found_qvariants_begin();
+					toqv_converter.found_time_dependencies_begin();
 			GPlatesFeatureVisitors::ToQvariantConverter::qvariant_container_const_iterator end =
-					toqv_converter.found_qvariants_end();
+					toqv_converter.found_time_dependencies_end();
+			for ( ; it != end; ++it) {
+				str.append((*it).toString());
+				str.append(" ");
+			}
+			str.append(": ");
+		}
+		if (toqv_converter.found_values_begin() != toqv_converter.found_values_end()) {
+			str.append("[");
+			GPlatesFeatureVisitors::ToQvariantConverter::qvariant_container_const_iterator it =
+					toqv_converter.found_values_begin();
+			GPlatesFeatureVisitors::ToQvariantConverter::qvariant_container_const_iterator end =
+					toqv_converter.found_values_end();
 			for ( ; it != end; ++it) {
 				str.append(" '");
 				str.append((*it).toString());
@@ -73,7 +109,7 @@ namespace
 			str.append(" ]");
 			return str;
 		} else {
-			return QString("[ Empty PropertyContainer ]");
+			return QString("[ Empty PropertyContainer or unable to convert ]");
 		}
 	}
 
@@ -228,8 +264,15 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 	if (fromqv_converter.get_property_value()) {
 		// Successful conversion. Now, assign the new value.
 		GPlatesModel::PropertyValue::non_null_ptr_type new_value = *(fromqv_converter.get_property_value());
-		
+
+#if 0		
+		// We are unable to actually do this right now, because assign_new_property_value
+		// isn't smart enough to handle nested PropertyValues, i.e. anything we've wrapped
+		// inside a ConstantValue. For now, the whole tablemodel is non-editable.
 		bool success = assign_new_property_value(it, new_value);
+#else
+		bool success = false;
+#endif
 		if (success) {
 			// Presence of the old property value implies a new one was set.
 			// Tell the QTableView about it.
@@ -251,8 +294,19 @@ void
 GPlatesGui::FeaturePropertyTableModel::set_feature_reference(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
+	// If we are given an invalid feature reference,
+	// or the new feature reference is different to the previous one,
+	// then we definitely want a clean slate before we refresh_data(), for consistency.
+	if ( ! feature_ref.is_valid() || d_feature_ref != feature_ref) {
+		clear_table();
+	}
 	d_feature_ref = feature_ref;
-	
+	refresh_data();
+}
+
+void
+GPlatesGui::FeaturePropertyTableModel::clear_table()
+{
 	layoutAboutToBeChanged();
 	// We also need to call beginRemoveRows() because of a QTableView regression in Qt 4.3.0.
 	int rows_to_be_removed = static_cast<int>(d_property_info_cache.size());
@@ -264,50 +318,69 @@ GPlatesGui::FeaturePropertyTableModel::set_feature_reference(
 		endRemoveRows();
 	}
 	layoutChanged();
-	
+}
+
+void
+GPlatesGui::FeaturePropertyTableModel::refresh_data()
+{
 	// Always check validity of weak_refs!
 	if ( ! d_feature_ref.is_valid()) {
 		return;
 	}
-
-	layoutAboutToBeChanged();
-	// We also need to call beginInsertRows() because of a QTableView regression in Qt 4.3.0.
-	int rows_to_be_inserted = calculate_number_of_properties(d_feature_ref);
-	if (rows_to_be_inserted > 0) {
-		beginInsertRows(QModelIndex(), 0, rows_to_be_inserted - 1);
+	
+	// Go through every cached property iterator we have, and see if it needs to be
+	// removed.
+	property_info_container_iterator remove_it = d_property_info_cache.begin();
+	property_info_container_iterator remove_end = d_property_info_cache.end();
+	for (; remove_it != remove_end; ++remove_it) {
+		// Check the properties_iterator and the intrusive_ptr it refers to.
+		if ( ! remove_it->property_iterator.is_valid()) {
+			int row = get_row_for_property_iterator(remove_it->property_iterator);
+			// Found an invalid property iterator. Remove it from the table.
+			beginRemoveRows(QModelIndex(), row, row);
+			d_property_info_cache.erase(remove_it);
+			endRemoveRows();
+		} else if (*remove_it->property_iterator == NULL) {
+			int row = get_row_for_property_iterator(remove_it->property_iterator);
+			// Found a NULL intrusive_ptr. Remove it from the table.
+			beginRemoveRows(QModelIndex(), row, row);
+			d_property_info_cache.erase(remove_it);
+			endRemoveRows();
+		}
 	}
-	GPlatesModel::FeatureHandle::properties_iterator it = d_feature_ref->properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator end = d_feature_ref->properties_end();
-	for (; it != end; ++it)
+
+	// Go through every actual property iterator in the feature, and see if it needs
+	// to be added to the table.
+	GPlatesModel::FeatureHandle::properties_iterator add_it = d_feature_ref->properties_begin();
+	GPlatesModel::FeatureHandle::properties_iterator add_end = d_feature_ref->properties_end();
+	for (; add_it != add_end; ++add_it)
 	{
-		if ( ! feature_ref.is_valid()) {
-			// Feature handles might become invalid at any time!
-			// Cleaning up at this point could be a little messy.
-			if (rows_to_be_inserted > 0) {
+		// Check the properties_iterator and the intrusive_ptr it refers to.
+		if (add_it.is_valid() && *add_it != NULL) {
+			int test_row = get_row_for_property_iterator(add_it);
+			if (test_row == -1) {
+				// We've found something not in the cache.
+				
+				int row_to_be_added = static_cast<int>(d_property_info_cache.size());
+				beginInsertRows(QModelIndex(), row_to_be_added, row_to_be_added);
+				
+				const GPlatesModel::PropertyName property_name = (*add_it)->property_name();
+				// To work out if property is editable inline, we do a dry-run of the FromQvariantConverter.
+				QVariant dummy;
+				GPlatesFeatureVisitors::FromQvariantConverter qvariant_converter(dummy);
+				(*add_it)->accept_visitor(qvariant_converter);
+				bool can_convert_inline = qvariant_converter.get_property_value();
+		
+				FeaturePropertyTableInfo info = { property_name, add_it, can_convert_inline };
+				d_property_info_cache.push_back(info);
+				
 				endInsertRows();
 			}
-			layoutChanged();
-			layoutAboutToBeChanged();
-			d_property_info_cache.clear();
-			layoutChanged();
-			return;
-		}
-		if (*it != NULL) {
-			const GPlatesModel::PropertyName property_name = (*it)->property_name();
-			// To work out if property is editable inline, we do a dry-run of the FromQvariantConverter.
-			QVariant dummy;
-			GPlatesFeatureVisitors::FromQvariantConverter qvariant_converter(dummy);
-			(*it)->accept_visitor(qvariant_converter);
-			bool can_convert_inline = qvariant_converter.get_property_value();
-	
-			FeaturePropertyTableInfo info = { property_name, it, can_convert_inline };
-			d_property_info_cache.push_back(info);
 		}
 	}
-	if (rows_to_be_inserted > 0) {
-		endInsertRows();
-	}
-	layoutChanged();
+
+	// Update every single data cell because we just don't know what's changed and what hasn't.
+	emit dataChanged(index(0, 1), index(static_cast<int>(d_property_info_cache.size()) - 1, 1));
 }
 
 
@@ -352,117 +425,20 @@ bool
 GPlatesGui::FeaturePropertyTableModel::is_property_editable_inline(
 		int row) const
 {
+#if 1
+	// Because of Bug #77, we are now editing PropertyValues in-place via
+	// the edit widgets, rather than creating new PropertyValues each time.
+	// This was non-trivial to add to the various Edit*Widget classes,
+	// but is much more difficult to add to FromQvariantConverter. As
+	// a result, we are disabling edits of property values via table cells
+	// until a better solution can be worked on.
+	return false;
+#else
 	return d_property_info_cache.at(row).editable_inline;
+#endif
 }
 
 
-bool
-GPlatesGui::FeaturePropertyTableModel::assign_new_property_value(
-		GPlatesModel::FeatureHandle::properties_iterator property_iterator,
-		GPlatesModel::PropertyValue::non_null_ptr_type property_value)
-{
-	if (*property_iterator == NULL) {
-		// Always check your property iterators.
-		return false;
-	}
-	// FIXME: UNDO
-	// FIXME: the assignment will need to be integrated into a QUndoCommand derivative.
-	GPlatesFeatureVisitors::PropertyValueSetter setter(property_iterator, property_value);
-	setter.visit_feature_handle(*d_feature_ref);
-	
-	// We have just changed the model. Let QTableView know.
-	int row = get_row_for_property_iterator(property_iterator);
-	if (row != -1) {
-		QModelIndex idx_begin = index(row, 0);
-		QModelIndex idx_end = index(row, 1);
-		emit dataChanged(idx_begin, idx_end);
-	}
-	
-	// We have just changed the model. Tell anyone who cares to know.
-	emit feature_modified(d_feature_ref);
-	d_feature_focus->notify_of_focused_feature_modification();
-	return setter.old_property_value();
-}
-
-
-void
-GPlatesGui::FeaturePropertyTableModel::delete_property(
-		GPlatesModel::FeatureHandle::properties_iterator property_iterator)
-{
-	// FIXME: UNDO
-	// Delete the property container for the given iterator.
-	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-	d_feature_ref->remove_property_container(property_iterator, transaction);
-	transaction.commit();
-	
-	// Update our internal cache of the table rows, and let QTableView know.
-	// We also need to call beginRemoveRows() because of a QTableView regression in Qt 4.3.0.
-	int row_to_be_deleted = get_row_for_property_iterator(property_iterator);
-	if (row_to_be_deleted >= 0) {
-		beginRemoveRows(QModelIndex(), row_to_be_deleted, row_to_be_deleted);
-	}
-	property_info_container_iterator it = d_property_info_cache.begin();
-	property_info_container_iterator end = d_property_info_cache.end();
-	for ( ; it != end; ++it) {
-		if (it->property_iterator == property_iterator) {
-			d_property_info_cache.erase(it);
-			break;
-		}
-	}
-	if (row_to_be_deleted >= 0) {
-		endRemoveRows();
-	}
-
-	// We have just changed the model. Tell anyone who cares to know.
-	emit feature_modified(d_feature_ref);
-	d_feature_focus->notify_of_focused_feature_modification();
-}
-
-
-GPlatesModel::FeatureHandle::properties_iterator
-GPlatesGui::FeaturePropertyTableModel::append_property_value_to_feature(
-		GPlatesModel::PropertyValue::non_null_ptr_type property_value,
-		const GPlatesModel::PropertyName &property_name)
-{
-	// FIXME: UNDO
-	const GPlatesModel::InlinePropertyContainer::non_null_ptr_type property_container =
-			GPlatesModel::ModelUtils::append_property_value_to_feature(
-					property_value,
-					property_name,
-					d_feature_ref);
-
-	// Search for the iterator which corresponds to this new property container.
-	GPlatesModel::FeatureHandle::properties_iterator it = d_feature_ref->properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator end = d_feature_ref->properties_end();
-	for (; it != end; ++it)
-	{
-		if (*it != NULL && *it == property_container) {
-			// Found the iterator. Add the info we need to our cache.
-			const GPlatesModel::PropertyName new_property_name = (*it)->property_name();
-			// To work out if property is editable inline, we do a dry-run of the FromQvariantConverter.
-			QVariant dummy;
-			GPlatesFeatureVisitors::FromQvariantConverter qvariant_converter(dummy);
-			(*it)->accept_visitor(qvariant_converter);
-			bool can_convert_inline = qvariant_converter.get_property_value();
-	
-			// We also need to call beginInsertRows() because of a QTableView regression in Qt 4.3.0.
-			int row_to_be_appended = static_cast<int>(d_property_info_cache.size());
-			beginInsertRows(QModelIndex(), row_to_be_appended, row_to_be_appended);
-			FeaturePropertyTableInfo info = { new_property_name, it, can_convert_inline };
-			d_property_info_cache.push_back(info);
-			endInsertRows();
-		}
-	}
-
-	// We have just changed the model. Tell anyone who cares to know.
-	emit feature_modified(d_feature_ref);
-	d_feature_focus->notify_of_focused_feature_modification();
-
-	// Note: Might theoretically be returning properties_end() in some bizzarro world where 
-	// we didn't append the property correctly. But ModelUtils::append_property_value_to_feature()
-	// can't possibly fail, can it?
-	return it;
-}
 
 
 QVariant
@@ -482,23 +458,10 @@ GPlatesGui::FeaturePropertyTableModel::get_property_value_as_qvariant(
 	GPlatesModel::FeatureHandle::properties_iterator it = get_property_iterator_for_row(row);
 	if (*it == NULL) {
 		// Always check your property iterators.
-		return QVariant();
+		return QVariant("< NULL >");
 	}
 
-	// For now, just test the actual feature - no modified cache yet.
-	GPlatesFeatureVisitors::ToQvariantConverter qvariant_converter;
-	qvariant_converter.set_desired_role(role);
-	(*it)->accept_visitor(qvariant_converter);
-	
-	if (qvariant_converter.found_qvariants_begin() != qvariant_converter.found_qvariants_end()) {
-		// We were able to make a QVariant out of this property value.
-		// FIXME: Note that we are only returning the first result, and not checking for multiple
-		// matching property names.
-		return *qvariant_converter.found_qvariants_begin();
-	} else {
-		// The property exists, but we were unable to render it in a single cell.
-		return QVariant();
-	}
+	return property_container_to_simple_qvariant(**it, role);
 }
 
 

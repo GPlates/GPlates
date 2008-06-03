@@ -18,6 +18,7 @@ libfile_io_la_SOURCES	= PlatesLineFormatReader.cc \
 				PlatesLineFormatWriter.cc \
 				PlatesRotationFormatWriter.cc \
 				ShapeFileReader.cc \
+				ExternalProgram.cc \
 				FileInfo.cc \
 				RasterReader.cc \
 				GdalReader.cc \

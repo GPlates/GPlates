@@ -29,8 +29,11 @@
 #include <boost/none.hpp>
 
 #include "AddPropertyDialog.h"
+#include "EditFeaturePropertiesWidget.h"
 
 #include "model/PropertyName.h"
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/TemplateTypeParameterType.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -42,6 +45,7 @@ namespace
 	{
 		const QString name;
 		const QString suggested_type;
+		bool is_time_dependent;
 	};
 	
 	/**
@@ -63,50 +67,45 @@ namespace
 	 *
 	 * Oh and naturally, when you're editing an InstantaneousFeature, all time-dependent
 	 * stuff needs to be stripped out.
-	 *
-	 * FIXME: Perhaps some kind of flag could be used to indicate properties which might
-	 * support a TimeDependentPropertyValue (although this varies...). This flag could be
-	 * passed to the EditWidgetGroupBox to signal that it should enable its "Time Dependent Property"
-	 * editing widget on top of the regular edit widget.
 	 */
 	static const PropertyNameInfo property_name_info_table[] = {
-		{ "gpml:angle", "gpml:angle" },
-		{ "gpml:boundary", "gml:Polygon" }, // TimeDependentPropertyValue<>
-		{ "gpml:centerLineOf", "gml:_Geometry" }, // TimeDependentPropertyValue<>
-		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration" }, // Enumeration
-		{ "gml:description", "xs:string" },
-		{ "gpml:dipAngle", "gpml:angle" },
-		{ "gpml:dipSide", "gpml:DipSideEnumeration" }, // Enumeration
-		{ "gpml:dipSlip", "gpml:DipSlipEnumeration" }, // Enumeration
-		{ "gpml:edge", "gpml:ContinentalBoundaryEdgeEnumeration" }, // Enumeration
-		{ "gpml:errorBounds", "gml:_Geometry" }, // TimeDependentPropertyValue<_Geometry>
-	//	{ "gpml:fixedReferenceFrame", "gpml:plateId" }, // For TotalReconstructionSequence
-	//	{ "gpml:movingReferenceFrame", "gpml:plateId" }, // For TotalReconstructionSequence
-		{ "gpml:foldAnnotation", "gpml:FoldPlaneAnnotationEnumeration" }, // Enumeration
-		{ "gpml:isActive", "xs:boolean" }, // TimeDependentPropertyValue<>
-		{ "gpml:leftPlate", "gpml:plateId" },
-	//	{ "gpml:leftUnit", "gpml:FeatureReference" }, // FeatureReference<AbstractRockUnit>
-	//	{ "gml:metaDataProperty", "gml:_MetaData" },
-		{ "gpml:motion", "gpml:StrikeSlipEnumeration" }, // Enumeration. Just for fun, it's also time-dependent.
-		{ "gml:name", "xs:string" },
-		{ "gpml:oldPlatesHeader", "gpml:OldPlatesHeader" },
-		{ "gpml:outlineOf", "gml:_Geometry" },
-		{ "gpml:polarityChronId", "gpml:PolarityChronId" },
-		{ "gpml:polarityChronOffset", "xs:double" },
-		{ "gpml:position", "gml:Point" },
-		{ "gpml:primarySlipComponent", "gpml:SlipComponentEnumeration" }, // Enumeration
-		{ "gpml:reconstructedPlateId", "gpml:plateId" }, // For InstantaneousFeatures
-		{ "gpml:reconstructedTime", "gml:TimeInstant" }, // For InstantaneousFeatures
-		{ "gpml:reconstructionPlateId", "gpml:plateId" }, // For ReconstructableFeatures
-		{ "gpml:rightPlate", "gpml:plateId" },
-	//	{ "gpml:rightUnit", "gpml:FeatureReference" }, // FeatureReference<AbstractRockUnit>
-	//	{ "gpml:shipTrack", "gpml:FeatureReference" }, // FeatureReference<MagneticAnomalyShipTrack>
-		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration" },
-		{ "gpml:subductingSlab", "gpml:SubductionSideEnumeration" }, // TimeDependentPropertyValue<>
-	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation" }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
-	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration" }, // Enumeration. For AbsoluteReferenceFrame.
-		{ "gpml:unclassifiedGeometry", "gml:_Geometry" },
-		{ "gml:validTime", "gml:TimePeriod" },
+		{ "gpml:angle", "gpml:angle", false },
+		{ "gpml:boundary", "gml:Polygon", true }, // TimeDependentPropertyValue<>
+		{ "gpml:centerLineOf", "gml:_Geometry", true }, // TimeDependentPropertyValue<>
+		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false }, // Enumeration
+		{ "gml:description", "xs:string", false },
+		{ "gpml:dipAngle", "gpml:angle", false },
+		{ "gpml:dipSide", "gpml:DipSideEnumeration", false }, // Enumeration
+		{ "gpml:dipSlip", "gpml:DipSlipEnumeration", false }, // Enumeration
+		{ "gpml:edge", "gpml:ContinentalBoundaryEdgeEnumeration", false }, // Enumeration
+		{ "gpml:errorBounds", "gml:_Geometry", true }, // TimeDependentPropertyValue<_Geometry>
+	//	{ "gpml:fixedReferenceFrame", "gpml:plateId", false }, // For TotalReconstructionSequence
+	//	{ "gpml:movingReferenceFrame", "gpml:plateId", false }, // For TotalReconstructionSequence
+		{ "gpml:foldAnnotation", "gpml:FoldPlaneAnnotationEnumeration", false }, // Enumeration
+		{ "gpml:isActive", "xs:boolean", true }, // TimeDependentPropertyValue<>
+		{ "gpml:leftPlate", "gpml:plateId", false },
+	//	{ "gpml:leftUnit", "gpml:FeatureReference", false }, // FeatureReference<AbstractRockUnit>
+	//	{ "gml:metaDataProperty", "gml:_MetaData", false },
+		{ "gpml:motion", "gpml:StrikeSlipEnumeration", true }, // Enumeration. Just for fun, it's also time-dependent.
+		{ "gml:name", "xs:string", false },
+		{ "gpml:oldPlatesHeader", "gpml:OldPlatesHeader", false },
+		{ "gpml:outlineOf", "gml:_Geometry", true },
+		{ "gpml:polarityChronId", "gpml:PolarityChronId", false },
+		{ "gpml:polarityChronOffset", "xs:double", false },
+		{ "gpml:position", "gml:Point", false },
+		{ "gpml:primarySlipComponent", "gpml:SlipComponentEnumeration", false }, // Enumeration
+		{ "gpml:reconstructedPlateId", "gpml:plateId", false }, // For InstantaneousFeatures
+		{ "gpml:reconstructedTime", "gml:TimeInstant", false }, // For InstantaneousFeatures
+		{ "gpml:reconstructionPlateId", "gpml:plateId", true }, // For ReconstructableFeatures
+		{ "gpml:rightPlate", "gpml:plateId", false },
+	//	{ "gpml:rightUnit", "gpml:FeatureReference", false }, // FeatureReference<AbstractRockUnit>
+	//	{ "gpml:shipTrack", "gpml:FeatureReference", false }, // FeatureReference<MagneticAnomalyShipTrack>
+		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration", false },
+		{ "gpml:subductingSlab", "gpml:SubductionSideEnumeration", true }, // TimeDependentPropertyValue<>
+	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
+	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false }, // Enumeration. For AbsoluteReferenceFrame.
+		{ "gpml:unclassifiedGeometry", "gml:_Geometry", true },
+		{ "gml:validTime", "gml:TimePeriod", false },
 	};
 	
 	void
@@ -153,7 +152,7 @@ namespace
 		}
 	}
 	
-	
+
 	/**
 	 * Attempts to convert a QString to a qualified PropertyName.
 	 * If the namespace alias is 'gml' or 'gpml', this is relatively pain-free.
@@ -188,14 +187,102 @@ namespace
 		}
 	}
 
+	/**
+	 * Attempts to convert a QString to a qualified TemplateTypeParameterType.
+	 * If the namespace alias is 'gml' or 'gpml', this is relatively pain-free.
+	 * However the user is currently free to enter whatever the hell they feel like.
+	 */
+	boost::optional<GPlatesPropertyValues::TemplateTypeParameterType>
+	string_to_template_type(
+			const QString &type_name_str)
+	{
+		boost::optional<GPlatesPropertyValues::TemplateTypeParameterType> type_name;
+		QStringList parts = type_name_str.split(':');
+		if (parts.size() == 2) {
+			// alias:name format. Handle it if it is something we know (gml or gpml).
+			// FIXME: Handle user-defined namespaces and aliases. Probably needs some
+			// clever dialog to let the user edit the mapping.
+			if (parts[0] == "gml") {
+				return GPlatesPropertyValues::TemplateTypeParameterType::create_gml(parts[1]);
+			} else if (parts[0] == "gpml") {
+				return GPlatesPropertyValues::TemplateTypeParameterType::create_gpml(parts[1]);
+			} else {
+				// FIXME: Can't handle user defined namespaces.
+				return boost::none;
+			}
+			
+		} else if (parts.size() == 1) {
+			// name (no alias). Assume the user is attempting to put it in the gpml namespace.
+			return GPlatesPropertyValues::TemplateTypeParameterType::create_gpml(parts[1]);
+
+		} else {
+			// some invalid not qualified or 'overqualified' name.
+			return boost::none;
+		}
+	}
+
+	
+	/**
+	 * Wraps a newly-created PropertyValue in a time-dependent wrapper
+	 * (GpmlConstantValue) if appropriate. If the property we are adding
+	 * is not listed as taking time-dependent property values, this function
+	 * simply returns the original PropertyValue::non_null_ptr_type.
+	 *
+	 * FIXME: We should really convert the property_info_table to use
+	 * the new PropertyName class rather than QStrings, although we do
+	 * need them as QStrings eventually because of the way QComboBox is
+	 * feeding us the appropriate value type to select.
+	 */
+	GPlatesModel::PropertyValue::non_null_ptr_type
+	add_time_dependency_if_necessary(
+			const QString &property_name_as_string,
+			const QString &property_type_as_string,
+			const GPlatesModel::PropertyName &property_name,
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+	{
+		// Assume no time dependency (The user might have entered their own
+		// property name, and selected a PropertyValue type to create for it)
+		bool is_time_dependent = false;
+		// Look up the time-dependency from the property_info_table.
+		const PropertyNameInfo *begin = property_name_info_table;
+		const PropertyNameInfo *end = begin + NUM_ELEMS(property_name_info_table);
+		for ( ; begin != end; ++begin) {
+			if (begin->name == property_name_as_string) {
+				is_time_dependent = begin->is_time_dependent;
+				break;
+			}
+		}
+		
+		if (is_time_dependent) {
+			// We need a time-dependent wrapper - set this up as a gpml:ConstantValue<thing>
+			// for now, and the user can change it after the property is added with the
+			// "ChangeTimeDependentPropertyDialog" (to be completed 2019)
+			
+			// We need to supply ConstantValue's constructor with a TemplateTypeParameterType of
+			// the type of PropertyValue that it is wrapping.
+			boost::optional<GPlatesPropertyValues::TemplateTypeParameterType> value_type = 
+					string_to_template_type(property_type_as_string);
+			
+			if (value_type) {
+				return GPlatesPropertyValues::GpmlConstantValue::create(property_value, *value_type);
+			} else {
+				// FIXME: Is this an exceptional state?
+				return property_value;
+			}
+			
+		} else {
+			// Just keep it as an ordinary PropertyValue.
+			return property_value;
+		}
+	}
 }
 
 
 GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
-		GPlatesGui::FeaturePropertyTableModel &property_model,
+		GPlatesQtWidgets::EditFeaturePropertiesWidget &edit_widget,
 		QWidget *parent_):
 	QDialog(parent_),
-	d_property_model_ptr(&property_model),
+	d_edit_feature_properties_widget_ptr(&edit_widget),
 	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(this))
 {
 	setupUi(this);
@@ -267,6 +354,7 @@ void
 GPlatesQtWidgets::AddPropertyDialog::set_appropriate_property_value_type(
 		int index)
 {
+	// Update the "Type" combobox based on what property name is selected.
 	QString suggested_value_type = combobox_add_property_name->itemData(index).toString();
 	int target_index = combobox_add_property_type->findText(suggested_value_type);
 	if (target_index != -1) {
@@ -291,13 +379,20 @@ GPlatesQtWidgets::AddPropertyDialog::add_property()
 		boost::optional<GPlatesModel::PropertyName> property_name = 
 				string_to_property_name(combobox_add_property_name->currentText());
 		if (property_name) {
+		
 			// If the name was something we understood, create the property value too.
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value =
 					d_edit_widget_group_box_ptr->create_property_value_from_widget();
+			
+			property_value = add_time_dependency_if_necessary(
+					combobox_add_property_name->currentText(),
+					combobox_add_property_type->currentText(),
+					*property_name,
+					property_value);
 					
-			// Do the adding via FeaturePropertyTableModel, so that when we have Undo/Redo,
-			// it can worry about that and no-one else has to.
-			d_property_model_ptr->append_property_value_to_feature(
+			// Do the adding via EditFeaturePropertiesWidget, so that most of
+			// the model-editing code is in one place.
+			d_edit_feature_properties_widget_ptr->append_property_value_to_feature(
 					property_value, *property_name);
 		} else {
 			// User supplied an incomprehensible property name.

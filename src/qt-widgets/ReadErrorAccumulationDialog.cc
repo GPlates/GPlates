@@ -63,7 +63,7 @@ namespace
 	 * This table is sourced from http://trac.gplates.org/wiki/ReadErrorMessages .
 	 */
 	static ReadErrorDescription description_table[] = {
-		// Errors from PLATES line-format files:
+		// Error descriptions for PLATES line-format files:
 		{ GPlatesFileIO::ReadErrors::InvalidPlatesRegionNumber,
 				QT_TR_NOOP("Error reading 'Region Number'"),
 				QT_TR_NOOP("Error reading 'Region Number' from header.") },
@@ -134,7 +134,7 @@ namespace
 				QT_TR_NOOP("More than one point"),
 				QT_TR_NOOP("A single distinct point was expected, but more were encountered.") },
 		
-		// Errors from PLATES rotation-format files:
+		// Error descriptions for PLATES rotation-format files:
 		{ GPlatesFileIO::ReadErrors::CommentMovingPlateIdAfterNonCommentSequence,
 				QT_TR_NOOP("Moving plate ID will be changed"),
 				QT_TR_NOOP("GPlates will need to change the moving plate ID from 999 to some other value.") },
@@ -172,7 +172,124 @@ namespace
 				QT_TR_NOOP("Overlapping geo-times"),
 				QT_TR_NOOP("Consecutive poles had the same plate IDs and overlapping geo-times.") },
 
-		// The following are related to ESRI shapefile input errors
+		
+		// Error descriptions for GPML format files:
+		{ GPlatesFileIO::ReadErrors::DuplicateProperty,
+				QT_TR_NOOP("Duplicate property"),
+				QT_TR_NOOP("More than one instance of a property was found where no more than one was expected.") },
+		{ GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
+				QT_TR_NOOP("Necessary property not found"),
+				QT_TR_NOOP("A property which is not optional was not found.") },
+		{ GPlatesFileIO::ReadErrors::UnknownValueType,
+				QT_TR_NOOP("Unknown value type"),
+				QT_TR_NOOP("A GPML Template Type was used where the type is not known to GPlates.") },
+		{ GPlatesFileIO::ReadErrors::BadOrMissingTargetForValueType,
+				QT_TR_NOOP("Bad or missing target for value type"),
+				QT_TR_NOOP("A GPML Template Type was used but the value could not be resolved.") },
+		{ GPlatesFileIO::ReadErrors::InvalidBoolean,
+				QT_TR_NOOP("Invalid boolean"),
+				QT_TR_NOOP("A boolean (true/false) value was expected, but the supplied value could not be interpreted as a boolean.") },
+		{ GPlatesFileIO::ReadErrors::InvalidDouble,
+				QT_TR_NOOP("Invalid double"),
+				QT_TR_NOOP("A double (high precision decimal number) value was expected, but the supplied value could not be interpreted as a double.") },
+		{ GPlatesFileIO::ReadErrors::InvalidGeoTime,
+				QT_TR_NOOP("Invalid geological time"),
+				QT_TR_NOOP("The supplied value could not be interpreted as a geological time.") },
+		{ GPlatesFileIO::ReadErrors::InvalidInt,
+				QT_TR_NOOP("Invalid integer"),
+				QT_TR_NOOP("An integer value was expected, but the supplied value could not be interpreted as an integer.") },
+		{ GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
+				QT_TR_NOOP("Invalid lat,lon point"),
+				QT_TR_NOOP("A lat,lon point was encountered outside the valid range for latitude and longitude.") },
+		{ GPlatesFileIO::ReadErrors::InvalidLong,
+				QT_TR_NOOP("Invalid long integer"),
+				QT_TR_NOOP("A long integer value was expected, but the supplied value could not be interpreted as a long integer.") },
+		{ GPlatesFileIO::ReadErrors::InvalidPointsInPolyline,
+				QT_TR_NOOP("Invalid points in polyline"),
+				QT_TR_NOOP("The points of the polyline are invalid (No specific error message is available).") },
+		{ GPlatesFileIO::ReadErrors::InsufficientDistinctPointsInPolyline,
+				QT_TR_NOOP("Insufficient distinct points in polyline"),
+				QT_TR_NOOP("Polylines must be defined with at least two distinct points.") },
+		{ GPlatesFileIO::ReadErrors::DuplicateAdjacentPointsInPolyline,
+				QT_TR_NOOP("Duplicate adjacent points in polyline"),
+				QT_TR_NOOP("Segments of a polyline cannot be defined between two points which are identical.") },
+		{ GPlatesFileIO::ReadErrors::AntipodalAdjacentPointsInPolyline,
+				QT_TR_NOOP("Antipodal adjacent points in polyline"),
+				QT_TR_NOOP("Segments of a polyline cannot be defined between two points which are antipodal.") },
+		{ GPlatesFileIO::ReadErrors::InvalidPointsInPolygon,
+				QT_TR_NOOP("Invalid points in polygon"),
+				QT_TR_NOOP("The points of the polygon are invalid (No specific error message is available).") },
+		{ GPlatesFileIO::ReadErrors::InvalidPolygonEndPoint,
+				QT_TR_NOOP("Invalid polygon end point"),
+				QT_TR_NOOP("GML Polygons' terminating point must be identical to their starting point.") },
+		{ GPlatesFileIO::ReadErrors::InsufficientPointsInPolygon,
+				QT_TR_NOOP("Insufficient points in polygon"),
+				QT_TR_NOOP("GML Polygons must be defined with at least four points (which includes the identical start and end point).") },
+		{ GPlatesFileIO::ReadErrors::InsufficientDistinctPointsInPolygon,
+				QT_TR_NOOP("Insufficient distinct points in polygon"),
+				QT_TR_NOOP("Polygons must be defined with at least three distinct points.") },
+		{ GPlatesFileIO::ReadErrors::DuplicateAdjacentPointsInPolygon,
+				QT_TR_NOOP("Duplicate adjacent points in polygon"),
+				QT_TR_NOOP("Segments of a polygon cannot be defined between two points which are identical.") },
+		{ GPlatesFileIO::ReadErrors::AntipodalAdjacentPointsInPolygon,
+				QT_TR_NOOP("Antipodal adjacent points in polygon"),
+				QT_TR_NOOP("Segments of a polygon cannot be defined between two points which are antipodal.") },
+		{ GPlatesFileIO::ReadErrors::InvalidString,
+				QT_TR_NOOP("Invalid string"),
+				QT_TR_NOOP("A text string was encountered which included XML elements.") },
+		{ GPlatesFileIO::ReadErrors::InvalidUnsignedInt,
+				QT_TR_NOOP("Invalid unsigned integer"),
+				QT_TR_NOOP("An unsigned (positive) integer value was expected, but the supplied value could not be interpreted as an unsigned integer.") },
+		{ GPlatesFileIO::ReadErrors::InvalidUnsignedLong,
+				QT_TR_NOOP("Invalid unsigned long integer"),
+				QT_TR_NOOP("An unsigned (positive) long integer value was expected, but the supplied value could not be interpreted as an unsigned long integer.") },
+		{ GPlatesFileIO::ReadErrors::MissingNamespaceAlias,
+				QT_TR_NOOP("Missing XML namespace alias"),
+				QT_TR_NOOP("An XML namespace alias was referred to which has not been defined at the start of the FeatureCollection element.") },
+		{ GPlatesFileIO::ReadErrors::NonUniqueStructuralElement,
+				QT_TR_NOOP("Multiple structural elements encountered"),
+				QT_TR_NOOP("A single property containing multiple structural elements was encountered, where only one is allowed.") },
+		{ GPlatesFileIO::ReadErrors::StructuralElementNotFound,
+				QT_TR_NOOP("Structural element not found"),
+				QT_TR_NOOP("A structural element was expected inside a property, but was not found.") },
+		{ GPlatesFileIO::ReadErrors::TooManyChildrenInElement,
+				QT_TR_NOOP("Too many children in element"),
+				QT_TR_NOOP("Found more child elements than were expected.") },
+		{ GPlatesFileIO::ReadErrors::UnexpectedEmptyString,
+				QT_TR_NOOP("Unexpected empty string"),
+				QT_TR_NOOP("A blank string was encountered where a non-empty text value was expected.") },
+		{ GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
+				QT_TR_NOOP("Unrecognised child found"),
+				QT_TR_NOOP("An unrecognised XML child element was encountered.") },
+		{ GPlatesFileIO::ReadErrors::ConstantValueOnNonTimeDependentProperty,
+				QT_TR_NOOP("ConstantValue on non-time-dependent property"),
+				QT_TR_NOOP("A gpml:ConstantValue wrapper was found around a property value that was not expected to have time-dependency.") },
+		// GPlatesFileIO::ReadErrors::DuplicateIdentityProperty FIXME: unused.
+		// GPlatesFileIO::ReadErrors::DuplicateRevisionProperty FIXME: unused.
+		{ GPlatesFileIO::ReadErrors::UnrecognisedFeatureCollectionElement,
+				QT_TR_NOOP("Unrecognised feature collection element"),
+				QT_TR_NOOP("An element inside the gml:FeatureCollection was unrecognised.") },
+		{ GPlatesFileIO::ReadErrors::UnrecognisedFeatureType,
+				QT_TR_NOOP("Unrecognised feature type"),
+				QT_TR_NOOP("An unrecognised type of feature was encountered.") },
+		{ GPlatesFileIO::ReadErrors::IncorrectRootElementName,
+				QT_TR_NOOP("Incorrect root element name"),
+				QT_TR_NOOP("The document root element was not a 'gml:FeatureCollection'.") },
+		{ GPlatesFileIO::ReadErrors::MissingVersionAttribute,
+				QT_TR_NOOP("Missing version attribute"),
+				QT_TR_NOOP("No information about which version of GPML this document uses was found.") },
+		{ GPlatesFileIO::ReadErrors::IncorrectVersionAttribute,
+				QT_TR_NOOP("Incorrect version attribute"),
+				QT_TR_NOOP("The document is not using a known version of GPML.") },
+		{ GPlatesFileIO::ReadErrors::ParseError,
+				QT_TR_NOOP("Parse Error"),
+				QT_TR_NOOP("Malformed XML was encountered.") },
+		{ GPlatesFileIO::ReadErrors::UnexpectedNonEmptyAttributeList,
+				QT_TR_NOOP("Unexpected attributes found"),
+				QT_TR_NOOP("XML attributes were encountered on a Feature element where none were expected.") },
+
+
+		// The following descriptions are related to ESRI shapefile input errors:
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,
 				QT_TR_NOOP("No layers found."),
 				QT_TR_NOOP("No layers were found in the shapefile.") },
@@ -243,17 +360,20 @@ namespace
 				QT_TR_NOOP("Multiple raster sets found."),
 				QT_TR_NOOP("More than one suitable raster file set was found in the selected folder.") },
 
-		// Generic file-related errors:
+		// Generic file-related error descriptions:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
 				QT_TR_NOOP("Error opening file"),
 				QT_TR_NOOP("Error opening the file for reading.") },
+		{ GPlatesFileIO::ReadErrors::FileIsEmpty,
+				QT_TR_NOOP("File is empty"),
+				QT_TR_NOOP("The file contains no data.") },
 	};
 	
 	/**
 	 * This table is sourced from http://trac.gplates.org/wiki/ReadErrorMessages .
 	 */
 	static ReadErrorResult result_table[] = {
-		// Errors from PLATES line-format files:
+		// Error results for PLATES line-format files:
 		{ GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated,
 				QT_TR_NOOP("Because the 'Data Type Code' was not known, Unclassified Features will be created.") },
 		{ GPlatesFileIO::ReadErrors::FeatureDiscarded,
@@ -261,7 +381,7 @@ namespace
 		{ GPlatesFileIO::ReadErrors::NoGeometryCreatedByMovement,
 				QT_TR_NOOP("No new geometry was created by the 'pen movement'.") },
 
-		// Errors from PLATES rotation-format files:
+		// Error results for PLATES rotation-format files:
 		{ GPlatesFileIO::ReadErrors::EmptyCommentCreated,
 				QT_TR_NOOP("An empty comment was created.") },
 		{ GPlatesFileIO::ReadErrors::ExclMarkInsertedAtCommentStart,
@@ -273,7 +393,21 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PoleDiscarded,
 				QT_TR_NOOP("The pole was discarded.") },
 
-		// The following apply to ESRI shapefile input errors
+		// Error results from GPML format files:
+		// GPlatesFileIO::ReadErrors::ElementIgnored FIXME: unused.
+		// GPlatesFileIO::ReadErrors::PropertyIgnored FIXME: unused.
+		{ GPlatesFileIO::ReadErrors::ParsingStoppedPrematurely,
+				QT_TR_NOOP("Parsing the file was stopped prematurely.") },
+		{ GPlatesFileIO::ReadErrors::ElementNameChanged,
+				QT_TR_NOOP("The name of the element was changed.") },
+		{ GPlatesFileIO::ReadErrors::AssumingCorrectVersion,
+				QT_TR_NOOP("The correct version will be assumed.") },
+		{ GPlatesFileIO::ReadErrors::FeatureNotInterpreted,
+				QT_TR_NOOP("The feature was not interpreted.") },
+		{ GPlatesFileIO::ReadErrors::AttributesIgnored,
+				QT_TR_NOOP("The attributes were ignored.") },
+
+		// The following results apply to ESRI shapefile input errors:
 		{ GPlatesFileIO::ReadErrors::MultipleLayersIgnored,
 				QT_TR_NOOP("Only the first layer was read.") },
 		{ GPlatesFileIO::ReadErrors::GeometryFlattenedTo2D,

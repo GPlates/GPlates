@@ -163,6 +163,11 @@ namespace GPlatesQtWidgets
 		 * being saved.
 		 */
 		QString d_open_file_path;
+		
+		/**
+		 * Controls whether Save File dialogs include a Compressed GPML option.
+		 */
+		bool d_gzip_available;
 	};
 }
 

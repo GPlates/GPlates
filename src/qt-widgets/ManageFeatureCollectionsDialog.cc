@@ -31,10 +31,13 @@
 #include "ViewportWindow.h"
 #include "file-io/FileInfo.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
+#include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/FileFormatNotSupportedException.h"
+#include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "ManageFeatureCollectionsActionWidget.h"
 #include "ManageFeatureCollectionsDialog.h"
+
 
 namespace
 {
@@ -57,6 +60,8 @@ namespace
 		static const QString format_line(QObject::tr("PLATES4 line"));
 		static const QString format_rotation(QObject::tr("PLATES4 rotation"));
 		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
+		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
+		static const QString format_gpml_gz(QObject::tr("Compressed GPML"));
 		static const QString format_unknown(QObject::tr(""));
 		
 		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
@@ -65,6 +70,11 @@ namespace
 			return format_rotation;
 		} else if (qfileinfo.suffix() == "shp") {
 			return format_shapefile;
+		} else if (qfileinfo.suffix() == "gpml") {
+			return format_gpml;
+		} else if (qfileinfo.completeSuffix().endsWith("gpml.gz", Qt::CaseInsensitive)) {
+			// FIXME: ^- REFACTOR ME!
+			return format_gpml_gz;
 		} else {
 			return format_unknown;
 		}
@@ -72,7 +82,8 @@ namespace
 	
 	QString
 	get_output_filters_for_file(
-			GPlatesFileIO::FileInfo &fileinfo)
+			GPlatesFileIO::FileInfo &fileinfo,
+			bool has_gzip)
 	{
 		// Appropriate filters for available output formats.
 		// Note that since we cannot write Shapefiles yet, we use PLATES4 line format as
@@ -80,17 +91,72 @@ namespace
 		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
 		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
 		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
+		static const QString filter_gpml(QObject::tr("GPlates Markup Language (*.gpml)"));
+		static const QString filter_gpml_gz(QObject::tr("Compressed GPML (*.gpml.gz)"));
 		static const QString filter_all(QObject::tr("All files (*)"));
 		
 		QFileInfo qfileinfo = fileinfo.get_qfileinfo();
 		
+		// FIXME: Again, there are similar suffix-checking functions scattered all over,
+		// e.g. FileInfo.h and ViewportWindow.h
 		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
-			return QString(filter_line).append(";;").append(filter_all);
+			QStringList filters;
+			filters << filter_line;
+			if (has_gzip) {
+				filters << filter_gpml_gz;
+			}
+			filters << filter_gpml;
+			filters << filter_all;
+			return filters.join(";;");
+
 		} else if (qfileinfo.suffix() == "rot") {
-			return QString(filter_rotation).append(";;").append(filter_all);
+			QStringList filters;
+			filters << filter_rotation;
+			if (has_gzip) {
+				filters << filter_gpml_gz;
+			}
+			filters << filter_gpml;
+			filters << filter_all;
+			return filters.join(";;");
+
 		} else if (qfileinfo.suffix() == "shp") {
-			// No shapefile writing support yet!
-			return QString(filter_line).append(";;").append(filter_all);
+			// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
+			QStringList filters;
+			filters << filter_line;
+			if (has_gzip) {
+				filters << filter_gpml_gz;
+			}
+			filters << filter_gpml;
+			filters << filter_all;
+			return filters.join(";;");
+
+		} else if (qfileinfo.suffix() == "gpml") {
+			QStringList filters;
+			filters << filter_gpml;			// Save uncompressed by default, same as original
+			if (has_gzip) {
+				filters << filter_gpml_gz;	// Option to change to compressed version.
+			}
+			filters << filter_line;
+			// FIXME: Only offer to save as PLATES4 .rot if feature collection
+			// actually has rotations in it! Ditto with collections that have no features!
+			filters << filter_rotation;
+			filters << filter_all;
+			return filters.join(";;");
+
+		} else if (qfileinfo.completeSuffix().endsWith("gpml.gz", Qt::CaseInsensitive)) {
+			// FIXME: ^- REFACTOR ME!
+			QStringList filters;
+			if (has_gzip) {
+				filters << filter_gpml_gz;	// Save compressed by default, assuming we can.
+			}
+			filters << filter_gpml;			// Option to change to uncompressed version.
+			filters << filter_line;
+			// FIXME: Only offer to save as PLATES4 .rot if feature collection
+			// actually has rotations in it! Ditto with collections that have no features!
+			filters << filter_rotation;
+			filters << filter_all;
+			return filters.join(";;");
+		
 		} else {
 			return filter_all;
 		}
@@ -103,7 +169,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 		QWidget *parent_):
 	QDialog(parent_),
 	d_viewport_window_ptr(&viewport_window),
-	d_open_file_path("")
+	d_open_file_path(""),
+	d_gzip_available(false)
 {
 	setupUi(this);
 	
@@ -122,6 +189,13 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	// Set up slots for Open File and Save All
 	QObject::connect(button_open_file, SIGNAL(clicked()), this, SLOT(open_file()));
 	QObject::connect(button_save_all, SIGNAL(clicked()), this, SLOT(save_all()));
+	
+	// Test if we can offer on-the-fly gzip compression.
+	// FIXME: Ideally we should let the user know WHY we're concealing this option.
+	// The user will still be able to type in a .gpml.gz file name and activate the
+	// gzipped saving code, however this will produce an exception which pops up
+	// a suitable message box (See ViewportWindow.cc)
+	d_gzip_available = GPlatesFileIO::GpmlOnePointSixOutputVisitor::s_gzip_program.test();
 }
 
 
@@ -177,6 +251,17 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 				QMessageBox::Ok, QMessageBox::Ok);
 				
 	}
+	catch (GPlatesFileIO::ErrorOpeningPipeToGzipException &e)
+	{
+		QString message = tr("GPlates was unable to use the '%1' program to save the file '%2'."
+				" Please check that gzip is installed and in your PATH. You will still be able to save"
+				" files without compression.")
+				.arg(e.command())
+				.arg(e.filename());
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+				
+	}
 	catch (GPlatesGlobal::UnexpectedEmptyFeatureCollectionException &)
 	{
 		// The argument name in the above expression was removed to
@@ -204,7 +289,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 			action_widget_ptr->get_file_info_iterator();
 	
 	QString filename = QFileDialog::getSaveFileName(d_viewport_window_ptr, tr("Save File As"),
-			file_it->get_qfileinfo().path(), get_output_filters_for_file(*file_it));
+			file_it->get_qfileinfo().path(), get_output_filters_for_file(*file_it, d_gzip_available));
 	if ( filename.isEmpty() ) {
 		return;
 	}
@@ -221,6 +306,17 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
 	{
 		QString message = tr("An error occurred while saving the file '%1'")
+				.arg(e.filename());
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+				
+	}
+	catch (GPlatesFileIO::ErrorOpeningPipeToGzipException &e)
+	{
+		QString message = tr("GPlates was unable to use the '%1' program to save the file '%2'."
+				" Please check that gzip is installed and in your PATH. You will still be able to save"
+				" files without compression.")
+				.arg(e.command())
 				.arg(e.filename());
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
@@ -256,7 +352,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 	
 	QString filename = QFileDialog::getSaveFileName(d_viewport_window_ptr,
 			tr("Save a copy of the file with a different name"),
-			file_it->get_qfileinfo().path(), get_output_filters_for_file(*file_it));
+			file_it->get_qfileinfo().path(), get_output_filters_for_file(*file_it, d_gzip_available));
 	if ( filename.isEmpty() ) {
 		return;
 	}
@@ -273,6 +369,17 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
 	{
 		QString message = tr("An error occurred while saving the file '%1'")
+				.arg(e.filename());
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+				
+	}
+	catch (GPlatesFileIO::ErrorOpeningPipeToGzipException &e)
+	{
+		QString message = tr("GPlates was unable to use the '%1' program to save the file '%2'."
+				" Please check that gzip is installed and in your PATH. You will still be able to save"
+				" files without compression.")
+				.arg(e.command())
 				.arg(e.filename());
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
@@ -320,10 +427,11 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_file()
 {
 	static const QString filters = tr(
-			"All loadable files (*.dat *.pla *.rot *.shp);;"
+			"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpml.gz);;"
 			"PLATES4 line (*.dat *.pla);;"
 			"PLATES4 rotation (*.rot);;"
 			"ESRI shapefile (*.shp);;"
+			"GPlates Markup Language (*.gpml *.gpml.gz);;"
 			"All files (*)" );
 	
 	QStringList filenames = QFileDialog::getOpenFileNames(d_viewport_window_ptr,

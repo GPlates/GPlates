@@ -27,6 +27,7 @@
 
 #include "property-values/XsBoolean.h"
 #include "model/ModelUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 GPlatesQtWidgets::EditBooleanWidget::EditBooleanWidget(
@@ -49,6 +50,7 @@ GPlatesQtWidgets::EditBooleanWidget::EditBooleanWidget(
 void
 GPlatesQtWidgets::EditBooleanWidget::reset_widget_to_default_values()
 {
+	d_boolean_ptr = NULL;
 	combobox_boolean->setCurrentIndex(0);
 	set_clean();
 }
@@ -56,8 +58,9 @@ GPlatesQtWidgets::EditBooleanWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditBooleanWidget::update_widget_from_boolean(
-		const GPlatesPropertyValues::XsBoolean &xs_boolean)
+		GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
+	d_boolean_ptr = &xs_boolean;
 	if (xs_boolean.value() == true) {
 		combobox_boolean->setCurrentIndex(0);
 	} else {
@@ -74,6 +77,28 @@ GPlatesQtWidgets::EditBooleanWidget::create_property_value_from_widget() const
 		return GPlatesPropertyValues::XsBoolean::create(true);
 	} else {
 		return GPlatesPropertyValues::XsBoolean::create(false);
+	}
+}
+
+
+bool
+GPlatesQtWidgets::EditBooleanWidget::update_property_value_from_widget()
+{
+	// Remember that the property value pointer may be NULL!
+	if (d_boolean_ptr.get() != NULL) {
+		if (is_dirty()) {
+			if (combobox_boolean->currentIndex() == 0) {
+				d_boolean_ptr->set_value(true);
+			} else {
+				d_boolean_ptr->set_value(false);
+			}
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
 	}
 }
 

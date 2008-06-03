@@ -23,12 +23,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDebug>
 #include <boost/none.hpp>
 #include <QHeaderView>
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include "EditFeaturePropertiesWidget.h"
 
+#include "model/FeatureHandle.h"
+#include "model/PropertyName.h"
+#include "model/ModelUtils.h"
+#include "model/DummyTransactionHandle.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -39,7 +44,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
 	d_feature_focus_ptr(&feature_focus),
 	d_property_model_ptr(new GPlatesGui::FeaturePropertyTableModel(feature_focus)),
 	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(this)),
-	d_add_property_dialog_ptr(new GPlatesQtWidgets::AddPropertyDialog(*d_property_model_ptr, this))
+	d_add_property_dialog_ptr(new GPlatesQtWidgets::AddPropertyDialog(*this, this))
 {
 	setupUi(this);
 	
@@ -63,8 +68,19 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
 			this, SLOT(delete_selected_property()));
 	
 	// Handle things gracefully if the feature we are looking at is modified.
+#if 0
+	// property table model should no longer be emitting this signal.
+	// I think I'm going to take a leap of faith here and temporarily disable the call
+	// to handle_model_change() entirely - I suspect it might not be necessary anymore,
+	// now that EditFeaturePropertiesWidget has control of things.
+	// Yes... we shouldn't need handle_model_change() at the moment as the only way of
+	// changing a PropertyValue in the model is the edit widgets. Previously we added
+	// this function to cope with a situation where we had an edit widget open with old
+	// data and the user modifies things directly in the table cell. Since we can't
+	// modify things via table cells right now, this doesn't matter,... for now.
 	QObject::connect(d_property_model_ptr, SIGNAL(feature_modified(GPlatesModel::FeatureHandle::weak_ref)),
 			this, SLOT(handle_model_change()));
+#endif
 }
 
 
@@ -89,12 +105,16 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::edit_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
 	if (feature_ref != d_feature_ref) {
+		// Brand new feature to look at!
 		// Clean up.
 		commit_and_clean_up();
 		
 		// Load new data.
 		d_property_model_ptr->set_feature_reference(feature_ref);
 		d_feature_ref = feature_ref;
+	} else {
+		// A redisplay of the current feature!
+		d_property_model_ptr->refresh_data();
 	}
 }
 
@@ -134,6 +154,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::handle_selection_change(
 
 	d_selected_property_iterator = boost::none;
 	if (selected.indexes().isEmpty()) {
+		// No selection, exit early.
 		return;
 	}
 	// We assume that the view has been constrained to allow only single-row selections,
@@ -171,12 +192,38 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 	// We have a valid selection. Find out what it is!
 	GPlatesModel::FeatureHandle::properties_iterator it = 
 			d_property_model_ptr->get_property_iterator_for_row(idx.row());
-	d_property_model_ptr->delete_property(it);
-	// Clear the selection afterwards, or we could end up in trouble.
+
+	// Clear the selection beforehand, or we could end up in trouble.
 	d_edit_widget_group_box_ptr->deactivate_edit_widgets();
 	property_table->selectionModel()->clear();
+
+	// FIXME: UNDO
+	// Delete the property container for the given iterator.
+	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+	d_feature_ref->remove_property_container(it, transaction);
+	transaction.commit();
+
+	// We have just changed the model. Tell anyone who cares to know.
+	// This will cause FeaturePropertyTableModel to refresh_data(), amongst other things.
+	d_feature_focus_ptr->notify_of_focused_feature_modification();
 }
 
+
+void
+GPlatesQtWidgets::EditFeaturePropertiesWidget::append_property_value_to_feature(
+		GPlatesModel::PropertyValue::non_null_ptr_type property_value,
+		const GPlatesModel::PropertyName &property_name)
+{
+	// FIXME: UNDO
+	const GPlatesModel::InlinePropertyContainer::non_null_ptr_type property_container =
+			GPlatesModel::ModelUtils::append_property_value_to_feature(
+					property_value,
+					property_name,
+					d_feature_ref);
+
+	// We have just changed the model. Tell anyone who cares to know.
+	d_feature_focus_ptr->notify_of_focused_feature_modification();
+}
 
 
 
@@ -195,15 +242,27 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::commit_and_clean_up()
 void
 GPlatesQtWidgets::EditFeaturePropertiesWidget::commit_edit_widget_data()
 {
+	if ( ! d_feature_ref.is_valid()) {
+		return;
+	}
 	if ( ! d_selected_property_iterator) {
 		return;
 	}
 	
 	if (d_edit_widget_group_box_ptr->is_edit_widget_active()) {
 		if (d_edit_widget_group_box_ptr->is_dirty()) {
-			d_property_model_ptr->assign_new_property_value(*d_selected_property_iterator,
-					d_edit_widget_group_box_ptr->create_property_value_from_widget());
-			d_edit_widget_group_box_ptr->set_clean();
+			// FIXME: UNDO
+			// Edit PropertyValues in the model by modifying them in-place.
+			bool modified = d_edit_widget_group_box_ptr->update_property_value_from_widget();
+			// As we are no longer going through FeaturePropertyTableModel to make this change,
+			// we should notify others of the modification.
+			if (modified) {
+				// As something was actually modified, we should let others know about it.
+				d_feature_focus_ptr->notify_of_focused_feature_modification();
+			} else {
+				// No actual modification took place, and we SHOULD NOT TELL ANYONE ELSE OTHERWISE!
+				// Otherwise we can hit a nasty Signal/Slot loop pretty easily.
+			}
 		}
 	}
 }

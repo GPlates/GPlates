@@ -68,10 +68,27 @@ namespace GPlatesPropertyValues {
 			return dup;
 		}
 
+		/**
+		 * Accesses the int contained within this XsInteger.
+		 */
 		int
 		value() const {
 			return d_value;
 		}
+
+		/**
+		 * Set the int value contained within this XsInteger to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const int &i) {
+			d_value = i;
+		}
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

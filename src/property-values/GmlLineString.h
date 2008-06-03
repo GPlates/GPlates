@@ -101,6 +101,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the polyline within this instance to @a p.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_polyline(

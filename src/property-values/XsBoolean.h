@@ -68,10 +68,27 @@ namespace GPlatesPropertyValues {
 			return dup;
 		}
 
+		/**
+		 * Accesses the bool contained within this XsBoolean.
+		 */
 		bool
 		value() const {
 			return d_value;
 		}
+		
+		/**
+		 * Set the bool value contained within this XsBoolean to @a b.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const bool &b) {
+			d_value = b;
+		}
+		
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

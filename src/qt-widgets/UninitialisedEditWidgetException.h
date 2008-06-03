@@ -25,29 +25,36 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
-#define GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
+#ifndef GPLATES_QTWIDGETS_UNINITIALISEDEDITWIDGETEXCEPTION_H
+#define GPLATES_QTWIDGETS_UNINITIALISEDEDITWIDGETEXCEPTION_H
 
-#include "FileInfo.h"
-#include "ReadErrorAccumulation.h"
-#include "ExternalProgram.h"
-#include "model/ModelInterface.h"
-#include "model/FeatureCollectionHandle.h"
+#include "global/PreconditionViolationError.h"
 
-namespace GPlatesFileIO
+namespace GPlatesQtWidgets
 {
-	class GpmlOnePointSixReader
+	/**
+	 * Exception thrown by an Edit Widget when update_property_value_from_widget()
+	 * is called without a property value to update being previously set via
+	 * update_widget_from_xxxx().
+	 */
+	class UninitialisedEditWidgetException:
+			public GPlatesGlobal::PreconditionViolationError
 	{
-	public:
-		static
-		void
-		read_file(
-				FileInfo &fileinfo,
-				GPlatesModel::ModelInterface &model,
-				ReadErrorAccumulation &read_errors);
-		
-		static const ExternalProgram s_gunzip_program;
+		public:
+			explicit
+			UninitialisedEditWidgetException()
+			{  }
+			
+			virtual
+			~UninitialisedEditWidgetException()
+			{  }
+			
+			const char *
+			ExceptionName() const
+			{
+				return "UninitialisedEditWidgetException";
+			}
 	};
 }
 
-#endif  // GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
+#endif	// GPLATES_QTWIDGETS_UNINITIALISEDEDITWIDGETEXCEPTION_H

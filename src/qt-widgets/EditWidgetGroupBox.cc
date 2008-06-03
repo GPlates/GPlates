@@ -210,6 +210,17 @@ GPlatesQtWidgets::EditWidgetGroupBox::create_property_value_from_widget()
 
 
 bool
+GPlatesQtWidgets::EditWidgetGroupBox::update_property_value_from_widget()
+{
+	if (d_active_widget_ptr != NULL) {
+		return d_active_widget_ptr->update_property_value_from_widget();
+	} else {
+		throw NoActiveEditWidgetException();
+	}
+}
+
+
+bool
 GPlatesQtWidgets::EditWidgetGroupBox::is_dirty()
 {
 	if (d_active_widget_ptr != NULL) {
@@ -239,7 +250,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::set_dirty()
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_instant_widget(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+		GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	setTitle(tr("%1 Time Instant").arg(d_edit_verb));
 	show();
@@ -250,7 +261,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_instant_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_period_widget(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	setTitle(tr("%1 Time Period").arg(d_edit_verb));
 	show();
@@ -261,7 +272,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_period_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_old_plates_header_widget(
-		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
+		GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 	setTitle(tr("%1 Old PLATES Header").arg(d_edit_verb));
 	show();
@@ -272,7 +283,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_old_plates_header_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_double_widget(
-		const GPlatesPropertyValues::XsDouble &xs_double)
+		GPlatesPropertyValues::XsDouble &xs_double)
 {
 	setTitle(tr("%1 Double").arg(d_edit_verb));
 	show();
@@ -283,7 +294,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_double_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_enumeration_widget(
-		const GPlatesPropertyValues::Enumeration &enumeration)
+		GPlatesPropertyValues::Enumeration &enumeration)
 {
 	setTitle(tr("%1 Enumeration").arg(d_edit_verb));
 	show();
@@ -294,7 +305,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_enumeration_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_integer_widget(
-		const GPlatesPropertyValues::XsInteger &xs_integer)
+		GPlatesPropertyValues::XsInteger &xs_integer)
 {
 	setTitle(tr("%1 Integer").arg(d_edit_verb));
 	show();
@@ -305,7 +316,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_integer_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_plate_id_widget(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	setTitle(tr("%1 Plate ID").arg(d_edit_verb));
 	show();
@@ -317,7 +328,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_plate_id_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_polarity_chron_id_widget(
-		const GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
+		GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
 {
 	setTitle(tr("%1 Polarity Chron ID").arg(d_edit_verb));
 	show();
@@ -329,7 +340,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_polarity_chron_id_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_angle_widget(
-		const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
+		GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
 	setTitle(tr("%1 Angle").arg(d_edit_verb));
 	show();
@@ -341,7 +352,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_angle_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_string_widget(
-		const GPlatesPropertyValues::XsString &xs_string)
+		GPlatesPropertyValues::XsString &xs_string)
 {
 	setTitle(tr("%1 String").arg(d_edit_verb));
 	show();
@@ -353,7 +364,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_string_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_boolean_widget(
-		const GPlatesPropertyValues::XsBoolean &xs_boolean)
+		GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	setTitle(tr("%1 Boolean").arg(d_edit_verb));
 	show();
@@ -369,16 +380,27 @@ GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 	hide();
 	d_active_widget_ptr = NULL;
 	d_edit_time_instant_widget_ptr->hide();
+	d_edit_time_instant_widget_ptr->reset_widget_to_default_values();
 	d_edit_time_period_widget_ptr->hide();
+	d_edit_time_period_widget_ptr->reset_widget_to_default_values();
 	d_edit_old_plates_header_widget_ptr->hide();
+	d_edit_old_plates_header_widget_ptr->reset_widget_to_default_values();
 	d_edit_double_widget_ptr->hide();
+	d_edit_double_widget_ptr->reset_widget_to_default_values();
 	d_edit_enumeration_widget_ptr->hide();
+	d_edit_enumeration_widget_ptr->reset_widget_to_default_values();
 	d_edit_integer_widget_ptr->hide();
+	d_edit_integer_widget_ptr->reset_widget_to_default_values();
 	d_edit_plate_id_widget_ptr->hide();
+	d_edit_plate_id_widget_ptr->reset_widget_to_default_values();
 	d_edit_polarity_chron_id_widget_ptr->hide();
+	d_edit_polarity_chron_id_widget_ptr->reset_widget_to_default_values();
 	d_edit_angle_widget_ptr->hide();
+	d_edit_angle_widget_ptr->reset_widget_to_default_values();
 	d_edit_string_widget_ptr->hide();
+	d_edit_string_widget_ptr->reset_widget_to_default_values();
 	d_edit_boolean_widget_ptr->hide();
+	d_edit_boolean_widget_ptr->reset_widget_to_default_values();
 }
 
 

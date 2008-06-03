@@ -38,6 +38,10 @@ GPlatesModel::XmlNode::create(
 		QXmlStreamReader &reader)
 {
 	bool found_parsable = false;
+	// .atEnd() can not be relied upon when reading a QProcess,
+	// so we must make sure we block for a moment to make sure
+	// the process is ready to feed us data.
+	reader.device()->waitForReadyRead(1000);
 	while ( ! reader.atEnd()) 
 	{
 		switch (reader.tokenType()) 
@@ -72,8 +76,12 @@ GPlatesModel::XmlNode::create(
 			break;
 
 		reader.readNext();
-
+		reader.device()->waitForReadyRead(1000);
 	}
+	// .atEnd() can not be relied upon when reading a QProcess,
+	// so we must make sure we block for a moment to make sure
+	// the process is ready to feed us data.
+	reader.device()->waitForReadyRead(1000);
 	Q_ASSERT( ! reader.atEnd());
 	Q_ASSERT(reader.tokenType() == QXmlStreamReader::Characters);
 	return XmlTextNode::create(reader);
@@ -165,6 +173,10 @@ GPlatesModel::XmlElementNode::create(
 
 	elem->load_attributes(reader.attributes());
 
+	// .atEnd() can not be relied upon when reading a QProcess,
+	// so we must make sure we block for a moment to make sure
+	// the process is ready to feed us data.
+	reader.device()->waitForReadyRead(1000);
 	while ( ! reader.atEnd()) {
 		reader.readNext();
 
@@ -189,6 +201,7 @@ GPlatesModel::XmlElementNode::create(
 		} catch (...) {
 			throw;
 		}
+		reader.device()->waitForReadyRead(1000);
 	}
 
 	return elem;

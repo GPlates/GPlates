@@ -26,7 +26,9 @@
 #include "EditTimePeriodWidget.h"
 
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GmlTimeInstant.h"
 #include "model/ModelUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 namespace
@@ -98,6 +100,7 @@ GPlatesQtWidgets::EditTimePeriodWidget::EditTimePeriodWidget(
 void
 GPlatesQtWidgets::EditTimePeriodWidget::reset_widget_to_default_values()
 {
+	d_time_period_ptr = NULL;
 	spinbox_time_of_appearance->setFocus();
 	spinbox_time_of_appearance->selectAll();
 	spinbox_time_of_appearance->setValue(0);
@@ -114,8 +117,9 @@ GPlatesQtWidgets::EditTimePeriodWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditTimePeriodWidget::update_widget_from_time_period(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
+	d_time_period_ptr = &gml_time_period;
 	const GPlatesPropertyValues::GeoTimeInstant begin = gml_time_period.begin()->time_position();
 	const GPlatesPropertyValues::GeoTimeInstant end = gml_time_period.end()->time_position();
 
@@ -159,6 +163,40 @@ GPlatesQtWidgets::EditTimePeriodWidget::create_property_value_from_widget() cons
 			GPlatesModel::ModelUtils::create_gml_time_period(begin, end);
 	return gml_time_period;
 }
+
+
+bool
+GPlatesQtWidgets::EditTimePeriodWidget::update_property_value_from_widget()
+{
+	// Remember that the property value pointer may be NULL!
+	if (d_time_period_ptr.get() != NULL) {
+		if (is_dirty()) {
+			GPlatesPropertyValues::GeoTimeInstant begin = create_geo_time_instant_from_widgets(
+					spinbox_time_of_appearance,
+					checkbox_appearance_is_distant_past,
+					checkbox_appearance_is_distant_future);
+			GPlatesPropertyValues::GeoTimeInstant end = create_geo_time_instant_from_widgets(
+					spinbox_time_of_disappearance,
+					checkbox_disappearance_is_distant_past,
+					checkbox_disappearance_is_distant_future);
+			
+			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type begin_ti =
+					GPlatesModel::ModelUtils::create_gml_time_instant(begin);
+			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type end_ti =
+					GPlatesModel::ModelUtils::create_gml_time_instant(end);
+			
+			d_time_period_ptr->set_begin(begin_ti);
+			d_time_period_ptr->set_end(end_ti);
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
+}
+
 
 
 void

@@ -1459,6 +1459,9 @@
 			Name="file-io"
 			Filter="">
 			<File
+				RelativePath="..\src\file-io\ExternalProgram.cc">
+			</File>
+			<File
 				RelativePath="..\src\file-io\FileInfo.cc">
 			</File>
 			<File
@@ -1568,9 +1571,6 @@
 		<Filter
 			Name="feature-visitors"
 			Filter="">
-			<File
-				RelativePath="..\src\feature-visitors\PropertyValueSetter.cc">
-			</File>
 			<File
 				RelativePath="..\src\feature-visitors\GeometryFinder.cc">
 			</File>

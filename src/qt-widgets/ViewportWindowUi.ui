@@ -28,7 +28,7 @@
      <x>0</x>
      <y>0</y>
      <width>639</width>
-     <height>22</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -65,7 +65,7 @@
     <property name="title" >
      <string>&amp;View</string>
     </property>
-    <addaction name="action_Enable_Raster_Display" />
+    <addaction name="action_Show_Rasters" />
     <addaction name="separator" />
     <addaction name="action_Set_Camera_Viewpoint" />
     <addaction name="action_Move_Camera_Up" />
@@ -435,7 +435,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_16.png</iconset>
    </property>
    <property name="text" >
-    <string>&amp;Reset Zoom Level</string>
+    <string>Reset Zoo&amp;m Level</string>
    </property>
    <property name="shortcut" >
     <string>1</string>
@@ -600,17 +600,20 @@
     <string>Open Global &amp;Raster...</string>
    </property>
   </action>
-  <action name="action_Enable_Raster_Display" >
+  <action name="action_Show_Rasters" >
    <property name="checkable" >
     <bool>true</bool>
    </property>
    <property name="text" >
-    <string>&amp;Enable Raster Display</string>
+    <string>&amp;Show Rasters</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether rasters are shown.</string>
    </property>
   </action>
   <action name="action_Open_Time_Dependent_Global_Raster_Set" >
    <property name="text" >
-    <string>Open Time Dependent Global Raster Set...</string>
+    <string>Open &amp;Time Dependent Global Raster Set...</string>
    </property>
   </action>
  </widget>

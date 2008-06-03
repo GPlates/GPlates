@@ -68,10 +68,27 @@ namespace GPlatesPropertyValues {
 			return dup;
 		}
 
+		/**
+		 * Accesses the double contained within this XsDouble.
+		 */
 		double
 		value() const {
 			return d_value;
 		}
+		
+		/**
+		 * Set the double value contained within this XsDouble to @a d.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const double &d) {
+			d_value = d;
+		}
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
