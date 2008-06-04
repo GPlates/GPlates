@@ -542,7 +542,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	tab_list_clicked->horizontalHeader()->setMinimumSectionSize(60);
 	tab_list_clicked->horizontalHeader()->setMovable(true);
 	tab_list_clicked->horizontalHeader()->setHighlightSections(false);
-	tab_list_clicked->horizontalHeader()->
 	QObject::connect(tab_list_clicked->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr,
