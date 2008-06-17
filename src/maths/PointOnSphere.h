@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,11 +30,11 @@
 
 #include <iosfwd>
 
+#include "GeometryOnSphere.h"
 #include "UnitVector3D.h"
 #include "LatLonPointConversions.h"
 #include "TrailingLatLonCoordinateException.h"
 #include "InvalidLatLonCoordinateException.h"
-#include "utils/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesMaths
@@ -52,7 +52,8 @@ namespace GPlatesMaths
 	 * As long as the invariant of the unit vector is maintained, the point
 	 * will definitely lie on the surface of the sphere.
 	 */
-	class PointOnSphere
+	class PointOnSphere:
+			public GeometryOnSphere
 	{
 	public:
 
@@ -65,11 +66,6 @@ namespace GPlatesMaths
 		 * This is the South Pole (latitude \f$ -90^\circ \f$).
 		 */
 		static const PointOnSphere south_pole;
-
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PointOnSphere>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PointOnSphere> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
@@ -91,7 +87,7 @@ namespace GPlatesMaths
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
 		static
-		const non_null_ptr_type
+		const non_null_ptr_to_const_type
 		create_on_heap(
 				const UnitVector3D &position_vector_);
 
@@ -102,10 +98,24 @@ namespace GPlatesMaths
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		const non_null_ptr_type
-		clone_on_heap() const
+		const GeometryOnSphere::non_null_ptr_to_const_type
+		clone_as_geometry() const
 		{
-			non_null_ptr_type dup(*(new PointOnSphere(*this)));
+			GeometryOnSphere::non_null_ptr_to_const_type dup(*(new PointOnSphere(*this)));
+			return dup;
+		}
+
+
+		/**
+		 * Clone this PointOnSphere instance, to create a duplicate instance on the
+		 * heap.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		const non_null_ptr_to_const_type
+		clone_as_point() const
+		{
+			non_null_ptr_to_const_type dup(*(new PointOnSphere(*this)));
 			return dup;
 		}
 
@@ -122,8 +132,8 @@ namespace GPlatesMaths
 		 */
 		explicit 
 		PointOnSphere(
-				const UnitVector3D &position_vector_) :
-			d_ref_count(0),
+				const UnitVector3D &position_vector_):
+			GeometryOnSphere(),
 			d_position_vector(position_vector_)
 		{  }
 
@@ -142,10 +152,31 @@ namespace GPlatesMaths
 		 * instances are instantiated on the stack and copied into containers by value.
 		 */
 		PointOnSphere(
-				const PointOnSphere &other) :
-			d_ref_count(0),
+				const PointOnSphere &other):
+			GeometryOnSphere(),
 			d_position_vector(other.d_position_vector)
 		{  }
+
+
+		virtual
+		ProximityHitDetail::maybe_null_ptr_type
+		test_proximity(
+				const ProximityCriteria &criteria) const;
+
+
+		/**
+		 * Accept a ConstGeometryOnSphereVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				ConstGeometryOnSphereVisitor &visitor) const
+		{
+			visitor.visit_point_on_sphere(*this);
+		}
 
 
 		/**
@@ -201,39 +232,7 @@ namespace GPlatesMaths
 		lies_on_gca(
 				const GreatCircleArc &gca) const;
 
-
-		/**
-		 * Increment the reference-count of this instance.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-
-		/**
-		 * Decrement the reference-count of this instance.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
 	private:
-
-		/**
-		 * This is the reference-count used by GPlatesUtils::non_null_intrusive_ptr.
-		 *
-		 * It is declared "mutable", because it is to be modified by
-		 * 'increment_ref_count' and 'decrement_ref_count', which are const member
-		 * functions.  They are const member functions because they do not modify
-		 * the "abstract state" of the instance; the reference-count is really only
-		 * memory-management book-keeping.
-		 */
-		mutable ref_count_type d_ref_count;
-
 
 		/**
 		 * This is the 3-D unit-vector which defines the position of this point.
@@ -244,11 +243,11 @@ namespace GPlatesMaths
 
 
 	inline
-	const PointOnSphere::non_null_ptr_type
+	const PointOnSphere::non_null_ptr_to_const_type
 	PointOnSphere::create_on_heap(
 			const UnitVector3D &position_vector_)
 	{
-		non_null_ptr_type ptr(*(new PointOnSphere(position_vector_)));
+		non_null_ptr_to_const_type ptr(*(new PointOnSphere(position_vector_)));
 		return ptr;
 	}
 

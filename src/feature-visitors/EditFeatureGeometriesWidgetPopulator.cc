@@ -256,11 +256,23 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_line_str
 	// The reconstructed polyline, which may not be available. And test d_last_property_visited,
 	// because someone might attempt to call us without invoking visit_feature_handle.
 	if (d_last_property_visited) {
-		if (get_reconstructed_polyline_for_property(*d_last_property_visited)) {
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type reconstructed_polyline =
-					*get_reconstructed_polyline_for_property(*d_last_property_visited);
-			populate_coordinates_from_polyline(coordinate_widgets, reconstructed_polyline,
-					CoordinatePeriods::RECONSTRUCTED);
+		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> recon_geometry =
+				get_reconstructed_geometry_for_property(*d_last_property_visited);
+		if (recon_geometry) {
+			// We use a dynamic cast here (despite the fact that dynamic casts are
+			// generally considered bad form) because we only care about one specific
+			// derivation.  There's no "if ... else if ..." chain, so I think it's not
+			// super-bad form.  (The "if ... else if ..." chain would imply that we
+			// should be using polymorphism -- specifically, the double-dispatch of the
+			// Visitor pattern -- rather than updating the "if ... else if ..." chain
+			// each time a new derivation is added.)
+			const GPlatesMaths::PolylineOnSphere *recon_polyline =
+					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(recon_geometry->get());
+			if (recon_polyline) {
+				populate_coordinates_from_polyline(coordinate_widgets,
+						GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type(*recon_polyline),
+						CoordinatePeriods::RECONSTRUCTED);
+			}
 		}
 	}
 	
@@ -315,11 +327,23 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_point(
 	// The reconstructed point, which may not be available. And test d_last_property_visited,
 	// because someone might attempt to call us without invoking visit_feature_handle.
 	if (d_last_property_visited) {
-		if (get_reconstructed_point_for_property(*d_last_property_visited)) {
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
-					*get_reconstructed_point_for_property(*d_last_property_visited);
-			populate_coordinates_from_point(coordinate_widgets, reconstructed_point,
-					CoordinatePeriods::RECONSTRUCTED);
+		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> recon_geometry =
+				get_reconstructed_geometry_for_property(*d_last_property_visited);
+		if (recon_geometry) {
+			// We use a dynamic cast here (despite the fact that dynamic casts are
+			// generally considered bad form) because we only care about one specific
+			// derivation.  There's no "if ... else if ..." chain, so I think it's not
+			// super-bad form.  (The "if ... else if ..." chain would imply that we
+			// should be using polymorphism -- specifically, the double-dispatch of the
+			// Visitor pattern -- rather than updating the "if ... else if ..." chain
+			// each time a new derivation is added.)
+			const GPlatesMaths::PointOnSphere *recon_point =
+					dynamic_cast<const GPlatesMaths::PointOnSphere *>(recon_geometry->get());
+			if (recon_point) {
+				populate_coordinates_from_point(coordinate_widgets,
+						GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(*recon_point),
+						CoordinatePeriods::RECONSTRUCTED);
+			}
 		}
 	}
 	
@@ -345,60 +369,45 @@ void
 GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::populate_rfg_points_for_feature(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::const_iterator it =
+	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator it =
 			d_reconstruction_ptr->point_geometries().begin();
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::const_iterator end =
+	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator end =
 			d_reconstruction_ptr->point_geometries().end();
 	for ( ; it != end; ++it) {
-		const GPlatesModel::FeatureHandle &rfg_feature_handle = *it->feature_ref();
-		if (rfg_feature_handle.feature_id() == feature_handle.feature_id()) {
-			ReconstructedPointInfo pt(it->property(), it->geometry());
-			d_rfg_points.push_back(pt);
+		if (it->feature_ref().references(feature_handle)) {
+			ReconstructedGeometryInfo info(it->property(), it->geometry());
+			d_rfg_geometries.push_back(info);
 		}
 	}
 }
+
 	
 void
 GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::populate_rfg_polylines_for_feature(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::const_iterator it =
+	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator it =
 			d_reconstruction_ptr->polyline_geometries().begin();
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::const_iterator end =
+	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator end =
 			d_reconstruction_ptr->polyline_geometries().end();
 	for ( ; it != end; ++it) {
-		const GPlatesModel::FeatureHandle &rfg_feature_handle = *it->feature_ref();
-		if (rfg_feature_handle.feature_id() == feature_handle.feature_id()) {
-			ReconstructedPolylineInfo pt(it->property(), it->geometry());
-			d_rfg_polylines.push_back(pt);
+		if (it->feature_ref().references(feature_handle)) {
+			ReconstructedGeometryInfo info(it->property(), it->geometry());
+			d_rfg_geometries.push_back(info);
 		}
 	}
 }
 
 
-boost::optional<const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::get_reconstructed_point_for_property(
+boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::get_reconstructed_geometry_for_property(
 		const GPlatesModel::FeatureHandle::properties_iterator property)
 {
-	points_for_property_const_iterator it = d_rfg_points.begin();
-	points_for_property_const_iterator end = d_rfg_points.end();
+	geometries_for_property_const_iterator it = d_rfg_geometries.begin();
+	geometries_for_property_const_iterator end = d_rfg_geometries.end();
 	for ( ; it != end; ++it) {
 		if (it->d_property == property) {
-			return it->d_point;
-		}
-	}
-	return boost::none;
-}
-
-boost::optional<const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::get_reconstructed_polyline_for_property(
-		const GPlatesModel::FeatureHandle::properties_iterator property)
-{
-	polylines_for_property_const_iterator it = d_rfg_polylines.begin();
-	polylines_for_property_const_iterator end = d_rfg_polylines.end();
-	for ( ; it != end; ++it) {
-		if (it->d_property == property) {
-			return it->d_polyline;
+			return it->d_geometry;
 		}
 	}
 	return boost::none;

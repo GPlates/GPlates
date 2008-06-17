@@ -77,7 +77,7 @@ namespace
 
 
 		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
+		const GPlatesModel::ReconstructedFeatureGeometry
 		reconstruct_point(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
 				GPlatesModel::FeatureHandle &feature_handle,
@@ -85,7 +85,7 @@ namespace
 
 
 		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
+		const GPlatesModel::ReconstructedFeatureGeometry
 		reconstruct_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
 				GPlatesModel::FeatureHandle &feature_handle,
@@ -108,7 +108,7 @@ namespace
 
 
 		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
+		const GPlatesModel::ReconstructedFeatureGeometry
 		reconstruct_point(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
 				GPlatesModel::FeatureHandle &feature_handle,
@@ -121,13 +121,13 @@ namespace
 			PointOnSphere::non_null_ptr_to_const_type reconstructed_p =
 					(d_recon_tree_ptr->reconstruct_point(*p, d_plate_id)).first;
 
-			return GPlatesModel::ReconstructedFeatureGeometry<PointOnSphere>(
+			return GPlatesModel::ReconstructedFeatureGeometry(
 					reconstructed_p, feature_handle, property_iterator, d_plate_id);
 		}
 
 
 		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
+		const GPlatesModel::ReconstructedFeatureGeometry
 		reconstruct_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
 				GPlatesModel::FeatureHandle &feature_handle,
@@ -140,7 +140,7 @@ namespace
 			PolylineOnSphere::non_null_ptr_to_const_type reconstructed_p =
 					(d_recon_tree_ptr->reconstruct_polyline(*p, d_plate_id)).first;
 
-			return GPlatesModel::ReconstructedFeatureGeometry<PolylineOnSphere>(
+			return GPlatesModel::ReconstructedFeatureGeometry(
 					reconstructed_p, feature_handle, property_iterator, d_plate_id);
 		}
 
@@ -160,25 +160,25 @@ namespace
 
 
 		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
+		const GPlatesModel::ReconstructedFeatureGeometry
 		reconstruct_point(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
 		{
-			return GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>(
+			return GPlatesModel::ReconstructedFeatureGeometry(
 					p, feature_handle, property_iterator);
 		}
 
 
 		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
+		const GPlatesModel::ReconstructedFeatureGeometry
 		reconstruct_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
 		{
-			return GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>(
+			return GPlatesModel::ReconstructedFeatureGeometry(
 					p, feature_handle, property_iterator);
 		}
 	};

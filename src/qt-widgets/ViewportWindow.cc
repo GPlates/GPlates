@@ -63,6 +63,7 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "gui/SvgExport.h"
 #include "gui/PlatesColourTable.h"
+#include "gui/GlobeCanvasPainter.h"
 
 
 namespace
@@ -368,9 +369,14 @@ namespace
 			reconstruction = create_reconstruction(active_reconstructable_files, 
 					active_reconstruction_files, model_ptr, recon_time, recon_root);
 
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator iter =
+			// FIXME: Merge these two while-loops into one, when the containers in class
+			// Reconstruction have been merged into one.
+			//
+			// FIXME 2: These should be for-loops rather than while-loops!
+
+			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator iter =
 					reconstruction->point_geometries().begin();
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator finish =
+			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator finish =
 					reconstruction->point_geometries().end();
 			while (iter != finish) {
 				GPlatesGui::PlatesColourTable::const_iterator colour = GPlatesGui::PlatesColourTable::Instance()->end();
@@ -383,12 +389,13 @@ namespace
 					colour = &GPlatesGui::Colour::OLIVE;
 				}
 
-				canvas_ptr->draw_point(iter->geometry(), colour);
+				GPlatesGui::GlobeCanvasPainter painter(*canvas_ptr, colour);
+				iter->geometry()->accept_visitor(painter);
 				++iter;
 			}
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator iter2 =
+			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator iter2 =
 					reconstruction->polyline_geometries().begin();
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator finish2 =
+			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator finish2 =
 					reconstruction->polyline_geometries().end();
 			while (iter2 != finish2) {
 				GPlatesGui::PlatesColourTable::const_iterator colour = GPlatesGui::PlatesColourTable::Instance()->end();
@@ -401,7 +408,8 @@ namespace
 					colour = &GPlatesGui::Colour::OLIVE;
 				}
 
-				canvas_ptr->draw_polyline(iter2->geometry(), colour);
+				GPlatesGui::GlobeCanvasPainter painter(*canvas_ptr, colour);
+				iter2->geometry()->accept_visitor(painter);
 				++iter2;
 			}
 

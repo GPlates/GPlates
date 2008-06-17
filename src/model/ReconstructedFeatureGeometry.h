@@ -30,7 +30,7 @@
 
 #include "types.h"
 #include "FeatureHandle.h"
-#include "utils/non_null_intrusive_ptr.h"
+#include "maths/GeometryOnSphere.h"
 #include <boost/optional.hpp>
 
 
@@ -39,14 +39,16 @@ namespace GPlatesModel
 	// Forward declaration to avoid circularity of headers.
 	class Reconstruction;
 
-	template<class T>
 	class ReconstructedFeatureGeometry
 	{
 	public:
-		typedef T geometry_type;
+		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr_type;
 
 	private:
-		GPlatesUtils::non_null_intrusive_ptr<const geometry_type> d_geometry_ptr;
+		/**
+		 * The reconstructed geometry.
+		 */
+		geometry_ptr_type d_geometry_ptr;
 
 		/**
 		 * This is a weak-ref to the feature, of which this RFG is a reconstruction.
@@ -83,7 +85,7 @@ namespace GPlatesModel
 
 	public:
 		ReconstructedFeatureGeometry(
-				GPlatesUtils::non_null_intrusive_ptr<const geometry_type> geometry_ptr,
+				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
 				integer_plate_id_type reconstruction_plate_id_):
@@ -95,7 +97,7 @@ namespace GPlatesModel
 		{  }
 
 		ReconstructedFeatureGeometry(
-				GPlatesUtils::non_null_intrusive_ptr<const geometry_type> geometry_ptr,
+				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_):
 			d_geometry_ptr(geometry_ptr),
@@ -146,7 +148,7 @@ namespace GPlatesModel
 			return *this;
 		}
 
-		const GPlatesUtils::non_null_intrusive_ptr<const geometry_type>
+		const geometry_ptr_type
 		geometry() const
 		{
 			return d_geometry_ptr;

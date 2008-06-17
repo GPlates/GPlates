@@ -8,7 +8,8 @@ noinst_LTLIBRARIES	= libmaths.la
 libmaths_la_SOURCES	= FiniteRotation.cc GreatCircle.cc GreatCircleArc.cc GridOnSphere.cc \
 				LatLonPointConversions.cc PointLiesOnGreatCircleArc.cc PointOnSphere.cc \
 				PolylineOnSphere.cc PolygonOnSphere.cc PolylineIntersections.cc Real.cc \
-				Rotation.cc SmallCircle.cc UnitQuaternion3D.cc UnitVector3D.cc Vector3D.cc
+				Rotation.cc SmallCircle.cc UnitQuaternion3D.cc UnitVector3D.cc Vector3D.cc \
+				ProximityCriteria.cc ProximityHitDetail.cc ProximityHitDetailVisitor.cc
 
 if PYTHON
 noinst_PROGRAMS		= _maths.so

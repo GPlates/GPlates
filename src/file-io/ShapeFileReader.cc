@@ -52,6 +52,9 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
 
+#include "maths/PolylineOnSphere.h"
+#include "maths/LatLonPointConversions.h"
+
 #include "qt-widgets/ShapefilePropertyMapper.h"
 
 #include "ErrorOpeningFileForReadingException.h"
@@ -738,7 +741,7 @@ GPlatesFileIO::ShapeFileReader::create_line_feature_from_list(
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model.create_feature(feature_type,collection);
 
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_type polyline =
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
 
 	GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =

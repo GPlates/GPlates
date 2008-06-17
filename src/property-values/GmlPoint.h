@@ -160,7 +160,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GmlPoint(
-				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> point_):
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point_):
 			PropertyValue(),
 			d_point(point_)
 		{  }
@@ -179,7 +179,7 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> d_point;
+		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> d_point;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

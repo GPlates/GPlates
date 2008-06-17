@@ -96,7 +96,7 @@ create_isochron(
 
 	std::list<GPlatesMaths::PointOnSphere> points;
 	GPlatesMaths::populate_point_on_sphere_sequence(points, coords_vector);
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_type polyline =
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 			GPlatesMaths::PolylineOnSphere::create_on_heap(points);
 	GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 			GPlatesPropertyValues::GmlLineString::create(polyline);
@@ -480,15 +480,25 @@ output_reconstructions(
 				<< std::endl;
 
 		std::cout << " > The reconstructed polylines are:\n";
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator
 				iter3 = reconstruction->polyline_geometries().begin();
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
+		std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator
 				end3 = reconstruction->polyline_geometries().end();
 		for ( ; iter3 != end3; ++iter3) {
+			// We only care about polylines (since all the geometries in this function
+			// *should* be polylines), so let's just use a dynamic cast.
+			const GPlatesMaths::PolylineOnSphere *polyline =
+					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(iter3->geometry().get());
+			if ( ! polyline) {
+				// Why wasn't it a polyline?
+				std::cerr << "Why wasn't it a polyline?" << std::endl;
+				std::exit(1);
+			}
+
 			GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter4 =
-					iter3->geometry()->vertex_begin();
+					polyline->vertex_begin();
 			GPlatesMaths::PolylineOnSphere::vertex_const_iterator end4 =
-					iter3->geometry()->vertex_end();
+					polyline->vertex_end();
 
 			{
 				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter4);

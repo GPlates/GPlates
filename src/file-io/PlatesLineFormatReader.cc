@@ -37,6 +37,8 @@
 #include "utils/MathUtils.h"
 
 #include "maths/LatLonPointConversions.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureRevision.h"
 #include "model/InlinePropertyContainer.h"
@@ -103,7 +105,7 @@ namespace
 			// ConstructionParameterValidity and report any parameter problems as
 			// ReadErrors.
 
-			PolylineOnSphere::non_null_ptr_type polyline =
+			PolylineOnSphere::non_null_ptr_to_const_type polyline =
 					PolylineOnSphere::create_on_heap(points);
 			GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 					GPlatesPropertyValues::GmlLineString::create(polyline);

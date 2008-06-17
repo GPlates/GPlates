@@ -31,8 +31,6 @@
 #include <vector>
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTree.h"
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
 #include "utils/non_null_intrusive_ptr.h"
 
 namespace GPlatesModel
@@ -79,7 +77,7 @@ namespace GPlatesModel
 		/**
 		 * Access the reconstructed point-geometries.
 		 */
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
+		std::vector<ReconstructedFeatureGeometry> &
 		point_geometries()
 		{
 			return d_point_geometries;
@@ -88,7 +86,7 @@ namespace GPlatesModel
 		/**
 		 * Access the reconstructed polyline-geometries.
 		 */
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
+		std::vector<ReconstructedFeatureGeometry> &
 		polyline_geometries()
 		{
 			return d_polyline_geometries;
@@ -141,15 +139,17 @@ namespace GPlatesModel
 
 		/**
 		 * The reconstructed point-geometries.
+		 *
+		 * FIXME: Merge this container with the polyline container.
 		 */
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >
-				d_point_geometries;
+		std::vector<ReconstructedFeatureGeometry> d_point_geometries;
 
 		/**
 		 * The reconstructed polyline-geometries.
+		 *
+		 * FIXME: Merge this container with the point container.
 		 */
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >
-				d_polyline_geometries;
+		std::vector<ReconstructedFeatureGeometry> d_polyline_geometries;
 
 		/**
 		 * The plate-reconstruction hierarchy of total reconstruction poles which was used

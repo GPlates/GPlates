@@ -117,10 +117,9 @@ namespace GPlatesModel
 
 		};
 		
-		typedef std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >
-				reconstructed_points_type;
-		typedef std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >
-				reconstructed_polylines_type;
+		// FIXME: Remove these two typedefs.
+		typedef std::vector<ReconstructedFeatureGeometry> reconstructed_points_type;
+		typedef std::vector<ReconstructedFeatureGeometry> reconstructed_polylines_type;
 
 		ReconstructedFeatureGeometryPopulator(
 				const double &recon_time,
@@ -187,6 +186,8 @@ namespace GPlatesModel
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
 		Reconstruction *d_recon_ptr;
 		ReconstructionTree *d_recon_tree_ptr;
+
+		// FIXME: Merge the next two containers.
 		reconstructed_points_type *d_reconstructed_points_to_populate;
 		reconstructed_polylines_type *d_reconstructed_polylines_to_populate;
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;

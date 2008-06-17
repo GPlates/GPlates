@@ -102,7 +102,7 @@ namespace GPlatesMaths {
 		 const PolylineOnSphere &polyline1,
 		 const PolylineOnSphere &polyline2,
 		 std::list< PointOnSphere > &intersection_points,
-		 std::list< PolylineOnSphere::non_null_ptr_type > &partitioned_polylines);
+		 std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polylines);
 
 
 		/**
@@ -145,7 +145,7 @@ namespace GPlatesMaths {
 		 */
 		bool
 		polyline_set_is_self_intersecting(
-		 const std::list< PolylineOnSphere::non_null_ptr_type > &polyline_set,
+		 const std::list< PolylineOnSphere::non_null_ptr_to_const_type > &polyline_set,
 		 std::list< PointOnSphere > &intersection_points,
 		 std::list< GreatCircleArc > &overlap_segments);
 

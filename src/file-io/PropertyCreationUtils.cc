@@ -462,7 +462,7 @@ namespace
 	}
 
 
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_type
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 	create_polyline(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
 	{
@@ -541,7 +541,7 @@ namespace
 	}
 
 
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_type
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 	create_polygon(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
 	{
@@ -669,7 +669,7 @@ namespace
 	/**
 	 * This function is used by create_gml_polygon to traverse the LinearRing intermediate junk.
 	 */
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_type
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 	create_linear_ring(
 			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
 	{
@@ -680,7 +680,7 @@ namespace
 		GPlatesModel::XmlElementNode::non_null_ptr_type
 			elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 	
-		GPlatesMaths::PolygonOnSphere::non_null_ptr_type
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 			polygon = find_and_create_one(elem, &create_polygon, POS_LIST);
 	
 		// FIXME: We need to give the srsName et al. attributes from the posList 
@@ -1221,7 +1221,7 @@ GPlatesFileIO::PropertyCreationUtils::create_line_string(
 	GPlatesModel::XmlElementNode::non_null_ptr_type
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_type
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		polyline = find_and_create_one(elem, &create_polyline, POS_LIST);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
@@ -1263,17 +1263,17 @@ GPlatesFileIO::PropertyCreationUtils::create_gml_polygon(
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	// GmlPolygon has exactly one exterior gml:LinearRing
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_type
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 		exterior = find_and_create_one(elem, &create_linear_ring, INTERIOR);
 
 	// GmlPolygon has zero or more interior gml:LinearRing
-	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_type> interiors;
+	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> interiors;
 	find_and_create_zero_or_more(elem, &create_linear_ring, EXTERIOR, interiors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
 	return GPlatesPropertyValues::GmlPolygon::create<
-			std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_type> >(exterior, interiors);
+			std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> >(exterior, interiors);
 }
 
 

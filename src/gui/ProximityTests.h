@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,6 +32,7 @@
 
 #include "model/Reconstruction.h"
 #include "model/FeatureHandle.h"
+#include "maths/ProximityHitDetail.h"
 
 
 namespace GPlatesGui
@@ -52,9 +53,10 @@ namespace GPlatesGui
 		{
 			ProximityHit(
 					const GPlatesModel::FeatureHandle::weak_ref &feature,
-					const double &proximity):
+					GPlatesMaths::ProximityHitDetail::non_null_ptr_type detail):
 				d_feature(feature),
-				d_proximity(proximity)
+				d_detail(detail),
+				d_proximity(detail->closeness())
 			{  }
 
 			bool
@@ -65,8 +67,31 @@ namespace GPlatesGui
 			}
 
 			GPlatesModel::FeatureHandle::weak_ref d_feature;
+			GPlatesMaths::ProximityHitDetail::non_null_ptr_type d_detail;
 			double d_proximity;
 		};
+
+
+#if 0
+		struct ProximityAggregator
+		{
+			explicit
+			ProximityAggregator(
+					std::priority_queue<ProximityHit> &sorted_hits):
+				d_sorted_hits_ptr(&sorted_hits)
+			{  }
+
+			void
+			insert_hit(
+					GPlatesModel::FeatureHandle &feature,
+					const double &proximity)
+			{
+				d_sorted_hits_ptr->push(ProximityHit(feature.reference(), proximity));
+			}
+
+			std::priority_queue<ProximityHit> *d_sorted_hits_ptr;
+		};
+#endif
 
 
 		/**
@@ -86,7 +111,7 @@ namespace GPlatesGui
 				std::priority_queue<ProximityHit> &sorted_hits,
 				GPlatesModel::Reconstruction &recon,
 				const GPlatesMaths::PointOnSphere &test_point,
-				const GPlatesMaths::real_t &proximity_inclusion_threshold);
+				const double &proximity_inclusion_threshold);
 	}
 }
 

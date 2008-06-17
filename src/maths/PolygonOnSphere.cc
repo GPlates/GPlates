@@ -27,6 +27,8 @@
 
 #include <sstream>
 #include "PolygonOnSphere.h"
+#include "PolygonProximityHitDetail.h"
+#include "ProximityCriteria.h"
 #include "HighPrecision.h"
 #include "InvalidPolygonException.h"
 #include "global/InvalidParametersException.h"
@@ -64,6 +66,25 @@ GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
 		return INVALID_ANTIPODAL_SEGMENT_ENDPOINTS;
 	}
 	return VALID;
+}
+
+
+GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+GPlatesMaths::PolygonOnSphere::test_proximity(
+		const ProximityCriteria &criteria) const
+{
+	// FIXME: This function should get its own implementation, rather than delegating to
+	// 'is_close_to', to enable it to provide more hit detail (for example, whether a vertex or
+	// a segment was hit).
+
+	real_t closeness;  // Don't bother initialising this.
+	if (this->is_close_to(criteria.test_point(), criteria.closeness_inclusion_threshold(),
+			criteria.latitude_exclusion_threshold(), closeness)) {
+		// OK, this polygon is close to the test point.
+		return make_maybe_null_ptr(PolygonProximityHitDetail::create(*this, closeness.dval()));
+	} else {
+		return ProximityHitDetail::null;
+	}
 }
 
 

@@ -31,6 +31,8 @@
 #endif
 #include "PointOnSphere.h"
 #include "PointLiesOnGreatCircleArc.h"
+#include "PointProximityHitDetail.h"
+#include "ProximityCriteria.h"
 
 
 const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::north_pole =
@@ -39,6 +41,19 @@ const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::north_pole =
 
 const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::south_pole =
 		GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(-90.0, 0.0));
+
+
+GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+GPlatesMaths::PointOnSphere::test_proximity(
+		const ProximityCriteria &criteria) const
+{
+	double closeness = calculate_closeness(criteria.test_point(), *this).dval();
+	if (closeness > criteria.closeness_inclusion_threshold()) {
+		return make_maybe_null_ptr(PointProximityHitDetail::create(*this, closeness));
+	} else {
+		return ProximityHitDetail::null;
+	}
+}
 
 
 bool

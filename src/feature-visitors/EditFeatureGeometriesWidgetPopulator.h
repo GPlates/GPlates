@@ -35,6 +35,8 @@
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
 #include "model/Reconstruction.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 
 namespace GPlatesFeatureVisitors
@@ -59,45 +61,29 @@ namespace GPlatesFeatureVisitors
 		typedef property_info_vector_type::const_iterator property_info_vector_const_iterator;
 
 		/**
-		 * Stores reconstructed geometry and the property it belongs to.
-		 * This allows us to add the reconstructed coordinates at the same time as the
+		 * Stores the reconstructed geometry and the property it belongs to.
+		 *
+		 * This allows us to display the reconstructed coordinates at the same time as the
 		 * present-day coordinates.
 		 */
-		struct ReconstructedPointInfo
+		struct ReconstructedGeometryInfo
 		{
 			const GPlatesModel::FeatureHandle::properties_iterator d_property;
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_point;
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry;
 			
-			ReconstructedPointInfo(
+			ReconstructedGeometryInfo(
 					const GPlatesModel::FeatureHandle::properties_iterator property,
-					const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point):
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry):
 				d_property(property),
-				d_point(point)
+				d_geometry(geometry)
 			{  }
 		};
-		
-		/**
-		 * Stores reconstructed geometry and the property it belongs to.
-		 * This allows us to add the reconstructed coordinates at the same time as the
-		 * present-day coordinates.
-		 */
-		struct ReconstructedPolylineInfo
-		{
-			const GPlatesModel::FeatureHandle::properties_iterator d_property;
-			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline;
 
-			ReconstructedPolylineInfo(
-					const GPlatesModel::FeatureHandle::properties_iterator property,
-					const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline):
-				d_property(property),
-				d_polyline(polyline)
-			{  }
-		};
-		
-		typedef std::list<ReconstructedPointInfo> points_for_property_type;
-		typedef points_for_property_type::const_iterator points_for_property_const_iterator;
-		typedef std::list<ReconstructedPolylineInfo> polylines_for_property_type;
-		typedef polylines_for_property_type::const_iterator polylines_for_property_const_iterator;
+		// FIXME:  Since this container contains ReconstructedGeometryInfo instances, which
+		// are effectively just a few pointers (inexpensive to copy, and no conceptual
+		// problems with copying), would this container be better as a 'std::vector'?
+		typedef std::list<ReconstructedGeometryInfo> geometries_for_property_type;
+		typedef geometries_for_property_type::const_iterator geometries_for_property_const_iterator;
 
 
 		explicit
@@ -181,13 +167,13 @@ namespace GPlatesFeatureVisitors
 		property_info_vector_type d_property_info_vector;
 
 		/**
-		 * Stores reconstructed geometry and the property it belongs to.
+		 * Stores the reconstructed geometries and the properties they belong to.
+		 *
 		 * This allows us to add the reconstructed coordinates at the same time as the
 		 * present-day coordinates.
 		 */
-		points_for_property_type d_rfg_points;
-		polylines_for_property_type d_rfg_polylines;
-		
+		geometries_for_property_type d_rfg_geometries;
+
 		/**
 		 * Iterates over d_reconstruction_ptr's RFGs, fills in the d_rfg_points table
 		 * with geometry found from RFGs which belong to the given feature.
@@ -205,19 +191,12 @@ namespace GPlatesFeatureVisitors
 				const GPlatesModel::FeatureHandle &feature_handle);
 		
 		/**
-		 * Searches the d_rfg_points table for geometry matching the given property.
+		 * Searches the d_rfg_geometries table for geometry matching the given property.
 		 */
-		boost::optional<const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
-		get_reconstructed_point_for_property(
+		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_reconstructed_geometry_for_property(
 				const GPlatesModel::FeatureHandle::properties_iterator property);
 
-		/**
-		 * Searches the d_rfg_polylines table for geometry matching the given property.
-		 */
-		boost::optional<const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
-		get_reconstructed_polyline_for_property(
-				const GPlatesModel::FeatureHandle::properties_iterator property);
-		
 
 		QTreeWidgetItem *
 		add_child(

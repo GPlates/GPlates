@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *  (under the name "PolyLineOnSphere.h")
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *  (under the name "PolylineOnSphere.h")
  *
  * This file is part of GPlates.
@@ -36,9 +36,9 @@
 #include <algorithm>  // std::swap
 #include <utility>  // std::pair
 
+#include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
 #include "InvalidPolylineException.h"
-#include "utils/non_null_intrusive_ptr.h"
 
 
 namespace GPlatesMaths
@@ -80,16 +80,18 @@ namespace GPlatesMaths
 	 * which enable the modification of the class internals), in particular
 	 * the copy-assignment operator.
 	 */
-	class PolylineOnSphere
+	class PolylineOnSphere:
+			public GeometryOnSphere
 	{
-	public:
-
 		/**
 		 * A convenience typedef for
 		 * GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere>.
+		 * 
+		 * Note that this typedef is indeed meant to be private.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere> non_null_ptr_type;
 
+	public:
 
 		/**
 		 * A convenience typedef for
@@ -525,7 +527,7 @@ namespace GPlatesMaths
 		 */
 		template<typename C>
 		static
-		const non_null_ptr_type
+		const non_null_ptr_to_const_type
 		create_on_heap(
 				const C &coll);
 
@@ -536,11 +538,46 @@ namespace GPlatesMaths
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		const PolylineOnSphere::non_null_ptr_type
-		clone_on_heap() const
+		const GeometryOnSphere::non_null_ptr_to_const_type
+		clone_as_geometry() const
 		{
-			PolylineOnSphere::non_null_ptr_type dup(*(new PolylineOnSphere(*this)));
+			GeometryOnSphere::non_null_ptr_to_const_type dup(*(new PolylineOnSphere(*this)));
 			return dup;
+		}
+
+
+		/**
+		 * Clone this PolylineOnSphere instance, to create a duplicate instance on the
+		 * heap.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		const non_null_ptr_to_const_type
+		clone_as_polyline() const
+		{
+			non_null_ptr_to_const_type dup(*(new PolylineOnSphere(*this)));
+			return dup;
+		}
+
+
+		virtual
+		ProximityHitDetail::maybe_null_ptr_type
+		test_proximity(
+				const ProximityCriteria &criteria) const;
+
+
+		/**
+		 * Accept a ConstGeometryOnSphereVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				ConstGeometryOnSphereVisitor &visitor) const
+		{
+			visitor.visit_polyline_on_sphere(*this);
 		}
 
 
@@ -701,37 +738,6 @@ namespace GPlatesMaths
 				const real_t &latitude_exclusion_threshold,
 				real_t &closeness) const;
 
-
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
 	private:
 
 		/**
@@ -748,7 +754,7 @@ namespace GPlatesMaths
 		 * zero.
 		 */
 		PolylineOnSphere():
-			d_ref_count(0)
+			GeometryOnSphere()
 		{  }
 
 
@@ -759,14 +765,14 @@ namespace GPlatesMaths
 		 * instantiation of this type on the stack.
 		 *
 		 * This constructor should never be invoked directly by client code; only through
-		 * the 'clone_on_heap' function.
+		 * the 'clone_as_geometry' or 'clone_as_polyline' function.
 		 *
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 */
 		PolylineOnSphere(
 				const PolylineOnSphere &other):
-			d_ref_count(0),
+			GeometryOnSphere(),
 			d_seq(other.d_seq)
 		{  }
 
@@ -809,16 +815,6 @@ namespace GPlatesMaths
 		 * 'create_on_heap' function to enable creation of a closed, well-defined polygon.
 		 */
 		static const unsigned s_min_num_collection_points;
-
-		/**
-		 * This is the reference-count used by GPlatesUtils::non_null_intrusive_ptr.
-		 *
-		 * It is declared "mutable", because it is to be modified by 'increment_ref_count'
-		 * and 'decrement_ref_count', which are const member functions.  They are const
-		 * member functions because they do not modify the "abstract state" of the
-		 * instance; the reference-count is really only memory-management book-keeping.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		/**
 		 * This is the sequence of polyline segments.
@@ -976,7 +972,7 @@ namespace GPlatesMaths
 
 
 	template<typename C>
-	const PolylineOnSphere::non_null_ptr_type
+	const PolylineOnSphere::non_null_ptr_to_const_type
 	PolylineOnSphere::create_on_heap(
 			const C &coll)
 	{

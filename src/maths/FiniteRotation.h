@@ -239,7 +239,7 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<PointOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
 	operator*(
 			const FiniteRotation &r,
 			GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> p);
@@ -294,7 +294,7 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>
 	operator*(
 			const FiniteRotation &r,
 			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> p);
@@ -305,7 +305,7 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<PolygonOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere>
 	operator*(
 			const FiniteRotation &r,
 			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> p);
