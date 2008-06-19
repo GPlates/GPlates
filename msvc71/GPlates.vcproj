@@ -1417,6 +1417,15 @@
 				RelativePath="..\src\maths\PolylineOnSphere.cc">
 			</File>
 			<File
+				RelativePath="..\src\maths\ProximityCriteria.cc">
+			</File>
+			<File
+				RelativePath="..\src\maths\ProximityHitDetail.cc">
+			</File>
+			<File
+				RelativePath="..\src\maths\ProximityHitDetailVisitor.cc">
+			</File>
+			<File
 				RelativePath="..\src\maths\Real.cc">
 			</File>
 			<File
