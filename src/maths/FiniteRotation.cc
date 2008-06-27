@@ -280,52 +280,6 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesMaths::GreatCircleArc
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const GreatCircleArc &g) {
-
-	PointOnSphere start = r * g.start_point();
-	PointOnSphere end   = r * g.end_point();
-	UnitVector3D rot_axis = r * g.rotation_axis();
-
-	return GreatCircleArc::create(start, end, rot_axis);
-}
-
-
-const GPlatesMaths::GreatCircle
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const GreatCircle &g) {
-
-	UnitVector3D axis = r * g.axisvector();
-	return GreatCircle(axis);
-}
-
-
-const GPlatesMaths::SmallCircle
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const SmallCircle &s) {
-
-	UnitVector3D axis = r * s.axisvector();
-	return SmallCircle(axis, s.cosColatitude());
-}
-
-
-const GPlatesMaths::GridOnSphere
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const GridOnSphere &g) {
-
-	SmallCircle sc = r * g.lineOfLat();
-	GreatCircle gc = r * g.lineOfLon();
-	PointOnSphere p = r * g.origin();
-
-	return GridOnSphere(sc, gc, p, g.deltaAlongLat(), g.deltaAlongLon());
-}
-
-
 const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
@@ -363,6 +317,52 @@ GPlatesMaths::operator*(
 	GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> rotated_polygon(
 			PolygonOnSphere::create_on_heap(rotated_points));
 	return rotated_polygon;
+}
+
+
+const GPlatesMaths::GreatCircleArc
+GPlatesMaths::operator*(
+		const FiniteRotation &r,
+		const GreatCircleArc &g)
+{
+	PointOnSphere start = r * g.start_point();
+	PointOnSphere end   = r * g.end_point();
+	UnitVector3D rot_axis = r * g.rotation_axis();
+
+	return GreatCircleArc::create(start, end, rot_axis);
+}
+
+
+const GPlatesMaths::GreatCircle
+GPlatesMaths::operator*(
+		const FiniteRotation &r,
+		const GreatCircle &g)
+{
+	UnitVector3D axis = r * g.axisvector();
+	return GreatCircle(axis);
+}
+
+
+const GPlatesMaths::SmallCircle
+GPlatesMaths::operator*(
+		const FiniteRotation &r,
+		const SmallCircle &s)
+{
+	UnitVector3D axis = r * s.axisvector();
+	return SmallCircle(axis, s.cosColatitude());
+}
+
+
+const GPlatesMaths::GridOnSphere
+GPlatesMaths::operator*(
+		const FiniteRotation &r,
+		const GridOnSphere &g)
+{
+	SmallCircle sc = r * g.lineOfLat();
+	GreatCircle gc = r * g.lineOfLon();
+	PointOnSphere p = r * g.origin();
+
+	return GridOnSphere(sc, gc, p, g.deltaAlongLat(), g.deltaAlongLon());
 }
 
 

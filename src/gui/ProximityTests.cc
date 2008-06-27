@@ -40,31 +40,13 @@ GPlatesGui::ProximityTests::find_close_rfgs(
 
 	GPlatesMaths::ProximityCriteria criteria(test_point, proximity_inclusion_threshold);
 
-	// FIXME: Merge these two for-loops into one, when the containers in class Reconstruction
-	// have been merged into one.
-
-	// First, test for proximity to reconstructed points.
-	std::vector<ReconstructedFeatureGeometry>::const_iterator point_iter =
-			recon.point_geometries().begin();
-	std::vector<ReconstructedFeatureGeometry>::const_iterator point_end =
-			recon.point_geometries().end();
-	for ( ; point_iter != point_end; ++point_iter) {
+	std::vector<ReconstructedFeatureGeometry>::const_iterator iter = recon.geometries().begin();
+	std::vector<ReconstructedFeatureGeometry>::const_iterator end = recon.geometries().end();
+	for ( ; iter != end; ++iter) {
 		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
-				point_iter->geometry()->test_proximity(criteria);
+				iter->geometry()->test_proximity(criteria);
 		if (hit) {
-			sorted_hits.push(ProximityHit(point_iter->feature_ref(),
-					GPlatesMaths::ProximityHitDetail::non_null_ptr_type(*hit)));
-		}
-	}
-
-	// Next, test for proximity to reconstructed polylines.
-	std::vector<ReconstructedFeatureGeometry>::const_iterator polyline_iter = recon.polyline_geometries().begin();
-	std::vector<ReconstructedFeatureGeometry>::const_iterator polyline_end = recon.polyline_geometries().end();
-	for ( ; polyline_iter != polyline_end; ++polyline_iter) {
-		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
-				polyline_iter->geometry()->test_proximity(criteria);
-		if (hit) {
-			sorted_hits.push(ProximityHit(polyline_iter->feature_ref(),
+			sorted_hits.push(ProximityHit(iter->feature_ref(),
 					GPlatesMaths::ProximityHitDetail::non_null_ptr_type(*hit)));
 		}
 	}

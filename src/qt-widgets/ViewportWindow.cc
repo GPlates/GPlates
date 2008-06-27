@@ -369,16 +369,11 @@ namespace
 			reconstruction = create_reconstruction(active_reconstructable_files, 
 					active_reconstruction_files, model_ptr, recon_time, recon_root);
 
-			// FIXME: Merge these two while-loops into one, when the containers in class
-			// Reconstruction have been merged into one.
-			//
-			// FIXME 2: These should be for-loops rather than while-loops!
-
 			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator iter =
-					reconstruction->point_geometries().begin();
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator finish =
-					reconstruction->point_geometries().end();
-			while (iter != finish) {
+					reconstruction->geometries().begin();
+			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator end =
+					reconstruction->geometries().end();
+			for ( ; iter != end; ++iter) {
 				GPlatesGui::PlatesColourTable::const_iterator colour = GPlatesGui::PlatesColourTable::Instance()->end();
 				if (iter->reconstruction_plate_id()) {
 					colour = GPlatesGui::PlatesColourTable::Instance()->lookup(*(iter->reconstruction_plate_id()));
@@ -391,26 +386,6 @@ namespace
 
 				GPlatesGui::GlobeCanvasPainter painter(*canvas_ptr, colour);
 				iter->geometry()->accept_visitor(painter);
-				++iter;
-			}
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator iter2 =
-					reconstruction->polyline_geometries().begin();
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator finish2 =
-					reconstruction->polyline_geometries().end();
-			while (iter2 != finish2) {
-				GPlatesGui::PlatesColourTable::const_iterator colour = GPlatesGui::PlatesColourTable::Instance()->end();
-				if (iter2->reconstruction_plate_id()) {
-					colour = GPlatesGui::PlatesColourTable::Instance()->lookup(*(iter2->reconstruction_plate_id()));
-				}
-
-				if (colour == GPlatesGui::PlatesColourTable::Instance()->end()) {
-					// Anything not in the table in gui/PlatesColourTable.cc uses the 'Olive' colour.
-					colour = &GPlatesGui::Colour::OLIVE;
-				}
-
-				GPlatesGui::GlobeCanvasPainter painter(*canvas_ptr, colour);
-				iter2->geometry()->accept_visitor(painter);
-				++iter2;
 			}
 
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);

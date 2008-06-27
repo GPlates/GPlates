@@ -158,8 +158,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_feature_hand
 	
 	// Iterate over the Reconstruction and grab the reconstructed geometry that originates
 	// from the given feature.
-	populate_rfg_points_for_feature(feature_handle);
-	populate_rfg_polylines_for_feature(feature_handle);
+	populate_rfg_geometries_for_feature(feature_handle);
 
 	// Now visit each of the properties in turn, populating d_property_info_vector
 	// with QTreeWidgetItems suitable for display.
@@ -366,30 +365,13 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gpml_constan
 
 
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::populate_rfg_points_for_feature(
+GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator it =
-			d_reconstruction_ptr->point_geometries().begin();
+			d_reconstruction_ptr->geometries().begin();
 	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator end =
-			d_reconstruction_ptr->point_geometries().end();
-	for ( ; it != end; ++it) {
-		if (it->feature_ref().references(feature_handle)) {
-			ReconstructedGeometryInfo info(it->property(), it->geometry());
-			d_rfg_geometries.push_back(info);
-		}
-	}
-}
-
-	
-void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::populate_rfg_polylines_for_feature(
-		const GPlatesModel::FeatureHandle &feature_handle)
-{
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator it =
-			d_reconstruction_ptr->polyline_geometries().begin();
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator end =
-			d_reconstruction_ptr->polyline_geometries().end();
+			d_reconstruction_ptr->geometries().end();
 	for ( ; it != end; ++it) {
 		if (it->feature_ref().references(feature_handle)) {
 			ReconstructedGeometryInfo info(it->property(), it->geometry());

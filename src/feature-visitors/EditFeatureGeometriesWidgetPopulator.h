@@ -175,21 +175,13 @@ namespace GPlatesFeatureVisitors
 		geometries_for_property_type d_rfg_geometries;
 
 		/**
-		 * Iterates over d_reconstruction_ptr's RFGs, fills in the d_rfg_points table
+		 * Iterates over d_reconstruction_ptr's RFGs, fills in the d_rfg_geometries table
 		 * with geometry found from RFGs which belong to the given feature.
 		 */
 		void
-		populate_rfg_points_for_feature(
+		populate_rfg_geometries_for_feature(
 				const GPlatesModel::FeatureHandle &feature_handle);
 
-		/**
-		 * Iterates over d_reconstruction_ptr's RFGs, fills in the d_rfg_polylines table
-		 * with geometry found from RFGs which belong to the given feature.
-		 */
-		void
-		populate_rfg_polylines_for_feature(
-				const GPlatesModel::FeatureHandle &feature_handle);
-		
 		/**
 		 * Searches the d_rfg_geometries table for geometry matching the given property.
 		 */

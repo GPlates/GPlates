@@ -34,10 +34,8 @@
 #include "FeatureVisitor.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "types.h"
-#include "PropertyName.h"
 #include "property-values/GeoTimeInstant.h"
-#include "maths/GeometryForwardDeclarations.h"
-#include "utils/non_null_intrusive_ptr.h"
+#include "maths/FiniteRotation.h"
 
 
 namespace GPlatesModel
@@ -45,54 +43,19 @@ namespace GPlatesModel
 	class Reconstruction;
 	class ReconstructionTree;
 
+
 	class ReconstructedFeatureGeometryPopulator:
 			public FeatureVisitor
 	{
 	public:
-		
-		/**
-		 * Struct defined to associate a FeatureHandle::properties_iterator with
-		 * geometry during the reconstruction process so that the iterator can be
-		 * set in the final ReconstructableFeatureGeometry.
-		 */
-		struct NotYetReconstructedPoint
-		{
-			FeatureHandle::properties_iterator d_property;
-			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> d_point;
-			
-			NotYetReconstructedPoint(
-					FeatureHandle::properties_iterator property,
-					GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point):
-				d_property(property),
-				d_point(point)
-			{  }
-		};
-		
-		/**
-		 * Struct defined to associate a FeatureHandle::properties_iterator with
-		 * geometry during the reconstruction process so that the iterator can be
-		 * set in the final ReconstructableFeatureGeometry.
-		 */
-		struct NotYetReconstructedPolyline
-		{
-			FeatureHandle::properties_iterator d_property;
-			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> d_polyline;
-
-			NotYetReconstructedPolyline(
-					FeatureHandle::properties_iterator property,
-					GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> polyline):
-				d_property(property),
-				d_polyline(polyline)
-			{  }
-		};
-		
-		typedef std::vector<NotYetReconstructedPoint> not_yet_reconstructed_points_type;
-		typedef not_yet_reconstructed_points_type::const_iterator not_yet_reconstructed_points_const_iterator;
-		typedef std::vector<NotYetReconstructedPolyline> not_yet_reconstructed_polylines_type;
-		typedef not_yet_reconstructed_polylines_type::const_iterator not_yet_reconstructed_polylines_const_iterator;
-
 		struct ReconstructedFeatureGeometryAccumulator
 		{
+			/**
+			 * Whether or not we're performing reconstructions, or just gathering
+			 * information.
+			 */
+			bool d_perform_reconstructions;
+
 			/**
 			 * Whether or not the current feature is defined at this reconstruction
 			 * time.
@@ -104,30 +67,35 @@ namespace GPlatesModel
 			 */
 			bool d_feature_is_defined_at_recon_time;
 
-			// FIXME: remove d_most_recent_propname_read and access name via d_most_recent_property_read.
-			boost::optional<PropertyName> d_most_recent_propname_read;
-			boost::optional<FeatureHandle::properties_iterator> d_most_recent_property_read;
+			boost::optional<FeatureHandle::properties_iterator> d_current_property;
 			boost::optional<integer_plate_id_type> d_recon_plate_id;
-			not_yet_reconstructed_points_type d_not_yet_reconstructed_points;
-			not_yet_reconstructed_polylines_type d_not_yet_reconstructed_polylines;
+			boost::optional<GPlatesMaths::FiniteRotation> d_recon_rotation;
 
 			ReconstructedFeatureGeometryAccumulator():
+				d_perform_reconstructions(false),
 				d_feature_is_defined_at_recon_time(true)
 			{  }
 
+			/**
+			 * Return the name of the current property.
+			 *
+			 * Note that this function assumes we're actually in a property!
+			 */
+			const PropertyName &
+			current_property_name() const
+			{
+				return (**d_current_property)->property_name();
+			}
 		};
 		
-		// FIXME: Remove these two typedefs.
-		typedef std::vector<ReconstructedFeatureGeometry> reconstructed_points_type;
-		typedef std::vector<ReconstructedFeatureGeometry> reconstructed_polylines_type;
+		typedef std::vector<ReconstructedFeatureGeometry> reconstructed_geometries_type;
 
 		ReconstructedFeatureGeometryPopulator(
 				const double &recon_time,
 				unsigned long root_plate_id,
 				Reconstruction &recon,
 				ReconstructionTree &recon_tree,
-				reconstructed_points_type &reconstructed_points,
-				reconstructed_polylines_type &reconstructed_polylines,
+				reconstructed_geometries_type &reconstructed_geometries,
 				bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -187,9 +155,7 @@ namespace GPlatesModel
 		Reconstruction *d_recon_ptr;
 		ReconstructionTree *d_recon_tree_ptr;
 
-		// FIXME: Merge the next two containers.
-		reconstructed_points_type *d_reconstructed_points_to_populate;
-		reconstructed_polylines_type *d_reconstructed_polylines_to_populate;
+		reconstructed_geometries_type *d_reconstructed_geometries_to_populate;
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
 		bool d_should_keep_features_without_recon_plate_id;
 

@@ -176,8 +176,7 @@ GPlatesModel::Model::create_reconstruction(
 
 	ReconstructedFeatureGeometryPopulator rfgp(time, root, *reconstruction,
 			reconstruction->reconstruction_tree(),
-			reconstruction->point_geometries(),
-			reconstruction->polyline_geometries());
+			reconstruction->geometries());
 
 	visit_feature_collections(
 		reconstructable_features_collection.begin(),

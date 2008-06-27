@@ -464,8 +464,7 @@ output_reconstructions(
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
 				*reconstruction,
 				reconstruction->reconstruction_tree(),
-				reconstruction->point_geometries(),
-				reconstruction->polyline_geometries());
+				reconstruction->geometries());
 
 		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
@@ -473,17 +472,15 @@ output_reconstructions(
 		}
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
-				<< reconstruction->point_geometries().size()
-				<< " reconstructed point geometries, and\n   "
-				<< reconstruction->polyline_geometries().size()
-				<< " reconstructed polyline geometries."
+				<< reconstruction->geometries().size()
+				<< " reconstructed geometries."
 				<< std::endl;
 
 		std::cout << " > The reconstructed polylines are:\n";
 		std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator
-				iter3 = reconstruction->polyline_geometries().begin();
+				iter3 = reconstruction->geometries().begin();
 		std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator
-				end3 = reconstruction->polyline_geometries().end();
+				end3 = reconstruction->geometries().end();
 		for ( ; iter3 != end3; ++iter3) {
 			// We only care about polylines (since all the geometries in this function
 			// *should* be polylines), so let's just use a dynamic cast.

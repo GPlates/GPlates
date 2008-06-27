@@ -50,177 +50,15 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeometr
 		unsigned long root_plate_id,
 		Reconstruction &recon,
 		ReconstructionTree &recon_tree,
-		reconstructed_points_type &reconstructed_points,
-		reconstructed_polylines_type &reconstructed_polylines,
+		reconstructed_geometries_type &reconstructed_geometries,
 		bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
-	d_reconstructed_points_to_populate(&reconstructed_points),
-	d_reconstructed_polylines_to_populate(&reconstructed_polylines),
+	d_reconstructed_geometries_to_populate(&reconstructed_geometries),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  }
-
-
-namespace
-{
-	/**
-	 * A Reconstructor is an abstract base class which provides member functions which
-	 * reconstruct points and polylines.
-	 */
-	struct Reconstructor
-	{
-		virtual
-		~Reconstructor()
-		{  }
-
-
-		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry
-		reconstruct_point(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const = 0;
-
-
-		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry
-		reconstruct_polyline(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const = 0;
-	};
-
-
-	/**
-	 * This is a reconstructor which uses a supplied ReconstructionTree to reconstruct points
-	 * and polylines according to a supplied plate ID.
-	 */
-	struct ReconstructAccordingToPlateId: public Reconstructor
-	{
-		ReconstructAccordingToPlateId(
-				const GPlatesModel::ReconstructionTree &recon_tree,
-				GPlatesModel::integer_plate_id_type plate_id):
-			d_recon_tree_ptr(&recon_tree),
-			d_plate_id(plate_id)
-		{  }
-
-
-		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry
-		reconstruct_point(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
-		{
-			using namespace GPlatesMaths;
-
-			// FIXME:  Do we care about the reconstruction circumstance?  (For example,
-			// there may have been no match for the reconstruction plate ID.)
-			PointOnSphere::non_null_ptr_to_const_type reconstructed_p =
-					(d_recon_tree_ptr->reconstruct_point(*p, d_plate_id)).first;
-
-			return GPlatesModel::ReconstructedFeatureGeometry(
-					reconstructed_p, feature_handle, property_iterator, d_plate_id);
-		}
-
-
-		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry
-		reconstruct_polyline(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
-		{
-			using namespace GPlatesMaths;
-
-			// FIXME:  Do we care about the reconstruction circumstance?  (For example,
-			// there may have been no match for the reconstruction plate ID.)
-			PolylineOnSphere::non_null_ptr_to_const_type reconstructed_p =
-					(d_recon_tree_ptr->reconstruct_polyline(*p, d_plate_id)).first;
-
-			return GPlatesModel::ReconstructedFeatureGeometry(
-					reconstructed_p, feature_handle, property_iterator, d_plate_id);
-		}
-
-		const GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
-		GPlatesModel::integer_plate_id_type d_plate_id;
-	};
-
-
-	/**
-	 * This is a reconstructor which simply returns the supplied points and polylines, as if
-	 * they had been reconstructed using the identity rotation.
-	 */
-	struct IdentityReconstructor: public Reconstructor
-	{
-		IdentityReconstructor()
-		{  }
-
-
-		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry
-		reconstruct_point(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
-		{
-			return GPlatesModel::ReconstructedFeatureGeometry(
-					p, feature_handle, property_iterator);
-		}
-
-
-		virtual
-		const GPlatesModel::ReconstructedFeatureGeometry
-		reconstruct_polyline(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type p,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator) const
-		{
-			return GPlatesModel::ReconstructedFeatureGeometry(
-					p, feature_handle, property_iterator);
-		}
-	};
-
-
-	void
-	reconstruct_points_and_polylines(
-			GPlatesModel::ReconstructedFeatureGeometryPopulator::reconstructed_points_type *
-					reconstructed_points_to_populate,
-			GPlatesModel::ReconstructedFeatureGeometryPopulator::reconstructed_polylines_type *
-					reconstructed_polylines_to_populate,
-			const GPlatesModel::ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_points_type &
-					not_yet_reconstructed_points,
-			const GPlatesModel::ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_polylines_type &
-					not_yet_reconstructed_polylines,
-			GPlatesModel::FeatureHandle &feature_handle,
-			GPlatesModel::Reconstruction *recon_ptr,
-			const Reconstructor &reconstructor)
-	{
-		using namespace GPlatesModel;
-
-		ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_points_const_iterator point_iter =
-				not_yet_reconstructed_points.begin();
-		ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_points_const_iterator point_end =
-				not_yet_reconstructed_points.end();
-		for ( ; point_iter != point_end; ++point_iter) {
-			reconstructed_points_to_populate->push_back(
-					reconstructor.reconstruct_point(point_iter->d_point, feature_handle, point_iter->d_property));
-			reconstructed_points_to_populate->back().set_reconstruction_ptr(recon_ptr);
-		}
-
-		ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_polylines_const_iterator polyline_iter =
-				not_yet_reconstructed_polylines.begin();
-		ReconstructedFeatureGeometryPopulator::not_yet_reconstructed_polylines_const_iterator polyline_end =
-				not_yet_reconstructed_polylines.end();
-		for ( ; polyline_iter != polyline_end; ++polyline_iter) {
-			reconstructed_polylines_to_populate->push_back(
-					reconstructor.reconstruct_polyline(polyline_iter->d_polyline, feature_handle, polyline_iter->d_property));
-			reconstructed_polylines_to_populate->back().set_reconstruction_ptr(recon_ptr);
-		}
-	}
-}
 
 
 void
@@ -229,11 +67,16 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 {
 	d_accumulator = ReconstructedFeatureGeometryAccumulator();
 
-	// Now visit each of the properties in turn.
+	// Now visit each of the properties in turn, twice -- firstly, to find a reconstruction
+	// plate ID and to determine whether the feature is defined at this reconstruction time;
+	// after that, to perform the reconstructions (if appropriate) using the plate ID.
+
+	// The first time through, we're not reconstructing, just gathering information.
+	d_accumulator->d_perform_reconstructions = false;
 	visit_feature_properties(feature_handle);
 
-	// So now we've visited the contents of this feature.  Let's find out if we were able to
-	// obtain all the information we need.
+	// So now we've visited the properties of this feature.  Let's find out if we were able
+	// to obtain all the information we need.
 	if ( ! d_accumulator->d_feature_is_defined_at_recon_time) {
 		// Quick-out: No need to continue.
 		d_accumulator = boost::none;
@@ -250,30 +93,19 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 			d_accumulator = boost::none;
 			return;
 		}
-		IdentityReconstructor reconstructor;
-
-		reconstruct_points_and_polylines(
-				d_reconstructed_points_to_populate,
-				d_reconstructed_polylines_to_populate,
-				d_accumulator->d_not_yet_reconstructed_points,
-				d_accumulator->d_not_yet_reconstructed_polylines,
-				feature_handle,
-				d_recon_ptr,
-				reconstructor);
+		// Otherwise, the code later will "reconstruct" with the identity rotation.
 	} else {
 		// We obtained the reconstruction plate ID.  We now have all the information we
 		// need to reconstruct according to the reconstruction plate ID.
-		ReconstructAccordingToPlateId reconstructor(*d_recon_tree_ptr, *(d_accumulator->d_recon_plate_id));
-
-		reconstruct_points_and_polylines(
-				d_reconstructed_points_to_populate,
-				d_reconstructed_polylines_to_populate,
-				d_accumulator->d_not_yet_reconstructed_points,
-				d_accumulator->d_not_yet_reconstructed_polylines,
-				feature_handle,
-				d_recon_ptr,
-				reconstructor);
+		d_accumulator->d_recon_rotation =
+				d_recon_tree_ptr->get_composed_absolute_rotation(*(d_accumulator->d_recon_plate_id)).first;
 	}
+
+	// Now for the second pass through the properties of the feature:  This time we reconstruct
+	// any geometries we find.
+	d_accumulator->d_perform_reconstructions = true;
+	visit_feature_properties(feature_handle);
+
 	d_accumulator = boost::none;
 }
 
@@ -288,8 +120,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_properties(
 		// Elements of this properties vector can be NULL pointers.  (See the comment in
 		// "model/FeatureRevision.h" for more details.)
 		if (*iter != NULL) {
-			// FIXME: This d_most_recent_property_read thing could go in the {Const,}FeatureVisitor base.
-			d_accumulator->d_most_recent_property_read = iter;
+			// FIXME: This d_current_property thing could go in the {Const,}FeatureVisitor base.
+			d_accumulator->d_current_property = iter;
 			(*iter)->accept_visitor(*this);
 		}
 	}
@@ -300,11 +132,6 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_inline_property_container(
 		InlinePropertyContainer &inline_property_container)
 {
-	if ( ! d_accumulator->d_feature_is_defined_at_recon_time) {
-		// Quick-out: No need to progress any deeper.
-		return;
-	}
-	d_accumulator->d_most_recent_propname_read = inline_property_container.property_name();
 	visit_property_values(inline_property_container);
 }
 
@@ -313,9 +140,31 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	FeatureHandle::properties_iterator property = *(d_accumulator->d_most_recent_property_read);
-	d_accumulator->d_not_yet_reconstructed_polylines.push_back(
-			NotYetReconstructedPolyline(property, gml_line_string.polyline()));
+	using namespace GPlatesMaths;
+
+	if (d_accumulator->d_perform_reconstructions) {
+		FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+
+		if (d_accumulator->d_recon_plate_id) {
+			const FiniteRotation &r = *d_accumulator->d_recon_rotation;
+			PolylineOnSphere::non_null_ptr_to_const_type reconstructed_polyline =
+					r * gml_line_string.polyline();
+
+			ReconstructedFeatureGeometry rfg(reconstructed_polyline,
+					*d_accumulator->d_current_property->collection_handle_ptr(),
+					*d_accumulator->d_current_property,
+					*d_accumulator->d_recon_plate_id);
+			d_reconstructed_geometries_to_populate->push_back(rfg);
+			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
+		} else {
+			// We must be reconstructing using the identity rotation.
+			ReconstructedFeatureGeometry rfg(gml_line_string.polyline(),
+					*d_accumulator->d_current_property->collection_handle_ptr(),
+					*d_accumulator->d_current_property);
+			d_reconstructed_geometries_to_populate->push_back(rfg);
+			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
+		}
+	}
 }
 
 
@@ -331,9 +180,31 @@ void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	FeatureHandle::properties_iterator property = *(d_accumulator->d_most_recent_property_read);
-	d_accumulator->d_not_yet_reconstructed_points.push_back(
-			NotYetReconstructedPoint(property, gml_point.point()));
+	using namespace GPlatesMaths;
+
+	if (d_accumulator->d_perform_reconstructions) {
+		FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+
+		if (d_accumulator->d_recon_plate_id) {
+			const FiniteRotation &r = *d_accumulator->d_recon_rotation;
+			PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
+					r * gml_point.point();
+
+			ReconstructedFeatureGeometry rfg(reconstructed_point,
+					*d_accumulator->d_current_property->collection_handle_ptr(),
+					*d_accumulator->d_current_property,
+					*d_accumulator->d_recon_plate_id);
+			d_reconstructed_geometries_to_populate->push_back(rfg);
+			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
+		} else {
+			// We must be reconstructing using the identity rotation.
+			ReconstructedFeatureGeometry rfg(gml_point.point(),
+					*d_accumulator->d_current_property->collection_handle_ptr(),
+					*d_accumulator->d_current_property);
+			d_reconstructed_geometries_to_populate->push_back(rfg);
+			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
+		}
+	}
 }
 
 
@@ -344,12 +215,16 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_time_period(
 	static const PropertyName valid_time_property_name =
 		PropertyName::create_gml("validTime");
 
-	// Note that we're going to assume that we've read a property name...
-	if (*(d_accumulator->d_most_recent_propname_read) == valid_time_property_name) {
-		// This time period is the "valid time" time period.
-		if ( ! gml_time_period.contains(d_recon_time)) {
-			// Oh no!  This feature instance is not defined at the recon time!
-			d_accumulator->d_feature_is_defined_at_recon_time = false;
+	if ( ! d_accumulator->d_perform_reconstructions) {
+		// We're gathering information, not performing reconstructions.
+
+		// Note that we're going to assume that we're in a property...
+		if (d_accumulator->current_property_name() == valid_time_property_name) {
+			// This time period is the "valid time" time period.
+			if ( ! gml_time_period.contains(d_recon_time)) {
+				// Oh no!  This feature instance is not defined at the recon time!
+				d_accumulator->d_feature_is_defined_at_recon_time = false;
+			}
 		}
 	}
 }
@@ -370,9 +245,13 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_plate_id(
 	static PropertyName reconstruction_plate_id_property_name =
 		PropertyName::create_gpml("reconstructionPlateId");
 
-	// Note that we're going to assume that we've read a property name...
-	if (*(d_accumulator->d_most_recent_propname_read) == reconstruction_plate_id_property_name) {
-		// This plate ID is the reconstruction plate ID.
-		d_accumulator->d_recon_plate_id = gpml_plate_id.value();
+	if ( ! d_accumulator->d_perform_reconstructions) {
+		// We're gathering information, not performing reconstructions.
+
+		// Note that we're going to assume that we're in a property...
+		if (d_accumulator->current_property_name() == reconstruction_plate_id_property_name) {
+			// This plate ID is the reconstruction plate ID.
+			d_accumulator->d_recon_plate_id = gpml_plate_id.value();
+		}
 	}
 }

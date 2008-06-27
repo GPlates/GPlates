@@ -190,18 +190,6 @@ namespace GPlatesModel
 		find_edges_whose_moving_plate_id_match(
 				integer_plate_id_type plate_id);
 
-		const std::pair<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>,
-				ReconstructionCircumstance>
-		reconstruct_point(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
-				integer_plate_id_type plate_id_of_feature) const;
-
-		const std::pair<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>,
-				ReconstructionCircumstance>
-		reconstruct_polyline(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
-				integer_plate_id_type plate_id_of_feature) const;
-
 		/**
 		 * Get the composed absolute rotation which describes the motion of @a
 		 * moving_plate_id relative to the root plate ID
