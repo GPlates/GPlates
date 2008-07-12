@@ -54,9 +54,11 @@ namespace GPlatesCanvasTools
 
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<EditFeature>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<EditFeature,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<EditFeature> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<EditFeature,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~EditFeature()
@@ -75,8 +77,9 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 				GPlatesGui::FeatureFocus &feature_focus)
 		{
-			EditFeature::non_null_ptr_type ptr(*(new EditFeature(globe_, globe_canvas_,
-					view_state_, clicked_table_model, fp_dialog_, feature_focus)));
+			EditFeature::non_null_ptr_type ptr(new EditFeature(globe_, globe_canvas_,
+					view_state_, clicked_table_model, fp_dialog_, feature_focus),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 

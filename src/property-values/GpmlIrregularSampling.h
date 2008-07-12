@@ -38,23 +38,26 @@
 
 namespace GPlatesPropertyValues {
 
-	class GpmlIrregularSampling :
+	class GpmlIrregularSampling:
 			public GPlatesModel::PropertyValue {
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -67,8 +70,9 @@ namespace GPlatesPropertyValues {
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
 				const TemplateTypeParameterType &value_type_) {
 			non_null_ptr_type ptr(
-					*(new GpmlIrregularSampling(first_time_sample, interp_func,
-							value_type_)));
+					new GpmlIrregularSampling(first_time_sample, interp_func,
+							value_type_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -84,14 +88,17 @@ namespace GPlatesPropertyValues {
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
 				const TemplateTypeParameterType &value_type_) {
 			non_null_ptr_type ptr(
-					*(new GpmlIrregularSampling(time_samples_, interp_func, value_type_)));
+					new GpmlIrregularSampling(time_samples_, interp_func, value_type_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlIrregularSampling(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlIrregularSampling(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

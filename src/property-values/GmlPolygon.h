@@ -43,21 +43,26 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPolygon>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPolygon,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPolygon> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPolygon,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
 		 * A convenience typedef for the ring representation used internally.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				ring_type;
 		
 		/**
@@ -85,7 +90,9 @@ namespace GPlatesPropertyValues
 			// non_null_ptr_to_const_type, there is no way a PolylineOnSphere instance
 			// can be changed.  Hence, it is safe to store a pointer to the instance
 			// which was passed into this 'create' function.
-			GmlPolygon::non_null_ptr_type polygon_ptr(*(new GmlPolygon(exterior_ring)));
+			GmlPolygon::non_null_ptr_type polygon_ptr(
+					new GmlPolygon(exterior_ring),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return polygon_ptr;
 		}
 
@@ -117,7 +124,8 @@ namespace GPlatesPropertyValues
 			// can be changed.  Hence, it is safe to store a pointer to the instance
 			// which was passed into this 'create' function.
 			GmlPolygon::non_null_ptr_type polygon_ptr(
-					*(new GmlPolygon(exterior_ring, interior_ring_collection)));
+					new GmlPolygon(exterior_ring, interior_ring_collection),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return polygon_ptr;
 		}
 
@@ -128,7 +136,9 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GmlPolygon(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GmlPolygon(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

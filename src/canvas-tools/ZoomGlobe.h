@@ -39,9 +39,11 @@ namespace GPlatesCanvasTools
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~ZoomGlobe()
@@ -56,7 +58,8 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_)
 		{
-			ZoomGlobe::non_null_ptr_type ptr(*(new ZoomGlobe(globe_, globe_canvas_)));
+			ZoomGlobe::non_null_ptr_type ptr(new ZoomGlobe(globe_, globe_canvas_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 

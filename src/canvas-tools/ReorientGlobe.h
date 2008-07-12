@@ -39,9 +39,11 @@ namespace GPlatesCanvasTools
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~ReorientGlobe()
@@ -56,7 +58,9 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_)
 		{
-			ReorientGlobe::non_null_ptr_type ptr(*(new ReorientGlobe(globe_, globe_canvas_)));
+			ReorientGlobe::non_null_ptr_type ptr(
+					new ReorientGlobe(globe_, globe_canvas_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 

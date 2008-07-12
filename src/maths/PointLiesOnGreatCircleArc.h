@@ -7,7 +7,7 @@
  *   $Author$
  *   $Date$
  *
- * Copyright (C) 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -87,8 +87,10 @@ namespace GPlatesMaths {
 
 		/**
 		 * The normal to the plane which contains the arc.
+		 *
+		 * Note that this might be an undefined boost::optional.
 		 */
-		const UnitVector3D d_arc_normal;
+		const boost::optional<UnitVector3D> d_arc_normal;
 
 		/**
 		 * The dot-product of the unit-vectors of the start-point and

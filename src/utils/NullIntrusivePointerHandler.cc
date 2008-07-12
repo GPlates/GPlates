@@ -1,13 +1,13 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * File specific comments.
  *
  * Most recent change:
  *   $Date$
- * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ *
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,18 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "GmlLineString.h"
-#include "maths/PolylineOnSphere.h"
+#include "NullIntrusivePointerHandler.h"
+#include "NullNonNullIntrusivePointerException.h"
 
 
-const GPlatesPropertyValues::GmlLineString::non_null_ptr_type
-GPlatesPropertyValues::GmlLineString::create(
-		const internal_polyline_type &polyline_)
+void
+GPlatesUtils::NullIntrusivePointerHandler::operator()() const
 {
-	// Because PolylineOnSphere can only ever be handled via a non_null_ptr_to_const_type,
-	// there is no way a PolylineOnSphere instance can be changed.  Hence, it is safe to store
-	// a pointer to the instance which was passed into this 'create' function.
-	GmlLineString::non_null_ptr_type line_string_ptr(new GmlLineString(polyline_),
-			GPlatesUtils::NullIntrusivePointerHandler());
-	return line_string_ptr;
+	throw NullNonNullIntrusivePointerException();
 }

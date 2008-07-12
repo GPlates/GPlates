@@ -40,10 +40,12 @@ namespace GPlatesPropertyValues {
 
 	public:
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<Enumeration> 
+		typedef GPlatesUtils::non_null_intrusive_ptr<Enumeration,
+				GPlatesUtils::NullIntrusivePointerHandler> 
 				non_null_ptr_type;
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<const Enumeration>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Enumeration,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -55,14 +57,16 @@ namespace GPlatesPropertyValues {
 		create(
 				const UnicodeString &enum_type,
 				const UnicodeString &enum_content) {
-			Enumeration::non_null_ptr_type ptr(*(new Enumeration(enum_type, enum_content)));
+			Enumeration::non_null_ptr_type ptr(new Enumeration(enum_type, enum_content),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new Enumeration(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new Enumeration(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

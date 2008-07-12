@@ -95,10 +95,8 @@ GPlatesModel::XmlTextNode::create(
 {
 	QString text = reader.text().toString().trimmed();
 	return non_null_ptr_type(
-			*(new XmlTextNode(
-					reader.lineNumber(), 
-					reader.columnNumber(), 
-					text)));
+			new XmlTextNode(reader.lineNumber(), reader.columnNumber(), text),
+			GPlatesUtils::NullIntrusivePointerHandler());
 }
 
 
@@ -141,10 +139,8 @@ GPlatesModel::XmlElementNode::create(
 			reader.name().toString());
 
 	non_null_ptr_type elem(
-			*(new XmlElementNode(
-					reader.lineNumber(),
-					reader.columnNumber(),
-					prop_name)));
+			new XmlElementNode(reader.lineNumber(), reader.columnNumber(), prop_name),
+			GPlatesUtils::NullIntrusivePointerHandler());
 
 	QXmlStreamNamespaceDeclarations ns_decls = reader.namespaceDeclarations();
 	// If this element contains namespace declarations...
@@ -214,10 +210,8 @@ GPlatesModel::XmlElementNode::create(
 		const GPlatesModel::PropertyName &prop_name)
 {	
 	non_null_ptr_type elem(
-			*(new XmlElementNode(
-					text->line_number(),
-					text->column_number(),
-					prop_name)));
+			new XmlElementNode(text->line_number(), text->column_number(), prop_name),
+			GPlatesUtils::NullIntrusivePointerHandler());
 
 	elem->d_children.push_back(text);
 	return elem;
@@ -358,7 +352,8 @@ void
 GPlatesModel::XmlTextNode::accept_visitor(
 		GPlatesModel::XmlNodeVisitor &visitor)
 {
-	visitor.visit_text_node(non_null_ptr_type(*this));
+	visitor.visit_text_node(non_null_ptr_type(this,
+			GPlatesUtils::NullIntrusivePointerHandler()));
 }
 
 
@@ -369,5 +364,6 @@ GPlatesModel::XmlElementNode::accept_visitor(
 	// FIXME: This is nasty, but I can't think of any other way to work it
 	// at the moment.
 	//XmlElementNode *ptr = const_cast<XmlElementNode *>(this);
-	visitor.visit_element_node(non_null_ptr_type(*this));
+	visitor.visit_element_node(non_null_ptr_type(this,
+			GPlatesUtils::NullIntrusivePointerHandler()));
 }

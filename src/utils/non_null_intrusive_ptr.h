@@ -34,6 +34,9 @@
 namespace GPlatesUtils
 {
 
+// This exception is thrown when the null_handler_type fails to handle a NULL pointer.
+struct UnhandledNullPointerException {  };
+
 //
 //  non_null_intrusive_ptr
 //
@@ -49,7 +52,7 @@ namespace GPlatesUtils
 //  The object is responsible for destroying itself.
 //
 
-template<class T> class non_null_intrusive_ptr
+template<class T, class H> class non_null_intrusive_ptr
 {
 private:
 
@@ -58,15 +61,23 @@ private:
 public:
 
     typedef T element_type;
+    typedef H null_handler_type;
 
-    non_null_intrusive_ptr(T & dereferenced_ptr, bool add_ref = true): p_(&dereferenced_ptr)
+    non_null_intrusive_ptr(T * p, H const & handle_null, bool add_ref = true): p_(p)
     {
+        if(p_ == 0) {
+            // Give 'handle_null' a chance to handle the situation.
+            handle_null();
+
+            // If 'handle_null' doesn't handle the situation, fall back to throwing an exception.
+            throw UnhandledNullPointerException();
+	}
         if(add_ref) intrusive_ptr_add_ref(p_);
     }
 
 #if !defined(BOOST_NO_MEMBER_TEMPLATES) || defined(BOOST_MSVC6_MEMBER_TEMPLATES)
 
-    template<class U> non_null_intrusive_ptr(non_null_intrusive_ptr<U> const & rhs): p_(rhs.get())
+    template<class U, class I> non_null_intrusive_ptr(non_null_intrusive_ptr<U, I> const & rhs): p_(rhs.get())
     {
         intrusive_ptr_add_ref(p_);
     }
@@ -85,7 +96,7 @@ public:
 
 #if !defined(BOOST_NO_MEMBER_TEMPLATES) || defined(BOOST_MSVC6_MEMBER_TEMPLATES)
 
-    template<class U> non_null_intrusive_ptr & operator=(non_null_intrusive_ptr<U> const & rhs)
+    template<class U, class I> non_null_intrusive_ptr & operator=(non_null_intrusive_ptr<U, I> const & rhs)
     {
         this_type(rhs).swap(*this);
         return *this;
@@ -158,52 +169,52 @@ private:
     T * p_;
 };
 
-template<class T, class U> inline bool operator==(non_null_intrusive_ptr<T> const & a, non_null_intrusive_ptr<U> const & b)
+template<class T, class H, class U, class I> inline bool operator==(non_null_intrusive_ptr<T, H> const & a, non_null_intrusive_ptr<U, I> const & b)
 {
     return a.get() == b.get();
 }
 
-template<class T, class U> inline bool operator!=(non_null_intrusive_ptr<T> const & a, non_null_intrusive_ptr<U> const & b)
+template<class T, class H, class U, class I> inline bool operator!=(non_null_intrusive_ptr<T, H> const & a, non_null_intrusive_ptr<U, I> const & b)
 {
     return a.get() != b.get();
 }
 
-template<class T, class U> inline bool operator==(non_null_intrusive_ptr<T> const & a, boost::intrusive_ptr<U> const & b)
+template<class T, class H, class U> inline bool operator==(non_null_intrusive_ptr<T, H> const & a, boost::intrusive_ptr<U> const & b)
 {
     return a.get() == b.get();
 }
 
-template<class T, class U> inline bool operator!=(non_null_intrusive_ptr<T> const & a, boost::intrusive_ptr<U> const & b)
+template<class T, class H, class U> inline bool operator!=(non_null_intrusive_ptr<T, H> const & a, boost::intrusive_ptr<U> const & b)
 {
     return a.get() != b.get();
 }
 
-template<class T, class U> inline bool operator==(boost::intrusive_ptr<T> const & a, non_null_intrusive_ptr<U> const & b)
+template<class T, class U, class I> inline bool operator==(boost::intrusive_ptr<T> const & a, non_null_intrusive_ptr<U, I> const & b)
 {
     return a.get() == b.get();
 }
 
-template<class T, class U> inline bool operator!=(boost::intrusive_ptr<T> const & a, non_null_intrusive_ptr<U> const & b)
+template<class T, class U, class I> inline bool operator!=(boost::intrusive_ptr<T> const & a, non_null_intrusive_ptr<U, I> const & b)
 {
     return a.get() != b.get();
 }
 
-template<class T> inline bool operator==(non_null_intrusive_ptr<T> const & a, T * b)
+template<class T, class H> inline bool operator==(non_null_intrusive_ptr<T, H> const & a, T * b)
 {
     return a.get() == b;
 }
 
-template<class T> inline bool operator!=(non_null_intrusive_ptr<T> const & a, T * b)
+template<class T, class H> inline bool operator!=(non_null_intrusive_ptr<T, H> const & a, T * b)
 {
     return a.get() != b;
 }
 
-template<class T> inline bool operator==(T * a, non_null_intrusive_ptr<T> const & b)
+template<class T, class H> inline bool operator==(T * a, non_null_intrusive_ptr<T, H> const & b)
 {
     return a == b.get();
 }
 
-template<class T> inline bool operator!=(T * a, non_null_intrusive_ptr<T> const & b)
+template<class T, class H> inline bool operator!=(T * a, non_null_intrusive_ptr<T, H> const & b)
 {
     return a != b.get();
 }
@@ -212,24 +223,24 @@ template<class T> inline bool operator!=(T * a, non_null_intrusive_ptr<T> const 
 
 // Resolve the ambiguity between our op!= and the one in rel_ops
 
-template<class T> inline bool operator!=(non_null_intrusive_ptr<T> const & a, non_null_intrusive_ptr<T> const & b)
+template<class T, class H> inline bool operator!=(non_null_intrusive_ptr<T, H> const & a, non_null_intrusive_ptr<T, H> const & b)
 {
     return a.get() != b.get();
 }
 
 #endif
 
-template<class T> inline bool operator<(non_null_intrusive_ptr<T> const & a, non_null_intrusive_ptr<T> const & b)
+template<class T, class H> inline bool operator<(non_null_intrusive_ptr<T, H> const & a, non_null_intrusive_ptr<T, H> const & b)
 {
     return std::less<T *>()(a.get(), b.get());
 }
 
-template<class T> void swap(non_null_intrusive_ptr<T> & lhs, non_null_intrusive_ptr<T> & rhs)
+template<class T, class H> void swap(non_null_intrusive_ptr<T, H> & lhs, non_null_intrusive_ptr<T, H> & rhs)
 {
     lhs.swap(rhs);
 }
 
-template<class T> boost::intrusive_ptr<T> get_intrusive_ptr(non_null_intrusive_ptr<T> const & p)
+template<class T, class H> boost::intrusive_ptr<T> get_intrusive_ptr(non_null_intrusive_ptr<T, H> const & p)
 {
     boost::intrusive_ptr<T> ip(p.get());
     return ip;
@@ -237,22 +248,22 @@ template<class T> boost::intrusive_ptr<T> get_intrusive_ptr(non_null_intrusive_p
 
 // mem_fn support
 
-template<class T> T * get_pointer(non_null_intrusive_ptr<T> const & p)
+template<class T, class H> T * get_pointer(non_null_intrusive_ptr<T, H> const & p)
 {
     return p.get();
 }
 
-template<class T, class U> non_null_intrusive_ptr<T> static_pointer_cast(non_null_intrusive_ptr<U> const & p)
+template<class T, class H, class U, class I> non_null_intrusive_ptr<T, H> static_pointer_cast(non_null_intrusive_ptr<U, I> const & p)
 {
     return static_cast<T *>(p.get());
 }
 
-template<class T, class U> non_null_intrusive_ptr<T> const_pointer_cast(non_null_intrusive_ptr<U> const & p)
+template<class T, class H, class U, class I> non_null_intrusive_ptr<T, H> const_pointer_cast(non_null_intrusive_ptr<U, I> const & p)
 {
     return const_cast<T *>(p.get());
 }
 
-template<class T, class U> non_null_intrusive_ptr<T> dynamic_pointer_cast(non_null_intrusive_ptr<U> const & p)
+template<class T, class H, class U, class I> non_null_intrusive_ptr<T, H> dynamic_pointer_cast(non_null_intrusive_ptr<U, I> const & p)
 {
     return dynamic_cast<T *>(p.get());
 }
@@ -261,7 +272,7 @@ template<class T, class U> non_null_intrusive_ptr<T> dynamic_pointer_cast(non_nu
 
 #if defined(__GNUC__) &&  (__GNUC__ < 3)
 
-template<class Y> std::ostream & operator<< (std::ostream & os, non_null_intrusive_ptr<Y> const & p)
+template<class Y, class Z> std::ostream & operator<< (std::ostream & os, non_null_intrusive_ptr<Y, Z> const & p)
 {
     os << p.get();
     return os;
@@ -272,9 +283,9 @@ template<class Y> std::ostream & operator<< (std::ostream & os, non_null_intrusi
 # if defined(BOOST_MSVC) && BOOST_WORKAROUND(BOOST_MSVC, <= 1200 && __SGI_STL_PORT)
 // MSVC6 has problems finding std::basic_ostream through the using declaration in namespace _STL
 using std::basic_ostream;
-template<class E, class T, class Y> basic_ostream<E, T> & operator<< (basic_ostream<E, T> & os, non_null_intrusive_ptr<Y> const & p)
+template<class E, class T, class Y, class Z> basic_ostream<E, T> & operator<< (basic_ostream<E, T> & os, non_null_intrusive_ptr<Y, Z> const & p)
 # else
-template<class E, class T, class Y> std::basic_ostream<E, T> & operator<< (std::basic_ostream<E, T> & os, non_null_intrusive_ptr<Y> const & p)
+template<class E, class T, class Y, class Z> std::basic_ostream<E, T> & operator<< (std::basic_ostream<E, T> & os, non_null_intrusive_ptr<Y, Z> const & p)
 # endif 
 {
     os << p.get();

@@ -34,6 +34,7 @@
 #include "ConstGeometryOnSphereVisitor.h"
 #include "ProximityHitDetail.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesMaths
@@ -52,9 +53,11 @@ namespace GPlatesMaths
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -161,6 +164,17 @@ namespace GPlatesMaths
 		decrement_ref_count() const
 		{
 			return --d_ref_count;
+		}
+
+		/**
+		 * Access the reference-count of this instance.
+		 *
+		 * This function is intended for use by @a PointOnSphere::get_non_null_pointer.
+		 */
+		ref_count_type
+		ref_count() const
+		{
+			return d_ref_count;
 		}
 
 	private:

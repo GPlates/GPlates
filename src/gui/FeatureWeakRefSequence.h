@@ -31,6 +31,7 @@
 
 #include "model/FeatureHandle.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesGui
@@ -59,9 +60,11 @@ namespace GPlatesGui
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<FeatureWeakRefSequence>.
+		 * GPlatesUtils::non_null_intrusive_ptr<FeatureWeakRefSequence,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureWeakRefSequence> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureWeakRefSequence,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * The type used to store the reference-count of an instance of this class.
@@ -93,7 +96,8 @@ namespace GPlatesGui
 		const non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(*(new FeatureWeakRefSequence));
+			non_null_ptr_type ptr(new FeatureWeakRefSequence,
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 

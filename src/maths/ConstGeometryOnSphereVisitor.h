@@ -28,6 +28,9 @@
 #ifndef GPLATES_MATHS_CONSTGEOMETRYONSPHEREVISITOR_H
 #define GPLATES_MATHS_CONSTGEOMETRYONSPHEREVISITOR_H
 
+#include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
+
 
 namespace GPlatesMaths
 {
@@ -74,7 +77,8 @@ namespace GPlatesMaths
 		virtual
 		void
 		visit_point_on_sphere(
-				const PointOnSphere &point_on_sphere)
+				GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
+						GPlatesUtils::NullIntrusivePointerHandler> point_on_sphere)
 		{  }
 
 		/**
@@ -83,7 +87,8 @@ namespace GPlatesMaths
 		virtual
 		void
 		visit_polygon_on_sphere(
-				const PolygonOnSphere &polygon_on_sphere)
+				GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
+						GPlatesUtils::NullIntrusivePointerHandler> polygon_on_sphere)
 		{  }
 
 		/**
@@ -92,7 +97,8 @@ namespace GPlatesMaths
 		virtual
 		void
 		visit_polyline_on_sphere(
-				const PolylineOnSphere &polyline_on_sphere)
+				GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+						GPlatesUtils::NullIntrusivePointerHandler> polyline_on_sphere)
 		{  }
 
 	private:

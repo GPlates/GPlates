@@ -46,15 +46,19 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -79,14 +83,16 @@ namespace GPlatesPropertyValues
 		create(
 				GmlTimeInstant::non_null_ptr_type begin_,
 				GmlTimeInstant::non_null_ptr_type end_) {
-			GmlTimePeriod::non_null_ptr_type ptr(*(new GmlTimePeriod(begin_, end_)));
+			GmlTimePeriod::non_null_ptr_type ptr(new GmlTimePeriod(begin_, end_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GmlTimePeriod(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlTimePeriod(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

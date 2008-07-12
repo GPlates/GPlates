@@ -32,6 +32,8 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTree.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
+
 
 namespace GPlatesModel
 {
@@ -44,15 +46,19 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<Reconstruction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<Reconstruction,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<Reconstruction> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<Reconstruction,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const Reconstruction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const Reconstruction,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const Reconstruction>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Reconstruction,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -70,7 +76,8 @@ namespace GPlatesModel
 		create(
 				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_)
 		{
-			non_null_ptr_type ptr(*(new Reconstruction(reconstruction_tree_ptr_)));
+			non_null_ptr_type ptr(new Reconstruction(reconstruction_tree_ptr_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 

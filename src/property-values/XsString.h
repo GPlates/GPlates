@@ -40,15 +40,19 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsString,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<XsString> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsString,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsString>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsString,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -58,14 +62,16 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const UnicodeString &s) {
-			XsString::non_null_ptr_type ptr(*(new XsString(s)));
+			XsString::non_null_ptr_type ptr(new XsString(s),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new XsString(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new XsString(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

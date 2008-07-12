@@ -82,7 +82,9 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	d_found_line_strings.push_back(
-			GPlatesPropertyValues::GmlLineString::non_null_ptr_to_const_type(gml_line_string));
+			GPlatesPropertyValues::GmlLineString::non_null_ptr_to_const_type(
+					&gml_line_string,
+					GPlatesUtils::NullIntrusivePointerHandler()));
 }
 
 void
@@ -97,7 +99,9 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	d_found_points.push_back(
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_to_const_type(gml_point));
+			GPlatesPropertyValues::GmlPoint::non_null_ptr_to_const_type(
+					&gml_point,
+					GPlatesUtils::NullIntrusivePointerHandler()));
 }
 
 

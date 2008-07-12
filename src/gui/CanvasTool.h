@@ -27,6 +27,7 @@
 #define GPLATES_GUI_CANVASTOOL_H
 
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesMaths
@@ -55,9 +56,11 @@ namespace GPlatesGui
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<CanvasTool>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<CanvasTool,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<CanvasTool> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<CanvasTool,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * The type used to store the reference-count of an instance of this class.

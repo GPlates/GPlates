@@ -39,23 +39,26 @@ namespace GPlatesPropertyValues {
 	/**
 	 * This class implements the PropertyValue which corresponds to "gml:OrientableCurve".
 	 */
-	class GmlOrientableCurve :
+	class GmlOrientableCurve:
 			public GPlatesModel::PropertyValue {
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlOrientableCurve,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -82,7 +85,8 @@ namespace GPlatesPropertyValues {
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
 						xml_attributes_) {
 			non_null_ptr_type ptr(
-					*(new GmlOrientableCurve(base_curve_, xml_attributes_)));
+					new GmlOrientableCurve(base_curve_, xml_attributes_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -93,7 +97,8 @@ namespace GPlatesPropertyValues {
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
 			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					*(new GmlOrientableCurve(*this)));
+					new GmlOrientableCurve(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

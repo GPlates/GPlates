@@ -31,6 +31,7 @@
 #include "FeatureStoreRootRevision.h"
 #include "RevisionAwareIterator.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 namespace GPlatesModel
 {
@@ -66,16 +67,19 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle>.
+		 * GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStoreRootHandle,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootHandle,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -144,7 +148,8 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(*(new FeatureStoreRootHandle()));
+			non_null_ptr_type ptr(new FeatureStoreRootHandle(),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -165,7 +170,8 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(*(new FeatureStoreRootHandle(*this)));
+			non_null_ptr_type dup(new FeatureStoreRootHandle(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

@@ -85,19 +85,23 @@ namespace GPlatesMaths
 	{
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere>.
+		 * GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 * 
 		 * Note that this typedef is indeed meant to be private.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 
@@ -447,7 +451,6 @@ namespace GPlatesMaths
 		{
 			VALID,
 			INVALID_INSUFFICIENT_DISTINCT_POINTS,
-			INVALID_DUPLICATE_SEGMENT_ENDPOINTS,
 			INVALID_ANTIPODAL_SEGMENT_ENDPOINTS
 		};
 
@@ -483,12 +486,6 @@ namespace GPlatesMaths
 		 * of @a coll which point to the guilty points.  If no adjacent
 		 * points are found to be duplicate or antipodal, this
 		 * parameter will not be modified.
-		 *
-		 * The optional argument @a should_silently_drop_dups controls
-		 * whether or not duplicate adjacent points should silently be
-		 * dropped instead of causing an exception to be thrown.  (Dup
-		 * adjacent points are a not-uncommon occurrence when reading
-		 * PLATES4 data files.  All Hail PLATES4!)
 		 */
 		template<typename C>
 		static
@@ -496,8 +493,7 @@ namespace GPlatesMaths
 		evaluate_construction_parameter_validity(
 				const C &coll,
 				std::pair<typename C::const_iterator, typename C::const_iterator> &
-						invalid_points,
-				bool should_silently_drop_dups = true);
+						invalid_points);
 
 
 		/**
@@ -541,7 +537,9 @@ namespace GPlatesMaths
 		const GeometryOnSphere::non_null_ptr_to_const_type
 		clone_as_geometry() const
 		{
-			GeometryOnSphere::non_null_ptr_to_const_type dup(*(new PolylineOnSphere(*this)));
+			GeometryOnSphere::non_null_ptr_to_const_type dup(
+					new PolylineOnSphere(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
@@ -555,9 +553,27 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		clone_as_polyline() const
 		{
-			non_null_ptr_to_const_type dup(*(new PolylineOnSphere(*this)));
+			non_null_ptr_to_const_type dup(
+					new PolylineOnSphere(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+
+		/**
+		 * Get a non-null pointer to a const PolylineOnSphere which points to this instance
+		 * (or a clone of this instance).
+		 *
+		 * (Since geometries are treated as immutable literals in GPlates, a geometry can
+		 * never be modified through a pointer, so there is no reason why it would be
+		 * inappropriate to return a pointer to a clone of this instance rather than a
+		 * pointer to this instance.)
+		 *
+		 * This function will behave correctly regardless of whether this instance is on
+		 * the stack or the heap.
+		 */
+		const non_null_ptr_to_const_type
+		get_non_null_pointer() const;
 
 
 		virtual
@@ -577,7 +593,7 @@ namespace GPlatesMaths
 		accept_visitor(
 				ConstGeometryOnSphereVisitor &visitor) const
 		{
-			visitor.visit_polyline_on_sphere(*this);
+			visitor.visit_polyline_on_sphere(this->get_non_null_pointer());
 		}
 
 
@@ -806,8 +822,7 @@ namespace GPlatesMaths
 		create_segment_and_append_to_seq(
 				seq_type &seq,
 				const PointOnSphere &p1,
-				const PointOnSphere &p2,
-				bool should_silently_drop_dups = true);
+				const PointOnSphere &p2);
 
 
 		/**
@@ -900,8 +915,7 @@ namespace GPlatesMaths
 	PolylineOnSphere::ConstructionParameterValidity
 	PolylineOnSphere::evaluate_construction_parameter_validity(
 			const C &coll,
-			std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points,
-			bool should_silently_drop_dups)
+			std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points)
 	{
 		typename C::size_type num_points = coll.size();
 		if (num_points < s_min_num_collection_points) {
@@ -936,22 +950,6 @@ namespace GPlatesMaths
 				// throw an exception if the assertion fails.)
 				break;
 
-			case INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
-
-				if (should_silently_drop_dups) {
-					// You heard the man:  We should
-					// silently drop duplicates.  But we
-					// still need to keep track of the
-					// number of (usable) points.
-					--num_points;
-				} else {
-					invalid_points.first = prev;
-					invalid_points.second = iter;
-					return v;
-				}
-				// Keep looping.
-				break;
-
 			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
 
 				invalid_points.first = prev;
@@ -976,7 +974,8 @@ namespace GPlatesMaths
 	PolylineOnSphere::create_on_heap(
 			const C &coll)
 	{
-		PolylineOnSphere::non_null_ptr_type ptr(*(new PolylineOnSphere()));
+		PolylineOnSphere::non_null_ptr_type ptr(new PolylineOnSphere(),
+				GPlatesUtils::NullIntrusivePointerHandler());
 		generate_segments_and_swap(*ptr, coll);
 		return ptr;
 	}

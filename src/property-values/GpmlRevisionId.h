@@ -34,21 +34,25 @@
 
 namespace GPlatesPropertyValues {
 
-	class GpmlRevisionId :
+	class GpmlRevisionId:
 			public GPlatesModel::PropertyValue {
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -63,14 +67,18 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::RevisionId &value_) {
-			non_null_ptr_type ptr(*(new GpmlRevisionId(value_)));
+			non_null_ptr_type ptr(
+					new GpmlRevisionId(value_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlRevisionId(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlRevisionId(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

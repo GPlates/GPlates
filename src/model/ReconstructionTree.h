@@ -33,6 +33,7 @@
 #include "ReconstructionGraph.h"
 #include "maths/GeometryForwardDeclarations.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -48,9 +49,11 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree>.
+		 * GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * The type used to store the reference-count of an instance of this class.
@@ -140,7 +143,8 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(*(new ReconstructionTree(*this)));
+			non_null_ptr_type dup(new ReconstructionTree(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 	

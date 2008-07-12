@@ -79,5 +79,6 @@ GPlatesFeatureVisitors::XsStringFinder::visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string)
 {
 	d_found_strings.push_back(
-			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type(xs_string));
+			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type(&xs_string,
+					GPlatesUtils::NullIntrusivePointerHandler()));
 }

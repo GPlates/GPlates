@@ -33,6 +33,7 @@
 #include "UnitQuaternion3D.h"
 #include "types.h"  /* real_t */
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesMaths
@@ -239,10 +240,12 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler>
 	operator*(
 			const FiniteRotation &r,
-			GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> p);
+			GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
+					GPlatesUtils::NullIntrusivePointerHandler> p);
 
 
 	/**
@@ -294,10 +297,12 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+					GPlatesUtils::NullIntrusivePointerHandler> p);
 
 
 	/**
@@ -305,10 +310,12 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
+					GPlatesUtils::NullIntrusivePointerHandler> p);
 
 
 	std::ostream &

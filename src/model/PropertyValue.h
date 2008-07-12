@@ -34,6 +34,7 @@
 #include "ConstFeatureVisitor.h"
 #include "FeatureVisitor.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -48,15 +49,19 @@ namespace GPlatesModel
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyValue,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**

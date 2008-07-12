@@ -59,8 +59,9 @@ GPlatesModel::ReconstructionTree::create(
 	//std::cerr << std::endl << "Starting new tree... " << std::endl;
 	// FIXME:  This function is very, very exception-unsafe.
 
-	ReconstructionTree::non_null_ptr_type tree(*(new ReconstructionTree(root_plate_id_,
-			graph.reconstruction_time())));
+	ReconstructionTree::non_null_ptr_type tree(
+			new ReconstructionTree(root_plate_id_, graph.reconstruction_time()),
+			GPlatesUtils::NullIntrusivePointerHandler());
 
 	// We *could* do this recursively, but to minimise the chance that pathological input data
 	// (eg, trees which are actually linear, like lists) could kill the program, let's use a
@@ -157,8 +158,10 @@ GPlatesModel::ReconstructionTree::create(
 			{
 				
 				edge_ref_type parent_edge = 
-					GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge>(
-						*(edge_being_processed->parent_edge()));
+						GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge,
+								GPlatesUtils::NullIntrusivePointerHandler>(
+								edge_being_processed->parent_edge(),
+								GPlatesUtils::NullIntrusivePointerHandler());
 				
 				edge_collection_type::iterator kids;
 				edge_collection_type::iterator kids_begin =

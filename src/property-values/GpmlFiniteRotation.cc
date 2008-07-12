@@ -47,7 +47,9 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 	PointOnSphere p = make_point_on_sphere(llp);
 	FiniteRotation fr = FiniteRotation::create(p, degreesToRadians(gml_angle_in_degrees));
 
-	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
+	non_null_ptr_type finite_rotation_ptr(
+			new GpmlFiniteRotation(fr),
+			GPlatesUtils::NullIntrusivePointerHandler());
 	return finite_rotation_ptr;
 }
 
@@ -63,7 +65,8 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 			*gpml_euler_pole->point(),
 			degreesToRadians(gml_angle_in_degrees->quantity()));
 
-	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
+	non_null_ptr_type finite_rotation_ptr(new GpmlFiniteRotation(fr),
+			GPlatesUtils::NullIntrusivePointerHandler());
 	return finite_rotation_ptr;
 }
 
@@ -75,7 +78,8 @@ GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
 
 	FiniteRotation fr = FiniteRotation::create(UnitQuaternion3D::create_identity_rotation());
 
-	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
+	non_null_ptr_type finite_rotation_ptr(new GpmlFiniteRotation(fr),
+			GPlatesUtils::NullIntrusivePointerHandler());
 	return finite_rotation_ptr;
 }
 
@@ -96,8 +100,7 @@ GPlatesPropertyValues::calculate_euler_pole(
 
 	// If 'fr' is a zero rotation, this will throw an exception.
 	UnitQuaternion3D::RotationParams rp = fr.finite_rotation().unit_quat().get_rotation_params();
-	GmlPoint::non_null_ptr_type euler_pole_ptr(*(GmlPoint::create(PointOnSphere(rp.axis))));
-	return euler_pole_ptr;
+	return GmlPoint::create(PointOnSphere(rp.axis));
 }
 
 

@@ -47,7 +47,9 @@ GPlatesGui::ProximityTests::find_close_rfgs(
 				iter->geometry()->test_proximity(criteria);
 		if (hit) {
 			sorted_hits.push(ProximityHit(iter->feature_ref(),
-					GPlatesMaths::ProximityHitDetail::non_null_ptr_type(*hit)));
+					GPlatesMaths::ProximityHitDetail::non_null_ptr_type(
+						hit.get(),
+						GPlatesUtils::NullIntrusivePointerHandler())));
 		}
 	}
 }

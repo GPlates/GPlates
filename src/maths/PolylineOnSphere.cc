@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *  (under the name "PolyLineOnSphere.cc")
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *  (under the name "PolylineOnSphere.cc")
  *
  * This file is part of GPlates.
@@ -51,25 +51,43 @@ GPlatesMaths::PolylineOnSphere::evaluate_segment_endpoint_validity(
 		const PointOnSphere &p1,
 		const PointOnSphere &p2)
 {
-	GreatCircleArc::ParameterStatus s = GreatCircleArc::test_parameter_status(p1, p2);
+	GreatCircleArc::ConstructionParameterValidity cpv =
+			GreatCircleArc::evaluate_construction_parameter_validity(p1, p2);
 
 	// Using a switch-statement, along with GCC's "-Wswitch" option
 	// (implicitly enabled by "-Wall"), will help to ensure that no cases
 	// are missed.
-	switch (s) {
+	switch (cpv) {
 
 	case GreatCircleArc::VALID:
 		// Continue after switch block so that we don't get warnings
 		// about "control reach[ing] end of non-void function".
 		break;
 
-	case GreatCircleArc::INVALID_IDENTICAL_ENDPOINTS:
-		return INVALID_DUPLICATE_SEGMENT_ENDPOINTS;
-
 	case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
 		return INVALID_ANTIPODAL_SEGMENT_ENDPOINTS;
 	}
 	return VALID;
+}
+
+
+const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PolylineOnSphere::get_non_null_pointer() const
+{
+	if (ref_count() == 0) {
+		// There are no intrusive-pointers referencing this class.  Hence, this instance is
+		// either on the stack or on the heap managed by a non-intrusive-pointer mechanism.
+		// 
+		// Either way, we should clone this instance, so the clone can be managed by
+		// intrusive-pointers.
+		return clone_as_polyline();
+	} else {
+		// This instance is already managed by intrusive-pointers, so we can simply return
+		// another intrusive-pointer to this instance.
+		return non_null_ptr_to_const_type(
+				this,
+				GPlatesUtils::NullIntrusivePointerHandler());
+	}
 }
 
 
@@ -85,7 +103,9 @@ GPlatesMaths::PolylineOnSphere::test_proximity(
 	if (this->is_close_to(criteria.test_point(), criteria.closeness_inclusion_threshold(),
 			criteria.latitude_exclusion_threshold(), closeness)) {
 		// OK, this polyline is close to the test point.
-		return make_maybe_null_ptr(PolylineProximityHitDetail::create(*this, closeness.dval()));
+		return make_maybe_null_ptr(PolylineProximityHitDetail::create(
+				this->get_non_null_pointer(),
+				closeness.dval()));
 	} else {
 		return ProximityHitDetail::null;
 	}
@@ -160,40 +180,19 @@ void
 GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
 		seq_type &seq, 
 		const PointOnSphere &p1,
-		const PointOnSphere &p2,
-		bool should_silently_drop_dups)
+		const PointOnSphere &p2)
 {
-	GreatCircleArc::ParameterStatus s = GreatCircleArc::test_parameter_status(p1, p2);
+	GreatCircleArc::ConstructionParameterValidity cpv =
+			GreatCircleArc::evaluate_construction_parameter_validity(p1, p2);
 
 	// Using a switch-statement, along with GCC's "-Wswitch" option
 	// (implicitly enabled by "-Wall"), will help to ensure that no cases
 	// are missed.
-	switch (s) {
+	switch (cpv) {
 
 	case GreatCircleArc::VALID:
 		// Continue after switch.
 		break;
-
-	case GreatCircleArc::INVALID_IDENTICAL_ENDPOINTS:
-		if (should_silently_drop_dups) {
-			// You heard the man:  We should silently drop
-			// duplicates, instead of throwing an exception.
-			return;
-		} else {
-			// The start-point was the same as the end-point
-			// => no segment.
-			std::ostringstream oss;
-			oss << "Attempted to create a polyline line-segment from "
-					<< "duplicate endpoints "
-					<< p1
-					<< " and "
-					<< p2
-					<< ".";
-			throw InvalidPolylineException(oss.str().c_str());
-			// FIXME: Should be
-			// 'PolylineSegmentConstructionException', a derived
-			// class of 'PolylineConstructionException'.
-		}
 
 	 case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
 		{
@@ -215,7 +214,7 @@ GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
 	}
 
 	// We should only have arrived at this point if
-	// GreatCircleArc::test_parameter_status returned
+	// GreatCircleArc::evaluate_construction_parameter_validity returned
 	// GreatCircleArc::VALID.
 	GreatCircleArc segment = GreatCircleArc::create(p1, p2);
 	seq.push_back(segment);

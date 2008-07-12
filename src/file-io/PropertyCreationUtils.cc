@@ -154,7 +154,7 @@ namespace
 		while (iter.first != elem->children_end()) {
 			GPlatesModel::XmlElementNode::non_null_ptr_type target = *iter.second;
 
-			destination.push_back((*creation_fn)(*target));  // creation_fn can throw.
+			destination.push_back((*creation_fn)(target));  // creation_fn can throw.
 			
 			// Increment iter:
 			iter = elem->get_next_child_by_name(prop_name, ++iter.first);
@@ -519,12 +519,6 @@ namespace
 						EXCEPTION_SOURCE);
 				break;
 				
-		case polyline_type::INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
-				// Segments of a polyline cannot be defined between two points which are identical.
-				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::DuplicateAdjacentPointsInPolyline,
-						EXCEPTION_SOURCE);
-				break;
-				
 		case polyline_type::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
 				// Segments of a polyline cannot be defined between two points which are antipodal.
 				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::AntipodalAdjacentPointsInPolyline,
@@ -614,12 +608,6 @@ namespace
 				// Less good - not enough points, although we have already checked for
 				// this earlier in the function. So it must be a problem with coincident points.
 				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InsufficientDistinctPointsInPolygon,
-						EXCEPTION_SOURCE);
-				break;
-				
-		case polygon_type::INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
-				// Segments of a polygon cannot be defined between two points which are identical.
-				throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::DuplicateAdjacentPointsInPolygon,
 						EXCEPTION_SOURCE);
 				break;
 				
@@ -1298,22 +1286,22 @@ GPlatesFileIO::PropertyCreationUtils::create_geometry(
 
 	structural_elem = parent->get_child_by_name(POINT);
 	if (structural_elem) {
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_point(*parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_point(parent));
 	}
 
 	structural_elem = parent->get_child_by_name(LINE_STRING);
 	if (structural_elem) {
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_line_string(*parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_line_string(parent));
 	}
 
 	structural_elem = parent->get_child_by_name(ORIENTABLE_CURVE);
 	if (structural_elem) {
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_orientable_curve(*parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_orientable_curve(parent));
 	}
 	
 	structural_elem = parent->get_child_by_name(POLYGON);
 	if (structural_elem) {
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_gml_polygon(*parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_gml_polygon(parent));
 	}
 	
 	// If we reach this point, we have found no valid children for a gml:_Geometry property value.
@@ -1334,7 +1322,7 @@ GPlatesFileIO::PropertyCreationUtils::create_geometry(
 		// The alternative for now is, just assume the ConstantValue is there for a good reason,
 		// read it, and return it (including whatever it was wrapping, which we should hope was
 		// some geometry!)
-		return GPlatesModel::PropertyValue::non_null_ptr_type(create_constant_value(*parent));
+		return GPlatesModel::PropertyValue::non_null_ptr_type(create_constant_value(parent));
 #endif
 	}
 
@@ -1364,19 +1352,19 @@ GPlatesFileIO::PropertyCreationUtils::create_time_dependent_property_value(
 	structural_elem = parent->get_child_by_name(CONSTANT_VALUE);
 	if (structural_elem) {
 		return GPlatesModel::PropertyValue::non_null_ptr_type(
-				create_constant_value(*parent));
+				create_constant_value(parent));
 	}
 
 	structural_elem = parent->get_child_by_name(IRREGULAR_SAMPLING);
 	if (structural_elem) {
 		return GPlatesModel::PropertyValue::non_null_ptr_type(
-				create_irregular_sampling(*parent));
+				create_irregular_sampling(parent));
 	}
 
 	structural_elem = parent->get_child_by_name(PIECEWISE_AGGREGATION);
 	if (structural_elem) {
 		return GPlatesModel::PropertyValue::non_null_ptr_type(
-				create_piecewise_aggregation(*parent));
+				create_piecewise_aggregation(parent));
 	}
 
 	// Invalid child!
@@ -1403,7 +1391,7 @@ GPlatesFileIO::PropertyCreationUtils::create_interpolation_function(
 	structural_elem = parent->get_child_by_name(FINITE_ROTATION_SLERP);
 	if (structural_elem) {
 		return GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type(
-				create_finite_rotation_slerp(*parent));
+				create_finite_rotation_slerp(parent));
 	}
 
 	// Invalid child!

@@ -42,16 +42,20 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -76,11 +80,12 @@ namespace GPlatesPropertyValues
 				unsigned int number_of_points)
 		{
 			non_null_ptr_type ptr(
-					*(new GpmlOldPlatesHeader(region_number, reference_number, 
+					new GpmlOldPlatesHeader(region_number, reference_number, 
 					string_number, geographic_description, plate_id_number, 
 					age_of_appearance, age_of_disappearance, data_type_code,
 					data_type_code_number, data_type_code_number_additional,
-					conjugate_plate_id_number, colour_code, number_of_points)));
+					conjugate_plate_id_number, colour_code, number_of_points),
+					GPlatesUtils::NullIntrusivePointerHandler());
 					
 			return ptr;
 		}
@@ -89,7 +94,8 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const 
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlOldPlatesHeader(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GpmlOldPlatesHeader(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

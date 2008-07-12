@@ -34,6 +34,7 @@
 
 #include "ReconstructionTreeEdge.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -172,7 +173,8 @@ namespace GPlatesModel
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree>
+		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree,
+				GPlatesUtils::NullIntrusivePointerHandler>
 		build_tree(
 				integer_plate_id_type root_plate_id);
 

@@ -268,22 +268,27 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
+		GPlatesUtils::NullIntrusivePointerHandler>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> p)
+		GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler> p)
 {
 	UnitVector3D rotated_position_vector = r * p->position_vector();
-	GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> rotated_point(
+	GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler> rotated_point(
 			PointOnSphere::create_on_heap(rotated_position_vector));
 	return rotated_point;
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere,
+		GPlatesUtils::NullIntrusivePointerHandler>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> p)
+		GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler> p)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
@@ -294,16 +299,19 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> rotated_polyline(
+	GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler> rotated_polyline(
 			PolylineOnSphere::create_on_heap(rotated_points));
 	return rotated_polyline;
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere,
+		GPlatesUtils::NullIntrusivePointerHandler>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> p)
+		GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler> p)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
@@ -314,7 +322,8 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> rotated_polygon(
+	GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler> rotated_polygon(
 			PolygonOnSphere::create_on_heap(rotated_points));
 	return rotated_polygon;
 }
@@ -325,11 +334,7 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GreatCircleArc &g)
 {
-	PointOnSphere start = r * g.start_point();
-	PointOnSphere end   = r * g.end_point();
-	UnitVector3D rot_axis = r * g.rotation_axis();
-
-	return GreatCircleArc::create(start, end, rot_axis);
+	return GreatCircleArc::create_rotated_arc(r, g);
 }
 
 

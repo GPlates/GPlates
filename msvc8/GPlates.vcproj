@@ -1382,6 +1382,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\utils\NullIntrusivePointerHandler.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\utils\StringFormattingUtils.cc"
 				>
 			</File>

@@ -269,7 +269,9 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_line_str
 					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(recon_geometry->get());
 			if (recon_polyline) {
 				populate_coordinates_from_polyline(coordinate_widgets,
-						GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type(*recon_polyline),
+						GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type(
+								recon_polyline,
+								GPlatesUtils::NullIntrusivePointerHandler()),
 						CoordinatePeriods::RECONSTRUCTED);
 			}
 		}
@@ -340,7 +342,9 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_point(
 					dynamic_cast<const GPlatesMaths::PointOnSphere *>(recon_geometry->get());
 			if (recon_point) {
 				populate_coordinates_from_point(coordinate_widgets,
-						GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(*recon_point),
+						GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(
+								recon_point,
+								GPlatesUtils::NullIntrusivePointerHandler()),
 						CoordinatePeriods::RECONSTRUCTED);
 			}
 		}

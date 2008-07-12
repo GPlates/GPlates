@@ -54,9 +54,11 @@ namespace GPlatesCanvasTools
 
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<QueryFeature>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<QueryFeature,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<QueryFeature> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<QueryFeature,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~QueryFeature()
@@ -75,8 +77,9 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 				GPlatesGui::FeatureFocus &feature_focus)
 		{
-			QueryFeature::non_null_ptr_type ptr(*(new QueryFeature(globe_, globe_canvas_,
-					view_state_, clicked_table_model, fp_dialog_, feature_focus)));
+			QueryFeature::non_null_ptr_type ptr(new QueryFeature(globe_, globe_canvas_,
+					view_state_, clicked_table_model, fp_dialog_, feature_focus),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 

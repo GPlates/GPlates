@@ -40,23 +40,26 @@ namespace GPlatesPropertyValues
 	/**
 	 * This class implements the PropertyValue which corresponds to "gpml:FiniteRotation".
 	 */
-	class GpmlFiniteRotation :
+	class GpmlFiniteRotation:
 			public GPlatesModel::PropertyValue
 	{
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -126,7 +129,9 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlFiniteRotation(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlFiniteRotation(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

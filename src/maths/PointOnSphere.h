@@ -69,10 +69,13 @@ namespace GPlatesMaths
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
+
 
 		/**
 		 * The type used for the reference-count.
@@ -101,7 +104,9 @@ namespace GPlatesMaths
 		const GeometryOnSphere::non_null_ptr_to_const_type
 		clone_as_geometry() const
 		{
-			GeometryOnSphere::non_null_ptr_to_const_type dup(*(new PointOnSphere(*this)));
+			GeometryOnSphere::non_null_ptr_to_const_type dup(
+					new PointOnSphere(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
@@ -115,9 +120,27 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		clone_as_point() const
 		{
-			non_null_ptr_to_const_type dup(*(new PointOnSphere(*this)));
+			non_null_ptr_to_const_type dup(
+					new PointOnSphere(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+
+		/**
+		 * Get a non-null pointer to a const PointOnSphere which points to this instance
+		 * (or a clone of this instance).
+		 *
+		 * (Since geometries are treated as immutable literals in GPlates, a geometry can
+		 * never be modified through a pointer, so there is no reason why it would be
+		 * inappropriate to return a pointer to a clone of this instance rather than a
+		 * pointer to this instance.)
+		 *
+		 * This function will behave correctly regardless of whether this instance is on
+		 * the stack or the heap.
+		 */
+		const non_null_ptr_to_const_type
+		get_non_null_pointer() const;
 
 
 		/**
@@ -175,7 +198,7 @@ namespace GPlatesMaths
 		accept_visitor(
 				ConstGeometryOnSphereVisitor &visitor) const
 		{
-			visitor.visit_point_on_sphere(*this);
+			visitor.visit_point_on_sphere(this->get_non_null_pointer());
 		}
 
 
@@ -247,7 +270,9 @@ namespace GPlatesMaths
 	PointOnSphere::create_on_heap(
 			const UnitVector3D &position_vector_)
 	{
-		non_null_ptr_to_const_type ptr(*(new PointOnSphere(position_vector_)));
+		non_null_ptr_to_const_type ptr(
+				new PointOnSphere(position_vector_),
+				GPlatesUtils::NullIntrusivePointerHandler());
 		return ptr;
 	}
 

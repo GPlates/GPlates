@@ -30,6 +30,7 @@
 
 #include <boost/intrusive_ptr.hpp>
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesMaths
@@ -52,9 +53,11 @@ namespace GPlatesMaths
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<ProximityHitDetail>.
+		 * GPlatesUtils::non_null_intrusive_ptr<ProximityHitDetail,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ProximityHitDetail> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ProximityHitDetail,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * The type used to store the reference-count of an instance of this class.

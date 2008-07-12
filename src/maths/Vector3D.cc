@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,9 +27,10 @@
 
 #include <ostream>
 
-#include "IndeterminateResultException.h"
 #include "Vector3D.h"
 #include "UnitVector3D.h"
+#include "UnableToNormaliseZeroVectorException.h"
+#include "HighPrecision.h"
 
 
 GPlatesMaths::Vector3D::Vector3D(
@@ -44,8 +45,9 @@ GPlatesMaths::UnitVector3D
 GPlatesMaths::Vector3D::get_normalisation() const
 {
 	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
-	if (mag_sqrd <= 0.0)
-		throw IndeterminateResultException("Can't normalise zero vectors!");
+	if (mag_sqrd <= 0.0) {
+		throw UnableToNormaliseZeroVectorException(*this);
+	}
 	real_t scale = 1 / sqrt(mag_sqrd);
 	return UnitVector3D(d_x * scale, d_y * scale, d_z * scale);
 }

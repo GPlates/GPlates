@@ -36,6 +36,8 @@
 #include "RevisionAwareIterator.h"
 #include "WeakReference.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
+
 
 namespace GPlatesModel
 {
@@ -75,15 +77,19 @@ namespace GPlatesModel
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FeatureHandle>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FeatureHandle,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureHandle> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureHandle,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureHandle>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureHandle,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureHandle>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureHandle,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -187,7 +193,8 @@ namespace GPlatesModel
 				const FeatureType &feature_type_,
 				const FeatureId &feature_id_)
 		{
-			non_null_ptr_type ptr(*(new FeatureHandle(feature_type_, feature_id_)));
+			non_null_ptr_type ptr(new FeatureHandle(feature_type_, feature_id_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -201,7 +208,8 @@ namespace GPlatesModel
 				const FeatureType &feature_type_,
 				const RevisionId &revision_id_)
 		{
-			non_null_ptr_type ptr(*(new FeatureHandle(feature_type_, revision_id_)));
+			non_null_ptr_type ptr(new FeatureHandle(feature_type_, revision_id_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -217,7 +225,8 @@ namespace GPlatesModel
 				const FeatureId &feature_id_,
 				const RevisionId &revision_id_)
 		{
-			non_null_ptr_type ptr(*(new FeatureHandle(feature_type_, feature_id_, revision_id_)));
+			non_null_ptr_type ptr(new FeatureHandle(feature_type_, feature_id_, revision_id_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -230,7 +239,8 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(*(new FeatureHandle(*this)));
+			non_null_ptr_type dup(new FeatureHandle(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

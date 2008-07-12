@@ -443,14 +443,13 @@ GPlatesQtWidgets::EulerPoleDialog::fill_circuit_tree()
 	
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type edge = it->second;
 
-		while (edge->parent_edge())
-		{
-			
+		while (edge->parent_edge()) {
 			QTreeWidgetItem *child = new QTreeWidgetItem(item,0);
 			fill_tree_item(child,edge);
 
-			edge = *(edge->parent_edge());
-
+			edge = GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type(
+					edge->parent_edge(),
+					GPlatesUtils::NullIntrusivePointerHandler());
 		}
 		// and finally add the edge from the last plate to the stationary plate
 		QTreeWidgetItem *child = new QTreeWidgetItem(item,0);
