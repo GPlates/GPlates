@@ -28,18 +28,13 @@
 #ifndef GPLATES_MATHS_CONSTGEOMETRYONSPHEREVISITOR_H
 #define GPLATES_MATHS_CONSTGEOMETRYONSPHEREVISITOR_H
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
+#include "PointOnSphere.h"
+#include "PolygonOnSphere.h"
+#include "PolylineOnSphere.h"
 
 
 namespace GPlatesMaths
 {
-	// Forward declarations for the member functions.
-	// Please keep these ordered alphabetically.
-	class PointOnSphere;
-	class PolygonOnSphere;
-	class PolylineOnSphere;
-
 	/**
 	 * This class defines an abstract interface for a Visitor to visit const geometries on the
 	 * sphere.
@@ -77,8 +72,7 @@ namespace GPlatesMaths
 		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-						GPlatesUtils::NullIntrusivePointerHandler> point_on_sphere)
+				PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{  }
 
 		/**
@@ -87,8 +81,7 @@ namespace GPlatesMaths
 		virtual
 		void
 		visit_polygon_on_sphere(
-				GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-						GPlatesUtils::NullIntrusivePointerHandler> polygon_on_sphere)
+				PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{  }
 
 		/**
@@ -97,8 +90,7 @@ namespace GPlatesMaths
 		virtual
 		void
 		visit_polyline_on_sphere(
-				GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-						GPlatesUtils::NullIntrusivePointerHandler> polyline_on_sphere)
+				PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{  }
 
 	private:

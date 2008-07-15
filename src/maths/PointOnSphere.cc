@@ -33,6 +33,7 @@
 #include "PointLiesOnGreatCircleArc.h"
 #include "PointProximityHitDetail.h"
 #include "ProximityCriteria.h"
+#include "ConstGeometryOnSphereVisitor.h"
 
 
 const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::north_pole =
@@ -75,6 +76,14 @@ GPlatesMaths::PointOnSphere::test_proximity(
 	} else {
 		return ProximityHitDetail::null;
 	}
+}
+
+
+void
+GPlatesMaths::PointOnSphere::accept_visitor(
+		ConstGeometryOnSphereVisitor &visitor) const
+{
+	visitor.visit_point_on_sphere(this->get_non_null_pointer());
 }
 
 

@@ -61,8 +61,7 @@ namespace GPlatesGui
 		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
-						GPlatesUtils::NullIntrusivePointerHandler> point_on_sphere)
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			d_canvas_ptr->draw_point(point_on_sphere, d_colour);
 		}
@@ -73,8 +72,7 @@ namespace GPlatesGui
 		virtual
 		void
 		visit_polygon_on_sphere(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere,
-						GPlatesUtils::NullIntrusivePointerHandler> polygon_on_sphere)
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
 			// FIXME:  We need a 'draw_polygon' function, which will additionally need
 			// to handle filled polygons.
@@ -86,8 +84,7 @@ namespace GPlatesGui
 		virtual
 		void
 		visit_polyline_on_sphere(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere,
-						GPlatesUtils::NullIntrusivePointerHandler> polyline_on_sphere)
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{
 			d_canvas_ptr->draw_polyline(polyline_on_sphere, d_colour);
 		}

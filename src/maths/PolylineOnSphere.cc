@@ -36,6 +36,7 @@
 #include "PolylineOnSphere.h"
 #include "PolylineProximityHitDetail.h"
 #include "ProximityCriteria.h"
+#include "ConstGeometryOnSphereVisitor.h"
 #include "HighPrecision.h"
 #include "InvalidPolylineException.h"
 #include "global/InvalidParametersException.h"
@@ -109,6 +110,14 @@ GPlatesMaths::PolylineOnSphere::test_proximity(
 	} else {
 		return ProximityHitDetail::null;
 	}
+}
+
+
+void
+GPlatesMaths::PolylineOnSphere::accept_visitor(
+		ConstGeometryOnSphereVisitor &visitor) const
+{
+	visitor.visit_polyline_on_sphere(this->get_non_null_pointer());
 }
 
 

@@ -28,10 +28,6 @@
 #ifndef GPLATES_MATHS_GEOMETRYONSPHERE_H
 #define GPLATES_MATHS_GEOMETRYONSPHERE_H
 
-// Even though we could make do with a forward declaration inside this header, every derived class
-// of 'GeometryOnSphere' will need to #include "ConstGeometryOnSphereVisitor.h" anyway, so we may
-// as well include them here.
-#include "ConstGeometryOnSphereVisitor.h"
 #include "ProximityHitDetail.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
@@ -40,6 +36,7 @@
 namespace GPlatesMaths
 {
 	class ProximityCriteria;
+	class ConstGeometryOnSphereVisitor;
 
 
 	/**

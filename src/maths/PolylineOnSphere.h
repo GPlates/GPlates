@@ -591,10 +591,7 @@ namespace GPlatesMaths
 		virtual
 		void
 		accept_visitor(
-				ConstGeometryOnSphereVisitor &visitor) const
-		{
-			visitor.visit_polyline_on_sphere(this->get_non_null_pointer());
-		}
+				ConstGeometryOnSphereVisitor &visitor) const;
 
 
 		/**
