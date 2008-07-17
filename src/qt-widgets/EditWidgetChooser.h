@@ -95,6 +95,16 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
+		visit_gml_line_string(
+				GPlatesPropertyValues::GmlLineString &gml_line_string);
+
+		virtual
+		void
+		visit_gml_orientable_curve(
+				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
+
+		virtual
+		void
 		visit_gml_time_instant(
 				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
 

@@ -193,13 +193,42 @@ namespace GPlatesGui
 		set_default_resize_modes(
 				QHeaderView &header);
 			
+		/**
+		 * Searches the table for the given FeatureHandle::weak_ref.
+		 * If found, returns a QModelIndex that can be used by the
+		 * ViewportWindow to highlight the appropriate row in the
+		 * QTableView (for instance).
+		 *
+		 * There is no guarantee that the FeatureHandle::weak_ref will
+		 * be in the FeatureTableModel of course; in these situations,
+		 * an invalid QModelIndex is returned, which can be tested for
+		 * via the @a .isValid() method.
+		 */
+		QModelIndex
+		get_index_for_feature(
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
 	public slots:
 		
+		/**
+		 * ViewportWindow connects the QTableView's selection model's change
+		 * event to this slot, so that the model can use it to focus the
+		 * corresponding feature.
+		 */
 		void
 		handle_selection_change(
 				const QItemSelection &selected,
 				const QItemSelection &deselected);
 	
+		/**
+		 * Lets the model know that a feature has been modified. The model
+		 * will test to see if any of the rows it is currently keeping track
+		 * of correspond to that feature, and emit update events appropriately.
+		 *
+		 * Internally, the model connects FeatureFocus::focused_feature_modified()
+		 * to this slot, since the only changes to features will usually be changes
+		 * to whatever is currently focused.
+		 */
 		void
 		handle_feature_modified(
 				GPlatesModel::FeatureHandle::weak_ref modified_feature_ref);

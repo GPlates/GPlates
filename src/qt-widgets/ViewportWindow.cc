@@ -33,10 +33,13 @@
 #include <QStringList>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QProgressBar>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
 #include "ShapefilePropertyMapper.h"
+#include "TaskPanel.h"
+#include "ActionButtonBox.h"
 
 #include "global/Exception.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
@@ -416,100 +419,46 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_manage_feature_collections_dialog(*this, this),
 	d_animate_dialog_has_been_shown(false),
 	d_euler_pole_dialog(*this, this),
+	d_task_panel_ptr(new TaskPanel(d_feature_focus, this)),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path("")
 {
 	setupUi(this);
 
 	d_canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
-	
-#if 0
-	QObject::connect(d_canvas_ptr, SIGNAL(items_selected()), this, SLOT(selection_handler()));
-	QObject::connect(d_canvas_ptr, SIGNAL(left_mouse_button_clicked()), this, SLOT(mouse_click_handler()));
-#endif
-	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
-			&d_reconstruction_view_widget, SLOT(activate_time_spinbox()));
-	QObject::connect(&d_reconstruction_view_widget, SIGNAL(reconstruction_time_changed(double)),
-			this, SLOT(reconstruct_to_time(double)));
 
-	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(triggered()),
-			this, SLOT(pop_up_specify_fixed_plate_dialog()));
+	// Connect all the Signal/Slot relationships of ViewportWindow's
+	// toolbar buttons and menu items.
+	connect_menu_actions();
+	
+	// Set up an emergency context menu to control QDockWidgets even if
+	// they're no longer behaving properly.
+	set_up_dock_context_menus();
+	
+	// FIXME: Set up the Task Panel in a more detailed fashion here.
+	d_reconstruction_view_widget.insert_task_panel(d_task_panel_ptr);
+	set_up_task_panel_actions();
+	
+	// Disable the feature-specific Actions as there is no currently focused feature to act on.
+	enable_or_disable_feature_actions(d_feature_focus.focused_feature());
+	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
+			this, SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
+
+	// Set up the Specify Fixed Plate dialog.
 	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
 			this, SLOT(reconstruct_with_root(unsigned long)));
-
-	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
-			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
-	QObject::connect(action_Move_Camera_Up, SIGNAL(triggered()),
-			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_up()));
-	QObject::connect(action_Move_Camera_Down, SIGNAL(triggered()),
-			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_down()));
-	QObject::connect(action_Move_Camera_Left, SIGNAL(triggered()),
-			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_left()));
-	QObject::connect(action_Move_Camera_Right, SIGNAL(triggered()),
-			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_right()));
-	QObject::connect(action_Rotate_Camera_Clockwise, SIGNAL(triggered()),
-			&(d_canvas_ptr->globe().orientation()), SLOT(rotate_camera_clockwise()));
-	QObject::connect(action_Rotate_Camera_Anticlockwise, SIGNAL(triggered()),
-			&(d_canvas_ptr->globe().orientation()), SLOT(rotate_camera_anticlockwise()));
-	QObject::connect(action_Reset_Camera_Orientation, SIGNAL(triggered()),
-			&(d_canvas_ptr->globe().orientation()), SLOT(orient_poles_vertically()));
-
-	QObject::connect(action_Animate, SIGNAL(triggered()),
-			this, SLOT(pop_up_animate_dialog()));
+	
+	// Set up the Animate dialog.
 	QObject::connect(&d_animate_dialog, SIGNAL(current_time_changed(double)),
 			&d_reconstruction_view_widget, SLOT(set_reconstruction_time(double)));
 
-	QObject::connect(action_Increment_Reconstruction_Time, SIGNAL(triggered()),
-			&d_reconstruction_view_widget, SLOT(increment_reconstruction_time()));
-	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(triggered()),
-			&d_reconstruction_view_widget, SLOT(decrement_reconstruction_time()));
+	// Set up the Reconstruction View widget.
+	setCentralWidget(&d_reconstruction_view_widget);
 
-	QObject::connect(action_Reconstruction_Tree_and_Poles, SIGNAL(triggered()),
-			this, SLOT(pop_up_euler_pole_dialog()));
-	
-	QObject::connect(action_Set_Zoom, SIGNAL(triggered()),
-			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
-
-	QObject::connect(action_Zoom_In, SIGNAL(triggered()),
-			&(d_canvas_ptr->viewport_zoom()), SLOT(zoom_in()));
-	QObject::connect(action_Zoom_Out, SIGNAL(triggered()),
-			&(d_canvas_ptr->viewport_zoom()), SLOT(zoom_out()));
-	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
-			&(d_canvas_ptr->viewport_zoom()), SLOT(reset_zoom()));
-	
-	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
-			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
-
-	QObject::connect(action_Show_Rasters, SIGNAL(triggered()),
-			this, SLOT(enable_raster_display()));
-
-	QObject::connect(action_About, SIGNAL(triggered()),
-			this, SLOT(pop_up_about_dialog()));
-
+	QObject::connect(&d_reconstruction_view_widget, SIGNAL(reconstruction_time_changed(double)),
+			this, SLOT(reconstruct_to_time(double)));
 	QObject::connect(d_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
 			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
-
-	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
-			this, SLOT(choose_drag_globe_tool()));
-	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
-			this, SLOT(choose_zoom_globe_tool()));
-	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
-			this, SLOT(choose_query_feature_tool()));
-	QObject::connect(action_Edit_Feature, SIGNAL(triggered()),
-			this, SLOT(choose_edit_feature_tool()));
-
-	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
-			&d_manage_feature_collections_dialog, SLOT(open_file()));
-	QObject::connect(action_Open_Global_Raster, SIGNAL(triggered()),
-			this, SLOT(open_global_raster()));
-	QObject::connect(action_Open_Time_Dependent_Global_Raster_Set, SIGNAL(triggered()),
-			this, SLOT(open_time_dependent_global_raster_set()));
-	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
-			this, SLOT(pop_up_manage_feature_collections_dialog()));
-	QObject::connect(action_File_Errors, SIGNAL(triggered()),
-			this, SLOT(pop_up_read_errors_dialog()));
-
-	setCentralWidget(&d_reconstruction_view_widget);
 
 	// Render everything on the screen in present-day positions.
 	d_canvas_ptr->clear_data();
@@ -517,6 +466,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_active_reconstruction_files, 0.0, d_recon_root);
 	d_canvas_ptr->update_canvas();
 
+	// Set up the Clicked table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
 	tab_list_clicked->setModel(d_feature_table_model_ptr);
 	tab_list_clicked->verticalHeader()->hide();
@@ -525,16 +475,23 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	tab_list_clicked->horizontalHeader()->setMinimumSectionSize(60);
 	tab_list_clicked->horizontalHeader()->setMovable(true);
 	tab_list_clicked->horizontalHeader()->setHighlightSections(false);
+	// Hide the "Description" column - we don't need it for the Clicked table.
+	tab_list_clicked->setColumnHidden(5, true);
+	// When the user selects a row of the table, we should focus that feature.
 	QObject::connect(tab_list_clicked->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+	// When the currently focused feature has changed, we should locate the appropriate
+	// table row and select it.
+	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
+			this, SLOT(highlight_clicked_feature_table(GPlatesModel::FeatureHandle::weak_ref)));
 
 	// If the focus is modified, we may need to reconstruct to update the view.
 	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref)),
 			this, SLOT(reconstruct()));
 
-
+	// Set up the Canvas Tools.
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
 	d_canvas_tool_choice_ptr =
 			new GPlatesGui::CanvasToolChoice(
@@ -543,17 +500,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					*this,
 					*d_feature_table_model_ptr,
 					d_feature_properties_dialog,
-					d_feature_focus);
+					d_feature_focus,
+					d_task_panel_ptr->digitisation_widget());
 
-	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
-			d_canvas_tool_choice_ptr, SLOT(choose_reorient_globe_tool()));
-	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
-			d_canvas_tool_choice_ptr, SLOT(choose_zoom_globe_tool()));
-	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
-			d_canvas_tool_choice_ptr, SLOT(choose_query_feature_tool()));
-	QObject::connect(action_Edit_Feature, SIGNAL(triggered()),
-			d_canvas_tool_choice_ptr, SLOT(choose_edit_feature_tool()));
-
+	// Set up the Canvas Tool Adapter for handling globe click and drag events.
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
 	d_canvas_tool_adapter_ptr = new GPlatesGui::CanvasToolAdapter(*d_canvas_tool_choice_ptr);
 
@@ -581,8 +531,192 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					const GPlatesMaths::PointOnSphere &, bool,
 					const GPlatesMaths::PointOnSphere &, bool,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
+	
+	// Add a progress bar to the status bar (Hidden until needed).
+	QProgressBar *progress_bar = new QProgressBar(this);
+	progress_bar->setMaximumWidth(100);
+	progress_bar->hide();
+	statusBar()->addPermanentWidget(progress_bar);
+}
 
-	QObject::connect(action_Quit, SIGNAL(triggered()), this, SLOT(close()));
+
+void	
+GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
+{
+	GlobeCanvas *canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
+	// If you want to add a new menu action, the steps are:
+	// 0. Open ViewportWindowUi.ui in the Designer.
+	// 1. Create a QAction in the Designer's Action Editor, called action_Something.
+	// 2. Assign icons, tooltips, and shortcuts as necessary.
+	// 3. Drag this action to a menu.
+	// 4. Add code for the triggered() signal your action generates here.
+	//    Please keep this function sorted in the same order as menu items appear.
+
+	// Main Tools:
+	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
+			this, SLOT(choose_drag_globe_tool()));
+	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
+			this, SLOT(choose_zoom_globe_tool()));
+	QObject::connect(action_Click_Geometry, SIGNAL(triggered()),
+			this, SLOT(choose_click_geometry_tool()));
+	QObject::connect(action_Digitise_New_Polyline, SIGNAL(triggered()),
+			this, SLOT(choose_digitise_polyline_tool()));
+	QObject::connect(action_Digitise_New_MultiPoint, SIGNAL(triggered()),
+			this, SLOT(choose_digitise_multipoint_tool()));
+	QObject::connect(action_Digitise_New_Polygon, SIGNAL(triggered()),
+			this, SLOT(choose_digitise_polygon_tool()));
+
+	// File Menu:
+	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
+			&d_manage_feature_collections_dialog, SLOT(open_file()));
+	QObject::connect(action_Open_Global_Raster, SIGNAL(triggered()),
+			this, SLOT(open_global_raster()));
+	QObject::connect(action_Open_Time_Dependent_Global_Raster_Set, SIGNAL(triggered()),
+			this, SLOT(open_time_dependent_global_raster_set()));
+	QObject::connect(action_File_Errors, SIGNAL(triggered()),
+			this, SLOT(pop_up_read_errors_dialog()));
+	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
+			this, SLOT(pop_up_manage_feature_collections_dialog()));
+	// ----
+	QObject::connect(action_Quit, SIGNAL(triggered()),
+			this, SLOT(close()));
+	
+	// Edit Menu:
+	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
+			&d_feature_properties_dialog, SLOT(choose_query_widget_and_open()));
+	QObject::connect(action_Edit_Feature, SIGNAL(triggered()),
+			&d_feature_properties_dialog, SLOT(choose_edit_widget_and_open()));
+	// FIXME: The following Edit Menu items are all unimplemented:
+	action_Delete_Feature->setDisabled(true);
+
+	// Reconstruction Menu:
+	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
+			&d_reconstruction_view_widget, SLOT(activate_time_spinbox()));
+	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(triggered()),
+			this, SLOT(pop_up_specify_fixed_plate_dialog()));
+	// ----
+	QObject::connect(action_Increment_Reconstruction_Time, SIGNAL(triggered()),
+			&d_reconstruction_view_widget, SLOT(increment_reconstruction_time()));
+	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(triggered()),
+			&d_reconstruction_view_widget, SLOT(decrement_reconstruction_time()));
+	// ----
+	QObject::connect(action_Animate, SIGNAL(triggered()),
+			this, SLOT(pop_up_animate_dialog()));
+	
+	// View Menu:
+	QObject::connect(action_Show_Rasters, SIGNAL(triggered()),
+			this, SLOT(enable_raster_display()));
+	// ----
+	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
+			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
+	QObject::connect(action_Move_Camera_Up, SIGNAL(triggered()),
+			&(canvas_ptr->globe().orientation()), SLOT(move_camera_up()));
+	QObject::connect(action_Move_Camera_Down, SIGNAL(triggered()),
+			&(canvas_ptr->globe().orientation()), SLOT(move_camera_down()));
+	QObject::connect(action_Move_Camera_Left, SIGNAL(triggered()),
+			&(canvas_ptr->globe().orientation()), SLOT(move_camera_left()));
+	QObject::connect(action_Move_Camera_Right, SIGNAL(triggered()),
+			&(canvas_ptr->globe().orientation()), SLOT(move_camera_right()));
+	// ----
+	QObject::connect(action_Rotate_Camera_Clockwise, SIGNAL(triggered()),
+			&(canvas_ptr->globe().orientation()), SLOT(rotate_camera_clockwise()));
+	QObject::connect(action_Rotate_Camera_Anticlockwise, SIGNAL(triggered()),
+			&(canvas_ptr->globe().orientation()), SLOT(rotate_camera_anticlockwise()));
+	QObject::connect(action_Reset_Camera_Orientation, SIGNAL(triggered()),
+			&(canvas_ptr->globe().orientation()), SLOT(orient_poles_vertically()));
+	// ----
+	QObject::connect(action_Set_Zoom, SIGNAL(triggered()),
+			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
+	QObject::connect(action_Zoom_In, SIGNAL(triggered()),
+			&(canvas_ptr->viewport_zoom()), SLOT(zoom_in()));
+	QObject::connect(action_Zoom_Out, SIGNAL(triggered()),
+			&(canvas_ptr->viewport_zoom()), SLOT(zoom_out()));
+	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
+			&(canvas_ptr->viewport_zoom()), SLOT(reset_zoom()));
+	// ----
+	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
+			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
+	
+	// Tools Menu:
+	QObject::connect(action_Reconstruction_Tree_and_Poles, SIGNAL(triggered()),
+			this, SLOT(pop_up_euler_pole_dialog()));
+	
+	// Help Menu:
+	QObject::connect(action_About, SIGNAL(triggered()),
+			this, SLOT(pop_up_about_dialog()));
+}
+
+
+void	
+GPlatesQtWidgets::ViewportWindow::set_up_task_panel_actions()
+{
+	ActionButtonBox &feature_actions = d_task_panel_ptr->feature_action_button_box();
+
+	// If you want to add a new action button, the steps are:
+	// 0. Open ViewportWindowUi.ui in the Designer.
+	// 1. Create a QAction in the Designer's Action Editor, called action_Something.
+	// 2. Assign icons, tooltips, and shortcuts as necessary.
+	// 3. Drag this action to a menu (optional).
+	// 4. Add code for the triggered() signal your action generates,
+	//    see ViewportWindow::connect_menu_actions().
+	// 5. Add a new line of code here adding the QAction to the ActionButtonBox.
+
+	feature_actions.add_action(action_Query_Feature);
+	feature_actions.add_action(action_Edit_Feature);
+	// FIXME: The following are just to eat up space and see how things will look.
+	// Remove for a release or a merge.
+	feature_actions.add_action(action_Delete_Feature);
+	feature_actions.add_action(action_Delete_Feature);
+	feature_actions.add_action(action_Delete_Feature);
+	feature_actions.add_action(action_Delete_Feature);
+	feature_actions.add_action(action_Delete_Feature);
+	feature_actions.add_action(action_Delete_Feature);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::set_up_dock_context_menus()
+{
+	// Search Results Dock:
+	dock_search_results->addAction(action_Information_Dock_At_Top);
+	dock_search_results->addAction(action_Information_Dock_At_Bottom);
+	QObject::connect(action_Information_Dock_At_Top, SIGNAL(triggered()),
+			this, SLOT(dock_search_results_at_top()));
+	QObject::connect(action_Information_Dock_At_Bottom, SIGNAL(triggered()),
+			this, SLOT(dock_search_results_at_bottom()));
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::dock_search_results_at_top()
+{
+	dock_search_results->setFloating(false);
+	addDockWidget(Qt::TopDockWidgetArea, dock_search_results);
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::dock_search_results_at_bottom()
+{
+	dock_search_results->setFloating(false);
+	addDockWidget(Qt::BottomDockWidgetArea, dock_search_results);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::highlight_clicked_feature_table(
+		GPlatesModel::FeatureHandle::weak_ref new_feature_ref)
+{
+	QModelIndex idx = d_feature_table_model_ptr->get_index_for_feature(new_feature_ref);
+	
+	// The specified feature might not be in the table model. If it is,
+	// we can highlight it (clearing any previous row selection first).
+	if (idx.isValid()) {
+		tab_list_clicked->selectionModel()->clear();
+		tab_list_clicked->selectionModel()->select(idx,
+				QItemSelectionModel::Select |
+				QItemSelectionModel::Current |
+				QItemSelectionModel::Rows);
+	}
 }
 
 
@@ -712,6 +846,7 @@ GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 {
 	uncheck_all_tools();
 	action_Drag_Globe->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_reorient_globe_tool();
 }
 
 
@@ -720,22 +855,47 @@ GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
 {
 	uncheck_all_tools();
 	action_Zoom_Globe->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_zoom_globe_tool();
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::choose_query_feature_tool()
+GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
 {
 	uncheck_all_tools();
-	action_Query_Feature->setChecked(true);
+	action_Click_Geometry->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_click_geometry_tool();
+	d_task_panel_ptr->choose_feature_tab();
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::choose_edit_feature_tool()
+GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 {
 	uncheck_all_tools();
-	action_Edit_Feature->setChecked(true);
+	action_Digitise_New_Polyline->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
+	d_task_panel_ptr->choose_digitisation_tab();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
+{
+	uncheck_all_tools();
+	action_Digitise_New_MultiPoint->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
+	d_task_panel_ptr->choose_digitisation_tab();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_digitise_polygon_tool()
+{
+	uncheck_all_tools();
+	action_Digitise_New_Polygon->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
+	d_task_panel_ptr->choose_digitisation_tab();
 }
 
 
@@ -744,9 +904,32 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 {
 	action_Drag_Globe->setChecked(false);
 	action_Zoom_Globe->setChecked(false);
-	action_Query_Feature->setChecked(false);
-	action_Edit_Feature->setChecked(false);
+	action_Click_Geometry->setChecked(false);
+	action_Digitise_New_Polyline->setChecked(false);
+	action_Digitise_New_MultiPoint->setChecked(false);
+	action_Digitise_New_Polygon->setChecked(false);
 }
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
+		GPlatesModel::FeatureHandle::weak_ref focused_feature)
+{
+	bool enable = focused_feature.is_valid();
+	action_Query_Feature->setEnabled(enable);
+	action_Edit_Feature->setEnabled(enable);
+#if 0
+	// FIXME: Delete Feature is unimplemented and should stay disabled for now.
+	action_Delete_Feature->setEnabled(enable);
+#endif
+#if 0
+	// FIXME: Add to Selection is unimplemented and should stay disabled for now.
+	// FIXME: To handle the "Remove from Selection", "Clear Selection" actions,
+	// we may want to modify this method to also test for a nonempty selection of features.
+	action_Add_Feature_To_Selection->setEnabled(enable);
+#endif
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()

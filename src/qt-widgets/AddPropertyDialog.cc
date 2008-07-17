@@ -30,6 +30,8 @@
 
 #include "AddPropertyDialog.h"
 #include "EditFeaturePropertiesWidget.h"
+#include "ViewportWindow.h"
+#include "InvalidPropertyValueException.h"
 
 #include "model/PropertyName.h"
 #include "property-values/GpmlConstantValue.h"
@@ -280,10 +282,12 @@ namespace
 
 GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
 		GPlatesQtWidgets::EditFeaturePropertiesWidget &edit_widget,
+		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		QWidget *parent_):
 	QDialog(parent_),
 	d_edit_feature_properties_widget_ptr(&edit_widget),
-	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(this))
+	d_view_state_ptr(&view_state_),
+	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(view_state_, this))
 {
 	setupUi(this);
 	
@@ -381,19 +385,28 @@ GPlatesQtWidgets::AddPropertyDialog::add_property()
 		if (property_name) {
 		
 			// If the name was something we understood, create the property value too.
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value =
-					d_edit_widget_group_box_ptr->create_property_value_from_widget();
-			
-			property_value = add_time_dependency_if_necessary(
-					combobox_add_property_name->currentText(),
-					combobox_add_property_type->currentText(),
-					*property_name,
-					property_value);
-					
-			// Do the adding via EditFeaturePropertiesWidget, so that most of
-			// the model-editing code is in one place.
-			d_edit_feature_properties_widget_ptr->append_property_value_to_feature(
-					property_value, *property_name);
+			try {
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+						d_edit_widget_group_box_ptr->create_property_value_from_widget();
+				
+				property_value = add_time_dependency_if_necessary(
+						combobox_add_property_name->currentText(),
+						combobox_add_property_type->currentText(),
+						*property_name,
+						property_value);
+				
+				// Do the adding via EditFeaturePropertiesWidget, so that most of
+				// the model-editing code is in one place.
+				d_edit_feature_properties_widget_ptr->append_property_value_to_feature(
+						property_value, *property_name);
+
+			} catch (InvalidPropertyValueException &e) {
+				// Not enough points for a constructable polyline, etc.
+				QMessageBox::warning(this, tr("Property Value Invalid"),
+						tr("The property can not be added: %1").arg(e.reason()),
+						QMessageBox::Ok);
+				return;
+			}
 		} else {
 			// User supplied an incomprehensible property name.
 			QMessageBox::warning(this, tr("Property Name Invalid"),

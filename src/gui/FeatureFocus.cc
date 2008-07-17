@@ -34,6 +34,10 @@ GPlatesGui::FeatureFocus::set_focused_feature(
 		unset_focused_feature();
 		return;
 	}
+	if (d_feature_ref == new_feature_ref) {
+		// Avoid infinite signal/slot loops like the plague!
+		return;
+	}
 	d_feature_ref = new_feature_ref;
 	emit focused_feature_changed(d_feature_ref);
 }

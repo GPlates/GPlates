@@ -7,10 +7,12 @@ INCLUDES		= -I$(top_srcdir)/src
 noinst_LTLIBRARIES	= libqt_widgets.la
 libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	AbstractEditWidget.cc moc_AbstractEditWidget.cc \
+	ActionButtonBox.cc moc_ActionButtonBox.cc \
 	AddPropertyDialog.cc AddPropertyDialogUi.h \
 	moc_AddPropertyDialog.cc \
 	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc \
 	ApplicationState.cc \
+	DigitisationWidget.cc DigitisationWidgetUi.h moc_DigitisationWidget.cc \
 	EditAngleWidget.cc EditAngleWidgetUi.h \
 	moc_EditAngleWidget.cc \
 	EditBooleanWidget.cc EditBooleanWidgetUi.h \
@@ -23,6 +25,10 @@ libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	moc_EditFeatureGeometriesWidget.cc \
 	EditFeaturePropertiesWidget.cc EditFeaturePropertiesWidgetUi.h \
 	moc_EditFeaturePropertiesWidget.cc \
+	EditGeometryWidget.cc EditGeometryWidgetUi.h \
+	moc_EditGeometryWidget.cc \
+	EditGeometryActionWidget.cc EditGeometryActionWidgetUi.h \
+	moc_EditGeometryActionWidget.cc \
 	EditIntegerWidget.cc EditIntegerWidgetUi.h \
 	moc_EditIntegerWidget.cc \
 	EditOldPlatesHeaderWidget.cc EditOldPlatesHeaderWidgetUi.h \
@@ -40,6 +46,8 @@ libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	EditWidgetChooser.cc \
 	EditWidgetGroupBox.cc moc_EditWidgetGroupBox.cc \
 	EulerPoleDialog.cc EulerPoleDialogUi.h moc_EulerPoleDialog.cc \
+	ExportCoordinatesDialog.cc ExportCoordinatesDialogUi.h moc_ExportCoordinatesDialog.cc \
+	FeatureSummaryWidget.cc FeatureSummaryWidgetUi.h moc_FeatureSummaryWidget.cc \
 	FeaturePropertiesDialog.cc FeaturePropertiesDialogUi.h \
 	moc_FeaturePropertiesDialog.cc \
 	GlobeCanvas.cc moc_GlobeCanvas.cc \
@@ -66,6 +74,7 @@ libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	ShapefilePropertyMapper.cc \
 	SpecifyFixedPlateDialog.cc SpecifyFixedPlateDialogUi.h \
 	moc_SpecifyFixedPlateDialog.cc \
+	TaskPanel.cc TaskPanelUi.h moc_TaskPanel.cc \
 	ViewportWindow.cc ViewportWindowUi.h moc_ViewportWindow.cc 
 
 
@@ -74,18 +83,23 @@ CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				QueryFeaturePropertiesWidgetUi.h ReconstructionViewWidgetUi.h \
 				ReadErrorAccumulationDialogUi.h ManageFeatureCollectionsDialogUi.h \
 				ManageFeatureCollectionsActionWidgetUi.h SetCameraViewpointDialogUi.h \
+				DigitisationWidgetUi.h \
 				EditFeaturePropertiesWidgetUi.h EditTimePeriodWidgetUi.h \
 				EditOldPlatesHeaderWidgetUi.h AddPropertyDialogUi.h \
 				EditStringWidgetUi.h EditEnumerationWidgetUi.h \
 				EditTimeInstantWidgetUi.h EditPlateIdWidgetUi.h \
+				EditGeometryWidgetUi.h EditGeometryActionWidgetUi.h \
 				EditIntegerWidgetUi.h EditDoubleWidgetUi.h \
 				EditBooleanWidgetUi.h EditPolarityChronIdWidgetUi.h \
 				EditAngleWidgetUi.h \
+				EulerPoleDialogUi.h \
+				ExportCoordinatesDialogUi.h \
+				FeatureSummaryWidgetUi.h \
 				FeaturePropertiesDialogUi.h EditFeatureGeometriesWidgetUi.h \
 				ShapefileAttributeMapperDialogUi.h \
 				ShapefileAttributeRemapperDialogUi.h \
 				ShapefileAttributeWidgetUi.h \
-				EulerPoleDialogUi.h
+				TaskPanelUi.h \
 				moc_*.cc
 
 # This rule lets GNU make create any moc_*.cc from the equivalent *.h

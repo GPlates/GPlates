@@ -38,6 +38,7 @@ namespace GPlatesQtWidgets
 	class GlobeCanvas;
 	class ViewportWindow;
 	class FeaturePropertiesDialog;
+	class DigitisationWidget;
 }
 
 namespace GPlatesGui
@@ -67,7 +68,8 @@ namespace GPlatesGui
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
-				GPlatesGui::FeatureFocus &feature_focus);
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_);
 
 		~CanvasToolChoice()
 		{  }
@@ -92,15 +94,27 @@ namespace GPlatesGui
 		}
 
 		void
-		choose_query_feature_tool()
+		choose_click_geometry_tool()
 		{
-			change_tool_if_necessary(d_query_feature_tool_ptr);
+			change_tool_if_necessary(d_click_geometry_tool_ptr);
 		}
 
 		void
-		choose_edit_feature_tool()
+		choose_digitise_polyline_tool()
 		{
-			change_tool_if_necessary(d_edit_feature_tool_ptr);
+			change_tool_if_necessary(d_digitise_polyline_tool_ptr);
+		}
+
+		void
+		choose_digitise_multipoint_tool()
+		{
+			change_tool_if_necessary(d_digitise_multipoint_tool_ptr);
+		}
+
+		void
+		choose_digitise_polygon_tool()
+		{
+			change_tool_if_necessary(d_digitise_polygon_tool_ptr);
 		}
 
 	private:
@@ -115,14 +129,24 @@ namespace GPlatesGui
 		CanvasTool::non_null_ptr_type d_zoom_globe_tool_ptr;
 
 		/**
-		 * This is the QueryFeature tool which the user may choose.
+		 * This is the ClickGeometry tool which the user may choose.
 		 */
-		CanvasTool::non_null_ptr_type d_query_feature_tool_ptr;
+		CanvasTool::non_null_ptr_type d_click_geometry_tool_ptr;
 
 		/**
-		 * This is the EditFeature tool which the user may choose.
+		 * This is the DigitiseGeometry (Polyline) tool which the user may choose.
 		 */
-		CanvasTool::non_null_ptr_type d_edit_feature_tool_ptr;
+		CanvasTool::non_null_ptr_type d_digitise_polyline_tool_ptr;
+
+		/**
+		 * This is the DigitiseGeometry (MultiPoint) tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_digitise_multipoint_tool_ptr;
+
+		/**
+		 * This is the DigitiseGeometry (Polygon) tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_digitise_polygon_tool_ptr;
 
 		/**
 		 * The current choice of CanvasTool.

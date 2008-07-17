@@ -38,6 +38,7 @@
 #include "qt-widgets/EditOldPlatesHeaderWidget.h"
 #include "qt-widgets/EditDoubleWidget.h"
 #include "qt-widgets/EditEnumerationWidget.h"
+#include "qt-widgets/EditGeometryWidget.h"
 #include "qt-widgets/EditIntegerWidget.h"
 #include "qt-widgets/EditPlateIdWidget.h"
 #include "qt-widgets/EditPolarityChronIdWidget.h"
@@ -48,6 +49,8 @@
 
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+
 	/**
 	 * A collection of pre-allocated property edit widgets, which are hidden/shown
 	 * depending on which edit widget needs to be displayed.
@@ -74,6 +77,7 @@ namespace GPlatesQtWidgets
 		
 		explicit
 		EditWidgetGroupBox(
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 		
 		virtual
@@ -235,6 +239,13 @@ namespace GPlatesQtWidgets
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
+		activate_edit_line_string_widget(
+				GPlatesPropertyValues::GmlLineString &gml_line_string);
+		
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 */
+		void
 		activate_edit_integer_widget(
 				GPlatesPropertyValues::XsInteger &xs_integer);
 
@@ -272,6 +283,17 @@ namespace GPlatesQtWidgets
 		void
 		activate_edit_boolean_widget(
 				GPlatesPropertyValues::XsBoolean &xs_boolean);
+		
+		
+		/**
+		 * Obtain a reference to the ViewState this EditWidgetGroupBox knows about.
+		 * Used for e.g. obtaining the current reconstruction time.
+		 */
+		const GPlatesQtWidgets::ViewportWindow &
+		view_state() const
+		{
+			return *d_view_state_ptr;
+		}
 	
 	signals:
 		
@@ -304,6 +326,11 @@ namespace GPlatesQtWidgets
 		get_widget_by_name(
 				const QString &property_value_type_name);
 		
+		/**
+		 * The view state, used to obtain current reconstruction time and allow
+		 * EditGeometryWidget to iterate over RFGs.
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * This pointer always refers to the one edit widget which is currently active
@@ -316,6 +343,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::EditOldPlatesHeaderWidget *d_edit_old_plates_header_widget_ptr;
 		GPlatesQtWidgets::EditDoubleWidget *d_edit_double_widget_ptr;
 		GPlatesQtWidgets::EditEnumerationWidget *d_edit_enumeration_widget_ptr;
+		GPlatesQtWidgets::EditGeometryWidget *d_edit_geometry_widget_ptr;
 		GPlatesQtWidgets::EditIntegerWidget *d_edit_integer_widget_ptr;
 		GPlatesQtWidgets::EditPlateIdWidget *d_edit_plate_id_widget_ptr;
 		GPlatesQtWidgets::EditPolarityChronIdWidget *d_edit_polarity_chron_id_widget_ptr;

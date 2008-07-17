@@ -34,6 +34,7 @@
 namespace GPlatesQtWidgets
 {
 	class EditFeaturePropertiesWidget;
+	class ViewportWindow;
 	
 	class AddPropertyDialog: 
 			public QDialog,
@@ -51,6 +52,7 @@ namespace GPlatesQtWidgets
 		explicit
 		AddPropertyDialog(
 				GPlatesQtWidgets::EditFeaturePropertiesWidget &edit_widget,
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 
 		virtual
@@ -93,6 +95,7 @@ namespace GPlatesQtWidgets
 		set_up_edit_widgets();
 
 		GPlatesQtWidgets::EditFeaturePropertiesWidget *d_edit_feature_properties_widget_ptr;
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 		GPlatesQtWidgets::EditWidgetGroupBox *d_edit_widget_group_box_ptr;
 	};
 }

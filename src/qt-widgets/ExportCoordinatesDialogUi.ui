@@ -1,0 +1,315 @@
+<ui version="4.0" >
+ <class>ExportCoordinatesDialog</class>
+ <widget class="QDialog" name="ExportCoordinatesDialog" >
+  <property name="windowModality" >
+   <enum>Qt::WindowModal</enum>
+  </property>
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>431</width>
+    <height>358</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Export Coordinates</string>
+  </property>
+  <layout class="QVBoxLayout" >
+   <item>
+    <widget class="QGroupBox" name="groupbox_format" >
+     <property name="title" >
+      <string>Format</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label_format" >
+          <property name="text" >
+           <string>For&amp;mat:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combobox_format</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="combobox_format" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <item>
+           <property name="text" >
+            <string>PLATES4 line data</string>
+           </property>
+          </item>
+          <item>
+           <property name="text" >
+            <string>GMT</string>
+           </property>
+          </item>
+          <item>
+           <property name="text" >
+            <string>Well-Known Text (WKT)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text" >
+            <string>Comma Separated Value (CSV)</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QStackedWidget" name="stack_format_options" >
+        <property name="currentIndex" >
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="page_format_plates4" />
+        <widget class="QWidget" name="page_format_gmt" />
+        <widget class="QWidget" name="page_format_csv" />
+        <widget class="QWidget" name="page_format_wkt" >
+         <layout class="QVBoxLayout" >
+          <item>
+           <layout class="QHBoxLayout" >
+            <item>
+             <widget class="QLabel" name="label_csv_delimiter" >
+              <property name="text" >
+               <string>&amp;Delimiter:</string>
+              </property>
+              <property name="buddy" >
+               <cstring>combobox_csv_delimiter</cstring>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="combobox_csv_delimiter" >
+              <item>
+               <property name="text" >
+                <string>Comma</string>
+               </property>
+              </item>
+              <item>
+               <property name="text" >
+                <string>Semicolon</string>
+               </property>
+              </item>
+              <item>
+               <property name="text" >
+                <string>Tab</string>
+               </property>
+              </item>
+              <item>
+               <property name="text" >
+                <string>Space</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label_coordinate_order" >
+          <property name="text" >
+           <string>Coordinate &amp;order:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combobox_coordinate_order</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="combobox_coordinate_order" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <item>
+           <property name="text" >
+            <string>Latitude, Longitude</string>
+           </property>
+          </item>
+          <item>
+           <property name="text" >
+            <string>Longitude, Latitude</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QCheckBox" name="checkbox_polygon_terminating_point" >
+          <property name="toolTip" >
+           <string/>
+          </property>
+          <property name="text" >
+           <string>Include additional &amp;terminating point for polygon</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_explain_terminating_point" >
+          <property name="toolTip" >
+           <string>What does this mean?</string>
+          </property>
+          <property name="text" >
+           <string/>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupbox_destination" >
+     <property name="title" >
+      <string>Destination</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label_export_to" >
+          <property name="text" >
+           <string>Export To:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>radiobutton_to_file</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radiobutton_to_file" >
+          <property name="text" >
+           <string>&amp;File</string>
+          </property>
+          <property name="checked" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radiobutton_to_clipboard" >
+          <property name="enabled" >
+           <bool>true</bool>
+          </property>
+          <property name="text" >
+           <string>&amp;Clipboard</string>
+          </property>
+          <property name="checked" >
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QStackedWidget" name="stack_destination" >
+        <property name="sizePolicy" >
+         <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <widget class="QWidget" name="page_export_select_file" >
+         <layout class="QHBoxLayout" >
+          <item>
+           <widget class="QLineEdit" name="lineedit_filename" />
+          </item>
+          <item>
+           <widget class="QPushButton" name="button_select_file" >
+            <property name="text" >
+             <string>&amp;Browse...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="page_export_clipboard" />
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonbox_export" >
+     <property name="standardButtons" >
+      <set>QDialogButtonBox::Cancel</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections>
+  <connection>
+   <sender>combobox_format</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>stack_format_options</receiver>
+   <slot>setCurrentIndex(int)</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>236</x>
+     <y>57</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>187</x>
+     <y>106</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonbox_export</sender>
+   <signal>rejected()</signal>
+   <receiver>ExportCoordinatesDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>392</x>
+     <y>336</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>396</x>
+     <y>357</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

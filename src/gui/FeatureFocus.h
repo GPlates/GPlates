@@ -81,7 +81,9 @@ namespace GPlatesGui
 	
 		/**
 		 * Accessor to change which feature is currently focused.
-		 * Will emit focused_feature_changed() to anyone who cares.
+		 * Will emit focused_feature_changed() to anyone who cares,
+		 * provided that @a new_feature_ref is actually different
+		 * to the previous feature.
 		 */
 		void
 		set_focused_feature(

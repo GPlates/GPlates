@@ -40,7 +40,7 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 	d_query_feature_properties_widget(new GPlatesQtWidgets::QueryFeaturePropertiesWidget(
 			view_state_, feature_focus, this)),
 	d_edit_feature_properties_widget(new GPlatesQtWidgets::EditFeaturePropertiesWidget(
-			feature_focus, this)),
+			view_state_, feature_focus, this)),
 	d_edit_feature_geometries_widget(new GPlatesQtWidgets::EditFeatureGeometriesWidget(
 			view_state_, feature_focus, this))
 {
@@ -49,11 +49,11 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 	// Set up the tab widget. Note we have to delete the 'dummy' tab set up by the Designer.
 	tabwidget_query_edit->clear();
 	tabwidget_query_edit->addTab(d_query_feature_properties_widget,
-			QIcon(":/info_sign_16.png"), tr("&Query Properties"));
+			QIcon(":/gnome_edit_find_16.png"), tr("&Query Properties"));
 	tabwidget_query_edit->addTab(d_edit_feature_properties_widget,
 			QIcon(":/gnome_gtk_edit_16.png"), tr("&Edit Properties"));
 	tabwidget_query_edit->addTab(d_edit_feature_geometries_widget,
-			QIcon(":/gnome_stock_edit_points_16.png"), tr("&Geometries"));
+			QIcon(":/gnome_stock_edit_points_16.png"), tr("View &Coordinates"));
 	tabwidget_query_edit->setCurrentIndex(0);
 
 	// Handle tab changes.
@@ -72,6 +72,10 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 	// Note: In the future, we may have a "feature was deleted" event we should listen to.
 	// This should be connected to refresh_display(), possibly indirectly via some
 	// when_feature_deleted_refresh_if_necessary(weakref) slot.
+	
+	// Refresh display - since the feature ref is invalid at this point,
+	// the dialog should lock everything down that might otherwise cause problems.
+	refresh_display();
 }
 
 
@@ -90,25 +94,17 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 	if ( ! d_feature_ref.is_valid()) {
 		// Disable everything except the Close button.
 		lineedit_feature_type->setEnabled(false);
-		lineedit_feature_id->setEnabled(false);
-		lineedit_revision_id->setEnabled(false);
 		tabwidget_query_edit->setEnabled(false);
 		return;
 	}
 	
 	// Ensure everything is enabled.
 	lineedit_feature_type->setEnabled(true);
-	lineedit_feature_id->setEnabled(true);
-	lineedit_revision_id->setEnabled(true);
 	tabwidget_query_edit->setEnabled(true);
 	
 	// Update our text fields at the top.
 	lineedit_feature_type->setText(
 			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->feature_type().build_aliased_name()));
-	lineedit_feature_id->setText(
-			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->feature_id().get()));
-	lineedit_revision_id->setText(
-			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->revision_id().get()));
 	
 	// Update our tabbed sub-widgets.
 	d_query_feature_properties_widget->display_feature(d_feature_ref);
@@ -118,21 +114,24 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 
 		
 void
-GPlatesQtWidgets::FeaturePropertiesDialog::choose_query_widget()
+GPlatesQtWidgets::FeaturePropertiesDialog::choose_query_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_query_feature_properties_widget);
+	setVisible(true);
 }
 
 void
-GPlatesQtWidgets::FeaturePropertiesDialog::choose_edit_widget()
+GPlatesQtWidgets::FeaturePropertiesDialog::choose_edit_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_edit_feature_properties_widget);
+	setVisible(true);
 }
 
 void
-GPlatesQtWidgets::FeaturePropertiesDialog::choose_geometries_widget()
+GPlatesQtWidgets::FeaturePropertiesDialog::choose_geometries_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_edit_feature_geometries_widget);
+	setVisible(true);
 }
 
 

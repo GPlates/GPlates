@@ -45,6 +45,8 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlOrientableCurve.h"
 
 #include "qt-widgets/EditTimePeriodWidget.h"
 
@@ -96,6 +98,24 @@ GPlatesQtWidgets::EditWidgetChooser::visit_enumeration(
 		GPlatesPropertyValues::Enumeration &enumeration)
 {
 	d_edit_widget_group_box_ptr->activate_edit_enumeration_widget(enumeration);
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gml_line_string(
+		GPlatesPropertyValues::GmlLineString &gml_line_string)
+{
+	d_edit_widget_group_box_ptr->activate_edit_line_string_widget(gml_line_string);
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gml_orientable_curve(
+		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+{
+	// FIXME: We might want to edit the OrientableCurve directly.
+	// For now, simply let the user edit the embedded LineString.
+	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
 

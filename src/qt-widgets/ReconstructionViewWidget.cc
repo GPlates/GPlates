@@ -28,6 +28,7 @@
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
 #include "GlobeCanvas.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 #include "utils/FloatingPointComparisons.h"
@@ -44,9 +45,21 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 // irrespective on which window (if any) the user has clicked. 
 	setFocusPolicy(Qt::StrongFocus);
 
+	// Create the GlobeCanvas,
 	d_canvas_ptr = new GlobeCanvas(view_state, this);
-	gridLayout->addWidget(d_canvas_ptr, 1, 0);
+	// and add it to the grid layout in the ReconstructionViewWidget.
+	// Note this is a bit of a hack, relying on the QGridLayout set up in the Designer.
+	gridLayout->addWidget(d_canvas_ptr, 0, 0);
+	
+	// Enforce some sizing constraints on the globe and friends.
+	// A minumum size and non-collapsibility is set on the globe basically so users
+	// can't obliterate it and then wonder (read:complain) where their globe went.
+	QSizePolicy globe_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	globe_size_policy.setHorizontalStretch(100);
+	d_canvas_ptr->setSizePolicy(globe_size_policy);
+	d_canvas_ptr->setMinimumSize(100, 100);
 
+	// Set up the Reconstruction Time spinbox and buttons.
 	spinbox_reconstruction_time->setRange(
 			ReconstructionViewWidget::min_reconstruction_time(),
 			ReconstructionViewWidget::max_reconstruction_time());
@@ -94,12 +107,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
 			d_canvas_ptr, SLOT(force_mouse_pointer_pos_change()));
 
-	// Make sure the globe is expanding as much as possible!
-	QSizePolicy globe_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	d_canvas_ptr->setSizePolicy(globe_size_policy);
-	d_canvas_ptr->updateGeometry();
 
+	d_canvas_ptr->updateGeometry();
 	recalc_camera_position();
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::insert_task_panel(
+		GPlatesQtWidgets::TaskPanel *task_panel)
+{
+	gridLayout->addWidget(task_panel, 0, 2);
 }
 
 

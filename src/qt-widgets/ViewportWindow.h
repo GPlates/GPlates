@@ -52,6 +52,7 @@
 #include "ReadErrorAccumulationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "EulerPoleDialog.h"
+#include "TaskPanel.h"
 
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
@@ -75,7 +76,7 @@ namespace GPlatesQtWidgets
 		
 	public:
 		ViewportWindow();
-
+		
 		GPlatesModel::Reconstruction &
 		reconstruction() const
 		{
@@ -104,8 +105,16 @@ namespace GPlatesQtWidgets
 		create_svg_file();
 
 
-
 	public slots:
+		
+		void
+		status_message(
+				const QString &message,
+				int timeout = 5000) const
+		{
+			statusBar()->showMessage(message, timeout);
+		}
+	
 		void
 		reconstruct();
 
@@ -127,10 +136,20 @@ namespace GPlatesQtWidgets
 		choose_zoom_globe_tool();
 
 		void
-		choose_query_feature_tool();
+		choose_click_geometry_tool();
 
 		void
-		choose_edit_feature_tool();
+		choose_digitise_polyline_tool();
+
+		void
+		choose_digitise_multipoint_tool();
+
+		void
+		choose_digitise_polygon_tool();
+
+		void
+		enable_or_disable_feature_actions(
+				GPlatesModel::FeatureHandle::weak_ref focused_feature);
 
 		void
 		pop_up_read_errors_dialog();
@@ -238,6 +257,29 @@ namespace GPlatesQtWidgets
 			GPlatesFileIO::FileInfo &file_info);
 
 	private:
+	
+		/**
+		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
+		 * buttons and menu items.
+		 */
+		void
+		connect_menu_actions();
+
+		/**
+		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
+		 * with some of the QActions that ViewportWindow has on the menu bar.
+		 */
+		void
+		set_up_task_panel_actions();
+
+		/**
+		 * Creates a context menu to allow the user to dock DockWidgets even if
+		 * they are misbehaving and not docking when dragged over the main window.
+		 */
+		void
+		set_up_dock_context_menus();
+
+
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
 
@@ -264,8 +306,9 @@ namespace GPlatesQtWidgets
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
-		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does.
+		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
 		EulerPoleDialog d_euler_pole_dialog;
+		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus.
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 
@@ -298,13 +341,25 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_about_dialog();
 
-
-
 		void
 		close_all_dialogs();
+		
+		void
+		dock_search_results_at_top();
+		
+		void
+		dock_search_results_at_bottom();
 
 		void
 		enable_raster_display();
+		
+		/**
+		 * Responds to a change in focus, and highlights the appropriate row
+		 * in the "Clicked" feature table, tab_list_clicked and d_feature_table_model_ptr.
+		 */
+		void
+		highlight_clicked_feature_table(
+				GPlatesModel::FeatureHandle::weak_ref new_feature_ref);
 
 	protected:
 	

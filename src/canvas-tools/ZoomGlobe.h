@@ -29,6 +29,12 @@
 #include "gui/CanvasTool.h"
 
 
+namespace GPlatesQtWidgets
+{
+	class GlobeCanvas;
+	class ViewportWindow;
+}
+
 namespace GPlatesCanvasTools
 {
 	/**
@@ -56,12 +62,17 @@ namespace GPlatesCanvasTools
 		const non_null_ptr_type
 		create(
 				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_)
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				const GPlatesQtWidgets::ViewportWindow &view_state_)
 		{
-			ZoomGlobe::non_null_ptr_type ptr(new ZoomGlobe(globe_, globe_canvas_),
+			ZoomGlobe::non_null_ptr_type ptr(new ZoomGlobe(globe_, globe_canvas_, view_state_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
+
+		virtual
+		void
+		handle_activation();
 
 		virtual
 		void
@@ -76,11 +87,19 @@ namespace GPlatesCanvasTools
 		explicit
 		ZoomGlobe(
 				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_):
-			CanvasTool(globe_, globe_canvas_)
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				const GPlatesQtWidgets::ViewportWindow &view_state_):
+			CanvasTool(globe_, globe_canvas_),
+			d_view_state_ptr(&view_state_)
 		{  }
 
 	private:
+
+		/**
+		 * This is the View State used to pass messages to the status bar.
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.
 		ZoomGlobe(

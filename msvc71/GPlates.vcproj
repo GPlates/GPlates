@@ -139,13 +139,16 @@
 			Name="canvas-tools"
 			Filter="">
 			<File
-				RelativePath="..\src\canvas-tools\moc_EditFeature.cc">
+				RelativePath="..\src\canvas-tools\DigitiseGeometry.cc">
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\EditFeature.cc">
+				RelativePath="..\src\canvas-tools\moc_ClickGeometry.cc">
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\EditFeature.h">
+				RelativePath="..\src\canvas-tools\ClickGeometry.cc">
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\ClickGeometry.h">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -157,22 +160,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc">
-			</File>
-			<File
-				RelativePath="..\src\canvas-tools\QueryFeature.cc">
-			</File>
-			<File
-				RelativePath="..\src\canvas-tools\QueryFeature.h">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Executing MOC on $(InputName)"
-						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
-"
-						Outputs="$(InputDir)/moc_$(InputName).cc"/>
-				</FileConfiguration>
+				RelativePath="..\src\canvas-tools\ReorientGlobe.cc">
 			</File>
 			<File
 				RelativePath="..\src\canvas-tools\ZoomGlobe.cc">
@@ -219,21 +207,6 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\FeatureWeakRefSequence.h">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Executing MOC on $(InputName)"
-						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
-"
-						Outputs="$(InputDir)/moc_$(InputName).cc"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\gui\FeaturePropertyTableDelegate.cc">
-			</File>
-			<File
-				RelativePath="..\src\gui\FeaturePropertyTableDelegate.h">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -300,9 +273,6 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc">
-			</File>
-			<File
-				RelativePath="..\src\gui\moc_FeaturePropertyTableDelegate.cc">
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_FeaturePropertyTableModel.cc">
@@ -379,6 +349,21 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\AbstractEditWidget.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ActionButtonBox.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ActionButtonBox.h">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -534,6 +519,9 @@
 				RelativePath="..\src\qt-widgets\moc_AbstractEditWidget.cc">
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_ActionButtonBox.cc">
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_AddPropertyDialog.cc">
 			</File>
 			<File
@@ -550,6 +538,9 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_LicenseDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_DigitisationWidget.cc">
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_EditOldPlatesHeaderWidget.cc">
@@ -570,6 +561,12 @@
 				RelativePath="..\src\qt-widgets\moc_EditPlateIdWidget.cc">
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_EditGeometryWidget.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditGeometryActionWidget.cc">
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_EditIntegerWidget.cc">
 			</File>
 			<File
@@ -586,6 +583,12 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_EditWidgetGroupBox.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ExportCoordinatesDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_FeatureSummaryWidget.cc">
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_FeaturePropertiesDialog.cc">
@@ -616,6 +619,33 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EditWidgetChooser.h">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidget.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidget.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidgetUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EditOldPlatesHeaderWidget.cc">
@@ -780,6 +810,60 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidget.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidget.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidgetUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidget.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidget.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidgetUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\EditIntegerWidget.cc">
 			</File>
 			<File
@@ -927,6 +1011,60 @@
 						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
 "
 						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidgetUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -1223,6 +1361,36 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_SpecifyFixedPlateDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_TaskPanel.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\TaskPanel.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\TaskPanel.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\TaskPanelUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_ViewportWindow.cc">

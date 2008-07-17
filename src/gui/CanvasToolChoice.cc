@@ -28,8 +28,10 @@
 #include "CanvasToolChoice.h"
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
-#include "canvas-tools/QueryFeature.h"
-#include "canvas-tools/EditFeature.h"
+#include "canvas-tools/ClickGeometry.h"
+#include "canvas-tools/DigitiseGeometry.h"
+
+#include "qt-widgets/DigitisationWidget.h"
 
 
 GPlatesGui::CanvasToolChoice::CanvasToolChoice(
@@ -38,13 +40,20 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		FeatureTableModel &clicked_table_model,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
-		GPlatesGui::FeatureFocus &feature_focus):
-	d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(globe_, globe_canvas_)),
-	d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(globe_, globe_canvas_)),
-	d_query_feature_tool_ptr(GPlatesCanvasTools::QueryFeature::create(globe_, globe_canvas_,
+		GPlatesGui::FeatureFocus &feature_focus,
+		GPlatesQtWidgets::DigitisationWidget &digitisation_widget_):
+	d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(globe_, globe_canvas_,
+			view_state_)),
+	d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(globe_, globe_canvas_,
+			view_state_)),
+	d_click_geometry_tool_ptr(GPlatesCanvasTools::ClickGeometry::create(globe_, globe_canvas_,
 			view_state_, clicked_table_model, fp_dialog_, feature_focus)),
-	d_edit_feature_tool_ptr(GPlatesCanvasTools::EditFeature::create(globe_, globe_canvas_,
-			view_state_, clicked_table_model, fp_dialog_, feature_focus)),
+	d_digitise_polyline_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(globe_, globe_canvas_,
+			view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::POLYLINE)),
+	d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(globe_, globe_canvas_,
+			view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::MULTIPOINT)),
+	d_digitise_polygon_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(globe_, globe_canvas_,
+			view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::POLYGON)),
 	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	tool_choice().handle_activation();

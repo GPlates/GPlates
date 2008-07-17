@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_QUERYFEATURE_H
-#define GPLATES_CANVASTOOLS_QUERYFEATURE_H
+#ifndef GPLATES_CANVASTOOLS_CLICKGEOMETRY_H
+#define GPLATES_CANVASTOOLS_CLICKGEOMETRY_H
 
 #include <QObject>
 
@@ -43,9 +43,9 @@ namespace GPlatesQtWidgets
 namespace GPlatesCanvasTools
 {
 	/**
-	 * This is the canvas tool used to query features by clicking on them.
+	 * This is the canvas tool used to focus features by clicking on them.
 	 */
-	class QueryFeature:
+	class ClickGeometry:
 			// It seems that QObject must be the first base specified here...
 			public QObject,
 			public GPlatesGui::CanvasTool
@@ -54,18 +54,18 @@ namespace GPlatesCanvasTools
 
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<QueryFeature,
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ClickGeometry,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<QueryFeature,
+		typedef GPlatesUtils::non_null_intrusive_ptr<ClickGeometry,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~QueryFeature()
+		~ClickGeometry()
 		{  }
 
 		/**
-		 * Create a QueryFeature instance.
+		 * Create a ClickGeometry instance.
 		 */
 		static
 		const non_null_ptr_type
@@ -77,11 +77,17 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 				GPlatesGui::FeatureFocus &feature_focus)
 		{
-			QueryFeature::non_null_ptr_type ptr(new QueryFeature(globe_, globe_canvas_,
-					view_state_, clicked_table_model, fp_dialog_, feature_focus),
+			ClickGeometry::non_null_ptr_type ptr(
+					new ClickGeometry(globe_, globe_canvas_, view_state_, clicked_table_model,
+							fp_dialog_, feature_focus),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
+
+		
+		virtual
+		void
+		handle_activation();
 
 		virtual
 		void
@@ -101,7 +107,7 @@ namespace GPlatesCanvasTools
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		explicit
-		QueryFeature(
+		ClickGeometry(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
@@ -136,6 +142,9 @@ namespace GPlatesCanvasTools
 	private:
 		/**
 		 * This is the view state which is used to obtain the reconstruction root.
+		 *
+		 * Since the view state is also the ViewportWindow, it is currently used to
+		 * pass messages to the status bar.
 		 */
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
@@ -159,15 +168,15 @@ namespace GPlatesCanvasTools
 		
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.
-		QueryFeature(
-				const QueryFeature &);
+		ClickGeometry(
+				const ClickGeometry &);
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment.
-		QueryFeature &
+		ClickGeometry &
 		operator=(
-				const QueryFeature &);
+				const ClickGeometry &);
 	};
 }
 
-#endif  // GPLATES_CANVASTOOLS_QUERYFEATURE_H
+#endif  // GPLATES_CANVASTOOLS_CLICKGEOMETRY_H

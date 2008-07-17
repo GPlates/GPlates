@@ -191,12 +191,12 @@ namespace
 				PropertyName::create_gml("validTime"), 
 				feature_handle);
 
-		// Use the PLATES4 geographic description as the "gml:description" property.
-		XsString::non_null_ptr_type gml_description = 
+		// Use the PLATES4 geographic description as the "gml:name" property.
+		XsString::non_null_ptr_type gml_name = 
 				XsString::create(header->geographic_description());
 		ModelUtils::append_property_value_to_feature(
-				gml_description, 
-				PropertyName::create_gml("description"), 
+				gml_name, 
+				PropertyName::create_gml("name"), 
 				feature_handle);
 
 		ModelUtils::append_property_value_to_feature(

@@ -28,20 +28,23 @@
 #include <map>
 #include "EditWidgetGroupBox.h"
 
-#include "qt-widgets/AbstractEditWidget.h"
-#include "qt-widgets/EditWidgetChooser.h"
+#include "AbstractEditWidget.h"
+#include "EditWidgetChooser.h"
 #include "NoActiveEditWidgetException.h"
-
+#include "qt-widgets/ViewportWindow.h"
 
 
 GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
+		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		QWidget *parent_):
+	d_view_state_ptr(&view_state_),
 	d_active_widget_ptr(NULL),
 	d_edit_time_instant_widget_ptr(new EditTimeInstantWidget(this)),
 	d_edit_time_period_widget_ptr(new EditTimePeriodWidget(this)),
 	d_edit_old_plates_header_widget_ptr(new EditOldPlatesHeaderWidget(this)),
 	d_edit_double_widget_ptr(new EditDoubleWidget(this)),
 	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(this)),
+	d_edit_geometry_widget_ptr(new EditGeometryWidget(view_state_, this)),
 	d_edit_integer_widget_ptr(new EditIntegerWidget(this)),
 	d_edit_plate_id_widget_ptr(new EditPlateIdWidget(this)),
 	d_edit_polarity_chron_id_widget_ptr(new EditPolarityChronIdWidget(this)),
@@ -61,6 +64,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	edit_layout->addWidget(d_edit_old_plates_header_widget_ptr);
 	edit_layout->addWidget(d_edit_double_widget_ptr);
 	edit_layout->addWidget(d_edit_enumeration_widget_ptr);
+	edit_layout->addWidget(d_edit_geometry_widget_ptr);
 	edit_layout->addWidget(d_edit_integer_widget_ptr);
 	edit_layout->addWidget(d_edit_plate_id_widget_ptr);
 	edit_layout->addWidget(d_edit_polarity_chron_id_widget_ptr);
@@ -78,6 +82,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	QObject::connect(d_edit_double_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_enumeration_widget_ptr, SIGNAL(commit_me()),
+			this, SLOT(edit_widget_wants_committing()));
+	QObject::connect(d_edit_geometry_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_integer_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
@@ -112,6 +118,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:SlipComponentEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:FoldPlaneAnnotationEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:AbsoluteReferenceFrameEnumeration"] = d_edit_enumeration_widget_ptr;
+	map["gml:LineString"] = d_edit_geometry_widget_ptr;
 	map["xs:integer"] = d_edit_integer_widget_ptr;
 	map["gpml:plateId"] = d_edit_plate_id_widget_ptr;
 	map["gpml:PolarityChronId"] = d_edit_polarity_chron_id_widget_ptr;
@@ -304,6 +311,17 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_enumeration_widget(
 }
 
 void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_line_string_widget(
+		GPlatesPropertyValues::GmlLineString &gml_line_string)
+{
+	setTitle(tr("%1 Polyline").arg(d_edit_verb));
+	show();
+	d_edit_geometry_widget_ptr->update_widget_from_line_string(gml_line_string);
+	d_active_widget_ptr = d_edit_geometry_widget_ptr;
+	d_edit_geometry_widget_ptr->show();
+}
+
+void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_integer_widget(
 		GPlatesPropertyValues::XsInteger &xs_integer)
 {
@@ -389,6 +407,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 	d_edit_double_widget_ptr->reset_widget_to_default_values();
 	d_edit_enumeration_widget_ptr->hide();
 	d_edit_enumeration_widget_ptr->reset_widget_to_default_values();
+	d_edit_geometry_widget_ptr->hide();
+	d_edit_geometry_widget_ptr->reset_widget_to_default_values();
 	d_edit_integer_widget_ptr->hide();
 	d_edit_integer_widget_ptr->reset_widget_to_default_values();
 	d_edit_plate_id_widget_ptr->hide();

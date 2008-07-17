@@ -134,7 +134,7 @@ namespace
 		GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
 		time_period_finder.visit_feature_handle(feature);
 		if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
-			// The feature has a gpml:validTime property.
+			// The feature has a gml:validTime property.
 			// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
 			// in the latter case it has a slightly different meaning and we should be displaying the
 			// gpml:reconstructedTime property instead.
@@ -280,7 +280,7 @@ namespace
 				get_time_end, Qt::AlignCenter }, 
 				
 		{ QT_TR_NOOP("Name"), QT_TR_NOOP(""),
-				96, QHeaderView::Stretch,
+				240, QHeaderView::ResizeToContents,
 				get_name, Qt::AlignLeft | Qt::AlignVCenter },
 				
 		{ QT_TR_NOOP("Description"), QT_TR_NOOP(""),
@@ -484,6 +484,8 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 	}
 	
 	// When the user clicks a line of the table, we change the currently focused feature.
+	// FIXME: If we end up using this class elsewhere, e.g. search results, we may
+	// want to re-evaluate this behaviour.
 	d_feature_focus.set_focused_feature(feature_ref);
 }
 
@@ -513,5 +515,25 @@ GPlatesGui::FeatureTableModel::set_default_resize_modes(
 	for (int column = 0; column < static_cast<int>(NUM_ELEMS(column_heading_info_table)); ++column) {
 		header.setResizeMode(column, column_heading_info_table[column].resize_mode);
 	}
+}
+
+
+QModelIndex
+GPlatesGui::FeatureTableModel::get_index_for_feature(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	// Figure out which row of the table (if any) contains the target feature.
+	FeatureWeakRefSequence::const_iterator it = d_sequence_ptr->begin();
+	FeatureWeakRefSequence::const_iterator end = d_sequence_ptr->end();
+	int row = 0;
+	for ( ; it != end; ++it, ++row) {
+		if (*it == feature_ref) {
+			QModelIndex idx = index(row, 0);
+			return idx;
+		}
+	}
+	
+	// No such feature exists in our table, return an invalid index.
+	return QModelIndex();
 }
 

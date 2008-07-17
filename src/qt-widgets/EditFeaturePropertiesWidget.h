@@ -38,6 +38,8 @@
 
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+
 	class EditFeaturePropertiesWidget: 
 			public QWidget,
 			protected Ui_EditFeaturePropertiesWidget 
@@ -47,6 +49,7 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		EditFeaturePropertiesWidget(
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureFocus &feature_focus,
 				QWidget *parent_ = NULL);
 
@@ -108,8 +111,17 @@ namespace GPlatesQtWidgets
 		void
 		set_up_edit_widgets();
 
+		/**
+		 * This is the view state which is used to obtain the reconstruction in order to
+		 * iterate over RFGs.
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+
+		/**
+		 * This is the feature focus which tracks changes to the currently focused feature.
+		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
-	
+		
 		GPlatesGui::FeaturePropertyTableModel *d_property_model_ptr;
 		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 		GPlatesQtWidgets::EditWidgetGroupBox *d_edit_widget_group_box_ptr;

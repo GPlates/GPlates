@@ -227,11 +227,19 @@
 			Name="canvas-tools"
 			>
 			<File
-				RelativePath="..\src\canvas-tools\EditFeature.cc"
+				RelativePath="..\src\canvas-tools\DigitiseGeometry.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\EditFeature.h"
+				RelativePath="..\src\canvas-tools\moc_ClickGeometry.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\ClickGeometry.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\ClickGeometry.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -242,27 +250,8 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\moc_EditFeature.cc"
+				RelativePath="..\src\canvas-tools\ReorientGlobe.cc"
 				>
-			</File>
-			<File
-				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\canvas-tools\QueryFeature.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\canvas-tools\QueryFeature.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\canvas-tools\ZoomGlobe.cc"
@@ -324,21 +313,6 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\FeatureFocus.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\gui\FeaturePropertyTableDelegate.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\FeaturePropertyTableDelegate.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -411,10 +385,6 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_FeatureFocus.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\moc_FeaturePropertyTableDelegate.cc"
 				>
 			</File>
 			<File
@@ -550,6 +520,21 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ActionButtonBox.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ActionButtonBox.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\AddPropertyDialog.cc"
 				>
 			</File>
@@ -589,6 +574,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\ApplicationState.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -703,6 +707,44 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -881,6 +923,44 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidgetUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\FeaturePropertiesDialog.cc"
 				>
 			</File>
@@ -995,11 +1075,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_ActionButtonBox.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_AddPropertyDialog.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_DigitisationWidget.cc"
 				>
 			</File>
 			<File
@@ -1024,6 +1112,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_EditFeaturePropertiesWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditGeometryWidget.cc"
 				>
 			</File>
 			<File
@@ -1060,6 +1152,14 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_EulerPoleDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ExportCoordinatesDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_FeatureSummaryWidget.cc"
 				>
 			</File>
 			<File
@@ -1116,6 +1216,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_SpecifyFixedPlateDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_TaskPanel.cc"
 				>
 			</File>
 			<File
@@ -1280,6 +1384,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\SpecifyFixedPlateDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\TaskPanel.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\TaskPanel.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\TaskPanelUi.ui"
 				>
 			</File>
 			<File

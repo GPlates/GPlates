@@ -80,13 +80,13 @@ namespace GPlatesQtWidgets
 		refresh_display();
 		
 		void
-		choose_query_widget();
+		choose_query_widget_and_open();
 
 		void
-		choose_edit_widget();
+		choose_edit_widget_and_open();
 
 		void
-		choose_geometries_widget();
+		choose_geometries_widget_and_open();
 	
 		/**
 		 * We need to reimplement setVisible() because reimplementing closeEvent() is not

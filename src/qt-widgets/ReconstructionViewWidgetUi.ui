@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>531</width>
-    <height>463</height>
+    <width>712</width>
+    <height>442</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -18,26 +18,23 @@
   <property name="windowTitle" >
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" >
-   <property name="leftMargin" >
+  <layout class="QVBoxLayout" >
+   <property name="spacing" >
     <number>2</number>
+   </property>
+   <property name="leftMargin" >
+    <number>1</number>
    </property>
    <property name="topMargin" >
-    <number>2</number>
+    <number>1</number>
    </property>
    <property name="rightMargin" >
-    <number>2</number>
+    <number>1</number>
    </property>
    <property name="bottomMargin" >
-    <number>2</number>
+    <number>1</number>
    </property>
-   <property name="horizontalSpacing" >
-    <number>2</number>
-   </property>
-   <property name="verticalSpacing" >
-    <number>2</number>
-   </property>
-   <item row="0" column="0" colspan="2" >
+   <item>
     <layout class="QHBoxLayout" >
      <property name="spacing" >
       <number>2</number>
@@ -338,54 +335,64 @@
      </item>
     </layout>
    </item>
-   <item row="1" column="0" >
-    <widget class="QWidget" native="1" name="globe_canvas_place_holder" >
-     <property name="sizePolicy" >
-      <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+   <item>
+    <layout class="QGridLayout" >
+     <property name="horizontalSpacing" >
+      <number>1</number>
      </property>
-    </widget>
-   </item>
-   <item row="1" column="1" >
-    <layout class="QVBoxLayout" >
-     <item>
-      <widget class="QLabel" name="label_zoom_max" >
-       <property name="text" >
-        <string/>
-       </property>
-       <property name="pixmap" >
-        <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_16.png</pixmap>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSlider" name="slider_zoom" >
-       <property name="singleStep" >
-        <number>1</number>
-       </property>
-       <property name="orientation" >
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="tickPosition" >
-        <enum>QSlider::NoTicks</enum>
+     <property name="verticalSpacing" >
+      <number>1</number>
+     </property>
+     <item row="0" column="0" >
+      <widget class="QWidget" native="1" name="globe_canvas_place_holder" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
+         <horstretch>100</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QLabel" name="label_zoom_min" >
-       <property name="text" >
-        <string/>
-       </property>
-       <property name="pixmap" >
-        <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_16.png</pixmap>
-       </property>
-      </widget>
+     <item row="0" column="1" >
+      <layout class="QVBoxLayout" >
+       <item>
+        <widget class="QLabel" name="label_zoom_max" >
+         <property name="text" >
+          <string/>
+         </property>
+         <property name="pixmap" >
+          <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_16.png</pixmap>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSlider" name="slider_zoom" >
+         <property name="singleStep" >
+          <number>1</number>
+         </property>
+         <property name="orientation" >
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="tickPosition" >
+          <enum>QSlider::NoTicks</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_zoom_min" >
+         <property name="text" >
+          <string/>
+         </property>
+         <property name="pixmap" >
+          <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_16.png</pixmap>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
-   <item row="2" column="0" colspan="2" >
+   <item>
     <layout class="QHBoxLayout" >
      <property name="spacing" >
       <number>2</number>
@@ -447,23 +454,22 @@
         </item>
         <item>
          <widget class="QLabel" name="label_camera_coords" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize" >
+           <size>
+            <width>170</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="text" >
            <string>(lat: ---.-- ; lon: ---.-- )</string>
           </property>
          </widget>
-        </item>
-        <item>
-         <spacer>
-          <property name="orientation" >
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" >
-           <size>
-            <width>20</width>
-            <height>16</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </widget>
@@ -471,7 +477,7 @@
      <item>
       <widget class="QFrame" name="frame_mouse_coords" >
        <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -526,15 +532,61 @@
         <item>
          <widget class="QLabel" name="label_mouse_coords" >
           <property name="sizePolicy" >
-           <sizepolicy vsizetype="Fixed" hsizetype="Preferred" >
+           <sizepolicy vsizetype="Fixed" hsizetype="MinimumExpanding" >
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize" >
+           <size>
+            <width>231</width>
+            <height>0</height>
+           </size>
           </property>
           <property name="text" >
            <string>(lat: ---.-- ; lon: ---.-- ) (off globe)</string>
           </property>
          </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame" >
+       <property name="frameShape" >
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow" >
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" >
+        <property name="spacing" >
+         <number>2</number>
+        </property>
+        <property name="leftMargin" >
+         <number>2</number>
+        </property>
+        <property name="topMargin" >
+         <number>2</number>
+        </property>
+        <property name="rightMargin" >
+         <number>2</number>
+        </property>
+        <property name="bottomMargin" >
+         <number>2</number>
+        </property>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>5</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
