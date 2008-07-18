@@ -227,14 +227,6 @@
 			Name="canvas-tools"
 			>
 			<File
-				RelativePath="..\src\canvas-tools\DigitiseGeometry.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\canvas-tools\moc_ClickGeometry.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\canvas-tools\ClickGeometry.cc"
 				>
 			</File>
@@ -248,6 +240,14 @@
 						Name="Build MOC Files"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\DigitiseGeometry.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\moc_ClickGeometry.cc"
+				>
 			</File>
 			<File
 				RelativePath="..\src\canvas-tools\ReorientGlobe.cc"
@@ -710,25 +710,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\EditGeometryWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditGeometryWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditGeometryWidgetUi.ui"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\EditGeometryActionWidget.cc"
 				>
 			</File>
@@ -745,6 +726,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EditGeometryActionWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -942,25 +942,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\FeatureSummaryWidgetUi.ui"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\FeaturePropertiesDialog.cc"
 				>
 			</File>
@@ -977,6 +958,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\FeaturePropertiesDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -1115,6 +1115,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_EditGeometryActionWidget.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_EditGeometryWidget.cc"
 				>
 			</File>
@@ -1159,11 +1163,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_FeatureSummaryWidget.cc"
+				RelativePath="..\src\qt-widgets\moc_FeaturePropertiesDialog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_FeaturePropertiesDialog.cc"
+				RelativePath="..\src\qt-widgets\moc_FeatureSummaryWidget.cc"
 				>
 			</File>
 			<File
