@@ -40,7 +40,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_action_button_box_ptr(new ActionButtonBox(5, 22, this)),
-	d_digitisation_widget_ptr(new DigitisationWidget(tab_digitisation))
+	d_digitisation_widget_ptr(new DigitisationWidget())
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including
