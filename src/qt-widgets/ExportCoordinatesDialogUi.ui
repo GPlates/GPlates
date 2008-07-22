@@ -9,7 +9,7 @@
     <x>0</x>
     <y>0</y>
     <width>431</width>
-    <height>358</height>
+    <height>404</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -49,7 +49,7 @@
           </item>
           <item>
            <property name="text" >
-            <string>GMT</string>
+            <string>Generic Mapping Tools (GMT)</string>
            </property>
           </item>
           <item>
@@ -71,11 +71,60 @@
         <property name="currentIndex" >
          <number>0</number>
         </property>
-        <widget class="QWidget" name="page_format_plates4" />
-        <widget class="QWidget" name="page_format_gmt" />
-        <widget class="QWidget" name="page_format_csv" />
+        <widget class="QWidget" name="page_format_plates4" >
+         <layout class="QVBoxLayout" >
+          <item>
+           <widget class="QLabel" name="label_info_plates4" >
+            <property name="text" >
+             <string>The geometry will be exported as PLATES4 pen commands. Note that no header is included in the written data.</string>
+            </property>
+            <property name="wordWrap" >
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="page_format_gmt" >
+         <layout class="QVBoxLayout" >
+          <item>
+           <widget class="QLabel" name="label_info_gmt" >
+            <property name="text" >
+             <string>The geometry will be exported in a format suitable for use in GMT scripts.</string>
+            </property>
+            <property name="wordWrap" >
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
         <widget class="QWidget" name="page_format_wkt" >
          <layout class="QVBoxLayout" >
+          <item>
+           <widget class="QLabel" name="label_info_wkt" >
+            <property name="text" >
+             <string>The geometry will be exported using the "Well Known Text" format.</string>
+            </property>
+            <property name="wordWrap" >
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="page_format_csv" >
+         <layout class="QVBoxLayout" >
+          <item>
+           <widget class="QLabel" name="label_info_csv" >
+            <property name="text" >
+             <string>The geometry will be exported as CSV data with the following parameters:</string>
+            </property>
+            <property name="wordWrap" >
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
           <item>
            <layout class="QHBoxLayout" >
             <item>

@@ -24,6 +24,7 @@
  */
 
 #include <QFile>
+#include <QTextStream>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QString>
@@ -31,6 +32,7 @@
 #include "ExportCoordinatesDialog.h"
 
 #include "InformationDialog.h"
+#include "file-io/PlatesLineFormatGeometryExporter.h"
 
 
 namespace
@@ -65,6 +67,7 @@ const QString GPlatesQtWidgets::ExportCoordinatesDialog::s_terminating_point_inf
 GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 		QWidget *parent_):
 	QDialog(parent_),
+	d_geometry_ptr(NULL),
 	d_export_file_dialog(new QFileDialog(this, tr("Select a filename for exporting"), QString(),
 			"All files (*)")),
 	d_terminating_point_information_dialog(new InformationDialog(s_terminating_point_information_text,
@@ -104,11 +107,23 @@ GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 
 
 void
-GPlatesQtWidgets::ExportCoordinatesDialog::set_geometry(
+GPlatesQtWidgets::ExportCoordinatesDialog::set_geometry_and_display(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_)
 {
-	// FIXME: Set a member somewhere. Probably a boost::optional, given that we
-	// can't take it in the constructor.
+	// The geometry is passed in as a GeometryOnSphere::non_null_ptr_to_const_type
+	// because we want to enforce that this dialog should be given valid geometry
+	// if you want it to display itself. However, we must set our d_geometry_ptr member
+	// as a boost::intrusive_ptr<const GPlatesMaths::GeometryOnSphere>, because
+	// it cannot be initialised with any meaningful value at this dialog's creation time.
+	d_geometry_ptr = geometry_.get();
+	
+	if (d_geometry_ptr == NULL) {
+		// We shouldn't let the dialog open without a valid geometry.
+		return;
+	}
+	
+	// Show the dialog modally.
+	exec();
 }
 
 
@@ -151,8 +166,19 @@ GPlatesQtWidgets::ExportCoordinatesDialog::pop_up_file_browser()
 void
 GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 {
+	// Sanity check.
+	if (d_geometry_ptr == NULL) {
+		QMessageBox::critical(this, tr("Invalid geometry for export"),
+				tr("How the hell did you open this dialog box without a valid geometry?"));
+		return;
+	}
+	
+	// What output has the user requested?
+	OutputFormat format = OutputFormat(combobox_format->currentIndex());
+		
 	// FIXME: Set up a text stream, either to file or a QBuffer.
 	if (radiobutton_to_file->isChecked()) {
+		// Get filename.
 		QString filename = lineedit_filename->text();
 		if (filename.isEmpty()) {
 			QMessageBox::warning(this, tr("No filename specified"),
@@ -160,6 +186,36 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 			lineedit_filename->setFocus();
 			return;
 		}
+		
+		// Open the file.
+		QFile file(filename);
+		if ( ! file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			QMessageBox::critical(this, tr("Error writing to file"),
+					tr("Error: The file could not be written."));
+			lineedit_filename->setFocus();
+			return;
+		}
+		
+		QTextStream text_stream(&file);
+		// FIXME: It would be awesome if we could arrange this switch -before- we
+		// open the file, to avoid clobbering the user's file needlessly.
+		switch (format)
+		{
+		case PLATES4:
+				{	// Braces used to avoid "jump to case label crosses initialization" errors.
+					GPlatesFileIO::PlatesLineFormatGeometryExporter exporter(text_stream,
+							(combobox_coordinate_order->currentIndex() != 0),
+							checkbox_polygon_terminating_point->isChecked());
+					exporter.visit_geometry(*d_geometry_ptr);
+					break;
+				}
+		default:
+				QMessageBox::critical(this, tr("Unsupported output format"),
+						tr("Sorry, writing in the selected format is currently not supported"));
+				return;
+		}
+		
+	} else {
 	}
 	// FIXME: Delegate writing to the output stream to some writer depending
 	// on the desired output format. (GeometryOnSphere visitor)

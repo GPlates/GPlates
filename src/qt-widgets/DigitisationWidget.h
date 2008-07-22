@@ -29,7 +29,10 @@
 #include <QWidget>
 #include <QTreeWidget>
 #include <QUndoStack>
+#include <boost/intrusive_ptr.hpp>
 #include "DigitisationWidgetUi.h"
+
+#include "maths/GeometryOnSphere.h"
 
 
 namespace GPlatesQtWidgets
@@ -67,6 +70,33 @@ namespace GPlatesQtWidgets
 			return treewidget_coordinates;
 		}
 					
+		/**
+		 * Updates the text on all top-level QTreeWidgetItems (the labels)
+		 * in the table to reflect what geometry (parts) you'll actually get.
+		 *
+		 * This public method is used by the QUndoCommands that manipulate this widget.
+		 */
+		void
+		update_table_labels();
+
+		/**
+		 * Clears the temporary geometry rendered on screen.
+		 * This sets d_geometry_ptr to NULL.
+		 *
+		 * This public method is used by the QUndoCommands that manipulate this widget.
+		 */
+		void
+		clear_geometry();
+
+		/**
+		 * Updates the temporary geometry rendered on screen.
+		 *
+		 * This public method is used by the QUndoCommands that manipulate this widget.
+		 */
+		void
+		update_geometry();
+		
+
 	public slots:
 		
 		/**
@@ -97,18 +127,6 @@ namespace GPlatesQtWidgets
 				GeometryType geom_type);
 		
 		/**
-		 *	The slot that gets called when the user clicks "Create".
-		 */
-		void
-		create_geometry();
-
-		/**
-		 *	The slot that gets called when the user clicks "Cancel".
-		 */
-		void
-		cancel_geometry();
-
-		/**
 		 * Adds a new lat,lon to the specified geometry (defaults to NULL,
 		 * indicating the 'default geometry', which for now is just the
 		 * first geometry available. This is convenient because to start
@@ -117,20 +135,16 @@ namespace GPlatesQtWidgets
 		 * If the specified geometry is a gml:Point, the given lat,lon will
 		 * NOT be added to it but will instead replace it - I believe this
 		 * would be the appropriate behaviour when (re)digitising a gml:position.
+		 *
+		 * The DigitiseGeometry canvas tool uses this function to populate
+		 * this DigitisationWidget.
 		 */
 		void
 		append_point_to_geometry(
 				double lat,
 				double lon,
 				QTreeWidgetItem *target_geometry = NULL);
-		
-		/**
-		 * Updates the text on all top-level QTreeWidgetItems (the labels)
-		 * in the table to reflect what geometry (parts) you'll actually get.
-		 */
-		void
-		update_table_labels();
-	
+			
 	private slots:
 		
 		/**
@@ -146,6 +160,18 @@ namespace GPlatesQtWidgets
 		change_geometry_type(
 				int idx);
 		
+		/**
+		 *	The slot that gets called when the user clicks "Create".
+		 */
+		void
+		handle_create();
+
+		/**
+		 *	The slot that gets called when the user clicks "Cancel".
+		 */
+		void
+		handle_cancel();
+
 		/**
 		 * Feeds the ExportCoordinatesDialog a GeometryOnSphere (TODO), and
 		 * then displays it.
@@ -163,12 +189,15 @@ namespace GPlatesQtWidgets
 				GeometryType geom_type);
 		
 		/**
-		 * May want to move this stack into e.g. ViewState,
+		 * The Undo Stack that handles all the Undo Commands for this widget.
+		 * 
+		 * We may want to move this stack into e.g. ViewState,
 		 * or use a @a QUndoGroup to manage this stack and others.
 		 */
 		QUndoStack d_undo_stack;
 		
 		/**
+		 * The dialog the user sees when they hit the Export button.
 		 * Memory managed by Qt.
 		 */
 		ExportCoordinatesDialog *d_export_coordinates_dialog;
@@ -180,6 +209,22 @@ namespace GPlatesQtWidgets
 		 */
 		GeometryType d_geometry_type;
 		
+		/**
+		 * What kind of geometry did we successfully build last?
+		 * 
+		 * This may be NULL if the digitisation widget has no
+		 * (valid) point data yet.
+		 *
+		 * The kind of geometry we get might not match the user's intention.
+		 * For example, if there are not enough points to make a gml:LineString
+		 * but there are enough for a gml:Point.
+		 * 
+		 * If the user were to manage to click a point, then click a point on the
+		 * exact opposite side of the globe, they should be congratulated with a
+		 * little music and fireworks show (and the geometry will stubbornly refuse
+		 * to update, because we can't create a gml:LineString out of it).
+		 */
+		boost::intrusive_ptr<const GPlatesMaths::GeometryOnSphere> d_geometry_ptr;
 	};
 }
 

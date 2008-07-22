@@ -49,11 +49,12 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 		
 		/**
-		 * You should call this before exec()ing the dialog to feed it with
-		 * the geometry you want to export.
+		 * Rather than simply exec()ing the dialog, you should call this method to
+		 * ensure you are feeding the ExportCoordinatesDialog some valid geometry
+		 * at the same time.
 		 */
 		void
-		set_geometry(
+		set_geometry_and_display(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_);
 					
 	private slots:
@@ -91,6 +92,15 @@ namespace GPlatesQtWidgets
 		
 	private:
 	
+		/**
+		 * The geometry that is to be exported when the user clicks the Export
+		 * button and triggers the handle_export() slot.
+		 * 
+		 * This may be NULL if the export dialog has not been fed any geometry yet.
+		 */
+		boost::intrusive_ptr<const GPlatesMaths::GeometryOnSphere> d_geometry_ptr;
+
+
 		/**
 		 * A QFileDialog instance that we use for specifying the destination file.
 		 * We keep it as a member so that it will remember where the user last

@@ -1673,6 +1673,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\PlatesLineFormatGeometryExporter.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\PlatesLineFormatReader.cc"
 				>
 			</File>
