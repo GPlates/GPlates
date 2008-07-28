@@ -372,13 +372,26 @@ void
 GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator it =
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator it =
 			d_reconstruction_ptr->geometries().begin();
-	std::vector<GPlatesModel::ReconstructedFeatureGeometry>::const_iterator end =
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator end =
 			d_reconstruction_ptr->geometries().end();
 	for ( ; it != end; ++it) {
-		if (it->feature_ref().references(feature_handle)) {
-			ReconstructedGeometryInfo info(it->property(), it->geometry());
+		GPlatesModel::ReconstructionGeometry *rg = it->get();
+		// We use a dynamic cast here (despite the fact that dynamic casts are
+		// generally considered bad form) because we only care about one specific
+		// derivation.  There's no "if ... else if ..." chain, so I think it's not
+		// super-bad form.  (The "if ... else if ..." chain would imply that we
+		// should be using polymorphism -- specifically, the double-dispatch of the
+		// Visitor pattern -- rather than updating the "if ... else if ..." chain
+		// each time a new derivation is added.)
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+		if ( ! rfg) {
+			continue;
+		}
+		if (rfg->feature_ref().references(feature_handle)) {
+			ReconstructedGeometryInfo info(rfg->property(), rfg->geometry());
 			d_rfg_geometries.push_back(info);
 		}
 	}

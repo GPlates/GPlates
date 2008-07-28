@@ -114,7 +114,13 @@ namespace GPlatesQtWidgets
 		{
 			statusBar()->showMessage(message, timeout);
 		}
-	
+
+		/**
+		 * Highlights the first row in the "Clicked" feature table.
+		 */
+		void
+		highlight_first_clicked_feature_table_row() const;
+
 		void
 		reconstruct();
 
@@ -352,14 +358,6 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_raster_display();
-		
-		/**
-		 * Responds to a change in focus, and highlights the appropriate row
-		 * in the "Clicked" feature table, tab_list_clicked and d_feature_table_model_ptr.
-		 */
-		void
-		highlight_clicked_feature_table(
-				GPlatesModel::FeatureHandle::weak_ref new_feature_ref);
 
 	protected:
 	

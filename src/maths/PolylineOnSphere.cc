@@ -41,6 +41,7 @@
 #include "InvalidPolylineException.h"
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
+#include "global/IntrusivePointerZeroRefCountException.h"
 
 
 const unsigned
@@ -76,12 +77,15 @@ const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 GPlatesMaths::PolylineOnSphere::get_non_null_pointer() const
 {
 	if (ref_count() == 0) {
-		// There are no intrusive-pointers referencing this class.  Hence, this instance is
-		// either on the stack or on the heap managed by a non-intrusive-pointer mechanism.
-		// 
-		// Either way, we should clone this instance, so the clone can be managed by
-		// intrusive-pointers.
-		return clone_as_polyline();
+		// How did this happen?  This should not have happened.
+		//
+		// Presumably, the programmer obtained the raw PolylineOnSphere pointer from inside
+		// a PolylineOnSphere::non_null_ptr_type, and is invoking this member function upon
+		// the instance indicated by the raw pointer, after all ref-counting pointers have
+		// expired and the instance has actually been deleted.
+		//
+		// Regardless of how this happened, this is an error.
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(this, __FILE__, __LINE__);
 	} else {
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.

@@ -62,13 +62,17 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 	
 	// Handle focus changes.
 	QObject::connect(&feature_focus, 
-			SIGNAL(focused_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
+			SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref)));
+			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 	QObject::connect(&feature_focus,
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref)),
+			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref)));
+			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 	// Note: In the future, we may have a "feature was deleted" event we should listen to.
 	// This should be connected to refresh_display(), possibly indirectly via some
 	// when_feature_deleted_refresh_if_necessary(weakref) slot.
@@ -81,7 +85,8 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 
 void
 GPlatesQtWidgets::FeaturePropertiesDialog::display_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)
 {
 	d_feature_ref = feature_ref;
 	refresh_display();

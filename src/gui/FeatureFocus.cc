@@ -27,38 +27,80 @@
 
 
 void
-GPlatesGui::FeatureFocus::set_focused_feature(
+GPlatesGui::FeatureFocus::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref new_feature_ref)
 {
 	if ( ! new_feature_ref.is_valid()) {
-		unset_focused_feature();
+		unset_focus();
 		return;
 	}
-	if (d_feature_ref == new_feature_ref) {
+	if (d_focused_feature == new_feature_ref) {
 		// Avoid infinite signal/slot loops like the plague!
 		return;
 	}
-	d_feature_ref = new_feature_ref;
-	emit focused_feature_changed(d_feature_ref);
+	d_focused_feature = new_feature_ref;
+	d_associated_rfg = NULL;
+
+	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
 
 
 void
-GPlatesGui::FeatureFocus::unset_focused_feature()
+GPlatesGui::FeatureFocus::set_focus(
+		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type new_associated_rfg)
 {
-	d_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
-	emit focused_feature_changed(d_feature_ref);
+	if ( ! new_feature_ref.is_valid()) {
+		unset_focus();
+		return;
+	}
+	if (d_focused_feature == new_feature_ref) {
+		// Avoid infinite signal/slot loops like the plague!
+		return;
+	}
+	d_focused_feature = new_feature_ref;
+	d_associated_rfg = new_associated_rfg.get();
+
+	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
 
 
 void
-GPlatesGui::FeatureFocus::notify_of_focused_feature_modification()
+GPlatesGui::FeatureFocus::set_focus(
+		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry *new_associated_rfg)
 {
-	if ( ! d_feature_ref.is_valid()) {
+	if ( ! new_feature_ref.is_valid()) {
+		unset_focus();
+		return;
+	}
+	if (d_focused_feature == new_feature_ref) {
+		// Avoid infinite signal/slot loops like the plague!
+		return;
+	}
+	d_focused_feature = new_feature_ref;
+	d_associated_rfg = new_associated_rfg;
+
+	emit focus_changed(d_focused_feature, d_associated_rfg);
+}
+
+
+void
+GPlatesGui::FeatureFocus::unset_focus()
+{
+	d_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
+	d_associated_rfg = NULL;
+
+	emit focus_changed(d_focused_feature, d_associated_rfg);
+}
+
+
+void
+GPlatesGui::FeatureFocus::announce_modfication_of_focused_feature()
+{
+	if ( ! d_focused_feature.is_valid()) {
 		// You can't have modified it, nothing is focused!
 		return;
 	}
-	emit focused_feature_modified(d_feature_ref);
+	emit focused_feature_modified(d_focused_feature, d_associated_rfg);
 }
-
-

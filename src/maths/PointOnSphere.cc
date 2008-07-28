@@ -53,6 +53,8 @@ GPlatesMaths::PointOnSphere::get_non_null_pointer() const
 		// 
 		// Either way, we should clone this instance, so the clone can be managed by
 		// intrusive-pointers.
+		std::cerr << "PointOnSphere::get_non_null_pointer just cloned something!"
+				<< std::endl;
 		return clone_as_point();
 	} else {
 		// This instance is already managed by intrusive-pointers, so we can simply return

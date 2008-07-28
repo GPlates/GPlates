@@ -52,6 +52,7 @@
 #include "maths/Real.h"
 #include "model/Model.h"
 #include "model/types.h"
+#include "model/ReconstructedFeatureGeometry.h"
 #include "model/DummyTransactionHandle.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
@@ -372,14 +373,26 @@ namespace
 			reconstruction = create_reconstruction(active_reconstructable_files, 
 					active_reconstruction_files, model_ptr, recon_time, recon_root);
 
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator iter =
+			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 					reconstruction->geometries().begin();
-			std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator end =
+			GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
 					reconstruction->geometries().end();
 			for ( ; iter != end; ++iter) {
 				GPlatesGui::PlatesColourTable::const_iterator colour = GPlatesGui::PlatesColourTable::Instance()->end();
-				if (iter->reconstruction_plate_id()) {
-					colour = GPlatesGui::PlatesColourTable::Instance()->lookup(*(iter->reconstruction_plate_id()));
+
+				// We use a dynamic cast here (despite the fact that dynamic casts are generally
+				// considered bad form) because we only care about one specific derivation.
+				// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
+				// "if ... else if ..." chain would imply that we should be using polymorphism --
+				// specifically, the double-dispatch of the Visitor pattern -- rather than updating
+				// the "if ... else if ..." chain each time a new derivation is added.)
+				GPlatesModel::ReconstructedFeatureGeometry *rfg =
+						dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(iter->get());
+				if (rfg) {
+					// It's an RFG, so let's look at the feature it's referencing.
+					if (rfg->reconstruction_plate_id()) {
+						colour = GPlatesGui::PlatesColourTable::Instance()->lookup(*(rfg->reconstruction_plate_id()));
+					}
 				}
 
 				if (colour == GPlatesGui::PlatesColourTable::Instance()->end()) {
@@ -388,7 +401,7 @@ namespace
 				}
 
 				GPlatesGui::GlobeCanvasPainter painter(*canvas_ptr, colour);
-				iter->geometry()->accept_visitor(painter);
+				(*iter)->geometry()->accept_visitor(painter);
 			}
 
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
@@ -441,7 +454,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
 	enable_or_disable_feature_actions(d_feature_focus.focused_feature());
-	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
+	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this, SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
 
 	// Set up the Specify Fixed Plate dialog.
@@ -468,27 +482,23 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	// Set up the Clicked table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
-	tab_list_clicked->setModel(d_feature_table_model_ptr);
-	tab_list_clicked->verticalHeader()->hide();
-	tab_list_clicked->resizeColumnsToContents();
-	GPlatesGui::FeatureTableModel::set_default_resize_modes(*tab_list_clicked->horizontalHeader());
-	tab_list_clicked->horizontalHeader()->setMinimumSectionSize(60);
-	tab_list_clicked->horizontalHeader()->setMovable(true);
-	tab_list_clicked->horizontalHeader()->setHighlightSections(false);
-	// Hide the "Description" column - we don't need it for the Clicked table.
-	tab_list_clicked->setColumnHidden(5, true);
+	table_view_clicked_geometries->setModel(d_feature_table_model_ptr);
+	table_view_clicked_geometries->verticalHeader()->hide();
+	table_view_clicked_geometries->resizeColumnsToContents();
+	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_clicked_geometries->horizontalHeader());
+	table_view_clicked_geometries->horizontalHeader()->setMinimumSectionSize(60);
+	table_view_clicked_geometries->horizontalHeader()->setMovable(true);
+	table_view_clicked_geometries->horizontalHeader()->setHighlightSections(false);
 	// When the user selects a row of the table, we should focus that feature.
-	QObject::connect(tab_list_clicked->selectionModel(),
+	QObject::connect(table_view_clicked_geometries->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
-	// When the currently focused feature has changed, we should locate the appropriate
-	// table row and select it.
-	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
-			this, SLOT(highlight_clicked_feature_table(GPlatesModel::FeatureHandle::weak_ref)));
 
 	// If the focus is modified, we may need to reconstruct to update the view.
-	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref)),
+	QObject::connect(&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this, SLOT(reconstruct()));
 
 	// Set up the Canvas Tools.
@@ -703,20 +713,18 @@ GPlatesQtWidgets::ViewportWindow::dock_search_results_at_bottom()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::highlight_clicked_feature_table(
-		GPlatesModel::FeatureHandle::weak_ref new_feature_ref)
+GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() const
 {
-	QModelIndex idx = d_feature_table_model_ptr->get_index_for_feature(new_feature_ref);
+	QModelIndex idx = d_feature_table_model_ptr->index(0, 0);
 	
-	// The specified feature might not be in the table model. If it is,
-	// we can highlight it (clearing any previous row selection first).
 	if (idx.isValid()) {
-		tab_list_clicked->selectionModel()->clear();
-		tab_list_clicked->selectionModel()->select(idx,
+		table_view_clicked_geometries->selectionModel()->clear();
+		table_view_clicked_geometries->selectionModel()->select(idx,
 				QItemSelectionModel::Select |
 				QItemSelectionModel::Current |
 				QItemSelectionModel::Rows);
 	}
+	table_view_clicked_geometries->scrollToTop();
 }
 
 

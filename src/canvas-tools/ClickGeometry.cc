@@ -35,6 +35,7 @@
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
 #include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
 #include "global/InternalInconsistencyException.h"
 
 
@@ -45,7 +46,7 @@ GPlatesCanvasTools::ClickGeometry::handle_activation()
 	// FIXME: Could be pithier.
 	// FIXME: May have to adjust message if we are using Map view.
 	d_view_state_ptr->status_message(tr(
-			"Click geometry to interact with features. Ctrl-Drag to reorient globe."));
+			"Click geometries to interact with features. Ctrl+Drag to reorient globe."));
 }
 
 
@@ -65,46 +66,53 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 	
 	// Give the user some useful feedback in the status bar.
 	if (sorted_hits.size() == 0) {
-		d_view_state_ptr->status_message(tr("Clicked %1 features.").arg(sorted_hits.size()));
+		d_view_state_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
 	} else if (sorted_hits.size() == 1) {
-		d_view_state_ptr->status_message(tr("Clicked %1 feature.").arg(sorted_hits.size()));
+		d_view_state_ptr->status_message(tr("Clicked %1 geometry.").arg(sorted_hits.size()));
 	} else {
-		d_view_state_ptr->status_message(tr("Clicked %1 features.").arg(sorted_hits.size()));
+		d_view_state_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
 	}
 
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
 	d_clicked_table_model_ptr->clear();
 
-	// Obtain a FeatureHandle::weak_ref for the feature the user has clicked.
 	if (sorted_hits.size() == 0) {
 		// User clicked on empty space! Do not change the currently focused feature.
 		emit no_hits_found();
 		return;
 	}
-	GPlatesModel::FeatureHandle::weak_ref feature_ref(sorted_hits.top().d_feature->reference());
-	if ( ! feature_ref.is_valid()) {
-		throw GPlatesGlobal::InternalInconsistencyException(__FILE__, __LINE__,
-				"Invalid FeatureHandle::weak_ref returned from proximity tests.");
-	}
-	
 	// Populate the 'Clicked' FeatureTableModel.
 	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
 	while ( ! sorted_hits.empty())
 	{
-		d_clicked_table_model_ptr->feature_sequence()->push_back(
-				sorted_hits.top().d_feature->reference());
+		d_clicked_table_model_ptr->geometry_sequence().push_back(
+				sorted_hits.top().d_recon_geometry);
 		sorted_hits.pop();
 	}
 	d_clicked_table_model_ptr->end_insert_features();
+	d_view_state_ptr->highlight_first_clicked_feature_table_row();
+	emit sorted_hits_updated();
 
 	// Update the focused feature.
-	// Note: we do this as late as possible, so that (for instance), the 'Clicked'
-	// FeatureTableModel actually has rows in it, so that it can highlight the one we just
-	// clicked on. If we set the new focused feature first, the clicked table model
-	// wouldn't have the right feature ref loaded and wouldn't be able to highlight
-	// anything.
-	d_feature_focus.set_focused_feature(feature_ref);
 
-	emit sorted_hits_updated();
+	GPlatesModel::ReconstructionGeometry *rg = sorted_hits.top().d_recon_geometry.get();
+	// We use a dynamic cast here (despite the fact that dynamic casts are generally considered
+	// bad form) because we only care about one specific derivation.  There's no "if ... else
+	// if ..." chain, so I think it's not super-bad form.  (The "if ... else if ..." chain
+	// would imply that we should be using polymorphism -- specifically, the double-dispatch of
+	// the Visitor pattern -- rather than updating the "if ... else if ..." chain each time a
+	// new derivation is added.)
+	GPlatesModel::ReconstructedFeatureGeometry *rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+	if (rfg) {
+		GPlatesModel::FeatureHandle::weak_ref feature_ref = rfg->feature_ref();
+		if ( ! feature_ref.is_valid()) {
+			// FIXME:  Replace this exception with a problem-specific exception which
+			// doesn't contain a string.
+			throw GPlatesGlobal::InternalInconsistencyException(__FILE__, __LINE__,
+					"Invalid FeatureHandle::weak_ref returned from proximity tests.");
+		}
+		d_feature_focus_ptr->set_focus(feature_ref, rfg);
+	}
 }
 

@@ -31,6 +31,7 @@
 #include <list>
 #include <boost/optional.hpp>
 #include <QTreeWidget>
+#include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"

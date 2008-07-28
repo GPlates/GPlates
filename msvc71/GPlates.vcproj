@@ -1505,6 +1505,9 @@
 				RelativePath="..\src\model\ModelUtils.cc">
 			</File>
 			<File
+				RelativePath="..\src\model\ReconstructedFeatureGeometry.cc">
+			</File>
+			<File
 				RelativePath="..\src\model\ReconstructedFeatureGeometryPopulator.cc">
 			</File>
 			<File

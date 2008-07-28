@@ -622,13 +622,29 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Return the start-point of this polygon.
+		 * Return the first vertex in this polygon.
+		 *
+		 * This is the first point specified as a point in the polygon.
 		 */
 		const PointOnSphere &
-		start_point() const
+		first_vertex() const
 		{
 			const GreatCircleArc &first_gca = *(begin());
 			return first_gca.start_point();
+		}
+
+
+		/**
+		 * Return the last vertex in this polygon.
+		 *
+		 * This is the last point specified as a point in the polygon.  It is presumably
+		 * different to the start-point.  (FIXME: We should ensure this at creation time.)
+		 */
+		const PointOnSphere &
+		last_vertex() const
+		{
+			const GreatCircleArc &last_gca = *(--(end()));
+			return last_gca.end_point();
 		}
 
 

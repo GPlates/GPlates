@@ -216,7 +216,7 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QTableView" name="tab_list_clicked" >
+          <widget class="QTableView" name="table_view_clicked_geometries" >
            <property name="sizePolicy" >
             <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
              <horstretch>0</horstretch>
@@ -260,7 +260,7 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QTableView" name="tab_list_selected" >
+          <widget class="QTableView" name="table_view_selected_features" >
            <property name="sizePolicy" >
             <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
              <horstretch>0</horstretch>

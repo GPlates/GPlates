@@ -36,17 +36,17 @@ GPlatesGui::ProximityTests::find_close_rfgs(
 		const GPlatesMaths::PointOnSphere &test_point,
 		const double &proximity_inclusion_threshold)
 {
-	using GPlatesModel::ReconstructedFeatureGeometry;
-
 	GPlatesMaths::ProximityCriteria criteria(test_point, proximity_inclusion_threshold);
 
-	std::vector<ReconstructedFeatureGeometry>::const_iterator iter = recon.geometries().begin();
-	std::vector<ReconstructedFeatureGeometry>::const_iterator end = recon.geometries().end();
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator iter =
+			recon.geometries().begin();
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator end =
+			recon.geometries().end();
 	for ( ; iter != end; ++iter) {
 		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
-				iter->geometry()->test_proximity(criteria);
+				(*iter)->geometry()->test_proximity(criteria);
 		if (hit) {
-			sorted_hits.push(ProximityHit(iter->feature_ref(),
+			sorted_hits.push(ProximityHit(*iter,
 					GPlatesMaths::ProximityHitDetail::non_null_ptr_type(
 						hit.get(),
 						GPlatesUtils::NullIntrusivePointerHandler())));

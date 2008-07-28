@@ -118,7 +118,7 @@ namespace GPlatesCanvasTools
 			d_view_state_ptr(&view_state_),
 			d_clicked_table_model_ptr(&clicked_table_model_),
 			d_fp_dialog_ptr(&fp_dialog_),
-			d_feature_focus(feature_focus)
+			d_feature_focus_ptr(&feature_focus)
 		{  }
 
 		const GPlatesQtWidgets::ViewportWindow &
@@ -164,7 +164,7 @@ namespace GPlatesCanvasTools
 		 * This is our reference to the Feature Focus, which we use to let the rest of the
 		 * application know what the user just clicked on.
 		 */
-		GPlatesGui::FeatureFocus &d_feature_focus;
+		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
 		
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.

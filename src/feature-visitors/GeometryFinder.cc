@@ -29,11 +29,16 @@
 #include <QDebug>
 
 #include "GeometryFinder.h"
-
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/UnicodeStringUtils.h"
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
+#include "property-values/GpmlConstantValue.h"
+#include "global/RetrievalFromEmptyContainerException.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
 
@@ -81,11 +86,9 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_found_line_strings.push_back(
-			GPlatesPropertyValues::GmlLineString::non_null_ptr_to_const_type(
-					&gml_line_string,
-					GPlatesUtils::NullIntrusivePointerHandler()));
+	d_found_geometries.push_back(gml_line_string.polyline());
 }
+
 
 void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_orientable_curve(
@@ -94,37 +97,27 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_orientable_curve(
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
+
 void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_found_points.push_back(
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_to_const_type(
-					&gml_point,
-					GPlatesUtils::NullIntrusivePointerHandler()));
+	d_found_geometries.push_back(gml_point.point());
 }
 
 
-const GPlatesMaths::PointOnSphere *
-GPlatesFeatureVisitors::GeometryFinder::get_first_point()
+void
+GPlatesFeatureVisitors::GeometryFinder::visit_gml_polygon(
+		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	if (found_points_begin() != found_points_end()) {
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_ptr =
-				(*found_points_begin())->point();
-		return &(*point_ptr);
-		
-	} else if (found_line_strings_begin() != found_line_strings_end()) {
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_ptr =
-				(*found_line_strings_begin())->polyline();
+	// First, the exterior ring.
+	d_found_geometries.push_back(gml_polygon.exterior());
 
-		GPlatesMaths::PolylineOnSphere::vertex_const_iterator begin = polyline_ptr->vertex_begin();
-		GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline_ptr->vertex_end();
-		return &(*begin);
-	
-	} else {
-		// Returning null because otherwise we'll run into "control reaches end of non-void function";
-		// Smart people should be checking has_found_geometry() first anyway.
-		return NULL;
+	// Next, the interior rings (if there are any).
+	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
+	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+	for ( ; iter != end; ++iter) {
+		d_found_geometries.push_back(*iter);
 	}
 }
 
@@ -136,3 +129,13 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gpml_constant_value(
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
+
+GPlatesFeatureVisitors::GeometryFinder::geometry_elem_type
+GPlatesFeatureVisitors::GeometryFinder::first_geometry_found() const
+{
+	if ( ! has_found_geometries()) {
+		// Whoops, the container's empty.
+		throw GPlatesGlobal::RetrievalFromEmptyContainerException(__FILE__, __LINE__);
+	}
+	return *(found_geometries_begin());
+}

@@ -87,15 +87,16 @@ namespace GPlatesModel
 				return (**d_current_property)->property_name();
 			}
 		};
-		
-		typedef std::vector<ReconstructedFeatureGeometry> reconstructed_geometries_type;
+
+		typedef std::vector<ReconstructionGeometry::non_null_ptr_type>
+				reconstruction_geometries_type;
 
 		ReconstructedFeatureGeometryPopulator(
 				const double &recon_time,
 				unsigned long root_plate_id,
 				Reconstruction &recon,
 				ReconstructionTree &recon_tree,
-				reconstructed_geometries_type &reconstructed_geometries,
+				reconstruction_geometries_type &reconstruction_geometries,
 				bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -155,7 +156,7 @@ namespace GPlatesModel
 		Reconstruction *d_recon_ptr;
 		ReconstructionTree *d_recon_tree_ptr;
 
-		reconstructed_geometries_type *d_reconstructed_geometries_to_populate;
+		reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
 		bool d_should_keep_features_without_recon_plate_id;
 

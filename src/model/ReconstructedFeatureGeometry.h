@@ -28,138 +28,109 @@
 #ifndef GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 #define GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 
+#include <boost/optional.hpp>
+#include "ReconstructionGeometry.h"
 #include "types.h"
 #include "FeatureHandle.h"
-#include "maths/GeometryOnSphere.h"
-#include <boost/optional.hpp>
 
 
 namespace GPlatesModel
 {
-	// Forward declaration to avoid circularity of headers.
-	class Reconstruction;
-
-	class ReconstructedFeatureGeometry
+	class ReconstructedFeatureGeometry:
+			public ReconstructionGeometry
 	{
 	public:
-		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr_type;
-
-	private:
 		/**
-		 * The reconstructed geometry.
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<ReconstructedFeatureGeometry,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		geometry_ptr_type d_geometry_ptr;
-
-		/**
-		 * This is a weak-ref to the feature, of which this RFG is a reconstruction.
-		 */
-		FeatureHandle::weak_ref d_feature_ref;
-		
-		/**
-		 * This is an iterator to the (geometry-valued) property that this RFG was
-		 * derived from.
-		 */
-		FeatureHandle::properties_iterator d_property_iterator;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructedFeatureGeometry,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
-		 * This is the Reconstruction instance which contains this RFG.
-		 *
-		 * Note that we do NOT want this to be any sort of ref-counting pointer, since the
-		 * Reconstruction instance which contains this RFG, does so using a ref-counting
-		 * pointer; circularity of ref-counting pointers would lead to memory leaks.
-		 *
-		 * Note that this pointer may be NULL.
-		 *
-		 * This pointer should only @em ever point to a Reconstruction instance which
-		 * @em does contain this RFG inside its vector.  (This is the only way we can
-		 * guarantee that the Reconstruction instance actually exists, ie that the pointer
-		 * is not a dangling pointer.)
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<const ReconstructedFeatureGeometry,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		Reconstruction *d_reconstruction_ptr;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructedFeatureGeometry,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_to_const_type;
 
 		/**
-		 * We cache the plate id here so that it can be extracted by drawing code
-		 * for use with on-screen colouring.
+		 * A convenience typedef for boost::intrusive_ptr<ReconstructedFeatureGeometry>.
 		 */
-		boost::optional<integer_plate_id_type> d_reconstruction_plate_id;
+		typedef boost::intrusive_ptr<ReconstructedFeatureGeometry> maybe_null_ptr_type;
 
-	public:
-		ReconstructedFeatureGeometry(
+		/**
+		 * Create a ReconstructedFeatureGeometry instance with a reconstruction plate ID.
+		 */
+		static
+		const non_null_ptr_type
+		create(
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				integer_plate_id_type reconstruction_plate_id_):
-			d_geometry_ptr(geometry_ptr),
-			d_feature_ref(feature_handle.reference()),
-			d_property_iterator(property_iterator_),
-			d_reconstruction_ptr(NULL),
-			d_reconstruction_plate_id(reconstruction_plate_id_)
-		{  }
+				integer_plate_id_type reconstruction_plate_id_)
+		{
+			non_null_ptr_type ptr(
+					new ReconstructedFeatureGeometry(geometry_ptr, feature_handle,
+							property_iterator_, reconstruction_plate_id_),
+					GPlatesUtils::NullIntrusivePointerHandler());
+			return ptr;
+		}
 
-		ReconstructedFeatureGeometry(
+		/**
+		 * Create a ReconstructedFeatureGeometry instance @em without a reconstruction
+		 * plate ID.
+		 *
+		 * For instance, a ReconstructedFeatureGeometry might be created without a
+		 * reconstruction plate ID if no reconstruction plate ID is found amongst the
+		 * properties of the feature being reconstructed, but the client code still wants
+		 * to "reconstruct" the geometries of the feature using the identity rotation.
+		 *
+		 */
+		static
+		const non_null_ptr_type
+		create(
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::properties_iterator property_iterator_):
-			d_geometry_ptr(geometry_ptr),
-			d_feature_ref(feature_handle.reference()),
-			d_property_iterator(property_iterator_),
-			d_reconstruction_ptr(NULL)
+				FeatureHandle::properties_iterator property_iterator_)
+		{
+			non_null_ptr_type ptr(
+					new ReconstructedFeatureGeometry(geometry_ptr, feature_handle,
+							property_iterator_),
+					GPlatesUtils::NullIntrusivePointerHandler());
+			return ptr;
+		}
+
+		virtual
+		~ReconstructedFeatureGeometry()
 		{  }
 
 		/**
-		 * Copy-constructor.
+		 * Get a non-null pointer to a ReconstructedFeatureGeometry which points to this
+		 * instance.
+		 *
+		 * Since the ReconstructedFeatureGeometry constructors are private, it should never
+		 * be the case that a ReconstructedFeatureGeometry instance has been constructed on
+		 * the stack.
 		 */
-		ReconstructedFeatureGeometry(
-				const ReconstructedFeatureGeometry &other):
-			d_geometry_ptr(other.d_geometry_ptr),
-			d_feature_ref(other.d_feature_ref),
-			d_property_iterator(other.d_property_iterator),
-			// Need to copy the reconstruction-ptr, or the reconstruction-ptr will be
-			// wiped whenever copy-construction occurs.  Copy-construction occurs, for
-			// example, when a vector is resized...
-			d_reconstruction_ptr(other.d_reconstruction_ptr),
-			d_reconstruction_plate_id(other.d_reconstruction_plate_id)
-		{  }
+		const non_null_ptr_type
+		get_non_null_pointer();
 
 		/**
-		 * Copy-assignment operator.
-		 *
-		 * Note that this function does NOT actually do an exact copy:  Specifically, it
-		 * does not copy the reconstruction-ptr member from 'other' to 'this' -- instead,
-		 * the reconstruction-ptr is left untouched.
-		 *
-		 * The reasoning:  Either this RFG is contained within (the vector within) a
-		 * Reconstruction instance, in which case its reconstruction-ptr should @em still
-		 * point to the enclosing Reconstruction instance (We'll assume that the
-		 * reconstruction-ptr has been set appropriately, using @a set_reconstruction_ptr),
-		 * @em or this RFG is @em not contained within a Reconstruction instance, in which
-		 * case its reconstruction-ptr should still be NULL.
+		 * Access (a reference to) the feature whose reconstructed geometry this RFG
+		 * contains.
 		 */
-		ReconstructedFeatureGeometry &
-		operator=(
-				const ReconstructedFeatureGeometry &other)
-		{
-			d_geometry_ptr = other.d_geometry_ptr;
-			d_feature_ref = other.d_feature_ref;
-			d_property_iterator = other.d_property_iterator;
-			// Leave 'd_reconstruction_ptr' untouched.
-			d_reconstruction_plate_id = other.d_reconstruction_plate_id;
-
-			return *this;
-		}
-
-		const geometry_ptr_type
-		geometry() const
-		{
-			return d_geometry_ptr;
-		}
-
 		const FeatureHandle::weak_ref
 		feature_ref() const
 		{
 			return d_feature_ref;
 		}
 
+		/**
+		 * Access the feature property which contained the reconstructed geometry.
+		 */
 		const FeatureHandle::properties_iterator
 		property() const
 		{
@@ -167,7 +138,13 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the cached plate id.
+		 * Access the cached reconstruction plate ID, if it exists.
+		 *
+		 * Note that it's possible for a ReconstructedFeatureGeometry to be created without
+		 * a reconstruction plate ID -- for example, if no reconstruction plate ID is found
+		 * amongst the properties of the feature being reconstructed, but the client code
+		 * still wants to "reconstruct" the geometries of the feature using the identity
+		 * rotation.
 		 */
 		const boost::optional<integer_plate_id_type> &
 		reconstruction_plate_id() const
@@ -176,50 +153,107 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Access the Reconstruction instance which contains this RFG.
-		 *
-		 * This could be used, for instance, to access the ReconstructionTree which was
-		 * used to reconstruct this RFG.
-		 *
-		 * Note that this pointer may be NULL.
+		 * Accept a ReconstructionGeometryVisitor instance.
 		 */
-		const Reconstruction *
-		reconstruction() const
-		{
-			return d_reconstruction_ptr;
-		}
-
-		/**
-		 * Access the Reconstruction instance which contains this RFG.
-		 *
-		 * This could be used, for instance, to access the ReconstructionTree which was
-		 * used to reconstruct this RFG.
-		 *
-		 * Note that this pointer may be NULL.
-		 */
-		Reconstruction *
-		reconstruction()
-		{
-			return d_reconstruction_ptr;
-		}
-
-		/**
-		 * Set the reconstruction pointer.
-		 *
-		 * This function is intended to be invoked @em only when the RFG is sitting in the
-		 * vector inside the Reconstruction instance, since even a copy-construction will
-		 * reset the value of the reconstruction pointer back to NULL.
-		 *
-		 * WARNING:  This function should only be invoked by the code which is actually
-		 * assigning an RFG instance into (the vector inside) a Reconstruction instance.
-		 */
+		virtual
 		void
-		set_reconstruction_ptr(
-				Reconstruction *reconstruction_ptr)
-		{
-			d_reconstruction_ptr = reconstruction_ptr;
-		}
+		accept_visitor(
+				ReconstructionGeometryVisitor &visitor);
+
+	private:
+
+		/**
+		 * This is a weak-ref to the feature, of which this RFG is a reconstruction.
+		 */
+		FeatureHandle::weak_ref d_feature_ref;
+		
+		/**
+		 * This is an iterator to the (geometry-valued) property from which this RFG was
+		 * derived.
+		 */
+		FeatureHandle::properties_iterator d_property_iterator;
+
+		/**
+		 * The cached reconstruction plate ID, if it exists.
+		 *
+		 * Note that it's possible for a ReconstructedFeatureGeometry to be created without
+		 * a reconstruction plate ID -- for example, if no reconstruction plate ID is found
+		 * amongst the properties of the feature being reconstructed, but the client code
+		 * still wants to "reconstruct" the geometries of the feature using the identity
+		 * rotation.
+		 *
+		 * We cache the plate ID here so that it can be extracted by drawing code for use
+		 * with on-screen colouring, and accessed quickly when RFGs are being queried.
+		 */
+		boost::optional<integer_plate_id_type> d_reconstruction_plate_id;
+
+		/**
+		 * Instantiate a reconstructed feature geometry with a reconstruction plate ID.
+		 *
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 */
+		ReconstructedFeatureGeometry(
+				geometry_ptr_type geometry_ptr,
+				FeatureHandle &feature_handle,
+				FeatureHandle::properties_iterator property_iterator_,
+				integer_plate_id_type reconstruction_plate_id_):
+			ReconstructionGeometry(geometry_ptr),
+			d_feature_ref(feature_handle.reference()),
+			d_property_iterator(property_iterator_),
+			d_reconstruction_plate_id(reconstruction_plate_id_)
+		{  }
+
+		/**
+		 * Instantiate a reconstructed feature geometry @em without a reconstruction plate
+		 * ID.
+		 *
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 */
+		ReconstructedFeatureGeometry(
+				geometry_ptr_type geometry_ptr,
+				FeatureHandle &feature_handle,
+				FeatureHandle::properties_iterator property_iterator_):
+			ReconstructionGeometry(geometry_ptr),
+			d_feature_ref(feature_handle.reference()),
+			d_property_iterator(property_iterator_)
+		{  }
+
+		// This constructor should never be defined, because we don't want to allow
+		// copy-construction.
+		ReconstructedFeatureGeometry(
+				const ReconstructedFeatureGeometry &other);
+
+		// This operator should never be defined, because we don't want/need to allow
+		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
+		// (which will in turn use the copy-constructor); all "assignment" should really
+		// only be assignment of one intrusive-pointer to another.
+		ReconstructedFeatureGeometry &
+		operator=(
+				const ReconstructedFeatureGeometry &);
 	};
+
+
+	inline
+	void
+	intrusive_ptr_add_ref(
+			const ReconstructedFeatureGeometry *p)
+	{
+		p->increment_ref_count();
+	}
+
+
+	inline
+	void
+	intrusive_ptr_release(
+			const ReconstructedFeatureGeometry *p)
+	{
+		if (p->decrement_ref_count() == 0) {
+			delete p;
+		}
+	}
+
 }
 
 #endif  // GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H

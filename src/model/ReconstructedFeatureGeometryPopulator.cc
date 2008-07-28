@@ -50,13 +50,13 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::ReconstructedFeatureGeometr
 		unsigned long root_plate_id,
 		Reconstruction &recon,
 		ReconstructionTree &recon_tree,
-		reconstructed_geometries_type &reconstructed_geometries,
+		reconstruction_geometries_type &reconstruction_geometries,
 		bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
-	d_reconstructed_geometries_to_populate(&reconstructed_geometries),
+	d_reconstruction_geometries_to_populate(&reconstruction_geometries),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  }
 
@@ -150,19 +150,23 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 			PolylineOnSphere::non_null_ptr_to_const_type reconstructed_polyline =
 					r * gml_line_string.polyline();
 
-			ReconstructedFeatureGeometry rfg(reconstructed_polyline,
-					*d_accumulator->d_current_property->collection_handle_ptr(),
-					*d_accumulator->d_current_property,
-					*d_accumulator->d_recon_plate_id);
-			d_reconstructed_geometries_to_populate->push_back(rfg);
-			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
+			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					ReconstructedFeatureGeometry::create(
+							reconstructed_polyline,
+							*d_accumulator->d_current_property->collection_handle_ptr(),
+							*d_accumulator->d_current_property,
+							*d_accumulator->d_recon_plate_id);
+			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
+			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		} else {
 			// We must be reconstructing using the identity rotation.
-			ReconstructedFeatureGeometry rfg(gml_line_string.polyline(),
-					*d_accumulator->d_current_property->collection_handle_ptr(),
-					*d_accumulator->d_current_property);
-			d_reconstructed_geometries_to_populate->push_back(rfg);
-			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
+			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					ReconstructedFeatureGeometry::create(
+							gml_line_string.polyline(),
+							*d_accumulator->d_current_property->collection_handle_ptr(),
+							*d_accumulator->d_current_property);
+			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
+			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		}
 	}
 }
@@ -190,19 +194,23 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 			PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
 					r * gml_point.point();
 
-			ReconstructedFeatureGeometry rfg(reconstructed_point,
-					*d_accumulator->d_current_property->collection_handle_ptr(),
-					*d_accumulator->d_current_property,
-					*d_accumulator->d_recon_plate_id);
-			d_reconstructed_geometries_to_populate->push_back(rfg);
-			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
+			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					ReconstructedFeatureGeometry::create(
+							reconstructed_point,
+							*d_accumulator->d_current_property->collection_handle_ptr(),
+							*d_accumulator->d_current_property,
+							*d_accumulator->d_recon_plate_id);
+			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
+			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		} else {
 			// We must be reconstructing using the identity rotation.
-			ReconstructedFeatureGeometry rfg(gml_point.point(),
-					*d_accumulator->d_current_property->collection_handle_ptr(),
-					*d_accumulator->d_current_property);
-			d_reconstructed_geometries_to_populate->push_back(rfg);
-			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
+			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					ReconstructedFeatureGeometry::create(
+							gml_point.point(),
+							*d_accumulator->d_current_property->collection_handle_ptr(),
+							*d_accumulator->d_current_property);
+			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
+			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		}
 	}
 }

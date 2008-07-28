@@ -52,9 +52,9 @@ namespace GPlatesGui
 		struct ProximityHit
 		{
 			ProximityHit(
-					const GPlatesModel::FeatureHandle::weak_ref &feature,
+					GPlatesModel::ReconstructionGeometry::non_null_ptr_type recon_geometry,
 					GPlatesMaths::ProximityHitDetail::non_null_ptr_type detail):
-				d_feature(feature),
+				d_recon_geometry(recon_geometry),
 				d_detail(detail),
 				d_proximity(detail->closeness())
 			{  }
@@ -66,7 +66,7 @@ namespace GPlatesGui
 				return (d_proximity < other.d_proximity);
 			}
 
-			GPlatesModel::FeatureHandle::weak_ref d_feature;
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type d_recon_geometry;
 			GPlatesMaths::ProximityHitDetail::non_null_ptr_type d_detail;
 			double d_proximity;
 		};

@@ -30,6 +30,7 @@
 #include "FeatureSummaryWidgetUi.h"
 
 #include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
 
 // An effort to reduce the dependency spaghetti currently plaguing the GUI.
 namespace GPlatesGui
@@ -59,7 +60,8 @@ namespace GPlatesQtWidgets
 
 		void
 		display_feature(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 		
 	};
 }

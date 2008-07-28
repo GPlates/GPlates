@@ -29,37 +29,34 @@
 #define GPLATES_FEATUREVISITORS_GEOMETRYFINDER_H
 
 #include <vector>
+
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
-#include "property-values/GmlLineString.h"
-#include "property-values/GmlOrientableCurve.h"
-#include "property-values/GmlPoint.h"
-#include "property-values/GpmlConstantValue.h"
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
+#include "maths/GeometryOnSphere.h"
 
 
 namespace GPlatesFeatureVisitors
 {
 	/**
 	 * This const feature visitor finds all geometry contained within the feature.
+	 *
 	 * It currently handles the following property-values:
-	 * GmlLineString, GmlOrientableCurve (Assuming a GmlLineString is used as the base),
-	 * and GmlPoint.
+	 *  -# GmlLineString
+	 *  -# GmlOrientableCurve (assuming a GmlLineString is used as the base)
+	 *  -# GmlPoint
+	 *  -# GmlPolygon (although the differentiation between the interior and exterior rings is
+	 * lost)
 	 */
 	class GeometryFinder:
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
-		typedef std::vector<GPlatesPropertyValues::GmlLineString::non_null_ptr_to_const_type>
-				line_string_container_type;
-		typedef line_string_container_type::const_iterator line_string_container_const_iterator;
+		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_elem_type;
+		typedef std::vector<geometry_elem_type> geometry_container_type;
+		typedef geometry_container_type::const_iterator geometry_container_const_iterator;
 
-		typedef std::vector<GPlatesPropertyValues::GmlPoint::non_null_ptr_to_const_type>
-				point_container_type;
-		typedef point_container_type::const_iterator point_container_const_iterator;
-
-		// FIXME: Supply the current reconstruction time to allow for time-dependent properties.
+		// FIXME: Supply the current reconstruction time to allow for time-dependent
+		// properties.
 		GeometryFinder()
 		{  }
 
@@ -107,69 +104,52 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_gml_polygon(
+				const GPlatesPropertyValues::GmlPolygon &gml_polygon);
+
+		virtual
+		void
 		visit_gpml_constant_value(
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
-                                                                                
 
-		line_string_container_const_iterator
-		found_line_strings_begin() const
+
+		geometry_container_const_iterator
+		found_geometries_begin() const
 		{
-			return d_found_line_strings.begin();
+			return d_found_geometries.begin();
 		}
 
-		line_string_container_const_iterator
-		found_line_strings_end() const
+		geometry_container_const_iterator
+		found_geometries_end() const
 		{
-			return d_found_line_strings.end();
+			return d_found_geometries.end();
 		}
 
-		point_container_const_iterator
-		found_points_begin() const
-		{
-			return d_found_points.begin();
-		}
-
-		point_container_const_iterator
-		found_points_end() const
-		{
-			return d_found_points.end();
-		}
-		
 		bool
-		has_found_geometry() const
+		has_found_geometries() const
 		{
-			if (found_line_strings_begin() != found_line_strings_end() ||
-					found_points_begin() != found_points_end())
-			{
-				return true;
-			}
-			return false;
+			return (found_geometries_begin() != found_geometries_end());
 		}
+
+		/**
+		 * Access the first element in the container of found geometries.
+		 *
+		 * Note that this function assumes that the client code has already ensured that
+		 * the container is not empty.  If the container @em is empty, a
+		 * RetrievalFromEmptyContainerException will be thrown.
+		 */
+		geometry_elem_type
+		first_geometry_found() const;
 
 		void
-		clear_found_geometry()
+		clear_found_geometries()
 		{
-			d_found_line_strings.clear();
-			d_found_points.clear();
+			d_found_geometries.clear();
 		}
-		
-		/**
-		 * If all you are interested in is finding the first point of some geometry
-		 * of the feature (for example, to display to a user to differentiate two different
-		 * geometries), you can call this function.
-		 * 
-		 * It returns the first point found in one of the geometric structural types of the
-		 * feature. If multiple geometries are found, the first gml:Point gets priority,
-		 * followed by the first point of the first gml:LineString.
-		 */
-		const GPlatesMaths::PointOnSphere *
-		get_first_point();
-		
 
 	private:
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;
-		line_string_container_type d_found_line_strings;
-		point_container_type d_found_points;
+		geometry_container_type d_found_geometries;
 	};
 }
 

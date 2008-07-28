@@ -477,15 +477,15 @@ output_reconstructions(
 				<< std::endl;
 
 		std::cout << " > The reconstructed polylines are:\n";
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator
+		GPlatesModel::Reconstruction::geometry_collection_type::iterator
 				iter3 = reconstruction->geometries().begin();
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry>::iterator
+		GPlatesModel::Reconstruction::geometry_collection_type::iterator
 				end3 = reconstruction->geometries().end();
 		for ( ; iter3 != end3; ++iter3) {
 			// We only care about polylines (since all the geometries in this function
 			// *should* be polylines), so let's just use a dynamic cast.
 			const GPlatesMaths::PolylineOnSphere *polyline =
-					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(iter3->geometry().get());
+					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>((*iter3)->geometry().get());
 			if ( ! polyline) {
 				// Why wasn't it a polyline?
 				std::cerr << "Why wasn't it a polyline?" << std::endl;

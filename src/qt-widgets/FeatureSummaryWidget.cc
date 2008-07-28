@@ -71,13 +71,17 @@ GPlatesQtWidgets::FeatureSummaryWidget::FeatureSummaryWidget(
 	
 	// Subscribe to focus events. We can discard the FeatureFocus reference afterwards.
 	QObject::connect(&feature_focus,
-			SIGNAL(focused_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
+			SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref)));
+			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 	QObject::connect(&feature_focus,
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref)),
+			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref)));
+			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 }
 
 
@@ -94,7 +98,8 @@ GPlatesQtWidgets::FeatureSummaryWidget::clear()
 
 void
 GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
 {
 	// Clear the fields first, then fill in those that we have data for.
 	clear();
@@ -154,6 +159,15 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
 	}
 
+	if (associated_rfg) {
+		// There was an associated Reconstructed Feature Geometry (RFG), which means there
+		// was a clicked geometry.
+		GPlatesModel::FeatureHandle::properties_iterator geometry_property =
+				associated_rfg->property();
+		lineedit_clicked_geometry->setText(
+				GPlatesUtils::make_qstring_from_icu_string(
+					(*geometry_property)->property_name().build_aliased_name()));
+	}
 }
 
 

@@ -29,10 +29,8 @@
 #define GPLATES_MODEL_RECONSTRUCTION_H
 
 #include <vector>
-#include "ReconstructedFeatureGeometry.h"
+#include "ReconstructionGeometry.h"
 #include "ReconstructionTree.h"
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -62,6 +60,11 @@ namespace GPlatesModel
 				non_null_ptr_to_const_type;
 
 		/**
+		 * The type of the collection of RFGs.
+		 */
+		typedef std::vector<ReconstructionGeometry::non_null_ptr_type> geometry_collection_type;
+
+		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;
@@ -84,7 +87,7 @@ namespace GPlatesModel
 		/**
 		 * Access the reconstructed geometries.
 		 */
-		std::vector<ReconstructedFeatureGeometry> &
+		geometry_collection_type &
 		geometries()
 		{
 			return d_geometries;
@@ -138,7 +141,7 @@ namespace GPlatesModel
 		/**
 		 * The reconstructed geometries.
 		 */
-		std::vector<ReconstructedFeatureGeometry> d_geometries;
+		geometry_collection_type d_geometries;
 
 		/**
 		 * The plate-reconstruction hierarchy of total reconstruction poles which was used
@@ -163,9 +166,8 @@ namespace GPlatesModel
 				const Reconstruction &other);
 
 		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive-pointer to another.
+		// copy-assignment:  All "assignment" should really only be assignment of one
+		// intrusive-pointer to another.
 		Reconstruction &
 		operator=(
 				const Reconstruction &);

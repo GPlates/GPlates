@@ -32,9 +32,11 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QDebug>
+#include <boost/none.hpp>
 
 #include "model/types.h"
 #include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/PlateIdFinder.h"
 #include "feature-visitors/GmlTimePeriodFinder.h"
 #include "feature-visitors/XsStringFinder.h"
@@ -44,6 +46,9 @@
 #include "utils/UnicodeStringUtils.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+#include "maths/ConstGeometryOnSphereVisitor.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -51,8 +56,8 @@
 
 namespace
 {
-	typedef QVariant (*table_cell_accessor_type)(
-			GPlatesModel::FeatureHandle &feature);
+	typedef const QVariant (*table_cell_accessor_type)(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry);
 	
 	struct ColumnHeadingInfo
 	{
@@ -67,40 +72,115 @@ namespace
 
 	// Accessor functions for table cells:
 	
-	QVariant
+	const QVariant
 	null_table_accessor(
-			GPlatesModel::FeatureHandle &feature)
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
 		return QVariant();
 	}
-	
-	QVariant
-	get_feature_type(
-			GPlatesModel::FeatureHandle &feature)
+
+
+	const boost::optional<GPlatesModel::FeatureHandle::weak_ref>
+	get_feature_weak_ref_if_valid(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
-		return QVariant(GPlatesUtils::make_qstring_from_icu_string(
-					feature.feature_type().build_aliased_name()));
+		// We use a dynamic cast here (despite the fact that dynamic casts are generally
+		// considered bad form) because we only care about one specific derivation.
+		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
+		// "if ... else if ..." chain would imply that we should be using polymorphism --
+		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
+		// the "if ... else if ..." chain each time a new derivation is added.)
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(geometry.get());
+		if (rfg) {
+			// It's an RFG, so let's look at the feature it's referencing.
+			if (rfg->feature_ref().is_valid()) {
+				return boost::optional<GPlatesModel::FeatureHandle::weak_ref>(
+						rfg->feature_ref());
+			}
+			// Else, the weak-ref is not valid, so we'll return boost::none instead.
+			return boost::none;
+		}
+		// Else, it's not an RFG, so there's no associated feature.
+		return boost::none;
 	}
+
+
+	const QVariant
+	get_feature_type(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+	{
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
+				get_feature_weak_ref_if_valid(geometry);
+		if (weak_ref) {
+			return QVariant(GPlatesUtils::make_qstring_from_icu_string(
+					(*weak_ref)->feature_type().build_aliased_name()));
+		}
+		return QVariant();
+	}
+
 	
-	QVariant
-	get_plate_id(
-			GPlatesModel::FeatureHandle &feature)
+	const QVariant
+	get_reconstruction_plate_id_from_properties(
+			const GPlatesModel::FeatureHandle &feature,
+			bool should_print_debugging_message = false)
 	{
 		static const GPlatesModel::PropertyName plate_id_property_name =
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
 		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
 		plate_id_finder.visit_feature_handle(feature);
 		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
 			// The feature has a reconstruction plate ID.
 			GPlatesModel::integer_plate_id_type recon_plate_id =
 					*plate_id_finder.found_plate_ids_begin();
+
+			if (should_print_debugging_message) {
+				std::cerr << "Debug log: No cached reconstruction plate ID in RFG,\n"
+						<< "but reconstruction plate ID found in feature." << std::endl;
+			}
 			return QVariant(static_cast<quint32>(recon_plate_id));
 		} else {
+			// The feature doesn't have a reconstruction plate ID.
 			return QVariant();
 		}
 	}
-	
-	QString
+
+
+	const QVariant
+	get_plate_id(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+	{
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
+				get_feature_weak_ref_if_valid(geometry);
+		if (weak_ref) {
+			// We use a dynamic cast here (despite the fact that dynamic casts are
+			// generally considered bad form) because we only care about one specific
+			// derivation.  There's no "if ... else if ..." chain, so I think it's not
+			// super-bad form.  (The "if ... else if ..." chain would imply that we
+			// should be using polymorphism -- specifically, the double-dispatch of the
+			// Visitor pattern -- rather than updating the "if ... else if ..." chain
+			// each time a new derivation is added.)
+			GPlatesModel::ReconstructedFeatureGeometry *rfg =
+					dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(geometry.get());
+			if (rfg) {
+				// It's an RFG, so it might have a cached reconstruction plate ID.
+				if (rfg->reconstruction_plate_id()) {
+					// Yes, it has a cached reconstruction plate ID.
+					return QVariant(static_cast<quint32>(*rfg->reconstruction_plate_id()));
+				} else {
+					// Otherwise, there wasn't a reconstruction plate ID.  Let's find
+					// the reconstruction plate ID the hard way -- by iterating through
+					// all the properties of the referenced feature.
+					return get_reconstruction_plate_id_from_properties(**weak_ref, true);
+				}
+			}
+		}
+		return QVariant();
+	}
+
+
+	const QString
 	format_time_instant(
 			const GPlatesPropertyValues::GmlTimeInstant &time_instant)
 	{
@@ -116,7 +196,8 @@ namespace
 		}
 	}
 
-	QString
+
+	const QString
 	format_time_period(
 			const GPlatesPropertyValues::GmlTimePeriod &time_period)
 	{
@@ -124,173 +205,321 @@ namespace
 				.arg(format_time_instant(*(time_period.begin())))
 				.arg(format_time_instant(*(time_period.end())));
 	}
-			
-	QVariant
+
+
+	const QVariant
 	get_time_begin(
-			GPlatesModel::FeatureHandle &feature)
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
 		static const GPlatesModel::PropertyName valid_time_property_name =
-			GPlatesModel::PropertyName::create_gml("validTime");
-		GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-		time_period_finder.visit_feature_handle(feature);
-		if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
-			// The feature has a gml:validTime property.
-			// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
-			// in the latter case it has a slightly different meaning and we should be displaying the
-			// gpml:reconstructedTime property instead.
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-					*time_period_finder.found_time_periods_begin();
-			return format_time_instant(*(time_period->begin()));
-		} else {
-			return QVariant();
+				GPlatesModel::PropertyName::create_gml("validTime");
+
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
+				get_feature_weak_ref_if_valid(geometry);
+		if (weak_ref) {
+			GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
+			time_period_finder.visit_feature_handle(**weak_ref);
+			if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
+				// The feature has a gml:validTime property.
+				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
+				// in the latter case it has a slightly different meaning and we should be displaying the
+				// gpml:reconstructedTime property instead.
+				GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
+						*time_period_finder.found_time_periods_begin();
+				return format_time_instant(*(time_period->begin()));
+			}
 		}
+		return QVariant();
 	}
 
-	QVariant
+
+	const QVariant
 	get_time_end(
-			GPlatesModel::FeatureHandle &feature)
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
 		static const GPlatesModel::PropertyName valid_time_property_name =
-			GPlatesModel::PropertyName::create_gml("validTime");
-		GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-		time_period_finder.visit_feature_handle(feature);
-		if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
-			// The feature has a gpml:validTime property.
-			// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
-			// in the latter case it has a slightly different meaning and we should be displaying the
-			// gpml:reconstructedTime property instead.
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-					*time_period_finder.found_time_periods_begin();
-			return format_time_instant(*(time_period->end()));
-		} else {
-			return QVariant();
+				GPlatesModel::PropertyName::create_gml("validTime");
+
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
+				get_feature_weak_ref_if_valid(geometry);
+		if (weak_ref) {
+			GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
+			time_period_finder.visit_feature_handle(**weak_ref);
+			if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
+				// The feature has a gml:validTime property.
+				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
+				// in the latter case it has a slightly different meaning and we should be displaying the
+				// gpml:reconstructedTime property instead.
+				GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
+						*time_period_finder.found_time_periods_begin();
+				return format_time_instant(*(time_period->end()));
+			}
 		}
+		return QVariant();
 	}
-	
-	QVariant
+
+
+	const QVariant
 	get_name(
-			GPlatesModel::FeatureHandle &feature)
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
 		// FIXME: Need to adapt according to user's current codeSpace setting.
 		static const GPlatesModel::PropertyName name_property_name = 
-			GPlatesModel::PropertyName::create_gml("name");
-		GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-		string_finder.visit_feature_handle(feature);
-		if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
-			// The feature has one or more name properties. Use the first one for now.
-			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
-					*string_finder.found_strings_begin();
-			return GPlatesUtils::make_qstring(name->value());
-		} else {
-			return QVariant();
+				GPlatesModel::PropertyName::create_gml("name");
+
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
+				get_feature_weak_ref_if_valid(geometry);
+		if (weak_ref) {
+			GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
+			string_finder.visit_feature_handle(**weak_ref);
+			if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
+				// The feature has one or more name properties.  Use the first one
+				// for now.
+				GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
+						*string_finder.found_strings_begin();
+				return GPlatesUtils::make_qstring(name->value());
+			}
 		}
+		return QVariant();
 	}
 
-	QVariant
+
+	const QVariant
 	get_description(
-			GPlatesModel::FeatureHandle &feature)
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
-		static const GPlatesModel::PropertyName description_property_name =
-			GPlatesModel::PropertyName::create_gml("description");
-		GPlatesFeatureVisitors::XsStringFinder string_finder(description_property_name);
-		string_finder.visit_feature_handle(feature);
-		if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
-			// The feature has a description property
-			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type description = 
-					*string_finder.found_strings_begin();
-			return GPlatesUtils::make_qstring(description->value());
-		} else {
-			return QVariant();
+		static const GPlatesModel::PropertyName description_property_name = 
+				GPlatesModel::PropertyName::create_gml("description");
+
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
+				get_feature_weak_ref_if_valid(geometry);
+		if (weak_ref) {
+			GPlatesFeatureVisitors::XsStringFinder string_finder(description_property_name);
+			string_finder.visit_feature_handle(**weak_ref);
+			if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
+				// The feature has one or more description properties.  Use the
+				// first one for now.
+				GPlatesPropertyValues::XsString::non_null_ptr_to_const_type description =
+						*string_finder.found_strings_begin();
+				return GPlatesUtils::make_qstring(description->value());
+			}
 		}
+		return QVariant();
 	}
-	
-	QString
-	format_geometry_point(
-			const GPlatesMaths::PointOnSphere &point)
+
+
+	const QString
+	format_point_or_vertex(
+			const GPlatesMaths::PointOnSphere &point_or_vertex)
 	{
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point_or_vertex);
 		QLocale locale;
-		QString point_str = QObject::tr("(%1 ; %2)")
+		QString str = QObject::tr("(%1 ; %2)")
 				.arg(locale.toString(llp.latitude()))
 				.arg(locale.toString(llp.longitude()));
-		return point_str;
+		return str;
 	}
 
-	QString
-	format_geometry_polyline(
-			const GPlatesMaths::PolylineOnSphere &polyline)
+
+	const QString
+	format_geometry_point(
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
 	{
-		QString begin_str = format_geometry_point(*polyline.vertex_begin());
-		QString end_str = format_geometry_point(*(--polyline.vertex_end()));
+		return QObject::tr("point: %1")
+				.arg(format_point_or_vertex(*point));
+	}
+
+
+	const QString
+	format_geometry_polygon(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
+	{
+		QString begin_str = format_point_or_vertex(polygon->first_vertex());
+		QString end_str = format_point_or_vertex(polygon->last_vertex());
 		QString middle_str;
-		if (polyline.number_of_vertices() == 3) {
-			middle_str = QObject::tr("... 1 vertex ... ");
-		} else if (polyline.number_of_vertices() > 3) {
-			middle_str = QObject::tr("... %1 vertices ... ").arg(polyline.number_of_vertices() - 2);
+		if (polygon->number_of_vertices() == 3) {
+			middle_str = QObject::tr("... 1 more vertex ... ");
+		} else if (polygon->number_of_vertices() > 3) {
+			middle_str = QObject::tr("... %1 more vertices ... ")
+					.arg(polygon->number_of_vertices() - 2);
 		}
-		return QObject::tr("%1 %3%2")
+		return QObject::tr("polygon: %1 %3%2")
 				.arg(begin_str)
 				.arg(end_str)
 				.arg(middle_str);
 	}
-	
-	QVariant
-	get_geometry(
-			GPlatesModel::FeatureHandle &feature)
+
+
+	const QString
+	format_geometry_polyline(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
 	{
-		GPlatesFeatureVisitors::GeometryFinder geometry_finder;
-		geometry_finder.visit_feature_handle(feature);
-		if (geometry_finder.has_found_geometry()) {
-			// The feature has some geometry of some kind.
-			if (geometry_finder.found_points_begin() != geometry_finder.found_points_end()) {
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_ptr =
-						(*geometry_finder.found_points_begin())->point();
-				return format_geometry_point(*point_ptr);
-				
-			} else if (geometry_finder.found_line_strings_begin() != geometry_finder.found_line_strings_end()) {
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_ptr =
-						(*geometry_finder.found_line_strings_begin())->polyline();
-				return format_geometry_polyline(*polyline_ptr);
-			
-			} else {
-				return QVariant();
-			}
-		} else {
-			return QVariant();
+		QString begin_str = format_point_or_vertex(polyline->start_point());
+		QString end_str = format_point_or_vertex(polyline->end_point());
+		QString middle_str;
+		if (polyline->number_of_vertices() == 3) {
+			middle_str = QObject::tr("... 1 more vertex ... ");
+		} else if (polyline->number_of_vertices() > 3) {
+			middle_str = QObject::tr("... %1 more vertices ... ")
+					.arg(polyline->number_of_vertices() - 2);
 		}
+		return QObject::tr("polyline: %1 %3%2")
+				.arg(begin_str)
+				.arg(end_str)
+				.arg(middle_str);
 	}
+
+
+	/**
+	 * This is a Visitor to obtain a summary of the geometry-on-sphere as a string.
+	 */
+	class GeometryOnSphereSummaryAsStringVisitor:
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		GeometryOnSphereSummaryAsStringVisitor()
+		{  }
+
+		~GeometryOnSphereSummaryAsStringVisitor()
+		{  }
+
+		// Please keep these geometries ordered alphabetically.
+
+		const QString &
+		geometry_summary() const
+		{
+			return d_string;
+		}
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_string = format_geometry_point(point_on_sphere);
+		}
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_string = format_geometry_polygon(polygon_on_sphere);
+		}
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_string = format_geometry_polyline(polyline_on_sphere);
+		}
+
+	private:
+		QString d_string;
+	};
+
+
+	const boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
+	get_geometry_property_if_valid(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+	{
+		// We use a dynamic cast here (despite the fact that dynamic casts are generally
+		// considered bad form) because we only care about one specific derivation.
+		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
+		// "if ... else if ..." chain would imply that we should be using polymorphism --
+		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
+		// the "if ... else if ..." chain each time a new derivation is added.)
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(geometry.get());
+		if (rfg) {
+			// It's an RFG, so let's look at the property iterator of the geometry.
+			if (rfg->property().is_valid()) {
+				return boost::optional<GPlatesModel::FeatureHandle::properties_iterator>(
+						rfg->property());
+			}
+			// Else, the iterator is not valid, so we'll return boost::none instead.
+			return boost::none;
+		}
+		// Else, it's not an RFG, so there's no associated feature.
+		return boost::none;
+	}
+
+
+	const QVariant
+	get_present_day_geometry(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+	{
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> property =
+				get_geometry_property_if_valid(geometry);
+		if (property) {
+			GPlatesFeatureVisitors::GeometryFinder geometry_finder;
+			(**property)->accept_visitor(geometry_finder);
+			if (geometry_finder.has_found_geometries()) {
+				GeometryOnSphereSummaryAsStringVisitor geometry_visitor;
+				(*geometry_finder.found_geometries_begin())->accept_visitor(geometry_visitor);
+				return QVariant(geometry_visitor.geometry_summary());
+			}
+		}
+		return QVariant();
+	}
+
+
+	const QVariant
+	get_clicked_geometry_property(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+	{
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> property =
+				get_geometry_property_if_valid(geometry);
+		if (property) {
+			return QVariant(GPlatesUtils::make_qstring_from_icu_string(
+					(**property)->property_name().build_aliased_name()));
+		}
+		return QVariant();
+	}
+
 
 	// The dispatch table for the above functions:
 	
 	static const ColumnHeadingInfo column_heading_info_table[] = {
-		{ QT_TR_NOOP("Feature Type"), QT_TR_NOOP(""),
+		{ QT_TR_NOOP("Feature type"), QT_TR_NOOP("The type of this feature"),
 				140, QHeaderView::ResizeToContents,
 				get_feature_type, Qt::AlignLeft | Qt::AlignVCenter },
-				
-		{ QT_TR_NOOP("Plate ID"), QT_TR_NOOP("The Plate ID used to reconstruct the feature"),
+
+		{ QT_TR_NOOP("Plate ID"), QT_TR_NOOP("The plate ID used to reconstruct this feature"),
 				60, QHeaderView::Fixed,
 				get_plate_id, Qt::AlignCenter },
-				
-		{ QT_TR_NOOP("Begin"), QT_TR_NOOP("Time of Appearance (Ma)"),
+
+		{ QT_TR_NOOP("Name"), QT_TR_NOOP("A convenient label for this feature"),
+				140, QHeaderView::ResizeToContents,
+				get_name, Qt::AlignLeft | Qt::AlignVCenter },
+
+		{ QT_TR_NOOP("Clicked geometry"), QT_TR_NOOP("The geometry which was clicked"),
+				140, QHeaderView::ResizeToContents,
+				get_clicked_geometry_property, Qt::AlignLeft | Qt::AlignVCenter },
+
+		{ QT_TR_NOOP("Begin"), QT_TR_NOOP("The time of appearance (Ma)"),
 				60, QHeaderView::Fixed,
 				get_time_begin, Qt::AlignCenter },
-				
-		{ QT_TR_NOOP("End"), QT_TR_NOOP("Time of Disappearance (Ma)"),
+
+		{ QT_TR_NOOP("End"), QT_TR_NOOP("The time of disappearance (Ma)"),
 				60, QHeaderView::Fixed,
 				get_time_end, Qt::AlignCenter }, 
-				
-		{ QT_TR_NOOP("Name"), QT_TR_NOOP(""),
+
+		{ QT_TR_NOOP("Present-day geometry (lat ; lon)"), QT_TR_NOOP("A summary of the present-day coordinates"),
 				240, QHeaderView::ResizeToContents,
-				get_name, Qt::AlignLeft | Qt::AlignVCenter },
-				
-		{ QT_TR_NOOP("Description"), QT_TR_NOOP(""),
-				240, QHeaderView::ResizeToContents,
-				get_description, Qt::AlignLeft | Qt::AlignVCenter },
-				
-		{ QT_TR_NOOP("Geometry (lat ; lon)"), QT_TR_NOOP("Summary of the first geometry associated with the feature"),
-				134, QHeaderView::ResizeToContents,
-				get_geometry, Qt::AlignCenter },
+				get_present_day_geometry, Qt::AlignCenter },
 	};
+
 
 	const QString
 	get_column_heading(
@@ -349,13 +578,14 @@ GPlatesGui::FeatureTableModel::FeatureTableModel(
 		FeatureFocus &feature_focus,
 		QObject *parent_):
 	QAbstractTableModel(parent_),
-	d_feature_focus(feature_focus),
-	d_sequence_ptr(FeatureWeakRefSequence::create())
+	d_feature_focus_ptr(&feature_focus)
 {
-	QObject::connect(&d_feature_focus,
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref)),
+	QObject::connect(d_feature_focus_ptr,
+			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this,
-			SLOT(handle_feature_modified(GPlatesModel::FeatureHandle::weak_ref)));
+			SLOT(handle_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 }
 
 
@@ -364,7 +594,7 @@ int
 GPlatesGui::FeatureTableModel::rowCount(
 		const QModelIndex &parent_) const
 {
-	return static_cast<int>(d_sequence_ptr->size());
+	return static_cast<int>(d_sequence.size());
 }
 
 int
@@ -408,7 +638,8 @@ GPlatesGui::FeatureTableModel::headerData(
 	
 	// We are only interested in modifying the horizontal header.
 	if (orientation == Qt::Horizontal) {
-		// No need to supply tooltip data, etc. for headers. We are only interested in a few roles.
+		// No need to supply tooltip data, etc. for headers. We are only interested in a
+		// few roles.
 
 		if (role == Qt::DisplayRole) {
 			return get_column_heading(section);
@@ -417,10 +648,12 @@ GPlatesGui::FeatureTableModel::headerData(
 			return get_column_tooltip(section);
 			
 		} else if (role == Qt::SizeHintRole) {
-			// Annoyingly, the metrics alone do not appear to be sufficient to supply the height
-			// of the header, so a few pixels are added.
-			// Furthermore, for some reason, the height is now being set correctly but the width
-			// does not updated until a call to QTableView::resizeColumnsToContents();
+			// Annoyingly, the metrics alone do not appear to be sufficient to supply
+			// the height of the header, so a few pixels are added.
+			//
+			// Furthermore, for some reason, the height is now being set correctly but
+			// the width does not updated until a call to
+			// QTableView::resizeColumnsToContents();
 			return QSize(get_column_width(section), fm.height()+4);
 			
 		} else {
@@ -439,7 +672,7 @@ GPlatesGui::FeatureTableModel::data(
 		const QModelIndex &idx,
 		int role) const
 {
-	if (!idx.isValid()) {
+	if ( ! idx.isValid()) {
 		return QVariant();
 	}
 	if (idx.row() < 0 || idx.row() >= rowCount()) {
@@ -447,15 +680,12 @@ GPlatesGui::FeatureTableModel::data(
 	}
 	
 	if (role == Qt::DisplayRole) {
-		// Obtain FeatureHandle and CHECK VALIDITY!
-		GPlatesModel::FeatureHandle::weak_ref feature_ref = d_sequence_ptr->at(idx.row());
-		if ( ! feature_ref.is_valid()) {
-			return QVariant();
-		}
-		
+		GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry =
+				d_sequence.at(idx.row());
+
 		// Cell contents is returned via call to column-specific dispatch function.
 		table_cell_accessor_type accessor = get_column_accessor(idx.column());
-		return accessor(*feature_ref);
+		return (*accessor)(geometry);
 	} else if (role == Qt::TextAlignmentRole) {
 		return QVariant(get_column_alignment(idx.column()));
 	}
@@ -477,33 +707,63 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 	if ( ! idx.isValid()) {
 		return;
 	}
-	// Obtain FeatureHandle and CHECK VALIDITY!
-	GPlatesModel::FeatureHandle::weak_ref feature_ref = d_sequence_ptr->at(idx.row());
-	if ( ! feature_ref.is_valid()) {
-		return;
+	GPlatesModel::ReconstructionGeometry *rg = d_sequence.at(idx.row()).get();
+
+	// We use a dynamic cast here (despite the fact that dynamic casts are generally
+	// considered bad form) because we only care about one specific derivation.
+	// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
+	// "if ... else if ..." chain would imply that we should be using polymorphism --
+	// specifically, the double-dispatch of the Visitor pattern -- rather than updating
+	// the "if ... else if ..." chain each time a new derivation is added.)
+	GPlatesModel::ReconstructedFeatureGeometry *rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+	if (rfg) {
+		// It's an RFG, so let's look at the feature it's referencing.
+		if ( ! rfg->feature_ref().is_valid()) {
+			return;
+		}
+
+		// When the user clicks a line of the table, we change the currently focused
+		// feature.
+		//
+		// FIXME: If we end up using this class elsewhere, e.g. search results, we may
+		// want to re-evaluate this behaviour.
+		d_feature_focus_ptr->set_focus(rfg->feature_ref(), rfg);
 	}
-	
-	// When the user clicks a line of the table, we change the currently focused feature.
-	// FIXME: If we end up using this class elsewhere, e.g. search results, we may
-	// want to re-evaluate this behaviour.
-	d_feature_focus.set_focused_feature(feature_ref);
 }
 
 
 void
 GPlatesGui::FeatureTableModel::handle_feature_modified(
-		GPlatesModel::FeatureHandle::weak_ref modified_feature_ref)
+		GPlatesModel::FeatureHandle::weak_ref modified_feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)
 {
-	// First, figure out which row of the table (if any) contains the modified feature weakref.
-	FeatureWeakRefSequence::const_iterator it = d_sequence_ptr->begin();
-	FeatureWeakRefSequence::const_iterator end = d_sequence_ptr->end();
+	// First, figure out which row(s) of the table (if any) contains the modified feature
+	// weak-ref.  Note that, since each row of the table corresponds to a single geometry
+	// rather than a single feature, there might be multiple rows which match this feature.
 	int row = 0;
+	geometry_sequence_type::const_iterator it = d_sequence.begin();
+	geometry_sequence_type::const_iterator end = d_sequence.end();
 	for ( ; it != end; ++it, ++row) {
-		if (*it == modified_feature_ref) {
-			QModelIndex idx_begin = index(row, 0);
-			QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
-			emit dataChanged(idx_begin, idx_end);
+		GPlatesModel::ReconstructionGeometry *rg = it->get();
+
+		// We use a dynamic cast here (despite the fact that dynamic casts are generally
+		// considered bad form) because we only care about one specific derivation.
+		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
+		// "if ... else if ..." chain would imply that we should be using polymorphism --
+		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
+		// the "if ... else if ..." chain each time a new derivation is added.)
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+		if (rfg) {
+			// It's an RFG, so let's look at the feature it's referencing.
+			if (rfg->feature_ref() == modified_feature_ref) {
+				QModelIndex idx_begin = index(row, 0);
+				QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
+				emit dataChanged(idx_begin, idx_end);
+			}
 		}
+		// Else, it's not an RFG, so it doesn't reference a feature.
 	}
 }
 
@@ -518,6 +778,7 @@ GPlatesGui::FeatureTableModel::set_default_resize_modes(
 }
 
 
+#if 0
 QModelIndex
 GPlatesGui::FeatureTableModel::get_index_for_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
@@ -536,4 +797,4 @@ GPlatesGui::FeatureTableModel::get_index_for_feature(
 	// No such feature exists in our table, return an invalid index.
 	return QModelIndex();
 }
-
+#endif

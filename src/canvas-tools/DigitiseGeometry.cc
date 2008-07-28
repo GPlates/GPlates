@@ -53,7 +53,7 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	// FIXME: Could be pithier.
 	// FIXME: May have to adjust message if we are using Map view.
 	d_view_state_ptr->status_message(QObject::tr(
-			"Click globe to add new geometry. Ctrl-Drag to reorient globe."));
+			"Click globe to add new geometry. Ctrl+Drag to reorient globe."));
 	
 	// Clicking these canvas tools has the same effect as changing the combo box
 	// of the DigitisationWidget.

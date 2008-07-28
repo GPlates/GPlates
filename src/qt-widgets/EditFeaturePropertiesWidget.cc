@@ -208,7 +208,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 
 	// We have just changed the model. Tell anyone who cares to know.
 	// This will cause FeaturePropertyTableModel to refresh_data(), amongst other things.
-	d_feature_focus_ptr->notify_of_focused_feature_modification();
+	d_feature_focus_ptr->announce_modfication_of_focused_feature();
 }
 
 
@@ -225,7 +225,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::append_property_value_to_feature(
 					d_feature_ref);
 
 	// We have just changed the model. Tell anyone who cares to know.
-	d_feature_focus_ptr->notify_of_focused_feature_modification();
+	d_feature_focus_ptr->announce_modfication_of_focused_feature();
 }
 
 
@@ -261,7 +261,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::commit_edit_widget_data()
 			// we should notify others of the modification.
 			if (modified) {
 				// As something was actually modified, we should let others know about it.
-				d_feature_focus_ptr->notify_of_focused_feature_modification();
+				d_feature_focus_ptr->announce_modfication_of_focused_feature();
 			} else {
 				// No actual modification took place, and we SHOULD NOT TELL ANYONE ELSE OTHERWISE!
 				// Otherwise we can hit a nasty Signal/Slot loop pretty easily.

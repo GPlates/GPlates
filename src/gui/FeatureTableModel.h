@@ -29,10 +29,11 @@
 #include <QAbstractTableModel>
 #include <QItemSelection>
 #include <QHeaderView>
+#include <vector>
 
 #include "gui/FeatureFocus.h"
-#include "gui/FeatureWeakRefSequence.h"
-#include "model/FeatureHandle.h"
+#include "model/ReconstructionGeometry.h"
+
 
 namespace GPlatesGui
 {
@@ -61,8 +62,9 @@ namespace GPlatesGui
 			public QAbstractTableModel
 	{
 		Q_OBJECT
-		
 	public:
+		typedef std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
+				geometry_sequence_type;
 	
 		explicit
 		FeatureTableModel(
@@ -78,10 +80,10 @@ namespace GPlatesGui
 		 * See http://doc.trolltech.com/4.3/qabstractitemmodel.html#beginInsertRows for
 		 * more details.
 		 */
-		FeatureWeakRefSequence::non_null_ptr_type
-		feature_sequence()
+		geometry_sequence_type &
+		geometry_sequence()
 		{
-			return d_sequence_ptr;
+			return d_sequence;
 		}
 		
 		
@@ -138,7 +140,7 @@ namespace GPlatesGui
 		clear()
 		{
 			layoutAboutToBeChanged();
-			d_sequence_ptr->clear();
+			d_sequence.clear();
 			layoutChanged();
 		}
 		
@@ -192,7 +194,8 @@ namespace GPlatesGui
 		void
 		set_default_resize_modes(
 				QHeaderView &header);
-			
+
+#if 0  // We don't need this function right now.
 		/**
 		 * Searches the table for the given FeatureHandle::weak_ref.
 		 * If found, returns a QModelIndex that can be used by the
@@ -207,36 +210,38 @@ namespace GPlatesGui
 		QModelIndex
 		get_index_for_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+#endif
 
 	public slots:
 		
 		/**
-		 * ViewportWindow connects the QTableView's selection model's change
-		 * event to this slot, so that the model can use it to focus the
-		 * corresponding feature.
+		 * ViewportWindow connects the QTableView's selection model's change event to this
+		 * slot, so that the model can use it to focus the corresponding geometry.
 		 */
 		void
 		handle_selection_change(
 				const QItemSelection &selected,
 				const QItemSelection &deselected);
-	
+
 		/**
-		 * Lets the model know that a feature has been modified. The model
-		 * will test to see if any of the rows it is currently keeping track
-		 * of correspond to that feature, and emit update events appropriately.
+		 * Lets the model know that a feature has been modified.
+		 * 
+		 * The model will test to see if any of the rows it is currently keeping track of
+		 * correspond to that feature, and emit update events appropriately.
 		 *
-		 * Internally, the model connects FeatureFocus::focused_feature_modified()
-		 * to this slot, since the only changes to features will usually be changes
-		 * to whatever is currently focused.
+		 * Internally, the model connects FeatureFocus::focused_feature_modified() to this
+		 * slot, since the only changes to features will usually be changes to whatever is
+		 * currently focused.
 		 */
 		void
 		handle_feature_modified(
-				GPlatesModel::FeatureHandle::weak_ref modified_feature_ref);
+				GPlatesModel::FeatureHandle::weak_ref modified_feature_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);
 
 	private:
 		
-		FeatureFocus &d_feature_focus;
-		FeatureWeakRefSequence::non_null_ptr_type d_sequence_ptr;
+		FeatureFocus *d_feature_focus_ptr;
+		geometry_sequence_type d_sequence;
 	
 	};
 }

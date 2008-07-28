@@ -167,7 +167,7 @@ namespace GPlatesQtWidgets
 		 *
 		 * Returns true only if the edit widget was dirty and the model was altered;
 		 * you should pay attention to this if you plan on calling the FeatureFocus
-		 * method notify_of_focused_feature_modification, because otherwise you'll
+		 * method announce_modfication_of_focused_feature, because otherwise you'll
 		 * likely end up with infinite Signal/Slot loops.
 		 */
 		bool
