@@ -26,7 +26,9 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				moc_FeatureTableModel.cc \
 				moc_FeaturePropertyTableModel.cc \
 				moc_FeatureFocus.cc \
-				Texture.cc
+				Texture.cc \
+				TemporaryGeometryFocus.cc \
+				moc_TemporaryGeometryFocus.cc
 
 CLEANFILES		= moc_*.cc
 

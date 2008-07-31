@@ -34,14 +34,10 @@
 namespace GPlatesGui
 {
 	/**
-	 * This class is used to store the feature which currently has focus.
+	 * This class is used to store the notion of which feature currently has the focus.
 	 *
-	 * All feature clicks go through here, and anything interested in displaying the
+	 * All feature-focus changes should update this, and anything interested in displaying the
 	 * currently-focused feature can listen to events emitted from here.
-	 *
-	 * It @em might be a singleton in the future, but that largely depends on how we want
-	 * feature focus to behave across multiple ViewportWindows, so for now it should be
-	 * accessed as a member of ViewportWindow.
 	 */
 	class FeatureFocus:
 			public QObject
@@ -49,14 +45,13 @@ namespace GPlatesGui
 		Q_OBJECT
 	public:
 		
-		explicit
 		FeatureFocus()
 		{  }
 
 		virtual
 		~FeatureFocus()
 		{  }
-		
+
 		/**
 		 * Accessor for the currently-focused feature.
 		 * Remember to check is_valid()!
@@ -141,7 +136,7 @@ namespace GPlatesGui
 		unset_focus();
 
 		/**
-		 * Call this method when you have modified the properties of the currently focused
+		 * Call this method when you have modified the properties of the currently-focused
 		 * feature.
 		 *
 		 * FeatureFocus will emit signals to notify anyone who needs to track modifications
@@ -164,7 +159,7 @@ namespace GPlatesGui
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);
 
 		/**
-		 * Emitted when the currently focused feature has been modified.
+		 * Emitted when the currently-focused feature has been modified.
 		 * For example, when the user edits a property of the feature.
 		 */
 		void

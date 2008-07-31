@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_RECONSTRUCTIONGEOMETRYVISITOR_H
 
 #include "ReconstructedFeatureGeometry.h"
+#include "TemporaryGeometry.h"
 
 
 namespace GPlatesModel
@@ -71,6 +72,15 @@ namespace GPlatesModel
 		void
 		visit_reconstructed_feature_geometry(
 				ReconstructedFeatureGeometry::non_null_ptr_type rfg)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_temporary_geometry(
+				TemporaryGeometry::non_null_ptr_type tg)
 		{  }
 
 	private:

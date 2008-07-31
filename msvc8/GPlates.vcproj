@@ -404,6 +404,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\moc_TemporaryGeometryFocus.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\moc_ViewportZoom.cc"
 				>
 			</File>
@@ -457,6 +461,21 @@
 			<File
 				RelativePath="..\src\gui\SvgExport.h"
 				>
+			</File>
+			<File
+				RelativePath="..\src\gui\TemporaryGeometryFocus.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\TemporaryGeometryFocus.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\Texture.cc"
@@ -1494,6 +1513,10 @@
 			</File>
 			<File
 				RelativePath="..\src\model\StringSetSingletons.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\TemporaryGeometry.cc"
 				>
 			</File>
 			<File

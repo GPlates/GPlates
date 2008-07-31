@@ -37,10 +37,11 @@
 
 GPlatesQtWidgets::TaskPanel::TaskPanel(
 		GPlatesGui::FeatureFocus &feature_focus_,
+		ViewportWindow &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_action_button_box_ptr(new ActionButtonBox(5, 22, this)),
-	d_digitisation_widget_ptr(new DigitisationWidget())
+	d_digitisation_widget_ptr(new DigitisationWidget(view_state_))
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including

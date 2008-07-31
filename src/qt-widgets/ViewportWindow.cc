@@ -412,6 +412,26 @@ namespace
 		}
 	}
 
+
+	void
+	render_mouse_interaction_geometry_layer(
+			GPlatesQtWidgets::GlobeCanvas *canvas_ptr, 
+			const GPlatesQtWidgets::ViewportWindow::mouse_interaction_geometry_layer_type &
+					geometry_layer)
+	{
+		typedef GPlatesQtWidgets::ViewportWindow::mouse_interaction_geometry_layer_type
+				geometry_layer_type;
+
+		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::WHITE;
+		GPlatesGui::GlobeCanvasPainter painter(*canvas_ptr, colour);
+
+		geometry_layer_type::const_iterator iter = geometry_layer.begin();
+		geometry_layer_type::const_iterator end = geometry_layer.end();
+		for ( ; iter != end; ++iter) {
+			(*iter)->accept_visitor(painter);
+		}
+	}
+
 } // namespace
 
 
@@ -432,7 +452,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_manage_feature_collections_dialog(*this, this),
 	d_animate_dialog_has_been_shown(false),
 	d_euler_pole_dialog(*this, this),
-	d_task_panel_ptr(new TaskPanel(d_feature_focus, this)),
+	d_task_panel_ptr(new TaskPanel(d_feature_focus, *this, this)),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path("")
 {
@@ -461,7 +481,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Set up the Specify Fixed Plate dialog.
 	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
 			this, SLOT(reconstruct_with_root(unsigned long)));
-	
+
 	// Set up the Animate dialog.
 	QObject::connect(&d_animate_dialog, SIGNAL(current_time_changed(double)),
 			&d_reconstruction_view_widget, SLOT(set_reconstruction_time(double)));
@@ -759,6 +779,7 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	d_canvas_ptr->clear_data();
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root);
+	render_mouse_interaction_geometry_layer(d_canvas_ptr, mouse_interaction_geometry_layer());
 
 
 	if (d_euler_pole_dialog.isVisible()){

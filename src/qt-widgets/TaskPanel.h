@@ -36,6 +36,8 @@
 
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+
 	/**
 	 * The Xtreme Task Panel - A contextual tabbed interface to expose powerful tasks
 	 * to manipulate GPlates.... to the XTREME!
@@ -45,11 +47,11 @@ namespace GPlatesQtWidgets
 			protected Ui_TaskPanel
 	{
 		Q_OBJECT
-		
 	public:
 		explicit
 		TaskPanel(
 				GPlatesGui::FeatureFocus &feature_focus_,
+				ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 		
 		/**

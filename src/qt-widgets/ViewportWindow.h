@@ -33,6 +33,7 @@
 # include <boost/python.hpp>
 #endif
 
+#include <vector>
 #include <string>
 #include <list>
 #include <QtCore/QTimer>
@@ -59,6 +60,8 @@
 
 #include "model/ModelInterface.h"
 
+#include "maths/GeometryOnSphere.h"
+
 
 namespace GPlatesGui
 {
@@ -82,7 +85,16 @@ namespace GPlatesQtWidgets
 		{
 			return *d_reconstruction_ptr;
 		}
-	
+
+		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+				mouse_interaction_geometry_layer_type;
+
+		mouse_interaction_geometry_layer_type &
+		mouse_interaction_geometry_layer()
+		{
+			return d_mouse_interaction_geometry_layer;
+		}
+
 		const double &
 		reconstruction_time() const
 		{
@@ -288,6 +300,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
+
+		mouse_interaction_geometry_layer_type d_mouse_interaction_geometry_layer;
 
 		//@{
 		// ViewState 

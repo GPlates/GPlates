@@ -35,8 +35,9 @@
 #include <QList>
 #include <QMessageBox>
 #include <boost/intrusive_ptr.hpp>
-#include "DigitisationWidget.h"
 
+#include "DigitisationWidget.h"
+#include "ViewportWindow.h"
 #include "ExportCoordinatesDialog.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/LatLonPointConversions.h"
@@ -485,8 +486,10 @@ namespace GPlatesUndoCommands
 
 
 GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
+		ViewportWindow &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
+	d_view_state_ptr(&view_state_),
 	d_export_coordinates_dialog(new ExportCoordinatesDialog(this)),
 	d_geometry_type(GPlatesQtWidgets::DigitisationWidget::POLYLINE),
 	d_geometry_ptr(NULL)
@@ -550,6 +553,9 @@ GPlatesQtWidgets::DigitisationWidget::clear_geometry()
 {
 	qDebug() << "clear_geometry(): reset d_geometry_ptr to NULL.";
 	d_geometry_ptr = NULL;
+
+	d_view_state_ptr->mouse_interaction_geometry_layer().clear();
+	d_view_state_ptr->reconstruct();
 }
 
 void
@@ -577,6 +583,13 @@ GPlatesQtWidgets::DigitisationWidget::update_geometry()
 			// No problems, set the new geometry and render it on screen.
 			qDebug() << "update_geometry(): Successfully made new geometry!";
 			d_geometry_ptr = geometry_ptr;
+
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type non_null_ptr(
+					geometry_ptr.get(),
+					GPlatesUtils::NullIntrusivePointerHandler());
+			d_view_state_ptr->mouse_interaction_geometry_layer().clear();
+			d_view_state_ptr->mouse_interaction_geometry_layer().push_back(non_null_ptr);
+			d_view_state_ptr->reconstruct();
 		} else {
 			qDebug() << "update_geometry(): Failed to make new geometry!";
 		}
@@ -703,5 +716,3 @@ GPlatesQtWidgets::DigitisationWidget::set_geometry_combobox(
 		combobox_geometry_type->setCurrentIndex(idx);
 	}
 }
-
-

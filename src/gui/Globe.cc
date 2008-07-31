@@ -115,7 +115,7 @@ namespace
 			points_begin = Layout::PointDataLayoutBegin(),
 			points_end   = Layout::PointDataLayoutEnd();
 
-		glPointSize(8.0f);
+		glPointSize(4.0f);
 		glBegin(GL_POINTS);
 			for_each(points_begin, points_end, PaintPointDataPos);
 		glEnd();

@@ -39,14 +39,13 @@ namespace GPlatesQtWidgets
 {
 	// Forward declaration to avoid the GUI header spaghetti as much as possible.
 	class ExportCoordinatesDialog;
-	
-	
+	class ViewportWindow;
+
 	class DigitisationWidget:
 			public QWidget, 
 			protected Ui_DigitisationWidget
 	{
 		Q_OBJECT
-		
 	public:
 
 		/**
@@ -59,6 +58,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		DigitisationWidget(
+				ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -195,6 +195,11 @@ namespace GPlatesQtWidgets
 		 * or use a @a QUndoGroup to manage this stack and others.
 		 */
 		QUndoStack d_undo_stack;
+
+		/**
+		 * The View State is used to access the mouse-interaction geometry layer.
+		 */
+		ViewportWindow *d_view_state_ptr;
 		
 		/**
 		 * The dialog the user sees when they hit the Export button.
