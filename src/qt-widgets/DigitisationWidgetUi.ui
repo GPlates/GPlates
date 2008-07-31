@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>178</width>
-    <height>291</height>
+    <width>188</width>
+    <height>290</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -29,66 +29,153 @@
     <number>2</number>
    </property>
    <item>
-    <widget class="QTreeWidget" name="treewidget_coordinates" >
-     <property name="horizontalScrollBarPolicy" >
-      <enum>Qt::ScrollBarAlwaysOff</enum>
+    <widget class="QGroupBox" name="groupbox_coordinates" >
+     <property name="title" >
+      <string>Coordinates</string>
      </property>
-     <property name="alternatingRowColors" >
+     <property name="flat" >
       <bool>true</bool>
      </property>
-     <property name="indentation" >
-      <number>0</number>
-     </property>
-     <property name="rootIsDecorated" >
-      <bool>false</bool>
-     </property>
-     <property name="itemsExpandable" >
-      <bool>false</bool>
-     </property>
-     <column>
-      <property name="text" >
-       <string>Lat</string>
+     <layout class="QVBoxLayout" >
+      <property name="leftMargin" >
+       <number>4</number>
       </property>
-     </column>
-     <column>
-      <property name="text" >
-       <string>Lon</string>
+      <property name="topMargin" >
+       <number>4</number>
       </property>
-     </column>
+      <property name="rightMargin" >
+       <number>4</number>
+      </property>
+      <property name="bottomMargin" >
+       <number>4</number>
+      </property>
+      <item>
+       <widget class="QTreeWidget" name="treewidget_coordinates" >
+        <property name="horizontalScrollBarPolicy" >
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="alternatingRowColors" >
+         <bool>true</bool>
+        </property>
+        <property name="indentation" >
+         <number>0</number>
+        </property>
+        <property name="rootIsDecorated" >
+         <bool>false</bool>
+        </property>
+        <property name="itemsExpandable" >
+         <bool>false</bool>
+        </property>
+        <column>
+         <property name="text" >
+          <string>Lat</string>
+         </property>
+        </column>
+        <column>
+         <property name="text" >
+          <string>Lon</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QPushButton" name="button_clear_coordinates" >
+          <property name="toolTip" >
+           <string>Clear the table of points  Ctrl-K</string>
+          </property>
+          <property name="text" >
+           <string>Clear</string>
+          </property>
+          <property name="shortcut" >
+           <string>Ctrl+K</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>41</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_export_coordinates" >
+          <property name="toolTip" >
+           <string>Export the coordinates to a file or the clipboard</string>
+          </property>
+          <property name="text" >
+           <string>E&amp;xport...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>
-    <widget class="QComboBox" name="combobox_geometry_type" />
-   </item>
-   <item>
-    <layout class="QHBoxLayout" >
-     <item>
-      <spacer>
-       <property name="orientation" >
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" >
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_export_coordinates" >
-       <property name="text" >
-        <string>E&amp;xport...</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QDialogButtonBox" name="buttonbox_create" >
-     <property name="standardButtons" >
-      <set>QDialogButtonBox::NoButton</set>
+    <widget class="QGroupBox" name="groupBox" >
+     <property name="title" >
+      <string>Feature</string>
      </property>
+     <property name="flat" >
+      <bool>true</bool>
+     </property>
+     <layout class="QVBoxLayout" >
+      <property name="leftMargin" >
+       <number>4</number>
+      </property>
+      <property name="topMargin" >
+       <number>4</number>
+      </property>
+      <property name="rightMargin" >
+       <number>4</number>
+      </property>
+      <property name="bottomMargin" >
+       <number>4</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QPushButton" name="button_create_feature" >
+          <property name="toolTip" >
+           <string>Create a new feature from the geometry</string>
+          </property>
+          <property name="text" >
+           <string>Create Feature...</string>
+          </property>
+          <property name="autoDefault" >
+           <bool>true</bool>
+          </property>
+          <property name="default" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>51</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>

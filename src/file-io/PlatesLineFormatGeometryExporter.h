@@ -68,8 +68,8 @@ namespace GPlatesFileIO
 		 */
 		virtual
 		void
-		visit_geometry(
-				const GPlatesMaths::GeometryOnSphere &geometry);
+		export_geometry(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr);
 
 		// Please keep these geometries ordered alphabetically.
 

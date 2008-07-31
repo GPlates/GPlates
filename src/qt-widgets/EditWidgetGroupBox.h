@@ -33,23 +33,24 @@
 #include "model/PropertyValue.h"
 #include "model/FeatureHandle.h"
 #include "qt-widgets/AbstractEditWidget.h"
-#include "qt-widgets/EditTimeInstantWidget.h"
-#include "qt-widgets/EditTimePeriodWidget.h"
-#include "qt-widgets/EditOldPlatesHeaderWidget.h"
-#include "qt-widgets/EditDoubleWidget.h"
-#include "qt-widgets/EditEnumerationWidget.h"
-#include "qt-widgets/EditGeometryWidget.h"
-#include "qt-widgets/EditIntegerWidget.h"
-#include "qt-widgets/EditPlateIdWidget.h"
-#include "qt-widgets/EditPolarityChronIdWidget.h"
-#include "qt-widgets/EditAngleWidget.h"
-#include "qt-widgets/EditStringWidget.h"
-#include "qt-widgets/EditBooleanWidget.h"
 
 
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
+	class EditTimeInstantWidget;
+	class EditTimePeriodWidget;
+	class EditOldPlatesHeaderWidget;
+	class EditDoubleWidget;
+	class EditEnumerationWidget;
+	class EditGeometryWidget;
+	class EditIntegerWidget;
+	class EditPlateIdWidget;
+	class EditPolarityChronIdWidget;
+	class EditAngleWidget;
+	class EditStringWidget;
+	class EditBooleanWidget;
+	
 
 	/**
 	 * A collection of pre-allocated property edit widgets, which are hidden/shown

@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>410</width>
-    <height>58</height>
+    <width>411</width>
+    <height>59</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -59,7 +59,21 @@
     </layout>
    </item>
    <item>
-    <widget class="QLineEdit" name="line_edit" />
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_value" >
+       <property name="text" >
+        <string>&amp;Value:</string>
+       </property>
+       <property name="buddy" >
+        <cstring>line_edit</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="line_edit" />
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_EXPORTCOORDINATESDIALOG_H
 
 #include <QFileDialog>
+#include <boost/optional.hpp>
 #include "ExportCoordinatesDialogUi.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -53,7 +54,7 @@ namespace GPlatesQtWidgets
 		 * ensure you are feeding the ExportCoordinatesDialog some valid geometry
 		 * at the same time.
 		 */
-		void
+		bool
 		set_geometry_and_display(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_);
 					
@@ -96,9 +97,9 @@ namespace GPlatesQtWidgets
 		 * The geometry that is to be exported when the user clicks the Export
 		 * button and triggers the handle_export() slot.
 		 * 
-		 * This may be NULL if the export dialog has not been fed any geometry yet.
+		 * This may be boost::none if the export dialog has not been fed any geometry yet.
 		 */
-		boost::intrusive_ptr<const GPlatesMaths::GeometryOnSphere> d_geometry_ptr;
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
 
 
 		/**

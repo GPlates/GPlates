@@ -43,7 +43,9 @@ GPlatesQtWidgets::EditBooleanWidget::EditBooleanWidget(
 	QObject::connect(combobox_boolean, SIGNAL(activated(int)),
 			this, SLOT(handle_combobox_change()));
 	
-	setFocusPolicy(Qt::StrongFocus);
+	label_value->setHidden(true);
+	declare_default_label(label_value);
+	setFocusProxy(combobox_boolean);
 }
 
 

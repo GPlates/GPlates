@@ -40,6 +40,7 @@
 #include "ShapefilePropertyMapper.h"
 #include "TaskPanel.h"
 #include "ActionButtonBox.h"
+#include "CreateFeatureDialog.h"
 
 #include "global/Exception.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
@@ -68,7 +69,6 @@
 #include "gui/SvgExport.h"
 #include "gui/PlatesColourTable.h"
 #include "gui/GlobeCanvasPainter.h"
-
 
 namespace
 {
@@ -452,7 +452,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_manage_feature_collections_dialog(*this, this),
 	d_animate_dialog_has_been_shown(false),
 	d_euler_pole_dialog(*this, this),
-	d_task_panel_ptr(new TaskPanel(d_feature_focus, *this, this)),
+	d_task_panel_ptr(new TaskPanel(d_feature_focus, *d_model_ptr, *this, this)),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path("")
 {
@@ -562,6 +562,18 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					const GPlatesMaths::PointOnSphere &, bool,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
 	
+	// If the user creates a new feature with the DigitisationWidget, we need to reconstruct to
+	// make sure everything is displayed properly.
+	QObject::connect(&(d_task_panel_ptr->digitisation_widget().create_feature_dialog()),
+			SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
+			this,
+			SLOT(reconstruct()));
+
+	// Add the DigitisationWidget's QUndoStack to the View State's QUndoGroup.
+	d_undo_group.addStack(&(d_task_panel_ptr->digitisation_widget().undo_stack()));
+	// Since we only have one stack right now, we may as well make it the active one.
+	d_task_panel_ptr->digitisation_widget().undo_stack().setActive(true);
+	
 	// Add a progress bar to the status bar (Hidden until needed).
 	QProgressBar *progress_bar = new QProgressBar(this);
 	progress_bar->setMaximumWidth(100);
@@ -616,6 +628,23 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			&d_feature_properties_dialog, SLOT(choose_query_widget_and_open()));
 	QObject::connect(action_Edit_Feature, SIGNAL(triggered()),
 			&d_feature_properties_dialog, SLOT(choose_edit_widget_and_open()));
+	// ----
+	// Unfortunately, the Undo and Redo actions cannot be added in the Designer,
+	// or at least, not nicely. We need to ask the QUndoGroup to create some
+	// QActions for us, and add them programmatically. To follow the principle
+	// of least surprise, placeholder actions are set up in the designer, which
+	// this code can use to insert the actions in the correct place with the
+	// correct shortcut.
+	// The new actions will be linked to the QUndoGroup appropriately.
+	QAction *undo_action_ptr = d_undo_group.createUndoAction(this, tr("&Undo"));
+	QAction *redo_action_ptr = d_undo_group.createRedoAction(this, tr("&Redo"));
+	undo_action_ptr->setShortcut(action_Undo_Placeholder->shortcut());
+	redo_action_ptr->setShortcut(action_Redo_Placeholder->shortcut());
+	menu_Edit->insertAction(action_Undo_Placeholder, undo_action_ptr);
+	menu_Edit->insertAction(action_Redo_Placeholder, redo_action_ptr);
+	menu_Edit->removeAction(action_Undo_Placeholder);
+	menu_Edit->removeAction(action_Redo_Placeholder);
+	// ----
 	// FIXME: The following Edit Menu items are all unimplemented:
 	action_Delete_Feature->setDisabled(true);
 

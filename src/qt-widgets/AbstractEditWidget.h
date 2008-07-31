@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_ABSTRACTEDITWIDGET_H
 
 #include <QWidget>
+#include <QLabel>
 
 #include "model/PropertyValue.h"
 #include "qt-widgets/PropertyValueNotSupportedException.h"
@@ -65,7 +66,9 @@ namespace GPlatesQtWidgets
 		AbstractEditWidget(
 				QWidget *parent_ = NULL):
 			QWidget(parent_),
-			d_dirty(false)
+			d_default_label_ptr(NULL),
+			d_dirty(false),
+			d_handle_enter_key(true)
 		{  }
 		
 		virtual
@@ -158,8 +161,43 @@ namespace GPlatesQtWidgets
 		bool
 		is_dirty();
 		
+		/**
+		 * Returns whether the edit widget will process the Enter key and emit
+		 * the commit_me() signal when it is pressed.
+		 */
+		bool
+		will_handle_enter_key();
+
+		/**
+		 * Some derivations of AbstractEditWidget may declare one of their (presumably
+		 * Qt-Designer made) labels as the 'default' label. This may not be applicable in
+		 * all cases, but for those widgets that typically set up a single label with a single
+		 * control, this allows the owner of the edit widget some control over the QLabel in
+		 * question.
+		 * 
+		 * For example, depending on the environment the edit widget is to be used in,
+		 * the label may not be appropriate and should be hidden. In others, it may be useful
+		 * to show the label, but set a different mneumonic key so that it will not conflict with
+		 * any other accelerators.
+		 *
+		 * Note that this accessor may return NULL if the widget in question has no suitable
+		 * label.
+		 */
+		QLabel *
+		label();
+		
 	protected:
 	
+		/**
+		 * Derivations of AbstractEditWidget can call this member in their constructor
+		 * to set a label as the 'default' for this edit widget; This allows the owner
+		 * of the edit widget to hide, show, or change default mneumonic keys of the
+		 * label as appropriate for the parent environment, using the accessor @a label().
+		 */
+		void
+		declare_default_label(
+				QLabel *label_);
+
 		void
 		keyPressEvent(
 				QKeyEvent *ev);
@@ -181,6 +219,18 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_clean();
+		
+		
+		/**
+		 * Controls whether the edit widget will process the Enter key and emit
+		 * the commit_me() and enter_pressed() signals when it is pressed.
+		 *
+		 * The default is true - the Enter key will be trapped and processed by
+		 * this edit widget.
+		 */
+		void
+		set_handle_enter_key(
+				bool should_handle);
 	
 	signals:
 	
@@ -192,15 +242,32 @@ namespace GPlatesQtWidgets
 		void
 		commit_me();
 
+		/**
+		 * Signal emitted when the user presses enter.
+		 * Note that this is different to the commit_me() signal, and may be useful for
+		 * focus handling situations where you (the owner of this widget) wish to call
+		 * create_property_value_from_widget() when you're good and ready.
+		 */
+		void
+		enter_pressed();
+
 	private:
-		
+				
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment.
 		AbstractEditWidget &
 		operator=(
 				const AbstractEditWidget &);
 		
+		/**
+		 * The 'default' label for this edit widget. This may not be applicable for all
+		 * edit widgets, so this pointer may be NULL.
+		 */
+		QLabel *d_default_label_ptr;
+		
 		bool d_dirty;
+		
+		bool d_handle_enter_key;
 		
 	};
 }

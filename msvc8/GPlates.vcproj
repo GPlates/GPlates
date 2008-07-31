@@ -596,6 +596,25 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\DigitisationWidget.cc"
 				>
 			</File>
@@ -612,6 +631,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\DigitisationWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidgetUndoCommands.h"
 				>
 			</File>
 			<File
@@ -1103,6 +1126,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_CreateFeatureDialog.cc"
 				>
 			</File>
 			<File

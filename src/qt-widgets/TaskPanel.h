@@ -32,7 +32,7 @@
 #include "DigitisationWidget.h"
 #include "ActionButtonBox.h"
 #include "gui/FeatureFocus.h"
-
+#include "model/ModelInterface.h"
 
 namespace GPlatesQtWidgets
 {
@@ -51,6 +51,7 @@ namespace GPlatesQtWidgets
 		explicit
 		TaskPanel(
 				GPlatesGui::FeatureFocus &feature_focus_,
+				GPlatesModel::ModelInterface &model_interface,
 				ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 		

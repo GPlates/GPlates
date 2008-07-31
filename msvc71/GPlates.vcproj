@@ -558,6 +558,9 @@
 				RelativePath="..\src\qt-widgets\moc_LicenseDialog.cc">
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_CreateFeatureDialog.cc">
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_DigitisationWidget.cc">
 			</File>
 			<File
@@ -639,6 +642,33 @@
 				RelativePath="..\src\qt-widgets\EditWidgetChooser.h">
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\DigitisationWidget.cc">
 			</File>
 			<File
@@ -664,6 +694,9 @@
 "
 						Outputs="$(InputDir)/$(InputName).h"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidgetUndoCommands.h">
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EditOldPlatesHeaderWidget.cc">

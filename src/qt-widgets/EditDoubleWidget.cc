@@ -39,7 +39,9 @@ GPlatesQtWidgets::EditDoubleWidget::EditDoubleWidget(
 	QObject::connect(spinbox_double, SIGNAL(valueChanged(double)),
 			this, SLOT(set_dirty()));
 	
-	setFocusPolicy(Qt::StrongFocus);
+	label_value->setHidden(true);	
+	declare_default_label(label_value);
+	setFocusProxy(spinbox_double);
 }
 
 

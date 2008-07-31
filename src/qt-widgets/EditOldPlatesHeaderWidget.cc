@@ -65,7 +65,7 @@ GPlatesQtWidgets::EditOldPlatesHeaderWidget::EditOldPlatesHeaderWidget(
 	QObject::connect(spinbox_colour_code, SIGNAL(valueChanged(int)),
 			this, SLOT(set_dirty()));
 
-	setFocusPolicy(Qt::StrongFocus);
+	setFocusProxy(spinbox_region_number);
 }
 
 

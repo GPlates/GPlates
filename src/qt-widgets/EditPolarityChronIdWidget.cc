@@ -43,7 +43,7 @@ GPlatesQtWidgets::EditPolarityChronIdWidget::EditPolarityChronIdWidget(
 	QObject::connect(lineedit_minor, SIGNAL(textEdited(const QString &)),
 			this, SLOT(set_dirty()));
 
-	setFocusPolicy(Qt::StrongFocus);
+	setFocusProxy(combobox_era);
 }
 
 

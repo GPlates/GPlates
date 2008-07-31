@@ -55,8 +55,8 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	d_view_state_ptr->status_message(QObject::tr(
 			"Click globe to add new geometry. Ctrl+Drag to reorient globe."));
 	
-	// Clicking these canvas tools has the same effect as changing the combo box
-	// of the DigitisationWidget.
+	// Clicking these canvas tools changes the type of geometry the user
+	// wishes to create, and may adjust the current table of coordinates accordingly.
 	d_digitisation_widget_ptr->change_geometry_type(d_default_geom_type);
 }
 

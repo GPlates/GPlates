@@ -28,6 +28,11 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QString>
+#include <QByteArray>
+#include <QMimeData>
+#include <QClipboard>
+#include <boost/optional.hpp>
+#include <boost/none.hpp>
 
 #include "ExportCoordinatesDialog.h"
 
@@ -37,6 +42,12 @@
 
 namespace
 {
+	/**
+	 * This typedef is used wherever geometry (of some unknown type) is expected.
+	 * It is a boost::optional because creation of geometry may fail for various reasons.
+	 */
+	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr_type;
+
 	/**
 	 * Enumeration for the possible formats to export to.
 	 * The order of these should match the setup of the @a combobox_format
@@ -67,13 +78,18 @@ const QString GPlatesQtWidgets::ExportCoordinatesDialog::s_terminating_point_inf
 GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 		QWidget *parent_):
 	QDialog(parent_),
-	d_geometry_ptr(NULL),
+	d_geometry_opt_ptr(boost::none),
 	d_export_file_dialog(new QFileDialog(this, tr("Select a filename for exporting"), QString(),
 			"All files (*)")),
 	d_terminating_point_information_dialog(new InformationDialog(s_terminating_point_information_text,
 			tr("Polygon point conventions"), this))
 {
 	setupUi(this);
+	
+	// Disable some things we're not going to implement just yet.
+	combobox_format->removeItem(3);
+	combobox_format->removeItem(2);
+	combobox_format->removeItem(1);
 	
 	// What happens when the user selects a format?
 	QObject::connect(combobox_format, SIGNAL(currentIndexChanged(int)),
@@ -95,7 +111,8 @@ GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 			this, SLOT(pop_up_file_browser()));
 	
 	// Default 'OK' button should read 'Export'.
-	buttonbox_export->addButton(tr("Export"), QDialogButtonBox::AcceptRole);
+	QPushButton *button_export = buttonbox_export->addButton(tr("Export"), QDialogButtonBox::AcceptRole);
+	button_export->setDefault(true);
 	QObject::connect(buttonbox_export, SIGNAL(accepted()),
 			this, SLOT(handle_export()));
 	
@@ -106,24 +123,24 @@ GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 }
 
 
-void
+bool
 GPlatesQtWidgets::ExportCoordinatesDialog::set_geometry_and_display(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_)
 {
 	// The geometry is passed in as a GeometryOnSphere::non_null_ptr_to_const_type
 	// because we want to enforce that this dialog should be given valid geometry
 	// if you want it to display itself. However, we must set our d_geometry_ptr member
-	// as a boost::intrusive_ptr<const GPlatesMaths::GeometryOnSphere>, because
+	// as a boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>, because
 	// it cannot be initialised with any meaningful value at this dialog's creation time.
-	d_geometry_ptr = geometry_.get();
+	d_geometry_opt_ptr = geometry_;
 	
-	if (d_geometry_ptr == NULL) {
+	if ( ! d_geometry_opt_ptr) {
 		// We shouldn't let the dialog open without a valid geometry.
-		return;
+		return false;
 	}
 	
 	// Show the dialog modally.
-	exec();
+	return exec();
 }
 
 
@@ -167,7 +184,7 @@ void
 GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 {
 	// Sanity check.
-	if (d_geometry_ptr == NULL) {
+	if ( ! d_geometry_opt_ptr) {
 		QMessageBox::critical(this, tr("Invalid geometry for export"),
 				tr("How the hell did you open this dialog box without a valid geometry?"));
 		return;
@@ -206,16 +223,41 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 					GPlatesFileIO::PlatesLineFormatGeometryExporter exporter(text_stream,
 							(combobox_coordinate_order->currentIndex() != 0),
 							checkbox_polygon_terminating_point->isChecked());
-					exporter.visit_geometry(*d_geometry_ptr);
+					exporter.export_geometry(*d_geometry_opt_ptr);
 					break;
 				}
 		default:
 				QMessageBox::critical(this, tr("Unsupported output format"),
-						tr("Sorry, writing in the selected format is currently not supported"));
+						tr("Sorry, writing in the selected format is currently not supported."));
 				return;
 		}
 		
 	} else {
+		// Create a byte array for the clipboard data.
+		QByteArray array;
+		
+		QTextStream text_stream(&array);
+		switch (format)
+		{
+		case PLATES4:
+				{	// Braces used to avoid "jump to case label crosses initialization" errors.
+					GPlatesFileIO::PlatesLineFormatGeometryExporter exporter(text_stream,
+							(combobox_coordinate_order->currentIndex() != 0),
+							checkbox_polygon_terminating_point->isChecked());
+					exporter.export_geometry(*d_geometry_opt_ptr);
+					break;
+				}
+		default:
+				QMessageBox::critical(this, tr("Unsupported output format"),
+						tr("Sorry, writing in the selected format is currently not supported."));
+				return;
+		}
+		
+		// Create mime data and assign to the clipboard.
+		// FIXME: Use text/csv for CSV, and I don't know what for the others.
+		QMimeData *mime = new QMimeData;
+		mime->setData("text/plain", array);
+		QApplication::clipboard()->setMimeData(mime, QClipboard::Clipboard);
 	}
 	// FIXME: Delegate writing to the output stream to some writer depending
 	// on the desired output format. (GeometryOnSphere visitor)

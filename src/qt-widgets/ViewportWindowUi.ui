@@ -97,6 +97,9 @@
     <addaction name="action_Query_Feature" />
     <addaction name="action_Edit_Feature" />
     <addaction name="separator" />
+    <addaction name="action_Undo_Placeholder" />
+    <addaction name="action_Redo_Placeholder" />
+    <addaction name="separator" />
     <addaction name="action_Delete_Feature" />
    </widget>
    <addaction name="menu_File" />
@@ -818,6 +821,22 @@
    </property>
    <property name="shortcut" >
     <string>P</string>
+   </property>
+  </action>
+  <action name="action_Undo_Placeholder" >
+   <property name="text" >
+    <string>Undo (Placeholder)</string>
+   </property>
+   <property name="shortcut" >
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="action_Redo_Placeholder" >
+   <property name="text" >
+    <string>Redo (Placeholder)</string>
+   </property>
+   <property name="shortcut" >
+    <string>Ctrl+R</string>
    </property>
   </action>
  </widget>

@@ -533,7 +533,7 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 	QObject::connect(button_append_point, SIGNAL(clicked()),
 			this, SLOT(append_point_clicked()));
 	
-	setFocusPolicy(Qt::StrongFocus);
+	setFocusProxy(table_points);
 }
 
 

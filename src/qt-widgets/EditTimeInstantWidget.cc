@@ -51,7 +51,9 @@ GPlatesQtWidgets::EditTimeInstantWidget::EditTimeInstantWidget(
 	QObject::connect(spinbox_time_position, SIGNAL(valueChanged(double)),
 			this, SLOT(set_dirty()));
 
-	setFocusPolicy(Qt::StrongFocus);
+	label_time_position->setHidden(false);
+	declare_default_label(label_time_position);
+	setFocusProxy(spinbox_time_position);
 }
 
 

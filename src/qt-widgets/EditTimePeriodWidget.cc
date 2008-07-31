@@ -93,7 +93,7 @@ GPlatesQtWidgets::EditTimePeriodWidget::EditTimePeriodWidget(
 	QObject::connect(spinbox_time_of_disappearance, SIGNAL(valueChanged(double)),
 			this, SLOT(set_dirty()));
 
-	setFocusPolicy(Qt::StrongFocus);
+	setFocusProxy(spinbox_time_of_appearance);
 }
 
 

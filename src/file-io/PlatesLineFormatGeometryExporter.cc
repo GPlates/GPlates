@@ -143,12 +143,12 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::PlatesLineFormatGeometryExporte
 
 
 void
-GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_geometry(
-		const GPlatesMaths::GeometryOnSphere &geometry)
+GPlatesFileIO::PlatesLineFormatGeometryExporter::export_geometry(
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr)
 {
 	qDebug(Q_FUNC_INFO);
 	// Write the coordinate list of the geometry.
-	geometry.accept_visitor(*this);
+	geometry_ptr->accept_visitor(*this);
 	// Write the final terminating point.
 	print_plates_feature_termination_line(*d_stream_ptr);
 }

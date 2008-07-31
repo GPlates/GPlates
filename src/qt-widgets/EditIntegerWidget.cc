@@ -40,7 +40,9 @@ GPlatesQtWidgets::EditIntegerWidget::EditIntegerWidget(
 	QObject::connect(spinbox_integer, SIGNAL(valueChanged(int)),
 			this, SLOT(set_dirty()));
 
-	setFocusPolicy(Qt::StrongFocus);
+	label_value->setHidden(true);
+	declare_default_label(label_value);
+	setFocusProxy(spinbox_integer);
 }
 
 

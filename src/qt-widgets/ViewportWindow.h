@@ -39,6 +39,7 @@
 #include <QtCore/QTimer>
 #include <QCloseEvent>
 #include <QStringList>
+#include <QUndoGroup>
 
 #include "ApplicationState.h"
 #include "ViewportWindowUi.h"
@@ -308,6 +309,8 @@ namespace GPlatesQtWidgets
 
 		active_files_collection_type d_active_reconstructable_files;
 		active_files_collection_type d_active_reconstruction_files;
+		
+		QUndoGroup d_undo_group;
 
 		//@}
 
@@ -328,7 +331,7 @@ namespace GPlatesQtWidgets
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
 		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
 		EulerPoleDialog d_euler_pole_dialog;
-		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus.
+		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 

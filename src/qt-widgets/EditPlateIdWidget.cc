@@ -40,7 +40,9 @@ GPlatesQtWidgets::EditPlateIdWidget::EditPlateIdWidget(
 	QObject::connect(spinbox_plate_id, SIGNAL(valueChanged(int)),
 			this, SLOT(set_dirty()));
 
-	setFocusPolicy(Qt::StrongFocus);
+	label_plate_id->setHidden(false);
+	declare_default_label(label_plate_id);
+	setFocusProxy(spinbox_plate_id);
 }
 
 

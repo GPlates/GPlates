@@ -74,7 +74,7 @@
 
 
 const GPlatesFileIO::ExternalProgram
-		GPlatesFileIO::GpmlOnePointSixReader::s_gunzip_program("zcat", "zcat --version");
+		GPlatesFileIO::GpmlOnePointSixReader::s_gunzip_program("gzip -d", "gzip --version");
 
 
 namespace

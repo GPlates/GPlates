@@ -44,7 +44,9 @@ GPlatesQtWidgets::EditStringWidget::EditStringWidget(
 	QObject::connect(line_edit, SIGNAL(textEdited(const QString &)),
 			this, SLOT(set_dirty()));
 
-	setFocusPolicy(Qt::StrongFocus);
+	label_value->setHidden(true);
+	declare_default_label(label_value);
+	setFocusProxy(line_edit);
 }
 
 

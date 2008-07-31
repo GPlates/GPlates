@@ -41,8 +41,10 @@ GPlatesQtWidgets::EditAngleWidget::EditAngleWidget(
 	
 	QObject::connect(spinbox_double, SIGNAL(valueChanged(double)),
 			this, SLOT(set_dirty()));
-	
-	setFocusPolicy(Qt::StrongFocus);
+
+	label_angle->setHidden(true);
+	declare_default_label(label_angle);
+	setFocusProxy(spinbox_double);
 }
 
 

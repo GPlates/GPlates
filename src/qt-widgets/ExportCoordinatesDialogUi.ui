@@ -15,6 +15,12 @@
   <property name="windowTitle" >
    <string>Export Coordinates</string>
   </property>
+  <property name="sizeGripEnabled" >
+   <bool>true</bool>
+  </property>
+  <property name="modal" >
+   <bool>true</bool>
+  </property>
   <layout class="QVBoxLayout" >
    <item>
     <widget class="QGroupBox" name="groupbox_format" >
