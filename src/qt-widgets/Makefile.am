@@ -62,6 +62,7 @@ libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	moc_QueryFeaturePropertiesWidget.cc \
 	ReadErrorAccumulationDialog.cc ReadErrorAccumulationDialogUi.h \
 	moc_ReadErrorAccumulationDialog.cc \
+	ReconstructionPoleWidget.cc ReconstructionPoleWidgetUi.h moc_ReconstructionPoleWidget.cc \
 	ReconstructionViewWidget.cc ReconstructionViewWidgetUi.h \
 	moc_ReconstructionViewWidget.cc \
 	SetCameraViewpointDialog.cc SetCameraViewpointDialogUi.h \
@@ -81,7 +82,8 @@ libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 
 CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				SpecifyFixedPlateDialogUi.h AnimateDialogUi.h AboutDialogUi.h \
-				QueryFeaturePropertiesWidgetUi.h ReconstructionViewWidgetUi.h \
+				QueryFeaturePropertiesWidgetUi.h ReconstructionPoleWidgetUi.h \
+				ReconstructionViewWidgetUi.h \
 				ReadErrorAccumulationDialogUi.h ManageFeatureCollectionsDialogUi.h \
 				ManageFeatureCollectionsActionWidgetUi.h SetCameraViewpointDialogUi.h \
 				CreateFeatureDialogUi.h DigitisationWidgetUi.h \

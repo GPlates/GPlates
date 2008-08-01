@@ -35,6 +35,8 @@
 #include <QTreeWidgetItem>
 #include <QLocale>
 #include "DigitisationWidget.h"
+#include "global/GPlatesAssert.h"
+#include "DigitisationUndoParadoxException.h"
 
 
 namespace
@@ -181,40 +183,36 @@ namespace GPlatesUndoCommands
 		undo()
 		{
 			QTreeWidgetItem *root = d_digitisation_widget->coordinates_table()->invisibleRootItem();
+
 			// Figure out which 'geometry' QTreeWidgetItem is the one where we added
 			// our coordinate previously.
-			QTreeWidgetItem *geom_item = NULL;
-			if (root->childCount() > 0) {
-				// Pick out the last geometry item in the table.
-				geom_item = root->child(root->childCount() - 1);
-			} else {
-				// No geometry items exist in the table. Paradox!
-				// FIXME: Else, throw something - or Assert.
-				qDebug() << Q_FUNC_INFO << ": Time Paradox!";
-				return;
-			}
+			
+			// Assertion: The table is not empty, there is a geometry item to be found.
+			GPlatesGlobal::Assert(root->childCount() > 0,
+					GPlatesQtWidgets::DigitisationUndoParadoxException(__FILE__, __LINE__));
+			
+			// Pick out the last geometry item in the table.
+			QTreeWidgetItem *geom_item = root->child(root->childCount() - 1);
 
 			// Locate the 'coordinate' QTreeWidgetItem that was added, and delete it.
-			if (geom_item->childCount() > 0) {
-				// Kill the last child.
-				QTreeWidgetItem *coord_item = geom_item->takeChild(geom_item->childCount() - 1);
-				delete coord_item;
-				
-				// Special case; if this leaves us with an empty geometry item, we should
-				// get rid of that one, too, just to keep things consistent. It doesn't harm
-				// anything, but just doesn't quite look right if you undo/redo the right way.
-				if (geom_item->childCount() == 0) {
-					root->removeChild(geom_item);
-					delete geom_item;
-				}
-				
-			} else {
-				// Empty geometry item.
-				// FIXME: throw something - or Assert.
-				qDebug() << Q_FUNC_INFO << ": Time Paradox!";
-				return;
-			}
 
+			// Assertion: There is at least one coordinate item to be found. We put it
+			// there just moments ago when you called our redo(). Remember?
+			GPlatesGlobal::Assert(geom_item->childCount() > 0,
+					GPlatesQtWidgets::DigitisationUndoParadoxException(__FILE__, __LINE__));
+
+			// Kill the last child.
+			QTreeWidgetItem *coord_item = geom_item->takeChild(geom_item->childCount() - 1);
+			delete coord_item;
+				
+			// Special case; if this leaves us with an empty geometry item, we should
+			// get rid of that one, too, just to keep things consistent. It doesn't harm
+			// anything, but just doesn't quite look right if you undo/redo the right way.
+			if (geom_item->childCount() == 0) {
+				root->removeChild(geom_item);
+				delete geom_item;
+			}
+				
 			// Update labels and the displayed geometry.
 			d_digitisation_widget->update_table_labels();
 			d_digitisation_widget->update_geometry();
@@ -375,10 +373,12 @@ namespace GPlatesUndoCommands
 				clone_geometry_item_coordinates(*it, new_coordinate_items);
 			}
 			
-			// Convert the old coordinates to something usable for the new geometry type.
-			QTreeWidgetItem *new_geom_item = add_geometry_item(
-					d_digitisation_widget->coordinates_table(), "");
-			new_geom_item->addChildren(new_coordinate_items);
+			if ( ! new_coordinate_items.empty()) {
+				// Convert the old coordinates to something usable for the new geometry type.
+				QTreeWidgetItem *new_geom_item = add_geometry_item(
+						d_digitisation_widget->coordinates_table(), "");
+				new_geom_item->addChildren(new_coordinate_items);
+			}
 			
 			// Tell the DigitisationWidget what the new desired geometry type is.
 			// FIXME: See the definition of set_geometry_type().

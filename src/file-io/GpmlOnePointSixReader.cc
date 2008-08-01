@@ -38,7 +38,7 @@
 #include "FileInfo.h"
 #include "ReadErrors.h"
 #include "ReadErrorOccurrence.h"
-#include "global/Assert.h"
+#include "global/GPlatesAssert.h"
 #include "PropertyCreationUtils.h"
 #include "FeaturePropertiesMap.h"
 #include "ErrorOpeningPipeFromGzipException.h"

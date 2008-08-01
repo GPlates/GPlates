@@ -30,6 +30,7 @@
 #include "TaskPanelUi.h"
 
 #include "DigitisationWidget.h"
+#include "ReconstructionPoleWidget.h"
 #include "ActionButtonBox.h"
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
@@ -79,6 +80,18 @@ namespace GPlatesQtWidgets
 		{
 			return *d_digitisation_widget_ptr;
 		}
+
+		/**
+		 * Accessor for the Reconstruction Pole Widget of the Modify Pole Tab.
+		 *
+		 * This lets the interactive manipulation of reconstructions canvas tool
+		 * interact with the ReconstructionPoleWidget.
+		 */
+		ReconstructionPoleWidget &
+		reconstruction_pole_widget() const
+		{
+			return *d_reconstruction_pole_widget_ptr;
+		}
 	
 	public slots:
 		
@@ -92,6 +105,12 @@ namespace GPlatesQtWidgets
 		choose_digitisation_tab()
 		{
 			tabwidget_task_panel->setCurrentWidget(tab_digitisation);
+		}		
+
+		void
+		choose_modify_pole_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_modify_pole);
 		}		
 		
 	private:
@@ -116,6 +135,14 @@ namespace GPlatesQtWidgets
 
 
 		/**
+		 * Sets up the "Modify Pole" tab in the Extr3me Task Panel.
+		 * This adds the special ReconstructionPoleWidget.
+		 */
+		void
+		set_up_modify_pole_tab();
+
+
+		/**
 		 * Widget responsible for the buttons in the Feature Tab.
 		 * Memory managed by Qt.
 		 *
@@ -137,6 +164,12 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::DigitisationWidget *d_digitisation_widget_ptr;
+
+		/**
+		 * Widget responsible for the controls in the Modify Pole Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::ReconstructionPoleWidget *d_reconstruction_pole_widget_ptr;
 		
 	};
 }

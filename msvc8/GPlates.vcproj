@@ -250,6 +250,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\canvas-tools\MoveGeometry.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\MoveVertex.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\canvas-tools\ReorientGlobe.cc"
 				>
 			</File>
@@ -1245,6 +1253,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_ReconstructionPoleWidget.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
 				>
 			</File>
@@ -1312,6 +1324,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionPoleWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionPoleWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionPoleWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -1683,7 +1714,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\global\Exception.cc"
+				RelativePath="..\src\global\GPlatesException.cc"
 				>
 			</File>
 			<File

@@ -30,6 +30,8 @@
 #include "canvas-tools/ZoomGlobe.h"
 #include "canvas-tools/ClickGeometry.h"
 #include "canvas-tools/DigitiseGeometry.h"
+#include "canvas-tools/MoveGeometry.h"
+#include "canvas-tools/MoveVertex.h"
 
 #include "qt-widgets/DigitisationWidget.h"
 
@@ -54,6 +56,10 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 			view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::MULTIPOINT)),
 	d_digitise_polygon_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(globe_, globe_canvas_,
 			view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::POLYGON)),
+	d_move_geometry_tool_ptr(GPlatesCanvasTools::MoveGeometry::create(globe_, globe_canvas_,
+			view_state_)),
+	d_move_vertex_tool_ptr(GPlatesCanvasTools::MoveVertex::create(globe_, globe_canvas_,
+			view_state_)),
 	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	tool_choice().handle_activation();

@@ -26,7 +26,7 @@
  */
 
 #include <iostream>
-#include "Exception.h"
+#include "GPlatesException.h"
 
 
 void

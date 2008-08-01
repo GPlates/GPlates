@@ -50,7 +50,7 @@
 #include "maths/UnitVector3D.h"
 #include "maths/LatLonPointConversions.h"
 
-#include "global/Exception.h"
+#include "global/GPlatesException.h"
 #include "state/Layout.h"
 #include "model/FeatureHandle.h"
 #include "utils/UnicodeStringUtils.h"

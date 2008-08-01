@@ -167,6 +167,12 @@ namespace GPlatesQtWidgets
 		choose_digitise_polygon_tool();
 
 		void
+		choose_move_geometry_tool();
+
+		void
+		choose_move_vertex_tool();
+
+		void
 		enable_or_disable_feature_actions(
 				GPlatesModel::FeatureHandle::weak_ref focused_feature);
 

@@ -46,7 +46,7 @@
 #include <iostream>
 #include <iterator>
 #include <QTextStream>
-#include "global/Exception.h"
+#include "global/GPlatesException.h"
 
 
 #define EXCEPTION_SOURCE BOOST_CURRENT_FUNCTION

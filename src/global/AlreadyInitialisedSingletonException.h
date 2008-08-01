@@ -28,7 +28,7 @@
 #ifndef _GPLATES_GLOBAL_ALREADYINITIALISEDSINGLETONEXCEPTION_H_
 #define _GPLATES_GLOBAL_ALREADYINITIALISEDSINGLETONEXCEPTION_H_
 
-#include "Exception.h"
+#include "GPlatesException.h"
 
 namespace GPlatesGlobal
 {

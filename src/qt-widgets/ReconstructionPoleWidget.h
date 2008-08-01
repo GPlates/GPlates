@@ -2,12 +2,10 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * $Revision$
+ * $Date$ 
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,23 +22,42 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+ 
+#ifndef GPLATES_QTWIDGETS_RECONSTRUCTIONPOLEWIDGET_H
+#define GPLATES_QTWIDGETS_RECONSTRUCTIONPOLEWIDGET_H
 
-#ifndef _GPLATES_GUI_GUIEXCEPTION_H_
-#define _GPLATES_GUI_GUIEXCEPTION_H_
+#include <QWidget>
+#include "ReconstructionPoleWidgetUi.h"
 
-#include "global/GPlatesException.h"
 
-namespace GPlatesGui
+namespace GPlatesQtWidgets
 {
-	/**
-	 * The (pure virtual) base class of all GUI exceptions.
-	 */
-	class GuiException : public GPlatesGlobal::Exception
+	class ViewportWindow;
+	
+
+	class ReconstructionPoleWidget:
+			public QWidget, 
+			protected Ui_ReconstructionPoleWidget
 	{
-		public:
-			virtual
-			~GuiException() {  }
+		Q_OBJECT
+		
+	public:
+		explicit
+		ReconstructionPoleWidget(
+				GPlatesQtWidgets::ViewportWindow &view_state,
+				QWidget *parent_ = NULL);
+					
+	public slots:
+		
+		void
+		handle_reset_adjustment();
+	
+	private:
+	
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		
 	};
 }
 
-#endif  // _GPLATES_GUI_GUIEXCEPTION_H_
+#endif  // GPLATES_QTWIDGETS_RECONSTRUCTIONPOLEWIDGET_H
+

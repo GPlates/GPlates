@@ -141,6 +141,8 @@
    <addaction name="action_Digitise_New_Polyline" />
    <addaction name="action_Digitise_New_MultiPoint" />
    <addaction name="action_Digitise_New_Polygon" />
+   <addaction name="action_Move_Geometry" />
+   <addaction name="action_Move_Vertex" />
   </widget>
   <widget class="QDockWidget" name="dock_search_results" >
    <property name="contextMenuPolicy" >
@@ -837,6 +839,46 @@
    </property>
    <property name="shortcut" >
     <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="action_Move_Geometry" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_stock_edit_points_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Move Geometry</string>
+   </property>
+   <property name="iconText" >
+    <string>&amp;Move Geometry</string>
+   </property>
+   <property name="toolTip" >
+    <string>Drag geometry to adjust position</string>
+   </property>
+  </action>
+  <action name="action_Move_Vertex" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_stock_edit_points_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Mo&amp;ve Vertex</string>
+   </property>
+   <property name="iconText" >
+    <string>Mo&amp;ve Vertex</string>
+   </property>
+   <property name="toolTip" >
+    <string>Drag vertices of geometry to adjust position</string>
    </property>
   </action>
  </widget>

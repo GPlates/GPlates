@@ -28,7 +28,7 @@
 #ifndef _GPLATES_MATHS_MATHEMATICALEXCEPTION_H_
 #define _GPLATES_MATHS_MATHEMATICALEXCEPTION_H_
 
-#include "global/Exception.h"
+#include "global/GPlatesException.h"
 
 namespace GPlatesMaths
 {

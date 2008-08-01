@@ -52,7 +52,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 #include "utils/StringFormattingUtils.h"
-#include "global/Assert.h"
+#include "global/GPlatesAssert.h"
 #include <unicode/ustream.h>
 
 

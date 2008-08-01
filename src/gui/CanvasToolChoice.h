@@ -117,6 +117,18 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_digitise_polygon_tool_ptr);
 		}
 
+		void
+		choose_move_geometry_tool()
+		{
+			change_tool_if_necessary(d_move_geometry_tool_ptr);
+		}
+
+		void
+		choose_move_vertex_tool()
+		{
+			change_tool_if_necessary(d_move_vertex_tool_ptr);
+		}
+
 	private:
 		/**
 		 * This is the ReorientGlobe tool which the user may choose.
@@ -147,6 +159,16 @@ namespace GPlatesGui
 		 * This is the DigitiseGeometry (Polygon) tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_digitise_polygon_tool_ptr;
+
+		/**
+		 * This is the MoveGeometry tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_move_geometry_tool_ptr;
+
+		/**
+		 * This is the MoveVertex tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_move_vertex_tool_ptr;
 
 		/**
 		 * The current choice of CanvasTool.

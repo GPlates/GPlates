@@ -42,7 +42,7 @@
 #include "ActionButtonBox.h"
 #include "CreateFeatureDialog.h"
 
-#include "global/Exception.h"
+#include "global/GPlatesException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "gui/CanvasToolAdapter.h"
 #include "gui/CanvasToolChoice.h"
@@ -607,6 +607,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(choose_digitise_multipoint_tool()));
 	QObject::connect(action_Digitise_New_Polygon, SIGNAL(triggered()),
 			this, SLOT(choose_digitise_polygon_tool()));
+	QObject::connect(action_Move_Geometry, SIGNAL(triggered()),
+			this, SLOT(choose_move_geometry_tool()));
+	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
+			this, SLOT(choose_move_vertex_tool()));
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
@@ -958,6 +962,26 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_polygon_tool()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
+{
+	uncheck_all_tools();
+	action_Move_Geometry->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_move_geometry_tool();
+	d_task_panel_ptr->choose_digitisation_tab();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
+{
+	uncheck_all_tools();
+	action_Move_Vertex->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_move_vertex_tool();
+	d_task_panel_ptr->choose_digitisation_tab();
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 {
 	action_Drag_Globe->setChecked(false);
@@ -966,6 +990,8 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Digitise_New_Polyline->setChecked(false);
 	action_Digitise_New_MultiPoint->setChecked(false);
 	action_Digitise_New_Polygon->setChecked(false);
+	action_Move_Geometry->setChecked(false);
+	action_Move_Vertex->setChecked(false);
 }
 
 

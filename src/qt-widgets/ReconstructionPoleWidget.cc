@@ -2,12 +2,10 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * $Revision$
+ * $Date$ 
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,22 +23,27 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_GUI_GUIEXCEPTION_H_
-#define _GPLATES_GUI_GUIEXCEPTION_H_
+#include "ReconstructionPoleWidget.h"
 
-#include "global/GPlatesException.h"
+#include "ViewportWindow.h"
 
-namespace GPlatesGui
+
+GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
+		GPlatesQtWidgets::ViewportWindow &view_state,
+		QWidget *parent_):
+	QWidget(parent_),
+	d_view_state_ptr(&view_state)
 {
-	/**
-	 * The (pure virtual) base class of all GUI exceptions.
-	 */
-	class GuiException : public GPlatesGlobal::Exception
-	{
-		public:
-			virtual
-			~GuiException() {  }
-	};
+	setupUi(this);
+	
+	// Reset button to change the current adjustment to an identity rotation.
+	QObject::connect(button_adjustment_reset, SIGNAL(clicked()),
+			this, SLOT(handle_reset_adjustment()));
 }
 
-#endif  // _GPLATES_GUI_GUIEXCEPTION_H_
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::handle_reset_adjustment()
+{  }
+
+

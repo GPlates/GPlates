@@ -64,6 +64,11 @@
        <string>Digitisation</string>
       </attribute>
      </widget>
+     <widget class="QWidget" name="tab_modify_pole" >
+      <attribute name="title" >
+       <string>Modify Pole</string>
+      </attribute>
+     </widget>
     </widget>
    </item>
   </layout>

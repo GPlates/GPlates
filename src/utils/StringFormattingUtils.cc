@@ -29,7 +29,7 @@
 #include <iomanip>
 
 #include "StringFormattingUtils.h"
-#include "global/Assert.h"
+#include "global/GPlatesAssert.h"
 
 
 namespace
