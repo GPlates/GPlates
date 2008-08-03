@@ -1666,6 +1666,9 @@
 				RelativePath="..\src\maths\LatLonPointConversions.cc">
 			</File>
 			<File
+				RelativePath="..\src\maths\MultiPointOnSphere.cc">
+			</File>
+			<File
 				RelativePath="..\src\maths\PointLiesOnGreatCircleArc.cc">
 			</File>
 			<File
@@ -1706,13 +1709,6 @@
 			</File>
 			<File
 				RelativePath="..\src\maths\Vector3D.cc">
-			</File>
-		</Filter>
-		<Filter
-			Name="state"
-			Filter="">
-			<File
-				RelativePath="..\src\state\Layout.cc">
 			</File>
 		</Filter>
 		<Filter

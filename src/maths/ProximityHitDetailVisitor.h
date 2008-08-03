@@ -35,6 +35,7 @@ namespace GPlatesMaths
 {
 	// Forward declarations for the member functions.
 	// Please keep these ordered alphabetically.
+	class MultiPointProximityHitDetail;
 	class PointProximityHitDetail;
 	class PolygonProximityHitDetail;
 	class PolylineProximityHitDetail;
@@ -69,6 +70,12 @@ namespace GPlatesMaths
 		~ProximityHitDetailVisitor() = 0;
 
 		// Please keep these proximity hit detail types ordered alphabetically.
+
+		virtual
+		void
+		visit_multi_point_proximity_hit_detail(
+				MultiPointProximityHitDetail &multi_point_detail)
+		{  }
 
 		virtual
 		void

@@ -87,15 +87,6 @@ namespace GPlatesQtWidgets
 			return *d_reconstruction_ptr;
 		}
 
-		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-				mouse_interaction_geometry_layer_type;
-
-		mouse_interaction_geometry_layer_type &
-		mouse_interaction_geometry_layer()
-		{
-			return d_mouse_interaction_geometry_layer;
-		}
-
 		const double &
 		reconstruction_time() const
 		{
@@ -114,9 +105,14 @@ namespace GPlatesQtWidgets
 			return d_reconstruction_view_widget;
 		}
 
+		GlobeCanvas &
+		globe_canvas() 
+		{
+			return *d_canvas_ptr;
+		}
+
 		void
 		create_svg_file();
-
 
 	public slots:
 		
@@ -307,8 +303,6 @@ namespace GPlatesQtWidgets
 
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
-
-		mouse_interaction_geometry_layer_type d_mouse_interaction_geometry_layer;
 
 		//@{
 		// ViewState 

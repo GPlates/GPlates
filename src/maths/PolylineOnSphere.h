@@ -38,7 +38,7 @@
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
-#include "InvalidPolylineException.h"
+#include "global/PreconditionViolationError.h"
 
 
 namespace GPlatesMaths
@@ -470,22 +470,21 @@ namespace GPlatesMaths
 		 * get an exception thrown back at you.
 		 *
 		 * It's not terribly difficult to obtain a collection which
-		 * qualifias as valid parameters (no duplicate or antipodal
-		 * adjacent points; at least two distinct points in the
-		 * collection -- nothing particularly unreasonable) but the
-		 * creation functions are fairly unsympathetic if your
-		 * parameters @em do turn out to be invalid.
+		 * qualifias as valid parameters (no antipodal adjacent points;
+		 * at least two distinct points in the collection -- nothing
+		 * particularly unreasonable) but the creation functions are
+		 * fairly unsympathetic if your parameters @em do turn out to
+		 * be invalid.
 		 *
 		 * @a coll should be a sequential STL container (list, vector,
 		 * ...) of PointOnSphere.
 		 *
 		 * @a invalid_points is a return-parameter; if the
 		 * construction-parameters are found to be invalid due to
-		 * duplicate or antipodal adjacent points, the value of this
-		 * return-parameter will be set to the pair of const_iterators
-		 * of @a coll which point to the guilty points.  If no adjacent
-		 * points are found to be duplicate or antipodal, this
-		 * parameter will not be modified.
+		 * antipodal adjacent points, the value of this return-parameter
+		 * will be set to the pair of const_iterators of @a coll which
+		 * point to the guilty points.  If no adjacent points are found
+		 * to be antipodal, this parameter will not be modified.
 		 */
 		template<typename C>
 		static
@@ -742,7 +741,7 @@ namespace GPlatesMaths
 		 * being "close" to that segment.
 		 *
 		 * For more information, read the comment before
-		 * @a GPlatesState::Layout::find_close_data.
+		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		bool
 		is_close_to(
@@ -824,9 +823,10 @@ namespace GPlatesMaths
 
 		/**
 		 * This is the minimum number of (distinct) collection points to be passed into the
-		 * 'create_on_heap' function to enable creation of a closed, well-defined polygon.
+		 * 'create_on_heap' function to enable creation of a closed, well-defined polyline.
 		 */
 		static const unsigned s_min_num_collection_points;
+
 
 		/**
 		 * This is the sequence of polyline segments.
@@ -914,10 +914,10 @@ namespace GPlatesMaths
 			const C &coll,
 			std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points)
 	{
-		typename C::size_type num_points = coll.size();
+		typename C::size_type num_points = count_distinct_adjacent_points(coll);
 		if (num_points < s_min_num_collection_points) {
-			// The collection does not contain enough points to
-			// create even one line-segment.
+			// The collection does not contain enough distinct points to create even
+			// one line-segment.
 			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
@@ -928,9 +928,8 @@ namespace GPlatesMaths
 
 			ConstructionParameterValidity v = evaluate_segment_endpoint_validity(p1, p2);
 
-			// Using a switch-statement, along with GCC's
-			// "-Wswitch" option (implicitly enabled by "-Wall"),
-			// will help to ensure that no cases are missed.
+			// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly
+			// enabled by "-Wall"), will help to ensure that no cases are missed.
 			switch (v) {
 
 			case VALID:
@@ -940,11 +939,12 @@ namespace GPlatesMaths
 
 			case INVALID_INSUFFICIENT_DISTINCT_POINTS:
 
-				// This value shouldn't be returned.
-				// FIXME:  Can this be checked at compile-time?
-				// (Perhaps with use of template magic, to
-				// avoid the need to check at run-time and
-				// throw an exception if the assertion fails.)
+				// This value should never be returned, since it's not related to
+				// segments.
+				//
+				// FIXME:  This sucks.  We should separate "global" errors (like
+				// "insufficient distinct points") from "segment" errors (like
+				// "antipodal segment endpoints").
 				break;
 
 			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
@@ -953,11 +953,6 @@ namespace GPlatesMaths
 				invalid_points.second = iter;
 				return v;
 			}
-		}
-		// Check the number of (usable) points again, now that we've
-		// abjusted for duplicates.
-		if (num_points < 2) {
-			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
 		// If we got this far, we couldn't find anything wrong with the
@@ -978,24 +973,82 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * The exception thrown when an attempt is made to create a polyline using invalid points.
+	 */
+	class InvalidPointsForPolylineConstructionError:
+			public GPlatesGlobal::PreconditionViolationError
+	{
+	public:
+		/**
+		 * Instantiate the exception.
+		 *
+		 * @param cpv is the polyline's construction parameter validity value, which
+		 * presumably describes why the points are invalid.
+		 */
+		InvalidPointsForPolylineConstructionError(
+				PolylineOnSphere::ConstructionParameterValidity cpv,
+				const char *filename,
+				int line_num):
+			d_cpv(cpv),
+			d_filename(filename),
+			d_line_num(line_num)
+		{  }
+
+		virtual
+		~InvalidPointsForPolylineConstructionError()
+		{  }
+
+	protected:
+		virtual
+		const char *
+		ExceptionName() const
+		{
+			return "InvalidPointsForPolylineConstructionError";
+		}
+
+		// FIXME: This would be better as a 'const std::string'.
+		virtual
+		std::string
+		Message() const
+		{
+			switch (d_cpv) {
+			case PolylineOnSphere::VALID:
+				return "valid";
+			case PolylineOnSphere::INVALID_INSUFFICIENT_DISTINCT_POINTS:
+				return "insufficient distinct points";
+			case PolylineOnSphere::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+				return "antipodal segment endpoints";
+			}
+			// Control-flow should never reach the end of this function.
+			// FIXME:  We should assert this.
+			// We'll return an empty string to placate the compiler, which is
+			// complaining about control reaching end of non-void function.
+			return std::string();
+		}
+
+	private:
+		PolylineOnSphere::ConstructionParameterValidity d_cpv;
+		const char *d_filename;
+		int d_line_num;
+	};
+
+
 	template<typename C>
 	void
 	PolylineOnSphere::generate_segments_and_swap(
 			PolylineOnSphere &poly,
 			const C &coll)
 	{
-		if (coll.size() < s_min_num_collection_points) {
-			// The collection does not contain enough points to
-			// create even one line-segment.
-			
-			throw InvalidPolylineException("Attempted to create a "
-					"polyline from an insufficient number (ie, less than "
-					"2) of endpoints.");
+		std::pair<typename C::const_iterator, typename C::const_iterator> invalid_points;
+		ConstructionParameterValidity v =
+				evaluate_construction_parameter_validity(coll, invalid_points);
+		if (v != VALID) {
+			throw InvalidPointsForPolylineConstructionError(v, __FILE__, __LINE__);
 		}
 
-		// Make it easier to provide strong exception safety by
-		// appending the new segments to a temporary sequence (rather
-		// than putting them directly into 'd_seq').
+		// Make it easier to provide strong exception safety by appending the new segments
+		// to a temporary sequence (rather than putting them directly into 'd_seq').
 		seq_type tmp_seq;
 		// Observe that the number of points used to define a polyline (which will become
 		// the number of vertices in the polyline, counting the begin-point and end-point
@@ -1008,15 +1061,6 @@ namespace GPlatesMaths
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
-		}
-
-		if (tmp_seq.size() == 0) {
-			// No line-segments were created, which must mean that
-			// all points in the collection were identical.
-			
-			throw InvalidPolylineException("Attempted to create a "
-					"polyline from an insufficient number (ie, less than "
-					"2) of unique endpoints.");
 		}
 		poly.d_seq.swap(tmp_seq);
 	}

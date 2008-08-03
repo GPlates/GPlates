@@ -60,10 +60,21 @@ namespace GPlatesGui
 		 */
 		virtual
 		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point)
 		{
-			d_canvas_ptr->draw_point(point_on_sphere, d_colour);
+			d_canvas_ptr->draw_multi_point(multi_point, d_colour);
+		}
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
+		{
+			d_canvas_ptr->draw_point(point, d_colour);
 		}
 
 		/**
@@ -72,10 +83,9 @@ namespace GPlatesGui
 		virtual
 		void
 		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
 		{
-			// FIXME:  We need a 'draw_polygon' function, which will additionally need
-			// to handle filled polygons.
+			d_canvas_ptr->draw_polygon(polygon, d_colour);
 		}
 
 		/**
@@ -84,9 +94,9 @@ namespace GPlatesGui
 		virtual
 		void
 		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
 		{
-			d_canvas_ptr->draw_polyline(polyline_on_sphere, d_colour);
+			d_canvas_ptr->draw_polyline(polyline, d_colour);
 		}
 
 	private:

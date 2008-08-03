@@ -25,11 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "PlatesLineFormatWriter.h"
 #include <ostream>
 #include <fstream>
 #include <vector>
+#include <unicode/ustream.h>
 
+#include "PlatesLineFormatWriter.h"
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/FeatureRevision.h"
@@ -51,9 +52,11 @@
 #include "maths/Real.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
+#include "maths/InvalidPolylineContainsZeroPointsException.h"
+#include "maths/InvalidPolylineContainsOnlyOnePointException.h"
+
 #include "utils/StringFormattingUtils.h"
 #include "global/GPlatesAssert.h"
-#include <unicode/ustream.h>
 
 
 namespace
@@ -135,17 +138,12 @@ namespace
 
 		// N.B. The class invariant of PolylineOnSphere guarentees that our iterators  iter
 		// and  end  span at least two vertices.  See the documentation for PolylineOnSphere.
-
-		Assert(iter != end, 
-				GPlatesMaths::InvalidPolylineException(
-					"Came across a polyline with no points in it!"));
+		Assert(iter != end, GPlatesMaths::InvalidPolylineContainsZeroPointsException(__FILE__, __LINE__));
 
 		print_plates_coordinate_line(os, *iter, PEN_SKIP_TO_POINT);
 
 		++iter;
-		Assert(iter != end, 
-				GPlatesMaths::InvalidPolylineException(
-					"Came across a polyline with less than two points in it!"));
+		Assert(iter != end, GPlatesMaths::InvalidPolylineContainsOnlyOnePointException(__FILE__, __LINE__));
 
 		for ( ; iter != end; ++iter) {
 			print_plates_coordinate_line(os, *iter, PEN_DRAW_TO_POINT);

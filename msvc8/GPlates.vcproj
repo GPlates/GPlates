@@ -1642,6 +1642,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\maths\MultiPointOnSphere.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\maths\PointLiesOnGreatCircleArc.cc"
 				>
 			</File>
@@ -1695,14 +1699,6 @@
 			</File>
 			<File
 				RelativePath="..\src\maths\Vector3D.cc"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="state"
-			>
-			<File
-				RelativePath="..\src\state\Layout.cc"
 				>
 			</File>
 		</Filter>

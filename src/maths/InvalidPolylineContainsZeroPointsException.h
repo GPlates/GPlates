@@ -11,6 +11,8 @@
  *  (under the name "InvalidPolyLineException.h")
  * Copyright (C) 2006 The University of Sydney, Australia
  *  (under the name "InvalidPolylineException.h")
+ * Copyright (C) 2008 The University of Sydney, Australia
+ *  (under the name "InvalidPolylineContainsZeroPointsException.h")
  *
  * This file is part of GPlates.
  *
@@ -28,44 +30,47 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_MATHS_INVALIDPOLYLINEEXCEPTION_H_
-#define _GPLATES_MATHS_INVALIDPOLYLINEEXCEPTION_H_
+#ifndef GPLATES_MATHS_INVALIDPOLYLINECONTAINSZEROPOINTSEXCEPTION_H
+#define GPLATES_MATHS_INVALIDPOLYLINECONTAINSZEROPOINTSEXCEPTION_H
 
-#include "MathematicalException.h"
+#include "global/InternalObjectInconsistencyException.h"
+
 
 namespace GPlatesMaths
 {
 	/**
-	 * The Exception thrown when an attempt is made to create an
-	 * invalid poly-line.
+	 * The exception thrown when a polyline is found to contain zero points.
 	 */
-	class InvalidPolylineException
-		: public MathematicalException
+	class InvalidPolylineContainsZeroPointsException:
+			public GPlatesGlobal::InternalObjectInconsistencyException
 	{
-		public:
-			/**
-			 * @param msg is a description of the conditions
-			 * which cause the poly-line to be invalid.
-			 */
-			InvalidPolylineException(const char *msg)
-				: _msg(msg) {  }
+	public:
+		/**
+		 * Instantiate the exception.
+		 */
+		InvalidPolylineContainsZeroPointsException(
+				const char *filename,
+				int line_num):
+			d_filename(filename),
+			d_line_num(line_num)
+		{  }
 
-			virtual
-			~InvalidPolylineException() {  }
+		virtual
+		~InvalidPolylineContainsZeroPointsException()
+		{  }
 
-		protected:
-			virtual const char *
-			ExceptionName() const {
+	protected:
+		virtual
+		const char *
+		ExceptionName() const
+		{
+			return "InvalidPolylineContainsZeroPointsException";
+		}
 
-				return "InvalidPolylineException";
-			}
-
-			virtual std::string
-			Message() const { return _msg; }
-
-		private:
-			std::string _msg;
+	private:
+		const char *d_filename;
+		int d_line_num;
 	};
 }
 
-#endif  // _GPLATES_MATHS_INVALIDPOLYLINEEXCEPTION_H_
+#endif  // GPLATES_MATHS_INVALIDPOLYLINECONTAINSZEROPOINTSEXCEPTION_H

@@ -371,7 +371,6 @@ AC_OUTPUT(Makefile
 	src/property-values/Makefile
 	src/qt-resources/Makefile
 	src/qt-widgets/Makefile
-	src/state/Makefile
 	src/utils/Makefile
 	)
 

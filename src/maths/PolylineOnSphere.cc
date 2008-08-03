@@ -38,7 +38,6 @@
 #include "ProximityCriteria.h"
 #include "ConstGeometryOnSphereVisitor.h"
 #include "HighPrecision.h"
-#include "InvalidPolylineException.h"
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
 #include "global/IntrusivePointerZeroRefCountException.h"
@@ -56,9 +55,8 @@ GPlatesMaths::PolylineOnSphere::evaluate_segment_endpoint_validity(
 	GreatCircleArc::ConstructionParameterValidity cpv =
 			GreatCircleArc::evaluate_construction_parameter_validity(p1, p2);
 
-	// Using a switch-statement, along with GCC's "-Wswitch" option
-	// (implicitly enabled by "-Wall"), will help to ensure that no cases
-	// are missed.
+	// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly enabled by
+	// "-Wall"), will help to ensure that no cases are missed.
 	switch (cpv) {
 
 	case GreatCircleArc::VALID:
@@ -195,40 +193,11 @@ GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
 		const PointOnSphere &p1,
 		const PointOnSphere &p2)
 {
-	GreatCircleArc::ConstructionParameterValidity cpv =
-			GreatCircleArc::evaluate_construction_parameter_validity(p1, p2);
+	// We'll assume that the validity of 'p1' and 'p2' to create a GreatCircleArc has been
+	// evaluated in the function 'PolylineOnSphere::evaluate_construction_parameter_validity',
+	// which was presumably invoked in 'PolylineOnSphere::generate_segments_and_swap' before
+	// this function was.
 
-	// Using a switch-statement, along with GCC's "-Wswitch" option
-	// (implicitly enabled by "-Wall"), will help to ensure that no cases
-	// are missed.
-	switch (cpv) {
-
-	case GreatCircleArc::VALID:
-		// Continue after switch.
-		break;
-
-	 case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
-		{
-			// The start-point and the end-point are antipodal
-			// => indeterminate segment
-			std::ostringstream oss;
-
-			oss << "Attempted to create a polyline line-segment from "
-					<< "antipodal endpoints "
-					<< p1
-					<< " and "
-					<< p2
-					<< ".";
-			throw InvalidPolylineException(oss.str().c_str());
-			// FIXME: Should be
-			// 'PolylineSegmentConstructionException', a derived
-			// class of 'PolylineConstructionException'.
-		}
-	}
-
-	// We should only have arrived at this point if
-	// GreatCircleArc::evaluate_construction_parameter_validity returned
-	// GreatCircleArc::VALID.
 	GreatCircleArc segment = GreatCircleArc::create(p1, p2);
 	seq.push_back(segment);
 }

@@ -94,6 +94,7 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Updates the temporary geometry rendered on screen.
+		 *
 		 * This sets d_geometry_opt_ptr appropriately and pushes new temporary geometry
 		 * to the ViewState after clearing it.
 		 *
@@ -166,7 +167,7 @@ namespace GPlatesQtWidgets
 		void
 		initialise_geometry(
 				GeometryType geom_type);
-		
+
 		/**
 		 * Configures widgets for a new geometry type while preserving the
 		 * points that are currently being digitised.
@@ -176,7 +177,7 @@ namespace GPlatesQtWidgets
 		void
 		change_geometry_type(
 				GeometryType geom_type);
-		
+
 		/**
 		 * Adds a new lat,lon to the specified geometry (defaults to NULL,
 		 * indicating the 'default geometry', which for now is just the
@@ -196,17 +197,33 @@ namespace GPlatesQtWidgets
 				double lat,
 				double lon,
 				QTreeWidgetItem *target_geometry = NULL);
-			
-	private slots:
-				
+
 		/**
-		 *	The slot that gets called when the user clicks "Create".
+		 * Hide the temporary geometry from the screen, but don't clear the coordinates.
+		 *
+		 * This is used when the user switches to a different tool.
+		 */
+		void
+		hide_geometry();
+
+		/**
+		 * Re-display the temporary geometry on the screen.
+		 *
+		 * This is used when the user switches back to this tool from a different tool.
+		 */
+		void
+		show_geometry();
+
+	private slots:
+
+		/**
+		 * The slot that gets called when the user clicks "Create".
 		 */
 		void
 		handle_create();
 
 		/**
-		 *	The slot that gets called when the user clicks "Clear".
+		 * The slot that gets called when the user clicks "Clear".
 		 */
 		void
 		handle_clear();
@@ -217,9 +234,9 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		handle_export();
-	
+
 	private:
-				
+
 		/**
 		 * The Undo Stack that handles all the Undo Commands for this widget.
 		 * 
@@ -229,10 +246,11 @@ namespace GPlatesQtWidgets
 		QUndoStack d_undo_stack;
 
 		/**
-		 * The View State is used to access the mouse-interaction geometry layer.
+		 * The View State is used to access the digitisation layer in the globe in the
+		 * globe canvas.
 		 */
 		ViewportWindow *d_view_state_ptr;
-		
+
 		/**
 		 * The dialog the user sees when they hit the Export button.
 		 * Memory managed by Qt.

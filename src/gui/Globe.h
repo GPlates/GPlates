@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_GUI_GLOBE_H_
-#define _GPLATES_GUI_GLOBE_H_
+#ifndef GPLATES_GUI_GLOBE_H
+#define GPLATES_GUI_GLOBE_H
 
 #include "Colour.h"
 #include "OpaqueSphere.h"
@@ -34,104 +34,125 @@
 #include "Texture.h"
 #include "NurbsRenderer.h"
 #include "SimpleGlobeOrientation.h"
+#include "RenderedGeometryLayers.h"
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
+
 
 namespace GPlatesGui
 {
 	class Globe
 	{
+	public:
+		Globe():
+			d_sphere(Colour(0.35f, 0.35f, 0.35f)),
+			d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON, Colour::WHITE)
+		{  }
 
-		public:
-			Globe() :
-			 _sphere(Colour(0.35f, 0.35f, 0.35f)),
-			 _grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON, Colour::WHITE)
-			 {  }
+		~Globe()
+		{  }
 
-			~Globe() {  }
+		/**
+		 * The layers of rendered geometries.
+		 */
+		RenderedGeometryLayers &
+		rendered_geometry_layers()
+		{
+			return d_rendered_geometry_layers;
+		}
 
-			SimpleGlobeOrientation &
-			orientation()
-			{
-				return m_globe_orientation;
-			}
+		SimpleGlobeOrientation &
+		orientation()
+		{
+			return d_globe_orientation;
+		}
 
-			// currently does nothing.
-			void
-			SetTransparency(bool trans = true) {  }
+		// currently does nothing.
+		void
+		SetTransparency(
+				bool trans = true)
+		{  }
 
-			void SetNewHandlePos(const
-			 GPlatesMaths::PointOnSphere &pos);
+		void
+		SetNewHandlePos(
+				const GPlatesMaths::PointOnSphere &pos);
 
-			void UpdateHandlePos(const
-			 GPlatesMaths::PointOnSphere &pos);
+		void
+		UpdateHandlePos(
+				const GPlatesMaths::PointOnSphere &pos);
 
-			GPlatesMaths::PointOnSphere Orient(const
-			 GPlatesMaths::PointOnSphere &pos);
+		const GPlatesMaths::PointOnSphere
+		Orient(
+				const GPlatesMaths::PointOnSphere &pos);
 
-			void
-			initialise_texture();
+		void
+		initialise_texture();
 
-			void Paint();
-			
-			/*
-			 * A special version of the globe's Paint() method more suitable
-			 * for vector output
-			 */
-			void paint_vector_output();
+		void Paint();
+		
+		/*
+		 * A special version of the globe's Paint() method more suitable
+		 * for vector output
+		 */
+		void paint_vector_output();
 
-			void
-			toggle_raster_image();
+		void
+		toggle_raster_image();
 
-			void
-			enable_raster_display();
+		void
+		enable_raster_display();
 
-			void
-			disable_raster_display();
+		void
+		disable_raster_display();
 
-			Texture &
-			texture(){
-				return d_texture;
-			}
+		Texture &
+		texture()
+		{
+			return d_texture;
+		}
 
-		private:
-			/**
-			 * The NurbsRenderer used to draw large GreatCircleArcs.
-			 */
-			NurbsRenderer d_nurbs_renderer;
+	private:
+		/**
+		 * The layers of rendered geometries.
+		 */
+		RenderedGeometryLayers d_rendered_geometry_layers;
 
-			/**
-			 * The solid earth.
-			 */
-			OpaqueSphere _sphere;
+		/**
+		 * The NurbsRenderer used to draw large GreatCircleArcs.
+		 */
+		NurbsRenderer d_nurbs_renderer;
 
+		/**
+		 * The solid earth.
+		 */
+		OpaqueSphere d_sphere;
 
-			/**
-			 * A (single) texture to be texture-mapped over the sphere surface.
-			 */
-			Texture d_texture;
+		/**
+		 * A (single) texture to be texture-mapped over the sphere surface.
+		 */
+		Texture d_texture;
 
-			/**
-			 * Lines of lat and lon on surface of earth.
-			 */
-			SphericalGrid _grid;
+		/**
+		 * Lines of lat and lon on surface of earth.
+		 */
+		SphericalGrid d_grid;
 
-			/**
-			 * The accumulated orientation of the globe.
-			 */
-			SimpleGlobeOrientation m_globe_orientation;
+		/**
+		 * The accumulated orientation of the globe.
+		 */
+		SimpleGlobeOrientation d_globe_orientation;
 
-			/**
-			 * One circle of latitude every 30 degrees.
-			 */
-			static const unsigned NUM_CIRCLES_LAT = 5;
+		/**
+		 * One circle of latitude every 30 degrees.
+		 */
+		static const unsigned NUM_CIRCLES_LAT = 5;
 
-			/**
-			 * One circle of longitude every 30 degrees.
-			 */
-			static const unsigned NUM_CIRCLES_LON = 6;
+		/**
+		 * One circle of longitude every 30 degrees.
+		 */
+		static const unsigned NUM_CIRCLES_LON = 6;
 	};
 }
 
-#endif  /* _GPLATES_GUI_GLOBE_H_ */
+#endif  // GPLATES_GUI_GLOBE_H

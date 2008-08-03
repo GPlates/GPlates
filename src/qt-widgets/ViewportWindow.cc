@@ -412,26 +412,6 @@ namespace
 		}
 	}
 
-
-	void
-	render_mouse_interaction_geometry_layer(
-			GPlatesQtWidgets::GlobeCanvas *canvas_ptr, 
-			const GPlatesQtWidgets::ViewportWindow::mouse_interaction_geometry_layer_type &
-					geometry_layer)
-	{
-		typedef GPlatesQtWidgets::ViewportWindow::mouse_interaction_geometry_layer_type
-				geometry_layer_type;
-
-		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::WHITE;
-		GPlatesGui::GlobeCanvasPainter painter(*canvas_ptr, colour);
-
-		geometry_layer_type::const_iterator iter = geometry_layer.begin();
-		geometry_layer_type::const_iterator end = geometry_layer.end();
-		for ( ; iter != end; ++iter) {
-			(*iter)->accept_visitor(painter);
-		}
-	}
-
 } // namespace
 
 
@@ -812,8 +792,6 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	d_canvas_ptr->clear_data();
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root);
-	render_mouse_interaction_geometry_layer(d_canvas_ptr, mouse_interaction_geometry_layer());
-
 
 	if (d_euler_pole_dialog.isVisible()){
 		d_euler_pole_dialog.update();

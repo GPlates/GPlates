@@ -48,6 +48,8 @@
 #include "gui/ViewportZoom.h"
 #include "gui/PlatesColourTable.h"
 
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
 
@@ -129,13 +131,23 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &click_point) const;
 
 		void
-		draw_polyline(
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+		draw_multi_point(
+				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multi_point,
 				GPlatesGui::PlatesColourTable::const_iterator colour);
 
 		void
 		draw_point(
 				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point,
+				GPlatesGui::PlatesColourTable::const_iterator colour);
+
+		void
+		draw_polygon(
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+				GPlatesGui::PlatesColourTable::const_iterator colour);
+
+		void
+		draw_polyline(
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
 				GPlatesGui::PlatesColourTable::const_iterator colour);
 
 		void

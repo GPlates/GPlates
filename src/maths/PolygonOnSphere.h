@@ -35,7 +35,7 @@
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
-#include "InvalidPolygonException.h"
+#include "global/PreconditionViolationError.h"
 
 
 namespace GPlatesMaths
@@ -70,6 +70,8 @@ namespace GPlatesMaths
 	 * Say you have a sequence of PointOnSphere: [A, B, C, D].  If you pass
 	 * this sequence to the @a PolygonOnSphere::create_on_heap function, it
 	 * will create a polygon composed of 4 segments: A->B, B->C, C->D and D->A. 
+	 * (Iterating through the arcs of the polygon using the member functions
+	 * @a begin and @a end will return these 4 segments.)
 	 * If you subsequently iterate through the vertices of this polygon,
 	 * you will get the same sequence of points back again: A, B, C, D.
 	 *
@@ -415,22 +417,21 @@ namespace GPlatesMaths
 		 * get an exception thrown back at you.
 		 *
 		 * It's not terribly difficult to obtain a collection which
-		 * qualifias as valid parameters (no duplicate or antipodal
-		 * adjacent points; at least three distinct points in the
-		 * collection -- nothing particularly unreasonable) but the
-		 * creation functions are fairly unsympathetic if your
-		 * parameters @em do turn out to be invalid.
+		 * qualifias as valid parameters (no antipodal adjacent points;
+		 * at least three distinct points in the collection -- nothing
+		 * particularly unreasonable) but the creation functions are
+		 * fairly unsympathetic if your parameters @em do turn out to
+		 * be invalid.
 		 *
 		 * @a coll should be a sequential STL container (list, vector,
 		 * ...) of PointOnSphere.
 		 *
 		 * @a invalid_points is a return-parameter; if the
 		 * construction-parameters are found to be invalid due to
-		 * duplicate or antipodal adjacent points, the value of this
-		 * return-parameter will be set to the pair of const_iterators
-		 * of @a coll which point to the guilty points.  If no adjacent
-		 * points are found to be duplicate or antipodal, this
-		 * parameter will not be modified.
+		 * antipodal adjacent points, the value of this return-parameter
+		 * will be set to the pair of const_iterators of @a coll which
+		 * point to the guilty points.  If no adjacent points are found
+		 * to be antipodal, this parameter will not be modified.
 		 */
 		template<typename C>
 		static
@@ -687,7 +688,7 @@ namespace GPlatesMaths
 		 * being "close" to that segment.
 		 *
 		 * For more information, read the comment before
-		 * @a GPlatesState::Layout::find_close_data.
+		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		bool
 		is_close_to(
@@ -774,6 +775,7 @@ namespace GPlatesMaths
 		 */
 		static const unsigned s_min_num_collection_points;
 
+
 		/**
 		 * This is the sequence of polygon segments.
 		 */
@@ -853,15 +855,26 @@ namespace GPlatesMaths
 			std::pair<typename C::const_iterator, typename C::const_iterator> &
 					invalid_points)
 	{
-		typename C::size_type num_points = coll.size();
+		typename C::size_type num_points = count_distinct_adjacent_points(coll);
+		// Don't forget that the polygon "wraps around" from the last point to the first.
+		// This 'count_distinct_adjacent_points' doesn't consider the first and last points
+		// of the sequence to be adjacent, but we do.  Hence, if the first and last points
+		// aren't distinct, that means there's one less "distinct adjacent point".
+		if (coll.size() >= 2) {
+			// It's valid (and worth-while) to invoke the 'front' and 'back' accessors
+			// of the container.
+			if (coll.front() == coll.back()) {
+				// A-HA!
+				--num_points;
+			}
+		}
 		if (num_points < s_min_num_collection_points) {
-			// The collection does not contain enough points to
-			// create a closed, well-defined polygon.
+			// The collection does not contain enough distinct points to create a
+			// closed, well-defined polygon.
 			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
-		// This for-loop is identical to the corresponding code in
-		// PolylineOnSphere.
+		// This for-loop is identical to the corresponding code in PolylineOnSphere.
 		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
 		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
@@ -869,55 +882,51 @@ namespace GPlatesMaths
 
 			ConstructionParameterValidity v = evaluate_segment_endpoint_validity(p1, p2);
 
-			// Using a switch-statement, along with GCC's
-			// "-Wswitch" option (implicitly enabled by "-Wall"),
-			// will help to ensure that no cases are missed.
+			// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly
+			// enabled by "-Wall"), will help to ensure that no cases are missed.
 			switch (v) {
 
-			 case VALID:
+			case VALID:
 
 				// Keep looping.
 				break;
 
-			 case INVALID_INSUFFICIENT_DISTINCT_POINTS:
+			case INVALID_INSUFFICIENT_DISTINCT_POINTS:
 
-				// This value shouldn't be returned.
-				// FIXME:  Can this be checked at compile-time?
-				// (Perhaps with use of template magic, to
-				// avoid the need to check at run-time and
-				// throw an exception if the assertion fails.)
+				// This value should never be returned, since it's not related to
+				// segments.
+				//
+				// FIXME:  This sucks.  We should separate "global" errors (like
+				// "insufficient distinct points") from "segment" errors (like
+				// "antipodal segment endpoints").
 				break;
 
-			 case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
 
 				invalid_points.first = prev;
 				invalid_points.second = iter;
-
 				return v;
 			}
 		}
 
-		// Now, an additional check, for the last->first point
-		// wrap-around.
+		// Now, an additional check, for the last->first point wrap-around.
 		iter = coll.begin();
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 
-			ConstructionParameterValidity v =
-			 evaluate_segment_endpoint_validity(p1, p2);
+			ConstructionParameterValidity v = evaluate_segment_endpoint_validity(p1, p2);
 
-			// Using a switch-statement, along with GCC's
-			// "-Wswitch" option (implicitly enabled by "-Wall"),
-			// will help to ensure that no cases are missed.
+			// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly
+			// enabled by "-Wall"), will help to ensure that no cases are missed.
 			switch (v) {
 
-			 case VALID:
+			case VALID:
 
 				// Exit the switch-statement.
 				break;
 
-			 case INVALID_INSUFFICIENT_DISTINCT_POINTS:
+			case INVALID_INSUFFICIENT_DISTINCT_POINTS:
 
 				// This value shouldn't be returned.
 				// FIXME:  Can this be checked at compile-time?
@@ -926,19 +935,12 @@ namespace GPlatesMaths
 				// throw an exception if the assertion fails.)
 				break;
 
-			 case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
 
 				invalid_points.first = prev;
 				invalid_points.second = iter;
-
 				return v;
 			}
-		}
-
-		// Check the number of (usable) points again, now that we've
-		// abjusted for duplicates.
-		if (num_points < s_min_num_collection_points) {
-			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
 		// If we got this far, we couldn't find anything wrong with the
@@ -960,58 +962,101 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * The exception thrown when an attempt is made to create a polygon using invalid points.
+	 */
+	class InvalidPointsForPolygonConstructionError:
+			public GPlatesGlobal::PreconditionViolationError
+	{
+	public:
+		/**
+		 * Instantiate the exception.
+		 *
+		 * @param cpv is the polygon's construction parameter validity value, which
+		 * presumably describes why the points are invalid.
+		 */
+		InvalidPointsForPolygonConstructionError(
+				PolygonOnSphere::ConstructionParameterValidity cpv,
+				const char *filename,
+				int line_num):
+			d_cpv(cpv),
+			d_filename(filename),
+			d_line_num(line_num)
+		{  }
+
+		virtual
+		~InvalidPointsForPolygonConstructionError()
+		{  }
+
+	protected:
+		virtual
+		const char *
+		ExceptionName() const
+		{
+			return "InvalidPointsForPolygonConstructionError";
+		}
+
+		// FIXME: This would be better as a 'const std::string'.
+		virtual
+		std::string
+		Message() const
+		{
+			switch (d_cpv) {
+			case PolygonOnSphere::VALID:
+				return "valid";
+			case PolygonOnSphere::INVALID_INSUFFICIENT_DISTINCT_POINTS:
+				return "insufficient distinct points";
+			case PolygonOnSphere::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+				return "antipodal segment endpoints";
+			}
+			// Control-flow should never reach the end of this function.
+			// FIXME:  We should assert this.
+			// We'll return an empty string to placate the compiler, which is
+			// complaining about control reaching end of non-void function.
+			return std::string();
+		}
+
+	private:
+		PolygonOnSphere::ConstructionParameterValidity d_cpv;
+		const char *d_filename;
+		int d_line_num;
+	};
+
+
 	template<typename C>
 	void
 	PolygonOnSphere::generate_segments_and_swap(
 			PolygonOnSphere &poly,
 	 		const C &coll)
 	{
-		if (coll.size() < s_min_num_collection_points) {
-			// The collection does not contain enough points to
-			// create a closed, well-defined polygon.
-
-			// FIXME:  I don't like throwing in a header-file.
-			throw InvalidPolygonException("Attempted to create a "
-			 "polygon from an insufficient number (ie, less than "
-			 "3) of endpoints.");
+		std::pair<typename C::const_iterator, typename C::const_iterator> invalid_points;
+		ConstructionParameterValidity v =
+				evaluate_construction_parameter_validity(coll, invalid_points);
+		if (v != VALID) {
+			throw InvalidPointsForPolygonConstructionError(v, __FILE__, __LINE__);
 		}
 
-		// Make it easier to provide strong exception safety by
-		// appending the new segments to a temporary sequence (rather
-		// than putting them directly into 'd_seq').
+		// Make it easier to provide strong exception safety by appending the new segments
+		// to a temporary sequence (rather than putting them directly into 'd_seq').
 		seq_type tmp_seq;
 		// Observe that the number of points used to define a polygon (which will become
 		// the number of vertices in the polygon) is also the number of segments in the
 		// polygon.
 		tmp_seq.reserve(coll.size());
 
-		// This for-loop is identical to the corresponding code in
-		// PolylineOnSphere.
+		// This for-loop is identical to the corresponding code in PolylineOnSphere.
 		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
 		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
 		}
-		// Now, an additional step, for the last->first point
-		// wrap-around.
+		// Now, an additional step, for the last->first point wrap-around.
 		iter = coll.begin();
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
-		}
-
-		// Observe that the minimum number of collection points for a polygon (3) is also
-		// the minimum number of segments for a polygon.
-		if (tmp_seq.size() < s_min_num_collection_points) {
-
-			// Not enough line-segments were created to create a
-			// closed, well-defined polygon.
-			// FIXME:  I don't like throwing in a header-file.
-			throw InvalidPolygonException("Attempted to create a "
-			 "polygon from an insufficient number (ie, less than "
-			 "3) of distinct endpoints.");
 		}
 		poly.d_seq.swap(tmp_seq);
 	}

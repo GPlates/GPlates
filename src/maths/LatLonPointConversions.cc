@@ -34,7 +34,6 @@
 
 #include "LatLonPointConversions.h"
 #include "InvalidLatLonException.h"
-#include "InvalidPolylineException.h"
 #include "IndeterminateResultException.h"
 #include "PointOnSphere.h"
 #include "utils/MathUtils.h"

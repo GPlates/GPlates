@@ -28,6 +28,7 @@
 #ifndef GPLATES_MATHS_CONSTGEOMETRYONSPHEREVISITOR_H
 #define GPLATES_MATHS_CONSTGEOMETRYONSPHEREVISITOR_H
 
+#include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "PolylineOnSphere.h"
@@ -65,6 +66,15 @@ namespace GPlatesMaths
 		~ConstGeometryOnSphereVisitor() = 0;
 
 		// Please keep these geometries ordered alphabetically.
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{  }
 
 		/**
 		 * Override this function in your own derived class.

@@ -51,7 +51,6 @@
 #include "maths/LatLonPointConversions.h"
 
 #include "global/GPlatesException.h"
-#include "state/Layout.h"
 #include "model/FeatureHandle.h"
 #include "utils/UnicodeStringUtils.h"
 
@@ -279,11 +278,12 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::draw_polyline(
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+GPlatesQtWidgets::GlobeCanvas::draw_multi_point(
+		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multi_point,
 		GPlatesGui::PlatesColourTable::const_iterator colour)
 {
-	GPlatesState::Layout::InsertLineDataPos(std::make_pair(polyline, colour));
+	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
+			GPlatesGui::RenderedGeometry(multi_point, colour));
 }
 
 
@@ -292,7 +292,28 @@ GPlatesQtWidgets::GlobeCanvas::draw_point(
 		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point,
 		GPlatesGui::PlatesColourTable::const_iterator colour)
 {
-	GPlatesState::Layout::InsertPointDataPos(std::make_pair(point, colour));
+	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
+			GPlatesGui::RenderedGeometry(point, colour));
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::draw_polygon(
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+		GPlatesGui::PlatesColourTable::const_iterator colour)
+{
+	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
+			GPlatesGui::RenderedGeometry(polygon, colour));
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::draw_polyline(
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+		GPlatesGui::PlatesColourTable::const_iterator colour)
+{
+	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
+			GPlatesGui::RenderedGeometry(polyline, colour));
 }
 
 
@@ -306,7 +327,7 @@ GPlatesQtWidgets::GlobeCanvas::update_canvas()
 void
 GPlatesQtWidgets::GlobeCanvas::clear_data()
 {
-	GPlatesState::Layout::Clear();
+	d_globe.rendered_geometry_layers().reconstruction_layer().clear();
 }
 
 void

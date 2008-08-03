@@ -236,7 +236,7 @@ namespace GPlatesMaths
 		 * value in @a closeness.
 		 *
 		 * For more information, read the comment before
-		 * @a GPlatesState::Layout::find_close_data.
+		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		bool
 		is_close_to(

@@ -58,12 +58,16 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	// Clicking these canvas tools changes the type of geometry the user
 	// wishes to create, and may adjust the current table of coordinates accordingly.
 	d_digitisation_widget_ptr->change_geometry_type(d_default_geom_type);
+
+	d_digitisation_widget_ptr->show_geometry();
 }
 
 
 void
 GPlatesCanvasTools::DigitiseGeometry::handle_deactivation()
-{  }
+{
+	d_digitisation_widget_ptr->hide_geometry();
+}
 
 
 void
@@ -90,5 +94,4 @@ GPlatesCanvasTools::DigitiseGeometry::handle_left_release_after_drag(
 {
 	handle_left_click(initial_pos_on_globe, oriented_initial_pos_on_globe, was_on_globe);
 }
-
 

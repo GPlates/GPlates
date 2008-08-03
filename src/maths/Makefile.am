@@ -9,7 +9,8 @@ libmaths_la_SOURCES	= FiniteRotation.cc GreatCircle.cc GreatCircleArc.cc GridOnS
 				LatLonPointConversions.cc PointLiesOnGreatCircleArc.cc PointOnSphere.cc \
 				PolylineOnSphere.cc PolygonOnSphere.cc PolylineIntersections.cc Real.cc \
 				Rotation.cc SmallCircle.cc UnitQuaternion3D.cc UnitVector3D.cc Vector3D.cc \
-				ProximityCriteria.cc ProximityHitDetail.cc ProximityHitDetailVisitor.cc
+				ProximityCriteria.cc ProximityHitDetail.cc ProximityHitDetailVisitor.cc \
+				MultiPointOnSphere.cc
 
 if PYTHON
 noinst_PROGRAMS		= _maths.so

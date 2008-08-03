@@ -4,7 +4,7 @@ MAINTAINERCLEANFILES	= Makefile.in
 
 SUBDIRS			= canvas-tools feature-visitors file-io global gui \
 				maths model property-values qt-resources \
-				qt-widgets state utils
+				qt-widgets utils
 
 INCLUDES		= -I$(top_srcdir)/src
 
@@ -37,5 +37,5 @@ libgplates_model_la_LIBADD	= model/libmodel.la \
 					property-values/libproperty_values.la
 
 libgplates_util_la_SOURCES	=
-libgplates_util_la_LIBADD	= maths/libmaths.la state/libstate.la \
-					utils/libutils.la global/libglobal.la
+libgplates_util_la_LIBADD	= maths/libmaths.la utils/libutils.la \
+					global/libglobal.la

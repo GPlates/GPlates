@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,44 +34,58 @@
 #include "PlatesColourTable.h"
 #include "NurbsRenderer.h"
 #include "Texture.h"
-#include "maths/Vector3D.h"
-#include "state/Layout.h"
 
-
-using namespace GPlatesMaths;
-using namespace GPlatesState;
+#include "maths/Real.h"
+#include "maths/UnitVector3D.h"
+#include "maths/ConstGeometryOnSphereVisitor.h"
 
 
 namespace 
 {
+	inline
 	void
-	CallVertexWithPoint(
-			const PointOnSphere& p)
+	draw_vertex(
+			const GPlatesMaths::PointOnSphere &p)
 	{
-		const UnitVector3D &uv = p.position_vector();
+		const GPlatesMaths::UnitVector3D &uv = p.position_vector();
 		glVertex3d(uv.x().dval(), uv.y().dval(), uv.z().dval());
 	}
 
 
 	void
-	CallVertexWithLine(
-			const PolylineOnSphere::const_iterator& begin, 
-			const PolylineOnSphere::const_iterator& end,
+	draw_points_for_multi_point(
+			const GPlatesMaths::MultiPointOnSphere::const_iterator &begin,
+			const GPlatesMaths::MultiPointOnSphere::const_iterator &end)
+	{
+		GPlatesMaths::MultiPointOnSphere::const_iterator iter = begin;
+
+		glBegin(GL_POINTS);
+			for ( ; iter != end; ++iter) {
+				draw_vertex(*iter);
+			}
+		glEnd();
+	}
+
+
+	void
+	draw_arcs_for_polygon(
+			const GPlatesMaths::PolygonOnSphere::const_iterator &begin, 
+			const GPlatesMaths::PolygonOnSphere::const_iterator &end,
 			GPlatesGui::NurbsRenderer &nurbs_renderer)
 	{
 		// We will draw a NURBS if the two endpoints of the arc are
 		// more than PI/36 radians (= 5 degrees) apart.
-		static const double DISTANCE_THRESHOLD = std::cos(PI/36.0);
+		static const double DISTANCE_THRESHOLD = std::cos(GPlatesMaths::PI/36.0);
 
-		PolylineOnSphere::const_iterator iter = begin;
+		GPlatesMaths::PolygonOnSphere::const_iterator iter = begin;
 
 		for ( ; iter != end; ++iter) {
 			if (iter->dot_of_endpoints().dval() < DISTANCE_THRESHOLD) {
 				nurbs_renderer.draw_great_circle_arc(*iter);
 			} else {
 				glBegin(GL_LINES);
-					CallVertexWithPoint(iter->start_point());
-					CallVertexWithPoint(iter->end_point());
+					draw_vertex(iter->start_point());
+					draw_vertex(iter->end_point());
 				glEnd();
 			}
 		}
@@ -79,80 +93,146 @@ namespace
 
 
 	void
-	PaintPointDataPos(Layout::PointDataPos& pointdata)
+	draw_arcs_for_polyline(
+			const GPlatesMaths::PolylineOnSphere::const_iterator &begin, 
+			const GPlatesMaths::PolylineOnSphere::const_iterator &end,
+			GPlatesGui::NurbsRenderer &nurbs_renderer)
 	{
-		const PointOnSphere& point = *pointdata.first;
-		
-		glColor3fv(*pointdata.second);
-		CallVertexWithPoint(point);
+		// We will draw a NURBS if the two endpoints of the arc are
+		// more than PI/36 radians (= 5 degrees) apart.
+		static const double DISTANCE_THRESHOLD = std::cos(GPlatesMaths::PI/36.0);
+
+		GPlatesMaths::PolylineOnSphere::const_iterator iter = begin;
+
+		for ( ; iter != end; ++iter) {
+			if (iter->dot_of_endpoints().dval() < DISTANCE_THRESHOLD) {
+				nurbs_renderer.draw_great_circle_arc(*iter);
+			} else {
+				glBegin(GL_LINES);
+					draw_vertex(iter->start_point());
+					draw_vertex(iter->end_point());
+				glEnd();
+			}
+		}
 	}
 
 
-	struct PaintLineDataPos {
+	/**
+	 * This is a visitor to draw geometries on-screen using OpenGL.
+	 */
+	class PaintGeometry:
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		explicit
+		PaintGeometry(
+				GPlatesGui::NurbsRenderer &nurbs_renderer):
+			d_nurbs_renderer_ptr(&nurbs_renderer)
+		{  }
 
-		GPlatesGui::NurbsRenderer &d_nurbs_renderer;
-
-		PaintLineDataPos(GPlatesGui::NurbsRenderer &nurbs_renderer) :
-			d_nurbs_renderer(nurbs_renderer)
-		{ }
+		virtual
+		~PaintGeometry()
+		{  }
 
 		void
-		operator()(Layout::LineDataPos& linedata)
+		operator()(
+				const GPlatesGui::RenderedGeometry &rendered_geometry)
 		{
-			const PolylineOnSphere& line = *linedata.first;
-			glColor3fv(*linedata.second);
-			
-			glLineWidth(1.5f);
-			CallVertexWithLine(line.begin(), line.end(), d_nurbs_renderer);
+			d_colour = rendered_geometry.colour();
+			rendered_geometry.geometry()->accept_visitor(*this);
 		}
+
+		// Please keep these geometries ordered alphabetically.
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point)
+		{
+			// FIXME:  We should assert that the boost::optional is not boost::none.
+			glColor3fv(**d_colour);
+			glPointSize(4.0f);
+			draw_points_for_multi_point(multi_point->begin(), multi_point->end());
+		}
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
+		{
+			// FIXME:  We should assert that the boost::optional is not boost::none.
+			glColor3fv(**d_colour);
+			glPointSize(4.0f);
+			glBegin(GL_POINTS);
+				draw_vertex(*point);
+			glEnd();
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
+		{
+			// FIXME:  We should assert that the boost::optional is not boost::none.
+			glColor3fv(**d_colour);
+			glLineWidth(1.5f);
+			draw_arcs_for_polygon(polygon->begin(), polygon->end(), *d_nurbs_renderer_ptr);
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
+		{
+			// FIXME:  We should assert that the boost::optional is not boost::none.
+			glColor3fv(**d_colour);
+			glLineWidth(1.5f);
+			draw_arcs_for_polyline(polyline->begin(), polyline->end(), *d_nurbs_renderer_ptr);
+		}
+
+	private:
+		GPlatesGui::NurbsRenderer *const d_nurbs_renderer_ptr;
+
+		boost::optional<GPlatesGui::PlatesColourTable::const_iterator> d_colour;
 	};
 
 
 	void
-	PaintPoints()
+	paint_geometries(
+			const GPlatesGui::RenderedGeometryLayers::rendered_geometry_layer_type &layer,
+			GPlatesGui::NurbsRenderer &nurbs_renderer)
 	{
-		Layout::PointDataLayout::iterator 
-			points_begin = Layout::PointDataLayoutBegin(),
-			points_end   = Layout::PointDataLayoutEnd();
+		typedef GPlatesGui::RenderedGeometryLayers::rendered_geometry_layer_type layer_type;
+		layer_type::const_iterator iter = layer.begin();
+		layer_type::const_iterator end = layer.end();
 
-		glPointSize(4.0f);
-		glBegin(GL_POINTS);
-			for_each(points_begin, points_end, PaintPointDataPos);
-		glEnd();
-	}
-
-
-	void
-	PaintLines(GPlatesGui::NurbsRenderer &nurbs_renderer)
-	{
-		Layout::LineDataLayout::iterator 
-			lines_begin = Layout::LineDataLayoutBegin(),
-			lines_end   = Layout::LineDataLayoutEnd();
-		
-		for_each(lines_begin, lines_end, PaintLineDataPos(nurbs_renderer));
+		for_each(iter, end, PaintGeometry(nurbs_renderer));
 	}
 }
 
 
 
 void
-GPlatesGui::Globe::SetNewHandlePos(const PointOnSphere &pos)
+GPlatesGui::Globe::SetNewHandlePos(
+		const GPlatesMaths::PointOnSphere &pos)
 {
-	m_globe_orientation.set_new_handle_at_pos(pos);
+	d_globe_orientation.set_new_handle_at_pos(pos);
 }
 
 
 void
-GPlatesGui::Globe::UpdateHandlePos(const PointOnSphere &pos)
+GPlatesGui::Globe::UpdateHandlePos(
+		const GPlatesMaths::PointOnSphere &pos)
 {
-	m_globe_orientation.move_handle_to_pos(pos);
+	d_globe_orientation.move_handle_to_pos(pos);
 }
 
 
-PointOnSphere
-GPlatesGui::Globe::Orient(const PointOnSphere &pos)
+const GPlatesMaths::PointOnSphere
+GPlatesGui::Globe::Orient(
+		const GPlatesMaths::PointOnSphere &pos)
 {
-	return m_globe_orientation.reverse_orient_point(pos);
+	return d_globe_orientation.reverse_orient_point(pos);
 }
 
 
@@ -175,9 +255,9 @@ GPlatesGui::Globe::Paint()
 		// rotate everything to get a nice almost-equatorial shot
 //		glRotatef(-80.0, 1.0, 0.0, 0.0);
 
-		UnitVector3D axis = m_globe_orientation.rotation_axis();
-		real_t angle_in_deg =
-		 radiansToDegrees(m_globe_orientation.rotation_angle());
+		GPlatesMaths::UnitVector3D axis = d_globe_orientation.rotation_axis();
+		GPlatesMaths::real_t angle_in_deg =
+				GPlatesMaths::radiansToDegrees(d_globe_orientation.rotation_angle());
 		glRotatef(angle_in_deg.dval(),
 		           axis.x().dval(), axis.y().dval(), axis.z().dval());
 		
@@ -187,7 +267,7 @@ GPlatesGui::Globe::Paint()
 		 * a bit to avoid Z-fighting with the LineData.
 		 */
 		glDepthRange(0.1, 1.0);
-		_sphere.Paint();
+		d_sphere.Paint();
 
 		// Draw the texture slightly in front of the grey sphere, otherwise we 
 		// get little bits of the sphere sticking out. 
@@ -201,7 +281,7 @@ GPlatesGui::Globe::Paint()
 		 */
 		glDepthRange(0.0, 0.9);
 
-		_grid.Paint();
+		d_grid.Paint();
 		
 		// Restore DepthRange
 		glDepthRange(0.0, 1.0);
@@ -209,12 +289,10 @@ GPlatesGui::Globe::Paint()
 		glPointSize(5.0f);
 		
 		/** 
-		 * Paint the data.
+		 * Paint the rendered geometries.
 		 */
-
-		PaintPoints();
-		
-		PaintLines(d_nurbs_renderer);
+		paint_geometries(rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer);
+		paint_geometries(rendered_geometry_layers().digitisation_layer(), d_nurbs_renderer);
 
 	glPopMatrix();
 }
@@ -222,17 +300,16 @@ GPlatesGui::Globe::Paint()
 void
 GPlatesGui::Globe::paint_vector_output()
 {
-
-	_grid.paint_circumference(GPlatesGui::Colour::GREY);
+	d_grid.paint_circumference(GPlatesGui::Colour::GREY);
 
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
 		// rotate everything to get a nice almost-equatorial shot
 //		glRotatef(-80.0, 1.0, 0.0, 0.0);
 
-		UnitVector3D axis = m_globe_orientation.rotation_axis();
-		real_t angle_in_deg =
-		 radiansToDegrees(m_globe_orientation.rotation_angle());
+		GPlatesMaths::UnitVector3D axis = d_globe_orientation.rotation_axis();
+		GPlatesMaths::real_t angle_in_deg =
+				GPlatesMaths::radiansToDegrees(d_globe_orientation.rotation_angle());
 		glRotatef(angle_in_deg.dval(),
 		           axis.x().dval(), axis.y().dval(), axis.z().dval());
 
@@ -245,7 +322,7 @@ GPlatesGui::Globe::paint_vector_output()
 		 * a bit to avoid Z-fighting with the LineData.
 		 */
 		glDepthRange(0.0, 0.9);
-		_grid.Paint(Colour::GREY);
+		d_grid.Paint(Colour::GREY);
 
 		// Restore DepthRange
 		glDepthRange(0.0, 1.0);
@@ -253,13 +330,9 @@ GPlatesGui::Globe::paint_vector_output()
 		glPointSize(5.0f);
 		
 		/* 
-		 * Paint the data.
+		 * Paint the rendered geometries.
 		 */
-		glColor3fv(GPlatesGui::Colour::GREEN);
-		PaintPoints();
-		
-		glColor3fv(GPlatesGui::Colour::BLACK);
-		PaintLines(d_nurbs_renderer);
+		paint_geometries(rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer);
 
 	glPopMatrix();
 }
