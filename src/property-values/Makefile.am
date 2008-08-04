@@ -6,7 +6,7 @@ INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libproperty_values.la
 libproperty_values_la_SOURCES	= GeoTimeInstant.cc GmlLineString.cc \
-				GmlPoint.cc GpmlFiniteRotation.cc
+				GmlPoint.cc GmlMultiPoint.cc GpmlFiniteRotation.cc
 
 if PYTHON
 noinst_PROGRAMS		= _property_values.so

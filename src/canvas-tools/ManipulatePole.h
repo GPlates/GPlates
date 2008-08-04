@@ -23,12 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H
-#define GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H
+#ifndef GPLATES_CANVASTOOLS_MANIPULATEPOLE_H
+#define GPLATES_CANVASTOOLS_MANIPULATEPOLE_H
 
 #include "gui/CanvasTool.h"
-
-#include "qt-widgets/DigitisationWidget.h"
 
 
 namespace GPlatesQtWidgets
@@ -36,44 +34,38 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
-
 namespace GPlatesCanvasTools
 {
 	/**
-	 * This is the canvas tool used to define new geometry.
+	 * This is the canvas tool used to interactively manipulate absolute rotations.
 	 */
-	class DigitiseGeometry:
+	class ManipulatePole:
 			public GPlatesGui::CanvasTool
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<DigitiseGeometry,
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ManipulatePole,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<DigitiseGeometry,
+		typedef GPlatesUtils::non_null_intrusive_ptr<ManipulatePole,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~DigitiseGeometry()
+		~ManipulatePole()
 		{  }
 
 		/**
-		 * Create a DigitiseGeometry instance.
-		 *
-		 * FIXME: Clean up unused parameters.
+		 * Create a ManipulatePole instance.
 		 */
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
-				GPlatesQtWidgets::DigitisationWidget::GeometryType geom_type_)
+				const GPlatesQtWidgets::ViewportWindow &view_state_)
 		{
-			DigitiseGeometry::non_null_ptr_type ptr(
-					new DigitiseGeometry(globe_, globe_canvas_, view_state_, digitisation_widget_,
-							geom_type_),
+			ManipulatePole::non_null_ptr_type ptr(
+					new ManipulatePole(globe_, globe_canvas_, view_state_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -91,9 +83,11 @@ namespace GPlatesCanvasTools
 
 		virtual
 		void
-		handle_left_click(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+		handle_left_drag(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe);
 
 		virtual
@@ -109,12 +103,10 @@ namespace GPlatesCanvasTools
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		explicit
-		DigitiseGeometry(
+		ManipulatePole(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
-				GPlatesQtWidgets::DigitisationWidget::GeometryType geom_type_);
+				const GPlatesQtWidgets::ViewportWindow &view_state_);
 		
 		
 		const GPlatesQtWidgets::ViewportWindow &
@@ -126,35 +118,20 @@ namespace GPlatesCanvasTools
 
 	private:
 		
-		/**
-		 * This is the view state used to obtain current reconstruction time.
-		 */
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
-		
-		/**
-		 * This is the Digitisation Widget in the Task Panel.
-		 * It accumulates points for us and handles the actual feature creation step.
-		 */
-		GPlatesQtWidgets::DigitisationWidget *d_digitisation_widget_ptr;
-		
-		/**
-		 * This is the type of geometry this particular DigitiseGeometry tool
-		 * should default to.
-		 */
-		GPlatesQtWidgets::DigitisationWidget::GeometryType d_default_geom_type;
-	
+			
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.
-		DigitiseGeometry(
-				const DigitiseGeometry &);
+		ManipulatePole(
+				const ManipulatePole &);
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment.
-		DigitiseGeometry &
+		ManipulatePole &
 		operator=(
-				const DigitiseGeometry &);
+				const ManipulatePole &);
 		
 	};
 }
 
-#endif  // GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H
+#endif  // GPLATES_CANVASTOOLS_MANIPULATEPOLE_H

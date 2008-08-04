@@ -6,6 +6,7 @@ INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libcanvas_tools.la
 libcanvas_tools_la_SOURCES	= ClickGeometry.cc moc_ClickGeometry.cc \
+			ManipulatePole.cc \
 			MoveGeometry.cc \
 			MoveVertex.cc \
 			ZoomGlobe.cc \

@@ -32,6 +32,7 @@
 #include "canvas-tools/DigitiseGeometry.h"
 #include "canvas-tools/MoveGeometry.h"
 #include "canvas-tools/MoveVertex.h"
+#include "canvas-tools/ManipulatePole.h"
 
 #include "qt-widgets/DigitisationWidget.h"
 
@@ -59,6 +60,8 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 	d_move_geometry_tool_ptr(GPlatesCanvasTools::MoveGeometry::create(globe_, globe_canvas_,
 			view_state_)),
 	d_move_vertex_tool_ptr(GPlatesCanvasTools::MoveVertex::create(globe_, globe_canvas_,
+			view_state_)),
+	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::ManipulatePole::create(globe_, globe_canvas_,
 			view_state_)),
 	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {

@@ -47,6 +47,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/Real.h"
 
 
 namespace
@@ -489,6 +490,40 @@ namespace
 		}
 	}
 	
+	/**
+	 * Determines the coordinate QTreeWidgetItem at the end of the table,
+	 * i.e. the coordinate above the position that new points will be appended.
+	 * This function is used by DigitisationWidget::append_point_to_geometry()
+	 * to determine if the user is adding the same point which is identical to
+	 * the last point in the table.
+	 *
+	 * As the table may be empty, or the 'geometry' item where new points will
+	 * be added may also be empty, this function may return a NULL pointer.
+	 */
+	QTreeWidgetItem *
+	get_coordinate_item_above_insertion_point(
+			const QTreeWidget &tree_widget)
+	{
+		QTreeWidgetItem *root = tree_widget.invisibleRootItem();
+
+		// Pick out the last geometry item in the table - this is where new
+		// points will be appended.
+		if (root->childCount() == 0) {
+			// Empty table.
+			return NULL;
+		}
+		QTreeWidgetItem *geom_item = root->child(root->childCount() - 1);
+
+		// Locate the 'coordinate' QTreeWidgetItem at the end.
+		if (geom_item->childCount() == 0) {
+			// There aren't any coordinates in here yet, and so there will
+			// not be any conflict with duplicate points when
+			// append_point_to_geometry() is called.
+			return NULL;
+		}
+		QTreeWidgetItem *coord_item = geom_item->child(geom_item->childCount() - 1);
+		return coord_item;
+	}
 }
 
 
@@ -615,6 +650,7 @@ void
 GPlatesQtWidgets::DigitisationWidget::clear_widget()
 {
 	treewidget_coordinates->clear();
+	d_undo_stack.clear();
 	d_geometry_opt_ptr = boost::none;
 }
 
@@ -624,7 +660,6 @@ GPlatesQtWidgets::DigitisationWidget::initialise_geometry(
 		GeometryType geom_type)
 {
 	clear_widget();
-	d_undo_stack.clear();
 	d_geometry_type = geom_type;
 }
 
@@ -672,6 +707,7 @@ GPlatesQtWidgets::DigitisationWidget::handle_create()
 	
 	// Then, when we're all done, reset the widget for new input.
 	initialise_geometry(d_geometry_type);
+	update_geometry();
 }
 
 
@@ -706,10 +742,36 @@ GPlatesQtWidgets::DigitisationWidget::append_point_to_geometry(
 		double lon,
 		QTreeWidgetItem *target_geometry_item)
 {
-	// Make a 'coordinate' QTreeWidgetItem, and add it to the last
-	// 'geometry' top-level QTreeWidgetItem in our table.
-	//
-	// FIXME:  We shouldn't append a point which is identical to the last point in the table.
+	// We shouldn't append a point which is identical to the last point in the table.
+	QTreeWidgetItem *prior_item = get_coordinate_item_above_insertion_point(*coordinates_table());
+	if (prior_item != NULL) {
+		// Determine the lat,lon for this item. Using GPlatesMaths::Real to avoid
+		// unsafe floating-point equality comparison.
+		GPlatesMaths::Real prior_lat;
+		GPlatesMaths::Real prior_lon;
+		
+		// Pull the lat,lon out of the QTreeWidgetItem that we stored inside it
+		// using the Qt::EditRole. This avoids unnecessary parsing of text.
+		QVariant lat_var = prior_item->data(DigitisationWidget::COLUMN_LAT, Qt::EditRole);
+		bool lat_ok = false;
+		prior_lat = lat_var.toDouble(&lat_ok);
+		
+		QVariant lon_var = prior_item->data(DigitisationWidget::COLUMN_LON, Qt::EditRole);
+		bool lon_ok = false;
+		prior_lon = lon_var.toDouble(&lon_ok);
+		
+		// Assuming we are able to get a sane lat,lon out of the table:
+		if (lat_ok && lon_ok) {
+			// Are we about to add a duplicate of the last point?
+			if (prior_lat == lat && prior_lon == lon) {
+				// Duplicate point. Return early and avoid any undo command being created.
+				return;
+			}
+		}
+	}
+
+	// Make a 'coordinate' QTreeWidgetItem, and add it to the last 'geometry'
+	// top-level QTreeWidgetItem in our table using an undo command.
 	undo_stack().push(new GPlatesUndoCommands::DigitisationAddPoint(*this, lat, lon));
 }
 

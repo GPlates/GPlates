@@ -160,6 +160,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\canvas-tools\ManipulatePole.cc">
+			</File>
+			<File
 				RelativePath="..\src\canvas-tools\MoveGeometry.cc">
 			</File>
 			<File
@@ -1796,6 +1799,21 @@
 			</File>
 			<File
 				RelativePath="..\src\property-values\GmlLineString.cc">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GmlMultiPoint.cc">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool

@@ -34,14 +34,17 @@
 #include "InlinePropertyContainer.h"
 
 #include "property-values/GmlLineString.h"
-#include "property-values/GmlPoint.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 
+#include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
 
@@ -173,6 +176,42 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 
 
 void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+{
+	using namespace GPlatesMaths;
+
+	if (d_accumulator->d_perform_reconstructions) {
+		FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+
+		if (d_accumulator->d_recon_plate_id) {
+			const FiniteRotation &r = *d_accumulator->d_recon_rotation;
+			MultiPointOnSphere::non_null_ptr_to_const_type reconstructed_multipoint =
+					r * gml_multi_point.multipoint();
+
+			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					ReconstructedFeatureGeometry::create(
+							reconstructed_multipoint,
+							*d_accumulator->d_current_property->collection_handle_ptr(),
+							*d_accumulator->d_current_property,
+							*d_accumulator->d_recon_plate_id);
+			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
+			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+		} else {
+			// We must be reconstructing using the identity rotation.
+			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					ReconstructedFeatureGeometry::create(
+							gml_multi_point.multipoint(),
+							*d_accumulator->d_current_property->collection_handle_ptr(),
+							*d_accumulator->d_current_property);
+			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
+			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+		}
+	}
+}
+
+
+void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
@@ -211,6 +250,75 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 							*d_accumulator->d_current_property);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+		}
+	}
+}
+
+
+void
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
+		GPlatesPropertyValues::GmlPolygon &gml_polygon)
+{
+	using namespace GPlatesMaths;
+
+	if (d_accumulator->d_perform_reconstructions) {
+		FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+
+		if (d_accumulator->d_recon_plate_id) {
+			// Reconstruct the exterior PolygonOnSphere,
+			// then add it to the d_reconstruction_geometries_to_populate vector.
+			const FiniteRotation &r = *d_accumulator->d_recon_rotation;
+			PolygonOnSphere::non_null_ptr_to_const_type reconstructed_exterior =
+					r * gml_polygon.exterior();
+
+			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					ReconstructedFeatureGeometry::create(
+							reconstructed_exterior,
+							*d_accumulator->d_current_property->collection_handle_ptr(),
+							*d_accumulator->d_current_property,
+							*d_accumulator->d_recon_plate_id);
+			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
+			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			
+			// Repeat the same procedure for each of the interior rings, if any.
+			GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
+			GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+			for ( ; it != end; ++it) {
+				PolygonOnSphere::non_null_ptr_to_const_type reconstructed_interior =
+						r * (*it);
+
+				ReconstructedFeatureGeometry::non_null_ptr_type interior_rfg_ptr =
+						ReconstructedFeatureGeometry::create(
+								reconstructed_interior,
+								*d_accumulator->d_current_property->collection_handle_ptr(),
+								*d_accumulator->d_current_property,
+								*d_accumulator->d_recon_plate_id);
+				d_reconstruction_geometries_to_populate->push_back(interior_rfg_ptr);
+				d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			}
+		} else {
+			// We must be reconstructing using the identity rotation.
+			// Add the exterior PolygonOnSphere to the vector directly.
+			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+					ReconstructedFeatureGeometry::create(
+							gml_polygon.exterior(),
+							*d_accumulator->d_current_property->collection_handle_ptr(),
+							*d_accumulator->d_current_property);
+			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
+			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+
+			// Repeat the same procedure for each of the interior rings, if any.
+			GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
+			GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+			for ( ; it != end; ++it) {
+				ReconstructedFeatureGeometry::non_null_ptr_type interior_rfg_ptr =
+						ReconstructedFeatureGeometry::create(
+								*it,
+								*d_accumulator->d_current_property->collection_handle_ptr(),
+								*d_accumulator->d_current_property);
+				d_reconstruction_geometries_to_populate->push_back(interior_rfg_ptr);
+				d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			}
 		}
 	}
 }

@@ -45,6 +45,7 @@
 #include "model/ModelUtils.h"
 #include "utils/UnicodeStringUtils.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlLineString.h"
@@ -288,6 +289,8 @@ namespace
 	 * PropertyValue (e.g. GmlLineString for PolylineOnSphere)
 	 *
 	 * FIXME: This should ideally be in the geometry-visitors/ directory.
+	 * FIXME 2: We should pass a flag indicating whether the resulting
+	 * geometry PropertyValue should be GpmlConstantValue-wrapped.
 	 */
 	class GeometricPropertyValueConstructor : 
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
@@ -319,11 +322,38 @@ namespace
 		
 		virtual
 		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			// Convert MultiPointOnSphere to GmlMultiPoint.
+			GPlatesModel::PropertyValue::non_null_ptr_type gml_multi_point =
+					GPlatesPropertyValues::GmlMultiPoint::create(multi_point_on_sphere);
+			// For now, I'm assuming we always want to return a GpmlConstantValue wrapper
+			// around the geometric property value, as the GpmlOnePointSixReader complains
+			// bitterly if it does not find one.
+			GPlatesPropertyValues::TemplateTypeParameterType value_type =
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("MultiPoint");
+			GPlatesModel::PropertyValue::non_null_ptr_type gpml_constant_value =
+					GPlatesPropertyValues::GpmlConstantValue::create(gml_multi_point, value_type);
+			d_property_value_opt = gpml_constant_value;
+		}
+		
+		virtual
+		void
 		visit_point_on_sphere(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			// Convert PointOnSphere to GmlPoint.
-			d_property_value_opt = GPlatesPropertyValues::GmlPoint::create(*point_on_sphere);
+			GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
+					GPlatesPropertyValues::GmlPoint::create(*point_on_sphere);
+			// For now, I'm assuming we always want to return a GpmlConstantValue wrapper
+			// around the geometric property value, as the GpmlOnePointSixReader complains
+			// bitterly if it does not find one.
+			GPlatesPropertyValues::TemplateTypeParameterType value_type =
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point");
+			GPlatesModel::PropertyValue::non_null_ptr_type gpml_constant_value =
+					GPlatesPropertyValues::GpmlConstantValue::create(gml_point, value_type);
+			d_property_value_opt = gpml_constant_value;
 		}
 
 		virtual
@@ -334,7 +364,16 @@ namespace
 			// Convert PolygonOnSphere to GmlPolygon with one exterior ring.
 			// FIXME: We could make this more intelligent and open up the possibility of making
 			// polygons with interiors.
-			d_property_value_opt = GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
+			GPlatesModel::PropertyValue::non_null_ptr_type gml_polygon =
+					GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
+			// For now, I'm assuming we always want to return a GpmlConstantValue wrapper
+			// around the geometric property value, as the GpmlOnePointSixReader complains
+			// bitterly if it does not find one.
+			GPlatesPropertyValues::TemplateTypeParameterType value_type =
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon");
+			GPlatesModel::PropertyValue::non_null_ptr_type gpml_constant_value =
+					GPlatesPropertyValues::GpmlConstantValue::create(gml_polygon, value_type);
+			d_property_value_opt = gpml_constant_value;
 		}
 		
 		virtual
@@ -344,7 +383,16 @@ namespace
 		{
 			// Convert PolylineOnSphere to GmlLineString.
 			// FIXME: OrientableCurve??
-			d_property_value_opt = GPlatesPropertyValues::GmlLineString::create(polyline_on_sphere);
+			GPlatesModel::PropertyValue::non_null_ptr_type gml_line_string =
+					GPlatesPropertyValues::GmlLineString::create(polyline_on_sphere);
+			// For now, I'm assuming we always want to return a GpmlConstantValue wrapper
+			// around the geometric property value, as the GpmlOnePointSixReader complains
+			// bitterly if it does not find one.
+			GPlatesPropertyValues::TemplateTypeParameterType value_type =
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString");
+			GPlatesModel::PropertyValue::non_null_ptr_type gpml_constant_value =
+					GPlatesPropertyValues::GpmlConstantValue::create(gml_line_string, value_type);
+			d_property_value_opt = gpml_constant_value;
 		}
 	
 	private:
@@ -607,15 +655,20 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	// Actually create the Feature!
 	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
 	
-	// Add a Geometry Property.
+	// Add a (possibly ConstantValue-wrapped, see GeometricPropertyValueConstructor)
+	// Geometry Property.
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
 			*geometry_value_opt,
 			geom_prop_name,
 			feature);
 
-	// Add a gpml:reconstructionPlateId Property.
+	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
+	GPlatesModel::PropertyValue::non_null_ptr_type plate_id =
+			d_plate_id_widget->create_property_value_from_widget();
+	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_plate_id_widget->create_property_value_from_widget(),
+			GPlatesPropertyValues::GpmlConstantValue::create(plate_id, plate_id_value_type),
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 			feature);
 

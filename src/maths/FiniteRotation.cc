@@ -32,6 +32,7 @@
 #include "HighPrecision.h"
 #include "UnitVector3D.h"
 #include "Vector3D.h"
+#include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 #include "PolylineOnSphere.h"
 #include "PolygonOnSphere.h"
@@ -280,6 +281,29 @@ GPlatesMaths::operator*(
 			GPlatesUtils::NullIntrusivePointerHandler> rotated_point(
 			PointOnSphere::create_on_heap(rotated_position_vector));
 	return rotated_point;
+}
+
+
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere,
+		GPlatesUtils::NullIntrusivePointerHandler>
+GPlatesMaths::operator*(
+		const FiniteRotation &r,
+		GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler> mp)
+{
+	std::vector<PointOnSphere> rotated_points;
+	rotated_points.reserve(mp->number_of_points());
+
+	MultiPointOnSphere::const_iterator iter = mp->begin();
+	MultiPointOnSphere::const_iterator end = mp->end();
+	for ( ; iter != end; ++iter) {
+		rotated_points.push_back(r * (*iter));
+	}
+
+	GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler> rotated_multipoint(
+			MultiPointOnSphere::create_on_heap(rotated_points));
+	return rotated_multipoint;
 }
 
 

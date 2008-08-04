@@ -42,6 +42,7 @@ namespace GPlatesMaths
 	class UnitVector3D;
 
 	// Forward declarations for the non-member function 'operator*'.
+	class MultiPointOnSphere;
 	class PointOnSphere;
 	class PolylineOnSphere;
 	class PolygonOnSphere;
@@ -246,6 +247,19 @@ namespace GPlatesMaths
 			const FiniteRotation &r,
 			GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
 					GPlatesUtils::NullIntrusivePointerHandler> p);
+
+
+	/**
+	 * Apply the given rotation to the given intrusive-pointer to multi-point-on-sphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler>
+	operator*(
+			const FiniteRotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
+					GPlatesUtils::NullIntrusivePointerHandler> mp);
 
 
 	/**

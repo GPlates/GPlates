@@ -58,10 +58,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	// to select the appropriate CanvasTool for the job.
 	tabwidget_task_panel->setTabEnabled(0, false);
 	tabwidget_task_panel->setTabEnabled(1, false);
-#if 0
-	// Enable this line when we have a means of selecting the Modify Pole tab via code.
 	tabwidget_task_panel->setTabEnabled(2, false);
-#endif
 	
 	// Set up the EX-TREME Task Panel's tabs.
 	set_up_feature_tab(feature_focus_);
@@ -87,7 +84,12 @@ GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
 	
 	// Action Buttons; these are added by ViewportWindow via
 	// TaskPanel::feature_action_button_box().add_action().
-	lay->addWidget(d_feature_action_button_box_ptr);
+	QHBoxLayout* ab_lay = new QHBoxLayout();
+	// We need to include a spacer to keep the buttons left-aligned,
+	// as we have less than five buttons right now.
+	ab_lay->addWidget(d_feature_action_button_box_ptr);
+	ab_lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Minimum));
+	lay->addLayout(ab_lay);
 	
 	// After the action buttons, a spacer to eat up remaining space and push all
 	// the widgets to the top of the Feature tab.

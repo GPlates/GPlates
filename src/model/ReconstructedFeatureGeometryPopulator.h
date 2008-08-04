@@ -123,6 +123,10 @@ namespace GPlatesModel
 		visit_gml_line_string(
 				GPlatesPropertyValues::GmlLineString &gml_line_string);
 
+		virtual
+		void
+		visit_gml_multi_point(
+				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
 
 		virtual
 		void
@@ -133,6 +137,11 @@ namespace GPlatesModel
 		void
 		visit_gml_point(
 				GPlatesPropertyValues::GmlPoint &gml_point);
+		
+		virtual
+		void
+		visit_gml_polygon(
+				GPlatesPropertyValues::GmlPolygon &gml_polygon);
 
 		virtual
 		void

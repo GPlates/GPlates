@@ -171,7 +171,7 @@ namespace GPlatesUndoCommands
 			geom_item->addChild(coord_item);
 
 			// Scroll to show the user the point they just added.
-			d_digitisation_widget->coordinates_table()->scrollToItem(geom_item);
+			d_digitisation_widget->coordinates_table()->scrollToItem(coord_item);
 
 			// Update labels and the displayed geometry.
 			d_digitisation_widget->update_table_labels();

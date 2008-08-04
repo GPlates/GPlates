@@ -129,6 +129,12 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_move_vertex_tool_ptr);
 		}
 
+		void
+		choose_manipulate_pole_tool()
+		{
+			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
+		}
+
 	private:
 		/**
 		 * This is the ReorientGlobe tool which the user may choose.
@@ -169,6 +175,11 @@ namespace GPlatesGui
 		 * This is the MoveVertex tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_move_vertex_tool_ptr;
+
+		/**
+		 * This is the ManipulatePole tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_manipulate_pole_tool_ptr;
 
 		/**
 		 * The current choice of CanvasTool.

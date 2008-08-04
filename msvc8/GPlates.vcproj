@@ -250,6 +250,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\canvas-tools\ManipulatePole.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\canvas-tools\MoveGeometry.cc"
 				>
 			</File>
@@ -1831,6 +1835,10 @@
 			</File>
 			<File
 				RelativePath="..\src\property-values\GmlLineString.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GmlMultiPoint.cc"
 				>
 			</File>
 			<File

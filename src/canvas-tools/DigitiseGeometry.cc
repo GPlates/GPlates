@@ -29,7 +29,6 @@
 
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "qt-widgets/EditGeometryWidget.h"
 #include "qt-widgets/DigitisationWidget.h"
 #include "maths/LatLonPointConversions.h"
 

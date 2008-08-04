@@ -591,6 +591,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(choose_move_geometry_tool()));
 	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
 			this, SLOT(choose_move_vertex_tool()));
+	// FIXME: The Move Vertex tool is to be disabled until it can be implemented.
+	action_Move_Vertex->setVisible(false);
+	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
+			this, SLOT(choose_manipulate_pole_tool()));
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
@@ -706,13 +710,6 @@ GPlatesQtWidgets::ViewportWindow::set_up_task_panel_actions()
 
 	feature_actions.add_action(action_Query_Feature);
 	feature_actions.add_action(action_Edit_Feature);
-	// FIXME: The following are just to eat up space and see how things will look.
-	// Remove for a release or a merge.
-	feature_actions.add_action(action_Delete_Feature);
-	feature_actions.add_action(action_Delete_Feature);
-	feature_actions.add_action(action_Delete_Feature);
-	feature_actions.add_action(action_Delete_Feature);
-	feature_actions.add_action(action_Delete_Feature);
 	feature_actions.add_action(action_Delete_Feature);
 }
 
@@ -945,7 +942,7 @@ GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 	uncheck_all_tools();
 	action_Move_Geometry->setChecked(true);
 	d_canvas_tool_choice_ptr->choose_move_geometry_tool();
-	d_task_panel_ptr->choose_digitisation_tab();
+	d_task_panel_ptr->choose_feature_tab();
 }
 
 
@@ -955,7 +952,17 @@ GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 	uncheck_all_tools();
 	action_Move_Vertex->setChecked(true);
 	d_canvas_tool_choice_ptr->choose_move_vertex_tool();
-	d_task_panel_ptr->choose_digitisation_tab();
+	d_task_panel_ptr->choose_feature_tab();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
+{
+	uncheck_all_tools();
+	action_Manipulate_Pole->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
+	d_task_panel_ptr->choose_modify_pole_tab();
 }
 
 
@@ -970,6 +977,7 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Digitise_New_Polygon->setChecked(false);
 	action_Move_Geometry->setChecked(false);
 	action_Move_Vertex->setChecked(false);
+	action_Manipulate_Pole->setChecked(false);
 }
 
 
@@ -980,6 +988,11 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	bool enable = focused_feature.is_valid();
 	action_Query_Feature->setEnabled(enable);
 	action_Edit_Feature->setEnabled(enable);
+	// FIXME: Move Geometry and Move Vertex could also be used for temporary
+	// GeometryOnSphere manipulation, once we have a canonical location for them.
+	action_Move_Geometry->setEnabled(enable);
+	action_Move_Vertex->setEnabled(enable);
+	action_Manipulate_Pole->setEnabled(enable);
 #if 0
 	// FIXME: Delete Feature is unimplemented and should stay disabled for now.
 	action_Delete_Feature->setEnabled(enable);

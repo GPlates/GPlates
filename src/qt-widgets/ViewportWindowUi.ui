@@ -143,6 +143,7 @@
    <addaction name="action_Digitise_New_Polygon" />
    <addaction name="action_Move_Geometry" />
    <addaction name="action_Move_Vertex" />
+   <addaction name="action_Manipulate_Pole" />
   </widget>
   <widget class="QDockWidget" name="dock_search_results" >
    <property name="contextMenuPolicy" >
@@ -849,7 +850,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_stock_edit_points_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/move_geometry_35.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Move Geometry</string>
@@ -858,7 +859,10 @@
     <string>&amp;Move Geometry</string>
    </property>
    <property name="toolTip" >
-    <string>Drag geometry to adjust position</string>
+    <string>Drag geometry to adjust position  M</string>
+   </property>
+   <property name="shortcut" >
+    <string>M</string>
    </property>
   </action>
   <action name="action_Move_Vertex" >
@@ -869,7 +873,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_stock_edit_points_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/move_vertex_35.png</iconset>
    </property>
    <property name="text" >
     <string>Mo&amp;ve Vertex</string>
@@ -878,7 +882,33 @@
     <string>Mo&amp;ve Vertex</string>
    </property>
    <property name="toolTip" >
-    <string>Drag vertices of geometry to adjust position</string>
+    <string>Drag vertices of geometry to adjust position  V</string>
+   </property>
+   <property name="shortcut" >
+    <string>V</string>
+   </property>
+  </action>
+  <action name="action_Manipulate_Pole" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/rotate_plate_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Manipulate Po&amp;le</string>
+   </property>
+   <property name="iconText" >
+    <string>Manipulate Po&amp;le</string>
+   </property>
+   <property name="toolTip" >
+    <string>Drag globe to manipulate absolute rotation of the current feature's plate  R</string>
+   </property>
+   <property name="shortcut" >
+    <string>R</string>
    </property>
   </action>
  </widget>

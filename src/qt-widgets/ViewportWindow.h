@@ -169,6 +169,9 @@ namespace GPlatesQtWidgets
 		choose_move_vertex_tool();
 
 		void
+		choose_manipulate_pole_tool();
+
+		void
 		enable_or_disable_feature_actions(
 				GPlatesModel::FeatureHandle::weak_ref focused_feature);
 
