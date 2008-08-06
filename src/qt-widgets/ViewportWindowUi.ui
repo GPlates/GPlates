@@ -65,7 +65,18 @@
     <property name="title" >
      <string>&amp;View</string>
     </property>
+    <widget class="QMenu" name="menu_Colour_By" >
+     <property name="title" >
+      <string>&amp;Colour By</string>
+     </property>
+     <addaction name="action_Colour_By_Plate_ID" />
+     <addaction name="action_Colour_By_Single_Colour" />
+     <addaction name="action_Colour_By_Feature_Type" />
+     <addaction name="action_Colour_By_Age" />
+    </widget>
     <addaction name="action_Show_Rasters" />
+    <addaction name="separator" />
+    <addaction name="menu_Colour_By" />
     <addaction name="separator" />
     <addaction name="action_Set_Camera_Viewpoint" />
     <addaction name="action_Move_Camera_Up" />
@@ -664,6 +675,41 @@
     <string>Open &amp;Time Dependent Global Raster Set...</string>
    </property>
   </action>
+  <action name="action_Colour_By_Plate_ID" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Plate ID</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Single_Colour" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Single Colour ...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Type" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Feature &amp;Type</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Age" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Feature &amp;Age</string>
+   </property>
+  </action> 
   <action name="action_Digitise_New_Polyline" >
    <property name="checkable" >
     <bool>true</bool>

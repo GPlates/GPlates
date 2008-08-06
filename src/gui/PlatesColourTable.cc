@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,30 +29,33 @@
 
 
 GPlatesGui::PlatesColourTable *
-GPlatesGui::PlatesColourTable::Instance() {
-
-	if (_instance == NULL) {
+GPlatesGui::PlatesColourTable::Instance()
+{
+	if (d_instance == NULL) {
 
 		// create a new instance
-		_instance = new PlatesColourTable();
+		d_instance = new PlatesColourTable();
 	}
-	return _instance;
+	return d_instance;
 }
 
 
-GPlatesGui::PlatesColourTable::~PlatesColourTable() {
-
-	delete[] _id_table;
-	delete[] _colours;
+GPlatesGui::PlatesColourTable::~PlatesColourTable()
+{
+	delete[] d_id_table;
+	delete[] d_colours;
 }
 
 
-GPlatesGui::PlatesColourTable::const_iterator
-GPlatesGui::PlatesColourTable::lookup(const GPlatesModel::integer_plate_id_type &id) const {
+GPlatesGui::ColourTable::const_iterator
+GPlatesGui::PlatesColourTable::lookup(
+		const GPlatesModel::ReconstructedFeatureGeometry &feature) const
+{
+	GPlatesModel::integer_plate_id_type id = *(feature.reconstruction_plate_id());
 
 	// First, ensure that the ID isn't greater than the highest ID in the
 	// ID table (which would result in an out-of-bounds index).
-	if (id > _highest_known_rid) {
+	if (id > d_highest_known_rid) {
 
 		// The ID is outside the bounds of this table.
 		return end();
@@ -60,13 +63,15 @@ GPlatesGui::PlatesColourTable::lookup(const GPlatesModel::integer_plate_id_type 
 
 	// Now, convert the ID into an index into the 'ID table'.
 	size_t idx = static_cast< size_t >(id);
-	const Colour *colour_ptr = _id_table[idx];
+	const Colour *colour_ptr = d_id_table[idx];
 	if (colour_ptr == NULL) {
 
 		// There is no entry for this ID in the table.
 		return end();
 
-	} else return const_iterator(colour_ptr);
+	} else {
+		return const_iterator(colour_ptr);
+	}
 }
 
 
@@ -81,7 +86,10 @@ namespace
 	};
 
 	GPlatesModel::integer_plate_id_type
-	getHighestID(const MappingPair array[], size_t array_len) {
+	getHighestID(
+			const MappingPair array[],
+			size_t array_len)
+	{
 
 		GPlatesModel::integer_plate_id_type highest_so_far = 0;
 		for (size_t i = 0; i < array_len; i++) {
@@ -96,9 +104,12 @@ namespace
 
 
 	void
-	populate(Colour *id_table[], Colour colours[],
-	 const MappingPair array[], size_t array_len) {
-
+	populate(
+			Colour *id_table[],
+			Colour colours[],
+			const MappingPair array[],
+			size_t array_len)
+	{
 		for (size_t array_idx = 0; array_idx < array_len; ++array_idx) {
 
 			// convert the ID into an index into the 'ID table'.
@@ -112,9 +123,9 @@ namespace
 }
 
 
-GPlatesGui::PlatesColourTable::PlatesColourTable() :
- _highest_known_rid(0) /* no default ctor, so must initialise now */ {
-
+GPlatesGui::PlatesColourTable::PlatesColourTable():
+		d_highest_known_rid(0) /* no default ctor, so must initialise now */
+{
 	const MappingPair MappingArray[] = {
 
 		{ 101, Colour::YELLOW },
@@ -428,36 +439,36 @@ GPlatesGui::PlatesColourTable::PlatesColourTable() :
 
 
 	size_t len_mapping_array =
-	 sizeof(MappingArray) / sizeof(MappingArray[0]);
+			sizeof(MappingArray) / sizeof(MappingArray[0]);
 
 	// First pass is to discover the highest rotation ID.
 	// [We won't assume that the 'MappingArray' is sorted.]
-	_highest_known_rid = getHighestID(MappingArray, len_mapping_array);
+	d_highest_known_rid = getHighestID(MappingArray, len_mapping_array);
 
 	// Allocate the arrays.
 	// FIXME: make this code use auto_ptrs to avoid possible mem-leaks.
 	// FIXME: (2): even better, use std::vector!
 	/*
-	 * See the comment at the declaration of '_id_table' to understand why
-	 * this array is of length (_highest_known_rid + 1).
+	 * See the comment at the declaration of 'd_id_table' to understand why
+	 * this array is of length (d_highest_known_rid + 1).
 	 */
-	size_t len_id_table =
-	 static_cast< size_t >(_highest_known_rid + 1);
+	size_t lend_id_table =
+			static_cast< size_t >(d_highest_known_rid + 1);
 	// This next line looks like it's trying to be clever or cryptic, but
 	// that's actually the only valid syntax.
-	_id_table = new Colour *[len_id_table];
-	for (size_t j = 0; j < len_id_table; j++) {
+	d_id_table = new Colour *[lend_id_table];
+	for (size_t j = 0; j < lend_id_table; j++) {
 
 		// set the pointer to NULL.  [C++ does not do this for us.]
-		_id_table[j] = NULL;
+		d_id_table[j] = NULL;
 	}
 
-	_colours = new Colour[len_mapping_array];
+	d_colours = new Colour[len_mapping_array];
 
 	// Second pass is to populate the two arrays.
-	populate(_id_table, _colours, MappingArray, len_mapping_array);
+	populate(d_id_table, d_colours, MappingArray, len_mapping_array);
 }
 
 
 GPlatesGui::PlatesColourTable *
-GPlatesGui::PlatesColourTable::_instance = NULL;
+GPlatesGui::PlatesColourTable::d_instance = NULL;

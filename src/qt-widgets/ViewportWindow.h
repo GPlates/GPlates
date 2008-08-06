@@ -58,6 +58,7 @@
 
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/ColourTable.h"
 
 #include "model/ModelInterface.h"
 
@@ -175,6 +176,18 @@ namespace GPlatesQtWidgets
 		enable_or_disable_feature_actions(
 				GPlatesModel::FeatureHandle::weak_ref focused_feature);
 
+		void		
+		choose_colour_by_plate_id();
+
+		void
+		choose_colour_by_single_colour();
+		
+		void	
+		choose_colour_by_feature_type();
+
+		void
+		choose_colour_by_age();
+
 		void
 		pop_up_read_errors_dialog();
 
@@ -214,6 +227,12 @@ namespace GPlatesQtWidgets
 		typedef std::list<file_info_iterator> active_files_collection_type;
 		typedef active_files_collection_type::iterator active_files_iterator;
 		
+		/**
+		 * Returns the current colour table in use.
+		 */
+		GPlatesGui::ColourTable *
+		get_colour_table();
+
 		void
 		load_files(
 				const QStringList &file_names);
@@ -344,8 +363,15 @@ namespace GPlatesQtWidgets
 		// The last path used for opening raster files.
 		QString d_open_file_path; 
 
+		// The current colour table in use. Do not access this directly, use
+		// get_colour_table() instead.
+		GPlatesGui::ColourTable *d_colour_table_ptr;
+
 		void
 		uncheck_all_tools();
+
+		void 
+		uncheck_all_colouring_tools();
 
 		bool
 		load_global_raster(
@@ -353,6 +379,7 @@ namespace GPlatesQtWidgets
 
 		void
 		update_time_dependent_raster();
+
 
 	private slots:
 		void
@@ -388,7 +415,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		closeEvent(QCloseEvent *close_event);
-
 	};
 }
 

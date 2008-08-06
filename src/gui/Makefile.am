@@ -11,6 +11,8 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				CanvasToolChoice.cc Colour.cc Globe.cc \
 				NurbsRenderer.cc OpaqueSphere.cc \
 				PlatesColourTable.cc ProximityTests.cc \
+				SingleColourTable.cc FeatureColourTable.cc \
+				AgeColourTable.cc ColourSpectrum.cc\
 				Quadrics.cc SimpleGlobeOrientation.cc \
 				SphericalGrid.cc SvgExport.cc \
 				ViewportZoom.cc \

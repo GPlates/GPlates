@@ -323,6 +323,18 @@
 				RelativePath="..\src\gui\OpaqueSphere.cc">
 			</File>
 			<File
+				RelativePath="..\src\gui\AgeColourTable.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\SingleColourTable.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureColourTable.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\ColourSpectrum.cc">
+			</File>
+			<File
 				RelativePath="..\src\gui\PlatesColourTable.cc">
 			</File>
 			<File

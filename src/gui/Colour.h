@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_GUI_COLOUR_H_
-#define _GPLATES_GUI_COLOUR_H_
+#ifndef GPLATES_GUI_COLOUR_H
+#define GPLATES_GUI_COLOUR_H
 
 #include <iostream>
 #include <cstdio>  /* for size_t */
@@ -36,114 +36,150 @@ namespace GPlatesGui
 {
 	class Colour
 	{
-		public:
-			/**
-			 * Some commonly used colours.
-			 */
-			static const Colour 
-				BLACK, WHITE, RED, GREEN, 
-				BLUE, GREY, SILVER, MAROON,
-				PURPLE, FUSCHIA, LIME, OLIVE,
-				YELLOW, NAVY, TEAL, AQUA;
+	public:
+		/**
+		 * Some commonly used colours.
+		 */
+		static const Colour 
+			BLACK, WHITE, RED, GREEN, 
+			BLUE, GREY, SILVER, MAROON,
+			PURPLE, FUSCHIA, LIME, OLIVE,
+			YELLOW, NAVY, TEAL, AQUA;
 
-			/**
-			 * Construct a colour with the given red, green and
-			 * blue components.
-			 * 
-			 * The parameters represent the percentage of red,
-			 * green and blue in the resulting colour.
-			 * 
-			 * The parameters should be in the range 0.0 - 1.0
-			 * inclusive.  Values outside this range will not
-			 * be clamped, since OpenGL does its own clamping.
-			 */
-			explicit
-			Colour(const GLfloat& red   = 0.0, 
-				   const GLfloat& green = 0.0,
-			 	   const GLfloat& blue  = 0.0, 
-				   const GLfloat& alpha = 1.0);
+		/**
+		 * Construct a colour with the given red, green and
+		 * blue components.
+		 * 
+		 * The parameters represent the percentage of red,
+		 * green and blue in the resulting colour.
+		 * 
+		 * The parameters should be in the range 0.0 - 1.0
+		 * inclusive.  Values outside this range will not
+		 * be clamped, since OpenGL does its own clamping.
+		 */
+		explicit
+		Colour(const GLfloat& red   = 0.0, 
+			   const GLfloat& green = 0.0,
+		 	   const GLfloat& blue  = 0.0, 
+			   const GLfloat& alpha = 1.0);
 
-			Colour(const Colour &colour) {
-				_rgba[RED_INDEX] = colour._rgba[RED_INDEX];
-				_rgba[GREEN_INDEX] = colour._rgba[GREEN_INDEX];
-				_rgba[BLUE_INDEX] = colour._rgba[BLUE_INDEX];
-				_rgba[ALPHA_INDEX] = colour._rgba[ALPHA_INDEX];
-			}
+		Colour(const Colour &colour) {
+			_rgba[RED_INDEX] = colour._rgba[RED_INDEX];
+			_rgba[GREEN_INDEX] = colour._rgba[GREEN_INDEX];
+			_rgba[BLUE_INDEX] = colour._rgba[BLUE_INDEX];
+			_rgba[ALPHA_INDEX] = colour._rgba[ALPHA_INDEX];
+		}
 
-			/**
-			 * Accessor methods.
-			 */
-			GLfloat
-			Red() const { return _rgba[RED_INDEX]; }
+		/**
+		 * Accessor methods.
+		 */
+		GLfloat
+		Red() const
+		{
+			return _rgba[RED_INDEX];
+		}
 
-			GLfloat
-			Green() const { return _rgba[GREEN_INDEX]; }
+		GLfloat
+		Green() const
+		{
+			return _rgba[GREEN_INDEX];
+		}
 
-			GLfloat
-			Blue() const { return _rgba[BLUE_INDEX]; }
+		GLfloat
+		Blue() const
+		{
+			return _rgba[BLUE_INDEX];
+		}
 
-			GLfloat
-			Alpha() const { return _rgba[ALPHA_INDEX]; }
+		GLfloat
+		Alpha() const
+		{
+			return _rgba[ALPHA_INDEX];
+		}
 
-			/**
-			 * Accessor/mutator methods.
-			 */
-			GLfloat&
-			Red() { return _rgba[RED_INDEX]; }
+		/**
+		 * Accessor/mutator methods.
+		 */
+		GLfloat&
+		Red()
+		{
+			return _rgba[RED_INDEX];
+		}
 
-			GLfloat&
-			Green() { return _rgba[GREEN_INDEX]; }
+		GLfloat&
+		Green()
+		{
+			return _rgba[GREEN_INDEX];
+		}
 
-			GLfloat&
-			Blue() { return _rgba[BLUE_INDEX]; }
+		GLfloat&
+		Blue()
+		{
+			return _rgba[BLUE_INDEX];
+		}
 
-			GLfloat&
-			Alpha() { return _rgba[ALPHA_INDEX]; }
+		GLfloat&
+		Alpha()
+		{
+			return _rgba[ALPHA_INDEX];
+		}
 
-			/**
-			 * Type conversion operators for integration with
-			 * OpenGL colour commands.
-			 */
-			operator GLfloat*() { return &_rgba[0]; }
+		/**
+		 * Type conversion operators for integration with
+		 * OpenGL colour commands.
+		 */
+		operator
+		GLfloat*()
+		{
+			return &_rgba[0];
+		}
 
-			operator const GLfloat*() const { return &_rgba[0]; }
+		operator
+		const
+		GLfloat*() const
+		{
+			return &_rgba[0];
+		}
 
-		private:
-			/**
-			 * Indices of the respective colour componets.
-			 */
-			static const size_t RED_INDEX = 0, 
-								GREEN_INDEX = 1, 
-								BLUE_INDEX = 2, 
-								ALPHA_INDEX = 3;
-			/**
-			 * Number of components in an RGBA colour.
-			 */
-			static const size_t RGBA_SIZE = 4;
+	private:
+		/**
+		 * Indices of the respective colour componets.
+		 */
+		static const size_t RED_INDEX = 0, 
+							GREEN_INDEX = 1, 
+							BLUE_INDEX = 2, 
+							ALPHA_INDEX = 3;
+		/**
+		 * Number of components in an RGBA colour.
+		 */
+		static const size_t RGBA_SIZE = 4;
 
-			/**
-			 * The storage space for the colour components.
-			 *
-			 * This is an array because that allows it to be
-			 * passed to OpenGL as a vector, which is often
-			 * faster than passing (and hence copying each
-			 * individual component.
-			 */
-			GLfloat _rgba[RGBA_SIZE];
+		/**
+		 * The storage space for the colour components.
+		 *
+		 * This is an array because that allows it to be
+		 * passed to OpenGL as a vector, which is often
+		 * faster than passing (and hence copying each
+		 * individual component.
+		 */
+		GLfloat _rgba[RGBA_SIZE];
 	};
 
 
-	inline std::ostream &
-	operator<<(std::ostream &os, const Colour &c) {
-
+	inline
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const Colour &c)
+	{
 		os << "("
-		 << c.Red() << ", "
-		 << c.Green() << ", "
-		 << c.Blue() << ", "
-		 << c.Alpha() << ")";
+			<< c.Red() << ", "
+			<< c.Green() << ", "
+			<< c.Blue() << ", "
+			<< c.Alpha() << ")";
 
 		return os;
 	}
 }
 
-#endif  /* _GPLATES_GUI_COLOUR_H_ */
+#endif  /* GPLATES_GUI_COLOUR_H */

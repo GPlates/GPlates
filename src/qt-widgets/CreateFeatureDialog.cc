@@ -63,71 +63,71 @@ namespace
 	 */
 	struct FeatureTypeInfo
 	{
-		const GPlatesModel::FeatureType type;
+		const char *gpml_type;
 	};
 	
 	/**
 	 * This list was created with the command:
 	 *
-	 * perl -ne 'print "\t\t{ GPlatesModel::FeatureType::create_gpml(\"$1\") },\n" if /^class\s+(\w+)/;' GPGIM_1.6.juuml | sort
+	 * perl -ne 'print "\t\t{ \"$1\" },\n" if /^class\s+(\w+)/;' GPGIM_1.6.juuml | sort
 	 *
 	 * plus some manual pruning. It could probably be more intelligent, but then
 	 * it would have to be a separate script.
 	 */
 	static const FeatureTypeInfo feature_type_info_table[] = {
-		{ GPlatesModel::FeatureType::create_gpml("AseismicRidge") },
-		{ GPlatesModel::FeatureType::create_gpml("BasicRockUnit") },
-		{ GPlatesModel::FeatureType::create_gpml("Basin") },
-		{ GPlatesModel::FeatureType::create_gpml("Bathymetry") },
-		{ GPlatesModel::FeatureType::create_gpml("ClosedContinentalBoundary") },
-		{ GPlatesModel::FeatureType::create_gpml("Coastline") },
-		{ GPlatesModel::FeatureType::create_gpml("ContinentalFragment") },
-		{ GPlatesModel::FeatureType::create_gpml("ContinentalRift") },
-		{ GPlatesModel::FeatureType::create_gpml("Craton") },
-		{ GPlatesModel::FeatureType::create_gpml("CrustalThickness") },
-		{ GPlatesModel::FeatureType::create_gpml("DynamicTopography") },
-		{ GPlatesModel::FeatureType::create_gpml("ExtendedContinentalCrust") },
-		{ GPlatesModel::FeatureType::create_gpml("Fault") },
-		{ GPlatesModel::FeatureType::create_gpml("FoldPlane") },
-		{ GPlatesModel::FeatureType::create_gpml("FractureZone") },
-		{ GPlatesModel::FeatureType::create_gpml("FractureZoneIdentification") },
-		{ GPlatesModel::FeatureType::create_gpml("GeologicalLineation") },
-		{ GPlatesModel::FeatureType::create_gpml("GeologicalPlane") },
-		{ GPlatesModel::FeatureType::create_gpml("GlobalElevation") },
-		{ GPlatesModel::FeatureType::create_gpml("Gravimetry") },
-		{ GPlatesModel::FeatureType::create_gpml("HeatFlow") },
-		{ GPlatesModel::FeatureType::create_gpml("HotSpot") },
-		{ GPlatesModel::FeatureType::create_gpml("HotSpotTrail") },
-		{ GPlatesModel::FeatureType::create_gpml("InferredPaleoBoundary") },
-		{ GPlatesModel::FeatureType::create_gpml("IslandArc") },
-		{ GPlatesModel::FeatureType::create_gpml("Isochron") },
-		{ GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince") },
-		{ GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification") },
-		{ GPlatesModel::FeatureType::create_gpml("MagneticAnomalyShipTrack") },
-		{ GPlatesModel::FeatureType::create_gpml("Magnetics") },
-		{ GPlatesModel::FeatureType::create_gpml("MantleDensity") },
-		{ GPlatesModel::FeatureType::create_gpml("MidOceanRidge") },
-		{ GPlatesModel::FeatureType::create_gpml("OceanicAge") },
-		{ GPlatesModel::FeatureType::create_gpml("OldPlatesGridMark") },
-		{ GPlatesModel::FeatureType::create_gpml("OrogenicBelt") },
-		{ GPlatesModel::FeatureType::create_gpml("PassiveContinentalBoundary") },
-		{ GPlatesModel::FeatureType::create_gpml("PseudoFault") },
-		{ GPlatesModel::FeatureType::create_gpml("Roughness") },
-		{ GPlatesModel::FeatureType::create_gpml("Seamount") },
-		{ GPlatesModel::FeatureType::create_gpml("SedimentThickness") },
-		{ GPlatesModel::FeatureType::create_gpml("SpreadingAsymmetry") },
-		{ GPlatesModel::FeatureType::create_gpml("SpreadingRate") },
-		{ GPlatesModel::FeatureType::create_gpml("Stress") },
-		{ GPlatesModel::FeatureType::create_gpml("SubductionZone") },
-		{ GPlatesModel::FeatureType::create_gpml("Suture") },
-		{ GPlatesModel::FeatureType::create_gpml("TerraneBoundary") },
-		{ GPlatesModel::FeatureType::create_gpml("Topography") },
-		{ GPlatesModel::FeatureType::create_gpml("Transform") },
-		{ GPlatesModel::FeatureType::create_gpml("TransitionalCrust") },
-		{ GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature") },
-		{ GPlatesModel::FeatureType::create_gpml("Unconformity") },
-		{ GPlatesModel::FeatureType::create_gpml("UnknownContact") },
-		{ GPlatesModel::FeatureType::create_gpml("Volcano") },
+		{ "AseismicRidge" },
+		{ "BasicRockUnit" },
+		{ "Basin" },
+		{ "Bathymetry" },
+		{ "ClosedContinentalBoundary" },
+		{ "Coastline" },
+		{ "ContinentalFragment" },
+		{ "ContinentalRift" },
+		{ "Craton" },
+		{ "CrustalThickness" },
+		{ "DynamicTopography" },
+		{ "ExtendedContinentalCrust" },
+		{ "Fault" },
+		{ "FoldPlane" },
+		{ "FractureZone" },
+		{ "FractureZoneIdentification" },
+		{ "GeologicalLineation" },
+		{ "GeologicalPlane" },
+		{ "GlobalElevation" },
+		{ "Gravimetry" },
+		{ "HeatFlow" },
+		{ "HotSpot" },
+		{ "HotSpotTrail" },
+		{ "InferredPaleoBoundary" },
+		{ "IslandArc" },
+		{ "Isochron" },
+		{ "LargeIgneousProvince" },
+		{ "MagneticAnomalyIdentification" },
+		{ "MagneticAnomalyShipTrack" },
+		{ "Magnetics" },
+		{ "MantleDensity" },
+		{ "MidOceanRidge" },
+		{ "OceanicAge" },
+		{ "OldPlatesGridMark" },
+		{ "OrogenicBelt" },
+		{ "PassiveContinentalBoundary" },
+		{ "PseudoFault" },
+		{ "Roughness" },
+		{ "Seamount" },
+		{ "SedimentThickness" },
+		{ "SpreadingAsymmetry" },
+		{ "SpreadingRate" },
+		{ "Stress" },
+		{ "SubductionZone" },
+		{ "Suture" },
+		{ "TerraneBoundary" },
+		{ "Topography" },
+		{ "Transform" },
+		{ "TransitionalCrust" },
+		{ "UnclassifiedFeature" },
+		{ "Unconformity" },
+		{ "UnknownContact" },
+		{ "Volcano" },
 	};
 	
 	
@@ -228,7 +228,8 @@ namespace
 		const FeatureTypeInfo *begin = feature_type_info_table;
 		const FeatureTypeInfo *end = begin + NUM_ELEMS(feature_type_info_table);
 		for ( ; begin != end; ++begin) {
-			list.addItem(new FeatureTypeItem(begin->type));
+			list.addItem(new FeatureTypeItem(
+					GPlatesModel::FeatureType::create_gpml(begin->gpml_type) ));
 		}
 		list.setCurrentRow(0);
 	}

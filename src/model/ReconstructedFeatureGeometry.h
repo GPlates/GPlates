@@ -32,6 +32,7 @@
 #include "ReconstructionGeometry.h"
 #include "types.h"
 #include "FeatureHandle.h"
+#include "property-values/GeoTimeInstant.h"
 
 
 namespace GPlatesModel
@@ -153,6 +154,25 @@ namespace GPlatesModel
 		}
 
 		/**
+		 * Return the cached feature time.
+		 */
+		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
+		reconstruction_feature_time() const
+		{
+			return d_reconstruction_feature_time;
+		}
+
+		/**
+		 * Cache feature time
+		 */
+		void 
+		set_reconstruction_feature_time(const GPlatesPropertyValues::GeoTimeInstant &feature_time) const
+		{
+			d_reconstruction_feature_time = feature_time;				
+		} 
+
+
+		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
 		 */
 		virtual
@@ -186,6 +206,12 @@ namespace GPlatesModel
 		 * with on-screen colouring, and accessed quickly when RFGs are being queried.
 		 */
 		boost::optional<integer_plate_id_type> d_reconstruction_plate_id;
+
+		/**
+		 * We cache the feature time so that it can be extracted by drawing code
+		 * for use with on-screen colouring.
+		 */
+		mutable boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_reconstruction_feature_time;
 
 		/**
 		 * Instantiate a reconstructed feature geometry with a reconstruction plate ID.

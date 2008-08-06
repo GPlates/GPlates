@@ -33,6 +33,9 @@
 #include <QStringList>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QColorDialog>
+#include <QColor>
+#include <QInputDialog>
 #include <QProgressBar>
 
 #include "ViewportWindow.h"
@@ -68,6 +71,9 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "gui/SvgExport.h"
 #include "gui/PlatesColourTable.h"
+#include "gui/SingleColourTable.h"
+#include "gui/FeatureColourTable.h"
+#include "gui/AgeColourTable.h"
 #include "gui/GlobeCanvasPainter.h"
 
 namespace
@@ -367,7 +373,8 @@ namespace
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
 			double recon_time,
-			GPlatesModel::integer_plate_id_type recon_root)
+			GPlatesModel::integer_plate_id_type recon_root,
+			GPlatesGui::ColourTable &colour_table)
 	{
 		try {
 			reconstruction = create_reconstruction(active_reconstructable_files, 
@@ -378,7 +385,7 @@ namespace
 			GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
 					reconstruction->geometries().end();
 			for ( ; iter != end; ++iter) {
-				GPlatesGui::PlatesColourTable::const_iterator colour = GPlatesGui::PlatesColourTable::Instance()->end();
+				GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
 
 				// We use a dynamic cast here (despite the fact that dynamic casts are generally
 				// considered bad form) because we only care about one specific derivation.
@@ -391,12 +398,12 @@ namespace
 				if (rfg) {
 					// It's an RFG, so let's look at the feature it's referencing.
 					if (rfg->reconstruction_plate_id()) {
-						colour = GPlatesGui::PlatesColourTable::Instance()->lookup(*(rfg->reconstruction_plate_id()));
+						colour = colour_table.lookup(*rfg);
 					}
 				}
 
-				if (colour == GPlatesGui::PlatesColourTable::Instance()->end()) {
-					// Anything not in the table in gui/PlatesColourTable.cc uses the 'Olive' colour.
+				if (colour == colour_table.end()) {
+					// Anything not in the table uses the 'Olive' colour.
 					colour = &GPlatesGui::Colour::OLIVE;
 				}
 
@@ -414,6 +421,18 @@ namespace
 
 } // namespace
 
+
+GPlatesGui::ColourTable *
+GPlatesQtWidgets::ViewportWindow::get_colour_table()
+{
+	GPlatesGui::ColourTable *value;
+	if (d_colour_table_ptr == NULL) {
+		value = GPlatesGui::PlatesColourTable::Instance();
+	} else {
+		value = d_colour_table_ptr;
+	}
+	return value;
+}
 
 GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_model_ptr(new GPlatesModel::Model()),
@@ -434,7 +453,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_euler_pole_dialog(*this, this),
 	d_task_panel_ptr(new TaskPanel(d_feature_focus, *d_model_ptr, *this, this)),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
-	d_open_file_path("")
+	d_open_file_path(""),
+	d_colour_table_ptr(NULL)
 {
 	setupUi(this);
 
@@ -477,7 +497,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Render everything on the screen in present-day positions.
 	d_canvas_ptr->clear_data();
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
-			d_active_reconstruction_files, 0.0, d_recon_root);
+			d_active_reconstruction_files, 0.0, d_recon_root, *get_colour_table());
 	d_canvas_ptr->update_canvas();
 
 	// Set up the Clicked table.
@@ -654,6 +674,15 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Show_Rasters, SIGNAL(triggered()),
 			this, SLOT(enable_raster_display()));
 	// ----
+	QObject::connect(action_Colour_By_Plate_ID, SIGNAL(triggered()), 
+			this, SLOT(choose_colour_by_plate_id()));
+	QObject::connect(action_Colour_By_Single_Colour, SIGNAL(triggered()), 
+			this, SLOT(choose_colour_by_single_colour()));
+	QObject::connect(action_Colour_By_Feature_Type, SIGNAL(triggered()), 
+			this, SLOT(choose_colour_by_feature_type()));
+	QObject::connect(action_Colour_By_Age, SIGNAL(triggered()), 
+			this, SLOT(choose_colour_by_age()));
+	// ----
 	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
 	QObject::connect(action_Move_Camera_Up, SIGNAL(triggered()),
@@ -788,7 +817,7 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
 	d_canvas_ptr->clear_data();
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
-			d_active_reconstruction_files, d_recon_time, d_recon_root);
+			d_active_reconstruction_files, d_recon_time, d_recon_root, *get_colour_table());
 
 	if (d_euler_pole_dialog.isVisible()){
 		d_euler_pole_dialog.update();
@@ -1003,6 +1032,56 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	// we may want to modify this method to also test for a nonempty selection of features.
 	action_Add_Feature_To_Selection->setEnabled(enable);
 #endif
+}
+
+
+void 
+GPlatesQtWidgets::ViewportWindow::uncheck_all_colouring_tools() {
+	action_Colour_By_Plate_ID->setChecked(false);
+	action_Colour_By_Single_Colour->setChecked(false);
+	action_Colour_By_Feature_Type->setChecked(false);
+	action_Colour_By_Age->setChecked(false);
+}
+
+void		
+GPlatesQtWidgets::ViewportWindow::choose_colour_by_plate_id() {
+	d_colour_table_ptr = GPlatesGui::PlatesColourTable::Instance();
+	uncheck_all_colouring_tools();
+	action_Colour_By_Plate_ID->setChecked(true);
+	reconstruct();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour() {	
+	QColor qcolor = QColorDialog::getColor();
+
+	GPlatesGui::Colour colour(qcolor.redF(), qcolor.greenF(), qcolor.blueF(), qcolor.alphaF());
+
+	GPlatesGui::SingleColourTable::Instance()->set_colour(colour);
+	d_colour_table_ptr = GPlatesGui::SingleColourTable::Instance();
+
+	uncheck_all_colouring_tools();
+	action_Colour_By_Single_Colour->setChecked(true);
+	reconstruct();
+}
+
+void	
+GPlatesQtWidgets::ViewportWindow::choose_colour_by_feature_type() {
+	d_colour_table_ptr = GPlatesGui::FeatureColourTable::Instance();
+
+	uncheck_all_colouring_tools();
+	action_Colour_By_Feature_Type->setChecked(true);
+	reconstruct();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_colour_by_age() {
+	GPlatesGui::AgeColourTable::Instance()->set_viewport_window(*this);
+	d_colour_table_ptr = GPlatesGui::AgeColourTable::Instance();
+
+	uncheck_all_colouring_tools();
+	action_Colour_By_Age->setChecked(true);
+	reconstruct();
 }
 
 
