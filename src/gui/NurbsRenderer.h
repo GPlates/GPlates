@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,11 +25,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_GUI_NURBSRENDERER_H_
-#define _GPLATES_GUI_NURBSRENDERER_H_
+#ifndef GPLATES_GUI_NURBSRENDERER_H
+#define GPLATES_GUI_NURBSRENDERER_H
 
 #include "OpenGL.h"
-#include "maths/GreatCircleArc.h"
+
+
+namespace GPlatesMaths
+{
+	class GreatCircleArc;
+	class UnitVector3D;
+}
 
 namespace GPlatesGui
 {
@@ -43,23 +49,11 @@ namespace GPlatesGui
 		public:
 			NurbsRenderer();
 
-			~NurbsRenderer() {
-
-				gluDeleteNurbsRenderer(_nr);
+			~NurbsRenderer()
+			{
+				gluDeleteNurbsRenderer(d_nurbs_ptr);
 			}
 
-		private:
-			/*
-			 * These two member functions intentionally declared
-			 * private to avoid object copying/assignment.
-			 * [There doesn't seem to be a way to duplicate
-			 * a GLUnurbsObj resource.]
-			 */ 
-			NurbsRenderer(const NurbsRenderer &other);
-
-			NurbsRenderer &operator=(const NurbsRenderer &other);
-
-		public:
 			/**
 			 * Draw a general NURBS curve.
 			 *
@@ -81,17 +75,18 @@ namespace GPlatesGui
 			 * (the length of the array @a ctrl_pts).
 			 */
 			void
-			drawCurve(GLint num_knots,
-			          GLfloat *knots,
-			          GLint stride,
-			          GLfloat *ctrl_pts,
-			          GLint order,
-			          GLenum curve_type) {
-
-				gluBeginCurve(_nr);
-				gluNurbsCurve(_nr, num_knots, knots, stride,
-				 ctrl_pts, order, curve_type);
-				gluEndCurve(_nr);
+			draw_curve(
+					GLint num_knots,
+					GLfloat *knots,
+					GLint stride,
+					GLfloat *ctrl_pts,
+					GLint order,
+					GLenum curve_type)
+			{
+				gluBeginCurve(d_nurbs_ptr);
+				gluNurbsCurve(d_nurbs_ptr, num_knots, knots, stride,
+						ctrl_pts, order, curve_type);
+				gluEndCurve(d_nurbs_ptr);
 			}
 
 
@@ -109,13 +104,29 @@ namespace GPlatesGui
 			/**
 			 * GLU nurbs renderer object
 			 */
-			GLUnurbsObj *_nr;
+			GLUnurbsObj *d_nurbs_ptr;
 
 			void
 			draw_great_circle_arc_smaller_than_ninety_degrees(
 					const GPlatesMaths::UnitVector3D &start_pt,
 					const GPlatesMaths::UnitVector3D &end_pt);
+
+			/*
+			 * These two member functions are intentionally declared
+			 * private to avoid object copying/assignment.
+			 *
+			 * (There doesn't seem to be a way to duplicate
+			 * a GLUnurbsObj resource.)
+			 */ 
+
+			NurbsRenderer(
+					const NurbsRenderer &other);
+
+			NurbsRenderer &
+			operator=(
+					const NurbsRenderer &other);
+
 	};
 }
 
-#endif /* _GPLATES_GUI_NURBSRENDERER_H_ */
+#endif  // GPLATES_GUI_NURBSRENDERER_H

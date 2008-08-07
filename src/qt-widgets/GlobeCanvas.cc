@@ -176,7 +176,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_view_state_ptr(&view_state),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
-	d_mouse_pointer_is_on_globe(false)
+	d_mouse_pointer_is_on_globe(false),
+	d_geometry_focus_highlight(d_globe.rendered_geometry_layers().geometry_focus_layer())
 {
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
@@ -186,6 +187,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	//   are pressed.
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
 	setMouseTracking(true);
+
+	QObject::connect(&d_geometry_focus_highlight, SIGNAL(canvas_should_update()),
+			this, SLOT(update_canvas()));
 
 	QObject::connect(&d_viewport_zoom, SIGNAL(zoom_changed()),
 			this, SLOT(handle_zoom_change()));

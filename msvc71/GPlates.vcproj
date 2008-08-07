@@ -272,10 +272,10 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\gui\TemporaryGeometryFocus.cc">
+				RelativePath="..\src\gui\GeometryFocusHighlight.cc">
 			</File>
 			<File
-				RelativePath="..\src\gui\TemporaryGeometryFocus.h">
+				RelativePath="..\src\gui\GeometryFocusHighlight.h">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -308,10 +308,13 @@
 				RelativePath="..\src\gui\moc_FeatureFocus.cc">
 			</File>
 			<File
-				RelativePath="..\src\gui\moc_TemporaryGeometryFocus.cc">
+				RelativePath="..\src\gui\moc_GeometryFocusHighlight.cc">
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_TemporaryGeometryFocus.cc">
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_ViewportZoom.cc">
@@ -363,6 +366,21 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\SvgExport.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\TemporaryGeometryFocus.cc">
+			</File>
+			<File
+				RelativePath="..\src\gui\TemporaryGeometryFocus.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\ViewportZoom.cc">

@@ -64,6 +64,11 @@ namespace GPlatesModel
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_to_const_type;
 
 		/**
+		 * A convenience typedef for boost::intrusive_ptr<ReconstructionGeometry>.
+		 */
+		typedef boost::intrusive_ptr<ReconstructionGeometry> maybe_null_ptr_type;
+
+		/**
 		 * A convenience typedef for the geometry of this RFG.
 		 */
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr_type;

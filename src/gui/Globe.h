@@ -47,7 +47,7 @@ namespace GPlatesGui
 	public:
 		Globe():
 			d_sphere(Colour(0.35f, 0.35f, 0.35f)),
-			d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON, Colour::WHITE)
+			d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON)
 		{  }
 
 		~Globe()

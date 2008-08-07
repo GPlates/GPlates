@@ -136,6 +136,25 @@ namespace GPlatesGui
 		unset_focus();
 
 		/**
+		 * Find the new associated RFG for the currently-focused feature (if any).
+		 *
+		 * When the reconstruction is re-calculated, it will be populated with all-new
+		 * RFGs.  The old RFGs will be meaningless (but due to the power of intrusive-ptrs,
+		 * the associated RFG currently referenced by this class will still exist).
+		 *
+		 * This function is used to iterate through the reconstruction geometries in the
+		 * supplied Reconstruction and find the new RFG (if there is one) which corresponds
+		 * to the current associated RFG; if a new RFG is found, it will be assigned to be
+		 * the associated RFG.
+		 *
+		 * Currently this function is O(n) in the number of reconstruction geometries in
+		 * the reconstruction, which is frustrating, but this function is necessary.
+		 */
+		void
+		find_new_associated_rfg(
+				GPlatesModel::Reconstruction &reconstruction);
+
+		/**
 		 * Call this method when you have modified the properties of the currently-focused
 		 * feature.
 		 *
@@ -193,7 +212,7 @@ namespace GPlatesGui
 		void
 		focused_feature_modified(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);	
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);
 
 		/**
 		 * Emitted when the currently-focused feature has been deleted.

@@ -387,16 +387,19 @@ namespace
 			for ( ; iter != end; ++iter) {
 				GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
 
-				// We use a dynamic cast here (despite the fact that dynamic casts are generally
-				// considered bad form) because we only care about one specific derivation.
-				// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
-				// "if ... else if ..." chain would imply that we should be using polymorphism --
-				// specifically, the double-dispatch of the Visitor pattern -- rather than updating
-				// the "if ... else if ..." chain each time a new derivation is added.)
+				// We use a dynamic cast here (despite the fact that dynamic casts
+				// are generally considered bad form) because we only care about
+				// one specific derivation.  There's no "if ... else if ..." chain,
+				// so I think it's not super-bad form.  (The "if ... else if ..."
+				// chain would imply that we should be using polymorphism --
+				// specifically, the double-dispatch of the Visitor pattern --
+				// rather than updating the "if ... else if ..." chain each time a
+				// new derivation is added.)
 				GPlatesModel::ReconstructedFeatureGeometry *rfg =
 						dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(iter->get());
 				if (rfg) {
-					// It's an RFG, so let's look at the feature it's referencing.
+					// It's an RFG, so let's look at the feature it's
+					// referencing.
 					if (rfg->reconstruction_plate_id()) {
 						colour = colour_table.lookup(*rfg);
 					}
@@ -474,7 +477,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
 	enable_or_disable_feature_actions(d_feature_focus.focused_feature());
-	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
+	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
+					GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this, SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
 
@@ -493,6 +497,20 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			this, SLOT(reconstruct_to_time(double)));
 	QObject::connect(d_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
 			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
+
+	// Connect the geometry-focus highlight to the feature focus.
+	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+			&(d_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_modified(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+			&(d_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 
 	// Render everything on the screen in present-day positions.
 	d_canvas_ptr->clear_data();
@@ -515,7 +533,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
 
-	// If the focus is modified, we may need to reconstruct to update the view.
+	// If the focused feature is modified, we may need to reconstruct to update the view.
+	// FIXME:  If the FeatureFocus emits the 'focused_feature_modified' signal, the view will
+	// be reconstructed twice -- once here, and once as a result of the 'set_focus' slot in the
+	// GeometryFocusHighlight below.
 	QObject::connect(&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
@@ -793,25 +814,45 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 
 void
 GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
-		double recon_time)
+		double new_recon_time)
 {
-	GPlatesMaths::Real original_recon_time(d_recon_time);
-	
-	d_recon_time = recon_time;
-	reconstruct();
-	
 	// != does not work with doubles, so we must wrap them in Real.
-	if (original_recon_time != GPlatesMaths::Real(d_recon_time)) {
+	GPlatesMaths::Real original_recon_time(d_recon_time);
+	if (original_recon_time != GPlatesMaths::Real(new_recon_time)) {
+		d_recon_time = new_recon_time;
 		emit reconstruction_time_changed(d_recon_time);
 	}
+	reconstruct();
 }
 
 
 void
 GPlatesQtWidgets::ViewportWindow::reconstruct_with_root(
-		unsigned long recon_root)
+		unsigned long new_recon_root)
 {
-	d_recon_root = recon_root;
+	if (d_recon_root != new_recon_root) {
+		d_recon_root = new_recon_root;
+		// Does anyone care if the reconstruction root changed?
+	}
+	reconstruct();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
+		double new_recon_time,
+		unsigned long new_recon_root)
+{
+	// != does not work with doubles, so we must wrap them in Real.
+	GPlatesMaths::Real original_recon_time(d_recon_time);
+	if (original_recon_time != GPlatesMaths::Real(new_recon_time)) {
+		d_recon_time = new_recon_time;
+		emit reconstruction_time_changed(d_recon_time);
+	}
+	if (d_recon_root != new_recon_root) {
+		d_recon_root = new_recon_root;
+		// Does anyone care if the reconstruction root changed?
+	}
 	reconstruct();
 }
 
@@ -823,14 +864,16 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root, *get_colour_table());
 
-	if (d_euler_pole_dialog.isVisible()){
+	if (d_euler_pole_dialog.isVisible()) {
 		d_euler_pole_dialog.update();
 	}
-
-	if (action_Show_Rasters->isChecked() &&
-		!d_time_dependent_raster_map.isEmpty())
-	{	
+	if (action_Show_Rasters->isChecked() && ! d_time_dependent_raster_map.isEmpty()) {	
 		update_time_dependent_raster();
+	}
+	if (d_feature_focus.is_valid() && d_feature_focus.associated_rfg()) {
+		// There's a focused feature and it has an associated RFG.  We need to update the
+		// associated RFG for the new reconstruction.
+		d_feature_focus.find_new_associated_rfg(*d_reconstruction_ptr);
 	}
 	d_canvas_ptr->update_canvas();
 }
@@ -1193,7 +1236,6 @@ void
 GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 	GPlatesFileIO::FileInfo &file_info)
 {
-
 	d_read_errors_dialog.clear();
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
@@ -1208,8 +1250,7 @@ GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 		d_read_errors_dialog.show();
 	}
 
-
-	// plate-ids may have changed, so update the reconstruction. 
+	// Plate-ids may have changed, so update the reconstruction. 
 	reconstruct();
 }
 

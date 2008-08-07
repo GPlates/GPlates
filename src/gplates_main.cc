@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 
 	viewport_window.show();
 	viewport_window.load_files(cmdline.first + cmdline.second);
-	viewport_window.reconstruct_to_time(0.0);
+	viewport_window.reconstruct_to_time_with_root(0.0, 0);
 
 	return application.exec();
 }

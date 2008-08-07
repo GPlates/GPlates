@@ -126,8 +126,10 @@ namespace
 	public:
 		explicit
 		PaintGeometry(
-				GPlatesGui::NurbsRenderer &nurbs_renderer):
-			d_nurbs_renderer_ptr(&nurbs_renderer)
+				GPlatesGui::NurbsRenderer &nurbs_renderer,
+				float gl_line_width):
+			d_nurbs_renderer_ptr(&nurbs_renderer),
+			d_gl_line_width(gl_line_width)
 		{  }
 
 		virtual
@@ -175,7 +177,7 @@ namespace
 		{
 			// FIXME:  We should assert that the boost::optional is not boost::none.
 			glColor3fv(**d_colour);
-			glLineWidth(1.5f);
+			glLineWidth(d_gl_line_width);
 			draw_arcs_for_polygon(polygon->begin(), polygon->end(), *d_nurbs_renderer_ptr);
 		}
 
@@ -186,13 +188,13 @@ namespace
 		{
 			// FIXME:  We should assert that the boost::optional is not boost::none.
 			glColor3fv(**d_colour);
-			glLineWidth(1.5f);
+			glLineWidth(d_gl_line_width);
 			draw_arcs_for_polyline(polyline->begin(), polyline->end(), *d_nurbs_renderer_ptr);
 		}
 
 	private:
 		GPlatesGui::NurbsRenderer *const d_nurbs_renderer_ptr;
-
+		float d_gl_line_width;
 		boost::optional<GPlatesGui::PlatesColourTable::const_iterator> d_colour;
 	};
 
@@ -200,13 +202,14 @@ namespace
 	void
 	paint_geometries(
 			const GPlatesGui::RenderedGeometryLayers::rendered_geometry_layer_type &layer,
-			GPlatesGui::NurbsRenderer &nurbs_renderer)
+			GPlatesGui::NurbsRenderer &nurbs_renderer,
+			float gl_line_width)
 	{
 		typedef GPlatesGui::RenderedGeometryLayers::rendered_geometry_layer_type layer_type;
 		layer_type::const_iterator iter = layer.begin();
 		layer_type::const_iterator end = layer.end();
 
-		for_each(iter, end, PaintGeometry(nurbs_renderer));
+		for_each(iter, end, PaintGeometry(nurbs_renderer, gl_line_width));
 	}
 }
 
@@ -261,38 +264,25 @@ GPlatesGui::Globe::Paint()
 		glRotatef(angle_in_deg.dval(),
 		           axis.x().dval(), axis.y().dval(), axis.z().dval());
 		
-		/**
-		 * Draw sphere.
-		 * DepthRange calls push the sphere back in the depth buffer
-		 * a bit to avoid Z-fighting with the LineData.
-		 */
-		glDepthRange(0.1, 1.0);
+		// The glDepthRange(near_plane, far_plane) call pushes the sphere back in the depth
+		// buffer a bit, to avoid Z-fighting.
+		glDepthRange(0.9, 1.0);
 		d_sphere.Paint();
 
-		// Draw the texture slightly in front of the grey sphere, otherwise we 
-		// get little bits of the sphere sticking out. 
-		glDepthRange(0.05,1.0);
+		// Draw the texture slightly in front of the grey sphere, otherwise we get little
+		// bits of the sphere sticking out. 
+		glDepthRange(0.8, 0.9);
 		d_texture.paint();
 		
-		/**
-		 * Draw grid.
-		 * DepthRange calls push the grid back in the depth buffer
-		 * a bit to avoid Z-fighting with the LineData.
-		 */
-		glDepthRange(0.0, 0.9);
+		glDepthRange(0.7, 0.8);
+		d_grid.paint(Colour::SILVER);
 
-		d_grid.Paint();
-		
-		// Restore DepthRange
-		glDepthRange(0.0, 1.0);
+		glDepthRange(0.6, 0.7);
+		paint_geometries(rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer, 1.5f);
 
-		glPointSize(5.0f);
-		
-		/** 
-		 * Paint the rendered geometries.
-		 */
-		paint_geometries(rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer);
-		paint_geometries(rendered_geometry_layers().digitisation_layer(), d_nurbs_renderer);
+		glDepthRange(0.5, 0.6);
+		paint_geometries(rendered_geometry_layers().digitisation_layer(), d_nurbs_renderer, 2.0f);
+		paint_geometries(rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
 
 	glPopMatrix();
 }
@@ -313,26 +303,16 @@ GPlatesGui::Globe::paint_vector_output()
 		glRotatef(angle_in_deg.dval(),
 		           axis.x().dval(), axis.y().dval(), axis.z().dval());
 
-		// Set the grid's colour.
-		glColor3fv(GPlatesGui::Colour::WHITE);
-		
-		/*
-		 * Draw grid.
-		 * DepthRange calls push the grid back in the depth buffer
-		 * a bit to avoid Z-fighting with the LineData.
-		 */
-		glDepthRange(0.0, 0.9);
-		d_grid.Paint(Colour::GREY);
+		// The glDepthRange(near_plane, far_plane) call pushes the grid back in the depth
+		// buffer a bit, to avoid Z-fighting.
+		glDepthRange(0.7, 0.8);
+		d_grid.paint(Colour::GREY);
 
-		// Restore DepthRange
-		glDepthRange(0.0, 1.0);
+		glDepthRange(0.6, 0.7);
+		paint_geometries(rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer, 1.5f);
 
-		glPointSize(5.0f);
-		
-		/* 
-		 * Paint the rendered geometries.
-		 */
-		paint_geometries(rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer);
+		glDepthRange(0.5, 0.6);
+		paint_geometries(rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
 
 	glPopMatrix();
 }

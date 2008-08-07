@@ -79,6 +79,20 @@ namespace GPlatesGui
 
 		/**
 		 * Geometries in this layer are interactive geometries which are populated from the
+		 * contents of the geometry focus.
+		 *
+		 * Geometries in this layer should be drawn on top of everything except the
+		 * geometries in the mouse-movement layer.  Geometries in this layer should be the
+		 * first matched by a spatial (mouse-click) query.
+		 */
+		rendered_geometry_layer_type &
+		geometry_focus_layer()
+		{
+			return d_geometry_focus_layer;
+		}
+
+		/**
+		 * Geometries in this layer are interactive geometries which are populated from the
 		 * ReconstructionGeometry contents of the Reconstruction.
 		 */
 		rendered_geometry_layer_type &
@@ -109,6 +123,16 @@ namespace GPlatesGui
 		 * first matched by a spatial (mouse-click) query.
 		 */
 		rendered_geometry_layer_type d_digitisation_layer;
+
+		/**
+		 * Geometries in this layer are interactive geometries which are populated from the
+		 * contents of the geometry focus.
+		 *
+		 * Geometries in this layer should be drawn on top of everything except the
+		 * geometries in the mouse-movement layer.  Geometries in this layer should be the
+		 * first matched by a spatial (mouse-click) query.
+		 */
+		rendered_geometry_layer_type d_geometry_focus_layer;
 
 		/**
 		 * Geometries in this layer are interactive geometries which are populated from the

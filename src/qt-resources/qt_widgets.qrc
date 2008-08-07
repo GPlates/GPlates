@@ -9,6 +9,7 @@
     <file>drag_globe_35.png</file>
     <file>drag_plate_35.png</file>
     <file>edit_feature_35.png</file>
+    <file>focus_feature_35.png</file>
     <file>gnome_applets_screenshooter_16.png</file>
     <file>gnome_application_exit_16.png</file>
     <file>gnome_dialog_error_16.png</file>
@@ -55,8 +56,8 @@
     <file>info_sign_16.png</file>
     <file>move_geometry_35.png</file>
     <file>move_vertex_35.png</file>
+    <file>plate_pole_modification_35.png</file>
     <file>query_feature_35.png</file>
-    <file>rotate_plate_35.png</file>
     <file>reorient_poles_16.png</file>
     <file>reorient_poles_22.png</file>
     <file>save_a_copy_22.png</file>

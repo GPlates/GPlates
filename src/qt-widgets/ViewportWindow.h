@@ -132,15 +132,20 @@ namespace GPlatesQtWidgets
 		highlight_first_clicked_feature_table_row() const;
 
 		void
-		reconstruct();
-
-		void
 		reconstruct_to_time(
 				double recon_time);
 
 		void
 		reconstruct_with_root(
 				unsigned long recon_root);
+
+		void
+		reconstruct_to_time_with_root(
+				double recon_time,
+				unsigned long recon_root);
+
+		void
+		reconstruct();
 
 		void
 		pop_up_license_dialog();

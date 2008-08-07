@@ -743,7 +743,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/click_geometry_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/focus_feature_35.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Click Geometry</string>
@@ -752,7 +752,7 @@
     <string>&amp;Click Geometry</string>
    </property>
    <property name="toolTip" >
-    <string>Click geometry to interact with features  C</string>
+    <string>Click geometry to interact with feature  C</string>
    </property>
    <property name="shortcut" >
     <string>C</string>
@@ -907,7 +907,7 @@
     <string>&amp;Move Geometry</string>
    </property>
    <property name="toolTip" >
-    <string>Drag geometry to adjust position  M</string>
+    <string>Drag geometry  M</string>
    </property>
    <property name="shortcut" >
     <string>M</string>
@@ -930,7 +930,7 @@
     <string>Mo&amp;ve Vertex</string>
    </property>
    <property name="toolTip" >
-    <string>Drag vertices of geometry to adjust position  V</string>
+    <string>Drag vertices of geometry  V</string>
    </property>
    <property name="shortcut" >
     <string>V</string>
@@ -944,7 +944,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/rotate_plate_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/plate_pole_modification_35.png</iconset>
    </property>
    <property name="text" >
     <string>Manipulate Po&amp;le</string>
@@ -953,7 +953,7 @@
     <string>Manipulate Po&amp;le</string>
    </property>
    <property name="toolTip" >
-    <string>Drag globe to manipulate absolute rotation of the current feature's plate  R</string>
+    <string>Drag geometry to manipulate total reconstruction pole  R</string>
    </property>
    <property name="shortcut" >
     <string>R</string>

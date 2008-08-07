@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,9 +28,9 @@
 #ifndef GPLATES_GUI_COLOUR_H
 #define GPLATES_GUI_COLOUR_H
 
-#include <iostream>
-#include <cstdio>  /* for size_t */
+#include <iosfwd>
 #include "OpenGL.h"
+
 
 namespace GPlatesGui
 {
@@ -47,6 +47,17 @@ namespace GPlatesGui
 			YELLOW, NAVY, TEAL, AQUA;
 
 		/**
+		 * Indices of the respective colour componets.
+		 */
+		enum {
+			RED_INDEX = 0,
+			GREEN_INDEX = 1,
+			BLUE_INDEX = 2,
+			ALPHA_INDEX = 3,
+			RGBA_SIZE  // the number of elements in an RGBA colour
+		};
+
+		/**
 		 * Construct a colour with the given red, green and
 		 * blue components.
 		 * 
@@ -58,101 +69,93 @@ namespace GPlatesGui
 		 * be clamped, since OpenGL does its own clamping.
 		 */
 		explicit
-		Colour(const GLfloat& red   = 0.0, 
-			   const GLfloat& green = 0.0,
-		 	   const GLfloat& blue  = 0.0, 
-			   const GLfloat& alpha = 1.0);
+		Colour(
+				const GLfloat &red   = 0.0,
+				const GLfloat &green = 0.0,
+				const GLfloat &blue  = 0.0,
+				const GLfloat &alpha = 1.0);
 
-		Colour(const Colour &colour) {
-			_rgba[RED_INDEX] = colour._rgba[RED_INDEX];
-			_rgba[GREEN_INDEX] = colour._rgba[GREEN_INDEX];
-			_rgba[BLUE_INDEX] = colour._rgba[BLUE_INDEX];
-			_rgba[ALPHA_INDEX] = colour._rgba[ALPHA_INDEX];
+		Colour(
+				const Colour &colour)
+		{
+			d_rgba[RED_INDEX] = colour.d_rgba[RED_INDEX];
+			d_rgba[GREEN_INDEX] = colour.d_rgba[GREEN_INDEX];
+			d_rgba[BLUE_INDEX] = colour.d_rgba[BLUE_INDEX];
+			d_rgba[ALPHA_INDEX] = colour.d_rgba[ALPHA_INDEX];
 		}
 
 		/**
 		 * Accessor methods.
 		 */
+
 		GLfloat
-		Red() const
+		red() const
 		{
-			return _rgba[RED_INDEX];
+			return d_rgba[RED_INDEX];
 		}
 
 		GLfloat
-		Green() const
+		green() const
 		{
-			return _rgba[GREEN_INDEX];
+			return d_rgba[GREEN_INDEX];
 		}
 
 		GLfloat
-		Blue() const
+		blue() const
 		{
-			return _rgba[BLUE_INDEX];
+			return d_rgba[BLUE_INDEX];
 		}
 
 		GLfloat
-		Alpha() const
+		alpha() const
 		{
-			return _rgba[ALPHA_INDEX];
+			return d_rgba[ALPHA_INDEX];
 		}
 
-		/**
-		 * Accessor/mutator methods.
+		/*
+		 * Accessor methods which allow modification.
 		 */
-		GLfloat&
-		Red()
+
+		GLfloat &
+		red()
 		{
-			return _rgba[RED_INDEX];
+			return d_rgba[RED_INDEX];
 		}
 
-		GLfloat&
-		Green()
+		GLfloat &
+		green()
 		{
-			return _rgba[GREEN_INDEX];
+			return d_rgba[GREEN_INDEX];
 		}
 
-		GLfloat&
-		Blue()
+		GLfloat &
+		blue()
 		{
-			return _rgba[BLUE_INDEX];
+			return d_rgba[BLUE_INDEX];
 		}
 
-		GLfloat&
-		Alpha()
+		GLfloat &
+		alpha()
 		{
-			return _rgba[ALPHA_INDEX];
+			return d_rgba[ALPHA_INDEX];
 		}
 
-		/**
+		/*
 		 * Type conversion operators for integration with
 		 * OpenGL colour commands.
 		 */
-		operator
-		GLfloat*()
+
+		operator GLfloat*()
 		{
-			return &_rgba[0];
+			return &d_rgba[0];
 		}
 
-		operator
-		const
-		GLfloat*() const
+		operator const GLfloat*() const
 		{
-			return &_rgba[0];
+			return &d_rgba[0];
 		}
 
 	private:
-		/**
-		 * Indices of the respective colour componets.
-		 */
-		static const size_t RED_INDEX = 0, 
-							GREEN_INDEX = 1, 
-							BLUE_INDEX = 2, 
-							ALPHA_INDEX = 3;
-		/**
-		 * Number of components in an RGBA colour.
-		 */
-		static const size_t RGBA_SIZE = 4;
 
 		/**
 		 * The storage space for the colour components.
@@ -162,24 +165,14 @@ namespace GPlatesGui
 		 * faster than passing (and hence copying each
 		 * individual component.
 		 */
-		GLfloat _rgba[RGBA_SIZE];
+		GLfloat d_rgba[RGBA_SIZE];
 	};
 
 
-	inline
 	std::ostream &
 	operator<<(
 			std::ostream &os,
-			const Colour &c)
-	{
-		os << "("
-			<< c.Red() << ", "
-			<< c.Green() << ", "
-			<< c.Blue() << ", "
-			<< c.Alpha() << ")";
-
-		return os;
-	}
+			const Colour &c);
 }
 
-#endif  /* GPLATES_GUI_COLOUR_H */
+#endif  // GPLATES_GUI_COLOUR_H

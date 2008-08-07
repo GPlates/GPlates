@@ -93,6 +93,7 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 	d_view_state_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
 
+#if 0  // It seems it's not necessary to set the feature focus here, as it's already being set elsewhere.
 	// Update the focused feature.
 
 	GPlatesModel::ReconstructionGeometry *rg = sorted_hits.top().d_recon_geometry.get();
@@ -114,5 +115,5 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 		}
 		d_feature_focus_ptr->set_focus(feature_ref, rfg);
 	}
+#endif
 }
-

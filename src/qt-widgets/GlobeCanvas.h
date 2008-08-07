@@ -47,6 +47,7 @@
 #include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
 #include "gui/PlatesColourTable.h"
+#include "gui/GeometryFocusHighlight.h"
 
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -150,9 +151,7 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
 				GPlatesGui::PlatesColourTable::const_iterator colour);
 
-		void
-		update_canvas();
-
+		// FIXME:  Is this function used anywhere?  Alternatively, should it be a slot?
 		void
 		clear_data();
 
@@ -179,6 +178,12 @@ namespace GPlatesQtWidgets
 			return d_viewport_zoom;
 		}
 
+		GPlatesGui::GeometryFocusHighlight &
+		geometry_focus_highlight()
+		{
+			return d_geometry_focus_highlight;
+		}
+
 		/**
 		 * If the mouse pointer is on the globe, return the position of the mouse pointer
 		 * on the globe.
@@ -202,6 +207,9 @@ namespace GPlatesQtWidgets
 		}
 
 	public slots:
+		void
+		update_canvas();
+
 		void
 		notify_of_orientation_change();
 
@@ -455,6 +463,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::Globe d_globe;
 		GPlatesGui::ViewportZoom d_viewport_zoom;
+		GPlatesGui::GeometryFocusHighlight d_geometry_focus_highlight;  // Depends upon Globe.
 
 		void
 		set_view();

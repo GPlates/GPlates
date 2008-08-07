@@ -380,6 +380,21 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\gui\GeometryFocusHighlight.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\GeometryFocusHighlight.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui\Globe.cc"
 				>
 			</File>
@@ -409,6 +424,10 @@
 			</File>
 			<File
 				RelativePath="..\src\gui\moc_FeatureWeakRefSequence.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_GeometryFocusHighlight.cc"
 				>
 			</File>
 			<File
