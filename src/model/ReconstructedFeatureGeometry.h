@@ -63,7 +63,8 @@ namespace GPlatesModel
 		typedef boost::intrusive_ptr<ReconstructedFeatureGeometry> maybe_null_ptr_type;
 
 		/**
-		 * Create a ReconstructedFeatureGeometry instance with a reconstruction plate ID.
+		 * Create a ReconstructedFeatureGeometry instance with an optional
+		 * reconstruction plate ID and an optional time of formation.
 		 */
 		static
 		const non_null_ptr_type
@@ -71,18 +72,20 @@ namespace GPlatesModel
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				integer_plate_id_type reconstruction_plate_id_)
+				boost::optional<integer_plate_id_type> reconstruction_plate_id_opt_,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> reconstruction_feature_time_opt_)
 		{
 			non_null_ptr_type ptr(
 					new ReconstructedFeatureGeometry(geometry_ptr, feature_handle,
-							property_iterator_, reconstruction_plate_id_),
+							property_iterator_, reconstruction_plate_id_opt_,
+							reconstruction_feature_time_opt_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		/**
 		 * Create a ReconstructedFeatureGeometry instance @em without a reconstruction
-		 * plate ID.
+		 * plate ID or a feature formation time.
 		 *
 		 * For instance, a ReconstructedFeatureGeometry might be created without a
 		 * reconstruction plate ID if no reconstruction plate ID is found amongst the
@@ -162,15 +165,6 @@ namespace GPlatesModel
 			return d_reconstruction_feature_time;
 		}
 
-		/**
-		 * Cache feature time
-		 */
-		void 
-		set_reconstruction_feature_time(const GPlatesPropertyValues::GeoTimeInstant &feature_time) const
-		{
-			d_reconstruction_feature_time = feature_time;				
-		} 
-
 
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
@@ -211,10 +205,11 @@ namespace GPlatesModel
 		 * We cache the feature time so that it can be extracted by drawing code
 		 * for use with on-screen colouring.
 		 */
-		mutable boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_reconstruction_feature_time;
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_reconstruction_feature_time;
 
 		/**
-		 * Instantiate a reconstructed feature geometry with a reconstruction plate ID.
+		 * Instantiate a reconstructed feature geometry with an optional
+		 * reconstruction plate ID and an optional time of formation.
 		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
@@ -223,16 +218,18 @@ namespace GPlatesModel
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				integer_plate_id_type reconstruction_plate_id_):
+				boost::optional<integer_plate_id_type> reconstruction_plate_id_opt_,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> reconstruction_feature_time_opt_):
 			ReconstructionGeometry(geometry_ptr),
 			d_feature_ref(feature_handle.reference()),
 			d_property_iterator(property_iterator_),
-			d_reconstruction_plate_id(reconstruction_plate_id_)
+			d_reconstruction_plate_id(reconstruction_plate_id_opt_),
+			d_reconstruction_feature_time(reconstruction_feature_time_opt_)
 		{  }
 
 		/**
 		 * Instantiate a reconstructed feature geometry @em without a reconstruction plate
-		 * ID.
+		 * ID or a cached feature formation time.
 		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.

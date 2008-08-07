@@ -158,7 +158,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 							reconstructed_polyline,
 							*d_accumulator->d_current_property->collection_handle_ptr(),
 							*d_accumulator->d_current_property,
-							*d_accumulator->d_recon_plate_id);
+							d_accumulator->d_recon_plate_id,
+							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		} else {
@@ -167,7 +168,9 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 					ReconstructedFeatureGeometry::create(
 							gml_line_string.polyline(),
 							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property);
+							*d_accumulator->d_current_property,
+							boost::none,
+							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		}
@@ -194,7 +197,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 							reconstructed_multipoint,
 							*d_accumulator->d_current_property->collection_handle_ptr(),
 							*d_accumulator->d_current_property,
-							*d_accumulator->d_recon_plate_id);
+							d_accumulator->d_recon_plate_id,
+							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		} else {
@@ -203,7 +207,9 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 					ReconstructedFeatureGeometry::create(
 							gml_multi_point.multipoint(),
 							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property);
+							*d_accumulator->d_current_property,
+							boost::none,
+							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		}
@@ -238,7 +244,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 							reconstructed_point,
 							*d_accumulator->d_current_property->collection_handle_ptr(),
 							*d_accumulator->d_current_property,
-							*d_accumulator->d_recon_plate_id);
+							d_accumulator->d_recon_plate_id,
+							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		} else {
@@ -247,7 +254,9 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 					ReconstructedFeatureGeometry::create(
 							gml_point.point(),
 							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property);
+							*d_accumulator->d_current_property,
+							boost::none,
+							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 		}
@@ -276,7 +285,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 							reconstructed_exterior,
 							*d_accumulator->d_current_property->collection_handle_ptr(),
 							*d_accumulator->d_current_property,
-							*d_accumulator->d_recon_plate_id);
+							d_accumulator->d_recon_plate_id,
+							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 			
@@ -292,7 +302,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 								reconstructed_interior,
 								*d_accumulator->d_current_property->collection_handle_ptr(),
 								*d_accumulator->d_current_property,
-								*d_accumulator->d_recon_plate_id);
+								d_accumulator->d_recon_plate_id,
+								d_accumulator->d_time_of_appearance);
 				d_reconstruction_geometries_to_populate->push_back(interior_rfg_ptr);
 				d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 			}
@@ -303,7 +314,9 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 					ReconstructedFeatureGeometry::create(
 							gml_polygon.exterior(),
 							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property);
+							*d_accumulator->d_current_property,
+							boost::none,
+							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 
@@ -315,7 +328,9 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 						ReconstructedFeatureGeometry::create(
 								*it,
 								*d_accumulator->d_current_property->collection_handle_ptr(),
-								*d_accumulator->d_current_property);
+								*d_accumulator->d_current_property,
+								boost::none,
+								d_accumulator->d_time_of_appearance);
 				d_reconstruction_geometries_to_populate->push_back(interior_rfg_ptr);
 				d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 			}
@@ -341,6 +356,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_time_period(
 				// Oh no!  This feature instance is not defined at the recon time!
 				d_accumulator->d_feature_is_defined_at_recon_time = false;
 			}
+			// Also, cache the time of appearance for colouring to use.
+			d_accumulator->d_time_of_appearance = gml_time_period.begin()->time_position();
 		}
 	}
 }

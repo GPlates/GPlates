@@ -70,6 +70,7 @@ namespace GPlatesModel
 			boost::optional<FeatureHandle::properties_iterator> d_current_property;
 			boost::optional<integer_plate_id_type> d_recon_plate_id;
 			boost::optional<GPlatesMaths::FiniteRotation> d_recon_rotation;
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
 
 			ReconstructedFeatureGeometryAccumulator():
 				d_perform_reconstructions(false),

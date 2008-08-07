@@ -51,41 +51,38 @@ GPlatesGui::AgeColourTable::lookup(
 {
 	GPlatesGui::ColourTable::const_iterator colour = NULL;
 
-	if( ! feature_geometry.reconstruction_feature_time() ) {
-		GPlatesModel::FeatureHandle::weak_ref ref = feature_geometry.feature_ref();
-
-		static const GPlatesModel::PropertyName valid_time_property_name =
-			GPlatesModel::PropertyName::create_gml("validTime");
-		GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-		time_period_finder.visit_feature_handle(*ref);
-
-		if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
-			// The feature has a gpml:validTime property.
-			// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
-			// in the latter case it has a slightly different meaning and we should be displaying the
-			// gpml:reconstructedTime property instead.
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-					*time_period_finder.found_time_periods_begin();
-
-			feature_geometry.set_reconstruction_feature_time(time_period->begin()->time_position());
-		}	
+	if( ! feature_geometry.reconstruction_feature_time()) {
+		// The feature does not have a gml:validTime property.
+		return &GPlatesGui::Colour::MAROON;
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant geo_time = *(feature_geometry.reconstruction_feature_time());
-	if( geo_time.is_distant_past() ) {
+	if(geo_time.is_distant_past()) {
+		// The feature's time of appearance is the distant past.
+		// We cannot calculate the 'age' from the point of view of the current recon time.
 		colour = &GPlatesGui::Colour::OLIVE;
-	} else if( geo_time.is_distant_future() )	{
-		colour = &GPlatesGui::Colour::SILVER;
-	} else if ( geo_time.is_real() )	{
+		
+	} else if(geo_time.is_distant_future()) {
+		// The feature's time of appearance is the distant future.
+		// What the hell.
+		colour = &GPlatesGui::Colour::RED;
+		
+	} else if (geo_time.is_real()) {
 		double age = geo_time.value() - d_viewport_window->reconstruction_time();
 		if( age < 0 ) {
-			//currently we colour the things that should not appear at this time the same as the things
-			//in the past
+			// The feature shouldn't exist yet.
+			// If (for some reason) we are drawing things without regard to their
+			// valid time, we will display this with the same colour as the
+			// 'distant past' case.
 			colour = &GPlatesGui::Colour::OLIVE; 
+			
 		} else {
+			// A valid time of appearance with a usable 'age' relative to the
+			// current reconstruction time.
 			unsigned long index = static_cast<unsigned long>(age)*d_colour_scale_factor;
 			index = index%d_colours->size();
 			colour = &((*d_colours)[index]);
+			
 		}
 	}
 
