@@ -95,9 +95,9 @@
     <addaction name="separator" />
     <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
-   <widget class="QMenu" name="menu_Tools" >
+   <widget class="QMenu" name="menu_Utilities" >
     <property name="title" >
-     <string>&amp;Tools</string>
+     <string>U&amp;tilities</string>
     </property>
     <addaction name="action_Reconstruction_Tree_and_Poles" />
    </widget>
@@ -112,12 +112,14 @@
     <addaction name="action_Redo_Placeholder" />
     <addaction name="separator" />
     <addaction name="action_Delete_Feature" />
+    <addaction name="separator" />
+    <addaction name="action_Clear_Selection" />
    </widget>
    <addaction name="menu_File" />
    <addaction name="menu_Edit" />
    <addaction name="menu_Reconstruction" />
    <addaction name="menu_View" />
-   <addaction name="menu_Tools" />
+   <addaction name="menu_Utilities" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />

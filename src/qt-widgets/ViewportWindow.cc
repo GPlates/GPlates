@@ -653,8 +653,11 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	menu_Edit->removeAction(action_Undo_Placeholder);
 	menu_Edit->removeAction(action_Redo_Placeholder);
 	// ----
-	// FIXME: The following Edit Menu items are all unimplemented:
-	action_Delete_Feature->setDisabled(true);
+	QObject::connect(action_Delete_Feature, SIGNAL(triggered()),
+			this, SLOT(delete_focused_feature()));
+	// ----
+	QObject::connect(action_Clear_Selection, SIGNAL(triggered()),
+			&d_feature_focus, SLOT(unset_focus()));
 
 	// Reconstruction Menu:
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
@@ -713,7 +716,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
 	
-	// Tools Menu:
+	// Utilities Menu:
 	QObject::connect(action_Reconstruction_Tree_and_Poles, SIGNAL(triggered()),
 			this, SLOT(pop_up_euler_pole_dialog()));
 	
@@ -740,6 +743,7 @@ GPlatesQtWidgets::ViewportWindow::set_up_task_panel_actions()
 	feature_actions.add_action(action_Query_Feature);
 	feature_actions.add_action(action_Edit_Feature);
 	feature_actions.add_action(action_Delete_Feature);
+	feature_actions.add_action(action_Clear_Selection);
 }
 
 
@@ -1022,10 +1026,8 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	action_Move_Geometry->setEnabled(enable);
 	action_Move_Vertex->setEnabled(enable);
 	action_Manipulate_Pole->setEnabled(enable);
-#if 0
-	// FIXME: Delete Feature is unimplemented and should stay disabled for now.
 	action_Delete_Feature->setEnabled(enable);
-#endif
+	action_Clear_Selection->setEnabled(enable);
 #if 0
 	// FIXME: Add to Selection is unimplemented and should stay disabled for now.
 	// FIXME: To handle the "Remove from Selection", "Clear Selection" actions,
@@ -1340,4 +1342,21 @@ GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
 	QString filename = GPlatesFileIO::RasterReader::get_nearest_raster_filename(d_time_dependent_raster_map,d_recon_time);
 	load_global_raster(filename);
 }
+
+
+// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
+void
+GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
+{
+	if (d_feature_focus.is_valid()) {
+		GPlatesModel::FeatureHandle::weak_ref feature_ref = d_feature_focus.focused_feature();
+#if 0		// Cannot call ModelInterface::remove_feature() as it is #if0'd out and not implemented in Model!
+		// FIXME: figure out FeatureCollectionHandle::weak_ref that feature_ref belongs to.
+		// Possibly implement that as part of ModelUtils.
+		d_model_ptr->remove_feature(feature_ref, collection_ref);
+#endif
+		d_feature_focus.announce_deletion_of_focused_feature();
+	}
+}
+
 

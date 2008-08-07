@@ -93,6 +93,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::clear()
 	lineedit_plate_id->clear();
 	lineedit_time_of_appearance->clear();
 	lineedit_time_of_disappearance->clear();
+	lineedit_clicked_geometry->clear();
 }
 
 

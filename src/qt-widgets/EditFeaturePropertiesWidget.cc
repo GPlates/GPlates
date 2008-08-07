@@ -70,6 +70,14 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
 	QObject::connect(button_delete_property, SIGNAL(clicked()),
 			this, SLOT(delete_selected_property()));
 	
+	// Handle things without error if the feature we are looking at is deleted.
+	QObject::connect(d_feature_focus_ptr, 
+			SIGNAL(focused_feature_deleted(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+			this,
+			SLOT(handle_feature_deletion()));
+
 	// Handle things gracefully if the feature we are looking at is modified.
 #if 0
 	// property table model should no longer be emitting this signal.
@@ -110,7 +118,8 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::edit_feature(
 	if (feature_ref != d_feature_ref) {
 		// Brand new feature to look at!
 		// Clean up.
-		commit_and_clean_up();
+		commit_edit_widget_data();
+		clean_up();
 		
 		// Load new data.
 		d_property_model_ptr->set_feature_reference(feature_ref);
@@ -121,6 +130,15 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::edit_feature(
 	}
 }
 
+
+void
+GPlatesQtWidgets::EditFeaturePropertiesWidget::handle_feature_deletion()
+{
+	// Clean up immediately without committing anything back to the model.
+	d_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
+	d_property_model_ptr->set_feature_reference(d_feature_ref);
+	clean_up();
+}
 
 
 
@@ -229,13 +247,10 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::append_property_value_to_feature(
 }
 
 
-
 void
-GPlatesQtWidgets::EditFeaturePropertiesWidget::commit_and_clean_up()
+GPlatesQtWidgets::EditFeaturePropertiesWidget::clean_up()
 {
-	// Ensure any outstanding data is committed, get ready for the next Feature
-	// or closing the dialog completely.
-	commit_edit_widget_data();
+	// Get widgets ready for the next feature, if any.
 	property_table->selectionModel()->clear();
 	d_edit_widget_group_box_ptr->deactivate_edit_widgets();
 	d_add_property_dialog_ptr->reject();

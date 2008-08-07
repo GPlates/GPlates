@@ -104,3 +104,15 @@ GPlatesGui::FeatureFocus::announce_modfication_of_focused_feature()
 	}
 	emit focused_feature_modified(d_focused_feature, d_associated_rfg);
 }
+
+
+void
+GPlatesGui::FeatureFocus::announce_deletion_of_focused_feature()
+{
+	if ( ! d_focused_feature.is_valid()) {
+		// You can't have deleted it, nothing is focused!
+		return;
+	}
+	emit focused_feature_deleted(d_focused_feature, d_associated_rfg);
+	unset_focus();
+}

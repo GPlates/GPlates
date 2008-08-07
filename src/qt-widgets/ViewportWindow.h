@@ -208,6 +208,10 @@ namespace GPlatesQtWidgets
 
 		void
 		open_time_dependent_global_raster_set();
+		
+		// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
+		void
+		delete_focused_feature();
 
 	signals:
 		

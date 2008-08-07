@@ -145,6 +145,34 @@ namespace GPlatesGui
 		void
 		announce_modfication_of_focused_feature();
 
+		/**
+		 * Call this method when you have deleted the currently-focused feature
+		 * from the model (i.e. the Delete Feature action).
+		 *
+		 * FeatureFocus will emit the focused_feature_deleted() signals to notify anyone
+		 * who needs to know about the deletion, then unset the focus and emit the
+		 * usual focus_changed(invalid weak_ref) signal.
+		 *
+		 * It is necessary to explicitly specify that the feature has been deleted,
+		 * rather than just emit a focus change event, because certain dialogs (i.e. the
+		 * EditFeaturePropertiesWidget) may have uncommited data that the user was in
+		 * the middle of editing before they went insane and hit the Delete Feature button.
+		 * Normally, the EditFeaturePropertiesWidget commits old data before switching to
+		 * a new focused feature, but in this situation it would be possible to be in
+		 * a situation where properties of the supposedly deleted feature were being modified.
+		 *
+		 * TODO: When we have entire selections of features that could be deleted,
+		 * would it make sense to emit an entirely different signal for the same basic
+		 * deletion event? Perhaps this indicates we want some sort of "FeatureEvents" class,
+		 * which will simply emit multiple feature_deleted(weak_ref) events in that case.
+		 * Of course, that depends on how well the Qt signal/slot mechanism can handle
+		 * potentially thousands of signals. Perhaps it would be better to have a separate
+		 * selected_features_deleted(vector<weak_ref>) in that case, and get listeners
+		 * to iterate through it if they really care about the event.
+		 */
+		void
+		announce_deletion_of_focused_feature();
+
 	signals:
 
 		/**
@@ -164,6 +192,18 @@ namespace GPlatesGui
 		 */
 		void
 		focused_feature_modified(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);	
+
+		/**
+		 * Emitted when the currently-focused feature has been deleted.
+		 * When the user clicks the Delete Feature action,
+		 * announce_deletion_of_focused_feature() will be called, this signal will
+		 * be emitted, and immediately afterwards a focus_changed() signal will
+		 * be emitted with an invalid weak_ref.
+		 */
+		void
+		focused_feature_deleted(
 				GPlatesModel::FeatureHandle::weak_ref,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);	
 

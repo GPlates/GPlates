@@ -73,9 +73,6 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 			this,
 			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
-	// Note: In the future, we may have a "feature was deleted" event we should listen to.
-	// This should be connected to refresh_display(), possibly indirectly via some
-	// when_feature_deleted_refresh_if_necessary(weakref) slot.
 	
 	// Refresh display - since the feature ref is invalid at this point,
 	// the dialog should lock everything down that might otherwise cause problems.
@@ -100,6 +97,7 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 		// Disable everything except the Close button.
 		lineedit_feature_type->setEnabled(false);
 		tabwidget_query_edit->setEnabled(false);
+		lineedit_feature_type->clear();
 		return;
 	}
 	
@@ -145,7 +143,8 @@ GPlatesQtWidgets::FeaturePropertiesDialog::setVisible(bool visible)
 {
 	if ( ! visible) {
 		// We are closing. Ensure things are left tidy.
-		d_edit_feature_properties_widget->commit_and_clean_up();
+		d_edit_feature_properties_widget->commit_edit_widget_data();
+		d_edit_feature_properties_widget->clean_up();
 	}
 	QDialog::setVisible(visible);
 }

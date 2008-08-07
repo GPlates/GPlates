@@ -84,16 +84,25 @@ namespace GPlatesQtWidgets
 				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 
 		/**
-		 * Used heavily internally, and in one situation by the parent FeaturePropertiesDialog.
+		 * Call this to blank edit widgets and get ready for the next feature.
+		 */
+		void
+		clean_up();
+
+		/**
 		 * Causes any leftover data in line edits, spinboxes etc. to be committed.
 		 */
 		void
-		commit_and_clean_up();
+		commit_edit_widget_data();
 
 	private slots:
-			
+		
+		/**
+		 * Wipes the EditFeaturePropertiesWidget clean without causing any leftover
+		 * data to be commited (as that feature no longer exists).
+		 */
 		void
-		commit_edit_widget_data();
+		handle_feature_deletion();
 
 		void
 		handle_model_change();
