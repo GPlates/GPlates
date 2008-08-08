@@ -97,7 +97,7 @@
    </widget>
    <widget class="QMenu" name="menu_Utilities" >
     <property name="title" >
-     <string>U&amp;tilities</string>
+     <string>&amp;Utilities</string>
     </property>
     <addaction name="action_Reconstruction_Tree_and_Poles" />
    </widget>

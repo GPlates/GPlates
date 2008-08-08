@@ -51,7 +51,7 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 
 	// Reconstruction features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence") ] = 
-			GPlatesGui::Colour::WHITE;
+			GPlatesGui::Colour::AQUA;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("AbsoluteReferenceFrame") ] = 
 			GPlatesGui::Colour::RED;
 	
@@ -89,7 +89,7 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 	d_colours[ GPlatesModel::FeatureType::create_gpml("ContinentalRift") ] =
 			GPlatesGui::Colour::BLACK;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("SubductionZone") ] =
-			GPlatesGui::Colour::WHITE;
+			GPlatesGui::Colour::AQUA;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("OrogenicBelt") ] =
 			GPlatesGui::Colour::RED;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Transform") ] =
@@ -121,7 +121,7 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 	d_colours[ GPlatesModel::FeatureType::create_gpml("HeatFlow") ] =
 			GPlatesGui::Colour::BLACK;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("SedimentThickness") ] =
-			GPlatesGui::Colour::WHITE;
+			GPlatesGui::Colour::AQUA;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Roughness") ] =
 			GPlatesGui::Colour::RED;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("SpreadingRate") ] =
@@ -153,7 +153,7 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 	d_colours[ GPlatesModel::FeatureType::create_gpml("AseismicRidge") ] =
 			GPlatesGui::Colour::BLACK;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Coastline") ] =
-			GPlatesGui::Colour::WHITE;
+			GPlatesGui::Colour::AQUA;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Craton") ] =
 			GPlatesGui::Colour::RED;
 	d_colours[ GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince") ] =

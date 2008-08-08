@@ -156,7 +156,7 @@ namespace GPlatesQtWidgets
 		clear_data();
 
 		/**
-		 *  Draw the relevant objects for vector output. This is essentially like the 
+		 * Draw the relevant objects for vector output. This is essentially like the 
 		 *	PaintGL method, except that:
 		 *	we will omit drawing the sphere (otherwise we end up with loads of little
 		 *	polygons);

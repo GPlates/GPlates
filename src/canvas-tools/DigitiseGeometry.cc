@@ -58,6 +58,7 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	// wishes to create, and may adjust the current table of coordinates accordingly.
 	d_digitisation_widget_ptr->change_geometry_type(d_default_geom_type);
 
+	d_view_state_ptr->globe_canvas().geometry_focus_highlight().hide_highlight();
 	d_digitisation_widget_ptr->show_geometry();
 }
 
@@ -66,6 +67,7 @@ void
 GPlatesCanvasTools::DigitiseGeometry::handle_deactivation()
 {
 	d_digitisation_widget_ptr->hide_geometry();
+	d_view_state_ptr->globe_canvas().geometry_focus_highlight().show_highlight();
 }
 
 

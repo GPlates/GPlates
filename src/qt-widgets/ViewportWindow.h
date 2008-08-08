@@ -107,7 +107,7 @@ namespace GPlatesQtWidgets
 		}
 
 		GlobeCanvas &
-		globe_canvas() 
+		globe_canvas() const
 		{
 			return *d_canvas_ptr;
 		}

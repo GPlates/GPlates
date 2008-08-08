@@ -901,7 +901,7 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	// Tangible features.
 	d_map[ FeatureType::create_gpml("Isochron") ] = 
 		get_isochron_properties();
-	d_map[ FeatureType::create_gpml("MagneticAnomalyIndentification") ] = 
+	d_map[ FeatureType::create_gpml("MagneticAnomalyIdentification") ] = 
 		get_magnetic_anomaly_identification_properties();
 	d_map[ FeatureType::create_gpml("MagneticAnomalyShipTrack") ] = 
 		get_magnetic_anomaly_ship_track_properties();

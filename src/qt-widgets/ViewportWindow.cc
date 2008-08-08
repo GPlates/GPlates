@@ -632,7 +632,9 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(choose_move_geometry_tool()));
 	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
 			this, SLOT(choose_move_vertex_tool()));
-	// FIXME: The Move Vertex tool is to be disabled until it can be implemented.
+	// FIXME: The Move Vertex and Move Geometry tools, although they have awesome icons,
+	// are to be disabled until they can be implemented.
+	action_Move_Geometry->setVisible(false);
 	action_Move_Vertex->setVisible(false);
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
 			this, SLOT(choose_manipulate_pole_tool()));
@@ -674,8 +676,12 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	menu_Edit->removeAction(action_Undo_Placeholder);
 	menu_Edit->removeAction(action_Redo_Placeholder);
 	// ----
+#if 0		// Delete Feature is nontrivial to implement (in the model) properly.
 	QObject::connect(action_Delete_Feature, SIGNAL(triggered()),
 			this, SLOT(delete_focused_feature()));
+#else
+	action_Delete_Feature->setDisabled(true);
+#endif
 	// ----
 	QObject::connect(action_Clear_Selection, SIGNAL(triggered()),
 			&d_feature_focus, SLOT(unset_focus()));
@@ -1069,7 +1075,11 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	action_Move_Geometry->setEnabled(enable);
 	action_Move_Vertex->setEnabled(enable);
 	action_Manipulate_Pole->setEnabled(enable);
+#if 0		// Delete Feature is nontrivial to implement (in the model) properly.
 	action_Delete_Feature->setEnabled(enable);
+#else
+	action_Delete_Feature->setDisabled(true);
+#endif
 	action_Clear_Selection->setEnabled(enable);
 #if 0
 	// FIXME: Add to Selection is unimplemented and should stay disabled for now.

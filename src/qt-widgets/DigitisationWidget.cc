@@ -433,11 +433,14 @@ namespace
 
 		// FIXME: I think... we need some way to add data() to the 'header' QTWIs, so that
 		// we can immediately discover which bits are supposed to be polygon exteriors etc.
+		// Then the function calculate_label_for_item could do all our 'tagging' of
+		// geometry parts, and -this- function wouldn't need to duplicate the logic.
 
 		// FIXME 2: We should have a 'try {  } catch {  }' block to catch any exceptions
 		// thrown during the instantiation of the geometries.
 
-		// This will become a 'try {  } catch {  } block' when we get around to it.
+		// This will become a proper 'try {  } catch {  } block' when we get around to it.
+		try
 		{
 			switch (target_geom_type)
 			{
@@ -487,6 +490,8 @@ namespace
 				break;
 			}
 			// Should never reach here.
+		} catch (...) {
+			throw;
 		}
 	}
 	
@@ -535,7 +540,7 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 	QWidget(parent_),
 	d_view_state_ptr(&view_state_),
 	d_export_coordinates_dialog(new ExportCoordinatesDialog(this)),
-	d_create_feature_dialog(new CreateFeatureDialog(model_interface, this)),
+	d_create_feature_dialog(new CreateFeatureDialog(model_interface, view_state_, this)),
 	d_geometry_type(GPlatesQtWidgets::DigitisationWidget::POLYLINE),
 	d_geometry_opt_ptr(boost::none)
 {

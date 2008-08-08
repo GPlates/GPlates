@@ -29,6 +29,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include "AbstractEditWidget.h"
 #include "property-values/GpmlPlateId.h"
+#include "model/types.h"
 
 #include "EditPlateIdWidgetUi.h"
 
@@ -56,6 +57,10 @@ namespace GPlatesQtWidgets
 		virtual
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_property_value_from_widget() const;
+		
+		virtual
+		GPlatesModel::integer_plate_id_type
+		create_integer_plate_id_from_widget() const;
 
 		virtual
 		bool

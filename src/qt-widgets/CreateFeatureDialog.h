@@ -35,6 +35,7 @@
 
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
 	class InformationDialog;
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
@@ -51,6 +52,7 @@ namespace GPlatesQtWidgets
 		explicit
 		CreateFeatureDialog(
 				GPlatesModel::ModelInterface &model_interface,
+				GPlatesQtWidgets::ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -102,6 +104,12 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesModel::ModelInterface *d_model_ptr;
 	
+		/**
+		 * The View State is used to access the reconstruction tree to perform reverse
+		 * reconstruction of the temporary geometry (once we know the plate id).
+		 */
+		ViewportWindow *d_view_state_ptr;
+
 		/**
 		 * The geometry that is to be included with the feature.
 		 * Note that the coordinates may have to be moved to present-day, once we know

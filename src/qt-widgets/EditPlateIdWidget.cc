@@ -73,6 +73,13 @@ GPlatesQtWidgets::EditPlateIdWidget::create_property_value_from_widget() const
 }
 
 
+GPlatesModel::integer_plate_id_type
+GPlatesQtWidgets::EditPlateIdWidget::create_integer_plate_id_from_widget() const
+{
+	return static_cast<GPlatesModel::integer_plate_id_type>(spinbox_plate_id->value());
+}
+
+
 bool
 GPlatesQtWidgets::EditPlateIdWidget::update_property_value_from_widget()
 {
