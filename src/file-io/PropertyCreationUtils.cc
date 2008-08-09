@@ -1252,11 +1252,11 @@ GPlatesFileIO::PropertyCreationUtils::create_gml_polygon(
 
 	// GmlPolygon has exactly one exterior gml:LinearRing
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-		exterior = find_and_create_one(elem, &create_linear_ring, INTERIOR);
+		exterior = find_and_create_one(elem, &create_linear_ring, EXTERIOR);
 
 	// GmlPolygon has zero or more interior gml:LinearRing
 	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> interiors;
-	find_and_create_zero_or_more(elem, &create_linear_ring, EXTERIOR, interiors);
+	find_and_create_zero_or_more(elem, &create_linear_ring, INTERIOR, interiors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!

@@ -36,8 +36,10 @@
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
@@ -158,6 +160,66 @@ namespace
 	}
 
 
+	void
+	print_multi_point(
+			std::ostream *os,
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint)
+	{
+		// Note: Unfortunately, writing a MultiPoint out to the PLATES line format means we
+		// will, upon re-reading the file, get multiple individual pointlike features.
+		// Not much can be done here, though. Fix this in the reader.
+		GPlatesMaths::MultiPointOnSphere::const_iterator iter = multipoint->begin();
+		GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint->end();
+		
+		for ( ; iter != end; ++iter) {
+			print_plates_coordinate_line(os, *iter, PEN_SKIP_TO_POINT);
+			print_plates_coordinate_line(os, *iter, PEN_DRAW_TO_POINT);
+		}
+
+		/*
+		 * The PLATES4 format dictates that we include a special
+		 * "line string has terminated" coordinate at the end of the line
+		 * string.  The coordinate is always exactly "  99.0000   99.0000 3".
+		 */
+		print_plates_feature_termination_line(os);
+	}
+
+
+	void
+	print_polygon(
+			std::ostream *os,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
+	{
+		// Note: Handles the GPlatesMaths::PolygonOnSphere, (1 exterior ring),
+		// not the GPlatesPropertyValues::GmlPolygon (1 exterior, 0-* interiors).
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon->vertex_begin();
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon->vertex_end();
+
+		// N.B. The class invariant of PolygonOnSphere guarentees that our iterators  iter
+		// and  end  span at least three vertices.  See the documentation for PolygonOnSphere.
+//		Assert(iter != end, GPlatesMaths::InvalidPolylineContainsZeroPointsException(__FILE__, __LINE__));
+
+		print_plates_coordinate_line(os, *iter, PEN_SKIP_TO_POINT);
+
+		++iter;
+//		Assert(iter != end, GPlatesMaths::InvalidPolylineContainsOnlyOnePointException(__FILE__, __LINE__));
+
+		for ( ; iter != end; ++iter) {
+			print_plates_coordinate_line(os, *iter, PEN_DRAW_TO_POINT);
+		}
+		
+		// Draw the final point to close the polygon.
+		print_plates_coordinate_line(os, *polygon->vertex_begin(), PEN_DRAW_TO_POINT);
+
+		/*
+		 * The PLATES4 format dictates that we include a special
+		 * "line string has terminated" coordinate at the end of the line
+		 * string.  The coordinate is always exactly "  99.0000   99.0000 3".
+		 */
+		print_plates_feature_termination_line(os);
+	}
+
+
 	/**
 	 * Convert a GeoTimeInstant instance to a double, for output in the PLATES4 line-format.
 	 *
@@ -205,7 +267,7 @@ bool
 GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatAccumulator::have_sufficient_info_for_output() const
 {
 	// To output this feature we need a geometry (a polyline or a point) and plate id.
-	return (polyline || point) && (old_plates_header || plate_id);
+	return (multi_point || polyline || point || polygon) && (old_plates_header || plate_id);
 }
 
 
@@ -299,18 +361,31 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_feature_handle(
 	}
 
 	// Find out if our geometry is a polyline or a point.
+	// FIXME: This does not handle cases where a feature has multiple geometric properties.
 	if (d_accum.polyline) {
 		old_plates_header.number_of_points = 
 			(*d_accum.polyline)->number_of_vertices();
+	} else if (d_accum.polygon) {
+		old_plates_header.number_of_points = 
+			(*d_accum.polygon)->number_of_vertices() + 1;
+	} else if (d_accum.multi_point) {
+		old_plates_header.number_of_points = 
+			(*d_accum.multi_point)->number_of_points();
 	} else {
 		// have_sufficient_info_for_output() guarentees that we must have a point.
 		old_plates_header.number_of_points = 1;
 	}
 
 	print_header_lines(d_output, old_plates_header);
+	// FIXME: This does not handle cases where a feature has multiple geometric properties.
 	if (d_accum.polyline) {
 		print_line_string(d_output, *d_accum.polyline);
+	} else if (d_accum.polygon) {
+		print_polygon(d_output, *d_accum.polygon);
+	} else if (d_accum.multi_point) {
+		print_multi_point(d_output, *d_accum.multi_point);
 	} else {
+		// have_sufficient_info_for_output() guarentees that we must have a point.
 		print_plates_coordinate_line(d_output, **d_accum.point, PEN_SKIP_TO_POINT);
 		print_plates_feature_termination_line(d_output);
 	}
@@ -336,6 +411,14 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_gml_line_string(
 
 
 void
+GPlatesFileIO::PlatesLineFormatWriter::visit_gml_multi_point(
+		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+{
+	d_accum.multi_point = gml_multi_point.multipoint();
+}
+
+
+void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
@@ -348,6 +431,15 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	d_accum.point = gml_point.point();
+}
+
+
+void
+GPlatesFileIO::PlatesLineFormatWriter::visit_gml_polygon(
+		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
+{
+	// FIXME: Handle interior rings. Requires a bit of restructuring.
+	d_accum.polygon = gml_polygon.exterior();
 }
 
 

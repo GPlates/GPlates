@@ -43,6 +43,7 @@
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
@@ -71,6 +72,7 @@
 #include "property-values/XsInteger.h"
 
 #include "maths/PolylineOnSphere.h"
+#include "maths/MultiPointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 
 
@@ -158,7 +160,8 @@ namespace
 		//   times two, since each point is a (lat, lon) duple.
 		pos_list.reserve((polygon_ptr->number_of_segments() + 1) * 2);
 	
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_ptr->vertex_begin();
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator begin = polygon_ptr->vertex_begin();
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = begin;
 		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
 		for ( ; iter != end; ++iter) 
 		{
@@ -169,6 +172,13 @@ namespace
 			pos_list.push_back(llp.latitude());
 			pos_list.push_back(llp.longitude());
 		}
+		// When writing gml:Polygons, the last point must be identical to the first point,
+		// because the format wasn't verbose enough.
+		GPlatesMaths::LatLonPoint begin_llp = GPlatesMaths::make_lat_lon_point(*begin);
+		pos_list.push_back(begin_llp.latitude());
+		pos_list.push_back(begin_llp.longitude());
+		
+		// Now that we have assembled the coordinates, write them into the XML.
 		xml_output.writeNumericalSequence(pos_list.begin(), pos_list.end());
 	
 		// Don't forget to clear the vector when we're done with it!
@@ -176,6 +186,27 @@ namespace
 	
 		xml_output.writeEndElement(); // </gml:posList>
 		xml_output.writeEndElement(); // </gml:LinearRing>
+	}
+
+
+	/**
+	 * Convenience function to help write GmlPoint and GmlMultiPoint.
+	 */
+	void
+	write_gml_point(
+			GPlatesFileIO::XmlWriter &xml_output,
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		xml_output.writeStartGmlElement("Point");
+			xml_output.writeStartGmlElement("pos");
+
+				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+				// NOTE: We are assuming GPML is using (lat,lon) ordering.
+				// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+				xml_output.writeDecimalPair(llp.latitude(), llp.longitude());
+
+			xml_output.writeEndElement();  // </gml:pos>
+		xml_output.writeEndElement();  // </gml:Point>
 	}
 }
 
@@ -379,6 +410,29 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_line_string(
 
 
 void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_multi_point(
+		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point) 
+{
+	d_output.writeStartGmlElement("MultiPoint");
+
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint_ptr =
+			gml_multi_point.multipoint();
+
+	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multipoint_ptr->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint_ptr->end();
+	for ( ; iter != end; ++iter) 
+	{
+		d_output.writeStartGmlElement("pointMember");
+		write_gml_point(d_output, *iter);
+		d_output.writeEndElement(); // </gml:pointMember>
+	}
+
+	d_output.writeEndElement(); // </gml:pointMember>
+	d_output.writeEndElement(); // </gml:MultiPoint>
+}
+
+
+void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve) 
 {
@@ -399,17 +453,7 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point) 
 {
-	d_output.writeStartGmlElement("Point");
-		d_output.writeStartGmlElement("pos");
-
-			const GPlatesMaths::PointOnSphere &pos = *gml_point.point();
-			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
-			// NOTE: We are assuming GPML is using (lat,lon) ordering.
-			// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
-			d_output.writeDecimalPair(llp.latitude(), llp.longitude());
-
-		d_output.writeEndElement();  // </gml:pos>
-	d_output.writeEndElement();  // </gml:Point>
+	write_gml_point(d_output, *gml_point.point());
 }
 
 
@@ -417,7 +461,6 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// FIXME: Update this to the new GmlPolygon which uses interior and exterior rings!
 	d_output.writeStartGmlElement("Polygon");
 	
 	// GmlPolygon has exactly one exterior ring.

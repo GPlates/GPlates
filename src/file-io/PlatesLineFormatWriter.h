@@ -35,6 +35,8 @@
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlOldPlatesHeader.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PointOnSphere.h"
 
@@ -75,6 +77,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gml_multi_point(
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+
+		virtual
+		void
 		visit_gml_orientable_curve(
 				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
 
@@ -82,6 +89,11 @@ namespace GPlatesFileIO
 		void
 		visit_gml_point(
 				const GPlatesPropertyValues::GmlPoint &gml_point);
+
+		virtual
+		void
+		visit_gml_polygon(
+				const GPlatesPropertyValues::GmlPolygon &gml_polygon);
 
 		virtual
 		void
@@ -214,6 +226,14 @@ namespace GPlatesFileIO
 			boost::optional<GPlatesModel::integer_plate_id_type> conj_plate_id;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_appearance;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_disappearance;
+			/**
+			 * These four boost::optionals are used to store the geometry encountered
+			 * during the visitor's traversal of properties.
+			 */
+			boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> 
+					multi_point;
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+					polygon;
 			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
 					polyline;
 			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>

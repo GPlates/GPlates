@@ -122,5 +122,7 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_line_string);
 	d_map[TemplateTypeParameterType::create_gml("Point")] = 
 		GET_PROP_VAL_NAME(create_point);
+	d_map[TemplateTypeParameterType::create_gml("Polygon")] = 
+		GET_PROP_VAL_NAME(create_gml_polygon);
 
 }

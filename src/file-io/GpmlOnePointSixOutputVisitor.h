@@ -105,6 +105,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gml_multi_point(
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+
+		virtual
+		void
 		visit_gml_orientable_curve(
 				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
 
