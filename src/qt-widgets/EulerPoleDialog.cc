@@ -54,15 +54,15 @@ namespace {
 	{
 		QString result;
 
-		GPlatesMaths::UnitQuaternion3D uq = rotation.unit_quat();
-
+		const GPlatesMaths::UnitQuaternion3D &uq = rotation.unit_quat();
+		const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint = rotation.axis_hint();
 
 		if (GPlatesMaths::represents_identity_rotation(uq)) {
 			result.append(QObject::tr("-- indeterminate pole --\t  angle: 0.00"));
 		} else {
 
 			using namespace GPlatesMaths;
-			UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
+			UnitQuaternion3D::RotationParams params = uq.get_rotation_params(axis_hint);
 
 			PointOnSphere euler_pole(params.axis);
 			LatLonPoint llp = make_lat_lon_point(euler_pole);
@@ -252,7 +252,8 @@ GPlatesQtWidgets::EulerPoleDialog::fill_equivalent_table()
 
 		table_equivalent->setItem(num_row,ColumnNames::PLATEID,id_item);
 
-		GPlatesMaths::UnitQuaternion3D uq = (it->second->composed_absolute_rotation().unit_quat());
+		GPlatesMaths::FiniteRotation fr = it->second->composed_absolute_rotation();
+		const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
 		if (GPlatesMaths::represents_identity_rotation(uq)) {
 			QString indeterminate_string(QObject::tr("Indeterminate"));
 			QTableWidgetItem*  latitude_item = new QTableWidgetItem(indeterminate_string);
@@ -270,7 +271,7 @@ GPlatesQtWidgets::EulerPoleDialog::fill_equivalent_table()
 		} else {
 
 			using namespace GPlatesMaths;
-			UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
+			UnitQuaternion3D::RotationParams params = uq.get_rotation_params(fr.axis_hint());
 
 			PointOnSphere euler_pole(params.axis);
 			LatLonPoint llp = make_lat_lon_point(euler_pole);
@@ -326,7 +327,8 @@ GPlatesQtWidgets::EulerPoleDialog::fill_relative_table()
 
 		table_relative->setItem(num_row,ColumnNames::PLATEID,id_item);
 
-		GPlatesMaths::UnitQuaternion3D uq = (it->second->relative_rotation().unit_quat());
+		GPlatesMaths::FiniteRotation fr = it->second->relative_rotation();
+		const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
 		if (GPlatesMaths::represents_identity_rotation(uq)) {
 			QString indeterminate_string(QObject::tr("Indeterminate"));
 			QTableWidgetItem*  latitude_item = new QTableWidgetItem(indeterminate_string);
@@ -344,7 +346,7 @@ GPlatesQtWidgets::EulerPoleDialog::fill_relative_table()
 		} else {
 
 			using namespace GPlatesMaths;
-			UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
+			UnitQuaternion3D::RotationParams params = uq.get_rotation_params(fr.axis_hint());
 
 			PointOnSphere euler_pole(params.axis);
 			LatLonPoint llp = make_lat_lon_point(euler_pole);

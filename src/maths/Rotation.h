@@ -128,10 +128,8 @@ namespace GPlatesMaths
 		const Rotation
 		get_reverse() const
 		{
-			UnitQuaternion3D rev_quat = quat().get_inverse();
-			UnitVector3D rev_axis = -axis();
-
-			return Rotation::create(rev_quat, rev_axis, angle());
+			UnitQuaternion3D reversed_quat = quat().get_inverse();
+			return Rotation::create(reversed_quat, axis(), -angle());
 		}
 
 
@@ -245,6 +243,17 @@ namespace GPlatesMaths
 	{
 		return PointOnSphere(r * p.position_vector());
 	}
+
+
+	/**
+	 * Apply the given rotation to the given geometry-on-sphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+	operator*(
+			const Rotation &r,
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type g);
 }
 
 #endif  // GPLATES_MATHS_ROTATION_H

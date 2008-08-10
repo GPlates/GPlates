@@ -385,6 +385,7 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -395,6 +396,7 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);

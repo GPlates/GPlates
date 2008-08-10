@@ -46,7 +46,7 @@ GPlatesCanvasTools::ClickGeometry::handle_activation()
 	// FIXME: Could be pithier.
 	// FIXME: May have to adjust message if we are using Map view.
 	d_view_state_ptr->status_message(tr(
-			"Click geometries to interact with features. Ctrl+Drag to reorient globe."));
+			"Click a geometry to interact with a feature. Ctrl+Drag to reorient globe."));
 }
 
 

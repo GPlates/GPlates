@@ -284,6 +284,9 @@ GPlatesGui::Globe::Paint()
 		paint_geometries(rendered_geometry_layers().digitisation_layer(), d_nurbs_renderer, 2.0f);
 		paint_geometries(rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
 
+		glDepthRange(0.4, 0.5);
+		paint_geometries(rendered_geometry_layers().mouse_movement_layer(), d_nurbs_renderer, 1.5f);
+
 	glPopMatrix();
 }
 

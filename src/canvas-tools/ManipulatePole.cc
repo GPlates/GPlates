@@ -26,7 +26,6 @@
  */
 
 #include "ManipulatePole.h"
-
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "maths/LatLonPointConversions.h"
@@ -35,9 +34,12 @@
 GPlatesCanvasTools::ManipulatePole::ManipulatePole(
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		const GPlatesQtWidgets::ViewportWindow &view_state_):
+		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_):
 	CanvasTool(globe_, globe_canvas_),
-	d_view_state_ptr(&view_state_)
+	d_view_state_ptr(&view_state_),
+	d_pole_widget_ptr(&pole_widget_),
+	d_is_in_drag(false)
 {  }
 
 
@@ -47,7 +49,7 @@ GPlatesCanvasTools::ManipulatePole::handle_activation()
 	// FIXME: Could be pithier.
 	// FIXME: May have to adjust message if we are using Map view.
 	d_view_state_ptr->status_message(QObject::tr(
-			"Click and drag to rotate the plate of the current feature around the centre of the view."
+			"Drag the geometry to modify its total reconstruction pole."
 			" Ctrl+Drag to reorient globe."));
 }
 
@@ -63,8 +65,15 @@ GPlatesCanvasTools::ManipulatePole::handle_left_drag(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe)
-{  }
+{
+	if ( ! d_is_in_drag) {
+		d_pole_widget_ptr->start_new_drag(oriented_initial_pos_on_globe);
+		d_is_in_drag = true;
+	}
+	d_pole_widget_ptr->update_drag_position(oriented_current_pos_on_globe);
+}
 
 
 void
@@ -73,7 +82,15 @@ GPlatesCanvasTools::ManipulatePole::handle_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe)
-{  }
-
+{
+	if ( ! d_is_in_drag) {
+		d_pole_widget_ptr->start_new_drag(oriented_initial_pos_on_globe);
+		d_is_in_drag = true;
+	}
+	d_pole_widget_ptr->update_drag_position(oriented_current_pos_on_globe);
+	d_pole_widget_ptr->finalise();
+	d_is_in_drag = false;
+}
 

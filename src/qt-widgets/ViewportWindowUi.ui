@@ -953,7 +953,7 @@
     <string>Manipulate Po&amp;le</string>
    </property>
    <property name="toolTip" >
-    <string>Drag geometry to manipulate total reconstruction pole  R</string>
+    <string>Drag geometry to modify total reconstruction pole  R</string>
    </property>
    <property name="shortcut" >
     <string>R</string>

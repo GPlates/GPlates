@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,8 +29,10 @@
 #define GPLATES_MATHS_FINITEROTATION_H
 
 #include <iosfwd>
+#include <boost/optional.hpp>
 
 #include "UnitQuaternion3D.h"
+#include "Rotation.h"
 #include "types.h"  /* real_t */
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
@@ -105,7 +107,8 @@ namespace GPlatesMaths
 			static
 			const FiniteRotation
 			create(
-					const UnitQuaternion3D &uq);
+					const UnitQuaternion3D &uq,
+					const boost::optional<UnitVector3D> &axis_hint_);
 
 			/**
 			 * Return a unit quaternion which would effect the rotation of this finite
@@ -115,6 +118,15 @@ namespace GPlatesMaths
 			unit_quat() const
 			{
 				return d_unit_quat;
+			}
+
+			/**
+			 * Return the axis hint.
+			 */
+			const boost::optional<UnitVector3D> &
+			axis_hint() const
+			{
+				return d_axis_hint;
 			}
 
 			/**
@@ -130,12 +142,16 @@ namespace GPlatesMaths
 
 			explicit
 			FiniteRotation(
-					const UnitQuaternion3D &unit_quat_);
+					const UnitQuaternion3D &unit_quat_,
+					const boost::optional<UnitVector3D> &axis_hint_);
 
 		private:
 
 			// This unit-quaternion is used to effect the rotation operation.
 			UnitQuaternion3D d_unit_quat;
+
+			// This provides a hint as to what the rotation axis might approx be.
+			boost::optional<UnitVector3D> d_axis_hint;
 
 			// These values are used to optimise rotation operations.
 			real_t   d_d;
@@ -152,7 +168,7 @@ namespace GPlatesMaths
 	get_reverse(
 			const FiniteRotation &r)
 	{
-		return FiniteRotation::create(r.unit_quat().get_inverse());
+		return FiniteRotation::create(r.unit_quat().get_inverse(), r.axis_hint());
 	}
 
 
@@ -187,7 +203,8 @@ namespace GPlatesMaths
 			const FiniteRotation &r2,
 			const real_t &t1,
 			const real_t &t2,
-			const real_t &t_target);
+			const real_t &t_target,
+			const boost::optional<UnitVector3D> &axis_hint);
 
 
 	/**
@@ -223,6 +240,30 @@ namespace GPlatesMaths
 	compose(
 	 const FiniteRotation &r1,
 	 const FiniteRotation &r2);
+
+
+	/**
+	 * Apply a Rotation to a FiniteRotation.
+	 *
+	 * Note: order of composition is important!
+	 * Quaternion multiplication is not commutative!
+	 * This operation is not commutative!
+	 *
+	 * This composition of rotations is very much in the style of matrix
+	 * composition by premultiplication:  You take 'fr', then apply 'r'
+	 * to it (in front of it).
+	 *
+	 * Note that, in contrast to the composition of two FiniteRotations
+	 * (which is used in the building of the ReconstructionTree), the
+	 * composition of a Rotation onto a FiniteRotation is intended for use
+	 * in the interactive manipulation of total reconstruction poles.  As
+	 * the user drags geometries around on the globe (thus accumulating
+	 * rotations), the FiniteRotation will be modified.
+	 */
+	const FiniteRotation
+	compose(
+			const Rotation &r,
+			const FiniteRotation &fr);
 
 
 	/**

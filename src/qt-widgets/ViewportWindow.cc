@@ -512,6 +512,14 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 
+	// Connect the reconstruction pole widget to the feature focus.
+	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(set_focus(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
 	// Render everything on the screen in present-day positions.
 	d_canvas_ptr->clear_data();
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
@@ -552,7 +560,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					*d_feature_table_model_ptr,
 					d_feature_properties_dialog,
 					d_feature_focus,
-					d_task_panel_ptr->digitisation_widget());
+					d_task_panel_ptr->digitisation_widget(),
+					d_task_panel_ptr->reconstruction_pole_widget());
 
 	// Set up the Canvas Tool Adapter for handling globe click and drag events.
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
@@ -567,19 +576,23 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	QObject::connect(d_canvas_ptr, SIGNAL(mouse_dragged(const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
 					Qt::MouseButton, Qt::KeyboardModifiers)),
 			d_canvas_tool_adapter_ptr, SLOT(handle_drag(const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
 
 	QObject::connect(d_canvas_ptr, SIGNAL(mouse_released_after_drag(const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
 					Qt::MouseButton, Qt::KeyboardModifiers)),
 			d_canvas_tool_adapter_ptr, SLOT(handle_release_after_drag(const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
 	

@@ -52,7 +52,7 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	// FIXME: Could be pithier.
 	// FIXME: May have to adjust message if we are using Map view.
 	d_view_state_ptr->status_message(QObject::tr(
-			"Click globe to add new geometry. Ctrl+Drag to reorient globe."));
+			"Click the globe to draw a new coordinate. Ctrl+Drag to reorient globe."));
 	
 	// Clicking these canvas tools changes the type of geometry the user
 	// wishes to create, and may adjust the current table of coordinates accordingly.
@@ -83,16 +83,3 @@ GPlatesCanvasTools::DigitiseGeometry::handle_left_click(
 	// Plain and simple append point to digitisation widget, default geometry.
 	d_digitisation_widget_ptr->append_point_to_geometry(llp.latitude(), llp.longitude());
 }
-
-
-void
-GPlatesCanvasTools::DigitiseGeometry::handle_left_release_after_drag(
-		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-		bool was_on_globe,
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		bool is_on_globe)
-{
-	handle_left_click(initial_pos_on_globe, oriented_initial_pos_on_globe, was_on_globe);
-}
-

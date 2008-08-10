@@ -44,7 +44,8 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		FeatureTableModel &clicked_table_model,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 		GPlatesGui::FeatureFocus &feature_focus,
-		GPlatesQtWidgets::DigitisationWidget &digitisation_widget_):
+		GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
+		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_):
 	d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(globe_, globe_canvas_,
 			view_state_)),
 	d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(globe_, globe_canvas_,
@@ -62,7 +63,7 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 	d_move_vertex_tool_ptr(GPlatesCanvasTools::MoveVertex::create(globe_, globe_canvas_,
 			view_state_)),
 	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::ManipulatePole::create(globe_, globe_canvas_,
-			view_state_)),
+			view_state_, pole_widget_)),
 	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	tool_choice().handle_activation();

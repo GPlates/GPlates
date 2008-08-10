@@ -510,6 +510,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 					d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
 					d_mouse_press_info->d_is_on_globe,
 					virtual_mouse_pointer_pos_on_globe(),
+					d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
 					mouse_pointer_is_on_globe(),
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
@@ -532,6 +533,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 				d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
 				d_mouse_press_info->d_is_on_globe,
 				virtual_mouse_pointer_pos_on_globe(),
+				d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
 				mouse_pointer_is_on_globe(),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);

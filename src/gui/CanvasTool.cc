@@ -41,6 +41,7 @@ GPlatesGui::CanvasTool::reorient_globe_by_drag_update(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe)
 {
 	if ( ! d_is_in_reorientation_op) {
@@ -57,6 +58,7 @@ GPlatesGui::CanvasTool::reorient_globe_by_drag_release(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe)
 {
 	if ( ! d_is_in_reorientation_op) {

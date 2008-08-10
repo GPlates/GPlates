@@ -80,6 +80,27 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * Return the accumulated rotation of the globe.
+		 */
+		const GPlatesMaths::Rotation &
+		rotation() const
+		{
+			return d_accum_rot;
+		}
+
+		/**
+		 * Apply the accumulated rotation of the globe to the supplied geometry.
+		 *
+		 * This operation is used by the ReconstructionPoleWidget.
+		 */
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		orient_geometry(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom) const
+		{
+			return (d_accum_rot * geom);
+		}
+
+		/**
 		 * Apply the accumulated rotation of the globe to the supplied
 		 * point.
 		 */
@@ -199,6 +220,17 @@ namespace GPlatesGui
 		 * The @em reverse of the accumulated rotation of the globe.
 		 */
 		GPlatesMaths::Rotation d_rev_accum_rot;
+
+		// Apparently QObject isn't copy-constructable.  So, let's make this class
+		// non-copy-constructable too.
+		SimpleGlobeOrientation(
+				const SimpleGlobeOrientation &);
+
+		// Apparently QObject isn't copy-assignable.  So, let's make this class
+		// non-copy-assignable too.
+		SimpleGlobeOrientation &
+		operator=(
+				const SimpleGlobeOrientation &);
 	};
 }
 

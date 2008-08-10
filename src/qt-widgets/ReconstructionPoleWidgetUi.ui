@@ -37,20 +37,20 @@
       <item>
        <layout class="QGridLayout" >
         <item row="0" column="0" >
-         <widget class="QLabel" name="label_adjustment_axis" >
+         <widget class="QLabel" name="label_adjustment_pole" >
           <property name="text" >
-           <string>Axis:</string>
+           <string>Pole:</string>
           </property>
           <property name="alignment" >
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
           <property name="buddy" >
-           <cstring>lineedit_adjustment_axis</cstring>
+           <cstring>lineedit_adjustment_pole</cstring>
           </property>
          </widget>
         </item>
         <item row="0" column="1" >
-         <widget class="QLineEdit" name="lineedit_adjustment_axis" >
+         <widget class="QLineEdit" name="lineedit_adjustment_pole" >
           <property name="readOnly" >
            <bool>true</bool>
           </property>
@@ -158,20 +158,20 @@
       <item>
        <layout class="QGridLayout" >
         <item row="0" column="0" >
-         <widget class="QLabel" name="label_result_axis" >
+         <widget class="QLabel" name="label_result_pole" >
           <property name="text" >
-           <string>Axis:</string>
+           <string>Pole:</string>
           </property>
           <property name="alignment" >
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
           <property name="buddy" >
-           <cstring>lineedit_adjustment_axis</cstring>
+           <cstring>lineedit_adjustment_pole</cstring>
           </property>
          </widget>
         </item>
         <item row="0" column="1" >
-         <widget class="QLineEdit" name="lineedit_result_axis" >
+         <widget class="QLineEdit" name="lineedit_result_pole" >
           <property name="readOnly" >
            <bool>true</bool>
           </property>

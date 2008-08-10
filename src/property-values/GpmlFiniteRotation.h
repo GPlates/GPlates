@@ -67,6 +67,14 @@ namespace GPlatesPropertyValues
 		{  }
 
 		/**
+		 * Create a GpmlFiniteRotation instance from a finite rotation.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const GPlatesMaths::FiniteRotation &finite_rotation);
+
+		/**
 		 * Create a GpmlFiniteRotation instance from an Euler pole (longitude, latitude)
 		 * and a rotation angle (units-of-measure: degrees).
 		 *

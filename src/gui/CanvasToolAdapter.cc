@@ -92,6 +92,7 @@ GPlatesGui::CanvasToolAdapter::handle_drag(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
@@ -102,7 +103,8 @@ GPlatesGui::CanvasToolAdapter::handle_drag(
 		case Qt::NoModifier:
 			get_tool(*this).handle_left_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe, is_on_globe);
+					current_pos_on_globe,
+					oriented_current_pos_on_globe, is_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
@@ -111,7 +113,8 @@ GPlatesGui::CanvasToolAdapter::handle_drag(
 		case Qt::ControlModifier:
 			get_tool(*this).handle_ctrl_left_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe, is_on_globe);
+					current_pos_on_globe,
+					oriented_current_pos_on_globe, is_on_globe);
 			break;
 
 		default:
@@ -140,6 +143,7 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
@@ -150,7 +154,8 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 		case Qt::NoModifier:
 			get_tool(*this).handle_left_release_after_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe, is_on_globe);
+					current_pos_on_globe,
+					oriented_current_pos_on_globe, is_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
@@ -159,7 +164,8 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 		case Qt::ControlModifier:
 			get_tool(*this).handle_ctrl_left_release_after_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe, is_on_globe);
+					current_pos_on_globe,
+					oriented_current_pos_on_globe, is_on_globe);
 			break;
 
 		default:

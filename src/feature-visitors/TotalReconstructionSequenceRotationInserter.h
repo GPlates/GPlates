@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,69 +25,50 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_RECONSTRUCTIONTREEPOPULATOR_H
-#define GPLATES_MODEL_RECONSTRUCTIONTREEPOPULATOR_H
+#ifndef GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H
+#define GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H
 
 #include <boost/optional.hpp>
 
-#include "FeatureVisitor.h"
-#include "PropertyName.h"
-#include "types.h"
+#include "model/FeatureVisitor.h"
+#include "model/PropertyName.h"
+#include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
 #include "maths/FiniteRotation.h"
 
 
-namespace GPlatesModel
+namespace GPlatesFeatureVisitors
 {
-	class ReconstructionGraph;
-
 	/**
-	 * Populate a ReconstructionTree instance with total reconstruction poles for a particular
+	 * Insert an updated finite rotation into a total reconstruction sequence for a particular
 	 * reconstruction time.
 	 *
-	 * This operation may involve finite rotation interpolation.
+	 * This is performed by applying (composing) the supplied Rotation to the finite rotation
+	 * found/interpolated in the sequence for that time.
 	 *
-	 * This class is effectively a re-distribution of the functionality of the function
-	 * 'GPlatesMaths::RotationSequence::finiteRotationAtTime' over a FeatureVisitor, to enable
-	 * the operation to be performed upon a Total Reconstruction Sequence feature in the GPGIM
-	 * implementation.
+	 * This class is based very strongly on 'GPlatesModel::ReconstructionTreePopulator'.
 	 */
-	class ReconstructionTreePopulator:
-			public FeatureVisitor
+	class TotalReconstructionSequenceRotationInserter:
+			public GPlatesModel::FeatureVisitor
 	{
 	public:
-
-		struct ReconstructionSequenceAccumulator
-		{
-			boost::optional<PropertyName> d_most_recent_propname_read;
-			boost::optional<integer_plate_id_type> d_fixed_ref_frame;
-			boost::optional<integer_plate_id_type> d_moving_ref_frame;
-			boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
-			bool d_is_expecting_a_finite_rotation;
-
-			ReconstructionSequenceAccumulator():
-				d_is_expecting_a_finite_rotation(false)
-			{  }
-
-		};
-
-		ReconstructionTreePopulator(
+		TotalReconstructionSequenceRotationInserter(
 				const double &recon_time,
-				ReconstructionGraph &graph);
+				const GPlatesMaths::Rotation &rotation_to_apply);
 
 		virtual
-		~ReconstructionTreePopulator()
+		~TotalReconstructionSequenceRotationInserter()
 		{  }
 
 		virtual
 		void
 		visit_feature_handle(
-				FeatureHandle &feature_handle);
+				GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
 		visit_inline_property_container(
-				InlinePropertyContainer &inline_property_container);
+				GPlatesModel::InlinePropertyContainer &inline_property_container);
 
 		virtual
 		void
@@ -106,31 +87,29 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_gpml_plate_id(
-				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
-		virtual
-		void
 		visit_gpml_time_sample(
 				GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
-		ReconstructionGraph *d_graph_ptr;
-		boost::optional<ReconstructionSequenceAccumulator> d_accumulator;
+		GPlatesMaths::Rotation d_rotation_to_apply;
+		bool d_is_expecting_a_finite_rotation;
+		bool d_trp_time_matches_exactly;
+		boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
+		boost::optional<GPlatesModel::PropertyName> d_most_recent_propname_read;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.
-		ReconstructionTreePopulator(
-				const ReconstructionTreePopulator &);
+		TotalReconstructionSequenceRotationInserter(
+				const TotalReconstructionSequenceRotationInserter &);
 
 		// This operator should never be defined, because we don't want to allow
 		// copy-assignment.
-		ReconstructionTreePopulator &
+		TotalReconstructionSequenceRotationInserter &
 		operator=(
-				const ReconstructionTreePopulator &);
+				const TotalReconstructionSequenceRotationInserter &);
 	};
 }
 
-#endif  // GPLATES_MODEL_RECONSTRUCTIONTREEPOPULATOR_H
+#endif  // GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H

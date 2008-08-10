@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -82,21 +82,24 @@ GPlatesMaths::FiniteRotation::create(
 	const UnitVector3D &axis = pole.position_vector();
 	UnitQuaternion3D uq = UnitQuaternion3D::create_rotation(axis, angle);
 
-	return FiniteRotation(uq);
+	return FiniteRotation(uq, axis);
 }
 
 
 const GPlatesMaths::FiniteRotation
 GPlatesMaths::FiniteRotation::create(
-		const UnitQuaternion3D &uq)
+		const UnitQuaternion3D &uq,
+		const boost::optional<UnitVector3D> &axis_hint_)
 {
-	return FiniteRotation(uq);
+	return FiniteRotation(uq, axis_hint_);
 }
 
 
 GPlatesMaths::FiniteRotation::FiniteRotation(
-		const UnitQuaternion3D &unit_quat_) :
+		const UnitQuaternion3D &unit_quat_,
+		const boost::optional<UnitVector3D> &axis_hint_):
 	d_unit_quat(unit_quat_),
+	d_axis_hint(axis_hint_),
 	d_d(::calculate_d_value(unit_quat_)),
 	d_e(::calculate_e_value(unit_quat_))
 {  }
@@ -235,7 +238,8 @@ GPlatesMaths::interpolate(
 		const FiniteRotation &r2,
 		const real_t &t1,
 		const real_t &t2,
-		const real_t &t_target)
+		const real_t &t_target,
+		const boost::optional<UnitVector3D> &axis_hint)
 {
 	if (t1 == t2) {
 
@@ -245,7 +249,7 @@ GPlatesMaths::interpolate(
 	real_t interpolation_parameter = (t_target - t1) / (t2 - t1);
 	UnitQuaternion3D res_uq = ::slerp(r1.unit_quat(), r2.unit_quat(), interpolation_parameter);
 
-	return FiniteRotation::create(res_uq);
+	return FiniteRotation::create(res_uq, axis_hint);
 }
 
 
@@ -255,7 +259,31 @@ GPlatesMaths::compose(
 		const FiniteRotation &r2)
 {
 	UnitQuaternion3D resultant_uq = r1.unit_quat() * r2.unit_quat();
-	return FiniteRotation::create(resultant_uq);
+
+	// If either of the finite rotations has an axis hint, use it.
+	boost::optional<GPlatesMaths::UnitVector3D> axis_hint;
+	if (r1.axis_hint()) {
+		axis_hint = r1.axis_hint();
+	} else if (r2.axis_hint()) {
+		axis_hint = r2.axis_hint();
+	}
+
+	return FiniteRotation::create(resultant_uq, axis_hint);
+}
+
+
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::compose(
+		const Rotation &r,
+		const FiniteRotation &fr)
+{
+	UnitQuaternion3D resultant_uq = r.quat() * fr.unit_quat();
+
+	// Are we interested in the axis hint of the Rotation?  I think not,
+	// since surely it is an arbitrary result of the manipulation...
+	// Hence, we're only interested in the axis hint (if there is one) of
+	// the FiniteRotation.
+	return FiniteRotation::create(resultant_uq, fr.axis_hint());
 }
 
 
@@ -397,19 +425,19 @@ GPlatesMaths::operator*(
 
 std::ostream &
 GPlatesMaths::operator<<(
- std::ostream &os,
- const FiniteRotation &fr) {
-
+		std::ostream &os,
+		const FiniteRotation &fr)
+{
 	os << "(rot = ";
 
-	UnitQuaternion3D uq = fr.unit_quat();
+	const UnitQuaternion3D &uq = fr.unit_quat();
 	if (represents_identity_rotation(uq)) {
 
 		os << "identity";
 
 	} else {
 
-		UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
+		UnitQuaternion3D::RotationParams params = uq.get_rotation_params(fr.axis_hint());
 
 		PointOnSphere p(params.axis);  // the point
 		PointOnSphere antip( -p.position_vector());  // the antipodal point

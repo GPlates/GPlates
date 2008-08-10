@@ -39,6 +39,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
+	class ReconstructionPoleWidget;
 }
 
 namespace GPlatesGui
@@ -69,7 +70,8 @@ namespace GPlatesGui
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_);
+				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_);
 
 		~CanvasToolChoice()
 		{  }

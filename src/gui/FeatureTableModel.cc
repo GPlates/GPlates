@@ -331,6 +331,26 @@ namespace
 
 
 	const QString
+	format_geometry_multi_point(
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point)
+	{
+		QString begin_str = format_point_or_vertex(multi_point->start_point());
+		QString end_str = format_point_or_vertex(multi_point->end_point());
+		QString middle_str;
+		if (multi_point->number_of_points() == 3) {
+			middle_str = QObject::tr("... 1 more vertex ... ");
+		} else if (multi_point->number_of_points() > 3) {
+			middle_str = QObject::tr("... %1 more vertices ... ")
+					.arg(multi_point->number_of_points() - 2);
+		}
+		return QObject::tr("multi-point: %1 %3%2")
+				.arg(begin_str)
+				.arg(end_str)
+				.arg(middle_str);
+	}
+
+
+	const QString
 	format_geometry_polygon(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
 	{
@@ -383,12 +403,23 @@ namespace
 		~GeometryOnSphereSummaryAsStringVisitor()
 		{  }
 
-		// Please keep these geometries ordered alphabetically.
-
 		const QString &
 		geometry_summary() const
 		{
 			return d_string;
+		}
+
+		// Please keep these geometries ordered alphabetically.
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_string = format_geometry_multi_point(multi_point_on_sphere);
 		}
 
 		/**

@@ -9,7 +9,9 @@ libfeature_visitors_la_SOURCES	= QueryFeaturePropertiesWidgetPopulator.cc \
 				EditFeatureGeometriesWidgetPopulator.cc \
 				PlateIdFinder.cc GmlTimePeriodFinder.cc XsStringFinder.cc \
 				GeometryFinder.cc FromQvariantConverter.cc ToQvariantConverter.cc \
-				ShapefileAttributeFinder.cc
+				ShapefileAttributeFinder.cc \
+				TotalReconstructionSequencePlateIdFinder.cc \
+				TotalReconstructionSequenceRotationInserter.cc
 
 if PYTHON
 noinst_PROGRAMS		= _feature_visitors.so

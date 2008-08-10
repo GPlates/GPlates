@@ -27,6 +27,7 @@
 #define GPLATES_CANVASTOOLS_MANIPULATEPOLE_H
 
 #include "gui/CanvasTool.h"
+#include "qt-widgets/ReconstructionPoleWidget.h"
 
 
 namespace GPlatesQtWidgets
@@ -62,10 +63,11 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_)
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_)
 		{
 			ManipulatePole::non_null_ptr_type ptr(
-					new ManipulatePole(globe_, globe_canvas_, view_state_),
+					new ManipulatePole(globe_, globe_canvas_, view_state_, pole_widget_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -88,7 +90,9 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe);
+
 
 		virtual
 		void
@@ -97,6 +101,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe);
 
 	protected:
@@ -106,19 +111,32 @@ namespace GPlatesCanvasTools
 		ManipulatePole(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_);
-		
-		
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_);
+
+
 		const GPlatesQtWidgets::ViewportWindow &
 		view_state() const
 		{
 			return *d_view_state_ptr;
 		}
-		
+
 
 	private:
-		
+
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+
+		/**
+		 * This is the Reconstruction Pole widget in the Task Panel.
+		 * It accumulates the rotation adjustment for us, as well as other book-keeping.
+		 */
+		GPlatesQtWidgets::ReconstructionPoleWidget *d_pole_widget_ptr;
+
+		/**
+		 * Whether or not this pole-manipulation tool is currently in the midst of a
+		 * pole-manipulating drag.
+		 */
+		bool d_is_in_drag;
 			
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.

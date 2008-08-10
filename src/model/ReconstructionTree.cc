@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,8 @@
 #include <iostream>
 #include <iterator>  /* std::distance */
 #include <deque>
+#include <boost/none.hpp>
+
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeEdge.h"
 #include "maths/PointOnSphere.h"
@@ -283,7 +285,8 @@ GPlatesModel::ReconstructionTree::get_composed_absolute_rotation(
 	// rotation.
 	if (moving_plate_id == d_root_plate_id) {
 		return std::make_pair(
-				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation()),
+				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(),
+						boost::none),
 				ExactlyOnePlateIdMatchFound);
 	}
 
@@ -293,7 +296,8 @@ GPlatesModel::ReconstructionTree::get_composed_absolute_rotation(
 	if (range.first == range.second) {
 		// No matches.  Let's return the identity rotation and inform the client code.
 		return std::make_pair(
-				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation()),
+				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(),
+						boost::none),
 				NoPlateIdMatchesFound);
 	}
 	if (std::distance(range.first, range.second) > 1) {

@@ -62,6 +62,7 @@ GPlatesCanvasTools::MoveGeometry::handle_left_drag(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe)
 {  }
 
@@ -72,6 +73,7 @@ GPlatesCanvasTools::MoveGeometry::handle_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe)
 {  }
 

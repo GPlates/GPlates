@@ -27,7 +27,6 @@
 #define GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H
 
 #include "gui/CanvasTool.h"
-
 #include "qt-widgets/DigitisationWidget.h"
 
 
@@ -94,15 +93,6 @@ namespace GPlatesCanvasTools
 		handle_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-				bool is_on_globe);
-
-		virtual
-		void
-		handle_left_release_after_drag(
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-				bool was_on_globe,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe);
 
 	protected:

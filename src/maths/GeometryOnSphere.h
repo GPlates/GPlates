@@ -58,6 +58,11 @@ namespace GPlatesMaths
 				non_null_ptr_to_const_type;
 
 		/**
+		 * A convenience typedef for boost::intrusive_ptr<const GeometryOnSphere>.
+		 */
+		typedef boost::intrusive_ptr<const GeometryOnSphere> maybe_null_ptr_to_const_type;
+
+		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
 		typedef long ref_count_type;

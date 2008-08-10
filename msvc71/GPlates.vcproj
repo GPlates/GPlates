@@ -1913,6 +1913,12 @@
 				RelativePath="..\src\feature-visitors\ToQvariantConverter.cc">
 			</File>
 			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequencePlateIdFinder.cc">
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInserter.cc">
+			</File>
+			<File
 				RelativePath="..\src\feature-visitors\XsStringFinder.cc">
 			</File>
 		</Filter>
