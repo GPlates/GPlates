@@ -44,6 +44,7 @@
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -364,6 +365,13 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
 		AS_PROP_VAL(create_line_string)
+
+
+		GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
+		create_gml_multi_point(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gml_multi_point)
 
 
 		GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type

@@ -427,7 +427,6 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_multi_point(
 		d_output.writeEndElement(); // </gml:pointMember>
 	}
 
-	d_output.writeEndElement(); // </gml:pointMember>
 	d_output.writeEndElement(); // </gml:MultiPoint>
 }
 

@@ -40,3 +40,5 @@ GPlatesPropertyValues::GmlMultiPoint::create(
 			GPlatesUtils::NullIntrusivePointerHandler());
 	return gml_multi_point_ptr;
 }
+
+

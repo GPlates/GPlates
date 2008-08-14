@@ -33,11 +33,13 @@
 #include "GpmlReaderUtils.h"
 #include "utils/UnicodeStringUtils.h"
 #include "maths/LatLonPointConversions.h"
+#include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "model/types.h"
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/TemplateTypeParameterType.h"
 #include <boost/optional.hpp>
@@ -675,6 +677,28 @@ namespace
 		// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
 		return polygon;
 	}
+
+
+	/**
+	 * This function is used by create_point and create_gml_multi_point to do the
+	 * common work of creating a GPlatesMaths::PointOnSphere.
+	 */
+	GPlatesMaths::PointOnSphere
+	create_point_on_sphere(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+	{
+		static const GPlatesModel::PropertyName
+			STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("Point"),
+			POS = GPlatesModel::PropertyName::create_gml("pos");
+
+		GPlatesModel::XmlElementNode::non_null_ptr_type
+			elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+		GPlatesMaths::PointOnSphere point = find_and_create_one(elem, &create_pos, POS);
+		// FIXME: We need to give the srsName et al. attributes from the pos 
+		// (or the gml:FeatureCollection tag?) to the GmlPoint or GmlMultiPoint.
+		return point;
+	}
 }
 
 
@@ -1183,14 +1207,7 @@ GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_point(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
 {
-	static const GPlatesModel::PropertyName
-		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("Point"),
-		POS = GPlatesModel::PropertyName::create_gml("pos");
-
-	GPlatesModel::XmlElementNode::non_null_ptr_type
-		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
-
-	GPlatesMaths::PointOnSphere point = find_and_create_one(elem, &create_pos, POS);
+	GPlatesMaths::PointOnSphere point = create_point_on_sphere(parent);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// to the line string!
@@ -1215,6 +1232,31 @@ GPlatesFileIO::PropertyCreationUtils::create_line_string(
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// to the line string!
 	return GPlatesPropertyValues::GmlLineString::create(polyline);
+}
+
+
+GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_gml_multi_point(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName 
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gml("MultiPoint"),
+		POINT_MEMBER = GPlatesModel::PropertyName::create_gml("pointMember");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	// GmlMultiPoint has multiple gml:pointMember properties each containing a
+	// single gml:Point.
+	std::vector<GPlatesMaths::PointOnSphere> points;
+	find_and_create_one_or_more(elem, &create_point_on_sphere, POINT_MEMBER, points);
+	
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
+		multipoint = GPlatesMaths::MultiPointOnSphere::create_on_heap(points);
+
+	// FIXME: We need to give the srsName et al. attributes from the gml:Point
+	// (or the gml:FeatureCollection tag?) to the GmlMultiPoint (or the FeatureCollection)!
+	return GPlatesPropertyValues::GmlMultiPoint::create(multipoint);
 }
 
 
