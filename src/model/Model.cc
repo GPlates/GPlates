@@ -39,6 +39,9 @@
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructedFeatureGeometryPopulator.h"
 
+#include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
+#include "feature-visitors/PlatepolygonResolver.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
@@ -183,6 +186,32 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		rfgp);
+
+
+	
+	// Visit the feature collections and build a map from feature id to RFG
+	GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder rfg_finder( *reconstruction );
+
+	visit_feature_collections(
+		reconstructable_features_collection.begin(),
+		reconstructable_features_collection.end(),
+		rfg_finder);
+	rfg_finder.report();
+
+
+	// Visit the feature collections and build the platepolygons 
+	GPlatesFeatureVisitors::PlatepolygonResolver resolver( 
+		time, root, *reconstruction,
+		reconstruction->reconstruction_tree(),
+		rfg_finder,
+		reconstruction->geometries());
+
+	visit_feature_collections(
+		reconstructable_features_collection.begin(),
+		reconstructable_features_collection.end(),
+		resolver);
+	resolver.report();
+
 
 	return reconstruction;
 }

@@ -906,6 +906,22 @@ namespace
 	}
 
 
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_platepolygon(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const std::list<GPlatesMaths::PointOnSphere> &points)
+	{
+		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
+				create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("PlatePolygon"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
+
+		return feature_handle;
+	}
+
+
 	typedef GPlatesModel::FeatureHandle::weak_ref (*creation_function_type)(
 			GPlatesModel::ModelInterface &,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &,
@@ -952,6 +968,7 @@ namespace
 		map["PB"] = create_inferred_paleo_boundary;
 		map["PC"] = create_magnetic_pick;
 		map["PM"] = create_magnetic_pick;
+		map["PP"] = create_platepolygon;
 		map["RA"] = create_island_arc_inactive;
 		map["RF"] = create_reverse_fault;
 		map["RI"] = create_ridge_segment;
@@ -1132,6 +1149,38 @@ namespace
 	}
 
 
+	// This function reads a series of lines from the input file
+	// and copies the data to a list of strings
+	std::string 
+	read_platepolygon_boundary_feature(
+			GPlatesFileIO::LineReader &in,
+			std::list<std::string> &boundary_list,
+			std::string code)
+	{
+		std::string line;
+
+		if ( ! in.getline(line)) 
+		{
+			// Since we're in this function, we're expecting to read a string.  
+			// But we couldn't find one.  So, let's complain.
+			throw GPlatesFileIO::ReadErrors::MissingPlatepolygonBoundaryFeature;
+		}
+
+		// std::cout << "read_platepolygon_boundary_feature() line = " << line << std::endl;
+
+		// 'NULL' is the end of platepolygon boundary list marker.
+		if (line == "NULL") 
+		{
+			return "NULL";
+		}
+
+		// append the line to the list
+		boundary_list.push_back( line );
+
+		return code;
+	}
+
+
 	void
 	create_feature_with_geometry(
 			GPlatesModel::ModelInterface &model, 
@@ -1197,6 +1246,57 @@ namespace
 		} else {
 			warning_unknown_data_type_code(old_plates_header, in, source, errors);
 		}
+
+		// Short-cut for Platepolygons (geometry to be resolved each reconstruction)
+		if (old_plates_header->data_type_code() == "PP") 
+		{
+			// Empty list of points to make create_common a happy litte function 
+			const std::list<GPlatesMaths::PointOnSphere> points;
+
+			// a list of boundary feature lines to populate from read_platepolygon_boundary_feature()
+			std::list<std::string> boundary_list;
+
+			// read the first platepolygon boundary feature and set the terminator code to CONTINUE
+			std::string code = "CONTINUE";
+			read_platepolygon_boundary_feature(in, boundary_list, code);
+
+			// Loop over the platepolygon's boundary feature lines, and build a list of strings
+			do 
+			{
+				code = read_platepolygon_boundary_feature(in, boundary_list, code);
+				if (code == "NULL")
+				{
+					// Reached end the boundary feature list, so create the platepolygon feature
+
+					GPlatesModel::FeatureHandle::weak_ref feature_handle = 
+						create_platepolygon(model, collection, old_plates_header, points);
+		
+					// Loop over the list of boundary feature id lines, and build a single string
+					std::string value_string = "";
+					std::list<std::string>::iterator iter = boundary_list.begin(); 
+					for ( ; iter != boundary_list.end() ; ++iter) 
+					{
+						// std::cout << "iter = " << *iter << std::endl;
+						value_string.append( *iter );
+						value_string.append( "$" );
+					}
+
+					// std::cout << "value_string = " << value_string << std::endl;
+
+					// Append a new property value to the feature
+					const GPlatesPropertyValues::XsString::non_null_ptr_type property_value =
+							GPlatesPropertyValues::XsString::create( value_string.c_str() );
+
+					GPlatesModel::ModelUtils::append_property_value_to_feature(
+							property_value, 
+							GPlatesModel::PropertyName::create_gpml( "boundaryList" ), 
+							feature_handle);
+				}
+			} while (code != "NULL");
+			return;
+		}
+
+
 
 		std::list<GPlatesMaths::PointOnSphere> points;
 		read_polyline_point(in, points, PlotterCodes::PEN_SKIP_TO);

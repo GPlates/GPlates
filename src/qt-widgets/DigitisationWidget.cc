@@ -493,6 +493,7 @@ namespace
 		} catch (...) {
 			throw;
 		}
+		return boost::none;
 	}
 	
 	/**

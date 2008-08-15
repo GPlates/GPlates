@@ -89,6 +89,15 @@ namespace
 				glEnd();
 			}
 		}
+
+		// highlight the polygon vertices
+		iter = begin;
+		for ( ; iter != end; ++iter) {
+			glBegin(GL_POINTS);
+				draw_vertex(iter->start_point());
+			glEnd();
+		}
+		
 	}
 
 

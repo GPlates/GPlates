@@ -1656,6 +1656,10 @@
 				RelativePath="..\src\utils\UniqueId.cc"
 				>
 			</File>
+			<File
+				RelativePath="..\src\utils\FeatureHandleToOldId.cc"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="maths"
@@ -1942,6 +1946,18 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\XsStringFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\PlatePolygonResolver.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\ReconstructedFeatureGeometryFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\ValueFinder.cc"
 				>
 			</File>
 		</Filter>

@@ -25,6 +25,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+
+
 #include <vector>
 #include <iterator>  /* std::distance */
 #include <algorithm>  /* std::find */
@@ -1779,6 +1782,8 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
 }
 
 
+
+
 bool
 GPlatesMaths::PolylineIntersections::polyline_set_is_self_intersecting(
  const std::list< PolylineOnSphere::non_null_ptr_to_const_type > &polyline_set,
@@ -1788,3 +1793,110 @@ GPlatesMaths::PolylineIntersections::polyline_set_is_self_intersecting(
 	// FIXME:  This is a dummy implementation.
 	return false;
 }
+
+
+
+std::pair<
+	std::list< PolylineOnSphere::non_null_ptr_to_const_type >,
+	std::list< PolylineOnSphere::non_null_ptr_to_const_type >
+>
+GPlatesMaths::PolylineIntersections::identify_partitioned_polylines(
+	const PolylineOnSphere &polyline1,
+	const PolylineOnSphere &polyline2,
+	std::list< PointOnSphere > &intersection_points,
+	std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polylines)
+{
+
+	std::list< PolylineOnSphere::non_null_ptr_to_const_type > from_polyline1;
+	std::list< PolylineOnSphere::non_null_ptr_to_const_type > from_polyline2;
+
+	// Iterate over the polyline_list to determine
+	// where each resultant polyline came from : 
+	// polyline1 or polyline2
+
+	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator beg =
+		partitioned_polylines.begin();
+
+	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator end =
+		partitioned_polylines.end();
+
+	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator iter;
+
+	for (iter = beg; iter != end; ++iter)
+	{
+		// determine which original polyline (1 or 2) 
+		// the iter polyline came from by 
+		// comparing begin and end vertices :
+
+#if 0
+std::cout << "----" << std::endl;
+std::cout << "IDENTIFY: llp( *( (*iter)->vertex_begin() ) )          = " 
+<< GPlatesMaths::make_lat_lon_point( *( (*iter)->vertex_begin() ) )
+<< std::endl;
+std::cout << "IDENTIFY: llp( *( --( (*iter)->vertex_end() ) ) )      = " 
+<< GPlatesMaths::make_lat_lon_point( *( --( (*iter)->vertex_end() ) ) )
+<< std::endl;
+std::cout << "----" << std::endl;
+#endif
+
+
+		if ( *( (*iter)->vertex_begin() ) == *( polyline1.vertex_begin() ) ) 
+		{
+#if 0
+std::cout << "        : llp( *polyline1.vertex_begin() )             = " 
+<< GPlatesMaths::make_lat_lon_point( *( polyline1.vertex_begin() ) )
+<< std::endl;
+#endif
+			// iter is the HEAD part of polyline1
+			from_polyline1.push_front( *iter );
+
+			continue; // to next iter 
+		}
+		
+		if ( *( --(*iter)->vertex_end()) == *( --( polyline1.vertex_end() ) ) ) 
+		{
+#if 0
+std::cout << "        : llp( *( --( polyline1.vertex_end() ) ) )      = " 
+<< GPlatesMaths::make_lat_lon_point( *( --( polyline1.vertex_end() ) ) )
+<< std::endl;
+#endif
+			// iter is the TAIL part of polyline1
+			from_polyline1.push_back( *iter );
+
+			continue; // to next iter 
+		}
+
+
+		if ( *( (*iter)->vertex_begin()) == *( polyline2.vertex_begin() ) ) 
+		{
+#if 0
+std::cout << "        : llp( *polyline2.vertex_begin() )             = " 
+<< GPlatesMaths::make_lat_lon_point( *( polyline2.vertex_begin() ) )
+<< std::endl;
+#endif
+			// iter is the HEAD part of polyline2
+			from_polyline2.push_front( *iter );
+
+			continue; // to next iter 
+		}
+
+		if ( *( --(*iter)->vertex_end()) == *( --( polyline2.vertex_end() ) ) ) 
+		{
+#if 0
+std::cout << "        : llp( *( --( polyline2.vertex_end() ) ) )      = " 
+<< GPlatesMaths::make_lat_lon_point( *( --( polyline2.vertex_end() ) ) )
+<< std::endl;
+#endif
+			// iter is the TAIL part of polyline1
+			from_polyline2.push_back( *iter );
+
+			continue; // to next iter
+		}
+
+	}
+
+	return std::make_pair( from_polyline1, from_polyline2 );
+
+}
+
+

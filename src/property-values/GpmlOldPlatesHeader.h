@@ -32,6 +32,14 @@
 #include "model/types.h"
 #include "TextContent.h"
 
+#include "utils/UnicodeStringUtils.h"
+
+#include <cstdlib>
+#include <ctime>
+#include <string>
+#include <sstream>
+#include <unicode/unistr.h>
+
 namespace GPlatesPropertyValues 
 {
 
@@ -397,6 +405,76 @@ namespace GPlatesPropertyValues
 				GPlatesModel::FeatureVisitor &visitor) {
 			visitor.visit_gpml_old_plates_header(*this);
 		}
+
+		/**
+		* Return the old plates header formatted to match GPlates 0.8 style feature Id's
+		* for example: 
+		# "gplates_00_00_0000_Front_Polygon_Rotates_About_X_BOUNDARY_LINE_101_ 999.0_-999.0_RI_0000_000_"
+		*/
+		std::string
+		old_feature_id() const
+		{
+			std::ostringstream oss;
+			oss << "gplates";
+			oss << "_";
+
+			oss.width(2);
+			oss.fill('0'); // NOTE: pad the field with ZERO
+			oss << d_region_number;
+			oss << "_";
+
+			oss.width(2);
+			oss.fill('0'); // NOTE: pad the field with ZERO
+			oss << d_reference_number;
+			oss << "_";
+
+			oss.width(4);
+			oss.fill('0'); // NOTE: pad the field with ZERO
+			oss << d_string_number;
+			oss << "_";
+
+			// NOTE: this string may have spaces in it; that's acceptable 
+			oss << GPlatesUtils::make_qstring( d_geographic_description ).toStdString();
+			oss << "_";
+
+			oss.width(3);
+			oss.fill('0'); // NOTE: pad the field with ZERO in case the plate id is single digit
+			oss << d_plate_id_number;
+			oss << "_";
+
+			oss.setf(std::ios::showpoint);
+			oss.setf(std::ios::fixed);
+			oss.precision(1); // old_id's only have 1 decimal of precision
+			oss.width(6);
+			oss.fill(' '); // NOTE: DO NOT pad the field ; old_id's have spaces around ages
+			oss << d_age_of_appearance;
+			oss << "_";
+
+			oss.setf(std::ios::fixed);
+			oss.setf(std::ios::showpoint);
+			oss.precision(1); // old_id's only have 1 decimal of precision
+			oss.width(6);
+			oss.fill(' '); // NOTE: pad the field with SPACE ; old_id's have spaces around ages
+			oss << d_age_of_disappearance;
+			oss << "_";
+
+			oss << GPlatesUtils::make_qstring( d_data_type_code ).toStdString();
+			oss << "_";
+
+			oss.width(4);
+			oss.fill('0'); // NOTE: pad the field with ZERO
+			oss << d_data_type_code_number;
+			oss << "_";
+
+			oss.width(3);
+			oss.fill('0'); // NOTE: pad the field with ZERO in case the plate id is single digit
+			oss << d_conjugate_plate_id_number;
+
+			oss << "_";
+
+			return oss.str();
+		}
+	
 
 	protected:
 		// This constructor should not be public, because we don't want to allow

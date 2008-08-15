@@ -149,8 +149,33 @@ namespace GPlatesMaths {
 		 std::list< PointOnSphere > &intersection_points,
 		 std::list< GreatCircleArc > &overlap_segments);
 
-	}
 
+		/**
+		* create and return two ordered lists of polylines resulting 
+		* from a call to partition_intersecting_polylines, 
+		*
+		* The elements of pair.first list are from polyline1.
+		* The elements of pair.second list are from polyline2.
+		*
+		* pair.first.front() is polyline1's head part
+		* pair.first.back() is polyline1's tail part
+		*
+		* pair.second.front() is polyline2's head part
+		* pair.second.back() is polyline2's tail part
+		*
+		*/
+		std::pair<
+				std::list< PolylineOnSphere::non_null_ptr_to_const_type >,
+				std::list< PolylineOnSphere::non_null_ptr_to_const_type > 
+		>
+		identify_partitioned_polylines(
+			const PolylineOnSphere &polyline1,
+			const PolylineOnSphere &polyline2,
+			std::list< PointOnSphere > &intersection_points,
+			std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polylines);
+
+
+	}
 }
 
 #endif  // GPLATES_MATHS_POLYLINEINTERSECTIONS_H
