@@ -57,6 +57,8 @@ namespace GPlatesPropertyValues
 	class GpmlRevisionId;
 	class GpmlTimeSample;
 	class GpmlTimeWindow;
+	class GpmlTopologicalPolygon;
+	class GpmlTopologicalLineSection;
 	class UninterpretedPropertyValue;
 	class XsBoolean;
 	class XsDouble;
@@ -291,6 +293,18 @@ namespace GPlatesModel
 		void
 		visit_gpml_time_window(
 				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
+		{  }
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+				GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+		{  }
+
+		virtual
+		void
+		visit_gpml_topological_line_section(
+				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
 		{  }
 
 		virtual
