@@ -85,11 +85,6 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
-		virtual
-		void
-		visit_gpml_time_sample(
-				GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
-
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;

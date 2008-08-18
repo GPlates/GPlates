@@ -187,7 +187,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		// Let's visit the time sample, to collect (what we expect to be) the
 		// FiniteRotation inside it.
 		d_accumulator->d_is_expecting_a_finite_rotation = true;
-		iter->accept_visitor(*this);
+		iter->value()->accept_visitor(*this);
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_accumulator->d_finite_rotation) {
@@ -236,7 +236,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			iter->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -251,7 +251,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Now let's visit the _previous_ non-disabled time sample, to collect
 			// (what we expect to be) the FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			prev->accept_visitor(*this);
+			prev->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -292,7 +292,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			iter->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -331,9 +331,3 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
 	}
 }
 
-
-void
-GPlatesModel::ReconstructionTreePopulator::visit_gpml_time_sample(
-		GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {
-	gpml_time_sample.value()->accept_visitor(*this);
-}

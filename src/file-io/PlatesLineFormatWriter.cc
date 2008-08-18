@@ -562,14 +562,6 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_plate_id(
 
 
 void
-GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_time_sample(
-		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
-{
-
-}
-
-
-void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_old_plates_header(
 		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {

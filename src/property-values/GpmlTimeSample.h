@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -173,30 +173,6 @@ namespace GPlatesPropertyValues {
 				bool is_disabled_)
 		{
 			d_is_disabled = is_disabled_;
-		}
-
-		/**
-		 * Accept a ConstFeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		void
-		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
-			visitor.visit_gpml_time_sample(*this);
-		}
-
-		/**
-		 * Accept a FeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		void
-		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
-			visitor.visit_gpml_time_sample(*this);
 		}
 
 	private:
