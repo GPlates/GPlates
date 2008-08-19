@@ -673,7 +673,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_piecewise_aggregation(
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeWindow");
-				iter->accept_visitor(*this);
+				write_gpml_time_window(*iter);
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();  // </gpml:IrregularSampling>
@@ -720,7 +720,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_measure(
 
 
 void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_time_window(
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_time_window(
 		const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
 	d_output.writeStartGpmlElement("TimeWindow");
@@ -749,7 +749,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_irregular_sampling(
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeSample");
-				iter->accept_visitor(*this);
+				write_gpml_time_sample(*iter);
 			d_output.writeEndElement();
 		}
 
@@ -785,7 +785,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_revision_id(
 
 
 void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_time_sample(
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) 
 {
 	d_output.writeStartGpmlElement("TimeSample");

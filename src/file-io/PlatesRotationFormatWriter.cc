@@ -241,7 +241,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_irregular_sampling(
 		iter = gpml_irregular_sampling.time_samples().begin(),
 		end = gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) {
-		iter->accept_visitor(*this);
+		write_gpml_time_sample(*iter);
 	}
 }
 
@@ -271,7 +271,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 
 
 void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_time_sample(
+GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 {
 	// Start a new reconstruction pole
@@ -293,7 +293,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_time_sample(
 void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_old_plates_header(
 		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
-{ }
+{  }
 
 
 void

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -55,8 +55,6 @@ namespace GPlatesPropertyValues
 	class GpmlPolarityChronId;
 	class GpmlPropertyDelegate;
 	class GpmlRevisionId;
-	class GpmlTimeSample;
-	class GpmlTimeWindow;
 	class GpmlTopologicalPolygon;
 	class GpmlTopologicalLineSection;
 	class UninterpretedPropertyValue;
@@ -285,16 +283,6 @@ namespace GPlatesModel
 		void
 		visit_gpml_revision_id(
 				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) {  }
-
-		virtual
-		void
-		visit_gpml_time_sample(
-				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {  }
-
-		virtual
-		void
-		visit_gpml_time_window(
-				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window) {  }
 
 		virtual
 		void

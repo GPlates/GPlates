@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -350,11 +350,11 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_
 }
 
 
+#if 0
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 {
-#if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:TimeSample");
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:value");
@@ -375,9 +375,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_time_s
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
 		d_output.write_line_of_string_content(gpml_time_sample.value_type().get());
 	}
-#endif
 }
-
+#endif
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_plates_header(

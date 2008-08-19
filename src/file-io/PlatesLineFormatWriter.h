@@ -40,6 +40,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/PointOnSphere.h"
 
+
 namespace GPlatesFileIO
 {
 	class PlatesLineFormatWriter:
@@ -134,11 +135,6 @@ namespace GPlatesFileIO
 		void
 		visit_gpml_plate_id(
 				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
-		virtual
-		void
-		visit_gpml_time_sample(
-				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
 		virtual
 		void

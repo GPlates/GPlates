@@ -39,6 +39,12 @@
 #include "ExternalProgram.h"
 
 
+namespace GPlatesPropertyValues
+{
+	class GpmlTimeSample;
+	class GpmlTimeWindow;
+}
+
 namespace GPlatesFileIO
 {
 	class GpmlOnePointSixOutputVisitor:
@@ -203,14 +209,12 @@ namespace GPlatesFileIO
 		visit_gpml_revision_id(
 				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id);
 
-		virtual
 		void
-		visit_gpml_time_sample(
+		write_gpml_time_sample(
 				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
-		virtual
 		void
-		visit_gpml_time_window(
+		write_gpml_time_window(
 				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
 
 		virtual

@@ -122,30 +122,6 @@ namespace GPlatesPropertyValues {
 			return d_value_type;
 		}
 
-		/**
-		 * Accept a ConstFeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		void
-		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
-			visitor.visit_gpml_time_window(*this);
-		}
-
-		/**
-		 * Accept a FeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		void
-		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
-			visitor.visit_gpml_time_window(*this);
-		}
-
 	private:
 
 		GPlatesModel::PropertyValue::non_null_ptr_type d_time_dependent_value;

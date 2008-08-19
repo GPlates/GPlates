@@ -186,7 +186,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		// FiniteRotation inside it.
 		d_is_expecting_a_finite_rotation = true;
 		d_trp_time_matches_exactly = true;
-		iter->accept_visitor(*this);
+		iter->value()->accept_visitor(*this);
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_finite_rotation) {
@@ -235,7 +235,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_is_expecting_a_finite_rotation = true;
-			iter->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation) {
@@ -250,7 +250,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			// Now let's visit the _previous_ non-disabled time sample, to collect
 			// (what we expect to be) the FiniteRotation inside it.
 			d_is_expecting_a_finite_rotation = true;
-			prev->accept_visitor(*this);
+			prev->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation) {
@@ -315,7 +315,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			// FiniteRotation inside it.
 			d_is_expecting_a_finite_rotation = true;
 			d_trp_time_matches_exactly = true;
-			iter->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation) {
@@ -332,11 +332,4 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	}
 	// FIXME:  We've passed the last fence-post, and not yet reached the requested recon time. 
 	// Should we complain?
-}
-
-
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_time_sample(
-		GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {
-	gpml_time_sample.value()->accept_visitor(*this);
 }
