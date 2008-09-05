@@ -28,6 +28,7 @@
 
 #include <boost/intrusive_ptr.hpp>
 #include "AbstractEditWidget.h"
+#include "InformationDialog.h"
 #include "property-values/GmlTimePeriod.h"
 
 #include "EditTimePeriodWidgetUi.h"
@@ -61,6 +62,28 @@ namespace GPlatesQtWidgets
 		bool
 		update_property_value_from_widget();
 
+		/**
+		 * Accessor for the '&Begin' label. As we have more than one main
+		 * label for this widget, we cannot simply rely on the label()
+		 * accessor provided by AbstractEditWidget.
+		 */
+		QLabel *
+		label_begin()
+		{
+			return label_begin_time;
+		}
+
+		/**
+		 * Accessor for the '&End' label. As we have more than one main
+		 * label for this widget, we cannot simply rely on the label()
+		 * accessor provided by AbstractEditWidget.
+		 */
+		QLabel *
+		label_end()
+		{
+			return label_end_time;
+		}
+
 	private slots:
 	
 		void
@@ -92,6 +115,14 @@ namespace GPlatesQtWidgets
 		 */
 		boost::intrusive_ptr<GPlatesPropertyValues::GmlTimePeriod> d_time_period_ptr;
 
+		/**
+		 * "What does this mean?" blue question mark help dialog.
+		 * Memory managed by Qt.
+		 */
+		InformationDialog *d_help_dialog;
+
+		static const QString s_help_dialog_text;
+		static const QString s_help_dialog_title;
 	};
 }
 

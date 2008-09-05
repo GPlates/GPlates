@@ -186,7 +186,7 @@
      <item>
       <widget class="QPushButton" name="button_prev" >
        <property name="text" >
-        <string>P&amp;revious</string>
+        <string>Pre&amp;vious</string>
        </property>
        <property name="autoDefault" >
         <bool>false</bool>
@@ -196,7 +196,7 @@
      <item>
       <widget class="QPushButton" name="button_next" >
        <property name="text" >
-        <string>&amp;Next</string>
+        <string>Ne&amp;xt</string>
        </property>
       </widget>
      </item>

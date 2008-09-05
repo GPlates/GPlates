@@ -46,12 +46,7 @@
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 #include "utils/UnicodeStringUtils.h"
-#include "maths/FiniteRotation.h"
-#include "maths/ConstGeometryOnSphereVisitor.h"
-#include "property-values/GmlMultiPoint.h"
-#include "property-values/GmlPoint.h"
-#include "property-values/GmlPolygon.h"
-#include "property-values/GmlLineString.h"
+#include "gui/GeometricPropertyValueConstructor.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -295,257 +290,8 @@ namespace
 		}
 		list.setCurrentRow(0);
 	}
-
-
-	/**
-	 * Apply a reverse reconstruction to the given temporary geometry, so that the
-	 * coordinates are set to present-day location given the supplied plate id and
-	 * current reconstruction tree.
-	 *
-	 * @a G should be a non_null_ptr_to_const_type of some suitable GeometryOnSphere
-	 * derivation, with an implementation of FiniteRotation::operator*() available.
-	 */
-	template <class G>
-	G
-	reverse_reconstruct(
-			G geometry,
-			const GPlatesModel::integer_plate_id_type plate_id,
-			GPlatesModel::ReconstructionTree &recon_tree)
-	{
-		// Get the composed absolute rotation needed to bring a thing on that plate
-		// in the present day to this time.
-		const GPlatesMaths::FiniteRotation rotation =
-				recon_tree.get_composed_absolute_rotation(plate_id).first;
-		const GPlatesMaths::FiniteRotation reverse = GPlatesMaths::get_reverse(rotation);
-		
-		// Apply the reverse rotation.
-		G present_day_geometry = reverse * geometry;
-		
-		return present_day_geometry;
-	}
-	
-	
-	/**
-	 * ConstGeometryVisitor to wrap a GeometryOnSphere with the appropriate
-	 * PropertyValue (e.g. GmlLineString for PolylineOnSphere)
-	 *
-	 * FIXME: This should ideally be in the geometry-visitors/ directory.
-	 * FIXME 2: We should pass a flag indicating whether the resulting
-	 * geometry PropertyValue should be GpmlConstantValue-wrapped.
-	 */
-	class GeometricPropertyValueConstructor : 
-			public GPlatesMaths::ConstGeometryOnSphereVisitor
-	{
-	public:
-		GeometricPropertyValueConstructor(
-				GPlatesModel::ReconstructionTree &reconstruction_tree_):
-			GPlatesMaths::ConstGeometryOnSphereVisitor(),
-			d_property_value_opt(boost::none),
-			d_plate_id_opt(boost::none),
-			d_wrap_with_gpml_constant_value(true),
-			d_recon_tree_ptr(&reconstruction_tree_)
-		{  }
-		
-		virtual
-		~GeometricPropertyValueConstructor()
-		{  }
-		
-		/**
-		 * Call this to visit a GeometryOnSphere and (attempt to)
-		 *  a) reverse-reconstruct the geometry to appropriate present-day coordinates,
-		 *  b) create a suitable geometric PropertyValue out of it.
-		 *  c) wrap that property value in a GpmlConstantValue.
-		 *
-		 * May return boost::none.
-		 */
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
-		convert(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr,
-				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_opt,
-				bool wrap_with_gpml_constant_value)
-		{
-			// Set parameters for this visitation.
-			d_plate_id_opt = plate_id_opt;
-			d_wrap_with_gpml_constant_value = wrap_with_gpml_constant_value;
-
-         // Clear any previous return value and do the visit.
-			d_property_value_opt = boost::none;
-			geometry_ptr->accept_visitor(*this);
-			return d_property_value_opt;
-		}
-		
-		// Please keep these geometries ordered alphabetically.
-		
-		virtual
-		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
-		{
-			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> prop_val_opt;
-			
-			if (d_plate_id_opt) {
-				// Reverse reconstruct the geometry to present-day.
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type present_day =
-						reverse_reconstruct(multi_point_on_sphere, *d_plate_id_opt, *d_recon_tree_ptr);
-				// Convert MultiPointOnSphere to GmlMultiPoint.
-				prop_val_opt = GPlatesPropertyValues::GmlMultiPoint::create(present_day);
-			} else {
-				// No reverse-reconstruction, just make a PropertyValue.
-				prop_val_opt = GPlatesPropertyValues::GmlMultiPoint::create(multi_point_on_sphere);
-			}
-			// At this point, we should have a valid PropertyValue.
-			// Now - do we want to add a GpmlConstantValue wrapper around it?
-			if (d_wrap_with_gpml_constant_value) {
-				// The GpmlOnePointSixReader complains bitterly if it does not find a ConstantValue
-				// wrapper around geometry, although GPlates is happy enough to display geometry
-				// without it.
-				static const GPlatesPropertyValues::TemplateTypeParameterType value_type =
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gml("MultiPoint");
-				prop_val_opt = GPlatesPropertyValues::GpmlConstantValue::create(
-						*prop_val_opt, value_type);
-			}
-			
-			// Return the prepared PropertyValue.
-			d_property_value_opt = prop_val_opt;
-		}
-		
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
-		{
-			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> prop_val_opt;
-			
-			if (d_plate_id_opt) {
-				// Reverse reconstruct the geometry to present-day.
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type present_day =
-						reverse_reconstruct(point_on_sphere, *d_plate_id_opt, *d_recon_tree_ptr);
-				// Convert PointOnSphere to GmlPoint.
-				prop_val_opt = GPlatesPropertyValues::GmlPoint::create(*present_day);
-			} else {
-				// No reverse-reconstruction, just make a PropertyValue.
-				prop_val_opt = GPlatesPropertyValues::GmlPoint::create(*point_on_sphere);
-			}
-			// At this point, we should have a valid PropertyValue.
-			// Now - do we want to add a GpmlConstantValue wrapper around it?
-			if (d_wrap_with_gpml_constant_value) {
-				// The GpmlOnePointSixReader complains bitterly if it does not find a ConstantValue
-				// wrapper around geometry, although GPlates is happy enough to display geometry
-				// without it.
-				static const GPlatesPropertyValues::TemplateTypeParameterType value_type =
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point");
-				prop_val_opt = GPlatesPropertyValues::GpmlConstantValue::create(
-						*prop_val_opt, value_type);
-			}
-			
-			// Return the prepared PropertyValue.
-			d_property_value_opt = prop_val_opt;
-		}
-
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-		{
-			// Convert PolygonOnSphere to GmlPolygon with one exterior ring.
-			// FIXME: We could make this more intelligent and open up the possibility of making
-			// polygons with interiors.
-			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> prop_val_opt;
-			
-			if (d_plate_id_opt) {
-				// Reverse reconstruct the geometry to present-day.
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type present_day =
-						reverse_reconstruct(polygon_on_sphere, *d_plate_id_opt, *d_recon_tree_ptr);
-				// Convert PolygonOnSphere to GmlPolygon.
-				prop_val_opt = GPlatesPropertyValues::GmlPolygon::create(present_day);
-			} else {
-				// No reverse-reconstruction, just make a PropertyValue.
-				prop_val_opt = GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
-			}
-			// At this point, we should have a valid PropertyValue.
-			// Now - do we want to add a GpmlConstantValue wrapper around it?
-			if (d_wrap_with_gpml_constant_value) {
-				// The GpmlOnePointSixReader complains bitterly if it does not find a ConstantValue
-				// wrapper around geometry, although GPlates is happy enough to display geometry
-				// without it.
-				static const GPlatesPropertyValues::TemplateTypeParameterType value_type =
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon");
-				prop_val_opt = GPlatesPropertyValues::GpmlConstantValue::create(
-						*prop_val_opt, value_type);
-			}
-			
-			// Return the prepared PropertyValue.
-			d_property_value_opt = prop_val_opt;
-		}
-		
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
-		{
-			// Convert PolylineOnSphere to GmlLineString.
-			// FIXME: OrientableCurve??
-			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> prop_val_opt;
-			
-			if (d_plate_id_opt) {
-				// Reverse reconstruct the geometry to present-day.
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type present_day =
-						reverse_reconstruct(polyline_on_sphere, *d_plate_id_opt, *d_recon_tree_ptr);
-				// Convert PolylineOnSphere to GmlLineString.
-				prop_val_opt = GPlatesPropertyValues::GmlLineString::create(present_day);
-			} else {
-				// No reverse-reconstruction, just make a PropertyValue.
-				prop_val_opt = GPlatesPropertyValues::GmlLineString::create(polyline_on_sphere);
-			}
-			// At this point, we should have a valid PropertyValue.
-			// Now - do we want to add a GpmlConstantValue wrapper around it?
-			if (d_wrap_with_gpml_constant_value) {
-				// The GpmlOnePointSixReader complains bitterly if it does not find a ConstantValue
-				// wrapper around geometry, although GPlates is happy enough to display geometry
-				// without it.
-				static const GPlatesPropertyValues::TemplateTypeParameterType value_type =
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString");
-				prop_val_opt = GPlatesPropertyValues::GpmlConstantValue::create(
-						*prop_val_opt, value_type);
-			}
-			
-			// Return the prepared PropertyValue.
-			d_property_value_opt = prop_val_opt;
-		}
-	
-	private:
-		// This operator should never be defined, because we don't want to allow copy-assignment.
-		GeometricPropertyValueConstructor &
-		operator=(
-				const GeometricPropertyValueConstructor &);
-		
-		/**
-		 * The return value of convert(), assigned during the visit.
-		 */
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> d_property_value_opt;
-		
-		/**
-		 * The plate id parameter for reverse reconstructing the geometry.
-		 * Set from convert().
-		 * If it is set to boost::none we will assume that, for whatever reason, the caller
-		 * does not want us to do reverse reconstructions today.
-		 */
-		boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id_opt;
-		
-		/**
-		 * The parameter indicating the caller wants the final PropertyValue to be
-		 * wrapped up in a suitable GpmlConstantValue.
-		 * Set from convert().
-		 */
-		bool d_wrap_with_gpml_constant_value;
-		
-		/**
-		 * This is the reconstruction tree, used to perform the reverse reconstruction
-		 * and obtain present-day geometry appropriate for the given plate id.
-		 */
-		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
-	};
 }
+
 
 
 GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
@@ -627,7 +373,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
 	// And set the EditStringWidget's label to something suitable for a gml:name property.
-	d_name_widget->label()->setText(tr("Na&me:"));
+	d_name_widget->label()->setText(tr("&Name:"));
 	d_name_widget->label()->setHidden(false);
 	
 	// Create the edit widgets we'll need, and add them to the Designer-created widgets.
@@ -774,9 +520,9 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 			d_plate_id_widget->create_integer_plate_id_from_widget();	
 	// It will also wrap the present-day GeometryOnSphere in a suitable PropertyValue,
 	// possibly including a GpmlConstantValue wrapper.
-	GeometricPropertyValueConstructor geometry_constructor(recon_tree);
+	GPlatesGui::GeometricPropertyValueConstructor geometry_constructor;
 	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
-			geometry_constructor.convert(*d_geometry_opt_ptr, int_plate_id,
+			geometry_constructor.convert(*d_geometry_opt_ptr, recon_tree, int_plate_id,
 					geom_prop_needs_constant_value);
 	
 	if ( ! geometry_value_opt) {

@@ -128,7 +128,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_point(
-				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere,
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
 						GPlatesUtils::NullIntrusivePointerHandler> p)
 		{
 			d_point = p;

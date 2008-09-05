@@ -392,6 +392,9 @@ namespace
 
 	/**
 	 * This is a Visitor to obtain a summary of the geometry-on-sphere as a string.
+	 * 
+	 * FIXME: This would be great in a separate file. The Query and Edit Feature
+	 * dialogs could make use of it.
 	 */
 	class GeometryOnSphereSummaryAsStringVisitor:
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
@@ -475,8 +478,11 @@ namespace
 		if (rfg) {
 			// It's an RFG, so let's look at the property iterator of the geometry.
 			if (rfg->property().is_valid()) {
-				return boost::optional<GPlatesModel::FeatureHandle::properties_iterator>(
-						rfg->property());
+				// Okay fine, but is the property NULL (i.e. deleted)?
+				if (*rfg->property() != NULL) {
+					return boost::optional<GPlatesModel::FeatureHandle::properties_iterator>(
+							rfg->property());
+				}
 			}
 			// Else, the iterator is not valid, so we'll return boost::none instead.
 			return boost::none;
@@ -730,6 +736,7 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 		const QItemSelection &deselected)
 {
 	if (selected.indexes().isEmpty()) {
+		d_feature_focus_ptr->unset_focus();
 		return;
 	}
 	// We assume that the view has been constrained to allow only single-row selections,

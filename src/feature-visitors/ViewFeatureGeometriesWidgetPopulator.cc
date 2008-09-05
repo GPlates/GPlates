@@ -30,7 +30,7 @@
 #include <QList>
 #include <boost/none.hpp>
 
-#include "EditFeatureGeometriesWidgetPopulator.h"
+#include "ViewFeatureGeometriesWidgetPopulator.h"
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/FeatureRevision.h"
@@ -151,7 +151,7 @@ namespace
 
 
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_feature_handle(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_feature_handle(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_tree_widget_ptr->clear();
@@ -192,7 +192,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_feature_hand
 // However, I ran into problems with the forward-declaration of FeatureHandle. I am not high level
 // enough to make those changes just yet.
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_feature_properties(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
@@ -209,7 +209,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_feature_prop
 
 
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_inline_property_container(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_inline_property_container(
 		GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
 	// Create a top-level item for this property and remember it - do not add it just yet.
@@ -229,7 +229,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_inline_prope
 
 
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_line_string(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	// Fetch the parent QTreeWidgetItem we will be adding to from the stack.
@@ -285,7 +285,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_line_str
 
 
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_orientable_curve(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	// Fetch the parent QTreeWidgetItem we will be adding to from the stack.
@@ -302,7 +302,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_orientab
 
 
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_point(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	// Fetch the parent QTreeWidgetItem we will be adding to from the stack.
@@ -359,7 +359,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gml_point(
 
 
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gpml_constant_value(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -369,7 +369,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::visit_gpml_constan
 
 
 void
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator it =
@@ -399,7 +399,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::populate_rfg_geome
 
 
 boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::get_reconstructed_geometry_for_property(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::get_reconstructed_geometry_for_property(
 		const GPlatesModel::FeatureHandle::properties_iterator property)
 {
 	geometries_for_property_const_iterator it = d_rfg_geometries.begin();
@@ -414,7 +414,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::get_reconstructed_
 
 
 QTreeWidgetItem *
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::add_child(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::add_child(
 		const QString &name,
 		const QString &value)
 {
@@ -431,7 +431,7 @@ GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::add_child(
 
 
 QTreeWidgetItem *
-GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator::add_child_then_visit_value(
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::add_child_then_visit_value(
 		const QString &name,
 		const QString &value,
 		GPlatesModel::PropertyValue &property_value_to_visit)

@@ -6,9 +6,10 @@ INCLUDES		= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES	= libfeature_visitors.la
 libfeature_visitors_la_SOURCES	= QueryFeaturePropertiesWidgetPopulator.cc \
-				EditFeatureGeometriesWidgetPopulator.cc \
+				ViewFeatureGeometriesWidgetPopulator.cc \
 				PlateIdFinder.cc GmlTimePeriodFinder.cc XsStringFinder.cc \
-				GeometryFinder.cc FromQvariantConverter.cc ToQvariantConverter.cc \
+				GeometryFinder.cc GeometrySetter.cc \
+				FromQvariantConverter.cc ToQvariantConverter.cc \
 				ShapefileAttributeFinder.cc \
 				TotalReconstructionSequencePlateIdFinder.cc \
 				TotalReconstructionSequenceRotationInserter.cc

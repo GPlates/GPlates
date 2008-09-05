@@ -36,6 +36,7 @@
 #include "model/DummyTransactionHandle.h"
 #include "utils/UnicodeStringUtils.h"
 #include "qt-widgets/ViewportWindow.h"
+#include "qt-widgets/EditTimePeriodWidget.h"
 
 
 GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
@@ -108,6 +109,11 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::set_up_edit_widgets()
 	
 	QObject::connect(d_edit_widget_group_box_ptr, SIGNAL(commit_me()),
 			this, SLOT(commit_edit_widget_data()));
+	
+	// A special case for the EditTimePeriodWidget: we need to change a conflicting
+	// accelerator on the &End label.
+	d_edit_widget_group_box_ptr->time_period_widget().label_end()->setText(
+			tr("E&nd (time of disappearance):"));
 }
 
 
@@ -153,7 +159,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::handle_model_change()
 	// We need to update the edit widget to fix this before it becomes a problem.
 	if (d_edit_widget_group_box_ptr->is_edit_widget_active()) {
 		if (d_selected_property_iterator) {
-			d_edit_widget_group_box_ptr->refresh_edit_widget(*d_selected_property_iterator);
+			d_edit_widget_group_box_ptr->refresh_edit_widget(d_feature_ref, *d_selected_property_iterator);
 		}
 	}
 }
@@ -191,8 +197,17 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::handle_selection_change(
 	
 	// Enable things which depend on an item being selected.
 	button_delete_property->setDisabled(false);
-		
-	d_edit_widget_group_box_ptr->activate_appropriate_edit_widget(it);
+	
+	// Note: We pass d_feature_ref as context. In the event that we are
+	// about to activate EditGeometryWidget, it will want to use the
+	// feature ref to determine the appropriate reconstruction plate id,
+	// if any, so that it can express coordinates in reconstruction time.
+	// We should be able to get away with just this, since the only way
+	// to change the plate ID is to click onto a different property, and
+	// then clicking back should reinitialise the EditGeometryWidget,
+	// so we won't have to do anything clever like anticipate plate ID
+	// changes while EditGeometryWidget is active.
+	d_edit_widget_group_box_ptr->activate_appropriate_edit_widget(d_feature_ref, it);
 	d_selected_property_iterator = it;
 }
 

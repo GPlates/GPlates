@@ -72,9 +72,34 @@ namespace
 }
 
 
+const QString GPlatesQtWidgets::EditTimePeriodWidget::s_help_dialog_text = QObject::tr(
+		"<html><body>\n"
+		"\n"
+		"<h3>Time Period:</h3>\n"
+		"<ul>\n"
+		"<li> Times are specified in units of millions of years ago (Ma). The present day is <b>0 Ma</b>. </li>\n"
+		"<li> The <b>Begin</b> time should be earlier than, or the same as, the <b>End</b> time. </li>\n"
+		"</ul>\n"
+		"<h3>Begin:</h3>\n"
+		"<ul>\n"
+		"<li> This specifies the time (in Ma) at which the feature appears, or is formed. </li>\n"
+		"<li> If you don't know the time of appearance, select <b>Distant Past</b>. </li>\n"
+		"</ul>\n"
+		"<h3>End:</h3>\n"
+		"<ul>\n"
+		"<li> This specifies the time (in Ma) at which the feature disappears, or is destroyed. </li>\n"
+		"<li> If you don't know the time of destruction, select <b>Distant Future</b>. </li>\n"
+		"</ul>\n"
+		"</body></html>\n");
+
+const QString GPlatesQtWidgets::EditTimePeriodWidget::s_help_dialog_title = QObject::tr(
+		"Specifying a time period");
+
+
 GPlatesQtWidgets::EditTimePeriodWidget::EditTimePeriodWidget(
 		QWidget *parent_):
-	AbstractEditWidget(parent_)
+	AbstractEditWidget(parent_),
+	d_help_dialog(new InformationDialog(s_help_dialog_text, s_help_dialog_title, this))
 {
 	setupUi(this);
 	reset_widget_to_default_values();
@@ -92,6 +117,17 @@ GPlatesQtWidgets::EditTimePeriodWidget::EditTimePeriodWidget(
 			this, SLOT(set_dirty()));
 	QObject::connect(spinbox_time_of_disappearance, SIGNAL(valueChanged(double)),
 			this, SLOT(set_dirty()));
+	
+	QObject::connect(button_help, SIGNAL(clicked()),
+			d_help_dialog, SLOT(show()));
+	
+	// Since having both Distant Past and Distant Future available for both
+	// Begin and End is confusing, the "less likely" choice of each is hidden.
+	// I haven't removed them from the code entirely, since this would mean
+	// a significant rewrite AND the widget would no longer match the
+	// GmlTimePeriod model precisely.
+	checkbox_appearance_is_distant_future->setVisible(false);
+	checkbox_disappearance_is_distant_past->setVisible(false);
 
 	setFocusProxy(spinbox_time_of_appearance);
 }

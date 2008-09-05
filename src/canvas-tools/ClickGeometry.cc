@@ -77,7 +77,8 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 	d_clicked_table_model_ptr->clear();
 
 	if (sorted_hits.size() == 0) {
-		// User clicked on empty space! Do not change the currently focused feature.
+		// User clicked on empty space! Clear the currently focused feature.
+		d_feature_focus_ptr->unset_focus();
 		emit no_hits_found();
 		return;
 	}
@@ -116,4 +117,18 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 		d_feature_focus_ptr->set_focus(feature_ref, rfg);
 	}
 #endif
+}
+
+
+void
+GPlatesCanvasTools::ClickGeometry::handle_shift_left_click(
+		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+		bool is_on_globe)
+{
+	handle_left_click(click_pos_on_globe, oriented_click_pos_on_globe, is_on_globe);
+	// If there is a feature focused, we'll assume that the user wants to look at it in detail.
+	if (d_feature_focus_ptr->is_valid()) {
+		fp_dialog().choose_query_widget_and_open();
+	}
 }

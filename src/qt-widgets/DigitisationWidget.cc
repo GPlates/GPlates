@@ -35,6 +35,7 @@
 
 #include "DigitisationWidget.h"
 #include "DigitisationWidgetUndoCommands.h"
+#include "utils/GeometryCreationUtils.h"
 
 #include "ViewportWindow.h"
 #include "ExportCoordinatesDialog.h"
@@ -43,52 +44,15 @@
 #include "maths/InvalidLatLonCoordinateException.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/GeometryOnSphere.h"
-#include "maths/MultiPointOnSphere.h"
-#include "maths/PointOnSphere.h"
-#include "maths/PolygonOnSphere.h"
-#include "maths/PolylineOnSphere.h"
 #include "maths/Real.h"
-
 
 namespace
 {
-	/**
-	 * Simple typedef for convenient calling of some of MultiPointOnSphere's members.
-	 */
-	typedef GPlatesMaths::MultiPointOnSphere multi_point_type;
-
-	/**
-	 * Type of intrusive pointer to use for multi_points.
-	 */
-	typedef GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_ptr_type;
-
-	/**
-	 * Simple typedef for convenient calling of some of PolygonOnSphere's members.
-	 */
-	typedef GPlatesMaths::PolygonOnSphere polygon_type;
-
-	/**
-	 * Type of intrusive pointer to use for polygons.
-	 */
-	typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr_type;
-
-	/**
-	 * Simple typedef for convenient calling of some of PolylineOnSphere's members.
-	 */
-	typedef GPlatesMaths::PolylineOnSphere polyline_type;
-
-	/**
-	 * Type of intrusive pointer to use for polylines.
-	 */
-	typedef GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_ptr_type;
-
 	/**
 	 * This typedef is used wherever geometry (of some unknown type) is expected.
 	 * It is a boost::optional because creation of geometry may fail for various reasons.
 	 */
 	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr_type;
-	
-	
 	
 	
 	/**
@@ -203,216 +167,17 @@ namespace
 		}
 		return points;
 	}
-	
-	
-	/**
-	 * Enumerates all possible return values from GeometryOnSphere construction-parameter
-	 * validation functions. This takes advantage of the fact that some invalid states
-	 * (e.g. insufficient points) are common to several different GeometryOnSphere derivations.
-	 * 
-	 * The downside is that each create_*_on_sphere() function needs to map the type-specific
-	 * validity states to this enumeration - but it should be checking the return value anyway.
-	 */
-	namespace GeometryConstruction
-	{
-		enum GeometryConstructionValidity
-		{
-			VALID,
-			INVALID_INSUFFICIENT_POINTS,
-			INVALID_ANTIPODAL_SEGMENT_ENDPOINTS
-		};
-	}
+
 
 
 	/**
-	 * Creates a single PointOnSphere (assuming >= 1 points are provided).
-	 * If you supply more than one point, the others will get ignored.
-	 *
-	 * @a validity is a return-parameter. It will be set to
-	 * GeometryConstruction::VALID if everything went ok. In the event
-	 * of construction problems occuring, it will indicate why construction
-	 * failed.
-	 *
-	 * Note we are returning a possibly-none boost::optional of
-	 * GeometryOnSphere::non_null_ptr_to_const_type.
-	 */
-	geometry_opt_ptr_type
-	create_point_on_sphere(
-			const std::vector<GPlatesMaths::PointOnSphere> &points,
-			GeometryConstruction::GeometryConstructionValidity &validity)
-	{
-		if (points.size() > 0) {
-			validity = GeometryConstruction::VALID;
-			return points.front().clone_as_geometry();
-		} else {
-			validity = GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
-			return boost::none;
-		}
-	}
-
-
-	/**
-	 * Creates a single PolylineOnSphere (assuming >= 2 distinct points are provided).
-	 *
-	 * @a validity is a return-parameter. It will be set to
-	 * GeometryConstruction::VALID if everything went ok. In the event
-	 * of construction problems occuring, it will indicate why construction
-	 * failed.
-	 *
-	 * Note we are returning a possibly-none boost::optional of
-	 * GeometryOnSphere::non_null_ptr_to_const_type.
-	 */
-	geometry_opt_ptr_type
-	create_polyline_on_sphere(
-			const std::vector<GPlatesMaths::PointOnSphere> &points,
-			GeometryConstruction::GeometryConstructionValidity &validity)
-	{
-		// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
-		std::pair<
-			std::vector<GPlatesMaths::PointOnSphere>::const_iterator, 
-			std::vector<GPlatesMaths::PointOnSphere>::const_iterator>
-				invalid_points;
-		
-		// Evaluate construction parameter validity, and create.
-		polyline_type::ConstructionParameterValidity polyline_validity = 
-				polyline_type::evaluate_construction_parameter_validity(points, invalid_points);
-
-		// Create the polyline and return it - if we can.
-		switch (polyline_validity)
-		{
-		case polyline_type::VALID:
-			validity = GeometryConstruction::VALID;
-			// Note that create_on_heap gives us a PolylineOnSphere::non_null_ptr_to_const_type,
-			// while we are returning it as an optional GeometryOnSphere::non_null_ptr_to_const_type.
-			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
-					polyline_type::create_on_heap(points));
-		
-		case polyline_type::INVALID_INSUFFICIENT_DISTINCT_POINTS:
-			// TODO:  In the future, it would be nice to highlight any invalid points
-			// for the user, since this information is returned in 'invalid_points'.
-			validity = GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
-			return boost::none;
-
-		case polyline_type::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
-			// TODO:  In the future, it would be nice to highlight any invalid points
-			// for the user, since this information is returned in 'invalid_points'.
-			validity = GeometryConstruction::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS;
-			return boost::none;
-			
-		default:
-			// FIXME: Exception.
-			qDebug() << "UNKNOWN/UNHANDLED polyline evaluate_construction_parameter_validity," << validity;
-			return boost::none;
-		}
-	}
-
-
-	/**
-	 * Creates a single PolygonOnSphere (assuming >= 3 distinct points are provided).
-	 *
-	 * @a validity is a return-parameter. It will be set to
-	 * GeometryConstruction::VALID if everything went ok. In the event
-	 * of construction problems occuring, it will indicate why construction
-	 * failed.
-	 *
-	 * Note we are returning a possibly-none boost::optional of
-	 * GeometryOnSphere::non_null_ptr_to_const_type.
-	 */
-	geometry_opt_ptr_type
-	create_polygon_on_sphere(
-			const std::vector<GPlatesMaths::PointOnSphere> &points,
-			GeometryConstruction::GeometryConstructionValidity &validity)
-	{
-		// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
-		std::pair<
-			std::vector<GPlatesMaths::PointOnSphere>::const_iterator, 
-			std::vector<GPlatesMaths::PointOnSphere>::const_iterator>
-				invalid_points;
-		
-		// Evaluate construction parameter validity, and create.
-		polygon_type::ConstructionParameterValidity polygon_validity = 
-				polygon_type::evaluate_construction_parameter_validity(points, invalid_points);
-
-		// Create the polygon and return it - if we can.
-		switch (polygon_validity)
-		{
-		case polygon_type::VALID:
-			validity = GeometryConstruction::VALID;
-			// Note that create_on_heap gives us a PolygonOnSphere::non_null_ptr_to_const_type,
-			// while we are returning it as an optional GeometryOnSphere::non_null_ptr_to_const_type.
-			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
-					polygon_type::create_on_heap(points));
-		
-		case polygon_type::INVALID_INSUFFICIENT_DISTINCT_POINTS:
-			// TODO:  In the future, it would be nice to highlight any invalid points
-			// for the user, since this information is returned in 'invalid_points'.
-			validity = GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
-			return boost::none;
-
-		case polygon_type::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
-			// TODO:  In the future, it would be nice to highlight any invalid points
-			// for the user, since this information is returned in 'invalid_points'.
-			validity = GeometryConstruction::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS;
-			return boost::none;
-			
-		default:
-			// FIXME: Exception.
-			qDebug() << "UNKNOWN/UNHANDLED polygon evaluate_construction_parameter_validity," << validity;
-			return boost::none;
-		}
-	}
-
-
-	/**
-	 * Creates a single MultiPointOnSphere (assuming >= 1 point is provided).
-	 *
-	 * @a validity is a return-parameter. It will be set to
-	 * GeometryConstruction::VALID if everything went ok. In the event
-	 * of construction problems occuring, it will indicate why construction
-	 * failed.
-	 *
-	 * Note we are returning a possibly-none boost::optional of
-	 * GeometryOnSphere::non_null_ptr_to_const_type.
-	 */
-	geometry_opt_ptr_type
-	create_multipoint_on_sphere(
-			const std::vector<GPlatesMaths::PointOnSphere> &points,
-			GeometryConstruction::GeometryConstructionValidity &validity)
-	{
-		// Evaluate construction parameter validity, and create.
-		multi_point_type::ConstructionParameterValidity multi_point_validity = 
-				multi_point_type::evaluate_construction_parameter_validity(points);
-
-		// Create the multi_point and return it - if we can.
-		switch (multi_point_validity)
-		{
-		case multi_point_type::VALID:
-			validity = GeometryConstruction::VALID;
-			// Note that create_on_heap gives us a MultiPointOnSphere::non_null_ptr_to_const_type,
-			// while we are returning it as an optional GeometryOnSphere::non_null_ptr_to_const_type.
-			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
-					multi_point_type::create_on_heap(points));
-
-		case multi_point_type::INVALID_INSUFFICIENT_POINTS:
-			// TODO:  In the future, it would be nice to highlight any invalid points
-			// for the user, since this information is returned in 'invalid_points'.
-			validity = GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
-			return boost::none;
-
-		default:
-			// FIXME: Exception.
-			qDebug() << "UNKNOWN/UNHANDLED multi-point evaluate_construction_parameter_validity," << validity;
-			return boost::none;
-		}
-	}
-
-
-	/**
-	 * Does the work of examining QTreeWidgetItems and the user's intentions
+	 * Creates 'appropriate' geometry given the available 
+	 * Examines QTreeWidgetItems, the number of points available, and the user's
+	 * intentions. 
 	 * to call upon the appropriate anonymous namespace geometry creation function.
 	 *
 	 * @a validity is a return-parameter. It will be set to
-	 * GeometryConstruction::VALID if everything went ok. In the event
+	 * GPlatesUtils::GeometryConstruction::VALID if everything went ok. In the event
 	 * of construction problems occuring, it will indicate why construction
 	 * failed.
 	 *
@@ -423,8 +188,9 @@ namespace
 	create_geometry_from_table_items(
 			QTreeWidgetItem *geom_item,
 			GPlatesQtWidgets::DigitisationWidget::GeometryType target_geom_type,
-			GeometryConstruction::GeometryConstructionValidity &validity)
+			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity)
 	{
+		// FIXME: Only handles the unbroken line and single-ring cases.
 		std::vector<GPlatesMaths::PointOnSphere> points;
 		points = build_points_from_table_item(geom_item);
 		// There's no guarantee that adjacent points in the table aren't identical.
@@ -452,40 +218,40 @@ namespace
 			case GPlatesQtWidgets::DigitisationWidget::POLYLINE:
 				// FIXME: I'd really like to wrap this up into a function pointer.
 				if (num_points == 0) {
-					validity = GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
+					validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
 					return boost::none;
 				} else if (num_points == 1) {
-					return create_point_on_sphere(points, validity);
+					return GPlatesUtils::create_point_on_sphere(points, validity);
 				} else {
-					return create_polyline_on_sphere(points, validity);
+					return GPlatesUtils::create_polyline_on_sphere(points, validity);
 				}
 				break;
 
 			case GPlatesQtWidgets::DigitisationWidget::MULTIPOINT:
 				// FIXME: I'd really like to wrap this up into a function pointer,
 				if (num_points == 0) {
-					validity = GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
+					validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
 					return boost::none;
 				} else if (num_points == 1) {
-					return create_point_on_sphere(points, validity);
+					return GPlatesUtils::create_point_on_sphere(points, validity);
 				} else {
-					return create_multipoint_on_sphere(points, validity);
+					return GPlatesUtils::create_multipoint_on_sphere(points, validity);
 				}
 				break;
 
 			case GPlatesQtWidgets::DigitisationWidget::POLYGON:
 				// FIXME: I'd really like to wrap this up into a function pointer.
 				if (num_points == 0) {
-					validity = GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
+					validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
 					return boost::none;
 				} else if (num_points == 1) {
-					return create_point_on_sphere(points, validity);
+					return GPlatesUtils::create_point_on_sphere(points, validity);
 				} else if (num_points == 2) {
-					return create_polyline_on_sphere(points, validity);
+					return GPlatesUtils::create_polyline_on_sphere(points, validity);
 				} else if (num_points == 3 && points.front() == points.back()) {
-					return create_polyline_on_sphere(points, validity);
+					return GPlatesUtils::create_polyline_on_sphere(points, validity);
 				} else {
-					return create_polygon_on_sphere(points, validity);
+					return GPlatesUtils::create_polygon_on_sphere(points, validity);
 				}
 				break;
 			}
@@ -604,13 +370,10 @@ GPlatesQtWidgets::DigitisationWidget::update_geometry()
 	QTreeWidgetItem *root = treewidget_coordinates->invisibleRootItem();
 	int num_children = root->childCount();
 	for (int i = 0; i < num_children; ++i) {
-		//   build vector of pointonsphere from the lat,lon
-				// std::vector<GPlatesMaths::PointOnSphere> build_points_from_table_item(*geom_item)
-		//   feed that into a create_xxxx function
-				// geometry_ptr_type create_polyline_on_sphere(std::vector<GPlatesMaths::PointOnSphere> &points,
-				// GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity& validity)
+		// Build vector of PointOnSphere from the lat,lons in the table,
+		// then feed that into the appropriate create_xxxx function.
 		QTreeWidgetItem *item = root->child(i);
-		GeometryConstruction::GeometryConstructionValidity validity;
+		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
 		geometry_opt_ptr_type geometry_opt_ptr = create_geometry_from_table_items(
 				item, d_geometry_type, validity);
 

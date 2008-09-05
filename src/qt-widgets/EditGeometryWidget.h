@@ -29,9 +29,11 @@
 #include <boost/optional.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include "AbstractEditWidget.h"
-#include "property-values/GmlPoint.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
+#include "model/types.h"
 
 #include "EditGeometryWidgetUi.h"
 
@@ -55,11 +57,35 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		reset_widget_to_default_values();
+		
+		virtual
+		void
+		configure_for_property_value_type(
+				const QString &property_value_name);
+
+		void
+		set_reconstruction_plate_id(
+				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_opt);
+
+		void
+		unset_reconstruction_plate_id();
 
 		void
 		update_widget_from_line_string(
 				GPlatesPropertyValues::GmlLineString &gml_line_string);
+
+		void
+		update_widget_from_multi_point(
+				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+
+		void
+		update_widget_from_point(
+				GPlatesPropertyValues::GmlPoint &gml_point);
 		
+		void
+		update_widget_from_polygon(
+				GPlatesPropertyValues::GmlPolygon &gml_polygon);
+
 		virtual
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_property_value_from_widget() const;
@@ -163,15 +189,26 @@ namespace GPlatesQtWidgets
 		bool
 		test_geometry_validity();
 
-
+		/**
+		 * Creates GeometryOnSphere and uses setters to place it inside
+		 * the current PropertyValue being edited.
+		 */
 		bool
-		set_geometry_for_line_string();
+		set_geometry_for_property_value();
 		
 		/**
 		 * A pointer to the view state so that the EditGeometryWidget can query
-		 * it for the current reconstruction time.
+		 * it for the current reconstruction time and perform reconstructions
+		 * of the points in the table.
 		 */
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		
+		/**
+		 * The plate ID that should be used for reconstructions.
+		 * If this member is boost::none, the "Reconstructed to x Ma" option will
+		 * not be available.
+		 */
+		boost::optional<GPlatesModel::integer_plate_id_type> d_reconstruction_plate_id_opt;
 		
 		/**
 		 * This boost::intrusive_ptr is used to remember the property value which
@@ -186,7 +223,7 @@ namespace GPlatesQtWidgets
 		 * The pointer will also be NULL when the edit widget is being used for
 		 * adding brand new properties to the model.
 		 */
-		boost::intrusive_ptr<GPlatesPropertyValues::GmlLineString> d_line_string_ptr;
+		boost::intrusive_ptr<GPlatesModel::PropertyValue> d_property_value_ptr;
 
 	};
 }

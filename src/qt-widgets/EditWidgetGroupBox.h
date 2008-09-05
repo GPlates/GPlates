@@ -55,6 +55,9 @@ namespace GPlatesQtWidgets
 	/**
 	 * A collection of pre-allocated property edit widgets, which are hidden/shown
 	 * depending on which edit widget needs to be displayed.
+	 *
+	 * Attention! If you want to add a new type of EditWidget, see instructions in
+	 * AbstractEditWidget.h.
 	 */
 	class EditWidgetGroupBox: 
 			public QGroupBox
@@ -104,10 +107,15 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Uses EditWidgetChooser to activate the editing widget most appropriate
-		 * for the given property iterator. Used by EditFeaturePropertiesWidget.
+		 * for the given property iterator @a it. Used by EditFeaturePropertiesWidget.
+		 * 
+		 * @a feature_ref only needs to be provided as context - for example,
+		 * EditGeometryWidget needs it so it can figure out what reconstruction plate id
+		 * to use.
 		 */
 		void
 		activate_appropriate_edit_widget(
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::FeatureHandle::properties_iterator it);
 
 		/**
@@ -117,9 +125,14 @@ namespace GPlatesQtWidgets
 		 * the interface would appear to 'flicker') - it is used by EditFeaturePropertiesWidget
 		 * to handle a case where a user has edited a value via the QTableView and the
 		 * currently selected edit widget needs to be updated.
+		 * 
+		 * @a feature_ref only needs to be provided as context - for example,
+		 * EditGeometryWidget needs it so it can figure out what reconstruction plate id
+		 * to use.
 		 */
 		void
 		refresh_edit_widget(
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::FeatureHandle::properties_iterator it);
 		 
 		/**
@@ -238,11 +251,44 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * 
+		 * @a feature_ref is used as context for the EditGeometryWidget.
 		 */
 		void
 		activate_edit_line_string_widget(
-				GPlatesPropertyValues::GmlLineString &gml_line_string);
+				GPlatesPropertyValues::GmlLineString &gml_line_string,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * 
+		 * @a feature_ref is used as context for the EditGeometryWidget.
+		 */
+		void
+		activate_edit_multi_point_widget(
+				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * 
+		 * @a feature_ref is used as context for the EditGeometryWidget.
+		 */
+		void
+		activate_edit_point_widget(
+				GPlatesPropertyValues::GmlPoint &gml_point,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 		
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * 
+		 * @a feature_ref is used as context for the EditGeometryWidget.
+		 */
+		void
+		activate_edit_polygon_widget(
+				GPlatesPropertyValues::GmlPolygon &gml_polygon,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
@@ -295,6 +341,29 @@ namespace GPlatesQtWidgets
 		{
 			return *d_view_state_ptr;
 		}
+		
+		/**
+		 * Accessor for the EditGeometryWidget, to support the extra functionality
+		 * available (e.g. set_reconstruction_plate_id())
+		 */
+		GPlatesQtWidgets::EditGeometryWidget &
+		geometry_widget()
+		{
+			return *d_edit_geometry_widget_ptr;
+		}
+
+		/**
+		 * Accessor for the EditTimePeriodWidget, to allow the EditFeaturePropertiesWidget
+		 * to change the accelerator mneumonics on the labels.
+		 *
+		 * TODO: These accessors could probably be extended to all of the widgets.
+		 */
+		GPlatesQtWidgets::EditTimePeriodWidget &
+		time_period_widget()
+		{
+			return *d_edit_time_period_widget_ptr;
+		}
+		
 	
 	signals:
 		

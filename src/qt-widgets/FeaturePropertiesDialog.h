@@ -33,7 +33,7 @@
 #include "model/FeatureHandle.h"
 #include "QueryFeaturePropertiesWidget.h"
 #include "EditFeaturePropertiesWidget.h"
-#include "EditFeatureGeometriesWidget.h"
+#include "ViewFeatureGeometriesWidget.h"
 
 
 namespace GPlatesQtWidgets
@@ -116,7 +116,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesQtWidgets::QueryFeaturePropertiesWidget *d_query_feature_properties_widget;
 		GPlatesQtWidgets::EditFeaturePropertiesWidget *d_edit_feature_properties_widget;
-		GPlatesQtWidgets::EditFeatureGeometriesWidget *d_edit_feature_geometries_widget;
+		GPlatesQtWidgets::ViewFeatureGeometriesWidget *d_view_feature_geometries_widget;
 	};
 }
 
