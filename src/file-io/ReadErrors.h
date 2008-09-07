@@ -97,6 +97,9 @@ namespace GPlatesFileIO
 			InvalidShapefileAgeOfAppearance,
 			InvalidShapefileAgeOfDisappearance,
 			
+			// The following relate to raster files.
+			InsufficientTextureMemory,
+
 			// The following relate to GDAL-readable Raster files.
 			ErrorReadingGDALBand,
 

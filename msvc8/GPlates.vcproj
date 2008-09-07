@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="GPlates"
 	ProjectGUID="{30E6493E-D095-4EF6-B65E-34FB3A7B8B8A}"
 	RootNamespace="GPlates"
@@ -246,11 +246,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\moc_ClickGeometry.cc"
+				RelativePath="..\src\canvas-tools\ManipulatePole.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\ManipulatePole.cc"
+				RelativePath="..\src\canvas-tools\moc_ClickGeometry.cc"
 				>
 			</File>
 			<File
@@ -273,6 +273,10 @@
 		<Filter
 			Name="gui"
 			>
+			<File
+				RelativePath="..\src\gui\AgeColourTable.cc"
+				>
+			</File>
 			<File
 				RelativePath="..\src\gui\CanvasTool.cc"
 				>
@@ -312,11 +316,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\ColourSpectrum.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\CsvExport.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\gui\CsvExport.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureColourTable.cc"
 				>
 			</File>
 			<File
@@ -455,22 +467,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\AgeColourTable.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\FeatureColourTable.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\SingleColourTable.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\ColourSpectrum.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\gui\PlatesColourTable.cc"
 				>
 			</File>
@@ -496,6 +492,10 @@
 						Name="Build MOC Files"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\gui\SingleColourTable.cc"
+				>
 			</File>
 			<File
 				RelativePath="..\src\gui\SphericalGrid.cc"
@@ -1941,15 +1941,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\feature-visitors\ToQvariantConverter.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\feature-visitors\TotalReconstructionSequencePlateIdFinder.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInserter.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\feature-visitors\ToQvariantConverter.cc"
 				>
 			</File>
 			<File

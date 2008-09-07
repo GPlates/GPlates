@@ -39,8 +39,8 @@
 namespace GPlatesGui {
 
 
-	const int NUM_STRIPS_S = 128;
-	const int NUM_STRIPS_T = 64;
+	const int NUM_STRIPS_S = 64;
+	const int NUM_STRIPS_T = 32;
 
 	const float LON_START = -180.0f;
 	const float LON_END = 180.0f;
@@ -91,6 +91,7 @@ namespace GPlatesGui {
 
 		/**
 		 * Generates a texture using the data contained in a std::vector<unsinged_byte_type>.
+		 * This is used for data loaded via GDAL. 
 		 */
 		void
 		generate_raster(
@@ -100,7 +101,24 @@ namespace GPlatesGui {
 			ColourFormat format);
 
 		/**
+		 * Generates a texture using the data contained in a std::vector<unsinged_byte_type>, and
+		 * which will be mapped to the coordinates given by x_start, y_start, x_end, y_end. 
+		 * This is used for data loaded via GDAL.
+		 */
+		void
+		generate_raster(
+			std::vector<unsigned_byte_type> &data,
+			float x_start,
+			float y_start,
+			float x_end,
+			float y_end,
+			int width,
+			int height,
+			ColourFormat format);
+
+		/**
 		 * Generates a texture using the data pointed to by unsigned_byte_type *data.
+		 * This is used for images loaded via Qt's QImage class.
 		 */
 		void
 		generate_raster(
@@ -246,6 +264,17 @@ namespace GPlatesGui {
 		void
 		generate_mapping_coordinates();
 
+		/** 
+		 * Maps 2D points in the texture coordinate system to 3D vertices on the sphere coordinate system,
+		 * over a region with corners given by x_start, y_start, x_end, y_end.
+		 */
+		void
+		generate_mapping_coordinates(
+			float x_start,
+			float y_start,
+			float x_end,
+			float y_end);
+
 		/**
 		 * A pointer to image data. 
 		 */
@@ -302,7 +331,9 @@ namespace GPlatesGui {
 		 */
 		bool d_corresponds_to_data;
 
-		
+		/**
+		 * The vertices used for mapping the texture to the sphere. 
+		 */
 		texture_vertex d_texture_vertices[NUM_STRIPS_S + 1][NUM_STRIPS_T + 1];
 		sphere_vertex d_sphere_vertices[NUM_STRIPS_S + 1][NUM_STRIPS_T + 1];
 
