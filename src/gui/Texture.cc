@@ -26,6 +26,7 @@
  */
 #include <iostream>
 #include <cmath>
+#include <cstring>
 
 #include <QtOpenGL/qgl.h>
 #include <QFileDialog>
@@ -38,6 +39,9 @@
 #include "OpenGLBadAllocException.h"
 #include "OpenGLException.h"
 #include "Texture.h"
+
+// RGBA_SIZE is the number of bytes required to store an RGBA value. RGBA is the only format we deal with at the moment. 
+const int RGBA_SIZE = 4;
 
 namespace{
 
@@ -97,67 +101,29 @@ namespace{
 		texture_width = next_power_of_two(image_width);
 		texture_height = next_power_of_two(image_height);
 
-		std::vector<unsigned char> padded_data(texture_width * texture_height * 4);
+		std::vector<unsigned char> padded_data(texture_width * texture_height * RGBA_SIZE);
 
-		std::vector<unsigned char>::const_iterator it = data.begin();
-
+		std::vector<unsigned char>::iterator it = data.begin();
 		std::vector<unsigned char>::iterator p_it = padded_data.begin();
 
-		int w = 0;
-		int h = 0;
+		int offset = (texture_width - image_width)*RGBA_SIZE;
 
-		int offset = (texture_width - image_width)*4;
+		int total_width = image_width*RGBA_SIZE;
 
-		for ( ; h < image_height ; h++)
+		for (int h = 0 ; h < image_height ; h++)
 		{
-			for ( w = 0; w < image_width*4 ; w++)
+			for (int w = 0; w < total_width ; w++)
 			{
 				*p_it = *it;
 				p_it++;
 				it++;
 			}
+
 			p_it += offset;	
 		}
 
-		data = padded_data;
-	}
-
-	/**
-	 * Pads the image out to power of two dimensions without stretching the image data. 
-	 */ 
-	void
-	expand_to_power_two(
-		unsigned char **data,
-		int image_width,
-		int image_height,
-		int &texture_width,
-		int &texture_height)
-	{
-		texture_width = next_power_of_two(image_width);
-		texture_height = next_power_of_two(image_height);
-
-		unsigned char *padded_data = new unsigned char[texture_width * texture_height * 4];
-
-		unsigned char *data_ptr = *data;
-		unsigned char *padded_ptr = padded_data;
-
-		int w = 0;
-		int h = 0;
-
-		int offset = (texture_width - image_width)*4;
-
-		for ( ; h < image_height ; h++)
-		{
-			for ( w = 0; w < image_width*4 ; w++)
-			{
-				*padded_ptr = *data_ptr;
-				padded_ptr++;
-				data_ptr++;
-			}
-			padded_ptr += offset;	
-		}
-
-		*data = padded_data;
+		data.swap(padded_data);
+//		data = padded_data;
 	}
 
 	/**
@@ -175,25 +141,30 @@ namespace{
 		texture_width = next_power_of_two(image_width);
 		texture_height = next_power_of_two(image_height);
 
-		expanded_data.resize(texture_width * texture_height * 4);
+		expanded_data.resize(texture_width * texture_height * RGBA_SIZE);
 
 		unsigned char *data_ptr = data;
 		unsigned char *padded_ptr = &expanded_data[0];
 
-		int w = 0;
-		int h = 0;
+		int offset = (texture_width - image_width)*RGBA_SIZE;
 
-		int offset = (texture_width - image_width)*4;
+		int total_width = image_width*RGBA_SIZE;
 
-		for ( ; h < image_height ; h++)
+		for (int h = 0 ; h < image_height ; h++)
 		{
-			for ( w = 0; w < image_width*4 ; w++)
+			std::memcpy(padded_ptr,data_ptr,total_width);
+			data_ptr += total_width;
+			padded_ptr += total_width + offset;
+#if 0
+
+			for ( w = 0; w < image_width*RGBA_SIZE ; w++)
 			{
 				*padded_ptr = *data_ptr;
 				padded_ptr++;
 				data_ptr++;
 			}
 			padded_ptr += offset;	
+#endif
 		}
 	}
 
@@ -660,7 +631,6 @@ GPlatesGui::Texture::generate_raster(
 	GLenum error = gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_texture_width,d_texture_height,
 		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,&expanded_data[0]);
 	
-	// FIXME: If the texture is too big to load, we should really report this via the ReadErrors dialog.
 	check_glu_errors(error);
 
 	check_gl_errors();

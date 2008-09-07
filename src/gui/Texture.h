@@ -38,6 +38,14 @@
 
 namespace GPlatesGui {
 
+	/**
+	 *	NUM_STRIPS_S and NUM_STRIPS_T are the number of strips that the texure is divided up into.
+	 *  The edges of these strips define coordinates in texture space (s,t). 
+	 *  Each of these coordinates will be mapped to a 3D coordinate on the sphere surface. 
+	 * 
+	 *  NUM_STRIPS_S is the number of strips in the texture's "s" direction (i.e. our longitude).
+	 *  NUM_STRIPS_T is the number of strips in the texture's "t" direction (i.e. latitude). 
+	 */
 
 	const int NUM_STRIPS_S = 64;
 	const int NUM_STRIPS_T = 32;
