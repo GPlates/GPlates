@@ -29,7 +29,10 @@
 
 #include <vector>
 #include <utility>
+#include <QDir>
 #include <QFile>
+#include <QtCore/QUuid>
+#include <QtGlobal> 
 #include <QProcess>
 #include <boost/bind.hpp>
 
@@ -82,6 +85,54 @@ const GPlatesFileIO::ExternalProgram
 
 namespace
 {
+	/**
+	 * Replace the q_file_ptr's filename with a unique temporary .gpml filename.
+	 */
+	void
+	set_temporary_filename(
+		boost::shared_ptr<QFile> q_file_ptr)
+	{
+		if (!q_file_ptr)
+		{
+			return;
+		}
+		// I'm using a uuid to generate a unique name... is this overkill?
+		QUuid uuid = QUuid::createUuid();
+		QString uuid_string = uuid.toString();
+
+		// The uuid string has braces around it, so remove them. 
+		uuid_string.remove(0,1);
+		uuid_string.remove(uuid_string.length()-1,1);
+
+		QFileInfo file_info(*q_file_ptr);
+
+		// And don't forget to put ".gpml" at the end. 
+		q_file_ptr->setFileName(file_info.absolutePath() + QDir::separator() + uuid_string + ".gpml");
+	}
+
+
+	/**
+	 * If the filename of the QFile ends in ".gz", this will be stripped from the QFile's filename. 
+	 */
+	void
+	remove_gz_from_filename(
+		boost::shared_ptr<QFile> q_file_ptr)
+	{
+		if (!q_file_ptr){
+			return;
+		}
+
+		QString file_name = q_file_ptr->fileName();
+
+		QString gz_string(".gz");
+
+		if (file_name.endsWith(gz_string))
+		{
+			file_name.remove(file_name.length()-gz_string.length(),gz_string.length());
+			q_file_ptr->setFileName(file_name);
+		}
+	}
+
 	typedef std::pair<
 		GPlatesModel::XmlAttributeName, 
 		GPlatesModel::XmlAttributeValue> 
@@ -215,12 +266,43 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 		const FileInfo &file_info,
 		bool use_gzip):
 	d_qfile_ptr(new QFile(file_info.get_qfileinfo().filePath())),
-	d_qprocess_ptr(new QProcess)
+	d_qprocess_ptr(new QProcess),
+	d_gzip_afterwards(false),
+	d_output_filename(file_info.get_qfileinfo().filePath())
 {
+
+// If we're on a Windows system, we have to treat the whole gzip thing differently. 
+//	The approach under Windows is:
+//	1. Produce uncompressed output.
+//	2. Gzip it.
+//
+//  To prevent us from overwriting any existing uncompressed file which the user may want preserved,
+//  we generate a temporary gpml file name. The desired output file name is stored in the member variable
+//  "d_output_filename". 
+//
+//	To implement this we do the following:
+//	1. If we're on Windows, AND compressed output is requested, then
+//		a. Set the "d_gzip_afterwards" flag to true. (We need to check the status of this flag in the destructor
+//			where we'll actually do the gzipping).
+//		b. Set "use_gzip" to false, so that uncompressed output will be produced.
+//		c. Replace the d_qfile_ptr's filename with a temporary .gpml filename. 
+//
+//	2. In the destructor, (i.e. after the uncompressed file has been written), check if the 
+//		"d_gzip_afterwards" flag is set. If so, gzip the uncompressed file, and rename it to 
+//		"d_output_filename". If not, do the normal wait-for-process-to-end stuff. 
+//																	
+#ifdef Q_WS_WIN
+	if (use_gzip) {
+		d_gzip_afterwards = true;
+		use_gzip = false;
+		set_temporary_filename(d_qfile_ptr);
+	}
+#endif
+
 	if ( ! d_qfile_ptr->open(QIODevice::WriteOnly | QIODevice::Text)) {
 		throw ErrorOpeningFileForWritingException(file_info.get_qfileinfo().filePath());
 	}
-	
+
 	if (use_gzip) {
 		// Using gzip; We already opened the file using d_qfile_ptr, but that's okay,
 		// since it verifies that we can actually write to that location.
@@ -253,7 +335,8 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 		QIODevice *target):
 	d_qfile_ptr(),
 	d_qprocess_ptr(),
-	d_output(target)
+	d_output(target),
+	d_gzip_afterwards(false)
 {
 	start_writing_document(d_output);
 }
@@ -288,16 +371,54 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::start_writing_document(
 
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::~GpmlOnePointSixOutputVisitor()
 {
-	d_output.writeEndElement(); // </gpml:FeatureCollection>
-	d_output.writeEndDocument();
-	
-	// If we were using gzip compression, we must wait for the process to finish.
-	if (d_qprocess_ptr.get() != NULL) {
-		// in fact, we need to forcibly close the input to gzip, because
-		// if we wait for it to go out of scope to clean itself up, there seems
-		// to be a bit of data left in a buffer somewhere - either ours, or gzip's.
-		d_qprocess_ptr->closeWriteChannel();
-		d_qprocess_ptr->waitForFinished();
+	// Wrap the entire body of the function in a 'try {  } catch(...)' block so that no
+	// exceptions can escape from the destructor.
+	try {
+		d_output.writeEndElement(); // </gpml:FeatureCollection>
+		d_output.writeEndDocument();
+
+
+		// d_gzip_aftewards should only be true if we're on Windows, and compressed output was requested. 
+		if (d_gzip_afterwards && d_qfile_ptr)
+		{
+			// Do the zipping now, but close the file first.
+			d_output.device()->close();
+
+			QStringList args;
+
+			args << d_qfile_ptr->fileName();
+
+			// The temporary gpml filename, and hence the corresponding .gpml.gz name, should be unique, 
+			// so we can just go ahead and compress the file. 
+			QProcess::execute(s_gzip_program.command(),args);
+			
+			// The requested output file may exist. If that is the case, at this stage the user has already
+			// confirmed that the file be overwritten. We can't rename a file if a file with the new name
+			// already exists, so remove it. 
+			if (QFile::exists(d_output_filename))
+			{
+				QFile::remove(d_output_filename);
+			}
+			QString gz_filename = d_qfile_ptr->fileName() + ".gz";
+			QFile::rename(gz_filename,d_output_filename);
+		}
+		else
+		{
+			// If we were using gzip compression, we must wait for the process to finish.
+			if (d_qprocess_ptr.get() != NULL) {
+				// in fact, we need to forcibly close the input to gzip, because
+				// if we wait for it to go out of scope to clean itself up, there seems
+				// to be a bit of data left in a buffer somewhere - either ours, or gzip's.
+				d_qprocess_ptr->closeWriteChannel();
+				d_qprocess_ptr->waitForFinished();
+			}
+		}
+	}
+	catch (...) {
+		// Nothing we can really do in here, I think... unless we want to log that we
+		// smothered an exception.  However, if we DO want to log that we smothered an
+		// exception, we need to wrap THAT code in a try-catch block also, to ensure that
+		// THAT code can't throw an exception which escapes the destructor.
 	}
 }
 

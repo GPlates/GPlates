@@ -309,6 +309,17 @@ namespace GPlatesFileIO
 		 * Keeps track of the last property that was read.
 		 */
 		boost::optional<GPlatesModel::PropertyName> d_last_property_seen;
+
+		/**
+		 * Whether or not we need to perform a gzip after producing uncompressed gpml output.
+		 * This should be true when compressed output is requested on a Windows system. 
+		 */
+		bool d_gzip_afterwards;
+
+		/**
+		 * The requested output filename. 
+		 */
+		QString d_output_filename;
 	};
 }
 

@@ -1565,6 +1565,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\model\FeatureId.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\model\FeatureRevision.cc"
 				>
 			</File>
@@ -1769,6 +1773,10 @@
 			Name="file-io"
 			>
 			<File
+				RelativePath="..\src\file-io\ErrorOpeningFileForWritingException.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\ExternalProgram.cc"
 				>
 			</File>
@@ -1790,6 +1798,10 @@
 			</File>
 			<File
 				RelativePath="..\src\file-io\GpmlOnePointSixOutputVisitor.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\GpmlOnePointSixOutputVisitor.h"
 				>
 			</File>
 			<File
@@ -1866,6 +1878,10 @@
 			</File>
 			<File
 				RelativePath="..\src\file-io\XmlWriter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\XmlWriter.h"
 				>
 			</File>
 		</Filter>
