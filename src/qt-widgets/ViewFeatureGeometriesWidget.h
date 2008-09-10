@@ -23,11 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_EDITFEATUREGEOMETRIESWIDGET_H
-#define GPLATES_QTWIDGETS_EDITFEATUREGEOMETRIESWIDGET_H
+#ifndef GPLATES_QTWIDGETS_VIEWFEATUREGEOMETRIESWIDGET_H
+#define GPLATES_QTWIDGETS_VIEWFEATUREGEOMETRIESWIDGET_H
 
 #include <QWidget>
-#include "EditFeatureGeometriesWidgetUi.h"
+#include "ViewFeatureGeometriesWidgetUi.h"
 
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"
@@ -37,21 +37,21 @@ namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
 
-	class EditFeatureGeometriesWidget: 
+	class ViewFeatureGeometriesWidget: 
 			public QWidget,
-			protected Ui_EditFeatureGeometriesWidget 
+			protected Ui_ViewFeatureGeometriesWidget 
 	{
 		Q_OBJECT
 		
 	public:
 		explicit
-		EditFeatureGeometriesWidget(
+		ViewFeatureGeometriesWidget(
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureFocus &feature_focus,
 				QWidget *parent_ = NULL);
 
 		virtual
-		~EditFeatureGeometriesWidget()
+		~ViewFeatureGeometriesWidget()
 		{  }
 		
 
@@ -102,4 +102,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_EDITFEATUREGEOMETRIESWIDGET_H
+#endif  // GPLATES_QTWIDGETS_VIEWFEATUREGEOMETRIESWIDGET_H

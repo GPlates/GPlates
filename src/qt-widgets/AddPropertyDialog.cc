@@ -73,14 +73,14 @@ namespace
 	static const PropertyNameInfo property_name_info_table[] = {
 		{ "gpml:angle", "gpml:angle", false },
 		{ "gpml:boundary", "gml:Polygon", true }, // TimeDependentPropertyValue<>
-		{ "gpml:centerLineOf", "gml:_Geometry", true }, // TimeDependentPropertyValue<>
+		{ "gpml:centerLineOf", "gml:LineString", true }, // TimeDependentPropertyValue<> _Geometry
 		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false }, // Enumeration
 		{ "gml:description", "xs:string", false },
 		{ "gpml:dipAngle", "gpml:angle", false },
 		{ "gpml:dipSide", "gpml:DipSideEnumeration", false }, // Enumeration
 		{ "gpml:dipSlip", "gpml:DipSlipEnumeration", false }, // Enumeration
 		{ "gpml:edge", "gpml:ContinentalBoundaryEdgeEnumeration", false }, // Enumeration
-		{ "gpml:errorBounds", "gml:_Geometry", true }, // TimeDependentPropertyValue<_Geometry>
+		{ "gpml:errorBounds", "gml:Polygon", true }, // TimeDependentPropertyValue<_Geometry>
 	//	{ "gpml:fixedReferenceFrame", "gpml:plateId", false }, // For TotalReconstructionSequence
 	//	{ "gpml:movingReferenceFrame", "gpml:plateId", false }, // For TotalReconstructionSequence
 		{ "gpml:foldAnnotation", "gpml:FoldPlaneAnnotationEnumeration", false }, // Enumeration
@@ -91,7 +91,7 @@ namespace
 		{ "gpml:motion", "gpml:StrikeSlipEnumeration", true }, // Enumeration. Just for fun, it's also time-dependent.
 		{ "gml:name", "xs:string", false },
 		{ "gpml:oldPlatesHeader", "gpml:OldPlatesHeader", false },
-		{ "gpml:outlineOf", "gml:_Geometry", true },
+		{ "gpml:outlineOf", "gml:Polygon", true }, // _Geometry
 		{ "gpml:polarityChronId", "gpml:PolarityChronId", false },
 		{ "gpml:polarityChronOffset", "xs:double", false },
 		{ "gpml:position", "gml:Point", false },
@@ -106,7 +106,7 @@ namespace
 		{ "gpml:subductingSlab", "gpml:SubductionSideEnumeration", true }, // TimeDependentPropertyValue<>
 	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
 	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false }, // Enumeration. For AbsoluteReferenceFrame.
-		{ "gpml:unclassifiedGeometry", "gml:_Geometry", true },
+		{ "gpml:unclassifiedGeometry", "gml:MultiPoint", true },	// _Geometry
 		{ "gml:validTime", "gml:TimePeriod", false },
 	};
 	

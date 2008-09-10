@@ -1,6 +1,6 @@
 <ui version="4.0" >
- <class>EditFeatureGeometriesWidget</class>
- <widget class="QWidget" name="EditFeatureGeometriesWidget" >
+ <class>ViewFeatureGeometriesWidget</class>
+ <widget class="QWidget" name="ViewFeatureGeometriesWidget" >
   <property name="geometry" >
    <rect>
     <x>0</x>

@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>353</width>
-    <height>57</height>
+    <width>557</width>
+    <height>59</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -25,10 +25,16 @@
    <property name="bottomMargin" >
     <number>2</number>
    </property>
+   <property name="horizontalSpacing" >
+    <number>2</number>
+   </property>
+   <property name="verticalSpacing" >
+    <number>2</number>
+   </property>
    <item row="0" column="0" >
-    <widget class="QLabel" name="label_begin" >
+    <widget class="QLabel" name="label_begin_time" >
      <property name="text" >
-      <string>&amp;Begin:</string>
+      <string>&amp;Begin (time of appearance):</string>
      </property>
      <property name="alignment" >
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -39,33 +45,73 @@
     </widget>
    </item>
    <item row="0" column="1" >
-    <widget class="QDoubleSpinBox" name="spinbox_time_of_appearance" >
-     <property name="maximum" >
-      <double>9999.000000000000000</double>
-     </property>
-     <property name="value" >
-      <double>0.000000000000000</double>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QDoubleSpinBox" name="spinbox_time_of_appearance" >
+       <property name="maximum" >
+        <double>9999.000000000000000</double>
+       </property>
+       <property name="value" >
+        <double>0.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_ma_1" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text" >
+        <string>Ma</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item row="0" column="2" >
-    <widget class="QCheckBox" name="checkbox_appearance_is_distant_past" >
-     <property name="text" >
-      <string>Distant &amp;Past</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="3" >
-    <widget class="QCheckBox" name="checkbox_appearance_is_distant_future" >
-     <property name="text" >
-      <string>Distant F&amp;uture</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QCheckBox" name="checkbox_appearance_is_distant_past" >
+       <property name="text" >
+        <string>Distant &amp;Past</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkbox_appearance_is_distant_future" >
+       <property name="text" >
+        <string>Distant F&amp;uture</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_help" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="toolTip" >
+        <string>What does this mean?</string>
+       </property>
+       <property name="text" >
+        <string/>
+       </property>
+       <property name="icon" >
+        <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item row="1" column="0" >
-    <widget class="QLabel" name="label_end" >
+    <widget class="QLabel" name="label_end_time" >
      <property name="text" >
-      <string>&amp;End:</string>
+      <string>&amp;End (time of disappearance):</string>
      </property>
      <property name="alignment" >
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -76,28 +122,67 @@
     </widget>
    </item>
    <item row="1" column="1" >
-    <widget class="QDoubleSpinBox" name="spinbox_time_of_disappearance" >
-     <property name="maximum" >
-      <double>9999.000000000000000</double>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QDoubleSpinBox" name="spinbox_time_of_disappearance" >
+       <property name="maximum" >
+        <double>9999.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_ma_2" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text" >
+        <string>Ma</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item row="1" column="2" >
-    <widget class="QCheckBox" name="checkbox_disappearance_is_distant_past" >
-     <property name="text" >
-      <string>Distant Pa&amp;st</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="3" >
-    <widget class="QCheckBox" name="checkbox_disappearance_is_distant_future" >
-     <property name="text" >
-      <string>Distant &amp;Future</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QCheckBox" name="checkbox_disappearance_is_distant_past" >
+       <property name="text" >
+        <string>Distant Pa&amp;st</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkbox_disappearance_is_distant_future" >
+       <property name="text" >
+        <string>Distant &amp;Future</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType" >
+        <enum>QSizePolicy::Preferred</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections/>
 </ui>

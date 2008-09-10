@@ -649,6 +649,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// are to be disabled until they can be implemented.
 	action_Move_Geometry->setVisible(false);
 	action_Move_Vertex->setVisible(false);
+	// Similarly, the Manipulate Pole tool is to be hidden for now.
+#if 1
+	action_Manipulate_Pole->setVisible(false);
+#endif
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
 			this, SLOT(choose_manipulate_pole_tool()));
 

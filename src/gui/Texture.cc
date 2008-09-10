@@ -26,6 +26,7 @@
  */
 #include <iostream>
 #include <cmath>
+#include <cstring>
 
 #include <QtOpenGL/qgl.h>
 #include <QFileDialog>
@@ -35,8 +36,12 @@
 #include "maths/LatLonPointConversions.h"
 #include "maths/PointOnSphere.h"
 
+#include "OpenGLBadAllocException.h"
 #include "OpenGLException.h"
 #include "Texture.h"
+
+// RGBA_SIZE is the number of bytes required to store an RGBA value. RGBA is the only format we deal with at the moment. 
+const int RGBA_SIZE = 4;
 
 namespace{
 
@@ -96,29 +101,29 @@ namespace{
 		texture_width = next_power_of_two(image_width);
 		texture_height = next_power_of_two(image_height);
 
-		std::vector<unsigned char> padded_data(texture_width * texture_height * 4);
+		std::vector<unsigned char> padded_data(texture_width * texture_height * RGBA_SIZE);
 
-		std::vector<unsigned char>::const_iterator it = data.begin();
-
+		std::vector<unsigned char>::iterator it = data.begin();
 		std::vector<unsigned char>::iterator p_it = padded_data.begin();
 
-		int w = 0;
-		int h = 0;
+		int offset = (texture_width - image_width)*RGBA_SIZE;
 
-		int offset = (texture_width - image_width)*4;
+		int total_width = image_width*RGBA_SIZE;
 
-		for ( ; h < image_height ; h++)
+		for (int h = 0 ; h < image_height ; h++)
 		{
-			for ( w = 0; w < image_width*4 ; w++)
+			for (int w = 0; w < total_width ; w++)
 			{
 				*p_it = *it;
 				p_it++;
 				it++;
 			}
+
 			p_it += offset;	
 		}
 
-		data = padded_data;
+		data.swap(padded_data);
+//		data = padded_data;
 	}
 
 	/**
@@ -126,7 +131,8 @@ namespace{
 	 */ 
 	void
 	expand_to_power_two(
-		unsigned char **data,
+		unsigned char *data,
+		std::vector<unsigned char> &expanded_data,
 		int image_width,
 		int image_height,
 		int &texture_width,
@@ -135,30 +141,32 @@ namespace{
 		texture_width = next_power_of_two(image_width);
 		texture_height = next_power_of_two(image_height);
 
-		unsigned char *padded_data = new unsigned char[texture_width * texture_height * 4];
+		expanded_data.resize(texture_width * texture_height * RGBA_SIZE);
 
-		unsigned char *data_ptr = *data;
-		unsigned char *padded_ptr = padded_data;
+		unsigned char *data_ptr = data;
+		unsigned char *padded_ptr = &expanded_data[0];
 
-		int w = 0;
-		int h = 0;
+		int offset = (texture_width - image_width)*RGBA_SIZE;
 
-		int offset = (texture_width - image_width)*4;
+		int total_width = image_width*RGBA_SIZE;
 
-		for ( ; h < image_height ; h++)
+		for (int h = 0 ; h < image_height ; h++)
 		{
-			for ( w = 0; w < image_width*4 ; w++)
+			std::memcpy(padded_ptr,data_ptr,total_width);
+			data_ptr += total_width;
+			padded_ptr += total_width + offset;
+#if 0
+
+			for ( w = 0; w < image_width*RGBA_SIZE ; w++)
 			{
 				*padded_ptr = *data_ptr;
 				padded_ptr++;
 				data_ptr++;
 			}
 			padded_ptr += offset;	
+#endif
 		}
-
-		*data = padded_data;
 	}
-
 
 	/**
 	 * Checks if we have enough resources to accomodate the given size and format of texture. 
@@ -199,6 +207,21 @@ namespace{
 			throw GPlatesGui::OpenGLException("OpenGL error in Texture.cc");
 		}
 		return error;
+	}
+
+	void
+	check_glu_errors(
+		GLuint error)
+	{
+		if (error == GLU_OUT_OF_MEMORY)
+		{
+			throw GPlatesGui::OpenGLBadAllocException("There was insufficient memory to load the requested texture.");
+		}
+		if (error != 0)
+		{
+			std::cout << " GLU error: " << gluErrorString(error) << std::endl;
+			throw GPlatesGui::OpenGLException("GLU error in Texture.cc");
+		}
 	}
 
 }
@@ -598,15 +621,17 @@ GPlatesGui::Texture::generate_raster(
 
 	check_texture_size(format,next_power_of_two(d_image_width),next_power_of_two(d_image_height));
 #endif
-	expand_to_power_two(&data,d_image_width,d_image_height,d_texture_width,d_texture_height);
+	std::vector<unsigned char> expanded_data;
+	expand_to_power_two(data,expanded_data,d_image_width,d_image_height,d_texture_width,d_texture_height);
 
 	generate_mapping_coordinates();
 
 	check_gl_errors();
 
-	gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_texture_width,d_texture_height,
-		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,data);
-
+	GLenum error = gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_texture_width,d_texture_height,
+		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,&expanded_data[0]);
+	
+	check_glu_errors(error);
 
 	check_gl_errors();
 }
@@ -636,4 +661,78 @@ GPlatesGui::Texture::generate_mapping_coordinates()
 			d_sphere_vertices[i][j].z = static_cast<float>(p.position_vector().z().dval());
 		}
 	}
+}
+
+void
+GPlatesGui::Texture::generate_mapping_coordinates(
+	float lon_start,
+	float lat_start,
+	float lon_end,
+	float lat_end)
+{
+
+	float s_coord, t_coord;
+	float lat, lon;
+	for (int j = 0; j <= NUM_STRIPS_T ; j++)
+	{
+		t_coord = static_cast<float>(j) * d_image_height / d_texture_height / static_cast<float>(NUM_STRIPS_T);
+		for (int i = 0; i <= NUM_STRIPS_S ; i++)
+		{
+			s_coord = static_cast<float>(i) * d_image_width / d_texture_width / static_cast<float>(NUM_STRIPS_S);
+			lon = lon_start + (lon_end-lon_start)*static_cast<float>(i)/static_cast<float>(NUM_STRIPS_S);
+			lat = lat_end + (lat_start-lat_end)*static_cast<float>(j)/static_cast<float>(NUM_STRIPS_T);
+
+			GPlatesMaths::LatLonPoint latlon(lat,lon);
+			GPlatesMaths::PointOnSphere p = 
+				GPlatesMaths::make_point_on_sphere(latlon);
+
+			d_texture_vertices[i][j].s = s_coord;
+			d_texture_vertices[i][j].t = t_coord;
+
+			d_sphere_vertices[i][j].x = static_cast<float>(p.position_vector().x().dval());
+			d_sphere_vertices[i][j].y = static_cast<float>(p.position_vector().y().dval());
+			d_sphere_vertices[i][j].z = static_cast<float>(p.position_vector().z().dval());
+		}
+	}
+}
+
+void
+GPlatesGui::Texture::generate_raster(
+	std::vector<unsigned_byte_type> &data, 
+	float x_start,
+	float y_start,
+	float x_end,
+	float y_end,
+	int width, 
+	int height, 
+	ColourFormat format)
+{
+	clear_gl_errors();
+	glDeleteTextures(1,&d_texture_name);
+	glGenTextures(1,&d_texture_name);
+	glBindTexture(GL_TEXTURE_2D, d_texture_name);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,GL_CLAMP);
+
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
+
+
+	d_image_width = width;
+	d_image_height = height;
+
+//	check_texture_size(format,next_power_of_two(d_image_width),next_power_of_two(d_image_height));
+
+	expand_to_power_two(data,d_image_width,d_image_height,d_texture_width,d_texture_height);
+
+	generate_mapping_coordinates(x_start,y_start,x_end,y_end);
+
+	check_gl_errors();
+
+	gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_texture_width,d_texture_height,
+		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,&data[0]);
+
+	check_gl_errors();
 }

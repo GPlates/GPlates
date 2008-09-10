@@ -37,6 +37,7 @@
 #include "qt-widgets/ViewportWindow.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/LatLonPointConversions.h"
+#include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "property-values/GmlPoint.h"
@@ -44,10 +45,23 @@
 #include "property-values/GmlPolygon.h"
 #include "UninitialisedEditWidgetException.h"
 #include "InvalidPropertyValueException.h"
+#include "utils/GeometryCreationUtils.h"
+#include "gui/GeometricPropertyValueConstructor.h"
+#include "feature-visitors/GeometrySetter.h"
 
 
 namespace
 {
+	/**
+	 * This typedef is used wherever geometry (of some unknown type) is expected.
+	 * It is a boost::optional because creation of geometry may fail for various reasons.
+	 */
+	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr_type;
+
+	// FIXME: If the DigitisationWidget is any indication, ideally, we won't have to
+	// deal with specific GeometryOnSphere derivations at all - we'd just handle it
+	// with GeometryCreationUtils and maybe some visitors (for getting things into a
+	// property-value, a'la CreateFeatureDialog.)
 	typedef GPlatesMaths::PolylineOnSphere polyline_type;
 	typedef GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_ptr_type;
 
@@ -178,7 +192,85 @@ namespace
 		
 		GPlatesMaths::PolylineOnSphere::vertex_const_iterator it = polyline->vertex_begin();
 		GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline->vertex_end();
-		for (int row = 0; it != end; ++it, ++row) {
+		for (int row = offset; it != end; ++it, ++row) {
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*it);
+			populate_table_row_from_lat_lon(geometry_widget, table, row,
+					llp.latitude(), llp.longitude());
+		}
+	}
+
+
+	/**
+	 * Allocates QTableWidgetItems and populates a QTableWidget from a
+	 * GPlatesMaths::MultiPointOnSphere.
+	 *
+	 * The table will be modified to ensure there are enough rows available,
+	 * and then new QTableWidgetItems will be set for each point in the
+	 * multipoint, starting with row @a offset and up to row @a offset +
+	 * the number of points in the multipoint.
+	 */
+	void
+	populate_table_rows_from_multi_point(
+			GPlatesQtWidgets::EditGeometryWidget &geometry_widget,
+			QTableWidget &table,
+			int offset,
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint)
+	{
+		ensure_table_size(table, offset + static_cast<int>(multipoint->number_of_points()));
+		
+		GPlatesMaths::MultiPointOnSphere::const_iterator it = multipoint->begin();
+		GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint->end();
+		for (int row = offset; it != end; ++it, ++row) {
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*it);
+			populate_table_row_from_lat_lon(geometry_widget, table, row,
+					llp.latitude(), llp.longitude());
+		}
+	}
+
+
+	/**
+	 * Allocates QTableWidgetItems and populates a QTableWidget from a
+	 * GPlatesMaths::PointOnSphere.
+	 *
+	 * The table will be modified to ensure there are enough rows available,
+	 * and then a new QTableWidgetItem will be set for the point.
+	 */
+	void
+	populate_table_rows_from_point(
+			GPlatesQtWidgets::EditGeometryWidget &geometry_widget,
+			QTableWidget &table,
+			int offset,
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
+	{
+		ensure_table_size(table, offset + 1);
+		
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*point);
+		populate_table_row_from_lat_lon(geometry_widget, table, offset,
+				llp.latitude(), llp.longitude());
+	}
+
+
+	/**
+	 * Allocates QTableWidgetItems and populates a QTableWidget from a
+	 * GPlatesMaths::PolygonOnSphere.
+	 *
+	 * The table will be modified to ensure there are enough rows available,
+	 * and then new QTableWidgetItems will be set for each point in the
+	 * polygon, starting with row @a offset and up to row @a offset +
+	 * the number of points in the polygon.
+	 */
+	void
+	populate_table_rows_from_polygon(
+			GPlatesQtWidgets::EditGeometryWidget &geometry_widget,
+			QTableWidget &table,
+			int offset,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
+	{
+		ensure_table_size(table, offset + static_cast<int>(polygon->number_of_vertices()));
+		
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator it = polygon->vertex_begin();
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon->vertex_end();
+		for (int row = offset; it != end; ++it, ++row) {
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*it);
 			populate_table_row_from_lat_lon(geometry_widget, table, row,
 					llp.latitude(), llp.longitude());
@@ -215,6 +307,7 @@ namespace
 	struct PolylineConstructionProblems
 	{
 		GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity polyline_validity;
+		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
 		std::vector<InvalidTableRow> invalid_rows;
 	};
 
@@ -357,7 +450,7 @@ namespace
 	
 	/**
 	 * Highlights table cells and updates labels to provide feedback to the
-	 * user about polyline validity.
+	 * user about GeometryOnSphere validity.
 	 */
 	void
 	display_validity_problems(
@@ -372,30 +465,24 @@ namespace
 		highlight_invalid_table_cells(table, problems.invalid_rows);
 		
 		// Provide an informative message about this particular problem (constructing a polyline).
-		switch (problems.polyline_validity)
+		switch (problems.validity)
 		{
-		case polyline_type::VALID:
+		case GPlatesUtils::GeometryConstruction::VALID:
 				// The polyline can be constructed. However, we might still want to warn
 				// the user that we have skipped points in order to construct the polyline.
-				if (problems.invalid_rows.empty()) {
-					label_error_feedback.setText(QObject::tr("Valid polyline."));
-					label_error_feedback.setVisible(true);
-					label_error_feedback.setStyleSheet(label_valid_style);
-				} else {
-					label_error_feedback.setText(QObject::tr("Valid polyline; however, invalid points have been skipped."));
-					label_error_feedback.setVisible(true);
-					label_error_feedback.setStyleSheet(label_valid_style);
-				}
+				label_error_feedback.setText(QObject::tr("Valid geometry."));
+				label_error_feedback.setVisible(true);
+				label_error_feedback.setStyleSheet(label_valid_style);
 				break;
 		
-		case polyline_type::INVALID_INSUFFICIENT_DISTINCT_POINTS:
+		case GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS:
 				// Not enough points to make even a single (valid) line segment.
-				label_error_feedback.setText(QObject::tr("Invalid polyline: insufficient distinct points."));
+				label_error_feedback.setText(QObject::tr("Invalid geometry: insufficient distinct points."));
 				label_error_feedback.setVisible(true);
 				label_error_feedback.setStyleSheet(label_invalid_style);
 				break;
 
-		case polyline_type::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+		case GPlatesUtils::GeometryConstruction::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
 				// Segments of a polyline cannot be defined between two points which are antipodal.
 				label_error_feedback.setText(QObject::tr("Invalid line segment: consecutive points are antipodal."));
 				label_error_feedback.setVisible(true);
@@ -404,7 +491,7 @@ namespace
 
 		default:
 				// Incompatible points encountered! For no defined reason!
-				label_error_feedback.setText(QObject::tr("Invalid polyline: <No reason available>."));
+				label_error_feedback.setText(QObject::tr("Invalid geometry: <No reason available>."));
 				label_error_feedback.setVisible(true);
 				label_error_feedback.setStyleSheet(label_invalid_style);
 				break;
@@ -413,39 +500,42 @@ namespace
 	
 	
 	/**
-	 * @a problems is a reference to a PolylineConstructionProblems that
-	 * should be created by the caller and will be populated by this function.
+	 * @a validity is a reference to a GeometryConstructionValidity that
+	 * should be created by the caller and will be set by this function.
 	 */
-	boost::optional<polyline_ptr_type>
-	create_polyline_on_sphere(
+	geometry_opt_ptr_type
+	create_geometry_on_sphere(
 			const std::vector<GPlatesMaths::PointOnSphere> &points,
-			PolylineConstructionProblems &problems)
+			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity,
+			int which_type)
 	{
-		// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
-		std::pair<
-			std::vector<GPlatesMaths::PointOnSphere>::const_iterator, 
-			std::vector<GPlatesMaths::PointOnSphere>::const_iterator>
-				invalid_points;
-		// FIXME: It would be nice if we could look at those iterators, calculate the appropriate
-		// table rows (remember, we may have skipped rows!), and highlight the bad ones.
-		
-		// Evaluate construction parameter validity, and create.
-		problems.polyline_validity = polyline_type::evaluate_construction_parameter_validity(
-				points, invalid_points);
-				
-		boost::optional<polyline_ptr_type> polyline;
-		if (problems.polyline_validity == polyline_type::VALID) {
-			polyline = polyline_type::create_on_heap(points);
+		// FIXME: Okay stupid switch() time, Sorry but I want to go home so I can
+		// go on holiday! See other comments regarding combobox_geometry_type and
+		// how it should really be a lookup table.
+		switch(which_type)
+		{
+		case 0:
+			return GPlatesUtils::create_polyline_on_sphere(points, validity);
+		case 1:
+			return GPlatesUtils::create_multipoint_on_sphere(points, validity);
+		case 2:
+			return GPlatesUtils::create_point_on_sphere(points, validity);
+		case 3:
+			return GPlatesUtils::create_polygon_on_sphere(points, validity);
+		default:
+			return boost::none;
 		}
-		return polyline;
 	}
-	
-	
+
+
 	/**
 	 * Goes through the points in the table and tests if they make a valid
 	 * PolylineOnSphere. Updates the table cells' foreground colours
 	 * appropriately, and will adjust the text and visibility of the provided
 	 * QLabel to provide feedback to the user.
+	 *
+	 * FIXME: This will probably get deprecated fast once EditGeometryWidget is
+	 * properly using utils/GeometryConstructionUtils.h
 	 */
 	bool
 	test_polyline_on_sphere_validity(
@@ -461,6 +551,7 @@ namespace
 		// table rows (remember, we may have skipped rows!), and highlight the bad ones.
 		
 		// Evaluate construction parameter validity.
+		// FIXME: Switch to GPlatesUtils::GeometryConstruction::GeometryConstructionValidity.
 		problems.polyline_validity = polyline_type::evaluate_construction_parameter_validity(
 				points, invalid_points);
 
@@ -489,6 +580,46 @@ namespace
 		table.horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
 	}
 	
+
+	/**
+	 * Apply a reverse reconstruction to the given vector of points, so that the
+	 * coordinates are set to present-day location given the supplied plate id and
+	 * current reconstruction tree.
+	 *
+	 * @a points is the vector of points created from build_points_from_table_rows(),
+	 * and will be modified by this function!
+	 *
+	 * FIXME: Handle invalid rows...? Perhaps this makes a strong case for converting
+	 * EditGeometryWidget to use a Qt model-view, so that we can store points in
+	 * present-day and merely display them reconstructed... I'm sure we'll think of
+	 * a case where we want to reuse a user-editable list of coordinates later on.
+	 * DigitisationWidget was a little easier because we didn't need to worry so much
+	 * about what the user can enter.
+	 * 
+	 * FIXME: Unused - when we do implement this, it will probably be as a rewrite
+	 * and use Qt-model-view.
+	 */
+	void
+	reverse_reconstruct(
+			std::vector<GPlatesMaths::PointOnSphere> &points,
+			const GPlatesModel::integer_plate_id_type plate_id,
+			GPlatesModel::ReconstructionTree &recon_tree)
+	{
+		// Get the composed absolute rotation needed to bring a thing on that plate
+		// in the present day to this time.
+		const GPlatesMaths::FiniteRotation rotation =
+				recon_tree.get_composed_absolute_rotation(plate_id).first;
+		const GPlatesMaths::FiniteRotation reverse = GPlatesMaths::get_reverse(rotation);
+		
+		// Iterate over points, modifying as we go.
+		std::vector<GPlatesMaths::PointOnSphere>::iterator it = points.begin();
+		std::vector<GPlatesMaths::PointOnSphere>::iterator end = points.end();
+		for ( ; it != end; ++it) {
+			// Apply the reverse rotation.
+			GPlatesMaths::PointOnSphere present_day_point = reverse * (*it);
+			*it = present_day_point;
+		}
+	}
 }
 
 
@@ -511,9 +642,24 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 	
 	// Set up combobox with all the  geometry types we can edit.
 	combobox_geometry_type->addItem("gml:LineString");
+	combobox_geometry_type->addItem("gml:MultiPoint");
+	combobox_geometry_type->addItem("gml:Point");
+	combobox_geometry_type->addItem("gml:Polygon");
+	// Since implementing the ability to transmogrify one type of PropertyValue
+	// to another is exceedingly non-trivial, we also .. yes! .. hide this combobox too.
+	// It is now only used to keep track of what kind of PropertyValue we should be
+	// creating.
+	combobox_geometry_type->setVisible(false);
 	// Set up combobox with Present Day / Reconstructed coordinate display.
 	combobox_coordinate_time_display->addItem(tr("Present Day"));
 	combobox_coordinate_time_display->addItem(tr("Reconstructed"));
+	// TODO: As the Reconstruction Time view is extremely non-trivial to implement,
+	// I am disabling (hiding) the 'coordinate time' display combobox, so that
+	// users aren't irritated with nonfunctioning UI elements.
+	// Remove this temporary code after release when we have the time to implement it.
+#if 1
+	combobox_coordinate_time_display->setVisible(false);
+#endif
 	
 	// Clear spinboxes and things.
 	reset_widget_to_default_values();
@@ -540,7 +686,8 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 void
 GPlatesQtWidgets::EditGeometryWidget::reset_widget_to_default_values()
 {
-	d_line_string_ptr = NULL;
+	set_reconstruction_plate_id(boost::none);
+	d_property_value_ptr = NULL;
 	// Reset table.
 	table_points->clearContents();
 	table_points->setRowCount(0);
@@ -560,19 +707,118 @@ GPlatesQtWidgets::EditGeometryWidget::reset_widget_to_default_values()
 
 
 void
+GPlatesQtWidgets::EditGeometryWidget::configure_for_property_value_type(
+		const QString &property_value_name)
+{
+	// TODO: Clean this up; use a table instead of relying on the name present
+	// in the combobox_geometry_type.
+	int type_index = combobox_geometry_type->findText(property_value_name);
+	if (type_index != -1) {
+		combobox_geometry_type->setCurrentIndex(type_index);
+	} else {
+		throw PropertyValueNotSupportedException();
+	}
+}
+
+
+void
+GPlatesQtWidgets::EditGeometryWidget::set_reconstruction_plate_id(
+		boost::optional<GPlatesModel::integer_plate_id_type> plate_id_opt)
+{
+	d_reconstruction_plate_id_opt = plate_id_opt;
+	update_reconstruction_time_display(d_view_state_ptr->reconstruction_time());
+	
+	// If we don't have a plate id anymore, we can't view reconstruction-time coords.
+	if ( ! d_reconstruction_plate_id_opt) {
+		combobox_coordinate_time_display->setCurrentIndex(0);
+	}
+	// TODO: If viewing reconstruction time coordinates, reconstruct.
+}
+
+
+void
+GPlatesQtWidgets::EditGeometryWidget::unset_reconstruction_plate_id()
+{
+	set_reconstruction_plate_id(boost::none);
+}
+
+
+void
 GPlatesQtWidgets::EditGeometryWidget::update_widget_from_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_line_string_ptr = &gml_line_string;
+	d_property_value_ptr = &gml_line_string;
 	// Reset table, then fill with points.
 	table_points->clearContents();
 	table_points->setRowCount(0);
 	populate_table_rows_from_polyline(*this, *table_points, 0, gml_line_string.polyline());
-	
+		
+	// FIXME: lookup based on table, THEN set combobox.
+	combobox_geometry_type->setCurrentIndex(0);
+
 	// Reset error feedback.
 	test_geometry_validity();
+
+	set_clean();
+}
+
+
+void
+GPlatesQtWidgets::EditGeometryWidget::update_widget_from_multi_point(
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+{
+	d_property_value_ptr = &gml_multi_point;
+	// Reset table, then fill with points.
+	table_points->clearContents();
+	table_points->setRowCount(0);
+	populate_table_rows_from_multi_point(*this, *table_points, 0, gml_multi_point.multipoint());
 	
-	// FIXME: set widgets
+	// FIXME: lookup based on table, THEN set combobox.
+	combobox_geometry_type->setCurrentIndex(1);
+
+	// Reset error feedback.
+	test_geometry_validity();
+
+	set_clean();
+}
+
+
+void
+GPlatesQtWidgets::EditGeometryWidget::update_widget_from_point(
+		GPlatesPropertyValues::GmlPoint &gml_point)
+{
+	d_property_value_ptr = &gml_point;
+	// Reset table, then fill with points.
+	table_points->clearContents();
+	table_points->setRowCount(0);
+	populate_table_rows_from_point(*this, *table_points, 0, gml_point.point());
+	
+	// FIXME: lookup based on table, THEN set combobox.
+	combobox_geometry_type->setCurrentIndex(2);
+
+	// Reset error feedback.
+	test_geometry_validity();
+
+	set_clean();
+}
+
+
+void
+GPlatesQtWidgets::EditGeometryWidget::update_widget_from_polygon(
+		GPlatesPropertyValues::GmlPolygon &gml_polygon)
+{
+	d_property_value_ptr = &gml_polygon;
+	// Reset table, then fill with points.
+	table_points->clearContents();
+	table_points->setRowCount(0);
+	populate_table_rows_from_polygon(*this, *table_points, 0, gml_polygon.exterior());
+	
+	// FIXME: lookup based on table, THEN set combobox.
+	combobox_geometry_type->setCurrentIndex(3);
+
+	// Reset error feedback.
+	test_geometry_validity();
+
 	set_clean();
 }
 
@@ -589,11 +835,32 @@ GPlatesQtWidgets::EditGeometryWidget::create_property_value_from_widget() const
 	std::vector<GPlatesMaths::PointOnSphere> points = build_points_from_table_rows(
 			*table_points, line_start, line_length, problems.invalid_rows);
 
-	boost::optional<polyline_ptr_type> polyline = create_polyline_on_sphere(points, problems);
-	if (polyline) {
-		return GPlatesPropertyValues::GmlLineString::create(*polyline);
+	// FIXME: needs a better hint than the combobox index.
+	geometry_opt_ptr_type geometry_opt_ptr = create_geometry_on_sphere(points, problems.validity,
+			combobox_geometry_type->currentIndex());
+	if (geometry_opt_ptr) {
+		// Use the GeometricPropertyValueConstructor visitor (which originated from
+		// inside CreateFeatureDialog) to set up a property value appropriate for the
+		// geometry we just made.
+		bool geom_prop_needs_constant_value = true; // Is it?
+		// It will also wrap the present-day GeometryOnSphere in a suitable PropertyValue,
+		// possibly including a GpmlConstantValue wrapper.
+		GPlatesGui::GeometricPropertyValueConstructor geometry_constructor;
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
+				geometry_constructor.convert(*geometry_opt_ptr, boost::none, boost::none,
+						geom_prop_needs_constant_value);
+
+		if (geometry_value_opt) {
+			// Give them the PropertyValue they desire so much.
+			return *geometry_value_opt;
+		} else {
+			// Might happen, if EditGeometryWidget and the GeometricPropertyValueConstructor
+			// disagree on what is implemented and what is not.
+			throw InvalidPropertyValueException(tr("There was an error converting the digitised geometry to a usable property value."));
+		}
 	} else {
-		throw InvalidPropertyValueException(tr("The supplied points do not form a valid polyline."));
+		// FIXME: Wording.
+		throw InvalidPropertyValueException(tr("There was an error creating the geometry. Check there are sufficient points in the table."));
 	}
 }
 
@@ -602,9 +869,11 @@ bool
 GPlatesQtWidgets::EditGeometryWidget::update_property_value_from_widget()
 {
 	// Remember that the property value pointer may be NULL!
-	if (d_line_string_ptr.get() != NULL) {
+	// FIXME: You know what? This should probably be a boost::optional of non_null_intrusive_ptr.
+	// It's late and I'm tired and there's no time for big API changes right now though.
+	if (d_property_value_ptr.get() != NULL) {
 		if (is_dirty()) {
-			set_geometry_for_line_string();
+			set_geometry_for_property_value();
 			set_clean();
 			return true;
 		} else {
@@ -668,6 +937,8 @@ GPlatesQtWidgets::EditGeometryWidget::handle_reconstruction_time_change(
 		double time)
 {
 	update_reconstruction_time_display(time);
+	// TODO: If we are in "Reconstruction Time" mode, we also need to update the
+	// table of points.
 }
 
 
@@ -769,7 +1040,14 @@ void
 GPlatesQtWidgets::EditGeometryWidget::update_reconstruction_time_display(
 		double time)
 {
-	combobox_coordinate_time_display->setItemText(1, tr("Reconstructed to %1 Ma").arg(time));
+	if (d_reconstruction_plate_id_opt) {
+		combobox_coordinate_time_display->setItemText(1,
+				tr("Reconstructed to %1 Ma on plate %2")
+						.arg(time)
+						.arg(*d_reconstruction_plate_id_opt));
+	} else {
+		combobox_coordinate_time_display->setItemText(1, tr("<Error: No Plate ID>"));
+	}
 }
 
 
@@ -785,7 +1063,14 @@ GPlatesQtWidgets::EditGeometryWidget::test_geometry_validity()
 	std::vector<GPlatesMaths::PointOnSphere> points = build_points_from_table_rows(
 			*table_points, line_start, line_length, problems.invalid_rows);
 
-	bool ok = test_polyline_on_sphere_validity(points, problems);
+	bool ok = true;
+	// Instead of the obsolete test_polyline_on_sphere_validity, just attempt
+	// to make a GeometryOnSphere using the utility code.
+	geometry_opt_ptr_type geometry_opt_ptr = create_geometry_on_sphere(points, problems.validity,
+			combobox_geometry_type->currentIndex());
+	if ( ! geometry_opt_ptr) {
+		ok = false;
+	}
 	
 	// Highlight any problems, and update the label appropriately.
 	display_validity_problems(*table_points, *label_error_feedback, problems);
@@ -795,9 +1080,9 @@ GPlatesQtWidgets::EditGeometryWidget::test_geometry_validity()
 
 
 bool
-GPlatesQtWidgets::EditGeometryWidget::set_geometry_for_line_string()
+GPlatesQtWidgets::EditGeometryWidget::set_geometry_for_property_value()
 {
-	// If the EditWidgetGroupBox wants a GmlLineString updated,
+	// If the EditWidgetGroupBox wants a GmlLineString (etc) updated,
 	// this is where we come to do it.
 
 	// For now, assume we're trying to make a GmlLineString with a single PolylineOnSphere.
@@ -809,10 +1094,17 @@ GPlatesQtWidgets::EditGeometryWidget::set_geometry_for_line_string()
 	std::vector<GPlatesMaths::PointOnSphere> points = build_points_from_table_rows(
 			*table_points, line_start, line_length, problems.invalid_rows);
 
-	boost::optional<polyline_ptr_type> polyline = create_polyline_on_sphere(points, problems);
-	if (polyline && d_line_string_ptr.get() != NULL) {
-		d_line_string_ptr->set_polyline(*polyline);
-		return true;
+	// FIXME: You know what? This should probably be a boost::optional of non_null_intrusive_ptr.
+	// It's late and I'm tired and there's no time for big API changes right now though.
+	if (d_property_value_ptr.get() != NULL) {
+		// FIXME: Pass some kind of BETTER hint to create_geometry_on_sphere.
+		geometry_opt_ptr_type geometry_opt_ptr = create_geometry_on_sphere(points, problems.validity,
+				combobox_geometry_type->currentIndex());
+		if (geometry_opt_ptr) {
+			GPlatesFeatureVisitors::GeometrySetter geometry_setter(*geometry_opt_ptr);
+			d_property_value_ptr->accept_visitor(geometry_setter);
+			return true;
+		}
 	}
 	return false;
 }

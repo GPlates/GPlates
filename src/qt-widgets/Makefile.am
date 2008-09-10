@@ -22,8 +22,8 @@ libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	moc_EditDoubleWidget.cc \
 	EditEnumerationWidget.cc EditEnumerationWidgetUi.h \
 	moc_EditEnumerationWidget.cc \
-	EditFeatureGeometriesWidget.cc EditFeatureGeometriesWidgetUi.h \
-	moc_EditFeatureGeometriesWidget.cc \
+	ViewFeatureGeometriesWidget.cc ViewFeatureGeometriesWidgetUi.h \
+	moc_ViewFeatureGeometriesWidget.cc \
 	EditFeaturePropertiesWidget.cc EditFeaturePropertiesWidgetUi.h \
 	moc_EditFeaturePropertiesWidget.cc \
 	EditGeometryWidget.cc EditGeometryWidgetUi.h \
@@ -98,7 +98,7 @@ CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				EulerPoleDialogUi.h \
 				ExportCoordinatesDialogUi.h \
 				FeatureSummaryWidgetUi.h \
-				FeaturePropertiesDialogUi.h EditFeatureGeometriesWidgetUi.h \
+				FeaturePropertiesDialogUi.h ViewFeatureGeometriesWidgetUi.h \
 				ShapefileAttributeMapperDialogUi.h \
 				ShapefileAttributeRemapperDialogUi.h \
 				ShapefileAttributeWidgetUi.h \

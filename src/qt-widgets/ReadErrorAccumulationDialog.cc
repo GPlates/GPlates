@@ -336,6 +336,11 @@ namespace
 				QT_TR_NOOP("Invalid age of disappearance."),
 				QT_TR_NOOP("An invalid age of disappearance was found.") },
 
+		// Errors relating to raster files
+		{ GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
+				QT_TR_NOOP("Insufficient texture memory."),
+				QT_TR_NOOP("There was insufficient memory to load the requested raster.") },
+
 		// Errors relating to GDAL-readable Raster files
 		{ GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,
 				QT_TR_NOOP("Error reading GDAL band."),

@@ -28,6 +28,8 @@
 #include <QDir>
 #include <QImageReader>
 
+#include "gui/OpenGLBadAllocException.h"
+#include "gui/OpenGLException.h"
 #include "gui/Texture.h"
 #include "utils/MathUtils.h"
 
@@ -207,11 +209,28 @@ namespace{
 				GPlatesPropertyValues::InMemoryRaster::RgbaFormat;
 
 		raster.set_corresponds_to_data(false);
-		raster.generate_raster(
-			image.bits(),
-			width,
-			height,
-			format);
+
+		try {
+			raster.generate_raster(
+				image.bits(),
+				width,
+				height,
+				format);
+		}
+		catch(GPlatesGui::OpenGLBadAllocException &)
+		{
+			read_errors.d_failures_to_begin.push_back(
+			GPlatesFileIO::ReadErrorOccurrence(
+				e_source,
+				e_location,
+				GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
+				GPlatesFileIO::ReadErrors::FileNotLoaded));		
+			return;
+		}
+		catch(GPlatesGui::OpenGLException &e)
+		{
+			throw(e);
+		}
 		raster.set_enabled(true);
 	}
 

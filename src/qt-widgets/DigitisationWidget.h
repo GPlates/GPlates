@@ -229,7 +229,7 @@ namespace GPlatesQtWidgets
 		handle_clear();
 
 		/**
-		 * Feeds the ExportCoordinatesDialog a GeometryOnSphere (TODO), and
+		 * Feeds the ExportCoordinatesDialog a GeometryOnSphere, and
 		 * then displays it.
 		 */
 		void

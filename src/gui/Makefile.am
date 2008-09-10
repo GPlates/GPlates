@@ -32,7 +32,8 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				TemporaryGeometryFocus.cc \
 				moc_TemporaryGeometryFocus.cc \
 				GeometryFocusHighlight.cc \
-				moc_GeometryFocusHighlight.cc
+				moc_GeometryFocusHighlight.cc \
+				GeometricPropertyValueConstructor.cc
 
 CLEANFILES		= moc_*.cc
 

@@ -41,7 +41,7 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 			view_state_, feature_focus, this)),
 	d_edit_feature_properties_widget(new GPlatesQtWidgets::EditFeaturePropertiesWidget(
 			view_state_, feature_focus, this)),
-	d_edit_feature_geometries_widget(new GPlatesQtWidgets::EditFeatureGeometriesWidget(
+	d_view_feature_geometries_widget(new GPlatesQtWidgets::ViewFeatureGeometriesWidget(
 			view_state_, feature_focus, this))
 {
 	setupUi(this);
@@ -52,7 +52,7 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 			QIcon(":/gnome_edit_find_16.png"), tr("&Query Properties"));
 	tabwidget_query_edit->addTab(d_edit_feature_properties_widget,
 			QIcon(":/gnome_gtk_edit_16.png"), tr("&Edit Properties"));
-	tabwidget_query_edit->addTab(d_edit_feature_geometries_widget,
+	tabwidget_query_edit->addTab(d_view_feature_geometries_widget,
 			QIcon(":/gnome_stock_edit_points_16.png"), tr("View &Coordinates"));
 	tabwidget_query_edit->setCurrentIndex(0);
 
@@ -112,7 +112,7 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 	// Update our tabbed sub-widgets.
 	d_query_feature_properties_widget->display_feature(d_feature_ref);
 	d_edit_feature_properties_widget->edit_feature(d_feature_ref);
-	d_edit_feature_geometries_widget->edit_feature(d_feature_ref);
+	d_view_feature_geometries_widget->edit_feature(d_feature_ref);
 }
 
 		
@@ -133,7 +133,7 @@ GPlatesQtWidgets::FeaturePropertiesDialog::choose_edit_widget_and_open()
 void
 GPlatesQtWidgets::FeaturePropertiesDialog::choose_geometries_widget_and_open()
 {
-	tabwidget_query_edit->setCurrentWidget(d_edit_feature_geometries_widget);
+	tabwidget_query_edit->setCurrentWidget(d_view_feature_geometries_widget);
 	setVisible(true);
 }
 

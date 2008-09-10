@@ -23,14 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "EditFeatureGeometriesWidget.h"
+#include "ViewFeatureGeometriesWidget.h"
 
-#include "feature-visitors/EditFeatureGeometriesWidgetPopulator.h"
+#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 #include "utils/UnicodeStringUtils.h"
 #include "qt-widgets/ViewportWindow.h"
 
 
-GPlatesQtWidgets::EditFeatureGeometriesWidget::EditFeatureGeometriesWidget(
+GPlatesQtWidgets::ViewFeatureGeometriesWidget::ViewFeatureGeometriesWidget(
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesGui::FeatureFocus &feature_focus,
 		QWidget *parent_):
@@ -47,14 +47,14 @@ GPlatesQtWidgets::EditFeatureGeometriesWidget::EditFeatureGeometriesWidget(
 
 
 void
-GPlatesQtWidgets::EditFeatureGeometriesWidget::reset()
+GPlatesQtWidgets::ViewFeatureGeometriesWidget::reset()
 {
 	tree_geometry->clear();
 }
 
 
 void
-GPlatesQtWidgets::EditFeatureGeometriesWidget::refresh_display()
+GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 {
 	reset();
 	if ( ! d_feature_ref.is_valid()) {
@@ -65,7 +65,7 @@ GPlatesQtWidgets::EditFeatureGeometriesWidget::refresh_display()
 		return;
 	}
 	
-	GPlatesFeatureVisitors::EditFeatureGeometriesWidgetPopulator populator(
+	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
 			d_view_state_ptr->reconstruction(), *tree_geometry);
 	populator.visit_feature_handle(*d_feature_ref);
 	
@@ -81,7 +81,7 @@ GPlatesQtWidgets::EditFeatureGeometriesWidget::refresh_display()
 
 
 void
-GPlatesQtWidgets::EditFeatureGeometriesWidget::edit_feature(
+GPlatesQtWidgets::ViewFeatureGeometriesWidget::edit_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
 	d_feature_ref = feature_ref;

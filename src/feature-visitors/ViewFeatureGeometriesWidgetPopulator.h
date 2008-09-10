@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_EDITFEATUREGEOMETRIESWIDGETPOPULATOR_H
-#define GPLATES_FEATUREVISITORS_EDITFEATUREGEOMETRIESWIDGETPOPULATOR_H
+#ifndef GPLATES_FEATUREVISITORS_VIEWFEATUREGEOMETRIESWIDGETPOPULATOR_H
+#define GPLATES_FEATUREVISITORS_VIEWFEATUREGEOMETRIESWIDGETPOPULATOR_H
 
 #include <list>
 #include <boost/optional.hpp>
@@ -42,7 +42,7 @@
 
 namespace GPlatesFeatureVisitors
 {
-	class EditFeatureGeometriesWidgetPopulator:
+	class ViewFeatureGeometriesWidgetPopulator:
 			public GPlatesModel::FeatureVisitor
 	{
 	public:
@@ -88,7 +88,7 @@ namespace GPlatesFeatureVisitors
 
 
 		explicit
-		EditFeatureGeometriesWidgetPopulator(
+		ViewFeatureGeometriesWidgetPopulator(
 				GPlatesModel::Reconstruction &reconstruction,
 				QTreeWidget &tree_widget):
 			d_reconstruction_ptr(&reconstruction),
@@ -96,7 +96,7 @@ namespace GPlatesFeatureVisitors
 		{  }
 
 		virtual
-		~EditFeatureGeometriesWidgetPopulator() {  }
+		~ViewFeatureGeometriesWidgetPopulator() {  }
 
 		virtual
 		void
@@ -206,4 +206,4 @@ namespace GPlatesFeatureVisitors
 
 }
 
-#endif  // GPLATES_FEATUREVISITORS_EDITFEATUREGEOMETRIESWIDGETPOPULATOR_H
+#endif  // GPLATES_FEATUREVISITORS_VIEWFEATUREGEOMETRIESWIDGETPOPULATOR_H

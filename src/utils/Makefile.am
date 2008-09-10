@@ -8,4 +8,6 @@ noinst_LTLIBRARIES	= libutils.la
 libutils_la_SOURCES	= FloatingPointComparisons.cc StringSet.cc UniqueId.cc \
 				CallStackTracker.cc UnicodeStringUtils.cc StringFormattingUtils.cc \
 				NullIntrusivePointerHandler.cc \
-				FeatureHandleToOldId.cc
+				FeatureHandleToOldId.cc \
+				GeometryCreationUtils.cc
+

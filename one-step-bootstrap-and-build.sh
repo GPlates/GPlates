@@ -35,7 +35,7 @@ sh build-everything.sh "$@"
 ( cd src/qt-widgets && make EditAngleWidgetUi.h )
 ( cd src/qt-widgets && make ExportCoordinatesDialogUi.h )
 ( cd src/qt-widgets && make FeatureSummaryWidgetUi.h ReconstructionPoleWidgetUi.h )
-( cd src/qt-widgets && make FeaturePropertiesDialogUi.h EditFeatureGeometriesWidgetUi.h )
+( cd src/qt-widgets && make FeaturePropertiesDialogUi.h ViewFeatureGeometriesWidgetUi.h )
 ( cd src/qt-widgets && make ShapefileAttributeMapperDialogUi.h )
 ( cd src/qt-widgets && make ShapefileAttributeRemapperDialogUi.h)
 ( cd src/qt-widgets && make ShapefileAttributeWidgetUi.h)

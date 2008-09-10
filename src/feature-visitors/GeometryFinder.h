@@ -42,6 +42,7 @@ namespace GPlatesFeatureVisitors
 	 *
 	 * It currently handles the following property-values:
 	 *  -# GmlLineString
+	 *  -# GmlMultiPoint
 	 *  -# GmlOrientableCurve (assuming a GmlLineString is used as the base)
 	 *  -# GmlPoint
 	 *  -# GmlPolygon (although the differentiation between the interior and exterior rings is
@@ -91,6 +92,11 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gml_line_string(
 				const GPlatesPropertyValues::GmlLineString &gml_line_string);
+
+		virtual
+		void
+		visit_gml_multi_point(
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
 
 		virtual
 		void

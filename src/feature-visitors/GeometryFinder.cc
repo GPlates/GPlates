@@ -32,11 +32,13 @@
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GpmlConstantValue.h"
 #include "global/RetrievalFromEmptyContainerException.h"
+#include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -87,6 +89,14 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	d_found_geometries.push_back(gml_line_string.polyline());
+}
+
+
+void
+GPlatesFeatureVisitors::GeometryFinder::visit_gml_multi_point(
+		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+{
+	d_found_geometries.push_back(gml_multi_point.multipoint());
 }
 
 

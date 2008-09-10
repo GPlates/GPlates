@@ -272,6 +272,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\gui\GeometricPropertyValueConstructor.cc">
+			</File>
+			<File
 				RelativePath="..\src\gui\GeometryFocusHighlight.cc">
 			</File>
 			<File
@@ -657,7 +660,7 @@
 				RelativePath="..\src\qt-widgets\moc_EditFeaturePropertiesWidget.cc">
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_EditFeatureGeometriesWidget.cc">
+				RelativePath="..\src\qt-widgets\moc_ViewFeatureGeometriesWidget.cc">
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_QueryFeaturePropertiesWidget.cc">
@@ -1215,10 +1218,10 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidget.cc">
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidget.cc">
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidget.h">
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidget.h">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -1230,7 +1233,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidgetUi.ui">
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidgetUi.ui">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -1665,6 +1668,9 @@
 				RelativePath="..\src\utils\FloatingPointComparisons.cc">
 			</File>
 			<File
+				RelativePath="..\src\utils\GeometryCreationUtils.cc">
+			</File>
+			<File
 				RelativePath="..\src\utils\NullIntrusivePointerHandler.cc">
 			</File>
 			<File
@@ -1898,13 +1904,16 @@
 				RelativePath="..\src\feature-visitors\GeometryFinder.cc">
 			</File>
 			<File
+				RelativePath="..\src\feature-visitors\GeometrySetter.cc">
+			</File>
+			<File
 				RelativePath="..\src\feature-visitors\GmlTimePeriodFinder.cc">
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\PlateIdFinder.cc">
 			</File>
 			<File
-				RelativePath="..\src\feature-visitors\EditFeatureGeometriesWidgetPopulator.cc">
+				RelativePath="..\src\feature-visitors\ViewFeatureGeometriesWidgetPopulator.cc">
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesWidgetPopulator.cc">

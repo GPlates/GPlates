@@ -76,6 +76,16 @@ namespace GPlatesFileIO
 		}
 
 		/**
+		 * Gets the output device, using QXmlStreamWriter::device().
+		 */
+		QIODevice*
+		device()
+		{
+			return d_writer.device();
+		}
+
+
+		/**
 		 * Constructs the XmlWriter with a QIODevice target.
 		 * This is the preferred method of constructing an XmlWriter.
 		 *

@@ -111,6 +111,8 @@ namespace GPlatesQtWidgets
 		 * It is called by EditWidgetGroupBox, as part of the
 		 * activate_widget_by_property_value_name() function, which is used by
 		 * AddPropertyDialog.
+		 *
+		 * FIXME: We ought to change the QString to a suitable QualifiedXmlName.
 		 */
 		virtual
 		void

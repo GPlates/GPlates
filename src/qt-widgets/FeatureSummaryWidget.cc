@@ -24,6 +24,7 @@
  */
 
 #include <QLocale>
+#include <QDebug>
 
 #include "FeatureSummaryWidget.h"
 
@@ -165,9 +166,13 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		// was a clicked geometry.
 		GPlatesModel::FeatureHandle::properties_iterator geometry_property =
 				associated_rfg->property();
-		lineedit_clicked_geometry->setText(
-				GPlatesUtils::make_qstring_from_icu_string(
-					(*geometry_property)->property_name().build_aliased_name()));
+		if (*geometry_property != NULL) {
+			lineedit_clicked_geometry->setText(
+					GPlatesUtils::make_qstring_from_icu_string(
+						(*geometry_property)->property_name().build_aliased_name()));
+		} else {
+			lineedit_clicked_geometry->setText(tr("<No longer valid>"));
+		}
 	}
 }
 

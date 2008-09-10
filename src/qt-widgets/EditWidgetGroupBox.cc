@@ -45,6 +45,35 @@
 #include "EditWidgetChooser.h"
 #include "NoActiveEditWidgetException.h"
 #include "qt-widgets/ViewportWindow.h"
+#include "feature-visitors/PlateIdFinder.h"
+
+
+namespace
+{
+	/**
+	 * EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	 * Find it, and set it (or unset it).
+	 */
+	void
+	find_reconstruction_plate_id_for_geometry_widget(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesQtWidgets::EditGeometryWidget *edit_geometry_widget_ptr)
+	{
+		static const GPlatesModel::PropertyName plate_id_property_name =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+		// Find it.
+		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+		plate_id_finder.visit_feature_handle(*feature_ref);
+		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+			// Set it.
+			edit_geometry_widget_ptr->set_reconstruction_plate_id(
+					*plate_id_finder.found_plate_ids_begin());
+		} else {
+			// Unset it.
+			edit_geometry_widget_ptr->unset_reconstruction_plate_id();
+		}
+	}
+}
 
 
 GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
@@ -132,6 +161,9 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:FoldPlaneAnnotationEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:AbsoluteReferenceFrameEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gml:LineString"] = d_edit_geometry_widget_ptr;
+	map["gml:MultiPoint"] = d_edit_geometry_widget_ptr;
+	map["gml:Point"] = d_edit_geometry_widget_ptr;
+	map["gml:Polygon"] = d_edit_geometry_widget_ptr;
 	map["xs:integer"] = d_edit_integer_widget_ptr;
 	map["gpml:plateId"] = d_edit_plate_id_widget_ptr;
 	map["gpml:PolarityChronId"] = d_edit_polarity_chron_id_widget_ptr;
@@ -160,8 +192,15 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types_list() const
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::FeatureHandle::properties_iterator it)
 {
+	if ( ! feature_ref.is_valid()) {
+		// Although in principle we only need the properties_iterator here,
+		// not having a valid feature ref is still worth checking for.
+		deactivate_edit_widgets();
+		return;
+	}
 	if (*it == NULL) {
 		// Always check your property iterators.
 		deactivate_edit_widgets();
@@ -169,21 +208,27 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
 	}
 	// Get EditWidgetChooser to tell us what widgets to show.
 	deactivate_edit_widgets();
-	GPlatesQtWidgets::EditWidgetChooser chooser(*this);
+	GPlatesQtWidgets::EditWidgetChooser chooser(*this, feature_ref);
 	(*it)->accept_visitor(chooser);
 }
 
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::FeatureHandle::properties_iterator it)
 {
+	if ( ! feature_ref.is_valid()) {
+		// Although in principle we only need the properties_iterator here,
+		// not having a valid feature ref is still worth checking for.
+		return;
+	}
 	if (*it == NULL) {
 		// Always check your property iterators.
 		return;
 	}
 	// Get EditWidgetChooser to tell us what widgets to update.
-	GPlatesQtWidgets::EditWidgetChooser chooser(*this);
+	GPlatesQtWidgets::EditWidgetChooser chooser(*this, feature_ref);
 	(*it)->accept_visitor(chooser);
 }
 
@@ -325,11 +370,68 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_enumeration_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_line_string_widget(
-		GPlatesPropertyValues::GmlLineString &gml_line_string)
+		GPlatesPropertyValues::GmlLineString &gml_line_string,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
 	setTitle(tr("%1 Polyline").arg(d_edit_verb));
 	show();
 	d_edit_geometry_widget_ptr->update_widget_from_line_string(gml_line_string);
+	
+	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	// Find it, and set it (or unset it).
+	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
+	
+	d_active_widget_ptr = d_edit_geometry_widget_ptr;
+	d_edit_geometry_widget_ptr->show();
+}
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_multi_point_widget(
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	setTitle(tr("%1 Multi-Point").arg(d_edit_verb));
+	show();
+	d_edit_geometry_widget_ptr->update_widget_from_multi_point(gml_multi_point);
+	
+	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	// Find it, and set it (or unset it).
+	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
+	
+	d_active_widget_ptr = d_edit_geometry_widget_ptr;
+	d_edit_geometry_widget_ptr->show();
+}
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_point_widget(
+		GPlatesPropertyValues::GmlPoint &gml_point,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	setTitle(tr("%1 Point").arg(d_edit_verb));
+	show();
+	d_edit_geometry_widget_ptr->update_widget_from_point(gml_point);
+	
+	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	// Find it, and set it (or unset it).
+	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
+	
+	d_active_widget_ptr = d_edit_geometry_widget_ptr;
+	d_edit_geometry_widget_ptr->show();
+}
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_polygon_widget(
+		GPlatesPropertyValues::GmlPolygon &gml_polygon,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	setTitle(tr("%1 Polygon").arg(d_edit_verb));
+	show();
+	d_edit_geometry_widget_ptr->update_widget_from_polygon(gml_polygon);
+	
+	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	// Find it, and set it (or unset it).
+	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
+	
 	d_active_widget_ptr = d_edit_geometry_widget_ptr;
 	d_edit_geometry_widget_ptr->show();
 }

@@ -54,15 +54,19 @@ namespace GPlatesQtWidgets
 		// handle time-dependent property values.
 		explicit
 		EditWidgetChooser(
-				GPlatesQtWidgets::EditWidgetGroupBox &edit_widget_group_box):
-			d_edit_widget_group_box_ptr(&edit_widget_group_box)
+				GPlatesQtWidgets::EditWidgetGroupBox &edit_widget_group_box,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref):
+			d_edit_widget_group_box_ptr(&edit_widget_group_box),
+			d_feature_ref(feature_ref)
 		{  }
 
 		explicit
 		EditWidgetChooser(
 				GPlatesQtWidgets::EditWidgetGroupBox &edit_widget_group_box,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				const GPlatesModel::PropertyName &property_name_to_allow):
-			d_edit_widget_group_box_ptr(&edit_widget_group_box)
+			d_edit_widget_group_box_ptr(&edit_widget_group_box),
+			d_feature_ref(feature_ref)
 		{
 			d_property_names_to_allow.push_back(property_name_to_allow);
 		}
@@ -100,8 +104,23 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
+		visit_gml_multi_point(
+				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+
+		virtual
+		void
 		visit_gml_orientable_curve(
 				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
+
+		virtual
+		void
+		visit_gml_point(
+				GPlatesPropertyValues::GmlPoint &gml_point);
+
+		virtual
+		void
+		visit_gml_polygon(
+				GPlatesPropertyValues::GmlPolygon &gml_polygon);
 
 		virtual
 		void
@@ -161,6 +180,7 @@ namespace GPlatesQtWidgets
 
 	private:
 		GPlatesQtWidgets::EditWidgetGroupBox *d_edit_widget_group_box_ptr;
+		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;
 				
 	};

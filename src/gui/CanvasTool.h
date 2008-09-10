@@ -227,6 +227,67 @@ namespace GPlatesGui
 		{  }
 
 		/**
+		 * Handle a left mouse-button click while a Shift key is held.
+		 *
+		 * This function is a no-op implementation which may be overridden in a derived
+		 * class.
+		 */
+		virtual
+		void
+		handle_shift_left_click(
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+				bool is_on_globe)
+		{  }
+
+		/**
+		 * Handle a mouse drag with the left mouse-button pressed while a Shift key is
+		 * held.
+		 *
+		 * This function should be invoked in response to intermediate updates of the
+		 * mouse-pointer position (as the mouse-pointer is moved about with the
+		 * mouse-button pressed).  In response to the final update (when the mouse-button
+		 * has just been released), invoke the function @a left_release_after_drag instead.
+		 *
+		 * This function is a no-op implementation which may be overridden in a derived
+		 * class.
+		 */
+		virtual
+		void
+		handle_shift_left_drag(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe)
+		{  }
+
+		/**
+		 * Handle the release of the left-mouse button after a mouse drag while a Shift
+		 * key is held.
+		 *
+		 * This function should be invoked in response to the final mouse-pointer position
+		 * update (when the mouse-button has just been released).  In response to
+		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
+		 * moved about with the mouse-button pressed), invoke the function @a
+		 * handle_left_drag instead.
+		 *
+		 * This function is a no-op implementation which may be overridden in a derived
+		 * class.
+		 */
+		virtual
+		void
+		handle_shift_left_release_after_drag(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe)
+		{  }
+
+		/**
 		 * Handle a left mouse-button click while a Control key is held.
 		 *
 		 * This function is a no-op implementation which may be overridden in a derived
