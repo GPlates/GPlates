@@ -42,6 +42,8 @@
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlOldPlatesHeader.h"
@@ -54,6 +56,10 @@
 #include "maths/LatLonPointConversions.h"
 #include "utils/UnicodeStringUtils.h"
 
+namespace
+{
+
+}
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_feature_handle(
@@ -337,6 +343,23 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_irregu
 #endif
 }
 
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_value_dictionary(
+		const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+{
+	d_tree_widget_item_stack.back()->setExpanded(true);
+
+	QTreeWidgetItem *shapefile_list_item = add_child(QObject::tr("gpml:elements"), QString());
+	d_tree_widget_item_stack.push_back(shapefile_list_item);
+
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+		iter = gpml_key_value_dictionary.elements().begin(),
+		end = gpml_key_value_dictionary.elements().end();
+	for ( ; iter != end; ++iter) {
+		add_gpml_key_value_dictionary_element(*iter);
+	}
+	d_tree_widget_item_stack.pop_back();
+}
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_id(
@@ -494,3 +517,15 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_child_then_vi
 
 	return item;
 }
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_value_dictionary_element(
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
+{
+
+	QString key_string = GPlatesUtils::make_qstring_from_icu_string(element.key()->value().get());
+
+	add_child_then_visit_value(key_string,QString(),*element.value());
+
+}
+

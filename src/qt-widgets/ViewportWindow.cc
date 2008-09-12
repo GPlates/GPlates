@@ -1246,6 +1246,7 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	d_feature_properties_dialog.reject();
 	d_read_errors_dialog.reject();
 	d_manage_feature_collections_dialog.reject();
+	d_euler_pole_dialog.reject();
 }
 
 void

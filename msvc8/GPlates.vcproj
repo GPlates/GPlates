@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="GPlates"
 	ProjectGUID="{30E6493E-D095-4EF6-B65E-34FB3A7B8B8A}"
 	RootNamespace="GPlates"
@@ -379,10 +379,6 @@
 			<File
 				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
 				>
-			</File>
-			<File
-				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
-				>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -390,6 +386,10 @@
 						Name="Build MOC Files"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
+				>
 			</File>
 			<File
 				RelativePath="..\src\gui\GeometricPropertyValueConstructor.cc"
@@ -765,25 +765,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidgetUi.ui"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidget.cc"
 				>
 			</File>
@@ -914,6 +895,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EditPolarityChronIdWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditShapefileAttributesWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -1204,10 +1189,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_ViewFeatureGeometriesWidget.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\moc_EditFeaturePropertiesWidget.cc"
 				>
 			</File>
@@ -1325,6 +1306,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_TaskPanel.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ViewFeatureGeometriesWidget.cc"
 				>
 			</File>
 			<File
@@ -1530,6 +1515,25 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidgetUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\ViewportWindow.cc"
 				>
 			</File>
@@ -1557,6 +1561,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\model\ConstFeatureVisitor.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\model\DummyTransactionHandle.cc"
 				>
 			</File>
@@ -1577,7 +1585,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\model\FeatureType.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\model\FeatureVisitor.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\FeatureVisitor.h"
 				>
 			</File>
 			<File
@@ -1586,6 +1602,14 @@
 			</File>
 			<File
 				RelativePath="..\src\model\ModelUtils.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\PropertyName.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\PropertyValue.h"
 				>
 			</File>
 			<File
@@ -1697,6 +1721,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\maths\MultiPointOnSphere.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\maths\PointLiesOnGreatCircleArc.cc"
 				>
 			</File>
@@ -1705,7 +1733,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\maths\PointOnSphere.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\maths\PolygonOnSphere.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\maths\PolygonOnSphere.h"
 				>
 			</File>
 			<File
@@ -1714,6 +1750,10 @@
 			</File>
 			<File
 				RelativePath="..\src\maths\PolylineOnSphere.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\maths\PolylineOnSphere.h"
 				>
 			</File>
 			<File
@@ -1813,6 +1853,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\GpmlReaderUtils.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\PlatesLineFormatGeometryExporter.cc"
 				>
 			</File>
@@ -1833,7 +1877,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\PlatesRotationFormatWriter.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\PropertyCreationUtils.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\PropertyCreationUtils.h"
 				>
 			</File>
 			<File
@@ -1853,7 +1905,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\ReadErrors.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\ShapeFileReader.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapeFileReader.h"
 				>
 			</File>
 			<File
@@ -1901,11 +1961,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\property-values\GmlMultiPoint.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\property-values\GmlPoint.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\property-values\GpmlFiniteRotation.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlIrregularSampling.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlKeyValueDictionary.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlKeyValueDictionaryElement.h"
 				>
 			</File>
 			<File
@@ -1916,14 +1992,18 @@
 				RelativePath="..\src\property-values\InMemoryRaster.h"
 				>
 			</File>
+			<File
+				RelativePath="..\src\property-values\TemplateTypeParameterType.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\XsString.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="feature-visitors"
 			>
-			<File
-				RelativePath="..\src\feature-visitors\ViewFeatureGeometriesWidgetPopulator.cc"
-				>
-			</File>
 			<File
 				RelativePath="..\src\feature-visitors\FromQvariantConverter.cc"
 				>
@@ -1949,6 +2029,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesWidgetPopulator.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\feature-visitors\ShapefileAttributeFinder.cc"
 				>
 			</File>
@@ -1966,6 +2050,10 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInserter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\ViewFeatureGeometriesWidgetPopulator.cc"
 				>
 			</File>
 			<File

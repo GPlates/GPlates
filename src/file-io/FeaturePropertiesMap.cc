@@ -66,6 +66,8 @@ namespace
 			GET_PROP_VAL_NAME(create_gpml_revision_id);
 		map[ PropertyName::create_gpml("oldPlatesHeader") ] =
 			GET_PROP_VAL_NAME(create_old_plates_header);
+		map[ PropertyName::create_gpml("shapefileAttributes") ] =
+			GET_PROP_VAL_NAME(create_key_value_dictionary);
 
 		return map;
 	}

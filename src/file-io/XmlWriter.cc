@@ -155,11 +155,13 @@ GPlatesFileIO::XmlWriter::declare_namespace_if_necessary(
 
 	if (declare_namespace)
 	{
+#if 0
 		// XXX: temporary
 		std::cout << "Declaring namespace: " 
 			<< GPlatesUtils::make_qstring_from_icu_string(*ns_decl.first).toStdString()
 			<< " with alias "
 			<< GPlatesUtils::make_qstring_from_icu_string(*ns_decl.second).toStdString() << std::endl;
+#endif
 		d_writer.writeNamespace(
 				GPlatesUtils::make_qstring_from_icu_string(*ns_decl.first),
 				GPlatesUtils::make_qstring_from_icu_string(*ns_decl.second));

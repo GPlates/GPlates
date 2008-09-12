@@ -61,6 +61,7 @@
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
@@ -259,6 +260,8 @@ namespace
 			xml_output.writeEndElement();  // </gml:pos>
 		xml_output.writeEndElement();  // </gml:Point>
 	}
+
+
 }
 
 
@@ -777,6 +780,23 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_finite_rotation_slerp(
 	d_output.writeEndElement();
 }
 
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_key_value_dictionary(
+		const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+{
+	d_output.writeStartGpmlElement("KeyValueDictionary");
+		//d_output.writeStartGpmlElement("elements");
+			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+				iter = gpml_key_value_dictionary.elements().begin(),
+				end = gpml_key_value_dictionary.elements().end();
+			for ( ; iter != end; ++iter) {
+				d_output.writeStartGpmlElement("element");
+				write_gpml_key_value_dictionary_element(*iter);
+				d_output.writeEndElement();
+			}
+		//d_output.writeEndElement();
+	d_output.writeEndElement();
+}
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_piecewise_aggregation(
@@ -996,7 +1016,8 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_old_plates_header(
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_xs_string(
-		const GPlatesPropertyValues::XsString &xs_string) {
+		const GPlatesPropertyValues::XsString &xs_string)
+{
 	d_output.writeText(xs_string.value().get());
 }
 
@@ -1038,3 +1059,24 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_xs_integer(
 {
 	d_output.writeInteger(xs_integer.value());
 }
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_key_value_dictionary_element(
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
+{
+	d_output.writeStartGpmlElement("KeyValueDictionaryElement");
+		d_output.writeStartGpmlElement("key");
+			element.key()->accept_visitor(*this);
+		d_output.writeEndElement();
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(
+				d_output,
+				element.value_type());
+		d_output.writeEndElement();
+		d_output.writeStartGpmlElement("value");
+			element.value()->accept_visitor(*this);
+		d_output.writeEndElement();
+	d_output.writeEndElement();
+}
+

@@ -59,6 +59,8 @@
 #include "property-values/GpmlFeatureReference.h"
 #include "property-values/GpmlFeatureSnapshotReference.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
+#include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlIrregularSampling.h"
@@ -414,6 +416,18 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
 		AS_PROP_VAL(create_time_dependent_property_value)
+
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement
+		create_key_value_dictionary_element(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
+		create_key_value_dictionary(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_key_value_dictionary)
+
 	}
 }
 

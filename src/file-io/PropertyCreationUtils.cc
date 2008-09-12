@@ -200,12 +200,29 @@ namespace
 		boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> 
 			target = elem->get_child_by_name(prop_name);
 
+
+#if 0
 		if ( ! (target && (*target)->attributes_empty() 
 				&& ((*target)->number_of_children() == 1))) {
 			// Can't find target value!
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::BadOrMissingTargetForValueType,
 					EXCEPTION_SOURCE);
 		}
+#endif
+
+// Allow no children for string-types.
+
+		static const GPlatesPropertyValues::TemplateTypeParameterType string_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string");
+
+		if ( ! (target && (*target)->attributes_empty() 
+				&& (((*target)->number_of_children() == 1)) ||
+					 ((type == string_type) && ((*target)->number_of_children() == 0)))) {
+			// Can't find target value!
+			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::BadOrMissingTargetForValueType,
+					EXCEPTION_SOURCE);
+		}
+
 		return (*iter->second)(*target);
 	}
 
@@ -1552,5 +1569,46 @@ GPlatesFileIO::PropertyCreationUtils::create_old_plates_header(
 			data_type_code_number, 
 			GPlatesUtils::make_icu_string_from_qstring(data_type_code_number_additional),
 			conjugate_plate_id_number, colour_code, number_of_points);
+}
+
+GPlatesPropertyValues::GpmlKeyValueDictionaryElement
+GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary_element(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("KeyValueDictionaryElement"),
+		KEY = GPlatesModel::PropertyName::create_gpml("key"),
+		VALUE_TYPE = GPlatesModel::PropertyName::create_gpml("valueType"),
+		VALUE = GPlatesModel::PropertyName::create_gpml("value");
+
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type 
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	GPlatesPropertyValues::TemplateTypeParameterType
+		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
+	GPlatesModel::PropertyValue::non_null_ptr_type 
+		value = find_and_create_from_type(elem, type, VALUE);
+	GPlatesPropertyValues::XsString::non_null_ptr_type
+		key = find_and_create_one(elem, &create_xs_string, KEY);
+
+	return GPlatesPropertyValues::GpmlKeyValueDictionaryElement(key, value, type);
+}
+
+GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("KeyValueDictionary"),
+		ELEMENT = GPlatesModel::PropertyName::create_gpml("element");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type 
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements;
+	find_and_create_one_or_more(elem, &create_key_value_dictionary_element, ELEMENT, elements);
+//	find_and_create_one(elem, &create_key_value_dictionary_element, ELEMENTS, elements);
+	return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements);
 }
 

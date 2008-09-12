@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 #include <QString>
 #include <QList>
 #include <boost/optional.hpp>
@@ -37,6 +38,8 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlPolarityChronId.h"
 #include "property-values/GpmlMeasure.h"
@@ -58,22 +61,6 @@ namespace
 	{
 		return (std::find(container.begin(), container.end(), elem) != container.end());
 	}
-	
-	
-	QVariant
-	geo_time_instant_to_qvariant(
-			const GPlatesPropertyValues::GeoTimeInstant &time_position)
-	{
-		if (time_position.is_real()) {
-			return QVariant(time_position.value());
-		} else if (time_position.is_distant_past()) {
-			return QVariant(QObject::tr("distant past"));
-		} else if (time_position.is_distant_future()) {
-			return QVariant(QObject::tr("distant future"));
-		} else {
-			return QVariant(QObject::tr("<Invalid time position>"));
-		}
-	}
 
 }
 
@@ -91,93 +78,31 @@ void
 GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_inline_property_container(
 		const GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
+	
 	QString property_name = GPlatesUtils::make_qstring_from_icu_string(inline_property_container.property_name().get_name());
-	QString property_namespace_alias = GPlatesUtils::make_qstring_from_icu_string(inline_property_container.property_name().get_namespace_alias());
 
-
-	if ((property_name != d_attribute_name) || (property_namespace_alias != "shapefile"))
-	 
+	if (property_name != "shapefileAttributes") 
 	{
 		return;
-
 	}
-
+	
 	visit_property_values(inline_property_container);
 }
 
 
 void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gml_time_instant(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_key_value_dictionary(
+		const GPlatesPropertyValues::GpmlKeyValueDictionary &dictionary)
 {
-	const GPlatesPropertyValues::GeoTimeInstant &time_position = gml_time_instant.time_position();
-	d_found_qvariants.push_back(geo_time_instant_to_qvariant(time_position));
-}
 
-
-void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gml_time_period(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
-{
-	const GPlatesPropertyValues::GeoTimeInstant begin = gml_time_period.begin()->time_position();
-	const GPlatesPropertyValues::GeoTimeInstant end = gml_time_period.end()->time_position();
-	
-	QString str = QString("%1 - %2")
-			.arg(geo_time_instant_to_qvariant(begin).toString())
-			.arg(geo_time_instant_to_qvariant(end).toString());
-		d_found_qvariants.push_back(QVariant(str));
-
-}
-
-
-void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_constant_value(
-		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
-{
-	gpml_constant_value.value()->accept_visitor(*this);
-}
-
-
-void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_plate_id(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
-{
-	d_found_qvariants.push_back(QVariant(static_cast<quint32>(gpml_plate_id.value())));
-}
-
-
-void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_polarity_chron_id(
-		const GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
-{
-	const boost::optional<QString> &era = gpml_polarity_chron_id.get_era();
-	const boost::optional<unsigned int> &major = gpml_polarity_chron_id.get_major_region();
-	const boost::optional<QString> &minor = gpml_polarity_chron_id.get_minor_region();
-
-	QString str;
-	if (era) {
-		str.append(*era);
-		str.append(" ");
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+		iter = dictionary.elements().begin(),
+		end = dictionary.elements().end();
+	for ( ; iter != end; ++iter) {
+		find_shapefile_attribute_in_element(*iter);
 	}
-	if (major) {
-		str.append(QString::number(*major));
-	}
-	if (minor) {
-		str.append(*minor);
-	}
-	d_found_qvariants.push_back(QVariant(str));
+
 }
-
-
-void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_measure(
-		const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
-{
-	// FIXME: Ideally we'd render things like the degrees symbol depending on the value of
-	// the uom attribute.
-	d_found_qvariants.push_back(QVariant(gpml_measure.quantity()));
-}
-
 
 void
 GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_boolean(
@@ -209,4 +134,19 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_string(
 	d_found_qvariants.push_back(QVariant(qstring));
 }
 
+
+
+void
+GPlatesFeatureVisitors::ShapefileAttributeFinder::find_shapefile_attribute_in_element(
+		const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
+{
+	QString temp = GPlatesUtils::make_qstring(element.key()->value());
+	
+	if (GPlatesUtils::make_qstring(
+		 element.key()->value()) != d_attribute_name)
+	{
+		return;
+	}
+	element.value()->accept_visitor(*this);
+}
 
