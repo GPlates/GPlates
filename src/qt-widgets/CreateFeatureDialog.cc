@@ -25,6 +25,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
+#include <map>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QListWidget>
@@ -53,82 +54,234 @@
 
 namespace
 {
+	typedef std::multimap<GPlatesModel::FeatureType, GPlatesModel::PropertyName> feature_geometric_prop_map_type;
+	typedef feature_geometric_prop_map_type::const_iterator feature_geometric_prop_map_const_iterator;
+
+	typedef std::map<GPlatesModel::PropertyName, QString> geometry_prop_name_map_type;
+	typedef geometry_prop_name_map_type::const_iterator geometry_prop_name_map_const_iterator;
+
+	typedef std::map<GPlatesModel::PropertyName, bool> geometry_prop_timedependency_map_type;
+	typedef geometry_prop_timedependency_map_type::const_iterator geometry_prop_timedependency_map_const_iterator;
+	
+	/**
+	 * This struct is used to build a static table of all possible geometric properties
+	 * we can fill in with this dialog.
+	 */
+	struct GeometryPropInfo
+	{
+		/**
+		 * The name of the geometric property, without the gpml: prefix.
+		 */
+		const char *prop_name;
+		
+		/**
+		 * The human-friendly name of the geometric property, made ready
+		 * for translation by being wrapped in a QT_TR_NOOP() macro.
+		 */
+		const char *friendly_name;
+		
+		/**
+		 * Whether the property should have a time-dependent wrapper.
+		 */
+		bool expects_time_dependent_wrapper;
+	};
+	
+	/**
+	 * Information about geometric properties we can fill in with this dialog.
+	 */
+	static const GeometryPropInfo geometry_prop_info_table[] = {
+		{ "centerLineOf", QT_TR_NOOP("Centre line"), true },
+		{ "outlineOf", QT_TR_NOOP("Outline"), true },
+		{ "errorBounds", QT_TR_NOOP("Error boundary"), false },
+		{ "boundary", QT_TR_NOOP("Boundary"), false },
+		{ "position", QT_TR_NOOP("Position"), false },
+		{ "unclassifiedGeometry", QT_TR_NOOP("Unclassified / miscellaneous"), true },
+	};
+
+	
+	/**
+	 * Converts the above table into a map of PropertyName -> QString.
+	 */
+	const geometry_prop_name_map_type &
+	build_geometry_prop_name_map()
+	{
+		static geometry_prop_name_map_type map;
+		// Add all the friendly names from the table.
+		const GeometryPropInfo *it = geometry_prop_info_table;
+		const GeometryPropInfo *end = it + NUM_ELEMS(geometry_prop_info_table);
+		for ( ; it != end; ++it) {
+			map.insert(std::make_pair(GPlatesModel::PropertyName::create_gpml(it->prop_name),
+					QObject::tr(it->friendly_name) ));
+		}
+		return map;
+	}	
+
+
+	/**
+	 * Converts the above table into a map of PropertyName -> bool.
+	 */
+	const geometry_prop_timedependency_map_type &
+	build_geometry_prop_timedependency_map()
+	{
+		static geometry_prop_timedependency_map_type map;
+		// Add all the expects_time_dependent_wrapper flags from the table.
+		const GeometryPropInfo *it = geometry_prop_info_table;
+		const GeometryPropInfo *end = it + NUM_ELEMS(geometry_prop_info_table);
+		for ( ; it != end; ++it) {
+			map.insert(std::make_pair(GPlatesModel::PropertyName::create_gpml(it->prop_name),
+					it->expects_time_dependent_wrapper ));
+		}
+		return map;
+	}	
+
+
 	/**
 	 * This struct is used to build a static table of all possible FeatureTypes we can
 	 * create with this dialog.
-	 * For now, it only has one member, the type - but it will ideally have extra metadata
-	 * about which properties the user should be presented with.
 	 */
 	struct FeatureTypeInfo
 	{
+		/**
+		 * The name of the feature, without the gpml: prefix.
+		 */
 		const char *gpml_type;
+		
+		/**
+		 * The name of a geometric property you can associate with this feature.
+		 */
+		const char *geometric_property;
 	};
 	
 	/**
-	 * This list was created with the command:
-	 *
-	 * perl -ne 'print "\t\t{ \"$1\" },\n" if /^class\s+(\w+)/;' GPGIM_1.6.juuml | sort
-	 *
-	 * plus some manual pruning. It could probably be more intelligent, but then
-	 * it would have to be a separate script.
+	 * This list was created by a Python script which processed the maps of
+	 *   feature-type -> feature-creation function
+	 * and
+	 *   feature-creation function -> property-creation function
+	 * in "src/file-io/FeaturePropertiesMap.cc" (part of the GPML parser).
 	 */
 	static const FeatureTypeInfo feature_type_info_table[] = {
-		{ "AseismicRidge" },
-		{ "BasicRockUnit" },
-		{ "Basin" },
-		{ "Bathymetry" },
-		{ "ClosedContinentalBoundary" },
-		{ "Coastline" },
-		{ "ContinentalFragment" },
-		{ "ContinentalRift" },
-		{ "Craton" },
-		{ "CrustalThickness" },
-		{ "DynamicTopography" },
-		{ "ExtendedContinentalCrust" },
-		{ "Fault" },
-		{ "FoldPlane" },
-		{ "FractureZone" },
-		{ "FractureZoneIdentification" },
-		{ "GeologicalLineation" },
-		{ "GeologicalPlane" },
-		{ "GlobalElevation" },
-		{ "Gravimetry" },
-		{ "HeatFlow" },
-		{ "HotSpot" },
-		{ "HotSpotTrail" },
-		{ "InferredPaleoBoundary" },
-		{ "IslandArc" },
-		{ "Isochron" },
-		{ "LargeIgneousProvince" },
-		{ "MagneticAnomalyIdentification" },
-		{ "MagneticAnomalyShipTrack" },
-		{ "Magnetics" },
-		{ "MantleDensity" },
-		{ "MidOceanRidge" },
-		{ "OceanicAge" },
-		{ "OldPlatesGridMark" },
-		{ "OrogenicBelt" },
-		{ "PassiveContinentalBoundary" },
-		{ "PseudoFault" },
-		{ "Roughness" },
-		{ "Seamount" },
-		{ "SedimentThickness" },
-		{ "SpreadingAsymmetry" },
-		{ "SpreadingRate" },
-		{ "Stress" },
-		{ "SubductionZone" },
-		{ "Suture" },
-		{ "TerraneBoundary" },
-		{ "Topography" },
-		{ "Transform" },
-		{ "TransitionalCrust" },
-		{ "UnclassifiedFeature" },
-		{ "Unconformity" },
-		{ "UnknownContact" },
-		{ "Volcano" },
+		{ "AseismicRidge", "centerLineOf" },
+		{ "AseismicRidge", "outlineOf" },
+		{ "AseismicRidge", "unclassifiedGeometry" },
+		{ "BasicRockUnit", "outlineOf" },
+		{ "BasicRockUnit", "unclassifiedGeometry" },
+		{ "Basin", "outlineOf" },
+		{ "Basin", "unclassifiedGeometry" },
+		{ "Bathymetry", "outlineOf" },
+		{ "ClosedContinentalBoundary", "boundary" },
+		{ "ClosedPlateBoundary", "boundary" },
+		{ "Coastline", "centerLineOf" },
+		{ "Coastline", "unclassifiedGeometry" },
+		{ "ContinentalFragment", "outlineOf" },
+		{ "ContinentalFragment", "unclassifiedGeometry" },
+		{ "ContinentalRift", "centerLineOf" },
+		{ "ContinentalRift", "outlineOf" },
+		{ "ContinentalRift", "unclassifiedGeometry" },
+		{ "Craton", "outlineOf" },
+		{ "Craton", "unclassifiedGeometry" },
+		{ "CrustalThickness", "outlineOf" },
+		{ "DynamicTopography", "outlineOf" },
+		{ "ExtendedContinentalCrust", "outlineOf" },
+		{ "ExtendedContinentalCrust", "unclassifiedGeometry" },
+		{ "Fault", "centerLineOf" },
+		{ "Fault", "unclassifiedGeometry" },
+		{ "FoldPlane", "centerLineOf" },
+		{ "FoldPlane", "unclassifiedGeometry" },
+		{ "FractureZone", "centerLineOf" },
+		{ "FractureZone", "outlineOf" },
+		{ "FractureZone", "unclassifiedGeometry" },
+		{ "FractureZoneIdentification", "position" },
+		{ "GeologicalLineation", "centerLineOf" },
+		{ "GeologicalLineation", "unclassifiedGeometry" },
+		{ "GeologicalPlane", "centerLineOf" },
+		{ "GeologicalPlane", "unclassifiedGeometry" },
+		{ "GlobalElevation", "outlineOf" },
+		{ "Gravimetry", "outlineOf" },
+		{ "HeatFlow", "outlineOf" },
+		{ "HotSpot", "position" },
+		{ "HotSpot", "unclassifiedGeometry" },
+		{ "HotSpotTrail", "errorBounds" },
+		{ "HotSpotTrail", "unclassifiedGeometry" },
+		{ "InferredPaleoBoundary", "centerLineOf" },
+		{ "InferredPaleoBoundary", "errorBounds" },
+		{ "InferredPaleoBoundary", "unclassifiedGeometry" },
+		{ "IslandArc", "outlineOf" },
+		{ "IslandArc", "unclassifiedGeometry" },
+		{ "Isochron", "centerLineOf" },
+		{ "Isochron", "unclassifiedGeometry" },
+		{ "LargeIgneousProvince", "outlineOf" },
+		{ "LargeIgneousProvince", "unclassifiedGeometry" },
+		{ "MagneticAnomalyIdentification", "position" },
+		{ "MagneticAnomalyShipTrack", "centerLineOf" },
+		{ "MagneticAnomalyShipTrack", "unclassifiedGeometry" },
+		{ "Magnetics", "outlineOf" },
+		{ "MantleDensity", "outlineOf" },
+		{ "MidOceanRidge", "centerLineOf" },
+		{ "MidOceanRidge", "outlineOf" },
+		{ "MidOceanRidge", "unclassifiedGeometry" },
+		{ "OceanicAge", "outlineOf" },
+		{ "OldPlatesGridMark", "centerLineOf" },
+		{ "OldPlatesGridMark", "unclassifiedGeometry" },
+		{ "OrogenicBelt", "centerLineOf" },
+		{ "OrogenicBelt", "outlineOf" },
+		{ "OrogenicBelt", "unclassifiedGeometry" },
+		{ "PassiveContinentalBoundary", "centerLineOf" },
+		{ "PassiveContinentalBoundary", "outlineOf" },
+		{ "PassiveContinentalBoundary", "unclassifiedGeometry" },
+		{ "PseudoFault", "centerLineOf" },
+		{ "PseudoFault", "unclassifiedGeometry" },
+		{ "Roughness", "outlineOf" },
+		{ "Seamount", "outlineOf" },
+		{ "Seamount", "position" },
+		{ "Seamount", "unclassifiedGeometry" },
+		{ "SedimentThickness", "outlineOf" },
+		{ "SpreadingAsymmetry", "outlineOf" },
+		{ "SpreadingRate", "outlineOf" },
+		{ "Stress", "outlineOf" },
+		{ "SubductionZone", "centerLineOf" },
+		{ "SubductionZone", "outlineOf" },
+		{ "SubductionZone", "unclassifiedGeometry" },
+		{ "Suture", "centerLineOf" },
+		{ "Suture", "outlineOf" },
+		{ "Suture", "unclassifiedGeometry" },
+		{ "TerraneBoundary", "centerLineOf" },
+		{ "TerraneBoundary", "unclassifiedGeometry" },
+		{ "Topography", "outlineOf" },
+		{ "TopologicalClosedPlateBoundary", "boundary" },
+		{ "Transform", "centerLineOf" },
+		{ "Transform", "outlineOf" },
+		{ "Transform", "unclassifiedGeometry" },
+		{ "TransitionalCrust", "outlineOf" },
+		{ "TransitionalCrust", "unclassifiedGeometry" },
+		{ "UnclassifiedFeature", "centerLineOf" },
+		{ "UnclassifiedFeature", "outlineOf" },
+		{ "UnclassifiedFeature", "unclassifiedGeometry" },
+		{ "Unconformity", "centerLineOf" },
+		{ "Unconformity", "unclassifiedGeometry" },
+		{ "UnknownContact", "centerLineOf" },
+		{ "UnknownContact", "unclassifiedGeometry" },
+		{ "Volcano", "outlineOf" },
+		{ "Volcano", "position" },
+		{ "Volcano", "unclassifiedGeometry" },
 	};
 	
-	
+	/**
+	 * Converts the above table into a multimap.
+	 */
+	const feature_geometric_prop_map_type &
+	build_feature_geometric_prop_map()
+	{
+		static feature_geometric_prop_map_type map;
+		// Add all the feature types -> geometric props from the feature_type_info_table.
+		const FeatureTypeInfo *it = feature_type_info_table;
+		const FeatureTypeInfo *end = it + NUM_ELEMS(feature_type_info_table);
+		for ( ; it != end; ++it) {
+			map.insert(std::make_pair(GPlatesModel::FeatureType::create_gpml(it->gpml_type),
+					GPlatesModel::PropertyName::create_gpml(it->geometric_property) ));
+		}
+		return map;
+	}
+		
 	/**
 	 * This typedef is used wherever geometry (of some unknown type) is expected.
 	 * It is a boost::optional because creation of geometry may fail for various reasons.
@@ -172,8 +325,9 @@ namespace
 	public:
 		PropertyNameItem(
 				const GPlatesModel::PropertyName name,
+				const QString &display_name,
 				bool expects_time_dependent_wrapper_):
-			QListWidgetItem(GPlatesUtils::make_qstring_from_icu_string(name.build_aliased_name())),
+			QListWidgetItem(display_name),
 			d_name(name),
 			d_expects_time_dependent_wrapper(expects_time_dependent_wrapper_)
 		{  }
@@ -228,17 +382,30 @@ namespace
 	 */
 	void
 	populate_feature_types_list(
-			QListWidget &list)
+			QListWidget &list_widget)
 	{
-		list.clear();
-		// Add all the feature types from the feature_type_info_table.
-		const FeatureTypeInfo *begin = feature_type_info_table;
-		const FeatureTypeInfo *end = begin + NUM_ELEMS(feature_type_info_table);
-		for ( ; begin != end; ++begin) {
-			list.addItem(new FeatureTypeItem(
-					GPlatesModel::FeatureType::create_gpml(begin->gpml_type) ));
+		std::list<GPlatesModel::FeatureType> list;
+		// Build a list of all FeatureTypes mentioned in the table.
+		const FeatureTypeInfo *table_it = feature_type_info_table;
+		const FeatureTypeInfo *table_end = table_it + NUM_ELEMS(feature_type_info_table);
+		for ( ; table_it != table_end; ++table_it) {
+			list.push_back(GPlatesModel::FeatureType::create_gpml(table_it->gpml_type));
 		}
-		list.setCurrentRow(0);
+		list.sort();
+		list.unique();
+		
+		// FIXME: For extra brownie points, filter -this- list based on features
+		// which you couldn't possibly create given the digitised geometry.
+		// E.g. no Cratons made from PolylineOnSphere!
+		
+		list_widget.clear();
+		// Add all the feature types from the finished list.
+		std::list<GPlatesModel::FeatureType>::const_iterator list_it = list.begin();
+		std::list<GPlatesModel::FeatureType>::const_iterator list_end = list.end();
+		for ( ; list_it != list_end; ++list_it) {
+			list_widget.addItem(new FeatureTypeItem(*list_it));
+		}
+		list_widget.setCurrentRow(0);
 	}
 
 	/**
@@ -246,20 +413,41 @@ namespace
 	 */
 	void
 	populate_geometry_destinations_list(
-			QListWidget &list)
+			QListWidget &list_widget,
+			GPlatesModel::FeatureType target_feature_type)
 	{
+		static const geometry_prop_name_map_type geometry_prop_names =
+				build_geometry_prop_name_map();
+		static const geometry_prop_timedependency_map_type geometry_time_dependencies =
+				build_geometry_prop_timedependency_map();
 		// FIXME: This list should ideally be dynamic, depending on:
 		//  - the type of GeometryOnSphere we are given (e.g. gpml:position for gml:Point)
 		//  - the type of feature the user has selected in the first list (since different
 		//    feature types are supposed to have a different selection of valid properties)
-		list.clear();
-		list.addItem(new PropertyNameItem(GPlatesModel::PropertyName::create_gpml("centerLineOf"), true));
-		list.addItem(new PropertyNameItem(GPlatesModel::PropertyName::create_gpml("outlineOf"), true));
-		list.addItem(new PropertyNameItem(GPlatesModel::PropertyName::create_gpml("errorBounds"), true));
-		list.addItem(new PropertyNameItem(GPlatesModel::PropertyName::create_gpml("boundary"), false));
-		list.addItem(new PropertyNameItem(GPlatesModel::PropertyName::create_gpml("position"), false));
-		list.addItem(new PropertyNameItem(GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"), true));
-		list.setCurrentRow(0);
+		list_widget.clear();
+		// Iterate over the feature_type_info_table, and add all property names
+		// that match our desired feature.
+		static const feature_geometric_prop_map_type map = build_feature_geometric_prop_map();
+		feature_geometric_prop_map_const_iterator it = map.lower_bound(target_feature_type);
+		feature_geometric_prop_map_const_iterator end = map.upper_bound(target_feature_type);
+		for ( ; it != end; ++it) {
+			GPlatesModel::PropertyName property = it->second;
+			// Display name defaults to the QualifiedXmlName.
+			QString display_name = GPlatesUtils::make_qstring_from_icu_string(property.build_aliased_name());
+			geometry_prop_name_map_const_iterator display_name_it = geometry_prop_names.find(property);
+			if (display_name_it != geometry_prop_names.end()) {
+				display_name = display_name_it->second;
+			}
+			// Now we have to look up the time-dependent flag somewhere, too.
+			bool expects_time_dependent_wrapper = true;
+			geometry_prop_timedependency_map_const_iterator time_dependency_it = geometry_time_dependencies.find(property);
+			if (time_dependency_it != geometry_time_dependencies.end()) {
+				expects_time_dependent_wrapper = time_dependency_it->second;
+			}
+			// Finally, add the item to the QListWidget.
+			list_widget.addItem(new PropertyNameItem(property, display_name, expects_time_dependent_wrapper));
+		}
+		list_widget.setCurrentRow(0);
 	}
 	
 	/**
@@ -267,14 +455,14 @@ namespace
 	 */
 	void
 	populate_feature_collections_list(
-			QListWidget &list)
+			QListWidget &list_widget)
 	{
 		GPlatesAppState::ApplicationState *state = GPlatesAppState::ApplicationState::instance();
 		
 		GPlatesAppState::ApplicationState::file_info_iterator it = state->files_begin();
 		GPlatesAppState::ApplicationState::file_info_iterator end = state->files_end();
 		
-		list.clear();
+		list_widget.clear();
 		for (; it != end; ++it) {
 			// Get the FeatureCollectionHandle for this file.
 			boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> collection_opt =
@@ -285,10 +473,26 @@ namespace
 			
 			// We are only interested in loaded files which have valid FeatureCollections.
 			if (collection_opt) {
-				list.addItem(new FeatureCollectionItem(*collection_opt, label));
+				list_widget.addItem(new FeatureCollectionItem(*collection_opt, label));
 			}
 		}
-		list.setCurrentRow(0);
+		list_widget.setCurrentRow(0);
+	}
+
+
+	/**
+	 * Get the FeatureType the user has selected.
+	 */
+	boost::optional<const GPlatesModel::FeatureType>
+	currently_selected_feature_type(
+			const QListWidget *listwidget_feature_types)
+	{
+		FeatureTypeItem *type_item = dynamic_cast<FeatureTypeItem *>(
+				listwidget_feature_types->currentItem());
+		if (type_item == NULL) {
+			return boost::none;
+		}
+		return type_item->get_type();
 	}
 }
 
@@ -385,9 +589,9 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	edit_layout->addWidget(d_time_period_widget);
 	edit_layout->addWidget(d_name_widget);
 	groupbox_properties->setLayout(edit_layout);
-
-	// Populate the listwidget_geometry_destinations.
-	populate_geometry_destinations_list(*listwidget_geometry_destinations);
+	
+	// Note that the geometric properties list must be populated dynamically
+	// on page change, see handle_page_change() below.
 }
 
 
@@ -402,6 +606,22 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_collection_page()
 	// Pushing Enter or double-clicking should cause the buttonbox to focus.
 	QObject::connect(listwidget_feature_collections, SIGNAL(itemActivated(QListWidgetItem *)),
 			buttonbox, SLOT(setFocus()));
+}
+
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
+{
+	// Get the FeatureType the user has selected.
+	boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
+			currently_selected_feature_type(listwidget_feature_types);
+	if ( ! feature_type_opt) {
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+	// Populate the listwidget_geometry_destinations based on what is legal right now.
+	populate_geometry_destinations_list(*listwidget_geometry_destinations, *feature_type_opt);
 }
 
 
@@ -471,6 +691,8 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 			break;
 
 	case 1:
+			// Populate the listwidget_geometry_destinations based on what is legal right now.
+			set_up_geometric_property_list();
 			listwidget_geometry_destinations->setFocus();
 			d_button_create->setEnabled(false);
 			break;
@@ -537,14 +759,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	
 	
 	// Get the FeatureType the user has selected.
-	FeatureTypeItem *type_item = dynamic_cast<FeatureTypeItem *>(
-			listwidget_feature_types->currentItem());
-	if (type_item == NULL) {
+	boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
+			currently_selected_feature_type(listwidget_feature_types);
+	if ( ! feature_type_opt) {
 		QMessageBox::critical(this, tr("No feature type selected"),
 				tr("Please select a feature type to create."));
 		return;
 	}
-	const GPlatesModel::FeatureType type = type_item->get_type();
+	const GPlatesModel::FeatureType type = *feature_type_opt;
 	
 	
 	// Get the FeatureCollection the user has selected.

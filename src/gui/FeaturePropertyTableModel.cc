@@ -328,28 +328,55 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 		return;
 	}
 	
-	// Go through every cached property iterator we have, and see if it needs to be
-	// removed.
+	// Go through every cached property iterator we have, and see if it needs to be removed.
 	property_info_container_iterator remove_it = d_property_info_cache.begin();
 	property_info_container_iterator remove_end = d_property_info_cache.end();
-	for (; remove_it != remove_end; ++remove_it) {
+	for ( ; remove_it != remove_end; /* iterator (sometimes) incremented at end of loop */ ) {
+		bool element_was_erased = false;
+
 		// Check the properties_iterator and the intrusive_ptr it refers to.
 		if ( ! remove_it->property_iterator.is_valid()) {
 			int row = get_row_for_property_iterator(remove_it->property_iterator);
-			// Found an invalid property iterator. Remove it from the table.
+
+			// Found an invalid property iterator.  Remove it from the table.
 			beginRemoveRows(QModelIndex(), row, row);
+
+			// Need to update the iterator after its element was erased, which
+			// invalidates the iterator (right?).
 			remove_it = d_property_info_cache.erase(remove_it);
+
+			// Need to update the "end" iterator, since an element has been erased from
+			// a contiguous-storage container (a std::vector), which invalidates any
+			// iterators which point to the following elements (Josuttis 99, section
+			// 6.2.2 "Vector Operations").
 			remove_end = d_property_info_cache.end();
-			--remove_it;
+
 			endRemoveRows();
+			element_was_erased = true;
 		} else if (*remove_it->property_iterator == NULL) {
 			int row = get_row_for_property_iterator(remove_it->property_iterator);
-			// Found a NULL intrusive_ptr. Remove it from the table.
+
+			// Found a NULL intrusive_ptr.  Remove it from the table.
 			beginRemoveRows(QModelIndex(), row, row);
+
+			// Need to update the iterator after its element was erased, which
+			// invalidates the iterator (right?).
 			remove_it = d_property_info_cache.erase(remove_it);
+
+			// Need to update the "end" iterator, since an element has been erased from
+			// a contiguous-storage container (a std::vector), which invalidates any
+			// iterators which point to the following elements (Josuttis 99, section
+			// 6.2.2 "Vector Operations").
 			remove_end = d_property_info_cache.end();
-			--remove_it;
+
 			endRemoveRows();
+			element_was_erased = true;
+		}
+
+		// Only increment the iterator if it hasn't already been advanced as a result of
+		// erasing an element.
+		if ( ! element_was_erased) {
+			++remove_it;
 		}
 	}
 

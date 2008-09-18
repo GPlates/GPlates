@@ -136,11 +136,18 @@ namespace
 		QTableWidgetItem *action_item = new QTableWidgetItem();
 		action_item->setFlags(0);
 		table.setItem(row, COLUMN_ACTION, action_item);
+
+
+		// Don't add the action widget to each line of the table. We're going to investigate doing it
+		// on an as-needed basis, i.e. create and add the action widget only to the currently highlighted
+		// row. 
+#if 0
 		// Creating the action_widget is not a memory leak - Qt will take ownership of
 		// the action_widget memory, and clean it up when the table row is deleted.
 		GPlatesQtWidgets::EditGeometryActionWidget *action_widget =
 				new GPlatesQtWidgets::EditGeometryActionWidget(geometry_widget, &geometry_widget);
 		table.setCellWidget(row, COLUMN_ACTION, action_widget);
+#endif
 	}
 
 
@@ -679,7 +686,12 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 	QObject::connect(button_append_point, SIGNAL(clicked()),
 			this, SLOT(append_point_clicked()));
 	
+	QObject::connect(table_points, SIGNAL(currentCellChanged(int,int,int,int)),
+						this, SLOT(handle_current_cell_changed(int,int,int,int)));
+		
+
 	setFocusProxy(table_points);
+
 }
 
 
@@ -760,6 +772,8 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_line_string(
 	test_geometry_validity();
 
 	set_clean();
+
+	table_points->setCurrentCell(0,0);
 }
 
 
@@ -780,6 +794,8 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_multi_point(
 	test_geometry_validity();
 
 	set_clean();
+
+	table_points->setCurrentCell(0,0);
 }
 
 
@@ -800,6 +816,8 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_point(
 	test_geometry_validity();
 
 	set_clean();
+
+	table_points->setCurrentCell(0,0);
 }
 
 
@@ -820,6 +838,8 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_polygon(
 	test_geometry_validity();
 
 	set_clean();
+
+	table_points->setCurrentCell(0,0);
 }
 
 
@@ -983,6 +1003,10 @@ GPlatesQtWidgets::EditGeometryWidget::append_point_to_table(
 		set_dirty();
 		emit commit_me();
 	}
+
+	// Set the current cell to be a cell from the new row, so that an action widget is added to it. 
+	table_points->setCurrentCell(row,COLUMN_ACTION);
+
 }
 
 
@@ -1021,6 +1045,11 @@ void
 GPlatesQtWidgets::EditGeometryWidget::delete_point_from_table(
 		int row)
 {
+
+	// Before we delete the row, delete the action widget. removeRow() messes with the previous/current
+	// row indices, and then calls handle_current_cell_changed, which cannot delete the old action widget, 
+	// the upshot being that we end up with a surplus action widget which we can't get rid of. 
+	table_points->removeCellWidget(row,COLUMN_ACTION);
 	// Delete the given row.
 	table_points->removeRow(row);
 
@@ -1109,3 +1138,20 @@ GPlatesQtWidgets::EditGeometryWidget::set_geometry_for_property_value()
 	return false;
 }
 
+void
+GPlatesQtWidgets::EditGeometryWidget::handle_current_cell_changed(
+		int current_row, int current_column, int previous_row, int previous_column)
+{
+
+	if ((current_row != previous_row) && current_row >=0)
+	{
+		if (table_points->cellWidget(previous_row,COLUMN_ACTION))
+		{
+			table_points->removeCellWidget(previous_row,COLUMN_ACTION);
+		}
+		GPlatesQtWidgets::EditGeometryActionWidget *action_widget =
+				new GPlatesQtWidgets::EditGeometryActionWidget(*this, this);
+		table_points->setCellWidget(current_row, COLUMN_ACTION, action_widget);
+	}
+
+}

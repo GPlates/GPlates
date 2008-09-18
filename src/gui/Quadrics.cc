@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cstdlib>
 #include <iostream>
 #include "Quadrics.h"
 #include "OpenGLBadAllocException.h"

@@ -102,7 +102,7 @@ namespace GPlatesFileIO
 				return d_location;
 			}
 
-			const ReadErrors::Description
+			ReadErrors::Description
 			description() const {
 				return d_description;
 			}

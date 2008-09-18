@@ -164,7 +164,7 @@
           <item>
            <widget class="QLabel" name="label_feature_collections" >
             <property name="text" >
-             <string>Please select the feature collection the new feature should be added to:</string>
+             <string>Choose the feature collection, to which the new feature should be added:</string>
             </property>
             <property name="wordWrap" >
              <bool>true</bool>

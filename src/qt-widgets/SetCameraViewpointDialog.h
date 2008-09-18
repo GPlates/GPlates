@@ -50,13 +50,13 @@ namespace GPlatesQtWidgets
 				const double &lat,
 				const double &lon);
 		
-		const double
+		double
 		latitude() const
 		{
 			return spinbox_latitude->value();
 		}
 
-		const double
+		double
 		longitude() const
 		{
 			return spinbox_longitude->value();

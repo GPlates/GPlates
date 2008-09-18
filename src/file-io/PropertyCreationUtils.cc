@@ -199,8 +199,6 @@ namespace
 
 		boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> 
 			target = elem->get_child_by_name(prop_name);
-
-
 #if 0
 		if ( ! (target && (*target)->attributes_empty() 
 				&& ((*target)->number_of_children() == 1))) {
@@ -210,14 +208,14 @@ namespace
 		}
 #endif
 
-// Allow no children for string-types.
+		// Allow any number of children for string-types.
 
 		static const GPlatesPropertyValues::TemplateTypeParameterType string_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string");
 
 		if ( ! (target && (*target)->attributes_empty() 
-				&& (((*target)->number_of_children() == 1)) ||
-					 ((type == string_type) && ((*target)->number_of_children() == 0)))) {
+				&& (((*target)->number_of_children() == 1)) || (type == string_type) )) {
+
 			// Can't find target value!
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::BadOrMissingTargetForValueType,
 					EXCEPTION_SOURCE);

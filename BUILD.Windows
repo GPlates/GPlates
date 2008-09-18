@@ -4,135 +4,169 @@ Table of Contents
 
  1. Introduction
  2. Using Microsoft Visual C++
-     1. Version requirements
-     2. Visual C++ 2005 Express Edition
-     3. Note before starting
-     4. Library dependencies
-         1. Qt
-         2. Python
-         3. Boost
-         4. ICU
-         5. GDAL
-     5. Building GPlates via the IDE
-     6. Building GPlates via the Command Line (MSVC2005+ only)
+	1. Version requirements
+	2. Visual C++ Express Edition
+	3. Note before starting
+	4. Library and binary dependencies
+		1. Qt
+		2. Python
+		3. Boost
+		4. ICU
+		5. GDAL
+		6. gzip
+	5. Building GPlates via the IDE	
+	6. Building GPlates via the Command Line (MSVC2005+ only)
 
 Introduction
 
 This will be a guide to building GPlates with various Windows development
-environments.
+environments. 
 
 Using Microsoft Visual C++
 
 The Visual C++ set of development tools is part of the Microsoft Visual Studio
-suite. More information can be found at http://msdn.microsoft.com/visualc - the
-MSDN product page for Visual C++.
+suite. More information can be found at http://msdn.microsoft.com/visualc - the 
+MSDN product page for Visual C++. 
 
 Version requirements
 
-Users of Microsoft Visual C++ will require at least version 7.1 (2003) or 8.0
-(2005) to build GPlates. Older versions of the environment are tied to older
-versions of the Microsoft C/C++ compiler (CL.EXE) which are not
-standard-conforming enough, and do not properly support many of the C++
-features that GPlates and its dependencies (especially Boost) use.
+GPlates can be built with version 8.0 (2005) of Microsoft Visual C++ (MSVC8), and 
+MSVC8 project files are provided in the GPlates source package. GPlates should also 
+build under MSVC9 (2008) with the provided MSVC8 project files. Older versions of 
+the environment are tied to older versions of the Microsoft C/C++ compiler (CL.EXE) 
+which are not standard-conforming enough, and do not properly support many of the 
+C++ features that GPlates and its dependencies (especially Boost) use. 
 
-Visual C++ 2005 Express Edition
+Visual C++ Express Edition
 
-The Express edition of Visual C++ 2005 is freely available from MSDN and can be
-downloaded from http://msdn2.microsoft.com/nb-no/vstudio/aa700736(en-us).aspx .
-The steps for building GPlates with the Express edition are the same, with one
-additional requirement. The Platform SDK must be downloaded and installed, and
-integrated with the version of Visual C++ Express installed. Download and
-installation instructions are available at http://www.microsoft.com/downloads/
-details.aspx?FamilyID=0baf2b35-c656-4969-ace8-e4c0c0716adb&DisplayLang=en .
-GPlates has not yet been tested with Visual C++ 2008 Express Edition.
+The Express edition of Visual C++ is freely available from MSDN and can be 
+downloaded from http://msdn2.microsoft.com/vstudio/ . The steps for building 
+GPlates with the Express edition are the same as those for the Standard or 
+Professional editions, with one additional requirement. The Platform SDK must 
+be downloaded and installed, and integrated with the version of Visual C++ 
+Express installed. Download and installation instructions are available at 
+http://www.microsoft.com/downloads/details.aspx?FamilyID=0baf2b35-c656-4969-
+ace8-e4c0c0716adb&DisplayLang=en . 
 
 Note before starting
 
-For any activities requiring the command line, remember to use the "Visual
-Studio 200X Command Prompt" shortcut available in the "Start > Programs >
-Microsoft Visual Studio 200X > Visual Studio Tools" menu. This starts a command
-prompt and sets up environment variables, allowing use of VC command line
-applications (such as the compiler, linker, and make tool).
+For any activities requiring the command line, remember to use the "Visual 
+Studio 200X Command Prompt" shortcut available in the "Start > Programs > 
+Microsoft Visual Studio 200X > Visual Studio Tools" menu. This starts a command 
+prompt and sets up environment variables, allowing use of VC command line 
+applications (such as the compiler, linker, and make tool). 
 
 Library dependencies
 
-The following libraries are required to build GPlates.
+The following libraries and binaries are required to build GPlates. 
 
 Qt
 
- 1. Download qt-win-opensource-src-4.3.1.zip from: http://www.trolltech.com/
-    download/opensource.html
- 2. Download acs-4.3.x-patch3.zip from: http://sourceforge.net/projects/qtwin/
- 3. Extract both to the same directory and run installpatch43.bat
- 4. Configure the build for the version of Visual C++:
-      * For MSVC7.1 run: qconfigure msvc.net
-      * For MSVC8.0 run: qconfigure msvc2005
- 5. Run: nmake
- 6. In VC access Tools, Options, Projects, Directories and add the following Qt
-    directories:
-      * Executable files: \bin
-      * Library files: \lib
-      * Include files: \include, \include\Qt, \include\QtCore, \include\QtGui,
-        \include\QtSvg
+ 1. Download qt-win-opensource-src-4.3.4.zip from: http://trolltech.com/
+    downloads/opensource 
+ 2. Extract it to a path containing no spaces 
+ 3. Run: configure 
+ 4. Run: nmake 
+ 5. In VC access Tools, Options, Projects, Directories and add the following Qt 
+    directories: 
+      * Executable files: \bin 
+      * Library files: \lib 
+      * Include files: \include, \include\Qt, \include\QtCore, \include\QtGui, 
+        \include\QtSvg 
 
 Python
 
- 1. Get and install python-2.5.1.msi from: http://www.python.org/download/
- 2. In VC access Tools, Options, Projects, Directories and add the following
-    Python directories:
-      * Library files: \libs
-      * Include files: \include
+  1. Get and install python-2.5.1.msi from: http://www.python.org/download/ 
+  2. In VC access Tools, Options, Projects, Directories and add the following 
+     Python directories: 
+       * Library files: \libs 
+       * Include files: \include 
 
 Boost
 
- 1. Get and install boost_1_34_1_setup.exe from: http://
-    www.boost-consulting.com/products/free
- 2. In VC access Tools, Options, Projects, Directories and add the following
-    Boost directories:
-      * Library files: \lib
-      * Include files: \
+  1. Get and install boost_1_34_1_setup.exe from: http://www.boost-consulting.com/
+     products/free 
+  2. In VC access Tools, Options, Projects, Directories and add the following 
+     Boost directories: 
+       * Library files: \lib 
+       * Include files: \ 
 
 ICU
 
- 1. Get and extract icu4c-3_8-Win32-msvc8.zip from: http://icu-project.org/
-    download/3.8.html
- 2. In VC access Tools, Options, Projects, Directories and add the following
-    ICU directories:
-      * Executable files: \bin
-      * Library files: \lib
-      * Include files: \include
+  1. Get and extract icu4c-3_8-Win32-msvc8.zip from: http://icu-project.org/
+     download/3.8.html 
+  2. In VC access Tools, Options, Projects, Directories and add the following 
+     ICU directories: 
+       * Executable files: \bin 
+       * Library files: \lib 
+       * Include files: \include 
 
 GDAL
 
- 1. Get and install FWTools136.exe from http://home.gdal.org/fwtools/
- 2. In VC access Tools, Options, Projects, Directories and add the following
-    FWTools directories:
-      * Library files: \lib
-      * Include files: \include
- 3. Add a path to the location of the FWTools dll files:
-      * From the desktop, or from within Windows Explorer, right-click on
-        MyComputer, and select Properties.
-      * In the System Properties dialog box, select the Advanced tab.
-      * Click the Environment Variables button at the bottom of the dialog.
-      * In the top part of the window (User variables), scroll down until you
-        find the PATH variable.
-      * Highlight this and select Edit.
-      * In the Edit User Variable dialog box, add the path to the FWTools \bin
-        folder. Any paths in the box should be separated by semi-colons.
-      * Select OK, followed by OK, and Apply.
+  1. Get and install FWTools210.exe from http://home.gdal.org/fwtools/ 
+  2. In VC access Tools, Options, Projects, Directories and add the following 
+     FWTools directories: 
+       * Library files: \lib 
+       * Include files: \include 
+  3. Add a path to the location of the FWTools dll files: 
+       * From the desktop, or from within Windows Explorer, right-click on 
+         MyComputer, and select Properties. 
+       * Windows Vista: If you can't see a 'My Computer' icon on the desktop: 
+          * Open the Start Panel by clicking on the Windows symbol at the bottom 
+            left of the screen. 
+          * Right click on 'Computer' in the right hand panel. 
+          * Select 'Show on Desktop'. 
+       * Open the 'System Properties' dialog box: 
+          * Windows XP: In the System Properties dialog box, select the 
+            Advanced tab. 
+          * Windows Vista: Select the 'Advanced system settings' link in the 
+            left hand panel. 
+       * Click the Environment Variables button at the bottom of the dialog. 
+       * In the top part of the window (User variables), scroll down until you 
+         find the PATH variable. 
+       * Highlight this and select Edit. 
+       * In the Edit User Variable dialog box, add the location of the FWTools 
+         \bin folder. Any paths in the box should be separated by semi-colons. 
+       * Select OK, followed by OK, and Apply. 
+
+gzip
+
+  1. Download and install gzip from http://gnuwin32.sourceforge.net/packages/gzip.htm 
+     . Select the 'complete package, except sources' link. 
+  2. Add a path to the location of the gzip executable: 
+       * From the desktop, or from within Windows Explorer, right-click on 
+         MyComputer, and select Properties. 
+       * Windows Vista: If you can't see a 'My Computer' icon on the desktop: 
+          * Open the Start Panel by clicking on the Windows symbol at the bottom 
+            left of the screen. 
+          * Right click on 'Computer' in the right hand panel. 
+          * Select 'Show on Desktop'. 
+       * Open the 'System Properties' dialog box: 
+          * Windows XP: In the System Properties dialog box, select the 
+            Advanced tab. 
+          * Windows Vista: Select the 'Advanced system settings' link in the 
+            left hand panel. 
+       * Click the Environment Variables button at the bottom of the dialog. 
+       * In the top part of the window (User variables), scroll down until you 
+         find the PATH variable. 
+       * Highlight this and select Edit. 
+       * In the Edit User Variable dialog box, add the location of the gzip.exe file, 
+         which will usually be C:\Program Files\GnuWin32\bin . Any paths in the box 
+         should be separated by semi-colons. 
+       * Select OK, followed by OK, and Apply. 
 
 Building GPlates via the IDE
 
- 1. Open GPlates.vcproj with the VS IDE.
- 2. Rebuild All from the Build menu.
+  1. Open GPlates.vcproj with the VS IDE. 
+  2. Rebuild All from the Build menu. 
 
 Building GPlates via the Command Line (MSVC2005+ only)
 
- 1. Add paths configured in Tools, Options, Projects, Directories in the IDE to
-    the appropriate environment variables:
-      * LIB: for Library file paths
-      * INCLUDE: for Include file paths
-      * PATH: for Executable file paths
- 2. Run the Visual Studio 2005 Command Prompt.
- 3. Change to the msvc8\ directory in GPlates and run build_debug.bat
-
+  1. Add paths configured in Tools, Options, Projects, Directories in the IDE to the 
+     appropriate environment variables: 
+       * LIB: for Library file paths 
+       * INCLUDE: for Include file paths 
+       * PATH: for Executable file paths 
+  2. Run the Visual Studio 2005 Command Prompt. 
+  3. Change to the msvc8\ directory in GPlates and run build_debug.bat 
+ 

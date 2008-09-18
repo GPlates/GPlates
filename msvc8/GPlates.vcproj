@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="GPlates"
 	ProjectGUID="{30E6493E-D095-4EF6-B65E-34FB3A7B8B8A}"
 	RootNamespace="GPlates"
@@ -2054,6 +2054,10 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\ViewFeatureGeometriesWidgetPopulator.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\ViewFeatureGeometriesWidgetPopulator.h"
 				>
 			</File>
 			<File

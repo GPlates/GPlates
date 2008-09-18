@@ -760,7 +760,8 @@ GPlatesFileIO::ShapeFileReader::create_polygon_feature_from_list(
 	// Anything that's got a polygon geometry is going to get an "outlineOf" property name. 
 	// What happens if the feature type expects a different geometry type?
 	GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-		GPlatesModel::PropertyName::create_gpml("outlineOf"), feature_handle);
+//		GPlatesModel::PropertyName::create_gpml("outlineOf"), feature_handle);
+		GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"), feature_handle);
 
 	return feature_handle;
 
@@ -795,7 +796,8 @@ GPlatesFileIO::ShapeFileReader::create_line_feature_from_list(
 
 	// Anything with a polyline geometry is going to get a "centerLineOf" property name. 
 	GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-					GPlatesModel::PropertyName::create_gpml("centerLineOf"), feature_handle);
+//					GPlatesModel::PropertyName::create_gpml("centerLineOf"), feature_handle);
+					GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"), feature_handle);
 
 	return feature_handle;
 }

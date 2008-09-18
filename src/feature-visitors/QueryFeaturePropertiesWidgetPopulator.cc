@@ -33,8 +33,10 @@
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
@@ -52,8 +54,10 @@
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
 
-#include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 namespace
@@ -150,6 +154,56 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_st
 	d_tree_widget_item_stack.pop_back();
 }
 
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_point(
+		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+{
+	// FIXME: Check if the following is the appropriate form of output.
+	// Do we want a multi-point to look more like a polyline here, or do 
+	// we want to wrap each (lat,lon) pair inside "gml:pos", which is inside a "gml:pointMember"?
+	// I'm going to implement the latter here. 
+	//
+	// I'm following the nested structure that you get in an exported gpml file, except I'm missing
+	// out the "gpml:value / gpml:ConstantValue" part, to be consistent with other geometries. 
+	//
+	// So I'll have something like this:
+	// - unclassifiedGeometry (this is taken care of outside this function)
+	//   - gml:MultiPoint # 1
+	//     - gml:pos
+	//       - (lat;lon)			<lat>;<lon>
+	//	 - gml:MultiPoint # 2
+	//     - gml:pos
+	//       - (lat;lon)			<lat>;<lon>
+	//
+	// 
+
+	d_tree_widget_item_stack.back()->setExpanded(true);
+
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type 
+		multi_point_ptr = gml_multi_point.multipoint();
+
+	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multi_point_ptr->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator end = multi_point_ptr->end();
+
+	for (unsigned point_number = 1; iter != end ; ++iter, ++point_number)
+	{
+
+
+		QLocale locale;
+
+		QString point_member(QObject::tr("gml:pointMember "));
+		point_member.append(QObject::tr("#"));
+		point_member.append(locale.toString(point_number));
+
+		QTreeWidgetItem *member_list_item = add_child(point_member, QString());
+		d_tree_widget_item_stack.push_back(member_list_item);
+
+		write_multipoint_member(*iter);
+
+		d_tree_widget_item_stack.pop_back();
+
+	}
+}
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orientable_curve(
@@ -215,6 +269,59 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 	d_tree_widget_item_stack.pop_back();
 }
 
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon(
+		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
+{
+	// FIXME: Check if the following is the appropriate form of output.
+	// I'm going to export this in the same form as a gml:polygon appears in an 
+	// exported gpml file, excluding the "gpml:value / gpml:ConstantValue" terms, to 
+	// be consistent with other geometries.
+	//
+	// So we'll have
+	// - gml:exterior 
+	// 	- gml:posList
+	//		- #1 (lat;lon)		<lat> ; <lon>
+	//		- #2 (lat;lon)		<lat> ; <lon>
+	// - gml:interior # 1
+	//   - gml:posList
+	//		- #1 (lat;lon)		<lat> ; <lon>
+	//		- #2 (lat;lon)		<lat> ; <lon>	
+	//
+
+	// First, add a branch for the "gml:exterior".
+	d_tree_widget_item_stack.back()->setExpanded(true);
+
+	QTreeWidgetItem *exterior_item = add_child(QObject::tr("gml:exterior"), QString());
+	d_tree_widget_item_stack.push_back(exterior_item);
+
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
+			gml_polygon.exterior();
+
+	write_polygon_ring(polygon_ptr);
+
+	d_tree_widget_item_stack.pop_back();
+
+	// Now handle any internal rings.
+	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
+	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+
+	for (unsigned ring_number = 1; iter != end ; ++iter, ++ring_number)
+	{
+		QString interior;
+		interior.append(QObject::tr("gml:interior"));
+		interior.append(QObject::tr(" #"));
+		interior.append(ring_number);
+
+		QTreeWidgetItem *interior_item = add_child(interior, QString());
+		d_tree_widget_item_stack.push_back(interior_item);
+
+		write_polygon_ring(*iter);
+
+		d_tree_widget_item_stack.pop_back();
+	}
+	
+}
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_instant(
@@ -529,3 +636,67 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_valu
 
 }
 
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_ring(
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
+{
+
+	QTreeWidgetItem *pos_list_item = add_child(QObject::tr("gml:posList"), QString());
+	d_tree_widget_item_stack.push_back(pos_list_item);
+	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
+	// "gml:posList" branch.
+
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_ptr->vertex_begin();
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
+
+	for (unsigned point_number = 1; iter != end; ++iter, ++point_number) {
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+
+		QLocale locale;
+
+		QString point_id(QObject::tr("#"));
+		point_id.append(locale.toString(point_number));
+		point_id.append(QObject::tr(" (lat ; lon)"));
+
+		QString lat = locale.toString(llp.latitude());
+		QString lon = locale.toString(llp.longitude());
+		QString point;
+		point.append(lat);
+		point.append(QObject::tr(" ; "));
+		point.append(lon);
+
+		add_child(point_id, point);
+	}
+
+	d_tree_widget_item_stack.pop_back();
+}
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_multipoint_member(
+	const GPlatesMaths::PointOnSphere &point)
+{
+
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);	
+		QString gml_pos;
+		gml_pos.append(QObject::tr("gml:pos"));
+
+		QTreeWidgetItem *gml_pos_item = add_child(gml_pos, QString());
+		d_tree_widget_item_stack.push_back(gml_pos_item);
+
+		QString pos;
+		pos.append(QObject::tr(" (lat ; lon)"));
+	
+		QLocale locale;
+
+		QString lat = locale.toString(llp.latitude());
+		QString lon = locale.toString(llp.longitude());
+		QString point_string;
+		point_string.append(lat);
+		point_string.append(QObject::tr(" ; "));
+		point_string.append(lon);
+
+		add_child(pos, point_string);
+
+		d_tree_widget_item_stack.pop_back();
+}

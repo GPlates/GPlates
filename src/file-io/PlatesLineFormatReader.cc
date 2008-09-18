@@ -121,12 +121,29 @@ namespace
 			// It's a point.
 			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
 					GPlatesPropertyValues::GmlPoint::create(points.front());
-			GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
+
+			// If it's a point, then we're going to check if the passed property type is gpml:position.
+			// If it *is* gpml:position, then we don't want to wrap it in a constant value.
+			// If it's *not* gpml:position, then we can go ahead and wrap it in a constant value.
+			static const GPlatesModel::PropertyName gpml_position = GPlatesModel::PropertyName::create_gpml("position");
+
+			if (property_name == gpml_position)
+			{
+				// Don't wrap it in a constant value, just add it directly.
+				GPlatesModel::ModelUtils::append_property_value_to_feature(gml_point,
+					property_name, feature);
+			}
+			else
+			{
+				// Wrap it in a constant value.
+				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 					GPlatesModel::ModelUtils::create_gpml_constant_value(
 							gml_point, 
 							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
-			GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
+				GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
 					property_name, feature);
+			}
+
 		} else {
 			// FIXME:  A pre-condition of this function has been violated.  We should
 			// throw an exception.
