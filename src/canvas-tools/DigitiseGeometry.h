@@ -35,6 +35,10 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
+namespace GPlatesGui
+{
+	class RenderedGeometryLayers;
+}
 
 namespace GPlatesCanvasTools
 {
@@ -66,13 +70,14 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesGui::RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
 				GPlatesQtWidgets::DigitisationWidget::GeometryType geom_type_)
 		{
 			DigitiseGeometry::non_null_ptr_type ptr(
-					new DigitiseGeometry(globe_, globe_canvas_, view_state_, digitisation_widget_,
-							geom_type_),
+					new DigitiseGeometry(globe_, globe_canvas_, layers, view_state_,
+							digitisation_widget_, geom_type_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -102,6 +107,7 @@ namespace GPlatesCanvasTools
 		DigitiseGeometry(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesGui::RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
 				GPlatesQtWidgets::DigitisationWidget::GeometryType geom_type_);
@@ -115,12 +121,18 @@ namespace GPlatesCanvasTools
 		
 
 	private:
-		
+
+		/**
+		 * We need to change which canvas-tool layer is shown when this canvas-tool is
+		 * activated.
+		 */
+		GPlatesGui::RenderedGeometryLayers *d_layers_ptr;
+
 		/**
 		 * This is the view state used to obtain current reconstruction time.
 		 */
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
-		
+
 		/**
 		 * This is the Digitisation Widget in the Task Panel.
 		 * It accumulates points for us and handles the actual feature creation step.

@@ -26,6 +26,8 @@
  */
 
 #include "CanvasToolChoice.h"
+#include "RenderedGeometryLayers.h"
+
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
 #include "canvas-tools/ClickGeometry.h"
@@ -40,6 +42,7 @@
 GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+		RenderedGeometryLayers &layers,
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		FeatureTableModel &clicked_table_model,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
@@ -51,19 +54,19 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 	d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(globe_, globe_canvas_,
 			view_state_)),
 	d_click_geometry_tool_ptr(GPlatesCanvasTools::ClickGeometry::create(globe_, globe_canvas_,
-			view_state_, clicked_table_model, fp_dialog_, feature_focus)),
+			layers, view_state_, clicked_table_model, fp_dialog_, feature_focus)),
 	d_digitise_polyline_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(globe_, globe_canvas_,
-			view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::POLYLINE)),
+			layers, view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::POLYLINE)),
 	d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(globe_, globe_canvas_,
-			view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::MULTIPOINT)),
+			layers, view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::MULTIPOINT)),
 	d_digitise_polygon_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(globe_, globe_canvas_,
-			view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::POLYGON)),
+			layers, view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::POLYGON)),
 	d_move_geometry_tool_ptr(GPlatesCanvasTools::MoveGeometry::create(globe_, globe_canvas_,
 			view_state_)),
 	d_move_vertex_tool_ptr(GPlatesCanvasTools::MoveVertex::create(globe_, globe_canvas_,
 			view_state_)),
 	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::ManipulatePole::create(globe_, globe_canvas_,
-			view_state_, pole_widget_)),
+			layers, view_state_, pole_widget_)),
 	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	tool_choice().handle_activation();

@@ -40,7 +40,10 @@ namespace GPlatesGui
 	public:
 		typedef std::vector<RenderedGeometry> rendered_geometry_layer_type;
 
-		RenderedGeometryLayers()
+		RenderedGeometryLayers():
+				d_should_show_digitisation_layer(false),
+				d_should_show_geometry_focus_layer(false),
+				d_should_show_pole_manipulation_layer(false)
 		{  }
 
 		~RenderedGeometryLayers()
@@ -78,6 +81,28 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * Whether the digitisation layer should be displayed.
+		 */
+		bool
+		should_show_digitisation_layer()
+		{
+			return d_should_show_digitisation_layer;
+		}
+
+		/**
+		 * Show (only) the digitisation layer.
+		 *
+		 * This will hide the geometry-focus layer, the pole-manipulation layer, and any
+		 * other canvas-tool-specific layers.
+		 */
+		void
+		show_only_digitisation_layer()
+		{
+			hide_all_canvas_tool_layers();
+			d_should_show_digitisation_layer = true;
+		}
+
+		/**
 		 * Geometries in this layer are interactive geometries which are populated from the
 		 * contents of the geometry focus.
 		 *
@@ -89,6 +114,72 @@ namespace GPlatesGui
 		geometry_focus_layer()
 		{
 			return d_geometry_focus_layer;
+		}
+
+		/**
+		 * Whether the geometry-focus layer should be displayed.
+		 */
+		bool
+		should_show_geometry_focus_layer()
+		{
+			return d_should_show_geometry_focus_layer;
+		}
+
+		/**
+		 * Show (only) the geometry-focus layer.
+		 *
+		 * This will hide the digitisation layer, the pole-manipulation layer, and any
+		 * other canvas-tool-specific layers.
+		 */
+		void
+		show_only_geometry_focus_layer()
+		{
+			hide_all_canvas_tool_layers();
+			d_should_show_geometry_focus_layer = true;
+		}
+
+		/**
+		 * Geometries in this layer are interactive geometries which are populated from the
+		 * contents of the pole-manipulation widget.
+		 *
+		 * Geometries in this layer should be drawn on top of everything except the
+		 * geometries in the mouse-movement layer.  Geometries in this layer should be the
+		 * first matched by a spatial (mouse-click) query.
+		 */
+		rendered_geometry_layer_type &
+		pole_manipulation_layer()
+		{
+			return d_pole_manipulation_layer;
+		}
+
+		/**
+		 * Whether the pole-manipulation layer should be displayed.
+		 */
+		bool
+		should_show_pole_manipulation_layer()
+		{
+			return d_should_show_pole_manipulation_layer;
+		}
+
+		/**
+		 * Show (only) the pole-manipulation layer.
+		 *
+		 * This will hide the digitisation layer, the geometry-focus layer, and any other
+		 * canvas-tool-specific layers.
+		 */
+		void
+		show_only_pole_manipulation_layer()
+		{
+			hide_all_canvas_tool_layers();
+			d_should_show_pole_manipulation_layer = true;
+		}
+
+		void
+		hide_all_canvas_tool_layers()
+		{
+			d_should_show_digitisation_layer = false;
+			d_should_show_geometry_focus_layer = false;
+			d_should_show_pole_manipulation_layer = false;
 		}
 
 		/**
@@ -125,6 +216,11 @@ namespace GPlatesGui
 		rendered_geometry_layer_type d_digitisation_layer;
 
 		/**
+		 * Whether the digitisation layer should be displayed.
+		 */
+		bool d_should_show_digitisation_layer;
+
+		/**
 		 * Geometries in this layer are interactive geometries which are populated from the
 		 * contents of the geometry focus.
 		 *
@@ -133,6 +229,26 @@ namespace GPlatesGui
 		 * first matched by a spatial (mouse-click) query.
 		 */
 		rendered_geometry_layer_type d_geometry_focus_layer;
+
+		/**
+		 * Whether the geometry focus layer should be displayed.
+		 */
+		bool d_should_show_geometry_focus_layer;
+
+		/**
+		 * Geometries in this layer are interactive geometries which are populated from the
+		 * contents of the pole manipulation widget.
+		 *
+		 * Geometries in this layer should be drawn on top of everything except the
+		 * geometries in the mouse-movement layer.  Geometries in this layer should be the
+		 * first matched by a spatial (mouse-click) query.
+		 */
+		rendered_geometry_layer_type d_pole_manipulation_layer;
+
+		/**
+		 * Whether the pole manipulation layer should be displayed;
+		 */
+		bool d_should_show_pole_manipulation_layer;
 
 		/**
 		 * Geometries in this layer are interactive geometries which are populated from the

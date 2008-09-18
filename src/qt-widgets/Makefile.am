@@ -12,6 +12,9 @@ libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	moc_AddPropertyDialog.cc \
 	AnimateDialog.cc AnimateDialogUi.h moc_AnimateDialog.cc \
 	ApplicationState.cc \
+	ApplyReconstructionPoleAdjustmentDialog.cc \
+	ApplyReconstructionPoleAdjustmentDialogUi.h \
+	moc_ApplyReconstructionPoleAdjustmentDialog.cc \
 	CreateFeatureDialog.cc CreateFeatureDialogUi.h moc_CreateFeatureDialog.cc \
 	DigitisationWidget.cc DigitisationWidgetUi.h moc_DigitisationWidget.cc \
 	EditAngleWidget.cc EditAngleWidgetUi.h \
@@ -86,6 +89,7 @@ CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				ReconstructionViewWidgetUi.h \
 				ReadErrorAccumulationDialogUi.h ManageFeatureCollectionsDialogUi.h \
 				ManageFeatureCollectionsActionWidgetUi.h SetCameraViewpointDialogUi.h \
+				ApplyReconstructionPoleAdjustmentDialogUi.h \
 				CreateFeatureDialogUi.h DigitisationWidgetUi.h \
 				EditFeaturePropertiesWidgetUi.h EditTimePeriodWidgetUi.h \
 				EditOldPlatesHeaderWidgetUi.h AddPropertyDialogUi.h \

@@ -520,6 +520,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 
+	// The Reconstruction Pole widget needs to know when the reconstruction time changes.
+	QObject::connect(this, SIGNAL(reconstruction_time_changed(
+					double)),
+			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(handle_reconstruction_time_change(
+					double)));
+
 	// Render everything on the screen in present-day positions.
 	d_canvas_ptr->clear_data();
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
@@ -556,6 +562,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			new GPlatesGui::CanvasToolChoice(
 					d_canvas_ptr->globe(),
 					*d_canvas_ptr,
+					d_canvas_ptr->globe().rendered_geometry_layers(),
 					*this,
 					*d_feature_table_model_ptr,
 					d_feature_properties_dialog,
@@ -578,22 +585,26 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					const GPlatesMaths::PointOnSphere &, bool,
 					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
 					Qt::MouseButton, Qt::KeyboardModifiers)),
 			d_canvas_tool_adapter_ptr, SLOT(handle_drag(const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
 					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
 
 	QObject::connect(d_canvas_ptr, SIGNAL(mouse_released_after_drag(const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
 					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
 					Qt::MouseButton, Qt::KeyboardModifiers)),
 			d_canvas_tool_adapter_ptr, SLOT(handle_release_after_drag(const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
 					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
 	
 	// If the user creates a new feature with the DigitisationWidget, we need to reconstruct to
@@ -649,10 +660,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// are to be disabled until they can be implemented.
 	action_Move_Geometry->setVisible(false);
 	action_Move_Vertex->setVisible(false);
-	// Similarly, the Manipulate Pole tool is to be hidden for now.
-#if 1
-	action_Manipulate_Pole->setVisible(false);
-#endif
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
 			this, SLOT(choose_manipulate_pole_tool()));
 
@@ -843,9 +850,10 @@ GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
 	GPlatesMaths::Real original_recon_time(d_recon_time);
 	if (original_recon_time != GPlatesMaths::Real(new_recon_time)) {
 		d_recon_time = new_recon_time;
+		// Reconstruct before we tell everyone that we've reconstructed!
+		reconstruct();
 		emit reconstruction_time_changed(d_recon_time);
 	}
-	reconstruct();
 }
 
 
@@ -858,6 +866,13 @@ GPlatesQtWidgets::ViewportWindow::reconstruct_with_root(
 		// Does anyone care if the reconstruction root changed?
 	}
 	reconstruct();
+
+	// The reconstruction time hasn't really changed, but emitting this signal will 
+	// make sure that other parts of GPlates which are dependent on new geometry values 
+	// will get updated.
+	// FIXME: Create a suitable new slot, or maybe just rename the slot to 
+	// something like "reconstruction_time_or_root_changed"
+	emit reconstruction_time_changed(d_recon_time);
 }
 
 
@@ -866,6 +881,10 @@ GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
 		double new_recon_time,
 		unsigned long new_recon_root)
 {
+	// FIXME: This function is only called once, on application startup, for root=0 and time=0;
+	// if we ever need to call this for other reasons, then we should be careful about the relative 
+	// order of the reconstruction, and the emit signal. 
+
 	// != does not work with doubles, so we must wrap them in Real.
 	GPlatesMaths::Real original_recon_time(d_recon_time);
 	if (original_recon_time != GPlatesMaths::Real(new_recon_time)) {

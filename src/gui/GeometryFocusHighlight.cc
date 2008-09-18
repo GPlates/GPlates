@@ -39,38 +39,21 @@ GPlatesGui::GeometryFocusHighlight::set_focus(
 	// Else, presumably the focused geometry has changed.
 	d_feature = feature_ref;
 	d_focused_geometry = focused_geometry;
-	d_rendered_geometry = boost::none;
-	render_focused_geometry();
-	show_highlight();
+	draw_focused_geometry();
 }
 
 
 void
-GPlatesGui::GeometryFocusHighlight::render_focused_geometry()
-{
-	if ( ! d_focused_geometry) {
-		// No focused geometry, so nothing to render.
-		return;
-	}
-	GPlatesGui::PlatesColourTable::const_iterator white = &GPlatesGui::Colour::WHITE;
-	d_rendered_geometry = GPlatesGui::RenderedGeometry(d_focused_geometry->geometry(), white);
-}
-
-
-void
-GPlatesGui::GeometryFocusHighlight::hide_highlight()
+GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 {
 	d_highlight_layer_ptr->clear();
-	emit canvas_should_update();
-}
-
-
-void
-GPlatesGui::GeometryFocusHighlight::show_highlight()
-{
-	d_highlight_layer_ptr->clear();
-	if (d_rendered_geometry) {
-		d_highlight_layer_ptr->push_back(*d_rendered_geometry);
+	if (d_focused_geometry) {
+		GPlatesGui::PlatesColourTable::const_iterator white = &GPlatesGui::Colour::WHITE;
+		GPlatesGui::RenderedGeometry rendered_geometry =
+				GPlatesGui::RenderedGeometry(d_focused_geometry->geometry(), white);
+		d_highlight_layer_ptr->push_back(rendered_geometry);
+	} else {
+		// No focused geometry, so nothing to draw.
 	}
 	emit canvas_should_update();
 }

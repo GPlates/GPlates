@@ -383,23 +383,12 @@ GPlatesQtWidgets::DigitisationWidget::update_geometry()
 	}
 
 	// Set that as our new d_geometry_opt_ptr, and render.
-	show_geometry();
+	draw_temporary_geometry();
 }
 
 
 void
-GPlatesQtWidgets::DigitisationWidget::hide_geometry()
-{
-	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
-	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-
-	layers.digitisation_layer().clear();
-	canvas.update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::DigitisationWidget::show_geometry()
+GPlatesQtWidgets::DigitisationWidget::draw_temporary_geometry()
 {
 	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
 	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();

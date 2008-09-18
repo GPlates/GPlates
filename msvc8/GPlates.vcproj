@@ -647,6 +647,25 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\CreateFeatureDialog.cc"
 				>
 			</File>
@@ -1162,6 +1181,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ApplyReconstructionPoleAdjustmentDialog.cc"
 				>
 			</File>
 			<File
@@ -2050,6 +2073,14 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInserter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInterpolater.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceTimePeriodFinder.cc"
 				>
 			</File>
 			<File

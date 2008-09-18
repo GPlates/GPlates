@@ -33,9 +33,10 @@
 void
 GPlatesCanvasTools::ReorientGlobe::handle_activation()
 {
-	// FIXME: Could be pithier.
-	// FIXME: May have to adjust message if we are using Map view.
-	d_view_state_ptr->status_message(QObject::tr("Drag the globe to reorient."));
+	// FIXME:  We may have to adjust the message if we are using a Map View.
+	d_view_state_ptr->status_message(QObject::tr(
+			"Drag to re-orient the globe."
+			" Shift+drag to rotate the globe."));
 }
 
 
@@ -46,13 +47,16 @@ GPlatesCanvasTools::ReorientGlobe::handle_left_drag(
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-		bool is_on_globe)
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {
 	reorient_globe_by_drag_update(initial_pos_on_globe,
 			oriented_initial_pos_on_globe, was_on_globe,
 			current_pos_on_globe,
-			oriented_current_pos_on_globe, is_on_globe);
+			oriented_current_pos_on_globe, is_on_globe,
+			oriented_centre_of_viewport);
 }
+
 
 void
 GPlatesCanvasTools::ReorientGlobe::handle_left_release_after_drag(
@@ -61,11 +65,49 @@ GPlatesCanvasTools::ReorientGlobe::handle_left_release_after_drag(
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-		bool is_on_globe)
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {
 	reorient_globe_by_drag_release(initial_pos_on_globe,
 			oriented_initial_pos_on_globe, was_on_globe,
 			current_pos_on_globe,
-			oriented_current_pos_on_globe, is_on_globe);
+			oriented_current_pos_on_globe, is_on_globe,
+			oriented_centre_of_viewport);
+}
+
+
+void
+GPlatesCanvasTools::ReorientGlobe::handle_shift_left_drag(
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		bool was_on_globe,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	rotate_globe_by_drag_update(initial_pos_on_globe,
+			oriented_initial_pos_on_globe, was_on_globe,
+			current_pos_on_globe,
+			oriented_current_pos_on_globe, is_on_globe,
+			oriented_centre_of_viewport);
+}
+
+
+void
+GPlatesCanvasTools::ReorientGlobe::handle_shift_left_release_after_drag(
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		bool was_on_globe,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	rotate_globe_by_drag_release(initial_pos_on_globe,
+			oriented_initial_pos_on_globe, was_on_globe,
+			current_pos_on_globe,
+			oriented_current_pos_on_globe, is_on_globe,
+			oriented_centre_of_viewport);
 }
 

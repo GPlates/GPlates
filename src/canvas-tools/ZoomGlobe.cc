@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,7 +37,9 @@ GPlatesCanvasTools::ZoomGlobe::handle_activation()
 {
 	// FIXME: May have to adjust message if we are using Map view.
 	d_view_state_ptr->status_message(QObject::tr(
-			"Click the globe to zoom in on that point. Ctrl+Drag to reorient globe."));
+			"Click to zoom in."
+			" Shift+click to zoom out."
+			" Ctrl+drag to re-orient the globe."));
 }
 
 
@@ -56,4 +58,14 @@ GPlatesCanvasTools::ZoomGlobe::handle_left_click(
 
 	// Now, zoom in.
 	globe_canvas().viewport_zoom().zoom_in();
+}
+
+
+void
+GPlatesCanvasTools::ZoomGlobe::handle_shift_left_click(
+		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+		bool is_on_globe)
+{
+	globe_canvas().viewport_zoom().zoom_out();
 }

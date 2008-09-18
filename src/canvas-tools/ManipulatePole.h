@@ -35,6 +35,11 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
+namespace GPlatesGui
+{
+	class RenderedGeometryLayers;
+}
+
 namespace GPlatesCanvasTools
 {
 	/**
@@ -63,11 +68,13 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesGui::RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_)
 		{
 			ManipulatePole::non_null_ptr_type ptr(
-					new ManipulatePole(globe_, globe_canvas_, view_state_, pole_widget_),
+					new ManipulatePole(globe_, globe_canvas_, layers, view_state_,
+							pole_widget_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -91,7 +98,8 @@ namespace GPlatesCanvasTools
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe);
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
 
 		virtual
@@ -102,7 +110,32 @@ namespace GPlatesCanvasTools
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe);
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+
+
+		virtual
+		void
+		handle_shift_left_drag(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+
+
+		virtual
+		void
+		handle_shift_left_release_after_drag(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
 	protected:
 		// This constructor should not be public, because we don't want to allow
@@ -111,6 +144,7 @@ namespace GPlatesCanvasTools
 		ManipulatePole(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesGui::RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_);
 
@@ -123,6 +157,12 @@ namespace GPlatesCanvasTools
 
 
 	private:
+
+		/**
+		 * We need to change which canvas-tool layer is shown when this canvas-tool is
+		 * activated.
+		 */
+		GPlatesGui::RenderedGeometryLayers *d_layers_ptr;
 
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 

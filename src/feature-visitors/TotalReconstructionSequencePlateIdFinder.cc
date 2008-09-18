@@ -110,3 +110,12 @@ GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_pla
 		d_moving_ref_frame_plate_id = gpml_plate_id.value();
 	}
 }
+
+
+void
+GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::reset()
+{
+	d_most_recent_propname_read = boost::none;
+	d_fixed_ref_frame_plate_id = boost::none;
+	d_moving_ref_frame_plate_id = boost::none;
+}

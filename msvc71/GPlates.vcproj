@@ -519,6 +519,33 @@
 				RelativePath="..\src\qt-widgets\ApplicationState.cc">
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialog.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing MOC on $(InputName)"
+						CommandLine="moc &quot;$(InputDir)/$(InputName).h&quot; -o &quot;$(InputDir)/moc_$(InputName).cc&quot;
+"
+						Outputs="$(InputDir)/moc_$(InputName).cc"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialogUi.ui">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Executing UIC on $(InputName)"
+						CommandLine="uic &quot;$(InputDir)/$(InputName).ui&quot; -o  &quot;$(InputDir)/$(InputName).h&quot;
+"
+						Outputs="$(InputDir)/$(InputName).h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\GlobeCanvas.cc">
 			</File>
 			<File
@@ -589,6 +616,9 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc">
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ApplyReconstructionPoleAdjustmentDialog.cc">
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_GlobeCanvas.cc">
@@ -1926,6 +1956,12 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInserter.cc">
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInterpolater.cc">
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceTimePeriodFinder.cc">
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\XsStringFinder.cc">

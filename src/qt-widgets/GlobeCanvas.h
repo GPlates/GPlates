@@ -93,6 +93,16 @@ namespace GPlatesQtWidgets
 			bool d_is_mouse_drag;
 		};
 
+		/**
+		 * The point which corresponds to the centre of the viewport.
+		 *
+		 * (I'm not expecting that this will change, but I'm creating this accessor as an
+		 * alternative to littering lots of equivalent PointOnSphere definitions throughout
+		 * the code.
+		 */
+		static
+		const GPlatesMaths::PointOnSphere &
+		centre_of_viewport();
 
 		explicit
 		GlobeCanvas(
@@ -387,6 +397,7 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -398,6 +409,7 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 

@@ -30,16 +30,19 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/DigitisationWidget.h"
+#include "gui/RenderedGeometryLayers.h"
 #include "maths/LatLonPointConversions.h"
 
 
 GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+		GPlatesGui::RenderedGeometryLayers &layers,
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
 		GPlatesQtWidgets::DigitisationWidget::GeometryType geom_type_):
 	CanvasTool(globe_, globe_canvas_),
+	d_layers_ptr(&layers),
 	d_view_state_ptr(&view_state_),
 	d_digitisation_widget_ptr(&digitisation_widget_),
 	d_default_geom_type(geom_type_)
@@ -49,26 +52,30 @@ GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
 void
 GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 {
-	// FIXME: Could be pithier.
-	// FIXME: May have to adjust message if we are using Map view.
-	d_view_state_ptr->status_message(QObject::tr(
-			"Click the globe to draw a new coordinate. Ctrl+Drag to reorient globe."));
-	
 	// Clicking these canvas tools changes the type of geometry the user
 	// wishes to create, and may adjust the current table of coordinates accordingly.
 	d_digitisation_widget_ptr->change_geometry_type(d_default_geom_type);
 
-	d_view_state_ptr->globe_canvas().geometry_focus_highlight().hide_highlight();
-	d_digitisation_widget_ptr->show_geometry();
+	// FIXME:  We may have to adjust the message if we are using a Map View.
+	if (d_digitisation_widget_ptr->geometry_type() ==
+			GPlatesQtWidgets::DigitisationWidget::MULTIPOINT) {
+		d_view_state_ptr->status_message(QObject::tr(
+				"Click to draw a new point."
+				" Ctrl+drag to re-orient the globe."));
+	} else {
+		d_view_state_ptr->status_message(QObject::tr(
+				"Click to draw a new vertex."
+				" Ctrl+drag to reorient the globe."));
+	}
+
+	d_layers_ptr->show_only_digitisation_layer();
+	globe_canvas().update_canvas();
 }
 
 
 void
 GPlatesCanvasTools::DigitiseGeometry::handle_deactivation()
-{
-	d_digitisation_widget_ptr->hide_geometry();
-	d_view_state_ptr->globe_canvas().geometry_focus_highlight().show_highlight();
-}
+{  }
 
 
 void

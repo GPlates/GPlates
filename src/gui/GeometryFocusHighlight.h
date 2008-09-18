@@ -73,23 +73,10 @@ namespace GPlatesGui
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry);
 
 		/**
-		 * Hide the focused reconstruction geometry from the screen, but don't clear it
-		 * from inside this class.
-		 *
-		 * This is used when the user switches to a non-focused-geometry-highlighting tool.
+		 * Draw the focused geometry (if there is one) on the screen.
 		 */
 		void
-		hide_highlight();
-
-		/**
-		 * Re-display the highlighted geometry on the screen, using the data members stored
-		 * inside this class.
-		 *
-		 * This is used when the user switches back to a focused-geometry-highlighting tool
-		 * from a non-focused-geometry-highlighting tool.
-		 */
-		void
-		show_highlight();
+		draw_focused_geometry();
 
 	signals:
 
@@ -122,22 +109,6 @@ namespace GPlatesGui
 		 * would be a null pointer.
 		 */
 		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_geometry;
-
-		/**
-		 * The rendered geometry from the focused reconstruction geometry.
-		 *
-		 * Note that there may not be a focused reconstruction geometry, in which case this
-		 * would be boost::none.
-		 */
-		boost::optional<GPlatesGui::RenderedGeometry> d_rendered_geometry;
-
-		/**
-		 * Render the focused reconstruction geometry, if there is one.
-		 *
-		 * This will overwrite the value of @a d_rendered_geometry.
-		 */
-		void
-		render_focused_geometry();
 
 	};
 }

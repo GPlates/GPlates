@@ -34,6 +34,7 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
+#include "gui/RenderedGeometryLayers.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "global/InternalInconsistencyException.h"
@@ -43,10 +44,14 @@
 void
 GPlatesCanvasTools::ClickGeometry::handle_activation()
 {
-	// FIXME: Could be pithier.
-	// FIXME: May have to adjust message if we are using Map view.
-	d_view_state_ptr->status_message(tr(
-			"Click a geometry to interact with a feature. Ctrl+Drag to reorient globe."));
+	// FIXME:  We may have to adjust the message if we are using a Map View.
+	d_view_state_ptr->status_message(QObject::tr(
+			"Click a geometry to choose a feature."
+			" Shift+click to query immediately."
+			" Ctrl+drag to re-orient the globe."));
+
+	d_layers_ptr->show_only_geometry_focus_layer();
+	globe_canvas().update_canvas();
 }
 
 

@@ -281,8 +281,15 @@ GPlatesGui::Globe::Paint()
 		paint_geometries(rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer, 1.5f);
 
 		glDepthRange(0.5, 0.6);
-		paint_geometries(rendered_geometry_layers().digitisation_layer(), d_nurbs_renderer, 2.0f);
-		paint_geometries(rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
+		if (rendered_geometry_layers().should_show_digitisation_layer()) {
+			paint_geometries(rendered_geometry_layers().digitisation_layer(), d_nurbs_renderer, 2.0f);
+		}
+		if (rendered_geometry_layers().should_show_geometry_focus_layer()) {
+			paint_geometries(rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
+		}
+		if (rendered_geometry_layers().should_show_pole_manipulation_layer()) {
+			paint_geometries(rendered_geometry_layers().pole_manipulation_layer(), d_nurbs_renderer, 1.5f);
+		}
 
 		glDepthRange(0.4, 0.5);
 		paint_geometries(rendered_geometry_layers().mouse_movement_layer(), d_nurbs_renderer, 1.5f);
@@ -315,7 +322,12 @@ GPlatesGui::Globe::paint_vector_output()
 		paint_geometries(rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer, 1.5f);
 
 		glDepthRange(0.5, 0.6);
-		paint_geometries(rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
+		if (rendered_geometry_layers().should_show_geometry_focus_layer()) {
+			paint_geometries(rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
+		}
+		if (rendered_geometry_layers().should_show_pole_manipulation_layer()) {
+			paint_geometries(rendered_geometry_layers().pole_manipulation_layer(), d_nurbs_renderer, 1.5f);
+		}
 
 	glPopMatrix();
 }
