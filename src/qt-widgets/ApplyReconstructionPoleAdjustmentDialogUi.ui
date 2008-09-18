@@ -721,8 +721,8 @@
   <tabstop>field_original_lat</tabstop>
   <tabstop>field_original_lon</tabstop>
   <tabstop>spinbox_original_angle</tabstop>
-  <tabstop>spinbox_adjustment_lat</tabstop>
-  <tabstop>spinbox_adjustment_lon</tabstop>
+  <tabstop>field_adjustment_lat</tabstop>
+  <tabstop>field_adjustment_lon</tabstop>
   <tabstop>spinbox_adjustment_angle</tabstop>
   <tabstop>field_result_lat</tabstop>
   <tabstop>field_result_lon</tabstop>
