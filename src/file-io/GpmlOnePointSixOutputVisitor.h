@@ -41,6 +41,7 @@
 
 namespace GPlatesPropertyValues
 {
+	class GpmlKeyValueDictionaryElement;
 	class GpmlTimeSample;
 	class GpmlTimeWindow;
 }
@@ -176,6 +177,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_key_value_dictionary(
+				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
+
+		virtual
+		void
 		visit_gpml_measure(
 				const GPlatesPropertyValues::GpmlMeasure &gpml_measure);
 
@@ -245,6 +251,10 @@ namespace GPlatesFileIO
 		static const ExternalProgram s_gzip_program;
 
 	private:
+		 
+		void
+		write_gpml_key_value_dictionary_element(
+				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
 
 		/**
 		 * Keeps track of the file currently being written to.

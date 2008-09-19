@@ -307,7 +307,13 @@ GPlatesFileIO::GdalReader::GdalReader()
 
 GPlatesFileIO::GdalReader::~GdalReader()
 {
-	GDALClose(d_dataset_ptr);
+	try {
+		if (d_dataset_ptr) {
+			GDALClose(d_dataset_ptr);
+		}
+	}
+	catch (...) {
+	}
 }
 
 void

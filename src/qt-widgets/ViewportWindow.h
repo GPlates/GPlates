@@ -120,7 +120,7 @@ namespace GPlatesQtWidgets
 		void
 		status_message(
 				const QString &message,
-				int timeout = 5000) const
+				int timeout = 20000) const
 		{
 			statusBar()->showMessage(message, timeout);
 		}

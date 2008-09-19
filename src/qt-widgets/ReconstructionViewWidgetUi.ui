@@ -525,7 +525,7 @@
            </sizepolicy>
           </property>
           <property name="text" >
-           <string>Mouse: </string>
+           <string>Mouse:</string>
           </property>
          </widget>
         </item>

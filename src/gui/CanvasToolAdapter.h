@@ -88,6 +88,7 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -99,6 +100,7 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 

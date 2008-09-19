@@ -99,6 +99,9 @@ namespace GPlatesQtWidgets
 		void
 		set_up_feature_collection_page();
 		
+		void
+		set_up_geometric_property_list();
+		
 		/**
 		 * The Model interface, used to create new features.
 		 */

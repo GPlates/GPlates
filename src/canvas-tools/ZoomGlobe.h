@@ -81,6 +81,13 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe);
 
+		virtual
+		void
+		handle_shift_left_click(
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+				bool is_on_globe);
+
 	protected:
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

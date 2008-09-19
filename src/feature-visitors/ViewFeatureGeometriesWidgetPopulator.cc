@@ -38,12 +38,16 @@
 #include "model/ReconstructedFeatureGeometry.h"
 
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GpmlConstantValue.h"
 
-#include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -90,6 +94,70 @@ namespace
 		}
 	}
 	
+	/**
+	 * Iterates over the vertices of the polygon, setting the coordinates in the
+	 * column of each QTreeWidget corresponding to 'period'.
+	 */
+	void
+	populate_coordinates_from_polygon(
+			QList<QTreeWidgetItem *> &coordinate_widgets,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon,
+			CoordinatePeriods::CoordinatePeriod period)
+	{
+		// This whole polygon function is essentially a copy of the line_string function. 
+		static QLocale locale;
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon->vertex_begin();
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon->vertex_end();
+		
+		// Ensure we have enough blank QTreeWidgetItems in the list to populate.
+		fill_coordinates_with_blank_items(coordinate_widgets, polygon->number_of_vertices());
+		
+		// Then fill in the appropriate column.
+		for (unsigned point_index = 0; iter != end; ++iter, ++point_index) {
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+			QString lat = locale.toString(llp.latitude());
+			QString lon = locale.toString(llp.longitude());
+			QString point;
+			point.append(lat);
+			point.append(QObject::tr(" ; "));
+			point.append(lon);
+	
+			coordinate_widgets[point_index]->setText(period, point);
+		}
+	}
+
+	/**
+	 * Iterates over the vertices of the multipoint, setting the coordinates in the
+	 * column of each QTreeWidget corresponding to 'period'.
+	 */
+	void
+	populate_coordinates_from_multi_point(
+			QList<QTreeWidgetItem *> &coordinate_widgets,
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point,
+			CoordinatePeriods::CoordinatePeriod period)
+	{
+		// This whole multi_point function is essentially a copy of the line_string function. 
+		static QLocale locale;
+		GPlatesMaths::MultiPointOnSphere::const_iterator iter = multi_point->begin();
+		GPlatesMaths::MultiPointOnSphere::const_iterator end = multi_point->end();
+		
+		// Ensure we have enough blank QTreeWidgetItems in the list to populate.
+		fill_coordinates_with_blank_items(coordinate_widgets, multi_point->number_of_points());
+		
+		// Then fill in the appropriate column.
+		for (unsigned point_index = 0; iter != end; ++iter, ++point_index) {
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+			QString lat = locale.toString(llp.latitude());
+			QString lon = locale.toString(llp.longitude());
+			QString point;
+			point.append(lat);
+			point.append(QObject::tr(" ; "));
+			point.append(lon);
+	
+			coordinate_widgets[point_index]->setText(period, point);
+		}
+	}
+
 	/**
 	 * Iterates over the vertices of the polyline, setting the coordinates in the
 	 * column of each QTreeWidget corresponding to 'period'.
@@ -283,6 +351,62 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_str
 	d_tree_widget_item_stack.pop_back();
 }
 
+void
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_point(
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+{
+// This whole gml_multi_point function is essentially a copy of the gml_line_string function. 
+
+	// Fetch the parent QTreeWidgetItem we will be adding to from the stack.
+	QTreeWidgetItem *parent_item = d_tree_widget_item_stack.back();
+	parent_item->setExpanded(true);
+	// Mark that the property tree widget item we are in the middle of constructing is a
+	// geometry-valued property so we can remember to add it to the QTreeWidget later.
+	d_property_info_vector.back().is_geometric_property = true;
+	
+	// First, add a branch for the type of geometry.
+	QTreeWidgetItem *geom_type_item = add_child(QObject::tr("gml:MultiPoint"), QString());
+	d_tree_widget_item_stack.push_back(geom_type_item);
+	geom_type_item->setExpanded(true);
+
+	// Now, prepare the coords in present-day and reconstructed time.
+	QList<QTreeWidgetItem *> coordinate_widgets;
+	// The present-day polyline.
+
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type present_day_multi_point =
+			gml_multi_point.multipoint();
+	populate_coordinates_from_multi_point(coordinate_widgets, present_day_multi_point,
+			CoordinatePeriods::PRESENT);
+
+	// The reconstructed polyline, which may not be available. And test d_last_property_visited,
+	// because someone might attempt to call us without invoking visit_feature_handle.
+	if (d_last_property_visited) {
+		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> recon_geometry =
+				get_reconstructed_geometry_for_property(*d_last_property_visited);
+		if (recon_geometry) {
+			// We use a dynamic cast here (despite the fact that dynamic casts are
+			// generally considered bad form) because we only care about one specific
+			// derivation.  There's no "if ... else if ..." chain, so I think it's not
+			// super-bad form.  (The "if ... else if ..." chain would imply that we
+			// should be using polymorphism -- specifically, the double-dispatch of the
+			// Visitor pattern -- rather than updating the "if ... else if ..." chain
+			// each time a new derivation is added.)
+			const GPlatesMaths::MultiPointOnSphere *recon_multi_point =
+					dynamic_cast<const GPlatesMaths::MultiPointOnSphere *>(recon_geometry->get());
+			if (recon_multi_point) {
+				populate_coordinates_from_multi_point(coordinate_widgets,
+						GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type(
+								recon_multi_point,
+								GPlatesUtils::NullIntrusivePointerHandler()),
+						CoordinatePeriods::RECONSTRUCTED);
+			}
+		}
+	}
+	
+	// Add the coordinates to the tree!
+	d_tree_widget_item_stack.back()->addChildren(coordinate_widgets);	
+	d_tree_widget_item_stack.pop_back();
+}
 
 void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_orientable_curve(
@@ -356,7 +480,56 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 	d_tree_widget_item_stack.pop_back();
 }
 
+void
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
+		GPlatesPropertyValues::GmlPolygon &gml_polygon)
+{
+	// Like the multi_point function, I've more or less just copied the line_string function here. 
 
+	// Fetch the parent QTreeWidgetItem we will be adding to from the stack.
+	QTreeWidgetItem *parent_item = d_tree_widget_item_stack.back();
+	parent_item->setExpanded(true);
+	// Mark that the property tree widget item we are in the middle of constructing is a
+	// geometry-valued property so we can remember to add it to the QTreeWidget later.
+	d_property_info_vector.back().is_geometric_property = true;
+	
+	// First, add a branch for the type of geometry.
+	QTreeWidgetItem *geom_type_item = add_child(QObject::tr("gml:Polygon"), QString());
+	d_tree_widget_item_stack.push_back(geom_type_item);
+	geom_type_item->setExpanded(true);
+
+	// Exterior ring. 
+	QTreeWidgetItem *exterior_item = add_child(QObject::tr("gml:exterior"), QString());
+	d_tree_widget_item_stack.push_back(exterior_item);
+
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
+			gml_polygon.exterior();
+
+	write_polygon_ring(polygon_ptr);
+
+	d_tree_widget_item_stack.pop_back();
+
+	// Now handle any internal rings.
+	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
+	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+
+	for (unsigned ring_number = 1; iter != end ; ++iter, ++ring_number)
+	{
+		QString interior;
+		interior.append(QObject::tr("gml:interior"));
+		interior.append(QObject::tr(" #"));
+		interior.append(ring_number);
+
+		QTreeWidgetItem *interior_item = add_child(interior, QString());
+		d_tree_widget_item_stack.push_back(interior_item);
+
+		write_polygon_ring(*iter);
+
+		d_tree_widget_item_stack.pop_back();
+	}
+
+	d_tree_widget_item_stack.pop_back(); // gml:Polygon
+}
 
 void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gpml_constant_value(
@@ -449,4 +622,45 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::add_child_then_vis
 	d_tree_widget_item_stack.pop_back();
 
 	return item;
+}
+
+void
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring(
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
+{
+	// Now, prepare the coords in present-day and reconstructed time.
+	QList<QTreeWidgetItem *> coordinate_widgets;
+
+	populate_coordinates_from_polygon(coordinate_widgets, polygon_ptr,
+			CoordinatePeriods::PRESENT);
+
+	// The reconstructed polyline, which may not be available. And test d_last_property_visited,
+	// because someone might attempt to call us without invoking visit_feature_handle.
+	if (d_last_property_visited) {
+		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> recon_geometry =
+				get_reconstructed_geometry_for_property(*d_last_property_visited);
+		if (recon_geometry) {
+			// We use a dynamic cast here (despite the fact that dynamic casts are
+			// generally considered bad form) because we only care about one specific
+			// derivation.  There's no "if ... else if ..." chain, so I think it's not
+			// super-bad form.  (The "if ... else if ..." chain would imply that we
+			// should be using polymorphism -- specifically, the double-dispatch of the
+			// Visitor pattern -- rather than updating the "if ... else if ..." chain
+			// each time a new derivation is added.)
+			const GPlatesMaths::PolygonOnSphere *recon_polygon =
+					dynamic_cast<const GPlatesMaths::PolygonOnSphere *>(recon_geometry->get());
+			if (recon_polygon) {
+				populate_coordinates_from_polygon(coordinate_widgets,
+						GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type(
+								recon_polygon,
+								GPlatesUtils::NullIntrusivePointerHandler()),
+						CoordinatePeriods::RECONSTRUCTED);
+			}
+		}
+	}
+	
+	// Add the coordinates to the tree!
+	d_tree_widget_item_stack.back()->addChildren(coordinate_widgets);	
+
+	d_tree_widget_item_stack.pop_back();
 }

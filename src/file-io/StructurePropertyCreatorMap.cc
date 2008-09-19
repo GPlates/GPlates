@@ -47,6 +47,7 @@ GPlatesFileIO::StructurePropertyCreatorMap::instance()
 
 GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 {
+
 	d_map[TemplateTypeParameterType::create_xsi("boolean")] =
 		GET_PROP_VAL_NAME(create_xs_boolean);
 	d_map[TemplateTypeParameterType::create_xsi("integer")] =
@@ -126,7 +127,10 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_gml_polygon);
 	d_map[TemplateTypeParameterType::create_gml("MultiPoint")] = 
 		GET_PROP_VAL_NAME(create_gml_multi_point);
-
 	d_map[TemplateTypeParameterType::create_gpml("TopologicalPolygon")] = 
 		GET_PROP_VAL_NAME(create_topological_polygon);
+	d_map[TemplateTypeParameterType::create_gpml("KeyValueDictionary")] =
+		GET_PROP_VAL_NAME(create_key_value_dictionary);
+	d_map[TemplateTypeParameterType::create_gpml("KeyValueDictionary")] =
+		GET_PROP_VAL_NAME(create_key_value_dictionary);
 }

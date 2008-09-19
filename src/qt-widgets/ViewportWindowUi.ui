@@ -28,7 +28,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>29</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -413,10 +413,10 @@
     <string>Drag Globe</string>
    </property>
    <property name="toolTip" >
-    <string>Drag globe to re-orient  D</string>
+    <string>Re-orient Globe  R</string>
    </property>
    <property name="shortcut" >
-    <string>D</string>
+    <string>R</string>
    </property>
   </action>
   <action name="action_Query_Feature" >
@@ -507,7 +507,7 @@
     <string>Zoom Globe</string>
    </property>
    <property name="toolTip" >
-    <string>Click globe to zoom  Z</string>
+    <string>Zoom In  Z</string>
    </property>
    <property name="shortcut" >
     <string>Z</string>
@@ -711,7 +711,7 @@
    <property name="text" >
     <string>Feature &amp;Age</string>
    </property>
-  </action> 
+  </action>
   <action name="action_Digitise_New_Polyline" >
    <property name="checkable" >
     <bool>true</bool>
@@ -729,7 +729,7 @@
     <string>Digitise New Poly&amp;line</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise new polyline geometry  L</string>
+    <string>Digitise Polyline Geometry  L</string>
    </property>
    <property name="shortcut" >
     <string>L</string>
@@ -752,10 +752,10 @@
     <string>&amp;Click Geometry</string>
    </property>
    <property name="toolTip" >
-    <string>Click geometry to interact with feature  C</string>
+    <string>Choose Feature  F</string>
    </property>
    <property name="shortcut" >
-    <string>C</string>
+    <string>F</string>
    </property>
   </action>
   <action name="action_Delete_Feature" >
@@ -845,10 +845,10 @@
     <string>Digitise New P&amp;olygon</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise new polygon geometry  O</string>
+    <string>Digitise Polygon Geometry  G</string>
    </property>
    <property name="shortcut" >
-    <string>O</string>
+    <string>G</string>
    </property>
   </action>
   <action name="action_Digitise_New_MultiPoint" >
@@ -868,10 +868,10 @@
     <string>Digitise New &amp;Points</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise new point geometries  P</string>
+    <string>Digitise Multi-point Geometry  M</string>
    </property>
    <property name="shortcut" >
-    <string>P</string>
+    <string>M</string>
    </property>
   </action>
   <action name="action_Undo_Placeholder" >
@@ -907,10 +907,10 @@
     <string>&amp;Move Geometry</string>
    </property>
    <property name="toolTip" >
-    <string>Drag geometry  M</string>
+    <string>Move Geometry  Y</string>
    </property>
    <property name="shortcut" >
-    <string>M</string>
+    <string>Y</string>
    </property>
   </action>
   <action name="action_Move_Vertex" >
@@ -930,7 +930,7 @@
     <string>Mo&amp;ve Vertex</string>
    </property>
    <property name="toolTip" >
-    <string>Drag vertices of geometry  V</string>
+    <string>Move Vertex  V</string>
    </property>
    <property name="shortcut" >
     <string>V</string>
@@ -953,10 +953,10 @@
     <string>Manipulate Po&amp;le</string>
    </property>
    <property name="toolTip" >
-    <string>Drag geometry to modify total reconstruction pole  R</string>
+    <string>Modify Reconstruction Pole  P</string>
    </property>
    <property name="shortcut" >
-    <string>R</string>
+    <string>P</string>
    </property>
   </action>
  </widget>

@@ -13,9 +13,11 @@ libfeature_visitors_la_SOURCES	= QueryFeaturePropertiesWidgetPopulator.cc \
 				ShapefileAttributeFinder.cc \
 				TotalReconstructionSequencePlateIdFinder.cc \
 				TotalReconstructionSequenceRotationInserter.cc \
-				ValueFinder.cc \
+				TotalReconstructionSequenceRotationInterpolater.cc \
+				TotalReconstructionSequenceTimePeriodFinder.cc \
 				PlatepolygonResolver.cc \
-				ReconstructedFeatureGeometryFinder.cc
+				ReconstructedFeatureGeometryFinder.cc \
+				ValueFinder.cc 
 
 if PYTHON
 noinst_PROGRAMS		= _feature_visitors.so

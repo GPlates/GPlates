@@ -146,6 +146,13 @@ namespace GPlatesQtWidgets
 		handle_reconstruction_time_change(
 				double time);
 		
+
+		/**
+		 * Creates an EditGeometryActionWidget item in the current row.
+		 */
+		void
+		handle_current_cell_changed(
+				int currentRow, int currentColumn, int previousRow, int previousColumn);
 		
 	private:
 		

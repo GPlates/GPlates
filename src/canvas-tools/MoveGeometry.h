@@ -89,7 +89,8 @@ namespace GPlatesCanvasTools
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe);
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
 		virtual
 		void
@@ -99,7 +100,8 @@ namespace GPlatesCanvasTools
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe);
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
 	protected:
 		// This constructor should not be public, because we don't want to allow

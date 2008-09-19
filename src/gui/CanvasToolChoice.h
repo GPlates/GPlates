@@ -44,6 +44,8 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesGui
 {
+	class RenderedGeometryLayers;
+
 	/**
 	 * This class contains the current choice of CanvasTool.
 	 *
@@ -66,6 +68,7 @@ namespace GPlatesGui
 		CanvasToolChoice(
 				Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,

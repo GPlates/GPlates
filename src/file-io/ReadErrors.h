@@ -98,8 +98,13 @@ namespace GPlatesFileIO
 			InvalidShapefileLongitude,
 			NoPlateIdFound,
 			InvalidShapefilePlateIdNumber,
+			UnrecognisedShapefileFeatureType,
 			InvalidShapefileAgeOfAppearance,
 			InvalidShapefileAgeOfDisappearance,
+			InvalidShapefilePoint,
+			InvalidShapefileMultiPoint,
+			InvalidShapefilePolyline,
+			InvalidShapefilePolygon,
 			
 			// The following relate to raster files.
 			InsufficientTextureMemory,
@@ -186,6 +191,7 @@ namespace GPlatesFileIO
 			NoPlateIdLoadedForFile,
 			NoPlateIdLoadedForFeature,
 			AttributeIgnored,
+			UnclassifiedShapefileFeatureCreated,
 
 			// The following relate to time-dependent raster file sets.
 			NoRasterSetsLoaded,

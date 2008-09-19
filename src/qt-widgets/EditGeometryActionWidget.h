@@ -55,7 +55,8 @@ namespace GPlatesQtWidgets
 		 */
 		virtual
 		~EditGeometryActionWidget()
-		{  }
+		{ 
+		}
 			
 	public slots:
 		

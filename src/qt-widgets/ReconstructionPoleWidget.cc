@@ -27,91 +27,256 @@
 
 #include "ReconstructionPoleWidget.h"
 #include "ViewportWindow.h"
+#include "ApplyReconstructionPoleAdjustmentDialog.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
-#include "feature-visitors/TotalReconstructionSequenceRotationInserter.h"
+#include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "utils/MathUtils.h"
 
 
 GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
-		GPlatesQtWidgets::ViewportWindow &view_state,
+		ViewportWindow &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_view_state_ptr(&view_state)
+	d_view_state_ptr(&view_state),
+	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&view_state)),
+	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr))
 {
 	setupUi(this);
-	
-	// Reset button to change the current adjustment to an identity rotation.
-	QObject::connect(button_adjustment_reset, SIGNAL(clicked()),
-			this, SLOT(handle_reset_adjustment()));
+
+	// The user wants to apply the current adjustment.
+	QObject::connect(button_apply, SIGNAL(clicked()),
+			this, SLOT(apply()));
+
+	// The user wants to reset the adjustment (to zero).
+	QObject::connect(button_reset_adjustment, SIGNAL(clicked()),
+			this, SLOT(reset()));
+
+	// Communication between the Apply ... Adjustment dialog and the Adjustment Applicator.
+	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_changed(int)),
+			d_applicator_ptr, SLOT(handle_pole_sequence_choice_changed(int)));
+	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_cleared()),
+			d_applicator_ptr, SLOT(handle_pole_sequence_choice_cleared()));
+	QObject::connect(d_dialog_ptr, SIGNAL(accepted()),
+			d_applicator_ptr, SLOT(apply_adjustment()));
+
+	// The user has agreed to apply the adjustment as described in the dialog.
+	QObject::connect(d_applicator_ptr, SIGNAL(have_reconstructed()),
+			this, SLOT(clear_and_reset_after_reconstruction()));
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries_at_activation()
+{
+	d_initial_geometries.clear();
+	populate_initial_geometries();
+	draw_dragged_geometries();
 }
 
 
 void
 GPlatesQtWidgets::ReconstructionPoleWidget::start_new_drag(
-		const GPlatesMaths::PointOnSphere &current_position)
+		const GPlatesMaths::PointOnSphere &current_oriented_position)
 {
-	d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
-	d_accum_orientation->set_new_handle_at_pos(current_position);
+	if ( ! d_accum_orientation) {
+		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
+	}
+	d_accum_orientation->set_new_handle_at_pos(current_oriented_position);
 }
 
 
 namespace
 {
-	const QString
-	format_axis_as_lat_lon_point(
-			const GPlatesMaths::UnitVector3D &axis)
+	const boost::optional<GPlatesMaths::PointOnSphere>
+	get_closest_point_on_horizon(
+			const GPlatesMaths::PointOnSphere &oriented_point_within_horizon,
+			const GPlatesMaths::PointOnSphere &oriented_center_of_viewport)
 	{
 		using namespace GPlatesMaths;
 
-		PointOnSphere pos(axis);
-		LatLonPoint llp = make_lat_lon_point(pos);
-		QLocale locale;
-		QString str = QObject::tr("(%1 ; %2)")
-				.arg(locale.toString(llp.latitude(), 'f', 1))
-				.arg(locale.toString(llp.longitude(), 'f', 1));
-		return str;
+		if (collinear(oriented_point_within_horizon.position_vector(),
+					oriented_center_of_viewport.position_vector())) {
+			// The point (which is meant to be) within the horizon is either coincident
+			// with the centre of the viewport, or (somehow) antipodal to the centre of
+			// the viewport (which should not be possible, but right now, we don't care
+			// about the history, we just care about the maths).
+			//
+			// Hence, it's not mathematically possible to calculate a closest point on
+			// the horizon.
+			return boost::none;
+		}
+		Vector3D cross_result =
+				cross(oriented_point_within_horizon.position_vector(),
+						oriented_center_of_viewport.position_vector());
+		// Since the two unit-vectors are non-collinear, we can assume the cross-product is
+		// a non-zero vector.
+		UnitVector3D normal_to_plane = cross_result.get_normalisation();
+
+		Vector3D point_on_horizon =
+				cross(oriented_center_of_viewport.position_vector(), normal_to_plane);
+		// Since both the center-of-viewport and normal-to-plane are unit-vectors, and they
+		// are (by definition) perpendicular, we will assume the result is of unit length.
+		return PointOnSphere(point_on_horizon.get_normalisation());
 	}
 }
 
 
 void
-GPlatesQtWidgets::ReconstructionPoleWidget::update_drag_position(
-		const GPlatesMaths::PointOnSphere &current_position)
+GPlatesQtWidgets::ReconstructionPoleWidget::start_new_rotation_drag(
+		const GPlatesMaths::PointOnSphere &current_oriented_position,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {
-	d_accum_orientation->move_handle_to_pos(current_position);
-	if ( ! d_initial_geometry) {
-		// That's pretty strange.  We expected a geometry here, or else, what's the user
-		// dragging?
-		std::cerr << "No initial geometry in ReconstructionPoleWidget::update_drag_position!" << std::endl;
+	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
+			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
+	if ( ! point_on_horizon) {
+		// The mouse position could not be converted to a point on the horizon.  Presumably
+		// the it was at the centre of the viewport.  Hence, nothing to be done.
 		return;
 	}
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type non_null_geom_ptr =
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(d_initial_geometry.get(),
-					GPlatesUtils::NullIntrusivePointerHandler());
-
-	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
-	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-
-	layers.mouse_movement_layer().clear();
-	GPlatesGui::PlatesColourTable::const_iterator silver_colour = &GPlatesGui::Colour::SILVER;
-	layers.mouse_movement_layer().push_back(
-			GPlatesGui::RenderedGeometry(
-					d_accum_orientation->orient_geometry(non_null_geom_ptr),
-					silver_colour));
-	canvas.update_canvas();
-
-	// Update the "Adjustment" fields in the TaskPanel pane.
-	double rot_angle_in_rads = d_accum_orientation->rotation_angle().dval();
-	double rot_angle_in_degs = GPlatesUtils::convert_rad_to_deg(rot_angle_in_rads);
-	spinbox_adjustment_angle->setValue(rot_angle_in_degs);
-
-	const GPlatesMaths::UnitVector3D &rot_axis = d_accum_orientation->rotation_axis();
-	lineedit_adjustment_pole->setText(format_axis_as_lat_lon_point(rot_axis));
+	if ( ! d_accum_orientation) {
+		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
+	}
+	d_accum_orientation->set_new_handle_at_pos(*point_on_horizon);
 }
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::update_drag_position(
+		const GPlatesMaths::PointOnSphere &current_oriented_position)
+{
+	d_accum_orientation->move_handle_to_pos(current_oriented_position);
+
+	draw_dragged_geometries();
+	update_adjustment_fields();
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::update_rotation_drag_position(
+		const GPlatesMaths::PointOnSphere &current_oriented_position,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	if ( ! d_accum_orientation) {
+		// We must be in the middle of a non-drag.  Perhaps the user tried to drag at the
+		// centre of the viewport, for instance.
+		return;
+	}
+
+	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
+			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
+	if ( ! point_on_horizon) {
+		// The mouse position could not be converted to a point on the horizon.  Presumably
+		// the it was at the centre of the viewport.  Hence, nothing to be done.
+		return;
+	}
+	d_accum_orientation->move_handle_to_pos(*point_on_horizon);
+
+	draw_dragged_geometries();
+	update_adjustment_fields();
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::end_drag()
+{  }
 
 
 namespace
 {
+	void
+	examine_trs(
+			std::vector<GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> &
+					sequence_choices,
+			GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
+			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
+			GPlatesModel::integer_plate_id_type plate_id_of_interest,
+			const double &reconstruction_time,
+			boost::intrusive_ptr<GPlatesModel::FeatureHandle> current_feature)
+	{
+		using namespace GPlatesQtWidgets;
+
+		if ( ! current_feature) {
+			// There was a feature here, but it's been deleted.
+			return;
+		}
+
+		trs_plate_id_finder.reset();
+		trs_plate_id_finder.visit_feature_handle(*current_feature);
+
+		// A valid TRS should have a fixed reference frame and a moving reference frame. 
+		// Let's verify that this is a valid TRS.
+		if ( ! (trs_plate_id_finder.fixed_ref_frame_plate_id() &&
+				trs_plate_id_finder.moving_ref_frame_plate_id())) {
+			// This feature was missing one (or both) of the plate IDs which a TRS is
+			// supposed to have.  Skip this feature.
+			return;
+		}
+		// Else, we know it found both of the required plate IDs.
+
+		if (*trs_plate_id_finder.fixed_ref_frame_plate_id() ==
+				*trs_plate_id_finder.moving_ref_frame_plate_id()) {
+			// The fixed ref-frame plate ID equals the moving ref-frame plate ID? 
+			// Something strange is going on here.  Skip this feature.
+			return;
+		}
+
+		// Dietmar has said that he doesn't want the table to include pole sequences for
+		// which the plate ID of interest is the fixed ref-frame.  (2008-09-18)
+#if 0
+		if (*trs_plate_id_finder.fixed_ref_frame_plate_id() == plate_id_of_interest) {
+			trs_time_period_finder.reset();
+			trs_time_period_finder.visit_feature_handle(*current_feature);
+			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time())) {
+				// No time samples were found.  Skip this feature.
+				return;
+			}
+
+			// For now, let's _not_ include sequences which don't span this
+			// reconstruction time.
+			GPlatesPropertyValues::GeoTimeInstant current_time(reconstruction_time);
+			if (trs_time_period_finder.begin_time()->is_strictly_later_than(current_time) ||
+					trs_time_period_finder.end_time()->is_strictly_earlier_than(current_time)) {
+				return;
+			}
+
+			sequence_choices.push_back(
+					ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo(
+							current_feature->reference(),
+							*trs_plate_id_finder.fixed_ref_frame_plate_id(),
+							*trs_plate_id_finder.moving_ref_frame_plate_id(),
+							trs_time_period_finder.begin_time()->value(),
+							trs_time_period_finder.end_time()->value(),
+							true));
+		}
+#endif
+		if (*trs_plate_id_finder.moving_ref_frame_plate_id() == plate_id_of_interest) {
+			trs_time_period_finder.reset();
+			trs_time_period_finder.visit_feature_handle(*current_feature);
+			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time())) {
+				// No time samples were found.  Skip this feature.
+				return;
+			}
+
+			// For now, let's _not_ include sequences which don't span this
+			// reconstruction time.
+			GPlatesPropertyValues::GeoTimeInstant current_time(reconstruction_time);
+			if (trs_time_period_finder.begin_time()->is_strictly_later_than(current_time) ||
+					trs_time_period_finder.end_time()->is_strictly_earlier_than(current_time)) {
+				return;
+			}
+
+			sequence_choices.push_back(
+					ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo(
+							current_feature->reference(),
+							*trs_plate_id_finder.fixed_ref_frame_plate_id(),
+							*trs_plate_id_finder.moving_ref_frame_plate_id(),
+							trs_time_period_finder.begin_time()->value(),
+							trs_time_period_finder.end_time()->value(),
+							false));
+		}
+	}
+
+
 	/**
 	 * This finds all the TRSes (total reconstruction sequences) in the supplied reconstruction
 	 * whose fixed or moving ref-frame plate ID matches our plate ID of interest.
@@ -121,11 +286,13 @@ namespace
 	 */
 	void
 	find_trses(
-			std::vector<GPlatesModel::FeatureHandle::weak_ref> &trses_with_plate_id_as_fixed,
-			std::vector<GPlatesModel::FeatureHandle::weak_ref> &trses_with_plate_id_as_moving,
+			std::vector<GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> &
+					sequence_choices,
 			GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
+			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
-			const GPlatesModel::Reconstruction &reconstruction)
+			const GPlatesModel::Reconstruction &reconstruction,
+			const double &reconstruction_time)
 	{
 		using namespace GPlatesModel;
 
@@ -136,9 +303,10 @@ namespace
 		for ( ; collections_iter != collections_end; ++collections_iter) {
 			const FeatureCollectionHandle::weak_ref &current_collection = *collections_iter;
 			if ( ! current_collection.is_valid()) {
-				// FIXME:  Should we do anything about this?  Or is this acceptable?
-				// (If the collection is not valid, then presumably it has been unloaded.
-				// In which case, why hasn't the reconstruction been recalculated?)
+				// FIXME:  Should we do anything about this? Or is this acceptable?
+				// (If the collection is not valid, then presumably it has been
+				// unloaded.  In which case, why hasn't the reconstruction been
+				// recalculated?)
 				continue;
 			}
 
@@ -148,68 +316,23 @@ namespace
 					current_collection->features_end();
 			for ( ; features_iter != features_end; ++features_iter) {
 				boost::intrusive_ptr<FeatureHandle> current_feature = *features_iter;
-				if ( ! current_feature) {
-					// There was a feature here, but it's been deleted.
-					continue;
-				}
-				trs_plate_id_finder.visit_feature_handle(*current_feature);
-
-				if ( ! (trs_plate_id_finder.fixed_ref_frame_plate_id() &&
-						trs_plate_id_finder.moving_ref_frame_plate_id())) {
-					// This feature was missing one (or both) of the required
-					// plate IDs.  Skip it.
-					continue;
-				}
-				// Else, we know it found both of the required plate IDs.
-
-				if (*trs_plate_id_finder.fixed_ref_frame_plate_id() ==
-						*trs_plate_id_finder.moving_ref_frame_plate_id()) {
-					// The fixed ref-frame plate ID equals the moving ref-frame
-					// plate ID?  Something strange is going on here.  Skip it.
-					continue;
-				}
-
-				if (*trs_plate_id_finder.fixed_ref_frame_plate_id() == plate_id_of_interest) {
-					trses_with_plate_id_as_fixed.push_back(current_feature->reference());
-				}
-				if (*trs_plate_id_finder.moving_ref_frame_plate_id() == plate_id_of_interest) {
-					trses_with_plate_id_as_moving.push_back(current_feature->reference());
-				}
+				examine_trs(sequence_choices, trs_plate_id_finder,
+						trs_time_period_finder, plate_id_of_interest,
+						reconstruction_time, current_feature);
 			}
-		}
-	}
-
-
-	void
-	update_trses_with_rotation_adjustment(
-			std::vector<GPlatesModel::FeatureHandle::weak_ref> &trses_to_be_updated,
-			const GPlatesMaths::Rotation &rotation_adjustment,
-			const double &reconstruction_time)
-	{
-		GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
-				reconstruction_time, rotation_adjustment);
-
-		std::vector<GPlatesModel::FeatureHandle::weak_ref>::iterator iter = trses_to_be_updated.begin();
-		std::vector<GPlatesModel::FeatureHandle::weak_ref>::iterator end = trses_to_be_updated.end();
-		for ( ; iter != end; ++iter) {
-			GPlatesModel::FeatureHandle::weak_ref current_feature = *iter;
-			if ( ! current_feature.is_valid()) {
-				// Nothing we can do with this feature.
-				continue;
-			}
-
-			inserter.visit_feature_handle(*current_feature);
 		}
 	}
 }
 
 
 void
-GPlatesQtWidgets::ReconstructionPoleWidget::finalise()
+GPlatesQtWidgets::ReconstructionPoleWidget::apply()
 {
-	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
-	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-	layers.mouse_movement_layer().clear();
+	if ( ! d_accum_orientation) {
+		// The user must have released the mouse button after a non-drag.  Perhaps the user
+		// tried to drag at the centre of the viewport, for instance.
+		return;
+	}
 
 	if ( ! d_plate_id) {
 		// Presumably the feature did not contain a reconstruction plate ID.
@@ -217,28 +340,52 @@ GPlatesQtWidgets::ReconstructionPoleWidget::finalise()
 		// For now, let's just do nothing.
 		return;
 	}
+
 	// Now find all the TRSes (total reconstruction sequences) whose fixed or moving ref-frame
 	// plate ID matches our plate ID of interest.
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> trses_with_plate_id_as_fixed;
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> trses_with_plate_id_as_moving;
+	std::vector<ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> sequence_choices;
 	GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder trs_plate_id_finder;
-	find_trses(trses_with_plate_id_as_fixed, trses_with_plate_id_as_moving,
-			trs_plate_id_finder, *d_plate_id, d_view_state_ptr->reconstruction());
+	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
-	update_trses_with_rotation_adjustment(trses_with_plate_id_as_fixed,
-			d_accum_orientation->rotation().get_reverse(),
-			d_view_state_ptr->reconstruction_time());
-	update_trses_with_rotation_adjustment(trses_with_plate_id_as_moving,
+	find_trses(sequence_choices, trs_plate_id_finder, trs_time_period_finder, *d_plate_id,
+			d_view_state_ptr->reconstruction(), d_view_state_ptr->reconstruction_time());
+
+	// The Applicator should be set before the dialog is set up.
+	// Why, you ask?  Because when the dialog is set up, the first row in the sequence choices
+	// table will be selected, which will send a signal which will trigger a slot in the
+	// Applicator, which will not do anything useful unless the Applicator has been set.
+	d_applicator_ptr->set(
+			sequence_choices,
 			d_accum_orientation->rotation(),
 			d_view_state_ptr->reconstruction_time());
+	d_dialog_ptr->setup_for_new_pole(
+			*d_plate_id,
+			d_view_state_ptr->reconstruction_time(),
+			sequence_choices,
+			d_accum_orientation->rotation());
 
-	d_view_state_ptr->reconstruct();
+	d_dialog_ptr->show();
 }
 
 
 void
-GPlatesQtWidgets::ReconstructionPoleWidget::handle_reset_adjustment()
-{  }
+GPlatesQtWidgets::ReconstructionPoleWidget::reset()
+{
+	reset_adjustment();
+	draw_initial_geometries();
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::reset_adjustment()
+{
+	d_accum_orientation.reset();
+
+	// Update the "Adjustment" fields in the TaskPanel pane.
+	field_adjustment_lat->clear();
+	field_adjustment_lon->clear();
+	spinbox_adjustment_angle->setValue(0.0);
+}
 
 
 void
@@ -248,8 +395,160 @@ GPlatesQtWidgets::ReconstructionPoleWidget::set_focus(
 {
 	if ( ! focused_geometry) {
 		// No RFG, so nothing we can do.
+
+		// Clear the plate ID and the plate ID field.
+		d_plate_id = boost::none;
+		reset_adjustment();
+		d_initial_geometries.clear();
+		field_moving_plate->clear();
 		return;
 	}
-	d_initial_geometry = focused_geometry->geometry().get();
+	if (d_plate_id == focused_geometry->reconstruction_plate_id()) {
+		// The plate ID hasn't changed, so there's nothing to do.
+		return;
+	}
+	reset_adjustment();
+	d_initial_geometries.clear();
 	d_plate_id = focused_geometry->reconstruction_plate_id();
+	if (d_plate_id) {
+		QLocale locale_;
+		// We need this static-cast because apparently QLocale's 'toString' member function
+		// doesn't have an overload for 'unsigned long', so the compiler complains about
+		// ambiguity.
+		field_moving_plate->setText(locale_.toString(static_cast<unsigned>(*d_plate_id)));
+	} else {
+		// Clear the plate ID field.
+		field_moving_plate->clear();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::handle_reconstruction_time_change(
+		double new_time)
+{
+	if (d_is_active) {
+		d_initial_geometries.clear();
+		populate_initial_geometries();
+		draw_dragged_geometries();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::populate_initial_geometries()
+{
+	// If there's no plate ID of the currently-focused RFG, then there can be no other RFGs
+	// with the same plate ID.
+	if ( ! d_plate_id) {
+		return;
+	}
+
+	GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
+			d_view_state_ptr->reconstruction().geometries().begin();
+	GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
+			d_view_state_ptr->reconstruction().geometries().end();
+	for ( ; iter != end; ++iter) {
+		GPlatesModel::ReconstructionGeometry *rg = iter->get();
+
+		// We use a dynamic cast here (despite the fact that dynamic casts are generally
+		// considered bad form) because we only care about one specific derivation.
+		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
+		// "if ... else if ..." chain would imply that we should be using polymorphism --
+		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
+		// the "if ... else if ..." chain each time a new derivation is added.)
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+		if (rfg) { 
+			// It's an RFG, so let's look at its reconstruction plate ID property (if
+			// there is one).
+			if (rfg->reconstruction_plate_id()) {
+				// OK, so the RFG *does* have a reconstruction plate ID.
+				if (*(rfg->reconstruction_plate_id()) == *d_plate_id) {
+					d_initial_geometries.push_back(rfg->geometry());
+				}
+			}
+		}
+	}
+
+	if (d_initial_geometries.empty()) {
+		// That's pretty strange.  We expected at least one geometry here, or else, what's
+		// the user dragging?
+		std::cerr << "No initial geometries found ReconstructionPoleWidget::populate_initial_geometries!"
+				<< std::endl;
+	}
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries()
+{
+	populate_initial_geometries();
+
+	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
+	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
+	layers.pole_manipulation_layer().clear();
+	GPlatesGui::PlatesColourTable::const_iterator white_colour = &GPlatesGui::Colour::WHITE;
+
+	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
+	geometry_collection_type::const_iterator end = d_initial_geometries.end();
+	for ( ; iter != end; ++iter) {
+		layers.pole_manipulation_layer().push_back(
+				GPlatesGui::RenderedGeometry(
+						*iter,
+						white_colour));
+	}
+	canvas.update_canvas();
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::draw_dragged_geometries()
+{
+	// Be careful that the boost::optional is not boost::none.
+	if ( ! d_accum_orientation) {
+		draw_initial_geometries();
+		return;
+	}
+
+	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
+	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
+	layers.pole_manipulation_layer().clear();
+	GPlatesGui::PlatesColourTable::const_iterator silver_colour = &GPlatesGui::Colour::SILVER;
+
+	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
+	geometry_collection_type::const_iterator end = d_initial_geometries.end();
+	for ( ; iter != end; ++iter) {
+		layers.pole_manipulation_layer().push_back(
+				GPlatesGui::RenderedGeometry(
+						d_accum_orientation->orient_geometry(*iter),
+						silver_colour));
+	}
+	canvas.update_canvas();
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::update_adjustment_fields()
+{
+	if ( ! d_accum_orientation) {
+		// No idea why the boost::optional is boost::none here, but let's not crash!
+		// FIXME:  Complain about this.
+		return;
+	}
+	ApplyReconstructionPoleAdjustmentDialog::fill_in_fields_for_rotation(
+			field_adjustment_lat, field_adjustment_lon, spinbox_adjustment_angle,
+			d_accum_orientation->rotation());
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::clear_and_reset_after_reconstruction()
+{
+	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
+	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
+	layers.pole_manipulation_layer().clear();
+
+	reset_adjustment();
+	draw_initial_geometries_at_activation();
 }

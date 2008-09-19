@@ -120,7 +120,16 @@ namespace GPlatesQtWidgets
 		{
 			d_geometry_type = geom_type;
 		}
-		
+
+		/**
+		 * Access the desired geometry type, d_geometry_type.
+		 */
+		GeometryType
+		geometry_type() const
+		{
+			return d_geometry_type;
+		}
+
 		/**
 		 * Accessor for the Export Coordinates Dialog, for signal/slot connections etc.
 		 */
@@ -199,20 +208,10 @@ namespace GPlatesQtWidgets
 				QTreeWidgetItem *target_geometry = NULL);
 
 		/**
-		 * Hide the temporary geometry from the screen, but don't clear the coordinates.
-		 *
-		 * This is used when the user switches to a different tool.
+		 * Draw the temporary geometry (if there is one) on the screen.
 		 */
 		void
-		hide_geometry();
-
-		/**
-		 * Re-display the temporary geometry on the screen.
-		 *
-		 * This is used when the user switches back to this tool from a different tool.
-		 */
-		void
-		show_geometry();
+		draw_temporary_geometry();
 
 	private slots:
 

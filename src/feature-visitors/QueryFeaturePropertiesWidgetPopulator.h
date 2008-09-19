@@ -30,12 +30,21 @@
 
 #include <vector>
 #include <QTreeWidget>
+
+#include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyValue.h"
+
+namespace GPlatesPropertyValues
+{
+	class GpmlKeyValueDictionaryElement;
+}
 
 
 namespace GPlatesFeatureVisitors
 {
+
 	class QueryFeaturePropertiesWidgetPopulator:
 			public GPlatesModel::ConstFeatureVisitor
 	{
@@ -71,6 +80,11 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_gml_multi_point(
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+
+		virtual
+		void
 		visit_gml_orientable_curve(
 				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
 
@@ -78,6 +92,11 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gml_point(
 				const GPlatesPropertyValues::GmlPoint &gml_point);
+
+		virtual
+		void
+		visit_gml_polygon(
+				const GPlatesPropertyValues::GmlPolygon	&gml_polygon);
 
 		virtual
 		void
@@ -111,8 +130,15 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_gpml_key_value_dictionary(
+				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
+
+		virtual
+		void
 		visit_gpml_plate_id(
 				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+
+
 
 		virtual
 		void
@@ -139,6 +165,8 @@ namespace GPlatesFeatureVisitors
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
 
+
+
 	private:
 
 		QTreeWidget *d_tree_widget_ptr;
@@ -156,6 +184,19 @@ namespace GPlatesFeatureVisitors
 				const QString &name,
 				const QString &value,
 				const GPlatesModel::PropertyValue &property_value_to_visit);
+
+		void
+		add_gpml_key_value_dictionary_element(
+				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
+
+
+		void
+		write_polygon_ring(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr);
+
+		void
+		write_multipoint_member(
+			const GPlatesMaths::PointOnSphere &point);
 	};
 
 }

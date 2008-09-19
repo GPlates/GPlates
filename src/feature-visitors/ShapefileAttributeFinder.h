@@ -35,6 +35,10 @@
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
 
+namespace GPlatesPropertyValues
+{
+	class GpmlKeyValueDictionaryElement;
+}
 
 namespace GPlatesFeatureVisitors
 {
@@ -72,7 +76,7 @@ namespace GPlatesFeatureVisitors
 		visit_inline_property_container(
 				const GPlatesModel::InlinePropertyContainer &inline_property_container);
 
-
+#if 0
 		virtual
 		void
 		visit_gml_time_instant(
@@ -87,7 +91,12 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gpml_constant_value(
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
-
+#endif
+		virtual
+		void
+		visit_gpml_key_value_dictionary(
+				const GPlatesPropertyValues::GpmlKeyValueDictionary &dictionary);
+#if 0
 		virtual
 		void
 		visit_gpml_plate_id(
@@ -102,7 +111,7 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gpml_measure(
 				const GPlatesPropertyValues::GpmlMeasure &gpml_measure);
-
+#endif
 		virtual
 		void
 		visit_xs_boolean(
@@ -143,6 +152,11 @@ namespace GPlatesFeatureVisitors
 		}
 
 	private:
+
+		void
+		find_shapefile_attribute_in_element(
+				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
+
 		QString d_attribute_name;
 		qvariant_container_type d_found_qvariants;
 		

@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_RECONSTRUCTIONPOLEWIDGET_H
 #define GPLATES_QTWIDGETS_RECONSTRUCTIONPOLEWIDGET_H
 
+#include <vector>
 #include <QWidget>
 #include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
@@ -39,6 +40,8 @@
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
+	class ApplyReconstructionPoleAdjustmentDialog;
+	class AdjustmentApplicator;
 	
 
 	class ReconstructionPoleWidget:
@@ -47,35 +50,150 @@ namespace GPlatesQtWidgets
 	{
 		Q_OBJECT
 	public:
+
+		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+				geometry_collection_type;
+
 		explicit
 		ReconstructionPoleWidget(
-				GPlatesQtWidgets::ViewportWindow &view_state,
+				ViewportWindow &view_state,
 				QWidget *parent_ = NULL);
 
 	public slots:
 
 		void
 		start_new_drag(
-				const GPlatesMaths::PointOnSphere &current_position);
+				const GPlatesMaths::PointOnSphere &current_oriented_position);
 
 		void
 		update_drag_position(
-				const GPlatesMaths::PointOnSphere &current_position);
+				const GPlatesMaths::PointOnSphere &current_oriented_position);
 
 		void
-		finalise();
+		start_new_rotation_drag(
+				const GPlatesMaths::PointOnSphere &current_oriented_position,
+				const GPlatesMaths::PointOnSphere &oriented_center_of_viewport);
 
 		void
-		handle_reset_adjustment();
+		update_rotation_drag_position(
+				const GPlatesMaths::PointOnSphere &current_oriented_position,
+				const GPlatesMaths::PointOnSphere &oriented_center_of_viewport);
+
+		void
+		end_drag();
+
+		void
+		apply();
+
+		void
+		reset();
+
+		void
+		reset_adjustment();
 
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry);
 
+		void
+		handle_reconstruction_time_change(
+				double new_time);
+
+		void
+		activate()
+		{
+			d_is_active = true;
+			draw_initial_geometries_at_activation();
+		}
+
+		void
+		deactivate()
+		{
+			d_is_active = false;
+		}
+
+	protected:
+
+		/**
+		 * Find the geometries whose RFG has a plate ID which is equal to the plate ID of
+		 * the currently-focused RFG (if there is one).
+		 *
+		 * These are called the "initial" geometries, because they will be moved around by
+		 * dragging.
+		 */
+		void
+		populate_initial_geometries();
+
+		/**
+		 * Draw the initial geometries, before they've been dragged.
+		 */
+		void
+		draw_initial_geometries();
+
+		/**
+		 * Draw the initial geometries in "dragged" positions, as a result of the
+		 * accumulated orientation.
+		 */
+		void
+		draw_dragged_geometries();
+
+		/**
+		 * Update the "Adjustment" fields in the TaskPanel pane.
+		 */
+		void
+		update_adjustment_fields();
+
+	protected slots:
+
+		/**
+		 * Draw the initial geometries when the canvas tool is first activated.
+		 */
+		void
+		draw_initial_geometries_at_activation();
+
+		/**
+		 * Clear geometries and reset the adjustment after a reconstruction.
+		 *
+		 * Or, in more detail:  Clear the initial/dragged geometries from the globe (since
+		 * the plate is about to be reconstructed to that position anyway) and reset the
+		 * adjustment (since the plate is now in the dragged position, so there's no
+		 * difference between the plate position and the dragged position).
+		 *
+		 * This slot is intended to be invoked after (re-)reconstruction has occurred (as a
+		 * result of the user clicking "OK" in the Apply Reconstruction Pole Adjustment
+		 * dialog).
+		 */
+		void
+		clear_and_reset_after_reconstruction();
+
 	private:
 
-		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		ViewportWindow *d_view_state_ptr;
+
+		/**
+		 * The dialog presented to the user, to enable him to complete the modification of
+		 * reconstruction poles.
+		 *
+		 * This dialog forms the second phase of user-interaction (after dragging
+		 * geometries around on the globe to calculate a reconstruction pole adjustment).
+		 */
+		// This is technically a memory leak, but since the ReconstructionPoleWidget will
+		// never be deleted...
+		ApplyReconstructionPoleAdjustmentDialog *d_dialog_ptr;
+
+		// This is technically a memory leak, but since the ReconstructionPoleWidget will
+		// never be deleted...
+		AdjustmentApplicator *d_applicator_ptr;
+
+		/**
+		 * Whether or not this dialog is currently active.
+		 *
+		 * This is slightly hackish, but I don't think we want to invoke
+		 * @a populate_initial_geometries every time the reconstruction time changes, even
+		 * when this dialog is not active...
+		 */
+		bool d_is_active;
 
 		/**
 		 * This accumulates the rotation for us.
@@ -98,16 +216,18 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 
 		/**
-		 * The (initial) geometry of the currently-focused RFG (if there is one).
+		 * The (initial) geometry of each of the RFGs whose plate IDs equal the plate ID of
+		 * the currently-focused RFG (if there is one).
 		 *
-		 * As the user drags the geometry around to modify the total reconstruction pole,
-		 * this geometry will be rotated to new positions on the globe by the accumulated
-		 * rotation.
+		 * As the user drags the geometries around to modify the total reconstruction pole,
+		 * these geometries will be rotated to new positions on the globe by the
+		 * accumulated rotation.
 		 *
-		 * Presumably, this will be non-NULL when the 'update_drag_position' slot is
-		 * triggered, since if there were no geometry, what would the user be dragging?
+		 * Presumably, this container will be non-empty when the 'update_drag_position'
+		 * slot is triggered, since if there were no geometry, what would the user be
+		 * dragging?
 		 */
-		GPlatesMaths::GeometryOnSphere::maybe_null_ptr_to_const_type d_initial_geometry;
+		geometry_collection_type d_initial_geometries;
 	};
 }
 

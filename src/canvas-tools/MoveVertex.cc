@@ -44,11 +44,10 @@ GPlatesCanvasTools::MoveVertex::MoveVertex(
 void
 GPlatesCanvasTools::MoveVertex::handle_activation()
 {
-	// FIXME: Could be pithier.
-	// FIXME: May have to adjust message if we are using Map view.
+	// FIXME:  We may have to adjust the message if we are using a Map View.
 	d_view_state_ptr->status_message(QObject::tr(
-			"Click and drag to move individual vertices of the current geometry."
-			" Ctrl+Drag to reorient globe."));
+			"Drag to move a vertex of the current geometry."
+			" Ctrl+drag to re-orient the globe."));
 }
 
 
@@ -64,7 +63,8 @@ GPlatesCanvasTools::MoveVertex::handle_left_drag(
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-		bool is_on_globe)
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {  }
 
 
@@ -75,7 +75,8 @@ GPlatesCanvasTools::MoveVertex::handle_left_release_after_drag(
 		bool was_on_globe,
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-		bool is_on_globe)
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {  }
 
 

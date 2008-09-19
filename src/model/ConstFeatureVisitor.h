@@ -48,6 +48,7 @@ namespace GPlatesPropertyValues
 	class GpmlFiniteRotationSlerp;
 	class GpmlHotSpotTrailMark;
 	class GpmlIrregularSampling;
+	class GpmlKeyValueDictionary;
 	class GpmlMeasure;
 	class GpmlOldPlatesHeader;
 	class GpmlPiecewiseAggregation;
@@ -247,6 +248,12 @@ namespace GPlatesModel
 		void
 		visit_gpml_irregular_sampling(
 				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling) {  }
+
+		virtual
+		void
+		visit_gpml_key_value_dictionary(
+				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary) {  }
+
 
 		virtual
 		void

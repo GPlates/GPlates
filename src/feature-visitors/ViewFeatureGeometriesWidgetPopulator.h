@@ -37,6 +37,7 @@
 #include "model/PropertyName.h"
 #include "model/Reconstruction.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
 
@@ -121,6 +122,11 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_gml_multi_point(
+				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+
+		virtual
+		void
 		visit_gml_orientable_curve(
 				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
 
@@ -129,6 +135,10 @@ namespace GPlatesFeatureVisitors
 		visit_gml_point(
 				GPlatesPropertyValues::GmlPoint &gml_point);
 
+		virtual
+		void
+		visit_gml_polygon(
+				GPlatesPropertyValues::GmlPolygon &gml_polygon);
 
 		virtual
 		void
@@ -202,6 +212,11 @@ namespace GPlatesFeatureVisitors
 				const QString &name,
 				const QString &value,
 				GPlatesModel::PropertyValue &property_value_to_visit);
+
+		void
+		write_polygon_ring(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr);
+
 	};
 
 }

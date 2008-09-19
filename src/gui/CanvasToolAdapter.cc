@@ -96,6 +96,7 @@ GPlatesGui::CanvasToolAdapter::handle_drag(
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -106,21 +107,24 @@ GPlatesGui::CanvasToolAdapter::handle_drag(
 			get_tool(*this).handle_left_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe);
+					oriented_current_pos_on_globe, is_on_globe,
+					oriented_centre_of_viewport);
 			break;
 
 		case Qt::ShiftModifier:
 			get_tool(*this).handle_shift_left_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe);
+					oriented_current_pos_on_globe, is_on_globe,
+					oriented_centre_of_viewport);
 			break;
 
 		case Qt::ControlModifier:
 			get_tool(*this).handle_ctrl_left_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe);
+					oriented_current_pos_on_globe, is_on_globe,
+					oriented_centre_of_viewport);
 			break;
 
 		default:
@@ -128,6 +132,12 @@ GPlatesGui::CanvasToolAdapter::handle_drag(
 			// (Qt::ShiftModifier | Qt::ControlModifier) is not a constant-expression,
 			// and so cannot be used as a case label.
 			if (modifiers == (Qt::ShiftModifier | Qt::ControlModifier)) {
+				// The user was indeed holding the Shift and Control keys.
+				get_tool(*this).handle_shift_ctrl_left_drag(initial_pos_on_globe,
+						oriented_initial_pos_on_globe, was_on_globe,
+						current_pos_on_globe,
+						oriented_current_pos_on_globe, is_on_globe,
+						oriented_centre_of_viewport);
 			}
 			else {
 			}
@@ -151,6 +161,7 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -161,21 +172,24 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 			get_tool(*this).handle_left_release_after_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe);
+					oriented_current_pos_on_globe, is_on_globe,
+					oriented_centre_of_viewport);
 			break;
 
 		case Qt::ShiftModifier:
 			get_tool(*this).handle_shift_left_release_after_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe);
+					oriented_current_pos_on_globe, is_on_globe,
+					oriented_centre_of_viewport);
 			break;
 
 		case Qt::ControlModifier:
 			get_tool(*this).handle_ctrl_left_release_after_drag(initial_pos_on_globe,
 					oriented_initial_pos_on_globe, was_on_globe,
 					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe);
+					oriented_current_pos_on_globe, is_on_globe,
+					oriented_centre_of_viewport);
 			break;
 
 		default:
@@ -183,6 +197,12 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 			// (Qt::ShiftModifier | Qt::ControlModifier) is not a constant-expression,
 			// and so cannot be used as a case label.
 			if (modifiers == (Qt::ShiftModifier | Qt::ControlModifier)) {
+				// The user was indeed holding the Shift and Control keys.
+				get_tool(*this).handle_shift_ctrl_left_release_after_drag(initial_pos_on_globe,
+						oriented_initial_pos_on_globe, was_on_globe,
+						current_pos_on_globe,
+						oriented_current_pos_on_globe, is_on_globe,
+						oriented_centre_of_viewport);
 			}
 			else {
 			}

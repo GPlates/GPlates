@@ -169,6 +169,14 @@ namespace
 }
 
 
+const GPlatesMaths::PointOnSphere &
+GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
+{
+	static const GPlatesMaths::PointOnSphere centre_point(GPlatesMaths::UnitVector3D(1, 0, 0));
+	return centre_point;
+}
+
+
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		ViewportWindow &view_state,
 		QWidget *parent_):
@@ -473,6 +481,11 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 		QMouseEvent *press_event) 
 {
 	update_mouse_pointer_pos(press_event);
+
+	// Let's ignore all mouse buttons except the left mouse button.
+	if (press_event->button() != Qt::LeftButton) {
+		return;
+	}
 	d_mouse_press_info =
 			MousePressInfo(
 					press_event->x(),
@@ -512,6 +525,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 					virtual_mouse_pointer_pos_on_globe(),
 					d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
 					mouse_pointer_is_on_globe(),
+					d_globe.Orient(centre_of_viewport()),
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
 		}
@@ -523,6 +537,25 @@ void
 GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		QMouseEvent *release_event)
 {
+	// Let's ignore all mouse buttons except the left mouse button.
+	if (release_event->button() != Qt::LeftButton) {
+		return;
+	}
+
+	// Let's do our best to avoid crash-inducing Boost assertions.
+	if ( ! d_mouse_press_info) {
+		// OK, something strange happened:  Our boost::optional MousePressInfo is not
+		// initialised.  Rather than spontaneously crashing with a Boost assertion error,
+		// let's log a warning on the console and NOT crash.
+		std::cerr << "Warning (GlobeCanvas::mouseReleaseEvent, "
+				<< __FILE__
+				<< " line "
+				<< __LINE__
+				<< "):\nUninitialised mouse press info!"
+				<< std::endl;
+		return;
+	}
+
 	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
 			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
 		d_mouse_press_info->d_is_mouse_drag = true;
@@ -535,6 +568,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 				virtual_mouse_pointer_pos_on_globe(),
 				d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
 				mouse_pointer_is_on_globe(),
+				d_globe.Orient(centre_of_viewport()),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 	} else {

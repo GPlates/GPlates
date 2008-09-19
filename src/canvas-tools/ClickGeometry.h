@@ -40,6 +40,11 @@ namespace GPlatesQtWidgets
 	class FeaturePropertiesDialog;
 }
 
+namespace GPlatesGui
+{
+	class RenderedGeometryLayers;
+}
+
 namespace GPlatesCanvasTools
 {
 	/**
@@ -72,14 +77,15 @@ namespace GPlatesCanvasTools
 		create(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesGui::RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 				GPlatesGui::FeatureFocus &feature_focus)
 		{
 			ClickGeometry::non_null_ptr_type ptr(
-					new ClickGeometry(globe_, globe_canvas_, view_state_, clicked_table_model,
-							fp_dialog_, feature_focus),
+					new ClickGeometry(globe_, globe_canvas_, layers, view_state_,
+							clicked_table_model, fp_dialog_, feature_focus),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -117,11 +123,13 @@ namespace GPlatesCanvasTools
 		ClickGeometry(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesGui::RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 				GPlatesGui::FeatureFocus &feature_focus):
 			CanvasTool(globe_, globe_canvas_),
+			d_layers_ptr(&layers),
 			d_view_state_ptr(&view_state_),
 			d_clicked_table_model_ptr(&clicked_table_model_),
 			d_fp_dialog_ptr(&fp_dialog_),
@@ -147,6 +155,13 @@ namespace GPlatesCanvasTools
 		}
 
 	private:
+
+		/**
+		 * We need to change which canvas-tool layer is shown when this canvas-tool is
+		 * activated.
+		 */
+		GPlatesGui::RenderedGeometryLayers *d_layers_ptr;
+
 		/**
 		 * This is the view state which is used to obtain the reconstruction root.
 		 *

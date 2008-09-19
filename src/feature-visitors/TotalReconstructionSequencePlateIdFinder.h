@@ -75,6 +75,15 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_plate_id(
 				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
+		/**
+		 * Reset a TotalReconstructionSequencePlateIdFinder instance, as if it were freshly
+		 * instantiated.
+		 *
+		 * This operation is cheaper than instantiating a new instance.
+		 */
+		void
+		reset();
+
 		const boost::optional<GPlatesModel::integer_plate_id_type> &
 		fixed_ref_frame_plate_id() const
 		{

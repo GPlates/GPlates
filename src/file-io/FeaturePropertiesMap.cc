@@ -66,6 +66,8 @@ namespace
 			GET_PROP_VAL_NAME(create_gpml_revision_id);
 		map[ PropertyName::create_gpml("oldPlatesHeader") ] =
 			GET_PROP_VAL_NAME(create_old_plates_header);
+		map[ PropertyName::create_gpml("shapefileAttributes") ] =
+			GET_PROP_VAL_NAME(create_key_value_dictionary);
 
 		return map;
 	}
@@ -313,7 +315,7 @@ namespace
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
-	get_hotspot_trail_properties()
+	get_hot_spot_trail_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
 
@@ -331,7 +333,7 @@ namespace
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
-	get_hotspot_properties()
+	get_hot_spot_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
 
@@ -537,7 +539,7 @@ namespace
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
-	get_abstract_fields_properties()
+	get_abstract_field_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
 
@@ -791,8 +793,7 @@ namespace
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_absolute_reference_frame_properties()
 	{
-		PropertyCreationUtils::PropertyCreatorMap map = 
-			get_total_reconstruction_sequence_properties();
+		PropertyCreationUtils::PropertyCreatorMap map = get_total_reconstruction_sequence_properties();
 
 		map[ PropertyName::create_gpml("type") ] =
 			GET_PROP_VAL_NAME(create_gpml_absolute_reference_frame_enumeration);
@@ -866,37 +867,37 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	d_map[ FeatureType::create_gpml("PassiveContinentalBoundary") ] =
 		get_passive_continental_boundary_properties();
 
-	// Abstract fields.
+	// Fields.
 	d_map[ FeatureType::create_gpml("Bathymetry") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("Topography") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("Gravimetry") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("Magnetics") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("GlobalElevation") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("OceanicAge") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("CrustalThickness") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("DynamicTopography") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("MantleDensity") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("HeatFlow") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("SedimentThickness") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("Roughness") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("SpreadingRate") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("SpreadingAsymmetry") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 	d_map[ FeatureType::create_gpml("Stress") ] =
-		get_abstract_feature_properties();
+		get_abstract_field_properties();
 
 	// Tangible features.
 	d_map[ FeatureType::create_gpml("Isochron") ] = 
@@ -911,8 +912,10 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_suture_properties();
 	d_map[ FeatureType::create_gpml("IslandArc") ] = 
 		get_island_arc_properties();
+	d_map[ FeatureType::create_gpml("HotSpot") ] = 
+		get_hot_spot_properties();
 	d_map[ FeatureType::create_gpml("HotSpotTrail") ] = 
-		get_hotspot_trail_properties();
+		get_hot_spot_trail_properties();
 	d_map[ FeatureType::create_gpml("Seamount") ] =
 		get_seamount_properties();
 	d_map[ FeatureType::create_gpml("Volcano") ] =

@@ -60,5 +60,3 @@ GPlatesQtWidgets::EditGeometryActionWidget::delete_point()
 {
 	d_geometry_widget_ptr->handle_delete_point(this);
 }
-
-

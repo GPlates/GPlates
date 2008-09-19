@@ -93,13 +93,13 @@ namespace GPlatesModel {
 				XmlNodeVisitor &visitor) = 0;
 
 
-		const qint64
+		qint64
 		line_number() const {
 			return d_line_num;
 		}
 
 
-		const qint64
+		qint64
 		column_number() const {
 			return d_col_num;
 		}
@@ -267,7 +267,7 @@ namespace GPlatesModel {
 		/**
 		 * Warning: O(n).  Map should be small though...
 		 */
-		const size_t
+		size_t
 		number_of_attributes() const {
 			return d_attributes.size();
 		}
@@ -299,7 +299,7 @@ namespace GPlatesModel {
 		/**
 		 * Warning: O(n).  List should be small though...
 		 */
-		const size_t
+		size_t
 		number_of_children() const {
 			return d_children.size();
 		}
