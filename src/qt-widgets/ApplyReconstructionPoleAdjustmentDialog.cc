@@ -312,6 +312,8 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_time_changed(
 void
 GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 {
+	using namespace GPlatesMaths;
+
 	if (d_sequence_choices.empty() || ( ! d_adjustment) || ( ! d_sequence_choice_index)) {
 		// Nothing we can do.
 		// (Is this an erroneous situation, about which we should complain?)
@@ -326,9 +328,29 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 		return;
 	}
 
+	Rotation adjustment = *d_adjustment;
+
+	// The "fixed" plate, relative to which this plate's motion is described.
+	unsigned long fixed_plate =
+			d_sequence_choices.at(*d_sequence_choice_index).d_fixed_plate;
+	// Of course, the "fixed" plate might be moving relative to some other plate...
+	FiniteRotation motion_of_fixed_plate =
+			d_view_state_ptr->reconstruction().reconstruction_tree()
+					.get_composed_absolute_rotation(fixed_plate).first;
+	const UnitQuaternion3D &uq = motion_of_fixed_plate.unit_quat();
+	if ( ! represents_identity_rotation(uq)) {
+		// Let's compensate for the motion of the "fixed" ref frame.
+		UnitQuaternion3D::RotationParams params =
+				uq.get_rotation_params(motion_of_fixed_plate.axis_hint());
+		Rotation rot = Rotation::create(params.axis, params.angle);
+		Rotation inverse_rot = rot.get_reverse();
+
+		adjustment = inverse_rot * adjustment * rot;
+	}
+
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
-			*d_adjustment);
+			adjustment);
 	inserter.visit_feature_handle(*chosen_pole_seq);
 
 	d_view_state_ptr->reconstruct();
