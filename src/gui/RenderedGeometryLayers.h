@@ -43,7 +43,8 @@ namespace GPlatesGui
 		RenderedGeometryLayers():
 				d_should_show_digitisation_layer(false),
 				d_should_show_geometry_focus_layer(false),
-				d_should_show_pole_manipulation_layer(false)
+				d_should_show_pole_manipulation_layer(false),
+				d_should_show_plate_closure_layer(false)
 		{  }
 
 		~RenderedGeometryLayers()
@@ -174,12 +175,48 @@ namespace GPlatesGui
 			d_should_show_pole_manipulation_layer = true;
 		}
 
+		/**
+		 * Geometries in this layer are interactive geometries which are populated from the
+		 * contents of the plate_closure widget.
+		 *
+		 * Geometries in this layer should be drawn on top of everything except the
+		 * geometries in the mouse-movement layer.  Geometries in this layer should be the
+		 * first matched by a spatial (mouse-click) query.
+		 */
+		rendered_geometry_layer_type &
+		plate_closure_layer()
+		{
+			return d_plate_closure_layer;
+		}
+
+		/**
+		 * Whether the plate_closure layer should be displayed.
+		 */
+		bool
+		should_show_plate_closure_layer()
+		{
+			return d_should_show_plate_closure_layer;
+		}
+
+		/**
+		 * Show (only) the plate_closure layer.
+		 *
+		 * This will hide the other canvas-tool-specific layers.
+		 */
+		void
+		show_only_plate_closure_layer()
+		{
+			hide_all_canvas_tool_layers();
+			d_should_show_plate_closure_layer = true;
+		}
+
 		void
 		hide_all_canvas_tool_layers()
 		{
 			d_should_show_digitisation_layer = false;
 			d_should_show_geometry_focus_layer = false;
 			d_should_show_pole_manipulation_layer = false;
+			d_should_show_plate_closure_layer = false;
 		}
 
 		/**
@@ -191,6 +228,7 @@ namespace GPlatesGui
 		{
 			return d_reconstruction_layer;
 		}
+
 	private:
 		/**
 		 * Geometries in this layer are non-interactive geometries which are drawn and
@@ -235,6 +273,7 @@ namespace GPlatesGui
 		 */
 		bool d_should_show_geometry_focus_layer;
 
+
 		/**
 		 * Geometries in this layer are interactive geometries which are populated from the
 		 * contents of the pole manipulation widget.
@@ -252,9 +291,27 @@ namespace GPlatesGui
 
 		/**
 		 * Geometries in this layer are interactive geometries which are populated from the
+		 * contents of the plate closure widget.
+		 *
+		 * Geometries in this layer should be drawn on top of everything except the
+		 * geometries in the mouse-movement layer.  Geometries in this layer should be the
+		 * first matched by a spatial (mouse-click) query.
+		 */
+		rendered_geometry_layer_type d_plate_closure_layer;
+
+		/**
+		 * Whether the plate_closure layer should be displayed;
+		 */
+		bool d_should_show_plate_closure_layer;
+
+		/**
+		 * Geometries in this layer are interactive geometries which are populated from the
 		 * ReconstructionGeometry contents of the Reconstruction.
 		 */
 		rendered_geometry_layer_type d_reconstruction_layer;
+
+
+
 	};
 }
 

@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>183</width>
-    <height>359</height>
+    <height>599</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -52,7 +52,7 @@
       <enum>QTabWidget::North</enum>
      </property>
      <property name="currentIndex" >
-      <number>0</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="tab_feature" >
       <attribute name="title" >
@@ -67,6 +67,11 @@
      <widget class="QWidget" name="tab_modify_pole" >
       <attribute name="title" >
        <string>Reconstruction Pole</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_plate_closure" >
+      <attribute name="title" >
+       <string>Plate Closure</string>
       </attribute>
      </widget>
     </widget>

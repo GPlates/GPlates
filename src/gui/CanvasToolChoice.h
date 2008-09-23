@@ -39,6 +39,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
+	class PlateClosureWidget;
 	class ReconstructionPoleWidget;
 }
 
@@ -74,6 +75,7 @@ namespace GPlatesGui
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
+				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_);
 
 		~CanvasToolChoice()
@@ -120,6 +122,12 @@ namespace GPlatesGui
 		choose_digitise_polygon_tool()
 		{
 			change_tool_if_necessary(d_digitise_polygon_tool_ptr);
+		}
+
+		void
+		choose_plate_closure_platepolygon_tool()
+		{
+			change_tool_if_necessary(d_plate_closure_platepolygon_tool_ptr);
 		}
 
 		void
@@ -170,6 +178,11 @@ namespace GPlatesGui
 		 * This is the DigitiseGeometry (Polygon) tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_digitise_polygon_tool_ptr;
+
+		/**
+		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_plate_closure_platepolygon_tool_ptr;
 
 		/**
 		 * This is the MoveGeometry tool which the user may choose.

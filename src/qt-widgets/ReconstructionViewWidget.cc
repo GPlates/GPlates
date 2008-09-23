@@ -24,6 +24,7 @@
  */
 
 #include <QLocale>
+#include <QSplitter>
 
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
@@ -41,14 +42,15 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 {
 	setupUi(this);
 
-// ensures that this widget accepts keyEvents, so that the keyPressEvent method is processed from start-up,
-// irrespective on which window (if any) the user has clicked. 
+	// ensures that this widget accepts keyEvents, so that the keyPressEvent method is processed from start-up,
+	// irrespective on which window (if any) the user has clicked. 
 	setFocusPolicy(Qt::StrongFocus);
 
 	// Create the GlobeCanvas,
 	d_canvas_ptr = new GlobeCanvas(view_state, this);
 	// and add it to the grid layout in the ReconstructionViewWidget.
 	// Note this is a bit of a hack, relying on the QGridLayout set up in the Designer.
+
 	gridLayout->addWidget(d_canvas_ptr, 0, 0);
 	
 	// Enforce some sizing constraints on the globe and friends.

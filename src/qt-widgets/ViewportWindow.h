@@ -169,6 +169,9 @@ namespace GPlatesQtWidgets
 		choose_digitise_polygon_tool();
 
 		void
+		choose_plate_closure_platepolygon_tool();
+
+		void
 		choose_move_geometry_tool();
 
 		void
@@ -360,11 +363,13 @@ namespace GPlatesQtWidgets
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
-		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
+		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
+		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		
 		EulerPoleDialog d_euler_pole_dialog;
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+		GPlatesGui::FeatureTableModel *d_feature_table_model_segments_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 
 		//  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;

@@ -31,6 +31,7 @@
 
 #include "DigitisationWidget.h"
 #include "ReconstructionPoleWidget.h"
+#include "PlateClosureWidget.h"
 #include "ActionButtonBox.h"
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
@@ -93,6 +94,19 @@ namespace GPlatesQtWidgets
 			return *d_reconstruction_pole_widget_ptr;
 		}
 	
+		/**
+		 * Accessor for the Plate Close Widget of the Plate Close Tab.
+		 *
+		 * This lets the plate closure canvas tool
+		 * interact with the PlateClosureWidget.
+		 */
+		PlateClosureWidget &
+		plate_closure_widget() const
+		{
+			return *d_plate_closure_widget_ptr;
+		}
+	
+
 	public slots:
 		
 		void
@@ -111,6 +125,12 @@ namespace GPlatesQtWidgets
 		choose_modify_pole_tab()
 		{
 			tabwidget_task_panel->setCurrentWidget(tab_modify_pole);
+		}		
+		
+		void
+		choose_plate_closure_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_plate_closure);
 		}		
 		
 	private:
@@ -140,6 +160,13 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_modify_pole_tab();
+
+		/**
+		 * Sets up the "Plate Closure" tab in the Extra Creamy Task Panel.
+		 * This adds the special PlateCloseWidget.
+		 */
+		void
+		set_up_plate_closure_tab();
 
 
 		/**
@@ -171,6 +198,11 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesQtWidgets::ReconstructionPoleWidget *d_reconstruction_pole_widget_ptr;
 		
+		/**
+		 * Widget responsible for the controls in the Plate Closure Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::PlateClosureWidget *d_plate_closure_widget_ptr;
 	};
 }
 

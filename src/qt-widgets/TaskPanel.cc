@@ -44,7 +44,8 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	QWidget(parent_),
 	d_feature_action_button_box_ptr(new ActionButtonBox(5, 22, this)),
 	d_digitisation_widget_ptr(new DigitisationWidget(model_interface, view_state_)),
-	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(view_state_))
+	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(view_state_)),
+	d_plate_closure_widget_ptr(new PlateClosureWidget(model_interface, view_state_))
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including
@@ -56,14 +57,18 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	
 	// Prevent the user from clicking tabs directly; instead, gently encourage them
 	// to select the appropriate CanvasTool for the job.
+#if 0
 	tabwidget_task_panel->setTabEnabled(0, false);
 	tabwidget_task_panel->setTabEnabled(1, false);
 	tabwidget_task_panel->setTabEnabled(2, false);
+	tabwidget_task_panel->setTabEnabled(3, false);
+#endif
 	
 	// Set up the EX-TREME Task Panel's tabs.
 	set_up_feature_tab(feature_focus_);
 	set_up_digitisation_tab();
 	set_up_modify_pole_tab();
+	set_up_plate_closure_tab();
 	
 	choose_feature_tab();
 }
@@ -136,4 +141,26 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 	// a spacer to eat up remaining space and push all the widgets to the top
 	// of the Modify Pole tab.
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+}
+
+void
+GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab()
+{
+	// Set up the layout to be used by the Modify Pole tab.
+	QVBoxLayout *lay = new QVBoxLayout(tab_plate_closure);
+	lay->setSpacing(2);
+	lay->setContentsMargins(2, 2, 2, 2);
+	
+	// Add the main ReconstructionPoleWidget.
+	// As usual, Qt will take ownership of memory so we don't have to worry.
+	// We cannot set this parent widget in the TaskPanel initialiser list because
+	// setupUi() has not been called yet.
+	lay->addWidget(d_plate_closure_widget_ptr);
+
+	// After the main widget and anything else we might want to cram in there,
+	// a spacer to eat up remaining space and push all the widgets to the top
+	// of the tab.
+	// lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+std::cout << "GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab() " << std::endl;
+std::cout << "GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab() " << std::endl;
 }

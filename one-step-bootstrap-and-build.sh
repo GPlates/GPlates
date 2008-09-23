@@ -27,6 +27,7 @@ sh build-everything.sh "$@"
 ( cd src/qt-widgets && make EditTimePeriodWidgetUi.h EditOldPlatesHeaderWidgetUi.h )
 ( cd src/qt-widgets && make AddPropertyDialogUi.h )
 ( cd src/qt-widgets && make CreateFeatureDialogUi.h DigitisationWidgetUi.h )
+( cd src/qt-widgets && make PlateClosureWidgetUi.h )
 ( cd src/qt-widgets && make EditStringWidgetUi.h EditEnumerationWidgetUi.h )
 ( cd src/qt-widgets && make EditTimeInstantWidgetUi.h EditPlateIdWidgetUi.h )
 ( cd src/qt-widgets && make EditGeometryWidgetUi.h EditGeometryActionWidgetUi.h )

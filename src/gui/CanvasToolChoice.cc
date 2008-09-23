@@ -32,11 +32,13 @@
 #include "canvas-tools/ZoomGlobe.h"
 #include "canvas-tools/ClickGeometry.h"
 #include "canvas-tools/DigitiseGeometry.h"
+#include "canvas-tools/PlateClosure.h"
 #include "canvas-tools/MoveGeometry.h"
 #include "canvas-tools/MoveVertex.h"
 #include "canvas-tools/ManipulatePole.h"
 
 #include "qt-widgets/DigitisationWidget.h"
+#include "qt-widgets/PlateClosureWidget.h"
 
 
 GPlatesGui::CanvasToolChoice::CanvasToolChoice(
@@ -48,6 +50,7 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
+		GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_):
 	d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(globe_, globe_canvas_,
 			view_state_)),
@@ -61,6 +64,8 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 			layers, view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::MULTIPOINT)),
 	d_digitise_polygon_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(globe_, globe_canvas_,
 			layers, view_state_, digitisation_widget_, GPlatesQtWidgets::DigitisationWidget::POLYGON)),
+	d_plate_closure_platepolygon_tool_ptr(GPlatesCanvasTools::PlateClosure::create(globe_, globe_canvas_,
+			layers, view_state_, plate_closure_widget_, GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON)),
 	d_move_geometry_tool_ptr(GPlatesCanvasTools::MoveGeometry::create(globe_, globe_canvas_,
 			view_state_)),
 	d_move_vertex_tool_ptr(GPlatesCanvasTools::MoveVertex::create(globe_, globe_canvas_,

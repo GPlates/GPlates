@@ -174,7 +174,6 @@ namespace GPlatesQtWidgets
 	private:
 
 		GlobeCanvas *d_canvas_ptr;
-
 	};
 }
 

@@ -456,6 +456,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_euler_pole_dialog(*this, this),
 	d_task_panel_ptr(new TaskPanel(d_feature_focus, *d_model_ptr, *this, this)),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
+	d_feature_table_model_segments_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path(""),
 	d_colour_table_ptr(NULL)
 {
@@ -532,6 +533,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_active_reconstruction_files, 0.0, d_recon_root, *get_colour_table());
 	d_canvas_ptr->update_canvas();
 
+//ZZZ
 	// Set up the Clicked table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
 	table_view_clicked_geometries->setModel(d_feature_table_model_ptr);
@@ -546,6 +548,27 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+
+
+// ZZZ 
+	// Set up the Platepolygon Segments table.
+	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
+	table_view_platepolygon_segments->setModel(d_feature_table_model_ptr);
+	table_view_platepolygon_segments->verticalHeader()->hide();
+	table_view_platepolygon_segments->resizeColumnsToContents();
+	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_platepolygon_segments->horizontalHeader());
+	table_view_platepolygon_segments->horizontalHeader()->setMinimumSectionSize(60);
+	table_view_platepolygon_segments->horizontalHeader()->setMovable(true);
+	table_view_platepolygon_segments->horizontalHeader()->setHighlightSections(false);
+#if 0
+	// When the user selects a row of the table, we should focus that feature.
+	QObject::connect(table_view_clicked_geometries->selectionModel(),
+			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+			d_feature_table_model_ptr,
+			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+#endif
+
+
 
 	// If the focused feature is modified, we may need to reconstruct to update the view.
 	// FIXME:  If the FeatureFocus emits the 'focused_feature_modified' signal, the view will
@@ -568,6 +591,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->digitisation_widget(),
+					d_task_panel_ptr->plate_closure_widget(),
 					d_task_panel_ptr->reconstruction_pole_widget());
 
 	// Set up the Canvas Tool Adapter for handling globe click and drag events.
@@ -644,28 +668,37 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(choose_drag_globe_tool()));
 	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
 			this, SLOT(choose_zoom_globe_tool()));
+
 	QObject::connect(action_Click_Geometry, SIGNAL(triggered()),
 			this, SLOT(choose_click_geometry_tool()));
+
 	QObject::connect(action_Digitise_New_Polyline, SIGNAL(triggered()),
 			this, SLOT(choose_digitise_polyline_tool()));
 	QObject::connect(action_Digitise_New_MultiPoint, SIGNAL(triggered()),
 			this, SLOT(choose_digitise_multipoint_tool()));
 	QObject::connect(action_Digitise_New_Polygon, SIGNAL(triggered()),
 			this, SLOT(choose_digitise_polygon_tool()));
+
 	QObject::connect(action_Move_Geometry, SIGNAL(triggered()),
 			this, SLOT(choose_move_geometry_tool()));
 	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
 			this, SLOT(choose_move_vertex_tool()));
+
+#if 0
 	// FIXME: The Move Vertex and Move Geometry tools, although they have awesome icons,
 	// are to be disabled until they can be implemented.
 	action_Move_Geometry->setVisible(false);
 	action_Move_Vertex->setVisible(false);
 	// Similarly, the Manipulate Pole tool is to be hidden for now.
-#if 1
 	action_Manipulate_Pole->setVisible(false);
 #endif
+
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
 			this, SLOT(choose_manipulate_pole_tool()));
+
+	QObject::connect(action_Plate_Closure, SIGNAL(triggered()),
+			this, SLOT(choose_plate_closure_platepolygon_tool()));
+
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
@@ -1057,6 +1090,14 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_polygon_tool()
 	d_task_panel_ptr->choose_digitisation_tab();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::choose_plate_closure_platepolygon_tool()
+{
+	uncheck_all_tools();
+	action_Plate_Closure->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_plate_closure_platepolygon_tool();
+	d_task_panel_ptr->choose_plate_closure_tab();
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
@@ -1088,6 +1129,7 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 }
 
 
+
 void
 GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 {
@@ -1097,6 +1139,7 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Digitise_New_Polyline->setChecked(false);
 	action_Digitise_New_MultiPoint->setChecked(false);
 	action_Digitise_New_Polygon->setChecked(false);
+	action_Plate_Closure->setChecked(false);
 	action_Move_Geometry->setChecked(false);
 	action_Move_Vertex->setChecked(false);
 	action_Manipulate_Pole->setChecked(false);

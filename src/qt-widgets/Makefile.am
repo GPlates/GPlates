@@ -61,6 +61,7 @@ libqt_widgets_la_SOURCES	= 	AboutDialog.cc AboutDialogUi.h moc_AboutDialog.cc \
 	moc_ManageFeatureCollectionsActionWidget.cc \
 	ManageFeatureCollectionsDialog.cc ManageFeatureCollectionsDialogUi.h \
 	moc_ManageFeatureCollectionsDialog.cc \
+	PlateClosureWidget.cc PlateClosureWidgetUi.h moc_PlateClosureWidget.cc \
 	QueryFeaturePropertiesWidget.cc QueryFeaturePropertiesWidgetUi.h \
 	moc_QueryFeaturePropertiesWidget.cc \
 	ReadErrorAccumulationDialog.cc ReadErrorAccumulationDialogUi.h \
@@ -102,6 +103,7 @@ CLEANFILES		= ViewportWindowUi.h InformationDialogUi.h \
 				EulerPoleDialogUi.h \
 				ExportCoordinatesDialogUi.h \
 				FeatureSummaryWidgetUi.h \
+				PlateClosureWidgetUi.h \
 				FeaturePropertiesDialogUi.h ViewFeatureGeometriesWidgetUi.h \
 				ShapefileAttributeMapperDialogUi.h \
 				ShapefileAttributeRemapperDialogUi.h \
