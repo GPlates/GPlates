@@ -473,7 +473,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	set_up_dock_context_menus();
 	
 	// FIXME: Set up the Task Panel in a more detailed fashion here.
-	d_reconstruction_view_widget.insert_task_panel(d_task_panel_ptr);
+	// d_reconstruction_view_widget.insert_task_panel(d_task_panel_ptr);
 	set_up_task_panel_actions();
 	
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
@@ -492,7 +492,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&d_reconstruction_view_widget, SLOT(set_reconstruction_time(double)));
 
 	// Set up the Reconstruction View widget.
-	setCentralWidget(&d_reconstruction_view_widget);
+	// setCentralWidget(&d_reconstruction_view_widget);
+
+	// ZZZ 
+	d_central_splitter = new QSplitter(Qt::Horizontal, this);
+	d_central_splitter->addWidget(&d_reconstruction_view_widget);
+	d_central_splitter->addWidget(d_task_panel_ptr);
+	setCentralWidget(d_central_splitter);
 
 	QObject::connect(&d_reconstruction_view_widget, SIGNAL(reconstruction_time_changed(double)),
 			this, SLOT(reconstruct_to_time(double)));

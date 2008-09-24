@@ -36,15 +36,16 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <QtCore>
 #include <QtCore/QTimer>
 #include <QCloseEvent>
 #include <QStringList>
 #include <QUndoGroup>
+#include <QSplitter>
 
 #include "ApplicationState.h"
 #include "ViewportWindowUi.h"
 #include "GlobeCanvas.h"
-#include "ReconstructionViewWidget.h"
 #include "SpecifyFixedPlateDialog.h"
 #include "SetCameraViewpointDialog.h"
 #include "AnimateDialog.h"
@@ -54,6 +55,8 @@
 #include "ReadErrorAccumulationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "EulerPoleDialog.h"
+
+#include "ReconstructionViewWidget.h"
 #include "TaskPanel.h"
 
 #include "gui/FeatureFocus.h"
@@ -350,7 +353,11 @@ namespace GPlatesQtWidgets
 
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
+
+		QSplitter *d_central_splitter;
+
 		ReconstructionViewWidget d_reconstruction_view_widget;
+
 		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
 		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
@@ -366,7 +373,10 @@ namespace GPlatesQtWidgets
 		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
 		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		
 		EulerPoleDialog d_euler_pole_dialog;
-		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
+
+		// Depends on FeatureFocus and the Model d_model_ptr.  Held in ReconstructionViewWidget
+		TaskPanel *d_task_panel_ptr;	
+
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 		GPlatesGui::FeatureTableModel *d_feature_table_model_segments_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.

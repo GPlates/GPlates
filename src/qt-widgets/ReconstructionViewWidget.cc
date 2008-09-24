@@ -52,7 +52,8 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Note this is a bit of a hack, relying on the QGridLayout set up in the Designer.
 
 	gridLayout->addWidget(d_canvas_ptr, 0, 0);
-	
+
+
 	// Enforce some sizing constraints on the globe and friends.
 	// A minumum size and non-collapsibility is set on the globe basically so users
 	// can't obliterate it and then wonder (read:complain) where their globe went.

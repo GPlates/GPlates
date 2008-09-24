@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>712</width>
-    <height>442</height>
+    <height>606</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -22,16 +22,7 @@
    <property name="spacing" >
     <number>2</number>
    </property>
-   <property name="leftMargin" >
-    <number>1</number>
-   </property>
-   <property name="topMargin" >
-    <number>1</number>
-   </property>
-   <property name="rightMargin" >
-    <number>1</number>
-   </property>
-   <property name="bottomMargin" >
+   <property name="margin" >
     <number>1</number>
    </property>
    <item>
@@ -39,16 +30,7 @@
      <property name="spacing" >
       <number>2</number>
      </property>
-     <property name="leftMargin" >
-      <number>0</number>
-     </property>
-     <property name="topMargin" >
-      <number>0</number>
-     </property>
-     <property name="rightMargin" >
-      <number>0</number>
-     </property>
-     <property name="bottomMargin" >
+     <property name="margin" >
       <number>0</number>
      </property>
      <item>
@@ -69,16 +51,7 @@
         <property name="spacing" >
          <number>2</number>
         </property>
-        <property name="leftMargin" >
-         <number>1</number>
-        </property>
-        <property name="topMargin" >
-         <number>1</number>
-        </property>
-        <property name="rightMargin" >
-         <number>1</number>
-        </property>
-        <property name="bottomMargin" >
+        <property name="margin" >
          <number>1</number>
         </property>
         <item>
@@ -123,7 +96,8 @@
            <string>Increment reconstruction time  Ctrl+I</string>
           </property>
           <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_22.png</iconset>
+           <iconset resource="../qt-resources/qt_widgets.qrc" >
+            <normaloff>:/gnome_seek_backward_22.png</normaloff>:/gnome_seek_backward_22.png</iconset>
           </property>
           <property name="iconSize" >
            <size>
@@ -145,7 +119,8 @@
            <string>Decrement reconstruction time  Ctrl+Shift+I</string>
           </property>
           <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_22.png</iconset>
+           <iconset resource="../qt-resources/qt_widgets.qrc" >
+            <normaloff>:/gnome_seek_forward_22.png</normaloff>:/gnome_seek_forward_22.png</iconset>
           </property>
           <property name="iconSize" >
            <size>
@@ -185,16 +160,7 @@
         <property name="spacing" >
          <number>2</number>
         </property>
-        <property name="leftMargin" >
-         <number>1</number>
-        </property>
-        <property name="topMargin" >
-         <number>1</number>
-        </property>
-        <property name="rightMargin" >
-         <number>1</number>
-        </property>
-        <property name="bottomMargin" >
+        <property name="margin" >
          <number>1</number>
         </property>
         <item>
@@ -239,7 +205,8 @@
            <string>Zoom in  +</string>
           </property>
           <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_22.png</iconset>
+           <iconset resource="../qt-resources/qt_widgets.qrc" >
+            <normaloff>:/gnome_zoom_in_22.png</normaloff>:/gnome_zoom_in_22.png</iconset>
           </property>
           <property name="iconSize" >
            <size>
@@ -258,7 +225,8 @@
            <string>Zoom out  -</string>
           </property>
           <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_22.png</iconset>
+           <iconset resource="../qt-resources/qt_widgets.qrc" >
+            <normaloff>:/gnome_zoom_out_22.png</normaloff>:/gnome_zoom_out_22.png</iconset>
           </property>
           <property name="iconSize" >
            <size>
@@ -277,7 +245,8 @@
            <string>Reset zoom level  1</string>
           </property>
           <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_22.png</iconset>
+           <iconset resource="../qt-resources/qt_widgets.qrc" >
+            <normaloff>:/gnome_zoom_original_22.png</normaloff>:/gnome_zoom_original_22.png</iconset>
           </property>
           <property name="iconSize" >
            <size>
@@ -305,16 +274,7 @@
         <property name="spacing" >
          <number>2</number>
         </property>
-        <property name="leftMargin" >
-         <number>1</number>
-        </property>
-        <property name="topMargin" >
-         <number>1</number>
-        </property>
-        <property name="rightMargin" >
-         <number>1</number>
-        </property>
-        <property name="bottomMargin" >
+        <property name="margin" >
          <number>1</number>
         </property>
         <item>
@@ -322,7 +282,7 @@
           <property name="orientation" >
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0" >
            <size>
             <width>40</width>
             <height>20</height>
@@ -337,10 +297,7 @@
    </item>
    <item>
     <layout class="QGridLayout" >
-     <property name="horizontalSpacing" >
-      <number>1</number>
-     </property>
-     <property name="verticalSpacing" >
+     <property name="spacing" >
       <number>1</number>
      </property>
      <item row="0" column="0" >
@@ -397,16 +354,7 @@
      <property name="spacing" >
       <number>2</number>
      </property>
-     <property name="leftMargin" >
-      <number>0</number>
-     </property>
-     <property name="topMargin" >
-      <number>0</number>
-     </property>
-     <property name="rightMargin" >
-      <number>0</number>
-     </property>
-     <property name="bottomMargin" >
+     <property name="margin" >
       <number>0</number>
      </property>
      <item>
@@ -433,16 +381,7 @@
         <property name="spacing" >
          <number>2</number>
         </property>
-        <property name="leftMargin" >
-         <number>2</number>
-        </property>
-        <property name="topMargin" >
-         <number>2</number>
-        </property>
-        <property name="rightMargin" >
-         <number>2</number>
-        </property>
-        <property name="bottomMargin" >
+        <property name="margin" >
          <number>2</number>
         </property>
         <item>
@@ -504,16 +443,7 @@
         <property name="spacing" >
          <number>2</number>
         </property>
-        <property name="leftMargin" >
-         <number>2</number>
-        </property>
-        <property name="topMargin" >
-         <number>2</number>
-        </property>
-        <property name="rightMargin" >
-         <number>2</number>
-        </property>
-        <property name="bottomMargin" >
+        <property name="margin" >
          <number>2</number>
         </property>
         <item>
@@ -563,16 +493,7 @@
         <property name="spacing" >
          <number>2</number>
         </property>
-        <property name="leftMargin" >
-         <number>2</number>
-        </property>
-        <property name="topMargin" >
-         <number>2</number>
-        </property>
-        <property name="rightMargin" >
-         <number>2</number>
-        </property>
-        <property name="bottomMargin" >
+        <property name="margin" >
          <number>2</number>
         </property>
         <item>
@@ -580,7 +501,7 @@
           <property name="orientation" >
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0" >
            <size>
             <width>40</width>
             <height>5</height>

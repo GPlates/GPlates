@@ -101,7 +101,7 @@ namespace GPlatesQtWidgets
 		{
 			return *d_canvas_ptr;
 		}
-		
+
 		/**
 		 * The Task Panel is created, and initialised by ViewportWindow.
 		 * ViewportWindow uses this method to insert the panel into the
