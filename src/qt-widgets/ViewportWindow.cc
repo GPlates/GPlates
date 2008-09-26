@@ -473,7 +473,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	set_up_dock_context_menus();
 	
 	// FIXME: Set up the Task Panel in a more detailed fashion here.
-	// d_reconstruction_view_widget.insert_task_panel(d_task_panel_ptr);
+	d_reconstruction_view_widget.insert_task_panel(d_task_panel_ptr);
 	set_up_task_panel_actions();
 	
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
@@ -492,13 +492,26 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&d_reconstruction_view_widget, SLOT(set_reconstruction_time(double)));
 
 	// Set up the Reconstruction View widget.
-	// setCentralWidget(&d_reconstruction_view_widget);
+	setCentralWidget(&d_reconstruction_view_widget);
 
+#if 0
+	//
 	// ZZZ 
-	d_central_splitter = new QSplitter(Qt::Horizontal, this);
+	//
+	d_centralsplitter = new QSplitter(Qt::Horizontal, this);
+
+	// add the widgets
 	d_central_splitter->addWidget(&d_reconstruction_view_widget);
 	d_central_splitter->addWidget(d_task_panel_ptr);
+
+	// re-parent the widgets to keep destructors happy
+	d_reconstruction_view_widget.setParent( d_central_splitter );
+	d_task_panel_ptr->setParent( d_central_splitter );
+	// show ... 
+
+	// Set the central widget to be the splitter
 	setCentralWidget(d_central_splitter);
+#endif
 
 	QObject::connect(&d_reconstruction_view_widget, SIGNAL(reconstruction_time_changed(double)),
 			this, SLOT(reconstruct_to_time(double)));
@@ -539,7 +552,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_active_reconstruction_files, 0.0, d_recon_root, *get_colour_table());
 	d_canvas_ptr->update_canvas();
 
-//ZZZ
 	// Set up the Clicked table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
 	table_view_clicked_geometries->setModel(d_feature_table_model_ptr);
@@ -555,8 +567,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
 
-
-// ZZZ 
 	// Set up the Platepolygon Segments table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
 	table_view_platepolygon_segments->setModel(d_feature_table_model_ptr);
