@@ -666,7 +666,7 @@ GPlatesFileIO::ShapeFileReader::read_features(
 		QMap<QString,QString>::const_iterator it = 
 			d_model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
 
-		if (it != d_model_to_attribute_map.constEnd()) {
+		if ((it != d_model_to_attribute_map.constEnd()) && d_field_names.contains(it.value())) {
 		
 			int index = d_field_names.indexOf(it.value());
 	
@@ -1099,6 +1099,8 @@ GPlatesFileIO::ShapeFileReader::read_file(
 
 	QString shapefile_xml_filename = make_shapefile_xml_filename(fileinfo.get_qfileinfo());
 
+	d_model_to_attribute_map.clear();
+
 	if (!fill_attribute_map_from_xml_file(shapefile_xml_filename,d_model_to_attribute_map))
 	{
 		// Set the last argument to false, because this is an initial mapping, not a re-mapping. 
@@ -1517,6 +1519,8 @@ GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(
 	reader.get_field_names(read_errors);
 
 	QString shapefile_xml_filename = make_shapefile_xml_filename(fileinfo.get_qfileinfo());
+
+	d_model_to_attribute_map.clear();
 
 	fill_attribute_map_from_xml_file(shapefile_xml_filename,d_model_to_attribute_map);
 
