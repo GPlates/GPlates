@@ -670,15 +670,22 @@ GPlatesFileIO::ShapeFileReader::read_features(
 		
 			int index = d_field_names.indexOf(it.value());
 	
-			QString feature_string = d_attributes[index].toString();
+			// d_field_names should be the same size as d_attributes, but check that we
+			// don't try to go beyond the bounds of d_attributes. If somehow we are trying to do 
+			// this, then we just get an unclassifiedFeature created.
+			if ((index >= 0) && (index < static_cast<int>(d_attributes.size())))
+			{
 
-			feature_map_const_iterator result = feature_map.find(feature_string);
-			if (result != feature_map.end()) {
-				d_feature_creation_pair = result->second;
-			} else {
-				read_errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(e_source, e_location, 
-				GPlatesFileIO::ReadErrors::UnrecognisedShapefileFeatureType,
-				GPlatesFileIO::ReadErrors::UnclassifiedShapefileFeatureCreated));
+				QString feature_string = d_attributes[index].toString();
+
+				feature_map_const_iterator result = feature_map.find(feature_string);
+				if (result != feature_map.end()) {
+					d_feature_creation_pair = result->second;
+				} else {
+					read_errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(e_source, e_location, 
+					GPlatesFileIO::ReadErrors::UnrecognisedShapefileFeatureType,
+					GPlatesFileIO::ReadErrors::UnclassifiedShapefileFeatureCreated));
+				}
 			}
 		}
 		
@@ -933,13 +940,19 @@ GPlatesFileIO::ShapeFileReader::get_attributes()
 		if (field_def_ptr->GetType()==OFTInteger){
 			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsInteger(count)));
 		}
-		if (field_def_ptr->GetType()==OFTReal){
+		else if (field_def_ptr->GetType()==OFTReal){
 			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsDouble(count)));
 		}
-		if (field_def_ptr->GetType()==OFTString){
+		else if (field_def_ptr->GetType()==OFTString){
 			QString temp_string;
 			temp_string = QString(d_feature_ptr->GetFieldAsString(count));
 			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsString(count)));
+		}
+		else{
+			// Any other attribute types are not handled at the moment...use an
+			// empty string so that the size of d_attributes keeps in sync with the number
+			// of fields.
+			d_attributes.push_back(QVariant(QString()));
 		}
 	}
 }
