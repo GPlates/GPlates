@@ -66,6 +66,7 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 	
 	// What did the user click on just now?
 	std::priority_queue<GPlatesGui::ProximityTests::ProximityHit> sorted_hits;
+
 	GPlatesGui::ProximityTests::find_close_rfgs(sorted_hits, view_state().reconstruction(),
 			oriented_click_pos_on_globe, proximity_inclusion_threshold);
 	

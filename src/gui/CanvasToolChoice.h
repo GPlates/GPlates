@@ -39,8 +39,8 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
-	class PlateClosureWidget;
 	class ReconstructionPoleWidget;
+	class PlateClosureWidget;
 }
 
 namespace GPlatesGui

@@ -12,7 +12,7 @@ libcanvas_tools_la_SOURCES	= ClickGeometry.cc moc_ClickGeometry.cc \
 			ZoomGlobe.cc \
 			ReorientGlobe.cc \
 			DigitiseGeometry.cc \
-			PlateClosure.cc
+			PlateClosure.cc moc_PlateClosure.cc
 
 CLEANFILES		= moc_*.cc
 
