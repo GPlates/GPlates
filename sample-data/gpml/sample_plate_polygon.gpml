@@ -43,9 +43,11 @@
                                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType> 
                                     <gpml:value>
                                         <gpml:TopologicalPolygon>
-                                            <gpml:section> <!-- this is one of many sectio elements -->
+
+                                            <gpml:section> <!-- this is one of many section elements -->
+
                                                 <gpml:TopologicalLineSection> 
-                                                    <gpml:sourceGeometry><!-- the source geom. to get vertices from, the geom. that gets cut -->
+                                                    <gpml:sourceGeometry><!-- the source geom. to get vertices from; the geom. that gets cut -->
                                                         <gpml:PropertyDelegate>
                                                             <gpml:valueType>gml:LineString</gpml:valueType>
                                                             <gpml:targetFeature>Line1</gpml:targetFeature>
@@ -53,6 +55,7 @@
                                                         </gpml:PropertyDelegate>
                                                     </gpml:sourceGeometry>
                                                     <!-- this is where the visitor pattern stops -->
+
                                                     <!-- direct access of data from within the visit_gpml_topological_line_section -->
                                                     <gpml:startIntersection>
                                                         <gpml:TopologicalIntersection>
