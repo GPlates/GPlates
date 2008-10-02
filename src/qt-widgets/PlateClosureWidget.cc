@@ -22,12 +22,15 @@
  */
 
 #include <QtGlobal>
-#include <QDebug>
 #include <QHeaderView>
 #include <QTreeWidget>
 #include <QUndoStack>
 #include <QToolButton>
 #include <QMessageBox>
+#include <QLocale>
+#include <QDebug>
+#include <QString>
+
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 
@@ -44,8 +47,39 @@
 #include "maths/GeometryOnSphere.h"
 #include "maths/Real.h"
 
+#include "gui/FeatureFocus.h"
+#include "model/FeatureHandle.h"
+#include "utils/UnicodeStringUtils.h"
+
+#include "feature-visitors/PlateIdFinder.h"
+#include "feature-visitors/GmlTimePeriodFinder.h"
+#include "feature-visitors/XsStringFinder.h"
+#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
+
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GeoTimeInstant.h"
+
 namespace
 {
+	/**
+	 * Borrowed from FeatureTableModel.cc.
+	 */
+	QString
+	format_time_instant(
+			const GPlatesPropertyValues::GmlTimeInstant &time_instant)
+	{
+		QLocale locale;
+		if (time_instant.time_position().is_real()) {
+			return locale.toString(time_instant.time_position().value());
+		} else if (time_instant.time_position().is_distant_past()) {
+			return QObject::tr("past");
+		} else if (time_instant.time_position().is_distant_future()) {
+			return QObject::tr("future");
+		} else {
+			return QObject::tr("<invalid>");
+		}
+	}
+
 	/**
 	 * This typedef is used wherever geometry (of some unknown type) is expected.
 	 * It is a boost::optional because creation of geometry may fail for various reasons.
@@ -106,66 +140,6 @@ namespace
 
 
 	/**
-	 * Goes through the children of the QTreeWidgetItem geometry-item (i.e. the
-	 * points in the table) and attempts to build a vector of PointOnSphere.
-	 * 
-	 * Invalid points in the table will be skipped over, although due to the nature
-	 * of the PlateClosureWidget, there really shouldn't be any invalid points to begin
-	 * with, since we're getting them from a PointOnSphere in the first place.
-	 */
-	std::vector<GPlatesMaths::PointOnSphere>
-	build_points_from_table_item(
-			QTreeWidgetItem *geom_item)
-	{
-		std::vector<GPlatesMaths::PointOnSphere> points;
-		int children = geom_item->childCount();
-		points.reserve(children);
-		
-		// Build a vector of points that we can pass to PolylineOnSphere's validity test.
-		for (int i = 0; i < children; ++i) {
-			QTreeWidgetItem *child = geom_item->child(i);
-			double lat = 0.0;
-			double lon = 0.0;
-			
-			// Pull the lat,lon out of the QTreeWidgetItem that we stored inside it
-			// using the Qt::EditRole. This avoids unnecessary parsing of text.
-			QVariant lat_var = child->data(GPlatesQtWidgets::PlateClosureWidget::COLUMN_LAT, Qt::EditRole);
-			bool lat_ok = false;
-			lat = lat_var.toDouble(&lat_ok);
-			
-			QVariant lon_var = child->data(GPlatesQtWidgets::PlateClosureWidget::COLUMN_LON, Qt::EditRole);
-			bool lon_ok = false;
-			lon = lon_var.toDouble(&lon_ok);
-			
-			// (Attempt to) create a LatLonPoint for the coordinates.
-			if (lat_ok && lon_ok) {
-				// At this point we have a valid lat,lon - valid as far as doubles are concerned.
-				try {
-					points.push_back(GPlatesMaths::make_point_on_sphere(
-							GPlatesMaths::LatLonPoint(lat,lon)));
-				} catch (GPlatesMaths::InvalidLatLonException &) {
-					// We really shouldn't be encountering invalid latlongs. How did the
-					// user click them?
-					throw;
-				}
-			} else {
-				// If ! lat_ok || ! lon_ok, something is seriously wrong.
-				// How did invalid data get in here? Throw an appropriate exception.
-				if ( ! lat_ok ) {
-					throw GPlatesMaths::InvalidLatLonCoordinateException(lat,
-							GPlatesMaths::InvalidLatLonCoordinateException::LatitudeCoord, i);
-				} else {
-					throw GPlatesMaths::InvalidLatLonCoordinateException(lon,
-							GPlatesMaths::InvalidLatLonCoordinateException::LongitudeCoord, i);
-				}
-			}
-		}
-		return points;
-	}
-
-
-
-	/**
 	 * Creates 'appropriate' geometry given the available 
 	 * Examines QTreeWidgetItems, the number of points available, and the user's
 	 * intentions. 
@@ -187,7 +161,7 @@ namespace
 	{
 		// FIXME: Only handles the unbroken line and single-ring cases.
 		std::vector<GPlatesMaths::PointOnSphere> points;
-		points = build_points_from_table_item(geom_item);
+		// FIXME : REMOVED points = build_points_from_table_item(geom_item);
 		// There's no guarantee that adjacent points in the table aren't identical.
 		std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
 				GPlatesMaths::count_distinct_adjacent_points(points);
@@ -260,46 +234,15 @@ namespace
 		}
 		return boost::none;
 	}
-	
-	/**
-	 * Determines the coordinate QTreeWidgetItem at the end of the table,
-	 * i.e. the coordinate above the position that new points will be appended.
-	 * This function is used by PlateClosureWidget::append_point_to_geometry()
-	 * to determine if the user is adding the same point which is identical to
-	 * the last point in the table.
-	 *
-	 * As the table may be empty, or the 'geometry' item where new points will
-	 * be added may also be empty, this function may return a NULL pointer.
-	 */
-	QTreeWidgetItem *
-	get_coordinate_item_above_insertion_point(
-			const QTreeWidget &tree_widget)
-	{
-		QTreeWidgetItem *root = tree_widget.invisibleRootItem();
-
-		// Pick out the last geometry item in the table - this is where new
-		// points will be appended.
-		if (root->childCount() == 0) {
-			// Empty table.
-			return NULL;
-		}
-		QTreeWidgetItem *geom_item = root->child(root->childCount() - 1);
-
-		// Locate the 'coordinate' QTreeWidgetItem at the end.
-		if (geom_item->childCount() == 0) {
-			// There aren't any coordinates in here yet, and so there will
-			// not be any conflict with duplicate points when
-			// append_point_to_geometry() is called.
-			return NULL;
-		}
-		QTreeWidgetItem *coord_item = geom_item->child(geom_item->childCount() - 1);
-		return coord_item;
-	}
 }
 
 
 
+// 
+// Constructor
+// 
 GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
+		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesModel::ModelInterface &model_interface,
 		ViewportWindow &view_state_,
 		QWidget *parent_):
@@ -310,83 +253,172 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	d_geometry_opt_ptr(boost::none)
 {
 	setupUi(this);
+
+	clear();
+
+	setDisabled(true);
+
+	// Subscribe to focus events. We can discard the FeatureFocus reference afterwards.
+	QObject::connect(&feature_focus,
+		SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+		this,
+		SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
+	QObject::connect(&feature_focus,
+		SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+		this,
+		SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
+	// Use Coordinates in Reverse
+	QObject::connect(button_use_coordinates_in_reverse, 
+		SIGNAL(clicked()),
+		this, 
+		SLOT(handle_use_coordinates_in_reverse()));
 	
-#if 0
-	// Set up the header of the coordinates widget.
-	treewidget_coordinates->header()->setResizeMode(QHeaderView::Stretch);
+	// Choose Feature button 
+	QObject::connect(button_choose_feature, 
+		SIGNAL(clicked()),
+		this, 
+		SLOT(handle_choose_feature()));
 	
 	// Clear button to clear points from table and start over.
-	QObject::connect(button_clear_coordinates, SIGNAL(clicked()),
-			this, SLOT(handle_clear()));
-#endif
+	QObject::connect(button_clear_feature, 
+		SIGNAL(clicked()),
+		this, 
+		SLOT(handle_clear()));
 	
 	// Create... button to open the Create Feature dialog.
-	QObject::connect(button_create_platepolygon, SIGNAL(clicked()),
-			this, SLOT(handle_create()));	
+	QObject::connect(button_create_platepolygon, 
+		SIGNAL(clicked()),
+		this, 
+		SLOT(handle_create()));	
+	
+	// Cancel button to cancel the process 
+	QObject::connect(button_cancel, 
+		SIGNAL(clicked()),
+		this, 
+		SLOT(handle_cancel()));	
 	
 	// Get everything else ready that may need to be set up more than once.
 	initialise_geometry(PLATEPOLYGON);
+}
 
-std::cout << "GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget() " << std::endl;
+void
+GPlatesQtWidgets::PlateClosureWidget::clear()
+{
+	lineedit_type->clear();
+	lineedit_name->clear();
+	lineedit_plate_id->clear();
+	lineedit_time_of_appearance->clear();
+	lineedit_time_of_disappearance->clear();
+	lineedit_clicked_geometry->clear();
+	lineedit_first->clear();
+	lineedit_last->clear();
 }
 
 
 void
-GPlatesQtWidgets::PlateClosureWidget::update_table_labels()
+GPlatesQtWidgets::PlateClosureWidget::display_feature(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
 {
-#if 0
-	// For each label (top-level QTreeWidgetItem) in the table,
-	// determine what (piece of) geometry it will turn into when
-	// the user hits Create.
-	QTreeWidgetItem *root = treewidget_coordinates->invisibleRootItem();
-	int num_children = root->childCount();
-	for (int i = 0; i < num_children; ++i) {
-		QTreeWidgetItem *geom_item = root->child(i);
-		QString label = calculate_label_for_item(d_geometry_type, i, geom_item);
-		geom_item->setText(0, label);
-		
-		// FIXME: Re-applying these properties has only become necessary with the
-		// addition of the multi-geom aware PlateClosureChangeGeometryType command.
-		// Something needs to be done about this awkward situation.
-		static const QBrush background(Qt::darkGray);
-		static const QBrush foreground(Qt::white);
-		geom_item->setBackground(0, background);
-		geom_item->setForeground(0, foreground);
-		geom_item->setFirstColumnSpanned(true);
-		geom_item->setExpanded(true);
+	// Clear the fields first, then fill in those that we have data for.
+	clear();
+	// lways check your weak_refs!
+	if ( ! feature_ref.is_valid()) {
+		setDisabled(true);
+		return;
+	} else {
+		setDisabled(false);
 	}
-#endif
-}
-
-
-void
-GPlatesQtWidgets::PlateClosureWidget::update_geometry()
-{
-#if 0
-	// Clear the old d_geometry_opt_ptr, so that if the table is empty we'll be left
-	// with boost::none.
-	d_geometry_opt_ptr = boost::none;
 	
-	// For each 'geometry' top level QTreeWidgetItem:
-	QTreeWidgetItem *root = treewidget_coordinates->invisibleRootItem();
-	int num_children = root->childCount();
-	for (int i = 0; i < num_children; ++i) {
-		// Build vector of PointOnSphere from the lat,lons in the table,
-		// then feed that into the appropriate create_xxxx function.
-		QTreeWidgetItem *item = root->child(i);
-		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
-		geometry_opt_ptr_type geometry_opt_ptr = create_geometry_from_table_items(
-				item, d_geometry_type, validity);
-
-		// FIXME: it only handles single-linestring cases this way.
-		// Set that as our new d_geometry_opt_ptr for now.
-		d_geometry_opt_ptr = geometry_opt_ptr;
+	// Populate the widget from the FeatureHandle:
+	
+	// Feature Type.
+	lineedit_type->setText(GPlatesUtils::make_qstring_from_icu_string(
+			feature_ref->feature_type().build_aliased_name()));
+	
+	// Feature Name.
+	// FIXME: Need to adapt according to user's current codeSpace setting.
+	static const GPlatesModel::PropertyName name_property_name = 
+		GPlatesModel::PropertyName::create_gml("name");
+	GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
+	string_finder.visit_feature_handle(*feature_ref);
+	if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
+		// The feature has one or more name properties. Use the first one for now.
+		GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
+				*string_finder.found_strings_begin();
+		
+		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
+		lineedit_name->setCursorPosition(0);
 	}
 
-	// Set that as our new d_geometry_opt_ptr, and render.
-	draw_temporary_geometry();
-#endif
+	// Plate ID.
+	static const GPlatesModel::PropertyName plate_id_property_name =
+		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+	plate_id_finder.visit_feature_handle(*feature_ref);
+	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+		// The feature has a reconstruction plate ID.
+		GPlatesModel::integer_plate_id_type recon_plate_id =
+				*plate_id_finder.found_plate_ids_begin();
+		
+		lineedit_plate_id->setText(QString::number(recon_plate_id));
+	}
+	
+	// Valid Time (Assuming a gml:TimePeriod, rather than a gml:TimeInstant!)
+	static const GPlatesModel::PropertyName valid_time_property_name =
+		GPlatesModel::PropertyName::create_gml("validTime");
+	GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
+	time_period_finder.visit_feature_handle(*feature_ref);
+	if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
+		// The feature has a gml:validTime property.
+		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
+				*time_period_finder.found_time_periods_begin();
+		
+		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
+		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
+	}
+
+	if (associated_rfg) {
+		// There was an associated Reconstructed Feature Geometry (RFG), which means there
+		// was a clicked geometry.
+		GPlatesModel::FeatureHandle::properties_iterator geometry_property =
+				associated_rfg->property();
+		if (*geometry_property != NULL) {
+			lineedit_clicked_geometry->setText(
+					GPlatesUtils::make_qstring_from_icu_string(
+						(*geometry_property)->property_name().build_aliased_name()));
+		} else {
+			lineedit_clicked_geometry->setText(tr("<No longer valid>"));
+		}
+	}
+
+	///
+	if ( ! feature_ref.is_valid()) {
+		return;
+	}
+
+	// set up a dummy tree
+	QTreeWidget *tree_geometry = new QTreeWidget(this);
+	tree_geometry->hide();
+	
+	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
+		d_view_state_ptr->reconstruction(), *tree_geometry);
+	populator.visit_feature_handle(*feature_ref);
+	QString f = populator.get_first_coordinate();
+	QString l = populator.get_last_coordinate();
+	lineedit_first->setText(f);
+	lineedit_last->setText(l);
+
+	delete tree_geometry;
 }
+
+
 
 
 void
@@ -406,22 +438,12 @@ GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 }
 
 
-void
-GPlatesQtWidgets::PlateClosureWidget::clear_widget()
-{
-#if 0
-	treewidget_coordinates->clear();
-	d_undo_stack.clear();
-	d_geometry_opt_ptr = boost::none;
-#endif
-}
-
 
 void
 GPlatesQtWidgets::PlateClosureWidget::initialise_geometry(
 		GeometryType geom_type)
 {
-	clear_widget();
+	clear();
 	d_geometry_type = geom_type;
 }
 
@@ -440,6 +462,45 @@ GPlatesQtWidgets::PlateClosureWidget::change_geometry_type(
 	undo_stack().push(new GPlatesUndoCommands::PlateClosureChangeGeometryType(
 			*this, d_geometry_type, geom_type));
 #endif
+}
+
+// 
+// Button Handlers  and support functions 
+// 
+
+void
+GPlatesQtWidgets::PlateClosureWidget::handle_use_coordinates_in_reverse()
+{
+	// flip coordinates
+	// set flag
+}
+
+void
+GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
+{
+	GPlatesGui::FeatureTableModel &ftm = d_view_state_ptr->segments_feature_table_model();
+
+	// transfer data to segments table
+	ftm.begin_insert_features(0, 0);
+
+	// ftm.geometry_sequence().push_back(ZZ
+		
+	// GPlatesModel::FeatureHandle::weak_ref
+
+	ftm.end_insert_features();
+
+	
+	// clear out the older featrure
+	clear();
+}
+
+
+void
+GPlatesQtWidgets::PlateClosureWidget::handle_clear()
+{
+	// Clear all geometry from the table.
+	// undo_stack().push(new GPlatesUndoCommands::PlateClosureClearGeometry(*this));
+	clear();
 }
 
 
@@ -471,75 +532,12 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	
 	// Then, when we're all done, reset the widget for new input.
 	initialise_geometry(d_geometry_type);
-	update_geometry();
+	// update_geometry();
 }
 
-
 void
-GPlatesQtWidgets::PlateClosureWidget::handle_clear()
+GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 {
-	// Clear all geometry from the table.
-	// undo_stack().push(new GPlatesUndoCommands::PlateClosureClearGeometry(*this));
-}
-
-
-void
-GPlatesQtWidgets::PlateClosureWidget::handle_export()
-{
-#if 0
-	// Feed the Export dialog the GeometryOnSphere you've set up for the current
-	// points. You -have- set up a GeometryOnSphere for the current points,
-	// haven't you?
-	if (d_geometry_opt_ptr) {
-		// Give a GeometryOnSphere::non_null_ptr_to_const_type to the Export dialog.
-		d_export_coordinates_dialog->set_geometry_and_display(*d_geometry_opt_ptr);
-	} else {
-		QMessageBox::warning(this, tr("No geometry to export"),
-				tr("There is no valid geometry to export."),
-				QMessageBox::Ok);
-	}
-#endif
-}
-
-
-void
-GPlatesQtWidgets::PlateClosureWidget::append_point_to_geometry(
-		double lat,
-		double lon,
-		QTreeWidgetItem *target_geometry_item)
-{
-# if 0 
-	// We shouldn't append a point which is identical to the last point in the table.
-	// QTreeWidgetItem *prior_item = get_coordinate_item_above_insertion_point(*coordinates_table());
-	if (prior_item != NULL) {
-		// Determine the lat,lon for this item. Using GPlatesMaths::Real to avoid
-		// unsafe floating-point equality comparison.
-		GPlatesMaths::Real prior_lat;
-		GPlatesMaths::Real prior_lon;
-		
-		// Pull the lat,lon out of the QTreeWidgetItem that we stored inside it
-		// using the Qt::EditRole. This avoids unnecessary parsing of text.
-		QVariant lat_var = prior_item->data(PlateClosureWidget::COLUMN_LAT, Qt::EditRole);
-		bool lat_ok = false;
-		prior_lat = lat_var.toDouble(&lat_ok);
-		
-		QVariant lon_var = prior_item->data(PlateClosureWidget::COLUMN_LON, Qt::EditRole);
-		bool lon_ok = false;
-		prior_lon = lon_var.toDouble(&lon_ok);
-		
-		// Assuming we are able to get a sane lat,lon out of the table:
-		if (lat_ok && lon_ok) {
-			// Are we about to add a duplicate of the last point?
-			if (prior_lat == lat && prior_lon == lon) {
-				// Duplicate point. Return early and avoid any undo command being created.
-				return;
-			}
-		}
-	}
-
-	// Make a 'coordinate' QTreeWidgetItem, and add it to the last 'geometry'
-	// top-level QTreeWidgetItem in our table using an undo command.
-	// undo_stack().push(new GPlatesUndoCommands::PlateClosureAddPoint(*this, lat, lon));
-#endif
+	handle_clear();
 }
 

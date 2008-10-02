@@ -35,6 +35,17 @@
 #include "maths/GeometryOnSphere.h"
 #include "model/ModelInterface.h"
 
+#include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
+
+#include "model/PropertyValue.h"
+#include "property-values/GpmlTopologicalSection.h"
+
+// An effort to reduce the dependency spaghetti currently plaguing the GUI.
+namespace GPlatesGui
+{
+	class FeatureFocus;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -48,6 +59,7 @@ namespace GPlatesQtWidgets
 			protected Ui_PlateClosureWidget
 	{
 		Q_OBJECT
+
 	public:
 
 		/**
@@ -59,16 +71,10 @@ namespace GPlatesQtWidgets
 			DEFORMINGPLATE
 		};
 		
-		/**
-		 * The order that coordinates are displayed in the tree widget.
-		 */
-		enum LatLonColumnLayout
-		{
-			COLUMN_LAT, COLUMN_LON
-		};	
 
 		explicit
 		PlateClosureWidget(
+				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesModel::ModelInterface &model_interface,
 				ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
@@ -82,7 +88,6 @@ namespace GPlatesQtWidgets
 		{
 			return treewidget_coordinates;
 		}
-#endif
 					
 		/**
 		 * Updates the text on all top-level QTreeWidgetItems (the labels)
@@ -106,6 +111,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		update_geometry();
+#endif
 
 		/**
 		 * Sets the desired geometry type, d_geometry_type.
@@ -159,7 +165,12 @@ namespace GPlatesQtWidgets
 		 * Resets all fields to their defaults.
 		 */
 		void
-		clear_widget();
+		clear();
+
+		void
+		display_feature(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		/**
 		 * Configures widgets to accept new geometry of a specific type.
@@ -179,6 +190,7 @@ namespace GPlatesQtWidgets
 		change_geometry_type(
 				GeometryType geom_type);
 
+#if 0
 		/**
 		 * Adds a new lat,lon to the specified geometry (defaults to NULL,
 		 * indicating the 'default geometry', which for now is just the
@@ -198,6 +210,7 @@ namespace GPlatesQtWidgets
 				double lat,
 				double lon,
 				QTreeWidgetItem *target_geometry = NULL);
+#endif
 
 		/**
 		 * Draw the temporary geometry (if there is one) on the screen.
@@ -208,10 +221,16 @@ namespace GPlatesQtWidgets
 	private slots:
 
 		/**
-		 * The slot that gets called when the user clicks "Create".
+		 * The slot that gets called when the user clicks "Use Coordinates in Reverse".
 		 */
 		void
-		handle_create();
+		handle_use_coordinates_in_reverse();
+
+		/**
+		 * The slot that gets called when the user clicks "Choose Feature".
+		 */
+		void
+		handle_choose_feature();
 
 		/**
 		 * The slot that gets called when the user clicks "Clear".
@@ -220,11 +239,25 @@ namespace GPlatesQtWidgets
 		handle_clear();
 
 		/**
+		 * The slot that gets called when the user clicks "Create".
+		 */
+		void
+		handle_create();
+
+		/**
+		 * The slot that gets called when the user clicks "Cancel".
+		 */
+		void
+		handle_cancel();
+
+#if 0
+		/**
 		 * Feeds the ExportCoordinatesDialog a GeometryOnSphere, and
 		 * then displays it.
 		 */
 		void
 		handle_export();
+#endif
 
 	private:
 
@@ -254,6 +287,11 @@ namespace GPlatesQtWidgets
 		 * different (A LineString with only one point?! That's unpossible.)
 		 */
 		GeometryType d_geometry_type;
+
+		/**
+		 *  FIXME
+		 */
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection> d_sections_vector;
 		
 		/**
 		 * What kind of geometry did we successfully build last?
