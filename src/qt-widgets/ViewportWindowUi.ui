@@ -29,7 +29,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>25</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -165,10 +165,10 @@
     <enum>Qt::ActionsContextMenu</enum>
    </property>
    <property name="features" >
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar</set>
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar|QDockWidget::NoDockWidgetFeatures</set>
    </property>
    <property name="allowedAreas" >
-    <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
+    <set>Qt::BottomDockWidgetArea|Qt::NoDockWidgetArea|Qt::TopDockWidgetArea</set>
    </property>
    <attribute name="dockWidgetArea" >
     <number>8</number>
@@ -1005,12 +1005,27 @@
    </property>
   </action>
   <action name="action_Plate_Closure" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
    <property name="icon" >
     <iconset resource="../qt-resources/qt_widgets.qrc" >
      <normaloff>:/select_plate_35.png</normaloff>:/select_plate_35.png</iconset>
    </property>
    <property name="text" >
     <string>Plate Clos&amp;ure</string>
+   </property>
+   <property name="iconText" >
+    <string>Plate Clos&amp;ure</string>
+   </property>
+   <property name="toolTip" >
+    <string>Plate Closure S</string>
+   </property>
+   <property name="shortcut" >
+    <string>S</string>
    </property>
   </action>
  </widget>
