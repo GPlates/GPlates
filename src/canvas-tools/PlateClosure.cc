@@ -88,13 +88,13 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 		bool is_on_globe)
 {
 
-#if 0
+	// save the click point for Topo data struct 
 	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
 			oriented_click_pos_on_globe);
-#endif
-	
-	// copied from ClickGeometry
 
+	//
+	// From ClickGeometry
+	//
 	double proximity_inclusion_threshold =
 			globe_canvas().current_proximity_inclusion_threshold(click_pos_on_globe);
 	

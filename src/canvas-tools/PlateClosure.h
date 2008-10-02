@@ -78,6 +78,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
+				GPlatesGui::FeatureTableModel &segments_table_model_,	
 				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
 				GPlatesQtWidgets::PlateClosureWidget::GeometryType geom_type_,
 				GPlatesGui::FeatureFocus &feature_focus_)
@@ -89,6 +90,7 @@ namespace GPlatesCanvasTools
 							layers, 
 							view_state_, 
 							clicked_table_model_,
+							segments_table_model_,
 							plate_closure_widget_, 
 							geom_type_, 
 							feature_focus_),
@@ -133,6 +135,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
+				GPlatesGui::FeatureTableModel &segments_table_model_,	
 				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
 				GPlatesQtWidgets::PlateClosureWidget::GeometryType geom_type_,
 				GPlatesGui::FeatureFocus &feature_focus):
@@ -140,6 +143,7 @@ namespace GPlatesCanvasTools
 			d_layers_ptr(&layers),
 			d_view_state_ptr(&view_state_),
 			d_clicked_table_model_ptr(&clicked_table_model_),
+			d_segments_table_model_ptr(&segments_table_model_),
 			d_plate_closure_widget_ptr(&plate_closure_widget_),
  			d_default_geom_type(geom_type_),
 			d_feature_focus_ptr(&feature_focus)
@@ -156,6 +160,12 @@ namespace GPlatesCanvasTools
 		clicked_table_model() const
 		{
 			return *d_clicked_table_model_ptr;
+		}
+		
+		GPlatesGui::FeatureTableModel &
+		segments_table_model() const
+		{
+			return *d_segments_table_model_ptr;
 		}
 		
 
@@ -180,6 +190,11 @@ namespace GPlatesCanvasTools
 		 * the test point hits one or more geometries.
 		 */
 		GPlatesGui::FeatureTableModel *d_clicked_table_model_ptr;
+
+		/**
+		 * This is the external table of selected features for boundary
+		 */
+		GPlatesGui::FeatureTableModel *d_segments_table_model_ptr;
 
 		/**
 		 * This is the PlateClosureWidget in the Task Panel.
