@@ -347,7 +347,8 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_str
 	
 	// Add the coordinates to the tree!
 	d_tree_widget_item_stack.back()->addChildren(coordinate_widgets);	
-
+	first_coord = coordinate_widgets.first()->text(1);
+	last_coord = coordinate_widgets.last()->text(1);
 	d_tree_widget_item_stack.pop_back();
 }
 
@@ -405,6 +406,8 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_po
 	
 	// Add the coordinates to the tree!
 	d_tree_widget_item_stack.back()->addChildren(coordinate_widgets);	
+	first_coord = coordinate_widgets.first()->text(1);
+	last_coord = coordinate_widgets.last()->text(1);
 	d_tree_widget_item_stack.pop_back();
 }
 
@@ -476,7 +479,8 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 	
 	// Add the coordinates to the tree!
 	d_tree_widget_item_stack.back()->addChildren(coordinate_widgets);	
-
+	first_coord = coordinate_widgets.first()->text(1);
+	last_coord = coordinate_widgets.last()->text(1);
 	d_tree_widget_item_stack.pop_back();
 }
 
@@ -661,6 +665,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring
 	
 	// Add the coordinates to the tree!
 	d_tree_widget_item_stack.back()->addChildren(coordinate_widgets);	
-
+	first_coord = coordinate_widgets.first()->text(1);
+	last_coord = coordinate_widgets.last()->text(1);
 	d_tree_widget_item_stack.pop_back();
 }
