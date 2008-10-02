@@ -45,7 +45,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	d_feature_action_button_box_ptr(new ActionButtonBox(5, 22, this)),
 	d_digitisation_widget_ptr(new DigitisationWidget(model_interface, view_state_)),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(view_state_)),
-	d_plate_closure_widget_ptr(new PlateClosureWidget(model_interface, view_state_))
+	d_plate_closure_widget_ptr(new PlateClosureWidget(feature_focus_, model_interface, view_state_))
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including
@@ -161,6 +161,4 @@ GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab()
 	// a spacer to eat up remaining space and push all the widgets to the top
 	// of the tab.
 	// lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
-std::cout << "GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab() " << std::endl;
-std::cout << "GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab() " << std::endl;
 }
