@@ -77,6 +77,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(button_reconstruction_decrement, SIGNAL(clicked()),
 			this, SLOT(decrement_reconstruction_time()));
 
+	// Set up the Reconstruction Time slider 
+	slider_reconstruction_time->setRange(0, 300); // FIXME : use the above values? 
+	slider_reconstruction_time->setValue(0);
+	slider_reconstruction_time->setInvertedAppearance( true );
+	slider_reconstruction_time->setInvertedControls( true );
+
+	// synchronize the slider and spinbox 
+	QObject::connect(slider_reconstruction_time, SIGNAL(valueChanged(int)),
+			this, SLOT(set_reconstruction_time_int(int)));
+
+
 	// Listen for zoom events, everything is now handled through ViewportZoom.
 	GPlatesGui::ViewportZoom &vzoom = d_canvas_ptr->viewport_zoom();
 	QObject::connect(&vzoom, SIGNAL(zoom_changed()),

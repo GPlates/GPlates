@@ -126,6 +126,14 @@ namespace GPlatesQtWidgets
 				double new_recon_time);
 
 		void
+		set_reconstruction_time_int(
+				int new_recon_time)
+		{
+			double d = static_cast<double>(new_recon_time);
+			set_reconstruction_time(d);
+		}
+
+		void
 		increment_reconstruction_time()
 		{
 			set_reconstruction_time(reconstruction_time() + 1.0);
@@ -141,6 +149,9 @@ namespace GPlatesQtWidgets
 		propagate_reconstruction_time()
 		{
 			emit reconstruction_time_changed(reconstruction_time());
+			// synchronize with reconstruction_time_slider
+			int i = static_cast<int>( reconstruction_time() );
+			slider_reconstruction_time->setValue(i);
 		}
 
 		void

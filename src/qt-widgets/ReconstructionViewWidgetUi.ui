@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>712</width>
-    <height>606</height>
+    <height>442</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -110,6 +110,25 @@
           </property>
           <property name="autoRepeatInterval" >
            <number>200</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSlider" name="slider_reconstruction_time" >
+          <property name="maximum" >
+           <number>300</number>
+          </property>
+          <property name="pageStep" >
+           <number>30</number>
+          </property>
+          <property name="sliderPosition" >
+           <number>0</number>
+          </property>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="tickPosition" >
+           <enum>QSlider::NoTicks</enum>
           </property>
          </widget>
         </item>
