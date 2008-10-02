@@ -115,8 +115,16 @@ namespace GPlatesQtWidgets
 			return *d_canvas_ptr;
 		}
 
+
+		GPlatesGui::FeatureTableModel &
+		segments_feature_table_model() 
+		{
+			return *d_segments_feature_table_model_ptr;
+		}
+
 		void
 		create_svg_file();
+
 
 	public slots:
 		
@@ -377,9 +385,11 @@ namespace GPlatesQtWidgets
 		// Depends on FeatureFocus and the Model d_model_ptr.  Held in ReconstructionViewWidget
 		TaskPanel *d_task_panel_ptr;	
 
+		// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	
 
-		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
-		GPlatesGui::FeatureTableModel *d_feature_table_model_segments_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+		// The 'Segments' table. Should be in ViewState. Depends on FeatureFocus.
+		GPlatesGui::FeatureTableModel *d_segments_feature_table_model_ptr;	
 
 		//  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;
