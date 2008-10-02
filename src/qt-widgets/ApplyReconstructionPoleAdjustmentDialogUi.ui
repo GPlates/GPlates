@@ -627,7 +627,7 @@
         </rect>
        </property>
        <property name="title" >
-        <string>Adjustment rotation:</string>
+        <string>Adjustment rel. fixed plate:</string>
        </property>
        <property name="flat" >
         <bool>true</bool>

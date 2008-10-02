@@ -96,8 +96,6 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::setup_for_new_pole(
 
 	spinbox_current_time->setValue(current_time_);
 	spinbox_pole_time->setValue(current_time_);
-	fill_in_fields_for_rotation(field_adjustment_lat, field_adjustment_lon,
-			spinbox_adjustment_angle, adjustment_);
 	populate_pole_sequence_table(sequence_choices_);
 }
 
@@ -151,6 +149,15 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::set_result_pole(
 {
 	fill_in_fields_for_finite_rotation(field_result_lat, field_result_lon,
 			spinbox_result_angle, fr);
+}
+
+
+void
+GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::set_adjustment(
+		const GPlatesMaths::Rotation &adjustment_)
+{
+	fill_in_fields_for_rotation(field_adjustment_lat, field_adjustment_lon,
+			spinbox_adjustment_angle, adjustment_);
 }
 
 
@@ -247,6 +254,8 @@ void
 GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 		int index)
 {
+	using namespace GPlatesMaths;
+
 	d_sequence_choice_index = index;
 	if (d_sequence_choices.empty()) {
 		// Apparently something has gone wrong -- this slot is being invoked when there is
@@ -285,12 +294,33 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 		// FIXME:  Should we complain?
 		return;
 	}
-	const GPlatesMaths::FiniteRotation &original_pole = *interpolater.result();
+	const FiniteRotation &original_pole = *interpolater.result();
 	d_dialog_ptr->set_original_pole(original_pole);
 
+	// Calculate the adjustment relative to the fixed plate.
+	Rotation adjustment_rel_fixed = *d_adjustment;
+
+	// The "fixed" plate, relative to which this plate's motion is described.
+	unsigned long fixed_plate = d_sequence_choices.at(index).d_fixed_plate;
+	// Of course, the "fixed" plate might be moving relative to some other plate...
+	FiniteRotation motion_of_fixed_plate =
+			d_view_state_ptr->reconstruction().reconstruction_tree()
+					.get_composed_absolute_rotation(fixed_plate).first;
+	const UnitQuaternion3D &uq = motion_of_fixed_plate.unit_quat();
+	if ( ! represents_identity_rotation(uq)) {
+		// Let's compensate for the motion of the "fixed" ref frame.
+		UnitQuaternion3D::RotationParams params =
+				uq.get_rotation_params(motion_of_fixed_plate.axis_hint());
+		Rotation rot = Rotation::create(params.axis, params.angle);
+		Rotation inverse_rot = rot.get_reverse();
+
+		adjustment_rel_fixed = inverse_rot * adjustment_rel_fixed * rot;
+	}
+	d_adjustment_rel_fixed = adjustment_rel_fixed;
+	d_dialog_ptr->set_adjustment(adjustment_rel_fixed);
+
 	// Calculate the new result pole.
-	GPlatesMaths::FiniteRotation result_pole =
-			GPlatesMaths::compose(*d_adjustment, original_pole);
+	FiniteRotation result_pole = compose(adjustment_rel_fixed, original_pole);
 	d_dialog_ptr->set_result_pole(result_pole);
 }
 
@@ -312,7 +342,8 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_time_changed(
 void
 GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 {
-	if (d_sequence_choices.empty() || ( ! d_adjustment) || ( ! d_sequence_choice_index)) {
+	if (d_sequence_choices.empty() || ( ! d_adjustment_rel_fixed) ||
+			( ! d_sequence_choice_index)) {
 		// Nothing we can do.
 		// (Is this an erroneous situation, about which we should complain?)
 		return;
@@ -328,7 +359,7 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
-			*d_adjustment);
+			*d_adjustment_rel_fixed);
 	inserter.visit_feature_handle(*chosen_pole_seq);
 
 	d_view_state_ptr->reconstruct();

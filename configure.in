@@ -5,7 +5,7 @@ package_is_beta="yes"		# change this to "no" for releases
 
 # When you update the version here, you should also update 'VersionString'
 # in "src/global/Constants.cc".
-AC_INIT([GPlates], [0.9.3], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
+AC_INIT([GPlates], [0.9.3.1], [http://sourceforge.net/tracker/?func=add&group_id=74515&atid=541217], [gplates])
 AC_PREREQ(2.53)
 
 # We no longer need this, but I've left it here as a reminder of how to define macro constants.
@@ -174,8 +174,11 @@ AC_CHECK_LIB([expat], [main], [], AC_MSG_ERROR([[
 # 'OGRRegisterAll'.  (Yes, I realise that hard-coding specific library versions
 # sucks, but we don't have the time to research a better solution right now.)
 #
+# Update, 2008-09-23:  GPlates user Gabriele Morra emailed me to say that
+# "gdal1.5.2" is the GDAL version on his openSUSE 11 system.  Thanks Gabriele!
+#
 # #AC_CHECK_LIB([gdal], [main], [], AC_MSG_ERROR([[
-AC_SEARCH_LIBS([OGRRegisterAll], [gdal gdal1.3.2 gdal1.4.0 gdal1.5.0], [], AC_MSG_ERROR([[
+AC_SEARCH_LIBS([OGRRegisterAll], [gdal gdal1.3.2 gdal1.4.0 gdal1.5.0 gdal1.5.2], [], AC_MSG_ERROR([[
 !!
 !!  You don't appear to have the Geospatial Data Abstraction Library (GDAL)
 !!  shared library installed.  Your operating system vendor may provide a

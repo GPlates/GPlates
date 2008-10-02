@@ -116,6 +116,10 @@ namespace GPlatesQtWidgets
 		set_result_pole(
 				const GPlatesMaths::FiniteRotation &fr);
 
+		void
+		set_adjustment(
+				const GPlatesMaths::Rotation &adjustment_);
+
 #if 0
 	public slots:
 		void
@@ -211,7 +215,12 @@ namespace GPlatesQtWidgets
 	private:
 		ViewportWindow *d_view_state_ptr;
 		ApplyReconstructionPoleAdjustmentDialog *d_dialog_ptr;
+		// The adjustment as calculated interactively, relative to the stationary plate.
 		boost::optional<GPlatesMaths::Rotation> d_adjustment;
+
+		/// The adjustment, compensating for the motion of the fixed plate (if any).
+		boost::optional<GPlatesMaths::Rotation> d_adjustment_rel_fixed;
+
 		double d_pole_time;
 		std::vector<ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> d_sequence_choices;
 		boost::optional<int> d_sequence_choice_index;
