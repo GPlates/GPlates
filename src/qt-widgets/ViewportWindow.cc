@@ -456,7 +456,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_euler_pole_dialog(*this, this),
 	d_task_panel_ptr(new TaskPanel(d_feature_focus, *d_model_ptr, *this, this)),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
-	d_feature_table_model_segments_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
+	d_segments_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path(""),
 	d_colour_table_ptr(NULL)
 {
@@ -493,25 +493,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	// Set up the Reconstruction View widget.
 	setCentralWidget(&d_reconstruction_view_widget);
-
-#if 0
-	//
-	// ZZZ 
-	//
-	d_centralsplitter = new QSplitter(Qt::Horizontal, this);
-
-	// add the widgets
-	d_central_splitter->addWidget(&d_reconstruction_view_widget);
-	d_central_splitter->addWidget(d_task_panel_ptr);
-
-	// re-parent the widgets to keep destructors happy
-	d_reconstruction_view_widget.setParent( d_central_splitter );
-	d_task_panel_ptr->setParent( d_central_splitter );
-	// show ... 
-
-	// Set the central widget to be the splitter
-	setCentralWidget(d_central_splitter);
-#endif
 
 	QObject::connect(&d_reconstruction_view_widget, SIGNAL(reconstruction_time_changed(double)),
 			this, SLOT(reconstruct_to_time(double)));
@@ -567,9 +548,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
 
+
 	// Set up the Platepolygon Segments table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
-	table_view_platepolygon_segments->setModel(d_feature_table_model_ptr);
+	table_view_platepolygon_segments->setModel(d_segments_feature_table_model_ptr);
 	table_view_platepolygon_segments->verticalHeader()->hide();
 	table_view_platepolygon_segments->resizeColumnsToContents();
 	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_platepolygon_segments->horizontalHeader());
@@ -580,7 +562,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// When the user selects a row of the table, we should focus that feature.
 	QObject::connect(table_view_clicked_geometries->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-			d_feature_table_model_ptr,
+			d_segments_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
 #endif
 
@@ -604,6 +586,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_canvas_ptr->globe().rendered_geometry_layers(),
 					*this,
 					*d_feature_table_model_ptr,
+					*d_segments_feature_table_model_ptr,
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->digitisation_widget(),
