@@ -72,6 +72,7 @@ namespace GPlatesGui
 				RenderedGeometryLayers &layers,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				FeatureTableModel &clicked_table_model,
+				FeatureTableModel &feature_table_model_segments,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,

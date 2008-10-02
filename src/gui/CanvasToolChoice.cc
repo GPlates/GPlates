@@ -47,6 +47,7 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		RenderedGeometryLayers &layers,
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		FeatureTableModel &clicked_table_model,
+		FeatureTableModel &segments_table_model,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
@@ -77,7 +78,9 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 	d_plate_closure_platepolygon_tool_ptr(
 			GPlatesCanvasTools::PlateClosure::create(
 				globe_, globe_canvas_, layers, view_state_, 
-				clicked_table_model, plate_closure_widget_, 
+				clicked_table_model, 
+				segments_table_model, 
+				plate_closure_widget_, 
 				GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON, feature_focus)),
 	d_move_geometry_tool_ptr(
 			GPlatesCanvasTools::MoveGeometry::create(
