@@ -310,6 +310,7 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 void
 GPlatesQtWidgets::PlateClosureWidget::clear()
 {
+	// Clear the widgets
 	lineedit_type->clear();
 	lineedit_name->clear();
 	lineedit_plate_id->clear();
@@ -318,6 +319,9 @@ GPlatesQtWidgets::PlateClosureWidget::clear()
 	lineedit_clicked_geometry->clear();
 	lineedit_first->clear();
 	lineedit_last->clear();
+
+	// Reset the flags
+	d_use_reverse = false;
 }
 
 
@@ -328,8 +332,8 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature(
 {
 	// Clear the fields first, then fill in those that we have data for.
 	clear();
-	// lways check your weak_refs!
-	if ( ! feature_ref.is_valid()) {
+	// always check your weak_refs!
+	if ( ! feature_ref.is_valid() ) {
 		setDisabled(true);
 		return;
 	} else {
@@ -410,15 +414,21 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature(
 	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
 		d_view_state_ptr->reconstruction(), *tree_geometry);
 	populator.visit_feature_handle(*feature_ref);
-	QString f = populator.get_first_coordinate();
-	QString l = populator.get_last_coordinate();
-	lineedit_first->setText(f);
-	lineedit_last->setText(l);
+	d_first_coord = populator.get_first_coordinate();
+	d_last_coord = populator.get_last_coordinate();
+	lineedit_first->setText(d_first_coord);
+	lineedit_last->setText(d_last_coord);
 
 	delete tree_geometry;
 }
 
 
+void
+GPlatesQtWidgets::PlateClosureWidget::set_click_point(double lat, double lon)
+{
+	d_click_lat = lat;
+	d_click_lon = lon;
+}
 
 
 void
@@ -445,6 +455,9 @@ GPlatesQtWidgets::PlateClosureWidget::initialise_geometry(
 {
 	clear();
 	d_geometry_type = geom_type;
+
+	// set reverse flag
+	d_use_reverse = false;
 }
 
 
@@ -471,27 +484,44 @@ GPlatesQtWidgets::PlateClosureWidget::change_geometry_type(
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_use_coordinates_in_reverse()
 {
-	// flip coordinates
 	// set flag
+	d_use_reverse = !d_use_reverse;
+
+	if ( d_use_reverse )
+	{
+		lineedit_first->setText( d_last_coord );
+		lineedit_last->setText( d_first_coord );
+	} else {
+		lineedit_first->setText( d_first_coord );
+		lineedit_last->setText( d_last_coord );
+	}
 }
 
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 {
-	GPlatesGui::FeatureTableModel &ftm = d_view_state_ptr->segments_feature_table_model();
+	// pointers to the tables
+	GPlatesGui::FeatureTableModel &clicked_table = 
+		d_view_state_ptr->feature_table_model();
+
+	GPlatesGui::FeatureTableModel &segments_table = 
+		d_view_state_ptr->segments_feature_table_model();
 
 	// transfer data to segments table
-	ftm.begin_insert_features(0, 0);
+	segments_table.begin_insert_features(0, 0);
+	int index = clicked_table.current_index().row();
+	segments_table.geometry_sequence().push_back(
+		clicked_table.geometry_sequence().at(index)
+	);
+	segments_table.end_insert_features();
 
-	// ftm.geometry_sequence().push_back(ZZ
-		
-	// GPlatesModel::FeatureHandle::weak_ref
+	// flip tab to segments table
+	d_view_state_ptr->change_tab( 2 );
 
-	ftm.end_insert_features();
 
-	
 	// clear out the older featrure
 	clear();
+
 }
 
 
@@ -500,6 +530,11 @@ GPlatesQtWidgets::PlateClosureWidget::handle_clear()
 {
 	// Clear all geometry from the table.
 	// undo_stack().push(new GPlatesUndoCommands::PlateClosureClearGeometry(*this));
+
+	// clear the clicked table
+	d_view_state_ptr->feature_table_model().clear();
+
+	// clear the widget
 	clear();
 }
 
@@ -507,23 +542,13 @@ GPlatesQtWidgets::PlateClosureWidget::handle_clear()
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_create()
 {
-	// Feed the Create dialog the GeometryOnSphere you've set up for the current
-	// points. You -have- set up a GeometryOnSphere for the current points,
-	// haven't you?
-	if (d_geometry_opt_ptr) {
-		// Give a GeometryOnSphere::non_null_ptr_to_const_type to the Create dialog.
-		bool success = d_create_feature_dialog->set_geometry_and_display(*d_geometry_opt_ptr);
-		if ( ! success) {
-			// The user cancelled the creation process. Return early and do not reset
-			// the digitisation widget.
-			return;
-		}
-	} else {
-		QMessageBox::warning(this, tr("No geometry for feature"),
-				tr("There is no valid geometry to use for creating a feature."),
-				QMessageBox::Ok);
+	d_create_feature_dialog->set_topological();
+
+	bool success = d_create_feature_dialog->display();
+	if ( ! success) {
+		// The user cancelled the creation process. Return early and do not reset
+		// the digitisation widget.
 		return;
-		// FIXME: Should it be possible to make geometryless features from a digitisation tool?
 	}
 
 	// FIXME: Undo! but that ties into the main 'model' QUndoStack.
@@ -532,12 +557,45 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	
 	// Then, when we're all done, reset the widget for new input.
 	initialise_geometry(d_geometry_type);
-	// update_geometry();
+
+
+	// Clear the widgets
+	handle_clear();
+
+	// Clear the tables
+	d_view_state_ptr->segments_feature_table_model().clear();
+	d_view_state_ptr->feature_table_model().clear();
+
+	// flip tab to clicked table
+	d_view_state_ptr->change_tab( 0 );
 }
 
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 {
+	// Clear the widgets
 	handle_clear();
+
+	// Clear the tables
+	d_view_state_ptr->segments_feature_table_model().clear();
+	d_view_state_ptr->feature_table_model().clear();
+
+	// flip tab to clicked table
+	d_view_state_ptr->change_tab( 0 );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

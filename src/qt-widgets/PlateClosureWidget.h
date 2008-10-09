@@ -190,27 +190,12 @@ namespace GPlatesQtWidgets
 		change_geometry_type(
 				GeometryType geom_type);
 
-#if 0
 		/**
-		 * Adds a new lat,lon to the specified geometry (defaults to NULL,
-		 * indicating the 'default geometry', which for now is just the
-		 * first geometry available. This is convenient because to start
-		 * with, I'm only handling unbroken LineString and MultiPoint.)
-		 *
-		 * If the specified geometry is a gml:Point, the given lat,lon will
-		 * NOT be added to it but will instead replace it - I believe this
-		 * would be the appropriate behaviour when (re)digitising a gml:position.
-		 * (FIXME: Unimplemented).
-		 *
 		 * The PlateClosureetry canvas tool uses this function to populate
 		 * this PlateClosureWidget.
 		 */
 		void
-		append_point_to_geometry(
-				double lat,
-				double lon,
-				QTreeWidgetItem *target_geometry = NULL);
-#endif
+		set_click_point(double lat, double lon);
 
 		/**
 		 * Draw the temporary geometry (if there is one) on the screen.
@@ -289,10 +274,18 @@ namespace GPlatesQtWidgets
 		GeometryType d_geometry_type;
 
 		/**
-		 *  FIXME
+		 *  FIXME : add documentation for these
 		 */
+
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection> d_sections_vector;
 		
+		double d_click_lat;
+		double d_click_lon;
+
+		QString d_first_coord;
+		QString d_last_coord;
+		bool d_use_reverse;
+
 		/**
 		 * What kind of geometry did we successfully build last?
 		 * 
