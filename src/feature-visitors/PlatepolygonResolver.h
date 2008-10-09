@@ -371,6 +371,53 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
+		virtual
+		void
+		visit_gpml_feature_reference(
+				GPlatesPropertyValues::GpmlFeatureReference &gpml_feature_reference);
+
+		virtual
+		void
+		visit_gpml_old_plates_header(
+				GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation);
+
+		virtual
+		void
+		visit_gpml_property_delegate(
+				GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate);
+
+#if 0
+		virtual
+		void
+		visit_gpml_revision_id(
+				GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id);
+
+		void
+		write_gpml_time_window(
+				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
+#endif
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+			 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+
+		virtual
+		void
+		visit_gpml_topological_line_section(
+				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+
+		virtual
+		void
+		visit_gpml_topological_intersection(
+				GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection);
+	
+
 
 		//
 		// from GPlates 8

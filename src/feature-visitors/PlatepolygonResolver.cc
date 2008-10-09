@@ -47,14 +47,26 @@
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
+#include "property-values/GpmlPropertyDelegate.h"
+#include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFeatureReference.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTopologicalPolygon.h"
+#include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlOldPlatesHeader.h"
 
 #include "maths/PolylineOnSphere.h"
-#include "maths/PolylineIntersections.h"
+#include "maths/MultiPointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/ProximityCriteria.h"
+#include "maths/PolylineIntersections.h"
 
 #include "gui/ProximityTests.h"
 
@@ -92,16 +104,25 @@ GPlatesFeatureVisitors::PlatepolygonResolver::visit_feature_handle(
 	//
 	// This feature property value is what determines if the feature is a Platepolygon 
 	//
+
 	// Create a visitor to check for boundarList property 
-	static const GPlatesModel::PropertyName prop_name = GPlatesModel::PropertyName::create_gpml("boundaryList");
+	static const GPlatesModel::PropertyName prop_name = 
+		GPlatesModel::PropertyName::create_gpml("boundaryList");
+
+//	static const GPlatesModel::PropertyName prop_name = 
+//		GPlatesModel::PropertyName::create_gpml("boundary");
+
+
 	GPlatesFeatureVisitors::ValueFinder finder(prop_name);
 	finder.visit_feature_handle(feature_handle);
 
+#if 0
 	// super short-cut for features without boundary list properties
 	if (finder.found_values_begin() == finder.found_values_end()) 
 	{ 
 		return; 
 	}
+#endif
 
 	// else process this feature:
 	// create an accumulator struct 
@@ -118,6 +139,7 @@ GPlatesFeatureVisitors::PlatepolygonResolver::visit_feature_handle(
 
 	// The first time through, we're not reconstructing, just gathering information.
 	d_accumulator->d_perform_reconstructions = false;
+
 	visit_feature_properties(feature_handle);
 
 
@@ -191,7 +213,8 @@ void
 GPlatesFeatureVisitors::PlatepolygonResolver::visit_inline_property_container(
 		GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
-	// std::cout << "GPlatesFeatureVisitors::PlatepolygonResolver::visit_inline_property_container() " << std::endl;
+// std::cout << "GPlatesFeatureVisitors::PlatepolygonResolver::visit_inline_property_container() " << std::endl;
+
 	visit_property_values(inline_property_container);
 }
 
@@ -326,11 +349,260 @@ GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_plate_id(
 
 
 
+
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_feature_reference(
+	GPlatesPropertyValues::GpmlFeatureReference &gpml_feature_reference)
+{
+#if 0
+	d_output.writeStartGpmlElement("FeatureReference");
+		d_output.writeStartGpmlElement("targetFeature");
+			d_output.writeText(gpml_feature_reference.feature_id().get());
+		d_output.writeEndElement();
+
+
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_feature_reference.value_type());
+		d_output.writeEndElement();
+	d_output.writeEndElement();
+#endif
+}
+
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_old_plates_header(
+	GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
+{
+ 		
+// qDebug() << GPlatesUtils::make_qstring_from_icu_string( gpml_old_plates_header.geographic_description() );
+
+#if 0
+	d_output.writeStartGpmlElement("OldPlatesHeader");
+
+		d_output.writeStartGpmlElement("regionNumber");
+ 		d_output.writeInteger(gpml_old_plates_header.region_number());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("referenceNumber");
+ 		d_output.writeInteger(gpml_old_plates_header.reference_number());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("stringNumber");
+ 		d_output.writeInteger(gpml_old_plates_header.string_number());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("geographicDescription");
+ 		d_output.writeText(gpml_old_plates_header.geographic_description());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("plateIdNumber");
+ 		d_output.writeInteger(gpml_old_plates_header.plate_id_number());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("ageOfAppearance");
+ 		d_output.writeDecimal(gpml_old_plates_header.age_of_appearance());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("ageOfDisappearance");
+ 		d_output.writeDecimal(gpml_old_plates_header.age_of_disappearance());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("dataTypeCode");
+ 		d_output.writeText(gpml_old_plates_header.data_type_code());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("dataTypeCodeNumber");
+ 		d_output.writeInteger(gpml_old_plates_header.data_type_code_number());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("dataTypeCodeNumberAdditional");
+ 		d_output.writeText(gpml_old_plates_header.data_type_code_number_additional());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("conjugatePlateIdNumber");
+ 		d_output.writeInteger(gpml_old_plates_header.conjugate_plate_id_number());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("colourCode");
+ 		d_output.writeInteger(gpml_old_plates_header.colour_code());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("numberOfPoints");
+ 		d_output.writeInteger(gpml_old_plates_header.number_of_points());
+		d_output.writeEndElement();
+
+	d_output.writeEndElement();  // </gpml:OldPlatesHeader>
+#endif
+}
+
+
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_piecewise_aggregation(
+		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+{
+#if 0
+	d_output.writeStartGpmlElement("PiecewiseAggregation");
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_piecewise_aggregation.value_type());
+		d_output.writeEndElement();
+
+		std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+				gpml_piecewise_aggregation.time_windows().begin();
+		std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+				gpml_piecewise_aggregation.time_windows().end();
+		for ( ; iter != end; ++iter) 
+		{
+			d_output.writeStartGpmlElement("timeWindow");
+				write_gpml_time_window(*iter);
+			d_output.writeEndElement();
+		}
+	d_output.writeEndElement();  // </gpml:IrregularSampling>
+#endif
+}
+
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_property_delegate(
+	GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate)
+{
+#if 0
+	d_output.writeStartGpmlElement("PropertyDelegate");
+		d_output.writeStartGpmlElement("targetFeature");
+			d_output.writeText(gpml_property_delegate.feature_id().get());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("targetProperty");
+			writeTemplateTypeParameterType(d_output, gpml_property_delegate.target_property());
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_property_delegate.value_type());
+		d_output.writeEndElement();
+	d_output.writeEndElement();
+#endif
+}
+
+#if 0
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_revision_id(
+	GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id)
+{
+	d_output.writeText(gpml_revision_id.value().get());
+}
+#endif
+
+#if 0
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::write_gpml_time_window(
+	GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
+{
+	d_output.writeStartGpmlElement("TimeWindow");
+		d_output.writeStartGpmlElement("timeDependentPropertyValue");
+			gpml_time_window.time_dependent_value()->accept_visitor(*this);
+		d_output.writeEndElement();
+		d_output.writeStartGpmlElement("validTime");
+			gpml_time_window.valid_time()->accept_visitor(*this);
+		d_output.writeEndElement();
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_time_window.value_type());
+		d_output.writeEndElement();
+	d_output.writeEndElement(); // </gpml:TimeWindow>
+}
+#endif
+
+
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_topological_polygon(
+	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+{
+#if 0
+	d_output.writeStartGpmlElement("TopologicalPolygon");
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator iter;
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator end;
+	iter = gpml_toplogical_polygon.sections().begin();
+	end = gpml_toplogical_polygon.sections().end();
+
+	for ( ; iter != end; ++iter) 
+	{
+		d_output.writeStartGpmlElement("section");
+		(*iter)->accept_visitor(*this);
+		d_output.writeEndElement();
+	}
+	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
+#endif
+}
+
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_topological_line_section(
+	GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+{  
+#if 0
+std::cerr << ("visit_gpml_topological_line_section") << std::endl;
+	d_output.writeStartGpmlElement("TopologicalLineSection");
+
+		d_output.writeStartGpmlElement("sourceGeometry");
+			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); // delgate 
+		d_output.writeEndElement();
+
+		// boost::optional<GpmlTopologicalIntersection>
+		if ( gpml_toplogical_line_section.get_start_intersection() )
+		{
+			d_output.writeStartGpmlElement("startIntersection");
+				gpml_toplogical_line_section.get_start_intersection()->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+
+		// check for endInterse
+		if ( gpml_toplogical_line_section.get_end_intersection() )
+		{
+			d_output.writeStartGpmlElement("endIntersection");
+				gpml_toplogical_line_section.get_end_intersection()->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+		
+		d_output.writeStartGpmlElement("reverseOrder");
+			d_output.writeBoolean( gpml_toplogical_line_section.get_reverse_order() );
+		d_output.writeEndElement();
+
+	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
+#endif
+}
+
+
+void
+GPlatesFeatureVisitors::PlatepolygonResolver::visit_gpml_topological_intersection(
+	GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
+{
+#if 0
+	d_output.writeStartGpmlElement("TopologicalIntersection");
+
+		d_output.writeStartGpmlElement("intersectionGeometry");
+			// visit the delegate
+			gpml_toplogical_intersection.intersection_geometry()->accept_visitor(*this); 
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("referencePoint");
+			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
+					gpml_toplogical_intersection.reference_point();
+			visit_gml_point(*gml_point);
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("referencePointPlateId");
+			// visit the delegate
+			gpml_toplogical_intersection.reference_point_plate_id()->accept_visitor(*this);
+		d_output.writeEndElement();
+
+	d_output.writeEndElement();
+#endif
+}
+
+
+
+
+// ZZZ 
+
 void
 GPlatesFeatureVisitors::PlatepolygonResolver::parse_boundary_string(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-	// std::cout << "GPlatesFeatureVisitors::PlatepolygonResolver::parse_boundary_string() " << std::endl;
 
 	// just in case we hit errors during parsing 
 	std::stringstream err_msg; 
@@ -339,7 +611,9 @@ GPlatesFeatureVisitors::PlatepolygonResolver::parse_boundary_string(
 	// This feature property value is what determines if the feature is a Platepolygon 
 	//
 	// Create a visitor to check for boundarList property 
-	static const GPlatesModel::PropertyName prop_name = GPlatesModel::PropertyName::create_gpml("boundaryList");
+	static const GPlatesModel::PropertyName prop_name = 
+		GPlatesModel::PropertyName::create_gpml("boundaryList");
+
 	GPlatesFeatureVisitors::ValueFinder finder(prop_name);
 	finder.visit_feature_handle(feature_handle);
 
@@ -348,6 +622,7 @@ GPlatesFeatureVisitors::PlatepolygonResolver::parse_boundary_string(
 	{ 
 		return; 
 	}
+
 
 	// else parse the string into nodes for the m_boundary_list
 	d_num_platepolygons += 1;
@@ -632,15 +907,18 @@ GPlatesFeatureVisitors::PlatepolygonResolver::resolve_boundary()
 	// iterate over the list of boundary features to get the list of vertices 
 	m_vertex_list = get_vertex_list( m_boundary_list.begin(), m_boundary_list.end() );
 
-#if 0
 // FIXME: diagnostic output
 	std::cout << "GPlatesFeatureVisitors::PlatepolygonResolver::resolve_boundary() " << std::endl;
 	std::cout << "GPlatesFeatureVisitors::PlatepolygonResolver:: m_vertex_list.size() " << m_vertex_list.size() << std::endl;
+
 	for ( ; iter != m_boundary_list.end() ; ++iter)
 	{
 		std::cout << "node id = " << iter->m_feature_id << std::endl;
 	}
-#endif
+
+	if (m_vertex_list.size() == 0 ) {
+		return;
+	}
 
 	// create a polygon on sphere
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type reconstructed_geom = 
