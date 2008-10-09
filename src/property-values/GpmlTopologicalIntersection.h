@@ -58,11 +58,39 @@ namespace GPlatesPropertyValues {
 			d_reference_point_plate_id(other.d_reference_point_plate_id)
 		{  }
 
+		virtual
+		~GpmlTopologicalIntersection() { }
+
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				GPlatesModel::ConstFeatureVisitor &visitor) const {
+			visitor.visit_gpml_topological_intersection(*this);
+		}
+
+		/**
+		 * Accept a FeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				GPlatesModel::FeatureVisitor &visitor) {
+			visitor.visit_gpml_topological_intersection(*this);
+		}
+
 
 		// access to d_intersection_geometry
-
 		GpmlPropertyDelegate::non_null_ptr_type
-		intersection_geometry() {
+		intersection_geometry() const {
 			return d_intersection_geometry;
 		}
 
@@ -74,9 +102,8 @@ namespace GPlatesPropertyValues {
 
 
 		// access to reference point
-
 		GmlPoint::non_null_ptr_type
-		reference_point() {
+		reference_point() const {
 			return d_reference_point;
 		}
 
@@ -88,9 +115,8 @@ namespace GPlatesPropertyValues {
 
 
 		// access to d_reference_point_plate_id
-
 		GpmlPropertyDelegate::non_null_ptr_type
-		reference_point_plate_id() {
+		reference_point_plate_id() const {
 			return d_reference_point_plate_id;
 		}
 
