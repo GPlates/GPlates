@@ -420,6 +420,14 @@ output_as_gpml(
 	}
 }
 
+void
+input_from_gpml()
+{
+	// parse argc as file name
+	// load feature set
+}
+	
+
 
 void
 output_reconstructions(
@@ -545,14 +553,13 @@ main(int argc, char *argv[])
 	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
 			isochrons_and_total_recon_seqs.second;
 
-	::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
+	// ::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
 //	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
 //			total_recon_seqs->features_begin(), total_recon_seqs->features_end());
 
 	// Test GPML 1.6 reader.
 	if (argc > 1) {
 
-		std::cout << "Attempting to read \"" << argv[1] << "\"." << std::endl;
 		QString filename = argv[1];
 
 		GPlatesFileIO::FileInfo fileinfo(filename);
