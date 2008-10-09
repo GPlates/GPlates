@@ -98,6 +98,29 @@ namespace GPlatesPropertyValues {
 		virtual
 		~GpmlTopologicalSection() {  }
 
+		/**
+		 * Accept a ConstFeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				GPlatesModel::ConstFeatureVisitor &visitor) const { }
+
+		/**
+		 * Accept a FeatureVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				GPlatesModel::FeatureVisitor &visitor) { }
+
+
 	private:
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
