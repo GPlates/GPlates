@@ -47,19 +47,6 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 	d_plate_closure_widget_ptr->change_geometry_type(d_default_geom_type);
 
 	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	// FIXME:  We may have to adjust the message if we are using a Map View.
 	if (d_plate_closure_widget_ptr->geometry_type() ==
 			GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON) {
 		d_view_state_ptr->status_message(QObject::tr(
@@ -88,9 +75,10 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 		bool is_on_globe)
 {
 
-	// save the click point for Topo data struct 
+	// send the click point to the widget
 	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
-			oriented_click_pos_on_globe);
+		oriented_click_pos_on_globe);
+	d_plate_closure_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
 
 	//
 	// From ClickGeometry
@@ -135,7 +123,9 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 	d_view_state_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
 
-#if 0  // It seems it's not necessary to set the feature focus here, as it's already being set elsewhere.
+#if 0  
+	// It seems it's not necessary to set the feature focus here, 
+	// as it's already being set elsewhere.
 	// Update the focused feature.
 
 	GPlatesModel::ReconstructionGeometry *rg = sorted_hits.top().d_recon_geometry.get();

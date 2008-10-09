@@ -192,7 +192,7 @@ namespace GPlatesCanvasTools
 		GPlatesGui::FeatureTableModel *d_clicked_table_model_ptr;
 
 		/**
-		 * This is the external table of selected features for boundary
+		 * This is the external table of selected features for the closed boundary
 		 */
 		GPlatesGui::FeatureTableModel *d_segments_table_model_ptr;
 
