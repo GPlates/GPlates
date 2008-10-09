@@ -1270,25 +1270,27 @@ namespace
 			// Empty list of points to make create_common a happy litte function 
 			const std::list<GPlatesMaths::PointOnSphere> points;
 
-			// a list of boundary feature lines to populate from read_platepolygon_boundary_feature()
+			// a list of boundary feature lines to populate from 
+			// read_platepolygon_boundary_feature()
 			std::list<std::string> boundary_list;
 
-			// read the first platepolygon boundary feature and set the terminator code to CONTINUE
+			// read the first platepolygon boundary feature and 
+			// set the terminator code to CONTINUE
 			std::string code = "CONTINUE";
 			read_platepolygon_boundary_feature(in, boundary_list, code);
 
-			// Loop over the platepolygon's boundary feature lines, and build a list of strings
+			// Loop over the platepolygon's boundary features, and build a list of strings
 			do 
 			{
 				code = read_platepolygon_boundary_feature(in, boundary_list, code);
 				if (code == "NULL")
 				{
-					// Reached end the boundary feature list, so create the platepolygon feature
+					// Reached end the boundary feature list, create the platepolygon feature
 
 					GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 						create_platepolygon(model, collection, old_plates_header, points);
 		
-					// Loop over the list of boundary feature id lines, and build a single string
+					// Loop over the list of boundary feature id lines, build a single string
 					std::string value_string = "";
 					std::list<std::string>::iterator iter = boundary_list.begin(); 
 					for ( ; iter != boundary_list.end() ; ++iter) 
@@ -1297,9 +1299,7 @@ namespace
 						value_string.append( *iter );
 						value_string.append( "$" );
 					}
-
 					// std::cout << "value_string = " << value_string << std::endl;
-
 					// Append a new property value to the feature
 					const GPlatesPropertyValues::XsString::non_null_ptr_type property_value =
 							GPlatesPropertyValues::XsString::create( value_string.c_str() );
