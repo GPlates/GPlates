@@ -238,11 +238,18 @@ namespace GPlatesGui
 				GPlatesModel::FeatureHandle::weak_ref modified_feature_ref,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);
 
+
+		QModelIndex
+		current_index() {
+			return d_current_index;
+		}
+			
 	private:
 		
 		FeatureFocus *d_feature_focus_ptr;
 		geometry_sequence_type d_sequence;
 	
+		QModelIndex d_current_index;
 	};
 }
 

@@ -747,6 +747,9 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 	}
 	GPlatesModel::ReconstructionGeometry *rg = d_sequence.at(idx.row()).get();
 
+	// set the current index
+	d_current_index = idx;
+
 	// We use a dynamic cast here (despite the fact that dynamic casts are generally
 	// considered bad form) because we only care about one specific derivation.
 	// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
