@@ -225,6 +225,22 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_topological_polygon(
+			 	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+
+		virtual
+		void
+		visit_gpml_topological_line_section(
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+
+		virtual
+		void
+		visit_gpml_topological_intersection(
+				const GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection);
+
+
+		virtual
+		void
 		visit_uninterpreted_property_value(
 				const GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val);
 

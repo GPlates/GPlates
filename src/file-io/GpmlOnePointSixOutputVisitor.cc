@@ -30,6 +30,7 @@
 #include <vector>
 #include <utility>
 #include <QDir>
+#include <QDebug>
 #include <QFile>
 #include <QtCore/QUuid>
 #include <QtGlobal> 
@@ -67,6 +68,9 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTopologicalPolygon.h"
+#include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/TemplateTypeParameterType.h"
@@ -820,6 +824,85 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_piecewise_aggregation(
 	d_output.writeEndElement();  // </gpml:IrregularSampling>
 }
 
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_polygon(
+	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+{
+	d_output.writeStartGpmlElement("TopologicalPolygon");
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator iter;
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator end;
+	iter = gpml_toplogical_polygon.sections().begin();
+	end = gpml_toplogical_polygon.sections().end();
+
+	for ( ; iter != end; ++iter) 
+	{
+		d_output.writeStartGpmlElement("section");
+		(*iter)->accept_visitor(*this);
+		d_output.writeEndElement();
+	}
+	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
+}
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_line_section(
+	const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+{  
+std::cerr << ("visit_gpml_topological_line_section") << std::endl;
+	d_output.writeStartGpmlElement("TopologicalLineSection");
+
+		d_output.writeStartGpmlElement("sourceGeometry");
+			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); // delgate 
+		d_output.writeEndElement();
+
+		// boost::optional<GpmlTopologicalIntersection>
+		if ( gpml_toplogical_line_section.get_start_intersection() )
+		{
+			d_output.writeStartGpmlElement("startIntersection");
+				gpml_toplogical_line_section.get_start_intersection()->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+
+		// check for endInterse
+		if ( gpml_toplogical_line_section.get_end_intersection() )
+		{
+			d_output.writeStartGpmlElement("endIntersection");
+				gpml_toplogical_line_section.get_end_intersection()->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+		
+		d_output.writeStartGpmlElement("reverseOrder");
+			d_output.writeBoolean( gpml_toplogical_line_section.get_reverse_order() );
+		d_output.writeEndElement();
+
+	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_intersection(
+	const GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
+{
+	d_output.writeStartGpmlElement("TopologicalIntersection");
+
+		d_output.writeStartGpmlElement("intersectionGeometry");
+			// visit the delegate
+			gpml_toplogical_intersection.intersection_geometry()->accept_visitor(*this); 
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("referencePoint");
+			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
+					gpml_toplogical_intersection.reference_point();
+			visit_gml_point(*gml_point);
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("referencePointPlateId");
+			// visit the delegate
+			gpml_toplogical_intersection.reference_point_plate_id()->accept_visitor(*this);
+		d_output.writeEndElement();
+
+	d_output.writeEndElement();
+}
+
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_hot_spot_trail_mark(
@@ -1079,4 +1162,5 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_key_value_dictionary_ele
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }
+
 
