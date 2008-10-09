@@ -115,6 +115,12 @@ namespace GPlatesQtWidgets
 			return *d_canvas_ptr;
 		}
 
+		GPlatesGui::FeatureTableModel &
+		feature_table_model() 
+		{
+			return *d_feature_table_model_ptr;
+		}
+
 
 		GPlatesGui::FeatureTableModel &
 		segments_feature_table_model() 
@@ -125,6 +131,11 @@ namespace GPlatesQtWidgets
 		void
 		create_svg_file();
 
+
+		void	
+		change_tab(int i) {
+			tabWidget->setCurrentIndex( i );
+		}
 
 	public slots:
 		
