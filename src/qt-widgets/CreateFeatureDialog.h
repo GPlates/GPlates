@@ -49,6 +49,14 @@ namespace GPlatesQtWidgets
 		
 	public:
 
+		/**
+		* What kinds of features to create 
+		*/ 
+		enum FeatureType
+		{
+			NORMAL, TOPOLOGICAL
+		};
+
 		explicit
 		CreateFeatureDialog(
 				GPlatesModel::ModelInterface &model_interface,
@@ -63,6 +71,15 @@ namespace GPlatesQtWidgets
 		bool
 		set_geometry_and_display(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_);
+
+		bool
+		display();
+
+
+		void
+		set_topological() {
+			d_type = TOPOLOGICAL;
+		}
 	
 	signals:
 		
@@ -84,6 +101,9 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_create();
+
+		void
+		handle_create_topological();
 		
 	private:
 	
@@ -144,6 +164,11 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt. This is a member so that we can enable and disable it as appropriate.
 		 */
 		QPushButton *d_button_create;
+
+		/**
+		* Type of feature to create 
+		*/
+		FeatureType d_type;
 		
 	};
 }

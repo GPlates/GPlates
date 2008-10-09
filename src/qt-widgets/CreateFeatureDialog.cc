@@ -393,7 +393,7 @@ namespace
 		}
 		list.sort();
 		list.unique();
-		
+
 		// FIXME: For extra brownie points, filter -this- list based on features
 		// which you couldn't possibly create given the digitised geometry.
 		// E.g. no Cratons made from PolylineOnSphere!
@@ -650,6 +650,19 @@ GPlatesQtWidgets::CreateFeatureDialog::set_geometry_and_display(
 }
 
 
+bool
+GPlatesQtWidgets::CreateFeatureDialog::display()
+{
+	// Set the stack back to the first page.
+	stack->setCurrentIndex(0);
+	// The Feature Collections list needs to be repopulated each time.
+	populate_feature_collections_list(*listwidget_feature_collections);
+	
+	// Show the dialog modally.
+	return exec();
+}
+
+
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_prev()
 {
@@ -708,6 +721,11 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 {
+	if (d_type == TOPOLOGICAL)
+	{
+		handle_create_topological();
+		return;
+	}
 	// Get the PropertyName the user has selected for geometry to go into.
 	// Also find out if we should be wrapping geometry in a GpmlConstantValue.
 	PropertyNameItem *geom_prop_name_item = dynamic_cast<PropertyNameItem *>(
@@ -788,6 +806,73 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 			*geometry_value_opt,
 			geom_prop_name,
 			feature);
+
+	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
+	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
+			d_plate_id_widget->create_property_value_from_widget();
+	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+			GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type),
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+			feature);
+
+	// Add a gml:validTime Property.
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+			d_time_period_widget->create_property_value_from_widget(),
+			GPlatesModel::PropertyName::create_gml("validTime"),
+			feature);
+
+	// Add a gml:name Property.
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+			d_name_widget->create_property_value_from_widget(),
+			GPlatesModel::PropertyName::create_gml("name"),
+			feature);
+	
+	emit feature_created(feature);
+	accept();
+}
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
+{
+	// Get the PropertyName the user has selected for geometry to go into.
+	// Also find out if we should be wrapping geometry in a GpmlConstantValue.
+	PropertyNameItem *geom_prop_name_item = dynamic_cast<PropertyNameItem *>(
+			listwidget_geometry_destinations->currentItem());
+	if (geom_prop_name_item == NULL) {
+		QMessageBox::critical(this, tr("No geometry destination selected"),
+				tr("Please select a property name to use for your digitised geometry."));
+		return;
+	}
+	const GPlatesModel::PropertyName geom_prop_name = geom_prop_name_item->get_name();
+	// bool geom_prop_needs_constant_value = geom_prop_name_item->expects_time_dependent_wrapper();
+
+
+	// Get the FeatureType the user has selected.
+	boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
+			currently_selected_feature_type(listwidget_feature_types);
+	if ( ! feature_type_opt) {
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+	const GPlatesModel::FeatureType type = *feature_type_opt;
+	
+	
+	// Get the FeatureCollection the user has selected.
+	FeatureCollectionItem *collection_item = dynamic_cast<FeatureCollectionItem *>(
+			listwidget_feature_collections->currentItem());
+	if (collection_item == NULL) {
+		QMessageBox::critical(this, tr("No feature collection selected"),
+				tr("Please select a feature collection to add the new feature to."));
+		return;
+	}
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection = collection_item->get_collection();
+	
+	// Actually create the Feature!
+	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
+	
 
 	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
 	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
