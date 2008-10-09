@@ -117,6 +117,56 @@ namespace GPlatesPropertyValues {
 			visitor.visit_gpml_topological_line_section(*this);
 		}
 
+
+
+		// access to d_source_geometry
+		GpmlPropertyDelegate::non_null_ptr_type
+		get_source_geometry() const {
+			return d_source_geometry;
+		}
+
+		void
+		set_source_geometry(
+				GpmlPropertyDelegate::non_null_ptr_type intersection_geom) {
+			d_source_geometry = intersection_geom;
+		} 
+
+
+		// access to start intersection
+		boost::optional<GpmlTopologicalIntersection>
+		get_start_intersection() const {
+			return d_start_intersection;
+		}
+
+		void
+		set_start_intersection(
+				boost::optional<GpmlTopologicalIntersection> start) {
+			d_start_intersection = start;
+		}
+
+		// access to end intersection
+		boost::optional<GpmlTopologicalIntersection>
+		get_end_intersection() const {
+			return d_end_intersection;
+		}
+
+		void
+		set_end_intersection(
+				boost::optional<GpmlTopologicalIntersection> start) {
+			d_end_intersection = start;
+		}
+
+		// access to d_reverse_order
+		bool
+		get_reverse_order() const {
+			return d_reverse_order;
+		}
+
+		void
+		set_reverse_order( bool order) {
+			d_reverse_order = order;
+		}
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
