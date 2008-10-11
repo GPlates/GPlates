@@ -112,6 +112,36 @@ namespace GPlatesGui
 			return d_texture;
 		}
 
+		/** 
+		 * Functions to change display state variables
+		 */ 
+		void enable_point_display()		{ d_show_point		= true; }
+		void enable_line_display()		{ d_show_line 		= true; }
+		void enable_polygon_display() 	{ d_show_polygon 	= true; }
+		void enable_topology_display() 	{ d_show_topology	= true; }
+		void enable_mesh_display() 		{ d_show_mesh 		= true; }
+
+		void disable_point_display() 	{ d_show_point 		= false; }
+		void disable_line_display() 	{ d_show_line 		= false; }
+		void disable_polygon_display() 	{ d_show_polygon 	= false; }
+		void disable_topology_display() { d_show_topology 	= false; }
+		void disable_mesh_display() 	{ d_show_mesh 		= false; }
+
+		void toggle_point_display()		{ d_show_point 		= !d_show_point; }
+		void toggle_line_display() 		{ d_show_line 		= !d_show_line; }
+		void toggle_polygon_display() 	{ d_show_polygon 	= !d_show_polygon; }
+		void toggle_topology_display() 	{ d_show_topology 	= !d_show_topology; }
+		void toggle_mesh_display() 		{ d_show_mesh 		= !d_show_mesh; }
+
+		/**
+	 	 * Flags to determine what data to show
+		*/
+		bool d_show_point;
+		bool d_show_line;
+		bool d_show_polygon;
+		bool d_show_topology;
+		bool d_show_mesh;
+
 	private:
 		/**
 		 * The layers of rendered geometries.
@@ -152,6 +182,7 @@ namespace GPlatesGui
 		 * One circle of longitude every 30 degrees.
 		 */
 		static const unsigned NUM_CIRCLES_LON = 6;
+
 	};
 }
 

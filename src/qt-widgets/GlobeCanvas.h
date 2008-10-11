@@ -239,6 +239,52 @@ namespace GPlatesQtWidgets
 		disable_raster_display();
 
 		void
+		toggle_point_display();
+
+		void
+		enable_point_display();
+
+		void
+		disable_point_display();
+
+		void
+		toggle_line_display();
+
+		void
+		enable_line_display();
+
+		void
+		disable_line_display();
+
+		void
+		toggle_polygon_display();
+
+		void
+		enable_polygon_display();
+
+		void
+		disable_polygon_display();
+
+		void
+		toggle_topology_display();
+
+		void
+		enable_topology_display();
+
+		void
+		disable_topology_display();
+
+		void
+		toggle_mesh_display();
+
+		void
+		enable_mesh_display();
+
+		void
+		disable_mesh_display();
+
+
+		void
 		draw_colour_legend(
 			QPainter *painter,
 			GPlatesGui::Texture &texture);

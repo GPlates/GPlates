@@ -451,6 +451,21 @@ namespace GPlatesQtWidgets
 		void
 		enable_raster_display();
 
+		void
+		enable_point_display();
+
+		void
+		enable_line_display();
+
+		void
+		enable_polygon_display();
+
+		void
+		enable_topology_display();
+
+		void
+		enable_mesh_display();
+
 	protected:
 	
 		/**

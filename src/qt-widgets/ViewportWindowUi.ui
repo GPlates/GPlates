@@ -76,6 +76,11 @@
      <addaction name="action_Colour_By_Age" />
     </widget>
     <addaction name="action_Show_Rasters" />
+    <addaction name="action_Show_Points" />
+    <addaction name="action_Show_Lines" />
+    <addaction name="action_Show_Polygons" />
+    <addaction name="action_Show_Topologies" />
+    <addaction name="action_Show_Meshes" />
     <addaction name="separator" />
     <addaction name="menu_Colour_By" />
     <addaction name="separator" />
@@ -695,11 +700,84 @@
    <property name="checkable" >
     <bool>true</bool>
    </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
    <property name="text" >
     <string>&amp;Show Rasters</string>
    </property>
    <property name="toolTip" >
     <string>A toggle operation which controls whether rasters are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Points" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Points</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether point-like features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Lines" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Lines</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether line-like are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Polygons" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Polygons</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether polygon-like features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Topologies" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Show Topologic Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether topological features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Meshes" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Show Mesh features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether mesh features are shown.</string>
    </property>
   </action>
   <action name="action_Open_Time_Dependent_Global_Raster_Set" >

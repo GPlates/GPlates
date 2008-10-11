@@ -763,6 +763,16 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// View Menu:
 	QObject::connect(action_Show_Rasters, SIGNAL(triggered()),
 			this, SLOT(enable_raster_display()));
+	QObject::connect(action_Show_Points, SIGNAL(triggered()),
+			this, SLOT(enable_point_display()));
+	QObject::connect(action_Show_Lines, SIGNAL(triggered()),
+			this, SLOT(enable_line_display()));
+	QObject::connect(action_Show_Polygons, SIGNAL(triggered()),
+			this, SLOT(enable_polygon_display()));
+	QObject::connect(action_Show_Topologies, SIGNAL(triggered()),
+			this, SLOT(enable_topology_display()));
+	QObject::connect(action_Show_Meshes, SIGNAL(triggered()),
+			this, SLOT(enable_mesh_display()));
 	// ----
 	QObject::connect(action_Colour_By_Plate_ID, SIGNAL(triggered()), 
 			this, SLOT(choose_colour_by_plate_id()));
@@ -1359,6 +1369,74 @@ GPlatesQtWidgets::ViewportWindow::enable_raster_display()
 		d_canvas_ptr->disable_raster_display();
 	}
 }
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_point_display()
+{
+	if (action_Show_Points->isChecked())
+	{
+		d_canvas_ptr->enable_point_display();
+	}
+	else
+	{
+		d_canvas_ptr->disable_point_display();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_line_display()
+{
+	if (action_Show_Lines->isChecked())
+	{
+		d_canvas_ptr->enable_line_display();
+	}
+	else
+	{
+		d_canvas_ptr->disable_line_display();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_polygon_display()
+{
+	if (action_Show_Polygons->isChecked())
+	{
+		d_canvas_ptr->enable_polygon_display();
+	}
+	else
+	{
+		d_canvas_ptr->disable_polygon_display();
+	}
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_topology_display()
+{
+	if (action_Show_Topologies->isChecked())
+	{
+		d_canvas_ptr->enable_topology_display();
+	}
+	else
+	{
+		d_canvas_ptr->disable_topology_display();
+	}
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_mesh_display()
+{
+	if (action_Show_Meshes->isChecked())
+	{
+		d_canvas_ptr->enable_mesh_display();
+	}
+	else
+	{
+		d_canvas_ptr->disable_mesh_display();
+	}
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::open_global_raster()
