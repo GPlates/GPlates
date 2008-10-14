@@ -48,7 +48,13 @@ namespace GPlatesGui
 		Globe():
 			d_sphere(Colour(0.35f, 0.35f, 0.35f)),
 			d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON)
-		{  }
+		{ 
+			//FIXME: be sure to sychonize with ViewportWidgetUi.ui 
+			d_show_point = true;  
+			d_show_line = true;
+			d_show_polygon = true;
+			d_show_topology = true; 
+			d_show_mesh = true; }
 
 		~Globe()
 		{  }
