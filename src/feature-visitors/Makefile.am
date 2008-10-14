@@ -17,7 +17,8 @@ libfeature_visitors_la_SOURCES	= QueryFeaturePropertiesWidgetPopulator.cc \
 				TotalReconstructionSequenceTimePeriodFinder.cc \
 				PlatepolygonResolver.cc \
 				ReconstructedFeatureGeometryFinder.cc \
-				ValueFinder.cc 
+				ValueFinder.cc \
+				ComputationalMeshSolver.cc
 
 if PYTHON
 noinst_PROGRAMS		= _feature_visitors.so
