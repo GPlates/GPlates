@@ -537,6 +537,18 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_computational_mesh_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = 
+			get_reconstructable_feature_properties();
+
+		map[ PropertyName::create_gpml("locations") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_abstract_field_properties()
@@ -548,7 +560,6 @@ namespace
 
 		return map;
 	}
-
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_tectonic_section_properties()
@@ -748,10 +759,8 @@ namespace
 	get_topological_feature_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_time_variant_feature_properties();
-
 		return map;
 	}
-
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_topological_closed_plate_boundary_properties()
@@ -832,6 +841,10 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_inferred_paleo_boundary_properties();
 	d_map[ FeatureType::create_gpml("OldPlatesGridMark") ] =
 		get_old_plates_grid_mark_properties();
+
+	// Computational Mesh features
+	d_map[ FeatureType::create_gpml("ComputationalMesh") ] =
+		get_computational_mesh_properties();
 
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =
