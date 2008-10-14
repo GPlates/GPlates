@@ -95,6 +95,7 @@ namespace
 		{ "errorBounds", QT_TR_NOOP("Error boundary"), false },
 		{ "boundary", QT_TR_NOOP("Boundary"), false },
 		{ "position", QT_TR_NOOP("Position"), false },
+		{ "locations", QT_TR_NOOP("Locations"), false },
 		{ "unclassifiedGeometry", QT_TR_NOOP("Unclassified / miscellaneous"), true },
 	};
 
@@ -172,6 +173,7 @@ namespace
 		{ "ClosedPlateBoundary", "boundary" },
 		{ "Coastline", "centerLineOf" },
 		{ "Coastline", "unclassifiedGeometry" },
+		{ "ComputationalMesh", "locations" },
 		{ "ContinentalFragment", "outlineOf" },
 		{ "ContinentalFragment", "unclassifiedGeometry" },
 		{ "ContinentalRift", "centerLineOf" },
