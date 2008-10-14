@@ -41,6 +41,7 @@
 
 #include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 #include "feature-visitors/PlatepolygonResolver.h"
+#include "feature-visitors/ComputationalMeshSolver.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -211,6 +212,19 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.end(),
 		resolver);
 	resolver.report();
+
+	// Visit the feature collections and fill computational meshes with nice juicy velocity data
+	GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
+		time, root, *reconstruction,
+		reconstruction->reconstruction_tree(),
+		rfg_finder,
+		reconstruction->geometries());
+
+	visit_feature_collections(
+		reconstructable_features_collection.begin(),
+		reconstructable_features_collection.end(),
+		solver);
+	solver.report();
 
 
 	return reconstruction;
