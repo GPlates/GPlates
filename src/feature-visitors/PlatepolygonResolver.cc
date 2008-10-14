@@ -101,6 +101,15 @@ GPlatesFeatureVisitors::PlatepolygonResolver::visit_feature_handle(
 {
 	d_num_features += 1;
 
+qDebug() << ".....................qDebug():" << GPlatesUtils::make_qstring_from_icu_string( 
+feature_handle.feature_type().get_name() ) << "END";
+
+
+	// super short-cut for features without boundary list properties
+	QString type("PlatePolygon");
+	if ( type != GPlatesUtils::make_qstring_from_icu_string( feature_handle.feature_type().get_name() ) ) { return; }
+
+#if 0
 	//
 	// This feature property value is what determines if the feature is a Platepolygon 
 	//
@@ -116,8 +125,6 @@ GPlatesFeatureVisitors::PlatepolygonResolver::visit_feature_handle(
 	GPlatesFeatureVisitors::ValueFinder finder(prop_name);
 	finder.visit_feature_handle(feature_handle);
 
-#if 0
-	// super short-cut for features without boundary list properties
 	if (finder.found_values_begin() == finder.found_values_end()) 
 	{ 
 		return; 
@@ -2182,7 +2189,6 @@ std::cout << std::endl;
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type node1_polyline = 
 		GPlatesMaths::PolylineOnSphere::create_on_heap( vertex_list );
 
-#if 0 // REMOVE
 	const GPlatesMaths::PolylineOnSphere& pl1 = *node1_polyline;
 	GPlatesMaths::PolylineOnSphere::VertexConstIterator itr1 = pl1.vertex_begin();
 	GPlatesMaths::PolylineOnSphere::VertexConstIterator end1 = pl1.vertex_end();
@@ -2191,6 +2197,7 @@ std::cout << std::endl;
 		std::cout << "TEST: llp( *itr1 ) = " << GPlatesMaths::make_lat_lon_point(*itr1) << std::endl;
 	}
 std::cout << std::endl;
+#if 0 // REMOVE
 #endif
 	
 
