@@ -10,7 +10,11 @@ libmaths_la_SOURCES	= FiniteRotation.cc GreatCircle.cc GreatCircleArc.cc GridOnS
 				PolylineOnSphere.cc PolygonOnSphere.cc PolylineIntersections.cc Real.cc \
 				Rotation.cc SmallCircle.cc UnitQuaternion3D.cc UnitVector3D.cc Vector3D.cc \
 				ProximityCriteria.cc ProximityHitDetail.cc ProximityHitDetailVisitor.cc \
-				MultiPointOnSphere.cc
+				MultiPointOnSphere.cc \
+				CartesianConvMatrix3D.cc
+
+				## CalculateVelocityOfPoint.cc
+				
 
 if PYTHON
 noinst_PROGRAMS		= _maths.so
