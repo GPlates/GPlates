@@ -61,6 +61,9 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
+	d_view_state_ptr->highlight_first_clicked_feature_table_row();
+
+
 	double proximity_inclusion_threshold =
 			globe_canvas().current_proximity_inclusion_threshold(click_pos_on_globe);
 	

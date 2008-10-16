@@ -437,11 +437,11 @@ GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
 	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
 
-	layers.digitisation_layer().clear();
+	layers.plate_closure_layer().clear();
 	if (d_geometry_opt_ptr) {
 		GPlatesGui::PlatesColourTable::const_iterator white_colour =
 				&GPlatesGui::Colour::WHITE;
-		layers.digitisation_layer().push_back(
+		layers.plate_closure_layer().push_back(
 				GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, white_colour));
 	}
 	canvas.update_canvas();
