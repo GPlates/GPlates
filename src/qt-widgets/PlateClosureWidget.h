@@ -33,8 +33,15 @@
 #include "PlateClosureWidgetUi.h"
 
 #include "maths/GeometryOnSphere.h"
-#include "model/ModelInterface.h"
+#include "maths/ConstGeometryOnSphereVisitor.h"
 
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+
+
+#include "model/ModelInterface.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 
@@ -56,6 +63,7 @@ namespace GPlatesQtWidgets
 
 	class PlateClosureWidget:
 			public QWidget, 
+			public GPlatesMaths::ConstGeometryOnSphereVisitor,
 			protected Ui_PlateClosureWidget
 	{
 		Q_OBJECT
@@ -79,24 +87,6 @@ namespace GPlatesQtWidgets
 				ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 		
-#if 0
-		/**
-		 * Accessor so the QUndoCommands can get at the table of points.
-		 */
-		QTreeWidget *
-		coordinates_table()
-		{
-			return treewidget_coordinates;
-		}
-					
-		/**
-		 * Updates the text on all top-level QTreeWidgetItems (the labels)
-		 * in the table to reflect what geometry (parts) you'll actually get.
-		 *
-		 * This public method is used by the QUndoCommands that manipulate this widget.
-		 */
-		void
-		update_table_labels();
 
 		/**
 		 * Updates the temporary geometry rendered on screen.
@@ -111,7 +101,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		update_geometry();
-#endif
 
 		/**
 		 * Sets the desired geometry type, d_geometry_type.
@@ -158,6 +147,40 @@ namespace GPlatesQtWidgets
 			return d_undo_stack;
 		}
 
+		// Please keep these geometries ordered alphabetically.
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
+
 
 	public slots:
 		
@@ -202,6 +225,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		draw_temporary_geometry();
+
 
 	private slots:
 
@@ -273,18 +297,6 @@ namespace GPlatesQtWidgets
 		 */
 		GeometryType d_geometry_type;
 
-		/**
-		 *  FIXME : add documentation for these
-		 */
-
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection> d_sections_vector;
-		
-		double d_click_lat;
-		double d_click_lon;
-
-		QString d_first_coord;
-		QString d_last_coord;
-		bool d_use_reverse;
 
 		/**
 		 * What kind of geometry did we successfully build last?
@@ -302,6 +314,22 @@ namespace GPlatesQtWidgets
 		 * to update, because we can't create a PolylineOnSphere out of it).
 		 */
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
+
+		/**
+		 *  FIXME : add documentation for these
+		 */
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection> d_sections_vector;
+		
+		double d_click_lat;
+		double d_click_lon;
+
+		QString d_first_coord;
+		QString d_last_coord;
+		bool d_use_reverse;
+
+
+		std::vector<GPlatesMaths::PointOnSphere> m_vertex_list;
+
 	};
 }
 

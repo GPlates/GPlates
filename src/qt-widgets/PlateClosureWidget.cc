@@ -36,20 +36,25 @@
 
 #include "PlateClosureWidget.h"
 // #include "PlateClosureWidgetUndoCommands.h"
-#include "utils/GeometryCreationUtils.h"
 
 #include "ViewportWindow.h"
 #include "ExportCoordinatesDialog.h"
 #include "CreateFeatureDialog.h"
+
 #include "maths/InvalidLatLonException.h"
 #include "maths/InvalidLatLonCoordinateException.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/GeometryOnSphere.h"
+#include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/Real.h"
 
 #include "gui/FeatureFocus.h"
+
 #include "model/FeatureHandle.h"
+#include "model/ReconstructionGeometry.h"
+
 #include "utils/UnicodeStringUtils.h"
+#include "utils/GeometryCreationUtils.h"
 
 #include "feature-visitors/PlateIdFinder.h"
 #include "feature-visitors/GmlTimePeriodFinder.h"
@@ -155,13 +160,12 @@ namespace
 	 */
 	geometry_opt_ptr_type
 	create_geometry_from_table_items(
-			QTreeWidgetItem *geom_item,
+			std::vector<GPlatesMaths::PointOnSphere> &points,
 			GPlatesQtWidgets::PlateClosureWidget::GeometryType target_geom_type,
 			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity)
 	{
 		// FIXME: Only handles the unbroken line and single-ring cases.
-		std::vector<GPlatesMaths::PointOnSphere> points;
-		// FIXME : REMOVED points = build_points_from_table_item(geom_item);
+
 		// There's no guarantee that adjacent points in the table aren't identical.
 		std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
 				GPlatesMaths::count_distinct_adjacent_points(points);
@@ -183,34 +187,6 @@ namespace
 				// FIXME: Exception.
 				qDebug() << "Unknown geometry type, not implemented yet!";
 				return boost::none;
-
-#if 0
-// WAS POLYLINE
-			case GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON:
-				// FIXME: I'd really like to wrap this up into a function pointer.
-				if (num_points == 0) {
-					validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
-					return boost::none;
-				} else if (num_points == 1) {
-					return GPlatesUtils::create_point_on_sphere(points, validity);
-				} else {
-					return GPlatesUtils::create_polyline_on_sphere(points, validity);
-				}
-				break;
-#endif
-// WAS MULTIPOINT
-
-			case GPlatesQtWidgets::PlateClosureWidget::DEFORMINGPLATE:
-				// FIXME: I'd really like to wrap this up into a function pointer,
-				if (num_points == 0) {
-					validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
-					return boost::none;
-				} else if (num_points == 1) {
-					return GPlatesUtils::create_point_on_sphere(points, validity);
-				} else {
-					return GPlatesUtils::create_multipoint_on_sphere(points, validity);
-				}
-				break;
 
 			case GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON:
 				// FIXME: I'd really like to wrap this up into a function pointer.
@@ -325,6 +301,7 @@ GPlatesQtWidgets::PlateClosureWidget::clear()
 }
 
 
+// Display the clicked feature data in the widgets 
 void
 GPlatesQtWidgets::PlateClosureWidget::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
@@ -402,23 +379,24 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature(
 		}
 	}
 
-	///
+	//FIXME: what to do here?
 	if ( ! feature_ref.is_valid()) {
 		return;
 	}
 
-	// set up a dummy tree
+	// create a dummy tree
 	QTreeWidget *tree_geometry = new QTreeWidget(this);
 	tree_geometry->hide();
-	
+	// use the tree and the populator to get coords
 	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
 		d_view_state_ptr->reconstruction(), *tree_geometry);
 	populator.visit_feature_handle(*feature_ref);
 	d_first_coord = populator.get_first_coordinate();
 	d_last_coord = populator.get_last_coordinate();
+	// fill the widgets
 	lineedit_first->setText(d_first_coord);
 	lineedit_last->setText(d_last_coord);
-
+	// clean up
 	delete tree_geometry;
 }
 
@@ -428,23 +406,6 @@ GPlatesQtWidgets::PlateClosureWidget::set_click_point(double lat, double lon)
 {
 	d_click_lat = lat;
 	d_click_lon = lon;
-}
-
-
-void
-GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
-{
-	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
-	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-
-	layers.plate_closure_layer().clear();
-	if (d_geometry_opt_ptr) {
-		GPlatesGui::PlatesColourTable::const_iterator white_colour =
-				&GPlatesGui::Colour::WHITE;
-		layers.plate_closure_layer().push_back(
-				GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, white_colour));
-	}
-	canvas.update_canvas();
 }
 
 
@@ -518,10 +479,11 @@ GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 	// flip tab to segments table
 	d_view_state_ptr->change_tab( 2 );
 
-
 	// clear out the older featrure
 	clear();
 
+	// process the segments table
+	update_geometry();
 }
 
 
@@ -586,16 +548,100 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 
 
 
+// Please keep these geometries ordered alphabetically.
+void
+GPlatesQtWidgets::PlateClosureWidget::visit_multi_point_on_sphere(
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+{
+std::cout << "multipoint geom" << std::endl;
+	GPlatesMaths::MultiPointOnSphere::const_iterator beg = multi_point_on_sphere->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator end = multi_point_on_sphere->end();
+	GPlatesMaths::MultiPointOnSphere::const_iterator itr = beg;
+	for ( ; itr != end ; ++itr)
+	{
+		// simply append the point to the working list
+		m_vertex_list.push_back( *itr );
+	}
+}
+
+void
+GPlatesQtWidgets::PlateClosureWidget::visit_point_on_sphere(
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+{ 
+std::cout << "point geom" << std::endl;
+
+	// simply append the point to the working list
+	m_vertex_list.push_back( *point_on_sphere );
+}
+
+void
+GPlatesQtWidgets::PlateClosureWidget::visit_polygon_on_sphere(
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+{
+std::cout << "polygon geom" << std::endl;
+}
+
+void
+GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+{  
+std::cout << "polyline geom" << std::endl;
+}
 
 
 
+void
+GPlatesQtWidgets::PlateClosureWidget::update_geometry()
+{
+	// access the segments table
+	GPlatesGui::FeatureTableModel &segments_table = 
+		d_view_state_ptr->segments_feature_table_model();
+
+	// short cut for empty table
+	if ( segments_table.geometry_sequence().empty() ) { return; }
+
+	// loop over each geom
+	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
+	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator end;
+
+	iter = segments_table.geometry_sequence().begin();
+	end = segments_table.geometry_sequence().end();
+
+	for ( ; iter != end ; ++iter)
+	{
+		(*iter)->geometry()->accept_visitor(*this);
+	}	
+
+	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
+
+	// create the temp geom.
+	// d_geometry_opt_ptr = GPlatesUtils::create_polygon_on_sphere(m_vertex_list, validity);
+	geometry_opt_ptr_type geometry_opt_ptr = create_geometry_from_table_items(
+		m_vertex_list, d_geometry_type, validity);
+
+	d_geometry_opt_ptr = geometry_opt_ptr;
+
+	// update the canvas
+	draw_temporary_geometry();
+
+}
 
 
+void
+GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
+{
+	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
+	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
 
+	layers.plate_closure_layer().clear();
+	if (d_geometry_opt_ptr) 
+	{
+std::cout << "draw_temporary_geometry()" << std::endl;
+		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::BLACK;
 
-
-
-
-
-
+		layers.plate_closure_layer().push_back(
+				GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, colour));
+	}
+	canvas.update_canvas();
+}
 
