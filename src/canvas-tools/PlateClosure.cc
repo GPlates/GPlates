@@ -50,7 +50,7 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 	if (d_plate_closure_widget_ptr->geometry_type() ==
 			GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON) {
 		d_view_state_ptr->status_message(QObject::tr(
-				"Click to draw a new point."
+				"Click on features to choose segments for the boundary."
 				" Ctrl+drag to re-orient the globe."));
 	} else {
 		d_view_state_ptr->status_message(QObject::tr(
@@ -58,7 +58,12 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 				" Ctrl+drag to reorient the globe."));
 	}
 
+	// hide other tools ; show plate closure 
 	d_layers_ptr->show_only_plate_closure_layer();
+
+	// also show geom. focus 
+	d_layers_ptr->show_geometry_focus_layer();
+
 	globe_canvas().update_canvas();
 }
 
