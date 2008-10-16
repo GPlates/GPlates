@@ -140,6 +140,18 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * Show (only) the geometry-focus layer.
+		 *
+		 * This will hide the digitisation layer, the pole-manipulation layer, and any
+		 * other canvas-tool-specific layers.
+		 */
+		void
+		show_geometry_focus_layer()
+		{
+			d_should_show_geometry_focus_layer = true;
+		}
+
+		/**
 		 * Geometries in this layer are interactive geometries which are populated from the
 		 * contents of the pole-manipulation widget.
 		 *
