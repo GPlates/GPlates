@@ -528,6 +528,9 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	d_view_state_ptr->segments_feature_table_model().clear();
 	d_view_state_ptr->feature_table_model().clear();
 
+	// enmpty the vertex list
+	m_vertex_list.clear();
+
 	// flip tab to clicked table
 	d_view_state_ptr->change_tab( 0 );
 }
@@ -544,6 +547,12 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 
 	// flip tab to clicked table
 	d_view_state_ptr->change_tab( 0 );
+
+	// clear the drawing laye
+	// GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
+
+	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	d_view_state_ptr->globe_canvas().update_canvas();
 }
 
 
@@ -586,6 +595,32 @@ GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {  
 std::cout << "polyline geom" << std::endl;
+
+	// Write out each point of the polyline.
+	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = 
+		polyline_on_sphere->vertex_begin();
+
+	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = 
+		polyline_on_sphere->vertex_end();
+
+	std::vector<GPlatesMaths::PointOnSphere> polyline_vertices;
+	polyline_vertices.clear();
+	
+	for ( ; iter != end; ++iter) 
+	{
+		polyline_vertices.push_back( *iter );
+	}
+
+	if (d_use_reverse) 
+	{
+		m_vertex_list.insert( m_vertex_list.end(), 
+			polyline_vertices.rbegin(), polyline_vertices.rend() );
+	}
+	else 
+	{
+		m_vertex_list.insert( m_vertex_list.end(), 
+			polyline_vertices.begin(), polyline_vertices.end() );
+	}
 }
 
 
@@ -615,15 +650,12 @@ GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
 
 	// create the temp geom.
-	// d_geometry_opt_ptr = GPlatesUtils::create_polygon_on_sphere(m_vertex_list, validity);
-	geometry_opt_ptr_type geometry_opt_ptr = create_geometry_from_table_items(
-		m_vertex_list, d_geometry_type, validity);
+	geometry_opt_ptr_type geometry_opt_ptr = 
+		create_geometry_from_table_items( m_vertex_list, d_geometry_type, validity);
 
 	d_geometry_opt_ptr = geometry_opt_ptr;
 
-	// update the canvas
 	draw_temporary_geometry();
-
 }
 
 
@@ -632,8 +664,8 @@ GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 {
 	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
 	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-
 	layers.plate_closure_layer().clear();
+
 	if (d_geometry_opt_ptr) 
 	{
 std::cout << "draw_temporary_geometry()" << std::endl;
