@@ -137,6 +137,11 @@ namespace GPlatesQtWidgets
 			tabWidget->setCurrentIndex( i );
 		}
 
+		int
+		get_tab() {
+			return tabWidget->currentIndex();
+		}
+
 	public slots:
 		
 		void
