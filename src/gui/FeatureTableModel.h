@@ -187,6 +187,31 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * If you are modifying the underlying FeatureWeakRefSequence directly,
+		 * call this function before features are removed. [first, last] is an
+		 * inclusive range, and correspond to the row numbers the features will
+		 * be removed from.
+		 */
+		void
+		begin_remove_features(int first, int last)
+		{
+			beginRemoveRows(QModelIndex(), first, last);
+		}
+
+		/**
+		 * If you are modifying the underlying FeatureWeakRefSequence directly,
+		 * call this function after features have been removed.
+		 */
+		void
+		end_remove_features()
+		{
+			endRemoveRows();
+		}
+
+
+
+
+		/**
 		 * Convenience function to initialise a QHeaderView with the suggested
 		 * resize mode appropriate for each column.
 		 */
