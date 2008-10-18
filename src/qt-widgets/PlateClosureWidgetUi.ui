@@ -140,6 +140,19 @@
     </widget>
    </item>
    <item>
+    <widget class="QPushButton" name="button_remove_feature" >
+     <property name="toolTip" >
+      <string>Select a feature in the Segments Table, then click here to Remove it from the boundary list.</string>
+     </property>
+     <property name="whatsThis" >
+      <string>Remove a feature from the Segments Table.</string>
+     </property>
+     <property name="text" >
+      <string>Remove Feature</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QPushButton" name="button_clear_feature" >
      <property name="text" >
       <string>Clear Focused Feature</string>

@@ -170,6 +170,14 @@ namespace
 		std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
 				GPlatesMaths::count_distinct_adjacent_points(points);
 
+		std::vector<GPlatesMaths::PointOnSphere>::iterator itr;
+		for ( itr = points.begin() ; itr != points.end(); ++itr)
+		{
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*itr);
+			std::cout << "POINTS: " << llp << std::endl;
+		}
+	
+
 		// FIXME: I think... we need some way to add data() to the 'header' QTWIs, so that
 		// we can immediately discover which bits are supposed to be polygon exteriors etc.
 		// Then the function calculate_label_for_item could do all our 'tagging' of
@@ -261,6 +269,12 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 		this, 
 		SLOT(handle_choose_feature()));
 	
+	// Remove Feature button 
+	QObject::connect(button_remove_feature, 
+		SIGNAL(clicked()),
+		this, 
+		SLOT(handle_remove_feature()));
+	
 	// Clear button to clear points from table and start over.
 	QObject::connect(button_clear_feature, 
 		SIGNAL(clicked()),
@@ -295,9 +309,6 @@ GPlatesQtWidgets::PlateClosureWidget::clear()
 	lineedit_clicked_geometry->clear();
 	lineedit_first->clear();
 	lineedit_last->clear();
-
-	// Reset the flags
-	d_use_reverse = false;
 }
 
 
@@ -401,14 +412,13 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature(
 }
 
 
+#if 0
 void
-GPlatesQtWidgets::PlateClosureWidget::set_click_point(double lat, double lon)
+GPlatesQtWidgets::PlateClosureWidget::set_click_point( const GPlatesMaths::PointOnSphere &pos)
 {
-	d_click_lat = lat;
-	d_click_lon = lon;
+	d_click_points.push_back( pos );
 }
-
-
+#endif
 
 void
 GPlatesQtWidgets::PlateClosureWidget::initialise_geometry(
@@ -416,9 +426,6 @@ GPlatesQtWidgets::PlateClosureWidget::initialise_geometry(
 {
 	clear();
 	d_geometry_type = geom_type;
-
-	// set reverse flag
-	d_use_reverse = false;
 }
 
 
@@ -445,22 +452,64 @@ GPlatesQtWidgets::PlateClosureWidget::change_geometry_type(
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_use_coordinates_in_reverse()
 {
-	// set flag
-	d_use_reverse = !d_use_reverse;
+std::cout << "use rever" << std::endl;
+	// pointers to the tables
+	GPlatesGui::FeatureTableModel &segments_table = 
+		d_view_state_ptr->segments_feature_table_model();
 
-	if ( d_use_reverse )
+	GPlatesGui::FeatureTableModel &clicked_table = 
+		d_view_state_ptr->feature_table_model();
+
+	// Determine which feature to reverse
+
+	// Segments Table is the tab 
+	if ( d_view_state_ptr->get_tab() == 2 )
 	{
-		lineedit_first->setText( d_last_coord );
-		lineedit_last->setText( d_first_coord );
-	} else {
-		lineedit_first->setText( d_first_coord );
-		lineedit_last->setText( d_last_coord );
+		if (segments_table.current_index().isValid() )
+		{
+			int index = segments_table.current_index().row();
+
+			// re-set the flag in the vector
+			d_use_reverse_flags.at(index) = !d_use_reverse_flags.at(index);
+
+std::cout << "use rever; tab 2 ; is valid" << std::endl;
+			// process the segments table
+			update_geometry();
+			return;
+		}
+	}
+		
+	// Clicked Table is the tab
+	if ( d_view_state_ptr->get_tab() == 0)
+	{
+		if ( clicked_table.current_index().isValid() )
+		{
+			// int index = clicked_table.current_index().row();
+
+std::cout << "use rever; tab 0 ; is valid" << std::endl;
+			// just set the widget's flag
+			d_use_reverse = !d_use_reverse;
+
+			if ( d_use_reverse ) {
+				lineedit_first->setText( d_last_coord );
+				lineedit_last->setText( d_first_coord );
+			} else {
+				lineedit_first->setText( d_first_coord );
+				lineedit_last->setText( d_last_coord );
+			}
+
+			// no change the d_use_reverse_flags vector,
+			// handle_choose_feature does that.
+		}
 	}
 }
 
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 {
+	// flip tab to segments table
+	d_view_state_ptr->change_tab( 2 );
+
 	// pointers to the tables
 	GPlatesGui::FeatureTableModel &clicked_table = 
 		d_view_state_ptr->feature_table_model();
@@ -471,13 +520,13 @@ GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 	// transfer data to segments table
 	segments_table.begin_insert_features(0, 0);
 	int index = clicked_table.current_index().row();
-	segments_table.geometry_sequence().push_back(
-		clicked_table.geometry_sequence().at(index)
-	);
+	segments_table.geometry_sequence().push_back( clicked_table.geometry_sequence().at(index) );
 	segments_table.end_insert_features();
 
-	// flip tab to segments table
-	d_view_state_ptr->change_tab( 2 );
+	// append the current flag
+	d_use_reverse_flags.push_back(d_use_reverse);
+	// reset to false
+	d_use_reverse = false;
 
 	// clear out the older featrure
 	clear();
@@ -485,6 +534,37 @@ GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 	// process the segments table
 	update_geometry();
 }
+
+void
+GPlatesQtWidgets::PlateClosureWidget::handle_remove_feature()
+{
+	// flip tab to Segments Table
+	d_view_state_ptr->change_tab( 2 );
+
+	// pointer to the table
+	GPlatesGui::FeatureTableModel &segments_table = 
+		d_view_state_ptr->segments_feature_table_model();
+
+	// get current selected index
+	int index = segments_table.current_index().row();
+
+	// erase that element from the Segments Table
+	segments_table.begin_remove_features(index, index);
+	segments_table.geometry_sequence().erase(
+		segments_table.geometry_sequence().begin() + index);
+	segments_table.end_remove_features();
+
+	// remove the click_point and reverse flags
+	// d_click_points.erase( d_click_points.begin() + index );
+	d_use_reverse_flags.erase( d_use_reverse_flags.begin() + index );
+
+	// clear out the widgets
+	clear();
+
+	// process the segments table
+	update_geometry();
+}
+
 
 
 void
@@ -611,6 +691,7 @@ std::cout << "polyline geom" << std::endl;
 		polyline_vertices.push_back( *iter );
 	}
 
+	// check for flag
 	if (d_use_reverse) 
 	{
 		m_vertex_list.insert( m_vertex_list.end(), 
@@ -642,8 +723,13 @@ GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 	iter = segments_table.geometry_sequence().begin();
 	end = segments_table.geometry_sequence().end();
 
+	int i = 0;
 	for ( ; iter != end ; ++iter)
 	{
+		// set the widget's reverse flag to this feature's flag
+		d_use_reverse = d_use_reverse_flags.at(i);
+
+		// visit the geoms.
 		(*iter)->geometry()->accept_visitor(*this);
 	}	
 

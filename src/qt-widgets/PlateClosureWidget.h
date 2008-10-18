@@ -213,12 +213,14 @@ namespace GPlatesQtWidgets
 		change_geometry_type(
 				GeometryType geom_type);
 
+#if 0
 		/**
 		 * The PlateClosureetry canvas tool uses this function to populate
 		 * this PlateClosureWidget.
 		 */
 		void
-		set_click_point(double lat, double lon);
+		set_click_point(const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe );
+#endif
 
 		/**
 		 * Draw the temporary geometry (if there is one) on the screen.
@@ -240,6 +242,13 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		handle_choose_feature();
+
+		/**
+		 * The slot that gets called when the user clicks "Remove Feature".
+		 */
+		void
+		handle_remove_feature();
+
 
 		/**
 		 * The slot that gets called when the user clicks "Clear".
@@ -316,20 +325,26 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
 
 		/**
+		* place holders for the widget data 
+		*/
+		QString d_first_coord;
+		QString d_last_coord;
+
+
+		/**
 		 *  FIXME : add documentation for these
 		 */
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection> d_sections_vector;
-		
-		double d_click_lat;
-		double d_click_lon;
-
-		QString d_first_coord;
-		QString d_last_coord;
-		bool d_use_reverse;
 
 
 		std::vector<GPlatesMaths::PointOnSphere> m_vertex_list;
-
+		
+		/**
+		 * These vectors are all sychronized by index
+		*/
+		//FIXME: std::vector<GPlatesMaths::PointOnSphere> d_click_points;
+		std::vector<bool> d_use_reverse_flags;
+		bool d_use_reverse;
 	};
 }
 
