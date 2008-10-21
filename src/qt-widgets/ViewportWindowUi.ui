@@ -74,9 +74,9 @@
      <addaction name="action_Colour_By_Feature_Type" />
      <addaction name="action_Colour_By_Age" />
     </widget>
-    <addaction name="action_Show_Rasters" />
-    <addaction name="separator" />
     <addaction name="menu_Colour_By" />
+    <addaction name="separator" />
+    <addaction name="action_Show_Rasters" />
     <addaction name="separator" />
     <addaction name="action_Set_Camera_Viewpoint" />
     <addaction name="action_Move_Camera_Up" />
@@ -693,7 +693,7 @@
     <bool>true</bool>
    </property>
    <property name="text" >
-    <string>&amp;Single Colour ...</string>
+    <string>&amp;Single Colour...</string>
    </property>
   </action>
   <action name="action_Colour_By_Feature_Type" >
