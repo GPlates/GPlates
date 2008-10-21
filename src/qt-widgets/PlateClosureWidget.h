@@ -102,6 +102,9 @@ namespace GPlatesQtWidgets
 		void
 		update_geometry();
 
+		void
+		build_topology();
+
 		/**
 		 * Sets the desired geometry type, d_geometry_type.
 		 *
@@ -345,6 +348,8 @@ namespace GPlatesQtWidgets
 		//FIXME: std::vector<GPlatesMaths::PointOnSphere> d_click_points;
 		std::vector<bool> d_use_reverse_flags;
 		bool d_use_reverse;
+		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate *> d_prop_delegate_ptrs;
+
 	};
 }
 

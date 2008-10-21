@@ -61,8 +61,29 @@
 #include "feature-visitors/XsStringFinder.h"
 #include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
-#include "property-values/GmlTimePeriod.h"
 #include "property-values/GeoTimeInstant.h"
+
+#include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
+#include "property-values/GpmlPropertyDelegate.h"
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFeatureReference.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTopologicalPolygon.h"
+#include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlOldPlatesHeader.h"
+
+#include "property-values/TemplateTypeParameterType.h"
 
 namespace
 {
@@ -628,9 +649,10 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 	// flip tab to clicked table
 	d_view_state_ptr->change_tab( 0 );
 
-	// clear the drawing laye
-	// GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
+	// enmpty the vertex list
+	m_vertex_list.clear();
 
+	// clear the drawing layer
 	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
@@ -704,6 +726,13 @@ std::cout << "polyline geom" << std::endl;
 	}
 }
 
+void
+GPlatesQtWidgets::PlateClosureWidget::build_topology()
+{
+
+	
+
+}
 
 
 void
@@ -731,6 +760,46 @@ GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 
 		// visit the geoms.
 		(*iter)->geometry()->accept_visitor(*this);
+
+		GPlatesModel::ReconstructionGeometry *rg = iter->get();
+
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+
+		// ZZ
+		// rfg->feature_ref()
+		static const GPlatesModel::PropertyName name_property_name =
+			GPlatesModel::PropertyName::create_gml("name");
+		GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
+		string_finder.visit_feature_handle( *(rfg->feature_ref()) );
+
+		if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+		{
+			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
+				 *string_finder.found_strings_begin();
+
+			QString s = GPlatesUtils::make_qstring(name->value());
+
+			qDebug() << "name=" << s;
+		}
+
+		const GPlatesModel::FeatureId fid = rfg->feature_ref()->feature_id();
+			
+		const GPlatesModel::PropertyName prop_name =
+			GPlatesModel::PropertyName::create_gpml("gpml:centerLineOf");
+
+		const GPlatesPropertyValues::TemplateTypeParameterType value_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("gml:LineString");
+			
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd = 
+			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+				fid,
+				prop_name,
+				value_type
+			);
+				
+		// d_prop_delegate_ptrs.push_back( pd );
+
 	}	
 
 	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
@@ -743,7 +812,6 @@ GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 
 	draw_temporary_geometry();
 }
-
 
 void
 GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
