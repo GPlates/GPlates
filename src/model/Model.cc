@@ -41,6 +41,7 @@
 
 #include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 #include "feature-visitors/PlatepolygonResolver.h"
+#include "feature-visitors/TopologyResolver.h"
 #include "feature-visitors/ComputationalMeshSolver.h"
 
 #include "maths/PointOnSphere.h"
@@ -189,7 +190,6 @@ GPlatesModel::Model::create_reconstruction(
 		rfgp);
 
 
-	
 	// Visit the feature collections and build a map from feature id to RFG
 	GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder rfg_finder( *reconstruction );
 
@@ -200,6 +200,7 @@ GPlatesModel::Model::create_reconstruction(
 	rfg_finder.report();
 
 
+#if 0
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::PlatepolygonResolver resolver( 
 		time, root, *reconstruction,
@@ -212,7 +213,22 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.end(),
 		resolver);
 	resolver.report();
+#endif
 
+	// Visit the feature collections and build the platepolygons 
+	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
+		time, root, *reconstruction,
+		reconstruction->reconstruction_tree(),
+		rfg_finder,
+		reconstruction->geometries());
+
+	visit_feature_collections(
+		reconstructable_features_collection.begin(),
+		reconstructable_features_collection.end(),
+		topology_resolver);
+	topology_resolver.report();
+
+#if 0 
 	// Visit the feature collections and fill computational meshes with nice juicy velocity data
 	GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
 		time, root, *reconstruction,
@@ -225,6 +241,7 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.end(),
 		solver);
 	solver.report();
+#endif
 
 
 	return reconstruction;
