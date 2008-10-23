@@ -483,6 +483,7 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gpml_property_delegate(
 	GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate)
 {
+std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gpml_property_delegate()" << std::endl;
 
 	// Test to see what property's value is the delegate
 
@@ -490,6 +491,7 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_property_delegate(
 	static const GPlatesModel::PropertyName prop_name_1 =
 		GPlatesModel::PropertyName::create_gpml("sourceGeometry");
 
+// ZZ
 	if (d_accumulator->current_property_name() == prop_name_1) 
 	{
 std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gpml_property_delegate(): sourceGeometry" << std::endl;
@@ -562,8 +564,19 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_line_section(
 {  
 std::cerr << ("visit_gpml_topological_line_section") << std::endl;
 
-	// visit the delgate 
+	
+	static const GPlatesModel::PropertyName name =
+		GPlatesModel::PropertyName::create_gml("sourceGeometry");
+	d_accumulator->d_current_name = name;
+
+	// delgate 
 	( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+
+	d_fid = ( gpml_toplogical_line_section.get_source_geometry() )->feature_id();
+
+qDebug() << "fid="
+<< GPlatesUtils::make_qstring_from_icu_string( d_fid.get() );
+		
 
 	// Set reverse flag 
 	d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
