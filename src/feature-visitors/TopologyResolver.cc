@@ -271,6 +271,8 @@ GGPlatesFeatureVisitors::TopologyResolver::visit_gml_orientable_curve(
 }
 
 
+#endif
+
 void
 GPlatesFeatureVisitors::TopologyResolver::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
@@ -279,6 +281,13 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gml_point(
 
 	if (d_accumulator->d_perform_reconstructions) {
 		GPlatesModel::FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+
+std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gml_point() " << std::endl;
+
+#if 0
+		PointOnSphere::non_null_ptr_to_const_type point = gml_point.point();
+
+		d_ref_point_ptr = *gml_point.point();
 
 		if (d_accumulator->d_recon_plate_id) {
 			const FiniteRotation &r = *d_accumulator->d_recon_rotation;
@@ -299,16 +308,17 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gml_point(
 			d_reconstructed_geometries_to_populate->push_back(rfg);
 			d_reconstructed_geometries_to_populate->back().set_reconstruction_ptr(d_recon_ptr);
 		}
+#endif
+
 	}
 }
-#endif
 
 
 void
 GPlatesFeatureVisitors::TopologyResolver::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-	// std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gml_time_period() " << std::endl;
+std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gml_time_period() " << std::endl;
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
@@ -331,7 +341,7 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	// std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gpml_constant_value() " << std::endl;
+std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gpml_constant_value() " << std::endl;
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
@@ -448,23 +458,24 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_piecewise_aggregation(
 		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
 std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gpml_piecewise_aggregation() " << std::endl;
-#if 0
-	d_output.writeStartGpmlElement("PiecewiseAggregation");
-		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_piecewise_aggregation.value_type());
-		d_output.writeEndElement();
 
-		std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-				gpml_piecewise_aggregation.time_windows().begin();
-		std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-				gpml_piecewise_aggregation.time_windows().end();
-		for ( ; iter != end; ++iter) 
-		{
-			d_output.writeStartGpmlElement("timeWindow");
-				write_gpml_time_window(*iter);
-			d_output.writeEndElement();
-		}
-	d_output.writeEndElement();  // </gpml:IrregularSampling>
+	//d_output.writeStartGpmlElement("PiecewiseAggregation");
+	//d_output.writeStartGpmlElement("valueType");
+	//writeTemplateTypeParameterType(d_output, gpml_piecewise_aggregation.value_type());
+	//d_output.writeEndElement();
+
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
+			gpml_piecewise_aggregation.time_windows().begin();
+
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
+			gpml_piecewise_aggregation.time_windows().end();
+
+	for ( ; iter != end; ++iter) 
+	{
+		//d_output.writeStartGpmlElement("timeWindow");
+		write_gpml_time_window(*iter);
+	}
+#if 0
 #endif
 }
 
@@ -472,21 +483,32 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gpml_property_delegate(
 	GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate)
 {
-#if 0
-	d_output.writeStartGpmlElement("PropertyDelegate");
-		d_output.writeStartGpmlElement("targetFeature");
-			d_output.writeText(gpml_property_delegate.feature_id().get());
-		d_output.writeEndElement();
 
-		d_output.writeStartGpmlElement("targetProperty");
-			writeTemplateTypeParameterType(d_output, gpml_property_delegate.target_property());
-		d_output.writeEndElement();
+	// Test to see what property's value is the delegate
 
-		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_property_delegate.value_type());
-		d_output.writeEndElement();
-	d_output.writeEndElement();
-#endif
+	// 
+	static const GPlatesModel::PropertyName prop_name_1 =
+		GPlatesModel::PropertyName::create_gpml("sourceGeometry");
+
+	if (d_accumulator->current_property_name() == prop_name_1) 
+	{
+std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gpml_property_delegate(): sourceGeometry" << std::endl;
+
+		d_fid = gpml_property_delegate.feature_id().get();
+		// gpml_property_delegate.target_property()
+		// gpml_property_delegate.value_type();
+	}
+
+
+	// 
+	static const GPlatesModel::PropertyName prop_name_2 =
+		GPlatesModel::PropertyName::create_gpml("intersectionGeometry");
+
+	if (d_accumulator->current_property_name() == prop_name_1) 
+	{
+std::cout << "GPlatesFeatureVisitors::TopologyResolver::visit_gpml_property_delegate(): intersectionGeometry" << std::endl;
+	}
+
 }
 
 #if 0
@@ -498,24 +520,21 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_revision_id(
 }
 #endif
 
-#if 0
 void
 GPlatesFeatureVisitors::TopologyResolver::write_gpml_time_window(
 	GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
-	d_output.writeStartGpmlElement("TimeWindow");
-		d_output.writeStartGpmlElement("timeDependentPropertyValue");
-			gpml_time_window.time_dependent_value()->accept_visitor(*this);
-		d_output.writeEndElement();
-		d_output.writeStartGpmlElement("validTime");
-			gpml_time_window.valid_time()->accept_visitor(*this);
-		d_output.writeEndElement();
-		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_time_window.value_type());
-		d_output.writeEndElement();
-	d_output.writeEndElement(); // </gpml:TimeWindow>
+std::cout << "GPlatesFeatureVisitors::TopologyResolver::write_gpml_time_window()" << std::endl;
+	//d_output.writeStartGpmlElement("TimeWindow");
+	//d_output.writeStartGpmlElement("timeDependentPropertyValue");
+	gpml_time_window.time_dependent_value()->accept_visitor(*this);
+
+	//d_output.writeStartGpmlElement("validTime");
+	gpml_time_window.valid_time()->accept_visitor(*this);
+
+	//d_output.writeStartGpmlElement("valueType");
+	//writeTemplateTypeParameterType(d_output, gpml_time_window.value_type());
 }
-#endif
 
 
 void
@@ -523,21 +542,18 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_polygon(
 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
 {
 std::cerr << ("visit_gpml_topological_polygon") << std::endl;
-#if 0
-	d_output.writeStartGpmlElement("TopologicalPolygon");
-	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator iter;
-	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator end;
+
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::iterator iter;
+
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::iterator end;
 	iter = gpml_toplogical_polygon.sections().begin();
 	end = gpml_toplogical_polygon.sections().end();
 
 	for ( ; iter != end; ++iter) 
 	{
-		d_output.writeStartGpmlElement("section");
 		(*iter)->accept_visitor(*this);
-		d_output.writeEndElement();
 	}
-	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
-#endif
+
 }
 
 void
@@ -545,36 +561,25 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_line_section(
 	GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
 {  
 std::cerr << ("visit_gpml_topological_line_section") << std::endl;
-#if 0
-	d_output.writeStartGpmlElement("TopologicalLineSection");
 
-		d_output.writeStartGpmlElement("sourceGeometry");
-			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); // delgate 
-		d_output.writeEndElement();
+	// visit the delgate 
+	( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
 
-		// boost::optional<GpmlTopologicalIntersection>
-		if ( gpml_toplogical_line_section.get_start_intersection() )
-		{
-			d_output.writeStartGpmlElement("startIntersection");
-				gpml_toplogical_line_section.get_start_intersection()->accept_visitor(*this);
-			d_output.writeEndElement();
-		}
+	// Set reverse flag 
+	d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
 
-		// check for endInterse
-		if ( gpml_toplogical_line_section.get_end_intersection() )
-		{
-			d_output.writeStartGpmlElement("endIntersection");
-				gpml_toplogical_line_section.get_end_intersection()->accept_visitor(*this);
-			d_output.writeEndElement();
-		}
-		
-		d_output.writeStartGpmlElement("reverseOrder");
-			d_output.writeBoolean( gpml_toplogical_line_section.get_reverse_order() );
-		d_output.writeEndElement();
+	if ( gpml_toplogical_line_section.get_start_intersection() )
+	{
+		gpml_toplogical_line_section.get_start_intersection()->accept_visitor(*this);
+	}
 
-	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
-#endif
+	if ( gpml_toplogical_line_section.get_end_intersection() )
+	{
+		gpml_toplogical_line_section.get_end_intersection()->accept_visitor(*this);
+	}
 }
+
+
 
 
 void
@@ -582,27 +587,26 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_intersection(
 	GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
 {
 std::cerr << ("visit_gpml_topological_intersection") << std::endl;
-#if 0
-	d_output.writeStartGpmlElement("TopologicalIntersection");
 
-		d_output.writeStartGpmlElement("intersectionGeometry");
-			// visit the delegate
-			gpml_toplogical_intersection.intersection_geometry()->accept_visitor(*this); 
-		d_output.writeEndElement();
+	//d_output.writeStartGpmlElement("intersectionGeometry");
+	// visit the delegate
+	gpml_toplogical_intersection.intersection_geometry()->accept_visitor(*this); 
 
-		d_output.writeStartGpmlElement("referencePoint");
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
-					gpml_toplogical_intersection.reference_point();
-			visit_gml_point(*gml_point);
-		d_output.writeEndElement();
+	//d_output.writeStartGpmlElement("referencePoint");
+	GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point = 
+		gpml_toplogical_intersection.reference_point();
 
-		d_output.writeStartGpmlElement("referencePointPlateId");
-			// visit the delegate
-			gpml_toplogical_intersection.reference_point_plate_id()->accept_visitor(*this);
-		d_output.writeEndElement();
+	visit_gml_point(*gml_point);
 
-	d_output.writeEndElement();
-#endif
+	GPlatesMaths::PointOnSphere pos = *( gml_point->point() );
+std::cout << "visit_gpml_topological_intersection: llp = " << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
+
+
+	// ZZ set directly here? 
+
+	//d_output.writeStartGpmlElement("referencePointPlateId");
+	// visit the delegate
+	gpml_toplogical_intersection.reference_point_plate_id()->accept_visitor(*this);
 }
 
 

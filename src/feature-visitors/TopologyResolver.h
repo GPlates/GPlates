@@ -111,14 +111,26 @@ namespace GPlatesFeatureVisitors
 			{
 				return (**d_current_property)->property_name();
 			}
+
+
+			/**
+			*/
 		};
 
 
 		typedef std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
 				reconstruction_geometries_type;
 
-		// typedef std::vector<GPlatesModel::ReconstructedFeatureGeometry> 
-			// reconstructed_geometries_type;
+
+		// typedef std::vector<GPlatesModel::ReconstructedFeatureGeometry> reconstructed_geometries_type;
+
+		bool d_use_reverse;
+
+		GPlatesModel::FeatureId d_fid;
+
+		//GPlatesPropertyValues::GmlPoint *d_ref_point;
+
+		GPlatesMaths::PointOnSphere *d_ref_point_ptr;
 
 
 		//
@@ -352,7 +364,9 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_enumeration(
 				GPlatesPropertyValues::Enumeration &enumeration);
+#endif
 
+#if 0
 		virtual
 		void
 		visit_gml_line_string(
@@ -367,12 +381,14 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gml_orientable_curve(
 				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
+#endif
 
 		virtual
 		void
 		visit_gml_point(
 				GPlatesPropertyValues::GmlPoint &gml_point);
 
+#if 0
 		virtual
 		void
 		visit_gml_polygon(
@@ -382,8 +398,8 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gml_time_instant(
 				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
-
 #endif
+
 
 		virtual
 		void
@@ -475,10 +491,10 @@ namespace GPlatesFeatureVisitors
 		write_gpml_time_sample(
 				GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
+#endif
 		void
 		write_gpml_time_window(
 				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
-#endif
 
 		virtual
 		void
