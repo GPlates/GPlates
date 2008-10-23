@@ -1,0 +1,853 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-530806e5-598a-47ad-b3ff-cde97a89c35f</gpml:identity>
+            <gpml:revision>GPlates-8d3ca616-5fcc-46d5-aa94-141dbaef6335</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>20 -20</gml:pos>
+                </gml:Point>
+            </gpml:position>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Point1</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Point1</gpml:geographicDescription>
+                    <gpml:plateIdNumber>101</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>HS</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>1</gpml:colourCode>
+                    <gpml:numberOfPoints>1</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-7629068d-ef69-49c5-827a-2d76898682dc</gpml:identity>
+            <gpml:revision>GPlates-170a1eb5-7fe5-4cc3-a12f-15e1f38431f1</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">35 10 15 10 10 10 5 10 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Line-3</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Line-3</gpml:geographicDescription>
+                    <gpml:plateIdNumber>101</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>4</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-9a195fe3-660e-42fe-95a0-6f8612112262</gpml:identity>
+            <gpml:revision>GPlates-52069ada-f481-4e3c-9c34-b2d38c40ee38</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-5 -10</gml:pos>
+                </gml:Point>
+            </gpml:position>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Point22</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Point22</gpml:geographicDescription>
+                    <gpml:plateIdNumber>101</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>HS</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>1</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-c2721c48-6c24-4725-9dc1-1d83101db361</gpml:identity>
+            <gpml:revision>GPlates-27b6a547-fcab-4547-ac84-8823dc989af3</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-15.7278 16.9472 -19.1555 11.9118 -25.3407 11.5341 -27.7778 16.2302 -28.3955 23.5808 -24.7392 27.4373 -18.2924 26.4726 -15.4449 23.5552 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>PolygonFromSingleLine_BOUNDARY_LINE</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>PolygonFromSingleLine_BOUNDARY_LINE</gpml:geographicDescription>
+                    <gpml:plateIdNumber>101</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>8</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-7ed35fdc-c113-4698-8a34-b8203a9b4578</gpml:identity>
+            <gpml:revision>GPlates-8da5db7b-c82a-47f9-a2f3-1b4bfffc4534</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>102</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>15 -20</gml:pos>
+                </gml:Point>
+            </gpml:position>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Point2</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Point2</gpml:geographicDescription>
+                    <gpml:plateIdNumber>102</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>HS</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>1</gpml:colourCode>
+                    <gpml:numberOfPoints>1</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-eac42d82-1505-4d25-8d4f-e6df0b81e86e</gpml:identity>
+            <gpml:revision>GPlates-0576cdb9-8f87-4876-8f4d-0791cbe41eba</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>102</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">11 5 11 15 11 30 11 40 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Line-44444444</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Line-44444444</gpml:geographicDescription>
+                    <gpml:plateIdNumber>102</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>4</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-2dd2a6d9-18e1-4306-9861-260dbac4a9ba</gpml:identity>
+            <gpml:revision>GPlates-9ca30f02-7c0d-44b1-846a-dc07dbc012f0</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>102</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">10 5 10 15 10 30 10 40 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Line-4</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Line-4</gpml:geographicDescription>
+                    <gpml:plateIdNumber>102</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>4</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-fb83d443-8251-4c36-9cbf-2dc14159967c</gpml:identity>
+            <gpml:revision>GPlates-ecdb3115-cfc3-46dc-921e-048e880a4e6d</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>103</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>15 -15</gml:pos>
+                </gml:Point>
+            </gpml:position>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Point3</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Point3</gpml:geographicDescription>
+                    <gpml:plateIdNumber>103</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>HS</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>1</gpml:colourCode>
+                    <gpml:numberOfPoints>1</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-1383d4e0-03bf-48c0-89be-48e05936da01</gpml:identity>
+            <gpml:revision>GPlates-1b86d075-b172-44e9-8b3c-5eceea33bc74</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>103</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">35 20 15 20 10 20 5 20 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Line-2</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Line-2</gpml:geographicDescription>
+                    <gpml:plateIdNumber>103</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>4</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-c155b693-5053-44db-90b3-4a1b7b4450c3</gpml:identity>
+            <gpml:revision>GPlates-5a447863-58a4-40f8-be9e-213fdaab9775</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>103</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-10 -5 -15 -5 -20 -5 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Line111</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Line111</gpml:geographicDescription>
+                    <gpml:plateIdNumber>103</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>3</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-5c7389fb-27f6-4860-a4f1-9d6ee0803266</gpml:identity>
+            <gpml:revision>GPlates-66b9c2de-fda2-4917-bd0d-1ca3f2e9c90a</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>104</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-20 -10</gml:pos>
+                </gml:Point>
+            </gpml:position>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Point33</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Point33</gpml:geographicDescription>
+                    <gpml:plateIdNumber>104</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>HS</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>1</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-489e6a7a-2b51-4785-b3ca-d32281e1993b</gpml:identity>
+            <gpml:revision>GPlates-8a5340a9-d575-4746-9a65-c2088a628b7b</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>105</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">20 5 20 15 20 30 20 40 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Line-1</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Line-1</gpml:geographicDescription>
+                    <gpml:plateIdNumber>105</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>4</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-f52e6a31-1bce-4250-b194-944c16556ec0</gpml:identity>
+            <gpml:revision>GPlates-9ac48544-0de5-41a2-a478-b04abb8eb3ba</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>106</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-10 -15 -15 -15 -20 -15 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Line222</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Line222</gpml:geographicDescription>
+                    <gpml:plateIdNumber>106</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>3</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:TopologicalClosedPlateBoundary>
+            <!-- Defined in gpml:TopologicalClosedPlateBoundary -->
+            <gpml:boundary>
+                <gpml:PiecewiseAggregation> 
+                <!-- this PiecewiseAggregation contains one or more "gpml:timeWindow" children of template type "gpml:TopologicalPolygon" -->
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType>
+                    <gpml:timeWindow>
+                        <gpml:TimeWindow>
+                            <!-- the TimeWindow is of this template type: -->
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType> 
+                            <!-- the TimeWindow lasts for this long --> 
+                            <gpml:validTime> 
+                                <gml:TimePeriod>
+                                    <gml:begin>
+                                        <gml:TimeInstant>
+                                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                        </gml:TimeInstant>
+                                    </gml:begin>
+                                    <gml:end>
+                                        <gml:TimeInstant>
+                                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">100</gml:timePosition>
+                                        </gml:TimeInstant>
+                                    </gml:end>
+                                </gml:TimePeriod>
+                            </gpml:validTime>
+                            <!-- the TimeWindow has this time dependent property -->
+                            <gpml:timeDependentPropertyValue> 
+                                <gpml:ConstantValue> 
+                                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType> 
+                                    <gpml:value>
+                                        <gpml:TopologicalPolygon>
+                                            <gpml:section> <!-- this is one of many section elements -->
+                                                <gpml:TopologicalLineSection> 
+                                                    <gpml:sourceGeometry><!-- the source geom. to get vertices from; the geom. that gets cut -->
+                                                        <gpml:PropertyDelegate>
+                                                            <gpml:valueType>gml:LineString</gpml:valueType>
+                                                            <gpml:targetFeature>GPlates-c155b693-5053-44db-90b3-4a1b7b4450c3</gpml:targetFeature>
+                                                            <gpml:targetProperty>gpml:centerLineOf</gpml:targetProperty>
+                                                        </gpml:PropertyDelegate>
+                                                    </gpml:sourceGeometry>
+                                                    <!-- this is where the visitor pattern stops -->
+                                                    <gpml:reverseOrder>true</gpml:reverseOrder>
+                                                </gpml:TopologicalLineSection>
+                                            </gpml:section>
+                                        </gpml:TopologicalPolygon>
+                                    </gpml:value>
+                                </gpml:ConstantValue> 
+                            </gpml:timeDependentPropertyValue> 
+                        </gpml:TimeWindow>
+                    </gpml:timeWindow>
+                </gpml:PiecewiseAggregation> 
+            </gpml:boundary>
+
+            <!-- validTime of the FEATURE ; inherited from gpml:TimeVariantFeature -->
+            <gml:validTime> 
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+
+            <!-- basic info for the FEATURE; inherited from gpml:AbstractFeature -->
+            <gpml:identity>GPlates-e66f3394-6131-4eb8-a23d-b772dbcdd804</gpml:identity>
+            <gpml:revision>GPlates-3cd4784c-31b6-4093-b3e0-33fa1a303227</gpml:revision>
+
+            <!-- basic info for the FEATURE; inherited from gml:AbstractFeature -->
+            <gml:name>Sample_Closed_Platepolugon</gml:name>
+            <gml:description>a sample platepolygon with one timeWindow</gml:description>
+            <gml:metaDataProperty>some meta data will go here</gml:metaDataProperty>
+
+
+        </gpml:TopologicalClosedPlateBoundary>
+    </gml:featureMember>
+
+    <gml:featureMember>
+        <gpml:MidOceanRidge>
+            <gpml:identity>GPlates-6f0385ff-b142-4626-b67a-0fa4f7f45f52</gpml:identity>
+            <gpml:revision>GPlates-20c01508-3dae-4c6e-a23b-7d15db2238d0</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-15.7278 16.9472 -19.1555 11.9118 -25.3407 11.5341 -27.7778 16.2302 -28.3955 23.5808 -24.7392 27.4373 -18.2924 26.4726 -15.4449 23.5552 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>PolygonFromSingleLine_BOUNDARY_LINE</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>PolygonFromSingleLine_BOUNDARY_LINE</gpml:geographicDescription>
+                    <gpml:plateIdNumber>101</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>8</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:MidOceanRidge>
+    </gml:featureMember>
+</gpml:FeatureCollection>
