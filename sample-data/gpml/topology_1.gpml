@@ -746,7 +746,7 @@
                                                     <gpml:sourceGeometry><!-- the source geom. to get vertices from; the geom. that gets cut -->
                                                         <gpml:PropertyDelegate>
                                                             <gpml:valueType>gml:LineString</gpml:valueType>
-                                                            <gpml:targetFeature>GPlates-c155b693-5053-44db-90b3-4a1b7b4450c3</gpml:targetFeature>
+                                                            <gpml:targetFeature>GPlates-6f0385ff-b142-4626-b67a-0fa4f7f45f52</gpml:targetFeature>
                                                             <gpml:targetProperty>gpml:centerLineOf</gpml:targetProperty>
                                                         </gpml:PropertyDelegate>
                                                     </gpml:sourceGeometry>

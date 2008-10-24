@@ -22,15 +22,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <sstream>
-#include <iostream>
-
-#include <QLocale>
-#include <QDebug>
-#include <QList>
-#include <QString>
-#include <boost/none.hpp>
-
 #include "TopologyResolver.h"
 
 #include "feature-visitors/ValueFinder.h"
@@ -86,6 +77,7 @@
 #include "gui/ProximityTests.h"
 
 #include "utils/UnicodeStringUtils.h"
+
 #include "utils/FeatureHandleToOldId.h"
 
 GPlatesFeatureVisitors::TopologyResolver::TopologyResolver(
@@ -115,12 +107,6 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_handle(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_num_features += 1;
-
-// FIXME : remove this debug
-qDebug() 
-<< "TopologyResolver::visit_feature_handle" 
-<< GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() ) 
-<< "END";
 
 	// super short-cut for features without boundary list properties
 	QString type("TopologicalClosedPlateBoundary");
@@ -184,6 +170,7 @@ qDebug()
 	// Now for the second pass through the properties of the feature:  
 	// This time we reconstruct any geometries we find.
 	d_accumulator->d_perform_reconstructions = true;
+
 	visit_feature_properties(feature_handle);
 
 	// parse the list of boundary features into nodes of m_boundary_list 
@@ -545,15 +532,24 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_polygon(
 {
 std::cerr << ("visit_gpml_topological_polygon") << std::endl;
 
-	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::iterator iter;
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::iterator 
+		iter, end;
 
-	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::iterator end;
 	iter = gpml_toplogical_polygon.sections().begin();
 	end = gpml_toplogical_polygon.sections().end();
 
+	// set the default d_FOO vars
+	d_ref_point_lat = 0.0;
+	d_ref_point_lon = 0.0;
+
+	// loop over all the sections
 	for ( ; iter != end; ++iter) 
 	{
+		// visit the properties, set the local d_FOO vars
 		(*iter)->accept_visitor(*this);
+
+		// create a boundary feature node for this section
+		create_boundary_node();
 	}
 
 }
@@ -564,20 +560,18 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_line_section(
 {  
 std::cerr << ("visit_gpml_topological_line_section") << std::endl;
 
-	
-	static const GPlatesModel::PropertyName name =
-		GPlatesModel::PropertyName::create_gml("sourceGeometry");
-	d_accumulator->d_current_name = name;
+	// DON't visit the delgate 
+	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
 
-	// delgate 
-	( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
 
+	// This is a line type feature
+	d_type = GPlatesGlobal::LINE_FEATURE;
+
+	// Access  directly the data
 	d_fid = ( gpml_toplogical_line_section.get_source_geometry() )->feature_id();
 
-qDebug() << "fid="
-<< GPlatesUtils::make_qstring_from_icu_string( d_fid.get() );
+qDebug() << "fid=" << GPlatesUtils::make_qstring_from_icu_string( d_fid.get() );
 		
-
 	// Set reverse flag 
 	d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
 
@@ -590,6 +584,8 @@ qDebug() << "fid="
 	{
 		gpml_toplogical_line_section.get_end_intersection()->accept_visitor(*this);
 	}
+
+
 }
 
 
@@ -628,271 +624,55 @@ std::cout << "visit_gpml_topological_intersection: llp = " << GPlatesMaths::make
 // ZZZ 
 
 void
-GPlatesFeatureVisitors::TopologyResolver::parse_boundary_string(
-		GPlatesModel::FeatureHandle &feature_handle)
+GPlatesFeatureVisitors::TopologyResolver::create_boundary_node()
 {
-
 	// just in case we hit errors during parsing 
 	std::stringstream err_msg; 
 
-	//
-	// This feature property value is what determines if the feature is a Platepolygon 
-	//
-	// Create a visitor to check for boundarList property 
-	static const GPlatesModel::PropertyName prop_name = 
-		GPlatesModel::PropertyName::create_gpml("boundaryList");
+	float closeness = 0.0;
 
-	GPlatesFeatureVisitors::ValueFinder finder(prop_name);
-	finder.visit_feature_handle(feature_handle);
+	bool use_head_prev = false;
+	bool use_tail_prev = false;
+	bool use_head_next = false;
+	bool use_tail_next = false;
 
-	// super short-cut for features without boundary list properties
-	if (finder.found_values_begin() == finder.found_values_end()) 
-	{ 
-		return; 
-	}
+	// convert type
+	GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
 
-
-	// else parse the string into nodes for the m_boundary_list
-	d_num_topologies += 1;
-
-	// The value from boundaryList property
-	std::string full_string = *finder.found_values_begin();
-	// std::cout << "full_string = " << full_string << std::endl;
-
-	// parse the boundaryList string into a list 
-	
-	// first clear the list
-	m_boundary_list.clear();
-
-	// tmp place to hold sting tokens
-	std::vector<std::string> node_tokens;
-
-	// loop over the full_list string finding new line delimiters
-	while (full_string.find("$", 0) != std::string::npos)
-	{ 
-		// store the position of the delimiter
-		size_t pos = full_string.find("$", 0);
-
-		// get the token
-		std::string temp = full_string.substr(0, pos);
-
-		// erase it from the source 
-		full_string.erase(0, pos + 1);
-
-		// and put it into the array
-		node_tokens.push_back(temp);
-	}
-
-	// loop over each boundary feature item and create a struct 
-	std::vector<std::string>::iterator iter = node_tokens.begin();
-
-	for ( ; iter != node_tokens.end() ; ++iter)
+	switch ( d_type )
 	{
-			// std::cout << "iter = " << *iter << std::endl; 
+		case GPlatesGlobal::POINT_FEATURE:
+			feature_type = GPlatesGlobal::POINT_FEATURE;
+			break;
 
-			std::string node_str = *iter;
+		case GPlatesGlobal::LINE_FEATURE:
+			feature_type = GPlatesGlobal::LINE_FEATURE;
+			break;
 
-			// tmp place to hold sting tokens
-			std::vector<std::string> tokens;
+		default :
+			std::ostringstream oss;
+			oss << "UNKNOWN boundary feature node type! " << std::endl;
+			// throw FileFormatException(oss.str().c_str());
+			break;
+	}
 
-			// NOTE:
-			// The hash is used to delimit boundary node fields
-			// if it it changed here, be sure to also change
-			// GPlatesGeo::operator<< for PlatePolygon::PlatePolygon 
-			// in geo/PlatePolygon.cc
-			//
+	// convert coordinates
+	GPlatesMaths::LatLonPoint llp( d_ref_point_lat, d_ref_point_lon);
+	GPlatesMaths::PointOnSphere click_point = GPlatesMaths::make_point_on_sphere(llp);
 
-			// loop over the string finding hash delimiters
-			while (node_str.find("#", 0) != std::string::npos)
-			{ 
-				// store the position of the delimiter
-				size_t pos = node_str.find("#", 0);
+	// empty list place holder
+ 	std::list<GPlatesMaths::PointOnSphere> empty_vert_list;
+ 	empty_vert_list.clear();
 
-				// get the token
-				std::string temp = node_str.substr(0, pos);
-
-				// erase it from the source 
-				node_str.erase(0, pos + 1);
-
-				// and put it into the array
-				tokens.push_back(temp);
-			}
-
-			// the last token is all alone,
-			// but has delimiter at end, remove it
-			tokens.push_back(node_str);
-
-			// Error checking on number of tokens found
-			if ( tokens.size() != 11 )
-			{
-				std::ostringstream oss;
-				oss << "Cannot parse boundary feature node line: "
-					<< "expected 10 comma delimited tokens, "
-					<< "got: " << tokens.size() << " tokens."
-					<< std::endl;
-				std::cout << "ERROR: " << oss.str() << std::endl;
-				continue;
-			}
-
-			// convert token strings into boudary feature node data
-			// via direct string copy and via string streams
-
-			int type;
-			float lat;
-			float lon;
-			float closeness;
-			bool use_reverse;
-			bool use_head_prev;
-			bool use_tail_prev;
-			bool use_head_next;
-			bool use_tail_next;
-
-			std::string fid = tokens[0];
-
-			std::istringstream iss_type(tokens[1]);
-			iss_type >> type;
-
-			std::istringstream iss_lat( tokens[2] );
-			iss_lat >> lat;
-
-			std::istringstream iss_lon( tokens[3] );
-			iss_lon >> lon;
-
-			std::istringstream iss_clo( tokens[4] );
-			iss_clo >> closeness;
-
-			std::istringstream iss_rev( tokens[5] );
-			iss_rev >> use_reverse;
-
-			std::istringstream iss_uhp( tokens[6] );
-			iss_uhp >> use_head_prev;
-
-			std::istringstream iss_utp( tokens[7] );
-			iss_utp >> use_tail_prev;
-
-			std::istringstream iss_uhn( tokens[8] );
-			iss_uhn >> use_head_next;
-
-			std::istringstream iss_utn( tokens[9] );
-			iss_utn >> use_tail_next;
-
-			// Check if feature exisits in reconstuction
-			if ( d_recon_finder_ptr->get_geometry_from_feature_id(fid) == boost::none )
-			{
-				err_msg << "  MISSING feature ref.: " << fid << std::endl;
-				continue; // to next boundary node
-			}
-
-// FIXME: enable to show verbose checks
-#if 0
-			else
-			{
-				err_msg << "  FOUND   feature ref.: " << fid << std::endl;
-			}
-#endif 
-
-#if 0
-std::cout << "GetPlatePolygonFromPolyLine: fid = " << fid << std::endl;
-std::cout << "GetPlatePolygonFromPolyLine: lat = " << lat << std::endl;
-std::cout << "GetPlatePolygonFromPolyLine: lon = " << lon << std::endl;
-std::cout << "GetPlatePolygonFromPolyLine: use_reverse = " << use_reverse << std::endl;
-std::cout << "GetPlatePolygonFromPolyLine: use_head_prev = " << use_head_prev << std::endl;
-std::cout << "GetPlatePolygonFromPolyLine: use_tail_prev = " << use_tail_prev << std::endl;
-std::cout << "GetPlatePolygonFromPolyLine: use_head_next = " << use_head_next << std::endl;
-std::cout << "GetPlatePolygonFromPolyLine: use_tail_next = " << use_tail_next << std::endl;
-#endif
-
-			bool test_ok = true;
-
-			if ( use_tail_next == 0 && use_head_next == 0 )
-			{
-				err_msg 
-				<< "  in NODE: " << fid << std::endl;
-				err_msg
-				<< "    BOTH use TAIL && use HEAD from NEXT intersection flags == 0"
-				<< std::endl;
-				test_ok = false;
-			}
-
-            if ( use_tail_next == 1 && use_head_next == 1)
-			{
-				err_msg 
-				<< "  in NODE: " << fid << std::endl;
-				err_msg
-				<< "    BOTH use TAIL && use HEAD from NEXT intersection flags == 1"
-				<< std::endl;
-				test_ok = false;
-			}
-
-			if ( use_tail_prev == 0 && use_head_prev == 0 )
-			{
-				err_msg 
-				<< "  in NODE: " << fid << std::endl;
-				err_msg
-				<< "    BOTH use TAIL && use HEAD from PREV intersection flags == 0"
-				<< std::endl;
-				test_ok = false;
-			}
-
-            if ( use_tail_prev == 1 && use_head_prev == 1)
-			{
-				err_msg 
-				<< "  in NODE: " << fid << std::endl;
-				err_msg
-				<< "    BOTH use TAIL && use HEAD from PREV intersection flags == 1"
-				<< std::endl;
-				test_ok = false;
-			}
-
-// FIX enable this code to add OK messages 
-#if 0
-			if (test_ok)
-			{
-				err_msg << "  in NODE: " << fid << std::endl;
-				err_msg << "    OK on all intersection flags tests " 
-					<< std::endl;
-			}
-#endif
-
-			// convert type
-			GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
-
-			switch ( type )
-			{
-				case GPlatesGlobal::POINT_FEATURE:
-					feature_type = GPlatesGlobal::POINT_FEATURE;
-					break;
-
-				case GPlatesGlobal::LINE_FEATURE:
-					feature_type = GPlatesGlobal::LINE_FEATURE;
-					break;
-
-				default :
-					std::ostringstream oss;
-					oss << "UNKNOWN boundary feature node type! "
-						<< std::endl;
-					// throw FileFormatException(oss.str().c_str());
-					break;
-			}
-			
-
-			// convert coordinates
-			GPlatesMaths::LatLonPoint llp( lat, lon);
-			GPlatesMaths::PointOnSphere click_point = GPlatesMaths::make_point_on_sphere(llp);
-
-			// empty list place holder
- 			std::list<GPlatesMaths::PointOnSphere> empty_vert_list;
- 			empty_vert_list.clear();
-
-			// create a boundary feature struct
-			BoundaryFeature bf(
-				feature_handle,
-				fid,
+	// create a boundary feature struct
+	BoundaryFeature bf(
+				// *d_feature_ref,
+				d_fid,
 				feature_type,
 				empty_vert_list,
 				click_point,
 				closeness,
-				use_reverse,
+				d_use_reverse,
 				0,
 				0,
 				use_head_prev,
@@ -901,26 +681,8 @@ std::cout << "GetPlatePolygonFromPolyLine: use_tail_next = " << use_tail_next <<
 				use_tail_next
 			);
 
-			// append this feature to the 
-			// platepolygon's list
-			m_boundary_list.push_back( bf );
-
-		} // end of loop over boundary feature nodes
-
-
-		// report any errors
-
-#if 0 // VERBOSE 
-		if ( !err_msg.str().empty() )
-		{
-			std::string msg;
-			msg.append( "WARNING from polygon:");
-			// msg.append( polygon->GetFeatureId() );
-			msg.append( "\n" );
-			msg.append( err_msg.str() );
-			std::cout << msg << std::endl;
-		}
-#endif 
+	// append this node to the list
+	m_boundary_list.push_back( bf );
 
 }
 
@@ -936,13 +698,16 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_boundary()
 	m_vertex_list = get_vertex_list( m_boundary_list.begin(), m_boundary_list.end() );
 
 // FIXME: diagnostic output
-	std::cout << "GPlatesFeatureVisitors::TopologyResolver::resolve_boundary() " << std::endl;
-	std::cout << "GPlatesFeatureVisitors::TopologyResolver:: m_vertex_list.size() " << m_vertex_list.size() << std::endl;
+std::cout << "GPlatesFeatureVisitors::TopologyResolver::resolve_boundary() " << std::endl;
+std::cout << "GPlatesFeatureVisitors::TopologyResolver:: m_vertex_list.size() " << m_vertex_list.size() << std::endl;
+for ( ; iter != m_boundary_list.end() ; ++iter)
+{
+	qDebug() 
+	<< "node id = " 
+	<< GPlatesUtils::make_qstring_from_icu_string( (iter->m_feature_id).get() );
+}
+// FIXME: diagnostic output
 
-	for ( ; iter != m_boundary_list.end() ; ++iter)
-	{
-		std::cout << "node id = " << iter->m_feature_id << std::endl;
-	}
 
 	if (m_vertex_list.size() == 0 ) {
 		return;
@@ -963,789 +728,6 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_boundary()
 
 	d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
  	d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
-}
-
-
-void
-GPlatesFeatureVisitors::TopologyResolver::report()
-{
-	std::cout << "GPlatesFeatureVisitors::TopologyResolver::report() " << std::endl;
-	std::cout << "number features visited = " << d_num_features << std::endl;
-	std::cout << "number topologies visited = " << d_num_topologies << std::endl;
-}
-
-
-
-bool
-GPlatesFeatureVisitors::TopologyResolver::is_feature_id_in_boundary( std::string fid )
-{
-	// short cut for empty list: 
-	if ( m_boundary_list.empty() )
-	{
-		return false;
-	}
-
-	BoundaryFeatureList_type::iterator iter = m_boundary_list.begin();
-
-	for ( ; iter != m_boundary_list.end(); ++iter)
-	{
-		if (iter->m_feature_id == fid)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-
-//
-// Insert and remove operations
-// NOTE: see also .h 
-//
-
-
-
-// insert at position pos a feature selection
-// set neighbor relations
-//
-void
-GPlatesFeatureVisitors::TopologyResolver::insert( 
-	BoundaryFeatureList_type::iterator pos, 
-	BoundaryFeature feature )
-{
-	// get the feature id of the feature to be inserted
-	// always good to know who you are inserting
-	// std::string fid = feature.m_feature->GetFeatureId();
-	std::string fid = GPlatesUtils::get_old_id( feature.m_feature );
-
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::insert: " << "fid=" << fid;
-std::cout << std::endl;
-#endif
-
-	// short cut for empty list: 
-	if ( m_boundary_list.empty() )
-	{
-		// just insert at pos the feature
-		m_boundary_list.insert( pos, feature );
-		return;
-	}
-
-
-	// short cut for inserting a POINT_FEATURE: 
-	// POINT_FEATURE do not use neighbor relations
-	// no need to test or set
-	if ( feature.m_feature_type == GPlatesGlobal::POINT_FEATURE )
-	{
-		// just insert at pos the feature
-		m_boundary_list.insert( pos, feature );
-		return;
-	}
-
-
-	// short cut for inserting onto a list with only one node
-	// set relations with previous node 
-	if ( m_boundary_list.size() == 1 )
-	{
-		// get the PREV node
-		BoundaryFeature &prev = m_boundary_list.front();
-
-		std::string prev_fid = GPlatesUtils::get_old_id( prev.m_feature );
-
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::insert: " << "m_boundary_list.size()==1; " << std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::insert: " << "prev_fid=" << prev_fid;
-std::cout << std::endl;
-#endif
-
-		if (prev.m_feature_type == GPlatesGlobal::POINT_FEATURE)
-		{
-			// only one PREV boundary feature and it is a point
-
-			// no need to test or set neighbor relations 
-			// short cut 
-			// just insert at pos the feature
-			m_boundary_list.insert( pos, feature );
-			return;
-		} 
-		else if ( prev.m_feature_type == GPlatesGlobal::LINE_FEATURE )
-		{
-			// only one boundary feature node and it is a line
-
-			//
-			// Set relations for this feature
-			//
-
-			// adjust this feature node's NEXT relation with prev
-			set_node_relation( 
-				GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT, 
-				feature, 
-				prev );
-
-			// adjust this feature node's PREV relation with prev
-			set_node_relation( 
-				GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV, 
-				feature, 
-				prev );
-
-
-			//
-			// Set relations for neighbor
-			//
-
-			// adjust prev node's NEXT relation with feature
-			set_node_relation(
-				GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT,
-				prev,
-				feature );
-
-			// adjust prev node's PREV relation with feature
-			set_node_relation(
-				GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV,
-				prev,
-				feature );
-
-			//
-			// relations have been set, insert the feature
-			//
-			m_boundary_list.insert( pos, feature );
-
-		}
-
-		return;
-	} // end of if (m_boundary_list.size() == 1)
-
-	//
-	// else there are 2 or more features on the list
-	//
-
-	// Iterators to the boundary feature list
-	BoundaryFeatureList_type::iterator prev;
-	BoundaryFeatureList_type::iterator next;
-
-	// iterator math to close the loop
-	if ( pos == m_boundary_list.end() )
-	{
-		// insert just before end:
-		next = m_boundary_list.begin(); // close the loop back to beg
-		prev = pos;
-		--prev; // locate the prev node
-	}
-	else if ( pos == m_boundary_list.begin() )
-	{
-		// insert just before begin
-		next = pos;
-		prev = --m_boundary_list.end();
-	}
-	else
-	{
-		// insert just before pos
-		next = pos;
-		prev = pos;
-		--prev; // locate the prev node
-	}
-
-	// get a feature ids for iters
-	std::string prev_fid = GPlatesUtils::get_old_id( prev->m_feature);
-	std::string next_fid = GPlatesUtils::get_old_id( next->m_feature);
-
-// FIX : remove this diagnostic output
-#if 0
-std::cout << std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::insert: " << "PREV_fid=" << prev_fid << std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::insert: " << "NEXT_fid=" << next_fid << std::endl;
-std::cout << std::endl;
-#endif
-
-	// if prev is a LINE set relations
-	if ( prev->m_feature_type == GPlatesGlobal::LINE_FEATURE )
-	{
-		//
-		// Set relations for this feature
-		//
-
-		// adjust this feature node's PREV relation with prev
-		set_node_relation( 
-			GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV, 
-			feature, 
-			*prev );
-
-		//
-		// Set relations for PREV neighbor
-		//
-
-		// adjust prev node's NEXT relation with feature
-		set_node_relation(
-			GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT,
-			*prev,
-			feature );
-	}
-
-	// if next is a LINE set relations
-	if ( next->m_feature_type == GPlatesGlobal::LINE_FEATURE )
-	{
-			//
-			// Set relations for this feature
-			//
-
-			// adjust this feature node's NEXT relation with next
-			set_node_relation( 
-				GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT, 
-				feature, 
-				*next );
-
-			//
-			// Set relations for NEXT neighbor
-			//
-
-			// adjust next node's PREV relation with feature
-			set_node_relation(
-				GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV,
-				*next,
-				feature );
-	}
-
-	//
-	// insert the feature
-	//
-	m_boundary_list.insert( pos, feature );
-}
-
-
-
-// set_node_relation is a general purpose function 
-// that tests for and sets a boundary feature node's flags.
-//
-// relation is the specific relation to set
-// node 1 is the node to change
-// node 2 is a neighbor node already existing on list
-void
-GPlatesFeatureVisitors::TopologyResolver::set_node_relation( 
-	GPlatesFeatureVisitors::TopologyResolver::NeighborRelation relation,
-	BoundaryFeature &node1,
-	BoundaryFeature &node2)
-{
-
-	// "alwys good to know who you are dealing with"
-	std::string node1_fid = GPlatesUtils::get_old_id( node1.m_feature);
-	std::string node2_fid = GPlatesUtils::get_old_id( node2.m_feature);
-
-
-#if 0
-// FIX : remove this diagnostic output
-std::cout << std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "relation=" << relation << std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "node1_fid=" << node1_fid << std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "node2_fid=" << node2_fid << std::endl;
-std::cout << std::endl;
-#endif
-
-
-	// short cuts for POINT_FEATURE : no change to node1
-	if ( node1.m_feature_type == GPlatesGlobal::POINT_FEATURE ) { return; }
-	if ( node2.m_feature_type == GPlatesGlobal::POINT_FEATURE ) { return; }
-
-	//
-	// nodes must be GPlatesGlobal::LINE_FEATURE test for intersection
-	//
-	
-	// tmp variables to hold results of processing node1 vs node2
-	std::list<GPlatesMaths::PointOnSphere> node1_vertex_list;
-	std::list<GPlatesMaths::PointOnSphere> node2_vertex_list;
-	std::list<GPlatesMaths::PointOnSphere> test_vertex_list;
-
-	// get verts for node1 from Layout 
-	d_recon_finder_ptr->get_vertex_list_from_feature_id(
-		node1_vertex_list,
-		node1_fid );
-
-	// re-populate the node list, just in case:
-	if ( node1.m_vertex_list.empty() )
-	{
-		node1.m_vertex_list = node1_vertex_list;
-	}
-
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "node1_vertex_list.size=" << node1_vertex_list.size() << std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "node1.m_vert_list.size=" << node1.m_vertex_list.size() << std::endl;
-#endif
-
-	
-	
-	// get verts for node2 from Layout 
-	d_recon_finder_ptr->get_vertex_list_from_feature_id(
-		node2_vertex_list,
-		node2_fid );
-
-	// re-populate the node lis,  just in case:
-	if ( node2.m_vertex_list.empty() )
-	{
-		node2.m_vertex_list = node2_vertex_list;
-	}
-
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "node2_vertex_list.size=" << node2_vertex_list.size() << std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "node2.m_vert_list.size=" << node2.m_vertex_list.size() << std::endl;
-#endif
-
-	// skip features not found, or missing from Layout
-	if ( node2_vertex_list.empty() or node1_vertex_list.empty() )
-	{
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "node2_vertex_list.empty()" << std::endl;
-#endif
-		// no need to check further
-		// no change to node1
-		return;
-	}
-
-	//
-	// create polylines for each boundary feature node
-	//
-//REMOVE:	GPlatesMaths::PolylineOnSphere node1_polyline =
-//REMOVE:		GPlatesMaths::PolylineOnSphere::create( node1.m_vertex_list );
-
-
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type node1_polyline =
-		GPlatesMaths::PolylineOnSphere::create_on_heap( node1.m_vertex_list );
-
-//REMOVE:	GPlatesMaths::PolylineOnSphere node2_polyline = 
-	//REMOVE:	GPlatesMaths::PolylineOnSphere::create( node2.m_vertex_list );
-
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type node2_polyline =
-		GPlatesMaths::PolylineOnSphere::create_on_heap( node2.m_vertex_list );
-	//
-	// variables to save results of intersection
-	//
-	std::list<GPlatesMaths::PointOnSphere> intersection_points;
-	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> partitioned_lines;
-
-// FIXME
-// PROXIMITY
-	//
-	// closeness vars used in is_close_to tests below
-	//
-	GPlatesMaths::real_t closeness_inclusion_threshold = 0.9;
-		 //GPlatesControls::GuiCalls::GetCloseThreshold();
-
-	const GPlatesMaths::real_t cit_sqrd =
-		closeness_inclusion_threshold * closeness_inclusion_threshold;
-		
-	const GPlatesMaths::real_t latitude_exclusion_threshold = sqrt(1.0 - cit_sqrd);
-
-	// this one gets filled by calls to is_close_to()
-	GPlatesMaths::real_t closeness;
-
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: closeness_inclusion_threshold=" << closeness_inclusion_threshold << std::endl;
-#endif
-
-	//
-	// test for intersection
-	//
-	int num_intersect = 0;
-	num_intersect = GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
-		*node1_polyline,
-		*node2_polyline,
-		intersection_points,
-		partitioned_lines);
-
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "num_intersect = " << num_intersect << std::endl;
-#endif
-
-	// switch on relation enum to set node1's member data
-	switch ( relation )
-	{
-		case GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV :
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: INTERSECT_PREV: " << std::endl;
-#endif
-			node1.m_num_intersections_with_prev = num_intersect;
-			break;
-
-		case GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT:
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: INTERSECT_NEXT: " << std::endl;
-#endif
-			node1.m_num_intersections_with_next = num_intersect;
-			break;
-
-		case GPlatesFeatureVisitors::TopologyResolver::NONE :
-		case GPlatesFeatureVisitors::TopologyResolver::OTHER :
-		default :
-			// somthing bad happened
-			// freak out
-			break;
-	}
-
-	// 
-
-	if ( num_intersect == 0 )
-	{
-		// no change to node1
-		return;
-	}
-	else if ( num_intersect == 1)
-	{
-		// pair of polyline lists from intersection
-		std::pair<
-			std::list< GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-			std::list< GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
-		> parts;
-
-		// unambiguously identify partitioned lines:
-		// parts.first.front is the head of node1_polyline
-		// parts.first.back is the tail of node1_polyline
-		// parts.second.front is the head of node2_polyline
-		// parts.second.back is the tail of node2_polyline
-		parts = GPlatesMaths::PolylineIntersections::identify_partitioned_polylines(
-			*node1_polyline,
-			*node2_polyline,
-			intersection_points,
-			partitioned_lines);
-
-		// now check which element of parts.first
-		// is close to node1's click_point:
-
-		// check head
-		if ( parts.first.front()->is_close_to(
-				node1.m_click_point,
-				closeness_inclusion_threshold,
-				latitude_exclusion_threshold,
-				closeness) )
-		{
-
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "use HEAD of: " << node1_fid << std::endl;
-#endif
-
-			// switch on the relation to be set
-			switch ( relation )
-			{
-				case GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV :
-					node1.m_use_head_from_intersect_prev = true;
-					node1.m_use_tail_from_intersect_prev = false;
-					break;
-	
-				case GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT:
-					node1.m_use_head_from_intersect_next = true;
-					node1.m_use_tail_from_intersect_next = false;
-					break;
-
-				default:
-					break;
-			}
-
-			// node1's relation has been set
-			return;
-		} 
-
-// PROXIMITY
-
-		// check tail
-		if ( parts.first.back()->is_close_to(
-				node1.m_click_point,
-				closeness_inclusion_threshold,
-				latitude_exclusion_threshold,
-				closeness) )
-		{
-#if 0
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << "use TAIL segment of   : " << node1_fid << std::endl;
-#endif
-
-			// switch on the relation to be set
-			switch ( relation )
-			{
-				case GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV :
-					node1.m_use_tail_from_intersect_prev = true;
-					node1.m_use_head_from_intersect_prev = false;
-					break;
-	
-				case GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT:
-					node1.m_use_tail_from_intersect_next = true;
-					node1.m_use_head_from_intersect_next = false;
-					break;
-
-				default:
-					break;
-			}
-
-			// node1's relation has been set
-			return;
-		} 
-
-		else
-		{
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << std::endl
-<< "WARN: click point not close to anything!" << std::endl
-<< "WARN: Unable to set boundary feature intersection flags!" 
-<< std::endl << std::endl;
-		}
-
-	} // end of else if ( num_intersect == 1 )
-	else 
-	{
-		// num_intersect must be 2 or greater
-		// oh no!
-		// check for overlap ...
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::s_n_r: " << std::endl
-<< "WARN: num_intersect=" << num_intersect
-<< "WARN: Unable to set boundary feature intersection relations!" << std::endl
-<< "WARN: Make sure boundary feature's only intersect once." 
-<< std::endl << std::endl;
-	}
-}
-
-
-
-//
-// erase a boundary feature by look up on feature id
-//
-void
-GPlatesFeatureVisitors::TopologyResolver::erase( std::string fid )
-{
-	// iterator to list
-	BoundaryFeatureList_type::iterator iter;
-
-	// Iterate over boundary list
-	for (iter = boundary_begin(); iter != boundary_end(); ++iter)
-	{
-		if ( GPlatesUtils::get_old_id( iter->m_feature) == fid )
-		{
-			// erase the item 
-			m_boundary_list.erase( iter );
-			return;
-		}
-	}
-}
-
-
-
-//
-// Modifying operations
-//
-
-#if 0 // KILL
-bool
-GPlatesFeatureVisitors::TopologyResolver::update_feature( std::string fid )
-{
-	// iterator to list
-	BoundaryFeatureList_type::iterator iter;
-
-	// Iterate over boundary list
-	for (iter = boundary_begin(); iter != boundary_end(); ++iter)
-	{
-		if ( GPlatesUtils::get_old_id( iter->m_feature) == fid )
-		{
-			// Update reverse flag
-			iter->m_use_reverse = iter->m_feature->GetReverse();
-			return true;
-		}
-	}
-
-	// not found;
-	return false;
-}
-#endif // KILL
-
-bool
-GPlatesFeatureVisitors::TopologyResolver::reselect_feature( BoundaryFeature feature )
-{
-	// iterators into list
-	BoundaryFeatureList_type::iterator iter;
-	BoundaryFeatureList_type::iterator prev;
-	BoundaryFeatureList_type::iterator next;
-
-	// fid of selection
-	std::string fid = feature.m_feature_id;
-
-	// Iterate over boundary list
-	for (iter = boundary_begin(); iter != boundary_end(); ++iter)
-	{
-		// find selection
-		if ( GPlatesUtils::get_old_id( iter->m_feature) == fid )
-		{
-
-			// Double check reverse state from old feature
-			bool use_reverse = iter->m_use_reverse;
-			feature.m_use_reverse = use_reverse;
-
-			// re-assign iterators
-			prev = iter;
-			if (prev == boundary_begin() ) { prev = boundary_end(); }
-			else { --prev; }
-    		std::string prev_fid = prev->m_feature_id;
-
-			next = iter;
-			if (next == --boundary_end() ) { next = boundary_begin(); }
-			else { ++next; }
-    		std::string next_fid = next->m_feature_id;
-
-#if 0
-// FIX : remove this diagnostic output
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::reselect_feature: " << "PREV_fid=" 
-<< prev_fid << "; list.size=" << prev->m_vertex_list.size() 
-<< std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::reselect_feature: " << "ITER_fid=" 
-<< fid << "; list.size=" << iter->m_vertex_list.size() 
-<< std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::reselect_feature: " << "NEXT_fid=" 
-<< next_fid << "; list.size=" << next->m_vertex_list.size() 
-<< std::endl;
-std::cout << std::endl;
-#endif
-			// if prev is a LINE set relations
-			if ( prev->m_feature_type == GPlatesGlobal::LINE_FEATURE )
-			{
-				// Set relations for this feature
-				// adjust this feature node's PREV relation with prev
-				set_node_relation( 
-					GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV,
-					feature, 
-					*prev );
-			}
-
-			// if next is a LINE set relations
-			if ( next->m_feature_type == GPlatesGlobal::LINE_FEATURE )
-			{
-			    // Set relations for this feature
-				// adjust this feature node's NEXT relation with next
-			    set_node_relation(
-			        GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT,
-			        feature,
-			        *next );
-			}
-
-			// insert new feature 
-			m_boundary_list.insert( iter, feature );
-
-			// erase old feature
-			m_boundary_list.erase( iter );
-
-			return true;
-		}
-	}
-
-	// not found;
-	return false;
-}
-
-
-bool
-GPlatesFeatureVisitors::TopologyResolver::insert_feature( 
-	BoundaryFeature feature, std::string pos_fid)
-{
-	// iterators into list
-	BoundaryFeatureList_type::iterator iter;
-	BoundaryFeatureList_type::iterator prev;
-	BoundaryFeatureList_type::iterator next;
-
-	// fid of selection
-	std::string fid = feature.m_feature_id;
-
-	int counter = 0;
-	// Iterate over boundary list
-	for (iter = boundary_begin(); iter != boundary_end(); ++iter)
-	{
-		std::string test_fid = iter->m_feature_id;
-
-		// find insert spot 
-		if ( test_fid == pos_fid )
-		{
-			insert( iter, feature ); // INSERT
-			return true;
-		}
-		counter = counter + 1;
-	}
-	// not found;
-	return false;
-}
-
-
-bool
-GPlatesFeatureVisitors::TopologyResolver::remove_feature( BoundaryFeature feature )
-{
-	// iterators into list
-	BoundaryFeatureList_type::iterator iter;
-	BoundaryFeatureList_type::iterator prev;
-	BoundaryFeatureList_type::iterator next;
-
-	// fid of selection
-	std::string fid = feature.m_feature_id;
-
-	// Iterate over boundary list
-	for (iter = boundary_begin(); iter != boundary_end(); ++iter)
-	{
-		// find selection
-		if ( GPlatesUtils::get_old_id( iter->m_feature) == fid )
-		{
-			// re-assign iterators
-			prev = iter;
-			if (prev == boundary_begin() ) { prev = boundary_end(); }
-			else { --prev; }
-    		std::string prev_fid = prev->m_feature_id;
-
-			next = iter;
-			if (next == --boundary_end() ) { next = boundary_begin(); }
-			else { ++next; }
-    		std::string next_fid = next->m_feature_id;
-
-			// make copies of prev and next
-			BoundaryFeature new_prev = *prev;
-			BoundaryFeature new_next = *next;
-
-#if 0
-// FIX : remove this diagnostic output
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::remove_feature: " 
-<< "PREV_fid=" << new_prev.m_feature_id 
-<< "; list.size=" << new_prev.m_vertex_list.size()
-<< std::endl;
-std::cout << "GPlatesFeatureVisitors::TopologyResolver::remove_feature: " 
-<< "NEXT_fid=" << new_next.m_feature_id 
-<< "; list.size=" << new_next.m_vertex_list.size()
-<< std::endl;
-#endif
-			// if prev is a LINE set relations for new_next
-			if ( prev->m_feature_type == GPlatesGlobal::LINE_FEATURE )
-			{
-				// Set relations for this feature
-				// adjust this feature node's PREV relation with prev
-				set_node_relation( 
-					GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV,
-					new_next, 
-					*prev );
-			}
-
-			// if next is a LINE set relations for new_prev
-			if ( next->m_feature_type == GPlatesGlobal::LINE_FEATURE )
-			{
-			    // Set relations for this feature
-				// adjust this feature node's NEXT relation with next
-			    set_node_relation(
-			        GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT,
-			        new_prev,
-			        *next );
-			}
-
-			// replace PREV
-			m_boundary_list.insert( prev, new_prev );
-			m_boundary_list.erase( prev );
-
-			// replace NEXT
-			m_boundary_list.insert( next, new_next );
-			m_boundary_list.erase( next );
-
-			// remove iter
-			m_boundary_list.erase( iter );
-
-			report();
-
-			return true;
-		}
-	}
-	// not found;
-	return false;
 }
 
 
@@ -1788,7 +770,7 @@ std::cout << "GPlatesFeatureVisitors::TopologyResolver::g_v_l: " << "size=" << m
 		BoundaryFeature node = m_boundary_list.front();
 
 		// FIX : OLD std::string fid = node.m_feature);
-		std::string fid = node.m_feature_id;
+		GPlatesModel::FeatureId fid = node.m_feature_id;
 		
 #if 0
 std::cout << "GPlatesFeatureVisitors::TopologyResolver::g_v_l: " << "m_boundary_list.size()==1; " << std::endl;
@@ -1876,9 +858,9 @@ std::cout << "GPlatesFeatureVisitors::TopologyResolver::g_v_l() step 1: iterator
 		//
 		// Step 2: get feature ids for iters
 		//
-		std::string prev_fid = prev->m_feature_id;
-		std::string iter_fid = iter->m_feature_id;
-		std::string next_fid = next->m_feature_id;
+		GPlatesModel::FeatureId prev_fid = prev->m_feature_id;
+		GPlatesModel::FeatureId iter_fid = iter->m_feature_id;
+		GPlatesModel::FeatureId next_fid = next->m_feature_id;
 
 #if 0
 // FIX : remove this diagnostic output
@@ -2152,8 +1134,8 @@ GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_node_relation(
 		return;
 	}
 
-	std::string node1_fid = node1.m_feature_id;
-	std::string node2_fid = node2.m_feature_id;
+	GPlatesModel::FeatureId node1_fid = node1.m_feature_id;
+	GPlatesModel::FeatureId node2_fid = node2.m_feature_id;
 
 #if 0
 // FIX : remove this diagnostic output
@@ -2761,7 +1743,15 @@ std::cout << "is_point_in_on_out_counter: v2 = "
 	return (0);	
 }
 
-//
-// END
-//
+
+void
+GPlatesFeatureVisitors::TopologyResolver::report()
+{
+	std::cout << "--------------------------" << std::endl;
+	std::cout << "TopologyResolver::report()" << std::endl;
+	std::cout << "number features visited = " << d_num_features << std::endl;
+	std::cout << "number topologies visited = " << d_num_topologies << std::endl;
+}
+
+
 

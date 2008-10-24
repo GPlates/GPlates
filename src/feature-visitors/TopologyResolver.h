@@ -28,8 +28,17 @@
 #define GPLATES_FEATUREVISITORS_TOPOLOGY_RESOLVER_H
 
 #include <list>
+#include <sstream>
+#include <iostream>
 #include <boost/optional.hpp>
+#include <boost/none.hpp>
+
 #include <QTreeWidget>
+#include <QLocale>
+#include <QDebug>
+#include <QList>
+#include <QString>
+
 
 #include "global/types.h"
 
@@ -39,6 +48,8 @@
 #include "maths/PolygonOnSphere.h"
 
 #include "model/types.h"
+#include "model/FeatureId.h"
+#include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
@@ -124,13 +135,20 @@ namespace GPlatesFeatureVisitors
 
 		// typedef std::vector<GPlatesModel::ReconstructedFeatureGeometry> reconstructed_geometries_type;
 
+		// these are used to create boundary nodes
+		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
+
 		bool d_use_reverse;
 
 		GPlatesModel::FeatureId d_fid;
 
-		//GPlatesPropertyValues::GmlPoint *d_ref_point;
+		GPlatesGlobal::FeatureTypes d_type;
 
-		GPlatesMaths::PointOnSphere *d_ref_point_ptr;
+
+
+		// used with gpml:referencePoint
+		float d_ref_point_lat;
+		float d_ref_point_lon;
 
 
 		//
@@ -163,10 +181,10 @@ namespace GPlatesFeatureVisitors
 
 			/** Pointer to the original GeoData feature */
 			// GPlatesGeo::DrawableData *m_feature;
-			GPlatesModel::FeatureHandle &m_feature;
+			// GPlatesModel::FeatureHandle &m_feature;
 
 			/** The feature id */
-			std::string m_feature_id;
+			GPlatesModel::FeatureId m_feature_id;
 			
 			/** The feature type */
 			GPlatesGlobal::FeatureTypes m_feature_type;
@@ -247,8 +265,8 @@ namespace GPlatesFeatureVisitors
 			* Constructor 
 			*/
 			BoundaryFeature( 
-				GPlatesModel::FeatureHandle &feature_handle,
-				std::string feature_id,
+				// GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureId feature_id,
 				GPlatesGlobal::FeatureTypes feature_type,
 				std::list<GPlatesMaths::PointOnSphere> vertex_list,
 				GPlatesMaths::PointOnSphere click_point,
@@ -261,7 +279,7 @@ namespace GPlatesFeatureVisitors
 				bool use_head_next = false,
 				bool use_tail_next = false) 
 				:
-				m_feature( feature_handle ),
+				// m_feature( feature_handle ),
 				m_feature_id( feature_id ),
 				m_feature_type ( feature_type ),
 				m_vertex_list ( vertex_list ),
@@ -729,9 +747,9 @@ namespace GPlatesFeatureVisitors
 			VertexEnd() const { return m_vertex_list.end(); }
 
 		// from GPlates 8
+
 		void
-		parse_boundary_string(
-				GPlatesModel::FeatureHandle &feature_handle);
+		create_boundary_node();
 
 		void
 		resolve_boundary();
