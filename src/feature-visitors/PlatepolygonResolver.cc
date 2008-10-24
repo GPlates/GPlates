@@ -101,9 +101,10 @@ GPlatesFeatureVisitors::PlatepolygonResolver::visit_feature_handle(
 {
 	d_num_features += 1;
 
-qDebug() << ".....................qDebug():" << GPlatesUtils::make_qstring_from_icu_string( 
-feature_handle.feature_type().get_name() ) << "END";
-
+// FIXME remove this diagnostic output 
+qDebug() 
+<< "PlatepolygonResolver::visit_feature_handle: " 
+<< GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name());
 
 	// super short-cut for features without boundary list properties
 	QString type("PlatePolygon");
@@ -756,7 +757,7 @@ GPlatesFeatureVisitors::PlatepolygonResolver::parse_boundary_string(
 			iss_utn >> use_tail_next;
 
 			// Check if feature exisits in reconstuction
-			if ( d_recon_finder_ptr->get_geometry_from_feature_id(fid) == boost::none )
+			if ( d_recon_finder_ptr->get_geometry_from_old_id(fid) == boost::none )
 			{
 				err_msg << "  MISSING feature ref.: " << fid << std::endl;
 				continue; // to next boundary node
@@ -1128,8 +1129,8 @@ std::cout << std::endl;
 	std::string prev_fid = GPlatesUtils::get_old_id( prev->m_feature);
 	std::string next_fid = GPlatesUtils::get_old_id( next->m_feature);
 
-// FIX : remove this diagnostic output
 #if 0
+// FIX : remove this diagnostic output
 std::cout << std::endl;
 std::cout << "GPlatesFeatureVisitors::PlatepolygonResolver::insert: " << "PREV_fid=" << prev_fid << std::endl;
 std::cout << "GPlatesFeatureVisitors::PlatepolygonResolver::insert: " << "NEXT_fid=" << next_fid << std::endl;
@@ -1234,7 +1235,7 @@ std::cout << std::endl;
 	std::list<GPlatesMaths::PointOnSphere> test_vertex_list;
 
 	// get verts for node1 from Layout 
-	d_recon_finder_ptr->get_vertex_list_from_feature_id(
+	d_recon_finder_ptr->get_vertex_list_from_old_id(
 		node1_vertex_list,
 		node1_fid );
 
@@ -1252,7 +1253,7 @@ std::cout << "GPlatesFeatureVisitors::PlatepolygonResolver::s_n_r: " << "node1.m
 	
 	
 	// get verts for node2 from Layout 
-	d_recon_finder_ptr->get_vertex_list_from_feature_id(
+	d_recon_finder_ptr->get_vertex_list_from_old_id(
 		node2_vertex_list,
 		node2_fid );
 
@@ -1782,7 +1783,7 @@ std::cout << std::endl;
 
 			// find vertex of rotated point in layout
 			// put direcly into work list
-			d_recon_finder_ptr->get_vertex_list_from_feature_id( 
+			d_recon_finder_ptr->get_vertex_list_from_old_id( 
 				work_vertex_list, 
 				fid );
 
@@ -1795,7 +1796,7 @@ std::cout << std::endl;
 
 			// find vertex list from rotated polyline in layout
 			// put direcly into work list
-			d_recon_finder_ptr->get_vertex_list_from_feature_id( 
+			d_recon_finder_ptr->get_vertex_list_from_old_id( 
 				work_vertex_list, 
 				fid );
 
@@ -1872,7 +1873,7 @@ std::cout << std::endl;
 		{
 			// find verts for iter
 			// put directly into work_vertex_list
-			d_recon_finder_ptr->get_vertex_list_from_feature_id( 
+			d_recon_finder_ptr->get_vertex_list_from_old_id( 
 				work_vertex_list, 
 				iter_fid );
 
@@ -1897,7 +1898,7 @@ std::cout << std::endl;
 		//
 		std::list<GPlatesMaths::PointOnSphere> iter_vertex_list;
 
-		d_recon_finder_ptr->get_vertex_list_from_feature_id(
+		d_recon_finder_ptr->get_vertex_list_from_old_id(
 			iter_vertex_list,
 			iter_fid );
 
@@ -2168,7 +2169,7 @@ std::cout << std::endl;
 	//
 
 	// get verts for node2 from Layout 
-	d_recon_finder_ptr->get_vertex_list_from_feature_id(
+	d_recon_finder_ptr->get_vertex_list_from_old_id(
 		node2_vertex_list,
 		node2_fid );
 
