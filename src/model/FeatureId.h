@@ -106,6 +106,22 @@ namespace GPlatesModel {
 		return fi1.is_equal_to(fi2);
 	}
 
+	inline
+	bool
+	operator<(
+			const FeatureId &fi1,
+			const FeatureId &fi2) {
+		return fi1.get() < fi2.get();
+	}
+		
+	inline
+	bool
+	operator>(
+			const FeatureId &fi1,
+			const FeatureId &fi2) {
+		return fi1.get() > fi2.get();
+	}
+		
 
 	inline
 	bool
