@@ -32,6 +32,7 @@
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
+#include "model/FeatureId.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
@@ -93,22 +94,26 @@ namespace GPlatesFeatureVisitors
 
 
 		// map of old feature id string to feature's RFG 
-		typedef std::map<std::string, const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type > id_to_geometry_map_type;
+		typedef std::map<
+			std::string, 
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type > 
+				old_id_to_geometry_map_type;
+
+		// map of FeatureId to features's RFG
+		typedef std::map<
+			GPlatesModel::FeatureId,
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type > 
+				feature_id_to_geometry_map_type;
 
 #if 0
-// FIXME : save this code for example on using separate maps 
-//
-		// map of old feature id string to feature's vertex list
-		typedef std::map<std::string, const std::list<GPlatesMaths::PointOnSphere> > id_to_vertex_list_map_type;
-
-		// map of old feature id string to point on sphere pointers
-		typedef std::map<std::string, const GPlatesMaths::PointOnSphere *> id_to_point_map_type;
-
-		// map of old feature id string to polyline on sphere pointers
-		typedef std::map<std::string, const GPlatesMaths::PolylineOnSphere *> id_to_polyline_map_type;
+		// map of FeatureId to FeatureHandle
+		typedef std::map<
+			GPlatesModel::FeatureId,
+			GPlatesModel::FeatureHandle::weak_ref >
+				feature_id_to_feature_handle_map_type;
 #endif
 
-
+		
 		explicit
 		ReconstructedFeatureGeometryFinder(
 				GPlatesModel::Reconstruction &reconstruction):
@@ -195,8 +200,17 @@ namespace GPlatesFeatureVisitors
 		* Access the RFG map
 		*/
 		boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-		get_geometry_from_feature_id( 
-			std::string old_id ); 
+		get_geometry_from_old_id( 
+			std::string old_id); 
+
+
+		/**
+		* Access the Vertex List map, populate the passed in list
+		*/
+		void
+		get_vertex_list_from_old_id( 
+			std::list<GPlatesMaths::PointOnSphere> &vertex_list,
+			std::string old_id);
 
 		/**
 		* Access the Vertex List map, populate the passed in list
@@ -204,26 +218,13 @@ namespace GPlatesFeatureVisitors
 		void
 		get_vertex_list_from_feature_id( 
 			std::list<GPlatesMaths::PointOnSphere> &vertex_list,
-			std::string old_id );
+			GPlatesModel::FeatureId id);
 
-#if 0
-// FIXME: save this code for example on using individual maps
-		/**
-		* Access the Point On Sphere pointer map
-		*/
-		const
-		GPlatesMaths::PointOnSphere*
-		get_point_from_feature_id( 
-			std::string old_id );
 
-		/**
-		* Access the Point On Sphere pointer map
-		*/
-		const
-		GPlatesMaths::PolylineOnSphere*
-		get_polyline_from_feature_id( 
-			std::string old_id );
-#endif
+		void
+		get_feature_handle_from_feature_id(
+			GPlatesModel::FeatureHandle &handle,
+			GPlatesModel::FeatureId id);
 
 
 	private:
@@ -285,35 +286,11 @@ namespace GPlatesFeatureVisitors
 		/**
 		* Stores the reconstructed feature geoms
 		*/
-		id_to_geometry_map_type d_id_to_geometry_map;
-
-#if 0
-// FIXME: save this code for examples of using individual maps
-//
-		/** 
-		* Stores the vertex list map 
-		*/
-		id_to_vertex_list_map_type d_id_to_vertex_list_map;
-
-		/** 
-		* Stores the points map 
-		*/
-		id_to_point_map_type d_id_to_point_map;
-
-		/** 
-		* Stores the polylines map 
-		*/
-		id_to_polyline_map_type d_id_to_polyline_map;
-
-
-		/**
-		 * Iterates over d_reconstruction_ptr's RFGs, fills in the d_id_to_geometry_map
-		 * with geometry found from RFGs which belong to the given feature.
-		 */
-		void 
-		populate_feature_maps( const GPlatesModel::FeatureHandle &feature_handle );
-#endif 
+		old_id_to_geometry_map_type d_old_id_to_geometry_map;
 		
+		feature_id_to_geometry_map_type d_feature_id_to_geometry_map;
+
+		// feature_id_to_feature_handle_map_type d_feature_id_to_feature_handle_map;
 	};
 
 }
