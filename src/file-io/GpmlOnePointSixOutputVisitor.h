@@ -238,6 +238,11 @@ namespace GPlatesFileIO
 		visit_gpml_topological_intersection(
 				const GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection);
 
+		virtual
+		void
+		visit_gpml_topological_point(
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+
 
 		virtual
 		void

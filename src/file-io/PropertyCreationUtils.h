@@ -72,6 +72,7 @@
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalIntersection.h"
+#include "property-values/GpmlTopologicalPoint.h"
 #include "ReadErrors.h"
 
 
@@ -443,10 +444,16 @@ namespace GPlatesFileIO
 		AS_PROP_VAL(create_topological_line_section)
 
 
+		GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
+		create_topological_point(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_topological_point)
+
+
 		GPlatesPropertyValues::GpmlTopologicalIntersection
 		create_topological_intersection(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
-
 
 
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement

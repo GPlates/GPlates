@@ -59,6 +59,7 @@ namespace GPlatesPropertyValues
 	class GpmlTopologicalPolygon;
 	class GpmlTopologicalLineSection;
 	class GpmlTopologicalIntersection;
+	class GpmlTopologicalPoint;
 	class UninterpretedPropertyValue;
 	class XsBoolean;
 	class XsDouble;
@@ -308,6 +309,12 @@ namespace GPlatesModel
 		void
 		visit_gpml_topological_intersection(
 				const GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
+		{  }
+
+		virtual
+		void
+		visit_gpml_topological_point(
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
 		{  }
 
 		virtual

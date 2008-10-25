@@ -71,6 +71,7 @@
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/TemplateTypeParameterType.h"
@@ -847,11 +848,11 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_line_section(
 	const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
 {  
-std::cerr << ("visit_gpml_topological_line_section") << std::endl;
 	d_output.writeStartGpmlElement("TopologicalLineSection");
 
 		d_output.writeStartGpmlElement("sourceGeometry");
-			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); // delgate 
+			// visit the delgate 
+			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
 		d_output.writeEndElement();
 
 		// boost::optional<GpmlTopologicalIntersection>
@@ -862,7 +863,6 @@ std::cerr << ("visit_gpml_topological_line_section") << std::endl;
 			d_output.writeEndElement();
 		}
 
-		// check for endInterse
 		if ( gpml_toplogical_line_section.get_end_intersection() )
 		{
 			d_output.writeStartGpmlElement("endIntersection");
@@ -874,8 +874,10 @@ std::cerr << ("visit_gpml_topological_line_section") << std::endl;
 			d_output.writeBoolean( gpml_toplogical_line_section.get_reverse_order() );
 		d_output.writeEndElement();
 
-	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
+	d_output.writeEndElement();
 }
+
+
 
 
 void
@@ -903,6 +905,17 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_intersection
 	d_output.writeEndElement();
 }
 
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_point(
+	const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+{  
+	d_output.writeStartGpmlElement("TopologicalPoint");
+		d_output.writeStartGpmlElement("sourceGeometry");
+			// visit the delegate
+			( gpml_toplogical_point.get_source_geometry() )->accept_visitor(*this); 
+		d_output.writeEndElement();
+	d_output.writeEndElement();  
+}
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_hot_spot_trail_mark(

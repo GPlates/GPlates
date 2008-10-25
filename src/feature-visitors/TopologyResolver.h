@@ -144,6 +144,10 @@ namespace GPlatesFeatureVisitors
 
 		GPlatesGlobal::FeatureTypes d_type;
 
+		bool d_use_head_prev;
+		bool d_use_tail_prev;
+		bool d_use_head_next;
+		bool d_use_tail_next;
 
 
 		// used with gpml:referencePoint
@@ -529,6 +533,11 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_topological_intersection(
 				GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection);
 
+
+		virtual
+		void
+		visit_gpml_topological_point(
+				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
 
 #if 0
 

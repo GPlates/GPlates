@@ -1543,7 +1543,10 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_section(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
 {
 	static const GPlatesModel::PropertyName
-		TOPOLOGICAL_LINE_SECTION = GPlatesModel::PropertyName::create_gpml("TopologicalLineSection");
+		TOPOLOGICAL_LINE_SECTION = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalLineSection"),
+		TOPOLOGICAL_POINT = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalPoint");
 
 	if (parent->number_of_children() > 1) {
 		// Too many children!
@@ -1557,6 +1560,12 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_section(
 	if (structural_elem) {
 		return GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type(
 				create_topological_line_section(parent));
+	}
+
+	structural_elem = parent->get_child_by_name(TOPOLOGICAL_POINT);
+	if (structural_elem) {
+		return GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type(
+				create_topological_point(parent));
 	}
 
 	// Invalid child!
@@ -1602,6 +1611,26 @@ GPlatesFileIO::PropertyCreationUtils::create_topological_line_section(
 		start_inter,
 		end_inter,
 		reverse_order);
+}
+
+GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_topological_point(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalPoint"),
+		SOURCE_GEOMETRY = 
+			GPlatesModel::PropertyName::create_gpml("sourceGeometry");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type source_geometry = 
+		find_and_create_one(elem, &create_property_delegate, SOURCE_GEOMETRY);
+
+	return GPlatesPropertyValues::GpmlTopologicalPoint::create(
+		source_geometry);
 }
 
 

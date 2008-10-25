@@ -200,7 +200,6 @@ GPlatesModel::Model::create_reconstruction(
 	rfg_finder.report();
 
 
-#if 0
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::PlatepolygonResolver resolver( 
 		time, root, *reconstruction,
@@ -213,6 +212,7 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.end(),
 		resolver);
 	resolver.report();
+#if 0
 #endif
 
 	// Visit the feature collections and build the platepolygons 
