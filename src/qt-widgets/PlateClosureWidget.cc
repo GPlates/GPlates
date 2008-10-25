@@ -632,6 +632,10 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	// enmpty the vertex list
 	m_vertex_list.clear();
 
+	// clear this tool's layer
+	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	d_view_state_ptr->globe_canvas().update_canvas();
+
 	// flip tab to clicked table
 	d_view_state_ptr->change_tab( 0 );
 }
