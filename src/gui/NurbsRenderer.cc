@@ -42,7 +42,7 @@ using namespace GPlatesGui;
 namespace
 {
 	// Handle GLU NURBS errors
-	GLvoid
+	GLvoid __CONVENTION__
 	NurbsError()
 	{
 		// XXX I'm not sure if glGetError actually returns the GLU 
@@ -70,13 +70,7 @@ GPlatesGui::NurbsRenderer::NurbsRenderer()
 	// On Mac OS X, the compiler complained, so it was changed to this.
 	// Update: Fixed the prototype of the NurbsError callback function 
 	// and removed the varargs ellipsis from the cast type.
-	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR,
-#if defined(__APPLE__)
-			// Assume compilation on OS X.
-			reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&NurbsError));
-#else
-			reinterpret_cast< GLvoid (__CONVENTION__ *)() >(&NurbsError));
-#endif
+	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR, &NurbsError);
 
 	// Increase the resolution so we get smoother curves:
 	//  -  Even though it's the default, we force GLU_SAMPLING_METHOD

@@ -43,10 +43,8 @@
 #include <gdal_priv.h>
 #endif  // HAVE_CONFIG_H
 
-
-#ifdef _MSC_VER
-#define isnan _isnan
-#endif
+// Use this header instead of <cmath> if you want to use 'std::isnan'.
+#include <cmath_ext.h>
 
 #include <QtOpenGL/qgl.h>
 #include <QColor>
@@ -147,7 +145,7 @@ namespace{
 			for ( ; it != it_end ; ++it)
 			{
 				data = *it;
-				if (isnan(data)){
+				if (std::isnan(data)){
 					std::cerr << "NaN detected" << std::endl;
 					colour = Qt::black;
 				}

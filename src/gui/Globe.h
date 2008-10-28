@@ -38,17 +38,14 @@
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
-
+#include "utils/VirtualProxy.h"
 
 namespace GPlatesGui
 {
 	class Globe
 	{
 	public:
-		Globe():
-			d_sphere(Colour(0.35f, 0.35f, 0.35f)),
-			d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON)
-		{  }
+		Globe();
 
 		~Globe()
 		{  }
@@ -109,7 +106,7 @@ namespace GPlatesGui
 		Texture &
 		texture()
 		{
-			return d_texture;
+			return *d_texture;
 		}
 
 	private:
@@ -120,18 +117,29 @@ namespace GPlatesGui
 
 		/**
 		 * The NurbsRenderer used to draw large GreatCircleArcs.
+		 * Delay creation until it's used.
 		 */
-		NurbsRenderer d_nurbs_renderer;
+		GPlatesUtils::VirtualProxy<NurbsRenderer> d_nurbs_renderer;
 
+		// Factory used by GPlatesUtils::VirtualProxy to create OpaqueSphere.
+		class OpaqueSphereFactory
+		{
+		public:
+			OpaqueSphereFactory(const Colour& colour) : d_colour(colour) { }
+			OpaqueSphere* create() const  { return new OpaqueSphere(d_colour); }
+		private:
+			Colour d_colour;
+		};
 		/**
 		 * The solid earth.
 		 */
-		OpaqueSphere d_sphere;
+		GPlatesUtils::VirtualProxy<OpaqueSphere, OpaqueSphereFactory> d_sphere;
 
 		/**
 		 * A (single) texture to be texture-mapped over the sphere surface.
+		 * Delay creation until it's used.
 		 */
-		Texture d_texture;
+		GPlatesUtils::VirtualProxy<Texture> d_texture;
 
 		/**
 		 * Lines of lat and lon on surface of earth.

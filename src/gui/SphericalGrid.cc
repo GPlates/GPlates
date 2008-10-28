@@ -132,7 +132,7 @@ GPlatesGui::SphericalGrid::draw_line_of_lat(
 		{ radius, 0.0, height, 1.0 }
 	};
 
-	d_nurbs.draw_curve(KNOT_SIZE, &knots[0], STRIDE, &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
+	d_nurbs->draw_curve(KNOT_SIZE, &knots[0], STRIDE, &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
 }
 
 
@@ -153,10 +153,10 @@ GPlatesGui::SphericalGrid::draw_line_of_lon(
 	PointOnSphere equatorial_pt(
 			Vector3D(p_x, p_y, 0.0).get_normalisation());
 
-	d_nurbs.draw_great_circle_arc(GreatCircleArc::create(PointOnSphere::north_pole, equatorial_pt));
-	d_nurbs.draw_great_circle_arc(GreatCircleArc::create(equatorial_pt, PointOnSphere::south_pole));
-	d_nurbs.draw_great_circle_arc(GreatCircleArc::create(PointOnSphere::south_pole, get_antipodal_point(equatorial_pt)));
-	d_nurbs.draw_great_circle_arc(GreatCircleArc::create(get_antipodal_point(equatorial_pt), PointOnSphere::north_pole));
+	d_nurbs->draw_great_circle_arc(GreatCircleArc::create(PointOnSphere::north_pole, equatorial_pt));
+	d_nurbs->draw_great_circle_arc(GreatCircleArc::create(equatorial_pt, PointOnSphere::south_pole));
+	d_nurbs->draw_great_circle_arc(GreatCircleArc::create(PointOnSphere::south_pole, get_antipodal_point(equatorial_pt)));
+	d_nurbs->draw_great_circle_arc(GreatCircleArc::create(get_antipodal_point(equatorial_pt), PointOnSphere::north_pole));
 #endif
 
 	GLfloat u_p_x = WEIGHT * p_x;
@@ -176,7 +176,7 @@ GPlatesGui::SphericalGrid::draw_line_of_lon(
 		{ 0.0, 0.0, 1.0, 1.0 }     // North pole again (to close loop).
 	};
 
-	d_nurbs.draw_curve(KNOT_SIZE, &knots[0], STRIDE, &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
+	d_nurbs->draw_curve(KNOT_SIZE, &knots[0], STRIDE, &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
 }
 
 
