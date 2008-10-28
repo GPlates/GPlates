@@ -140,7 +140,7 @@ namespace GPlatesFeatureVisitors
 
 		bool d_use_reverse;
 
-		GPlatesModel::FeatureId d_fid;
+		GPlatesModel::FeatureId d_src_geom_fid;
 
 		GPlatesGlobal::FeatureTypes d_type;
 

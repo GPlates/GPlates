@@ -493,10 +493,7 @@ std::cout << "TopologyResolver::visit_gpml_property_delegate()" << std::endl;
 	if (d_accumulator->current_property_name() == prop_name_1) 
 	{
 std::cout << "TopologyResolver::visit_gpml_property_delegate(): sourceGeometry" << std::endl;
-
-		d_fid = gpml_property_delegate.feature_id().get();
-		// gpml_property_delegate.target_property()
-		// gpml_property_delegate.value_type();
+		d_src_geom_fid = gpml_property_delegate.feature_id().get();
 	}
 
 
@@ -577,10 +574,8 @@ std::cerr << "TopologyResolver::visit_gpml_topological_line_section" << std::end
 	// This is a line type feature
 	d_type = GPlatesGlobal::LINE_FEATURE;
 
-
 	// source geom.'s value is a delegate 
-
-	// FIXME: DO NOT visit the delegate with:
+	// DO NOT visit the delegate with:
 	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
 
 	// Rather, access directly
@@ -589,7 +584,11 @@ std::cerr << "TopologyResolver::visit_gpml_topological_line_section" << std::end
 
 qDebug() << "src_geom_fid=" 
 << GPlatesUtils::make_qstring_from_icu_string( src_geom_fid.get() );
-		
+
+
+	// set the member data for create_boundary() call
+	d_src_geom_fid = ( gpml_toplogical_line_section.get_source_geometry() )->feature_id();
+
 	
 	// Set reverse flag 
 	bool use_reverse = gpml_toplogical_line_section.get_reverse_order();
@@ -679,9 +678,9 @@ std::cerr << ("TopologyResolver::visit_gpml_topological_point") << std::endl;
 	d_type = GPlatesGlobal::POINT_FEATURE;
 
 	// Access  directly the data
-	d_fid = ( gpml_toplogical_point.get_source_geometry() )->feature_id();
+	d_src_geom_fid = ( gpml_toplogical_point.get_source_geometry() )->feature_id();
 
-qDebug() << "fid=" << GPlatesUtils::make_qstring_from_icu_string( d_fid.get() );
+qDebug() << "fid=" << GPlatesUtils::make_qstring_from_icu_string( d_src_geom_fid.get() );
 }
 		
 
@@ -725,7 +724,7 @@ std::cerr << ("TopologyResolver::visit_gpml_topological_point") << std::endl;
 
 	// create a boundary feature struct
 	BoundaryFeature bf(
-				d_fid,
+				d_src_geom_fid,
 				feature_type,
 				empty_vert_list,
 				click_point,
