@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-530806e5-598a-47ad-b3ff-cde97a89c35f</gpml:identity>
+            <gpml:revision>GPlates-8d3ca616-5fcc-46d5-aa94-141dbaef6335</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>20 -20</gml:pos>
+                </gml:Point>
+            </gpml:position>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Point1</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Point1</gpml:geographicDescription>
+                    <gpml:plateIdNumber>101</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>HS</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>1</gpml:colourCode>
+                    <gpml:numberOfPoints>1</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-7ed35fdc-c113-4698-8a34-b8203a9b4578</gpml:identity>
+            <gpml:revision>GPlates-8da5db7b-c82a-47f9-a2f3-1b4bfffc4534</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>102</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>15 -20</gml:pos>
+                </gml:Point>
+            </gpml:position>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Point2</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Point2</gpml:geographicDescription>
+                    <gpml:plateIdNumber>102</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>HS</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>1</gpml:colourCode>
+                    <gpml:numberOfPoints>1</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:HotSpot>
+            <gpml:identity>GPlates-fb83d443-8251-4c36-9cbf-2dc14159967c</gpml:identity>
+            <gpml:revision>GPlates-ecdb3115-cfc3-46dc-921e-048e880a4e6d</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>103</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>15 -15</gml:pos>
+                </gml:Point>
+            </gpml:position>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Point3</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Point3</gpml:geographicDescription>
+                    <gpml:plateIdNumber>103</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>HS</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>1</gpml:colourCode>
+                    <gpml:numberOfPoints>1</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:HotSpot>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:TopologicalClosedPlateBoundary>
+            <!-- Defined in gpml:TopologicalClosedPlateBoundary -->
+            <gpml:boundary>
+                <gpml:PiecewiseAggregation> 
+                <!-- this PiecewiseAggregation contains one or more "gpml:timeWindow" children of template type "gpml:TopologicalPolygon" -->
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType>
+                    <gpml:timeWindow>
+                        <gpml:TimeWindow>
+                            <!-- the TimeWindow is of this template type: -->
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType> 
+                            <!-- the TimeWindow lasts for this long --> 
+                            <gpml:validTime> 
+                                <gml:TimePeriod>
+                                    <gml:begin>
+                                        <gml:TimeInstant>
+                                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                        </gml:TimeInstant>
+                                    </gml:begin>
+                                    <gml:end>
+                                        <gml:TimeInstant>
+                                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">100</gml:timePosition>
+                                        </gml:TimeInstant>
+                                    </gml:end>
+                                </gml:TimePeriod>
+                            </gpml:validTime>
+                            <!-- the TimeWindow has this time dependent property -->
+                            <gpml:timeDependentPropertyValue> 
+                                <gpml:ConstantValue> 
+                                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType> 
+                                    <gpml:value>
+                                        <gpml:TopologicalPolygon>
+
+                                            <gpml:section> <!-- this is one of many section elements -->
+                                                <gpml:TopologicalPoint> 
+                                                    <gpml:sourceGeometry><!-- the source geom. to get vertices from; the geom. that gets cut -->
+                                                        <gpml:PropertyDelegate>
+                                                            <gpml:valueType>gml:Point</gpml:valueType>
+                                                            <gpml:targetFeature>GPlates-fb83d443-8251-4c36-9cbf-2dc14159967c</gpml:targetFeature>
+                                                            <gpml:targetProperty>gpml:position</gpml:targetProperty>
+                                                        </gpml:PropertyDelegate>
+                                                    </gpml:sourceGeometry>
+                                                </gpml:TopologicalPoint>
+                                            </gpml:section>
+
+                                            <gpml:section> <!-- this is one of many section elements -->
+                                                <gpml:TopologicalPoint> 
+                                                    <gpml:sourceGeometry><!-- the source geom. to get vertices from; the geom. that gets cut -->
+                                                        <gpml:PropertyDelegate>
+                                                            <gpml:valueType>gml:Point</gpml:valueType>
+                                                            <gpml:targetFeature>GPlates-7ed35fdc-c113-4698-8a34-b8203a9b4578</gpml:targetFeature>
+                                                            <gpml:targetProperty>gpml:position</gpml:targetProperty>
+                                                        </gpml:PropertyDelegate>
+                                                    </gpml:sourceGeometry>
+                                                </gpml:TopologicalPoint>
+                                            </gpml:section>
+
+                                            <gpml:section> <!-- this is one of many section elements -->
+                                                <gpml:TopologicalPoint> 
+                                                    <gpml:sourceGeometry><!-- the source geom. to get vertices from; the geom. that gets cut -->
+                                                        <gpml:PropertyDelegate>
+                                                            <gpml:valueType>gml:Point</gpml:valueType>
+                                                            <gpml:targetFeature>GPlates-530806e5-598a-47ad-b3ff-cde97a89c35f</gpml:targetFeature>
+                                                            <gpml:targetProperty>gpml:position</gpml:targetProperty>
+                                                        </gpml:PropertyDelegate>
+                                                    </gpml:sourceGeometry>
+                                                </gpml:TopologicalPoint>
+                                            </gpml:section>
+
+                                        </gpml:TopologicalPolygon>
+                                    </gpml:value>
+                                </gpml:ConstantValue> 
+                            </gpml:timeDependentPropertyValue> 
+                        </gpml:TimeWindow>
+                    </gpml:timeWindow>
+                </gpml:PiecewiseAggregation> 
+            </gpml:boundary>
+
+            <!-- validTime of the FEATURE ; inherited from gpml:TimeVariantFeature -->
+            <gml:validTime> 
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <!-- basic info for the FEATURE; inherited from gpml:AbstractFeature -->
+            <gpml:identity>GPlates-e66f3394-6131-4eb8-a23d-b772dbcdd804</gpml:identity>
+            <gpml:revision>GPlates-3cd4784c-31b6-4093-b3e0-33fa1a303227</gpml:revision>
+            <!-- basic info for the FEATURE; inherited from gml:AbstractFeature -->
+            <gml:name>TopologicalClosedPlateBoundary from three point features</gml:name>
+            <gml:description>a sample platepolygon with one timeWindow</gml:description>
+            <gml:metaDataProperty>some meta data will go here</gml:metaDataProperty>
+        </gpml:TopologicalClosedPlateBoundary>
+    </gml:featureMember>
+</gpml:FeatureCollection>
