@@ -34,6 +34,7 @@
 #include <vector>
 #include "ModelInterface.h"
 #include "FeatureStore.h"
+#include "FeatureIdRegistry.h"
 
 
 namespace GPlatesModel
@@ -92,6 +93,7 @@ namespace GPlatesModel
 
 	private:
 		FeatureStore::non_null_ptr_type d_feature_store;
+		FeatureIdRegistry d_feature_id_registry;
 	};
 
 	void export_Model();

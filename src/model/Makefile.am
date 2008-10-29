@@ -17,6 +17,7 @@ libmodel_la_SOURCES	= ConstFeatureVisitor.cc FeatureVisitor.cc \
 				FeatureCollectionRevision.cc \
 				FeatureStoreRootRevision.cc \
 				FeatureRevision.cc \
+				FeatureIdRegistry.cc \
 				DummyTransactionHandle.cc \
 				ModelUtils.cc \
 				XmlNode.cc \

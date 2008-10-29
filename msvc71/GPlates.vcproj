@@ -1643,6 +1643,9 @@
 				RelativePath="..\src\model\FeatureCollectionRevision.cc">
 			</File>
 			<File
+				RelativePath="..\src\model\FeatureIdRegistry.cc">
+			</File>
+			<File
 				RelativePath="..\src\model\FeatureRevision.cc">
 			</File>
 			<File

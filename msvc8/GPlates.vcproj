@@ -1604,6 +1604,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\model\FeatureIdRegistry.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\FeatureIdRegistry.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\model\FeatureRevision.cc"
 				>
 			</File>
