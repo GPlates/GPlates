@@ -115,7 +115,7 @@ IF(GDAL_DIR_SEARCH)
     SET(GDAL_DIR_SEARCH ${GDAL_DIR_SEARCH})
     
     FIND_LIBRARY(GDAL_LIBRARY
-      NAMES gdal gdal_i gdal1.4.0 gdal1.3.2 GDAL
+      NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
       PATHS ${GDAL_DIR_SEARCH}
       NO_DEFAULT_PATH
       PATH_SUFFIXES lib64 lib
@@ -129,7 +129,7 @@ IF(GDAL_DIR_SEARCH)
     SET(GDAL_DIR_SEARCH ${GDAL_DIR_SEARCH})
     
     FIND_LIBRARY(GDAL_LIBRARY
-      NAMES gdal gdal_i gdal1.4.0 gdal1.3.2 GDAL
+      NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
       PATHS ${GDAL_DIR_SEARCH}
       NO_DEFAULT_PATH
       PATH_SUFFIXES lib64 lib
@@ -138,7 +138,7 @@ IF(GDAL_DIR_SEARCH)
 ENDIF(GDAL_DIR_SEARCH)
 
 FIND_LIBRARY(GDAL_LIBRARY 
-  NAMES gdal gdal_i gdal1.4.0 gdal1.3.2 GDAL
+  NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
   PATHS ${CMAKE_PREFIX_PATH} # Unofficial: We are proposing this.
     NO_DEFAULT_PATH
     PATH_SUFFIXES lib64 lib
@@ -150,7 +150,7 @@ FIND_LIBRARY(GDAL_LIBRARY
 #
 
 FIND_LIBRARY(GDAL_LIBRARY 
-  NAMES gdal gdal_i gdal1.4.0 gdal1.3.2 GDAL
+  NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
   PATHS
     "${GDAL_INCLUDE_DIR}/.." # this only really needed on windows platforms
     ~/Library/Frameworks
