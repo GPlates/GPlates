@@ -275,13 +275,13 @@ namespace GPlatesQtWidgets
 		disable_topology_display();
 
 		void
-		toggle_mesh_display();
+		toggle_multipoint_display();
 
 		void
-		enable_mesh_display();
+		enable_multipoint_display();
 
 		void
-		disable_mesh_display();
+		disable_multipoint_display();
 
 
 		void

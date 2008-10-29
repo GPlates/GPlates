@@ -771,8 +771,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(enable_polygon_display()));
 	QObject::connect(action_Show_Topologies, SIGNAL(triggered()),
 			this, SLOT(enable_topology_display()));
-	QObject::connect(action_Show_Meshes, SIGNAL(triggered()),
-			this, SLOT(enable_mesh_display()));
+	QObject::connect(action_Show_Multipoint, SIGNAL(triggered()),
+			this, SLOT(enable_multipoint_display()));
 	// ----
 	QObject::connect(action_Colour_By_Plate_ID, SIGNAL(triggered()), 
 			this, SLOT(choose_colour_by_plate_id()));
@@ -1425,15 +1425,15 @@ GPlatesQtWidgets::ViewportWindow::enable_topology_display()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::enable_mesh_display()
+GPlatesQtWidgets::ViewportWindow::enable_multipoint_display()
 {
-	if (action_Show_Meshes->isChecked())
+	if (action_Show_Multipoint->isChecked())
 	{
-		d_canvas_ptr->enable_mesh_display();
+		d_canvas_ptr->enable_multipoint_display();
 	}
 	else
 	{
-		d_canvas_ptr->disable_mesh_display();
+		d_canvas_ptr->disable_multipoint_display();
 	}
 }
 

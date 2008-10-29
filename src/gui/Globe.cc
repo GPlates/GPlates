@@ -167,7 +167,7 @@ namespace
 			// FIXME:  We should assert that the boost::optional is not boost::none.
 			glColor3fv(**d_colour);
 			glPointSize(4.0f);
-			if ( d_globe_ptr->d_show_mesh ) { 
+			if ( d_globe_ptr->d_show_multipoint ) { 
 				draw_points_for_multi_point(multi_point->begin(), multi_point->end());
 			}
 		}

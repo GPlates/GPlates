@@ -842,25 +842,25 @@ GPlatesQtWidgets::GlobeCanvas::disable_topology_display()
 	update_canvas();
 }
 
-// mesh display
+// multipoint display
 void
-GPlatesQtWidgets::GlobeCanvas::toggle_mesh_display()
+GPlatesQtWidgets::GlobeCanvas::toggle_multipoint_display()
 {
-	d_globe.toggle_mesh_display();
+	d_globe.toggle_multipoint_display();
 	update_canvas();
 }
 
 void
-GPlatesQtWidgets::GlobeCanvas::enable_mesh_display()
+GPlatesQtWidgets::GlobeCanvas::enable_multipoint_display()
 {
-	d_globe.enable_mesh_display();
+	d_globe.enable_multipoint_display();
 	update_canvas();
 }
 
 void
-GPlatesQtWidgets::GlobeCanvas::disable_mesh_display()
+GPlatesQtWidgets::GlobeCanvas::disable_multipoint_display()
 {
-	d_globe.disable_mesh_display();
+	d_globe.disable_multipoint_display();
 	update_canvas();
 }
 

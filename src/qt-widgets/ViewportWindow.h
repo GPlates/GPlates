@@ -469,7 +469,7 @@ namespace GPlatesQtWidgets
 		enable_topology_display();
 
 		void
-		enable_mesh_display();
+		enable_multipoint_display();
 
 	protected:
 	

@@ -80,7 +80,7 @@
     <addaction name="action_Show_Lines" />
     <addaction name="action_Show_Polygons" />
     <addaction name="action_Show_Topologies" />
-    <addaction name="action_Show_Meshes" />
+    <addaction name="action_Show_Multipoint" />
     <addaction name="separator" />
     <addaction name="menu_Colour_By" />
     <addaction name="separator" />
@@ -766,7 +766,7 @@
     <string>A toggle operation which controls whether topological features are shown.</string>
    </property>
   </action>
-  <action name="action_Show_Meshes" >
+  <action name="action_Show_Multipoint" >
    <property name="checkable" >
     <bool>true</bool>
    </property>
@@ -774,7 +774,7 @@
     <bool>true</bool>
    </property>
    <property name="text" >
-    <string>&amp;Show Mesh features</string>
+    <string>&amp;Show Multipoint features</string>
    </property>
    <property name="toolTip" >
     <string>A toggle operation which controls whether mesh features are shown.</string>
