@@ -25,7 +25,15 @@ if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
         "set(GPLATES_USE_PCH false)\n\n"
         "# When using Visual Studio this shows included headers (used by 'list_external_includes.py').\n"
         "# This disables pre-compiled headers (regardless of value of 'GPLATES_USE_PCH').\n"
-        "set(GPLATES_SHOW_INCLUDES false)\n\n")
+        "set(GPLATES_SHOW_INCLUDES false)\n\n"
+        "# If Visual Studio 2005 then enable parallel builds within a project.\n"
+        "#\n"
+        "# To also enable parallel project builds set\n"
+        "# “Tools->Options->Programs and Solutions->Build and Run->maximum number of parallel project builds” to\n"
+        "# the number of cores on your CPU.\n"
+        "if (MSVC80)\n"
+        "	#set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} /MP\")\n"
+        "endif (MSVC80)\n\n")
 endif (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 include ("${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 
