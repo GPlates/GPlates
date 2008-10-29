@@ -30,6 +30,7 @@
 #define GPLATES_MODEL_FEATUREIDREGISTRY_H
 
 #include <boost/optional.hpp>
+#include <boost/none.hpp>
 #include <map>
 #include "FeatureHandle.h"
 #include "WeakReference.h"
