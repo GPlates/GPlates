@@ -82,7 +82,7 @@ def main(argv):
         parser.error("incorrect number of arguments")
 
     # Get the GPlates 'src/' directory from the location of this script (in 'cmake' directory).
-    gplates_src_dir = os.path.join( os.path.dirname( os.getcwd() ), 'src')
+    gplates_src_dir = os.path.join( os.path.dirname( os.path.dirname( argv[0] ) ), 'src')
     
     add_sources(gplates_src_dir)
 
