@@ -33,7 +33,7 @@
 namespace
 {
 	// Handle GLU quadric errors
-	GLvoid
+	GLvoid __CONVENTION__
 	QuadricError() {
 
 		// XXX: Not sure if glGetError returns GLU error codes as well
@@ -61,12 +61,6 @@ GPlatesGui::Quadrics::Quadrics() {
 	// On Mac OS X, the compiler complained, so it was changed to this.
 	// Update: Fixed the prototype of the QuadricError callback function 
 	// and removed the varargs ellipsis from the cast type.
-	gluQuadricCallback(_q, GLU_ERROR,
-#if defined(__APPLE__)
-			// Assume compilation on OS X.
-			reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&QuadricError));
-#else
-			reinterpret_cast< GLvoid (__CONVENTION__ *)() >(&QuadricError));
-#endif
+	gluQuadricCallback(_q, GLU_ERROR, &QuadricError);
 
 }

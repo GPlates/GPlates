@@ -29,7 +29,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>30</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -75,14 +75,14 @@
      <addaction name="action_Colour_By_Feature_Type" />
      <addaction name="action_Colour_By_Age" />
     </widget>
+    <addaction name="menu_Colour_By" />
+    <addaction name="separator" />
     <addaction name="action_Show_Rasters" />
     <addaction name="action_Show_Points" />
     <addaction name="action_Show_Lines" />
     <addaction name="action_Show_Polygons" />
     <addaction name="action_Show_Topologies" />
     <addaction name="action_Show_Multipoint" />
-    <addaction name="separator" />
-    <addaction name="menu_Colour_By" />
     <addaction name="separator" />
     <addaction name="action_Set_Camera_Viewpoint" />
     <addaction name="action_Move_Camera_Up" />
@@ -170,10 +170,10 @@
     <enum>Qt::ActionsContextMenu</enum>
    </property>
    <property name="features" >
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar|QDockWidget::NoDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar</set>
    </property>
    <property name="allowedAreas" >
-    <set>Qt::BottomDockWidgetArea|Qt::NoDockWidgetArea|Qt::TopDockWidgetArea</set>
+    <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
    </property>
    <attribute name="dockWidgetArea" >
     <number>8</number>
@@ -801,7 +801,7 @@
     <bool>true</bool>
    </property>
    <property name="text" >
-    <string>&amp;Single Colour ...</string>
+    <string>&amp;Single Colour...</string>
    </property>
   </action>
   <action name="action_Colour_By_Feature_Type" >

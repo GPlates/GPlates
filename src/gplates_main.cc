@@ -105,6 +105,7 @@ namespace {
 int main(int argc, char* argv[])
 {
 	QApplication application(argc, argv);
+	Q_INIT_RESOURCE(qt_widgets);
 
 	// All the libtool cruft causes the value of 'argv[0]' to be not what the user invoked,
 	// so we'll have to hard-code this for now.

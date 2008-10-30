@@ -140,7 +140,7 @@ namespace
 				GPlatesGui::NurbsRenderer &nurbs_renderer,
 				float gl_line_width,
 				GPlatesGui::Globe *globe):
-			d_nurbs_renderer_ptr(&nurbs_renderer),
+			d_nurbs_renderer(&nurbs_renderer),
 			d_gl_line_width(gl_line_width),
 			d_globe_ptr(globe)
 		{  }
@@ -196,7 +196,7 @@ namespace
 			glColor3fv(**d_colour);
 			glLineWidth(d_gl_line_width);
 			if ( d_globe_ptr->d_show_polygon ) { 
-				draw_arcs_for_polygon(polygon->begin(), polygon->end(), *d_nurbs_renderer_ptr);
+				draw_arcs_for_polygon(polygon->begin(), polygon->end(), *d_nurbs_renderer);
 			}
 		}
 
@@ -209,12 +209,12 @@ namespace
 			glColor3fv(**d_colour);
 			glLineWidth(d_gl_line_width);
 			if ( d_globe_ptr->d_show_line ) {
-				draw_arcs_for_polyline(polyline->begin(), polyline->end(), *d_nurbs_renderer_ptr);
+				draw_arcs_for_polyline(polyline->begin(), polyline->end(), *d_nurbs_renderer);
 			}
 		}
 
 	private:
-		GPlatesGui::NurbsRenderer *const d_nurbs_renderer_ptr;
+		GPlatesGui::NurbsRenderer *const d_nurbs_renderer;
 		float d_gl_line_width;
 		GPlatesGui::Globe *const d_globe_ptr;
 		boost::optional<GPlatesGui::PlatesColourTable::const_iterator> d_colour;
@@ -237,6 +237,17 @@ namespace
 }
 
 
+GPlatesGui::Globe::Globe() :
+d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
+d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON)
+{
+	//FIXME: be sure to sychonize with ViewportWidgetUi.ui
+	d_show_point = true;
+	d_show_line = true;
+	d_show_polygon = true;
+	d_show_topology = true;
+	d_show_multipoint = true;
+}
 
 void
 GPlatesGui::Globe::SetNewHandlePos(
@@ -290,36 +301,36 @@ GPlatesGui::Globe::Paint()
 		// The glDepthRange(near_plane, far_plane) call pushes the sphere back in the depth
 		// buffer a bit, to avoid Z-fighting.
 		glDepthRange(0.9, 1.0);
-		d_sphere.Paint();
+		d_sphere->Paint();
 
 		// Draw the texture slightly in front of the grey sphere, otherwise we get little
 		// bits of the sphere sticking out. 
 		glDepthRange(0.8, 0.9);
-		d_texture.paint();
+		d_texture->paint();
 		
 		glDepthRange(0.7, 0.8);
 		d_grid.paint(Colour::SILVER);
 
 		glDepthRange(0.6, 0.7);
-		paint_geometries(this, rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer, 1.5f);
+		paint_geometries(this, rendered_geometry_layers().reconstruction_layer(), *d_nurbs_renderer, 1.5f);
 
 		glDepthRange(0.5, 0.6);
 		if (rendered_geometry_layers().should_show_digitisation_layer()) {
-			paint_geometries(this, rendered_geometry_layers().digitisation_layer(), d_nurbs_renderer, 2.0f);
+			paint_geometries(this, rendered_geometry_layers().digitisation_layer(), *d_nurbs_renderer, 2.0f);
 		}
 		if (rendered_geometry_layers().should_show_geometry_focus_layer()) {
-			paint_geometries(this, rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
+			paint_geometries(this, rendered_geometry_layers().geometry_focus_layer(), *d_nurbs_renderer, 2.5f);
 		}
 		if (rendered_geometry_layers().should_show_pole_manipulation_layer()) {
-			paint_geometries(this, rendered_geometry_layers().pole_manipulation_layer(), d_nurbs_renderer, 1.5f);
+			paint_geometries(this, rendered_geometry_layers().pole_manipulation_layer(), *d_nurbs_renderer, 1.5f);
 		}
 		if (rendered_geometry_layers().should_show_plate_closure_layer()) {
-			paint_geometries(this, rendered_geometry_layers().plate_closure_layer(), d_nurbs_renderer, 2.0f);
+			paint_geometries(this, rendered_geometry_layers().plate_closure_layer(), *d_nurbs_renderer, 2.0f);
 		}
 
 
 		glDepthRange(0.4, 0.5);
-		paint_geometries(this, rendered_geometry_layers().mouse_movement_layer(), d_nurbs_renderer, 1.5f);
+		paint_geometries(this, rendered_geometry_layers().mouse_movement_layer(), *d_nurbs_renderer, 1.5f);
 
 	glPopMatrix();
 }
@@ -346,17 +357,17 @@ GPlatesGui::Globe::paint_vector_output()
 		d_grid.paint(Colour::GREY);
 
 		glDepthRange(0.6, 0.7);
-		paint_geometries(this, rendered_geometry_layers().reconstruction_layer(), d_nurbs_renderer, 1.5f);
+		paint_geometries(this, rendered_geometry_layers().reconstruction_layer(), *d_nurbs_renderer, 1.5f);
 
 		glDepthRange(0.5, 0.6);
 		if (rendered_geometry_layers().should_show_geometry_focus_layer()) {
-			paint_geometries(this, rendered_geometry_layers().geometry_focus_layer(), d_nurbs_renderer, 2.5f);
+			paint_geometries(this, rendered_geometry_layers().geometry_focus_layer(), *d_nurbs_renderer, 2.5f);
 		}
 		if (rendered_geometry_layers().should_show_pole_manipulation_layer()) {
-			paint_geometries(this, rendered_geometry_layers().pole_manipulation_layer(), d_nurbs_renderer, 1.5f);
+			paint_geometries(this, rendered_geometry_layers().pole_manipulation_layer(), *d_nurbs_renderer, 1.5f);
 		}
 		if (rendered_geometry_layers().should_show_plate_closure_layer()) {
-			paint_geometries(this, rendered_geometry_layers().plate_closure_layer(), d_nurbs_renderer, 1.5f);
+			paint_geometries(this, rendered_geometry_layers().plate_closure_layer(), *d_nurbs_renderer, 1.5f);
 		}
 
 
@@ -366,25 +377,25 @@ GPlatesGui::Globe::paint_vector_output()
 void
 GPlatesGui::Globe::initialise_texture()
 {
-//	d_texture.generate_test_texture2();
+//	d_texture->generate_test_texture2();
 }
 
 void
 GPlatesGui::Globe::toggle_raster_image()
 {
-	d_texture.toggle();
+	d_texture->toggle();
 
 }
 
 void
 GPlatesGui::Globe::enable_raster_display()
 {
-	d_texture.set_enabled(true);
+	d_texture->set_enabled(true);
 }
 
 void
 GPlatesGui::Globe::disable_raster_display()
 {
-	d_texture.set_enabled(false);
+	d_texture->set_enabled(false);
 }
 
