@@ -138,16 +138,28 @@ namespace GPlatesFeatureVisitors
 		// these are used to create boundary nodes
 		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 
-		bool d_use_reverse;
-
 		GPlatesModel::FeatureId d_src_geom_fid;
+
 
 		GPlatesGlobal::FeatureTypes d_type;
 
-		bool d_use_head_prev;
-		bool d_use_tail_prev;
-		bool d_use_head_next;
-		bool d_use_tail_next;
+		std::list<GPlatesMaths::PointOnSphere> d_working_vertex_list;
+		std::list<GPlatesMaths::PointOnSphere> d_node2_vertex_list;
+
+		const GPlatesMaths::PointOnSphere *d_click_point_ptr;
+
+		GPlatesMaths::real_t d_closeness;
+
+		bool d_use_reverse;
+
+		int  d_num_intersections_with_prev;
+		int  d_num_intersections_with_next;
+
+		bool d_use_head_from_intersect_prev;
+		bool d_use_tail_from_intersect_prev;
+
+		bool d_use_head_from_intersect_next;
+		bool d_use_tail_from_intersect_next;
 
 
 		// used with gpml:referencePoint
@@ -567,6 +579,14 @@ namespace GPlatesFeatureVisitors
 				GPlatesPropertyValues::XsString &xs_string);
 #endif
 
+		void
+		resolve_intersection(
+				GPlatesModel::FeatureId source_geometry_fid,
+				GPlatesModel::FeatureId intersection_geometry_fid,
+				NeighborRelation relation
+		);
+			
+
 		//
 		// from GPlates 8
 		//
@@ -836,6 +856,7 @@ namespace GPlatesFeatureVisitors
 		/** the number of features visited by this visitor */
 		int d_num_features;
 		int d_num_topologies;
+
 	};
 
 }
