@@ -22,7 +22,8 @@
 
 
 #
-# Try searching only CMake variable 'GDAL_DIR' and environment variable 'GDAL_DIR'.
+# Try searching only CMake variable 'GDAL_DIR' and environment variable
+# 'GDAL_DIR'.
 #
 
 SET(GDAL_DIR_SEARCH "${GDAL_DIR}")
@@ -76,8 +77,8 @@ FIND_PATH(GDAL_INCLUDE_DIR gdal.h
 )
 
 #
-# Try searching default paths (plus the extras specified in 'PATHS' (which looks like it catches alot of defaults anyway).
-#icu
+# Try searching default paths (plus the extras specified in 'PATHS' (which
+# looks like it catches alot of defaults anyway).
 #
 
 FIND_PATH(GDAL_INCLUDE_DIR gdal.h
@@ -106,7 +107,8 @@ FIND_PATH(GDAL_INCLUDE_DIR gdal.h
 )
 
 #
-# Try only searching directories of CMake variable 'GDAL_DIR' and environment variable 'GDAL_DIR'.
+# Try only searching directories of CMake variable 'GDAL_DIR' and environment
+# variable 'GDAL_DIR'.
 #
 
 set(GDAL_DIR_SEARCH ${GDAL_DIR})
@@ -146,7 +148,8 @@ FIND_LIBRARY(GDAL_LIBRARY
 )
 
 #
-# Try searching default paths (plus the extras specified in 'PATHS' (which looks like it catches alot of defaults anyway).
+# Try searching default paths (plus the extras specified in 'PATHS' (which
+# looks like it catches alot of defaults anyway).
 #
 
 FIND_LIBRARY(GDAL_LIBRARY 
