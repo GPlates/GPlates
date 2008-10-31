@@ -116,8 +116,12 @@ IF(GDAL_DIR_SEARCH)
     FILE(TO_CMAKE_PATH "${GDAL_DIR_SEARCH}" GDAL_DIR_SEARCH)
     SET(GDAL_DIR_SEARCH ${GDAL_DIR_SEARCH})
     
+    # gdal1.3.2 on Ubuntu 7.04 in 2007-2008 (GPlates changeset 2107).
+    # gdal1.4.0 on Ubuntu 7.10 in 2008 (GPlates changeset 2222).
+    # gdal1.5.0 on Debian testing in 2008 (GPlates changeset 2773).
+    # gdal1.5.2 on OpenSUSE 11 in 2008 (GPlates changeset 3954).
     FIND_LIBRARY(GDAL_LIBRARY
-      NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
+      NAMES gdal gdal_i gdal1.5.2 gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
       PATHS ${GDAL_DIR_SEARCH}
       NO_DEFAULT_PATH
       PATH_SUFFIXES lib64 lib
