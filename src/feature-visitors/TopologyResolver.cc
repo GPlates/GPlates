@@ -961,13 +961,6 @@ qDebug() << "fid=" << GPlatesUtils::make_qstring_from_icu_string( d_src_geom_fid
 void
 GPlatesFeatureVisitors::TopologyResolver::create_boundary_node()
 {
-std::cout << ("TopologyResolver::visit_gpml_topological_point") << std::endl;
-	// just in case we hit errors during parsing 
-	std::stringstream err_msg; 
-
-	float closeness = 0.0;
-
-	// convert type
 	GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
 
 	switch ( d_type )
@@ -981,9 +974,7 @@ std::cout << ("TopologyResolver::visit_gpml_topological_point") << std::endl;
 			break;
 
 		default :
-			std::ostringstream oss;
-			oss << "UNKNOWN boundary feature node type! " << std::endl;
-			// throw FileFormatException(oss.str().c_str());
+			// FIXME error
 			break;
 	}
 
@@ -1013,7 +1004,6 @@ std::cout << ("TopologyResolver::visit_gpml_topological_point") << std::endl;
 
 	// append this node to the list
 	m_boundary_list.push_back( bf );
-
 }
 
 void
@@ -1063,13 +1053,12 @@ qDebug() << "node id = "
 
 
 // Traverse the boundary feature list and return the list of vertices
-// found from processing boundary list nodes and their neighbor relations
+// found from processing each node and it's relation to previous and next neighbors
 std::list<GPlatesMaths::PointOnSphere>
 GPlatesFeatureVisitors::TopologyResolver::get_vertex_list(
 	BoundaryFeatureList_type::iterator pos1,
 	BoundaryFeatureList_type::iterator pos2)
 {
-
 	// Clear working variable
 	std::list<GPlatesMaths::PointOnSphere> work_vertex_list;
 	work_vertex_list.clear();
