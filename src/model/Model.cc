@@ -87,6 +87,7 @@ GPlatesModel::Model::create_feature(
 	target_collection->append_feature(feature_handle, transaction);
 	transaction.commit();
 
+	d_feature_id_registry.register_feature(feature_handle->reference());
 	return feature_handle->reference();
 }
 
@@ -103,8 +104,8 @@ GPlatesModel::Model::create_feature(
 	target_collection->append_feature(feature_handle, transaction);
 	transaction.commit();
 
+	d_feature_id_registry.register_feature(feature_handle->reference());
 	return feature_handle->reference();
-
 }
 
 
@@ -122,6 +123,7 @@ GPlatesModel::Model::create_feature(
 	target_collection->append_feature(feature_handle, transaction);
 	transaction.commit();
 
+	d_feature_id_registry.register_feature(feature_handle->reference());
 	return feature_handle->reference();
 }
 
@@ -263,6 +265,14 @@ GPlatesModel::Model::create_empty_reconstruction(
 	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree, empty_vector);
 
 	return reconstruction;
+}
+
+
+boost::optional<GPlatesModel::FeatureHandle::weak_ref>
+GPlatesModel::Model::get_feature_for_id(
+		const GPlatesModel::FeatureId &feature_id)
+{
+	return d_feature_id_registry.find(feature_id);
 }
 
 

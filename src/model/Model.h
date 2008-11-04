@@ -83,6 +83,10 @@ namespace GPlatesModel
 				const double &time,
 				integer_plate_id_type root);
 
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref>
+		get_feature_for_id(
+				const GPlatesModel::FeatureId &feature_id);
+
 #ifdef HAVE_PYTHON
 		// A Python wrapper for create_reconstruction
 		boost::python::tuple

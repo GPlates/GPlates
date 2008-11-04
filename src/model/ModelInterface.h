@@ -204,6 +204,18 @@ namespace GPlatesModel
 				const double &time,
 				integer_plate_id_type root) = 0;
 
+		/**
+		 * Searches the feature id registry to locate a FeatureHandle
+		 * from the given FeatureId. This will return boost::none if the
+		 * FeatureId does not exist in the registry.
+		 *
+		 * Bear in mind also that the returned weak_ref may be invalid
+		 * for other reasons.
+		 */
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref>
+		get_feature_for_id(
+				const GPlatesModel::FeatureId &feature_id);
+
 		virtual
 		~ModelInterface()
 		{  }

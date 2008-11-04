@@ -37,7 +37,16 @@ void
 GPlatesModel::FeatureIdRegistry::register_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
-	// FIXME: Stub.
+	if (feature_ref.is_valid()) {
+		const GPlatesModel::FeatureId &feature_id = feature_ref->feature_id();
+		if ( ! find(feature_id)) {
+			d_id_map.insert(std::make_pair(feature_id, feature_ref));
+		} else {
+			// Exception - feature id already exists in registry.
+		}
+	} else {
+		// Exception - invalid weak_ref given for registration.
+	}
 }
 
 
@@ -45,7 +54,11 @@ void
 GPlatesModel::FeatureIdRegistry::deregister_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
-	// FIXME: Stub.
+	if (feature_ref.is_valid()) {
+		d_id_map.erase(feature_ref->feature_id());
+	} else {
+		// Exception - invalid weak_ref given for registration.
+	}
 }
 
 
@@ -53,8 +66,12 @@ boost::optional<GPlatesModel::FeatureHandle::weak_ref>
 GPlatesModel::FeatureIdRegistry::find(
 		const GPlatesModel::FeatureId &feature_id)
 {
-	// FIXME: Stub.
-	return boost::none;
+	id_map_const_iterator result = d_id_map.find(feature_id);
+	if (result != d_id_map.end()) {
+		return result->second;
+	} else {
+		return boost::none;
+	}
 }
 
 
