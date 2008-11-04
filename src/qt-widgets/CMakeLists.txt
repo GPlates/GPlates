@@ -151,6 +151,7 @@ set(srcs
     ViewportWindow.cc
     ViewportWindow.h
     ViewportWindowUi.ui
+    ZoomSliderWidget.h
 )
 
 

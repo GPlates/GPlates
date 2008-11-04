@@ -37,6 +37,7 @@
 #include <QColor>
 #include <QInputDialog>
 #include <QProgressBar>
+#include <QDockWidget>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -472,7 +473,17 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	set_up_dock_context_menus();
 	
 	// FIXME: Set up the Task Panel in a more detailed fashion here.
+#if 1
 	d_reconstruction_view_widget.insert_task_panel(d_task_panel_ptr);
+#else
+	// Stretchable Task Panel hack for testing: Make the Task Panel
+	// into a QDockWidget, undocked by default.
+	QDockWidget *task_panel_dock = new QDockWidget(tr("Task Panel"), this);
+	task_panel_dock->setWidget(d_task_panel_ptr);
+	task_panel_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+	addDockWidget(Qt::RightDockWidgetArea, task_panel_dock);
+	task_panel_dock->setFloating(true);
+#endif
 	set_up_task_panel_actions();
 	
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.

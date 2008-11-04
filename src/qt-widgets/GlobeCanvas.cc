@@ -39,6 +39,7 @@
 #include <QLocale>
 #include <QPainter>
 #include <QtGui/QMouseEvent>
+#include <QSizePolicy>
 
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
 #include "feature-visitors/PlateIdFinder.h"
@@ -195,6 +196,14 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	//   are pressed.
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
 	setMouseTracking(true);
+	
+	// Ensure the globe will always expand to fill available space.
+	// A minumum size and non-collapsibility is set on the globe basically so users
+	// can't obliterate it and then wonder (read:complain) where their globe went.
+	QSizePolicy globe_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	globe_size_policy.setHorizontalStretch(255);
+	setSizePolicy(globe_size_policy);
+	setMinimumSize(100, 100);
 
 	QObject::connect(&d_geometry_focus_highlight, SIGNAL(canvas_should_update()),
 			this, SLOT(update_canvas()));
@@ -203,7 +212,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			this, SLOT(handle_zoom_change()));
 	handle_zoom_change();
 
-    setAttribute(Qt::WA_NoSystemBackground);
+	setAttribute(Qt::WA_NoSystemBackground);
 }
 
 

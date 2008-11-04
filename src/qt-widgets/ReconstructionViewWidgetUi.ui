@@ -54,7 +54,7 @@
      <item>
       <widget class="QFrame" name="frame_reconstruction_time" >
        <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Fixed" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -170,7 +170,7 @@
      <item>
       <widget class="QFrame" name="frame_zoom_amount" >
        <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Fixed" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -295,6 +295,12 @@
      </item>
      <item>
       <widget class="QFrame" name="frame_2" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="frameShape" >
         <enum>QFrame::StyledPanel</enum>
        </property>
@@ -336,61 +342,14 @@
     </layout>
    </item>
    <item>
-    <layout class="QGridLayout" >
-     <property name="horizontalSpacing" >
-      <number>1</number>
+    <widget class="QWidget" native="1" name="canvas_taskpanel_place_holder" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
+       <horstretch>100</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-     <property name="verticalSpacing" >
-      <number>1</number>
-     </property>
-     <item row="0" column="0" >
-      <widget class="QWidget" native="1" name="globe_canvas_place_holder" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
-         <horstretch>100</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1" >
-      <layout class="QVBoxLayout" >
-       <item>
-        <widget class="QLabel" name="label_zoom_max" >
-         <property name="text" >
-          <string/>
-         </property>
-         <property name="pixmap" >
-          <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_16.png</pixmap>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSlider" name="slider_zoom" >
-         <property name="singleStep" >
-          <number>1</number>
-         </property>
-         <property name="orientation" >
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="tickPosition" >
-          <enum>QSlider::NoTicks</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_zoom_min" >
-         <property name="text" >
-          <string/>
-         </property>
-         <property name="pixmap" >
-          <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_16.png</pixmap>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" >
@@ -411,6 +370,12 @@
      </property>
      <item>
       <widget class="QFrame" name="frame_camera_coords" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize" >
         <size>
          <width>16</width>
@@ -477,7 +442,7 @@
      <item>
       <widget class="QFrame" name="frame_mouse_coords" >
        <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -553,6 +518,12 @@
      </item>
      <item>
       <widget class="QFrame" name="frame" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="frameShape" >
         <enum>QFrame::StyledPanel</enum>
        </property>

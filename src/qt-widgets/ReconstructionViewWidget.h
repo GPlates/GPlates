@@ -34,7 +34,10 @@
 #endif
 
 #include <QWidget>
+#include <QSplitter>
 #include "ReconstructionViewWidgetUi.h"
+
+#include "ZoomSliderWidget.h"
 
 
 namespace GPlatesMaths
@@ -99,7 +102,7 @@ namespace GPlatesQtWidgets
 		GlobeCanvas &
 		globe_canvas() const
 		{
-			return *d_canvas_ptr;
+			return *d_globe_canvas_ptr;
 		}
 		
 		/**
@@ -173,8 +176,9 @@ namespace GPlatesQtWidgets
 
 	private:
 
-		GlobeCanvas *d_canvas_ptr;
-
+		QSplitter *d_splitter_widget;
+		GlobeCanvas *d_globe_canvas_ptr;
+		ZoomSliderWidget *d_zoom_slider_widget;
 	};
 }
 

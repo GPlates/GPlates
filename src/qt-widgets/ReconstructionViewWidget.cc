@@ -24,6 +24,8 @@
  */
 
 #include <QLocale>
+#include <QHBoxLayout>
+#include <QSplitter>
 
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
@@ -37,27 +39,49 @@
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 		ViewportWindow &view_state,
 		QWidget *parent_):
+	d_splitter_widget(new QSplitter(this)),
 	QWidget(parent_)
 {
 	setupUi(this);
 
-// ensures that this widget accepts keyEvents, so that the keyPressEvent method is processed from start-up,
-// irrespective on which window (if any) the user has clicked. 
+	// ensures that this widget accepts keyEvents, so that the keyPressEvent method is processed from start-up,
+	// irrespective on which window (if any) the user has clicked. 
 	setFocusPolicy(Qt::StrongFocus);
 
-	// Create the GlobeCanvas,
-	d_canvas_ptr = new GlobeCanvas(view_state, this);
-	// and add it to the grid layout in the ReconstructionViewWidget.
-	// Note this is a bit of a hack, relying on the QGridLayout set up in the Designer.
-	gridLayout->addWidget(d_canvas_ptr, 0, 0);
+	// Create the GlobeCanvas.
+	d_globe_canvas_ptr = new GlobeCanvas(view_state, this);
+	// Create the ZoomSliderWidget for the right-hand side.
+	d_zoom_slider_widget = new ZoomSliderWidget(d_globe_canvas_ptr->viewport_zoom(), this);
 	
-	// Enforce some sizing constraints on the globe and friends.
-	// A minumum size and non-collapsibility is set on the globe basically so users
-	// can't obliterate it and then wonder (read:complain) where their globe went.
-	QSizePolicy globe_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	globe_size_policy.setHorizontalStretch(100);
-	d_canvas_ptr->setSizePolicy(globe_size_policy);
-	d_canvas_ptr->setMinimumSize(100, 100);
+	// Create a tiny invisible widget with a tiny invisible horizontal layout to
+	// hold the "canvas" area (including the zoom slider). This layout will glue
+	// the zoom slider to the right hand side of the canvas. We set a custom size
+	// policy in an attempt to make sure that the GlobeCanvas+ZoomSlider eat as
+	// much space as possible, leaving the TaskPanel to the default minimum.
+	QWidget *canvas_widget = new QWidget(d_splitter_widget);
+	QSizePolicy canvas_widget_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	canvas_widget_size_policy.setHorizontalStretch(255);
+	canvas_widget->setSizePolicy(canvas_widget_size_policy);
+	QHBoxLayout *canvas_widget_layout = new QHBoxLayout(canvas_widget);
+	canvas_widget_layout->setSpacing(0);
+	canvas_widget_layout->setContentsMargins(0, 0, 0, 0);
+	// Add GlobeCanvas and ZoomSliderWidget to this hand-made widget.
+	canvas_widget_layout->addWidget(d_globe_canvas_ptr);
+	canvas_widget_layout->addWidget(d_zoom_slider_widget);
+	// Then add that widget (globe + zoom slider) to the QSplitter.
+	d_splitter_widget->addWidget(canvas_widget);
+	
+	// Add the QSplitter to the placeholder widget in the ReconstructionViewWidget.
+	// Note this is a bit of a hack, relying on the canvas_taskpanel_place_holder widget
+	// set up in the Designer.
+	// We need to make an 'invisible' QLayout inside that widget first, with zero margins
+	// and spacing. Just to hold one QSplitter widget. Trust me, without this, we end
+	// up with seriously weird vertical stretching in the ReconstructionViewWidget.
+	QHBoxLayout *splitter_layout = new QHBoxLayout(canvas_taskpanel_place_holder);
+	splitter_layout->setSpacing(0);
+	splitter_layout->setContentsMargins(0, 0, 0, 0);
+	splitter_layout->addWidget(d_splitter_widget);
+	
 
 	// Set up the Reconstruction Time spinbox and buttons.
 	spinbox_reconstruction_time->setRange(
@@ -67,7 +91,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(spinbox_reconstruction_time, SIGNAL(editingFinished()),
 			this, SLOT(propagate_reconstruction_time()));
 	QObject::connect(spinbox_reconstruction_time, SIGNAL(editingFinished()),
-			d_canvas_ptr, SLOT(setFocus()));
+			d_globe_canvas_ptr, SLOT(setFocus()));
 
 	QObject::connect(button_reconstruction_increment, SIGNAL(clicked()),
 			this, SLOT(increment_reconstruction_time()));
@@ -75,10 +99,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			this, SLOT(decrement_reconstruction_time()));
 
 	// Listen for zoom events, everything is now handled through ViewportZoom.
-	GPlatesGui::ViewportZoom &vzoom = d_canvas_ptr->viewport_zoom();
+	GPlatesGui::ViewportZoom &vzoom = d_globe_canvas_ptr->viewport_zoom();
 	QObject::connect(&vzoom, SIGNAL(zoom_changed()),
 			this, SLOT(handle_zoom_change()));
 
+	// Zoom buttons.
 	QObject::connect(button_zoom_in, SIGNAL(clicked()),
 			&vzoom, SLOT(zoom_in()));
 	QObject::connect(button_zoom_out, SIGNAL(clicked()),
@@ -90,25 +115,19 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
 			this, SLOT(propagate_zoom_percent()));
 	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
-			d_canvas_ptr, SLOT(setFocus()));
+			d_globe_canvas_ptr, SLOT(setFocus()));
 
-	// Set up the zoom slider to use appropriate range.
-	slider_zoom->setRange(d_canvas_ptr->viewport_zoom().s_min_zoom_level,
-			d_canvas_ptr->viewport_zoom().s_max_zoom_level);
-	slider_zoom->setValue(d_canvas_ptr->viewport_zoom().s_initial_zoom_level);
-
-	QObject::connect(slider_zoom, SIGNAL(sliderMoved(int)),
+	// Zoom slider.
+	QObject::connect(d_zoom_slider_widget, SIGNAL(slider_moved(int)),
 			&vzoom, SLOT(set_zoom_level(int)));
 
-	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
-			d_canvas_ptr, SLOT(notify_of_orientation_change()));
-	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
+	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
+			d_globe_canvas_ptr, SLOT(notify_of_orientation_change()));
+	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
 			this, SLOT(recalc_camera_position()));
-	QObject::connect(&(d_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
-			d_canvas_ptr, SLOT(force_mouse_pointer_pos_change()));
+	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
+			d_globe_canvas_ptr, SLOT(force_mouse_pointer_pos_change()));
 
-
-	d_canvas_ptr->updateGeometry();
 	recalc_camera_position();
 }
 
@@ -117,7 +136,9 @@ void
 GPlatesQtWidgets::ReconstructionViewWidget::insert_task_panel(
 		GPlatesQtWidgets::TaskPanel *task_panel)
 {
-	gridLayout->addWidget(task_panel, 0, 2);
+	// Add the Task Panel to the right-hand edge of the QSplitter in
+	// the middle of the ReconstructionViewWidget.
+	d_splitter_widget->addWidget(task_panel);
 }
 
 
@@ -170,7 +191,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 	static const GPlatesMaths::PointOnSphere centre_of_canvas =
 			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
 
-	GPlatesMaths::PointOnSphere oriented_centre = d_canvas_ptr->globe().Orient(centre_of_canvas);
+	GPlatesMaths::PointOnSphere oriented_centre = d_globe_canvas_ptr->globe().Orient(centre_of_canvas);
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(oriented_centre);
 
 	QLocale locale_;
@@ -213,15 +234,15 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 void
 GPlatesQtWidgets::ReconstructionViewWidget::propagate_zoom_percent()
 {
-	d_canvas_ptr->viewport_zoom().set_zoom_percent(zoom_percent());
+	d_globe_canvas_ptr->viewport_zoom().set_zoom_percent(zoom_percent());
 }
 
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::handle_zoom_change()
 {
-	spinbox_zoom_percent->setValue(d_canvas_ptr->viewport_zoom().zoom_percent());
-	slider_zoom->setValue(d_canvas_ptr->viewport_zoom().zoom_level());
+	spinbox_zoom_percent->setValue(d_globe_canvas_ptr->viewport_zoom().zoom_percent());
+	d_zoom_slider_widget->set_zoom_value(d_globe_canvas_ptr->viewport_zoom().zoom_level());
 }
 
 
