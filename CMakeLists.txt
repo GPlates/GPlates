@@ -31,9 +31,7 @@ if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
         "# To also enable parallel project builds set\n"
         "# “Tools->Options->Programs and Solutions->Build and Run->maximum number of parallel project builds” to\n"
         "# the number of cores on your CPU.\n"
-        "if (MSVC80)\n"
-        "	#set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} /MP\")\n"
-        "endif (MSVC80)\n\n")
+        "set(GPLATES_MSVC80_PARALLEL_BUILD false)\n\n")
 endif (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 include ("${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 
@@ -99,6 +97,11 @@ if(MSVC)
     if (GPLATES_SHOW_INCLUDES)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /showIncludes")
     endif (GPLATES_SHOW_INCLUDES)
+    
+    # If we've been asked to do parallel builds in Visual Studio 2005 within a project.
+    if (GPLATES_MSVC80_PARALLEL_BUILD)
+    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    endif (GPLATES_MSVC80_PARALLEL_BUILD)
 
     #set(CMAKE_EXE_LINKER_FLAGS )
     #set(CMAKE_SHARED_LINKER_FLAGS )
