@@ -39,8 +39,8 @@
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 		ViewportWindow &view_state,
 		QWidget *parent_):
-	d_splitter_widget(new QSplitter(this)),
-	QWidget(parent_)
+	QWidget(parent_),
+	d_splitter_widget(new QSplitter(this))
 {
 	setupUi(this);
 
