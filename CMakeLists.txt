@@ -118,10 +118,19 @@ endif(MSVC)
 # Our G++ configuration:
 if(CMAKE_COMPILER_IS_GNUCXX)
     # Use a list instead of a string so we can have multiple lines (instead of one giant line).
-    set(warnings_flags_list
-        -W -Wall -pedantic -ansi -Werror -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal
-        -Wno-unused-parameter -Wpointer-arith -Wctor-dtor-privacy -Wnon-virtual-dtor -Woverloaded-virtual
-        -Wno-long-long -Wold-style-cast)
+    if(APPLE)
+        # The compilers under OSX seem to behave oddly with '-isystem'.
+        # Headers in system include paths (and '-isystem' paths) should not generate warnings.
+        # However on OSX they do and because we have '-Werror' they become errors.
+        # FIXME: temporary solution is to turn off warnings for OSX.
+        # All GPlates developers currently use Linux or Windows.
+        set(warnings_flags_list )
+    else(APPLE)
+        set(warnings_flags_list
+            -W -Wall -pedantic -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
+            -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
+            -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
+    endif(APPLE)
     # Convert the semi-colon separated list 'warnings_flags_list' to the string 'warnings_flags' 
     # (otherwise semi-colons will appear on the compiler command-line).
     foreach(warning ${warnings_flags_list})
@@ -129,7 +138,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endforeach(warning ${warnings_flags_list})
 
     # Flags common to all build types.
-	set(CMAKE_CXX_FLAGS "${warning_flags}")
+	set(CMAKE_CXX_FLAGS "${warnings_flags}")
     #set(CMAKE_EXE_LINKER_FLAGS )
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )
