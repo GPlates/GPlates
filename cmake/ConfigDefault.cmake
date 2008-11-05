@@ -64,3 +64,7 @@ set(CMAKE_SUPPRESS_REGENERATION false)
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.
 set(GPLATES_USE_PCH false)
+
+# Set to 'true' if this is a source code release (to non-developers).
+# Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
+set(GPLATES_SOURCE_RELEASE false)
