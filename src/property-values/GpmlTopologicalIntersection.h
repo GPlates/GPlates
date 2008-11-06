@@ -29,6 +29,8 @@
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALINTERSECTION_H
 
 #include "GpmlPropertyDelegate.h"
+#include "GmlPoint.h"
+
 #include "model/PropertyValue.h"
 
 
