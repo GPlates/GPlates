@@ -159,6 +159,9 @@ namespace GPlatesQtWidgets
 		highlight_first_clicked_feature_table_row() const;
 
 		void
+		highlight_segments_table_row(int i) const;
+
+		void
 		reconstruct_to_time(
 				double recon_time);
 
