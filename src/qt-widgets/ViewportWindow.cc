@@ -558,13 +558,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	table_view_platepolygon_segments->horizontalHeader()->setMinimumSectionSize(60);
 	table_view_platepolygon_segments->horizontalHeader()->setMovable(true);
 	table_view_platepolygon_segments->horizontalHeader()->setHighlightSections(false);
-#if 0
+
 	// When the user selects a row of the table, we should focus that feature.
-	QObject::connect(table_view_clicked_geometries->selectionModel(),
+	QObject::connect(table_view_platepolygon_segments->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_segments_feature_table_model_ptr,
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
-#endif
 
 
 
@@ -636,6 +635,19 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
 			this,
 			SLOT(reconstruct()));
+
+
+#if 0
+#endif
+	// If the user creates a new feature with the PlateClosureWidget, 
+	// then we need to create and append property values to it
+	QObject::connect(
+		&(d_task_panel_ptr->plate_closure_widget().create_feature_dialog()),
+		SIGNAL( feature_created(GPlatesModel::FeatureHandle::weak_ref) ),
+		d_canvas_tool_adapter_ptr,
+		SLOT( handle_create_new_feature( GPlatesModel::FeatureHandle::weak_ref ) )
+	);
+
 
 	// Add the DigitisationWidget's QUndoStack to the View State's QUndoGroup.
 	d_undo_group.addStack(&(d_task_panel_ptr->digitisation_widget().undo_stack()));
@@ -889,6 +901,23 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 
 
 void
+GPlatesQtWidgets::ViewportWindow::highlight_segments_table_row(int i) const
+{
+	QModelIndex idx = d_segments_feature_table_model_ptr->index(i, 0);
+	
+	if (idx.isValid()) {
+		table_view_platepolygon_segments->selectionModel()->clear();
+		table_view_platepolygon_segments->selectionModel()->select(idx,
+				QItemSelectionModel::Select |
+				QItemSelectionModel::Current |
+				QItemSelectionModel::Rows);
+		table_view_platepolygon_segments->scrollTo(idx);
+	}
+}
+
+
+
+void
 GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
 		double new_recon_time)
 {
@@ -949,8 +978,10 @@ void
 GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
 	d_canvas_ptr->clear_data();
-	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
-			d_active_reconstruction_files, d_recon_time, d_recon_root, *get_colour_table());
+
+	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, 
+		d_active_reconstructable_files, d_active_reconstruction_files, 
+		d_recon_time, d_recon_root, *get_colour_table());
 
 	if (d_euler_pole_dialog.isVisible()) {
 		d_euler_pole_dialog.update();
