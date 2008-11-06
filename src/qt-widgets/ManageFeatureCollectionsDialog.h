@@ -101,6 +101,13 @@ namespace GPlatesQtWidgets
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
 
 		/**
+		 * Unloads and re-loads the file referenced by the action widget.
+		 */
+		void
+		reload_file(
+				ManageFeatureCollectionsActionWidget *action_widget_ptr);
+
+		/**
 		 * Causes the file referenced by the action widget to be unloaded,
 		 * and removed from the table. No user interaction is necessary.
 		 */

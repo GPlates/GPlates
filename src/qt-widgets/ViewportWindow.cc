@@ -322,6 +322,121 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 }
 
 
+void
+GPlatesQtWidgets::ViewportWindow::reload_file(
+		file_info_iterator file_it)
+{
+	d_read_errors_dialog.clear();
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
+
+	// Now load the files in a similar way to 'load_files' above, but in this case
+	// we don't need to worry about adding/removing from ApplicationState, or the
+	// d_active_reconstructable_files and d_active_reconstruction_files lists.
+	// The file should already belong to them.
+	
+	try
+	{
+	// FIXME: When we merge with gmt-export-2008-oct-31, we can safely scrap the
+	// 'is_xxxx_format_file' checks below and use
+	//     GPlatesFileIO::read_feature_collection_file(*file_it, *d_model_ptr, read_errors);
+	// instead.
+	// In fact, we are sharing plenty of exception-handling code with load_files as
+	// well, though this might also change after the merge. A possible area for refactoring
+	// if someone is bored?
+		if (is_plates_line_format_file(*file_it))
+		{
+			GPlatesFileIO::PlatesLineFormatReader::read_file(*file_it, *d_model_ptr, read_errors);
+		}
+		else if (is_plates_rotation_format_file(*file_it))
+		{
+			GPlatesFileIO::PlatesRotationFormatReader::read_file(*file_it, *d_model_ptr, read_errors);
+		} 
+		else if (is_shapefile_format_file(*file_it))
+		{
+			GPlatesFileIO::ShapeFileReader::set_property_mapper(
+				boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
+			GPlatesFileIO::ShapeFileReader::read_file(*file_it,*d_model_ptr,read_errors);
+		}
+		else if (is_gpml_format_file(*file_it) || is_gpml_gz_format_file(*file_it))
+		{
+			GPlatesFileIO::GpmlOnePointSixReader::read_file(*file_it, *d_model_ptr, read_errors);
+		}
+		else
+		{
+			// FIXME: This should be added to the read errors!
+			std::cerr << "Unrecognised file type for file: " 
+				<< file_it->get_display_name(true).toStdString() << std::endl;
+		}
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
+	{
+		// FIXME: A bit of a sucky conversion from ErrorOpeningFileForReadingException to
+		// ReadErrorOccurrence, but hey, this whole function will be rewritten when we add
+		// QFileDialog support.
+		// FIXME: I suspect I'm Missing The Point with these shared_ptrs.
+		boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
+				new GPlatesFileIO::LocalFileDataSource(e.filename(), GPlatesFileIO::DataFormats::Unspecified));
+		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
+				new GPlatesFileIO::LineNumberInFile(0));
+		read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
+				e_source,
+				e_location,
+				GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
+				GPlatesFileIO::ReadErrors::FileNotLoaded));
+	}
+	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &e)
+	{
+		QString message = tr("GPlates was unable to use the '%1' program to read the file '%2'."
+				" Please check that gzip is installed and in your PATH. You will still be able to open"
+				" files which are not compressed.")
+				.arg(e.command())
+				.arg(e.filename());
+		QMessageBox::critical(this, tr("Error Opening File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+	catch (GPlatesGlobal::Exception &e)
+	{
+		std::cerr << "Caught exception: " << e << std::endl;
+	}
+
+	
+	// Internal state changed, make sure dialogs are up to date.
+	d_read_errors_dialog.update();
+	d_manage_feature_collections_dialog.update();
+
+	// Pop up errors only if appropriate.
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors) {
+		d_read_errors_dialog.show();
+	}
+
+	// Data may have changed, update the display.
+	reconstruct();
+}
+
+
+GPlatesAppState::ApplicationState::file_info_iterator
+GPlatesQtWidgets::ViewportWindow::create_empty_reconstructable_file()
+{
+	// Create an empty "file" - does not correspond to anything on disk yet.
+	GPlatesFileIO::FileInfo file;
+	file.set_feature_collection(d_model_ptr->create_feature_collection());
+
+	GPlatesAppState::ApplicationState::file_info_iterator new_file =
+	GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+
+	// Given this method's name, we are promised this new FeatureCollection will
+	// be used for reconstructable data.
+	d_active_reconstructable_files.push_back(new_file);
+
+	// Internal state changed, make sure dialogs are up to date.
+	d_manage_feature_collections_dialog.update();
+	
+	return new_file;
+}
+
+
 namespace
 {
 	void

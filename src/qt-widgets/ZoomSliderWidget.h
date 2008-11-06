@@ -135,7 +135,6 @@ namespace GPlatesQtWidgets
 		handle_slider_moved(
 				int slider_position)
 		{
-			qDebug() << "slider_moved"<<slider_position;
 			emit slider_moved(slider_position);
 		}
 	

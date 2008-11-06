@@ -83,6 +83,37 @@ namespace
 }
 
 
+QString
+GPlatesFileIO::FileInfo::get_display_name(
+		bool use_absolute_path_name) const
+{
+	// Check there is a FeatureCollection on this FileInfo.
+	if ( ! get_feature_collection()) {
+		return QObject::tr("< No Feature Collection >");
+	}
+	GPlatesModel::FeatureCollectionHandle::const_weak_ref collection = *get_feature_collection();
+	
+	// Double-check it is valid.
+	if ( ! collection.is_valid()) {
+		return QObject::tr("< Invalid Feature Collection >");
+	}
+	
+	// See if we have a file associated with this FileInfo yet;
+	// we might be a 'dummy' FileInfo used in the creation of
+	// a new FeatureCollection, for example at the end of the
+	// digitisation step.
+	if ( ! d_file_info.exists()) {
+		return QObject::tr("New Feature Collection");
+	}
+	
+	if (use_absolute_path_name) {
+		return d_file_info.absoluteFilePath();
+	} else {
+		return d_file_info.fileName();
+	}
+}
+
+
 boost::shared_ptr< GPlatesModel::ConstFeatureVisitor >
 GPlatesFileIO::FileInfo::get_writer() const
 {

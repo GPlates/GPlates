@@ -79,6 +79,9 @@ namespace GPlatesQtWidgets
 		save_copy();
 		
 		void
+		reload();
+
+		void
 		unload();
 	
 	private:

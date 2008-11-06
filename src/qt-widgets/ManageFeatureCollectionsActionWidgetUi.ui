@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>180</width>
+    <width>216</width>
     <height>32</height>
    </rect>
   </property>
@@ -131,6 +131,28 @@
      </property>
      <property name="icon" >
       <iconset resource="../qt-resources/qt_widgets.qrc" >:/save_a_copy_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="flat" >
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_reload" >
+     <property name="toolTip" >
+      <string>Reload the file from disk</string>
+     </property>
+     <property name="text" >
+      <string/>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_view_refresh_22.png</iconset>
      </property>
      <property name="iconSize" >
       <size>

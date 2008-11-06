@@ -63,11 +63,46 @@ namespace GPlatesFileIO {
 			UNKNOWN, XML, GZIP
 		};
 
+		/**
+		 * Construct a FileInfo for the given file_name.
+		 * The file_name does not have to exist.
+		 *
+		 * No FeatureCollection is assigned to the FileInfo yet,
+		 * use set_feature_collection() to do so.
+		 */
 		explicit
 		FileInfo(
 				QString file_name):
 			d_file_info(file_name)
 		{ }
+
+		/**
+		 * Construct a FileInfo without any file associated with
+		 * it. This may seem a little weird, but is necessary
+		 * to handle the concept of the user creating a new "empty"
+		 * FeatureCollection within GPlates, and enabling it to
+		 * show up in the list of active reconstructable files
+		 * (so that it can be displayed on the globe, and saved via
+		 * the ManageFeatureCollections dialog).
+		 *
+		 * No FeatureCollection is assigned to the FileInfo yet,
+		 * use set_feature_collection() to do so.
+		 */
+		FileInfo():
+			d_file_info()
+		{ }
+
+
+		/**
+		 * Returns a string that can be used by the GUI to identify
+		 * this file. Usually, this will simply be the file name -
+		 * however, if a FileInfo has been created without any file
+		 * association (e.g. a blank FeatureCollection created during
+		 * digitisation), it will simply return "New Feature Collection".
+		 */
+		QString
+		get_display_name(
+				bool use_absolute_path_name) const;
 
 
 		const QFileInfo &

@@ -42,8 +42,18 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 	QObject::connect(button_save, SIGNAL(clicked()), this, SLOT(save()));
 	QObject::connect(button_save_as, SIGNAL(clicked()), this, SLOT(save_as()));
 	QObject::connect(button_save_copy, SIGNAL(clicked()), this, SLOT(save_copy()));
+	QObject::connect(button_reload, SIGNAL(clicked()), this, SLOT(reload()));
 	QObject::connect(button_unload, SIGNAL(clicked()), this, SLOT(unload()));
 
+	// Edge case - if the FileInfo has been created for a FeatureCollection
+	// which only exists in GPlates' memory so far (i.e., created as a new
+	// feature collection at the end of d10n), then any "Save" function
+	// should be disabled in favour of "Save As". Similarly, the FeatureCollection
+	// cannot be "Reloaded".
+	if ( ! file_it->get_qfileinfo().exists()) {
+		button_save->setDisabled(true);
+		button_reload->setDisabled(true);
+	}
 }
 
 void
@@ -68,6 +78,12 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::save_copy()
 {
 	d_feature_collections_dialog.save_file_copy(this);
+}
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::reload()
+{
+	d_feature_collections_dialog.reload_file(this);
 }
 
 void

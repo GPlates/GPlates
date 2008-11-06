@@ -179,7 +179,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
 	header->resizeSection(ColumnNames::IN_USE, 56);
-	header->resizeSection(ColumnNames::ACTIONS, 180);
+	header->resizeSection(ColumnNames::ACTIONS, 216);
 
 	// Enforce minimum row height for the Actions widget's sake.
 	QHeaderView *sider = table_feature_collections->verticalHeader();
@@ -405,6 +405,21 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 
 
 void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_file(
+		ManageFeatureCollectionsActionWidget *action_widget_ptr)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			action_widget_ptr->get_file_info_iterator();
+	
+	// BIG FIXME: Unloading/Reloading files should be handled by ApplicationState, which should
+	// then update all ViewportWindows' ViewState's active files list. However, we
+	// don't have that built yet, so the current method of unloading files is to call
+	// ViewportWindow and let it do the ApplicationState call.
+	d_viewport_window_ptr->reload_file(file_it);
+}
+
+
+void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_file(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
@@ -466,6 +481,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	// Obtain information from the FileInfo
 	const QFileInfo &qfileinfo = file_it->get_qfileinfo();
 	
+	QString display_name = file_it->get_display_name(false);
 	QString filename_str = qfileinfo.fileName();
 	QString filepath_str = qfileinfo.path();
 	QString format_str = get_format_for_file(qfileinfo);
@@ -476,7 +492,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	table_feature_collections->insertRow(row);
 	
 	// Add filename item.
-	QTableWidgetItem *filename_item = new QTableWidgetItem(filename_str);
+	QTableWidgetItem *filename_item = new QTableWidgetItem(display_name);
 	filename_item->setToolTip(tr("Location: %1").arg(filepath_str));
 	filename_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FILENAME, filename_item);

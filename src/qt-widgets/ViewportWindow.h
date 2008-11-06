@@ -246,6 +246,23 @@ namespace GPlatesQtWidgets
 		load_files(
 				const QStringList &file_names);
 
+		/**
+		 * Given a file_info_iterator, reloads the data for that file from disk,
+		 * replacing the FeatureCollection associated with that file_info_iterator.
+		 */
+		void
+		reload_file(
+				file_info_iterator file_it);
+
+		/**
+		 * Creates a fresh, empty, FeatureCollection. Associates a 'dummy'
+		 * FileInfo for it, and registers it with ApplicationState so that
+		 * the FeatureCollection can be reconstructed and saved via
+		 * the ManageFeatureCollectionsDialog.
+		 */
+		GPlatesAppState::ApplicationState::file_info_iterator
+		create_empty_reconstructable_file();
+
 
 		/**
 		 * Write the feature collection associated to @a file_info to the file
