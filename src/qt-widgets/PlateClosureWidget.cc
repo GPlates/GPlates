@@ -52,6 +52,7 @@
 
 #include "model/FeatureHandle.h"
 #include "model/ReconstructionGeometry.h"
+#include "model/ModelUtils.h"
 
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
@@ -62,7 +63,6 @@
 #include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "property-values/GeoTimeInstant.h"
-
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlPoint.h"
@@ -252,6 +252,7 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 		ViewportWindow &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
+	d_feature_focus_ptr(&feature_focus),
 	d_view_state_ptr(&view_state_),
 	d_create_feature_dialog(new CreateFeatureDialog(model_interface, view_state_, this)),
 	d_geometry_type(GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON),
@@ -318,6 +319,7 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	initialise_geometry(PLATEPOLYGON);
 }
 
+
 void
 GPlatesQtWidgets::PlateClosureWidget::clear()
 {
@@ -341,12 +343,29 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature(
 {
 	// Clear the fields first, then fill in those that we have data for.
 	clear();
+
 	// always check your weak_refs!
 	if ( ! feature_ref.is_valid() ) {
-		setDisabled(true);
+std::cout << "PlateClosureWidget::display_feature: ref NOT valid" << std::endl;
+
+
+		// Don't Disable the whole widget with setDisabled(true); ...
+		// ... just disable some widgets
+		button_use_coordinates_in_reverse->setEnabled(false);
+		button_choose_feature->setEnabled(false);
+		button_remove_feature->setEnabled(false);
+		button_clear_feature->setEnabled(false);
+
 		return;
 	} else {
+std::cout << "PlateClosureWidget::display_feature: ref valid" << std::endl;
+
 		setDisabled(false);
+
+		button_use_coordinates_in_reverse->setEnabled(true);
+		button_choose_feature->setEnabled(true);
+		button_remove_feature->setEnabled(true);
+		button_clear_feature->setEnabled(true);
 	}
 	
 	// Populate the widget from the FeatureHandle:
@@ -433,19 +452,19 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature(
 }
 
 
-#if 0
 void
-GPlatesQtWidgets::PlateClosureWidget::set_click_point( const GPlatesMaths::PointOnSphere &pos)
+GPlatesQtWidgets::PlateClosureWidget::set_click_point(double lat, double lon)
 {
-	d_click_points.push_back( pos );
+	d_click_point_lat = lat;
+	d_click_point_lon = lon;
 }
-#endif
 
 void
 GPlatesQtWidgets::PlateClosureWidget::initialise_geometry(
 		GeometryType geom_type)
 {
 	clear();
+	d_use_reverse = false;
 	d_geometry_type = geom_type;
 }
 
@@ -473,7 +492,8 @@ GPlatesQtWidgets::PlateClosureWidget::change_geometry_type(
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_use_coordinates_in_reverse()
 {
-std::cout << "use rever" << std::endl;
+std::cout << "handle_use_coordinates_in_reverse" << std::endl;
+
 	// pointers to the tables
 	GPlatesGui::FeatureTableModel &segments_table = 
 		d_view_state_ptr->segments_feature_table_model();
@@ -481,32 +501,17 @@ std::cout << "use rever" << std::endl;
 	GPlatesGui::FeatureTableModel &clicked_table = 
 		d_view_state_ptr->feature_table_model();
 
+	//
 	// Determine which feature to reverse
+	//
 
-	// Segments Table is the tab 
-	if ( d_view_state_ptr->get_tab() == 2 )
-	{
-		if (segments_table.current_index().isValid() )
-		{
-			int index = segments_table.current_index().row();
-
-			// re-set the flag in the vector
-			d_use_reverse_flags.at(index) = !d_use_reverse_flags.at(index);
-
-std::cout << "use rever; tab 2 ; is valid" << std::endl;
-			// process the segments table
-			update_geometry();
-			return;
-		}
-	}
-		
-	// Clicked Table is the tab
+	// Clicked Table is the current tab
+	// so we just want to reverse the display 
 	if ( d_view_state_ptr->get_tab() == 0)
 	{
 		if ( clicked_table.current_index().isValid() )
 		{
 			// int index = clicked_table.current_index().row();
-
 std::cout << "use rever; tab 0 ; is valid" << std::endl;
 			// just set the widget's flag
 			d_use_reverse = !d_use_reverse;
@@ -518,11 +523,39 @@ std::cout << "use rever; tab 0 ; is valid" << std::endl;
 				lineedit_first->setText( d_first_coord );
 				lineedit_last->setText( d_last_coord );
 			}
-
-			// no change the d_use_reverse_flags vector,
-			// handle_choose_feature does that.
 		}
 	}
+
+	// Segments Table is the current tab 
+	if ( d_view_state_ptr->get_tab() == 2 )
+	{
+std::cout << "use rever; tab 2" << std::endl;
+std::cout << "use rever; tab 2; row=" << segments_table.current_index().row() << std::endl;
+
+		if ( segments_table.current_index().isValid() )
+		{
+			int index = segments_table.current_index().row();
+
+			// re-set the flag in the vector
+			d_use_reverse_flags.at(index) = !d_use_reverse_flags.at(index);
+
+std::cout << "use rever; tab 2 ; is valid; index=" << index 
+<< "; use=" << d_use_reverse_flags.at(index) << std::endl;
+
+			if ( d_use_reverse_flags.at(index) ) {
+				lineedit_first->setText( d_last_coord );
+				lineedit_last->setText( d_first_coord );
+			} else {
+				lineedit_first->setText( d_first_coord );
+				lineedit_last->setText( d_last_coord );
+			}
+
+			// process the segments table
+			update_geometry();
+			return;
+		}
+	}
+		
 }
 
 void
@@ -539,21 +572,33 @@ GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 		d_view_state_ptr->segments_feature_table_model();
 
 	// transfer data to segments table
+	int click_index = clicked_table.current_index().row();
 	segments_table.begin_insert_features(0, 0);
-	int index = clicked_table.current_index().row();
-	segments_table.geometry_sequence().push_back( clicked_table.geometry_sequence().at(index) );
+	segments_table.geometry_sequence().push_back(
+		clicked_table.geometry_sequence().at(click_index) );
 	segments_table.end_insert_features();
+
+	// highlight the segments table row for this feature
+	int segments_index = segments_table.geometry_sequence().size() - 1;
+	d_view_state_ptr->highlight_segments_table_row( segments_index );
 
 	// append the current flag
 	d_use_reverse_flags.push_back(d_use_reverse);
-	// reset to false
+	// reset the current flag
 	d_use_reverse = false;
 
-	// clear out the older featrure
-	clear();
+	// append the current click_point
+	d_click_points.push_back( std::make_pair( d_click_point_lat, d_click_point_lon ) );
 
 	// process the segments table
 	update_geometry();
+
+	// FIXME: this undoes the connection to highlight_segments_table_row 
+	// uset the focus
+	// d_feature_focus_ptr->unset_focus();
+
+	// clear the "Clicked" table
+	d_view_state_ptr->feature_table_model().clear();
 }
 
 void
@@ -566,24 +611,28 @@ GPlatesQtWidgets::PlateClosureWidget::handle_remove_feature()
 	GPlatesGui::FeatureTableModel &segments_table = 
 		d_view_state_ptr->segments_feature_table_model();
 
-	// get current selected index
-	int index = segments_table.current_index().row();
+	if ( segments_table.current_index().isValid() )
+	{
+		// get current selected index
+		int index = segments_table.current_index().row();
 
-	// erase that element from the Segments Table
-	segments_table.begin_remove_features(index, index);
-	segments_table.geometry_sequence().erase(
-		segments_table.geometry_sequence().begin() + index);
-	segments_table.end_remove_features();
+		// erase that element from the Segments Table
+		segments_table.begin_remove_features(index, index);
+		segments_table.geometry_sequence().erase(
+			segments_table.geometry_sequence().begin() + index);
+		segments_table.end_remove_features();
 
-	// remove the click_point and reverse flags
-	// d_click_points.erase( d_click_points.begin() + index );
-	d_use_reverse_flags.erase( d_use_reverse_flags.begin() + index );
+		// remove the click_point and reverse flags
+		d_click_points.erase( d_click_points.begin() + index );
+		d_use_reverse_flags.erase( d_use_reverse_flags.begin() + index );
 
-	// clear out the widgets
-	clear();
+		// clear out the widgets
+		clear();
 
-	// process the segments table
-	update_geometry();
+		// process the segments table
+		update_geometry();
+	}
+
 }
 
 
@@ -594,7 +643,7 @@ GPlatesQtWidgets::PlateClosureWidget::handle_clear()
 	// Clear all geometry from the table.
 	// undo_stack().push(new GPlatesUndoCommands::PlateClosureClearGeometry(*this));
 
-	// clear the clicked table
+	// clear the "Clicked" table
 	d_view_state_ptr->feature_table_model().clear();
 
 	// clear the widget
@@ -605,12 +654,30 @@ GPlatesQtWidgets::PlateClosureWidget::handle_clear()
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_create()
 {
-	d_create_feature_dialog->set_topological();
+	// do one final update 
+	update_geometry();
 
-	bool success = d_create_feature_dialog->display();
-	if ( ! success) {
-		// The user cancelled the creation process. Return early and do not reset
-		// the digitisation widget.
+	// pointer to the Segments table
+	GPlatesGui::FeatureTableModel &segments_table = 
+		d_view_state_ptr->segments_feature_table_model();
+
+	// check for an empty segments table
+	if ( ! segments_table.geometry_sequence().empty() ) 
+	{
+		// tell dialog that we are creating a topological feature
+		d_create_feature_dialog->set_topological();
+
+		bool success = d_create_feature_dialog->display();
+
+		if ( ! success) {
+			// The user cancelled the creation process. 
+			// Return early and do not reset the widget.
+			return;
+		}
+	} else {
+		QMessageBox::warning(this, tr("No boundary segments selected for new feature"),
+				tr("There are no valid boundray sements to use for creating a new feature."),
+				QMessageBox::Ok);
 		return;
 	}
 
@@ -621,7 +688,6 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	// Then, when we're all done, reset the widget for new input.
 	initialise_geometry(d_geometry_type);
 
-
 	// Clear the widgets
 	handle_clear();
 
@@ -630,23 +696,26 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	d_view_state_ptr->feature_table_model().clear();
 
 	// enmpty the vertex list
-	m_vertex_list.clear();
+	d_vertex_list.clear();
+	d_tmp_vertex_list.clear();
 
 	// clear this tool's layer
 	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
-	// flip tab to clicked table
+	// change tab to Clicked table
 	d_view_state_ptr->change_tab( 0 );
+
+std::cout << "END of handle_create()" << std::endl;
 }
 
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 {
-	// Clear the widgets
+	// clear the widgets
 	handle_clear();
 
-	// Clear the tables
+	// clear the tables
 	d_view_state_ptr->segments_feature_table_model().clear();
 	d_view_state_ptr->feature_table_model().clear();
 
@@ -654,13 +723,17 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 	d_view_state_ptr->change_tab( 0 );
 
 	// enmpty the vertex list
-	m_vertex_list.clear();
+	d_vertex_list.clear();
+	d_tmp_vertex_list.clear();
 
 	// clear the drawing layer
 	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
-}
 
+	// unset the feature focus
+	d_feature_focus_ptr->unset_focus();
+
+}
 
 
 // Please keep these geometries ordered alphabetically.
@@ -675,8 +748,9 @@ std::cout << "multipoint geom" << std::endl;
 	for ( ; itr != end ; ++itr)
 	{
 		// simply append the point to the working list
-		m_vertex_list.push_back( *itr );
+		d_tmp_vertex_list.push_back( *itr );
 	}
+	d_tmp_check_intersections = false;
 }
 
 void
@@ -686,7 +760,36 @@ GPlatesQtWidgets::PlateClosureWidget::visit_point_on_sphere(
 std::cout << "point geom" << std::endl;
 
 	// simply append the point to the working list
-	m_vertex_list.push_back( *point_on_sphere );
+	d_tmp_vertex_list.push_back( *point_on_sphere );
+
+	// set the d_tmp vars to create a source geometry property delegate 
+	d_tmp_property_name = "position";
+	d_tmp_value_type = "Point";
+
+	const GPlatesModel::FeatureId fid( d_tmp_feature_id);
+
+	const GPlatesModel::PropertyName prop_name =
+		GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
+
+	const GPlatesPropertyValues::TemplateTypeParameterType value_type =
+		GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd_ptr = 
+		GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+			fid,
+			prop_name,
+			value_type
+		);
+			
+	//d_source_geometry_property_delegate_ptrs.push_back( pd_ptr );
+
+	GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type gtp_ptr =
+		GPlatesPropertyValues::GpmlTopologicalPoint::create(pd_ptr);
+
+	// Fill the vector of GpmlTopologicalSection::non_null_ptr_type 
+	d_sections_ptrs.push_back( gtp_ptr );
+
+	d_tmp_check_intersections = false;
 }
 
 void
@@ -701,6 +804,10 @@ GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {  
 std::cout << "polyline geom" << std::endl;
+
+	// Set the d_tmp vars to create a source geometry property delegate 
+	d_tmp_property_name = "centerLineOf";
+	d_tmp_value_type = "LineString";
 
 	// Write out each point of the polyline.
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = 
@@ -720,73 +827,199 @@ std::cout << "polyline geom" << std::endl;
 	// check for flag
 	if (d_use_reverse) 
 	{
-		m_vertex_list.insert( m_vertex_list.end(), 
+std::cout << "polyline geom REVERSE" << std::endl;
+		d_tmp_vertex_list.insert( 
+			d_tmp_vertex_list.end(), 
 			polyline_vertices.rbegin(), polyline_vertices.rend() );
 	}
 	else 
 	{
-		m_vertex_list.insert( m_vertex_list.end(), 
+std::cout << "polyline geom normal" << std::endl;
+		d_tmp_vertex_list.insert( 
+			d_tmp_vertex_list.end(), 
 			polyline_vertices.begin(), polyline_vertices.end() );
 	}
+
+	d_tmp_check_intersections = true;
 }
 
-void
-GPlatesQtWidgets::PlateClosureWidget::build_topology()
-{
-
-	
-
-}
 
 
 void
 GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 {
+std::cout << "update_geometry: " << std::endl;
+
+	// clear this tool's layer
+	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	d_view_state_ptr->globe_canvas().update_canvas();
+
+	// loop over Segments Table to fill d_vertex_list
+	create_sections_from_segments();
+
+	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
+
+	// create the temp geom.
+	geometry_opt_ptr_type geometry_opt_ptr = 
+		create_geometry_from_table_items( d_vertex_list, d_geometry_type, validity);
+
+	d_geometry_opt_ptr = geometry_opt_ptr;
+
+	draw_temporary_geometry();
+}
+
+void
+GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
+{
+	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	d_view_state_ptr->globe_canvas().update_canvas();
+
+	if (d_geometry_opt_ptr) 
+	{
+		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::BLACK;
+
+		d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().push_back(
+				GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, colour));
+	}
+
+	// update the canvas 
+	d_view_state_ptr->globe_canvas().update_canvas();
+}
+
+
+void
+GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments()
+{
+	// clear the working lists
+	d_vertex_list.clear();
+	d_tmp_vertex_list.clear();
+
+	d_sections_ptrs.clear();
+
 	// access the segments table
 	GPlatesGui::FeatureTableModel &segments_table = 
 		d_view_state_ptr->segments_feature_table_model();
 
-	// short cut for empty table
+	// super short cut for empty table
 	if ( segments_table.geometry_sequence().empty() ) { return; }
 
-	// loop over each geom
+	// get the size of the table
+	d_tmp_segments_size = segments_table.geometry_sequence().size();
+
+	// super short cut for single feature on thie list
+	if ( d_tmp_segments_size == 1 )
+	{
+		// visit the geoms. ; will fill d_tmp_ vars
+		std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
+		iter = segments_table.geometry_sequence().begin();
+		(*iter)->geometry()->accept_visitor(*this);
+
+		// simply insert tmp items on the list
+		d_vertex_list.insert( d_vertex_list.end(), 
+			d_tmp_vertex_list.begin(), d_tmp_vertex_list.end() );
+		return;
+	}
+
+	// else the list is > 2 
+
+	// loop over each geom in the Segments Table
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator end;
 
 	iter = segments_table.geometry_sequence().begin();
 	end = segments_table.geometry_sequence().end();
 
-	int i = 0;
+	int d_tmp_index = 0;
 	for ( ; iter != end ; ++iter)
 	{
-		// set the widget's reverse flag to this feature's flag
-		d_use_reverse = d_use_reverse_flags.at(i);
-
-		// visit the geoms.
-		(*iter)->geometry()->accept_visitor(*this);
+// FIXME: remove this diagnostic 
+std::cout << "create_sections_from_segments: d_tmp_index = " << d_tmp_index << std::endl;
 
 		GPlatesModel::ReconstructionGeometry *rg = iter->get();
 
 		GPlatesModel::ReconstructedFeatureGeometry *rfg =
 			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
 
-		// ZZ
-		// rfg->feature_ref()
 		static const GPlatesModel::PropertyName name_property_name =
 			GPlatesModel::PropertyName::create_gml("name");
+
 		GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
 		string_finder.visit_feature_handle( *(rfg->feature_ref()) );
-
 		if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
 		{
 			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
 				 *string_finder.found_strings_begin();
+			qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
+		}
+// FIXME: remove this diagnostic 
 
-			QString s = GPlatesUtils::make_qstring(name->value());
+		//
+		// Visit the geoms. ; will fill d_tmp_ vars 
+		//
+		(*iter)->geometry()->accept_visitor(*this);
 
-			qDebug() << "name=" << s;
+		// Create a source geometry property delegate 
+
+		d_tmp_feature_id = rfg->feature_ref()->feature_id();
+
+		//const GPlatesModel::FeatureId fid = rfg->feature_ref()->feature_id();
+
+		const GPlatesModel::FeatureId fid( d_tmp_feature_id);
+
+		const GPlatesModel::PropertyName prop_name =
+			GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
+
+		const GPlatesPropertyValues::TemplateTypeParameterType value_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
+
+		
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd = 
+			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+				fid,
+				prop_name,
+				value_type
+			);
+				
+		
+		//d_source_geometry_property_delegate_ptrs.push_back( pd );
+
+
+		// check for intersection
+		if ( d_tmp_check_intersections )
+		{
+			//get_vertex_list_from_intersectons;
+		}
+		else
+		{
+			// simply insert tmp items on the list
+			d_vertex_list.insert( d_vertex_list.end(), 
+				d_tmp_vertex_list.begin(), d_tmp_vertex_list.end() );
 		}
 
+		// set the tmp reverse flag to this feature's flag
+		d_use_reverse = d_use_reverse_flags.at(d_tmp_index);
+std::cout << "create_sections_from_segments: d_use_rev = " << d_use_reverse << std::endl;
+
+
+		// update counter d_tmp_index
+		++d_tmp_index;
+	}
+
+}
+
+void
+GPlatesQtWidgets::PlateClosureWidget::get_vertex_list_from_intersection()
+{
+
+		// set the tmp click point to this feture's click point
+		d_click_point_lat = d_click_points.at(d_tmp_index).first;
+		d_click_point_lon = d_click_points.at(d_tmp_index).second;
+
+}
+
+// FIXME : save this code for ref
+
+#if 0
 		const GPlatesModel::FeatureId fid = rfg->feature_ref()->feature_id();
 			
 		const GPlatesModel::PropertyName prop_name =
@@ -802,36 +1035,86 @@ GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 				value_type
 			);
 				
-		// d_prop_delegate_ptrs.push_back( pd );
-
-	}	
-
-	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
-
-	// create the temp geom.
-	geometry_opt_ptr_type geometry_opt_ptr = 
-		create_geometry_from_table_items( m_vertex_list, d_geometry_type, validity);
-
-	d_geometry_opt_ptr = geometry_opt_ptr;
-
-	draw_temporary_geometry();
-}
+		//d_source_geometry_property_delegate_ptrs.push_back( pd );
+#endif
 
 void
-GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
+GPlatesQtWidgets::PlateClosureWidget::append_boundary_to_feature(
+	GPlatesModel::FeatureHandle::weak_ref feature)
 {
-	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
-	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-	layers.plate_closure_layer().clear();
+std::cout << "PlateClosureWidget::append_boundary_value_to_feature " << std::endl;
 
-	if (d_geometry_opt_ptr) 
-	{
-std::cout << "draw_temporary_geometry()" << std::endl;
-		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::BLACK;
+// FIXME: remove this diagnostic 
+		static const GPlatesModel::PropertyName name_property_name =
+			GPlatesModel::PropertyName::create_gml("name");
+		GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
+		string_finder.visit_feature_handle( *feature );
+		if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+		{
+			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
+				 *string_finder.found_strings_begin();
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name=" 
+<< GPlatesUtils::make_qstring( name->value() );
+		}
+// FIXME: remove this diagnostic 
 
-		layers.plate_closure_layer().push_back(
-				GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, colour));
-	}
-	canvas.update_canvas();
+	// create the TopologicalPolygon
+	GPlatesModel::PropertyValue::non_null_ptr_type topo_poly_value =
+		GPlatesPropertyValues::GpmlTopologicalPolygon::create(d_sections_ptrs);
+
+	const GPlatesPropertyValues::TemplateTypeParameterType topo_poly_type =
+		GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("TopologicalPolygon");
+
+	// create the ConstantValue
+	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type constant_value =
+		GPlatesPropertyValues::GpmlConstantValue::create(topo_poly_value, topo_poly_type);
+
+	// get the time period for the feature
+	// Valid Time (Assuming a gml:TimePeriod, rather than a gml:TimeInstant!)
+	static const GPlatesModel::PropertyName valid_time_property_name =
+		GPlatesModel::PropertyName::create_gml("validTime");
+
+	GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
+	time_period_finder.visit_feature_handle( *feature );
+
+	GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period = 
+		*time_period_finder.found_time_periods_begin();
+
+	//GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type *tp = 
+	GPlatesPropertyValues::GmlTimePeriod* tp = 
+	const_cast<GPlatesPropertyValues::GmlTimePeriod *>( time_period.get() );
+
+	// GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type ttpp =
+	GPlatesUtils::non_null_intrusive_ptr<
+		GPlatesPropertyValues::GmlTimePeriod, 
+		GPlatesUtils::NullIntrusivePointerHandler> ttpp(
+				tp,
+				GPlatesUtils::NullIntrusivePointerHandler()
+		);
+
+
+	// create the TimeWindow
+	GPlatesPropertyValues::GpmlTimeWindow tw = GPlatesPropertyValues::GpmlTimeWindow(
+			constant_value, 
+			ttpp,
+			topo_poly_type);
+
+	// use the time window
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
+
+	time_windows.push_back(tw);
+
+	// create the PiecewiseAggregation
+	GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type aggregation =
+		GPlatesPropertyValues::GpmlPiecewiseAggregation::create(time_windows, topo_poly_type);
+	
+	// Add a gpml:boundary Property.
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+		aggregation,
+		GPlatesModel::PropertyName::create_gpml("boundary"),
+		feature);
+
+
+	d_view_state_ptr->reconstruct();
 }
 

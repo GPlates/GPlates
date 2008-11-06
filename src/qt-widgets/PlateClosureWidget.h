@@ -46,7 +46,11 @@
 #include "model/ReconstructedFeatureGeometry.h"
 
 #include "model/PropertyValue.h"
+#include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalIntersection.h"
 
 // An effort to reduce the dependency spaghetti currently plaguing the GUI.
 namespace GPlatesGui
@@ -87,23 +91,30 @@ namespace GPlatesQtWidgets
 				ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 		
+		/**
+		 * Set the click point (called from canvas tool)
+		 */
+		void
+		set_click_point( double lat, double lon);
 
 		/**
 		 * Updates the temporary geometry rendered on screen.
-		 *
-		 * This sets d_geometry_opt_ptr appropriately and pushes new temporary geometry
-		 * to the ViewState after clearing it.
-		 *
-		 * If there are no (valid) coordinates in the table, d_geometry_opt_ptr will be
-		 * set to boost::none and the temporary geometry will be cleared from the view.
-		 *
-		 * This public method is used by the QUndoCommands that manipulate this widget.
 		 */
 		void
 		update_geometry();
 
 		void
-		build_topology();
+		create_sections_from_segments();
+
+		void
+		create_topological_polygon();
+
+		void
+		append_boundary_to_feature(
+			GPlatesModel::FeatureHandle::weak_ref feature);
+
+		void
+		get_vertex_list_from_intersection();
 
 		/**
 		 * Sets the desired geometry type, d_geometry_type.
@@ -216,15 +227,6 @@ namespace GPlatesQtWidgets
 		change_geometry_type(
 				GeometryType geom_type);
 
-#if 0
-		/**
-		 * The PlateClosureetry canvas tool uses this function to populate
-		 * this PlateClosureWidget.
-		 */
-		void
-		set_click_point(const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe );
-#endif
-
 		/**
 		 * Draw the temporary geometry (if there is one) on the screen.
 		 */
@@ -282,6 +284,18 @@ namespace GPlatesQtWidgets
 
 	private:
 
+
+		/**
+		 * The currently focused feature
+		*/
+
+		/**
+		 * This is our reference to the Feature Focus, which we use to let the rest of the
+		 * application know what the user just clicked on.
+		*/
+		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
+
+
 		/**
 		 * The Undo Stack that handles all the Undo Commands for this widget.
 		 * 
@@ -334,22 +348,47 @@ namespace GPlatesQtWidgets
 		QString d_last_coord;
 
 
+		std::vector<GPlatesMaths::PointOnSphere> d_vertex_list;
+		
+		/**
+		 * These vectors are all sychronized to the Segments table with d_tmp_index
+		 */
+		std::vector< std::pair<double, double> > d_click_points;
+
+		std::vector<bool> d_use_reverse_flags;
+
+		/**
+		 * These d_tmp_ vars are all set by the canvas tool, or the widget
+		 */
+		int d_tmp_index;
+		int d_tmp_segments_size;
+		bool d_tmp_check_intersections;
+
+		
+		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> 
+			d_source_geometry_property_delegate_ptrs;
+
+		GPlatesModel::FeatureId d_tmp_feature_id;
+
+		QString d_tmp_property_name;
+		QString d_tmp_value_type;
+
+
+		bool d_use_reverse;
+		double d_click_point_lat;
+		double d_click_point_lon;
+
+		std::vector<GPlatesMaths::PointOnSphere> d_tmp_vertex_list;
+
+
+		// GPlatesPropertyValues::GpmlTopologicalPolygon *d_topological_polygon;
+
 		/**
 		 *  FIXME : add documentation for these
 		 */
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection> d_sections_vector;
-
-
-		std::vector<GPlatesMaths::PointOnSphere> m_vertex_list;
-		
-		/**
-		 * These vectors are all sychronized by index
-		*/
-		//FIXME: std::vector<GPlatesMaths::PointOnSphere> d_click_points;
-		std::vector<bool> d_use_reverse_flags;
-		bool d_use_reverse;
-		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate *> d_prop_delegate_ptrs;
-
+		/** Because GpmlTopologicalSection is abstract we use non_null_ptr_type */
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
+			d_sections_ptrs;
 	};
 }
 
