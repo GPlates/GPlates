@@ -65,6 +65,21 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 	d_layers_ptr->show_geometry_focus_layer();
 
 	globe_canvas().update_canvas();
+
+#if 0
+// FIXME: something is wrong with connect's arguments below, but I can't see what?
+// This connection was moved to ViewportWindow, and uses the canvas_tool_adapter 
+// to come back to this tool ... it seems so round about, but it works.
+
+ 	// If the user creates a new feature with the PlateClosureWidget, 
+	// then we need to create, and append property values to the feature
+ 	QObject::connect( 
+		&( d_plate_closure_widget_ptr->create_feature_dialog() ),
+ 		SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
+ 		this,
+ 		SLOT( append_property_values_to_feature( GPlatesModel::FeatureHandle::weak_ref ) )
+		);
+#endif
 }
 
 
@@ -119,6 +134,7 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 		emit no_hits_found();
 		return;
 	}
+
 	// Populate the 'Clicked' FeatureTableModel.
 	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
 	while ( ! sorted_hits.empty())
@@ -156,4 +172,13 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 		d_feature_focus_ptr->set_focus(feature_ref, rfg);
 	}
 #endif
+}
+
+
+void
+GPlatesCanvasTools::PlateClosure::handle_create_new_feature(
+	GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	// finalize the new feature with the boundary prop value
+	d_plate_closure_widget_ptr->append_boundary_to_feature( feature_ref );
 }

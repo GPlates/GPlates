@@ -118,7 +118,15 @@ namespace GPlatesCanvasTools
 
 		// FIXME do we need handle_left_shift_click ?
 
+		virtual
+		void
+		handle_create_new_feature(GPlatesModel::FeatureHandle::weak_ref feature);
+
+	public slots:
+
+
 	signals:
+
 		void
 		sorted_hits_updated();
 
