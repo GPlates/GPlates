@@ -29,6 +29,8 @@
 #include <QObject>
 #include <Qt>
 
+#include "model/FeatureHandle.h"
+
 
 namespace GPlatesMaths
 {
@@ -103,6 +105,10 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
+
+		void
+		handle_create_new_feature(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref);
 
 	private:
 		const CanvasToolChoice *d_canvas_tool_choice_ptr;

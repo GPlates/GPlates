@@ -217,3 +217,13 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 		break;
 	}
 }
+
+void
+GPlatesGui::CanvasToolAdapter::handle_create_new_feature(
+	GPlatesModel::FeatureHandle::weak_ref feature_ref )
+{
+	get_tool(*this).handle_create_new_feature(feature_ref);
+}
+
+
+

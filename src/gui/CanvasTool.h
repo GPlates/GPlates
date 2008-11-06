@@ -29,6 +29,10 @@
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 
+#include "model/FeatureHandle.h"
+
+
+
 
 namespace GPlatesMaths
 {
@@ -440,6 +444,12 @@ namespace GPlatesGui
 					oriented_current_pos_on_globe, is_on_globe,
 					oriented_centre_of_viewport);
 		}
+
+		virtual
+		void
+		handle_create_new_feature(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref )
+		{	}
 
 		/**
 		 * Increment the reference-count of this instance.
