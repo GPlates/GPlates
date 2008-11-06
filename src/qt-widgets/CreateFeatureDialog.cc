@@ -870,19 +870,25 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 				tr("Please select a feature collection to add the new feature to."));
 		return;
 	}
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection = collection_item->get_collection();
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection = 
+		collection_item->get_collection();
 	
 	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
+	GPlatesModel::FeatureHandle::weak_ref feature = 
+		d_model_ptr->create_feature(type, collection);
 	
 
 	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
 	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
 			d_plate_id_widget->create_property_value_from_widget();
+
 	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
+
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type),
+			GPlatesPropertyValues::GpmlConstantValue::create(
+				plate_id_value, 
+				plate_id_value_type),
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 			feature);
 
@@ -897,7 +903,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 			d_name_widget->create_property_value_from_widget(),
 			GPlatesModel::PropertyName::create_gml("name"),
 			feature);
-	
+
 	emit feature_created(feature);
 	accept();
 }

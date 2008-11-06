@@ -81,6 +81,12 @@ namespace GPlatesQtWidgets
 			d_type = TOPOLOGICAL;
 		}
 	
+
+		GPlatesModel::FeatureHandle::weak_ref
+		get_feature_ref() {
+			return d_feature_ref;
+		}
+
 	signals:
 		
 		void
@@ -169,6 +175,11 @@ namespace GPlatesQtWidgets
 		* Type of feature to create 
 		*/
 		FeatureType d_type;
+
+		/**
+		* the newly created feature
+		*/
+		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 		
 	};
 }
