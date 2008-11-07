@@ -766,7 +766,7 @@ std::cout << "point geom" << std::endl;
 	d_tmp_property_name = "position";
 	d_tmp_value_type = "Point";
 
-	const GPlatesModel::FeatureId fid( d_tmp_feature_id);
+	const GPlatesModel::FeatureId fid(d_tmp_feature_id);
 
 	const GPlatesModel::PropertyName prop_name =
 		GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
@@ -781,8 +781,7 @@ std::cout << "point geom" << std::endl;
 			value_type
 		);
 			
-	//d_source_geometry_property_delegate_ptrs.push_back( pd_ptr );
-
+	// create a GpmlTopologicalPoint from the delegate
 	GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type gtp_ptr =
 		GPlatesPropertyValues::GpmlTopologicalPoint::create(pd_ptr);
 
@@ -809,6 +808,22 @@ std::cout << "polyline geom" << std::endl;
 	d_tmp_property_name = "centerLineOf";
 	d_tmp_value_type = "LineString";
 
+	const GPlatesModel::FeatureId fid(d_tmp_feature_id);
+
+	const GPlatesModel::PropertyName prop_name =
+		GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
+
+	const GPlatesPropertyValues::TemplateTypeParameterType value_type =
+		GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd_ptr = 
+		GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+			fid,
+			prop_name,
+			value_type
+		);
+			
+
 	// Write out each point of the polyline.
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = 
 		polyline_on_sphere->vertex_begin();
@@ -824,7 +839,7 @@ std::cout << "polyline geom" << std::endl;
 		polyline_vertices.push_back( *iter );
 	}
 
-	// check for flag
+	// check for reverse flag
 	if (d_use_reverse) 
 	{
 std::cout << "polyline geom REVERSE" << std::endl;
@@ -841,6 +856,17 @@ std::cout << "polyline geom normal" << std::endl;
 	}
 
 	d_tmp_check_intersections = true;
+
+	// create a GpmlTopologicalPoint from the delegate
+	GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type gtls_ptr =
+		GPlatesPropertyValues::GpmlTopologicalLineSection::create(
+			pd_ptr,
+			boost::none,
+			boost::none,
+			d_use_reverse);
+
+	// Fill the vector of GpmlTopologicalSection::non_null_ptr_type 
+	d_sections_ptrs.push_back( gtls_ptr );
 }
 
 
@@ -953,6 +979,12 @@ std::cout << "create_sections_from_segments: d_tmp_index = " << d_tmp_index << s
 		}
 // FIXME: remove this diagnostic 
 
+
+
+		// set the tmp reverse flag to this feature's flag
+		d_use_reverse = d_use_reverse_flags.at(d_tmp_index);
+std::cout << "create_sections_from_segments: d_use_rev = " << d_use_reverse << std::endl;
+
 		//
 		// Visit the geoms. ; will fill d_tmp_ vars 
 		//
@@ -962,9 +994,7 @@ std::cout << "create_sections_from_segments: d_tmp_index = " << d_tmp_index << s
 
 		d_tmp_feature_id = rfg->feature_ref()->feature_id();
 
-		//const GPlatesModel::FeatureId fid = rfg->feature_ref()->feature_id();
-
-		const GPlatesModel::FeatureId fid( d_tmp_feature_id);
+		const GPlatesModel::FeatureId fid(d_tmp_feature_id);
 
 		const GPlatesModel::PropertyName prop_name =
 			GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
@@ -972,7 +1002,6 @@ std::cout << "create_sections_from_segments: d_tmp_index = " << d_tmp_index << s
 		const GPlatesPropertyValues::TemplateTypeParameterType value_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
 
-		
 		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd = 
 			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
 				fid,
@@ -980,14 +1009,13 @@ std::cout << "create_sections_from_segments: d_tmp_index = " << d_tmp_index << s
 				value_type
 			);
 				
-		
-		//d_source_geometry_property_delegate_ptrs.push_back( pd );
-
 
 		// check for intersection
 		if ( d_tmp_check_intersections )
 		{
 			//get_vertex_list_from_intersectons;
+			d_vertex_list.insert( d_vertex_list.end(), 
+				d_tmp_vertex_list.begin(), d_tmp_vertex_list.end() );
 		}
 		else
 		{
@@ -995,11 +1023,6 @@ std::cout << "create_sections_from_segments: d_tmp_index = " << d_tmp_index << s
 			d_vertex_list.insert( d_vertex_list.end(), 
 				d_tmp_vertex_list.begin(), d_tmp_vertex_list.end() );
 		}
-
-		// set the tmp reverse flag to this feature's flag
-		d_use_reverse = d_use_reverse_flags.at(d_tmp_index);
-std::cout << "create_sections_from_segments: d_use_rev = " << d_use_reverse << std::endl;
-
 
 		// update counter d_tmp_index
 		++d_tmp_index;
