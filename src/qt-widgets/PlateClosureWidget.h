@@ -82,6 +82,12 @@ namespace GPlatesQtWidgets
 			PLATEPOLYGON,
 			DEFORMINGPLATE
 		};
+
+		/** simple enum to identify neighbor relation */
+		enum NeighborRelation
+		{
+			NONE, INTERSECT_PREV, INTERSECT_NEXT, OVERLAP_PREV, OVERLAP_NEXT, OTHER
+		};
 		
 
 		explicit
@@ -103,18 +109,33 @@ namespace GPlatesQtWidgets
 		void
 		update_geometry();
 
+		/**
+		 * From the Segments Table, create the tmp. geom. and property value items 
+		 */
 		void
 		create_sections_from_segments();
 
+		/**
+		 * FIXME:
+		 */
 		void
-		create_topological_polygon();
+		process_intersections();
 
+		/**
+		 * FIXME:
+		 */
+		void
+		check_intersection(
+			const GPlatesMaths::PolylineOnSphere* node1_polyline,
+			const GPlatesMaths::PolylineOnSphere* node2_polyline,
+			NeighborRelation relation);
+
+		/**
+		 * Once the feature is created from the dialog, append a boundary prop. value.
+		 */
 		void
 		append_boundary_to_feature(
 			GPlatesModel::FeatureHandle::weak_ref feature);
-
-		void
-		get_vertex_list_from_intersection();
 
 		/**
 		 * Sets the desired geometry type, d_geometry_type.
@@ -363,6 +384,8 @@ namespace GPlatesQtWidgets
 		int d_tmp_index;
 		int d_tmp_segments_size;
 		bool d_tmp_check_intersections;
+		int d_tmp_prev_index;
+		int d_tmp_next_index;
 
 		
 		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> 
@@ -375,13 +398,19 @@ namespace GPlatesQtWidgets
 
 
 		bool d_use_reverse;
-		double d_click_point_lat;
-		double d_click_point_lon;
 
 		std::vector<GPlatesMaths::PointOnSphere> d_tmp_vertex_list;
 
 
-		// GPlatesPropertyValues::GpmlTopologicalPolygon *d_topological_polygon;
+		int d_num_intersections_with_prev;
+		int d_num_intersections_with_next;
+
+		GPlatesMaths::real_t d_closeness;
+
+		double d_click_point_lat;
+		double d_click_point_lon;
+		const GPlatesMaths::PointOnSphere *d_click_point_ptr;
+
 
 		/**
 		 *  FIXME : add documentation for these

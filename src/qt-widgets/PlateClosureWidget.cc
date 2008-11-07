@@ -21,6 +21,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#define DEBUG
+
 #include <QtGlobal>
 #include <QHeaderView>
 #include <QTreeWidget>
@@ -41,14 +43,19 @@
 #include "ExportCoordinatesDialog.h"
 #include "CreateFeatureDialog.h"
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
+#include "maths/GeometryOnSphere.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/InvalidLatLonCoordinateException.h"
 #include "maths/LatLonPointConversions.h"
-#include "maths/GeometryOnSphere.h"
-#include "maths/ConstGeometryOnSphereVisitor.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+#include "maths/ProximityCriteria.h"
+#include "maths/PolylineIntersections.h"
 #include "maths/Real.h"
 
 #include "gui/FeatureFocus.h"
+#include "gui/ProximityTests.h"
 
 #include "model/FeatureHandle.h"
 #include "model/ReconstructionGeometry.h"
@@ -82,7 +89,6 @@
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlOldPlatesHeader.h"
-
 #include "property-values/TemplateTypeParameterType.h"
 
 namespace
@@ -822,7 +828,7 @@ std::cout << "polyline geom" << std::endl;
 			prop_name,
 			value_type
 		);
-			
+
 
 	// Write out each point of the polyline.
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = 
@@ -1013,7 +1019,8 @@ std::cout << "create_sections_from_segments: d_use_rev = " << d_use_reverse << s
 		// check for intersection
 		if ( d_tmp_check_intersections )
 		{
-			//get_vertex_list_from_intersectons;
+			process_intersections();
+			// d_tmp_vertex_list may have been modified by process_intersections()
 			d_vertex_list.insert( d_vertex_list.end(), 
 				d_tmp_vertex_list.begin(), d_tmp_vertex_list.end() );
 		}
@@ -1031,35 +1038,446 @@ std::cout << "create_sections_from_segments: d_use_rev = " << d_use_reverse << s
 }
 
 void
-GPlatesQtWidgets::PlateClosureWidget::get_vertex_list_from_intersection()
+GPlatesQtWidgets::PlateClosureWidget::process_intersections()
 {
+	// access the segments table
+	GPlatesGui::FeatureTableModel &segments_table = 
+		d_view_state_ptr->segments_feature_table_model();
 
-		// set the tmp click point to this feture's click point
-		d_click_point_lat = d_click_points.at(d_tmp_index).first;
-		d_click_point_lon = d_click_points.at(d_tmp_index).second;
+	// set the tmp click point to this feture's click point
+	d_click_point_lat = d_click_points.at(d_tmp_index).first;
+	d_click_point_lon = d_click_points.at(d_tmp_index).second;
+
+	GPlatesMaths::PointOnSphere pos = GPlatesMaths::make_point_on_sphere(
+		GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon) );
+	d_click_point_ptr = &pos;
+
+	const GPlatesMaths::PointOnSphere const_pos(pos); 
+
+	// index math to close the loop of segments
+	if ( d_tmp_index == (d_tmp_segments_size - 1) ) 
+	{
+		d_tmp_next_index = 0;
+		d_tmp_prev_index = d_tmp_index - 1;
+	}
+	else if ( d_tmp_index == 0 )
+	{
+		d_tmp_next_index = d_tmp_index + 1;
+		d_tmp_prev_index = d_tmp_segments_size - 1;
+	}
+	else
+	{
+		d_tmp_next_index = d_tmp_index + 1;
+		d_tmp_prev_index = d_tmp_index - 1;
+	}
+
+std::cout << "PlateClosureWidget::process_intersections: "
+<< "prev_index = " << d_tmp_prev_index << "; " 
+<< "tmp_index = " << d_tmp_index << "; " 
+<< "next_index = " << d_tmp_next_index << "; " 
+<< std::endl;
+
+	// reset intersection variables
+	d_num_intersections_with_prev = 0;
+	d_num_intersections_with_next = 0;
+
+	//
+	// check for startIntersection
+	//
+
+	// access the Segments Table for the index item
+	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
+	iter = segments_table.geometry_sequence().begin() + d_tmp_index;
+
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type iter_gos = (*iter)->geometry();
+	
+	const GPlatesMaths::PolylineOnSphere *iter_polyline = 
+		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( iter_gos.get() );
+
+	// access the Segments Table for the PREV item
+	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator prev;
+	prev = segments_table.geometry_sequence().begin() + d_tmp_prev_index;
+
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type prev_gos = (*prev)->geometry();
+
+	const GPlatesMaths::PolylineOnSphere *prev_polyline = 
+		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( prev_gos.get() );
+
+	// check if these two polylines intersect
+	check_intersection(
+		iter_polyline,
+		prev_polyline,
+		GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV);
+
+	// if they do, then create the startIntersection property value
+	if ( d_num_intersections_with_prev != 0)
+	{
+		// if there was an intersection, create a startIntersection property value
+		GPlatesModel::ReconstructionGeometry *prev_rg = prev->get();
+
+		GPlatesModel::ReconstructedFeatureGeometry *prev_rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(prev_rg);
+
+		// intersection_geometry
+		const GPlatesModel::FeatureId prev_fid = prev_rfg->feature_ref()->feature_id();
+
+		const GPlatesModel::PropertyName prop_name1 =
+			GPlatesModel::PropertyName::create_gpml("centerLineOf");
+
+		const GPlatesPropertyValues::TemplateTypeParameterType value_type1 =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString" );
+
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type geom_delegte = 
+			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+				prev_fid,
+				prop_name1,
+				value_type1
+			);
+
+		// reference_point
+		 GPlatesPropertyValues::GmlPoint::non_null_ptr_type ref_point =
+			GPlatesPropertyValues::GmlPoint::create( const_pos );
+
+		// reference_point_plate_id
+		const GPlatesModel::PropertyName prop_name2 =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
+		const GPlatesPropertyValues::TemplateTypeParameterType value_type2 =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("PlateId" );
+
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
+			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+				prev_fid,
+				prop_name2,
+				value_type2
+			);
+
+		// Create the start GpmlTopologicalIntersection
+		GPlatesPropertyValues::GpmlTopologicalIntersection start_ti(
+			geom_delegte,
+			ref_point,
+			plate_id_delegate);
+			
+		// Set the start instersection
+		GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
+			dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
+				d_sections_ptrs.at( d_tmp_index ).get() );
+
+		gtls_ptr->set_start_intersection( start_ti );
+	}
+
+
+	// access the Segments Table for the NEXT item
+	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator next;
+	next = segments_table.geometry_sequence().begin() + d_tmp_next_index;
+
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type next_gos = (*next)->geometry();
+
+	const GPlatesMaths::PolylineOnSphere *next_polyline = 
+		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( next_gos.get() );
+
+	check_intersection(
+		iter_polyline,
+		next_polyline,
+		GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT);
+
+
+	// if they do, then create the endIntersection property value
+	if ( d_num_intersections_with_next != 0)
+	{
+		// if there was an intersection, create a endIntersection property value
+		GPlatesModel::ReconstructionGeometry *rg = next->get();
+
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+
+		// intersection_geometry
+		const GPlatesModel::FeatureId fid = rfg->feature_ref()->feature_id();
+
+		const GPlatesModel::PropertyName prop_name1 =
+			GPlatesModel::PropertyName::create_gpml("centerLineOf");
+
+		const GPlatesPropertyValues::TemplateTypeParameterType value_type1 =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString" );
+
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type geom_delegte = 
+			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+				fid,
+				prop_name1,
+				value_type1
+			);
+
+		// reference_point
+		 GPlatesPropertyValues::GmlPoint::non_null_ptr_type ref_point =
+			GPlatesPropertyValues::GmlPoint::create( const_pos );
+
+		// reference_point_plate_id
+		const GPlatesModel::PropertyName prop_name2 =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
+		const GPlatesPropertyValues::TemplateTypeParameterType value_type2 =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("PlateId" );
+
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
+			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+				fid,
+				prop_name2,
+				value_type2
+			);
+
+		// Create the end GpmlTopologicalIntersection
+		GPlatesPropertyValues::GpmlTopologicalIntersection end_ti(
+			geom_delegte,
+			ref_point,
+			plate_id_delegate);
+			
+		// Set the end instersection
+		GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
+			dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
+				d_sections_ptrs.at( d_tmp_index ).get() );
+
+		gtls_ptr->set_end_intersection( end_ti );
+	}
 
 }
 
-// FIXME : save this code for ref
+void
+GPlatesQtWidgets::PlateClosureWidget::check_intersection(
+	const GPlatesMaths::PolylineOnSphere* node1_polyline,
+	const GPlatesMaths::PolylineOnSphere* node2_polyline,
+	GPlatesQtWidgets::PlateClosureWidget::NeighborRelation relation)
+{
+	// variables to save results of intersection
+	std::list<GPlatesMaths::PointOnSphere> intersection_points;
+	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> partitioned_lines;
 
-#if 0
-		const GPlatesModel::FeatureId fid = rfg->feature_ref()->feature_id();
-			
-		const GPlatesModel::PropertyName prop_name =
-			GPlatesModel::PropertyName::create_gpml("gpml:centerLineOf");
 
-		const GPlatesPropertyValues::TemplateTypeParameterType value_type =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("gml:LineString");
-			
-		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd = 
-			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-				fid,
-				prop_name,
-				value_type
-			);
-				
-		//d_source_geometry_property_delegate_ptrs.push_back( pd );
+	int num_intersect = 0;
+	num_intersect = GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
+		*node1_polyline,
+		*node2_polyline,
+		intersection_points,
+		partitioned_lines);
+
+#ifdef DEBUG
+std::cout << "PlateClosureWidget::resolve_intersection: " 
+<< "num_intersect = " << num_intersect << std::endl;
 #endif
+
+	// switch on relation enum to set node1's member data
+	switch ( relation )
+	{
+		case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV :
+#ifdef DEBUG
+std::cout << "PlateClosureWidget::resolve_intersection: INTERSECT_PREV: " << std::endl;
+#endif
+			d_num_intersections_with_prev = num_intersect;
+			break;
+
+		case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT:
+#ifdef DEBUG
+std::cout << "PlateClosureWidget::resolve_intersection: INTERSECT_NEXT: " << std::endl;
+#endif
+			d_num_intersections_with_next = num_intersect;
+			break;
+
+		case GPlatesQtWidgets::PlateClosureWidget::NONE :
+		case GPlatesQtWidgets::PlateClosureWidget::OTHER :
+		default :
+			// somthing bad happened freak out
+			break;
+	}
+
+
+	if ( num_intersect == 0 )
+	{
+		// no change to d_tmp_vertex_list
+		return;
+	}
+	else if ( num_intersect == 1)
+	{
+		// pair of polyline lists from intersection
+		std::pair<
+			std::list< GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			std::list< GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+		> parts;
+
+		// unambiguously identify partitioned lines:
+		// parts.first.front is the head of node1_polyline
+		// parts.first.back is the tail of node1_polyline
+		// parts.second.front is the head of node2_polyline
+		// parts.second.back is the tail of node2_polyline
+		parts = GPlatesMaths::PolylineIntersections::identify_partitioned_polylines(
+			*node1_polyline,
+			*node2_polyline,
+			intersection_points,
+			partitioned_lines);
+
+
+#ifdef DEBUG
+GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter, end;
+iter = parts.first.front()->vertex_begin();
+end = parts.first.front()->vertex_end();
+std::cout << "PlateClosureWidget::resolve_intersection:: HEAD: verts:" << std::endl;
+for ( ; iter != end; ++iter) {
+std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
+}
+
+iter = parts.first.back()->vertex_begin();
+end = parts.first.back()->vertex_end();
+std::cout << "PlateClosureWidget::resolve_intersection:: TAIL: verts:" << std::endl;
+for ( ; iter != end; ++iter) {
+std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
+}
+#endif
+
+		// now check which element of parts.first
+		// is closest to click_point:
+
+// FIXME :
+// we should first rotate the click point with the plate id of intersection_geometry_fid 
+// before calling is_close_to()
+
+// PROXIMITY
+		GPlatesMaths::real_t closeness_inclusion_threshold = 0.9;
+		const GPlatesMaths::real_t cit_sqrd =
+			closeness_inclusion_threshold * closeness_inclusion_threshold;
+		const GPlatesMaths::real_t latitude_exclusion_threshold = sqrt(1.0 - cit_sqrd);
+
+		// these get filled by calls to is_close_to()
+		bool click_close_to_head;
+		bool click_close_to_tail;
+		GPlatesMaths::real_t closeness_head;
+		GPlatesMaths::real_t closeness_tail;
+
+		// set head closeness
+		click_close_to_head = parts.first.front()->is_close_to(
+			*d_click_point_ptr,
+			closeness_inclusion_threshold,
+			latitude_exclusion_threshold,
+			closeness_head);
+
+		// set tail closeness
+		click_close_to_tail = parts.first.back()->is_close_to(
+			*d_click_point_ptr,
+			closeness_inclusion_threshold,
+			latitude_exclusion_threshold,
+			closeness_tail);
+
+
+		// Make sure that the click point is close to /something/ !!!
+		if ( !click_close_to_head && !click_close_to_tail ) 
+		{
+std::cerr << "PlateClosureWidget::resolve_intersection: " << std::endl
+<< "WARN: click point not close to anything!" << std::endl
+<< "WARN: Unable to set boundary feature intersection flags!" 
+<< std::endl << std::endl;
+			// FIXME : freak out!
+			return;
+		}
+#ifdef DEBUG
+std::cout << "PlateClosureWidget::resolve_intersection: "
+<< "closeness_head=" << closeness_head << " and " 
+<< "closeness_tail=" << closeness_tail << std::endl;
+#endif
+
+		// now compare the closeness values to set relation
+		if ( closeness_head > closeness_tail )
+		{
+#ifdef DEBUG
+qDebug() << "PlateClosureWidget::resolve_intersection: " << "use HEAD";
+#endif
+			d_closeness = closeness_head;
+
+			// switch on the relation to be set
+			switch ( relation )
+			{
+				case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV :
+					//d_use_head_from_intersect_prev = true;
+					//d_use_tail_from_intersect_prev = false;
+
+					d_tmp_vertex_list.clear();
+					copy(
+						parts.first.front()->vertex_begin(),
+						parts.first.front()->vertex_end(),
+						back_inserter( d_tmp_vertex_list )
+					);
+
+					break;
+	
+				case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT:
+					//d_use_head_from_intersect_next = true;
+					//d_use_tail_from_intersect_next = false;
+
+					d_tmp_vertex_list.clear();
+					copy(
+						parts.first.front()->vertex_begin(),
+						parts.first.front()->vertex_end(),
+						back_inserter( d_tmp_vertex_list )
+					);
+
+					break;
+
+				default:
+					break;
+			}
+			return; // node1's relation has been set
+		} 
+		else if ( closeness_tail > closeness_head )
+		{
+			d_closeness = closeness_tail;
+#ifdef DEBUG
+qDebug() << "PlateClosureWidget::resolve_intersection: " << "use TAIL" ;
+#endif
+
+			// switch on the relation to be set
+			switch ( relation )
+			{
+				case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV :
+					//d_use_tail_from_intersect_prev = true;
+					//d_use_head_from_intersect_prev = false;
+					d_tmp_vertex_list.clear();
+					copy(
+						parts.first.back()->vertex_begin(),
+						parts.first.back()->vertex_end(),
+						back_inserter( d_tmp_vertex_list )
+					);
+
+					break;
+	
+				case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT:
+					//d_use_tail_from_intersect_next = true;
+					//d_use_head_from_intersect_next = false;
+					d_tmp_vertex_list.clear();
+					copy(
+						parts.first.back()->vertex_begin(),
+						parts.first.back()->vertex_end(),
+						back_inserter( d_tmp_vertex_list )
+					);
+
+					break;
+
+				default:
+					break;
+			}
+			return; // node1's relation has been set
+		} 
+
+	} // end of else if ( num_intersect == 1 )
+	else 
+	{
+		// num_intersect must be 2 or greater
+		// oh no!
+		// check for overlap ...
+std::cerr << "PlateClosureWidget::resolve_intersection: " << std::endl
+<< "WARN: num_intersect=" << num_intersect << std::endl 
+<< "WARN: Unable to set boundary feature intersection relations!" << std::endl
+<< "WARN: Make sure boundary feature's only intersect once." << std::endl 
+<< std::endl;
+	}
+
+}
+
 
 void
 GPlatesQtWidgets::PlateClosureWidget::append_boundary_to_feature(
@@ -1140,4 +1558,27 @@ qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name="
 
 	d_view_state_ptr->reconstruct();
 }
+
+// FIXME : save this code for ref on how to create things
+// FIXME : save this code for ref on how to create things
+// FIXME : save this code for ref on how to create things
+
+#if 0
+		const GPlatesModel::FeatureId fid = rfg->feature_ref()->feature_id();
+			
+		const GPlatesModel::PropertyName prop_name =
+			GPlatesModel::PropertyName::create_gpml("gpml:centerLineOf");
+
+		const GPlatesPropertyValues::TemplateTypeParameterType value_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("gml:LineString");
+			
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd = 
+			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+				fid,
+				prop_name,
+				value_type
+			);
+				
+		//d_source_geometry_property_delegate_ptrs.push_back( pd );
+#endif
 
