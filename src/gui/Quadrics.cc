@@ -61,6 +61,13 @@ GPlatesGui::Quadrics::Quadrics() {
 	// On Mac OS X, the compiler complained, so it was changed to this.
 	// Update: Fixed the prototype of the QuadricError callback function 
 	// and removed the varargs ellipsis from the cast type.
+#if 1
 	gluQuadricCallback(_q, GLU_ERROR, &QuadricError);
+#else
+	// A few OS X platforms need this instead - could be OS X 10.4 or
+	// gcc 4.0.0 or PowerPC Macs ?
+	gluQuadricCallback(_q, GLU_ERROR,
+		reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&QuadricError));
+#endif
 
 }
