@@ -204,6 +204,8 @@ namespace
 		default:
 			return filter_all;
 		}
+
+		return filter_all;
 	}
 }
 
