@@ -96,6 +96,9 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+    GMTHeaderFormatDialog.cc
+    GMTHeaderFormatDialog.h
+    GMTHeaderFormatDialogUi.ui
     GlobeCanvas.cc
     GlobeCanvas.h
     InformationDialog.cc

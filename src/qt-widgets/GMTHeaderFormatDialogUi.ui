@@ -1,0 +1,96 @@
+<ui version="4.0" >
+ <class>GMTHeaderFormatDialog</class>
+ <widget class="QDialog" name="GMTHeaderFormatDialog" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>445</width>
+    <height>211</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Dialog</string>
+  </property>
+  <widget class="QGroupBox" name="group_box_format" >
+   <property name="geometry" >
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>411</width>
+     <height>181</height>
+    </rect>
+   </property>
+   <property name="title" >
+    <string>GMT Header Format</string>
+   </property>
+   <widget class="QLabel" name="label_header_type" >
+    <property name="geometry" >
+     <rect>
+      <x>130</x>
+      <y>10</y>
+      <width>105</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>What goes in header?</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="radio_button_feature_properties" >
+    <property name="geometry" >
+     <rect>
+      <x>130</x>
+      <y>70</y>
+      <width>161</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>Verbose (property values)</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="radio_button_plates4_header" >
+    <property name="geometry" >
+     <rect>
+      <x>130</x>
+      <y>40</y>
+      <width>131</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>PLATES4 style</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="radio_button_prefer_plate4_style" >
+    <property name="geometry" >
+     <rect>
+      <x>130</x>
+      <y>100</y>
+      <width>211</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>Use PLATES4 style, otherwise verbose</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="push_button_finished" >
+    <property name="geometry" >
+     <rect>
+      <x>170</x>
+      <y>140</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>OK</string>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

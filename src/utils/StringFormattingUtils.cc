@@ -84,32 +84,41 @@ const std::string
 GPlatesUtils::formatted_double_to_string(
 		const double &val, 
 		unsigned width,
-		unsigned prec,
+		int prec,
 		bool elide_trailing_zeroes)
 {
 	GPlatesGlobal::Assert(width > 0,
 		InvalidFormattingParametersException(
 			"Attempt to format a real number using a negative width."));
-	GPlatesGlobal::Assert(prec > 0,
-		InvalidFormattingParametersException(
+
+	if (prec != IGNORE_PRECISION)
+	{
+		GPlatesGlobal::Assert(prec > 0,
+			InvalidFormattingParametersException(
 			"Attempt to format a real number using a negative precision."));
 
-	// The number 3 below is the number of characters required to
-	// represent (1) the decimal point, (2) the minus sign, and (3)
-	// at least one digit to the left of the decimal point.
-	GPlatesGlobal::Assert(width >= (prec + 3), 
-		InvalidFormattingParametersException(
+		// The number 3 below is the number of characters required to
+		// represent (1) the decimal point, (2) the minus sign, and (3)
+		// at least one digit to the left of the decimal point.
+		GPlatesGlobal::Assert(width >= (static_cast<unsigned>(prec) + 3), 
+			InvalidFormattingParametersException(
 			"Attempted to format a real number with parameters that don't "\
 			"leave enough space for the decimal point, sign, and integral part."));
+	}
 
 	std::ostringstream oss;
 	oss << std::setw(width)			// Use 'width' chars of space
 		<< std::right				// Right-justify
 		<< std::setfill(' ')		// Fill in with spaces
 		<< std::fixed 				// Always use decimal notation
-		<< std::showpoint			// Always show the decimal point
-		<< std::setprecision(prec)	// Show prec digits after the decimal point
-		<< val;				// Print the actual value
+		<< std::showpoint;			// Always show the decimal point
+
+	if (prec != IGNORE_PRECISION)
+	{
+		oss << std::setprecision(prec);	// Show prec digits after the decimal point
+	}
+	
+	oss	<< val;				// Print the actual value
 
 	if (elide_trailing_zeroes) {
 		return remove_trailing_zeroes(oss.str());

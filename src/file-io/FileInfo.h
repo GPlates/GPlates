@@ -30,10 +30,7 @@
 #include <QString>
 #include <QFileInfo>
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
-#include "model/ConstFeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
-#include "FileFormat.h"
 
 namespace GPlatesFileIO {
 	
@@ -53,14 +50,6 @@ namespace GPlatesFileIO {
 		enum LineEndingStyle
 		{
 			NL, CRNL, CR 
-		};
-
-		// FIXME: Factor this into FileFormat, perhaps. Or maybe not, since we can only
-		// really detect 'XML' and 'GZIP' instead of 'GPML' and 'GPML.GZ'.
-		// See FileInfo::identify_by_magic_number();
-		enum FileMagic
-		{
-			UNKNOWN, XML, GZIP
 		};
 
 		/**
@@ -137,27 +126,6 @@ namespace GPlatesFileIO {
 			d_feature_collection = feature_collection;
 		}
 
-
-		boost::shared_ptr< GPlatesModel::ConstFeatureVisitor >
-		get_writer() const;
-
-
-		bool
-		is_writable() const
-		{
-			QFileInfo dir(get_qfileinfo().path());
-			return dir.permission(QFile::WriteUser);
-		}
-		
-		/**
-		 * Briefly opens the file for reading, and attempts to identify the
-		 * format of the file by it's magic number.
-		 *
-		 * This function can and will throw ErrorOpeningFileForReadingException.
-		 */
-		FileMagic
-		identify_by_magic_number() const;
-
 	private:
 #if 0
 		FileInfo(
@@ -174,6 +142,26 @@ namespace GPlatesFileIO {
 		//LineEndingStyle d_line_ending;
 		boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> d_feature_collection;
 	};
+
+	//@{
+	/**
+	 * Returns 'true' if specified file is writable.
+	 *
+	 * @param file_info file to test for writability.
+	 */
+	bool
+		is_writable(
+		const QFileInfo& file_info);
+
+	inline
+		bool
+		is_writable(
+		const GPlatesFileIO::FileInfo& file_info)
+	{
+		return is_writable(file_info.get_qfileinfo());
+	}
+	//@}
+
 }
 
 #endif // GPLATES_FILEIO_FILEINFO_H

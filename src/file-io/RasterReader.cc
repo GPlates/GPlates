@@ -27,6 +27,7 @@
 
 #include <QDir>
 #include <QImageReader>
+#include <iostream>
 
 #include "gui/OpenGLBadAllocException.h"
 #include "gui/OpenGLException.h"

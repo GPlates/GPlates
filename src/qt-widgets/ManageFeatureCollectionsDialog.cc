@@ -30,6 +30,7 @@
 #include "ApplicationState.h"
 #include "ViewportWindow.h"
 #include "file-io/FileInfo.h"
+#include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/FileFormatNotSupportedException.h"
@@ -37,6 +38,7 @@
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "ManageFeatureCollectionsActionWidget.h"
 #include "ManageFeatureCollectionsDialog.h"
+#include "GMTHeaderFormatDialog.h"
 
 
 namespace
@@ -52,7 +54,6 @@ namespace
 		};
 	}
 	
-	// FIXME: FileFormat can definitely handle this.
 	const QString &
 	get_format_for_file(
 			const QFileInfo &qfileinfo)
@@ -64,18 +65,24 @@ namespace
 		static const QString format_gpml_gz(QObject::tr("Compressed GPML"));
 		static const QString format_unknown(QObject::tr(""));
 		
-		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
+		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
+		{
+		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
 			return format_line;
-		} else if (qfileinfo.suffix() == "rot") {
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
 			return format_rotation;
-		} else if (qfileinfo.suffix() == "shp") {
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			return format_shapefile;
-		} else if (qfileinfo.suffix() == "gpml") {
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 			return format_gpml;
-		} else if (qfileinfo.completeSuffix().endsWith("gpml.gz", Qt::CaseInsensitive)) {
-			// FIXME: ^- REFACTOR ME!
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
 			return format_gpml_gz;
-		} else {
+
+		default:
 			return format_unknown;
 		}
 	}
@@ -88,6 +95,7 @@ namespace
 		// Appropriate filters for available output formats.
 		// Note that since we cannot write Shapefiles yet, we use PLATES4 line format as
 		// the default when the user clicks "Save a Copy" etc on shapefiles.
+		static const QString filter_gmt(QObject::tr("GMT xy (*.xy)"));
 		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
 		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
 		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
@@ -97,67 +105,103 @@ namespace
 		
 		QFileInfo qfileinfo = fileinfo.get_qfileinfo();
 		
-		// FIXME: Again, there are similar suffix-checking functions scattered all over,
-		// e.g. FileInfo.h and ViewportWindow.h
-		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
-			QStringList filters;
-			filters << filter_line;
-			if (has_gzip) {
-				filters << filter_gpml_gz;
-			}
-			filters << filter_gpml;
-			filters << filter_all;
-			return filters.join(";;");
+		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
+		{
+		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
+			{
+				QStringList filters;
+				filters << filter_gmt;
+				if (has_gzip) {
+					filters << filter_gpml_gz;
+				}
+				filters << filter_line;
+				filters << filter_gpml;
+				filters << filter_all;
+				return filters.join(";;");
 
-		} else if (qfileinfo.suffix() == "rot") {
-			QStringList filters;
-			filters << filter_rotation;
-			if (has_gzip) {
-				filters << filter_gpml_gz;
 			}
-			filters << filter_gpml;
-			filters << filter_all;
-			return filters.join(";;");
+			break;
 
-		} else if (qfileinfo.suffix() == "shp") {
-			// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
-			QStringList filters;
-			filters << filter_line;
-			if (has_gzip) {
-				filters << filter_gpml_gz;
-			}
-			filters << filter_gpml;
-			filters << filter_all;
-			return filters.join(";;");
+		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
+			{
+				QStringList filters;
+				filters << filter_line;
+				if (has_gzip) {
+					filters << filter_gpml_gz;
+				}
+				filters << filter_gmt;
+				filters << filter_gpml;
+				filters << filter_all;
+				return filters.join(";;");
 
-		} else if (qfileinfo.suffix() == "gpml") {
-			QStringList filters;
-			filters << filter_gpml;			// Save uncompressed by default, same as original
-			if (has_gzip) {
-				filters << filter_gpml_gz;	// Option to change to compressed version.
 			}
-			filters << filter_line;
-			// FIXME: Only offer to save as PLATES4 .rot if feature collection
-			// actually has rotations in it! Ditto with collections that have no features!
-			filters << filter_rotation;
-			filters << filter_all;
-			return filters.join(";;");
+			break;
 
-		} else if (qfileinfo.completeSuffix().endsWith("gpml.gz", Qt::CaseInsensitive)) {
-			// FIXME: ^- REFACTOR ME!
-			QStringList filters;
-			if (has_gzip) {
-				filters << filter_gpml_gz;	// Save compressed by default, assuming we can.
+		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
+			{
+				QStringList filters;
+				filters << filter_rotation;
+				if (has_gzip) {
+					filters << filter_gpml_gz;
+				}
+				filters << filter_gpml;
+				filters << filter_all;
+				return filters.join(";;");
+
 			}
-			filters << filter_gpml;			// Option to change to uncompressed version.
-			filters << filter_line;
-			// FIXME: Only offer to save as PLATES4 .rot if feature collection
-			// actually has rotations in it! Ditto with collections that have no features!
-			filters << filter_rotation;
-			filters << filter_all;
-			return filters.join(";;");
-		
-		} else {
+			break;
+			
+		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
+			{
+				// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
+				QStringList filters;
+				filters << filter_line;
+				if (has_gzip) {
+					filters << filter_gpml_gz;
+				}
+				filters << filter_gmt;
+				filters << filter_gpml;
+				filters << filter_all;
+				return filters.join(";;");
+
+			}
+			break;
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
+			{
+				QStringList filters;
+				filters << filter_gpml;			// Save uncompressed by default, same as original
+				if (has_gzip) {
+					filters << filter_gpml_gz;	// Option to change to compressed version.
+				}
+				filters << filter_gmt;
+				filters << filter_line;
+				// FIXME: Only offer to save as PLATES4 .rot if feature collection
+				// actually has rotations in it! Ditto with collections that have no features!
+				filters << filter_rotation;
+				filters << filter_all;
+				return filters.join(";;");
+
+			}
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
+			{
+				QStringList filters;
+				if (has_gzip) {
+					filters << filter_gpml_gz;	// Save compressed by default, assuming we can.
+				}
+				filters << filter_gpml;			// Option to change to uncompressed version.
+				filters << filter_gmt;
+				filters << filter_line;
+				// FIXME: Only offer to save as PLATES4 .rot if feature collection
+				// actually has rotations in it! Ditto with collections that have no features!
+				filters << filter_rotation;
+				filters << filter_all;
+				return filters.join(";;");
+			
+			}
+			break;
+			
+		default:
 			return filter_all;
 		}
 	}
@@ -236,11 +280,19 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 {
 	GPlatesAppState::ApplicationState::file_info_iterator file_it =
 			action_widget_ptr->get_file_info_iterator();
+
+	// Get the format to write feature collection in.
+	// This is usually determined by file extension but some format also
+	// require user preferences (eg, style of feature header in file).
+	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
+		get_feature_collection_write_format(*file_it);
 	
 	try
 	{
 		// FIXME: Saving files should not be handled by the viewport window.
-		d_viewport_window_ptr->save_file(*file_it);
+		d_viewport_window_ptr->save_file(
+			*file_it,
+			feature_collection_write_format);
 		
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
@@ -297,10 +349,19 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 	// Make a new FileInfo object to tell save_file_as() what the new name should be.
 	GPlatesFileIO::FileInfo new_fileinfo(filename);
 
+	// Get the format to write feature collection in.
+	// This is usually determined by file extension but some format also
+	// require user preferences (eg, style of feature header in file).
+	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
+		get_feature_collection_write_format(new_fileinfo);
+
 	try
 	{
 		// FIXME: Saving files should not be handled by the viewport window.
-		d_viewport_window_ptr->save_file_as(new_fileinfo, file_it);
+		d_viewport_window_ptr->save_file_as(
+			new_fileinfo,
+			file_it,
+			feature_collection_write_format);
 		
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
@@ -360,10 +421,19 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 	// Make a new FileInfo object to tell save_file_copy() what the copy name should be.
 	GPlatesFileIO::FileInfo new_fileinfo(filename);
 
+	// Get the format to write feature collection in.
+	// This is usually determined by file extension but some format also
+	// require user preferences (eg, style of feature header in file).
+	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
+		get_feature_collection_write_format(new_fileinfo);
+
 	try
 	{
 		// FIXME: Saving files should not be handled by the viewport window.
-		d_viewport_window_ptr->save_file_copy(new_fileinfo, file_it);
+		d_viewport_window_ptr->save_file_copy(
+			new_fileinfo,
+			file_it,
+			feature_collection_write_format);
 		
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
@@ -553,3 +623,21 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::remove_row(
 	}
 }
 
+GPlatesFileIO::FeatureCollectionWriteFormat::Format
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::get_feature_collection_write_format(
+	const GPlatesFileIO::FileInfo& file_info)
+{
+	switch (get_feature_collection_file_format(file_info) )
+	{
+	case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
+		{
+			GMTHeaderFormatDialog gmt_header_format_dialog(d_viewport_window_ptr);
+			gmt_header_format_dialog.exec();
+
+			return gmt_header_format_dialog.get_header_format();
+		}
+
+	default:
+		return GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION;
+	}
+}

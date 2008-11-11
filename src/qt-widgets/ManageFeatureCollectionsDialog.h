@@ -37,8 +37,9 @@
 #include <QString>
 
 #include "ManageFeatureCollectionsActionWidget.h"
-
 #include "ManageFeatureCollectionsDialogUi.h"
+
+#include "file-io/FeatureCollectionFileFormat.h"
 
 namespace GPlatesQtWidgets
 {
@@ -155,6 +156,13 @@ namespace GPlatesQtWidgets
 		remove_row(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
 	
+		/**
+		 * Get format for writing to feature collection file.
+		 */
+		GPlatesFileIO::FeatureCollectionWriteFormat::Format
+			get_feature_collection_write_format(
+			const GPlatesFileIO::FileInfo& file_info);
+
 	private:
 		
 		/**

@@ -2,12 +2,11 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * Interface for exporting GeometryOnSphere geometry.
+ * $Revision$
+ * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,30 +24,33 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
-#define GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
+#ifndef GPLATES_FILEIO_GEOMETRYEXPORTER_H
+#define GPLATES_FILEIO_GEOMETRYEXPORTER_H
 
-#include "FileInfo.h"
-#include "ReadErrorAccumulation.h"
-#include "ExternalProgram.h"
-#include "model/ModelInterface.h"
-#include "model/FeatureCollectionHandle.h"
+#include "maths/GeometryOnSphere.h"
 
 namespace GPlatesFileIO
 {
-	class GpmlOnePointSixReader
+	/**
+	 * Interface for exporting GeometryOnSphere geometry.
+	 */
+	class GeometryExporter
 	{
 	public:
-		static
-		void
-		read_file(
-				FileInfo &fileinfo,
-				GPlatesModel::ModelInterface &model,
-				ReadErrorAccumulation &read_errors,
-				bool use_gzip = false);
-		
-		static const ExternalProgram s_gunzip_program;
+		virtual
+			~GeometryExporter()
+		{  }
+
+		/**
+		 * Export specified geometry.
+		 *
+		 * @param geometry_ptr is what's exported.
+		 */
+		virtual
+			void
+			export_geometry(
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr) = 0;
 	};
 }
 
-#endif  // GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
+#endif // GPLATES_FILEIO_GEOMETRYEXPORTER_H

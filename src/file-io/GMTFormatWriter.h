@@ -2,10 +2,9 @@
 
 /**
  * \file 
- * Defines the interface for writing data in Plates4 data format.
- *
- * Most recent change:
- *   $Date$
+ * Defines the interface for writing data in GMT xy format.
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
@@ -25,21 +24,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_PLATESLINEFORMATWRITER_H
-#define GPLATES_FILEIO_PLATESLINEFORMATWRITER_H
+#ifndef GPLATES_FILEIO_GMTFORMATWRITER_H
+#define GPLATES_FILEIO_GMTFORMATWRITER_H
 
 #include <iosfwd>
 #include <vector>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <QFile>
 #include <QTextStream>
+#include <QString>
 
 #include "FileInfo.h"
 #include "FeatureWriter.h"
-#include "PlatesLineFormatHeaderVisitor.h"
-
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GpmlOldPlatesHeader.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -48,79 +49,94 @@
 
 namespace GPlatesFileIO
 {
-	struct OldPlatesHeader;
+	class GMTHeaderFormatter;
 
-	class PlatesLineFormatWriter:
-			public FeatureWriter,
-			private GPlatesModel::ConstFeatureVisitor
+	class GMTFormatWriter :
+		public FeatureWriter,
+		private GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
+		enum HeaderFormat
+		{
+			// If feature has an old plates header then use that
+			// otherwise print any elements of old plates header
+			// (with defaults for missing elements).
+			PLATES4_STYLE_HEADER,
+
+			// Print verbose header containing feature's property values
+			// printed on separate header lines.
+			VERBOSE_HEADER,
+
+			// If feature has an old plates header then use that
+			// otherwise print verbose header.
+			PREFER_PLATES4_STYLE_HEADER
+		};
+
 		/**
-		 * @pre is_writable(file_info) is true.
-		 */
+		* @pre is_writable(file_info) is true.
+		* @param file_info file to write to.
+		* @param header_format determines what information is printed in each feature header.
+		*/
 		explicit
-		PlatesLineFormatWriter(
-				const FileInfo &file_info);
+			GMTFormatWriter(
+			const FileInfo &file_info,
+			HeaderFormat header_format = PLATES4_STYLE_HEADER);
 
 		virtual
-		~PlatesLineFormatWriter()
-		{ }
+			~GMTFormatWriter();
 
 		/**
-		* Writes a feature in PLATES4 line format.
+		* Writes a feature in GMT 'xy' format.
 		*
 		* @param feature_handle feature to write
 		*/
 		virtual
 			void
-			write_feature(const GPlatesModel::FeatureHandle& feature_handle);
+			write_feature(
+			const GPlatesModel::FeatureHandle& feature_handle);
 
 	private:
+		virtual
+			void
+			visit_feature_handle(
+			const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
-		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
+			void
+			visit_inline_property_container(
+			const GPlatesModel::InlinePropertyContainer &inline_property_container);
 
 		virtual
-		void
-		visit_inline_property_container(
-				const GPlatesModel::InlinePropertyContainer &inline_property_container);
+			void
+			visit_gml_line_string(
+			const GPlatesPropertyValues::GmlLineString &gml_line_string);
 
 		virtual
-		void
-		visit_gml_line_string(
-				const GPlatesPropertyValues::GmlLineString &gml_line_string);
+			void
+			visit_gml_multi_point(
+			const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
 
 		virtual
-		void
-		visit_gml_multi_point(
-				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+			void
+			visit_gml_orientable_curve(
+			const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
 
 		virtual
-		void
-		visit_gml_orientable_curve(
-				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
+			void
+			visit_gml_point(
+			const GPlatesPropertyValues::GmlPoint &gml_point);
 
 		virtual
-		void
-		visit_gml_point(
-				const GPlatesPropertyValues::GmlPoint &gml_point);
-
-		virtual
-		void
-		visit_gml_polygon(
-				const GPlatesPropertyValues::GmlPolygon &gml_polygon);
+			void
+			visit_gml_polygon(
+			const GPlatesPropertyValues::GmlPolygon &gml_polygon);
 
 		virtual
 			void
 			visit_gpml_constant_value(
 			const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
-		void
-			print_header_lines(
-			const OldPlatesHeader &old_plates_header);
 
 		//! Accumulates feature geometry(s) when visiting a feature.
 		class FeatureAccumulator
@@ -141,9 +157,9 @@ namespace GPlatesFileIO
 
 			//@{
 			/**
-			* Begin/end of geometry sequence.
-			* Dereference to get 'GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type'.
-			*/
+			 * Begin/end of geometry sequence.
+			 * Dereference to get 'GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type'.
+			 */
 			geometries_const_iterator_type geometries_begin() const
 			{
 				return d_feature_geometries.begin();
@@ -165,14 +181,30 @@ namespace GPlatesFileIO
 			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_feature_geometries;
 		};
 
-		//! Stores geometries encountered while traversing a feature.
-		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_feature_geometries;
-	   	
+		//! Prints lines of header and keeps track of writing starting '>' character.
+		class HeaderPrinter
+		{
+		public:
+			HeaderPrinter()
+				: d_is_first_header_in_file(true)
+			{ }
+
+			void
+				print_header_lines(
+				QTextStream& output_stream,
+				std::vector<QString>& header_lines);
+
+		private:
+			//! Is the next feature to be written the first one ?
+			bool d_is_first_header_in_file;
+		};
+
 		boost::scoped_ptr<QFile> d_output_file;
 		boost::scoped_ptr<QTextStream> d_output_stream;
+		boost::scoped_ptr<GMTHeaderFormatter> d_feature_header;
 		FeatureAccumulator d_feature_accumulator;
-		PlatesLineFormatHeaderVisitor d_feature_header;
+		HeaderPrinter d_header_printer;
 	};
 }
 
-#endif  // GPLATES_FILEIO_PLATESLINEFORMATWRITER_H
+#endif // GPLATES_FILEIO_GMTFORMATWRITER_H

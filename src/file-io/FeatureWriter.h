@@ -2,12 +2,11 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * Interface for writing features.
+ * $Revision$
+ * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,30 +24,35 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
-#define GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
+#ifndef GPLATES_FILEIO_FEATUREWRITER_H
+#define GPLATES_FILEIO_FEATUREWRITER_H
 
-#include "FileInfo.h"
-#include "ReadErrorAccumulation.h"
-#include "ExternalProgram.h"
-#include "model/ModelInterface.h"
-#include "model/FeatureCollectionHandle.h"
+namespace GPlatesModel
+{
+	class FeatureHandle;
+}
 
 namespace GPlatesFileIO
 {
-	class GpmlOnePointSixReader
+	/**
+	 * Interface for writing features.
+	 */
+	class  FeatureWriter
 	{
 	public:
-		static
-		void
-		read_file(
-				FileInfo &fileinfo,
-				GPlatesModel::ModelInterface &model,
-				ReadErrorAccumulation &read_errors,
-				bool use_gzip = false);
-		
-		static const ExternalProgram s_gunzip_program;
+		virtual
+			~FeatureWriter()
+		{  }
+
+		/**
+		 * Writes a feature to a file (the format is defined in derived class).
+		 *
+		 * @param feature_handle feature to write
+		 */
+		virtual
+			void
+			write_feature(const GPlatesModel::FeatureHandle& feature_handle) = 0;
 	};
 }
 
-#endif  // GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
+#endif // GPLATES_FILEIO_FEATUREWRITER_H

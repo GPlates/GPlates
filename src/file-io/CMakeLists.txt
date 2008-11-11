@@ -18,14 +18,21 @@ set(srcs
     ErrorOpeningPipeToGzipException.h
     ExternalProgram.cc
     ExternalProgram.h
+    FeatureCollectionFileFormat.cc
+    FeatureCollectionFileFormat.h
     FeaturePropertiesMap.cc
     FeaturePropertiesMap.h
-    FileFormat.h
+    FeatureWriter.h
     FileFormatNotSupportedException.h
     FileInfo.cc
     FileInfo.h
+    GMTFormatGeometryExporter.cc
+    GMTFormatGeometryExporter.h
+    GMTFormatWriter.cc
+    GMTFormatWriter.h
     GdalReader.cc
     GdalReader.h
+    GeometryExporter.h
     GpmlOnePointFiveOutputVisitor.cc
     GpmlOnePointFiveOutputVisitor.h
     GpmlOnePointSixOutputVisitor.cc
@@ -37,6 +44,8 @@ set(srcs
     LineReader.h
     PlatesLineFormatGeometryExporter.cc
     PlatesLineFormatGeometryExporter.h
+    PlatesLineFormatHeaderVisitor.cc
+    PlatesLineFormatHeaderVisitor.h
     PlatesLineFormatReader.cc
     PlatesLineFormatReader.h
     PlatesLineFormatWriter.cc
@@ -54,7 +63,6 @@ set(srcs
     ReadErrorOccurrence.cc
     ReadErrorOccurrence.h
     ReadErrors.h
-    Reader.h
     ShapeFileReader.cc
     ShapeFileReader.h
     ShapefileXmlReader.cc
@@ -63,7 +71,6 @@ set(srcs
     ShapefileXmlWriter.h
     StructurePropertyCreatorMap.cc
     StructurePropertyCreatorMap.h
-    Writer.h
     XmlOutputInterface.cc
     XmlOutputInterface.h
     XmlWriter.cc
