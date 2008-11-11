@@ -95,13 +95,11 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 		bool is_on_globe)
 {
 
-#if 0
 	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
 		oriented_click_pos_on_globe);
 
 	// send the click point to the widget
-	d_plate_closure_widget_ptr->set_click_point( oriented_click_pos_on_globe );
-#endif
+	d_plate_closure_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
 
 	//
 	// From ClickGeometry

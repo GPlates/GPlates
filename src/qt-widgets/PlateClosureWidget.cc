@@ -1048,6 +1048,11 @@ GPlatesQtWidgets::PlateClosureWidget::process_intersections()
 	d_click_point_lat = d_click_points.at(d_tmp_index).first;
 	d_click_point_lon = d_click_points.at(d_tmp_index).second;
 
+std::cout << "PlateClosureWidget::process_intersections: "
+<< "d_click_point_lat = " << d_click_point_lat << "; " 
+<< "d_click_point_lon = " << d_click_point_lon << "; " 
+<< std::endl;
+
 	GPlatesMaths::PointOnSphere pos = GPlatesMaths::make_point_on_sphere(
 		GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon) );
 	d_click_point_ptr = &pos;

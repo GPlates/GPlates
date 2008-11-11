@@ -101,7 +101,7 @@ namespace GPlatesQtWidgets
 		 * Set the click point (called from canvas tool)
 		 */
 		void
-		set_click_point( double lat, double lon);
+		set_click_point( double lat, double lon );
 
 		/**
 		 * Updates the temporary geometry rendered on screen.
