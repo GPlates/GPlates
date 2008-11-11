@@ -77,7 +77,8 @@ endforeach(dir)
 #
 # The 'qt-widgets' target generates header files so it should get built before anything that depends on it.
 #
-# NOTE: there's a bug in CMake 2.4.6 in 'add_dependencies'.  Will have to hope that subdirs are built in order in they  are listed.
+# NOTE: there's a bug in CMake 2.4.6 in 'add_dependencies'. 
+#   It seems that subdirs are built in order in they  are listed provided you don't run a parallel build (eg, 'make -j').
 if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
     add_dependencies(canvas-tools qt-widgets)
     add_dependencies(gui qt-widgets)
@@ -128,3 +129,5 @@ include_directories(${internal_INCLUDE_DIRS})
 # require access to directory and target properties (eg, include directories).
 GPLATES_POST_ADD_TARGET(gplates target_GPlates_SRCS)
 GPLATES_POST_ADD_TARGET(gplates-no-gui target_GPlates_no_gui_SRCS)
+
+install(TARGETS gplates RUNTIME DESTINATION bin CONFIGURATIONS release)
