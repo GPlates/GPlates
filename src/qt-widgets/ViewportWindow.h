@@ -322,9 +322,49 @@ namespace GPlatesQtWidgets
 		deactivate_loaded_file(
 				file_info_iterator loaded_file);
 
+		/**
+		 * Tests if the @a loaded_file is active, either as reconstructable features
+		 * or an active reconstruction tree.
+		 */
 		bool
 		is_file_active(
 				file_info_iterator loaded_file);
+
+		/**
+		 * Tests if the @a loaded_file is active and being used for reconstructable
+		 * feature data.
+		 */
+		bool
+		is_file_active_reconstructable(
+				file_info_iterator loaded_file);
+
+		/**
+		 * Tests if the @a loaded_file is active and being used for reconstruction
+		 * tree data.
+		 */
+		bool
+		is_file_active_reconstruction(
+				file_info_iterator loaded_file);
+		
+		/**
+		 * Temporarily shows or hides a feature collection by adding or removing
+		 * it from the list of active reconstructable files. This does not
+		 * un-load the file.
+		 */
+		void
+		set_file_active_reconstructable(
+				file_info_iterator file_it,
+				bool activate);
+
+		/**
+		 * Temporarily enables or disables a reconstruction tree by adding or
+		 * removing it from the list of active reconstruction files. This does not
+		 * un-load the file.
+		 */
+		void
+		set_file_active_reconstruction(
+				file_info_iterator file_it,
+				bool activate);
 			
 		/**
 		 * Temporary method for initiating shapefile attribute remapping. 

@@ -24,6 +24,8 @@
  */
 
 #include "ManageFeatureCollectionsDialog.h"
+#include "file-io/FeatureCollectionFileFormat.h"
+
 #include "ManageFeatureCollectionsActionWidget.h"
 
 
@@ -45,16 +47,49 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 	QObject::connect(button_reload, SIGNAL(clicked()), this, SLOT(reload()));
 	QObject::connect(button_unload, SIGNAL(clicked()), this, SLOT(unload()));
 
+	update_state();
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state()
+{
+	QFileInfo qfileinfo = d_file_info_iterator->get_qfileinfo();
+	// Enable the buttons in question first, then disable if needed.
+	button_save->setDisabled(false);
+	button_reload->setDisabled(false);
+	
+	// Disable specific buttons for specific formats.
+	switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
+	{
+	case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
+			// Disable save in-place button for formats we can't write yet.
+			button_save->setDisabled(true);
+			break;
+			
+	case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
+			// Disable reload button for formats we can't read yet.
+			// (If you're thinking, "ah, but then how did it get into GPlates?",
+			// we can currently export GMT xy format but not read it back in.
+			// So the reload button makes no sense.)
+			button_reload->setDisabled(true);
+			break;
+			
+	default:
+			break;
+	}
+
 	// Edge case - if the FileInfo has been created for a FeatureCollection
 	// which only exists in GPlates' memory so far (i.e., created as a new
 	// feature collection at the end of d10n), then any "Save" function
 	// should be disabled in favour of "Save As". Similarly, the FeatureCollection
 	// cannot be "Reloaded".
-	if ( ! file_it->get_qfileinfo().exists()) {
+	if ( ! qfileinfo.exists()) {
 		button_save->setDisabled(true);
 		button_reload->setDisabled(true);
 	}
 }
+
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::edit_configuration()

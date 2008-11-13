@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSACTIONWIDGET_H
-#define GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSACTIONWIDGET_H
+#ifndef GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSSTATEWIDGET_H
+#define GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSSTATEWIDGET_H
 
 #ifdef HAVE_PYTHON
 // We need to include this _before_ any Qt headers get included because
@@ -35,31 +35,36 @@
 
 #include <QWidget>
 #include "ApplicationState.h"
-#include "ManageFeatureCollectionsActionWidgetUi.h"
+#include "ManageFeatureCollectionsStateWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {
 	class ManageFeatureCollectionsDialog;
 	
 	
-	class ManageFeatureCollectionsActionWidget:
+	class ManageFeatureCollectionsStateWidget:
 			public QWidget, 
-			protected Ui_ManageFeatureCollectionsActionWidget
+			protected Ui_ManageFeatureCollectionsStateWidget
 	{
 		Q_OBJECT
 		
 	public:
 		explicit
-		ManageFeatureCollectionsActionWidget(
+		ManageFeatureCollectionsStateWidget(
 				ManageFeatureCollectionsDialog &feature_collections_dialog,
 				GPlatesAppState::ApplicationState::file_info_iterator file_it,
+				bool reconstructable_active,
+				bool reconstruction_active,
 				QWidget *parent_ = NULL);
-		
+
 		/**
-		 * Enables and disables buttons according to various criteria.
+		 * Updates the StateWidget by checking/unchecking checkboxes and
+		 * disabling/enabling buttons as necessary.
 		 */
 		void
-		update_state();
+		update_state(
+				bool reconstructable_active,
+				bool reconstruction_active);		
 		
 		GPlatesAppState::ApplicationState::file_info_iterator
 		get_file_info_iterator() const
@@ -67,30 +72,39 @@ namespace GPlatesQtWidgets
 			return d_file_info_iterator;
 		}
 	
-		void
-		enable_edit_configuration_button();
-	
-	public slots:
+	private slots:
 		
 		void
-		edit_configuration();
+		handle_active_reconstructable_checked(
+				bool checked);
 
 		void
-		save();
-		
-		void
-		save_as();
-		
-		void
-		save_copy();
-		
-		void
-		reload();
+		handle_active_reconstructable_toggled();
 
 		void
-		unload();
+		handle_active_reconstruction_checked(
+				bool checked);
+
+		void
+		handle_active_reconstruction_toggled();
 	
 	private:
+	
+		/**
+		 * Reconfigures the button icon, tooltip etc. to indicate state.
+		 */
+		void
+		set_reconstructable_button_properties(
+				bool is_active,
+				bool is_enabled);
+
+		/**
+		 * Reconfigures the button icon, tooltip etc. to indicate state.
+		 */
+		void
+		set_reconstruction_button_properties(
+				bool is_active,
+				bool is_enabled);
 	
 		ManageFeatureCollectionsDialog &d_feature_collections_dialog;
 		GPlatesAppState::ApplicationState::file_info_iterator d_file_info_iterator;
@@ -98,4 +112,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSACTIONWIDGET_H
+#endif  // GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSSTATEWIDGET_H

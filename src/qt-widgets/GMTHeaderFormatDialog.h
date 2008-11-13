@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -43,21 +43,21 @@ namespace GPlatesQtWidgets
 
 	public:
 		explicit
-			GMTHeaderFormatDialog(
-			QWidget *parent_ = NULL);
+		GMTHeaderFormatDialog(
+				QWidget *parent_ = NULL);
 
 		/**
 		 * Returns GMT header format selected by user after dialog closes.
 		 */
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format
-			get_header_format() const
+				get_header_format() const
 		{
 			return d_header_format;
 		}
 
 	public slots:
 		void
-			finished();
+		finished();
 
 	private:
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format d_header_format;

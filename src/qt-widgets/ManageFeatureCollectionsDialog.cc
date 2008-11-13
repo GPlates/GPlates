@@ -27,6 +27,9 @@
 #include <QHeaderView>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QPushButton>
+#include <QDebug>
+
 #include "ApplicationState.h"
 #include "ViewportWindow.h"
 #include "file-io/FileInfo.h"
@@ -36,9 +39,12 @@
 #include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
+#include "feature-visitors/FeatureCollectionClassifier.h"
 #include "ManageFeatureCollectionsActionWidget.h"
-#include "ManageFeatureCollectionsDialog.h"
+#include "ManageFeatureCollectionsStateWidget.h"
 #include "GMTHeaderFormatDialog.h"
+
+#include "ManageFeatureCollectionsDialog.h"
 
 
 namespace
@@ -63,6 +69,7 @@ namespace
 		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
 		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
 		static const QString format_gpml_gz(QObject::tr("Compressed GPML"));
+		static const QString format_gmt(QObject::tr("GMT xy"));
 		static const QString format_unknown(QObject::tr(""));
 		
 		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
@@ -81,6 +88,9 @@ namespace
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
 			return format_gpml_gz;
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
+			return format_gmt;
 
 		default:
 			return format_unknown;
@@ -104,7 +114,25 @@ namespace
 		static const QString filter_all(QObject::tr("All files (*)"));
 		
 		QFileInfo qfileinfo = fileinfo.get_qfileinfo();
+		// Get the FeatureCollection from the FileInfo and determine whether it
+		// contains reconstructable and/or reconstruction features.
+		bool has_reconstructable_features = true;
+		bool has_reconstruction_features = true;
+		if (fileinfo.get_feature_collection()) {
+			GPlatesFeatureVisitors::FeatureCollectionClassifier classifier;
+			classifier.scan_feature_collection(
+					GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
+							*fileinfo.get_feature_collection()) );
+			
+			if (classifier.reconstructable_feature_count() == 0) {
+				has_reconstructable_features = false;
+			}
+			if (classifier.reconstruction_feature_count() == 0) {
+				has_reconstruction_features = false;
+			}
+		}
 		
+		// Build the list of filters depending on the original file format.
 		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
 		{
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
@@ -114,8 +142,8 @@ namespace
 				if (has_gzip) {
 					filters << filter_gpml_gz;
 				}
-				filters << filter_line;
 				filters << filter_gpml;
+				filters << filter_line;
 				filters << filter_all;
 				return filters.join(";;");
 
@@ -129,8 +157,8 @@ namespace
 				if (has_gzip) {
 					filters << filter_gpml_gz;
 				}
-				filters << filter_gmt;
 				filters << filter_gpml;
+				filters << filter_gmt;
 				filters << filter_all;
 				return filters.join(";;");
 
@@ -159,8 +187,8 @@ namespace
 				if (has_gzip) {
 					filters << filter_gpml_gz;
 				}
-				filters << filter_gmt;
 				filters << filter_gpml;
+				filters << filter_gmt;
 				filters << filter_all;
 				return filters.join(";;");
 
@@ -174,11 +202,17 @@ namespace
 				if (has_gzip) {
 					filters << filter_gpml_gz;	// Option to change to compressed version.
 				}
-				filters << filter_gmt;
-				filters << filter_line;
-				// FIXME: Only offer to save as PLATES4 .rot if feature collection
-				// actually has rotations in it! Ditto with collections that have no features!
-				filters << filter_rotation;
+				if (has_reconstructable_features) {
+					// Only offer to save in line-only formats if feature collection
+					// actually has reconstructable features in it!
+					filters << filter_gmt;
+					filters << filter_line;
+				}
+				if (has_reconstruction_features) {
+					// Only offer to save as PLATES4 .rot if feature collection
+					// actually has rotations in it!
+					filters << filter_rotation;
+				}
 				filters << filter_all;
 				return filters.join(";;");
 
@@ -190,11 +224,17 @@ namespace
 					filters << filter_gpml_gz;	// Save compressed by default, assuming we can.
 				}
 				filters << filter_gpml;			// Option to change to uncompressed version.
-				filters << filter_gmt;
-				filters << filter_line;
-				// FIXME: Only offer to save as PLATES4 .rot if feature collection
-				// actually has rotations in it! Ditto with collections that have no features!
-				filters << filter_rotation;
+				if (has_reconstructable_features) {
+					// Only offer to save in line-only formats if feature collection
+					// actually has reconstructable features in it!
+					filters << filter_gmt;
+					filters << filter_line;
+				}
+				if (has_reconstruction_features) {
+					// Only offer to save as PLATES4 .rot if feature collection
+					// actually has rotations in it!
+					filters << filter_rotation;
+				}
 				filters << filter_all;
 				return filters.join(";;");
 			
@@ -224,7 +264,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	QHeaderView *header = table_feature_collections->horizontalHeader();
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
-	header->resizeSection(ColumnNames::IN_USE, 56);
+	header->resizeSection(ColumnNames::IN_USE, 88);
 	header->resizeSection(ColumnNames::ACTIONS, 216);
 
 	// Enforce minimum row height for the Actions widget's sake.
@@ -260,8 +300,34 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
 }
 
 void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_state()
+{
+	int row = 0;
+	int end = table_feature_collections->rowCount();
+	for (; row < end; ++row) {
+		// Update the State widget.
+		ManageFeatureCollectionsStateWidget *state_widget = dynamic_cast<ManageFeatureCollectionsStateWidget *>(
+				table_feature_collections->cellWidget(row, ColumnNames::IN_USE));
+		if (state_widget) {
+			GPlatesAppState::ApplicationState::file_info_iterator file_it =
+					state_widget->get_file_info_iterator();
+			bool in_use_reconstructable = d_viewport_window_ptr->is_file_active_reconstructable(file_it);
+			bool in_use_reconstruction = d_viewport_window_ptr->is_file_active_reconstruction(file_it);
+			state_widget->update_state(in_use_reconstructable, in_use_reconstruction);
+		}
+		// Update the Action widget.
+		ManageFeatureCollectionsActionWidget *action_widget = dynamic_cast<ManageFeatureCollectionsActionWidget *>(
+				table_feature_collections->cellWidget(row, ColumnNames::ACTIONS));
+		if (action_widget) {
+			action_widget->update_state();
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
-	ManageFeatureCollectionsActionWidget *action_widget_ptr)
+		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
 	// The "edit configuration" method only makes sense for shapefiles 
 	// (until there is some sort of equivalent requirement for other types of 
@@ -509,6 +575,38 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_file(
 }
 
 
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstructable_state_for_file(
+		ManageFeatureCollectionsStateWidget *state_widget_ptr,
+		bool desired_state)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			state_widget_ptr->get_file_info_iterator();
+	// TODO: Depending on desired_state, ask the ViewportWindow(*) to activate or
+	// deactivate the loaded file for the given file_info_iterator list.
+	// Shouldn't use ViewportWindow::deactivate_loaded_file, because that
+	// operates on both lists and has side effects right now.
+	// (*) - Well, actually ViewState.
+	d_viewport_window_ptr->set_file_active_reconstructable(file_it, desired_state);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstruction_state_for_file(
+		ManageFeatureCollectionsStateWidget *state_widget_ptr,
+		bool desired_state)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			state_widget_ptr->get_file_info_iterator();
+	// TODO: Depending on desired_state, ask the ViewportWindow(*) to activate or
+	// deactivate the loaded file for the given file_info_iterator list.
+	// Shouldn't use ViewportWindow::deactivate_loaded_file, because that
+	// operates on both lists and has side effects right now.
+	// (*) - Well, actually ViewState.
+	d_viewport_window_ptr->set_file_active_reconstruction(file_it, desired_state);
+}
+
+
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_file()
@@ -543,13 +641,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::clear_rows()
 }
 
 
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget *
+void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 		GPlatesAppState::ApplicationState::file_info_iterator file_it)
 {
-	static const QString in_use_str(tr("Yes"));
-	static const QString not_in_use_str(tr(""));
-
 	// Obtain information from the FileInfo
 	const QFileInfo &qfileinfo = file_it->get_qfileinfo();
 	
@@ -557,7 +652,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	QString filename_str = qfileinfo.fileName();
 	QString filepath_str = qfileinfo.path();
 	QString format_str = get_format_for_file(qfileinfo);
-	bool in_use = d_viewport_window_ptr->is_file_active(file_it);
+	bool in_use_reconstructable = d_viewport_window_ptr->is_file_active_reconstructable(file_it);
+	bool in_use_reconstruction = d_viewport_window_ptr->is_file_active_reconstruction(file_it);
 	
 	// Add blank row.
 	int row = table_feature_collections->rowCount();
@@ -575,15 +671,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	table_feature_collections->setItem(row, ColumnNames::FORMAT, format_item);
 
 	// Add in use status.
-	QTableWidgetItem *in_use_item = new QTableWidgetItem();
-	if (in_use)	{
-		in_use_item->setText(in_use_str);
-	} else {
-		in_use_item->setText(not_in_use_str);
-	}
-	in_use_item->setFlags(Qt::ItemIsEnabled);
-	in_use_item->setTextAlignment(Qt::AlignCenter);
-	table_feature_collections->setItem(row, ColumnNames::IN_USE, in_use_item);
+	ManageFeatureCollectionsStateWidget *state_widget_ptr =
+			new ManageFeatureCollectionsStateWidget(*this, file_it, 
+					in_use_reconstructable, in_use_reconstruction, this);
+	table_feature_collections->setCellWidget(row, ColumnNames::IN_USE, state_widget_ptr);
 	
 	// Add action buttons widget.
 	ManageFeatureCollectionsActionWidget *action_widget_ptr =
@@ -595,8 +686,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	{
 		action_widget_ptr->enable_edit_configuration_button();
 	}
-
-	return action_widget_ptr;
 }
 
 

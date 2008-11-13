@@ -78,6 +78,7 @@
 #include "gui/FeatureColourTable.h"
 #include "gui/AgeColourTable.h"
 #include "gui/GlobeCanvasPainter.h"
+#include "feature-visitors/FeatureCollectionClassifier.h"
 
 
 void
@@ -181,21 +182,29 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 					GPlatesAppState::ApplicationState::file_info_iterator new_file =
 						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
 
-					// GPML format files are made active by default.
-					// FIXME: However, GPML files are magical and can contain rotation trees too.
-					// What do we do about those? Obviously this file must be made 'active' because
-					// it contains new feature data - however we may want some clever code in here
-					// to check if it also contains rotation data, and if so, deactivate any prior
-					// rotation files.
-					// FIXME: And THEN what happens when we load another rotation file on top? Can't
-					// deactivate half of this GPML file, can we?
-					d_active_reconstructable_files.push_back(new_file);
-
-					// So for now, let's pretend we've got some rotation data in here.
-					// We only want to make the first rotation file active.
-					d_active_reconstruction_files.clear();
-					d_active_reconstruction_files.push_back(new_file);
-					have_loaded_new_rotation_file = true;
+					// GPML format files can contain both reconstructable features and
+					// reconstruction trees. This visitor lets us find out which.
+					if (file.get_feature_collection()) {
+						GPlatesFeatureVisitors::FeatureCollectionClassifier classifier;
+						classifier.scan_feature_collection(
+								GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
+										*file.get_feature_collection())
+								);
+						// Check if the file contains reconstructable features.
+						if (classifier.reconstructable_feature_count() > 0) {
+							d_active_reconstructable_files.push_back(new_file);
+						}
+						// Check if the file contains reconstruction features.
+						if (classifier.reconstruction_feature_count() > 0) {
+							// We only want to make the first rotation file active.
+							if ( ! have_loaded_new_rotation_file) 
+							{
+								d_active_reconstruction_files.clear();
+								d_active_reconstruction_files.push_back(new_file);
+								have_loaded_new_rotation_file = true;
+							}
+						}
+					}
 				}
 				break;
 
@@ -268,6 +277,12 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 					" files which are not compressed.")
 					.arg(e.command())
 					.arg(e.filename());
+			QMessageBox::critical(this, tr("Error Opening File"), message,
+					QMessageBox::Ok, QMessageBox::Ok);
+		}
+		catch (GPlatesFileIO::FileFormatNotSupportedException &)
+		{
+			QString message = tr("Error: Loading files in this format is currently not supported.");
 			QMessageBox::critical(this, tr("Error Opening File"), message,
 					QMessageBox::Ok, QMessageBox::Ok);
 		}
@@ -359,7 +374,9 @@ GPlatesQtWidgets::ViewportWindow::reload_file(
 	
 	// Internal state changed, make sure dialogs are up to date.
 	d_read_errors_dialog.update();
-	d_manage_feature_collections_dialog.update();
+	// We should be able to get by with just updating the MFCD's state buttons,
+	// not rebuild the whole table. This avoids an ugly table redraw.
+	d_manage_feature_collections_dialog.update_state();
 
 	// Pop up errors only if appropriate.
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
@@ -1297,6 +1314,15 @@ bool
 GPlatesQtWidgets::ViewportWindow::is_file_active(
 		file_info_iterator loaded_file)
 {
+	return is_file_active_reconstructable(loaded_file) ||
+			is_file_active_reconstruction(loaded_file);
+}
+
+
+bool
+GPlatesQtWidgets::ViewportWindow::is_file_active_reconstructable(
+		file_info_iterator loaded_file)
+{
 	active_files_iterator reconstructable_it = d_active_reconstructable_files.begin();
 	active_files_iterator reconstructable_end = d_active_reconstructable_files.end();
 	for (; reconstructable_it != reconstructable_end; ++reconstructable_it) {
@@ -1304,7 +1330,14 @@ GPlatesQtWidgets::ViewportWindow::is_file_active(
 			return true;
 		}
 	}
+	return false;
+}
 
+
+bool
+GPlatesQtWidgets::ViewportWindow::is_file_active_reconstruction(
+		file_info_iterator loaded_file)
+{
 	active_files_iterator reconstruction_it = d_active_reconstruction_files.begin();
 	active_files_iterator reconstruction_end = d_active_reconstruction_files.end();
 	for (; reconstruction_it != reconstruction_end; ++reconstruction_it) {
@@ -1312,9 +1345,67 @@ GPlatesQtWidgets::ViewportWindow::is_file_active(
 			return true;
 		}
 	}
-
-	// loaded_file not found in any active files lists, must not be active.
 	return false;
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::set_file_active_reconstructable(
+		file_info_iterator file_it,
+		bool activate)
+{
+	if (activate) {
+		// Add it to the list, if it's not there already.
+		if ( ! is_file_active_reconstructable(file_it)) {
+			d_active_reconstructable_files.push_back(file_it);
+		}
+	} else {
+		// Don't bother checking whether 'loaded_file' is actually an element of
+		// 'd_active_reconstructable_files' and/or 'd_active_reconstruction_files' -- just tell the
+		// lists to remove the value if it *is* an element.
+		
+		// list<T>::remove(const T &val) -- remove all elements with value 'val'.
+		// Will not throw (unless element comparisons can throw).
+		// See Josuttis section 6.10.7 "Inserting and Removing Elements".
+		d_active_reconstructable_files.remove(file_it);
+	}
+	// Active features changed, will need to reconstruct() to make RFGs for them.
+	reconstruct();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::set_file_active_reconstruction(
+		file_info_iterator file_it,
+		bool activate)
+{
+	if (activate) {
+		// At the moment, we only want one active reconstruction tree
+		// at a time. Deactivate the others, and update ManageFeatureCollectionsDialog
+		// so that the other buttons get deselected appropriately.
+		d_active_reconstruction_files.clear();
+		d_active_reconstruction_files.push_back(file_it);
+		// NOTE: in the current setup, the only place this set_file_active_xxxx()
+		// method is called is by ManageFeatureCollectionsDialog itself, in response
+		// to a button press. Therefore we can assume it is up-to-date already, except
+		// for this one case where we have cleared all the other reconstruction files.
+		// If this situation changes and other code will also be calling
+		// set_file_active_xxxx() or otherwise messing with file 'active' status, you
+		// will need to call ManageFeatureCollectionsDialog::update_state() at the end
+		// of both these methods.
+		d_manage_feature_collections_dialog.update_state();
+	} else {
+		// Don't bother checking whether 'loaded_file' is actually an element of
+		// 'd_active_reconstructable_files' and/or 'd_active_reconstruction_files' -- just tell the
+		// lists to remove the value if it *is* an element.
+		
+		// list<T>::remove(const T &val) -- remove all elements with value 'val'.
+		// Will not throw (unless element comparisons can throw).
+		// See Josuttis section 6.10.7 "Inserting and Removing Elements".
+		d_active_reconstruction_files.remove(file_it);
+	}
+	// Active rotation changed, will need to reconstruct() to make make use of it.
+	reconstruct();
 }
 
 

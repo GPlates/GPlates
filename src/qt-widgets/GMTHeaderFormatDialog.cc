@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,9 +27,9 @@
 #include "GMTHeaderFormatDialog.h"
 
 GPlatesQtWidgets::GMTHeaderFormatDialog::GMTHeaderFormatDialog(
-	QWidget *parent_) :
-QDialog(parent_),
-d_header_format(GPlatesFileIO::FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER)
+		QWidget *parent_):
+	QDialog(parent_),
+	d_header_format(GPlatesFileIO::FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER)
 {
 	setupUi(this);
 

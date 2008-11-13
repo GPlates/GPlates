@@ -5,91 +5,82 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>445</width>
-    <height>211</height>
+    <width>381</width>
+    <height>203</height>
    </rect>
   </property>
   <property name="windowTitle" >
    <string>Dialog</string>
   </property>
-  <widget class="QGroupBox" name="group_box_format" >
-   <property name="geometry" >
-    <rect>
-     <x>20</x>
-     <y>10</y>
-     <width>411</width>
-     <height>181</height>
-    </rect>
-   </property>
-   <property name="title" >
-    <string>GMT Header Format</string>
-   </property>
-   <widget class="QLabel" name="label_header_type" >
-    <property name="geometry" >
-     <rect>
-      <x>130</x>
-      <y>10</y>
-      <width>105</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="text" >
-     <string>What goes in header?</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="radio_button_feature_properties" >
-    <property name="geometry" >
-     <rect>
-      <x>130</x>
-      <y>70</y>
-      <width>161</width>
-      <height>18</height>
-     </rect>
-    </property>
-    <property name="text" >
-     <string>Verbose (property values)</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="radio_button_plates4_header" >
-    <property name="geometry" >
-     <rect>
-      <x>130</x>
-      <y>40</y>
-      <width>131</width>
-      <height>18</height>
-     </rect>
-    </property>
-    <property name="text" >
-     <string>PLATES4 style</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="radio_button_prefer_plate4_style" >
-    <property name="geometry" >
-     <rect>
-      <x>130</x>
-      <y>100</y>
-      <width>211</width>
-      <height>18</height>
-     </rect>
-    </property>
-    <property name="text" >
-     <string>Use PLATES4 style, otherwise verbose</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="push_button_finished" >
-    <property name="geometry" >
-     <rect>
-      <x>170</x>
-      <y>140</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text" >
-     <string>OK</string>
-    </property>
-   </widget>
-  </widget>
+  <layout class="QVBoxLayout" >
+   <item>
+    <widget class="QGroupBox" name="group_box_format" >
+     <property name="title" >
+      <string>GMT Header Format</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <item>
+       <widget class="QLabel" name="label_header_type" >
+        <property name="text" >
+         <string>Select what additional information should be added to the header:</string>
+        </property>
+        <property name="wordWrap" >
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radio_button_plates4_header" >
+        <property name="text" >
+         <string>&amp;PLATES4 style header information</string>
+        </property>
+        <property name="checked" >
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radio_button_feature_properties" >
+        <property name="text" >
+         <string>&amp;Verbose (GPGIM property values)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radio_button_prefer_plate4_style" >
+        <property name="text" >
+         <string>&amp;Use PLATES4 style, otherwise verbose</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="push_button_finished" >
+       <property name="text" >
+        <string>OK</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections/>

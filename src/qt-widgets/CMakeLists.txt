@@ -113,6 +113,9 @@ set(srcs
     ManageFeatureCollectionsDialog.cc
     ManageFeatureCollectionsDialog.h
     ManageFeatureCollectionsDialogUi.ui
+    ManageFeatureCollectionsStateWidget.cc
+    ManageFeatureCollectionsStateWidget.h
+    ManageFeatureCollectionsStateWidgetUi.ui
     NoActiveEditWidgetException.h
     PropertyValueNotSupportedException.h
     QueryFeaturePropertiesWidget.cc
