@@ -1,4 +1,4 @@
-Build On Linux
+Build On Mac OSX
 
 Table of Contents
 
@@ -20,7 +20,7 @@ Package dependencies
 Firstly, you should ensure that you have installed all the packages which are
 dependencies for compilation.
 
-See "DEPS.Linux" for more information on installing dependencies.
+See "DEPS.OSX" for more information on installing dependencies.
 
 Commands to execute
 

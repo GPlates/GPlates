@@ -26,7 +26,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
 # 4) MinSizeRel - release build optimised for size.
 IF(NOT MSVC)
     IF(NOT CMAKE_BUILD_TYPE)
-      SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+      SET(CMAKE_BUILD_TYPE Release CACHE STRING
           "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel ${extra_build_configurations}."
           FORCE)
     ENDIF(NOT CMAKE_BUILD_TYPE)
