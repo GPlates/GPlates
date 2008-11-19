@@ -51,6 +51,11 @@ Installing dependencies using Macports
     For example, "export http_proxy=http://www-cache.usyd.edu.au:8080".
   • Update Macports with 'sudo port -d selfupdate'.
   • Install CMake with 'sudo port install cmake' if you don't have CMake.
+  • If the port installation seems to hang then the proxy settings aren't working and you'll
+    need to download the 'cmake' port tarball by following the instructions in
+    http://trac.macports.org/wiki/howto/PortTreeTarball and then run the 'port install' command again.
+    Thanks to Jo Whittaker for pointing this out.
+    The same applies to the following port installs.
   • Install Qt4 with 'sudo port install qt4-mac' if you don't have Qt4.
   • Install Boost with 'sudo port install boost' if you don't have Boost.
   • Install ICU with 'sudo port install icu' if you don't have ICU.
