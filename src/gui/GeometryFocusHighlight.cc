@@ -25,6 +25,8 @@
 
 #include <boost/none.hpp>
 #include "GeometryFocusHighlight.h"
+#include "utils/GeometryCreationUtils.h"
+#include <vector>
 
 
 void
@@ -52,8 +54,50 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 		GPlatesGui::RenderedGeometry rendered_geometry =
 				GPlatesGui::RenderedGeometry(d_focused_geometry->geometry(), white);
 		d_highlight_layer_ptr->push_back(rendered_geometry);
+
+		// add decorations as needed
+		rendered_geometry.geometry()->accept_visitor(*this);
+	
 	} else {
 		// No focused geometry, so nothing to draw.
 	}
 	emit canvas_should_update();
 }
+
+void
+GPlatesGui::GeometryFocusHighlight::visit_polyline_on_sphere(
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
+{
+		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::SILVER;
+
+		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
+		std::vector<GPlatesMaths::PointOnSphere> points;
+
+		// get the begin and end points ; NOTE the -- on end
+		GPlatesMaths::PolylineOnSphere::vertex_const_iterator v_begin= polyline->vertex_begin();
+		GPlatesMaths::PolylineOnSphere::vertex_const_iterator v_end= --(polyline->vertex_end());
+
+		// add the first point of the line to the layer
+		points.clear();
+		points.push_back( *v_begin );
+
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> g_start = 
+				GPlatesUtils::create_point_on_sphere(points, validity);
+
+		GPlatesGui::RenderedGeometry rg_start = 
+			GPlatesGui::RenderedGeometry( *g_start, colour, 7.0f );
+
+		d_highlight_layer_ptr->push_back( rg_start );
+
+		// add the last point of the line to the layer
+		points.clear();
+		points.push_back( *v_end );
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> g_end = 
+				GPlatesUtils::create_point_on_sphere(points, validity);
+
+		GPlatesGui::RenderedGeometry rg_end = 
+			GPlatesGui::RenderedGeometry( *g_end, colour, 5.0f);
+
+		d_highlight_layer_ptr->push_back( rg_end );
+}
+
