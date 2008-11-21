@@ -506,6 +506,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&(d_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
 					GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
 	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_modified(
 					GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
@@ -901,19 +902,26 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 
 
 void
-GPlatesQtWidgets::ViewportWindow::highlight_segments_table_row(int i) const
+GPlatesQtWidgets::ViewportWindow::highlight_segments_table_row(int i, bool state) const
 {
 	QModelIndex idx = d_segments_feature_table_model_ptr->index(i, 0);
 	
-	if (idx.isValid()) {
+	if (idx.isValid()) 
+	{
 		table_view_platepolygon_segments->selectionModel()->clear();
-		table_view_platepolygon_segments->selectionModel()->select(idx,
-				QItemSelectionModel::Select |
-				QItemSelectionModel::Current |
-				QItemSelectionModel::Rows);
-		table_view_platepolygon_segments->scrollTo(idx);
+
+		if ( state )
+		{
+			table_view_platepolygon_segments->selectionModel()->select(idx,
+					QItemSelectionModel::Select |
+					QItemSelectionModel::Current |
+					QItemSelectionModel::Rows);
+			table_view_platepolygon_segments->scrollTo(idx);
+		}
 	}
 }
+
+
 
 
 
