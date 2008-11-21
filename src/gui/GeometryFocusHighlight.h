@@ -34,6 +34,8 @@
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
+
 
 namespace GPlatesGui
 {
@@ -42,7 +44,8 @@ namespace GPlatesGui
 	 * geometry.
 	 */
 	class GeometryFocusHighlight:
-			public QObject
+			public QObject,	
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 		Q_OBJECT
 	public:
@@ -55,6 +58,13 @@ namespace GPlatesGui
 		virtual
 		~GeometryFocusHighlight()
 		{  }
+
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline);
+
 
 	public slots:
 
