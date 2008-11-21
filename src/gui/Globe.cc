@@ -93,7 +93,7 @@ namespace
 		// highlight the polygon vertices
 		iter = begin;
 		for ( ; iter != end; ++iter) {
-			glPointSize(6.0f);
+			glPointSize(8.0f);
 			glBegin(GL_POINTS);
 				draw_vertex(iter->start_point());
 			glEnd();
@@ -154,6 +154,7 @@ namespace
 				const GPlatesGui::RenderedGeometry &rendered_geometry)
 		{
 			d_colour = rendered_geometry.colour();
+			d_size = rendered_geometry.size();
 			rendered_geometry.geometry()->accept_visitor(*this);
 		}
 
@@ -180,6 +181,8 @@ namespace
 			// FIXME:  We should assert that the boost::optional is not boost::none.
 			glColor3fv(**d_colour);
 			glPointSize(4.0f);
+			GLfloat s = static_cast<GLfloat>( *d_size );
+			glPointSize(s);
 			glBegin(GL_POINTS);
 			if ( d_globe_ptr->d_show_point ) { 
 				draw_vertex(*point);
@@ -218,6 +221,7 @@ namespace
 		float d_gl_line_width;
 		GPlatesGui::Globe *const d_globe_ptr;
 		boost::optional<GPlatesGui::PlatesColourTable::const_iterator> d_colour;
+		boost::optional<float> d_size;
 	};
 
 
