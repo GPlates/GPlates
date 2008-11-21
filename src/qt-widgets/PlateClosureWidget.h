@@ -113,7 +113,7 @@ namespace GPlatesQtWidgets
 		 * From the Segments Table, create the tmp. geom. and property value items 
 		 */
 		void
-		create_sections_from_segments();
+		create_sections_from_segments_table();
 
 		/**
 		 * FIXME:
@@ -380,26 +380,37 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * These d_tmp_ vars are all set by the canvas tool, or the widget
+		 * and used during interation around the Segments Table as the code
+		 * bounces between visitor functions and intersection processing functions.
 		 */
 		int d_tmp_index;
 		int d_tmp_segments_size;
-		bool d_tmp_check_intersections;
 		int d_tmp_prev_index;
 		int d_tmp_next_index;
 
-		
+		bool d_tmp_index_use_reverse;
+		bool d_tmp_check_intersections;
+
+		std::vector<GPlatesMaths::PointOnSphere> d_tmp_index_vertex_list;
+
+
 		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> 
 			d_source_geometry_property_delegate_ptrs;
 
-		GPlatesModel::FeatureId d_tmp_feature_id;
+		GPlatesModel::FeatureId d_tmp_index_fid;
 
 		QString d_tmp_property_name;
 		QString d_tmp_value_type;
 
 
+		/**
+		* thise d_ vars keep track of the widget's current state as data is transfered from
+		* the Clicked Table to the Segments Table
+		*/
 		bool d_use_reverse;
 
-		std::vector<GPlatesMaths::PointOnSphere> d_tmp_vertex_list;
+
+		std::vector<GPlatesMaths::PointOnSphere> d_intersection_vertex_list;
 
 
 		int d_num_intersections_with_prev;

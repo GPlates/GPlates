@@ -186,7 +186,7 @@ namespace
 	 * GeometryOnSphere::non_null_ptr_to_const_type.
 	 */
 	geometry_opt_ptr_type
-	create_geometry_from_table_items(
+	create_geometry_from_vertex_list(
 			std::vector<GPlatesMaths::PointOnSphere> &points,
 			GPlatesQtWidgets::PlateClosureWidget::GeometryType target_geom_type,
 			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity)
@@ -201,7 +201,7 @@ namespace
 		for ( itr = points.begin() ; itr != points.end(); ++itr)
 		{
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*itr);
-			std::cout << "POINTS: " << llp << std::endl;
+			std::cout << "create_geometry_from_vertex_list: llp=" << llp << std::endl;
 		}
 	
 
@@ -351,10 +351,9 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature(
 	clear();
 
 	// always check your weak_refs!
-	if ( ! feature_ref.is_valid() ) {
+	if ( ! feature_ref.is_valid() ) 
+	{
 std::cout << "PlateClosureWidget::display_feature: ref NOT valid" << std::endl;
-
-
 		// Don't Disable the whole widget with setDisabled(true); ...
 		// ... just disable some widgets
 		button_use_coordinates_in_reverse->setEnabled(false);
@@ -363,16 +362,65 @@ std::cout << "PlateClosureWidget::display_feature: ref NOT valid" << std::endl;
 		button_clear_feature->setEnabled(false);
 
 		return;
-	} else {
+	} 
+	else 
+	{
 std::cout << "PlateClosureWidget::display_feature: ref valid" << std::endl;
-
 		setDisabled(false);
 
 		button_use_coordinates_in_reverse->setEnabled(true);
 		button_choose_feature->setEnabled(true);
 		button_remove_feature->setEnabled(true);
 		button_clear_feature->setEnabled(true);
+
+		if ( d_view_state_ptr->get_tab() == 0)
+		{
+			// check if a row of Segments Table needs highlight
+			// pointers to the tables
+			GPlatesGui::FeatureTableModel &segments_table = 
+				d_view_state_ptr->segments_feature_table_model();
+
+			GPlatesGui::FeatureTableModel &clicked_table = 
+				d_view_state_ptr->feature_table_model();
+
+			int click_index = clicked_table.current_index().row();
+
+			GPlatesModel::ReconstructionGeometry *rg = 
+				clicked_table.geometry_sequence().at(click_index).get();
+
+			GPlatesModel::ReconstructedFeatureGeometry *rfg =
+				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+
+			GPlatesModel::FeatureId clicked_fid = rfg->feature_ref()->feature_id();
+
+			// loop over each geom in the Segments Table
+			std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
+			std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator end;
+			iter = segments_table.geometry_sequence().begin();	
+			end = segments_table.geometry_sequence().end();
+
+			for ( int i = 0; iter != end ; ++iter, ++i)
+			{
+std::cout << "IIIIIIIIIIIIIIIIIIIIIIIIIIII=" << i << std::endl;
+				GPlatesModel::ReconstructionGeometry *rg = iter->get();
+				GPlatesModel::ReconstructedFeatureGeometry *rfg =
+					dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+				GPlatesModel::FeatureId index_fid = rfg->feature_ref()->feature_id();
+	
+				if (clicked_fid == index_fid)
+				{
+					d_view_state_ptr->highlight_segments_table_row(i, true);
+					break;
+				}
+std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
+			}
+
+		}
+#if 0
+#endif
+
 	}
+
 	
 	// Populate the widget from the FeatureHandle:
 	
@@ -386,7 +434,8 @@ std::cout << "PlateClosureWidget::display_feature: ref valid" << std::endl;
 		GPlatesModel::PropertyName::create_gml("name");
 	GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
 	string_finder.visit_feature_handle(*feature_ref);
-	if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
+	if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+	{
 		// The feature has one or more name properties. Use the first one for now.
 		GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
 				*string_finder.found_strings_begin();
@@ -400,7 +449,8 @@ std::cout << "PlateClosureWidget::display_feature: ref valid" << std::endl;
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
 	plate_id_finder.visit_feature_handle(*feature_ref);
-	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+	{
 		// The feature has a reconstruction plate ID.
 		GPlatesModel::integer_plate_id_type recon_plate_id =
 				*plate_id_finder.found_plate_ids_begin();
@@ -413,7 +463,8 @@ std::cout << "PlateClosureWidget::display_feature: ref valid" << std::endl;
 		GPlatesModel::PropertyName::create_gml("validTime");
 	GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
 	time_period_finder.visit_feature_handle(*feature_ref);
-	if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
+	if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) 
+	{
 		// The feature has a gml:validTime property.
 		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
 				*time_period_finder.found_time_periods_begin();
@@ -471,6 +522,7 @@ GPlatesQtWidgets::PlateClosureWidget::initialise_geometry(
 {
 	clear();
 	d_use_reverse = false;
+	d_tmp_index_use_reverse = false;
 	d_geometry_type = geom_type;
 }
 
@@ -542,11 +594,16 @@ std::cout << "use rever; tab 2; row=" << segments_table.current_index().row() <<
 		{
 			int index = segments_table.current_index().row();
 
-			// re-set the flag in the vector
-			d_use_reverse_flags.at(index) = !d_use_reverse_flags.at(index);
+std::cout << "use rever; tab 2 ; size=" << d_use_reverse_flags.size() << std::endl;
 
 std::cout << "use rever; tab 2 ; is valid; index=" << index 
-<< "; use=" << d_use_reverse_flags.at(index) << std::endl;
+<< "; use=" << d_use_reverse_flags.at( index ) << std::endl;
+
+			// re-set the flag in the vector
+			d_use_reverse_flags.at( index ) = !d_use_reverse_flags.at( index );
+
+std::cout << "use rever; tab 2 ; is valid; index=" << index 
+<< "; use=" << d_use_reverse_flags.at( index ) << std::endl;
 
 			if ( d_use_reverse_flags.at(index) ) {
 				lineedit_first->setText( d_last_coord );
@@ -556,12 +613,16 @@ std::cout << "use rever; tab 2 ; is valid; index=" << index
 				lineedit_last->setText( d_last_coord );
 			}
 
+
 			// process the segments table
 			update_geometry();
+
+			// un-highlight the segments table row for this feature
+			d_view_state_ptr->highlight_segments_table_row( index, false );
+
 			return;
 		}
 	}
-		
 }
 
 void
@@ -584,9 +645,12 @@ GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 		clicked_table.geometry_sequence().at(click_index) );
 	segments_table.end_insert_features();
 
+#if 0
+// FIXME: remove; don't need to highlight each feature as it is selected
 	// highlight the segments table row for this feature
 	int segments_index = segments_table.geometry_sequence().size() - 1;
 	d_view_state_ptr->highlight_segments_table_row( segments_index );
+#endif
 
 	// append the current flag
 	d_use_reverse_flags.push_back(d_use_reverse);
@@ -599,9 +663,9 @@ GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 	// process the segments table
 	update_geometry();
 
-	// FIXME: this undoes the connection to highlight_segments_table_row 
 	// uset the focus
-	// d_feature_focus_ptr->unset_focus();
+	// NOTE: this undoes the connection to highlight_segments_table_row 
+	d_feature_focus_ptr->unset_focus();
 
 	// clear the "Clicked" table
 	d_view_state_ptr->feature_table_model().clear();
@@ -703,7 +767,7 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 
 	// enmpty the vertex list
 	d_vertex_list.clear();
-	d_tmp_vertex_list.clear();
+	d_tmp_index_vertex_list.clear();
 
 	// clear this tool's layer
 	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
@@ -728,9 +792,12 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 	// flip tab to clicked table
 	d_view_state_ptr->change_tab( 0 );
 
-	// enmpty the vertex list
+	// empty the vertex list
 	d_vertex_list.clear();
-	d_tmp_vertex_list.clear();
+	d_tmp_index_vertex_list.clear();
+
+	// empty the flags list
+	d_use_reverse_flags.clear();
 
 	// clear the drawing layer
 	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
@@ -738,6 +805,8 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 
 	// unset the feature focus
 	d_feature_focus_ptr->unset_focus();
+
+	initialise_geometry(PLATEPOLYGON);
 
 }
 
@@ -754,7 +823,7 @@ std::cout << "multipoint geom" << std::endl;
 	for ( ; itr != end ; ++itr)
 	{
 		// simply append the point to the working list
-		d_tmp_vertex_list.push_back( *itr );
+		d_tmp_index_vertex_list.push_back( *itr );
 	}
 	d_tmp_check_intersections = false;
 }
@@ -766,13 +835,13 @@ GPlatesQtWidgets::PlateClosureWidget::visit_point_on_sphere(
 std::cout << "point geom" << std::endl;
 
 	// simply append the point to the working list
-	d_tmp_vertex_list.push_back( *point_on_sphere );
+	d_tmp_index_vertex_list.push_back( *point_on_sphere );
 
-	// set the d_tmp vars to create a source geometry property delegate 
+	// set the d_tmp vars to create a sourceGeometry property delegate 
 	d_tmp_property_name = "position";
 	d_tmp_value_type = "Point";
 
-	const GPlatesModel::FeatureId fid(d_tmp_feature_id);
+	const GPlatesModel::FeatureId fid(d_tmp_index_fid);
 
 	const GPlatesModel::PropertyName prop_name =
 		GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
@@ -810,14 +879,17 @@ GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 {  
 std::cout << "polyline geom" << std::endl;
 
-	// Set the d_tmp vars to create a source geometry property delegate 
+	// set the global flag for intersection processing 
+	d_tmp_check_intersections = true;
+
+	// Set the d_tmp vars to create a sourceGeometry property delegate 
 	d_tmp_property_name = "centerLineOf";
 	d_tmp_value_type = "LineString";
 
-	const GPlatesModel::FeatureId fid(d_tmp_feature_id);
+	const GPlatesModel::FeatureId fid(d_tmp_index_fid);
 
 	const GPlatesModel::PropertyName prop_name =
-		GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
+		GPlatesModel::PropertyName::create_gpml(d_tmp_property_name);
 
 	const GPlatesPropertyValues::TemplateTypeParameterType value_type =
 		GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
@@ -846,30 +918,29 @@ std::cout << "polyline geom" << std::endl;
 	}
 
 	// check for reverse flag
-	if (d_use_reverse) 
+	if (d_tmp_index_use_reverse) 
 	{
 std::cout << "polyline geom REVERSE" << std::endl;
-		d_tmp_vertex_list.insert( 
-			d_tmp_vertex_list.end(), 
+		d_tmp_index_vertex_list.insert( 
+			d_tmp_index_vertex_list.end(), 
 			polyline_vertices.rbegin(), polyline_vertices.rend() );
 	}
 	else 
 	{
 std::cout << "polyline geom normal" << std::endl;
-		d_tmp_vertex_list.insert( 
-			d_tmp_vertex_list.end(), 
+		d_tmp_index_vertex_list.insert( 
+			d_tmp_index_vertex_list.end(), 
 			polyline_vertices.begin(), polyline_vertices.end() );
 	}
 
-	d_tmp_check_intersections = true;
 
-	// create a GpmlTopologicalPoint from the delegate
+	// create a GpmlTopologicalLineSection from the delegate
 	GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type gtls_ptr =
 		GPlatesPropertyValues::GpmlTopologicalLineSection::create(
 			pd_ptr,
 			boost::none,
 			boost::none,
-			d_use_reverse);
+			d_tmp_index_use_reverse);
 
 	// Fill the vector of GpmlTopologicalSection::non_null_ptr_type 
 	d_sections_ptrs.push_back( gtls_ptr );
@@ -887,13 +958,13 @@ std::cout << "update_geometry: " << std::endl;
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	// loop over Segments Table to fill d_vertex_list
-	create_sections_from_segments();
+	create_sections_from_segments_table();
 
 	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
 
 	// create the temp geom.
 	geometry_opt_ptr_type geometry_opt_ptr = 
-		create_geometry_from_table_items( d_vertex_list, d_geometry_type, validity);
+		create_geometry_from_vertex_list( d_vertex_list, d_geometry_type, validity);
 
 	d_geometry_opt_ptr = geometry_opt_ptr;
 
@@ -920,11 +991,10 @@ GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 
 
 void
-GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments()
+GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments_table()
 {
 	// clear the working lists
 	d_vertex_list.clear();
-	d_tmp_vertex_list.clear();
 
 	d_sections_ptrs.clear();
 
@@ -932,8 +1002,12 @@ GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments()
 	GPlatesGui::FeatureTableModel &segments_table = 
 		d_view_state_ptr->segments_feature_table_model();
 
+	//
 	// super short cut for empty table
-	if ( segments_table.geometry_sequence().empty() ) { return; }
+	//
+	if ( segments_table.geometry_sequence().empty() ) { 
+		return; 
+	}
 
 	// get the size of the table
 	d_tmp_segments_size = segments_table.geometry_sequence().size();
@@ -942,13 +1016,14 @@ GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments()
 	if ( d_tmp_segments_size == 1 )
 	{
 		// visit the geoms. ; will fill d_tmp_ vars
+		d_tmp_index_vertex_list.clear();
 		std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
 		iter = segments_table.geometry_sequence().begin();
 		(*iter)->geometry()->accept_visitor(*this);
 
 		// simply insert tmp items on the list
 		d_vertex_list.insert( d_vertex_list.end(), 
-			d_tmp_vertex_list.begin(), d_tmp_vertex_list.end() );
+			d_tmp_index_vertex_list.begin(), d_tmp_index_vertex_list.end() );
 		return;
 	}
 
@@ -961,17 +1036,24 @@ GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments()
 	iter = segments_table.geometry_sequence().begin();
 	end = segments_table.geometry_sequence().end();
 
-	int d_tmp_index = 0;
+	// re-set the global d_tmp_index to zero for the start of the list;
+	d_tmp_index = 0;
+
 	for ( ; iter != end ; ++iter)
 	{
-// FIXME: remove this diagnostic 
-std::cout << "create_sections_from_segments: d_tmp_index = " << d_tmp_index << std::endl;
-
 		GPlatesModel::ReconstructionGeometry *rg = iter->get();
 
 		GPlatesModel::ReconstructedFeatureGeometry *rfg =
 			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
 
+		// Set the fid for the tmp_index section 
+		d_tmp_index_fid = rfg->feature_ref()->feature_id();
+
+		// set the tmp reverse flag to this feature's flag
+		d_tmp_index_use_reverse = d_use_reverse_flags.at(d_tmp_index);
+
+#ifdef DEBUG
+std::cout << "create_sections_from_segments_table: d_tmp_index = " << d_tmp_index << std::endl;
 		static const GPlatesModel::PropertyName name_property_name =
 			GPlatesModel::PropertyName::create_gml("name");
 
@@ -982,53 +1064,38 @@ std::cout << "create_sections_from_segments: d_tmp_index = " << d_tmp_index << s
 			GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
 				 *string_finder.found_strings_begin();
 			qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
+			qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
+			qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
+			qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
+			qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
 		}
-// FIXME: remove this diagnostic 
+std::cout << "create_sections_from_segments_table: d_use_rev = " << d_tmp_index_use_reverse << std::endl;
+#endif
 
 
+		// clear the index list
+		d_tmp_index_vertex_list.clear();
 
-		// set the tmp reverse flag to this feature's flag
-		d_use_reverse = d_use_reverse_flags.at(d_tmp_index);
-std::cout << "create_sections_from_segments: d_use_rev = " << d_use_reverse << std::endl;
-
-		//
-		// Visit the geoms. ; will fill d_tmp_ vars 
-		//
+		// visit the geoms. ; will fill additional d_tmp_index_ vars 
 		(*iter)->geometry()->accept_visitor(*this);
 
-		// Create a source geometry property delegate 
 
-		d_tmp_feature_id = rfg->feature_ref()->feature_id();
-
-		const GPlatesModel::FeatureId fid(d_tmp_feature_id);
-
-		const GPlatesModel::PropertyName prop_name =
-			GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
-
-		const GPlatesPropertyValues::TemplateTypeParameterType value_type =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
-
-		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd = 
-			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-				fid,
-				prop_name,
-				value_type
-			);
-				
-
-		// check for intersection
+		//
+		// Check for intersection
+		//
 		if ( d_tmp_check_intersections )
 		{
 			process_intersections();
-			// d_tmp_vertex_list may have been modified by process_intersections()
+
+			// d_tmp_index_vertex_list may have been modified by process_intersections()
 			d_vertex_list.insert( d_vertex_list.end(), 
-				d_tmp_vertex_list.begin(), d_tmp_vertex_list.end() );
+				d_tmp_index_vertex_list.begin(), d_tmp_index_vertex_list.end() );
 		}
 		else
 		{
 			// simply insert tmp items on the list
 			d_vertex_list.insert( d_vertex_list.end(), 
-				d_tmp_vertex_list.begin(), d_tmp_vertex_list.end() );
+				d_tmp_index_vertex_list.begin(), d_tmp_index_vertex_list.end() );
 		}
 
 		// update counter d_tmp_index
@@ -1044,10 +1111,11 @@ GPlatesQtWidgets::PlateClosureWidget::process_intersections()
 	GPlatesGui::FeatureTableModel &segments_table = 
 		d_view_state_ptr->segments_feature_table_model();
 
-	// set the tmp click point to this feture's click point
+	// set the tmp click point to d_tmp_index feture's click point
 	d_click_point_lat = d_click_points.at(d_tmp_index).first;
 	d_click_point_lon = d_click_points.at(d_tmp_index).second;
 
+std::cout << std::endl;
 std::cout << "PlateClosureWidget::process_intersections: "
 << "d_click_point_lat = " << d_click_point_lat << "; " 
 << "d_click_point_lon = " << d_click_point_lon << "; " 
@@ -1077,9 +1145,9 @@ std::cout << "PlateClosureWidget::process_intersections: "
 	}
 
 std::cout << "PlateClosureWidget::process_intersections: "
-<< "prev_index = " << d_tmp_prev_index << "; " 
-<< "tmp_index = " << d_tmp_index << "; " 
-<< "next_index = " << d_tmp_next_index << "; " 
+<< "d_prev_index = " << d_tmp_prev_index << "; " 
+<< "d_tmp_index = " << d_tmp_index << "; " 
+<< "d_next_index = " << d_tmp_next_index << "; " 
 << std::endl;
 
 	// reset intersection variables
@@ -1090,27 +1158,25 @@ std::cout << "PlateClosureWidget::process_intersections: "
 	// check for startIntersection
 	//
 
-	// access the Segments Table for the index item
-	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
-	iter = segments_table.geometry_sequence().begin() + d_tmp_index;
+	// NOTE: the d_tmp_index segment may have had its d_tmp_index_vertex_list reversed, 
+	// so use that list of points_on_sphere, rather than the geom from Segments Table.
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type tmp_for_prev_polyline =
+		GPlatesMaths::PolylineOnSphere::create_on_heap( d_tmp_index_vertex_list );
 
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type iter_gos = (*iter)->geometry();
-	
-	const GPlatesMaths::PolylineOnSphere *iter_polyline = 
-		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( iter_gos.get() );
 
-	// access the Segments Table for the PREV item
+	// Access the Segments Table for the PREV item's geom
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator prev;
 	prev = segments_table.geometry_sequence().begin() + d_tmp_prev_index;
-
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type prev_gos = (*prev)->geometry();
 
 	const GPlatesMaths::PolylineOnSphere *prev_polyline = 
 		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( prev_gos.get() );
 
-	// check if these two polylines intersect
+	//
+	// check if INDEX and PREV polylines intersect
+	//
 	check_intersection(
-		iter_polyline,
+		tmp_for_prev_polyline.get(),
 		prev_polyline,
 		GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV);
 
@@ -1132,6 +1198,7 @@ std::cout << "PlateClosureWidget::process_intersections: "
 		const GPlatesPropertyValues::TemplateTypeParameterType value_type1 =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString" );
 
+		// create the intersectionGeometry property delegate
 		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type geom_delegte = 
 			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
 				prev_fid,
@@ -1144,6 +1211,8 @@ std::cout << "PlateClosureWidget::process_intersections: "
 			GPlatesPropertyValues::GmlPoint::create( const_pos );
 
 		// reference_point_plate_id
+		const GPlatesModel::FeatureId index_fid(d_tmp_index_fid);
+
 		const GPlatesModel::PropertyName prop_name2 =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -1152,7 +1221,7 @@ std::cout << "PlateClosureWidget::process_intersections: "
 
 		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
 			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-				prev_fid,
+				index_fid,
 				prop_name2,
 				value_type2
 			);
@@ -1172,7 +1241,14 @@ std::cout << "PlateClosureWidget::process_intersections: "
 	}
 
 
+	//
+	// Since d_tmp_index_vertex_list may have been changed by PREV, create another polyline 
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type tmp_for_next_polyline =
+		GPlatesMaths::PolylineOnSphere::create_on_heap( d_tmp_index_vertex_list );
+
+	//
 	// access the Segments Table for the NEXT item
+	//
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator next;
 	next = segments_table.geometry_sequence().begin() + d_tmp_next_index;
 
@@ -1181,8 +1257,11 @@ std::cout << "PlateClosureWidget::process_intersections: "
 	const GPlatesMaths::PolylineOnSphere *next_polyline = 
 		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( next_gos.get() );
 
+	//
+	// check if INDEX and NEXT polylines intersect
+	//
 	check_intersection(
-		iter_polyline,
+		tmp_for_next_polyline.get(),
 		next_polyline,
 		GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT);
 
@@ -1197,7 +1276,7 @@ std::cout << "PlateClosureWidget::process_intersections: "
 			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
 
 		// intersection_geometry
-		const GPlatesModel::FeatureId fid = rfg->feature_ref()->feature_id();
+		const GPlatesModel::FeatureId next_fid = rfg->feature_ref()->feature_id();
 
 		const GPlatesModel::PropertyName prop_name1 =
 			GPlatesModel::PropertyName::create_gpml("centerLineOf");
@@ -1207,7 +1286,7 @@ std::cout << "PlateClosureWidget::process_intersections: "
 
 		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type geom_delegte = 
 			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-				fid,
+				next_fid,
 				prop_name1,
 				value_type1
 			);
@@ -1217,6 +1296,8 @@ std::cout << "PlateClosureWidget::process_intersections: "
 			GPlatesPropertyValues::GmlPoint::create( const_pos );
 
 		// reference_point_plate_id
+		const GPlatesModel::FeatureId index_fid(d_tmp_index_fid);
+
 		const GPlatesModel::PropertyName prop_name2 =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -1225,7 +1306,7 @@ std::cout << "PlateClosureWidget::process_intersections: "
 
 		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
 			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-				fid,
+				index_fid,
 				prop_name2,
 				value_type2
 			);
@@ -1256,8 +1337,8 @@ GPlatesQtWidgets::PlateClosureWidget::check_intersection(
 	std::list<GPlatesMaths::PointOnSphere> intersection_points;
 	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> partitioned_lines;
 
-
 	int num_intersect = 0;
+
 	num_intersect = GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
 		*node1_polyline,
 		*node2_polyline,
@@ -1265,23 +1346,26 @@ GPlatesQtWidgets::PlateClosureWidget::check_intersection(
 		partitioned_lines);
 
 #ifdef DEBUG
-std::cout << "PlateClosureWidget::resolve_intersection: " 
-<< "num_intersect = " << num_intersect << std::endl;
+std::cout << std::endl
+<< "PlateClosureWidget::check_intersection: " 
+<< "num_intersect = " << num_intersect 
+<< std::endl;
 #endif
+
 
 	// switch on relation enum to set node1's member data
 	switch ( relation )
 	{
 		case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV :
 #ifdef DEBUG
-std::cout << "PlateClosureWidget::resolve_intersection: INTERSECT_PREV: " << std::endl;
+std::cout << "PlateClosureWidget::check_intersection: INTERSECT_PREV: " << std::endl;
 #endif
 			d_num_intersections_with_prev = num_intersect;
 			break;
 
 		case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT:
 #ifdef DEBUG
-std::cout << "PlateClosureWidget::resolve_intersection: INTERSECT_NEXT: " << std::endl;
+std::cout << "PlateClosureWidget::check_intersection: INTERSECT_NEXT: " << std::endl;
 #endif
 			d_num_intersections_with_next = num_intersect;
 			break;
@@ -1293,10 +1377,9 @@ std::cout << "PlateClosureWidget::resolve_intersection: INTERSECT_NEXT: " << std
 			break;
 	}
 
-
 	if ( num_intersect == 0 )
 	{
-		// no change to d_tmp_vertex_list
+		// no change to d_tmp_index_vertex_list
 		return;
 	}
 	else if ( num_intersect == 1)
@@ -1308,10 +1391,12 @@ std::cout << "PlateClosureWidget::resolve_intersection: INTERSECT_NEXT: " << std
 		> parts;
 
 		// unambiguously identify partitioned lines:
+		//
 		// parts.first.front is the head of node1_polyline
 		// parts.first.back is the tail of node1_polyline
 		// parts.second.front is the head of node2_polyline
 		// parts.second.back is the tail of node2_polyline
+		//
 		parts = GPlatesMaths::PolylineIntersections::identify_partitioned_polylines(
 			*node1_polyline,
 			*node2_polyline,
@@ -1323,14 +1408,14 @@ std::cout << "PlateClosureWidget::resolve_intersection: INTERSECT_NEXT: " << std
 GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter, end;
 iter = parts.first.front()->vertex_begin();
 end = parts.first.front()->vertex_end();
-std::cout << "PlateClosureWidget::resolve_intersection:: HEAD: verts:" << std::endl;
+std::cout << "PlateClosureWidget::check_intersection:: HEAD: verts:" << std::endl;
 for ( ; iter != end; ++iter) {
 std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 }
 
 iter = parts.first.back()->vertex_begin();
 end = parts.first.back()->vertex_end();
-std::cout << "PlateClosureWidget::resolve_intersection:: TAIL: verts:" << std::endl;
+std::cout << "PlateClosureWidget::check_intersection:: TAIL: verts:" << std::endl;
 for ( ; iter != end; ++iter) {
 std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 }
@@ -1373,7 +1458,7 @@ std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 		// Make sure that the click point is close to /something/ !!!
 		if ( !click_close_to_head && !click_close_to_tail ) 
 		{
-std::cerr << "PlateClosureWidget::resolve_intersection: " << std::endl
+std::cerr << "PlateClosureWidget::check_intersection: " << std::endl
 << "WARN: click point not close to anything!" << std::endl
 << "WARN: Unable to set boundary feature intersection flags!" 
 << std::endl << std::endl;
@@ -1381,7 +1466,7 @@ std::cerr << "PlateClosureWidget::resolve_intersection: " << std::endl
 			return;
 		}
 #ifdef DEBUG
-std::cout << "PlateClosureWidget::resolve_intersection: "
+std::cout << "PlateClosureWidget::check_intersection: "
 << "closeness_head=" << closeness_head << " and " 
 << "closeness_tail=" << closeness_tail << std::endl;
 #endif
@@ -1390,7 +1475,7 @@ std::cout << "PlateClosureWidget::resolve_intersection: "
 		if ( closeness_head > closeness_tail )
 		{
 #ifdef DEBUG
-qDebug() << "PlateClosureWidget::resolve_intersection: " << "use HEAD";
+qDebug() << "PlateClosureWidget::check_intersection: " << "use HEAD";
 #endif
 			d_closeness = closeness_head;
 
@@ -1400,27 +1485,23 @@ qDebug() << "PlateClosureWidget::resolve_intersection: " << "use HEAD";
 				case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV :
 					//d_use_head_from_intersect_prev = true;
 					//d_use_tail_from_intersect_prev = false;
-
-					d_tmp_vertex_list.clear();
+					d_tmp_index_vertex_list.clear();
 					copy(
 						parts.first.front()->vertex_begin(),
 						parts.first.front()->vertex_end(),
-						back_inserter( d_tmp_vertex_list )
+						back_inserter( d_tmp_index_vertex_list )
 					);
-
 					break;
 	
 				case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT:
 					//d_use_head_from_intersect_next = true;
 					//d_use_tail_from_intersect_next = false;
-
-					d_tmp_vertex_list.clear();
+					d_tmp_index_vertex_list.clear();
 					copy(
 						parts.first.front()->vertex_begin(),
 						parts.first.front()->vertex_end(),
-						back_inserter( d_tmp_vertex_list )
+						back_inserter( d_tmp_index_vertex_list )
 					);
-
 					break;
 
 				default:
@@ -1432,7 +1513,7 @@ qDebug() << "PlateClosureWidget::resolve_intersection: " << "use HEAD";
 		{
 			d_closeness = closeness_tail;
 #ifdef DEBUG
-qDebug() << "PlateClosureWidget::resolve_intersection: " << "use TAIL" ;
+qDebug() << "PlateClosureWidget::check_intersection: " << "use TAIL" ;
 #endif
 
 			// switch on the relation to be set
@@ -1441,11 +1522,11 @@ qDebug() << "PlateClosureWidget::resolve_intersection: " << "use TAIL" ;
 				case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV :
 					//d_use_tail_from_intersect_prev = true;
 					//d_use_head_from_intersect_prev = false;
-					d_tmp_vertex_list.clear();
+					d_tmp_index_vertex_list.clear();
 					copy(
 						parts.first.back()->vertex_begin(),
 						parts.first.back()->vertex_end(),
-						back_inserter( d_tmp_vertex_list )
+						back_inserter( d_tmp_index_vertex_list )
 					);
 
 					break;
@@ -1453,13 +1534,12 @@ qDebug() << "PlateClosureWidget::resolve_intersection: " << "use TAIL" ;
 				case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT:
 					//d_use_tail_from_intersect_next = true;
 					//d_use_head_from_intersect_next = false;
-					d_tmp_vertex_list.clear();
+					d_tmp_index_vertex_list.clear();
 					copy(
 						parts.first.back()->vertex_begin(),
 						parts.first.back()->vertex_end(),
-						back_inserter( d_tmp_vertex_list )
+						back_inserter( d_tmp_index_vertex_list )
 					);
-
 					break;
 
 				default:
@@ -1474,10 +1554,16 @@ qDebug() << "PlateClosureWidget::resolve_intersection: " << "use TAIL" ;
 		// num_intersect must be 2 or greater
 		// oh no!
 		// check for overlap ...
-std::cerr << "PlateClosureWidget::resolve_intersection: " << std::endl
+std::cerr << "PlateClosureWidget::check_intersection: " << std::endl
+<< "WARN: num_intersect=" << num_intersect << std::endl 
+<< "WARN: num_intersect=" << num_intersect << std::endl 
+<< "WARN: num_intersect=" << num_intersect << std::endl 
 << "WARN: num_intersect=" << num_intersect << std::endl 
 << "WARN: Unable to set boundary feature intersection relations!" << std::endl
 << "WARN: Make sure boundary feature's only intersect once." << std::endl 
+<< std::endl
+<< std::endl
+<< std::endl
 << std::endl;
 	}
 
@@ -1587,3 +1673,21 @@ qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name="
 		//d_source_geometry_property_delegate_ptrs.push_back( pd );
 #endif
 
+#if 0
+//
+// FIXME: save this code for generic example of how to 
+// Create a sourceGeometry property delegate 
+//
+		const GPlatesModel::FeatureId fid(d_tmp_index_fid);
+		const GPlatesModel::PropertyName prop_name =
+			GPlatesModel::PropertyName::create_gpml( d_tmp_property_name);
+		const GPlatesPropertyValues::TemplateTypeParameterType value_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
+
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd = 
+			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+				fid,
+				prop_name,
+				value_type
+			);
+#endif
