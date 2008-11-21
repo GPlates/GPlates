@@ -152,8 +152,8 @@ namespace GPlatesPropertyValues {
 
 		void
 		set_end_intersection(
-				boost::optional<GpmlTopologicalIntersection> start) {
-			d_end_intersection = start;
+				boost::optional<GpmlTopologicalIntersection> end) {
+			d_end_intersection = end;
 		}
 
 		// access to d_reverse_order
