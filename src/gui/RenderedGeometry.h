@@ -40,9 +40,11 @@ namespace GPlatesGui
 	public:
 		RenderedGeometry(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_,
-				PlatesColourTable::const_iterator colour_):
+				PlatesColourTable::const_iterator colour_,
+				float size_ = 1.5f):
 			d_geometry(geometry_),
-			d_colour(colour_)
+			d_colour(colour_),
+			d_size(size_)
 		{  }
 
 		virtual
@@ -60,6 +62,12 @@ namespace GPlatesGui
 		{
 			return d_colour;
 		}
+
+		float 
+		size() const
+		{
+			return d_size;
+		}
 	private:
 		/**
 		 * This is the geometry which is to be displayed.
@@ -70,6 +78,11 @@ namespace GPlatesGui
 		 * This is the colour in which the geometry is to be drawn.
 		 */
 		PlatesColourTable::const_iterator d_colour;
+
+		/**
+		 * This is the size (glPointSize or glLineWidth) in which the geometry is to be drawn.
+		 */
+		float d_size;
 	};
 }
 
