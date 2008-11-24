@@ -960,6 +960,7 @@ GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments_table()
 	// get the size of the table
 	d_tmp_segments_size = segments_table.geometry_sequence().size();
 
+#if 0
 	// super short cut for single feature on thie list
 	if ( d_tmp_segments_size == 1 )
 	{
@@ -976,6 +977,7 @@ GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments_table()
 	}
 
 	// else the list is > 2 
+#endif
 
 	// loop over each geom in the Segments Table
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
@@ -1027,6 +1029,11 @@ std::cout << "create_sections_from_segments_table: d_use_rev = " << d_tmp_index_
 		// visit the geoms. ; will fill additional d_tmp_index_ vars 
 		(*iter)->geometry()->accept_visitor(*this);
 
+	
+		// re-set the check intersections flag for a sigle item on the list
+		if ( d_tmp_segments_size == 1 ) {
+			d_tmp_check_intersections = false;
+		}
 
 		//
 		// Check for intersection
