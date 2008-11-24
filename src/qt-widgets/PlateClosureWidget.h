@@ -32,6 +32,8 @@
 #include <boost/none.hpp>
 #include "PlateClosureWidgetUi.h"
 
+#include "global/types.h"
+
 #include "maths/GeometryOnSphere.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
@@ -380,19 +382,21 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * These d_tmp_ vars are all set by the canvas tool, or the widget
-		 * and used during interation around the Segments Table as the code
-		 * bounces between visitor functions and intersection processing functions.
+		 * and used during interation around the Segments Table (d_sections_ptrs)
+		 * as the code bounces between visitor functions and intersection processing functions.
 		 */
 		int d_tmp_index;
 		int d_tmp_segments_size;
 		int d_tmp_prev_index;
 		int d_tmp_next_index;
 
+		bool d_check_type;
+		bool d_tmp_feature_type;
+
 		bool d_tmp_index_use_reverse;
 		bool d_tmp_check_intersections;
 
 		std::vector<GPlatesMaths::PointOnSphere> d_tmp_index_vertex_list;
-
 
 		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> 
 			d_source_geometry_property_delegate_ptrs;
@@ -402,6 +406,10 @@ namespace GPlatesQtWidgets
 		QString d_tmp_property_name;
 		QString d_tmp_value_type;
 
+		int d_num_intersections_with_prev;
+		int d_num_intersections_with_next;
+
+		bool d_create_properties;
 
 		/**
 		* thise d_ vars keep track of the widget's current state as data is transfered from
@@ -409,12 +417,7 @@ namespace GPlatesQtWidgets
 		*/
 		bool d_use_reverse;
 
-
 		std::vector<GPlatesMaths::PointOnSphere> d_intersection_vertex_list;
-
-
-		int d_num_intersections_with_prev;
-		int d_num_intersections_with_next;
 
 		GPlatesMaths::real_t d_closeness;
 
@@ -423,9 +426,6 @@ namespace GPlatesQtWidgets
 		const GPlatesMaths::PointOnSphere *d_click_point_ptr;
 
 
-		/**
-		 *  FIXME : add documentation for these
-		 */
 		/** Because GpmlTopologicalSection is abstract we use non_null_ptr_type */
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
 			d_sections_ptrs;

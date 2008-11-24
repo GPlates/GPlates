@@ -782,6 +782,15 @@ GPlatesQtWidgets::PlateClosureWidget::visit_point_on_sphere(
 { 
 std::cout << "point geom" << std::endl;
 
+
+	if (d_check_type){
+		d_tmp_feature_type = GPlatesGlobal::POINT_FEATURE;
+		return;
+	}
+
+	// set the global flag for intersection processing 
+	d_tmp_check_intersections = false;
+
 	// simply append the point to the working list
 	d_tmp_index_vertex_list.push_back( *point_on_sphere );
 
@@ -818,14 +827,20 @@ void
 GPlatesQtWidgets::PlateClosureWidget::visit_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
-std::cout << "polygon geom" << std::endl;
+	if (d_check_type) {
+		d_tmp_feature_type = GPlatesGlobal::POLYGON_FEATURE;
+		return;
+	}
 }
 
 void
 GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {  
-std::cout << "polyline geom" << std::endl;
+	if (d_check_type) {
+		d_tmp_feature_type = GPlatesGlobal::LINE_FEATURE;
+		return;
+	}
 
 	// set the global flag for intersection processing 
 	d_tmp_check_intersections = true;
@@ -1113,6 +1128,7 @@ std::cout << "PlateClosureWidget::process_intersections: "
 	// check for startIntersection
 	//
 
+
 	// NOTE: the d_tmp_index segment may have had its d_tmp_index_vertex_list reversed, 
 	// so use that list of points_on_sphere, rather than the geom from Segments Table.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type tmp_for_prev_polyline =
@@ -1124,12 +1140,21 @@ std::cout << "PlateClosureWidget::process_intersections: "
 	prev = segments_table.geometry_sequence().begin() + d_tmp_prev_index;
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type prev_gos = (*prev)->geometry();
 
+	// Set the d_tmp_feature_type by visiting the geom
+	d_check_type = true;
+	prev_gos->accept_visitor(*this);
+	d_check_type = false;
+
+	// No need to process intersections with POINT features 
+	if (d_tmp_feature_type == GPlatesGlobal::POINT_FEATURE ) {
+		return;
+	}
+
+	// else process the geom as a LINE
 	const GPlatesMaths::PolylineOnSphere *prev_polyline = 
 		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( prev_gos.get() );
 
-	//
 	// check if INDEX and PREV polylines intersect
-	//
 	check_intersection(
 		tmp_for_prev_polyline.get(),
 		prev_polyline,
@@ -1206,20 +1231,27 @@ std::cout << "PlateClosureWidget::process_intersections: "
 	//
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator next;
 	next = segments_table.geometry_sequence().begin() + d_tmp_next_index;
-
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type next_gos = (*next)->geometry();
 
+	// Set the d_tmp_feature_type by visiting the geom
+	d_check_type = true;
+	next_gos->accept_visitor(*this);
+	d_check_type = false;
+
+	// No need to process intersections with POINT features 
+	if (d_tmp_feature_type == GPlatesGlobal::POINT_FEATURE ) {
+		return;
+	}
+
+	// else process the geom as LINE
 	const GPlatesMaths::PolylineOnSphere *next_polyline = 
 		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( next_gos.get() );
 
-	//
 	// check if INDEX and NEXT polylines intersect
-	//
 	check_intersection(
 		tmp_for_next_polyline.get(),
 		next_polyline,
 		GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT);
-
 
 	// if they do, then create the endIntersection property value
 	if ( d_num_intersections_with_next != 0)
