@@ -202,27 +202,13 @@ GPlatesModel::Model::create_reconstruction(
 //	rfg_finder.report();
 
 
-#if 0
-	// Visit the feature collections and build the platepolygons 
-	GPlatesFeatureVisitors::PlatepolygonResolver resolver( 
-		time, root, *reconstruction,
-		reconstruction->reconstruction_tree(),
-		rfg_finder,
-		reconstruction->geometries());
-
-	visit_feature_collections(
-		reconstructable_features_collection.begin(),
-		reconstructable_features_collection.end(),
-		resolver);
-	resolver.report();
-#endif
-
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
 		time, root, *reconstruction,
 		reconstruction->reconstruction_tree(),
 		rfg_finder,
-		reconstruction->geometries());
+		reconstruction->geometries(),
+		true); // keep features without recon plate id
 
 	visit_feature_collections(
 		reconstructable_features_collection.begin(),
