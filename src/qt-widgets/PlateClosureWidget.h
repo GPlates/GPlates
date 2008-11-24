@@ -391,7 +391,7 @@ namespace GPlatesQtWidgets
 		int d_tmp_next_index;
 
 		bool d_check_type;
-		bool d_tmp_feature_type;
+		GPlatesGlobal::FeatureTypes d_tmp_feature_type;
 
 		bool d_tmp_index_use_reverse;
 		bool d_tmp_check_intersections;
