@@ -473,6 +473,8 @@ GPlatesQtWidgets::PlateClosureWidget::initialise_geometry(
 	d_use_reverse = false;
 	d_tmp_index_use_reverse = false;
 	d_geometry_type = geom_type;
+
+	d_tmp_feature_type = GPlatesGlobal::UNKNOWN_FEATURE;
 }
 
 
@@ -837,8 +839,10 @@ void
 GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {  
+std::cout << "visit_polyline_on_sphere geom" << std::endl;
 	if (d_check_type) {
 		d_tmp_feature_type = GPlatesGlobal::LINE_FEATURE;
+std::cout << "visit_polyline_on_sphere: d_tmp_feature_type = " << d_tmp_feature_type  << std::endl;
 		return;
 	}
 
@@ -1044,6 +1048,7 @@ std::cout << "create_sections_from_segments_table: d_use_rev = " << d_tmp_index_
 		// visit the geoms. ; will fill additional d_tmp_index_ vars 
 		(*iter)->geometry()->accept_visitor(*this);
 
+std::cout << "create_sections_from_segments_table: d_tmp_check_intersections = " << d_tmp_check_intersections << std::endl;
 	
 		// re-set the check intersections flag for a sigle item on the list
 		if ( d_tmp_segments_size == 1 ) {
@@ -1145,10 +1150,15 @@ std::cout << "PlateClosureWidget::process_intersections: "
 	prev_gos->accept_visitor(*this);
 	d_check_type = false;
 
+std::cout << "PlateClosureWidget::process_intersection: 1111111111111111111111" << std::endl;
+
+std::cout << "PlateClosureWidget::process_intersection: d_tmp_feature_type = " << d_tmp_feature_type  << std::endl;
 	// No need to process intersections with POINT features 
 	if (d_tmp_feature_type == GPlatesGlobal::POINT_FEATURE ) {
 		return;
 	}
+
+std::cout << "PlateClosureWidget::process_intersection: 222222222222:" << std::endl;
 
 	// else process the geom as a LINE
 	const GPlatesMaths::PolylineOnSphere *prev_polyline = 
