@@ -107,7 +107,7 @@
                                     <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> rot about X axis ( yellow )</gml:description>
+                            <gml:description>rot about X axis going ccw fwd in time (101 = yellow )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -128,7 +128,7 @@
                                     <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> rot about X</gml:description>
+                            <gml:description>rot about X axis going ccw fwd in time (101 = yellow )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -160,7 +160,7 @@
                                     <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> rot about Y axis ( red ) </gml:description>
+                            <gml:description>rot about Y axis cw going fwd in time ( 102 = red ) </gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -181,7 +181,7 @@
                                     <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> rot about Y cw going fwd in time</gml:description>
+                            <gml:description>rot about Y axis cw going fwd in time ( 102 = red ) </gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -213,7 +213,7 @@
                                     <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> rot about Z axis ( blue )</gml:description>
+                            <gml:description>rot about Z axis going cw fwd in time( 103 = blue )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -234,7 +234,7 @@
                                     <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> rot about Z ccw going fwd in time</gml:description>
+                            <gml:description>rot about Z axis going cw fwd in time( 103 = blue )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -252,8 +252,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:TotalReconstructionSequence>
-            <gpml:identity>GPlates-cce8b41d-ef06-4fb1-a2d4-b4031772633e</gpml:identity>
-            <gpml:revision>GPlates-adb8d8a7-4843-40d3-be17-8dd91b0aaa8f</gpml:revision>
+            <gpml:identity>GPlates-7165b959-54fe-4590-9635-5cbd78595214</gpml:identity>
+            <gpml:revision>GPlates-8642f98c-bbc1-4a40-98ec-be15420c3210</gpml:revision>
             <gpml:totalReconstructionPole>
                 <gpml:IrregularSampling>
                     <gpml:timeSample>
@@ -266,7 +266,7 @@
                                     <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> rot about X axis ( WHITE )</gml:description>
+                            <gml:description>rot about X axis going ccw fwd in time (104 = green )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -287,7 +287,7 @@
                                     <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> rot about X</gml:description>
+                            <gml:description>rot about X axis going ccw fwd in time (104 = green )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -301,6 +301,112 @@
             </gpml:totalReconstructionPole>
             <gpml:fixedReferenceFrame>0</gpml:fixedReferenceFrame>
             <gpml:movingReferenceFrame>104</gpml:movingReferenceFrame>
+        </gpml:TotalReconstructionSequence>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:TotalReconstructionSequence>
+            <gpml:identity>GPlates-32429e96-b683-4f34-80a7-8ced11906d15</gpml:identity>
+            <gpml:revision>GPlates-283c8338-9ddd-462a-8ac0-42128af4660d</gpml:revision>
+            <gpml:totalReconstructionPole>
+                <gpml:IrregularSampling>
+                    <gpml:timeSample>
+                        <gpml:TimeSample>
+                            <gpml:value>
+                                <gpml:ZeroFiniteRotation/>
+                            </gpml:value>
+                            <gpml:validTime>
+                                <gml:TimeInstant>
+                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                </gml:TimeInstant>
+                            </gpml:validTime>
+                            <gml:description>rot about Y axis cw going fwd in time ( 105 = red ) </gml:description>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:TimeSample>
+                    </gpml:timeSample>
+                    <gpml:timeSample>
+                        <gpml:TimeSample>
+                            <gpml:value>
+                                <gpml:AxisAngleFiniteRotation>
+                                    <gpml:eulerPole>
+                                        <gml:Point>
+                                            <gml:pos>0 90</gml:pos>
+                                        </gml:Point>
+                                    </gpml:eulerPole>
+                                    <gpml:angle>-180</gpml:angle>
+                                </gpml:AxisAngleFiniteRotation>
+                            </gpml:value>
+                            <gpml:validTime>
+                                <gml:TimeInstant>
+                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                </gml:TimeInstant>
+                            </gpml:validTime>
+                            <gml:description>rot about Y axis cw going fwd in time ( 105 = red ) </gml:description>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:TimeSample>
+                    </gpml:timeSample>
+                    <gpml:interpolationFunction>
+                        <gpml:FiniteRotationSlerp>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:FiniteRotationSlerp>
+                    </gpml:interpolationFunction>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                </gpml:IrregularSampling>
+            </gpml:totalReconstructionPole>
+            <gpml:fixedReferenceFrame>0</gpml:fixedReferenceFrame>
+            <gpml:movingReferenceFrame>105</gpml:movingReferenceFrame>
+        </gpml:TotalReconstructionSequence>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:TotalReconstructionSequence>
+            <gpml:identity>GPlates-cb98ea22-acb8-47e0-9e17-2a1e5d4563c4</gpml:identity>
+            <gpml:revision>GPlates-38da9a6c-10c5-4baf-91de-0080c97a8431</gpml:revision>
+            <gpml:totalReconstructionPole>
+                <gpml:IrregularSampling>
+                    <gpml:timeSample>
+                        <gpml:TimeSample>
+                            <gpml:value>
+                                <gpml:ZeroFiniteRotation/>
+                            </gpml:value>
+                            <gpml:validTime>
+                                <gml:TimeInstant>
+                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                </gml:TimeInstant>
+                            </gpml:validTime>
+                            <gml:description>rot about Z axis going cw fwd in time( 106 = blue )</gml:description>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:TimeSample>
+                    </gpml:timeSample>
+                    <gpml:timeSample>
+                        <gpml:TimeSample>
+                            <gpml:value>
+                                <gpml:AxisAngleFiniteRotation>
+                                    <gpml:eulerPole>
+                                        <gml:Point>
+                                            <gml:pos>90 0</gml:pos>
+                                        </gml:Point>
+                                    </gpml:eulerPole>
+                                    <gpml:angle>-180</gpml:angle>
+                                </gpml:AxisAngleFiniteRotation>
+                            </gpml:value>
+                            <gpml:validTime>
+                                <gml:TimeInstant>
+                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                </gml:TimeInstant>
+                            </gpml:validTime>
+                            <gml:description>rot about Z axis going cw fwd in time( 106 = blue )</gml:description>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:TimeSample>
+                    </gpml:timeSample>
+                    <gpml:interpolationFunction>
+                        <gpml:FiniteRotationSlerp>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:FiniteRotationSlerp>
+                    </gpml:interpolationFunction>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                </gpml:IrregularSampling>
+            </gpml:totalReconstructionPole>
+            <gpml:fixedReferenceFrame>0</gpml:fixedReferenceFrame>
+            <gpml:movingReferenceFrame>106</gpml:movingReferenceFrame>
         </gpml:TotalReconstructionSequence>
     </gml:featureMember>
 </gpml:FeatureCollection>
