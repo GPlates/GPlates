@@ -30,6 +30,8 @@
 # include <boost/python.hpp>
 #endif
 
+#include <ctime>
+
 #include "Model.h"
 #include "DummyTransactionHandle.h"
 #include "FeatureHandle.h"
@@ -169,6 +171,12 @@ GPlatesModel::Model::create_reconstruction(
 		const double &time,
 		GPlatesModel::integer_plate_id_type root)
 {
+
+
+time_t *tp=NULL;
+std::cerr << std::endl;
+std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+
 	ReconstructionGraph graph(time);
 	ReconstructionTreePopulator rtp(time, graph);
 
@@ -191,6 +199,7 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.end(),
 		rfgp);
 
+std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 
 	// Visit the feature collections and build a map from feature id to RFG
 	GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder rfg_finder( *reconstruction );
@@ -199,8 +208,9 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		rfg_finder);
-//	rfg_finder.report();
+	// rfg_finder.report();
 
+std::cerr << "3 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
@@ -216,6 +226,8 @@ GPlatesModel::Model::create_reconstruction(
 		topology_resolver);
 	topology_resolver.report();
 
+std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+
 #if 0 
 	// Visit the feature collections and fill computational meshes with nice juicy velocity data
 	GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
@@ -228,7 +240,10 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		solver);
-	solver.report();
+	// solver.report();
+
+std::cerr << "5 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+
 #endif
 
 
