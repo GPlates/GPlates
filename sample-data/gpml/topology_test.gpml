@@ -729,7 +729,7 @@
             <gpml:revision>GPlates-473d51c8-5046-4519-aa66-14b821c7c125</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
+                    <gpml:value>102</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
@@ -822,7 +822,7 @@
             <gpml:revision>GPlates-2696d5bf-3f7b-41b8-90c0-4b3ade597a56</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
+                    <gpml:value>103</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
@@ -1114,7 +1114,7 @@
             <gpml:revision>GPlates-020e4731-9d3a-44d5-ae6e-378ea7393e00</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
+                    <gpml:value>104</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
