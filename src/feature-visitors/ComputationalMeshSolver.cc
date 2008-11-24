@@ -102,8 +102,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 {
 	d_num_features += 1;
 
-qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
-
+// qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
 
 	// super short-cut for features without boundary list properties
 	QString type("ComputationalMesh");
@@ -192,7 +191,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_inline_property_container(
 		GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
-std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::visit_inline_property_container() " << std::endl;
 	visit_property_values(inline_property_container);
 }
 
@@ -203,7 +201,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 	if ( ! d_accumulator->d_perform_reconstructions) {
 		return;
 	}
-std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point() " << std::endl;
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint_ptr =
 		gml_multi_point.multipoint();
@@ -221,8 +218,8 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 	const GPlatesMaths::PointOnSphere &point )
 {
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
-std::cout << "llp =" << llp << std::endl;
+//	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+//std::cout << "llp =" << llp << std::endl;
 
 }
 
@@ -233,7 +230,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_time_period() " << std::endl;
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
@@ -256,7 +252,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_constant_value() " << std::endl;
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
@@ -265,7 +260,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id() " << std::endl;
 	static GPlatesModel::PropertyName reconstruction_plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
