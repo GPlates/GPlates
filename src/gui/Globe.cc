@@ -180,9 +180,15 @@ namespace
 		{
 			// FIXME:  We should assert that the boost::optional is not boost::none.
 			glColor3fv(**d_colour);
+
 			glPointSize(4.0f);
-			GLfloat s = static_cast<GLfloat>( *d_size );
-			glPointSize(s);
+	
+			if ( d_size != boost::none ) 
+			{
+				GLfloat s = static_cast<GLfloat>( *d_size );
+				glPointSize(s);
+			}
+
 			glBegin(GL_POINTS);
 			if ( d_globe_ptr->d_show_point ) { 
 				draw_vertex(*point);
