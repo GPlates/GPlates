@@ -372,53 +372,6 @@ std::cout << "PlateClosureWidget::display_feature: ref valid" << std::endl;
 		button_choose_feature->setEnabled(true);
 		button_remove_feature->setEnabled(true);
 		button_clear_feature->setEnabled(true);
-
-		if ( d_view_state_ptr->get_tab() == 0)
-		{
-			// check if a row of Segments Table needs highlight
-			// pointers to the tables
-			GPlatesGui::FeatureTableModel &segments_table = 
-				d_view_state_ptr->segments_feature_table_model();
-
-			GPlatesGui::FeatureTableModel &clicked_table = 
-				d_view_state_ptr->feature_table_model();
-
-			int click_index = clicked_table.current_index().row();
-
-			GPlatesModel::ReconstructionGeometry *rg = 
-				clicked_table.geometry_sequence().at(click_index).get();
-
-			GPlatesModel::ReconstructedFeatureGeometry *rfg =
-				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
-
-			GPlatesModel::FeatureId clicked_fid = rfg->feature_ref()->feature_id();
-
-			// loop over each geom in the Segments Table
-			std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
-			std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator end;
-			iter = segments_table.geometry_sequence().begin();	
-			end = segments_table.geometry_sequence().end();
-
-			for ( int i = 0; iter != end ; ++iter, ++i)
-			{
-std::cout << "IIIIIIIIIIIIIIIIIIIIIIIIIIII=" << i << std::endl;
-				GPlatesModel::ReconstructionGeometry *rg = iter->get();
-				GPlatesModel::ReconstructedFeatureGeometry *rfg =
-					dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
-				GPlatesModel::FeatureId index_fid = rfg->feature_ref()->feature_id();
-	
-				if (clicked_fid == index_fid)
-				{
-					d_view_state_ptr->highlight_segments_table_row(i, true);
-					break;
-				}
-std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
-			}
-
-		}
-#if 0
-#endif
-
 	}
 
 	
@@ -487,10 +440,6 @@ std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
 		}
 	}
 
-	//FIXME: what to do here?
-	if ( ! feature_ref.is_valid()) {
-		return;
-	}
 
 	// create a dummy tree
 	QTreeWidget *tree_geometry = new QTreeWidget(this);
@@ -663,7 +612,6 @@ GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 	// process the segments table
 	update_geometry();
 
-	// uset the focus
 	// NOTE: this undoes the connection to highlight_segments_table_row 
 	d_feature_focus_ptr->unset_focus();
 
@@ -803,7 +751,7 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
-	// unset the feature focus
+	// NOTE: this undoes the connection to highlight_segments_table_row 
 	d_feature_focus_ptr->unset_focus();
 
 	initialise_geometry(PLATEPOLYGON);

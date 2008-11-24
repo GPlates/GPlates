@@ -94,6 +94,7 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 
 	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
 		oriented_click_pos_on_globe);
@@ -125,6 +126,10 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
 	d_clicked_table_model_ptr->clear();
 
+	// Un-highlight all the rows of the 'Segments' Table 
+	d_view_state_ptr->highlight_segments_table_clear();
+
+
 	if (sorted_hits.size() == 0) {
 		d_view_state_ptr->status_message(tr("Clicked 0 geometries."));
 		// User clicked on empty space! Clear the currently focused feature.
@@ -132,6 +137,8 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 		emit no_hits_found();
 		return;
 	}
+
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click 1" << std::endl;
 
 	// Populate the 'Clicked' FeatureTableModel.
 	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
@@ -145,7 +152,75 @@ GPlatesCanvasTools::PlateClosure::handle_left_click(
 	d_view_state_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
 
+	int click_index = d_clicked_table_model_ptr->current_index().row();
+
+	// Highlight the 'Segments' Feature Table if needed
+
+	// get the feature_id of the currently selected feature
+	GPlatesModel::FeatureId clicked_fid;
+
+	GPlatesModel::ReconstructionGeometry *rg = 
+		d_clicked_table_model_ptr->geometry_sequence().at(click_index).get();
+	GPlatesModel::ReconstructedFeatureGeometry *rfg =
+		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+
+	// FIXME: check for the cast and valid ref before doing this:
+	// GPlatesModel::FeatureId clicked_fid = rfg->feature_ref()->feature_id();
+
+	if (rfg) {
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
+		GPlatesModel::FeatureHandle::weak_ref clicked_ref = rfg->feature_ref();
+		if ( clicked_ref.is_valid()) {
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref YES" << std::endl;
+			clicked_fid = clicked_ref->feature_id();
+		} else{
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref NO" << std::endl;
+		}
+	} else {
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
+	}
+
+	// clear any previous selection
+	d_view_state_ptr->highlight_segments_table_clear();
+
+	// loop over each geom in the Segments Table
+	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
+	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator end;
+	iter = d_segments_table_model_ptr->geometry_sequence().begin();	
+	end = d_segments_table_model_ptr->geometry_sequence().end();
+	int i = 0;
+	for ( ; iter != end ; ++iter)
+	{
+std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
+		d_view_state_ptr->highlight_segments_table_row(i, false);
+
+		GPlatesModel::ReconstructionGeometry *rg = iter->get();
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+
+		if (rfg) {
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg YES" << std::endl;
+			GPlatesModel::FeatureHandle::weak_ref index_ref = rfg->feature_ref();
+			if ( index_ref.is_valid()) {
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref YES" << std::endl;
+				GPlatesModel::FeatureId index_fid = index_ref->feature_id();
+				if (clicked_fid == index_fid) {
+		std::cout << "=============================" << i << std::endl;
+					d_view_state_ptr->highlight_segments_table_row(i, true);
+				}
+			} else {
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref NO" << std::endl;
+			}
+		} else {
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg NO" << std::endl;
+		}
+		++i;
+	}
+
+std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click 2" << std::endl;
+
 #if 0  
+// FIXME: remove this 
 	// It seems it's not necessary to set the feature focus here, 
 	// as it's already being set elsewhere.
 	// Update the focused feature.
