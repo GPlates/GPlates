@@ -759,6 +759,7 @@ namespace
 	get_topological_feature_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_time_variant_feature_properties();
+
 		return map;
 	}
 
@@ -766,6 +767,10 @@ namespace
 	get_topological_closed_plate_boundary_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_topological_feature_properties();
+
+		// NOTE: this might change to effectivePlateId
+		map[ PropertyName::create_gpml("reconstructionPlateId") ] =
+			GET_PROP_VAL_NAME(create_constant_value);
 
 		map[ PropertyName::create_gpml("boundary") ] =
 			GET_PROP_VAL_NAME(create_piecewise_aggregation);
