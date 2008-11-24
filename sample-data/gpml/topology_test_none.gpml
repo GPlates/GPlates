@@ -157,64 +157,6 @@
         </gpml:HotSpot>
     </gml:featureMember>
     <gml:featureMember>
-        <gpml:MidOceanRidge>
-            <gpml:identity>GPlates-c2721c48-6c24-4725-9dc1-1d83101db361</gpml:identity>
-            <gpml:revision>GPlates-27b6a547-fcab-4547-ac84-8823dc989af3</gpml:revision>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
-            <gpml:centerLineOf>
-                <gpml:ConstantValue>
-                    <gpml:value>
-                        <gml:OrientableCurve gml:orientation="+">
-                            <gml:baseCurve>
-                                <gml:LineString>
-                                    <gml:posList gml:dimension="2">-15.7278 16.9472 -19.1555 11.9118 -25.3407 11.5341 -27.7778 16.2302 -28.3955 23.5808 -24.7392 27.4373 -18.2924 26.4726 -15.4449 23.5552 </gml:posList>
-                                </gml:LineString>
-                            </gml:baseCurve>
-                        </gml:OrientableCurve>
-                    </gpml:value>
-                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:centerLineOf>
-            <gml:validTime>
-                <gml:TimePeriod>
-                    <gml:begin>
-                        <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
-                        </gml:TimeInstant>
-                    </gml:begin>
-                    <gml:end>
-                        <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
-                        </gml:TimeInstant>
-                    </gml:end>
-                </gml:TimePeriod>
-            </gml:validTime>
-            <gml:name>PolygonFromSingleLine_BOUNDARY_LINE</gml:name>
-            <gpml:oldPlatesHeader>
-                <gpml:OldPlatesHeader>
-                    <gpml:regionNumber>0</gpml:regionNumber>
-                    <gpml:referenceNumber>0</gpml:referenceNumber>
-                    <gpml:stringNumber>0</gpml:stringNumber>
-                    <gpml:geographicDescription>PolygonFromSingleLine_BOUNDARY_LINE</gpml:geographicDescription>
-                    <gpml:plateIdNumber>101</gpml:plateIdNumber>
-                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
-                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
-                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
-                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
-                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
-                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
-                    <gpml:colourCode>0</gpml:colourCode>
-                    <gpml:numberOfPoints>8</gpml:numberOfPoints>
-                </gpml:OldPlatesHeader>
-            </gpml:oldPlatesHeader>
-        </gpml:MidOceanRidge>
-    </gml:featureMember>
-    <gml:featureMember>
         <gpml:HotSpot>
             <gpml:identity>GPlates-7ed35fdc-c113-4698-8a34-b8203a9b4578</gpml:identity>
             <gpml:revision>GPlates-8da5db7b-c82a-47f9-a2f3-1b4bfffc4534</gpml:revision>
@@ -434,7 +376,7 @@
             <gpml:revision>GPlates-5a447863-58a4-40f8-be9e-213fdaab9775</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>103</gpml:value>
+                    <gpml:value>105</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
@@ -541,7 +483,7 @@
             <gpml:revision>GPlates-8a5340a9-d575-4746-9a65-c2088a628b7b</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>105</gpml:value>
+                    <gpml:value>104</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
@@ -580,7 +522,7 @@
                     <gpml:referenceNumber>0</gpml:referenceNumber>
                     <gpml:stringNumber>0</gpml:stringNumber>
                     <gpml:geographicDescription>Line-1</gpml:geographicDescription>
-                    <gpml:plateIdNumber>105</gpml:plateIdNumber>
+                    <gpml:plateIdNumber>104</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
                     <gpml:dataTypeCode>RI</gpml:dataTypeCode>
@@ -651,7 +593,6 @@
             </gpml:oldPlatesHeader>
         </gpml:MidOceanRidge>
     </gml:featureMember>
-
     <gml:featureMember>
         <gpml:MidOceanRidge>
             <gpml:identity>GPlates-6f0385ff-b142-4626-b67a-0fa4f7f45f52</gpml:identity>
@@ -690,13 +631,13 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>PolygonFromSingleLine_BOUNDARY_LINE</gml:name>
+            <gml:name>Line-0</gml:name>
             <gpml:oldPlatesHeader>
                 <gpml:OldPlatesHeader>
                     <gpml:regionNumber>0</gpml:regionNumber>
                     <gpml:referenceNumber>0</gpml:referenceNumber>
                     <gpml:stringNumber>0</gpml:stringNumber>
-                    <gpml:geographicDescription>PolygonFromSingleLine_BOUNDARY_LINE</gpml:geographicDescription>
+                    <gpml:geographicDescription>Line-0</gpml:geographicDescription>
                     <gpml:plateIdNumber>101</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
