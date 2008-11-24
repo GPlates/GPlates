@@ -158,8 +158,18 @@ namespace GPlatesQtWidgets
 		void
 		highlight_first_clicked_feature_table_row() const;
 
+		/**
+		 * Clears the "Segments" feature table selection
+		 */
+		void
+		highlight_segments_table_clear() const;
+
+		/**
+		 * Highlights a row in the "Segments" feature table.
+		 */
 		void
 		highlight_segments_table_row(int i, bool state) const;
+
 
 		void
 		reconstruct_to_time(

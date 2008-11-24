@@ -892,6 +892,7 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 	
 	if (idx.isValid()) {
 		table_view_clicked_geometries->selectionModel()->clear();
+
 		table_view_clicked_geometries->selectionModel()->select(idx,
 				QItemSelectionModel::Select |
 				QItemSelectionModel::Current |
@@ -900,6 +901,11 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 	table_view_clicked_geometries->scrollToTop();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::highlight_segments_table_clear() const
+{
+	table_view_platepolygon_segments->selectionModel()->clear();
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::highlight_segments_table_row(int i, bool state) const
@@ -908,8 +914,6 @@ GPlatesQtWidgets::ViewportWindow::highlight_segments_table_row(int i, bool state
 	
 	if (idx.isValid()) 
 	{
-		table_view_platepolygon_segments->selectionModel()->clear();
-
 		if ( state )
 		{
 			table_view_platepolygon_segments->selectionModel()->select(idx,
