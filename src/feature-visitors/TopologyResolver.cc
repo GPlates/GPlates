@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// #define DEBUG
+#define DEBUG
 
 #include "TopologyResolver.h"
 
@@ -713,7 +713,7 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_intersection(
 		GPlatesMaths::PolylineOnSphere::create_on_heap( d_node2_vertex_list );
 
 #ifdef DEBUG
-std::cout << "d_working_vertex_list.size=" << d_working_vertex_list.size() << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: " << std::endl;
 std::cout << "node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
 #endif
 
@@ -762,6 +762,9 @@ std::cout << "TopologyResolver::resolve_intersection: INTERSECT_NEXT: " << std::
 	if ( num_intersect == 0 )
 	{
 		// no change to node1
+		// clean up
+		//delete node1_polyline.get();
+		//delete node2_polyline.get();
 		return;
 	}
 	else if ( num_intersect == 1)
@@ -783,6 +786,9 @@ std::cout << "TopologyResolver::resolve_intersection: INTERSECT_NEXT: " << std::
 			intersection_points,
 			partitioned_lines);
 
+		// clean up
+		//delete node1_polyline.get();
+		//delete node2_polyline.get();
 
 #ifdef DEBUG
 GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter, end;
@@ -923,6 +929,7 @@ std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
 << std::endl;
 	}
 
+
 }
 
 
@@ -1037,7 +1044,7 @@ qDebug() << "node id = "
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type reconstructed_geom = 
 		GPlatesMaths::PolygonOnSphere::create_on_heap( m_vertex_list );
 		
-	// create a new RFG
+	// create an RFG
 	GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 		GPlatesModel::ReconstructedFeatureGeometry::create(
 			reconstructed_geom,
@@ -1048,6 +1055,9 @@ qDebug() << "node id = "
 
 	d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
  	d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+
+	// clean up
+	// delete reconstructed_geom.get();
 }
 
 
@@ -1100,8 +1110,6 @@ qDebug() << "TopologyResolver::g_v_l: " << "fid="
 		if (node.m_feature_type == GPlatesGlobal::POINT_FEATURE)
 		{
 			// only one boundary feature and it is a point
-			// probably the case of user starting new platepolyon
-
 			// find vertex of rotated point in layout
 			// put direcly into work list
 			d_recon_finder_ptr->get_vertex_list_from_feature_id( 
@@ -1113,8 +1121,6 @@ qDebug() << "TopologyResolver::g_v_l: " << "fid="
 		else if (node.m_feature_type == GPlatesGlobal::LINE_FEATURE)
 		{
 			// only one boundary feature and it is a line
-			// probably the case of user starting new platepolyon
-
 			// find vertex list from rotated polyline in layout
 			// put direcly into work list
 			d_recon_finder_ptr->get_vertex_list_from_feature_id( 
@@ -1554,6 +1560,7 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 << "num_intersect = " << num_intersect << std::endl;
 #endif
 
+
 	//
 	// switch on relation enum to update node1's member data
 	//
@@ -1580,6 +1587,9 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 	if ( num_intersect == 0 )
 	{
 		// no further change to node1 or vertex_list
+		// clean up
+		//delete node1_polyline.get();
+		//delete node2_polyline.get();
 		return;
 	}
 	else if ( num_intersect == 1 )
@@ -1603,6 +1613,9 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 			intersection_points,
 			partitioned_lines);
 
+		// clean up
+		// delete node1_polyline.get();
+		// delete node2_polyline.get();
 
 		// now check which element of parts.first
 		// to use based upon node1's neighbor relations
@@ -1678,7 +1691,6 @@ std::cerr << "TopologyResolver::g_v_l_f_n_r: "
 << "WARN: num_intersect=" << num_intersect
 << std::endl;
 	}
-
 }
 
 
