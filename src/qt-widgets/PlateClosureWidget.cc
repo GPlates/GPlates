@@ -262,7 +262,8 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	QWidget(parent_),
 	d_feature_focus_ptr(&feature_focus),
 	d_view_state_ptr(&view_state_),
-	d_create_feature_dialog(new CreateFeatureDialog(model_interface, view_state_, this)),
+	d_create_feature_dialog(
+		new CreateFeatureDialog(model_interface, view_state_, this) ),
 	d_geometry_type(GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON),
 	d_geometry_opt_ptr(boost::none)
 {
@@ -448,9 +449,9 @@ std::cout << "PlateClosureWidget::display_feature: ref valid" << std::endl;
 
 
 	// create a dummy tree
+	// use it and the populator to get coords
 	QTreeWidget *tree_geometry = new QTreeWidget(this);
 	tree_geometry->hide();
-	// use the tree and the populator to get coords
 	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
 		d_view_state_ptr->reconstruction(), *tree_geometry);
 	populator.visit_feature_handle(*feature_ref);
@@ -666,8 +667,10 @@ GPlatesQtWidgets::PlateClosureWidget::handle_remove_feature()
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_clear()
 {
+#if 0
 	// Clear all geometry from the table.
 	// undo_stack().push(new GPlatesUndoCommands::PlateClosureClearGeometry(*this));
+#endif
 
 	// clear the "Clicked" table
 	d_view_state_ptr->feature_table_model().clear();
@@ -680,9 +683,6 @@ GPlatesQtWidgets::PlateClosureWidget::handle_clear()
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_create()
 {
-	// do one final update 
-	update_geometry();
-
 	// pointer to the Segments table
 	GPlatesGui::FeatureTableModel &segments_table = 
 		d_view_state_ptr->segments_feature_table_model();
@@ -690,28 +690,36 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	// check for an empty segments table
 	if ( ! segments_table.geometry_sequence().empty() ) 
 	{
-		// tell dialog that we are creating a topological feature
-		d_create_feature_dialog->set_topological();
-
-		bool success = d_create_feature_dialog->display();
-
-		if ( ! success) {
-			// The user cancelled the creation process. 
-			// Return early and do not reset the widget.
-			return;
-		}
-	} else {
-		QMessageBox::warning(this, tr("No boundary segments selected for new feature"),
-				tr("There are no valid boundray sements to use for creating a new feature."),
-				QMessageBox::Ok);
+		QMessageBox::warning(this, 
+			tr("No boundary segments are selected for this feature"),
+			tr("There are no valid boundray sements to use for creating this feature."),
+			QMessageBox::Ok);
 		return;
 	}
 
+	// do one final update ; create properties this time
+	d_should_create_properties = true;
+	update_geometry();
+
+
+	// tell dialog that we are creating a topological feature
+	d_create_feature_dialog->set_topological();
+
+	bool success = d_create_feature_dialog->display();
+
+	if ( ! success) {
+		// The user cancelled the creation process. 
+		// Return early and do not reset the widget.
+		return;
+	}
+
+#if 0
 	// FIXME: Undo! but that ties into the main 'model' QUndoStack.
 	// So the simplest thing to do at this stage is clear the 'digitisation' undo stack.
 	undo_stack().clear();
+#endif
 	
-	// Then, when we're all done, reset the widget for new input.
+	// Then, when we're all done, reset the widget for input.
 	initialise_geometry(d_geometry_type);
 
 	// Clear the widgets
@@ -776,15 +784,24 @@ GPlatesQtWidgets::PlateClosureWidget::visit_multi_point_on_sphere(
 		d_tmp_feature_type = GPlatesGlobal::MULTIPOINT_FEATURE;
 		return;
 	}
+
+	// set the global flag for intersection processing 
+	d_tmp_process_intersections = false;
+
+	// simply append the points to the working list
+	GPlatesMaths::MultiPointOnSphere::const_iterator itr;
 	GPlatesMaths::MultiPointOnSphere::const_iterator beg = multi_point_on_sphere->begin();
 	GPlatesMaths::MultiPointOnSphere::const_iterator end = multi_point_on_sphere->end();
-	GPlatesMaths::MultiPointOnSphere::const_iterator itr = beg;
-	for ( ; itr != end ; ++itr)
+	for ( itr = beg ; itr != end ; ++itr)
 	{
-		// simply append the point to the working list
 		d_tmp_index_vertex_list.push_back( *itr );
 	}
-	d_tmp_check_intersections = false;
+
+	// return early if properties are not needed
+	if (! d_should_create_properties) { return; }
+
+	// FIXME:
+	// loop again and create a set of sourceGeometry property delegates 
 }
 
 void
@@ -798,10 +815,14 @@ GPlatesQtWidgets::PlateClosureWidget::visit_point_on_sphere(
 	}
 
 	// set the global flag for intersection processing 
-	d_tmp_check_intersections = false;
+	d_tmp_process_intersections = false;
 
 	// simply append the point to the working list
 	d_tmp_index_vertex_list.push_back( *point_on_sphere );
+
+
+	// return early if properties are not needed
+	if (! d_should_create_properties) { return; }
 
 	// set the d_tmp vars to create a sourceGeometry property delegate 
 	d_tmp_property_name = "position";
@@ -824,12 +845,11 @@ GPlatesQtWidgets::PlateClosureWidget::visit_point_on_sphere(
 			
 	// create a GpmlTopologicalPoint from the delegate
 	GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type gtp_ptr =
-		GPlatesPropertyValues::GpmlTopologicalPoint::create(pd_ptr);
+		GPlatesPropertyValues::GpmlTopologicalPoint::create(
+			pd_ptr);
 
 	// Fill the vector of GpmlTopologicalSection::non_null_ptr_type 
 	d_sections_ptrs.push_back( gtp_ptr );
-
-	d_tmp_check_intersections = false;
 }
 
 void
@@ -841,6 +861,12 @@ GPlatesQtWidgets::PlateClosureWidget::visit_polygon_on_sphere(
 		d_tmp_feature_type = GPlatesGlobal::POLYGON_FEATURE;
 		return;
 	}
+
+	// return early if properties are not needed
+	if (! d_should_create_properties) { return; }
+
+	// FIXME:
+	// create a sourceGeometry property delegates 
 }
 
 void
@@ -854,27 +880,7 @@ GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 	}
 
 	// set the global flag for intersection processing 
-	d_tmp_check_intersections = true;
-
-	// Set the d_tmp vars to create a sourceGeometry property delegate 
-	d_tmp_property_name = "centerLineOf";
-	d_tmp_value_type = "LineString";
-
-	const GPlatesModel::FeatureId fid(d_tmp_index_fid);
-
-	const GPlatesModel::PropertyName prop_name =
-		GPlatesModel::PropertyName::create_gpml(d_tmp_property_name);
-
-	const GPlatesPropertyValues::TemplateTypeParameterType value_type =
-		GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
-
-	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd_ptr = 
-		GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-			fid,
-			prop_name,
-			value_type
-		);
-
+	d_tmp_process_intersections = true;
 
 	// Write out each point of the polyline.
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = 
@@ -903,6 +909,27 @@ GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 			polyline_vertices.begin(), polyline_vertices.end() );
 	}
 
+	// return early if properties are not needed
+	if (! d_should_create_properties) { return; }
+
+	// Set the d_tmp vars to create a sourceGeometry property delegate 
+	d_tmp_property_name = "centerLineOf";
+	d_tmp_value_type = "LineString";
+
+	const GPlatesModel::FeatureId fid(d_tmp_index_fid);
+
+	const GPlatesModel::PropertyName prop_name =
+		GPlatesModel::PropertyName::create_gpml(d_tmp_property_name);
+
+	const GPlatesPropertyValues::TemplateTypeParameterType value_type =
+		GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd_ptr = 
+		GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+			fid,
+			prop_name,
+			value_type
+		);
 
 	// create a GpmlTopologicalLineSection from the delegate
 	GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type gtls_ptr =
@@ -1027,13 +1054,13 @@ std::cout << "create_sections_from_segments_table: d_use_rev = " << d_tmp_index_
 
 		// re-set the check intersections flag for a sigle item on the list
 		if ( d_tmp_segments_size == 1 ) {
-			d_tmp_check_intersections = false;
+			d_tmp_process_intersections = false;
 		}
 
 		//
 		// Check for intersection
 		//
-		if ( d_tmp_check_intersections )
+		if ( d_tmp_process_intersections )
 		{
 			process_intersections();
 
@@ -1136,13 +1163,13 @@ std::cout << "PlateClosureWidget::process_intersections: "
 		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( prev_gos.get() );
 
 	// check if INDEX and PREV polylines intersect
-	check_intersection(
+	compute_intersection(
 		tmp_for_prev_polyline.get(),
 		prev_polyline,
 		GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV);
 
 	// if they do, then create the startIntersection property value
-	if ( d_num_intersections_with_prev != 0)
+	if ( d_should_create_properties && (d_num_intersections_with_prev != 0) )
 	{
 		// if there was an intersection, create a startIntersection property value
 		GPlatesModel::ReconstructionGeometry *prev_rg = prev->get();
@@ -1229,13 +1256,13 @@ std::cout << "PlateClosureWidget::process_intersections: "
 		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( next_gos.get() );
 
 	// check if INDEX and NEXT polylines intersect
-	check_intersection(
+	compute_intersection(
 		tmp_for_next_polyline.get(),
 		next_polyline,
 		GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT);
 
 	// if they do, then create the endIntersection property value
-	if ( d_num_intersections_with_next != 0)
+	if ( d_should_create_properties && (d_num_intersections_with_next != 0) )
 	{
 		// if there was an intersection, create a endIntersection property value
 		GPlatesModel::ReconstructionGeometry *rg = next->get();
@@ -1296,7 +1323,7 @@ std::cout << "PlateClosureWidget::process_intersections: "
 }
 
 void
-GPlatesQtWidgets::PlateClosureWidget::check_intersection(
+GPlatesQtWidgets::PlateClosureWidget::compute_intersection(
 	const GPlatesMaths::PolylineOnSphere* node1_polyline,
 	const GPlatesMaths::PolylineOnSphere* node2_polyline,
 	GPlatesQtWidgets::PlateClosureWidget::NeighborRelation relation)
@@ -1315,7 +1342,7 @@ GPlatesQtWidgets::PlateClosureWidget::check_intersection(
 
 #ifdef DEBUG
 std::cout << std::endl
-<< "PlateClosureWidget::check_intersection: " << "num_intersect = " << num_intersect 
+<< "PlateClosureWidget::compute_intersection: " << "num_intersect = " << num_intersect 
 << std::endl;
 #endif
 
@@ -1325,14 +1352,14 @@ std::cout << std::endl
 	{
 		case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_PREV :
 #ifdef DEBUG
-std::cout << "PlateClosureWidget::check_intersection: INTERSECT_PREV: " << std::endl;
+std::cout << "PlateClosureWidget::compute_intersection: INTERSECT_PREV: " << std::endl;
 #endif
 			d_num_intersections_with_prev = num_intersect;
 			break;
 
 		case GPlatesQtWidgets::PlateClosureWidget::INTERSECT_NEXT:
 #ifdef DEBUG
-std::cout << "PlateClosureWidget::check_intersection: INTERSECT_NEXT: " << std::endl;
+std::cout << "PlateClosureWidget::compute_intersection: INTERSECT_NEXT: " << std::endl;
 #endif
 			d_num_intersections_with_next = num_intersect;
 			break;
@@ -1375,14 +1402,14 @@ std::cout << "PlateClosureWidget::check_intersection: INTERSECT_NEXT: " << std::
 GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter, end;
 iter = parts.first.front()->vertex_begin();
 end = parts.first.front()->vertex_end();
-std::cout << "PlateClosureWidget::check_intersection:: HEAD: verts:" << std::endl;
+std::cout << "PlateClosureWidget::compute_intersection:: HEAD: verts:" << std::endl;
 for ( ; iter != end; ++iter) {
 std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 }
 
 iter = parts.first.back()->vertex_begin();
 end = parts.first.back()->vertex_end();
-std::cout << "PlateClosureWidget::check_intersection:: TAIL: verts:" << std::endl;
+std::cout << "PlateClosureWidget::compute_intersection:: TAIL: verts:" << std::endl;
 for ( ; iter != end; ++iter) {
 std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 }
@@ -1426,7 +1453,7 @@ std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 		if ( !click_close_to_head && !click_close_to_tail ) 
 		{
 			// FIXME : freak out!
-			std::cerr << "PlateClosureWidget::check_intersection: " << std::endl
+			std::cerr << "PlateClosureWidget::compute_intersection: " << std::endl
 			<< "WARN: click point not close to anything!" << std::endl
 			<< "WARN: Unable to set boundary feature intersection flags!" 
 			<< std::endl << std::endl;
@@ -1434,7 +1461,7 @@ std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 		}
 
 #ifdef DEBUG
-std::cout << "PlateClosureWidget::check_intersection: "
+std::cout << "PlateClosureWidget::compute_intersection: "
 << "closeness_head=" << closeness_head << " and " 
 << "closeness_tail=" << closeness_tail << std::endl;
 #endif
@@ -1443,7 +1470,7 @@ std::cout << "PlateClosureWidget::check_intersection: "
 		if ( closeness_head > closeness_tail )
 		{
 #ifdef DEBUG
-qDebug() << "PlateClosureWidget::check_intersection: " << "use HEAD";
+qDebug() << "PlateClosureWidget::compute_intersection: " << "use HEAD";
 #endif
 			d_closeness = closeness_head;
 
@@ -1481,7 +1508,7 @@ qDebug() << "PlateClosureWidget::check_intersection: " << "use HEAD";
 		{
 			d_closeness = closeness_tail;
 #ifdef DEBUG
-qDebug() << "PlateClosureWidget::check_intersection: " << "use TAIL" ;
+qDebug() << "PlateClosureWidget::compute_intersection: " << "use TAIL" ;
 #endif
 
 			// switch on the relation to be set
@@ -1520,7 +1547,7 @@ qDebug() << "PlateClosureWidget::check_intersection: " << "use TAIL" ;
 	else 
 	{
 		// num_intersect must be 2 or greater oh no!
-		std::cerr << "PlateClosureWidget::check_intersection: " << std::endl
+		std::cerr << "PlateClosureWidget::compute_intersection: " << std::endl
 		<< "WARN: num_intersect=" << num_intersect << std::endl 
 		<< "WARN: Unable to set boundary feature intersection relations!" << std::endl
 		<< "WARN: Make sure boundary feature's only intersect once." << std::endl 

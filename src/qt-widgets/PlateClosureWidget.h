@@ -127,7 +127,7 @@ namespace GPlatesQtWidgets
 		 * FIXME:
 		 */
 		void
-		check_intersection(
+		compute_intersection(
 			const GPlatesMaths::PolylineOnSphere* node1_polyline,
 			const GPlatesMaths::PolylineOnSphere* node2_polyline,
 			NeighborRelation relation);
@@ -394,7 +394,7 @@ namespace GPlatesQtWidgets
 		GPlatesGlobal::FeatureTypes d_tmp_feature_type;
 
 		bool d_tmp_index_use_reverse;
-		bool d_tmp_check_intersections;
+		bool d_tmp_process_intersections;
 
 		std::vector<GPlatesMaths::PointOnSphere> d_tmp_index_vertex_list;
 
@@ -409,7 +409,7 @@ namespace GPlatesQtWidgets
 		int d_num_intersections_with_prev;
 		int d_num_intersections_with_next;
 
-		bool d_create_properties;
+		bool d_should_create_properties;
 
 		/**
 		* thise d_ vars keep track of the widget's current state as data is transfered from
