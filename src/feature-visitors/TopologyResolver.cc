@@ -607,10 +607,10 @@ qDebug() << "ref_point_plate_id_fid="
 << GPlatesUtils::make_qstring_from_icu_string( ref_point_plate_id_fid.get() );
 #endif
 
+#ifdef DEBUG
 		// next, get the target_property name
 		const GPlatesModel::PropertyName &prop_name =
 			( start.reference_point_plate_id() )->target_property();
-#ifdef DEBUG
 qDebug() << "ref_point_plate_id_prop_name =" 
 << GPlatesUtils::make_qstring_from_icu_string( prop_name.get_name() );
 #endif
@@ -677,10 +677,10 @@ qDebug() << "ref_point_plate_id_fid="
 << GPlatesUtils::make_qstring_from_icu_string( ref_point_plate_id_fid.get() );
 #endif
 
+#ifdef DEBUG
 		// next, get the target_property name
 		const GPlatesModel::PropertyName &prop_name =
 			( end.reference_point_plate_id() )->target_property();
-#ifdef DEBUG
 qDebug() << "ref_point_plate_id_prop_name =" 
 << GPlatesUtils::make_qstring_from_icu_string( prop_name.get_name() );
 #endif

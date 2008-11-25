@@ -159,17 +159,18 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click 1" << std::end
 	// get the feature_id of the currently selected feature
 	GPlatesModel::FeatureId clicked_fid;
 
-	GPlatesModel::ReconstructionGeometry *rg = 
+	GPlatesModel::ReconstructionGeometry *clicked_rg = 
 		d_clicked_table_model_ptr->geometry_sequence().at(click_index).get();
-	GPlatesModel::ReconstructedFeatureGeometry *rfg =
-		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+	GPlatesModel::ReconstructedFeatureGeometry *clicked_rfg =
+		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(clicked_rg);
 
 	// FIXME: check for the cast and valid ref before doing this:
-	// GPlatesModel::FeatureId clicked_fid = rfg->feature_ref()->feature_id();
+	// GPlatesModel::FeatureId clicked_fid = clicked_rfg->feature_ref()->feature_id();
 
-	if (rfg) {
+	if (clicked_rfg) 
+	{
 std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
-		GPlatesModel::FeatureHandle::weak_ref clicked_ref = rfg->feature_ref();
+		GPlatesModel::FeatureHandle::weak_ref clicked_ref = clicked_rfg->feature_ref();
 		if ( clicked_ref.is_valid()) {
 std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref YES" << std::endl;
 			clicked_fid = clicked_ref->feature_id();
@@ -194,13 +195,13 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YE
 std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
 		d_view_state_ptr->highlight_segments_table_row(i, false);
 
-		GPlatesModel::ReconstructionGeometry *rg = iter->get();
-		GPlatesModel::ReconstructedFeatureGeometry *rfg =
-			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+		GPlatesModel::ReconstructionGeometry *index_rg = iter->get();
+		GPlatesModel::ReconstructedFeatureGeometry *index_rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(index_rg);
 
-		if (rfg) {
+		if (index_rfg) {
 std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg YES" << std::endl;
-			GPlatesModel::FeatureHandle::weak_ref index_ref = rfg->feature_ref();
+			GPlatesModel::FeatureHandle::weak_ref index_ref = index_rfg->feature_ref();
 			if ( index_ref.is_valid()) {
 std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref YES" << std::endl;
 				GPlatesModel::FeatureId index_fid = index_ref->feature_id();

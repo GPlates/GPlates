@@ -1065,12 +1065,12 @@ GPlatesQtWidgets::PlateClosureWidget::process_intersections()
 	d_click_point_lat = d_click_points.at(d_tmp_index).first;
 	d_click_point_lon = d_click_points.at(d_tmp_index).second;
 
-	GPlatesMaths::PointOnSphere pos = GPlatesMaths::make_point_on_sphere(
+	GPlatesMaths::PointOnSphere click_pos = GPlatesMaths::make_point_on_sphere(
 		GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon) );
 
-	d_click_point_ptr = &pos;
+	d_click_point_ptr = &click_pos;
 
-	const GPlatesMaths::PointOnSphere const_pos(pos); 
+	const GPlatesMaths::PointOnSphere const_pos(click_pos); 
 
 	// index math to close the loop of segments
 	if ( d_tmp_index == (d_tmp_segments_size - 1) ) 

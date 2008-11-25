@@ -322,8 +322,8 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			{
 				// get the PREV feature id
 				std::string str = boundary_strings.at( p );
-				size_t pos = str.find("#", 0);
-				std::string prev_old_fid = str.substr(0, pos);
+				size_t prev_pos = str.find("#", 0);
+				std::string prev_old_fid = str.substr(0, prev_pos);
 				// FIXME: what to do if the prev_old_fid is not found?
 				const GPlatesModel::FeatureId prev_fid = (id_map.find(prev_old_fid))->second; 
 
@@ -342,7 +342,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					);
 		
 				// reference_point
-				 GPlatesPropertyValues::GmlPoint::non_null_ptr_type ref_point =
+				 GPlatesPropertyValues::GmlPoint::non_null_ptr_type prev_ref_point =
 					GPlatesPropertyValues::GmlPoint::create( const_pos );
 		
 				// reference_point_plate_id
@@ -365,7 +365,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				// Create the start GpmlTopologicalIntersection
 				GPlatesPropertyValues::GpmlTopologicalIntersection start_ti(
 					geom_delegte,
-					ref_point,
+					prev_ref_point,
 					plate_id_delegate);
 					
 				// Set the start instersection
@@ -382,8 +382,8 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			{
 				// get the next feature id
 				std::string str = boundary_strings.at( n );
-				size_t pos = str.find("#", 0);
-				std::string next_old_fid = str.substr(0, pos);
+				size_t next_pos = str.find("#", 0);
+				std::string next_old_fid = str.substr(0, next_pos);
 				// FIXME: what to do if the next_old_fid is not found?
 				const GPlatesModel::FeatureId next_fid = (id_map.find(next_old_fid))->second; 
 
@@ -402,7 +402,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					);
 		
 				// reference_point
-				 GPlatesPropertyValues::GmlPoint::non_null_ptr_type ref_point =
+				 GPlatesPropertyValues::GmlPoint::non_null_ptr_type next_ref_point =
 					GPlatesPropertyValues::GmlPoint::create( const_pos );
 		
 				// reference_point_plate_id
@@ -425,7 +425,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				// Create the start GpmlTopologicalIntersection
 				GPlatesPropertyValues::GpmlTopologicalIntersection end_ti(
 					geom_delegte,
-					ref_point,
+					next_ref_point,
 					plate_id_delegate);
 					
 				// Set the start instersection

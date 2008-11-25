@@ -183,7 +183,7 @@ namespace
 
 			glPointSize(4.0f);
 	
-			if ( d_size != boost::none ) 
+			if ( d_size ) 
 			{
 				GLfloat s = static_cast<GLfloat>( *d_size );
 				glPointSize(s);
