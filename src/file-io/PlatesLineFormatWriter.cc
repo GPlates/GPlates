@@ -29,7 +29,6 @@
 #include <fstream>
 #include <vector>
 #include <unicode/ustream.h>
-#include <boost/foreach.hpp>
 
 #include "PlatesLineFormatWriter.h"
 #include "PlatesLineFormatHeaderVisitor.h"

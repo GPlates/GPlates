@@ -30,7 +30,6 @@
 #include <vector>
 #include <QTextStream>
 #include <unicode/ustream.h>
-#include <boost/foreach.hpp>
 
 #include "GMTFormatWriter.h"
 #include "GMTFormatGeometryExporter.h"
@@ -480,10 +479,12 @@ GPlatesFileIO::GMTFormatWriter::HeaderPrinter::print_header_lines(
 	bool first_line_in_header = true;
 
 	// Print each line of the GMT header.
-	BOOST_FOREACH(
-		const QString& line,
-		header_lines)
+	for (std::vector<QString>::const_iterator header_line_iter = header_lines.begin();
+		header_line_iter != header_lines.end();
+		++header_line_iter)
 	{
+		const QString &line = *header_line_iter;
+
 		if (first_line_in_header)
 		{
 			// First line in header uses '>' marker written by previous geometry.
@@ -1031,10 +1032,12 @@ namespace
 			d_line_stream << " :";
 		}
 
-		BOOST_FOREACH (
-			const AttributeMap::value_type& attribute,
-			attribute_map)
+		for (AttributeMap::const_iterator attribute_map_iter = attribute_map.begin();
+			attribute_map_iter != attribute_map.end();
+			++attribute_map_iter)
 		{
+			const AttributeMap::value_type &attribute = *attribute_map_iter;
+
 			d_line_stream
 				<< " ("
 				<< GPlatesUtils::make_qstring_from_icu_string(
