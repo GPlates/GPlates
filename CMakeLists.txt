@@ -31,9 +31,7 @@ if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
         "# To also enable parallel project builds set\n"
         "# “Tools->Options->Programs and Solutions->Build and Run->maximum number of parallel project builds” to\n"
         "# the number of cores on your CPU.\n"
-        "if (MSVC80)\n"
-        "	#set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} /MP\")\n"
-        "endif (MSVC80)\n\n")
+        "set(GPLATES_MSVC80_PARALLEL_BUILD false)\n\n")
 endif (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 include ("${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 
@@ -93,12 +91,24 @@ if(MSVC)
     # Flags common to all build types.
     #       The default warning level /W3 seems sufficient (/W4 generates informational warnings which are not necessary to write good code).
     #       /WX - treat all warnings as errors.
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+    if (GPLATES_SOURCE_RELEASE)
+        # Disable all warnings when releasing source code to non-developers.
+        # Remove any warning flags that are on by default.
+        string(REGEX REPLACE "/[Ww][a-zA-Z0-9]*" "" CMAKE_CXX_FLAGS_NO_WARNINGS "${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_NO_WARNINGS} /w")
+    else (GPLATES_SOURCE_RELEASE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+    endif (GPLATES_SOURCE_RELEASE)
     
     # If we've been asked to output a list of header files included by source files.
     if (GPLATES_SHOW_INCLUDES)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /showIncludes")
     endif (GPLATES_SHOW_INCLUDES)
+    
+    # If we've been asked to do parallel builds in Visual Studio 2005 within a project.
+    if (GPLATES_MSVC80_PARALLEL_BUILD)
+    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    endif (GPLATES_MSVC80_PARALLEL_BUILD)
 
     #set(CMAKE_EXE_LINKER_FLAGS )
     #set(CMAKE_SHARED_LINKER_FLAGS )
@@ -117,11 +127,20 @@ endif(MSVC)
 
 # Our G++ configuration:
 if(CMAKE_COMPILER_IS_GNUCXX)
-    # Use a list instead of a string so we can have multiple lines (instead of one giant line).
-    set(warnings_flags_list
-        -W -Wall -pedantic -ansi -Werror -Wshadow -Wcast-align -Wwrite-strings -Wfloat-equal
-        -Wno-unused-parameter -Wpointer-arith -Wctor-dtor-privacy -Wnon-virtual-dtor -Woverloaded-virtual
-        -Wno-long-long -Wold-style-cast)
+    if(APPLE)
+        # The compilers under OSX seem to behave oddly with '-isystem'.
+        # Headers in system include paths (and '-isystem' paths) should not generate warnings.
+        # However on OSX they do and because we have '-Werror' they become errors.
+        # FIXME: temporary solution is to turn off warnings for OSX.
+        # All GPlates developers currently use Linux or Windows.
+        set(warnings_flags_list )
+    else(APPLE)
+        # Use a list instead of a string so we can have multiple lines (instead of one giant line).
+        set(warnings_flags_list
+            -W -Wall -pedantic -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
+            -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
+            -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
+    endif(APPLE)
     # Convert the semi-colon separated list 'warnings_flags_list' to the string 'warnings_flags' 
     # (otherwise semi-colons will appear on the compiler command-line).
     foreach(warning ${warnings_flags_list})
@@ -129,7 +148,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endforeach(warning ${warnings_flags_list})
 
     # Flags common to all build types.
-	set(CMAKE_CXX_FLAGS "${warning_flags}")
+    if (GPLATES_SOURCE_RELEASE)
+        # Disable all warnings when releasing source code to non-developers.
+        set(CMAKE_CXX_FLAGS "-w")
+    else (GPLATES_SOURCE_RELEASE)
+        set(CMAKE_CXX_FLAGS "${warnings_flags}")
+    endif (GPLATES_SOURCE_RELEASE)
     #set(CMAKE_EXE_LINKER_FLAGS )
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )

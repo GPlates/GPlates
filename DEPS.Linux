@@ -27,6 +27,7 @@ Program and library dependencies
 To compile GPlates, you will need the following programs and libraries
 installed:
 
+  • cmake
   • g++ 4.x
   • make
   • GL library (the OpenGL shared library)
@@ -54,6 +55,7 @@ Debian system.
 Ubuntu 6.06 packages
 
 Program/library Corresponding Ubuntu packages
+cmake           cmake
 g++ 4.0         g++-4.0
 make            make
 GL              See note below. (On JB's 7.04 system: libgl1-mesa-dev)
@@ -71,6 +73,7 @@ GDAL            libgdal1-dev libgdal1c2a libgeos2c2a libgeos-dev
 Ubuntu 7.04 packages
 
 Program/library Corresponding Ubuntu packages
+cmake           cmake
 g++ 4.0         g++-4.1
 make            make
 GL              See note below. (On JB's 7.04 system: libgl1-mesa-dev)
@@ -84,6 +87,7 @@ GDAL            libgdal1-1.3.2 libgdal1-1.3.2-dev
 Ubuntu 7.10 packages
 
 Program/library Corresponding Ubuntu packages
+cmake           cmake
 g++ 4.0         g++-4.1
 make            make
 GL              See note below. (On JC's 7.10 system: libgl1-mesa-dev)
@@ -182,6 +186,7 @@ while GPlates 0.9.1 and above require Qt 4.3 and above.
 Fedora packages
 
 Program/library Corresponding Fedora packages
+cmake           cmake
 g++ 4.1         g++ 4.1.0.3
 make            make 3.80-10.2
 GL              MesaLib? 6.5.2
@@ -205,6 +210,7 @@ few differences.
 Debian testing/lenny packages
 
 Program/library Corresponding Debian packages
+cmake           cmake
 g++ 4.0         g++
 make            make
 GL              Varies according to your setup. On JC's nvidia based system:

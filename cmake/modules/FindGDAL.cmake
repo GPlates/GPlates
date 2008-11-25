@@ -22,7 +22,8 @@
 
 
 #
-# Try searching only CMake variable 'GDAL_DIR' and environment variable 'GDAL_DIR'.
+# Try searching only CMake variable 'GDAL_DIR' and environment variable
+# 'GDAL_DIR'.
 #
 
 SET(GDAL_DIR_SEARCH "${GDAL_DIR}")
@@ -76,8 +77,8 @@ FIND_PATH(GDAL_INCLUDE_DIR gdal.h
 )
 
 #
-# Try searching default paths (plus the extras specified in 'PATHS' (which looks like it catches alot of defaults anyway).
-#icu
+# Try searching default paths (plus the extras specified in 'PATHS' (which
+# looks like it catches alot of defaults anyway).
 #
 
 FIND_PATH(GDAL_INCLUDE_DIR gdal.h
@@ -106,7 +107,8 @@ FIND_PATH(GDAL_INCLUDE_DIR gdal.h
 )
 
 #
-# Try only searching directories of CMake variable 'GDAL_DIR' and environment variable 'GDAL_DIR'.
+# Try only searching directories of CMake variable 'GDAL_DIR' and environment
+# variable 'GDAL_DIR'.
 #
 
 set(GDAL_DIR_SEARCH ${GDAL_DIR})
@@ -114,8 +116,12 @@ IF(GDAL_DIR_SEARCH)
     FILE(TO_CMAKE_PATH "${GDAL_DIR_SEARCH}" GDAL_DIR_SEARCH)
     SET(GDAL_DIR_SEARCH ${GDAL_DIR_SEARCH})
     
+    # gdal1.3.2 on Ubuntu 7.04 in 2007-2008 (GPlates changeset 2107).
+    # gdal1.4.0 on Ubuntu 7.10 in 2008 (GPlates changeset 2222).
+    # gdal1.5.0 on Debian testing in 2008 (GPlates changeset 2773).
+    # gdal1.5.2 on OpenSUSE 11 in 2008 (GPlates changeset 3954).
     FIND_LIBRARY(GDAL_LIBRARY
-      NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
+      NAMES gdal gdal_i gdal1.5.2 gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
       PATHS ${GDAL_DIR_SEARCH}
       NO_DEFAULT_PATH
       PATH_SUFFIXES lib64 lib
@@ -146,7 +152,8 @@ FIND_LIBRARY(GDAL_LIBRARY
 )
 
 #
-# Try searching default paths (plus the extras specified in 'PATHS' (which looks like it catches alot of defaults anyway).
+# Try searching default paths (plus the extras specified in 'PATHS' (which
+# looks like it catches alot of defaults anyway).
 #
 
 FIND_LIBRARY(GDAL_LIBRARY 

@@ -351,6 +351,13 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 
 
 void
+	GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
+	const GPlatesModel::FeatureHandle& feature_handle)
+{
+	feature_handle.accept_visitor(*this);
+}
+
+void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::start_writing_document(
 		XmlWriter &writer)
 {
@@ -1175,5 +1182,3 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_key_value_dictionary_ele
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }
-
-

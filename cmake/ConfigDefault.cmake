@@ -26,7 +26,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
 # 4) MinSizeRel - release build optimised for size.
 IF(NOT MSVC)
     IF(NOT CMAKE_BUILD_TYPE)
-      SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+      SET(CMAKE_BUILD_TYPE Release CACHE STRING
           "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel ${extra_build_configurations}."
           FORCE)
     ENDIF(NOT CMAKE_BUILD_TYPE)
@@ -64,3 +64,7 @@ set(CMAKE_SUPPRESS_REGENERATION false)
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.
 set(GPLATES_USE_PCH false)
+
+# Set to 'true' if this is a source code release (to non-developers).
+# Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
+set(GPLATES_SOURCE_RELEASE false)

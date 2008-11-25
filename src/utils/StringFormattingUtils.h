@@ -66,6 +66,9 @@ namespace GPlatesUtils
 	};
 
 
+	//! Tell 'formatted_double_to_string()' to ignore precision.
+	static const int IGNORE_PRECISION = -1;
+
 	/*
 	 * Print a real number in a space of 'width' characters, right-justified,
 	 * with exactly 'prec' digits to the right of the decimal place.  The
@@ -81,7 +84,7 @@ namespace GPlatesUtils
 	formatted_double_to_string(
 			const double &val, 
 			unsigned width,
-			unsigned prec,
+			int prec = IGNORE_PRECISION,
 			bool elide_trailing_zeroes = false);
 
 

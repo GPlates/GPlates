@@ -10,8 +10,8 @@
    </rect>
   </property>
   <property name="sizePolicy" >
-   <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
-    <horstretch>0</horstretch>
+   <sizepolicy vsizetype="Preferred" hsizetype="MinimumExpanding" >
+    <horstretch>1</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
@@ -23,12 +23,12 @@
   </property>
   <property name="maximumSize" >
    <size>
-    <width>183</width>
+    <width>1024</width>
     <height>16777215</height>
    </size>
   </property>
   <property name="windowTitle" >
-   <string>Form</string>
+   <string>Task Panel</string>
   </property>
   <layout class="QVBoxLayout" >
    <property name="spacing" >

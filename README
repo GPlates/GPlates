@@ -13,6 +13,7 @@ Compiling GPlates on Linux
 
 To compile GPlates on Linux, you will need the following programs and libraries
 installed:
+ * CMake (2.4 or newer)
  * g++ 4
  * make
  * GL library (the OpenGL shared library)
@@ -24,14 +25,38 @@ installed:
  * Geospatial Data Abstraction Library (GDAL) (1.2.6 or newer)
 
 To compile on Linux, execute:
-	./configure
+	cmake .
 	make
 and then optionally:
 	make install
 
 More information can be found in the files "DEPS.Linux" and "BUILD.Linux" in
-this directory, in addition to the generic installation instructions in the
-file "INSTALL".
+this directory.
+
+
+Compiling GPlates on Mac OSX
+----------------------------
+
+To compile GPlates on Mac OSX, you will need the following programs and libraries
+installed:
+ * CMake (2.4 or newer)
+ * g++ 4
+ * make
+ * GL library (the OpenGL shared library)
+ * GLU library (the OpenGL Utility shared library)
+ * Qt library (version 4.3 or newer)
+ * ICU library
+ * Boost library headers
+ * Geospatial Data Abstraction Library (GDAL) (1.2.6 or newer)
+
+To compile on Mac OSX, execute:
+	cmake .
+	make
+and then optionally:
+	make install
+
+More information can be found in the files "DEPS.OSX" and "BUILD.OSX" in
+this directory.
 
 
 Compiling GPlates on Windows
@@ -39,16 +64,29 @@ Compiling GPlates on Windows
 
 To compile GPlates on Microsoft Windows, you will need the following programs
 and libraries installed:
+ * CMake (2.4 or newer)
  * Microsoft Visual Studio 8
  * Qt (version 4.3 or newer)
  * ICU
  * Boost
  * Geospatial Data Abstraction Library (GDAL) (1.2.6 or newer)
 
-There is a Visual Studio project file named "GPlates.vcproj" in the folder
-"msvc8".  To compile in Visual Studio:
- 1. Open "GPlates.vcproj" in the Visual Studio IDE.
- 2. Invoke "Rebuild All" from the Build menu. 
+To compile on Windows:
+ * Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
+   Boost, GDAL and ICU packages you've installed.
+ * The Gzip package should be found automatically if it's installed in 'C:/Program Files/GnuWin32/'.
+ * Run the CMake program ('CMakeSetup.exe'). CMake 2.4.8 and above is fine.
+      Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by
+      right-click->properties->compatibility(tab)->check "run this program as an administrator".
+ * Set both the 'source' and 'build' directories to the root GPlates source directory
+   (the one that has 'src' as a sub-directory).
+ * Click 'configure'.
+ * Specify 'Visual Studio 2005'.
+ * Click 'configure' once more.
+ * Click 'OK'.
+ * Open newly created 'GPlates.sln' with the Visual Studio IDE.
+ * Select 'release' build from the "Build->Configuration Manager..." menu.
+ * Rebuild All from the Build menu.
 
 More information can be found in the file "BUILD.Windows" in this directory.
 
@@ -60,5 +98,5 @@ For up-to-date information about GPlates, you can go to the GPlates website:
  http://www.gplates.org/
 
 
-This README was last updated 2007-12-21 by James Boyden.
+This README was last updated 2008-11-18 by John Cannon.
 

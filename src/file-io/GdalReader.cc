@@ -31,7 +31,7 @@
 // We're building on a UNIX-y system, and can thus expect "global/config.h".
 
 // On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
-// The "configure" script should have determined which one to use.
+// The "CMake" script should have determined which one to use.
 #include "global/config.h"
 #ifdef HAVE_GDAL_OGRSF_FRMTS_H
 #include <gdal/gdal_priv.h>

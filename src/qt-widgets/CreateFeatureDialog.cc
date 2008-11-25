@@ -361,11 +361,20 @@ namespace
 			public QListWidgetItem
 	{
 	public:
+		// Standard constructor for creating FeatureCollection entry.
 		FeatureCollectionItem(
 				GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 				const QString &label):
 			QListWidgetItem(label),
-			d_collection(collection)
+			d_collection(collection),
+			d_is_create_new_collection_item(false)
+		{  }
+
+		// Constructor for creating fake "Make a new Feature Collection" entry.
+		FeatureCollectionItem(
+				const QString &label):
+			QListWidgetItem(label),
+			d_is_create_new_collection_item(true)
 		{  }
 		
 		GPlatesModel::FeatureCollectionHandle::weak_ref
@@ -373,9 +382,16 @@ namespace
 		{
 			return d_collection;
 		}
+		
+		bool
+		is_create_new_collection_item()
+		{
+			return d_is_create_new_collection_item;
+		}
 	
 	private:
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_collection;
+		bool d_is_create_new_collection_item;
 	};
 
 
@@ -470,14 +486,17 @@ namespace
 			boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> collection_opt =
 					it->get_feature_collection();
 					
-			// Get a suitable label; we will use the full filename.
-			QString label = it->get_qfileinfo().absoluteFilePath();
+			// Get a suitable label; we will prefer the full filename.
+			QString label = it->get_display_name(true);
 			
 			// We are only interested in loaded files which have valid FeatureCollections.
 			if (collection_opt) {
 				list_widget.addItem(new FeatureCollectionItem(*collection_opt, label));
 			}
 		}
+		// Add a final option for creating a brand new FeatureCollection.
+		list_widget.addItem(new FeatureCollectionItem(QObject::tr(" < Create a new Feature Collection > ")));
+		// Default to first entry.
 		list_widget.setCurrentRow(0);
 	}
 
@@ -541,7 +560,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_button_box()
 			this, SLOT(reject()));
 	
 	// A few extra buttons for switching between the pages; I set them up outside
-	// the QDialogButtonBox to guarentee that "Previous" comes before "Next".
+	// the QDialogButtonBox to guarantee that "Previous" comes before "Next".
 	QObject::connect(button_prev, SIGNAL(clicked()),
 			this, SLOT(handle_prev()));
 	QObject::connect(button_next, SIGNAL(clicked()),
@@ -796,8 +815,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 				tr("Please select a feature collection to add the new feature to."));
 		return;
 	}
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection = collection_item->get_collection();
-	
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection;
+	if (collection_item->is_create_new_collection_item()) {
+		GPlatesAppState::ApplicationState::file_info_iterator new_file = 
+				d_view_state_ptr->create_empty_reconstructable_file();
+		collection = *(new_file->get_feature_collection());
+	} else {
+		collection = collection_item->get_collection();
+	}
 	// Actually create the Feature!
 	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
 	

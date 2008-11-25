@@ -27,11 +27,16 @@
 #define GPLATES_QTWIDGETS_EXPORTCOORDINATESDIALOG_H
 
 #include <QFileDialog>
+#include <QTextStream>
 #include <boost/optional.hpp>
 #include "ExportCoordinatesDialogUi.h"
 
 #include "maths/GeometryOnSphere.h"
 
+namespace GPlatesFileIO
+{
+	class GeometryExporter;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -90,8 +95,32 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		handle_export();
-		
+
 	private:
+
+		/**
+		* Enumeration for the possible formats to export to.
+		* The order of these should match the setup of the @a combobox_format
+		* as set up in the designer.
+		*
+		* FIXME: When we implement the writers, we will probably want to associate
+		* information with these enums; this would be a good point to include the
+		* combobox text so we can set it up in code.
+		*/
+		enum OutputFormat
+		{
+			PLATES4, GMT, WKT, CSV
+		};
+
+		/**
+		 * Enumeration for the order of coordinates to export with.
+		 * The order of these should match the setup of the @a combobox_coordinate_order
+		 * as set up in the designer.
+		 */
+		enum CoordinateOrder
+		{
+			LAT_LON, LON_LAT
+		};
 	
 		/**
 		 * The geometry that is to be exported when the user clicks the Export
@@ -124,6 +153,14 @@ namespace GPlatesQtWidgets
 		 */
 		static const QString s_terminating_point_information_text;
 		
+		/**
+		 * Export geometry in specified format.
+		 *
+		 * @param format format of geometry export.
+		 * @param text_stream output stream.
+		 */
+		void export_geometry( OutputFormat format, QTextStream& text_stream);
+
 	};
 }
 

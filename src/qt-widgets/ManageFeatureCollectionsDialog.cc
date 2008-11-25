@@ -27,15 +27,23 @@
 #include <QHeaderView>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QPushButton>
+#include <QDebug>
+
 #include "ApplicationState.h"
 #include "ViewportWindow.h"
 #include "file-io/FileInfo.h"
+#include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
+#include "feature-visitors/FeatureCollectionClassifier.h"
 #include "ManageFeatureCollectionsActionWidget.h"
+#include "ManageFeatureCollectionsStateWidget.h"
+#include "GMTHeaderFormatDialog.h"
+
 #include "ManageFeatureCollectionsDialog.h"
 
 
@@ -52,7 +60,6 @@ namespace
 		};
 	}
 	
-	// FIXME: FileFormat can definitely handle this.
 	const QString &
 	get_format_for_file(
 			const QFileInfo &qfileinfo)
@@ -62,20 +69,30 @@ namespace
 		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
 		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
 		static const QString format_gpml_gz(QObject::tr("Compressed GPML"));
+		static const QString format_gmt(QObject::tr("GMT xy"));
 		static const QString format_unknown(QObject::tr(""));
 		
-		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
+		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
+		{
+		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
 			return format_line;
-		} else if (qfileinfo.suffix() == "rot") {
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
 			return format_rotation;
-		} else if (qfileinfo.suffix() == "shp") {
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			return format_shapefile;
-		} else if (qfileinfo.suffix() == "gpml") {
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 			return format_gpml;
-		} else if (qfileinfo.completeSuffix().endsWith("gpml.gz", Qt::CaseInsensitive)) {
-			// FIXME: ^- REFACTOR ME!
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
 			return format_gpml_gz;
-		} else {
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
+			return format_gmt;
+
+		default:
 			return format_unknown;
 		}
 	}
@@ -88,6 +105,7 @@ namespace
 		// Appropriate filters for available output formats.
 		// Note that since we cannot write Shapefiles yet, we use PLATES4 line format as
 		// the default when the user clicks "Save a Copy" etc on shapefiles.
+		static const QString filter_gmt(QObject::tr("GMT xy (*.xy)"));
 		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
 		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
 		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
@@ -96,70 +114,138 @@ namespace
 		static const QString filter_all(QObject::tr("All files (*)"));
 		
 		QFileInfo qfileinfo = fileinfo.get_qfileinfo();
+		// Get the FeatureCollection from the FileInfo and determine whether it
+		// contains reconstructable and/or reconstruction features.
+		bool has_reconstructable_features = true;
+		bool has_reconstruction_features = true;
+		if (fileinfo.get_feature_collection()) {
+			GPlatesFeatureVisitors::FeatureCollectionClassifier classifier;
+			classifier.scan_feature_collection(
+					GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
+							*fileinfo.get_feature_collection()) );
+			
+			if (classifier.reconstructable_feature_count() == 0) {
+				has_reconstructable_features = false;
+			}
+			if (classifier.reconstruction_feature_count() == 0) {
+				has_reconstruction_features = false;
+			}
+		}
 		
-		// FIXME: Again, there are similar suffix-checking functions scattered all over,
-		// e.g. FileInfo.h and ViewportWindow.h
-		if (qfileinfo.suffix() == "dat" || qfileinfo.suffix() == "pla") {
-			QStringList filters;
-			filters << filter_line;
-			if (has_gzip) {
-				filters << filter_gpml_gz;
-			}
-			filters << filter_gpml;
-			filters << filter_all;
-			return filters.join(";;");
+		// Build the list of filters depending on the original file format.
+		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
+		{
+		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
+			{
+				QStringList filters;
+				filters << filter_gmt;
+				if (has_gzip) {
+					filters << filter_gpml_gz;
+				}
+				filters << filter_gpml;
+				filters << filter_line;
+				filters << filter_all;
+				return filters.join(";;");
 
-		} else if (qfileinfo.suffix() == "rot") {
-			QStringList filters;
-			filters << filter_rotation;
-			if (has_gzip) {
-				filters << filter_gpml_gz;
 			}
-			filters << filter_gpml;
-			filters << filter_all;
-			return filters.join(";;");
+			break;
 
-		} else if (qfileinfo.suffix() == "shp") {
-			// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
-			QStringList filters;
-			filters << filter_line;
-			if (has_gzip) {
-				filters << filter_gpml_gz;
-			}
-			filters << filter_gpml;
-			filters << filter_all;
-			return filters.join(";;");
+		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
+			{
+				QStringList filters;
+				filters << filter_line;
+				if (has_gzip) {
+					filters << filter_gpml_gz;
+				}
+				filters << filter_gpml;
+				filters << filter_gmt;
+				filters << filter_all;
+				return filters.join(";;");
 
-		} else if (qfileinfo.suffix() == "gpml") {
-			QStringList filters;
-			filters << filter_gpml;			// Save uncompressed by default, same as original
-			if (has_gzip) {
-				filters << filter_gpml_gz;	// Option to change to compressed version.
 			}
-			filters << filter_line;
-			// FIXME: Only offer to save as PLATES4 .rot if feature collection
-			// actually has rotations in it! Ditto with collections that have no features!
-			filters << filter_rotation;
-			filters << filter_all;
-			return filters.join(";;");
+			break;
 
-		} else if (qfileinfo.completeSuffix().endsWith("gpml.gz", Qt::CaseInsensitive)) {
-			// FIXME: ^- REFACTOR ME!
-			QStringList filters;
-			if (has_gzip) {
-				filters << filter_gpml_gz;	// Save compressed by default, assuming we can.
+		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
+			{
+				QStringList filters;
+				filters << filter_rotation;
+				if (has_gzip) {
+					filters << filter_gpml_gz;
+				}
+				filters << filter_gpml;
+				filters << filter_all;
+				return filters.join(";;");
+
 			}
-			filters << filter_gpml;			// Option to change to uncompressed version.
-			filters << filter_line;
-			// FIXME: Only offer to save as PLATES4 .rot if feature collection
-			// actually has rotations in it! Ditto with collections that have no features!
-			filters << filter_rotation;
-			filters << filter_all;
-			return filters.join(";;");
-		
-		} else {
+			break;
+			
+		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
+			{
+				// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
+				QStringList filters;
+				filters << filter_line;
+				if (has_gzip) {
+					filters << filter_gpml_gz;
+				}
+				filters << filter_gpml;
+				filters << filter_gmt;
+				filters << filter_all;
+				return filters.join(";;");
+
+			}
+			break;
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
+			{
+				QStringList filters;
+				filters << filter_gpml;			// Save uncompressed by default, same as original
+				if (has_gzip) {
+					filters << filter_gpml_gz;	// Option to change to compressed version.
+				}
+				if (has_reconstructable_features) {
+					// Only offer to save in line-only formats if feature collection
+					// actually has reconstructable features in it!
+					filters << filter_gmt;
+					filters << filter_line;
+				}
+				if (has_reconstruction_features) {
+					// Only offer to save as PLATES4 .rot if feature collection
+					// actually has rotations in it!
+					filters << filter_rotation;
+				}
+				filters << filter_all;
+				return filters.join(";;");
+
+			}
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
+			{
+				QStringList filters;
+				if (has_gzip) {
+					filters << filter_gpml_gz;	// Save compressed by default, assuming we can.
+				}
+				filters << filter_gpml;			// Option to change to uncompressed version.
+				if (has_reconstructable_features) {
+					// Only offer to save in line-only formats if feature collection
+					// actually has reconstructable features in it!
+					filters << filter_gmt;
+					filters << filter_line;
+				}
+				if (has_reconstruction_features) {
+					// Only offer to save as PLATES4 .rot if feature collection
+					// actually has rotations in it!
+					filters << filter_rotation;
+				}
+				filters << filter_all;
+				return filters.join(";;");
+			
+			}
+			break;
+			
+		default:
 			return filter_all;
 		}
+
+		return filter_all;
 	}
 }
 
@@ -178,8 +264,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	QHeaderView *header = table_feature_collections->horizontalHeader();
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
-	header->resizeSection(ColumnNames::IN_USE, 56);
-	header->resizeSection(ColumnNames::ACTIONS, 180);
+	header->resizeSection(ColumnNames::IN_USE, 88);
+	header->resizeSection(ColumnNames::ACTIONS, 216);
 
 	// Enforce minimum row height for the Actions widget's sake.
 	QHeaderView *sider = table_feature_collections->verticalHeader();
@@ -214,8 +300,34 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
 }
 
 void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_state()
+{
+	int row = 0;
+	int end = table_feature_collections->rowCount();
+	for (; row < end; ++row) {
+		// Update the State widget.
+		ManageFeatureCollectionsStateWidget *state_widget = dynamic_cast<ManageFeatureCollectionsStateWidget *>(
+				table_feature_collections->cellWidget(row, ColumnNames::IN_USE));
+		if (state_widget) {
+			GPlatesAppState::ApplicationState::file_info_iterator file_it =
+					state_widget->get_file_info_iterator();
+			bool in_use_reconstructable = d_viewport_window_ptr->is_file_active_reconstructable(file_it);
+			bool in_use_reconstruction = d_viewport_window_ptr->is_file_active_reconstruction(file_it);
+			state_widget->update_state(in_use_reconstructable, in_use_reconstruction);
+		}
+		// Update the Action widget.
+		ManageFeatureCollectionsActionWidget *action_widget = dynamic_cast<ManageFeatureCollectionsActionWidget *>(
+				table_feature_collections->cellWidget(row, ColumnNames::ACTIONS));
+		if (action_widget) {
+			action_widget->update_state();
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
-	ManageFeatureCollectionsActionWidget *action_widget_ptr)
+		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
 	// The "edit configuration" method only makes sense for shapefiles 
 	// (until there is some sort of equivalent requirement for other types of 
@@ -236,11 +348,19 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 {
 	GPlatesAppState::ApplicationState::file_info_iterator file_it =
 			action_widget_ptr->get_file_info_iterator();
+
+	// Get the format to write feature collection in.
+	// This is usually determined by file extension but some format also
+	// require user preferences (eg, style of feature header in file).
+	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
+		get_feature_collection_write_format(*file_it);
 	
 	try
 	{
 		// FIXME: Saving files should not be handled by the viewport window.
-		d_viewport_window_ptr->save_file(*file_it);
+		d_viewport_window_ptr->save_file(
+			*file_it,
+			feature_collection_write_format);
 		
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
@@ -297,10 +417,19 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 	// Make a new FileInfo object to tell save_file_as() what the new name should be.
 	GPlatesFileIO::FileInfo new_fileinfo(filename);
 
+	// Get the format to write feature collection in.
+	// This is usually determined by file extension but some format also
+	// require user preferences (eg, style of feature header in file).
+	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
+		get_feature_collection_write_format(new_fileinfo);
+
 	try
 	{
 		// FIXME: Saving files should not be handled by the viewport window.
-		d_viewport_window_ptr->save_file_as(new_fileinfo, file_it);
+		d_viewport_window_ptr->save_file_as(
+			new_fileinfo,
+			file_it,
+			feature_collection_write_format);
 		
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
@@ -360,10 +489,19 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 	// Make a new FileInfo object to tell save_file_copy() what the copy name should be.
 	GPlatesFileIO::FileInfo new_fileinfo(filename);
 
+	// Get the format to write feature collection in.
+	// This is usually determined by file extension but some format also
+	// require user preferences (eg, style of feature header in file).
+	GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format =
+		get_feature_collection_write_format(new_fileinfo);
+
 	try
 	{
 		// FIXME: Saving files should not be handled by the viewport window.
-		d_viewport_window_ptr->save_file_copy(new_fileinfo, file_it);
+		d_viewport_window_ptr->save_file_copy(
+			new_fileinfo,
+			file_it,
+			feature_collection_write_format);
 		
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
@@ -405,6 +543,21 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 
 
 void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_file(
+		ManageFeatureCollectionsActionWidget *action_widget_ptr)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			action_widget_ptr->get_file_info_iterator();
+	
+	// BIG FIXME: Unloading/Reloading files should be handled by ApplicationState, which should
+	// then update all ViewportWindows' ViewState's active files list. However, we
+	// don't have that built yet, so the current method of unloading files is to call
+	// ViewportWindow and let it do the ApplicationState call.
+	d_viewport_window_ptr->reload_file(file_it);
+}
+
+
+void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_file(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
@@ -419,6 +572,38 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_file(
 	d_viewport_window_ptr->reconstruct();
 	
 	remove_row(action_widget_ptr);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstructable_state_for_file(
+		ManageFeatureCollectionsStateWidget *state_widget_ptr,
+		bool desired_state)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			state_widget_ptr->get_file_info_iterator();
+	// TODO: Depending on desired_state, ask the ViewportWindow(*) to activate or
+	// deactivate the loaded file for the given file_info_iterator list.
+	// Shouldn't use ViewportWindow::deactivate_loaded_file, because that
+	// operates on both lists and has side effects right now.
+	// (*) - Well, actually ViewState.
+	d_viewport_window_ptr->set_file_active_reconstructable(file_it, desired_state);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstruction_state_for_file(
+		ManageFeatureCollectionsStateWidget *state_widget_ptr,
+		bool desired_state)
+{
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			state_widget_ptr->get_file_info_iterator();
+	// TODO: Depending on desired_state, ask the ViewportWindow(*) to activate or
+	// deactivate the loaded file for the given file_info_iterator list.
+	// Shouldn't use ViewportWindow::deactivate_loaded_file, because that
+	// operates on both lists and has side effects right now.
+	// (*) - Well, actually ViewState.
+	d_viewport_window_ptr->set_file_active_reconstruction(file_it, desired_state);
 }
 
 
@@ -456,27 +641,26 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::clear_rows()
 }
 
 
-GPlatesQtWidgets::ManageFeatureCollectionsActionWidget *
+void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 		GPlatesAppState::ApplicationState::file_info_iterator file_it)
 {
-	static const QString in_use_str(tr("Yes"));
-	static const QString not_in_use_str(tr(""));
-
 	// Obtain information from the FileInfo
 	const QFileInfo &qfileinfo = file_it->get_qfileinfo();
 	
+	QString display_name = file_it->get_display_name(false);
 	QString filename_str = qfileinfo.fileName();
 	QString filepath_str = qfileinfo.path();
 	QString format_str = get_format_for_file(qfileinfo);
-	bool in_use = d_viewport_window_ptr->is_file_active(file_it);
+	bool in_use_reconstructable = d_viewport_window_ptr->is_file_active_reconstructable(file_it);
+	bool in_use_reconstruction = d_viewport_window_ptr->is_file_active_reconstruction(file_it);
 	
 	// Add blank row.
 	int row = table_feature_collections->rowCount();
 	table_feature_collections->insertRow(row);
 	
 	// Add filename item.
-	QTableWidgetItem *filename_item = new QTableWidgetItem(filename_str);
+	QTableWidgetItem *filename_item = new QTableWidgetItem(display_name);
 	filename_item->setToolTip(tr("Location: %1").arg(filepath_str));
 	filename_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FILENAME, filename_item);
@@ -487,15 +671,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	table_feature_collections->setItem(row, ColumnNames::FORMAT, format_item);
 
 	// Add in use status.
-	QTableWidgetItem *in_use_item = new QTableWidgetItem();
-	if (in_use)	{
-		in_use_item->setText(in_use_str);
-	} else {
-		in_use_item->setText(not_in_use_str);
-	}
-	in_use_item->setFlags(Qt::ItemIsEnabled);
-	in_use_item->setTextAlignment(Qt::AlignCenter);
-	table_feature_collections->setItem(row, ColumnNames::IN_USE, in_use_item);
+	ManageFeatureCollectionsStateWidget *state_widget_ptr =
+			new ManageFeatureCollectionsStateWidget(*this, file_it, 
+					in_use_reconstructable, in_use_reconstruction, this);
+	table_feature_collections->setCellWidget(row, ColumnNames::IN_USE, state_widget_ptr);
 	
 	// Add action buttons widget.
 	ManageFeatureCollectionsActionWidget *action_widget_ptr =
@@ -507,8 +686,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	{
 		action_widget_ptr->enable_edit_configuration_button();
 	}
-
-	return action_widget_ptr;
 }
 
 
@@ -537,3 +714,21 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::remove_row(
 	}
 }
 
+GPlatesFileIO::FeatureCollectionWriteFormat::Format
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::get_feature_collection_write_format(
+	const GPlatesFileIO::FileInfo& file_info)
+{
+	switch (get_feature_collection_file_format(file_info) )
+	{
+	case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
+		{
+			GMTHeaderFormatDialog gmt_header_format_dialog(d_viewport_window_ptr);
+			gmt_header_format_dialog.exec();
+
+			return gmt_header_format_dialog.get_header_format();
+		}
+
+	default:
+		return GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION;
+	}
+}

@@ -31,25 +31,18 @@
 #include <unicode/ustream.h>
 
 #include "PlatesLineFormatWriter.h"
+#include "PlatesLineFormatHeaderVisitor.h"
+#include "PlatesLineFormatGeometryExporter.h"
+#include "ErrorOpeningFileForWritingException.h"
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
-#include "model/FeatureRevision.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
-#include "property-values/GmlTimeInstant.h"
-#include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
-#include "property-values/GpmlFiniteRotation.h"
-#include "property-values/GpmlFiniteRotationSlerp.h"
-#include "property-values/GpmlIrregularSampling.h"
-#include "property-values/GpmlPlateId.h"
-#include "property-values/GpmlTimeSample.h"
-#include "property-values/GpmlOldPlatesHeader.h"
-#include "property-values/XsString.h"
 
 #include "maths/Real.h"
 #include "maths/PolylineOnSphere.h"
@@ -63,218 +56,123 @@
 
 namespace
 {
-	/* A point on a polyline in the PLATES4 format includes a "draw command"
-	 * after the coordninates of the point.  This is a number (2 or 3) which 
-	 * tells us whether to draw a line (from the previous point) to the point,
-	 * or to start the next line at the point.
-	 */
-	enum pen_pos_t { PEN_DRAW_TO_POINT = 2, PEN_SKIP_TO_POINT = 3 };
-
-
-	void
-	print_plates_coordinate_line(
-			std::ostream *os, 
-			const GPlatesMaths::Real &lat, 
-			const GPlatesMaths::Real &lon,
-			pen_pos_t pen)
-	{
-		/*
-		 * A coordinate in the PLATES4 format is written as decimal number with
-		 * 4 digits precision after the decimal point, and it must take up 9
-		 * characters altogether (i.e. including the decimal point and maybe
-		 * a sign).
-		 */
-		static const unsigned PLATES_COORDINATE_PRECISION = 4;
-		static const unsigned PLATES_COORDINATE_FIELDWIDTH = 9;
-		static const unsigned PLATES_PEN_FIELDWIDTH = 1;
-
-		/*
-		 * We convert the coordinates to strings first, so that in case an exception
-		 * is thrown, the ostream is not modified.
-		 */
-		std::string lat_str, lon_str, pen_str;
-		try {
-			lat_str = GPlatesUtils::formatted_double_to_string(lat.dval(),
-				PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION);
-			lon_str = GPlatesUtils::formatted_double_to_string(lon.dval(),
-				PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION);
-			pen_str = GPlatesUtils::formatted_int_to_string(static_cast<int>(pen),
-				PLATES_PEN_FIELDWIDTH);
-		} catch (const GPlatesUtils::InvalidFormattingParametersException &) {
-			// The argument name in the above expression was removed to
-			// prevent "unreferenced local variable" compiler warnings under MSVC.
-			throw;
-		}
-
-		(*os) << lat_str << " " << lon_str << " " << pen_str << std::endl;
-	}
-
-
-	void
-	print_plates_feature_termination_line(
-			std::ostream *os)
-	{
-		print_plates_coordinate_line(os, 99.0, 99.0, PEN_SKIP_TO_POINT);
-	}
-
-
-	void
-	print_plates_coordinate_line(
-			std::ostream *os, 
-			const GPlatesMaths::PointOnSphere &pos,
-			pen_pos_t pen)
-	{
-		GPlatesMaths::LatLonPoint llp =
-				GPlatesMaths::make_lat_lon_point(pos);
-		print_plates_coordinate_line(os, llp.latitude(), llp.longitude(), pen);
-	}
-
-
-	void
-	print_line_string(
-			std::ostream *os,
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
-	{
-		GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = polyline->vertex_begin();
-		GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline->vertex_end();
-
-		// N.B. The class invariant of PolylineOnSphere guarentees that our iterators  iter
-		// and  end  span at least two vertices.  See the documentation for PolylineOnSphere.
-		Assert(iter != end, GPlatesMaths::InvalidPolylineContainsZeroPointsException(__FILE__, __LINE__));
-
-		print_plates_coordinate_line(os, *iter, PEN_SKIP_TO_POINT);
-
-		++iter;
-		Assert(iter != end, GPlatesMaths::InvalidPolylineContainsOnlyOnePointException(__FILE__, __LINE__));
-
-		for ( ; iter != end; ++iter) {
-			print_plates_coordinate_line(os, *iter, PEN_DRAW_TO_POINT);
-		}
-
-		/*
-		 * The PLATES4 format dictates that we include a special
-		 * "line string has terminated" coordinate at the end of the line
-		 * string.  The coordinate is always exactly "  99.0000   99.0000 3".
-		 */
-		print_plates_feature_termination_line(os);
-	}
-
-
-	void
-	print_multi_point(
-			std::ostream *os,
-			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint)
-	{
-		// Note: Unfortunately, writing a MultiPoint out to the PLATES line format means we
-		// will, upon re-reading the file, get multiple individual pointlike features.
-		// Not much can be done here, though. Fix this in the reader.
-		GPlatesMaths::MultiPointOnSphere::const_iterator iter = multipoint->begin();
-		GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint->end();
-		
-		for ( ; iter != end; ++iter) {
-			print_plates_coordinate_line(os, *iter, PEN_SKIP_TO_POINT);
-			print_plates_coordinate_line(os, *iter, PEN_DRAW_TO_POINT);
-		}
-
-		/*
-		 * The PLATES4 format dictates that we include a special
-		 * "line string has terminated" coordinate at the end of the line
-		 * string.  The coordinate is always exactly "  99.0000   99.0000 3".
-		 */
-		print_plates_feature_termination_line(os);
-	}
-
-
-	void
-	print_polygon(
-			std::ostream *os,
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
-	{
-		// Note: Handles the GPlatesMaths::PolygonOnSphere, (1 exterior ring),
-		// not the GPlatesPropertyValues::GmlPolygon (1 exterior, 0-* interiors).
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon->vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon->vertex_end();
-
-		// N.B. The class invariant of PolygonOnSphere guarentees that our iterators  iter
-		// and  end  span at least three vertices.  See the documentation for PolygonOnSphere.
-//		Assert(iter != end, GPlatesMaths::InvalidPolylineContainsZeroPointsException(__FILE__, __LINE__));
-
-		print_plates_coordinate_line(os, *iter, PEN_SKIP_TO_POINT);
-
-		++iter;
-//		Assert(iter != end, GPlatesMaths::InvalidPolylineContainsOnlyOnePointException(__FILE__, __LINE__));
-
-		for ( ; iter != end; ++iter) {
-			print_plates_coordinate_line(os, *iter, PEN_DRAW_TO_POINT);
-		}
-		
-		// Draw the final point to close the polygon.
-		print_plates_coordinate_line(os, *polygon->vertex_begin(), PEN_DRAW_TO_POINT);
-
-		/*
-		 * The PLATES4 format dictates that we include a special
-		 * "line string has terminated" coordinate at the end of the line
-		 * string.  The coordinate is always exactly "  99.0000   99.0000 3".
-		 */
-		print_plates_feature_termination_line(os);
-	}
-
-
 	/**
-	 * Convert a GeoTimeInstant instance to a double, for output in the PLATES4 line-format.
-	 *
-	 * This may involve the conversion of the GeoTimeInstant concepts of "distant past" and
-	 * "distant future" to the magic numbers 999.0 and -999.0 which are used in the PLATES4
-	 * line-format.
+	 * Visitor determines number of points in a derived GeometryOnSphere object.
 	 */
-	const double &
-	convert_geotimeinstant_to_double(
-			const GPlatesPropertyValues::GeoTimeInstant &geo_time)
+	class NumberOfGeometryPointsVisitor :
+		public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
-		static const double distant_past_magic_number = 999.0;
-		static const double distant_future_magic_number = -999.0;
+	public:
+		NumberOfGeometryPointsVisitor()
+			: d_number_of_points(0)
+		{ }
 
-		if (geo_time.is_distant_past()) {
-			return distant_past_magic_number;
-		} else if (geo_time.is_distant_future()) {
-			return distant_future_magic_number;
-		} else {
-			return geo_time.value();
+		int
+			get_number_of_points(
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
+		{
+			geometry->accept_visitor(*this);
+			return d_number_of_points;
 		}
-	}
 
+		virtual
+			void
+			visit_multi_point_on_sphere(
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_number_of_points = multi_point_on_sphere->number_of_points();
+		}
 
-	const UnicodeString
-	generate_geog_description(
-			const UnicodeString &type, 
-			const UnicodeString &id)
-	{
-		return "There was insufficient information to completely "\
-			"generate the header for this data.  It came from GPlates, where "\
-			"it had feature type \"" + type + "\" and feature id \"" + id + "\".";
-	}
+		virtual
+			void
+			visit_point_on_sphere(
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+		{
+			d_number_of_points = 1;
+		}
+
+		virtual
+			void
+			visit_polygon_on_sphere(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_number_of_points = polygon_on_sphere->number_of_vertices() + 1;
+		}
+
+		virtual
+			void
+			visit_polyline_on_sphere(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_number_of_points = polyline_on_sphere->number_of_vertices();
+		}
+
+	private:
+		int d_number_of_points;
+	};
 }
 
 
 GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
 		const FileInfo &file_info)
 {
-	d_output = new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str());
+	// Open the file.
+	d_output_file.reset( new QFile(file_info.get_qfileinfo().filePath()) );
+	if ( ! d_output_file->open(QIODevice::WriteOnly | QIODevice::Text) )
+	{
+		throw ErrorOpeningFileForWritingException(
+			file_info.get_qfileinfo().filePath());
+	}
+
+	d_output_stream.reset( new QTextStream(d_output_file.get()) );
 }
 
 
-bool 
-GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatAccumulator::have_sufficient_info_for_output() const
+void
+GPlatesFileIO::PlatesLineFormatWriter::write_feature(
+	const GPlatesModel::FeatureHandle& feature_handle)
 {
-	// To output this feature we need a geometry (a polyline or a point) and plate id.
-	return (multi_point || polyline || point || polygon) && (old_plates_header || plate_id);
+	// Clear accumulator before visiting feature.
+	d_feature_accumulator.clear();
+
+	// Collect any geometries in the current feature.
+	feature_handle.accept_visitor(*this);
+
+	OldPlatesHeader old_plates_header;
+
+	// Delegate formating of feature header.
+	const bool valid_header = d_feature_header.get_old_plates_header(
+		feature_handle, old_plates_header);
+
+	// If we have a valid header and at least one geometry then we can output for the current feature.
+	if (valid_header && d_feature_accumulator.have_geometry())
+	{
+		// For each GeometryOnSphere write out a header and the geometry data.
+		for(
+			FeatureAccumulator::geometries_const_iterator_type geometry_iter =
+				d_feature_accumulator.geometries_begin();
+			geometry_iter != d_feature_accumulator.geometries_end();
+			++geometry_iter)
+		{
+			// Get number of points in current geometry.
+			NumberOfGeometryPointsVisitor number_of_points_visitor;
+			old_plates_header.number_of_points =
+				number_of_points_visitor.get_number_of_points(*geometry_iter);
+
+			// Write out the header.
+			print_header_lines(old_plates_header);
+
+			// Write out the geometry.
+			PlatesLineFormatGeometryExporter geometry_exporter(*d_output_stream);
+			geometry_exporter.export_geometry(*geometry_iter);
+		}
+	}
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
-		std::ostream *os, 
-		const PlatesLineFormatAccumulator::OldPlatesHeader &old_plates_header)
+	const OldPlatesHeader &old_plates_header)
 {
 	using namespace GPlatesUtils;
 
@@ -284,143 +182,70 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 	 */
 
 	// First line of the PLATES4 header.
-	(*os) << formatted_int_to_string(old_plates_header.region_number, 2)
-		<< formatted_int_to_string(old_plates_header.reference_number, 2)
+	*d_output_stream << formatted_int_to_string(old_plates_header.region_number, 2).c_str()
+		<< formatted_int_to_string(old_plates_header.reference_number, 2).c_str()
 		<< " "
-		<< formatted_int_to_string(old_plates_header.string_number, 4)
+		<< formatted_int_to_string(old_plates_header.string_number, 4).c_str()
 		<< " "
-		<< old_plates_header.geographic_description 
-		<< std::endl;
+		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.geographic_description)
+		<< endl;
 
 	// Second line of the PLATES4 header.
-	(*os) << " "
-		<< formatted_int_to_string(old_plates_header.plate_id_number, 3)
+	*d_output_stream << " "
+		<< formatted_int_to_string(old_plates_header.plate_id_number, 3).c_str()
 		<< " "
-		<< formatted_double_to_string(old_plates_header.age_of_appearance, 6, 1)
+		<< formatted_double_to_string(old_plates_header.age_of_appearance, 6, 1).c_str()
 		<< " "
-		<< formatted_double_to_string(old_plates_header.age_of_disappearance, 6, 1)
+		<< formatted_double_to_string(old_plates_header.age_of_disappearance, 6, 1).c_str()
 		<< " "
-		<< old_plates_header.data_type_code
-		<< formatted_int_to_string(old_plates_header.data_type_code_number, 4)
+		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.data_type_code)
+		<< formatted_int_to_string(old_plates_header.data_type_code_number, 4).c_str()
 		<< " "
-		<< formatted_int_to_string(old_plates_header.conjugate_plate_id_number, 3)
+		<< formatted_int_to_string(old_plates_header.conjugate_plate_id_number, 3).c_str()
 		<< " "
-		<< formatted_int_to_string(old_plates_header.colour_code, 3)
+		<< formatted_int_to_string(old_plates_header.colour_code, 3).c_str()
 		<< " "
-		<< formatted_int_to_string(old_plates_header.number_of_points, 5)
-		<< std::endl;
+		<< formatted_int_to_string(old_plates_header.number_of_points, 5).c_str()
+		<< endl;
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
+	const GPlatesModel::FeatureHandle &feature_handle)
 {
-	d_accum = PlatesLineFormatAccumulator();
-
-	// These two strings will be used to write the "Geographic description"
-	// field in the case that no old PLATES4 header is found.
-	d_accum.feature_type = feature_handle.feature_type().get_name();
-	d_accum.feature_id   = feature_handle.feature_id().get();
-
 	// Visit each of the properties in turn.
 	visit_feature_properties(feature_handle);
-
-	// Check that we have enough data to actually output something
-	if ( ! d_accum.have_sufficient_info_for_output()) {
-		// XXX: Should we emit some kind of "data loss" warning?
-		return;
-	}
-	
-	// Build an old plates header from the information we've gathered.
-	PlatesLineFormatAccumulator::OldPlatesHeader old_plates_header;
-	if (d_accum.old_plates_header) {
-		old_plates_header = *d_accum.old_plates_header;
-	} else {
-		// use the feature type and feature id info to make up a description.
-		old_plates_header.geographic_description = 
-			generate_geog_description(*d_accum.feature_type, *d_accum.feature_id);
-	}
-
-	/*
-	 * Override the old plates header values with any that GPlates has added.
-	 */
-	if (d_accum.plate_id) {
-		old_plates_header.plate_id_number = *d_accum.plate_id;
-	}
-	if (d_accum.conj_plate_id) {
-		old_plates_header.conjugate_plate_id_number = *d_accum.conj_plate_id;
-	}
-	if (d_accum.age_of_appearance) {
-		old_plates_header.age_of_appearance = 
-			convert_geotimeinstant_to_double(*d_accum.age_of_appearance);
-	}
-	if (d_accum.age_of_disappearance) {
-		old_plates_header.age_of_disappearance = 
-			convert_geotimeinstant_to_double(*d_accum.age_of_disappearance);
-	}
-
-	// Find out if our geometry is a polyline or a point.
-	// FIXME: This does not handle cases where a feature has multiple geometric properties.
-	if (d_accum.polyline) {
-		old_plates_header.number_of_points = 
-			(*d_accum.polyline)->number_of_vertices();
-	} else if (d_accum.polygon) {
-		old_plates_header.number_of_points = 
-			(*d_accum.polygon)->number_of_vertices() + 1;
-	} else if (d_accum.multi_point) {
-		old_plates_header.number_of_points = 
-			(*d_accum.multi_point)->number_of_points();
-	} else {
-		// have_sufficient_info_for_output() guarentees that we must have a point.
-		old_plates_header.number_of_points = 1;
-	}
-
-	print_header_lines(d_output, old_plates_header);
-	// FIXME: This does not handle cases where a feature has multiple geometric properties.
-	if (d_accum.polyline) {
-		print_line_string(d_output, *d_accum.polyline);
-	} else if (d_accum.polygon) {
-		print_polygon(d_output, *d_accum.polygon);
-	} else if (d_accum.multi_point) {
-		print_multi_point(d_output, *d_accum.multi_point);
-	} else {
-		// have_sufficient_info_for_output() guarentees that we must have a point.
-		print_plates_coordinate_line(d_output, **d_accum.point, PEN_SKIP_TO_POINT);
-		print_plates_feature_termination_line(d_output);
-	}
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+	const GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
-	d_accum.current_propname = inline_property_container.property_name();
-
 	visit_property_values(inline_property_container);
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_line_string(
-		const GPlatesPropertyValues::GmlLineString &gml_line_string)
+	const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_accum.polyline = gml_line_string.polyline();
+	d_feature_accumulator.add_geometry(gml_line_string.polyline());
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_multi_point(
-		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+	const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-	d_accum.multi_point = gml_multi_point.multipoint();
+	d_feature_accumulator.add_geometry(gml_multi_point.multipoint());
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_orientable_curve(
-		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+	const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
@@ -428,163 +253,23 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_gml_orientable_curve(
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_point(
-		const GPlatesPropertyValues::GmlPoint &gml_point)
+	const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_accum.point = gml_point.point();
+	d_feature_accumulator.add_geometry(gml_point.point());
 }
 
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_polygon(
-		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
+	const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// FIXME: Handle interior rings. Requires a bit of restructuring.
-	d_accum.polygon = gml_polygon.exterior();
+	d_feature_accumulator.add_geometry(gml_polygon.exterior());
 }
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_gml_time_instant(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
-{
-	// Only the "gml:validTime" is meaningful for the ages of appearance and disappearance.
-	static const GPlatesModel::PropertyName validTime =
-		GPlatesModel::PropertyName::create_gml("validTime");
-	if (*d_accum.current_propname != validTime) {
-		return;
-	}
-
-	if ( ! d_accum.age_of_appearance) {
-		d_accum.age_of_appearance = gml_time_instant.time_position();
-		d_accum.age_of_disappearance = gml_time_instant.time_position();
-	} else {
-		// The age of appearance was already set, which means that there was already a
-		// "gml:validTime" property which contains a "gml:TimeInstant" or "gml:TimePeriod".
-		// FIXME: Should we warn about this?
-	}
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_gml_time_period(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
-{
-	// Only the "gml:validTime" is meaningful for the ages of appearance and disappearance.
-	static const GPlatesModel::PropertyName validTime =
-		GPlatesModel::PropertyName::create_gml("validTime");
-	if (*d_accum.current_propname != validTime) {
-		return;
-	}
-
-	if ( ! d_accum.age_of_appearance) {
-		d_accum.age_of_appearance = gml_time_period.begin()->time_position();
-		d_accum.age_of_disappearance = gml_time_period.end()->time_position();
-	} else {
-		// The age of appearance was already set, which means that there was already a
-		// "gml:validTime" property which contains a "gml:TimeInstant" or "gml:TimePeriod".
-		// FIXME: Should we warn about this?
-	}
-}
-
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_constant_value(
-		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+	const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_finite_rotation(
-		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
-{
-
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_finite_rotation_slerp(
-		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
-{
-
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_irregular_sampling(
-		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
-{
-
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_plate_id(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
-{
-	// This occurs in "gpml:ReconstructableFeature" instances.
-	static const GPlatesModel::PropertyName reconstructionPlateId = 
-		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-	// This occurs in "gpml:Isochron" and its instantaneous equivalent.
-	static const GPlatesModel::PropertyName conjugatePlateId =
-		GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
-
-	// This occurs in "gpml:InstantaneousFeature" instances.
-	static const GPlatesModel::PropertyName reconstructedPlateId =
-		GPlatesModel::PropertyName::create_gpml("reconstructedPlateId");
-
-	if (*d_accum.current_propname == reconstructionPlateId) {
-		if ( ! d_accum.plate_id) {
-			d_accum.plate_id = gpml_plate_id.value();
-		} else {
-			// The plate ID was already set, which means that there was already a
-			// "gpml:reconstructionPlateId" property which contains a "gpml:PlateId".
-			// FIXME: Should we warn about this?
-		}
-	} else if (*d_accum.current_propname == conjugatePlateId) {
-		if ( ! d_accum.conj_plate_id) {
-			d_accum.conj_plate_id = gpml_plate_id.value();
-		} else {
-			// The conjugate plate ID was already set, which means that there was
-			// already a "gpml:conjugatePlateId" property which contains a
-			// "gpml:PlateId".
-			// FIXME: Should we warn about this?
-		}
-	} else if (*d_accum.current_propname == reconstructedPlateId) {
-		// Nothing to do here.
-	} else {
-		// We've encountered a plate ID inside an unrecognised property-name.
-		// FIXME:  Should we complain/warn/log about this?
-	}
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_old_plates_header(
-		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
-{
-	d_accum.old_plates_header = PlatesLineFormatAccumulator::OldPlatesHeader(
-			gpml_old_plates_header.region_number(),
-			gpml_old_plates_header.reference_number(),
-			gpml_old_plates_header.string_number(),
-			gpml_old_plates_header.geographic_description(),
-			gpml_old_plates_header.plate_id_number(),
-			gpml_old_plates_header.age_of_appearance(),
-			gpml_old_plates_header.age_of_disappearance(),
-			gpml_old_plates_header.data_type_code(),
-			gpml_old_plates_header.data_type_code_number(),
-			gpml_old_plates_header.data_type_code_number_additional(),
-			gpml_old_plates_header.conjugate_plate_id_number(),
-			gpml_old_plates_header.colour_code(),
-			gpml_old_plates_header.number_of_points());
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_xs_string(
-		const GPlatesPropertyValues::XsString &xs_string)
-{
-	
 }

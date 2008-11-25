@@ -1,0 +1,64 @@
+Build On Mac OSX
+
+Table of Contents
+
+ 1. Introduction
+ 2. Build process
+     1. Package dependencies
+     2. Commands to execute
+     3. The GPlates executable
+     4. Installing GPlates
+
+Introduction
+
+This page details how to build GPlates from a source release.
+
+Build process
+
+Package dependencies
+
+Firstly, you should ensure that you have installed all the packages which are
+dependencies for compilation.
+
+See "DEPS.OSX" for more information on installing dependencies.
+
+Commands to execute
+
+ 1. Change your working directory (if not already) into the base directory of
+    the GPlates source code.
+ 2. Configure and compile the program:
+
+	cmake .
+    make
+
+    * If you wish to install GPlates to a location other than the default
+      ("/usr/local"), specify the "-DCMAKE_INSTALL_PREFIX:STRING" argument to "cmake".
+      For more information, see the Installing GPlates step below.
+
+The GPlates executable
+
+The GPlates executable will be called "gplates", located in the "src"
+directory. If you want to do more than test GPlates from the source directory,
+you will need to install it on your system.
+
+Installing GPlates
+
+The command
+
+	make install
+
+Will copy the "gplates" executable to the default location, "/usr/local".
+The GPlates executable will be installed as "/usr/local/bin/gplates".
+Note that you will need to be root to install software to "/usr/local".
+On Ubuntu systems, this is accomplished by prefixing the command with
+"sudo", i.e. "sudo make install".
+
+If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:STRING" argument to
+"cmake". For example:
+
+	cmake -DCMAKE_INSTALL_PREFIX:STRING=$HOME/usr .
+    make
+	make install
+
+This will install GPlates in your home directory as "~/usr/bin/gplates".
+

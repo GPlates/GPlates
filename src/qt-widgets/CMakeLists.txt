@@ -96,6 +96,9 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+    GMTHeaderFormatDialog.cc
+    GMTHeaderFormatDialog.h
+    GMTHeaderFormatDialogUi.ui
     GlobeCanvas.cc
     GlobeCanvas.h
     InformationDialog.cc
@@ -110,6 +113,9 @@ set(srcs
     ManageFeatureCollectionsDialog.cc
     ManageFeatureCollectionsDialog.h
     ManageFeatureCollectionsDialogUi.ui
+    ManageFeatureCollectionsStateWidget.cc
+    ManageFeatureCollectionsStateWidget.h
+    ManageFeatureCollectionsStateWidgetUi.ui
     NoActiveEditWidgetException.h
     PropertyValueNotSupportedException.h
 	PlateClosureWidget.cc
@@ -154,6 +160,7 @@ set(srcs
     ViewportWindow.cc
     ViewportWindow.h
     ViewportWindowUi.ui
+    ZoomSliderWidget.h
 )
 
 

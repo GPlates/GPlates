@@ -59,6 +59,8 @@
 #include "ReconstructionViewWidget.h"
 #include "TaskPanel.h"
 
+#include "file-io/FeatureCollectionFileFormat.h"
+
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/ColourTable.h"
@@ -289,6 +291,23 @@ namespace GPlatesQtWidgets
 		load_files(
 				const QStringList &file_names);
 
+		/**
+		 * Given a file_info_iterator, reloads the data for that file from disk,
+		 * replacing the FeatureCollection associated with that file_info_iterator.
+		 */
+		void
+		reload_file(
+				file_info_iterator file_it);
+
+		/**
+		 * Creates a fresh, empty, FeatureCollection. Associates a 'dummy'
+		 * FileInfo for it, and registers it with ApplicationState so that
+		 * the FeatureCollection can be reconstructed and saved via
+		 * the ManageFeatureCollectionsDialog.
+		 */
+		GPlatesAppState::ApplicationState::file_info_iterator
+		create_empty_reconstructable_file();
+
 
 		/**
 		 * Write the feature collection associated to @a file_info to the file
@@ -296,7 +315,9 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		save_file(
-				const GPlatesFileIO::FileInfo &file_info);
+				const GPlatesFileIO::FileInfo &file_info,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
+					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
 
 		/**
@@ -308,7 +329,9 @@ namespace GPlatesQtWidgets
 		void
 		save_file_as(
 				const GPlatesFileIO::FileInfo &file_info,
-				file_info_iterator features_to_save);
+				file_info_iterator features_to_save,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
+					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
 
 		/**
@@ -321,7 +344,9 @@ namespace GPlatesQtWidgets
 		GPlatesFileIO::FileInfo
 		save_file_copy(
 				const GPlatesFileIO::FileInfo &file_info,
-				file_info_iterator features_to_save);
+				file_info_iterator features_to_save,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
+					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
 
 		/**
@@ -340,9 +365,49 @@ namespace GPlatesQtWidgets
 		deactivate_loaded_file(
 				file_info_iterator loaded_file);
 
+		/**
+		 * Tests if the @a loaded_file is active, either as reconstructable features
+		 * or an active reconstruction tree.
+		 */
 		bool
 		is_file_active(
 				file_info_iterator loaded_file);
+
+		/**
+		 * Tests if the @a loaded_file is active and being used for reconstructable
+		 * feature data.
+		 */
+		bool
+		is_file_active_reconstructable(
+				file_info_iterator loaded_file);
+
+		/**
+		 * Tests if the @a loaded_file is active and being used for reconstruction
+		 * tree data.
+		 */
+		bool
+		is_file_active_reconstruction(
+				file_info_iterator loaded_file);
+		
+		/**
+		 * Temporarily shows or hides a feature collection by adding or removing
+		 * it from the list of active reconstructable files. This does not
+		 * un-load the file.
+		 */
+		void
+		set_file_active_reconstructable(
+				file_info_iterator file_it,
+				bool activate);
+
+		/**
+		 * Temporarily enables or disables a reconstruction tree by adding or
+		 * removing it from the list of active reconstruction files. This does not
+		 * un-load the file.
+		 */
+		void
+		set_file_active_reconstruction(
+				file_info_iterator file_it,
+				bool activate);
 			
 		/**
 		 * Temporary method for initiating shapefile attribute remapping. 

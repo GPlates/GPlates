@@ -65,7 +65,7 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	} else {
 		d_view_state_ptr->status_message(QObject::tr(
 				"Click to draw a new vertex."
-				" Ctrl+drag to reorient the globe."));
+				" Ctrl+drag to re-orient the globe."));
 	}
 
 	d_layers_ptr->show_only_digitisation_layer();

@@ -136,6 +136,9 @@ namespace GPlatesQtWidgets
 		/**
 		 * The View State is used to access the reconstruction tree to perform reverse
 		 * reconstruction of the temporary geometry (once we know the plate id).
+		 *
+		 * It is also necessary for a call to create_empty_reconstructable_file(),
+		 * should the user decide to create a new FeatureCollection on the spot.
 		 */
 		ViewportWindow *d_view_state_ptr;
 

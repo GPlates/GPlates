@@ -37,6 +37,7 @@
 #include <QColor>
 #include <QInputDialog>
 #include <QProgressBar>
+#include <QDockWidget>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -58,13 +59,15 @@
 #include "model/types.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/DummyTransactionHandle.h"
+#include "file-io/FeatureWriter.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
+#include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/PlatesLineFormatReader.h"
 #include "file-io/PlatesRotationFormatReader.h"
 #include "file-io/FileInfo.h"
-#include "file-io/Reader.h"
+#include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/RasterReader.h"
 #include "file-io/ShapeFileReader.h"
 #include "file-io/GpmlOnePointSixReader.h"
@@ -75,61 +78,15 @@
 #include "gui/FeatureColourTable.h"
 #include "gui/AgeColourTable.h"
 #include "gui/GlobeCanvasPainter.h"
-
-namespace
-{
-	bool
-	file_name_ends_with(
-			const GPlatesFileIO::FileInfo &file, 
-			const QString &suffix)
-	{
-		return file.get_qfileinfo().completeSuffix().endsWith(QString(suffix), Qt::CaseInsensitive);
-	}
-
-
-	bool
-	is_plates_line_format_file(
-			const GPlatesFileIO::FileInfo &file)
-	{
-		return file_name_ends_with(file, "dat") || file_name_ends_with(file, "pla");
-	}
-
-	
-	bool
-	is_plates_rotation_format_file(
-			const GPlatesFileIO::FileInfo &file)
-	{
-		return file_name_ends_with(file, "rot");
-	}
-	
-	bool
-	is_shapefile_format_file(
-			const GPlatesFileIO::FileInfo &file)
-	{
-		return file_name_ends_with(file, "shp");
-	}
-
-	bool
-	is_gpml_format_file(
-			const GPlatesFileIO::FileInfo &file)
-	{
-		return file_name_ends_with(file, "gpml");
-	}
-
-	bool
-	is_gpml_gz_format_file(
-			const GPlatesFileIO::FileInfo &file)
-	{
-		return file_name_ends_with(file, "gpml.gz");
-	}
-}
+#include "feature-visitors/FeatureCollectionClassifier.h"
 
 
 void
 GPlatesQtWidgets::ViewportWindow::save_file(
-		const GPlatesFileIO::FileInfo &file_info)
+		const GPlatesFileIO::FileInfo &file_info,
+		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
 {
-	if ( ! file_info.is_writable()) {
+	if ( ! GPlatesFileIO::is_writable(file_info)) {
 		throw GPlatesFileIO::ErrorOpeningFileForWritingException(
 				file_info.get_qfileinfo().filePath());
 	}
@@ -139,14 +96,25 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 				"Attempted to write an empty feature collection.");
 	}
 
+	boost::shared_ptr<GPlatesFileIO::FeatureWriter> writer =
+		GPlatesFileIO::get_feature_collection_writer(
+		file_info,
+		feature_collection_write_format);
+
 	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
 		*file_info.get_feature_collection();
-	boost::shared_ptr< GPlatesModel::ConstFeatureVisitor > writer = file_info.get_writer();
-	GPlatesModel::FeatureCollectionHandle::features_const_iterator
-		iter = feature_collection->features_begin(), 
-		end = feature_collection->features_end();
-	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(*writer);
+
+	if (feature_collection.is_valid())
+	{
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator
+			iter = feature_collection->features_begin(), 
+			end = feature_collection->features_end();
+
+		for ( ; iter != end; ++iter)
+		{
+			const GPlatesModel::FeatureHandle& feature_handle = **iter;
+			writer->write_feature(feature_handle);
+		}
 	}
 }
 
@@ -154,9 +122,13 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 void
 GPlatesQtWidgets::ViewportWindow::save_file_as(
 		const GPlatesFileIO::FileInfo &file_info,
-		file_info_iterator features_to_save)
+		file_info_iterator features_to_save,
+		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
 {
-	GPlatesFileIO::FileInfo file_copy = save_file_copy(file_info, features_to_save);
+	GPlatesFileIO::FileInfo file_copy = save_file_copy(
+		file_info,
+		features_to_save,
+		feature_collection_write_format);
 
 	// Update iterator
 	*features_to_save = file_copy;
@@ -166,7 +138,8 @@ GPlatesQtWidgets::ViewportWindow::save_file_as(
 GPlatesFileIO::FileInfo
 GPlatesQtWidgets::ViewportWindow::save_file_copy(
 		const GPlatesFileIO::FileInfo &file_info,
-		file_info_iterator features_to_save)
+		file_info_iterator features_to_save,
+		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
 {
 	GPlatesFileIO::FileInfo file_copy(file_info.get_qfileinfo().filePath());
 	if ( ! features_to_save->get_feature_collection()) {
@@ -174,7 +147,7 @@ GPlatesQtWidgets::ViewportWindow::save_file_copy(
 				"Attempted to write an empty feature collection.");
 	}
 	file_copy.set_feature_collection(*(features_to_save->get_feature_collection()));
-	save_file(file_copy);
+	save_file(file_copy, feature_collection_write_format);
 	return file_copy;
 }
 
@@ -197,10 +170,45 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 
 		try
 		{
-			if (is_plates_line_format_file(file))
-			{
-				GPlatesFileIO::PlatesLineFormatReader::read_file(file, *d_model_ptr, read_errors);
+			// Read the feature collection from file.
+			GPlatesFileIO::read_feature_collection_file(file, *d_model_ptr, read_errors);
 
+			switch ( GPlatesFileIO::get_feature_collection_file_format(file) )
+			{
+			case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
+			case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
+				{
+					// All loaded files are added to the set of loaded files.
+					GPlatesAppState::ApplicationState::file_info_iterator new_file =
+						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+
+					// GPML format files can contain both reconstructable features and
+					// reconstruction trees. This visitor lets us find out which.
+					if (file.get_feature_collection()) {
+						GPlatesFeatureVisitors::FeatureCollectionClassifier classifier;
+						classifier.scan_feature_collection(
+								GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
+										*file.get_feature_collection())
+								);
+						// Check if the file contains reconstructable features.
+						if (classifier.reconstructable_feature_count() > 0) {
+							d_active_reconstructable_files.push_back(new_file);
+						}
+						// Check if the file contains reconstruction features.
+						if (classifier.reconstruction_feature_count() > 0) {
+							// We only want to make the first rotation file active.
+							if ( ! have_loaded_new_rotation_file) 
+							{
+								d_active_reconstruction_files.clear();
+								d_active_reconstruction_files.push_back(new_file);
+								have_loaded_new_rotation_file = true;
+							}
+						}
+					}
+				}
+				break;
+
+			case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
 				if (file.get_feature_collection())
 				{
 					// All loaded files are added to the set of loaded files.
@@ -210,18 +218,15 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 					// Line format files are made active by default.
 					d_active_reconstructable_files.push_back(new_file);
 				}
-			}
-			else if (is_plates_rotation_format_file(file))
-			{
-				GPlatesFileIO::PlatesRotationFormatReader::read_file(file, *d_model_ptr, read_errors);
-	
+				break;
 
+			case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
 				if (file.get_feature_collection())
 				{
 					// All loaded files are added to the set of loaded files.
 					GPlatesAppState::ApplicationState::file_info_iterator new_file =
 						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);				
-					
+
 					// We only want to make the first rotation file active.
 					if ( ! have_loaded_new_rotation_file) 
 					{
@@ -230,9 +235,9 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 						have_loaded_new_rotation_file = true;
 					}
 				}
-			} 
-			else if (is_shapefile_format_file(file))
-			{
+				break;
+
+			case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 				GPlatesFileIO::ShapeFileReader::set_property_mapper(
 					boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
 				GPlatesFileIO::ShapeFileReader::read_file(file,*d_model_ptr,read_errors);
@@ -243,36 +248,10 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
 					d_active_reconstructable_files.push_back(new_file);
 				}
-			}
-			else if (is_gpml_format_file(file) || is_gpml_gz_format_file(file))
-			{
-				GPlatesFileIO::GpmlOnePointSixReader::read_file(file, *d_model_ptr, read_errors);
-				
-				// All loaded files are added to the set of loaded files.
-				GPlatesAppState::ApplicationState::file_info_iterator new_file =
-					GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+				break;
 
-				// GPML format files are made active by default.
-				// FIXME: However, GPML files are magical and can contain rotation trees too.
-				// What do we do about those? Obviously this file must be made 'active' because
-				// it contains new feature data - however we may want some clever code in here
-				// to check if it also contains rotation data, and if so, deactivate any prior
-				// rotation files.
-				// FIXME: And THEN what happens when we load another rotation file on top? Can't
-				// deactivate half of this GPML file, can we?
-				d_active_reconstructable_files.push_back(new_file);
-
-				// So for now, let's pretend we've got some rotation data in here.
-				// We only want to make the first rotation file active.
-				d_active_reconstruction_files.clear();
-				d_active_reconstruction_files.push_back(new_file);
-				have_loaded_new_rotation_file = true;
-			}
-			else
-			{
-				// FIXME: This should be added to the read errors!
-				std::cerr << "Unrecognised file type for file: " 
-					<< file.get_qfileinfo().absoluteFilePath().toStdString() << std::endl;
+			default:
+				break;
 			}
 		}
 		catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
@@ -301,6 +280,12 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 			QMessageBox::critical(this, tr("Error Opening File"), message,
 					QMessageBox::Ok, QMessageBox::Ok);
 		}
+		catch (GPlatesFileIO::FileFormatNotSupportedException &)
+		{
+			QString message = tr("Error: Loading files in this format is currently not supported.");
+			QMessageBox::critical(this, tr("Error Opening File"), message,
+					QMessageBox::Ok, QMessageBox::Ok);
+		}
 		catch (GPlatesGlobal::Exception &e)
 		{
 			std::cerr << "Caught exception: " << e << std::endl;
@@ -318,6 +303,110 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 	if (num_initial_errors != num_final_errors) {
 		d_read_errors_dialog.show();
 	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::reload_file(
+		file_info_iterator file_it)
+{
+	d_read_errors_dialog.clear();
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
+
+	// Now load the files in a similar way to 'load_files' above, but in this case
+	// we don't need to worry about adding/removing from ApplicationState, or the
+	// d_active_reconstructable_files and d_active_reconstruction_files lists.
+	// The file should already belong to them.
+	
+	try
+	{
+		// FIXME: In fact, we are sharing plenty of exception-handling code with load_files as
+		// well, though this might also change after the merge. A possible area for refactoring
+		// if someone is bored?
+
+		switch ( GPlatesFileIO::get_feature_collection_file_format(*file_it) )
+		{
+		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
+			GPlatesFileIO::ShapeFileReader::set_property_mapper(
+				boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
+			break;
+
+		default:
+			break;
+		}
+
+		// Read the feature collection from file.
+		GPlatesFileIO::read_feature_collection_file(*file_it, *d_model_ptr, read_errors);
+
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
+	{
+		// FIXME: A bit of a sucky conversion from ErrorOpeningFileForReadingException to
+		// ReadErrorOccurrence, but hey, this whole function will be rewritten when we add
+		// QFileDialog support.
+		// FIXME: I suspect I'm Missing The Point with these shared_ptrs.
+		boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
+				new GPlatesFileIO::LocalFileDataSource(e.filename(), GPlatesFileIO::DataFormats::Unspecified));
+		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
+				new GPlatesFileIO::LineNumberInFile(0));
+		read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
+				e_source,
+				e_location,
+				GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
+				GPlatesFileIO::ReadErrors::FileNotLoaded));
+	}
+	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &e)
+	{
+		QString message = tr("GPlates was unable to use the '%1' program to read the file '%2'."
+				" Please check that gzip is installed and in your PATH. You will still be able to open"
+				" files which are not compressed.")
+				.arg(e.command())
+				.arg(e.filename());
+		QMessageBox::critical(this, tr("Error Opening File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+	catch (GPlatesGlobal::Exception &e)
+	{
+		std::cerr << "Caught exception: " << e << std::endl;
+	}
+
+	
+	// Internal state changed, make sure dialogs are up to date.
+	d_read_errors_dialog.update();
+	// We should be able to get by with just updating the MFCD's state buttons,
+	// not rebuild the whole table. This avoids an ugly table redraw.
+	d_manage_feature_collections_dialog.update_state();
+
+	// Pop up errors only if appropriate.
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors) {
+		d_read_errors_dialog.show();
+	}
+
+	// Data may have changed, update the display.
+	reconstruct();
+}
+
+
+GPlatesAppState::ApplicationState::file_info_iterator
+GPlatesQtWidgets::ViewportWindow::create_empty_reconstructable_file()
+{
+	// Create an empty "file" - does not correspond to anything on disk yet.
+	GPlatesFileIO::FileInfo file;
+	file.set_feature_collection(d_model_ptr->create_feature_collection());
+
+	GPlatesAppState::ApplicationState::file_info_iterator new_file =
+	GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
+
+	// Given this method's name, we are promised this new FeatureCollection will
+	// be used for reconstructable data.
+	d_active_reconstructable_files.push_back(new_file);
+
+	// Internal state changed, make sure dialogs are up to date.
+	d_manage_feature_collections_dialog.update();
+	
+	return new_file;
 }
 
 
@@ -473,7 +562,17 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	set_up_dock_context_menus();
 	
 	// FIXME: Set up the Task Panel in a more detailed fashion here.
+#if 1
 	d_reconstruction_view_widget.insert_task_panel(d_task_panel_ptr);
+#else
+	// Stretchable Task Panel hack for testing: Make the Task Panel
+	// into a QDockWidget, undocked by default.
+	QDockWidget *task_panel_dock = new QDockWidget(tr("Task Panel"), this);
+	task_panel_dock->setWidget(d_task_panel_ptr);
+	task_panel_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+	addDockWidget(Qt::RightDockWidgetArea, task_panel_dock);
+	task_panel_dock->setFloating(true);
+#endif
 	set_up_task_panel_actions();
 	
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
@@ -1314,6 +1413,15 @@ bool
 GPlatesQtWidgets::ViewportWindow::is_file_active(
 		file_info_iterator loaded_file)
 {
+	return is_file_active_reconstructable(loaded_file) ||
+			is_file_active_reconstruction(loaded_file);
+}
+
+
+bool
+GPlatesQtWidgets::ViewportWindow::is_file_active_reconstructable(
+		file_info_iterator loaded_file)
+{
 	active_files_iterator reconstructable_it = d_active_reconstructable_files.begin();
 	active_files_iterator reconstructable_end = d_active_reconstructable_files.end();
 	for (; reconstructable_it != reconstructable_end; ++reconstructable_it) {
@@ -1321,7 +1429,14 @@ GPlatesQtWidgets::ViewportWindow::is_file_active(
 			return true;
 		}
 	}
+	return false;
+}
 
+
+bool
+GPlatesQtWidgets::ViewportWindow::is_file_active_reconstruction(
+		file_info_iterator loaded_file)
+{
 	active_files_iterator reconstruction_it = d_active_reconstruction_files.begin();
 	active_files_iterator reconstruction_end = d_active_reconstruction_files.end();
 	for (; reconstruction_it != reconstruction_end; ++reconstruction_it) {
@@ -1329,9 +1444,67 @@ GPlatesQtWidgets::ViewportWindow::is_file_active(
 			return true;
 		}
 	}
-
-	// loaded_file not found in any active files lists, must not be active.
 	return false;
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::set_file_active_reconstructable(
+		file_info_iterator file_it,
+		bool activate)
+{
+	if (activate) {
+		// Add it to the list, if it's not there already.
+		if ( ! is_file_active_reconstructable(file_it)) {
+			d_active_reconstructable_files.push_back(file_it);
+		}
+	} else {
+		// Don't bother checking whether 'loaded_file' is actually an element of
+		// 'd_active_reconstructable_files' and/or 'd_active_reconstruction_files' -- just tell the
+		// lists to remove the value if it *is* an element.
+		
+		// list<T>::remove(const T &val) -- remove all elements with value 'val'.
+		// Will not throw (unless element comparisons can throw).
+		// See Josuttis section 6.10.7 "Inserting and Removing Elements".
+		d_active_reconstructable_files.remove(file_it);
+	}
+	// Active features changed, will need to reconstruct() to make RFGs for them.
+	reconstruct();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::set_file_active_reconstruction(
+		file_info_iterator file_it,
+		bool activate)
+{
+	if (activate) {
+		// At the moment, we only want one active reconstruction tree
+		// at a time. Deactivate the others, and update ManageFeatureCollectionsDialog
+		// so that the other buttons get deselected appropriately.
+		d_active_reconstruction_files.clear();
+		d_active_reconstruction_files.push_back(file_it);
+		// NOTE: in the current setup, the only place this set_file_active_xxxx()
+		// method is called is by ManageFeatureCollectionsDialog itself, in response
+		// to a button press. Therefore we can assume it is up-to-date already, except
+		// for this one case where we have cleared all the other reconstruction files.
+		// If this situation changes and other code will also be calling
+		// set_file_active_xxxx() or otherwise messing with file 'active' status, you
+		// will need to call ManageFeatureCollectionsDialog::update_state() at the end
+		// of both these methods.
+		d_manage_feature_collections_dialog.update_state();
+	} else {
+		// Don't bother checking whether 'loaded_file' is actually an element of
+		// 'd_active_reconstructable_files' and/or 'd_active_reconstruction_files' -- just tell the
+		// lists to remove the value if it *is* an element.
+		
+		// list<T>::remove(const T &val) -- remove all elements with value 'val'.
+		// Will not throw (unless element comparisons can throw).
+		// See Josuttis section 6.10.7 "Inserting and Removing Elements".
+		d_active_reconstruction_files.remove(file_it);
+	}
+	// Active rotation changed, will need to reconstruct() to make make use of it.
+	reconstruct();
 }
 
 
