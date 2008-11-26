@@ -1057,12 +1057,14 @@ namespace
 			const std::string &first_line)
 	{
 		std::string second_line;
-		if ( ! in.getline(second_line)) {
+		if ( ! in.peekline(second_line)) {
 			throw GPlatesFileIO::ReadErrors::MissingPlatesHeaderSecondLine;
 		}
 
 		typedef GPlatesModel::integer_plate_id_type plate_id_type;
-		return GPlatesPropertyValues::GpmlOldPlatesHeader::create(
+
+		GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
+			gpml_old_plates_header = GPlatesPropertyValues::GpmlOldPlatesHeader::create(
 				GPlatesUtils::slice_string<unsigned int>(first_line, 0, 2, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesRegionNumber),
 				GPlatesUtils::slice_string<unsigned int>(first_line, 2, 4, 
@@ -1089,6 +1091,15 @@ namespace
 					GPlatesFileIO::ReadErrors::InvalidPlatesColourCode),
 				GPlatesUtils::slice_string<unsigned int>(second_line, 34, 39, 
 					GPlatesFileIO::ReadErrors::InvalidPlatesNumberOfPoints));
+
+		// If we get here then no exception has been thrown parsing first two lines
+		// so we can commit to having read the second line.
+		// If don't do this then we're effectively only checking every
+		// alternate line for a new feature (if the previous feature had a parse error)
+		// and could skip a feature even if it's parseable.
+		in.getline(second_line);
+
+		return gpml_old_plates_header;
 	}
 
 
