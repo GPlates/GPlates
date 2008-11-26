@@ -21,7 +21,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// #define DEBUG
+#define DEBUG
 
 #include <QtGlobal>
 #include <QHeaderView>
@@ -688,7 +688,7 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 		d_view_state_ptr->segments_feature_table_model();
 
 	// check for an empty segments table
-	if ( ! segments_table.geometry_sequence().empty() ) 
+	if ( segments_table.geometry_sequence().empty() ) 
 	{
 		QMessageBox::warning(this, 
 			tr("No boundary segments are selected for this feature"),
@@ -736,6 +736,11 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	// clear this tool's layer
 	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
+
+	// NOTE: this undoes the connection to highlight_segments_table_row 
+	d_feature_focus_ptr->unset_focus();
+
+	initialise_geometry(PLATEPOLYGON);
 
 	// change tab to Clicked table
 	d_view_state_ptr->change_tab( 0 );

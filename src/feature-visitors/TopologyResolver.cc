@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#define DEBUG
+// #define DEBUG
 
 #include "TopologyResolver.h"
 
@@ -170,10 +170,6 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_handle(
 		d_accumulator->d_recon_rotation =
 			d_recon_tree_ptr->get_composed_absolute_rotation(*(d_accumulator->d_recon_plate_id)).first;
 	}
-
-#ifdef DEBUG
-std::cout << " 222222222222222222222222222222222222222222222222222 " << std::endl;
-#endif
 
 	// Now for the second pass through the properties of the feature:  
 	// This time we reconstruct any geometries we find.

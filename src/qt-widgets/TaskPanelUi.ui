@@ -71,7 +71,7 @@
      </widget>
      <widget class="QWidget" name="tab_plate_closure" >
       <attribute name="title" >
-       <string>Plate Closure</string>
+       <string>Close Plate</string>
       </attribute>
      </widget>
     </widget>

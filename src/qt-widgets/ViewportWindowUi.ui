@@ -1094,16 +1094,16 @@
      <normaloff>:/select_plate_35.png</normaloff>:/select_plate_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Plate Clos&amp;ure</string>
+    <string>Close Plate</string>
    </property>
    <property name="iconText" >
-    <string>Plate Clos&amp;ure</string>
+    <string>Close Plate</string>
    </property>
    <property name="toolTip" >
-    <string>Plate Closure S</string>
+    <string>Close Plate</string>
    </property>
    <property name="shortcut" >
-    <string>S</string>
+    <string>C</string>
    </property>
   </action>
  </widget>
