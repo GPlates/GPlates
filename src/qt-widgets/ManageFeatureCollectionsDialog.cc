@@ -196,6 +196,7 @@ namespace
 			break;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
+		default: // If no file extension then use same options as GMPL.
 			{
 				QStringList filters;
 				filters << filter_gpml;			// Save uncompressed by default, same as original
@@ -240,9 +241,6 @@ namespace
 			
 			}
 			break;
-			
-		default:
-			return filter_all;
 		}
 
 		return filter_all;
