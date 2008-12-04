@@ -26,13 +26,13 @@ set(srcs
     FileFormatNotSupportedException.h
     FileInfo.cc
     FileInfo.h
+    GdalReader.cc
+    GdalReader.h
+    GeometryExporter.h
     GMTFormatGeometryExporter.cc
     GMTFormatGeometryExporter.h
     GMTFormatWriter.cc
     GMTFormatWriter.h
-    GdalReader.cc
-    GdalReader.h
-    GeometryExporter.h
     GpmlOnePointFiveOutputVisitor.cc
     GpmlOnePointFiveOutputVisitor.h
     GpmlOnePointSixOutputVisitor.cc

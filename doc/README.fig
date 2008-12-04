@@ -1,0 +1,21 @@
+The *.fig files need to be converted to .png and .eps using:
+    fig2dev -L png <filename>.fig <filename>.png
+    fig2dev -L eps <filename>.fig <filename>.eps
+
+The resulting images are used by doxygen when it encounters descriptions like:
+    /**
+     ...
+	 * @image html fig_grid.png
+	 * @image latex fig_grid.eps
+     */
+
+...in source files (this example is from "maths/GridOnSphere.h").
+
+Currently the CMake build system does not setup rules for this since
+there's only two places these images are used.
+
+If images get used more in the future then we can add rules to cmake by
+creating a FindFig2dev.cmake module and adding rules using ADD_CUSTOM_COMMAND(), etc.
+
+Fig2dev has Mac OS X and Windows binaries at:
+http://tams-www.informatik.uni-hamburg.de/applets/jfig/download.html

@@ -13,6 +13,7 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     AlreadyInitialisedSingletonException.h
     AssertionFailureException.h
+    config.h
     Constants.cc
     Constants.h
     ControlFlowException.h
@@ -31,11 +32,11 @@ set(srcs
     NullParameterException.h
     PreconditionViolationError.h
     RetrievalFromEmptyContainerException.h
+    types.h
     UnexpectedEmptyFeatureCollectionException.h
     UninitialisedIteratorException.h
     UninitialisedSingletonException.h
     UnsupportedFunctionException.h
-    types.h
 )
 
 

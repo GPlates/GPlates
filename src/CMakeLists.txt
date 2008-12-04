@@ -18,12 +18,22 @@ SET(ICU_USE_IO 1)
 include (${ICU_USE_FILE})
 
 # Some useful utilities.
-include (${CMAKE_MODULE_PATH}/Util.cmake)
+include (Util)
 
 #
 # Generate 'global/config.h' file from 'global/config.h.in' and add HAVE_CONFIG_H compiler definition so GPlates will look for it.
 #
-include (${CMAKE_MODULE_PATH}/Config_h.cmake)
+# This should be included after the above include and find_package calls and before the add_subdirectory calls because
+# it uses the GDAL package and it sets the HAVE_CONFIG_H compiler flag needed by source code in the subdirectories.
+#
+include (Config_h)
+
+#
+# Generate 'global/Constants.cc' file from 'global/Constants.cc.in'.
+#
+# To change the current GPlates version string edit the "ConfigDefault.cmake" file.
+#
+include (GPlatesVersion)
 
 # Source files.
 set(GPlates_SRCS

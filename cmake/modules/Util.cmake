@@ -1,7 +1,7 @@
 # If we are using pre-compiled headers then include the macros required to use them.
 # 'GPLATES_USE_PCH' should be added/modified in 'ConfigUser.cmake' only.
 if (GPLATES_USE_PCH)
-include (${CMAKE_MODULE_PATH}/PCHSupport.cmake)
+include (PCHSupport)
 endif (GPLATES_USE_PCH)
 
 # Parses header files (passed as macro arguments) and returns list of headers containing "Q_OBJECT" .

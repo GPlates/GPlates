@@ -180,12 +180,4 @@ IF(GDAL_LIBRARY AND GDAL_INCLUDE_DIR)
   SET(GDAL_FOUND "YES")
 ENDIF(GDAL_LIBRARY AND GDAL_INCLUDE_DIR)
 
-# See if 'gdal/ogrsf_frmts.h' or 'ogrsf_frmts.h'.
-# This is used in GPlates to determine which to '#include'.
-IF(GDAL_INCLUDE_DIR)
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/gdal/ogrsf_frmts.h")
-    set(HAVE_GDAL_OGRSF_FRMTS_H 1)
-  ENDIF (EXISTS "${GDAL_INCLUDE_DIR}/gdal/ogrsf_frmts.h")
-ENDIF(GDAL_INCLUDE_DIR)
-
 

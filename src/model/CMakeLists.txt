@@ -62,13 +62,13 @@ set(srcs
     StringSetSingletons.h
     TemporaryGeometry.cc
     TemporaryGeometry.h
+    types.h
     WeakObserver.h
     WeakReference.h
     XmlAttributeName.h
     XmlAttributeValue.h
     XmlNode.cc
     XmlNode.h
-    types.h
 )
 
 
