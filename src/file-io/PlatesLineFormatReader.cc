@@ -191,8 +191,8 @@ namespace
 		// numeric indices to the boundary list:
 		// i is the current item, a.k.a iter
 		// p and n, are the previous and next items on the list 
-		int i = 0;
 		int p = 0;
+		int i = 0;
 		int n = 0;
 
 		// loop over the list of strings
@@ -212,8 +212,10 @@ namespace
 				n = i + 1;
 				p = i - 1;
 			}
+
 #if 0
 // FIXME : remove diagnostic 
+std::cout << "size = " << boundary_strings.size() << std::endl; 
 std::cout << "p=" << p << " ; i=" << i << " ; n=" << n  << std::endl; 
 std::cout << "iter = " << node_str << std::endl; 
 #endif
@@ -240,7 +242,7 @@ std::cout << "iter = " << node_str << std::endl;
 			// the last token is all alone, but has delimiter at end, remove it
 			tokens.push_back(node_str);
 
-//FIXME: synch with file levelerror checking
+			//FIXME: synch with file levelerror checking
 			// Error checking on number of tokens found
 			if ( tokens.size() != 11 )
 			{
@@ -249,7 +251,7 @@ std::cout << "iter = " << node_str << std::endl;
 					<< "expected 10 comma delimited tokens, "
 					<< "got: " << tokens.size() << " tokens."
 					<< std::endl;
-				std::cout << "ERROR: " << oss.str() << std::endl;
+				std::cerr << "ERROR: " << oss.str() << std::endl;
 				continue;
 			}
 
@@ -286,6 +288,19 @@ std::cout << "use_tail_prev = " << use_tail_prev << std::endl;
 std::cout << "use_head_next = " << use_head_next << std::endl;
 std::cout << "use_tail_next = " << use_tail_next << std::endl;
 #endif
+
+			// Make sure Feature referenced by old_fid can be located 
+			old_id_to_new_id_map_const_iterator find_iter;
+			find_iter = id_map.find( old_fid );
+			if ( find_iter == id_map.end() ) 
+			{
+				std::cerr << "WARNING: feature '" << old_fid << "' is missing." << std::endl;
+				std::cerr << "WARNING: a GpmlTopologicalSection will NOT be created" << std::endl;
+				// DO NOT create a GpmlTopologicalSection
+				continue; // to next item on boundary list; 
+			}
+			// else, process this boundary node
+
 			// convert type
 			GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
 
@@ -309,6 +324,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			}
 
 			// create intersections if needed....
+			if ( boundary_strings.size() == 1) { continue; } 
 
 			// convert coordinates
 			GPlatesMaths::LatLonPoint llp( lat, lon);
@@ -324,7 +340,18 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				std::string str = boundary_strings.at( p );
 				size_t prev_pos = str.find("#", 0);
 				std::string prev_old_fid = str.substr(0, prev_pos);
-				// FIXME: what to do if the prev_old_fid is not found?
+				// Make sure Feature referenced by prev_old_fid can be located 
+				old_id_to_new_id_map_const_iterator prev_find_iter;
+				prev_find_iter = id_map.find( prev_old_fid );
+				if ( find_iter == id_map.end() ) 
+				{
+					std::cerr << "WARNING: PREV feature '" << prev_old_fid << "' is missing from file!" << std::endl;
+					std::cerr << "WARNING: GpmlTopologicalIntersection will NOT be created" << std::endl;
+					// DO NOT create a GpmlTopologicalSection
+					continue; // to next item on boundary list; 
+				}
+				// else, process 
+
 				const GPlatesModel::FeatureId prev_fid = (id_map.find(prev_old_fid))->second; 
 
 				const GPlatesModel::PropertyName prop_name1 =
@@ -371,7 +398,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				// Set the start instersection
 				GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
 					dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
-						topo_section_ptrs_vector.at( i ).get() 
+					topo_section_ptrs_vector.at( topo_section_ptrs_vector.size() - 1 ).get() 
 					);
 		
 				gtls_ptr->set_start_intersection( start_ti );
@@ -384,7 +411,19 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				std::string str = boundary_strings.at( n );
 				size_t next_pos = str.find("#", 0);
 				std::string next_old_fid = str.substr(0, next_pos);
-				// FIXME: what to do if the next_old_fid is not found?
+				// Make sure Feature referenced by prev_old_fid can be located 
+				old_id_to_new_id_map_const_iterator next_find_iter;
+				next_find_iter = id_map.find( next_old_fid );
+				if ( next_find_iter == id_map.end() ) 
+				{
+					std::cerr << "WARNING: NEXT feature '" << next_old_fid 
+					<< "' is missing." << std::endl;
+					std::cerr << "WARNING: GpmlTopologicalIntersection will NOT be created" << std::endl;
+					// DO NOT create a GpmlTopologicalSection
+					continue; // to next item on boundary list; 
+				}
+				// else, process 
+
 				const GPlatesModel::FeatureId next_fid = (id_map.find(next_old_fid))->second; 
 
 				const GPlatesModel::PropertyName prop_name1 =
@@ -422,16 +461,16 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 						value_type2
 					);
 		
-				// Create the start GpmlTopologicalIntersection
+				// Create the end GpmlTopologicalIntersection
 				GPlatesPropertyValues::GpmlTopologicalIntersection end_ti(
 					geom_delegte,
 					next_ref_point,
 					plate_id_delegate);
 					
-				// Set the start instersection
+				// Set the end instersection
 				GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
 					dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
-						topo_section_ptrs_vector.at( i ).get() 
+					topo_section_ptrs_vector.at( topo_section_ptrs_vector.size() - 1 ).get() 
 					);
 		
 				gtls_ptr->set_end_intersection( end_ti );
@@ -1428,7 +1467,8 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["IM"] = create_isochron;
 		map["IP"] = create_isopach;
 		map["IR"] = create_island_arc_inactive;
-		map["IS"] = create_unclassified_feature; // -might- be Ice Shelf, might be Isochron. We don't know.
+		// -might- be Ice Shelf, might be Isochron. We don't know.
+		map["IS"] = create_unclassified_feature; 
 		map["LI"] = create_geological_lineation;
 		map["MA"] = create_magnetics;
 		map["NF"] = create_normal_fault;
@@ -1436,6 +1476,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["OP"] = create_ophiolite_belt;
 		map["OR"] = create_orogenic_belt;
 		map["PB"] = create_inferred_paleo_boundary;
+		map["ln"] = create_inferred_paleo_boundary; // FIXME: GP8
 		map["PC"] = create_magnetic_pick;
 		map["PM"] = create_magnetic_pick;
 		map["PP"] = create_topological_closed_plate_boundary;
