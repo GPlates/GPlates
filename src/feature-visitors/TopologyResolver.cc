@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// #define DEBUG
+//#define DEBUG
 
 #include "TopologyResolver.h"
 
@@ -700,6 +700,35 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_intersection(
 	GPlatesFeatureVisitors::TopologyResolver::NeighborRelation relation)
 {
 
+#ifdef DEBUG
+std::cout << "TopologyResolver::resolve_intersection: " << std::endl;
+std::cout << "node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
+#endif
+
+	if ( d_working_vertex_list.size() < 2 )
+	{
+			// FIXME : freak out!
+#ifdef DEBUG
+std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
+<< "WARN: d_working_vertex_list < 2 ; Unable to create polyline." << std::endl;
+qDebug() << "WARN: source_geometry_feature_id=" 
+<< GPlatesUtils::make_qstring_from_icu_string( source_geometry_feature_id.get() );
+#endif
+			return;
+	}
+
+	if ( d_node2_vertex_list.size() < 2 )
+	{
+#ifdef DEBUG
+std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
+<< "WARN: d_node2_vertex_list < 2 ; Unable to create polyline." << std::endl;
+qDebug() << "WARN: intersection_geometry_feature_id=" 
+<< GPlatesUtils::make_qstring_from_icu_string( intersection_geometry_feature_id.get() );
+#endif
+			// FIXME : freak out!
+			return;
+	}
+
 	// test for intersection and set node relation:
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type node1_polyline =
@@ -708,10 +737,6 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_intersection(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type node2_polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap( d_node2_vertex_list );
 
-#ifdef DEBUG
-std::cout << "TopologyResolver::resolve_intersection: " << std::endl;
-std::cout << "node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
-#endif
 
 
 	// variables to save results of intersection
