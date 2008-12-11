@@ -47,7 +47,9 @@ GPlatesUtils::get_old_id( const GPlatesModel::FeatureHandle &feature )
 	std::string id = "";
 
 	// Create a visitor to check for old plates header property 
-	static const GPlatesModel::PropertyName prop_name = GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
+	static const GPlatesModel::PropertyName prop_name = 
+		GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
+
 	GPlatesFeatureVisitors::ValueFinder finder(prop_name);
 
 	finder.visit_feature_handle(feature);
@@ -60,4 +62,29 @@ GPlatesUtils::get_old_id( const GPlatesModel::FeatureHandle &feature )
 	}
 	return id;
 }
+
+std::string
+GPlatesUtils::get_old_id( GPlatesModel::FeatureHandle::weak_ref ref)
+{
+	// start with a nice empty string
+	std::string id = "";
+
+	// Create a visitor to check for old plates header property 
+	static const GPlatesModel::PropertyName prop_name = 
+		GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
+
+	GPlatesFeatureVisitors::ValueFinder finder(prop_name);
+
+	finder.visit_feature_handle( *ref );
+
+	if (finder.found_values_begin() != finder.found_values_end())
+	{
+		std::string old_id = *finder.found_values_begin();
+		// std::cout << "finder old_id " << old_id << std::endl;
+		id.append( old_id );
+	}
+	return id;
+}
+
+
 

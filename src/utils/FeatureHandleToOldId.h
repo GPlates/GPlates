@@ -44,6 +44,9 @@ namespace GPlatesUtils
 	 */
 	std::string
 	get_old_id( const GPlatesModel::FeatureHandle &feature );
+
+	std::string
+	get_old_id( GPlatesModel::FeatureHandle::weak_ref ref);
 }
 
 #endif  // GPLATES_UTILS_FEATUREHANDLETOOLDID_H
