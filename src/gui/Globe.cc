@@ -93,7 +93,7 @@ namespace
 		// highlight the polygon vertices
 		iter = begin;
 		for ( ; iter != end; ++iter) {
-			glPointSize(8.0f);
+			glPointSize(5.0f);
 			glBegin(GL_POINTS);
 				draw_vertex(iter->start_point());
 			glEnd();
