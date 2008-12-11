@@ -43,7 +43,8 @@ There are multiple ways to install dependencies.
 Here we briefly describe how to install dependencies using Macports (http://www.macports.org).
 
 Installing dependencies using Macports
-  • Ensure g++ is installed (we've tested g++ 4.0.0 on OSX 10.4 and g++ 4.0.1 on OSX 10.5). 
+  • Ensure g++ is installed (we've tested g++ 4.0.0 on OSX 10.4 and g++ 4.0.1 on OSX 10.5).
+    It appears to be installed by default.
   • Install Macports (http://www.macports.org).
   • Start a new terminal window.
   • You may need to set the path to Macports with "export PATH=/opt/local/bin:/opt/local/sbin:$PATH".
@@ -58,5 +59,11 @@ Installing dependencies using Macports
   • Install Boost with 'sudo port install boost' if you don't have Boost.
   • Install ICU with 'sudo port install icu' if you don't have ICU.
   • Install GDAL with 'sudo port install gdal' if you don't have GDAL.
+  • If 'port install' appears to hang when fetching the port tarball try manually downloading the
+    tarball from http://distfiles.macports.org/<portname>/ and copy it to
+    ${prefix}/var/macports/distfiles/<portname>/ where 'prefix' is most likely '/opt/local'.
+    More details can be found in the "Fetch failures" section at http://trac.macports.org/wiki/ProblemHotlist.
+    You may have to do the same for any dependencies that failed to fetch.
+    Oh the joy !
   • Make sure you don't have multiple installations of the same library.
     For example, /opt/local/include/gdal* and /Library/Frameworks/GDAL.framework.

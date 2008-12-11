@@ -169,7 +169,7 @@
 INCLUDE(CheckSymbolExists)
 INCLUDE(MacroAddFileDependencies)
 
-SET(QT_USE_FILE ${CMAKE_MODULE_PATH}/UseQt4.cmake)
+SET(QT_USE_FILE UseQt4)
 
 SET( QT_DEFINITIONS "")
 

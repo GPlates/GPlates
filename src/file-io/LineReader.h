@@ -37,30 +37,57 @@
 
 #include <iosfwd>
 #include <string>
+#include <boost/noncopyable.hpp>
 
 namespace GPlatesFileIO {
 
-	class LineReader 
+	class LineReader :
+		private boost::noncopyable
 	{
 	public:
 		explicit
 		LineReader(
 				std::istream &stream) :
 			d_stream_ptr(&stream),
-			d_line_number(0)
+			d_line_number(0),
+			d_have_buffered_line(false)
 		{ }
 		
 		LineReader &
 		getline(
 				std::string &line)
 		{
-			if (std::getline(*d_stream_ptr, line)) {
+			if (d_have_buffered_line)
+			{
+				line = d_buffered_line;
+				d_have_buffered_line = false;
+				d_line_number++;
+			}
+			else if (std::getline(*d_stream_ptr, line))
+			{
 				d_line_number++;
 			}
 			
 			return *this;
 		}
-		
+			
+		LineReader &
+		peekline(
+				std::string &line)
+		{
+			if (d_have_buffered_line)
+			{
+				line = d_buffered_line;
+			}
+			else if (std::getline(*d_stream_ptr, d_buffered_line))
+			{
+				line = d_buffered_line;
+				d_have_buffered_line = true;
+			}
+
+			return *this;
+		}
+	
 		operator bool() const
 		{
 			return *d_stream_ptr;
@@ -73,16 +100,10 @@ namespace GPlatesFileIO {
 		}
 	
 	private:
-		// LineReader instances should not be copy-assigned or copy-constructed
-		LineReader &
-		operator=(
-				const LineReader &rhs);
-
-		LineReader(
-				const LineReader &rhs);
-
 		std::istream *d_stream_ptr;
 		unsigned int d_line_number;
+		std::string d_buffered_line;
+		bool d_have_buffered_line;
 	};
 
 }

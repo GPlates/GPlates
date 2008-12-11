@@ -9,8 +9,26 @@
 # NOTE: If you want to change CMake behaviour just for yourself then modify the "ConfigUser.cmake" file (not "ConfigDefault.cmake").
 #
 
-# Tell the 'find_package()' command where to find our CMake modules (this variable is visible in subdirectories).
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
+# The GPlates package name.
+set(GPLATES_PACKAGE_NAME "GPlates")
+
+# The GPlates package version.
+set(GPLATES_PACKAGE_VERSION "0.9.3.1")
+
+# The current GPlates version.
+set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}")
+
+# Set to 'true' if this is a source code release (to non-developers).
+# Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
+set(GPLATES_SOURCE_RELEASE false)
+
+# Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
+# Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.
+set(GPLATES_USE_PCH false)
+
+# Specify which source directories (relative to the 'doc/' directory) should be scanned by doxygen.
+set(GPLATES_DOXYGEN_INPUT
+    "../src/feature-visitors ../src/file-io ../src/model ../src/property-values ../src/utils")
 
 # You can set the build configuration type as a command-line argument to 'cmake' using -DCMAKE_BUILD_TYPE:STRING=Debug for example.
 # If no build configuration type was given as a command-line option to 'cmake' then a default cache entry is set here.
@@ -60,11 +78,3 @@ set(CMAKE_INCLUDE_CURRENT_DIR false)
 # Use this if you want to avoid Visual Studio asking to reload a project in the middle of a build,
 # or Unix makefiles changing in middle of build, because a 'CMakeList.txt' file was changed.
 set(CMAKE_SUPPRESS_REGENERATION false)
-
-# Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
-# Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.
-set(GPLATES_USE_PCH false)
-
-# Set to 'true' if this is a source code release (to non-developers).
-# Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
-set(GPLATES_SOURCE_RELEASE false)

@@ -29,7 +29,7 @@
 #    to locate ICU_INCLUDE_DIR by utilizing the PATH_SUFFIXES option. e.g.
 #    SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "<Your Path>")
 
-SET(ICU_USE_FILE ${CMAKE_MODULE_PATH}/UseICU.cmake)
+SET(ICU_USE_FILE UseICU)
 
 #
 # Try searching only CMake variable 'ICU_DIR' and environment variable 'ICU_DIR'.

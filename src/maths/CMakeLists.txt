@@ -69,6 +69,7 @@ set(srcs
     SmallCircle.h
     SphericalCollection.h
     TrailingLatLonCoordinateException.h
+    types.h
     UnableToExtendPointlikeArcException.h
     UnableToIntersectEquivalentGreatCirclesException.h
     UnableToNormaliseZeroVectorException.h
@@ -82,7 +83,6 @@ set(srcs
     ViolatedDirVectorInvariantException.h
     ViolatedSmallCircleInvariantException.h
     ViolatedUnitVectorInvariantException.h
-    types.h
 )
 
 

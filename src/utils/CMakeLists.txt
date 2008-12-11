@@ -20,6 +20,7 @@ set(srcs
     GeometryCreationUtils.cc
     GeometryCreationUtils.h
     MathUtils.h
+    non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
@@ -34,7 +35,6 @@ set(srcs
     UniqueId.h
     VirtualProxy.h
     XmlNamespaces.h
-    non_null_intrusive_ptr.h
 )
 
 
