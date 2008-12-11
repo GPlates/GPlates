@@ -173,9 +173,11 @@ GPlatesModel::Model::create_reconstruction(
 {
 
 
+#if 0
 time_t *tp=NULL;
 std::cerr << std::endl;
 std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+#endif
 
 	ReconstructionGraph graph(time);
 	ReconstructionTreePopulator rtp(time, graph);
@@ -199,7 +201,7 @@ std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.end(),
 		rfgp);
 
-std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+//std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 
 	// Visit the feature collections and build a map from feature id to RFG
 	GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder rfg_finder( *reconstruction );
@@ -210,7 +212,7 @@ std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		rfg_finder);
 	// rfg_finder.report();
 
-std::cerr << "3 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+//std::cerr << "3 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
@@ -224,9 +226,9 @@ std::cerr << "3 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		topology_resolver);
-	topology_resolver.report();
+	// topology_resolver.report();
 
-std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+//std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 
 #if 0 
 	// Visit the feature collections and fill computational meshes with nice juicy velocity data
@@ -242,7 +244,7 @@ std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		solver);
 	// solver.report();
 
-std::cerr << "5 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+//std::cerr << "5 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 
 #endif
 
