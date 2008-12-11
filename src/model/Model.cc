@@ -216,8 +216,11 @@ std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << s
 
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
-		time, root, *reconstruction,
+		time, 
+		root, 
+		*reconstruction,
 		reconstruction->reconstruction_tree(),
+		d_feature_id_registry,
 		rfg_finder,
 		reconstruction->geometries(),
 		true); // keep features without recon plate id
