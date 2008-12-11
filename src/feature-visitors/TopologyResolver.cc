@@ -36,6 +36,7 @@
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/FeatureRevision.h"
+#include "model/FeatureIdRegistry.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
@@ -90,6 +91,7 @@ GPlatesFeatureVisitors::TopologyResolver::TopologyResolver(
 			unsigned long root_plate_id,
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
+			GPlatesModel::FeatureIdRegistry &registry,
 			GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &finder,
 			reconstruction_geometries_type &reconstructed_geometries,
 			bool should_keep_features_without_recon_plate_id):
@@ -97,6 +99,7 @@ GPlatesFeatureVisitors::TopologyResolver::TopologyResolver(
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
+	d_feature_id_registry_ptr(&registry),
 	d_recon_finder_ptr(&finder),
 	d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
@@ -392,6 +395,10 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_piecewise_aggregation(
 std::cout << "TopologyResolver::visit_gpml_piecewise_aggregation() " << std::endl;
 #endif
 
+	if ( ! d_accumulator->d_perform_reconstructions ) {
+		return;
+	}
+
 	//d_output.writeStartGpmlElement("PiecewiseAggregation");
 	//d_output.writeStartGpmlElement("valueType");
 	//writeTemplateTypeParameterType(d_output, gpml_piecewise_aggregation.value_type());
@@ -417,6 +424,9 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_property_delegate(
 #ifdef DEBUG
 std::cout << "TopologyResolver::visit_gpml_property_delegate()" << std::endl;
 #endif
+	if ( ! d_accumulator->d_perform_reconstructions ) {
+		return;
+	}
 
 	// Test to see what property's value is the delegate
 
@@ -483,6 +493,9 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_polygon(
 #ifdef DEBUG
 std::cout << "TopologyResolver::visit_gpml_topological_polygon" << std::endl;
 #endif
+	if ( ! d_accumulator->d_perform_reconstructions ) {
+		return;
+	}
 
 	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::iterator 
 		iter, end;
@@ -514,6 +527,9 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_line_section(
 #ifdef DEBUG
 std::cout << "TopologyResolver::visit_gpml_topological_line_section" << std::endl;
 #endif
+	if ( ! d_accumulator->d_perform_reconstructions ) {
+		return;
+	}
 
 	// This is a line type feature
 	d_type = GPlatesGlobal::LINE_FEATURE;
@@ -699,34 +715,42 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_intersection(
 	GPlatesModel::FeatureId intersection_geometry_feature_id,
 	GPlatesFeatureVisitors::TopologyResolver::NeighborRelation relation)
 {
+	// FIXME: check for boost::none on calls to registry
+	GPlatesModel::FeatureHandle::weak_ref src_geometry_ref = 
+		( d_feature_id_registry_ptr->find(source_geometry_feature_id) ).get();
+
+	GPlatesModel::FeatureHandle::weak_ref intersection_ref = 
+		( d_feature_id_registry_ptr->find(intersection_geometry_feature_id) ).get();
+
+	std::string src_geometry_id = GPlatesUtils::get_old_id( src_geometry_ref );
+	std::string intersection_id = GPlatesUtils::get_old_id( intersection_ref );
 
 #ifdef DEBUG
 std::cout << "TopologyResolver::resolve_intersection: " << std::endl;
+std::cerr << "src_geometry_id= " << src_geometry_id << std::endl;
+std::cerr << "intersection_id= " << intersection_id << std::endl;
 std::cout << "node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
 #endif
 
 	if ( d_working_vertex_list.size() < 2 )
 	{
-			// FIXME : freak out!
-#ifdef DEBUG
-std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
-<< "WARN: d_working_vertex_list < 2 ; Unable to create polyline." << std::endl;
-qDebug() << "WARN: source_geometry_feature_id=" 
-<< GPlatesUtils::make_qstring_from_icu_string( source_geometry_feature_id.get() );
-#endif
-			return;
+		// FIXME : freak out!
+		std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
+		<< "WARN: d_working_vertex_list < 2 ; Unable to create polyline." << std::endl
+		<< "WARN: src_geometry_id= " << src_geometry_id << std::endl;
+		std::cerr << "d_working_vertex_list.size=" << d_working_vertex_list.size() << std::endl;
+		return;
 	}
 
 	if ( d_node2_vertex_list.size() < 2 )
 	{
-#ifdef DEBUG
-std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
-<< "WARN: d_node2_vertex_list < 2 ; Unable to create polyline." << std::endl;
-qDebug() << "WARN: intersection_geometry_feature_id=" 
-<< GPlatesUtils::make_qstring_from_icu_string( intersection_geometry_feature_id.get() );
-#endif
-			// FIXME : freak out!
-			return;
+		// FIXME : freak out!
+		std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
+		<< "WARN: d_node2_vertex_list < 2 ; Unable to create polyline." << std::endl
+		<< "WARN: src_geometry_id= " << src_geometry_id << std::endl
+		<< "WARN: intersection_id= " << intersection_id << std::endl;
+		std::cerr << "node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
+		return;
 	}
 
 	// test for intersection and set node relation:
@@ -867,12 +891,16 @@ std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 		// Make sure that the click point is close to /something/ !!!
 		if ( !click_close_to_head && !click_close_to_tail ) 
 		{
-std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
-<< "WARN: click point not close to anything!" << std::endl
-<< "WARN: Unable to set boundary feature intersection flags!" 
-<< std::endl << std::endl;
+			std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
+			<< "WARN: click point not close to anything!" << std::endl
+			<< "WARN: Unable to set boundary feature intersection flags!" 
+			<< "WARN: src_geometry_id= " << src_geometry_id << std::endl
+			<< "WARN: intersection_id= " << intersection_id << std::endl;
+			qDebug() << "WARN: source_geometry_feature_id=" 
+			<< GPlatesUtils::make_qstring_from_icu_string(source_geometry_feature_id.get() );
+			qDebug() << "WARN: intersection_geometry_feature_id=" 
+			<< GPlatesUtils::make_qstring_from_icu_string(intersection_geometry_feature_id.get());
 			// FIXME : freak out!
-			return;
 		}
 
 #ifdef DEBUG
@@ -941,16 +969,22 @@ qDebug() << "TopologyResolver::resolve_intersection: " << "use TAIL of: "
 	else 
 	{
 		// num_intersect must be 2 or greater
-		// oh no!
-		// check for overlap ...
-std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
-<< "WARN: num_intersect=" << num_intersect << std::endl 
-<< "WARN: Unable to set boundary feature intersection relations!" << std::endl
-<< "WARN: Make sure boundary feature's only intersect once." << std::endl 
-<< std::endl;
+		// FIXME : freak out!
+		std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
+		<< "WARN: num_intersect=" << num_intersect << std::endl 
+		<< "WARN: Unable to set boundary feature intersection relations!" << std::endl
+		<< "WARN: Make sure boundary feature's only intersect once." << std::endl
+		<< "WARN: src geometry id= " << src_geometry_id << std::endl
+		<< "WARN: intersection id= " << intersection_id << std::endl;
+		qDebug() << "WARN: source_geometry_feature_id=" 
+		<< GPlatesUtils::make_qstring_from_icu_string( source_geometry_feature_id.get() );
+		qDebug() << "WARN: intersection_geometry_feature_id=" 
+		<< GPlatesUtils::make_qstring_from_icu_string(intersection_geometry_feature_id.get());
+		std::cerr << std::endl;
+#if 0
+#endif
+		return;
 	}
-
-
 }
 
 
@@ -969,6 +1003,9 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_point(
 #ifdef DEBUG
 std::cout << "TopologyResolver::visit_gpml_topological_point" << std::endl;
 #endif
+	if ( ! d_accumulator->d_perform_reconstructions ) {
+		return;
+	}
 
 	// FIXME: should we visit the delegate?
 	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
@@ -1708,9 +1745,9 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 	else 
 	{
 		// num_intersect must be 2 or greater oh no!
-std::cerr << "TopologyResolver::g_v_l_f_n_r: "
-<< "WARN: num_intersect=" << num_intersect
-<< std::endl;
+		std::cerr << "TopologyResolver::g_v_l_f_n_r: "
+		<< "WARN: num_intersect=" << num_intersect
+		<< std::endl;
 	}
 }
 
