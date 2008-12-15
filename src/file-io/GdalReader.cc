@@ -363,8 +363,8 @@ GPlatesFileIO::GdalReader::read_file(
 #if 0
 	display_gdal_band_info(gdal_band_ptr);
 #endif
-	int width = gdal_band_ptr->GetXSize();
-	int height = gdal_band_ptr->GetYSize();
+
+	QSize size(gdal_band_ptr->GetXSize(),gdal_band_ptr->GetYSize());
 
 	std::vector<GLubyte> image_RGB;
 
@@ -400,7 +400,7 @@ GPlatesFileIO::GdalReader::read_file(
 	raster.set_min(colour_min);
 	raster.set_max(colour_max);
 	raster.set_corresponds_to_data(true);
-	raster.generate_raster(image_RGB,width,height,
+	raster.generate_raster(image_RGB,size,
 		GPlatesPropertyValues::InMemoryRaster::RgbaFormat);
 	raster.set_enabled(true);
 

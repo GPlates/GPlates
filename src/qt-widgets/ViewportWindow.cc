@@ -533,16 +533,17 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_recon_root(0),
 	d_reconstruction_view_widget(*this, this),
 	d_feature_focus(),
-	d_specify_fixed_plate_dialog(d_recon_root, this),
-	d_set_camera_viewpoint_dialog(*this, this),
-	d_animate_dialog(*this, this),
 	d_about_dialog(*this, this),
-	d_license_dialog(&d_about_dialog),
-	d_feature_properties_dialog(*this, d_feature_focus, this),
-	d_read_errors_dialog(this),
-	d_manage_feature_collections_dialog(*this, this),
-	d_animate_dialog_has_been_shown(false),
+	d_animate_dialog(*this, this),
 	d_euler_pole_dialog(*this, this),
+	d_feature_properties_dialog(*this, d_feature_focus, this),
+	d_license_dialog(&d_about_dialog),
+	d_manage_feature_collections_dialog(*this, this),
+	d_read_errors_dialog(this),
+	d_set_camera_viewpoint_dialog(*this, this),
+	d_set_raster_surface_extent_dialog(*this, this),
+	d_specify_fixed_plate_dialog(d_recon_root, this),
+	d_animate_dialog_has_been_shown(false),
 	d_task_panel_ptr(new TaskPanel(d_feature_focus, *d_model_ptr, *this, this)),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path(""),
@@ -765,10 +766,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
 			&d_manage_feature_collections_dialog, SLOT(open_file()));
-	QObject::connect(action_Open_Global_Raster, SIGNAL(triggered()),
-			this, SLOT(open_global_raster()));
-	QObject::connect(action_Open_Time_Dependent_Global_Raster_Set, SIGNAL(triggered()),
-			this, SLOT(open_time_dependent_global_raster_set()));
+	QObject::connect(action_Open_Raster, SIGNAL(triggered()),
+			this, SLOT(open_raster()));
+	QObject::connect(action_Open_Time_Dependent_Raster_Sequence, SIGNAL(triggered()),
+			this, SLOT(open_time_dependent_raster_sequence()));
 	QObject::connect(action_File_Errors, SIGNAL(triggered()),
 			this, SLOT(pop_up_read_errors_dialog()));
 	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
@@ -824,8 +825,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(pop_up_animate_dialog()));
 	
 	// View Menu:
-	QObject::connect(action_Show_Rasters, SIGNAL(triggered()),
+	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
 			this, SLOT(enable_raster_display()));
+	QObject::connect(action_Set_Raster_Surface_Extent, SIGNAL(triggered()),
+			this, SLOT(pop_up_set_raster_surface_extent_dialog()));
 	// ----
 	QObject::connect(action_Colour_By_Plate_ID, SIGNAL(triggered()), 
 			this, SLOT(choose_colour_by_plate_id()));
@@ -1008,7 +1011,7 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	if (d_euler_pole_dialog.isVisible()) {
 		d_euler_pole_dialog.update();
 	}
-	if (action_Show_Rasters->isChecked() && ! d_time_dependent_raster_map.isEmpty()) {	
+	if (action_Show_Raster->isChecked() && ! d_time_dependent_raster_map.isEmpty()) {	
 		update_time_dependent_raster();
 	}
 	if (d_feature_focus.is_valid() && d_feature_focus.associated_rfg()) {
@@ -1430,15 +1433,16 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file()
 void
 GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 {
-	d_specify_fixed_plate_dialog.reject();
-	d_set_camera_viewpoint_dialog.reject();
-	d_animate_dialog.reject();
 	d_about_dialog.reject();
-	d_license_dialog.reject();
-	d_feature_properties_dialog.reject();
-	d_read_errors_dialog.reject();
-	d_manage_feature_collections_dialog.reject();
+	d_animate_dialog.reject();
 	d_euler_pole_dialog.reject();
+	d_feature_properties_dialog.reject();
+	d_license_dialog.reject();
+	d_manage_feature_collections_dialog.reject();
+	d_read_errors_dialog.reject();
+	d_set_camera_viewpoint_dialog.reject();
+	d_set_raster_surface_extent_dialog.reject();
+	d_specify_fixed_plate_dialog.reject();
 }
 
 void
@@ -1477,7 +1481,7 @@ GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 void
 GPlatesQtWidgets::ViewportWindow::enable_raster_display()
 {
-	if (action_Show_Rasters->isChecked())
+	if (action_Show_Raster->isChecked())
 	{
 		d_canvas_ptr->enable_raster_display();
 	}
@@ -1488,17 +1492,24 @@ GPlatesQtWidgets::ViewportWindow::enable_raster_display()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::open_global_raster()
+GPlatesQtWidgets::ViewportWindow::open_raster()
 {
 
+
+
 	QString filename = QFileDialog::getOpenFileName(0,
-		QObject::tr("Open File"), d_open_file_path, QObject::tr("Image files (*.jpg *.jpeg)") );
+		QObject::tr("Open File"), d_open_file_path, QObject::tr("Raster files (*.jpg *.jpeg)") );
 
 	if ( filename.isEmpty()){
 		return;
 	}
 
-	if (load_global_raster(filename))
+	// Give the user a chance to set the raster extent before loading the (already selected) file.  
+	// Using "exec" hear instead of "show" makes the dialog modal and blocks
+	// progress until the user has done something. (In this case, cancel or OK). 
+	d_set_raster_surface_extent_dialog.exec();
+
+	if (load_raster(filename))
 	{
 		// If we've successfully loaded a single raster, clear the raster_map.
 		d_time_dependent_raster_map.clear();
@@ -1508,7 +1519,7 @@ GPlatesQtWidgets::ViewportWindow::open_global_raster()
 }
 
 bool
-GPlatesQtWidgets::ViewportWindow::load_global_raster(
+GPlatesQtWidgets::ViewportWindow::load_raster(
 	QString filename)
 {
 	bool result = false;
@@ -1520,7 +1531,7 @@ GPlatesQtWidgets::ViewportWindow::load_global_raster(
 	try{
 
 		GPlatesFileIO::RasterReader::read_file(file_info, d_canvas_ptr->globe().texture(), read_errors);
-		action_Show_Rasters->setChecked(true);
+		action_Show_Raster->setChecked(true);
 		result = true;
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
@@ -1559,17 +1570,18 @@ GPlatesQtWidgets::ViewportWindow::load_global_raster(
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::open_time_dependent_global_raster_set()
+GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 {
 	d_read_errors_dialog.clear();
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
 
-	QFileDialog file_dialog(0,QObject::tr("Select folder containing time-dependent file set"),d_open_file_path,NULL);
+	QFileDialog file_dialog(this,QObject::tr("Choose Folder Containing Time-dependent Rasters"),d_open_file_path,NULL);
 	file_dialog.setFileMode(QFileDialog::DirectoryOnly);
 
 	if (file_dialog.exec())
 	{
+		
 		QStringList directory_list = file_dialog.selectedFiles();
 		QString directory = directory_list.at(0);
 
@@ -1589,7 +1601,15 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_global_raster_set()
 
 	if (!d_time_dependent_raster_map.isEmpty())
 	{
-		action_Show_Rasters->setChecked(true);
+		// Give the user a chance to set the raster extent before loading the appropriate file.  
+		// Using "exec" hear instead of "show" makes the dialog modal and blocks
+		// progress until the user has done something. (In this case, cancel or OK). 
+		//
+		// For the time-dependent set, we want this dialog to appear after successfully finding a 
+		// file sequence, and before loading the first image. 
+		d_set_raster_surface_extent_dialog.exec();
+
+		action_Show_Raster->setChecked(true);
 		update_time_dependent_raster();
 	}
 
@@ -1601,7 +1621,7 @@ void
 GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
 {
 	QString filename = GPlatesFileIO::RasterReader::get_nearest_raster_filename(d_time_dependent_raster_map,d_recon_time);
-	load_global_raster(filename);
+	load_raster(filename);
 }
 
 
@@ -1620,4 +1640,9 @@ GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
 	}
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_set_raster_surface_extent_dialog()
+{
+	d_set_raster_surface_extent_dialog.exec();
+}
 

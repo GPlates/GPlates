@@ -41,30 +41,33 @@
 #include <QStringList>
 #include <QUndoGroup>
 
-#include "ApplicationState.h"
-#include "ViewportWindowUi.h"
-#include "GlobeCanvas.h"
-#include "ReconstructionViewWidget.h"
-#include "SpecifyFixedPlateDialog.h"
-#include "SetCameraViewpointDialog.h"
-#include "AnimateDialog.h"
 #include "AboutDialog.h"
-#include "LicenseDialog.h"
-#include "FeaturePropertiesDialog.h"
-#include "ReadErrorAccumulationDialog.h"
-#include "ManageFeatureCollectionsDialog.h"
+#include "AnimateDialog.h"
+#include "ApplicationState.h"
 #include "EulerPoleDialog.h"
+#include "FeaturePropertiesDialog.h"
+#include "GlobeCanvas.h"
+#include "LicenseDialog.h"
+#include "ManageFeatureCollectionsDialog.h"
+#include "ReadErrorAccumulationDialog.h"
+#include "ReconstructionViewWidget.h"
+#include "SetCameraViewpointDialog.h"
+#include "SetRasterSurfaceExtentDialog.h"
+#include "SpecifyFixedPlateDialog.h"
 #include "TaskPanel.h"
+#include "ViewportWindowUi.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 
+#include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
-#include "gui/ColourTable.h"
+
+#include "maths/GeometryOnSphere.h"
 
 #include "model/ModelInterface.h"
 
-#include "maths/GeometryOnSphere.h"
+
 
 
 namespace GPlatesGui
@@ -211,10 +214,10 @@ namespace GPlatesQtWidgets
 		pop_up_euler_pole_dialog();
 	
 		void
-		open_global_raster();
+		open_raster();
 
 		void
-		open_time_dependent_global_raster_set();
+		open_time_dependent_raster_sequence();
 		
 		// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
 		void
@@ -414,19 +417,23 @@ namespace GPlatesQtWidgets
 		GPlatesModel::integer_plate_id_type d_recon_root;
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
-		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
-		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
-		AnimateDialog d_animate_dialog;
+
 		AboutDialog d_about_dialog;
-		LicenseDialog d_license_dialog;
+		AnimateDialog d_animate_dialog;
+		EulerPoleDialog d_euler_pole_dialog;
 		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
-		ReadErrorAccumulationDialog d_read_errors_dialog;
+		LicenseDialog d_license_dialog;
 		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
+		ReadErrorAccumulationDialog d_read_errors_dialog;
+		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
+		SetRasterSurfaceExtentDialog d_set_raster_surface_extent_dialog;
+		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
+
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
 		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
-		EulerPoleDialog d_euler_pole_dialog;
+
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
@@ -448,7 +455,7 @@ namespace GPlatesQtWidgets
 		uncheck_all_colouring_tools();
 
 		bool
-		load_global_raster(
+		load_raster(
 			QString filename);
 
 		void
@@ -479,6 +486,9 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_raster_display();
+
+		void
+		pop_up_set_raster_surface_extent_dialog();
 
 	protected:
 	

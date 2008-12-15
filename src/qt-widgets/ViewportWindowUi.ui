@@ -28,7 +28,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>27</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -42,8 +42,8 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Open_Feature_Collection" />
-    <addaction name="action_Open_Global_Raster" />
-    <addaction name="action_Open_Time_Dependent_Global_Raster_Set" />
+    <addaction name="action_Open_Raster" />
+    <addaction name="action_Open_Time_Dependent_Raster_Sequence" />
     <addaction name="action_File_Errors" />
     <addaction name="action_Manage_Feature_Collections" />
     <addaction name="separator" />
@@ -65,18 +65,19 @@
     <property name="title" >
      <string>&amp;View</string>
     </property>
-    <widget class="QMenu" name="menu_Colour_By" >
+    <widget class="QMenu" name="menu_Colour_Geometries_By" >
      <property name="title" >
-      <string>&amp;Colour By</string>
+      <string>&amp;Colour Geometries By</string>
      </property>
      <addaction name="action_Colour_By_Plate_ID" />
      <addaction name="action_Colour_By_Single_Colour" />
      <addaction name="action_Colour_By_Feature_Type" />
      <addaction name="action_Colour_By_Age" />
     </widget>
-    <addaction name="menu_Colour_By" />
+    <addaction name="menu_Colour_Geometries_By" />
     <addaction name="separator" />
-    <addaction name="action_Show_Rasters" />
+    <addaction name="action_Show_Raster" />
+    <addaction name="action_Set_Raster_Surface_Extent" />
     <addaction name="separator" />
     <addaction name="action_Set_Camera_Viewpoint" />
     <addaction name="action_Move_Camera_Up" />
@@ -656,25 +657,25 @@
     <string>Total Reconstruction &amp;Poles</string>
    </property>
   </action>
-  <action name="action_Open_Global_Raster" >
+  <action name="action_Open_Raster" >
    <property name="text" >
-    <string>Open Global &amp;Raster...</string>
+    <string>Open &amp;Raster...</string>
    </property>
   </action>
-  <action name="action_Show_Rasters" >
+  <action name="action_Show_Raster" >
    <property name="checkable" >
     <bool>true</bool>
    </property>
    <property name="text" >
-    <string>&amp;Show Rasters</string>
+    <string>&amp;Show Raster</string>
    </property>
    <property name="toolTip" >
     <string>A toggle operation which controls whether rasters are shown.</string>
    </property>
   </action>
-  <action name="action_Open_Time_Dependent_Global_Raster_Set" >
+  <action name="action_Open_Time_Dependent_Raster_Sequence" >
    <property name="text" >
-    <string>Open &amp;Time Dependent Global Raster Set...</string>
+    <string>Open &amp;Time-dependent Raster Sequence...</string>
    </property>
   </action>
   <action name="action_Colour_By_Plate_ID" >
@@ -957,6 +958,11 @@
    </property>
    <property name="shortcut" >
     <string>P</string>
+   </property>
+  </action>
+  <action name="action_Set_Raster_Surface_Extent" >
+   <property name="text" >
+    <string>Set Raster Surface &amp;Extent...</string>
    </property>
   </action>
  </widget>

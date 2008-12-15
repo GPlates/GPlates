@@ -98,10 +98,26 @@ namespace{
 		int &texture_width,
 		int &texture_height)
 	{
-		texture_width = next_power_of_two(image_width);
-		texture_height = next_power_of_two(image_height);
+		int new_width = next_power_of_two(image_width);
+		int new_height = next_power_of_two(image_height);
 
-		std::vector<unsigned char> padded_data(texture_width * texture_height * RGBA_SIZE);
+		std::vector<unsigned char> padded_data;
+
+
+
+		try{
+			padded_data.resize(new_width * new_height * RGBA_SIZE);
+		}
+		catch (...)
+		{
+			std::cerr << "Unable to allocate memory for expanded texture." << std::endl;
+			texture_width = image_width;
+			texture_height = image_height;
+			return;
+		}
+
+		texture_width = new_width;
+		texture_height = new_height;
 
 		std::vector<unsigned char>::iterator it = data.begin();
 		std::vector<unsigned char>::iterator p_it = padded_data.begin();
@@ -123,7 +139,6 @@ namespace{
 		}
 
 		data.swap(padded_data);
-//		data = padded_data;
 	}
 
 	/**
@@ -138,10 +153,21 @@ namespace{
 		int &texture_width,
 		int &texture_height)
 	{
-		texture_width = next_power_of_two(image_width);
-		texture_height = next_power_of_two(image_height);
+		int new_width = next_power_of_two(image_width);
+		int new_height = next_power_of_two(image_height);
 
-		expanded_data.resize(texture_width * texture_height * RGBA_SIZE);
+		try{
+			expanded_data.resize(new_width * new_height * RGBA_SIZE);
+		}
+		catch (...)
+		{
+			std::cerr << "Unable to allocate memory for expanded texture." << std::endl;
+			return;
+		}
+
+
+		texture_width = new_width;
+		texture_height = new_height;
 
 		unsigned char *data_ptr = data;
 		unsigned char *padded_ptr = &expanded_data[0];
@@ -155,16 +181,6 @@ namespace{
 			std::memcpy(padded_ptr,data_ptr,total_width);
 			data_ptr += total_width;
 			padded_ptr += total_width + offset;
-#if 0
-
-			for ( w = 0; w < image_width*RGBA_SIZE ; w++)
-			{
-				*padded_ptr = *data_ptr;
-				padded_ptr++;
-				data_ptr++;
-			}
-			padded_ptr += offset;	
-#endif
 		}
 	}
 
@@ -198,12 +214,14 @@ namespace{
 
 	GLenum
 	check_gl_errors(
+		GLuint &texture_name,
 		const char *message = "")
 	{
 		GLenum error = glGetError();
 		if (error != GL_NO_ERROR)
 		{
 			std::cout << message << ": openGL error: " << gluErrorString(error) << std::endl;
+			glDeleteTextures(1,&texture_name);
 			throw GPlatesGui::OpenGLException("OpenGL error in Texture.cc");
 		}
 		return error;
@@ -211,15 +229,18 @@ namespace{
 
 	void
 	check_glu_errors(
-		GLuint error)
+		GLuint error,
+		GLuint &texture_name)
 	{
 		if (error == GLU_OUT_OF_MEMORY)
 		{
+			glDeleteTextures(1,&texture_name);
 			throw GPlatesGui::OpenGLBadAllocException("There was insufficient memory to load the requested texture.");
 		}
-		if (error != 0)
+		if (error != GL_NO_ERROR)
 		{
 			std::cout << " GLU error: " << gluErrorString(error) << std::endl;
+			glDeleteTextures(1,&texture_name);
 			throw GPlatesGui::OpenGLException("GLU error in Texture.cc");
 		}
 	}
@@ -245,10 +266,10 @@ GPlatesGui::Texture::generate_test_texture()
 	}
 	glDeleteTextures(1,&d_texture_name);
 
-	d_texture_width = 2048;
-	d_texture_height = 1024;
+	d_image_width = 2048;
+	d_image_height = 1024;
 
-	int size = d_texture_width*d_texture_height;
+	int size = d_image_width*d_image_height;
 
 	d_image_data = new GLubyte[size*4];
 
@@ -258,7 +279,7 @@ GPlatesGui::Texture::generate_test_texture()
 
 	GLubyte value1, value2;
 
-	for(i = 0; i < d_texture_height; i++)
+	for(i = 0; i < d_image_height; i++)
 	{
 		int check = (i/16)%2;
 		if (check == 0){
@@ -269,7 +290,7 @@ GPlatesGui::Texture::generate_test_texture()
 			value1 = 255;
 			value2 = 0;
 		}
-		for(j = 0; j < d_texture_width; j+=16)
+		for(j = 0; j < d_image_width; j+=16)
 		{	
 			for(a = 0; a < 8; a++)
 			{
@@ -299,102 +320,12 @@ GPlatesGui::Texture::generate_test_texture()
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_LUMINANCE,d_texture_width,d_texture_height,GL_LUMINANCE,GL_UNSIGNED_BYTE,d_image_data);
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_LUMINANCE,d_image_width,d_image_height,GL_LUMINANCE,GL_UNSIGNED_BYTE,d_image_data);
 
 	glEnable(GL_TEXTURE_2D);
 
 	delete[] d_image_data;
 	d_image_data = NULL;
-}
-
-void
-GPlatesGui::Texture::generate_test_texture2()
-{
-// Load an RGB TGA file....
-
-	glDeleteTextures(1,&d_texture_name);
-
-	QString filename = QFileDialog::getOpenFileName(0,
-		QObject::tr("Open Files"), NULL, QObject::tr("TGA files (*.tga)") );
-
-
-	unsigned char temp_char;
-	unsigned char type;
-	unsigned short temp_short;
-	unsigned short width, height;
-	unsigned char bpp;
-
-	int size;
-
-	FILE *tga_file;
-
-	if (!(tga_file = fopen (filename.toStdString().c_str(), "rb")))
-		return;
-
-	// skip over some header data
-	fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-	fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-
-	// get the type, and make sure it's RGB
-	fread (&type, sizeof (unsigned char), 1, tga_file);
-
-	if (type != 2) return;
-
-	// skip over some more header data
-	fread (&temp_short,sizeof(unsigned short),1,tga_file);
-	fread (&temp_short,sizeof(unsigned short),1,tga_file);
-	fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-	fread (&temp_short,sizeof(unsigned short),1,tga_file);
-	fread (&temp_short,sizeof(unsigned short),1,tga_file);
-
-	// read the width, height, and bits-per-pixel.
-	fread(&width,sizeof(unsigned short),1,tga_file);
-	fread(&height,sizeof(unsigned short),1,tga_file);
-	fread(&bpp,sizeof(unsigned char),1,tga_file);
-
-	fread(&temp_char,sizeof(unsigned char),1,tga_file);
-
-	d_image_width = width; 
-	d_image_height = height;
-
-	if (bpp != 24){
-		return;
-	}
-
-	size = d_image_width * d_image_height; 
-
-	std::vector<GLubyte> image_data_vector(size*3);
-
-	int num_read = fread(&image_data_vector[0],sizeof (unsigned char),size*3,tga_file);
-
-	fclose (tga_file);
-
-	if (num_read != size*3){
-		return;
-	}
-
-	GLubyte temp;
-	for (int i = 0; i < size * 3; i += 3)
-	{
-		temp = image_data_vector[i];
-		image_data_vector[i] = image_data_vector[i + 2];
-		image_data_vector[i + 2] = temp;
-	}
-
-
-	glGenTextures(1,&d_texture_name);
-	glBindTexture(GL_TEXTURE_2D, d_texture_name);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,GL_CLAMP);
-
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,d_image_width,d_image_height,GL_RGB,GL_UNSIGNED_BYTE,&image_data_vector[0]);
-	
-
 }
 
 
@@ -467,98 +398,11 @@ GPlatesGui::Texture::toggle()
 	d_enabled = !d_enabled;
 }
 
-void
-GPlatesGui::Texture::load_TGA_file(QString &filename)
-{
-	glDeleteTextures(1,&d_texture_name);
-
-	unsigned char temp_char;
-	unsigned char type;
-	unsigned short temp_short;
-	unsigned short width, height;
-	unsigned char bpp;
-
-	int size;
-
-	FILE *tga_file;
-
-	if (!(tga_file = fopen (filename.toStdString().c_str(), "rb")))
-		return;
-
-	// skip over some header data
-	fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-	fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-
-	// get the type, and make sure it's RGB
-	fread (&type, sizeof (unsigned char), 1, tga_file);
-
-	if (type != 2) return;
-
-	// skip over some more header data
-	fread (&temp_short,sizeof(unsigned short),1,tga_file);
-	fread (&temp_short,sizeof(unsigned short),1,tga_file);
-	fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-	fread (&temp_short,sizeof(unsigned short),1,tga_file);
-	fread (&temp_short,sizeof(unsigned short),1,tga_file);
-
-	// read the width, height, and bits-per-pixel.
-	fread(&width,sizeof(unsigned short),1,tga_file);
-	fread(&height,sizeof(unsigned short),1,tga_file);
-	fread(&bpp,sizeof(unsigned char),1,tga_file);
-
-	fread(&temp_char,sizeof(unsigned char),1,tga_file);
-
-	d_image_width = width; 
-	d_image_height = height;
-
-	if (bpp != 24){
-		return;
-	}
-
-	size = d_image_width * d_image_height; 
-
-	std::vector<GLubyte> image_data_vector(size*3);
-
-	int num_read = fread(&image_data_vector[0],sizeof (unsigned char),size*3,tga_file);
-
-	fclose (tga_file);
-
-	if (num_read != size*3){
-		return;
-	}
-
-	GLubyte temp;
-	for (int i = 0; i < size * 3; i += 3)
-	{
-		temp = image_data_vector[i];
-		image_data_vector[i] = image_data_vector[i + 2];
-		image_data_vector[i + 2] = temp;
-	}
-
-
-	glGenTextures(1,&d_texture_name);
-	glBindTexture(GL_TEXTURE_2D, d_texture_name);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,GL_CLAMP);
-
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-
-	GLuint result = gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,d_image_width,d_image_height,GL_RGB,GL_UNSIGNED_BYTE,&image_data_vector[0]);
-	if (result != 0){
-		GLenum error = glGetError();
-		const GLubyte* error_string = gluErrorString(error);
-		std::cerr << error_string << std::endl;
-	}
-}
 
 void
 GPlatesGui::Texture::generate_raster(
 	std::vector<unsigned_byte_type> &data, 
-	int width, 
-	int height, 
+	QSize &size, 
 	ColourFormat format)
 {
 	clear_gl_errors();
@@ -574,28 +418,26 @@ GPlatesGui::Texture::generate_raster(
 	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
 
 
-	d_image_width = width;
-	d_image_height = height;
+	d_image_width = size.width();
+	d_image_height = size.height();
 
-//	check_texture_size(format,next_power_of_two(d_image_width),next_power_of_two(d_image_height));
+	generate_mapping_coordinates(d_extent);
 
-	expand_to_power_two(data,d_image_width,d_image_height,d_texture_width,d_texture_height);
+	check_gl_errors(d_texture_name);
 
-	generate_mapping_coordinates();
-
-	check_gl_errors();
-
-	gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_texture_width,d_texture_height,
+	GLenum error = gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_image_width,d_image_height,
 		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,&data[0]);
 
-	check_gl_errors();
+	check_glu_errors(error,d_texture_name);
+
+	check_gl_errors(d_texture_name);
 }
+
 
 void
 GPlatesGui::Texture::generate_raster(
 	unsigned_byte_type *data, 
-	int width, 
-	int height, 
+	QSize &size, 
 	ColourFormat format)
 {
 	clear_gl_errors();
@@ -611,30 +453,26 @@ GPlatesGui::Texture::generate_raster(
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
 
-	d_image_width = width;
-	d_image_height = height;
+	d_image_width = size.width();
+	d_image_height = size.height();
 
-	GLint size;
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE,&size);
-#if 0
-	std::cerr << "Max texture size: " << size << std::endl;
+	GLint max_texture_size;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE,&max_texture_size);
 
-	check_texture_size(format,next_power_of_two(d_image_width),next_power_of_two(d_image_height));
-#endif
-	std::vector<unsigned char> expanded_data;
-	expand_to_power_two(data,expanded_data,d_image_width,d_image_height,d_texture_width,d_texture_height);
+	generate_mapping_coordinates(d_extent);
 
-	generate_mapping_coordinates();
+	check_gl_errors(d_texture_name);
 
-	check_gl_errors();
+	GLenum error = GL_NO_ERROR;
 
-	GLenum error = gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_texture_width,d_texture_height,
-		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,&expanded_data[0]);
-	
-	check_glu_errors(error);
+	error = gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_image_width,d_image_height,
+		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,data);
 
-	check_gl_errors();
+	check_glu_errors(error,d_texture_name);
+
+	check_gl_errors(d_texture_name);
 }
+
 
 void
 GPlatesGui::Texture::generate_mapping_coordinates()
@@ -643,12 +481,13 @@ GPlatesGui::Texture::generate_mapping_coordinates()
 	float lat, lon;
 	for (int j = 0; j <= NUM_STRIPS_T ; j++)
 	{
-		t_coord = static_cast<float>(j) * d_image_height / d_texture_height / static_cast<float>(NUM_STRIPS_T);
+		t_coord = static_cast<float>(j) / static_cast<float>(NUM_STRIPS_T);
+		lat = LAT_START + (LAT_END-LAT_START)*t_coord;
 		for (int i = 0; i <= NUM_STRIPS_S ; i++)
 		{
-			s_coord = static_cast<float>(i) * d_image_width / d_texture_width / static_cast<float>(NUM_STRIPS_S);
-			lon = LON_START + (LON_END-LON_START)*static_cast<float>(i)/static_cast<float>(NUM_STRIPS_S);
-			lat = LAT_START + (LAT_END-LAT_START)*static_cast<float>(j)/static_cast<float>(NUM_STRIPS_T);
+			s_coord = static_cast<float>(i) / static_cast<float>(NUM_STRIPS_S);
+			lon = LON_START + (LON_END-LON_START)*s_coord;
+
 			GPlatesMaths::LatLonPoint latlon(lat,lon);
 			GPlatesMaths::PointOnSphere p = 
 				GPlatesMaths::make_point_on_sphere(latlon);
@@ -663,24 +502,55 @@ GPlatesGui::Texture::generate_mapping_coordinates()
 	}
 }
 
+
 void
 GPlatesGui::Texture::generate_mapping_coordinates(
-	float lon_start,
-	float lat_start,
-	float lon_end,
-	float lat_end)
+	QRectF &extent)
 {
 
+	float lon_start = extent.left();
+	float lat_start = extent.bottom();
+	float width = extent.width();
+	float height = extent.height();
+
+	// The height, as stored in the QRectF d_extent, should be negative. 
+	// We want to make it positive for the mapping algorithm below. 
+	//
+	// A positive height in the QRectF corresponds to an invalid range for mapping - 
+	// unless we interpret it as a request to vertically flip the image. I'm not 
+	// going to allow vertical flipping, and so if we get a positive height, return. 
+	if (height < 0.){
+		height = -height;
+	}
+	else
+	{
+		return;
+	}
+
+	// A negative width means we've gone over the date line, and that's OK, we
+	// just need to correct it. 
+	if (width < 0.) 
+	{
+		width += 360.;
+	};
+
+	// A width > 360 means we've gone round the globe more than once. 
+	if (width > 360.)
+	{
+		width -= 360.;
+	}
+
+	// FIXME: Do some optimisation on these loops...
 	float s_coord, t_coord;
 	float lat, lon;
 	for (int j = 0; j <= NUM_STRIPS_T ; j++)
 	{
-		t_coord = static_cast<float>(j) * d_image_height / d_texture_height / static_cast<float>(NUM_STRIPS_T);
+		t_coord = static_cast<float>(j) / static_cast<float>(NUM_STRIPS_T);
+		lat = lat_start + height*t_coord;
 		for (int i = 0; i <= NUM_STRIPS_S ; i++)
 		{
-			s_coord = static_cast<float>(i) * d_image_width / d_texture_width / static_cast<float>(NUM_STRIPS_S);
-			lon = lon_start + (lon_end-lon_start)*static_cast<float>(i)/static_cast<float>(NUM_STRIPS_S);
-			lat = lat_end + (lat_start-lat_end)*static_cast<float>(j)/static_cast<float>(NUM_STRIPS_T);
+			s_coord = static_cast<float>(i) / static_cast<float>(NUM_STRIPS_S);
+			lon = lon_start + width*s_coord;
 
 			GPlatesMaths::LatLonPoint latlon(lat,lon);
 			GPlatesMaths::PointOnSphere p = 
@@ -696,18 +566,29 @@ GPlatesGui::Texture::generate_mapping_coordinates(
 	}
 }
 
+
 void
-GPlatesGui::Texture::generate_raster(
-	std::vector<unsigned_byte_type> &data, 
-	float x_start,
-	float y_start,
-	float x_end,
-	float y_end,
-	int width, 
-	int height, 
-	ColourFormat format)
+GPlatesGui::Texture::remap_texture()
 {
+	// Check that a texture already exists. 
+	if (!texture_is_loaded()) return;
+
 	clear_gl_errors();
+
+	// The dimensions of the image in texture memory may differ from those of the original image, 
+	// so we need to query openGL to get the current width and height. 
+	GLint width, height;
+	
+	glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_WIDTH,&width);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_HEIGHT,&height);
+
+	// Allocate memory to store the image which we'll later grab from texture memory
+	std::vector<unsigned_byte_type> texture_data(width*height*RGBA_SIZE);
+
+	// Grab the texture from texture memory, stick it in texture_data.
+	glGetTexImage(GL_TEXTURE_2D,0,GL_RGBA,GL_UNSIGNED_BYTE,&texture_data[0]);
+
+
 	glDeleteTextures(1,&d_texture_name);
 	glGenTextures(1,&d_texture_name);
 	glBindTexture(GL_TEXTURE_2D, d_texture_name);
@@ -719,20 +600,53 @@ GPlatesGui::Texture::generate_raster(
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
 
+	generate_mapping_coordinates(d_extent);
 
-	d_image_width = width;
-	d_image_height = height;
+	check_gl_errors(d_texture_name);
 
-//	check_texture_size(format,next_power_of_two(d_image_width),next_power_of_two(d_image_height));
+	GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
+		GPlatesPropertyValues::InMemoryRaster::RgbaFormat;
 
-	expand_to_power_two(data,d_image_width,d_image_height,d_texture_width,d_texture_height);
+	GLenum error = gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),width,height,
+		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,&texture_data[0]);
 
-	generate_mapping_coordinates(x_start,y_start,x_end,y_end);
+	check_glu_errors(error,d_texture_name);
 
-	check_gl_errors();
+	check_gl_errors(d_texture_name);
 
-	gluBuild2DMipmaps(GL_TEXTURE_2D,translate_colour_format_to_gl(format),d_texture_width,d_texture_height,
-		translate_colour_format_to_gl(format),GL_UNSIGNED_BYTE,&data[0]);
+}
 
-	check_gl_errors();
+void
+GPlatesGui::Texture::set_extent(
+	const QRectF &rect)
+{
+	d_extent = rect;
+
+	// Seeing as we've changed the extent, check if a texture is loaded. If there is, re-map it.
+	if (texture_is_loaded())
+	{
+		remap_texture();
+	}
+}
+
+bool
+GPlatesGui::Texture::texture_is_loaded()
+{
+
+	if (! glIsTexture(d_texture_name))
+	{
+		return false;
+	}
+
+	GLint width, height;
+	
+	glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_WIDTH,&width);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_HEIGHT,&height);
+
+	if ((width == 0) || (height == 0))
+	{
+		return false;
+	}
+
+	return true;
 }

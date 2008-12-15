@@ -133,6 +133,9 @@ set(srcs
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
+    SetRasterSurfaceExtentDialog.cc
+    SetRasterSurfaceExtentDialog.h
+    SetRasterSurfaceExtentDialogUi.ui
     ShapefileAttributeMapperDialog.cc
     ShapefileAttributeMapperDialog.h
     ShapefileAttributeMapperDialogUi.ui

@@ -13,7 +13,7 @@
    <string>Set Camera Viewpoint</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
   <property name="modal" >
    <bool>true</bool>
