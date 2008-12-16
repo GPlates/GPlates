@@ -535,7 +535,7 @@
   </action>
   <action name="action_Open_Feature_Collection" >
    <property name="text" >
-    <string>&amp;Open Feature Collection...</string>
+    <string>Open &amp;Feature Collection...</string>
    </property>
    <property name="shortcut" >
     <string>Ctrl+O</string>
