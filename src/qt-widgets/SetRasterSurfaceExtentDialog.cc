@@ -86,7 +86,7 @@ GPlatesQtWidgets::SetRasterSurfaceExtentDialog::SetRasterSurfaceExtentDialog(
 				DEFAULT_UPPER_LEFT_LAT,
 				DEFAULT_LOWER_RIGHT_LON-DEFAULT_UPPER_LEFT_LON,
 				DEFAULT_LOWER_RIGHT_LAT-DEFAULT_UPPER_LEFT_LAT),
-	d_help_dialog(new InformationDialog(s_help_dialog_text,s_help_dialog_title))
+	d_help_dialog(new InformationDialog(s_help_dialog_text, s_help_dialog_title, this))
 {
 	setupUi(this);
 
