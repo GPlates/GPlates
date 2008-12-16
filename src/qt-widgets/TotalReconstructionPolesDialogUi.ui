@@ -1,6 +1,6 @@
 <ui version="4.0" >
- <class>EulerPoleDialog</class>
- <widget class="QWidget" name="EulerPoleDialog" >
+ <class>TotalReconstructionPolesDialog</class>
+ <widget class="QWidget" name="TotalReconstructionPolesDialog" >
   <property name="geometry" >
    <rect>
     <x>0</x>
@@ -130,6 +130,9 @@
          <property name="horizontalScrollBarPolicy" >
           <enum>Qt::ScrollBarAlwaysOff</enum>
          </property>
+         <property name="alternatingRowColors" >
+          <bool>true</bool>
+         </property>
          <column>
           <property name="text" >
            <string>Plate ID</string>
@@ -217,6 +220,9 @@
          </property>
          <property name="horizontalScrollBarPolicy" >
           <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="alternatingRowColors" >
+          <bool>true</bool>
          </property>
          <column>
           <property name="text" >
@@ -455,7 +461,7 @@
   <connection>
    <sender>button_close</sender>
    <signal>clicked()</signal>
-   <receiver>EulerPoleDialog</receiver>
+   <receiver>TotalReconstructionPolesDialog</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel" >

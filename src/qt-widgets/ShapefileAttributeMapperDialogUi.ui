@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>287</height>
+    <height>289</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -49,6 +49,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="button_cancel" >
+       <property name="minimumSize" >
+        <size>
+         <width>110</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text" >
         <string>Cancel Loading</string>
        </property>
@@ -56,8 +62,14 @@
      </item>
      <item>
       <widget class="QPushButton" name="button_reset" >
+       <property name="minimumSize" >
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text" >
-        <string>Reset Fields</string>
+        <string>&amp;Reset Fields</string>
        </property>
       </widget>
      </item>

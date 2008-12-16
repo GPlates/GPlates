@@ -50,6 +50,7 @@ namespace GPlatesQtWidgets
 	class EditAngleWidget;
 	class EditStringWidget;
 	class EditBooleanWidget;
+	class EditShapefileAttributesWidget;
 	
 
 	/**
@@ -330,7 +331,14 @@ namespace GPlatesQtWidgets
 		void
 		activate_edit_boolean_widget(
 				GPlatesPropertyValues::XsBoolean &xs_boolean);
-		
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 */
+		void
+		activate_edit_shapefile_attributes_widget(
+				GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
+
 		
 		/**
 		 * Obtain a reference to the ViewState this EditWidgetGroupBox knows about.
@@ -420,6 +428,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::EditAngleWidget *d_edit_angle_widget_ptr;
 		GPlatesQtWidgets::EditStringWidget *d_edit_string_widget_ptr;
 		GPlatesQtWidgets::EditBooleanWidget *d_edit_boolean_widget_ptr;
+		GPlatesQtWidgets::EditShapefileAttributesWidget *d_edit_shapefile_attributes_widget_ptr;
 		
 		/**
 		 * The verb in front of the title of the groupbox, prepended to the PropertyValue

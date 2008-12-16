@@ -44,7 +44,6 @@
 #include "AboutDialog.h"
 #include "AnimateDialog.h"
 #include "ApplicationState.h"
-#include "EulerPoleDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
 #include "LicenseDialog.h"
@@ -55,6 +54,8 @@
 #include "SetRasterSurfaceExtentDialog.h"
 #include "SpecifyFixedPlateDialog.h"
 #include "TaskPanel.h"
+#include "TotalReconstructionPolesDialog.h"
+#include "ShapefileAttributeViewerDialog.h"
 #include "ViewportWindowUi.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
@@ -211,7 +212,7 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		pop_up_euler_pole_dialog();
+		pop_up_total_reconstruction_poles_dialog();
 	
 		void
 		open_raster();
@@ -420,7 +421,7 @@ namespace GPlatesQtWidgets
 
 		AboutDialog d_about_dialog;
 		AnimateDialog d_animate_dialog;
-		EulerPoleDialog d_euler_pole_dialog;
+		TotalReconstructionPolesDialog d_total_reconstruction_poles_dialog;
 		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
 		LicenseDialog d_license_dialog;
 		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
@@ -435,6 +436,7 @@ namespace GPlatesQtWidgets
 		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
 
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
+		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 
@@ -489,6 +491,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_set_raster_surface_extent_dialog();
+
+		void
+		pop_up_shapefile_attribute_viewer_dialog();
 
 	protected:
 	

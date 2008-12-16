@@ -25,12 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QTWIDGETS_EULERPOLEDIALOG_H
-#define GPLATES_QTWIDGETS_EULERPOLEDIALOG_H
+#ifndef GPLATES_QTWIDGETS_TOTALRECONSTRUCTIONPOLESDIALOG_H
+#define GPLATES_QTWIDGETS_TOTALRECONSTRUCTIONPOLESDIALOG_H
 
 #include <QDialog>
 
-#include "EulerPoleDialogUi.h"
+#include "TotalReconstructionPolesDialogUi.h"
 
 #include "model/Reconstruction.h"
 
@@ -39,14 +39,14 @@ namespace GPlatesQtWidgets{
 
 	class ViewportWindow;
 
-	class EulerPoleDialog:
+	class TotalReconstructionPolesDialog:
 		public QDialog,
-		protected Ui_EulerPoleDialog
+		protected Ui_TotalReconstructionPolesDialog
 	{
 		Q_OBJECT
 
 	public:
-	EulerPoleDialog(
+	TotalReconstructionPolesDialog(
 		ViewportWindow &viewport_window,
 		QWidget *parent_ = NULL);
 
@@ -131,5 +131,5 @@ namespace GPlatesQtWidgets{
 
 }
 
-#endif // GPLATES_QTWIDGETS_EULERPOLEDIALOG_H
+#endif // GPLATES_QTWIDGETS_TOTALRECONSTRUCTIONPOLESDIALOG_H
 

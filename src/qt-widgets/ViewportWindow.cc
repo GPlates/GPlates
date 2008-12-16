@@ -297,6 +297,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 	// Internal state changed, make sure dialogs are up to date.
 	d_read_errors_dialog.update();
 	d_manage_feature_collections_dialog.update();
+	d_shapefile_attribute_viewer_dialog.update();
 
 	// Pop up errors only if appropriate.
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
@@ -535,7 +536,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_feature_focus(),
 	d_about_dialog(*this, this),
 	d_animate_dialog(*this, this),
-	d_euler_pole_dialog(*this, this),
+	d_total_reconstruction_poles_dialog(*this, this),
 	d_feature_properties_dialog(*this, d_feature_focus, this),
 	d_license_dialog(&d_about_dialog),
 	d_manage_feature_collections_dialog(*this, this),
@@ -545,6 +546,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_specify_fixed_plate_dialog(d_recon_root, this),
 	d_animate_dialog_has_been_shown(false),
 	d_task_panel_ptr(new TaskPanel(d_feature_focus, *d_model_ptr, *this, this)),
+	d_shapefile_attribute_viewer_dialog(*this,this),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path(""),
 	d_colour_table_ptr(NULL)
@@ -655,6 +657,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this, SLOT(reconstruct()));
+
+	// If the focused feature is modified, we may need to update the ShapefileAttributeViewerDialog.
+	QObject::connect(&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+			&d_shapefile_attribute_viewer_dialog, SLOT(update()));
 
 	// Set up the Canvas Tools.
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
@@ -772,8 +780,11 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(open_time_dependent_raster_sequence()));
 	QObject::connect(action_File_Errors, SIGNAL(triggered()),
 			this, SLOT(pop_up_read_errors_dialog()));
+	// ---
 	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
 			this, SLOT(pop_up_manage_feature_collections_dialog()));
+	QObject::connect(action_View_Shapefile_Attributes, SIGNAL(triggered()),
+			this, SLOT(pop_up_shapefile_attribute_viewer_dialog()));
 	// ----
 	QObject::connect(action_Quit, SIGNAL(triggered()),
 			this, SLOT(close()));
@@ -813,16 +824,17 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// Reconstruction Menu:
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(activate_time_spinbox()));
-	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(triggered()),
-			this, SLOT(pop_up_specify_fixed_plate_dialog()));
-	// ----
 	QObject::connect(action_Increment_Reconstruction_Time, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(increment_reconstruction_time()));
 	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(decrement_reconstruction_time()));
-	// ----
 	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
+	// ----
+	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(triggered()),
+			this, SLOT(pop_up_specify_fixed_plate_dialog()));
+	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
+			this, SLOT(pop_up_total_reconstruction_poles_dialog()));
 	
 	// View Menu:
 	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
@@ -868,10 +880,6 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// ----
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
-	
-	// Utilities Menu:
-	QObject::connect(action_Reconstruction_Tree_and_Poles, SIGNAL(triggered()),
-			this, SLOT(pop_up_euler_pole_dialog()));
 	
 	// Help Menu:
 	QObject::connect(action_About, SIGNAL(triggered()),
@@ -1008,8 +1016,8 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	render_model(d_canvas_ptr, d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root, *get_colour_table());
 
-	if (d_euler_pole_dialog.isVisible()) {
-		d_euler_pole_dialog.update();
+	if (d_total_reconstruction_poles_dialog.isVisible()) {
+		d_total_reconstruction_poles_dialog.update();
 	}
 	if (action_Show_Raster->isChecked() && ! d_time_dependent_raster_map.isEmpty()) {	
 		update_time_dependent_raster();
@@ -1065,11 +1073,11 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_euler_pole_dialog()
+GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog()
 {
-	d_euler_pole_dialog.update();
+	d_total_reconstruction_poles_dialog.update();
 
-	d_euler_pole_dialog.show();
+	d_total_reconstruction_poles_dialog.show();
 }
 
 void
@@ -1310,6 +1318,9 @@ GPlatesQtWidgets::ViewportWindow::deactivate_loaded_file(
 	// (using 'remove_loaded_file' in ApplicationState) which triggers *this*! -- but until we
 	// have multiple view windows, it doesn't matter.
 	GPlatesAppState::ApplicationState::instance()->remove_loaded_file(loaded_file);
+
+	// Update the shapefile-attribute viewer dialog, which needs to know which files are loaded.
+	d_shapefile_attribute_viewer_dialog.update();
 }
 
 
@@ -1435,7 +1446,7 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 {
 	d_about_dialog.reject();
 	d_animate_dialog.reject();
-	d_euler_pole_dialog.reject();
+	d_total_reconstruction_poles_dialog.reject();
 	d_feature_properties_dialog.reject();
 	d_license_dialog.reject();
 	d_manage_feature_collections_dialog.reject();
@@ -1443,6 +1454,7 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	d_set_camera_viewpoint_dialog.reject();
 	d_set_raster_surface_extent_dialog.reject();
 	d_specify_fixed_plate_dialog.reject();
+	d_shapefile_attribute_viewer_dialog.reject();
 }
 
 void
@@ -1624,7 +1636,6 @@ GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
 	load_raster(filename);
 }
 
-
 // FIXME: Should be a ViewState operation, or /somewhere/ better than this.
 void
 GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
@@ -1646,3 +1657,9 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_raster_surface_extent_dialog()
 	d_set_raster_surface_extent_dialog.exec();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()
+{
+	d_shapefile_attribute_viewer_dialog.show();
+	d_shapefile_attribute_viewer_dialog.update();
+}

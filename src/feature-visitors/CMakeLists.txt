@@ -21,6 +21,8 @@ set(srcs
     GeometrySetter.h
     GmlTimePeriodFinder.cc
     GmlTimePeriodFinder.h
+    KeyValueDictionaryFinder.cc
+    KeyValueDictionaryFinder.h
     PlateIdFinder.cc
     PlateIdFinder.h
     QueryFeaturePropertiesWidgetPopulator.cc

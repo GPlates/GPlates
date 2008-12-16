@@ -28,6 +28,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARYELEMENT_H
 #define GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARYELEMENT_H
 
+#include "property-values/TemplateTypeParameterType.h"
 #include "property-values/XsString.h"
 
 namespace GPlatesPropertyValues {

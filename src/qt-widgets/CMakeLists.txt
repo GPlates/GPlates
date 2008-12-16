@@ -70,6 +70,8 @@ set(srcs
     EditPolarityChronIdWidget.cc
     EditPolarityChronIdWidget.h
     EditPolarityChronIdWidgetUi.ui
+    EditShapefileAttributesWidget.cc
+    EditShapefileAttributesWidget.h
     EditShapefileAttributesWidgetUi.ui
     EditStringWidget.cc
     EditStringWidget.h
@@ -84,9 +86,6 @@ set(srcs
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
     EditWidgetGroupBox.h
-    EulerPoleDialog.cc
-    EulerPoleDialog.h
-    EulerPoleDialogUi.ui
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
@@ -142,6 +141,9 @@ set(srcs
     ShapefileAttributeRemapperDialog.cc
     ShapefileAttributeRemapperDialog.h
     ShapefileAttributeRemapperDialogUi.ui
+    ShapefileAttributeViewerDialog.cc
+    ShapefileAttributeViewerDialog.h
+    ShapefileAttributeViewerDialogUi.ui
     ShapefileAttributeWidget.cc
     ShapefileAttributeWidget.h
     ShapefileAttributeWidgetUi.ui
@@ -153,6 +155,9 @@ set(srcs
     TaskPanel.cc
     TaskPanel.h
     TaskPanelUi.ui
+    TotalReconstructionPolesDialog.cc
+    TotalReconstructionPolesDialog.h
+    TotalReconstructionPolesDialogUi.ui
     UninitialisedEditWidgetException.h
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h

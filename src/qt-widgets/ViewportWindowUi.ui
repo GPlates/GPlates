@@ -45,7 +45,9 @@
     <addaction name="action_Open_Raster" />
     <addaction name="action_Open_Time_Dependent_Raster_Sequence" />
     <addaction name="action_File_Errors" />
+    <addaction name="separator" />
     <addaction name="action_Manage_Feature_Collections" />
+    <addaction name="action_View_Shapefile_Attributes" />
     <addaction name="separator" />
     <addaction name="action_Quit" />
    </widget>
@@ -54,12 +56,12 @@
      <string>&amp;Reconstruction</string>
     </property>
     <addaction name="action_Reconstruct_to_Time" />
-    <addaction name="action_Specify_Fixed_Plate" />
-    <addaction name="separator" />
     <addaction name="action_Increment_Reconstruction_Time" />
     <addaction name="action_Decrement_Reconstruction_Time" />
-    <addaction name="separator" />
     <addaction name="action_Animate" />
+    <addaction name="separator" />
+    <addaction name="action_Specify_Fixed_Plate" />
+    <addaction name="action_View_Reconstruction_Poles" />
    </widget>
    <widget class="QMenu" name="menu_View" >
     <property name="title" >
@@ -96,12 +98,6 @@
     <addaction name="separator" />
     <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
-   <widget class="QMenu" name="menu_Utilities" >
-    <property name="title" >
-     <string>&amp;Utilities</string>
-    </property>
-    <addaction name="action_Reconstruction_Tree_and_Poles" />
-   </widget>
    <widget class="QMenu" name="menu_Edit" >
     <property name="title" >
      <string>&amp;Edit</string>
@@ -120,7 +116,6 @@
    <addaction name="menu_Edit" />
    <addaction name="menu_Reconstruction" />
    <addaction name="menu_View" />
-   <addaction name="menu_Utilities" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
@@ -652,9 +647,9 @@
     <string>Ctrl+E</string>
    </property>
   </action>
-  <action name="action_Reconstruction_Tree_and_Poles" >
+  <action name="action_View_Reconstruction_Poles" >
    <property name="text" >
-    <string>Total Reconstruction &amp;Poles</string>
+    <string>View Total Reconstruction &amp;Poles</string>
    </property>
   </action>
   <action name="action_Open_Raster" >
@@ -965,9 +960,12 @@
     <string>Set Raster Surface &amp;Extent...</string>
    </property>
   </action>
+  <action name="action_View_Shapefile_Attributes" >
+   <property name="text" >
+    <string>View &amp;Shapefile Attributes</string>
+   </property>
+  </action>
  </widget>
- <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
- </resources>
+ <resources/>
  <connections/>
 </ui>

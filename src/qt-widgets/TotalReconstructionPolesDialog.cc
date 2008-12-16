@@ -29,7 +29,7 @@
 #include <QHeaderView>
 #include <QTableWidget>
 
-#include "EulerPoleDialog.h"
+#include "TotalReconstructionPolesDialog.h"
 #include "gui/CsvExport.h"
 #include "model/ReconstructionTreeEdge.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -137,7 +137,7 @@ namespace {
 
 } // anonymous namespace
 
-GPlatesQtWidgets::EulerPoleDialog::EulerPoleDialog(
+GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog(
 		ViewportWindow &viewport_window,
 		QWidget *parent_):
 	QDialog(parent_),
@@ -198,7 +198,7 @@ GPlatesQtWidgets::EulerPoleDialog::EulerPoleDialog(
 }
 
 void
-GPlatesQtWidgets::EulerPoleDialog::set_plate(
+GPlatesQtWidgets::TotalReconstructionPolesDialog::set_plate(
 	unsigned long plate)
 {
 	d_plate = plate;
@@ -208,7 +208,7 @@ GPlatesQtWidgets::EulerPoleDialog::set_plate(
 }
 
 void
-GPlatesQtWidgets::EulerPoleDialog::set_time(
+GPlatesQtWidgets::TotalReconstructionPolesDialog::set_time(
 	double time)
 {
 	d_time = time;
@@ -223,7 +223,7 @@ GPlatesQtWidgets::EulerPoleDialog::set_time(
  *	composite Euler poles.
  */
 void
-GPlatesQtWidgets::EulerPoleDialog::fill_equivalent_table()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table()
 {
 	table_equivalent->clearContents();
 	table_equivalent->setRowCount(0);
@@ -299,7 +299,7 @@ GPlatesQtWidgets::EulerPoleDialog::fill_equivalent_table()
 }
 
 void
-GPlatesQtWidgets::EulerPoleDialog::fill_relative_table()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table()
 {
 	table_relative->clearContents();
 	table_relative->setRowCount(0);
@@ -385,7 +385,7 @@ GPlatesQtWidgets::EulerPoleDialog::fill_relative_table()
  * Fill the QTreeWidget in the second tab with data from the Reconstruction Tree
  */
 void
-GPlatesQtWidgets::EulerPoleDialog::fill_reconstruction_tree()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree()
 {
 	tree_reconstruction->clear();
 
@@ -416,7 +416,7 @@ GPlatesQtWidgets::EulerPoleDialog::fill_reconstruction_tree()
  * Fill the QTreeWidget in the third tab with the circuit-to-stationary-plate for each plate-id. 
  */
 void
-GPlatesQtWidgets::EulerPoleDialog::fill_circuit_tree()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree()
 {
 	tree_circuit->clear();
 
@@ -466,7 +466,7 @@ GPlatesQtWidgets::EulerPoleDialog::fill_circuit_tree()
 }
 
 void
-GPlatesQtWidgets::EulerPoleDialog::update()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 {
 	set_time(d_viewport_window_ptr->reconstruction_time());
 	set_plate(d_viewport_window_ptr->reconstruction_root());
@@ -477,7 +477,7 @@ GPlatesQtWidgets::EulerPoleDialog::update()
 }
 
 void
-GPlatesQtWidgets::EulerPoleDialog::export_relative()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::export_relative()
 {
 	QString filename = QFileDialog::getSaveFileName(this,
 			tr("Save As"), "", tr("CSV file (*.csv)"));
@@ -492,7 +492,7 @@ GPlatesQtWidgets::EulerPoleDialog::export_relative()
 }
 
 void
-GPlatesQtWidgets::EulerPoleDialog::export_equivalent()
+GPlatesQtWidgets::TotalReconstructionPolesDialog::export_equivalent()
 {
 	QString filename = QFileDialog::getSaveFileName(this,
 			tr("Save As"), "", tr("CSV file (*.csv)"));
