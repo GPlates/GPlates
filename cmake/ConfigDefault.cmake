@@ -13,7 +13,7 @@
 set(GPLATES_PACKAGE_NAME "GPlates")
 
 # The GPlates package version.
-set(GPLATES_PACKAGE_VERSION "0.9.3.1")
+set(GPLATES_PACKAGE_VERSION "0.9.4")
 
 # The current GPlates version.
 set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}")
