@@ -209,9 +209,15 @@ namespace{
 				GPlatesFileIO::ReadErrors::FileNotLoaded));		
 			return;
 		}
-		catch(GPlatesGui::OpenGLException &e)
+		catch(GPlatesGui::OpenGLException &)
 		{
-			throw(e);
+			read_errors.d_failures_to_begin.push_back(
+			GPlatesFileIO::ReadErrorOccurrence(
+				e_source,
+				e_location,
+				GPlatesFileIO::ReadErrors::ErrorGeneratingTexture,
+				GPlatesFileIO::ReadErrors::FileNotLoaded));		
+			return;
 		}
 		raster.set_enabled(true);
 	}

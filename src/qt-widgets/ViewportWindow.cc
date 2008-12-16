@@ -1516,11 +1516,6 @@ GPlatesQtWidgets::ViewportWindow::open_raster()
 		return;
 	}
 
-	// Give the user a chance to set the raster extent before loading the (already selected) file.  
-	// Using "exec" hear instead of "show" makes the dialog modal and blocks
-	// progress until the user has done something. (In this case, cancel or OK). 
-	d_set_raster_surface_extent_dialog.exec();
-
 	if (load_raster(filename))
 	{
 		// If we've successfully loaded a single raster, clear the raster_map.
@@ -1613,14 +1608,6 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 
 	if (!d_time_dependent_raster_map.isEmpty())
 	{
-		// Give the user a chance to set the raster extent before loading the appropriate file.  
-		// Using "exec" hear instead of "show" makes the dialog modal and blocks
-		// progress until the user has done something. (In this case, cancel or OK). 
-		//
-		// For the time-dependent set, we want this dialog to appear after successfully finding a 
-		// file sequence, and before loading the first image. 
-		d_set_raster_surface_extent_dialog.exec();
-
 		action_Show_Raster->setChecked(true);
 		update_time_dependent_raster();
 	}
