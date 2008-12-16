@@ -52,6 +52,9 @@
    </item>
    <item row="1" column="0" >
     <widget class="QTableWidget" name="table_attributes" >
+     <property name="alternatingRowColors" >
+      <bool>true</bool>
+     </property>
      <property name="rowCount" >
       <number>10</number>
      </property>
