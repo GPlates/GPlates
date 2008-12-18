@@ -34,34 +34,37 @@
 
 
 GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 		ViewportWindow &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
+	d_rendered_geom_collection(&rendered_geom_collection),
+	d_rendered_geom_factory(&rendered_geom_factory),
 	d_view_state_ptr(&view_state),
 	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&view_state)),
 	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr))
 {
 	setupUi(this);
 
-	// The user wants to apply the current adjustment.
-	QObject::connect(button_apply, SIGNAL(clicked()),
-			this, SLOT(apply()));
+	make_signal_slot_connections();
 
-	// The user wants to reset the adjustment (to zero).
-	QObject::connect(button_reset_adjustment, SIGNAL(clicked()),
-			this, SLOT(reset()));
+	create_child_rendered_layers();
+}
 
-	// Communication between the Apply ... Adjustment dialog and the Adjustment Applicator.
-	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_changed(int)),
-			d_applicator_ptr, SLOT(handle_pole_sequence_choice_changed(int)));
-	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_cleared()),
-			d_applicator_ptr, SLOT(handle_pole_sequence_choice_cleared()));
-	QObject::connect(d_dialog_ptr, SIGNAL(accepted()),
-			d_applicator_ptr, SLOT(apply_adjustment()));
 
-	// The user has agreed to apply the adjustment as described in the dialog.
-	QObject::connect(d_applicator_ptr, SIGNAL(have_reconstructed()),
-			this, SLOT(clear_and_reset_after_reconstruction()));
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::activate()
+{
+	d_is_active = true;
+	draw_initial_geometries_at_activation();
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::deactivate()
+{
+	d_is_active = false;
 }
 
 
@@ -485,46 +488,70 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries()
 {
 	populate_initial_geometries();
 
-	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
-	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-	layers.pole_manipulation_layer().clear();
-	GPlatesGui::PlatesColourTable::const_iterator white_colour = &GPlatesGui::Colour::WHITE;
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// Clear all initial geometry RenderedGeometry's before adding new ones.
+	d_initial_geom_layer_ptr->clear_rendered_geometries();
+	d_dragged_geom_layer_ptr->clear_rendered_geometries();
+
+	const GPlatesGui::Colour &white_colour = GPlatesGui::Colour::WHITE;
 
 	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
 	geometry_collection_type::const_iterator end = d_initial_geometries.end();
-	for ( ; iter != end; ++iter) {
-		layers.pole_manipulation_layer().push_back(
-				GPlatesGui::RenderedGeometry(
-						*iter,
-						white_colour));
+	for ( ; iter != end; ++iter)
+	{
+		// Create rendered geometry.
+		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+					*iter, white_colour);
+
+		// Add to pole manipulation layer.
+		d_initial_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
-	canvas.update_canvas();
 }
 
 
 void
 GPlatesQtWidgets::ReconstructionPoleWidget::draw_dragged_geometries()
 {
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
 	// Be careful that the boost::optional is not boost::none.
 	if ( ! d_accum_orientation) {
 		draw_initial_geometries();
 		return;
 	}
 
-	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
-	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-	layers.pole_manipulation_layer().clear();
-	GPlatesGui::PlatesColourTable::const_iterator silver_colour = &GPlatesGui::Colour::SILVER;
+	// Clear all dragged geometry RenderedGeometry's before adding new ones.
+	d_dragged_geom_layer_ptr->clear_rendered_geometries();
+
+	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::SILVER;
 
 	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
 	geometry_collection_type::const_iterator end = d_initial_geometries.end();
-	for ( ; iter != end; ++iter) {
-		layers.pole_manipulation_layer().push_back(
-				GPlatesGui::RenderedGeometry(
-						d_accum_orientation->orient_geometry(*iter),
-						silver_colour));
+	for ( ; iter != end; ++iter)
+	{
+		// Create rendered geometry.
+		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+					d_accum_orientation->orient_geometry(*iter),
+					silver_colour);
+
+		// Add to pole manipulation layer.
+		d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
-	canvas.update_canvas();
 }
 
 
@@ -545,10 +572,72 @@ GPlatesQtWidgets::ReconstructionPoleWidget::update_adjustment_fields()
 void
 GPlatesQtWidgets::ReconstructionPoleWidget::clear_and_reset_after_reconstruction()
 {
-	GlobeCanvas &canvas = d_view_state_ptr->globe_canvas();
-	GPlatesGui::RenderedGeometryLayers &layers = canvas.globe().rendered_geometry_layers();
-	layers.pole_manipulation_layer().clear();
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// Clear all RenderedGeometry's.
+	d_initial_geom_layer_ptr->clear_rendered_geometries();
+	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
 	reset_adjustment();
 	draw_initial_geometries_at_activation();
+}
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::make_signal_slot_connections()
+{
+	// The user wants to apply the current adjustment.
+	QObject::connect(button_apply, SIGNAL(clicked()),
+		this, SLOT(apply()));
+
+	// The user wants to reset the adjustment (to zero).
+	QObject::connect(button_reset_adjustment, SIGNAL(clicked()),
+		this, SLOT(reset()));
+
+	// Communication between the Apply ... Adjustment dialog and the Adjustment Applicator.
+	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_changed(int)),
+		d_applicator_ptr, SLOT(handle_pole_sequence_choice_changed(int)));
+	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_cleared()),
+		d_applicator_ptr, SLOT(handle_pole_sequence_choice_cleared()));
+	QObject::connect(d_dialog_ptr, SIGNAL(accepted()),
+		d_applicator_ptr, SLOT(apply_adjustment()));
+
+	// The user has agreed to apply the adjustment as described in the dialog.
+	QObject::connect(d_applicator_ptr, SIGNAL(have_reconstructed()),
+		this, SLOT(clear_and_reset_after_reconstruction()));
+}
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::create_child_rendered_layers()
+{
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// Create a rendered layer to draw the initial geometries.
+	d_initial_geom_layer_ptr =
+		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+
+	// Create a rendered layer to draw the initial geometries.
+	// NOTE: this must be created second to get drawn on top.
+	d_dragged_geom_layer_ptr =
+		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+
+	// In both cases above we store the returned object as a data member and it
+	// automatically destroys the created layer for us when 'this' object is destroyed.
+
+	// Activate both layers.
+	d_initial_geom_layer_ptr->set_active();
+	d_dragged_geom_layer_ptr->set_active();
 }

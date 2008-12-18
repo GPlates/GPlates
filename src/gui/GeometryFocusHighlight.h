@@ -30,10 +30,16 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "gui/RenderedGeometryLayers.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
+#include "view-operations/GeometryBuilder.h"
 
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryLayer;
+	class RenderedGeometryCollection;
+	class RenderedGeometryFactory;
+}
 
 namespace GPlatesGui
 {
@@ -48,9 +54,8 @@ namespace GPlatesGui
 	public:
 
 		GeometryFocusHighlight(
-				RenderedGeometryLayers::rendered_geometry_layer_type &highlight_layer):
-			d_highlight_layer_ptr(&highlight_layer)
-		{  }
+			GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
+			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection);
 
 		virtual
 		~GeometryFocusHighlight()
@@ -78,21 +83,7 @@ namespace GPlatesGui
 		void
 		draw_focused_geometry();
 
-	signals:
-
-		/**
-		 * Emitted when the canvas should update (re-draw) itself.
-		 */
-		void
-		canvas_should_update();
-
 	private:
-
-		/**
-		 * The layer of rendered geometries which is used for highlighting.
-		 */
-		RenderedGeometryLayers::rendered_geometry_layer_type *d_highlight_layer_ptr;
-
 		/**
 		 * The feature which contains the geometry whose RFG is the currently-focused
 		 * reconstruction geometry.
@@ -110,6 +101,16 @@ namespace GPlatesGui
 		 */
 		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_geometry;
 
+		GPlatesViewOperations::RenderedGeometryFactory *d_rendered_geom_factory;
+
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+
+		/**
+		 * The layer of rendered geometries which is used for highlighting.
+		 */
+		GPlatesViewOperations::RenderedGeometryLayer *d_highlight_layer_ptr;
+
+		GPlatesViewOperations::GeometryBuilder d_geometry_builder;
 	};
 }
 

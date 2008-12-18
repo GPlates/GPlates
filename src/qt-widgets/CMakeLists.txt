@@ -36,7 +36,6 @@ set(srcs
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
-    DigitisationWidgetUndoCommands.h
     EditAngleWidget.cc
     EditAngleWidget.h
     EditAngleWidgetUi.ui
@@ -104,6 +103,8 @@ set(srcs
     InformationDialog.h
     InformationDialogUi.ui
     InvalidPropertyValueException.h
+    LatLonCoordinatesTable.cc
+    LatLonCoordinatesTable.h
     LicenseDialog.cc
     LicenseDialog.h
     ManageFeatureCollectionsActionWidget.cc
@@ -115,6 +116,9 @@ set(srcs
     ManageFeatureCollectionsStateWidget.cc
     ManageFeatureCollectionsStateWidget.h
     ManageFeatureCollectionsStateWidgetUi.ui
+    MoveVertexWidget.cc
+    MoveVertexWidget.h
+    MoveVertexWidgetUi.ui
     NoActiveEditWidgetException.h
     PropertyValueNotSupportedException.h
     QueryFeaturePropertiesWidget.cc

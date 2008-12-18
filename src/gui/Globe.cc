@@ -39,6 +39,13 @@
 #include "maths/UnitVector3D.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
+#include "view-operations/RenderedMultiPointOnSphere.h"
+#include "view-operations/RenderedPointOnSphere.h"
+#include "view-operations/RenderedPolygonOnSphere.h"
+#include "view-operations/RenderedPolylineOnSphere.h"
+#include "view-operations/RenderedGeometryCollectionVisitor.h"
+#include "view-operations/RenderedGeometryUtils.h"
+
 
 namespace 
 {
@@ -116,105 +123,168 @@ namespace
 		}
 	}
 
-
 	/**
-	 * This is a visitor to draw geometries on-screen using OpenGL.
+	 * This is a visitor to draw rendered geometries on-screen using OpenGL.
 	 */
-	class PaintGeometry:
-			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	class PaintGeometry :
+			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor
 	{
 	public:
 		explicit
 		PaintGeometry(
-				GPlatesGui::NurbsRenderer &nurbs_renderer,
-				float gl_line_width):
+				GPlatesGui::NurbsRenderer &nurbs_renderer):
 			d_nurbs_renderer(&nurbs_renderer),
-			d_gl_line_width(gl_line_width)
+			d_current_layer_far_depth(0),
+			d_depth_range_per_layer(0)
 		{  }
 
 		virtual
 		~PaintGeometry()
 		{  }
 
+		virtual
 		void
-		operator()(
-				const GPlatesGui::RenderedGeometry &rendered_geometry)
+		paint(
+				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				double depth_range_near,
+				double depth_range_far)
 		{
-			d_colour = rendered_geometry.colour();
-			rendered_geometry.geometry()->accept_visitor(*this);
+			// Count the number of layers that we're going to draw.
+			const unsigned num_layers_to_draw = get_num_active_non_empty_layers(
+					rendered_geometry_collection);
+
+			// Divide our given depth range equally amongst the layers.
+			// Draw layers back to front as we visit them.
+			d_depth_range_per_layer = (depth_range_far - depth_range_near) / num_layers_to_draw;
+			d_current_layer_far_depth = depth_range_far;
+
+			// Draw the layers.
+			rendered_geometry_collection.accept_visitor(*this);
 		}
 
-		// Please keep these geometries ordered alphabetically.
+	private:
+		virtual
+		bool
+		visit_rendered_geometry_layer(
+				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer)
+		{
+			// If layer is not active then we don't want to visit it.
+			if (!rendered_geometry_layer.is_active())
+			{
+				return false;
+			}
+
+			// If layer is not empty then we have allocated a depth range for it.
+			if (!rendered_geometry_layer.is_empty())
+			{
+				const double far_depth = d_current_layer_far_depth;
+				double near_depth = far_depth - d_depth_range_per_layer;
+				if (near_depth < 0) near_depth = 0;
+
+				glDepthRange(near_depth, far_depth);
+
+				d_current_layer_far_depth -= d_depth_range_per_layer;
+			}
+
+			// We want to visit the RenderedGeometry objects in this layer to draw them.
+			return true;
+		}
 
 		virtual
 		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point)
+		visit_rendered_point_on_sphere(
+				const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 		{
-			// FIXME:  We should assert that the boost::optional is not boost::none.
-			glColor3fv(**d_colour);
-			glPointSize(4.0f);
-			draw_points_for_multi_point(multi_point->begin(), multi_point->end());
-		}
-
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
-		{
-			// FIXME:  We should assert that the boost::optional is not boost::none.
-			glColor3fv(**d_colour);
-			glPointSize(4.0f);
+			glColor3fv(rendered_point_on_sphere.get_colour());
+			glPointSize(rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
 			glBegin(GL_POINTS);
-				draw_vertex(*point);
+				draw_vertex(rendered_point_on_sphere.get_point_on_sphere());
 			glEnd();
 		}
 
 		virtual
 		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
+		visit_rendered_multi_point_on_sphere(
+				const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 		{
-			// FIXME:  We should assert that the boost::optional is not boost::none.
-			glColor3fv(**d_colour);
-			glLineWidth(d_gl_line_width);
-			draw_arcs_for_polygon(polygon->begin(), polygon->end(), *d_nurbs_renderer);
+			glColor3fv(rendered_multi_point_on_sphere.get_colour());
+			glPointSize(rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
+
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
+				rendered_multi_point_on_sphere.get_multi_point_on_sphere();
+
+			draw_points_for_multi_point(
+					multi_point_on_sphere->begin(),
+					multi_point_on_sphere->end());
 		}
 
 		virtual
 		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
+		visit_rendered_polyline_on_sphere(
+				const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 		{
-			// FIXME:  We should assert that the boost::optional is not boost::none.
-			glColor3fv(**d_colour);
-			glLineWidth(d_gl_line_width);
-			draw_arcs_for_polyline(polyline->begin(), polyline->end(), *d_nurbs_renderer);
+			glColor3fv(rendered_polyline_on_sphere.get_colour());
+			glLineWidth(rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
+
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
+				rendered_polyline_on_sphere.get_polyline_on_sphere();
+
+			draw_arcs_for_polyline(
+					polyline_on_sphere->begin(),
+					polyline_on_sphere->end(),
+					*d_nurbs_renderer);
+		}
+
+		virtual
+		void
+		visit_rendered_polygon_on_sphere(
+				const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
+		{
+			glColor3fv(rendered_polygon_on_sphere.get_colour());
+			glLineWidth(rendered_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
+
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
+				rendered_polygon_on_sphere.get_polygon_on_sphere();
+
+			draw_arcs_for_polygon(
+					polygon_on_sphere->begin(),
+					polygon_on_sphere->end(),
+					*d_nurbs_renderer);
 		}
 
 	private:
 		GPlatesGui::NurbsRenderer *const d_nurbs_renderer;
-		float d_gl_line_width;
-		boost::optional<GPlatesGui::PlatesColourTable::const_iterator> d_colour;
+		double d_current_layer_far_depth;
+		double d_depth_range_per_layer;
+
+		//! Multiplying factor to get default point size of 1.0f to look like one screen-space pixel.
+		static const float POINT_SIZE_ADJUSTMENT;
+		//! Multiplying factor to get default line width of 1.0f to look like one screen-space pixel.
+		static const float LINE_WIDTH_ADJUSTMENT;
 	};
+
+	const float PaintGeometry::POINT_SIZE_ADJUSTMENT = 1.5f;
+	const float PaintGeometry::LINE_WIDTH_ADJUSTMENT = 1.5f;
 
 
 	void
-	paint_geometries(
-			const GPlatesGui::RenderedGeometryLayers::rendered_geometry_layer_type &layer,
+	paint_rendered_geometries(
+			const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 			GPlatesGui::NurbsRenderer &nurbs_renderer,
-			float gl_line_width)
+			double depth_range_near,
+			double depth_range_far)
 	{
-		typedef GPlatesGui::RenderedGeometryLayers::rendered_geometry_layer_type layer_type;
-		layer_type::const_iterator iter = layer.begin();
-		layer_type::const_iterator end = layer.end();
+		PaintGeometry paint_geometry(nurbs_renderer);
 
-		for_each(iter, end, PaintGeometry(nurbs_renderer, gl_line_width));
+		paint_geometry.paint(
+				rendered_geom_collection, depth_range_near, depth_range_far);
 	}
 }
 
 
-GPlatesGui::Globe::Globe() :
+GPlatesGui::Globe::Globe(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection) :
+d_rendered_geom_collection(&rendered_geom_collection),
 d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
 d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON)
 {
@@ -245,7 +315,7 @@ GPlatesGui::Globe::Orient(
 
 
 void
-GPlatesGui::Globe::Paint()
+GPlatesGui::Globe::paint()
 {
 	// Enable smoothing.
 	glShadeModel(GL_SMOOTH);
@@ -272,7 +342,7 @@ GPlatesGui::Globe::Paint()
 		// The glDepthRange(near_plane, far_plane) call pushes the sphere back in the depth
 		// buffer a bit, to avoid Z-fighting.
 		glDepthRange(0.9, 1.0);
-		d_sphere->Paint();
+		d_sphere->paint();
 
 		// Draw the texture slightly in front of the grey sphere, otherwise we get little
 		// bits of the sphere sticking out. 
@@ -282,22 +352,11 @@ GPlatesGui::Globe::Paint()
 		glDepthRange(0.7, 0.8);
 		d_grid.paint(Colour::SILVER);
 
-		glDepthRange(0.6, 0.7);
-		paint_geometries(rendered_geometry_layers().reconstruction_layer(), *d_nurbs_renderer, 1.5f);
-
-		glDepthRange(0.5, 0.6);
-		if (rendered_geometry_layers().should_show_digitisation_layer()) {
-			paint_geometries(rendered_geometry_layers().digitisation_layer(), *d_nurbs_renderer, 2.0f);
-		}
-		if (rendered_geometry_layers().should_show_geometry_focus_layer()) {
-			paint_geometries(rendered_geometry_layers().geometry_focus_layer(), *d_nurbs_renderer, 2.5f);
-		}
-		if (rendered_geometry_layers().should_show_pole_manipulation_layer()) {
-			paint_geometries(rendered_geometry_layers().pole_manipulation_layer(), *d_nurbs_renderer, 1.5f);
-		}
-
-		glDepthRange(0.4, 0.5);
-		paint_geometries(rendered_geometry_layers().mouse_movement_layer(), *d_nurbs_renderer, 1.5f);
+		paint_rendered_geometries(
+				*d_rendered_geom_collection,
+				*d_nurbs_renderer,
+				0.0,
+				0.7);
 
 	glPopMatrix();
 }
@@ -323,16 +382,30 @@ GPlatesGui::Globe::paint_vector_output()
 		glDepthRange(0.7, 0.8);
 		d_grid.paint(Colour::GREY);
 
-		glDepthRange(0.6, 0.7);
-		paint_geometries(rendered_geometry_layers().reconstruction_layer(), *d_nurbs_renderer, 1.5f);
+		// Get current rendered layer active state so we can restore later.
+		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState
+			prev_rendered_layer_active_state =
+				d_rendered_geom_collection->capture_main_layer_active_state();
 
-		glDepthRange(0.5, 0.6);
-		if (rendered_geometry_layers().should_show_geometry_focus_layer()) {
-			paint_geometries(rendered_geometry_layers().geometry_focus_layer(), *d_nurbs_renderer, 2.5f);
-		}
-		if (rendered_geometry_layers().should_show_pole_manipulation_layer()) {
-			paint_geometries(rendered_geometry_layers().pole_manipulation_layer(), *d_nurbs_renderer, 1.5f);
-		}
+		// Turn off rendering of digitisation layer.
+		d_rendered_geom_collection->set_main_layer_active(
+				GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER,
+				false);
+
+		// Turn off rendering of mouse movement layer.
+		d_rendered_geom_collection->set_main_layer_active(
+				GPlatesViewOperations::RenderedGeometryCollection::MOUSE_MOVEMENT_LAYER,
+				false);
+
+		paint_rendered_geometries(
+				*d_rendered_geom_collection,
+				*d_nurbs_renderer,
+				0.0,
+				0.7);
+
+		// Restore previous rendered layer active state.
+		d_rendered_geom_collection->restore_main_layer_active_state(
+			prev_rendered_layer_active_state);
 
 	glPopMatrix();
 }

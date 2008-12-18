@@ -28,38 +28,30 @@
 #ifndef _GPLATES_GUI_OPAQUESPHERE_H_
 #define _GPLATES_GUI_OPAQUESPHERE_H_
 
+#include <boost/noncopyable.hpp>
+
 #include "OpenGL.h"
 #include "Colour.h"
 #include "Quadrics.h"
 
 namespace GPlatesGui
 {
-	class OpaqueSphere
+	class OpaqueSphere :
+		public boost::noncopyable
 	{
 		public:
 			explicit
-			OpaqueSphere(const Colour &colour);
+			OpaqueSphere(
+					const Colour &colour);
 
-			~OpaqueSphere() {  }
+			~OpaqueSphere()
+			{  }
 
-		private:
-			/*
-			 * These two member functions intentionally declared
-			 * private to avoid object copying/assignment.
-			 * [Since the data member '_quad' itself cannot be
-			 * copied or assigned.]
-			 */
-			OpaqueSphere(const OpaqueSphere &other);
-
-			OpaqueSphere &operator=(const OpaqueSphere &other);
-
-		public:
-			void Paint();
+			void paint();
 
 		private:
-			Quadrics _quad;
-
-			Colour _colour;
+			Quadrics d_quad;
+			Colour d_colour;
 	};
 }
 

@@ -33,6 +33,7 @@
 # include <boost/python.hpp>
 #endif
 
+#include <memory>
 #include <QWidget>
 #include <QSplitter>
 #include "ReconstructionViewWidgetUi.h"
@@ -43,6 +44,11 @@
 namespace GPlatesMaths
 {
 	class PointOnSphere;
+}
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
 }
 
 namespace GPlatesQtWidgets
@@ -59,8 +65,8 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
-		explicit
 		ReconstructionViewWidget(
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				ViewportWindow &view_state,
 				QWidget *parent_ = NULL);
 
@@ -113,7 +119,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		insert_task_panel(
-				GPlatesQtWidgets::TaskPanel *task_panel);
+				std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel);
 				
 
 	public slots:

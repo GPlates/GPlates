@@ -34,30 +34,26 @@
 #include "Texture.h"
 #include "NurbsRenderer.h"
 #include "SimpleGlobeOrientation.h"
-#include "RenderedGeometryLayers.h"
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
 #include "utils/VirtualProxy.h"
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
+}
 
 namespace GPlatesGui
 {
 	class Globe
 	{
 	public:
-		Globe();
+		Globe(
+				GPlatesViewOperations::RenderedGeometryCollection &);
 
 		~Globe()
 		{  }
-
-		/**
-		 * The layers of rendered geometries.
-		 */
-		RenderedGeometryLayers &
-		rendered_geometry_layers()
-		{
-			return d_rendered_geometry_layers;
-		}
 
 		SimpleGlobeOrientation &
 		orientation()
@@ -86,10 +82,10 @@ namespace GPlatesGui
 		void
 		initialise_texture();
 
-		void Paint();
+		void paint();
 		
 		/*
-		 * A special version of the globe's Paint() method more suitable
+		 * A special version of the globe's paint() method more suitable
 		 * for vector output
 		 */
 		void paint_vector_output();
@@ -111,9 +107,9 @@ namespace GPlatesGui
 
 	private:
 		/**
-		 * The layers of rendered geometries.
+		 * The collection of @a RenderedGeometry objects we need to paint.
 		 */
-		RenderedGeometryLayers d_rendered_geometry_layers;
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 
 		/**
 		 * The NurbsRenderer used to draw large GreatCircleArcs.

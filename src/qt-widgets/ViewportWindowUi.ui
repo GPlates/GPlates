@@ -725,7 +725,7 @@
     <string>Digitise New Poly&amp;line</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise Polyline Geometry  L</string>
+    <string>Digitise New Polyline Geometry  L</string>
    </property>
    <property name="shortcut" >
     <string>L</string>
@@ -841,7 +841,7 @@
     <string>Digitise New P&amp;olygon</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise Polygon Geometry  G</string>
+    <string>Digitise New Polygon Geometry  G</string>
    </property>
    <property name="shortcut" >
     <string>G</string>
@@ -864,7 +864,7 @@
     <string>Digitise New &amp;Points</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise Multi-point Geometry  M</string>
+    <string>Digitise New Multi-point Geometry  M</string>
    </property>
    <property name="shortcut" >
     <string>M</string>

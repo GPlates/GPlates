@@ -153,7 +153,7 @@ GPlatesGui::FeatureFocus::find_new_associated_rfg(
 
 
 void
-GPlatesGui::FeatureFocus::announce_modfication_of_focused_feature()
+GPlatesGui::FeatureFocus::announce_modification_of_focused_feature()
 {
 	if ( ! d_focused_feature.is_valid()) {
 		// You can't have modified it, nothing is focused!

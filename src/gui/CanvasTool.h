@@ -26,6 +26,8 @@
 #ifndef GPLATES_GUI_CANVASTOOL_H
 #define GPLATES_GUI_CANVASTOOL_H
 
+#include <boost/noncopyable.hpp>
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 
@@ -52,7 +54,8 @@ namespace GPlatesGui
 	 *
 	 * The currently-activated CanvasTool is referenced by an instance of CanvasToolChoice.
 	 */
-	class CanvasTool
+	class CanvasTool :
+		private boost::noncopyable
 	{
 	public:
 		/**
@@ -570,17 +573,6 @@ namespace GPlatesGui
 		 * re-orientation operation.
 		 */
 		bool d_is_in_reorientation_op;
-
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		CanvasTool(
-				const CanvasTool &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		CanvasTool &
-		operator=(
-				const CanvasTool &);
 	};
 
 

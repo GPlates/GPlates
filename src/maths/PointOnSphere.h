@@ -29,6 +29,7 @@
 #define GPLATES_MATHS_POINTONSPHERE_H
 
 #include <iosfwd>
+#include <iterator>  // std::distance
 
 #include "GeometryOnSphere.h"
 #include "UnitVector3D.h"
@@ -363,14 +364,53 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Count the number of distinct adjacent points in the sequence @a point_seq in
+	 * the range @a point_seq_begin / @a point_seq_end
+	 * (which is assumed to be a sequence of PointOnSphere).
+	 */
+	template<typename ForwardIter>
+	unsigned
+	count_distinct_adjacent_points(
+			ForwardIter point_seq_begin,
+			ForwardIter point_seq_end);
+
+	/**
 	 * Count the number of distinct adjacent points in the sequence @a point_seq of type S
 	 * (which is assumed to be a sequence of PointOnSphere).
 	 */
 	template<typename S>
-	typename S::size_type
+	unsigned
 	count_distinct_adjacent_points(
-			const S &point_seq);
+			const S &point_seq)
+	{
+		return count_distinct_adjacent_points(point_seq.begin(), point_seq.end());
+	}
 
+
+	/**
+	 * Populate the supplied (presumably empty) destination sequence @a dest_seq of type D
+	 * (which is assumed to be a sequence of type PointOnSphere) from the source sequence
+	 * range @a source_seq_begin / @a source_seq_end (which is assumed to be a sequence of double).
+	 *
+	 * The source sequence is assumed to contain doubles in the order used by GML in a
+	 * "gml:posList" property in a "gml:LineString" geometry -- that is, each consecutive pair
+	 * of doubles represents the (longitude, latitude) of a point: lon, lat, lon, lat, ...
+	 *
+	 * Note that this is the reverse of the usual (latitude, longitude) representation used in
+	 * GPlates.
+	 *
+	 * It is presumed that the destination sequence is empty -- or its contents unimportant --
+	 * since its contents, if any, will be swapped out into a temporary sequence and discarded
+	 * at the end of the function.
+	 *
+	 * This function is strongly exception-safe and exception-neutral.
+	 */
+	template<typename ForwardIter, typename D>
+	void
+	populate_point_on_sphere_sequence(
+			D &dest_seq,
+			ForwardIter source_seq_begin,
+			ForwardIter source_seq_end);
 
 	/**
 	 * Populate the supplied (presumably empty) destination sequence @a dest_seq of type D
@@ -394,7 +434,11 @@ namespace GPlatesMaths
 	void
 	populate_point_on_sphere_sequence(
 			D &dest_seq,
-			const S &source_seq);
+			const S &source_seq)
+	{
+		return populate_point_on_sphere_sequence(
+				dest_seq, source_seq.begin(), source_seq.end());
+	}
 
 
 	std::ostream &
@@ -430,13 +474,14 @@ namespace GPlatesMaths
 }
 
 
-template<typename S>
-typename S::size_type
+template<typename ForwardIter>
+unsigned
 GPlatesMaths::count_distinct_adjacent_points(
-		const S &point_seq)
+		ForwardIter point_seq_begin,
+		ForwardIter point_seq_end)
 {
-	// We'll assume that S provides at least forward iterators.
-	typename S::const_iterator iter = point_seq.begin(), end = point_seq.end();
+	ForwardIter iter = point_seq_begin;
+	ForwardIter end = point_seq_end;
 
 	if (iter == end) {
 		// The container is empty.
@@ -444,7 +489,7 @@ GPlatesMaths::count_distinct_adjacent_points(
 	}
 	// else, the container is not empty.
 	PointOnSphere recent = *iter;
-	typename S::size_type num_distinct_adjacent_points = 1;
+	unsigned num_distinct_adjacent_points = 1;
 	for (++iter; iter != end; ++iter) {
 		if (*iter != recent) {
 			++num_distinct_adjacent_points;
@@ -455,23 +500,29 @@ GPlatesMaths::count_distinct_adjacent_points(
 }
 
 
-template<typename S, typename D>
+template<typename ForwardIter, typename D>
 void
 GPlatesMaths::populate_point_on_sphere_sequence(
 		D &dest_seq,
-		const S &source_seq)
+		ForwardIter source_seq_begin,
+		ForwardIter source_seq_end)
 {
 	D tmp_seq;
 
 	// First, verify that the source is of an even length -- otherwise, there will be a
 	// trailing coordinate which cannot be paired.
-	if ((source_seq.size() % 2) != 0) {
+	if ((std::distance(source_seq_begin, source_seq_end) % 2) != 0) {
 		// Uh oh, it's an odd-length collection.
 		// Note that, since the length of the sequence is odd, the length must be
 		// greater than zero, so there must be at least one element.
-		throw TrailingLatLonCoordinateException(source_seq.back(), source_seq.size());
+		ForwardIter back_iter = source_seq_end;
+		--back_iter;
+		throw TrailingLatLonCoordinateException(
+				*back_iter,
+				std::distance(source_seq_begin, source_seq_end));
 	}
-	typename S::const_iterator iter = source_seq.begin(), end = source_seq.end();
+	ForwardIter iter = source_seq_begin;
+	ForwardIter end = source_seq_end;
 	for (unsigned coord_index = 0; iter != end; ++iter, ++coord_index) {
 		double lon = *iter;
 		if ( ! LatLonPoint::is_valid_longitude(lon)) {

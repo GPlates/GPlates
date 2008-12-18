@@ -20,6 +20,8 @@ set(srcs
     CanvasToolAdapter.h
     CanvasToolChoice.cc
     CanvasToolChoice.h
+    ChooseCanvasTool.cc
+    ChooseCanvasTool.h
     Colour.cc
     Colour.h
     ColourSpectrum.cc
@@ -42,7 +44,6 @@ set(srcs
     GeometryFocusHighlight.h
     Globe.cc
     Globe.h
-    GlobeCanvasPainter.h
     GlobeOrientation.h
     GuiException.h
     Interface.h
@@ -60,8 +61,6 @@ set(srcs
     Quadrics.cc
     Quadrics.h
     ReconstructionGeometrySequence.h
-    RenderedGeometry.h
-    RenderedGeometryLayers.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
     SingleColourTable.cc

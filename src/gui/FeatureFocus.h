@@ -162,7 +162,7 @@ namespace GPlatesGui
 		 * to the currently-focused feature.
 		 */
 		void
-		announce_modfication_of_focused_feature();
+		announce_modification_of_focused_feature();
 
 		/**
 		 * Call this method when you have deleted the currently-focused feature
