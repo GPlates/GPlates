@@ -879,7 +879,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Delete_Feature, SIGNAL(triggered()),
 			this, SLOT(delete_focused_feature()));
 #else
-	action_Delete_Feature->setDisabled(true);
+	action_Delete_Feature->setVisible(false);
 #endif
 	// ----
 	QObject::connect(action_Clear_Selection, SIGNAL(triggered()),
@@ -967,7 +967,10 @@ GPlatesQtWidgets::ViewportWindow::set_up_task_panel_actions()
 
 	feature_actions.add_action(action_Query_Feature);
 	feature_actions.add_action(action_Edit_Feature);
+#if 0
+	// Doesn't work - hidden for release.
 	feature_actions.add_action(action_Delete_Feature);
+#endif
 	feature_actions.add_action(action_Clear_Selection);
 }
 
