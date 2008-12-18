@@ -90,20 +90,28 @@ namespace GPlatesViewOperations
 
 	private:
 		/**
-		 * Convenience structure for calling @a begin_block_set_focus and @a end_block_set_focus.
+		 * Convenience structure for calling @a begin_block_infinite_signal_slot_loop and @a end_block_infinite_signal_slot_loop.
 		 */
-		struct BlockSetFocus
+		struct BlockInfiniteSignalSlotLoop
 		{
-			BlockSetFocus(
+			BlockInfiniteSignalSlotLoop(
 					FocusedFeatureGeometryManipulator *geom_manipulator) :
 			d_geom_manipulator(geom_manipulator)
 			{
-				d_geom_manipulator->begin_block_set_focus();
+				d_geom_manipulator->begin_block_infinite_signal_slot_loop();
 			}
 
-			~BlockSetFocus()
+			~BlockInfiniteSignalSlotLoop()
 			{
-				d_geom_manipulator->end_block_set_focus();
+				// Cannot allow exceptions to leave a destructor.
+				// Exception won't happen here anyway.
+				try
+				{
+					d_geom_manipulator->end_block_infinite_signal_slot_loop();
+				}
+				catch (...)
+				{
+				}
 			}
 
 			FocusedFeatureGeometryManipulator *d_geom_manipulator;
@@ -148,9 +156,9 @@ namespace GPlatesViewOperations
 		bool d_ignore_geom_builder_update;
 
 		/**
-		 * Counts depth of nested calls to @a begin_block_set_focus and @a end_block_set_focus.
+		 * Counts depth of nested calls to @a begin_block_infinite_signal_slot_loop and @a end_block_infinite_signal_slot_loop.
 		 */
-		int d_block_set_focus_depth;
+		int d_block_infinite_signal_slot_loop_depth;
 
 		void
 		connect_to_geometry_builder();
@@ -184,24 +192,24 @@ namespace GPlatesViewOperations
 		 * Starts blocking of @a set_focus.
 		 */
 		void
-		begin_block_set_focus()
+		begin_block_infinite_signal_slot_loop()
 		{
-			++d_block_set_focus_depth;
+			++d_block_infinite_signal_slot_loop_depth;
 		}
 
 		/**
 		 * Finishes blocking of @a set_focus.
 		 */
 		void
-		end_block_set_focus()
+		end_block_infinite_signal_slot_loop()
 		{
-			--d_block_set_focus_depth;
+			--d_block_infinite_signal_slot_loop_depth;
 		}
 
 		bool
-		is_set_focus_blocked() const
+		is_infinite_signal_slot_loop_blocked() const
 		{
-			return d_block_set_focus_depth > 0;
+			return d_block_infinite_signal_slot_loop_depth > 0;
 		}
 
 		/**

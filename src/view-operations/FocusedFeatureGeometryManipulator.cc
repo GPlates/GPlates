@@ -222,7 +222,7 @@ d_focused_feature_geom_builder(&focused_feature_geom_builder),
 d_feature_focus(&feature_focus),
 d_viewport_window(&viewport_window),
 d_ignore_geom_builder_update(false),
-d_block_set_focus_depth(0)
+d_block_infinite_signal_slot_loop_depth(0)
 {
 	connect_to_geometry_builder();
 
@@ -274,6 +274,17 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::connect_to_feature_foc
 void
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::geometry_builder_stopped_updating_geometry()
 {
+	// Stop infinite loop from happening where we update feature with geometry builder
+	// which updates geometry builder with feature in a continuous loop.
+	if (is_infinite_signal_slot_loop_blocked())
+	{
+		return;
+	}
+
+	// Stop infinite loop from happening where we update feature with geometry builder
+	// which updates geometry builder with feature in a continuous loop.
+	BlockInfiniteSignalSlotLoop block_infinite_loop(this);
+
 	// The geometry builder has just potentially finished a group of
 	// geometry modifications and is now notifying us that it's finished.
 
@@ -314,11 +325,21 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry)
 {
-	// If we're blocking this call to avoid infinite recursion.
-	if (is_set_focus_blocked())
+	// Stop infinite loop from happening where we update geometry builder with feature
+	// which updates feature with geometry builder in a continuous loop.
+	if (is_infinite_signal_slot_loop_blocked())
 	{
 		return;
 	}
+
+	// Stop infinite loop from happening where we update geometry builder with feature
+	// which updates feature with geometry builder in a continuous loop.
+	BlockInfiniteSignalSlotLoop block_infinite_loop(this);
+
+	// FIXME: The reconstruction time needs to be taken into account when handling undo.
+	// Currently just clear the undo stack and avoid this issue until we get a better
+	// handle on undo/redo in the model and across reconstruction times.
+	GPlatesViewOperations::UndoRedo::instance().get_active_undo_stack().clear();
 
 	// Set these data member variables first because when we call operations
 	// on GeometryBuilder then 'this' object will receive signals from it
@@ -332,12 +353,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 void
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_feature_to_builder()
 {
-	// FIXME: The reconstruction time needs to be taken into account when handling undo.
-	// Currently just clear the undo stack and avoid this issue until we get a better
-	// handle on undo/redo in the model and across reconstruction times.
-	GPlatesViewOperations::UndoRedo::instance().get_active_undo_stack().clear();
-
-	// If we're got a focused feature geometry at the reconstruction time then
+	// If we've got a focused feature geometry at a reconstruction time then
 	// copy the geometry to the geometry builder, otherwise clear the geometry
 	// in the geometry builder.
 	if (d_focused_geometry)
@@ -382,9 +398,6 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 		d_feature->accept_visitor(geometry_setter);
 
 		// Announce that we've modified the focused feature.
-		// This will cause our 'set_focus' slot to be called recursively so
-		// block that from happening.
-		BlockSetFocus block_set_focus(this);
 		d_feature_focus->announce_modification_of_focused_feature();
 	}
 }
