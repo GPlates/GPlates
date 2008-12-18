@@ -46,7 +46,7 @@ namespace GPlatesViewOperations
 			operator()(
 					const RenderedGeometryLayer &rendered_geom_layer)
 			{
-				if (!rendered_geom_layer.is_empty())
+				if (rendered_geom_layer.is_active() && !rendered_geom_layer.is_empty())
 				{
 					++d_count;
 				}
