@@ -282,7 +282,10 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::geometry_builder_stopp
 	if (d_focused_geometry)
 	{
 		// Only set geometry in focused feature if we're not ignoring the
-		// GeometryBuilder update to the geometry.
+		// GeometryBuilder update to the geometry (an example of an update we
+		// ignore is the Move Vertex operations that occur during a mouse drag -
+		// we're only interested in the Move Vertex operation when the mouse
+		// button is released).
 		if (!d_ignore_geom_builder_update)
 		{
 			if (d_feature.is_valid())
@@ -323,10 +326,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 	d_feature = feature_ref;
 	d_focused_geometry = focused_geometry;
 
-	if (d_focused_geometry)
-	{
-		convert_geom_from_feature_to_builder();
-	}
+	convert_geom_from_feature_to_builder();
 }
 
 void
@@ -337,16 +337,30 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_feat
 	// handle on undo/redo in the model and across reconstruction times.
 	GPlatesViewOperations::UndoRedo::instance().get_active_undo_stack().clear();
 
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere =
-			d_focused_geometry->geometry();
+	// If we're got a focused feature geometry at the reconstruction time then
+	// copy the geometry to the geometry builder, otherwise clear the geometry
+	// in the geometry builder.
+	if (d_focused_geometry)
+	{
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere =
+				d_focused_geometry->geometry();
 
-	// Initialise our GeometryBuilder with this geometry.
-	// Various canvas tools will then make changes to the geometry through
-	// this builder. We'll listen for those changes via the GeometryBuilder
-	// signals and make changes to the feature containing the original
-	// geometry property.
-	SetGeometryInBuilder(
-			d_focused_feature_geom_builder).set_geometry_in_builder(geometry_on_sphere);
+		// Initialise our GeometryBuilder with this geometry.
+		// Various canvas tools will then make changes to the geometry through
+		// this builder. We'll listen for those changes via the GeometryBuilder
+		// signals and make changes to the feature containing the original
+		// geometry property.
+		// TODO: we currently ignore the returned undo operation because we're not
+		// allowing undo/redo across a feature focus change boundary.
+		SetGeometryInBuilder(
+				d_focused_feature_geom_builder).set_geometry_in_builder(geometry_on_sphere);
+	}
+	else
+	{
+		// TODO: we currently ignore the returned undo operation because we're not
+		// allowing undo/redo across a feature focus change boundary.
+		d_focused_feature_geom_builder->clear_all_geometries();
+	}
 }
 
 void
