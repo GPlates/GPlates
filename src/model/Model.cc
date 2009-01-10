@@ -42,7 +42,6 @@
 #include "ReconstructedFeatureGeometryPopulator.h"
 
 #include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
-#include "feature-visitors/PlatepolygonResolver.h"
 #include "feature-visitors/TopologyResolver.h"
 #include "feature-visitors/ComputationalMeshSolver.h"
 
@@ -201,7 +200,9 @@ std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.end(),
 		rfgp);
 
-//std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+#if 0
+std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+#endif
 
 	// Visit the feature collections and build a map from feature id to RFG
 	GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder rfg_finder( *reconstruction );
@@ -210,9 +211,12 @@ std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		rfg_finder);
+
 	// rfg_finder.report();
 
+#if 0
 //std::cerr << "3 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+#endif
 
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
@@ -229,28 +233,33 @@ std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		topology_resolver);
-	// topology_resolver.report();
 
-//std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+	topology_resolver.report();
 
-#if 0 
+#if 0
+std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+#endif
+
 	// Visit the feature collections and fill computational meshes with nice juicy velocity data
 	GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
-		time, root, *reconstruction,
+		time, 
+		root, 
+		*reconstruction,
 		reconstruction->reconstruction_tree(),
+		d_feature_id_registry,
 		rfg_finder,
+		topology_resolver,
 		reconstruction->geometries());
 
 	visit_feature_collections(
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		solver);
-	// solver.report();
+	solver.report();
 
-//std::cerr << "5 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
-
+#if 0
+std::cerr << "5 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
-
 
 	return reconstruction;
 }
