@@ -27,7 +27,9 @@
 #ifndef GPLATES_FEATUREVISITORS_TOPOLOGY_RESOLVER_H
 #define GPLATES_FEATUREVISITORS_TOPOLOGY_RESOLVER_H
 
+#include <map>
 #include <list>
+#include <vector>
 #include <sstream>
 #include <iostream>
 #include <boost/optional.hpp>
@@ -38,7 +40,6 @@
 #include <QDebug>
 #include <QList>
 #include <QString>
-
 
 #include "global/types.h"
 
@@ -58,6 +59,7 @@
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
 #include "model/Reconstruction.h"
+#include "model/WeakReference.h"
 
 #include "property-values/GeoTimeInstant.h"
 
@@ -163,11 +165,9 @@ namespace GPlatesFeatureVisitors
 		bool d_use_head_from_intersect_next;
 		bool d_use_tail_from_intersect_next;
 
-
 		// used with gpml:referencePoint
 		float d_ref_point_lat;
 		float d_ref_point_lon;
-
 
 		//
 		// From GPlates 8
@@ -357,6 +357,31 @@ namespace GPlatesFeatureVisitors
 			NONE, INTERSECT_PREV, INTERSECT_NEXT, OVERLAP_PREV, OVERLAP_NEXT, OTHER
 		};
 
+
+//zzzz
+		/** 
+		* struct to hold plate polygon data from resolving topology feature 
+		*/
+		struct PlatePolygon 
+		{
+			/* List of vertices */
+			std::list<GPlatesMaths::PointOnSphere> d_vertex_list;
+
+			/**
+		 	* Polar polygon status:
+		 	* 0 = no pole in polygon; 1 = North Pole; -1 = South Pole in polygon
+			*/
+			int d_pole;
+
+			/** geographic bounds */
+			double d_max_lat;
+			double d_max_lon;
+			double d_min_lat;
+			double d_min_lon;
+		};
+
+		typedef std::map<GPlatesModel::FeatureId, PlatePolygon> plate_map_type;
+		typedef plate_map_type::iterator plate_map_iterator;
 
 		//
 		// the TopologyResolver class
@@ -590,43 +615,26 @@ namespace GPlatesFeatureVisitors
 		);
 			
 
-		//
-		// from GPlates 8
-		//
-		/** Test state of boundary vertex list */
-		bool
-		vertex_list_empty() const
-		{
-			return m_vertex_list.empty();
-		}
-
 		/** Test state of boundary list */
 		bool
 		boundary_empty()
 		{
-			return m_boundary_list.empty();
+			return d_boundary_list.empty();
 		}
 
 		/** Get the number of boundary features */
 		BoundaryFeatureList_type::size_type 
 		boundary_list_size()
 		{
-			return m_boundary_list.size();
+			return d_boundary_list.size();
 		}
 
-			/** Get the total number of boundary vertices */
-			std::list< GPlatesMaths::PointOnSphere >::size_type 
-			boundary_vertex_size()
-			{
-				return m_vertex_list.size();
-			}
-
-			/** Get the list */
-			BoundaryFeatureList_type
-			get_boundary_list()
-			{
-				return m_boundary_list;
-			}
+		/** Get the list */
+		BoundaryFeatureList_type
+		get_boundary_list()
+		{
+			return d_boundary_list;
+		}
 
 			/** Test if a feature is on the list */
 			bool is_feature_id_in_boundary( std::string fid);
@@ -639,14 +647,14 @@ namespace GPlatesFeatureVisitors
 			BoundaryFeatureList_type::iterator
 			boundary_begin()
 			{
-				return m_boundary_list.begin();
+				return d_boundary_list.begin();
 			}
 
 			/** Iterator to the boundary list */
 			BoundaryFeatureList_type::iterator
 			boundary_end()
 			{
-				return m_boundary_list.end();
+				return d_boundary_list.end();
 			}
 
 
@@ -678,7 +686,7 @@ namespace GPlatesFeatureVisitors
 			void
 			push_back( BoundaryFeature feature )
 			{
-				m_boundary_list.push_back( feature );
+				d_boundary_list.push_back( feature );
 			}
 
 			/** 
@@ -687,7 +695,7 @@ namespace GPlatesFeatureVisitors
 			BoundaryFeatureList_type::iterator
 			erase( BoundaryFeatureList_type::iterator pos )
 			{
-				return m_boundary_list.erase( pos );
+				return d_boundary_list.erase( pos );
 			}
 
  			/** 
@@ -761,22 +769,15 @@ namespace GPlatesFeatureVisitors
 			*/
 			int
 			is_point_in_on_out ( 
-				const GPlatesMaths::PointOnSphere &test_point ) const;
+				const GPlatesMaths::PointOnSphere &test_point,
+				PlatePolygon &plate ) const;
 
 			int
 			is_point_in_on_out_counter (
 				const GPlatesMaths::PointOnSphere &test_point,
+				PlatePolygon &plate, 
 				int &count_north,
 				int &count_south) const;
-
-			/**
-			 * Restricted Enumerative access to the vertices
-			 */
-			std::list<GPlatesMaths::PointOnSphere>::const_iterator
-			VertexBegin() const { return m_vertex_list.begin(); }
-
-			std::list<GPlatesMaths::PointOnSphere>::const_iterator
-			VertexEnd() const { return m_vertex_list.end(); }
 
 		// from GPlates 8
 
@@ -784,13 +785,24 @@ namespace GPlatesFeatureVisitors
 		create_boundary_node();
 
 		void
-		resolve_boundary();
+		resolve_boundary( PlatePolygon &plate );
 
 		void 
-		compute_bounds();
+		compute_bounds( PlatePolygon &plate );
 
 		void
 		report();
+
+		/*
+		* Locate what topological feature the point resides 'in', and return the id
+		*/
+		std::vector<GPlatesModel::FeatureId>
+		locate_point( const GPlatesMaths::PointOnSphere &point );
+
+		bool
+		is_point_in_plate( 
+			const GPlatesMaths::PointOnSphere &point,
+			PlatePolygon &plate);
 
 	private:
 		
@@ -827,8 +839,9 @@ namespace GPlatesFeatureVisitors
 		/**
 		* list of boundary feature nodes
 		*/
-		BoundaryFeatureList_type m_boundary_list;
+		BoundaryFeatureList_type d_boundary_list;
 
+#if 0
 		/** List of subduction features */
 		SubductionBoundaryFeatureList_t m_subduction_list;
 		SubductionBoundaryFeatureList_t m_subduction_sR_list;
@@ -844,7 +857,6 @@ namespace GPlatesFeatureVisitors
 		/* List of vertices */
 		std::list<GPlatesMaths::PointOnSphere> m_vertex_list;
 
-
 		/**
 		 * Polar polygon status:
 		 * 0 = no pole in polygon; 1 = North Pole; -1 = South Pole in polygon
@@ -856,11 +868,13 @@ namespace GPlatesFeatureVisitors
 		double m_max_lon;
 		double m_min_lat;
 		double m_min_lon;
+#endif 
 
 		/** the number of features visited by this visitor */
 		int d_num_features;
 		int d_num_topologies;
 
+		plate_map_type d_plate_map;
 	};
 
 }

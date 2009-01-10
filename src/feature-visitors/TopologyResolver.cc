@@ -23,11 +23,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-//#define DEBUG
+// #define DEBUG
+
+#ifdef _MSC_VER
+#define copysign _copysign
+#endif
 
 #include "TopologyResolver.h"
 
 #include "feature-visitors/ValueFinder.h"
+#include "feature-visitors/PlateIdFinder.h"
 #include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 
 #include "model/ReconstructedFeatureGeometry.h"
@@ -124,6 +129,8 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_handle(
 		return; 
 	}
 
+
+
 	// else process this feature:
 	// create an accumulator struct 
 	// visit the properties once to check times and rot ids
@@ -178,16 +185,26 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_handle(
 	// This time we reconstruct any geometries we find.
 	d_accumulator->d_perform_reconstructions = true;
 
-	// clear the list for the real visit
-	m_boundary_list.clear();
+
+	// Create a PlatePolygon struct to hold the results of resolving topology props.
+	PlatePolygon plate;
+
+	// Clear the boundary list befor the visit to properties
+	d_boundary_list.clear();
 
 	visit_feature_properties(feature_handle);
 
-	// parse the list of boundary features into nodes of m_boundary_list 
+	// FIXME: remove this test
+	// parse the list of boundary features into nodes of d_boundary_list 
 	// parse_boundary_string( feature_handle );
 
-	// iterate over m_boundary_list
-	resolve_boundary();
+	// fill the PlatePolygon struct
+	// Iterate over d_boundary_list to generate a list of vertices and 
+	// via compute_bounds( plate), set the other plate.d_FOO variables
+	resolve_boundary( plate );
+
+	// insert the plate into the map
+	d_plate_map.insert( std::make_pair( feature_handle.feature_id(), plate ) );
 
 	d_accumulator = boost::none;
 }
@@ -1068,39 +1085,38 @@ GPlatesFeatureVisitors::TopologyResolver::create_boundary_node()
 			);
 
 	// append this node to the list
-	m_boundary_list.push_back( bf );
+	d_boundary_list.push_back( bf );
 }
 
 void
-GPlatesFeatureVisitors::TopologyResolver::resolve_boundary()
+GPlatesFeatureVisitors::TopologyResolver::resolve_boundary( PlatePolygon &plate )
 {
-	BoundaryFeatureList_type::iterator iter = m_boundary_list.begin();
+	BoundaryFeatureList_type::iterator iter = d_boundary_list.begin();
 
 	// clear the working list
-	m_vertex_list.clear();
+	plate.d_vertex_list.clear();
 
 	// iterate over the list of boundary features to get the list of vertices 
-	m_vertex_list = get_vertex_list( m_boundary_list.begin(), m_boundary_list.end() );
+	plate.d_vertex_list = get_vertex_list( d_boundary_list.begin(), d_boundary_list.end() );
 
 #ifdef DEBUG
 // FIXME: diagnostic output
 std::cout << "TopologyResolver::resolve_boundary() " << std::endl;
-std::cout << std::endl;
-std::cout << "TopologyResolver:: m_vertex_list.size() " << m_vertex_list.size() << std::endl;
-for ( ; iter != m_boundary_list.end() ; ++iter) {
+for ( ; iter != d_boundary_list.end() ; ++iter) {
 qDebug() << "node id = " 
 << GPlatesUtils::make_qstring_from_icu_string( (iter->m_feature_id).get() );
 }
+std::cout << "TopologyResolver::resolve_boundary() plate.d_vertex_list.size() " << plate.d_vertex_list.size() << std::endl;
 #endif
 
 
-	if (m_vertex_list.size() == 0 ) {
+	if (plate.d_vertex_list.size() == 0 ) {
 		return;
 	}
 
 	// create a polygon on sphere
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type reconstructed_geom = 
-		GPlatesMaths::PolygonOnSphere::create_on_heap( m_vertex_list );
+		GPlatesMaths::PolygonOnSphere::create_on_heap( plate.d_vertex_list );
 		
 	// create an RFG
 	GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
@@ -1115,6 +1131,11 @@ qDebug() << "node id = "
  	d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 
 	// clean up
+
+	// compute_bounds 
+
+	compute_bounds( plate );
+
 	// delete reconstructed_geom.get();
 }
 
@@ -1131,21 +1152,23 @@ GPlatesFeatureVisitors::TopologyResolver::get_vertex_list(
 	std::list<GPlatesMaths::PointOnSphere> work_vertex_list;
 	work_vertex_list.clear();
 
+#if 0
 	// Clear subduction boundary component lists
 	m_subduction_list.clear();
 	m_subduction_sR_list.clear();
 	m_subduction_sL_list.clear();
 	m_ridge_transform_list.clear();
+#endif
 
 #ifdef DEBUG
 std::cout << std::endl;
-std::cout << "TopologyResolver::g_v_l: " << "m_boundary_list.size()=" << m_boundary_list.size() << std::endl;
+std::cout << "TopologyResolver::g_v_l: " << "d_boundary_list.size()=" << d_boundary_list.size() << std::endl;
 #endif
 
 	// 
 	// super short cut for empty list:
 	//
-	if ( m_boundary_list.empty() )
+	if ( d_boundary_list.empty() )
 	{
 		return work_vertex_list;
 	}
@@ -1153,14 +1176,14 @@ std::cout << "TopologyResolver::g_v_l: " << "m_boundary_list.size()=" << m_bound
 	//
 	// super short cut for single feature on list
 	//
-	if ( m_boundary_list.size() == 1 )
+	if ( d_boundary_list.size() == 1 )
 	{
-		BoundaryFeature node = m_boundary_list.front();
+		BoundaryFeature node = d_boundary_list.front();
 
 		GPlatesModel::FeatureId fid = node.m_feature_id;
 		
 #ifdef DEBUG
-qDebug() << "TopologyResolver::g_v_l: " << "m_boundary_list.size()==1; ";
+qDebug() << "TopologyResolver::g_v_l: " << "d_boundary_list.size()==1; ";
 qDebug() << "TopologyResolver::g_v_l: " << "fid=" 
 << GPlatesUtils::make_qstring_from_icu_string(fid.get());
 #endif
@@ -1476,17 +1499,13 @@ std::cout << "TopologyResolver::g_v_l step 6 copy: "
 	} // End of interation over boundary feature list
 
 	//
-	// Step 7: adjust member copy of working vertex list
+	// Step 7: return working vertex list
 	//
-	m_vertex_list = work_vertex_list;
-
 #ifdef DEBUG
 std::cout << "TopologyResolver::g_v_l step 7: "
 << "work_vertex_list.size()=" << work_vertex_list.size() << "; "
 << std::endl;
 #endif
-
-	// report();
 
 	return work_vertex_list;
 }
@@ -1753,27 +1772,27 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 
 
 void
-GPlatesFeatureVisitors::TopologyResolver::compute_bounds()
+GPlatesFeatureVisitors::TopologyResolver::compute_bounds( PlatePolygon &plate )
 {
 	// tmp vars
 	double dlon = 0;
 	double lon_sum = 0.0;
 
 	// re-set initial default values to opposite extreame value
-	m_max_lat = -91;
-	m_min_lat = 91;
-	m_max_lon = -181;
-	m_min_lon = 181;
+	plate.d_max_lat = -91;
+	plate.d_min_lat = 91;
+	plate.d_max_lon = -181;
+	plate.d_min_lon = 181;
 
 	// re-set polar value to default : 
 	// 0 = no pole contained in polygon
-	m_pole = 0;
+	plate.d_pole = 0;
 
 	// loop over rotated vertices
 	std::list<GPlatesMaths::PointOnSphere>::const_iterator iter;
 	std::list<GPlatesMaths::PointOnSphere>::const_iterator next;
 
-	for ( iter = VertexBegin(); iter != VertexEnd(); ++iter )
+	for ( iter = plate.d_vertex_list.begin(); iter != plate.d_vertex_list.end(); ++iter )
 	{
 		// get coords for iter vertex
 		GPlatesMaths::LatLonPoint v1 = GPlatesMaths::make_lat_lon_point(*iter);
@@ -1781,7 +1800,7 @@ GPlatesFeatureVisitors::TopologyResolver::compute_bounds()
 		// coords for next vertex in list
 		next = iter;
 		++next;
-		if ( next == VertexEnd() ) { next = VertexBegin(); }
+		if ( next == plate.d_vertex_list.end() ) { next = plate.d_vertex_list.begin(); }
 
 		// coords for next vextex
 		GPlatesMaths::LatLonPoint v2 = GPlatesMaths::make_lat_lon_point(*next);
@@ -1792,11 +1811,11 @@ GPlatesFeatureVisitors::TopologyResolver::compute_bounds()
 		// double v2lat = v2.latitude(); // not used
 		double v2lon = v2.longitude();
 
-		m_min_lon = std::min( v1lon, m_min_lon );
-		m_max_lon = std::max( v1lon, m_max_lon );
+		plate.d_min_lon = std::min( v1lon, plate.d_min_lon );
+		plate.d_max_lon = std::max( v1lon, plate.d_max_lon );
 
-		m_min_lat = std::min( v1lat, m_min_lat );
-		m_max_lat = std::max( v1lat, m_max_lat );
+		plate.d_min_lat = std::min( v1lat, plate.d_min_lat );
+		plate.d_max_lat = std::max( v1lat, plate.d_max_lat );
 
 		dlon = v1lon - v2lon;
 
@@ -1809,17 +1828,12 @@ GPlatesFeatureVisitors::TopologyResolver::compute_bounds()
 
 	}
 
+std::cout << "TopologyResolver::compute_bounds: " << "max_lat = " << plate.d_max_lat << std::endl;
+std::cout << "TopologyResolver::compute_bounds: " << "min_lat = " << plate.d_min_lat << std::endl;
+std::cout << "TopologyResolver::compute_bounds: " << "max_lon = " << plate.d_max_lon << std::endl;
+std::cout << "TopologyResolver::compute_bounds: " << "min_lon = " << plate.d_min_lon << std::endl;
+std::cout << "TopologyResolver::compute_bounds: " << "lon_sum = " << lon_sum << std::endl;
 #ifdef DEBUG
-std::cout << "TopologyResolver::compute_bounds: " 
-<< "max_lat = " << m_max_lat << std::endl;
-std::cout << "TopologyResolver::compute_bounds: " 
-<< "min_lat = " << m_min_lat << std::endl;
-std::cout << "TopologyResolver::compute_bounds: " 
-<< "max_lon = " << m_max_lon << std::endl;
-std::cout << "TopologyResolver::compute_bounds: " 
-<< "min_lon = " << m_min_lon << std::endl;
-std::cout << "TopologyResolver::compute_bounds: " 
-<< "lon_sum = " << lon_sum << std::endl;
 #endif
 
 	//
@@ -1827,21 +1841,21 @@ std::cout << "TopologyResolver::compute_bounds: "
 	//
 	if ( fabs(fabs(lon_sum) - 360.0) < 1.0e-8 )
 	{
-		if ( fabs(m_max_lat) > fabs(m_min_lat) ) 
+		if ( fabs(plate.d_max_lat) > fabs(plate.d_min_lat) ) 
 		{
-			m_pole = static_cast<int>(copysign(1.0, m_max_lat));
+			plate.d_pole = static_cast<int>(copysign(1.0, plate.d_max_lat));
 		}
 		else 
 		{
-			m_pole = static_cast<int>(copysign(1.0, m_min_lat));
+			plate.d_pole = static_cast<int>(copysign(1.0, plate.d_min_lat));
 		}
 	}
+std::cout << "TopologyResolver::compute_bounds: " << "plate.d_pole = " << plate.d_pole << std::endl;
 #ifdef DEBUG
-std::cout << "TopologyResolver::compute_bounds: " 
-<< "m_pole = " << m_pole << std::endl;
 #endif
-
 }
+
+
 
 
 
@@ -1854,7 +1868,8 @@ std::cout << "TopologyResolver::compute_bounds: "
  */
 int 
 GPlatesFeatureVisitors::TopologyResolver::is_point_in_on_out ( 
-	const GPlatesMaths::PointOnSphere &test_point ) const
+	const GPlatesMaths::PointOnSphere &test_point,
+	PlatePolygon &plate) const
 {
 	/* Algorithm:
 	 *
@@ -1884,54 +1899,54 @@ GPlatesFeatureVisitors::TopologyResolver::is_point_in_on_out (
 	// test point's plat
 	double plat = p.latitude();
 		
-#if 0
+#ifdef DEBUG
 std::cout << "TopologyResolver::is_point_in_on_out: " << std::endl;
 std::cout << "llp" << p << std::endl;
 std::cout << "pos" << test_point << std::endl;
 #endif
 
-	if (m_pole) 
+	if (plate.d_pole) 
 	{	
-#if 0
-std::cout << "TopologyResolver::is_point_in_on_out: pole" << std::endl;
+#ifdef DEBUG
+std::cout << "TopologyResolver::is_point_in_on_out: plate contains N or S pole." << std::endl;
 #endif
 		/* Case 1 of an enclosed polar cap */
 
 		/* N polar cap */
-		if (m_pole == 1) 
+		if (plate.d_pole == 1) 
 		{	
 			/* South of a N polar cap */
-			if (plat < m_min_lat) return (POINT_OUTSIDE_POLYGON);	
+			if (plat < plate.d_min_lat) return (POINT_OUTSIDE_POLYGON);	
 
 			/* Clearly inside of a N polar cap */
-			if (plat > m_max_lat) return (POINT_INSIDE_POLYGON);	
+			if (plat > plate.d_max_lat) return (POINT_INSIDE_POLYGON);	
 		}
 
 		/* S polar cap */
-		if (m_pole == -1) 
+		if (plate.d_pole == -1) 
 		{	
 			/* North of a S polar cap */
-			if (plat > m_max_lat) return (POINT_OUTSIDE_POLYGON);
+			if (plat > plate.d_max_lat) return (POINT_OUTSIDE_POLYGON);
 
 			/* North of a S polar cap */
-			if (plat < m_min_lat) return (POINT_INSIDE_POLYGON);	
+			if (plat < plate.d_min_lat) return (POINT_INSIDE_POLYGON);	
 		}
 	
 		// Tally up number of intersections between polygon 
 		// and meridian through p 
 		
-		if ( is_point_in_on_out_counter(test_point, count_north, count_south) ) 
+		if ( is_point_in_on_out_counter(test_point, plate, count_north, count_south) ) 
 		{
 			/* Found P is on S */
 			return (POINT_ON_POLYGON);	
 		}
 	
-		if (m_pole == 1 && count_north % 2 == 0) 
+		if (plate.d_pole == 1 && count_north % 2 == 0) 
 		{
 			return (POINT_INSIDE_POLYGON);
 		}
 
-		if (m_pole == -1 && count_south % 2 == 0) 
+		if (plate.d_pole == -1 && count_south % 2 == 0) 
 		{
 			return (POINT_INSIDE_POLYGON);
 		}
@@ -1942,7 +1957,7 @@ std::cout << "TopologyResolver::is_point_in_on_out: pole" << std::endl;
 	/* Here is Case 2.  */
 
 	// First check latitude range 
-	if (plat < m_min_lat || plat > m_max_lat) 
+	if (plat < plate.d_min_lat || plat > plate.d_max_lat) 
 	{
 		return (POINT_OUTSIDE_POLYGON);
 	}
@@ -1950,7 +1965,7 @@ std::cout << "TopologyResolver::is_point_in_on_out: pole" << std::endl;
 	// Longitudes are tricker and are tested with the 
 	// tallying of intersections 
 	
-	if ( is_point_in_on_out_counter( test_point, count_north, count_south ) ) 
+	if ( is_point_in_on_out_counter( test_point, plate, count_north, count_south ) ) 
 	{
 		/* Found P is on S */
 		return (POINT_ON_POLYGON);	
@@ -1966,11 +1981,12 @@ std::cout << "TopologyResolver::is_point_in_on_out: pole" << std::endl;
 int 
 GPlatesFeatureVisitors::TopologyResolver::is_point_in_on_out_counter ( 
 	const GPlatesMaths::PointOnSphere &test_point,
+	PlatePolygon &plate,
 	int &count_north,
 	int &count_south) 
 const
 {
-#if 0
+#ifdef DEBUG
 std::cout << "TopologyResolver::is_point_in_on_out_counter: " << std::endl;
 #endif
 
@@ -1994,13 +2010,13 @@ std::cout << "TopologyResolver::is_point_in_on_out_counter: " << std::endl;
 	// Compute meridian through P and count all the crossings with 
 	// segments of polygon boundary 
 
-	// loop over plate polygon vertices
+	// loop over vertices
 	// form segments for each vertex pair
 	std::list<GPlatesMaths::PointOnSphere>::const_iterator iter;
 	std::list<GPlatesMaths::PointOnSphere>::const_iterator next;
 
 	// loop over rotated vertices using access iterators
-	for ( iter = VertexBegin(); iter != VertexEnd(); ++iter )
+	for ( iter = plate.d_vertex_list.begin(); iter != plate.d_vertex_list.end(); ++iter )
 	{
 		// get coords for iter vertex
 		GPlatesMaths::LatLonPoint v1 = GPlatesMaths::make_lat_lon_point(*iter);
@@ -2008,7 +2024,7 @@ std::cout << "TopologyResolver::is_point_in_on_out_counter: " << std::endl;
 		// identifiy next vertex 
 		next = iter; 
 		++next;
-		if ( next == VertexEnd() ) { next = VertexBegin(); }
+		if ( next == plate.d_vertex_list.end() ) { next = plate.d_vertex_list.begin(); }
 
 		// coords for next vextex
 		GPlatesMaths::LatLonPoint v2 = GPlatesMaths::make_lat_lon_point(*next);
@@ -2019,7 +2035,7 @@ std::cout << "TopologyResolver::is_point_in_on_out_counter: " << std::endl;
 		double v2lat = v2.latitude();
 		double v2lon = v2.longitude();
 
-#if 0
+#ifdef DEBUG
 std::cout << "is_point_in_on_out_counter: v1 = " 
 << v1lat << ", " << v1lon << std::endl;
 std::cout << "is_point_in_on_out_counter: v2 = " 
@@ -2118,15 +2134,113 @@ std::cout << "is_point_in_on_out_counter: v2 = "
 	return (0);	
 }
 
+std::vector<GPlatesModel::FeatureId>
+GPlatesFeatureVisitors::TopologyResolver::locate_point(
+	const GPlatesMaths::PointOnSphere &point )
+{
+	std::vector<GPlatesModel::FeatureId> found_ids;
+	
+	// loop over the map of plates, as represented by their vertex lists
+	plate_map_iterator iter = d_plate_map.begin();
+	plate_map_iterator end = d_plate_map.end();
+	for ( ; iter != end ; ++iter )
+	{
+		// Get a feature ref from the feature id 
+		// FIXME: check for boost::none on calls to registry
+		GPlatesModel::FeatureHandle::weak_ref feature_ref =
+ 			d_feature_id_registry_ptr->find( iter->first ).get();
+
+#if 0
+// FIXME: this is the way to get plate id
+		// Plate ID.
+		static const GPlatesModel::PropertyName plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+		plate_id_finder.visit_feature_handle(*feature_ref);
+		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+		{
+			// The feature has a reconstruction plate ID.
+			GPlatesModel::integer_plate_id_type recon_plate_id =
+				*plate_id_finder.found_plate_ids_begin();
+
+			PlatePolygon plate = iter->second;
+
+			std::cout << "Plate ID " << recon_plate_id 
+				<< " has " << plate.d_vertex_list.size() << " vertices." 
+				<< std::endl;
+		}
+#endif
+
+
+		/*
+ 		* 0: test_point is outside the plate
+ 		* 1: test_point is inside the plate
+ 		* 2: test_point is on boundary of the plate
+ 		*/
+
+		// apply the point in polygon test to the point
+		int state = is_point_in_on_out ( point, iter->second );
+
+		if (state > 0) {
+			found_ids.push_back( iter->first );
+		}
+	}
+
+	return found_ids;
+
+}
+
+
+
 
 void
 GPlatesFeatureVisitors::TopologyResolver::report()
 {
-	std::cout << "--------------------------" << std::endl;
+	std::cout << "-------------------------------------------------------------" << std::endl;
 	std::cout << "TopologyResolver::report()" << std::endl;
 	std::cout << "number features visited = " << d_num_features << std::endl;
 	std::cout << "number topologies visited = " << d_num_topologies << std::endl;
+
+
+	plate_map_iterator iter = d_plate_map.begin();
+	plate_map_iterator end = d_plate_map.end();
+	for ( ; iter != end ; ++iter )
+	{
+		// FIXME: check for boost::none on calls to registry
+		GPlatesModel::FeatureHandle::weak_ref feature_ref =
+ 			d_feature_id_registry_ptr->find( iter->first ).get();
+
+		// Plate ID.
+		static const GPlatesModel::PropertyName plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+		plate_id_finder.visit_feature_handle(*feature_ref);
+		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+		{
+			// The feature has a reconstruction plate ID.
+			GPlatesModel::integer_plate_id_type recon_plate_id =
+				*plate_id_finder.found_plate_ids_begin();
+
+			PlatePolygon plate = iter->second;
+
+			std::cout << "rotation id " << recon_plate_id 
+				<< " has " << plate.d_vertex_list.size() << " vertices (" 
+				<< " max_lat = " << plate.d_max_lat
+				<< " max_lat = " << plate.d_max_lat
+				<< " max_lon = " << plate.d_max_lon
+				<< " max_lon = " << plate.d_max_lon
+				<< " pole = " << plate.d_pole
+				<< ")"
+				<< std::endl;
+
+			qDebug() << "id = " 
+				<< GPlatesUtils::make_qstring_from_icu_string( (iter->first).get() );
+		}
+	}
+	std::cout << "-------------------------------------------------------------" << std::endl;
 }
+
+
 
 
 
