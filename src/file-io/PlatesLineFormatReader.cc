@@ -334,7 +334,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				GPlatesPropertyValues::GmlPoint::create( const_pos );
 
 			// Check for intersections with prev item on the list
-			if (use_head_prev or use_tail_prev)
+			if (use_head_prev || use_tail_prev)
 			{
 				// get the PREV feature id
 				std::string str = boundary_strings.at( p );
@@ -405,7 +405,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			}
 
 			// check for endIntersection
-			if (use_head_next or use_tail_next)
+			if (use_head_next || use_tail_next)
 			{
 				// get the next feature id
 				std::string str = boundary_strings.at( n );
