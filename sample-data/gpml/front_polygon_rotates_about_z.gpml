@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+    <gml:featureMember>
+        <gpml:InferredPaleoBoundary>
+            <gpml:identity>GPlates-4ec3d86f-0a2e-4065-a55d-37baa98c4253</gpml:identity>
+            <gpml:revision>GPlates-e6da408b-7b62-44f0-a8c5-457ea756700f</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>103</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-60 0.0173205 -48.5904 40.8934 -25.6589 56.3099 8.99578e-15 60 25.6589 56.3099 48.5904 40.8934 59.9849 1.73144 48.5904 -40.8934 25.6589 -56.3099 2.91933e-15 -60 -25.6589 -56.3099 -48.5904 -40.8934 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Front_Polygon_Rotates_About_Z_BOUNDARY_LINE</gml:name>
+            <gpml:oldPlatesHeader>
+                <gpml:OldPlatesHeader>
+                    <gpml:regionNumber>0</gpml:regionNumber>
+                    <gpml:referenceNumber>0</gpml:referenceNumber>
+                    <gpml:stringNumber>0</gpml:stringNumber>
+                    <gpml:geographicDescription>Front_Polygon_Rotates_About_Z_BOUNDARY_LINE</gpml:geographicDescription>
+                    <gpml:plateIdNumber>103</gpml:plateIdNumber>
+                    <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
+                    <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
+                    <gpml:dataTypeCode>ln</gpml:dataTypeCode>
+                    <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
+                    <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
+                    <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
+                    <gpml:colourCode>0</gpml:colourCode>
+                    <gpml:numberOfPoints>12</gpml:numberOfPoints>
+                </gpml:OldPlatesHeader>
+            </gpml:oldPlatesHeader>
+        </gpml:InferredPaleoBoundary>
+    </gml:featureMember>
+</gpml:FeatureCollection>
