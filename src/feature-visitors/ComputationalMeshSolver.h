@@ -48,6 +48,7 @@
 #include "property-values/GeoTimeInstant.h"
 
 #include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
+#include "feature-visitors/TopologyResolver.h"
 
 
 #define POINT_OUTSIDE_POLYGON 0
@@ -124,7 +125,9 @@ namespace GPlatesFeatureVisitors
 				unsigned long root_plate_id,
 				GPlatesModel::Reconstruction &recon,
 				GPlatesModel::ReconstructionTree &recon_tree,
-				GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &finder,
+				GPlatesModel::FeatureIdRegistry &registry,
+				GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &rfg_finder,
+				GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 				reconstruction_geometries_type &reconstructed_geometries,
 				bool should_keep_features_without_recon_plate_id = true);
 
@@ -185,7 +188,9 @@ namespace GPlatesFeatureVisitors
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
 		GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
+		GPlatesModel::FeatureIdRegistry *d_feature_id_registry_ptr;
 		GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder *d_recon_finder_ptr;
+		GPlatesFeatureVisitors::TopologyResolver *d_topology_resolver_ptr;
 
 		reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;

@@ -34,6 +34,7 @@
 #include "ComputationalMeshSolver.h"
 
 #include "feature-visitors/ValueFinder.h"
+#include "feature-visitors/PlateIdFinder.h"
 #include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 
 #include "model/ReconstructedFeatureGeometry.h"
@@ -79,14 +80,18 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			unsigned long root_plate_id,
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
-			GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &finder,
+			GPlatesModel::FeatureIdRegistry &registry,
+			GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &rfg_finder,
+			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			reconstruction_geometries_type &reconstructed_geometries,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
-	d_recon_finder_ptr(&finder),
+	d_feature_id_registry_ptr(&registry),
+	d_recon_finder_ptr(&rfg_finder),
+	d_topology_resolver_ptr(&topo_resolver),
 	d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  
@@ -102,10 +107,13 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 {
 	d_num_features += 1;
 
-// qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
+#if 0
+qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
+#endif
 
-	// super short-cut for features without boundary list properties
-	QString type("ComputationalMesh");
+	// super short-cut 
+	// QString type("ComputationalMesh");
+	QString type("UnclassifiedFeature");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() ) ) { 
 		// Quick-out: No need to continue.
 		return; 
@@ -218,9 +226,39 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 	const GPlatesMaths::PointOnSphere &point )
 {
-//	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
-//std::cout << "llp =" << llp << std::endl;
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 
+	std::vector<GPlatesModel::FeatureId> feature_ids;
+	std::vector<GPlatesModel::FeatureId>::iterator iter;
+
+	feature_ids = d_topology_resolver_ptr->locate_point( point );
+
+std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::process_point: " 
+		<< llp << " found in " << feature_ids.size() << " plates." << std::endl;
+	
+	// loop over feature ids 
+	for (iter = feature_ids.begin(); iter != feature_ids.end(); ++iter)
+	{
+		// FIXME: check for boost::none on calls to registry
+		GPlatesModel::FeatureHandle::weak_ref feature_ref =
+			d_feature_id_registry_ptr->find( *iter ).get();
+
+		// Plate ID.
+		static const GPlatesModel::PropertyName plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+
+		plate_id_finder.visit_feature_handle(*feature_ref);
+
+		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+		{
+			// The feature has a reconstruction plate ID.
+			GPlatesModel::integer_plate_id_type recon_plate_id =
+				*plate_id_finder.found_plate_ids_begin();
+
+			std::cout << "	plate id = " << recon_plate_id << std::endl;
+		}
+	}
 }
 
 
