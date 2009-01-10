@@ -25,8 +25,6 @@ set(srcs
     PlateIdFinder.h
 	ComputationalMeshSolver.cc
 	ComputationalMeshSolver.h
-	PlatepolygonResolver.cc
-	PlatepolygonResolver.h
 	ReconstructedFeatureGeometryFinder.cc
 	ReconstructedFeatureGeometryFinder.h
 	TopologyResolver.cc
