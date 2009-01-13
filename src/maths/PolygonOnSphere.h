@@ -29,7 +29,7 @@
 #define GPLATES_MATHS_POLYGONONSPHERE_H
 
 #include <vector>
-#include <iterator>  // std::iterator, std::bidirectional_iterator_tag
+#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <algorithm>  // std::swap
 #include <utility>  // std::pair
 
@@ -408,6 +408,45 @@ namespace GPlatesMaths
 		 * What this actually means in plain(er) English is that you
 		 * can use this function to check whether you would be able to
 		 * construct a polygon instance from a given set of parameters
+		 * (ie, your collection of points in the range [@a begin, @a end) ).
+		 *
+		 * If you pass this function what turns out to be invalid
+		 * construction-parameters, it will politely return an error
+		 * diagnostic.  If you were to pass these same invalid
+		 * parameters to the creation functions down below, you would
+		 * get an exception thrown back at you.
+		 *
+		 * It's not terribly difficult to obtain a collection which
+		 * qualifies as as valid parameters (no antipodal adjacent points;
+		 * at least three distinct points in the collection -- nothing
+		 * particularly unreasonable) but the creation functions are
+		 * fairly unsympathetic if your parameters @em do turn out to
+		 * be invalid.
+		 *
+		 * The half-open range [@a begin, @a end) should contain
+		 * PointOnSphere objects.
+		 *
+		 * @a invalid_points is a return-parameter; if the
+		 * construction-parameters are found to be invalid due to
+		 * antipodal adjacent points, the value of this return-parameter
+		 * will be set to the pair of iterators of type ForwardIter which
+		 * point to the guilty points.  If no adjacent points are found
+		 * to be antipodal, this parameter will not be modified.
+		 */
+		template<typename ForwardIter>
+		static
+		ConstructionParameterValidity
+		evaluate_construction_parameter_validity(
+				ForwardIter begin,
+				ForwardIter end,
+				std::pair<ForwardIter, ForwardIter> &invalid_points);
+
+		/**
+		 * Evaluate the validity of the construction-parameters.
+		 *
+		 * What this actually means in plain(er) English is that you
+		 * can use this function to check whether you would be able to
+		 * construct a polygon instance from a given set of parameters
 		 * (ie, your collection of points in @a coll).
 		 *
 		 * If you pass this function what turns out to be invalid
@@ -417,7 +456,7 @@ namespace GPlatesMaths
 		 * get an exception thrown back at you.
 		 *
 		 * It's not terribly difficult to obtain a collection which
-		 * qualifias as valid parameters (no antipodal adjacent points;
+		 * qualifies as as valid parameters (no antipodal adjacent points;
 		 * at least three distinct points in the collection -- nothing
 		 * particularly unreasonable) but the creation functions are
 		 * fairly unsympathetic if your parameters @em do turn out to
@@ -439,7 +478,11 @@ namespace GPlatesMaths
 		evaluate_construction_parameter_validity(
 				const C &coll,
 				std::pair<typename C::const_iterator, typename C::const_iterator> &
-						invalid_points);
+						invalid_points)
+		{
+			return evaluate_construction_parameter_validity(
+					coll.begin(), coll.end(), invalid_points);
+		}
 
 
 		/**
@@ -460,6 +503,20 @@ namespace GPlatesMaths
 
 		/**
 		 * Create a new PolygonOnSphere instance on the heap from the sequence of points
+		 * in the range @a begin / @a end, and return an intrusive_ptr which points to
+		 * the newly-created instance.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		template<typename ForwardIter>
+		static
+		const non_null_ptr_to_const_type
+		create_on_heap(
+				ForwardIter begin,
+				ForwardIter end);
+
+		/**
+		 * Create a new PolygonOnSphere instance on the heap from the sequence of points
 		 * @a coll, and return an intrusive_ptr which points to the newly-created instance.
 		 *
 		 * @a coll should be a sequential STL container (list, vector, ...) of
@@ -471,7 +528,10 @@ namespace GPlatesMaths
 		static
 		const non_null_ptr_to_const_type
 		create_on_heap(
-				const C &coll);
+				const C &coll)
+		{
+			return create_on_heap(coll.begin(), coll.end());
+		}
 
 
 		/**
@@ -738,20 +798,21 @@ namespace GPlatesMaths
 
 		/**
 		 * Generate a sequence of polygon segments from the collection
-		 * of points @a coll, using the points to define the vertices
-		 * of the segments, then swap this new sequence of segments
-		 * into the polygon @a poly, discarding any sequence of
+		 * of points in the range @a begin / @a end, using the points to
+		 * define the vertices of the segments, then swap this new sequence
+		 * of segments into the polygon @a poly, discarding any sequence of
 		 * segments which may have been there before.
 		 *
 		 * This function is strongly exception-safe and
 		 * exception-neutral.
 		 */
-		template<typename C>
+		template<typename ForwardIter>
 		static
 		void
 		generate_segments_and_swap(
 				PolygonOnSphere &poly,
-				const C &coll);
+				ForwardIter begin,
+				ForwardIter end);
 
 
 		/**
@@ -848,22 +909,26 @@ namespace GPlatesMaths
 	}
 
 
-	template<typename C>
+	template<typename ForwardIter>
 	PolygonOnSphere::ConstructionParameterValidity
 	PolygonOnSphere::evaluate_construction_parameter_validity(
-			const C &coll,
-			std::pair<typename C::const_iterator, typename C::const_iterator> &
-					invalid_points)
+			ForwardIter begin,
+			ForwardIter end,
+			std::pair<ForwardIter, ForwardIter> &invalid_points)
 	{
-		typename C::size_type num_points = count_distinct_adjacent_points(coll);
+		unsigned num_points = count_distinct_adjacent_points(begin, end);
 		// Don't forget that the polygon "wraps around" from the last point to the first.
 		// This 'count_distinct_adjacent_points' doesn't consider the first and last points
 		// of the sequence to be adjacent, but we do.  Hence, if the first and last points
 		// aren't distinct, that means there's one less "distinct adjacent point".
-		if (coll.size() >= 2) {
+		if (std::distance(begin, end) >= 2) {
 			// It's valid (and worth-while) to invoke the 'front' and 'back' accessors
 			// of the container.
-			if (coll.front() == coll.back()) {
+			const PointOnSphere &first = *begin;
+			ForwardIter last_iter = end;
+			--last_iter;
+			const PointOnSphere &last = *last_iter;
+			if (first == last) {
 				// A-HA!
 				--num_points;
 			}
@@ -875,7 +940,8 @@ namespace GPlatesMaths
 		}
 
 		// This for-loop is identical to the corresponding code in PolylineOnSphere.
-		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
+		ForwardIter prev;
+		ForwardIter iter = begin;
 		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
@@ -910,7 +976,7 @@ namespace GPlatesMaths
 		}
 
 		// Now, an additional check, for the last->first point wrap-around.
-		iter = coll.begin();
+		iter = begin;
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
@@ -949,15 +1015,16 @@ namespace GPlatesMaths
 	}
 
 
-	template<typename C>
+	template<typename ForwardIter>
 	const PolygonOnSphere::non_null_ptr_to_const_type
 	PolygonOnSphere::create_on_heap(
-			const C &coll)
+			ForwardIter begin,
+			ForwardIter end)
 	{
 		PolygonOnSphere::non_null_ptr_type ptr(
 				new PolygonOnSphere(),
 				GPlatesUtils::NullIntrusivePointerHandler());
-		generate_segments_and_swap(*ptr, coll);
+		generate_segments_and_swap(*ptr, begin, end);
 		return ptr;
 	}
 
@@ -1023,15 +1090,16 @@ namespace GPlatesMaths
 	};
 
 
-	template<typename C>
+	template<typename ForwardIter>
 	void
 	PolygonOnSphere::generate_segments_and_swap(
 			PolygonOnSphere &poly,
-	 		const C &coll)
+	 		ForwardIter begin,
+			ForwardIter end)
 	{
-		std::pair<typename C::const_iterator, typename C::const_iterator> invalid_points;
+		std::pair<ForwardIter, ForwardIter> invalid_points;
 		ConstructionParameterValidity v =
-				evaluate_construction_parameter_validity(coll, invalid_points);
+				evaluate_construction_parameter_validity(begin, end, invalid_points);
 		if (v != VALID) {
 			throw InvalidPointsForPolygonConstructionError(v, __FILE__, __LINE__);
 		}
@@ -1042,17 +1110,18 @@ namespace GPlatesMaths
 		// Observe that the number of points used to define a polygon (which will become
 		// the number of vertices in the polygon) is also the number of segments in the
 		// polygon.
-		tmp_seq.reserve(coll.size());
+		tmp_seq.reserve(std::distance(begin, end));
 
 		// This for-loop is identical to the corresponding code in PolylineOnSphere.
-		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
+		ForwardIter prev;
+		ForwardIter iter = begin;
 		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
 		}
 		// Now, an additional step, for the last->first point wrap-around.
-		iter = coll.begin();
+		iter = begin;
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;

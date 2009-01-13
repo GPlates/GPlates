@@ -41,6 +41,7 @@
 #include "EditAngleWidget.h"
 #include "EditStringWidget.h"
 #include "EditBooleanWidget.h"
+#include "EditShapefileAttributesWidget.h"
 
 #include "EditWidgetChooser.h"
 #include "NoActiveEditWidgetException.h"
@@ -93,6 +94,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	d_edit_angle_widget_ptr(new EditAngleWidget(this)),
 	d_edit_string_widget_ptr(new EditStringWidget(this)),
 	d_edit_boolean_widget_ptr(new EditBooleanWidget(this)),
+	d_edit_shapefile_attributes_widget_ptr(new EditShapefileAttributesWidget(this)),
 	d_edit_verb(tr("Edit"))
 {
 	// We stay invisible unless we are called on for a specific widget.
@@ -113,6 +115,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	edit_layout->addWidget(d_edit_angle_widget_ptr);
 	edit_layout->addWidget(d_edit_string_widget_ptr);
 	edit_layout->addWidget(d_edit_boolean_widget_ptr);
+	edit_layout->addWidget(d_edit_shapefile_attributes_widget_ptr);
 	setLayout(edit_layout);
 		
 	QObject::connect(d_edit_time_instant_widget_ptr, SIGNAL(commit_me()),
@@ -138,6 +141,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	QObject::connect(d_edit_string_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_boolean_widget_ptr, SIGNAL(commit_me()),
+			this, SLOT(edit_widget_wants_committing()));
+	QObject::connect(d_edit_shapefile_attributes_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
 }
 
@@ -170,6 +175,11 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:angle"] = d_edit_angle_widget_ptr;
 	map["xs:string"] = d_edit_string_widget_ptr;
 	map["xs:boolean"] = d_edit_boolean_widget_ptr;
+#if 0
+	// Keep the KeyValueDictionary out of the map until we have the
+	// ability to create one. 
+	map["gpml:KeyValueDictionary"] = d_edit_shapefile_attributes_widget_ptr;
+#endif
 	return map;
 }
 
@@ -508,6 +518,18 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_boolean_widget(
 
 
 void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_shapefile_attributes_widget(
+		GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+{
+	setTitle(tr("%1 Shapefile Attributes").arg(d_edit_verb));
+	show();
+	d_edit_shapefile_attributes_widget_ptr->update_widget_from_key_value_dictionary(gpml_key_value_dictionary);
+	d_active_widget_ptr = d_edit_shapefile_attributes_widget_ptr;
+	d_edit_shapefile_attributes_widget_ptr->show();
+}
+
+
+void
 GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 {
 	hide();
@@ -536,6 +558,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 	d_edit_string_widget_ptr->reset_widget_to_default_values();
 	d_edit_boolean_widget_ptr->hide();
 	d_edit_boolean_widget_ptr->reset_widget_to_default_values();
+	d_edit_shapefile_attributes_widget_ptr->hide();
 }
 
 

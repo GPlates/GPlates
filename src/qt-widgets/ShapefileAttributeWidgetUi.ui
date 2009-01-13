@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>450</width>
-    <height>236</height>
+    <width>500</width>
+    <height>300</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -17,8 +17,8 @@
   </property>
   <property name="minimumSize" >
    <size>
-    <width>450</width>
-    <height>236</height>
+    <width>500</width>
+    <height>300</height>
    </size>
   </property>
   <property name="windowTitle" >
@@ -28,7 +28,7 @@
    <item row="0" column="0" colspan="2" >
     <widget class="QLabel" name="label_main_description" >
      <property name="text" >
-      <string>Select shapefile attributes for association with GPlates model properties.</string>
+      <string>Associate shapefile attributes with GPlates model properties.</string>
      </property>
     </widget>
    </item>
@@ -38,7 +38,7 @@
       <enum>Qt::LeftToRight</enum>
      </property>
      <property name="text" >
-      <string>Filename</string>
+      <string>Filename:</string>
      </property>
      <property name="alignment" >
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -56,6 +56,12 @@
     <layout class="QGridLayout" >
      <item row="0" column="0" >
       <widget class="QLabel" name="label_model_properties" >
+       <property name="font" >
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
        <property name="layoutDirection" >
         <enum>Qt::RightToLeft</enum>
        </property>
@@ -72,6 +78,12 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="font" >
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
        <property name="layoutDirection" >
         <enum>Qt::RightToLeft</enum>
        </property>
@@ -86,10 +98,13 @@
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="text" >
-        <string>Plate ID</string>
+        <string>&amp;Plate ID</string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buddy" >
+        <cstring>combo_plateID</cstring>
        </property>
       </widget>
      </item>
@@ -109,10 +124,13 @@
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="text" >
-        <string>Feature Type</string>
+        <string>Feature &amp;Type</string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buddy" >
+        <cstring>combo_feature_type</cstring>
        </property>
       </widget>
      </item>
@@ -125,10 +143,13 @@
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="text" >
-        <string>Begin</string>
+        <string>&amp;Begin</string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buddy" >
+        <cstring>combo_from_age</cstring>
        </property>
       </widget>
      </item>
@@ -141,10 +162,13 @@
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="text" >
-        <string>End</string>
+        <string>&amp;End</string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buddy" >
+        <cstring>combo_to_age</cstring>
        </property>
       </widget>
      </item>
@@ -157,10 +181,13 @@
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="text" >
-        <string>Name</string>
+        <string>&amp;Name</string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buddy" >
+        <cstring>combo_name</cstring>
        </property>
       </widget>
      </item>
@@ -173,10 +200,13 @@
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="text" >
-        <string>Description</string>
+        <string>&amp;Description</string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buddy" >
+        <cstring>combo_description</cstring>
        </property>
       </widget>
      </item>

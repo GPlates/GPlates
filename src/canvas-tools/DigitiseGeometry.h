@@ -26,18 +26,29 @@
 #ifndef GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H
 #define GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H
 
-#include "gui/CanvasTool.h"
-#include "qt-widgets/DigitisationWidget.h"
+#include <boost/scoped_ptr.hpp>
 
+#include "gui/CanvasTool.h"
+#include "view-operations/GeometryType.h"
+
+
+namespace GPlatesGui
+{
+	class ChooseCanvasTool;
+}
 
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
 }
 
-namespace GPlatesGui
+namespace GPlatesViewOperations
 {
-	class RenderedGeometryLayers;
+	class AddPointGeometryOperation;
+	class GeometryOperationRenderParameters;
+	class GeometryBuilderToolTarget;
+	class RenderedGeometryCollection;
+	class RenderedGeometryFactory;
 }
 
 namespace GPlatesCanvasTools
@@ -57,8 +68,7 @@ namespace GPlatesCanvasTools
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~DigitiseGeometry()
-		{  }
+		~DigitiseGeometry();
 
 		/**
 		 * Create a DigitiseGeometry instance.
@@ -68,19 +78,16 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesGui::RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
-				GPlatesQtWidgets::DigitisationWidget::GeometryType geom_type_)
-		{
-			DigitiseGeometry::non_null_ptr_type ptr(
-					new DigitiseGeometry(globe_, globe_canvas_, layers, view_state_,
-							digitisation_widget_, geom_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
+				GPlatesViewOperations::GeometryType::Value geom_type,
+				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
+				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				// Ultimately would like to remove the following arguments...
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state);
 		
 		
 		virtual
@@ -103,59 +110,45 @@ namespace GPlatesCanvasTools
 	protected:
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
 		DigitiseGeometry(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesGui::RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
-				GPlatesQtWidgets::DigitisationWidget::GeometryType geom_type_);
+				GPlatesViewOperations::GeometryType::Value geom_type,
+				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
+				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				// Ultimately would like to remove the following arguments...
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state);
 		
-		
-		const GPlatesQtWidgets::ViewportWindow &
-		view_state() const
-		{
-			return *d_view_state_ptr;
-		}
-		
-
 	private:
-
 		/**
-		 * We need to change which canvas-tool layer is shown when this canvas-tool is
-		 * activated.
-		 */
-		GPlatesGui::RenderedGeometryLayers *d_layers_ptr;
-
-		/**
-		 * This is the view state used to obtain current reconstruction time.
+		 * This is the view state used to update the viewport window status bar.
 		 */
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
-		 * This is the Digitisation Widget in the Task Panel.
-		 * It accumulates points for us and handles the actual feature creation step.
+		 * Used to set main rendered layer.
 		 */
-		GPlatesQtWidgets::DigitisationWidget *d_digitisation_widget_ptr;
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 		
+		/**
+		 * Used to select target of our add point operation.
+		 */
+		GPlatesViewOperations::GeometryBuilderToolTarget *d_geom_builder_tool_target;
+
 		/**
 		 * This is the type of geometry this particular DigitiseGeometry tool
 		 * should default to.
 		 */
-		GPlatesQtWidgets::DigitisationWidget::GeometryType d_default_geom_type;
-	
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		DigitiseGeometry(
-				const DigitiseGeometry &);
+		GPlatesViewOperations::GeometryType::Value d_default_geom_type;
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		DigitiseGeometry &
-		operator=(
-				const DigitiseGeometry &);
-		
+		/**
+		 * Digitise operation for adding a point to digitised geometry.
+		 */
+		boost::scoped_ptr<GPlatesViewOperations::AddPointGeometryOperation>
+			d_add_point_geometry_operation;
 	};
 }
 

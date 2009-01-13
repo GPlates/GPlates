@@ -55,6 +55,8 @@
 #include "model/FeatureHandle.h"
 #include "utils/UnicodeStringUtils.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
+
 
 /**
  * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
@@ -179,6 +181,7 @@ GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
 
 
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		ViewportWindow &view_state,
 		QWidget *parent_):
 	QGLWidget(parent_),
@@ -186,7 +189,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
-	d_geometry_focus_highlight(d_globe.rendered_geometry_layers().geometry_focus_layer())
+	d_globe(rendered_geom_collection),
+	d_geometry_focus_highlight(d_rendered_geom_factory, rendered_geom_collection)
 {
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
@@ -205,8 +209,16 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	setSizePolicy(globe_size_policy);
 	setMinimumSize(100, 100);
 
-	QObject::connect(&d_geometry_focus_highlight, SIGNAL(canvas_should_update()),
-			this, SLOT(update_canvas()));
+	// Update our canvas whenever the RenderedGeometryCollection gets updated.
+	// This will cause 'paintGL()' to be called which will visit the rendered
+	// geometry collection and redraw it.
+	QObject::connect(
+		&rendered_geom_collection,
+		SIGNAL(collection_was_updated(
+				GPlatesViewOperations::RenderedGeometryCollection &,
+				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
+		this,
+		SLOT(update_canvas()));
 
 	QObject::connect(&d_viewport_zoom, SIGNAL(zoom_changed()),
 			this, SLOT(handle_zoom_change()));
@@ -299,57 +311,11 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::draw_multi_point(
-		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multi_point,
-		GPlatesGui::PlatesColourTable::const_iterator colour)
-{
-	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
-			GPlatesGui::RenderedGeometry(multi_point, colour));
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::draw_point(
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point,
-		GPlatesGui::PlatesColourTable::const_iterator colour)
-{
-	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
-			GPlatesGui::RenderedGeometry(point, colour));
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::draw_polygon(
-		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-		GPlatesGui::PlatesColourTable::const_iterator colour)
-{
-	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
-			GPlatesGui::RenderedGeometry(polygon, colour));
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::draw_polyline(
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
-		GPlatesGui::PlatesColourTable::const_iterator colour)
-{
-	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
-			GPlatesGui::RenderedGeometry(polyline, colour));
-}
-
-
-void
 GPlatesQtWidgets::GlobeCanvas::update_canvas()
 {
 	update();
 }
 
-
-void
-GPlatesQtWidgets::GlobeCanvas::clear_data()
-{
-	d_globe.rendered_geometry_layers().reconstruction_layer().clear();
-}
 
 void
 GPlatesQtWidgets::GlobeCanvas::draw_vector_output()
@@ -473,7 +439,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
 		// FIXME: Globe uses wrong naming convention for methods.
-		d_globe.Paint();
+		d_globe.paint();
 
 	} catch (const GPlatesGlobal::Exception &){
 		// The argument name in the above expression was removed to

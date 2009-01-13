@@ -53,6 +53,13 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
+#include "view-operations/GlobeRenderedGeometryFactory.h"
+#include "view-operations/QueryProximityThreshold.h"
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
+}
 
 namespace GPlatesQtWidgets 
 {
@@ -61,7 +68,8 @@ namespace GPlatesQtWidgets
 	class Texture;
 
 	class GlobeCanvas:
-			public QGLWidget 
+			public QGLWidget,
+			public GPlatesViewOperations::QueryProximityThreshold
 	{
 		Q_OBJECT
 
@@ -106,6 +114,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		GlobeCanvas(
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				ViewportWindow &view_state,
 				QWidget *parent_ = 0);
 
@@ -141,30 +150,6 @@ namespace GPlatesQtWidgets
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point) const;
 
-		void
-		draw_multi_point(
-				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multi_point,
-				GPlatesGui::PlatesColourTable::const_iterator colour);
-
-		void
-		draw_point(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point,
-				GPlatesGui::PlatesColourTable::const_iterator colour);
-
-		void
-		draw_polygon(
-				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-				GPlatesGui::PlatesColourTable::const_iterator colour);
-
-		void
-		draw_polyline(
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
-				GPlatesGui::PlatesColourTable::const_iterator colour);
-
-		// FIXME:  Is this function used anywhere?  Alternatively, should it be a slot?
-		void
-		clear_data();
-
 		/**
 		 * Draw the relevant objects for vector output. This is essentially like the 
 		 *	PaintGL method, except that:
@@ -175,6 +160,12 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		draw_vector_output();
+
+		GPlatesViewOperations::RenderedGeometryFactory &
+		get_rendered_geometry_factory()
+		{
+			return d_rendered_geom_factory;
+		}
 
 		GPlatesGui::Globe &
 		globe()
@@ -217,6 +208,10 @@ namespace GPlatesQtWidgets
 		}
 
 	public slots:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
 		void
 		update_canvas();
 
@@ -468,7 +463,10 @@ namespace GPlatesQtWidgets
 				double zoom_percent);
 
 	private slots:
-	
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
 		void
 		handle_zoom_change();
 
@@ -520,6 +518,15 @@ namespace GPlatesQtWidgets
 		double d_larger_dim;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
+
+		/**
+		 * Used to create the @a RenderedGeometry objects.
+		 */
+		GPlatesViewOperations::GlobeRenderedGeometryFactory d_rendered_geom_factory;
+
+		//
+		// Some of these must go after 'd_rendered_geom_factory' as they use it.
+		//
 
 		GPlatesGui::Globe d_globe;
 		GPlatesGui::ViewportZoom d_viewport_zoom;

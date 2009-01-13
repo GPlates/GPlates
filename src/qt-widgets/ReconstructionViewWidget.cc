@@ -37,6 +37,7 @@
 
 
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		ViewportWindow &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
@@ -57,7 +58,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	gridLayout->addWidget(d_canvas_ptr, 0, 0);
 #endif
 	// Create the GlobeCanvas.
-	d_globe_canvas_ptr = new GlobeCanvas(view_state, this);
+	d_globe_canvas_ptr = new GlobeCanvas(rendered_geom_collection, view_state, this);
 	// Create the ZoomSliderWidget for the right-hand side.
 	d_zoom_slider_widget = new ZoomSliderWidget(d_globe_canvas_ptr->viewport_zoom(), this);
 
@@ -154,11 +155,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::insert_task_panel(
-		GPlatesQtWidgets::TaskPanel *task_panel)
+		std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel)
 {
 	// Add the Task Panel to the right-hand edge of the QSplitter in
 	// the middle of the ReconstructionViewWidget.
-	d_splitter_widget->addWidget(task_panel);
+	d_splitter_widget->addWidget(task_panel.release());
 }
 
 

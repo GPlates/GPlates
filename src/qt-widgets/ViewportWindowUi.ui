@@ -43,10 +43,12 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Open_Feature_Collection" />
-    <addaction name="action_Open_Global_Raster" />
-    <addaction name="action_Open_Time_Dependent_Global_Raster_Set" />
+    <addaction name="action_Open_Raster" />
+    <addaction name="action_Open_Time_Dependent_Raster_Sequence" />
     <addaction name="action_File_Errors" />
+    <addaction name="separator" />
     <addaction name="action_Manage_Feature_Collections" />
+    <addaction name="action_View_Shapefile_Attributes" />
     <addaction name="separator" />
     <addaction name="action_Quit" />
    </widget>
@@ -55,29 +57,30 @@
      <string>&amp;Reconstruction</string>
     </property>
     <addaction name="action_Reconstruct_to_Time" />
-    <addaction name="action_Specify_Fixed_Plate" />
-    <addaction name="separator" />
     <addaction name="action_Increment_Reconstruction_Time" />
     <addaction name="action_Decrement_Reconstruction_Time" />
-    <addaction name="separator" />
     <addaction name="action_Animate" />
+    <addaction name="separator" />
+    <addaction name="action_Specify_Fixed_Plate" />
+    <addaction name="action_View_Reconstruction_Poles" />
    </widget>
    <widget class="QMenu" name="menu_View" >
     <property name="title" >
      <string>&amp;View</string>
     </property>
-    <widget class="QMenu" name="menu_Colour_By" >
+    <widget class="QMenu" name="menu_Colour_Geometries_By" >
      <property name="title" >
-      <string>&amp;Colour By</string>
+      <string>&amp;Colour Geometries By</string>
      </property>
      <addaction name="action_Colour_By_Plate_ID" />
      <addaction name="action_Colour_By_Single_Colour" />
      <addaction name="action_Colour_By_Feature_Type" />
      <addaction name="action_Colour_By_Age" />
     </widget>
-    <addaction name="menu_Colour_By" />
+    <addaction name="menu_Colour_Geometries_By" />
     <addaction name="separator" />
-    <addaction name="action_Show_Rasters" />
+    <addaction name="action_Show_Raster" />
+    <addaction name="action_Set_Raster_Surface_Extent" />
     <addaction name="action_Show_Points" />
     <addaction name="action_Show_Lines" />
     <addaction name="action_Show_Polygons" />
@@ -101,12 +104,6 @@
     <addaction name="separator" />
     <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
-   <widget class="QMenu" name="menu_Utilities" >
-    <property name="title" >
-     <string>&amp;Utilities</string>
-    </property>
-    <addaction name="action_Reconstruction_Tree_and_Poles" />
-   </widget>
    <widget class="QMenu" name="menu_Edit" >
     <property name="title" >
      <string>&amp;Edit</string>
@@ -125,7 +122,6 @@
    <addaction name="menu_Edit" />
    <addaction name="menu_Reconstruction" />
    <addaction name="menu_View" />
-   <addaction name="menu_Utilities" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
@@ -561,7 +557,7 @@
   </action>
   <action name="action_Open_Feature_Collection" >
    <property name="text" >
-    <string>&amp;Open Feature Collection...</string>
+    <string>Open &amp;Feature Collection...</string>
    </property>
    <property name="shortcut" >
     <string>Ctrl+O</string>
@@ -686,17 +682,17 @@
     <string>Ctrl+E</string>
    </property>
   </action>
-  <action name="action_Reconstruction_Tree_and_Poles" >
+  <action name="action_View_Reconstruction_Poles" >
    <property name="text" >
-    <string>Total Reconstruction &amp;Poles</string>
+    <string>View Total Reconstruction &amp;Poles</string>
    </property>
   </action>
-  <action name="action_Open_Global_Raster" >
+  <action name="action_Open_Raster" >
    <property name="text" >
-    <string>Open Global &amp;Raster...</string>
+    <string>Open &amp;Raster...</string>
    </property>
   </action>
-  <action name="action_Show_Rasters" >
+  <action name="action_Show_Raster" >
    <property name="checkable" >
     <bool>true</bool>
    </property>
@@ -704,7 +700,7 @@
     <bool>false</bool>
    </property>
    <property name="text" >
-    <string>&amp;Show Rasters</string>
+    <string>&amp;Show Raster</string>
    </property>
    <property name="toolTip" >
     <string>A toggle operation which controls whether rasters are shown.</string>
@@ -780,9 +776,9 @@
     <string>A toggle operation which controls whether mesh features are shown.</string>
    </property>
   </action>
-  <action name="action_Open_Time_Dependent_Global_Raster_Set" >
+  <action name="action_Open_Time_Dependent_Raster_Sequence" >
    <property name="text" >
-    <string>Open &amp;Time Dependent Global Raster Set...</string>
+    <string>Open &amp;Time-dependent Raster Sequence...</string>
    </property>
   </action>
   <action name="action_Colour_By_Plate_ID" >
@@ -838,7 +834,7 @@
     <string>Digitise New Poly&amp;line</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise Polyline Geometry  L</string>
+    <string>Digitise New Polyline Geometry  L</string>
    </property>
    <property name="shortcut" >
     <string>L</string>
@@ -964,7 +960,7 @@
     <string>Digitise New P&amp;olygon</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise Polygon Geometry  G</string>
+    <string>Digitise New Polygon Geometry  G</string>
    </property>
    <property name="shortcut" >
     <string>G</string>
@@ -988,7 +984,7 @@
     <string>Digitise New &amp;Points</string>
    </property>
    <property name="toolTip" >
-    <string>Digitise Multi-point Geometry  M</string>
+    <string>Digitise New Multi-point Geometry  M</string>
    </property>
    <property name="shortcut" >
     <string>M</string>
@@ -1106,9 +1102,17 @@
     <string>C</string>
    </property>
   </action>
+  <action name="action_Set_Raster_Surface_Extent" >
+   <property name="text" >
+    <string>Set Raster Surface &amp;Extent...</string>
+   </property>
+  </action>
+  <action name="action_View_Shapefile_Attributes" >
+   <property name="text" >
+    <string>View &amp;Shapefile Attributes</string>
+   </property>
+  </action>
  </widget>
- <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
- </resources>
+ <resources/>
  <connections/>
 </ui>

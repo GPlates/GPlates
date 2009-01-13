@@ -28,6 +28,8 @@
 #ifndef _GPLATES_GUI_QUADRICS_H_
 #define _GPLATES_GUI_QUADRICS_H_
 
+#include <boost/noncopyable.hpp>
+
 #include "OpenGL.h"
 
 namespace GPlatesGui
@@ -37,28 +39,17 @@ namespace GPlatesGui
 	 *
 	 * Performs resource management and provides a nice class interface.
 	 */
-	class Quadrics
+	class Quadrics :
+		private boost::noncopyable
 	{
 		public:
 			Quadrics();
 
-			~Quadrics() {
-
-				gluDeleteQuadric(_q);
+			~Quadrics()
+			{
+				gluDeleteQuadric(d_quadric);
 			}
 
-		private:
-			/*
-			 * These two member functions intentionally declared
-			 * private to avoid object copying/assignment.
-			 * [There doesn't seem to be a way to duplicate
-			 * a GLUquadricObj resource.]
-			 */ 
-			Quadrics(const Quadrics &other);
-
-			Quadrics &operator=(const Quadrics &other);
-
-		public:
 			/**
 			 * Specify what kind of normals are desired for
 			 * quadrics rendered by an instance of this type.
@@ -76,9 +67,10 @@ namespace GPlatesGui
 			 *    vertex of a quadric.  This is the default.
 			 */
 			void
-			setNormals(GLenum normals) {
+			set_normals(GLenum normals)
+			{
 
-				gluQuadricNormals(_q, normals);
+				gluQuadricNormals(d_quadric, normals);
 			}
 
 
@@ -88,7 +80,7 @@ namespace GPlatesGui
 			 * of this type.
 			 *
 			 * The parameter to this function matches the latter
-			 * parameter to the GLU function 'setGenerateTexture'.
+			 * parameter to the GLU function 'set_generate_texture'.
 			 *
 			 * @param texture_coords a flag indicating whether
 			 *   texture coordinates should be generated.
@@ -99,9 +91,10 @@ namespace GPlatesGui
 			 *    This is the default.
 			 */
 			void
-			setGenerateTexture(GLboolean texture_coords) {
+			set_generate_texture(GLboolean texture_coords)
+			{
 
-				gluQuadricTexture(_q, texture_coords);
+				gluQuadricTexture(d_quadric, texture_coords);
 			}
 
 
@@ -121,9 +114,10 @@ namespace GPlatesGui
 			 * - GLU_INSIDE: normals point inward.
 			 */
 			void
-			setOrientation(GLenum orientation) {
+			set_orientation(GLenum orientation)
+			{
 
-				gluQuadricOrientation(_q, orientation);
+				gluQuadricOrientation(d_quadric, orientation);
 			}
 
 
@@ -140,7 +134,7 @@ namespace GPlatesGui
 			 * - GLU_FILL: quadrics are rendered with polygon
 			 *    primitives.  The polygons are drawn in a
 			 *    counterclockwise fashion with respect to
-			 *    their normals (as defined by @a setOrientation).
+			 *    their normals (as defined by @a set_orientation).
 			 * - GLU_LINE: quadrics are rendered as a set of lines.
 			 * - GLU_SILHOUETTE: quadrics are rendered as a set of
 			 *    lines, except that edges separating coplanar
@@ -149,9 +143,10 @@ namespace GPlatesGui
 			 *    points.
 			 */
 			void
-			setDrawStyle(GLenum draw_style) {
+			set_draw_style(GLenum draw_style)
+			{
 
-				gluQuadricDrawStyle(_q, draw_style);
+				gluQuadricDrawStyle(d_quadric, draw_style);
 			}
 
 
@@ -174,24 +169,25 @@ namespace GPlatesGui
 			 *   the <i>z</i> axis.
 			 *
 			 * If the orientation is set to 'GLU_OUTSIDE' (with
-			 * @a setOrientation), then any normals generated
+			 * @a set_orientation), then any normals generated
 			 * point away from the center of the sphere.
 			 * Otherwise, they point toward the center of the
 			 * sphere.
 			 */
 			void
-			drawSphere(GLdouble radius,
-			           GLint num_slices,
-			           GLint num_stacks) {
+			draw_sphere(GLdouble radius,
+					GLint num_slices,
+					GLint num_stacks)
+			{
 
-				gluSphere(_q, radius, num_slices, num_stacks);
+				gluSphere(d_quadric, radius, num_slices, num_stacks);
 			}
 
 		private:
 			/**
 			 * GLU quadrics object
 			 */
-			GLUquadricObj *_q;
+			GLUquadricObj *d_quadric;
 	};
 }
 

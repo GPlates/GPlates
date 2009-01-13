@@ -38,6 +38,7 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/Enumeration.h"
@@ -177,6 +178,12 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gpml_key_value_dictionary(
+		GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+{
+	d_edit_widget_group_box_ptr->activate_edit_shapefile_attributes_widget(gpml_key_value_dictionary);
+}
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_plate_id(

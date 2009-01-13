@@ -24,10 +24,31 @@
  */
 
 #include <boost/none.hpp>
+
 #include "GeometryFocusHighlight.h"
+#if 0
+<<<<<<< .working
 #include "utils/GeometryCreationUtils.h"
 #include <vector>
+=======
+#endif
+#include "gui/ColourTable.h"
+#include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryFactory.h"
+#include "view-operations/RenderedGeometryLayer.h"
+// >>>>>>> .merge-right.r4570
 
+
+GPlatesGui::GeometryFocusHighlight::GeometryFocusHighlight(
+		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection):
+d_rendered_geom_factory(&rendered_geom_factory),
+d_rendered_geom_collection(&rendered_geom_collection),
+d_highlight_layer_ptr(
+		rendered_geom_collection.get_main_rendered_layer(
+				GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER))
+{
+}
 
 void
 GPlatesGui::GeometryFocusHighlight::set_focus(
@@ -38,6 +59,11 @@ GPlatesGui::GeometryFocusHighlight::set_focus(
 		// No change, so nothing to do.
 		return;
 	}
+
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
 	// Else, presumably the focused geometry has changed.
 	d_feature = feature_ref;
 	d_focused_geometry = focused_geometry;
@@ -48,6 +74,8 @@ GPlatesGui::GeometryFocusHighlight::set_focus(
 void
 GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 {
+#if 0
+<<<<<<< .working
 	d_highlight_layer_ptr->clear();
 	if (d_focused_geometry) {
 		GPlatesGui::PlatesColourTable::const_iterator white = &GPlatesGui::Colour::WHITE;
@@ -59,11 +87,36 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 		rendered_geometry.geometry()->accept_visitor(*this);
 	
 	} else {
+=======
+#endif
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// Activate our layer.
+	d_highlight_layer_ptr->set_active();
+
+	// Clear all geometries from layer before adding them.
+	d_highlight_layer_ptr->clear_rendered_geometries();
+
+	if (d_focused_geometry)
+	{
+		const GPlatesGui::Colour &white = GPlatesGui::Colour::WHITE;
+
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+						d_focused_geometry->geometry(), white);
+
+		d_highlight_layer_ptr->add_rendered_geometry(rendered_geometry);
+	}
+	else
+	{
+// >>>>>>> .merge-right.r4570
 		// No focused geometry, so nothing to draw.
 	}
-	emit canvas_should_update();
 }
 
+#if 0
 void
 GPlatesGui::GeometryFocusHighlight::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
@@ -100,4 +153,5 @@ GPlatesGui::GeometryFocusHighlight::visit_polyline_on_sphere(
 
 		d_highlight_layer_ptr->push_back( rg_end );
 }
+#endif
 

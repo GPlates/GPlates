@@ -65,11 +65,11 @@
 
 #include "ErrorOpeningFileForReadingException.h"
 
-boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapeFileReader::d_property_mapper;
+boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapeFileReader::s_property_mapper;
 
-QMap<QString,QString> GPlatesFileIO::ShapeFileReader::d_model_to_attribute_map;
+QMap<QString,QString> GPlatesFileIO::ShapeFileReader::s_model_to_attribute_map;
 
-QStringList GPlatesFileIO::ShapeFileReader::d_field_names;
+QStringList GPlatesFileIO::ShapeFileReader::s_field_names;
 	
 namespace
 {
@@ -664,11 +664,11 @@ GPlatesFileIO::ShapeFileReader::read_features(
 
 		// Check if we have a shapefile attribute corresponding to the Feature Type.
 		QMap<QString,QString>::const_iterator it = 
-			d_model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
+			s_model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
 
-		if ((it != d_model_to_attribute_map.constEnd()) && d_field_names.contains(it.value())) {
+		if ((it != s_model_to_attribute_map.constEnd()) && s_field_names.contains(it.value())) {
 		
-			int index = d_field_names.indexOf(it.value());
+			int index = s_field_names.indexOf(it.value());
 	
 			// d_field_names should be the same size as d_attributes, but check that we
 			// don't try to go beyond the bounds of d_attributes. If somehow we are trying to do 
@@ -910,7 +910,7 @@ GPlatesFileIO::ShapeFileReader::get_field_names(
 	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
 		new GPlatesFileIO::LineNumberInFile(0));
 				
-	d_field_names.clear();
+	s_field_names.clear();
 	if (!d_feature_ptr){
 		return;
 	}
@@ -920,7 +920,7 @@ GPlatesFileIO::ShapeFileReader::get_field_names(
 
 	for ( count=0; count< num_fields; count++){
 		OGRFieldDefn *field_def_ptr = feature_def_ptr->GetFieldDefn(count);
-		d_field_names.push_back(QString::fromAscii(field_def_ptr->GetNameRef()));
+		s_field_names.push_back(QString::fromAscii(field_def_ptr->GetNameRef()));
 	}
 
 }
@@ -935,7 +935,7 @@ GPlatesFileIO::ShapeFileReader::get_attributes()
 	OGRFeatureDefn *feature_def_ptr = d_layer_ptr->GetLayerDefn();
 	int num_fields = feature_def_ptr->GetFieldCount();
 	int count;
-	for (count=0; count< num_fields; count++){
+	for (count=0; count < num_fields; count++){
 		OGRFieldDefn *field_def_ptr = feature_def_ptr->GetFieldDefn(count);
 		if (field_def_ptr->GetType()==OFTInteger){
 			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsInteger(count)));
@@ -944,6 +944,14 @@ GPlatesFileIO::ShapeFileReader::get_attributes()
 			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsDouble(count)));
 		}
 		else if (field_def_ptr->GetType()==OFTString){
+			QString temp_string;
+			temp_string = QString(d_feature_ptr->GetFieldAsString(count));
+			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsString(count)));
+		}
+		else if (field_def_ptr->GetType()==OFTDate)
+		{
+			// Store this as a string. It's possible to extract the various year/month/day
+			// fields separately. 
 			QString temp_string;
 			temp_string = QString(d_feature_ptr->GetFieldAsString(count));
 			d_attributes.push_back(QVariant(d_feature_ptr->GetFieldAsString(count)));
@@ -974,7 +982,7 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::create();
 
 	for (int count = 0; count < n ; count++){
-		QString fieldname = d_field_names[count];
+		QString fieldname = s_field_names[count];
 		QVariant attribute = d_attributes[count];
 
 		QVariant::Type type_ = attribute.type();
@@ -1035,7 +1043,7 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 		feature_handle);
 
 	// Map the shapefile attributes to model properties.
-	map_attributes_to_properties(feature_handle,d_model_to_attribute_map,read_errors,source,location);
+	map_attributes_to_properties(feature_handle,s_model_to_attribute_map,read_errors,source,location);
 
 }
 
@@ -1112,17 +1120,17 @@ GPlatesFileIO::ShapeFileReader::read_file(
 
 	QString shapefile_xml_filename = make_shapefile_xml_filename(fileinfo.get_qfileinfo());
 
-	d_model_to_attribute_map.clear();
+	s_model_to_attribute_map.clear();
 
-	if (!fill_attribute_map_from_xml_file(shapefile_xml_filename,d_model_to_attribute_map))
+	if (!fill_attribute_map_from_xml_file(shapefile_xml_filename,s_model_to_attribute_map))
 	{
 		// Set the last argument to false, because this is an initial mapping, not a re-mapping. 
-		if (!fill_attribute_map_from_dialog(filename,d_field_names,d_model_to_attribute_map,d_property_mapper,false))
+		if (!fill_attribute_map_from_dialog(filename,s_field_names,s_model_to_attribute_map,s_property_mapper,false))
 		{
 			// The user has cancelled the mapper-dialog routine, so cancel the whole shapefile loading procedure.
 			return;
 		}
-		save_attribute_map_as_xml_file(shapefile_xml_filename,d_model_to_attribute_map);
+		save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
 	}
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
@@ -1141,7 +1149,7 @@ void
 GPlatesFileIO::ShapeFileReader::set_property_mapper(
 	boost::shared_ptr< PropertyMapper > property_mapper)
 {
-	d_property_mapper = property_mapper;
+	s_property_mapper = property_mapper;
 }
 
 
@@ -1533,23 +1541,23 @@ GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(
 
 	QString shapefile_xml_filename = make_shapefile_xml_filename(fileinfo.get_qfileinfo());
 
-	d_model_to_attribute_map.clear();
+	s_model_to_attribute_map.clear();
 
-	fill_attribute_map_from_xml_file(shapefile_xml_filename,d_model_to_attribute_map);
+	fill_attribute_map_from_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
 
 	// Set the last argument to true because we are remapping. 
-	if (!fill_attribute_map_from_dialog(filename,d_field_names,d_model_to_attribute_map,d_property_mapper,true))
+	if (!fill_attribute_map_from_dialog(filename,s_field_names,s_model_to_attribute_map,s_property_mapper,true))
 	{
 		// The user has cancelled the mapper-dialog, so cancel the whole shapefile re-mapping procedure.
 		return;
 	}
-	save_attribute_map_as_xml_file(shapefile_xml_filename,d_model_to_attribute_map);
+	save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
 
 	if (fileinfo.get_feature_collection())
 	{
 		remap_feature_collection(
 								fileinfo,
-								d_model_to_attribute_map,
+								s_model_to_attribute_map,
 								read_errors);
 	}
 }

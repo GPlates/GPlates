@@ -26,24 +26,25 @@
  */
 
 #include "ManipulatePole.h"
+#include "maths/LatLonPointConversions.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "gui/RenderedGeometryLayers.h"
-#include "maths/LatLonPointConversions.h"
+#include "view-operations/RenderedGeometryCollection.h"
 
 
 GPlatesCanvasTools::ManipulatePole::ManipulatePole(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		GPlatesGui::RenderedGeometryLayers &layers,
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
-		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_):
+		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget):
 	CanvasTool(globe_, globe_canvas_),
-	d_layers_ptr(&layers),
+	d_rendered_geom_collection(&rendered_geom_collection),
 	d_view_state_ptr(&view_state_),
-	d_pole_widget_ptr(&pole_widget_),
+	d_pole_widget_ptr(&pole_widget),
 	d_is_in_drag(false)
-{  }
+{
+}
 
 
 void
@@ -54,9 +55,11 @@ GPlatesCanvasTools::ManipulatePole::handle_activation()
 			"Drag or Shift+drag the current geometry to modify its reconstruction pole."
 			" Ctrl+drag to re-orient the globe."));
 
+	// Activate the pole manipulation rendered layer.
+	d_rendered_geom_collection->set_main_layer_active(
+			GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+
 	d_pole_widget_ptr->activate();
-	d_layers_ptr->show_only_pole_manipulation_layer();
-	globe_canvas().update_canvas();
 }
 
 

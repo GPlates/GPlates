@@ -27,38 +27,104 @@
 
 #include "DigitiseGeometry.h"
 
-#include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "qt-widgets/DigitisationWidget.h"
-#include "gui/RenderedGeometryLayers.h"
-#include "maths/LatLonPointConversions.h"
+#include "view-operations/AddPointGeometryOperation.h"
+#include "view-operations/GeometryBuilderToolTarget.h"
+#include "view-operations/RenderedGeometryCollection.h"
 
+const GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type
+GPlatesCanvasTools::DigitiseGeometry::create(
+		GPlatesViewOperations::GeometryType::Value geom_type,
+		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
+		const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
+		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		// Ultimately would like to remove the following arguments...
+		GPlatesGui::Globe &globe,
+		GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+		const GPlatesQtWidgets::ViewportWindow &view_state)
+{
+	return DigitiseGeometry::non_null_ptr_type(
+			new DigitiseGeometry(
+					geom_type,
+					geom_builder_tool_target,
+					rendered_geometry_collection,
+					rendered_geometry_factory,
+					digitise_render_parameters,
+					choose_canvas_tool,
+					// Ultimately would like to remove the following arguments...
+					globe,
+					globe_canvas,
+					view_state),
+			GPlatesUtils::NullIntrusivePointerHandler());
+}
 
 GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
+		GPlatesViewOperations::GeometryType::Value geom_type,
+		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
+		const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
+		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		// Ultimately would like to remove the following arguments...
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		GPlatesGui::RenderedGeometryLayers &layers,
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
-		GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
-		GPlatesQtWidgets::DigitisationWidget::GeometryType geom_type_):
+		const GPlatesQtWidgets::ViewportWindow &view_state_):
 	CanvasTool(globe_, globe_canvas_),
-	d_layers_ptr(&layers),
 	d_view_state_ptr(&view_state_),
-	d_digitisation_widget_ptr(&digitisation_widget_),
-	d_default_geom_type(geom_type_)
-{  }
+	d_rendered_geometry_collection(&rendered_geometry_collection),
+	d_geom_builder_tool_target(&geom_builder_tool_target),
+	d_default_geom_type(geom_type),
+	d_add_point_geometry_operation(
+		new GPlatesViewOperations::AddPointGeometryOperation(
+				geom_type,
+				&rendered_geometry_collection,
+				&rendered_geometry_factory,
+				digitise_render_parameters,
+				choose_canvas_tool))
+{
+}
 
+
+GPlatesCanvasTools::DigitiseGeometry::~DigitiseGeometry()
+{
+	// boost::scoped_ptr destructor needs complete type.
+}
 
 void
 GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 {
-	// Clicking these canvas tools changes the type of geometry the user
-	// wishes to create, and may adjust the current table of coordinates accordingly.
-	d_digitisation_widget_ptr->change_geometry_type(d_default_geom_type);
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// Tell everyone we're activating digitise geometry tool.
+	d_geom_builder_tool_target->activate(
+			GPlatesViewOperations::GeometryBuilderToolTarget::DIGITISE_GEOMETRY);
+
+	// Ask which GeometryBuilder we are to operate on.
+	GPlatesViewOperations::GeometryBuilder *geometry_builder =
+			d_geom_builder_tool_target->get_geometry_builder_for_active_tool();
+
+	// Ask which main rendered layer we are to operate on.
+	const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_layer_type =
+			d_geom_builder_tool_target->get_main_rendered_layer_for_active_tool();
+
+	// In addition to adding points - our dual responsibility is to change
+	// the type of geometry the builder is attempting to build.
+	//
+	// Set type to build - ignore returned undo operation (this is handled
+	// at a higher level).
+	geometry_builder->set_geometry_type_to_build(d_default_geom_type);
+
+	// Activate our AddPointGeometryOperation - it will add points to the
+	// specified GeometryBuilder and add RenderedGeometry objects
+	// to the specified main render layer.
+	d_add_point_geometry_operation->activate(geometry_builder, main_layer_type);
 
 	// FIXME:  We may have to adjust the message if we are using a Map View.
-	if (d_digitisation_widget_ptr->geometry_type() ==
-			GPlatesQtWidgets::DigitisationWidget::MULTIPOINT) {
+	if (d_default_geom_type == GPlatesViewOperations::GeometryType::MULTIPOINT) {
 		d_view_state_ptr->status_message(QObject::tr(
 				"Click to draw a new point."
 				" Ctrl+drag to re-orient the globe."));
@@ -67,15 +133,15 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 				"Click to draw a new vertex."
 				" Ctrl+drag to re-orient the globe."));
 	}
-
-	d_layers_ptr->show_only_digitisation_layer();
-	globe_canvas().update_canvas();
 }
 
 
 void
 GPlatesCanvasTools::DigitiseGeometry::handle_deactivation()
-{  }
+{
+	// Deactivate our AddPointGeometryOperation.
+	d_add_point_geometry_operation->deactivate();
+}
 
 
 void
@@ -84,9 +150,6 @@ GPlatesCanvasTools::DigitiseGeometry::handle_left_click(
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
-	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
-			oriented_click_pos_on_globe);
-	
-	// Plain and simple append point to digitisation widget, default geometry.
-	d_digitisation_widget_ptr->append_point_to_geometry(llp.latitude(), llp.longitude());
+	// Plain and simple append point.
+	d_add_point_geometry_operation->add_point(oriented_click_pos_on_globe);
 }

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -78,23 +78,6 @@ namespace{
 		return true;
 	}
 
-	// a blue->cyan->green->yellow->red colour map.
-	const static QRgb colour_map[9] = {
-		qRgb(0,0,255),			// blue = low
-		qRgb(0,127,255),
-		qRgb(0,255,255),		// Cyan
-		qRgb(0,255,127),
-		qRgb(0,255,0),			// green = central   
-		qRgb(127,255,0),
-		qRgb(255,255,0),		// yellow
-		qRgb(255,127,0),
-		qRgb(255,0,0)    // red = high
-	};
-
-	const float NUM_BANDS = 7;
-	const float BAND_MIN = -1800.;
-	const float BAND_MAX = 1800.;
-	const float BAND_WIDTH =(BAND_MAX - BAND_MIN)/NUM_BANDS;
 
 	void
 	load_tga_file(
@@ -167,9 +150,11 @@ namespace{
 		GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
 				GPlatesPropertyValues::InMemoryRaster::RgbFormat;
 		raster.set_corresponds_to_data(false);
+
+		QSize image_size = QSize(width,height);
+
 		raster.generate_raster(image_data_vector,
-								  width,
-								  height,
+								  image_size,
 								  format);
 
 		raster.set_enabled(true);
@@ -198,12 +183,7 @@ namespace{
 				GPlatesFileIO::ReadErrors::FileNotLoaded));
 			return;
 		}
-
-
-		int width = raw_image.width();
-		int height = raw_image.height();
 		
-	//	std::cerr << "Jpg dimensions: width: " << width << ", height: " << height << std::endl;
 		QImage image = QGLWidget::convertToGLFormat(raw_image);
 
 		GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
@@ -211,11 +191,12 @@ namespace{
 
 		raster.set_corresponds_to_data(false);
 
+		QSize image_size = image.size();
+
 		try {
 			raster.generate_raster(
 				image.bits(),
-				width,
-				height,
+				image_size,
 				format);
 		}
 		catch(GPlatesGui::OpenGLBadAllocException &)
@@ -228,9 +209,15 @@ namespace{
 				GPlatesFileIO::ReadErrors::FileNotLoaded));		
 			return;
 		}
-		catch(GPlatesGui::OpenGLException &e)
+		catch(GPlatesGui::OpenGLException &)
 		{
-			throw(e);
+			read_errors.d_failures_to_begin.push_back(
+			GPlatesFileIO::ReadErrorOccurrence(
+				e_source,
+				e_location,
+				GPlatesFileIO::ReadErrors::ErrorGeneratingTexture,
+				GPlatesFileIO::ReadErrors::FileNotLoaded));		
+			return;
 		}
 		raster.set_enabled(true);
 	}
@@ -259,19 +246,10 @@ GPlatesFileIO::RasterReader::read_file(
 
 	QString suffix = q_file_info.suffix();
 
-#if 0
-	if (suffix.compare(QString("tga"),Qt::CaseInsensitive) == 0)
-	{
-	//	std::cerr << "TGA file." << std::endl;
-		load_tga_file(file_info.get_qfileinfo().absoluteFilePath(),
-						raster,
-						read_errors);
-	}
-#endif
+
 	if ((suffix.compare(QString("jpg"),Qt::CaseInsensitive) == 0) ||
 		(suffix.compare(QString("jpeg"),Qt::CaseInsensitive) == 0))
 	{
-	//	std::cerr << "JPG/JPEG file." << std::endl;
 
 		load_qimage_file(file_info.get_qfileinfo().absoluteFilePath(),
 						raster,
@@ -279,7 +257,7 @@ GPlatesFileIO::RasterReader::read_file(
 	}
 	else if (suffix.compare(QString("grd"),Qt::CaseInsensitive) == 0)
 	{
-	//	std::cerr << "GRD file." << std::endl;
+
 		load_gdal_file(file_info.get_qfileinfo().absoluteFilePath(),
 						raster,
 						read_errors);
@@ -318,7 +296,6 @@ GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
 				e_location,
 				GPlatesFileIO::ReadErrors::NoRasterSetsFound,
 				GPlatesFileIO::ReadErrors::NoRasterSetsLoaded));
-			// std::cerr << "No files in directory..." << std::endl;
 			return;
 		}
 
@@ -404,7 +381,6 @@ GPlatesFileIO::RasterReader::get_nearest_raster_filename(
 		}
 	}
 
-	//std::cerr << result.toStdString().c_str() << std::endl;
 	return result;
 }
 

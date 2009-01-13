@@ -63,6 +63,7 @@
 #include "property-values/GpmlHotSpotTrailMark.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"

@@ -137,6 +137,12 @@ namespace GPlatesQtWidgets
 		visit_gpml_constant_value(
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
+
+		virtual
+		void
+		visit_gpml_key_value_dictionary(
+				GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
+
 		virtual
 		void
 		visit_gpml_plate_id(

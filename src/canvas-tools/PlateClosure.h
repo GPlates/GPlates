@@ -38,9 +38,9 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
-namespace GPlatesGui
+namespace GPlatesViewOperations
 {
-	class RenderedGeometryLayers;
+	class RenderedGeometryCollection;
 }
 
 namespace GPlatesCanvasTools
@@ -73,10 +73,10 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesGui::RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::FeatureTableModel &segments_table_model_,	
 				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
@@ -85,10 +85,10 @@ namespace GPlatesCanvasTools
 		{
 			PlateClosure::non_null_ptr_type ptr(
 					new PlateClosure(
-							globe_, 
-							globe_canvas_, 
-							layers, 
-							view_state_, 
+							rendered_geom_collection,
+							globe, 
+							globe_canvas, 
+							view_state, 
 							clicked_table_model_,
 							segments_table_model_,
 							plate_closure_widget_, 
@@ -136,26 +136,16 @@ namespace GPlatesCanvasTools
 	protected:
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
 		PlateClosure(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesGui::RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::FeatureTableModel &segments_table_model_,	
 				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
 				GPlatesQtWidgets::PlateClosureWidget::GeometryType geom_type_,
-				GPlatesGui::FeatureFocus &feature_focus):
-			CanvasTool(globe_, globe_canvas_),
-			d_layers_ptr(&layers),
-			d_view_state_ptr(&view_state_),
-			d_clicked_table_model_ptr(&clicked_table_model_),
-			d_segments_table_model_ptr(&segments_table_model_),
-			d_plate_closure_widget_ptr(&plate_closure_widget_),
- 			d_default_geom_type(geom_type_),
-			d_feature_focus_ptr(&feature_focus)
-		{  }
+				GPlatesGui::FeatureFocus &feature_focus);
 
 
 		const GPlatesQtWidgets::ViewportWindow &
@@ -183,7 +173,7 @@ namespace GPlatesCanvasTools
 		 * We need to change which canvas-tool layer is shown when this canvas-tool is
 		 * activated.
 		 */
-		GPlatesGui::RenderedGeometryLayers *d_layers_ptr;
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 
 		/**
 		 * This is the view state which is used to obtain the reconstruction root.

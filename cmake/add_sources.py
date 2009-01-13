@@ -25,7 +25,8 @@ GPLATES_SUB_DIRECTORIES = [
     'property-values',
     'qt-resources',
     'qt-widgets',
-    'utils'
+    'utils',
+    'view-operations'
 ]
 
 GPLATES_EXTRA_SOURCE_FILES = [

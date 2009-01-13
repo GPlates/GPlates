@@ -61,7 +61,12 @@
      </widget>
      <widget class="QWidget" name="tab_digitisation" >
       <attribute name="title" >
-       <string>Digitisation</string>
+       <string>New Geometry</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_move_vertex" >
+      <attribute name="title" >
+       <string>Move Vertex</string>
       </attribute>
      </widget>
      <widget class="QWidget" name="tab_modify_pole" >

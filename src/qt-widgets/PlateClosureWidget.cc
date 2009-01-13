@@ -734,7 +734,7 @@ GPlatesQtWidgets::PlateClosureWidget::handle_create()
 	d_tmp_index_vertex_list.clear();
 
 	// clear this tool's layer
-	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	// FIXME: d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	// NOTE: this undoes the connection to highlight_segments_table_row 
@@ -767,7 +767,7 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 	d_use_reverse_flags.clear();
 
 	// clear the drawing layer
-	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	//FIXME: d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	// NOTE: this undoes the connection to highlight_segments_table_row 
@@ -954,7 +954,7 @@ void
 GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 {
 	// clear this tool's layer
-	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	//FIXME: d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	// loop over Segments Table to fill d_vertex_list
@@ -974,15 +974,15 @@ GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 void
 GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 {
-	d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	//FIXME: d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	if (d_geometry_opt_ptr) 
 	{
-		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::BLACK;
+		// GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::BLACK;
 
-		d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().push_back(
-				GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, colour));
+		//FIXME: d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().push_back(
+				//FIXME: GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, colour));
 	}
 
 	// update the canvas 

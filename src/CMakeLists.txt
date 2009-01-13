@@ -47,7 +47,7 @@ set(GPlates_no_gui_SRCS
 # feature-visitors.  (This stops weird "undefined reference to 
 # vtable for blah" error messages occurring.)
 set(gui_LIBS
-	qt-resources qt-widgets gui canvas-tools)
+	qt-resources qt-widgets gui canvas-tools view-operations)
 set(app_LIBS
 	file-io model feature-visitors property-values)
 set(util_LIBS
@@ -91,6 +91,7 @@ endforeach(dir)
 #   It seems that subdirs are built in order in they  are listed provided you don't run a parallel build (eg, 'make -j').
 if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
     add_dependencies(canvas-tools qt-widgets)
+    add_dependencies(view-operations qt-widgets)
     add_dependencies(gui qt-widgets)
     #add_dependencies(qt-widgets qt-resources)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")

@@ -55,6 +55,8 @@ namespace GPlatesGui {
 	const float LAT_START = -90.0f;
 	const float LAT_END = 90.0f;
 
+	const QRectF INITIAL_EXTENT(-180.,90.,360.,-180.);
+
 	struct texture_vertex
 	{
 		float s;
@@ -85,13 +87,12 @@ namespace GPlatesGui {
 			d_image_data(0),
 			d_image_width(0),
 			d_image_height(0),
-			d_texture_width(0),
-			d_texture_height(0),
 			d_texture_name(0),
 			d_enabled(false),
 			d_min(0),
 			d_max(0),
-			d_corresponds_to_data(false)
+			d_corresponds_to_data(false),
+			d_extent(INITIAL_EXTENT)
 			{}
 
 		~Texture();
@@ -104,24 +105,7 @@ namespace GPlatesGui {
 		void
 		generate_raster(
 			std::vector<unsigned_byte_type> &data,
-			int width,
-			int height,
-			ColourFormat format);
-
-		/**
-		 * Generates a texture using the data contained in a std::vector<unsinged_byte_type>, and
-		 * which will be mapped to the coordinates given by x_start, y_start, x_end, y_end. 
-		 * This is used for data loaded via GDAL.
-		 */
-		void
-		generate_raster(
-			std::vector<unsigned_byte_type> &data,
-			float x_start,
-			float y_start,
-			float x_end,
-			float y_end,
-			int width,
-			int height,
+			QSize &size,
 			ColourFormat format);
 
 		/**
@@ -131,8 +115,7 @@ namespace GPlatesGui {
 		void
 		generate_raster(
 			unsigned_byte_type *data,
-			int width,
-			int height,
+			QSize &size,
 			ColourFormat format);
 
 
@@ -142,19 +125,6 @@ namespace GPlatesGui {
 		void
 		generate_test_texture();
 
-		/**
-		 * Loads a 24-bit TGA file and creates a texture. Assumes the loaded image represents 
-		 * the entire globe, and that the leftmost edge of the image is -180 degrees longitude. 
-		 */
-		void
-		generate_test_texture2();
-
-		/**
-		 * Loads a 24-bit TGA file and generates a texture from it. Any existing texture will
-		 * be replaced by the new texture.
-		 */
-		void
-		load_TGA_file(QString &filename);
 
 		/**
 		 * Binds the texture so that it will be mapped to the sphere quadric.
@@ -256,6 +226,28 @@ namespace GPlatesGui {
 			d_corresponds_to_data = data;
 		}
 
+		/**
+		 * Set the coordinate range over which the texture will be mapped.
+		 */
+		void
+		set_extent(
+			const QRectF &rect);
+
+
+		/**
+		 * Return the coordinate range over which the texture is mapped.
+		 */ 
+		const QRectF &
+		get_extent()
+		{
+			return d_extent;
+		}
+
+		bool
+		texture_is_loaded();
+
+
+
 	private:
 
 		// Make copy and assignment private to prevent copying/assignment
@@ -267,21 +259,24 @@ namespace GPlatesGui {
 			const Texture &other);
 
 		/** 
-		 * Maps 2D points in the texture coordinate system to 3D vertices on the sphere coordinate system. 
+		 * Maps 2D points in the texture coordinate system to 3D vertices in the sphere coordinate system. 
 		 */
 		void
 		generate_mapping_coordinates();
 
 		/** 
-		 * Maps 2D points in the texture coordinate system to 3D vertices on the sphere coordinate system,
+		 * Maps 2D points in the texture coordinate system to 3D vertices in the sphere coordinate system,
 		 * over a region with corners given by x_start, y_start, x_end, y_end.
 		 */
 		void
 		generate_mapping_coordinates(
-			float x_start,
-			float y_start,
-			float x_end,
-			float y_end);
+			QRectF &extent);
+
+		/**
+		 * Re-maps an existing texture to the portion of the sphere surface given by extent.
+		 */
+		void
+		remap_texture();
 
 		/**
 		 * A pointer to image data. 
@@ -298,6 +293,7 @@ namespace GPlatesGui {
 		 */
 		int d_image_height;
 
+#if 0
 		/**
 		 * The width of the texture, which should be a power of 2.
 		 */
@@ -307,7 +303,7 @@ namespace GPlatesGui {
 		 * The height of the texture, which should be a power of 2. 
 		 */
 		int d_texture_height;
-
+#endif
 		/**
 		 * The openGL texture name.
 		 */
@@ -344,6 +340,12 @@ namespace GPlatesGui {
 		 */
 		texture_vertex d_texture_vertices[NUM_STRIPS_S + 1][NUM_STRIPS_T + 1];
 		sphere_vertex d_sphere_vertices[NUM_STRIPS_S + 1][NUM_STRIPS_T + 1];
+
+		/**
+		 * The lat-lon extent over which the texture should be mapped.
+		 */
+		QRectF d_extent;
+
 
 	};
 

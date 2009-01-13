@@ -26,12 +26,31 @@
 #ifndef GPLATES_CANVASTOOLS_MOVEVERTEX_H
 #define GPLATES_CANVASTOOLS_MOVEVERTEX_H
 
-#include "gui/CanvasTool.h"
+#include <boost/scoped_ptr.hpp>
 
+#include "gui/CanvasTool.h"
+#include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
+
+
+namespace GPlatesGui
+{
+	class ChooseCanvasTool;
+}
 
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
+}
+
+namespace GPlatesViewOperations
+{
+	class GeometryOperationRenderParameters;
+	class MoveVertexGeometryOperation;
+	class GeometryBuilderToolTarget;
+	class QueryProximityThreshold;
+	class RenderedGeometryCollection;
+	class RenderedGeometryFactory;
 }
 
 namespace GPlatesCanvasTools
@@ -51,8 +70,7 @@ namespace GPlatesCanvasTools
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~MoveVertex()
-		{  }
+		~MoveVertex();
 
 		/**
 		 * Create a MoveVertex instance.
@@ -60,14 +78,29 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_)
+				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
+				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
+				// Ultimately would like to remove the following arguments...
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state)
 		{
-			MoveVertex::non_null_ptr_type ptr(
-					new MoveVertex(globe_, globe_canvas_, view_state_),
+			return MoveVertex::non_null_ptr_type(
+					new MoveVertex(
+							geom_builder_tool_target,
+							rendered_geometry_collection,
+							rendered_geometry_factory,
+							digitise_render_parameters,
+							choose_canvas_tool,
+							query_proximity_threshold,
+							globe,
+							globe_canvas,
+							view_state),
 					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
 		}
 		
 		
@@ -106,35 +139,43 @@ namespace GPlatesCanvasTools
 	protected:
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
 		MoveVertex(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_);
-		
-		
-		const GPlatesQtWidgets::ViewportWindow &
-		view_state() const
-		{
-			return *d_view_state_ptr;
-		}
-		
-
+				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
+				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
+				// Ultimately would like to remove the following arguments...
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state);
 	private:
-		
+		/**
+		 * This is the view state used to update the viewport window status bar.
+		 */
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
-			
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		MoveVertex(
-				const MoveVertex &);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		MoveVertex &
-		operator=(
-				const MoveVertex &);
+		/**
+		 * Used to set main rendered layer.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 		
+		/**
+		 * Used to select target of our move vertex operation.
+		 */
+		GPlatesViewOperations::GeometryBuilderToolTarget *d_geom_builder_tool_target;
+
+		/**
+		 * Digitise operation for moving a vertex in digitised geometry.
+		 */
+		boost::scoped_ptr<GPlatesViewOperations::MoveVertexGeometryOperation>
+			d_move_vertex_geometry_operation;
+
+		/**
+		 * Whether or not this tool is currently in the midst of a drag.
+		 */
+		bool d_is_in_drag;
 	};
 }
 

@@ -248,14 +248,14 @@ namespace GPlatesFileIO
 		OGRwkbGeometryType d_type;
 
 		// The shapefile attribute field names. 
-		static QStringList d_field_names;
+		static QStringList s_field_names;
 
 		// The shapefile attributes for the current geometry.
 		std::vector<QVariant> d_attributes;
 
 		// Map for associating a model property with a shapefile attribute.
 //		std::map<int, int> d_model_to_attribute_map;
-		static QMap<QString,QString> d_model_to_attribute_map;
+		static QMap<QString,QString> s_model_to_attribute_map;
 
 		// The feature type and the geometry type
 		std::pair<QString,QString> d_feature_creation_pair;
@@ -269,7 +269,7 @@ namespace GPlatesFileIO
 		// The total number of features in the file.
 		unsigned d_total_features;
 
-		static boost::shared_ptr< PropertyMapper > d_property_mapper;
+		static boost::shared_ptr< PropertyMapper > s_property_mapper;
 	};
 
 

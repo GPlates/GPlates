@@ -36,7 +36,6 @@ set(srcs
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
-    DigitisationWidgetUndoCommands.h
     EditAngleWidget.cc
     EditAngleWidget.h
     EditAngleWidgetUi.ui
@@ -70,6 +69,8 @@ set(srcs
     EditPolarityChronIdWidget.cc
     EditPolarityChronIdWidget.h
     EditPolarityChronIdWidgetUi.ui
+    EditShapefileAttributesWidget.cc
+    EditShapefileAttributesWidget.h
     EditShapefileAttributesWidgetUi.ui
     EditStringWidget.cc
     EditStringWidget.h
@@ -84,9 +85,6 @@ set(srcs
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
     EditWidgetGroupBox.h
-    EulerPoleDialog.cc
-    EulerPoleDialog.h
-    EulerPoleDialogUi.ui
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
@@ -105,6 +103,8 @@ set(srcs
     InformationDialog.h
     InformationDialogUi.ui
     InvalidPropertyValueException.h
+    LatLonCoordinatesTable.cc
+    LatLonCoordinatesTable.h
     LicenseDialog.cc
     LicenseDialog.h
     ManageFeatureCollectionsActionWidget.cc
@@ -116,6 +116,9 @@ set(srcs
     ManageFeatureCollectionsStateWidget.cc
     ManageFeatureCollectionsStateWidget.h
     ManageFeatureCollectionsStateWidgetUi.ui
+    MoveVertexWidget.cc
+    MoveVertexWidget.h
+    MoveVertexWidgetUi.ui
     NoActiveEditWidgetException.h
     PropertyValueNotSupportedException.h
 	PlateClosureWidget.cc
@@ -136,12 +139,18 @@ set(srcs
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
+    SetRasterSurfaceExtentDialog.cc
+    SetRasterSurfaceExtentDialog.h
+    SetRasterSurfaceExtentDialogUi.ui
     ShapefileAttributeMapperDialog.cc
     ShapefileAttributeMapperDialog.h
     ShapefileAttributeMapperDialogUi.ui
     ShapefileAttributeRemapperDialog.cc
     ShapefileAttributeRemapperDialog.h
     ShapefileAttributeRemapperDialogUi.ui
+    ShapefileAttributeViewerDialog.cc
+    ShapefileAttributeViewerDialog.h
+    ShapefileAttributeViewerDialogUi.ui
     ShapefileAttributeWidget.cc
     ShapefileAttributeWidget.h
     ShapefileAttributeWidgetUi.ui
@@ -153,6 +162,9 @@ set(srcs
     TaskPanel.cc
     TaskPanel.h
     TaskPanelUi.ui
+    TotalReconstructionPolesDialog.cc
+    TotalReconstructionPolesDialog.h
+    TotalReconstructionPolesDialogUi.ui
     UninitialisedEditWidgetException.h
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h

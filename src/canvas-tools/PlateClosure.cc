@@ -32,12 +32,34 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/PlateClosureWidget.h"
-#include "gui/RenderedGeometryLayers.h"
 #include "maths/LatLonPointConversions.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "global/InternalInconsistencyException.h"
 
+GPlatesCanvasTools::PlateClosure::PlateClosure(
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::Globe &globe_,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesGui::FeatureTableModel &clicked_table_model_,	
+				GPlatesGui::FeatureTableModel &segments_table_model_,	
+				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
+				GPlatesQtWidgets::PlateClosureWidget::GeometryType geom_type,
+				GPlatesGui::FeatureFocus &feature_focus):
+	CanvasTool(globe_, globe_canvas_),
+	d_rendered_geom_collection(&rendered_geom_collection),
+	d_view_state_ptr(&view_state_),
+	d_clicked_table_model_ptr(&clicked_table_model_),
+	d_segments_table_model_ptr(&segments_table_model_),
+	d_plate_closure_widget_ptr(&plate_closure_widget),
+	d_default_geom_type(geom_type),
+	d_feature_focus_ptr(&feature_focus)
+{
+}
+
+
+	
 
 void
 GPlatesCanvasTools::PlateClosure::handle_activation()
@@ -59,10 +81,10 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 	}
 
 	// hide other tools ; show plate closure 
-	d_layers_ptr->show_only_plate_closure_layer();
+	// d_layers_ptr->show_only_plate_closure_layer();
 
 	// also show geom. focus 
-	d_layers_ptr->show_geometry_focus_layer();
+	// d_layers_ptr->show_geometry_focus_layer();
 
 	globe_canvas().update_canvas();
 
