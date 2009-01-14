@@ -132,8 +132,10 @@ namespace
 	public:
 		explicit
 		PaintGeometry(
-				GPlatesGui::NurbsRenderer &nurbs_renderer):
+				GPlatesGui::NurbsRenderer &nurbs_renderer,
+				GPlatesGui::Globe *globe):
 			d_nurbs_renderer(&nurbs_renderer),
+			d_globe_ptr(globe),
 			d_current_layer_far_depth(0),
 			d_depth_range_per_layer(0)
 		{  }
@@ -195,6 +197,8 @@ namespace
 		visit_rendered_point_on_sphere(
 				const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 		{
+			if ( ! d_globe_ptr->d_show_point ) { return; }
+
 			glColor3fv(rendered_point_on_sphere.get_colour());
 			glPointSize(rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
 			glBegin(GL_POINTS);
@@ -207,6 +211,8 @@ namespace
 		visit_rendered_multi_point_on_sphere(
 				const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 		{
+			if ( ! d_globe_ptr->d_show_multipoint ) { return; }
+
 			glColor3fv(rendered_multi_point_on_sphere.get_colour());
 			glPointSize(rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
 
@@ -223,6 +229,8 @@ namespace
 		visit_rendered_polyline_on_sphere(
 				const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 		{
+			if ( !d_globe_ptr->d_show_line ) { return; }
+
 			glColor3fv(rendered_polyline_on_sphere.get_colour());
 			glLineWidth(rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
 
@@ -240,6 +248,8 @@ namespace
 		visit_rendered_polygon_on_sphere(
 				const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 		{
+			if ( ! d_globe_ptr->d_show_polygon ) { return; }
+
 			glColor3fv(rendered_polygon_on_sphere.get_colour());
 			glLineWidth(rendered_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
 
@@ -254,6 +264,7 @@ namespace
 
 	private:
 		GPlatesGui::NurbsRenderer *const d_nurbs_renderer;
+		GPlatesGui::Globe *const d_globe_ptr;
 		double d_current_layer_far_depth;
 		double d_depth_range_per_layer;
 
@@ -271,10 +282,11 @@ namespace
 	paint_rendered_geometries(
 			const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 			GPlatesGui::NurbsRenderer &nurbs_renderer,
+			GPlatesGui::Globe *globe,
 			double depth_range_near,
 			double depth_range_far)
 	{
-		PaintGeometry paint_geometry(nurbs_renderer);
+		PaintGeometry paint_geometry(nurbs_renderer, globe);
 
 		paint_geometry.paint(
 				rendered_geom_collection, depth_range_near, depth_range_far);
@@ -288,6 +300,12 @@ d_rendered_geom_collection(&rendered_geom_collection),
 d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
 d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON)
 {
+	//FIXME: be sure to sychonize with ViewportWidgetUi.ui
+	d_show_point = true;
+	d_show_line = true;
+	d_show_polygon = true;
+	d_show_topology = true;
+	d_show_multipoint = true;
 }
 
 void
@@ -355,6 +373,7 @@ GPlatesGui::Globe::paint()
 		paint_rendered_geometries(
 				*d_rendered_geom_collection,
 				*d_nurbs_renderer,
+				this,
 				0.0,
 				0.7);
 
@@ -400,6 +419,7 @@ GPlatesGui::Globe::paint_vector_output()
 		paint_rendered_geometries(
 				*d_rendered_geom_collection,
 				*d_nurbs_renderer,
+				this,
 				0.0,
 				0.7);
 
