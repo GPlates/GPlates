@@ -59,7 +59,7 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 		GPlatesQtWidgets::CreateTopologyWidget &create_topology_widget,
-		// GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
+		GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
 		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight):
 d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(
 		globe,
@@ -134,18 +134,16 @@ d_create_topology_tool_ptr(GPlatesCanvasTools::CreateTopology::create(
 		globe_canvas,
 		view_state,
 		create_topology_widget)),
-		// FIXME : add tables
-#if 0
 d_plate_closure_platepolygon_tool_ptr( GPlatesCanvasTools::PlateClosure::create(
+		rendered_geom_collection,
 		globe, 
 		globe_canvas, 
-		layers, 
-		view_state_, 
+		view_state, 
 		clicked_table_model, 
-		segments_table_model, 
+		feature_table_model_segments, 
 		plate_closure_widget, 
-		GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON, feature_focus)),
-#endif
+		GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON, 
+		feature_focus)),
 d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	// Delay any notification of changes to the rendered geometry collection

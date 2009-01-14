@@ -47,7 +47,7 @@ namespace GPlatesQtWidgets
 	class DigitisationWidget;
 	class ReconstructionPoleWidget;
 	class CreateTopologyWidget;
-	// class PlateClosureWidget;
+	class PlateClosureWidget;
 }
 
 namespace GPlatesViewOperations
@@ -99,7 +99,7 @@ namespace GPlatesGui
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesQtWidgets::CreateTopologyWidget &create_topology_widget,
-				// GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
+				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		~CanvasToolChoice()
@@ -151,7 +151,7 @@ namespace GPlatesGui
 		void
 		choose_plate_closure_platepolygon_tool()
 		{
-			// change_tool_if_necessary(d_plate_closure_platepolygon_tool_ptr);
+			change_tool_if_necessary(d_plate_closure_platepolygon_tool_ptr);
 		}
 
 		void
@@ -209,13 +209,6 @@ namespace GPlatesGui
 		 */
 		CanvasTool::non_null_ptr_type d_digitise_polygon_tool_ptr;
 
-#if 0
-		/**
-		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
-		 */
-		CanvasTool::non_null_ptr_type d_plate_closure_platepolygon_tool_ptr;
-#endif
-
 		/**
 		 * This is the MoveGeometry tool which the user may choose.
 		 */
@@ -235,6 +228,11 @@ namespace GPlatesGui
 		 * This is the ManipulatePole tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_create_topology_tool_ptr;
+
+		/**
+		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_plate_closure_platepolygon_tool_ptr;
 
 		/**
 		 * The current choice of CanvasTool.

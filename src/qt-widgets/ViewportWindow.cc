@@ -684,6 +684,14 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(handle_reconstruction_time_change(
 					double)));
 
+	// Connect the reconstruction pole widget to the feature focus.
+	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+			&(d_task_panel_ptr->create_topology_widget()), SLOT(set_focus(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
 	// Setup RenderedGeometryCollection.
 	initialise_rendered_geom_collection();
 
@@ -760,7 +768,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					d_task_panel_ptr->create_topology_widget(),
-					// d_task_panel_ptr->plate_closure_widget(),
+					d_task_panel_ptr->plate_closure_widget(),
 					d_canvas_ptr->geometry_focus_highlight()));
 
 	// Set up the Canvas Tool Adapter for handling globe click and drag events.
@@ -1360,8 +1368,8 @@ GPlatesQtWidgets::ViewportWindow::choose_create_topology_tool()
 {
 	uncheck_all_tools();
 	action_Create_Topology->setChecked(true);
-	d_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
-	//FIXME: add panel for topo d_task_panel_ptr->choose_modify_pole_tab();
+	d_canvas_tool_choice_ptr->choose_create_topology_tool();
+	d_task_panel_ptr->choose_create_topology_tab();
 }
 
 
@@ -1907,6 +1915,8 @@ GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 			GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+	orthogonal_main_layers.set(
+			GPlatesViewOperations::RenderedGeometryCollection::CREATE_TOPOLOGY_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
 	orthogonal_main_layers.set(

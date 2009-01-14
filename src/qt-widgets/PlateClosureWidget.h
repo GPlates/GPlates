@@ -54,6 +54,13 @@
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalIntersection.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryFactory;
+}
+
 // An effort to reduce the dependency spaghetti currently plaguing the GUI.
 namespace GPlatesGui
 {
@@ -94,6 +101,8 @@ namespace GPlatesQtWidgets
 
 		explicit
 		PlateClosureWidget(
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesModel::ModelInterface &model_interface,
 				ViewportWindow &view_state_,
@@ -306,6 +315,27 @@ namespace GPlatesQtWidgets
 #endif
 
 	private:
+		/**
+		 * Used to draw rendered geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+
+		/**
+		 * Used to create @a RenderedGeometry objects.
+		 */
+		GPlatesViewOperations::RenderedGeometryFactory *d_rendered_geom_factory;
+
+		/**
+		 * Rendered geometry layer to render initial geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_initial_geom_layer_ptr;
+
+		/**
+		 * Rendered geometry layer to render dragged geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_dragged_geom_layer_ptr;
 
 
 		/**
@@ -429,6 +459,9 @@ namespace GPlatesQtWidgets
 		/** Because GpmlTopologicalSection is abstract we use non_null_ptr_type */
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
 			d_sections_ptrs;
+
+		void
+		create_child_rendered_layers();
 	};
 }
 

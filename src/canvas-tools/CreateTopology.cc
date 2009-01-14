@@ -49,12 +49,12 @@ GPlatesCanvasTools::CreateTopology::handle_activation()
 {
 	// FIXME:  We may have to adjust the message if we are using a Map View.
 	d_view_state_ptr->status_message(QObject::tr(
-			"Drag or Shift+drag the current geometry to modify its reconstruction pole."
+			"Use the controls in the Task Panel to create a topology."
 			" Ctrl+drag to re-orient the globe."));
 
 	// Activate the pole manipulation rendered layer.
 	d_rendered_geom_collection->set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+			GPlatesViewOperations::RenderedGeometryCollection::CREATE_TOPOLOGY_LAYER);
 
 	d_create_topology_widget_ptr->activate();
 }

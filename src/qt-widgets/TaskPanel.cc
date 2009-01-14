@@ -58,6 +58,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			geom_builder_tool_target)),
 	d_plate_closure_widget_ptr(
 		new PlateClosureWidget(
+			rendered_geom_collection, rendered_geom_factory, 
 			feature_focus, model_interface, view_state)),
 	d_reconstruction_pole_widget_ptr(
 		new ReconstructionPoleWidget(

@@ -237,6 +237,7 @@ std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << s
 	topology_resolver.report();
 
 #if 0
+#if 0
 std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
 
@@ -256,6 +257,7 @@ std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.end(),
 		solver);
 	solver.report();
+#endif
 
 #if 0
 std::cerr << "5 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;

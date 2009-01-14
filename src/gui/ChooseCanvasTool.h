@@ -101,7 +101,8 @@ namespace GPlatesGui
 			DIGITISE_POLYGON,
 			MOVE_GEOMETRY,
 			MOVE_VERTEX,
-			MANIPULATE_POLE
+			MANIPULATE_POLE,
+			CREATE_TOPOLOGY
 		};
 
 		ChooseCanvasTool(
@@ -145,6 +146,9 @@ namespace GPlatesGui
 
 		void
 		choose_manipulate_pole_tool();
+
+		void
+		choose_create_topology_tool();
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments

@@ -155,6 +155,17 @@ GPlatesGui::ChooseCanvasTool::choose_manipulate_pole_tool()
 }
 
 
+void
+GPlatesGui::ChooseCanvasTool::choose_create_topology_tool()
+{
+	d_viewport_window->choose_create_topology_tool();
+
+	d_most_recent_tool_type = CREATE_TOPOLOGY;
+
+	emit chose_canvas_tool(*this, d_most_recent_tool_type);
+}
+
+
 GPlatesGui::ChooseCanvasToolUndoCommand::ChooseCanvasToolUndoCommand(
 		GPlatesGui::ChooseCanvasTool *choose_canvas_tool,
 		choose_canvas_tool_method_type choose_canvas_tool_method,

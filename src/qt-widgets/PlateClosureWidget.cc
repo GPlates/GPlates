@@ -1,3 +1,4 @@
+
 /**
  * \file 
  * $Revision$
@@ -197,6 +198,8 @@ namespace
 		std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
 				GPlatesMaths::count_distinct_adjacent_points(points);
 
+std::cout << "create_geometry_from_vertex_list: size =" << num_points << std::endl;
+
 #ifdef DEBUG
 std::vector<GPlatesMaths::PointOnSphere>::iterator itr;
 for ( itr = points.begin() ; itr != points.end(); ++itr)
@@ -255,11 +258,15 @@ for ( itr = points.begin() ; itr != points.end(); ++itr)
 // Constructor
 // 
 GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesModel::ModelInterface &model_interface,
 		ViewportWindow &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
+	d_rendered_geom_collection(&rendered_geom_collection),
+	d_rendered_geom_factory(&rendered_geom_factory),
 	d_feature_focus_ptr(&feature_focus),
 	d_view_state_ptr(&view_state_),
 	d_create_feature_dialog(
@@ -268,6 +275,8 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	d_geometry_opt_ptr(boost::none)
 {
 	setupUi(this);
+
+	create_child_rendered_layers();
 
 	clear();
 
@@ -326,6 +335,36 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	
 	// Get everything else ready that may need to be set up more than once.
 	initialise_geometry(PLATEPOLYGON);
+}
+
+void
+GPlatesQtWidgets::PlateClosureWidget::create_child_rendered_layers()
+{
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// Create a rendered layer to draw the initial geometries.
+	d_initial_geom_layer_ptr =
+		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+
+	// Create a rendered layer to draw the initial geometries.
+	// NOTE: this must be created second to get drawn on top.
+	d_dragged_geom_layer_ptr =
+		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+
+	// In both cases above we store the returned object as a data member and it
+	// automatically destroys the created layer for us when 'this' object is destroyed.
+
+	// Activate both layers.
+	d_initial_geom_layer_ptr->set_active();
+	d_dragged_geom_layer_ptr->set_active();
 }
 
 
@@ -618,6 +657,9 @@ GPlatesQtWidgets::PlateClosureWidget::handle_choose_feature()
 	// append the current click_point
 	d_click_points.push_back( std::make_pair( d_click_point_lat, d_click_point_lon ) );
 
+	// set flag for visit from update_geom() { 
+	d_check_type = false;
+
 	// process the segments table
 	update_geometry();
 
@@ -878,11 +920,15 @@ void
 GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {  
+std::cout << "visit_polyline_on_sphere:" << std::endl;
+
 	// set type only
 	if (d_check_type) {
 		d_tmp_feature_type = GPlatesGlobal::LINE_FEATURE;
 		return;
 	}
+
+std::cout << "visit_polyline_on_sphere: 11111111111" << std::endl;
 
 	// set the global flag for intersection processing 
 	d_tmp_process_intersections = true;
@@ -914,8 +960,11 @@ GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 			polyline_vertices.begin(), polyline_vertices.end() );
 	}
 
+std::cout << "visit_polyline_on_sphere: size=" << d_tmp_index_vertex_list.size() << std::endl;
+
 	// return early if properties are not needed
 	if (! d_should_create_properties) { return; }
+std::cout << "visit_polyline_on_sphere: 2222222222" << std::endl;
 
 	// Set the d_tmp vars to create a sourceGeometry property delegate 
 	d_tmp_property_name = "centerLineOf";
@@ -983,6 +1032,19 @@ GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 
 		//FIXME: d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().push_back(
 				//FIXME: GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, colour));
+
+		
+		const GPlatesGui::Colour &colour = GPlatesGui::Colour::BLACK;
+
+		// Create rendered geometry.
+		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+				*d_geometry_opt_ptr,
+				colour);
+
+		// Add to pole manipulation layer.
+		d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
+
 	}
 
 	// update the canvas 
@@ -1036,16 +1098,16 @@ GPlatesQtWidgets::PlateClosureWidget::create_sections_from_segments_table()
 		d_tmp_index_use_reverse = d_use_reverse_flags.at(d_tmp_index);
 
 #ifdef DEBUG
-std::cout << "create_sections_from_segments_table: d_tmp_index = " << d_tmp_index 
-<< std::endl;
+std::cout << "create_sections_from_segments_table: d_tmp_index = " << d_tmp_index << std::endl;
 static const GPlatesModel::PropertyName name_property_name =
 	GPlatesModel::PropertyName::create_gml("name");
 GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
 string_finder.visit_feature_handle( *(rfg->feature_ref()) );
-if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
+if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+{
 	GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
 		 *string_finder.found_strings_begin();
-	qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
+	qDebug() << "create_sections_from_segments_table: name=" << GPlatesUtils::make_qstring( name->value() );
 }
 std::cout << "create_sections_from_segments_table: d_use_rev = " << d_tmp_index_use_reverse 
 << std::endl;
@@ -1083,6 +1145,9 @@ std::cout << "create_sections_from_segments_table: d_use_rev = " << d_tmp_index_
 		// update counter d_tmp_index
 		++d_tmp_index;
 	}
+
+
+std::cout << "create_sections_from_segments_table: size = " << d_vertex_list.size() << std::endl; 
 
 }
 

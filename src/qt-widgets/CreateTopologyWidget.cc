@@ -348,13 +348,13 @@ GPlatesQtWidgets::CreateTopologyWidget::create_child_rendered_layers()
 	// Create a rendered layer to draw the initial geometries.
 	d_initial_geom_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::CREATE_TOPOLOGY_LAYER);
 
 	// Create a rendered layer to draw the initial geometries.
 	// NOTE: this must be created second to get drawn on top.
 	d_dragged_geom_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::CREATE_TOPOLOGY_LAYER);
 
 	// In both cases above we store the returned object as a data member and it
 	// automatically destroys the created layer for us when 'this' object is destroyed.
