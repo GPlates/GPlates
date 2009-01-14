@@ -96,6 +96,17 @@ namespace
 				glEnd();
 			}
 		}
+
+		// highlight the polygon vertices
+		iter = begin;
+		for ( ; iter != end; ++iter) {
+			glPointSize(5.0f);
+			glBegin(GL_POINTS);
+				draw_vertex(iter->start_point());
+			glEnd();
+			glPointSize(4.0f);
+		}
+
 	}
 
 
