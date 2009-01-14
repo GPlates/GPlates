@@ -31,6 +31,7 @@
 
 #include "DigitisationWidget.h"
 #include "ReconstructionPoleWidget.h"
+#include "CreateTopologyWidget.h"
 #include "PlateClosureWidget.h"
 #include "ActionButtonBox.h"
 #include "gui/FeatureFocus.h"
@@ -113,6 +114,20 @@ namespace GPlatesQtWidgets
 		{
 			return *d_reconstruction_pole_widget_ptr;
 		}
+
+		/**
+		 * Accessor for the Reconstruction Pole Widget of the Modify Pole Tab.
+		 *
+		 * This lets the interactive manipulation of reconstructions canvas tool
+		 * interact with the CreateTopologyWidget.
+		 */
+		CreateTopologyWidget &
+		create_topology_widget() const
+		{
+			return *d_create_topology_widget_ptr;
+		}
+
+
 	
 		/**
 		 * Accessor for the Plate Close Widget of the Plate Close Tab.
@@ -151,6 +166,12 @@ namespace GPlatesQtWidgets
 		choose_modify_pole_tab()
 		{
 			tabwidget_task_panel->setCurrentWidget(tab_modify_pole);
+		}		
+		
+		void
+		choose_create_topology_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_create_topology);
 		}		
 		
 		void
@@ -195,6 +216,13 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_modify_pole_tab();
+
+		/**
+		 * Sets up the "Create Topology" tab in the Extra Creamy Task Panel.
+		 * This adds the special CreateTopologyWidget.
+		 */
+		void
+		set_up_create_topology_tab();
 
 		/**
 		 * Sets up the "Plate Closure" tab in the Extra Creamy Task Panel.
@@ -244,6 +272,12 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::ReconstructionPoleWidget *d_reconstruction_pole_widget_ptr;
+
+		/**
+		 * Widget responsible for the controls in the Create Topology Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::CreateTopologyWidget *d_create_topology_widget_ptr;
 
 	};
 }

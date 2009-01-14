@@ -159,6 +159,7 @@
    <addaction name="action_Move_Geometry" />
    <addaction name="action_Move_Vertex" />
    <addaction name="action_Manipulate_Pole" />
+   <addaction name="action_Create_Topology" />
    <addaction name="action_Plate_Closure" />
   </widget>
   <widget class="QDockWidget" name="dock_search_results" >
@@ -1076,6 +1077,30 @@
    </property>
    <property name="shortcut" >
     <string>P</string>
+   </property>
+  </action>
+  <action name="action_Create_Topology" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/select_plate_35.png</normaloff>:/select_plate_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Create New Topology</string>
+   </property>
+   <property name="iconText" >
+    <string>Create New Topology</string>
+   </property>
+   <property name="toolTip" >
+    <string>Create a new Topology T</string>
+   </property>
+   <property name="shortcut" >
+    <string>T</string>
    </property>
   </action>
   <action name="action_Plate_Closure" >

@@ -759,6 +759,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
+					d_task_panel_ptr->create_topology_widget(),
 					// d_task_panel_ptr->plate_closure_widget(),
 					d_canvas_ptr->geometry_focus_highlight()));
 
@@ -871,6 +872,9 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
 			d_choose_canvas_tool.get(), SLOT(choose_manipulate_pole_tool()));
+
+	QObject::connect(action_Create_Topology, SIGNAL(triggered()),
+			d_choose_canvas_tool.get(), SLOT(choose_create_topology_tool()));
 
 	QObject::connect(action_Plate_Closure, SIGNAL(triggered()),
 			this, SLOT(choose_plate_closure_platepolygon_tool()));
@@ -1351,6 +1355,17 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 }
 
 
+void
+GPlatesQtWidgets::ViewportWindow::choose_create_topology_tool()
+{
+	uncheck_all_tools();
+	action_Create_Topology->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
+	//FIXME: add panel for topo d_task_panel_ptr->choose_modify_pole_tab();
+}
+
+
+
 
 void
 GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
@@ -1365,6 +1380,7 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Move_Geometry->setChecked(false);
 	action_Move_Vertex->setChecked(false);
 	action_Manipulate_Pole->setChecked(false);
+	action_Create_Topology->setChecked(false);
 }
 
 
@@ -1380,6 +1396,7 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	action_Move_Geometry->setEnabled(enable);
 	//action_Move_Vertex->setEnabled(enable);
 	action_Manipulate_Pole->setEnabled(enable);
+	action_Create_Topology->setEnabled(enable);
 #if 0		// Delete Feature is nontrivial to implement (in the model) properly.
 	action_Delete_Feature->setEnabled(enable);
 #else

@@ -74,6 +74,11 @@
        <string>Reconstruction Pole</string>
       </attribute>
      </widget>
+     <widget class="QWidget" name="tab_create_topology" >
+      <attribute name="title" >
+       <string>Create Topology</string>
+      </attribute>
+     </widget>
      <widget class="QWidget" name="tab_plate_closure" >
       <attribute name="title" >
        <string>Close Plate</string>

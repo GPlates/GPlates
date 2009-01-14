@@ -13,6 +13,8 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     ClickGeometry.cc
     ClickGeometry.h
+    CreateTopology.cc
+    CreateTopology.h
     DigitiseGeometry.cc
     DigitiseGeometry.h
     ManipulatePole.cc
