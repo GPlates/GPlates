@@ -1918,6 +1918,8 @@ GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::CREATE_TOPOLOGY_LAYER);
 	orthogonal_main_layers.set(
+			GPlatesViewOperations::RenderedGeometryCollection::PLATE_CLOSURE_LAYER);
+	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_MANIPULATION_LAYER);

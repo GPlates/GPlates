@@ -80,6 +80,10 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 				" Ctrl+drag to reorient the globe."));
 	}
 
+	// Activate the pole manipulation rendered layer.
+	d_rendered_geom_collection->set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::PLATE_CLOSURE_LAYER);
+
 	// hide other tools ; show plate closure 
 	// d_layers_ptr->show_only_plate_closure_layer();
 
