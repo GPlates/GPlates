@@ -161,7 +161,7 @@
  */
 #define PROFILE_BLOCK(name) \
 	PROFILE_BEGIN(name); \
-	GPlatesUtils::ProfileBlockEnd PROFILE_ANONYMOUS_VARIABLE(gplates_profile_block);
+	GPlatesUtils::ProfileBlockEnd PROFILE_UNUSED PROFILE_ANONYMOUS_VARIABLE(gplates_profile_block);
 
 /**
  * Same as @a PROFILE_BLOCK except the name of the profile is the function
@@ -226,6 +226,12 @@
 #define PROFILE_CONCATENATE_DIRECT(s1, s2) s1##s2
 #define PROFILE_CONCATENATE(s1, s2)        PROFILE_CONCATENATE_DIRECT(s1, s2)
 #define PROFILE_ANONYMOUS_VARIABLE(name)   PROFILE_CONCATENATE(name, __LINE__)
+
+#if defined (__GNUG__)
+#define PROFILE_UNUSED __attribute__ ((unused))
+#else
+#define PROFILE_UNUSED
+#endif
 
 
 namespace GPlatesUtils
