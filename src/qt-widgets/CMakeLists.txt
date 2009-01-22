@@ -123,10 +123,10 @@ set(srcs
     MoveVertexWidget.h
     MoveVertexWidgetUi.ui
     NoActiveEditWidgetException.h
+    PlateClosureWidget.cc
+    PlateClosureWidget.h
+    PlateClosureWidgetUi.ui
     PropertyValueNotSupportedException.h
-	PlateClosureWidget.cc
-	PlateClosureWidget.h
-	PlateClosureWidgetUi.ui
     QueryFeaturePropertiesWidget.cc
     QueryFeaturePropertiesWidget.h
     QueryFeaturePropertiesWidgetUi.ui

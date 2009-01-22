@@ -11,6 +11,8 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    ComputationalMeshSolver.cc
+    ComputationalMeshSolver.h
     FeatureCollectionClassifier.cc
     FeatureCollectionClassifier.h
     FromQvariantConverter.cc
@@ -25,16 +27,15 @@ set(srcs
     KeyValueDictionaryFinder.h
     PlateIdFinder.cc
     PlateIdFinder.h
-	ComputationalMeshSolver.cc
-	ComputationalMeshSolver.h
-	ReconstructedFeatureGeometryFinder.cc
-	ReconstructedFeatureGeometryFinder.h
-	TopologyResolver.cc
-	TopologyResolver.h
+
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
+    ReconstructedFeatureGeometryFinder.cc
+    ReconstructedFeatureGeometryFinder.h
     ShapefileAttributeFinder.cc
     ShapefileAttributeFinder.h
+    TopologyResolver.cc
+    TopologyResolver.h
     ToQvariantConverter.cc
     ToQvariantConverter.h
     TotalReconstructionSequencePlateIdFinder.cc
@@ -45,8 +46,8 @@ set(srcs
     TotalReconstructionSequenceRotationInterpolater.h
     TotalReconstructionSequenceTimePeriodFinder.cc
     TotalReconstructionSequenceTimePeriodFinder.h
-	ValueFinder.cc
-	ValueFinder.h
+    ValueFinder.cc
+    ValueFinder.h
     ViewFeatureGeometriesWidgetPopulator.cc
     ViewFeatureGeometriesWidgetPopulator.h
     XsStringFinder.cc

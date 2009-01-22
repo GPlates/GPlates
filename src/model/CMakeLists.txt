@@ -20,6 +20,8 @@ set(srcs
     FeatureCollectionRevision.h
     FeatureHandle.h
     FeatureId.h
+    FeatureIdRegistry.cc
+    FeatureIdRegistry.h
     FeatureRevision.cc
     FeatureRevision.h
     FeatureStore.h
@@ -29,8 +31,6 @@ set(srcs
     FeatureType.h
     FeatureVisitor.cc
     FeatureVisitor.h
-	FeatureIdRegistry.cc
-	FeatureIdRegistry.h
     InlinePropertyContainer.h
     Model.cc
     Model.h

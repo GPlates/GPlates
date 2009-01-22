@@ -46,11 +46,11 @@ set(srcs
     GpmlRevisionId.h
     GpmlTimeSample.h
     GpmlTimeWindow.h
-	GpmlTopologicalIntersection.h
-	GpmlTopologicalLineSection.h
-	GpmlTopologicalPoint.h
-	GpmlTopologicalPolygon.h
-	GpmlTopologicalSection.h
+    GpmlTopologicalIntersection.h
+    GpmlTopologicalLineSection.h
+    GpmlTopologicalPoint.h
+    GpmlTopologicalPolygon.h
+    GpmlTopologicalSection.h
     InMemoryRaster.h
     TemplateTypeParameterType.h
     TextContent.h

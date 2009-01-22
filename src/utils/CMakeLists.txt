@@ -13,8 +13,8 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     CallStackTracker.cc
     CallStackTracker.h
-	FeatureHandleToOldId.cc
-	FeatureHandleToOldId.h
+    FeatureHandleToOldId.cc
+    FeatureHandleToOldId.h
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
     GeometryCreationUtils.cc
@@ -24,6 +24,8 @@ set(srcs
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
+    Profile.cc
+    Profile.h
     StringFormattingUtils.cc
     StringFormattingUtils.h
     StringSet.cc
