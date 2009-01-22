@@ -30,10 +30,13 @@
 #include <boost/pool/object_pool.hpp>
 #include <boost/bind.hpp>
 #include <stack>
+#include <vector>
 #include <string>
 #include <map>
 #include <iterator>
+#include <iostream>
 #include <fstream>
+#include <iomanip>
 #include <numeric>
 #include <functional>
 
@@ -457,11 +460,11 @@ namespace
 		update(run);
 	}
 
-	int
+	calls_t
 	calc_total_calls_from_parents(
 			const ProfileNode &profile_node)
 	{
-		int calls = 0;
+		calls_t calls = 0;
 		ProfileNode::profile_count_const_iterator parent_begin = profile_node.parent_profiles_begin();
 		ProfileNode::profile_count_const_iterator parent_end = profile_node.parent_profiles_end();
 		for (
