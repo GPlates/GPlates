@@ -40,6 +40,10 @@
 
 #include "utils/StringUtils.h"
 #include "utils/MathUtils.h"
+// NOTE: we include UnicodeStringUtils.h to avoid Visual Studio compiler
+// warning concerning UBool -> bool performance warning. This header defines
+// a template specialisation of std::less<UnicodeString> that avoids this warning.
+#include "utils/UnicodeStringUtils.h"
 
 #include "maths/LatLonPointConversions.h"
 #include "maths/PointOnSphere.h"
@@ -1438,6 +1442,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			const std::list<GPlatesMaths::PointOnSphere> &);
 
 	typedef std::map<UnicodeString, creation_function_type> creation_map_type;
+	// NOTE: we've included UnicodeStringUtils.h to avoid Visual Studio compiler
+	// warning concerning UBool -> bool performance warning. That header defines
+	// a template specialisation of std::less<UnicodeString> that avoids this warning.
 	typedef creation_map_type::const_iterator creation_map_const_iterator;
 
 
