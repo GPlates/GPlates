@@ -117,45 +117,53 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-O3 -ggdb3")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os")
 
-    # Create our own build type for profiling since there are no defaults that suit it.
-    # Use '-DCMAKE_BUILD_TYPE:STRING=profilegprof' option to 'cmake' to generate a gprof profile build environment
-    # and activate 'CMAKE_CXX_FLAGS_PROFILEGPROF' (note: 'CMAKE_CXX_FLAGS' will get used too).
-    set(CMAKE_CXX_FLAGS_PROFILEGPROF "-pg -O2 -ggdb3" CACHE STRING
-        "Flags used by the C++ compiler during gprof profile builds."
-        FORCE)
-    mark_as_advanced(CMAKE_CXX_FLAGS_PROFILEGPROF)
-    set(CMAKE_EXE_LINKER_FLAGS_PROFILEGPROF "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
-    set(CMAKE_SHARED_LINKER_FLAGS_PROFILEGPROF "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
-    set(CMAKE_MODULE_LINKER_FLAGS_PROFILEGPROF "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}")
-    # We have an extra build configuration.
-    set(extra_build_configurations "${extra_build_configurations} ProfileGprof")
-    
-    # Apparently this variable should only be set if it currently exists because it's not used in all native build environments.
-    # See http://mail.kde.org/pipermail/kde-buildsystem/2008-November/005108.html.
-    if(CMAKE_CONFIGURATION_TYPES)
-      set(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} ProfileGprof CACHE STRING "" FORCE)
-    endif(CMAKE_CONFIGURATION_TYPES)
+    # Disable profiling when releasing to the public.
+    if (NOT GPLATES_SOURCE_RELEASE)
+        # Create our own build type for profiling since there are no defaults that suit it.
+        # Use '-DCMAKE_BUILD_TYPE:STRING=profilegprof' option to 'cmake' to generate a gprof profile build environment
+        # and activate 'CMAKE_CXX_FLAGS_PROFILEGPROF' (note: 'CMAKE_CXX_FLAGS' will get used too).
+        set(CMAKE_CXX_FLAGS_PROFILEGPROF "-pg -O2 -ggdb3" CACHE STRING
+            "Flags used by the C++ compiler during gprof profile builds."
+            FORCE)
+        mark_as_advanced(CMAKE_CXX_FLAGS_PROFILEGPROF)
+        set(CMAKE_EXE_LINKER_FLAGS_PROFILEGPROF "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+        set(CMAKE_SHARED_LINKER_FLAGS_PROFILEGPROF "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
+        set(CMAKE_MODULE_LINKER_FLAGS_PROFILEGPROF "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}")
+        # We have an extra build configuration.
+        set(extra_build_configurations "${extra_build_configurations} ProfileGprof")
+        
+        # Apparently this variable should only be set if it currently exists because it's not used in all native build environments.
+        # See http://mail.kde.org/pipermail/kde-buildsystem/2008-November/005108.html.
+        if(CMAKE_CONFIGURATION_TYPES)
+          set(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} ProfileGprof CACHE STRING "" FORCE)
+        endif(CMAKE_CONFIGURATION_TYPES)
+    endif (NOT GPLATES_SOURCE_RELEASE)
 
     # There are _DEBUG, _RELEASE, _RELWITHDEBINFO, _MINSIZEREL and _PROFILEGPROF suffixes for CMAKE_*_LINKER_FLAGS
     # where '*' is EXE, SHARED and MODULE.
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-# Create our own build type for profiling with GPlates inbuilt profiler.
-# Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile
-# build environment and activate 'CMAKE_CXX_FLAGS_PROFILEGPLATES' (note: 'CMAKE_CXX_FLAGS' will get used too).
-set(CMAKE_CXX_FLAGS_PROFILEGPLATES "-DPROFILE_GPLATES ${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING
-    "Flags used by the C++ compiler during gplates profile builds."
-    FORCE)
-mark_as_advanced(CMAKE_CXX_FLAGS_PROFILEGPLATES)
-set(CMAKE_EXE_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
-set(CMAKE_SHARED_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
-set(CMAKE_MODULE_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}")
-# We have an extra build configuration.
-set(extra_build_configurations "${extra_build_configurations} ProfileGplates")
+# Disable profiling when releasing to the public.
+# This is also because cmake 2.4 won't let you add a new build type to Visual Studio.
+# Cmake 2.6 does allow this but we don't want to force cmake 2.6 on the public.
+# GPlates developers will have to use cmake 2.6 if they're using Visual Studio (otherwise 2.4.6 and above is fine otherwise).
+if (NOT GPLATES_SOURCE_RELEASE)
+    # Create our own build type for profiling with GPlates inbuilt profiler.
+    # Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile
+    # build environment and activate 'CMAKE_CXX_FLAGS_PROFILEGPLATES' (note: 'CMAKE_CXX_FLAGS' will get used too).
+    set(CMAKE_CXX_FLAGS_PROFILEGPLATES "-DPROFILE_GPLATES ${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING
+        "Flags used by the C++ compiler during gplates profile builds."
+        FORCE)
+    mark_as_advanced(CMAKE_CXX_FLAGS_PROFILEGPLATES)
+    set(CMAKE_EXE_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+    set(CMAKE_SHARED_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
+    set(CMAKE_MODULE_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}")
+    # We have an extra build configuration.
+    set(extra_build_configurations "${extra_build_configurations} ProfileGplates")
 
-# Apparently this variable should only be set if it currently exists because it's not used in all native build environments.
-# See http://mail.kde.org/pipermail/kde-buildsystem/2008-November/005108.html.
-if(CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} ProfileGplates CACHE STRING "" FORCE)
-endif(CMAKE_CONFIGURATION_TYPES)
-
+    # Apparently this variable should only be set if it currently exists because it's not used in all native build environments.
+    # See http://mail.kde.org/pipermail/kde-buildsystem/2008-November/005108.html.
+    if(CMAKE_CONFIGURATION_TYPES)
+      set(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} ProfileGplates CACHE STRING "" FORCE)
+    endif(CMAKE_CONFIGURATION_TYPES)
+endif (NOT GPLATES_SOURCE_RELEASE)
