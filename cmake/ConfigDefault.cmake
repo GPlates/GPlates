@@ -42,13 +42,25 @@ set(GPLATES_DOXYGEN_INPUT
 # 2) Release - release build optimised for speed.
 # 3) RelWithDebInfo - release build optimised for speed with debug info.
 # 4) MinSizeRel - release build optimised for size.
-IF(NOT MSVC)
+
+# The following is from http://mail.kde.org/pipermail/kde-buildsystem/2008-November/005112.html...
+#
+# "The way to identify whether a generator is multi-configuration is to
+# check whether CMAKE_CONFIGURATION_TYPES is set.  The VS/XCode generators
+# set it (and ignore CMAKE_BUILD_TYPE).  The Makefile generators do not
+# set it (and use CMAKE_BUILD_TYPE).  If CMAKE_CONFIGURATION_TYPES is not
+# already set, don't set it."
+#
+IF(NOT CMAKE_CONFIGURATION_TYPES)
     IF(NOT CMAKE_BUILD_TYPE)
+      # Should we set build type to RelWithDebInfo for developers and
+      # to Release for general public (ie when GPLATES_SOURCE_RELEASE is true) ?
+      # Currently it's Release for both.
       SET(CMAKE_BUILD_TYPE Release CACHE STRING
           "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel ${extra_build_configurations}."
           FORCE)
     ENDIF(NOT CMAKE_BUILD_TYPE)
-ENDIF(NOT MSVC)
+ENDIF(NOT CMAKE_CONFIGURATION_TYPES)
 
 # Turn this on if you want to...
 #	Unix: see compiler commands echoed to console and messages about make entering and leaving directories.
