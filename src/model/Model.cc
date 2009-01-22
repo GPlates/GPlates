@@ -49,6 +49,8 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 
+#include "utils/Profile.h"
+
 GPlatesModel::Model::Model():
 	d_feature_store(FeatureStore::create())
 {  }
@@ -170,13 +172,14 @@ GPlatesModel::Model::create_reconstruction(
 		const double &time,
 		GPlatesModel::integer_plate_id_type root)
 {
-
+	PROFILE_FUNC();
 
 #if 0
 time_t *tp=NULL;
 std::cerr << std::endl;
 std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
+	PROFILE_BEGIN("Model::create_reconstruction build reconstruction tree");
 
 	ReconstructionGraph graph(time);
 	ReconstructionTreePopulator rtp(time, graph);
@@ -200,9 +203,11 @@ std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.end(),
 		rfgp);
 
+	PROFILE_END();
 #if 0
 std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
+	PROFILE_BEGIN("Model::create_reconstruction map feature id to RFG");
 
 	// Visit the feature collections and build a map from feature id to RFG
 	GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder rfg_finder( *reconstruction );
@@ -214,9 +219,11 @@ std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << s
 
 	// rfg_finder.report();
 
+	PROFILE_END();
 #if 0
 //std::cerr << "3 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
+	PROFILE_BEGIN("Model::create_reconstruction build platepolygons");
 
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
@@ -236,10 +243,12 @@ std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << s
 
 	topology_resolver.report();
 
+	PROFILE_END();
 #if 0
 #if 0
 std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
+	PROFILE_BEGIN("Model::create_reconstruction fill computational meshes with velocity data");
 
 	// Visit the feature collections and fill computational meshes with nice juicy velocity data
 	GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
@@ -257,10 +266,11 @@ std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.end(),
 		solver);
 	solver.report();
-#endif
 
+	PROFILE_END();
 #if 0
 std::cerr << "5 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
+#endif
 #endif
 
 	return reconstruction;
