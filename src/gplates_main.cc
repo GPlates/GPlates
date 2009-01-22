@@ -41,6 +41,7 @@
 #include <QTextStream>
 #include <QtGui/QApplication>
 #include "qt-widgets/ViewportWindow.h"
+#include "utils/Profile.h"
 
 
 namespace {
@@ -102,8 +103,11 @@ namespace {
 }
 
 
-int main(int argc, char* argv[])
+int call_main(int argc, char* argv[])
 {
+	// Profiles local object constructors and destructors.
+	PROFILE_BLOCK("application startup and shutdown");
+
 	QApplication application(argc, argv);
 	Q_INIT_RESOURCE(qt_widgets);
 
@@ -116,9 +120,25 @@ int main(int argc, char* argv[])
 
 	GPlatesQtWidgets::ViewportWindow viewport_window;
 
+	// Profiles everything except local object constructors and destructors.
+	PROFILE_BLOCK("application running");
+
 	viewport_window.show();
 	viewport_window.load_files(cmdline.first + cmdline.second);
 	viewport_window.reconstruct_to_time_with_root(0.0, 0);
 
 	return application.exec();
+}
+
+int main(int argc, char* argv[])
+{
+	const int return_code = call_main(argc, argv);
+
+	// We wrap 'main' inside 'call_main' because we want all profiles
+	// to have completed before we do profile reporting and we only
+	// want to do profile reporting if no exceptions have made their
+	// way back to 'main'.
+	PROFILE_REPORT_TO_FILE("profile.txt");
+
+	return return_code;
 }
