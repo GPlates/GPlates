@@ -92,6 +92,8 @@
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/TemplateTypeParameterType.h"
 
+#include "view-operations/RenderedGeometryParameters.h"
+
 namespace
 {
 	/**
@@ -1040,7 +1042,9 @@ GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
 				*d_geometry_opt_ptr,
-				colour);
+				colour,
+				GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_POINT_SIZE_HINT,
+				GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_LINE_WIDTH_HINT);
 
 		// Add to pole manipulation layer.
 		d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_geometry);

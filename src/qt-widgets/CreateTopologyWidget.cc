@@ -29,6 +29,7 @@
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "utils/MathUtils.h"
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 GPlatesQtWidgets::CreateTopologyWidget::CreateTopologyWidget(
@@ -223,7 +224,10 @@ GPlatesQtWidgets::CreateTopologyWidget::draw_initial_geometries()
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
-					*iter, white_colour);
+					*iter, 
+					white_colour,
+					GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_POINT_SIZE_HINT,
+					GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_LINE_WIDTH_HINT);
 
 		// Add to pole manipulation layer.
 		d_initial_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
