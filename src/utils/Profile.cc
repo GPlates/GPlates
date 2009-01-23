@@ -576,6 +576,17 @@ namespace
 				const ticks_t &suspend_profile_time);
 
 		/**
+		 * Returns true if all profile runs have finished.
+		 */
+		bool
+		have_all_profile_runs_finished() const
+		{
+			// If only the root profile run exists then it means all
+			// user added profiles have finished.
+			return d_profile_run_stack.size() == 1;
+		}
+
+		/**
 		 * Returns generated profile graph.
 		 */
 		const ProfileGraph &
@@ -880,6 +891,14 @@ namespace GPlatesUtils
 	profile_report_to_ostream(
 			std::ostream &output_stream)
 	{
+		if (!ProfileManager::instance().have_all_profile_runs_finished())
+		{
+			std::cerr << "Profiler encountered too many PROFILE_BEGIN calls - "
+					"number of PROFILE_BEGIN and PROFILE_END calls must match." << std::endl;
+			std::cerr << "...Or PROFILE_REPORT called when profiles are still running." << std::endl;
+			throw GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__);
+		}
+
 		const ProfileGraph &profile_graph = ProfileManager::instance().get_profile_graph();
 
 		profile_graph.report(output_stream);
