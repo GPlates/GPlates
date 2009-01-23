@@ -119,9 +119,6 @@ namespace GPlatesViewOperations
 }
 
 
-const GPlatesGui::Colour GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_COLOUR =
- 	GPlatesGui::Colour::WHITE;
-
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(

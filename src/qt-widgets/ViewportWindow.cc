@@ -80,6 +80,7 @@
 #include "file-io/ShapeFileReader.h"
 #include "file-io/GpmlOnePointSixReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
+#include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
 
@@ -526,7 +527,10 @@ namespace
 				// Create a RenderedGeometry using the reconstructed geometry.
 				GPlatesViewOperations::RenderedGeometry rendered_geom =
 					rendered_geom_factory.create_rendered_geometry_on_sphere(
-							(*iter)->geometry(), *colour);
+							(*iter)->geometry(),
+							*colour,
+							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
+							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
 
 				// Add to the reconstruction rendered layer.
 				// Updates to the canvas will be taken care of since canvas listens
@@ -727,7 +731,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_rendered_geom_collection,
 					get_rendered_geometry_factory(),
 					d_geom_builder_tool_target,
-					d_geom_operation_render_parameters,
 					*d_choose_canvas_tool,
 					*d_canvas_ptr,
 					d_canvas_ptr->globe(),

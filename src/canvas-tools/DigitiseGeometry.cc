@@ -38,7 +38,6 @@ GPlatesCanvasTools::DigitiseGeometry::create(
 		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
-		const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		// Ultimately would like to remove the following arguments...
 		GPlatesGui::Globe &globe,
@@ -51,7 +50,6 @@ GPlatesCanvasTools::DigitiseGeometry::create(
 					geom_builder_tool_target,
 					rendered_geometry_collection,
 					rendered_geometry_factory,
-					digitise_render_parameters,
 					choose_canvas_tool,
 					// Ultimately would like to remove the following arguments...
 					globe,
@@ -65,7 +63,6 @@ GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
 		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
-		const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		// Ultimately would like to remove the following arguments...
 		GPlatesGui::Globe &globe_,
@@ -81,7 +78,6 @@ GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
 				geom_type,
 				&rendered_geometry_collection,
 				&rendered_geometry_factory,
-				digitise_render_parameters,
 				choose_canvas_tool))
 {
 }

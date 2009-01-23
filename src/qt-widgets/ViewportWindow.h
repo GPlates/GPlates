@@ -72,7 +72,6 @@
 
 
 #include "view-operations/GeometryBuilder.h"
-#include "view-operations/GeometryOperationRenderParameters.h"
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
 #include "view-operations/GeometryBuilderToolTarget.h"
 #include "view-operations/RenderedGeometryCollection.h"
@@ -430,7 +429,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
 		GPlatesViewOperations::GeometryBuilder d_digitise_geometry_builder;
 		GPlatesViewOperations::GeometryBuilder d_focused_feature_geometry_builder;
-		GPlatesViewOperations::GeometryOperationRenderParameters d_geom_operation_render_parameters;
 		GPlatesViewOperations::GeometryBuilderToolTarget d_geom_builder_tool_target;
 		GPlatesViewOperations::FocusedFeatureGeometryManipulator d_focused_feature_geom_manipulator;
 

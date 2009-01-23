@@ -30,6 +30,7 @@
 #include "AddPointGeometryOperation.h"
 #include "GeometryBuilderUndoCommands.h"
 #include "RenderedGeometryFactory.h"
+#include "RenderedGeometryParameters.h"
 #include "RenderedGeometryUtils.h"
 #include "UndoRedo.h"
 #include "gui/ChooseCanvasTool.h"
@@ -40,14 +41,12 @@ GPlatesViewOperations::AddPointGeometryOperation::AddPointGeometryOperation(
 		GeometryType::Value build_geom_type,
 		RenderedGeometryCollection *rendered_geometry_collection,
 		RenderedGeometryFactory *rendered_geometry_factory,
-		const GeometryOperationRenderParameters &geom_operation_render_parameters,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool) :
 d_build_geom_type(build_geom_type),
 d_geometry_builder(NULL),
 d_rendered_geometry_collection(rendered_geometry_collection),
 d_rendered_geometry_factory(rendered_geometry_factory),
-d_choose_canvas_tool(&choose_canvas_tool),
-d_geom_operation_render_parameters(geom_operation_render_parameters)
+d_choose_canvas_tool(&choose_canvas_tool)
 {
 }
 
@@ -268,8 +267,8 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_multipoint_on_
 		RenderedGeometry rendered_geom =
 			d_rendered_geometry_factory->create_rendered_point_on_sphere(
 					point_on_sphere,
-					d_geom_operation_render_parameters.get_focus_colour(),
-					d_geom_operation_render_parameters.get_large_point_size_hint());
+					GeometryOperationParameters::FOCUS_COLOUR,
+					GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
 
 		// Add to the points layer.
 		d_points_layer_ptr->add_rendered_geometry(rendered_geom);
@@ -293,8 +292,8 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 		RenderedGeometry polyline_rendered_geom =
 			d_rendered_geometry_factory->create_rendered_polyline_on_sphere(
 					polyline_on_sphere,
-					d_geom_operation_render_parameters.get_focus_colour(),
-					d_geom_operation_render_parameters.get_line_width_hint());
+					GeometryOperationParameters::FOCUS_COLOUR,
+					GeometryOperationParameters::LINE_WIDTH_HINT);
 
 		// Add to the lines layer.
 		d_lines_layer_ptr->add_rendered_geometry(polyline_rendered_geom);
@@ -305,8 +304,8 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 		RenderedGeometry end_point_rendered_geom =
 			d_rendered_geometry_factory->create_rendered_point_on_sphere(
 					end_point_on_sphere,
-					d_geom_operation_render_parameters.get_not_in_focus_colour(),
-					d_geom_operation_render_parameters.get_large_point_size_hint());
+					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
+					GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
 
 		// Add to the points layer.
 		d_points_layer_ptr->add_rendered_geometry(end_point_rendered_geom);
@@ -320,8 +319,8 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 		RenderedGeometry rendered_geom =
 			d_rendered_geometry_factory->create_rendered_point_on_sphere(
 					point_on_sphere,
-					d_geom_operation_render_parameters.get_not_in_focus_colour(),
-					d_geom_operation_render_parameters.get_regular_point_size_hint());
+					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
+					GeometryOperationParameters::REGULAR_POINT_SIZE_HINT);
 
 		// Add to the points layer.
 		d_points_layer_ptr->add_rendered_geometry(rendered_geom);
@@ -354,8 +353,8 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polygon_on_sph
 		RenderedGeometry end_segment_polyline_rendered_geom =
 			d_rendered_geometry_factory->create_rendered_polyline_on_sphere(
 					end_segment_polyline_on_sphere,
-					d_geom_operation_render_parameters.get_not_in_focus_colour(),
-					d_geom_operation_render_parameters.get_line_width_hint());
+					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
+					GeometryOperationParameters::LINE_WIDTH_HINT);
 
 		// Add to the lines layer.
 		d_lines_layer_ptr->add_rendered_geometry(end_segment_polyline_rendered_geom);

@@ -45,13 +45,13 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_dashed_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR);
+				const GPlatesGui::Colour &colour);
 
 		virtual
 		rendered_geometry_seq_type
 		create_rendered_dashed_polyline_segments_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR);
+				const GPlatesGui::Colour &colour);
 		//@}
 
 	private:

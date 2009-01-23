@@ -37,7 +37,7 @@ GPlatesViewOperations::GlobeRenderedGeometryFactory::create_rendered_dashed_poly
 		const GPlatesGui::Colour &colour)
 {
 	// Until this is implemented we'll just return a regular polyline.
-	return create_rendered_polyline_on_sphere(polyline, colour);
+	return create_rendered_polyline_on_sphere(polyline, colour, 1.0f);
 }
 
 GPlatesViewOperations::GlobeRenderedGeometryFactory::rendered_geometry_seq_type
@@ -72,7 +72,7 @@ GPlatesViewOperations::GlobeRenderedGeometryFactory::create_rendered_dashed_poly
 			GPlatesMaths::PolylineOnSphere::create_on_heap(segment, segment + 2);
 
 		const RenderedGeometry rendered_geom_segment =
-			create_rendered_polyline_on_sphere(polyline_segment, colour);
+			create_rendered_polyline_on_sphere(polyline_segment, colour, 1.0f);
 
 		polyline_seq.push_back(rendered_geom_segment);
 	}

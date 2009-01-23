@@ -30,6 +30,7 @@
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 GPlatesGui::GeometryFocusHighlight::GeometryFocusHighlight(
@@ -83,7 +84,10 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
-						d_focused_geometry->geometry(), white);
+						d_focused_geometry->geometry(),
+						white,
+						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
+						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
 
 		d_highlight_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
