@@ -302,6 +302,12 @@ namespace
 					d_profile_link_map_const_iter == rhs.d_profile_link_map_const_iter;
 			}
 
+			const ProfileLink *
+			get() const
+			{
+				return d_profile_link_map_const_iter->second.get();
+			}
+
 			const ProfileLink &
 			operator*() const
 			{
@@ -444,7 +450,7 @@ namespace
 					GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
 		}
 
-		// Get this link to update itself from info in 'run'.
+		// Get this parent_link to update itself from info in 'run'.
 		ProfileLink::pointer_type &parentLink = p->second;
 		parentLink->update(run);
 
@@ -454,11 +460,11 @@ namespace
 
 	calls_t
 	calc_total_calls_from_parents(
-			const ProfileNode &profile_node)
+			const ProfileNode *profile_node)
 	{
 		calls_t calls = 0;
-		ProfileNode::profile_count_const_iterator parent_begin = profile_node.parent_profiles_begin();
-		ProfileNode::profile_count_const_iterator parent_end = profile_node.parent_profiles_end();
+		ProfileNode::profile_count_const_iterator parent_begin = profile_node->parent_profiles_begin();
+		ProfileNode::profile_count_const_iterator parent_end = profile_node->parent_profiles_end();
 		for (
 			ProfileNode::profile_count_const_iterator parent_iter = parent_begin;
 			parent_iter != parent_end;
@@ -473,11 +479,11 @@ namespace
 
 	ticks_t
 	calc_ticks_in_all_children(
-			const ProfileNode &profile_node)
+			const ProfileNode *profile_node)
 	{
 		ticks_t ticks = 0;
-		ProfileNode::profile_count_const_iterator child_begin = profile_node.child_profiles_begin();
-		ProfileNode::profile_count_const_iterator child_end = profile_node.child_profiles_end();
+		ProfileNode::profile_count_const_iterator child_begin = profile_node->child_profiles_begin();
+		ProfileNode::profile_count_const_iterator child_end = profile_node->child_profiles_end();
 		for (
 			ProfileNode::profile_count_const_iterator child_iter = child_begin;
 			child_iter != child_end;
@@ -486,6 +492,14 @@ namespace
 			ticks += child_iter->get_ticks_in_child() + child_iter->get_ticks_in_child_children();
 		}
 		return ticks;
+	}
+
+	inline
+	ticks_t
+	calc_ticks_in_profile_node_and_all_its_children(
+			const ProfileNode *profile_node)
+	{
+		return profile_node->get_self_ticks() + calc_ticks_in_all_children(profile_node);
 	}
 
 
@@ -521,11 +535,25 @@ namespace
 				std::ostream &output_stream) const;
 
 	private:
+		//! Sequence of @a ProfileNode objects.
+		typedef std::vector<const ProfileNode *> profile_node_seq_type;
 
 		//! Maps profile name to ProfileNode object.
 		typedef std::map<std::string, ProfileNode> profile_node_map_type;
 
 		profile_node_map_type d_profile_node_map;
+
+		void
+		report_flat_profile(
+				std::ostream &output_stream,
+				const profile_node_seq_type &profile_node_seq,
+				const float total_seconds) const;
+
+		void
+		report_call_graph_profile(
+				std::ostream &output_stream,
+				const profile_node_seq_type &profile_node_seq,
+				const float total_seconds) const;
 	};
 
 	ProfileNode &
@@ -548,69 +576,40 @@ namespace
 	}
 
 	void
-	ProfileGraph::report(
-			std::ostream &output_stream) const
+	ProfileGraph::report_flat_profile(
+			std::ostream &output_stream,
+			const profile_node_seq_type &profile_node_seq,
+			const float total_seconds) const
 	{
-		// If there are no recorded profiles then there is no
-		// reporting to be done.
-		if ( d_profile_node_map.empty() )
-		{
-			return;
-		}
+		// Copy sequence of ProfileNode objects.
+		profile_node_seq_type sorted_profile_node_seq(
+				profile_node_seq.begin(), profile_node_seq.end());
 
-		// Sequence of all ProfileNode objects sorted on tick count.
-		typedef std::vector<const ProfileNode *> sorted_profile_node_seq_type;
-		sorted_profile_node_seq_type sorted_profile_nodes;
-
-		// Copy ProfileNodes from map to vector.
-		profile_node_map_type::const_iterator profile_node_map_iter;
-		for (
-			profile_node_map_iter = d_profile_node_map.begin();
-			profile_node_map_iter != d_profile_node_map.end();
-			++profile_node_map_iter)
-		{
-			const ProfileNode *profile_node = &profile_node_map_iter->second;
-			sorted_profile_nodes.push_back(profile_node);
-		}
-
+		// Sort sequence of ProfileNode objects according to time spent
+		// in each profile only (ie, not counting time spent in their children).
 		std::sort(
-				sorted_profile_nodes.begin(),
-				sorted_profile_nodes.end(),
+				sorted_profile_node_seq.begin(),
+				sorted_profile_node_seq.end(),
 				boost::bind(&ProfileNode::get_self_ticks, _1)
 						< boost::bind(&ProfileNode::get_self_ticks, _2));
-
-		// Get the total number of ticks spent profiling.
-		const ticks_t total_ticks = std::accumulate(
-				sorted_profile_nodes.begin(),
-				sorted_profile_nodes.end(),
-				ticks_t(0),
-				boost::bind(std::plus<ticks_t>(),
-						_1,
-						boost::bind(&ProfileNode::get_self_ticks, _2)));
-		
-		const double total_seconds = convert_ticks_to_seconds(total_ticks);
-		
-		output_stream << std::endl;
-		output_stream << "Profile Report" << std::endl;
-		output_stream << "--------------" << std::endl;
-		output_stream << "--------------" << std::endl << std::endl;
 		
 		output_stream << "Flat Profile" << std::endl;
-		output_stream << "------------" << std::endl << std::endl;
+		output_stream << "------------" << std::endl;
+		output_stream << std::endl;
 		
 		output_stream.setf(std::ios::fixed);
 
 		// Print out the flat profile in order of time taken.
-		sorted_profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
+		profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
 		for (
-			sorted_profile_node_seq_iter = sorted_profile_nodes.rbegin();
-			sorted_profile_node_seq_iter != sorted_profile_nodes.rend();
+			sorted_profile_node_seq_iter = sorted_profile_node_seq.rbegin();
+			sorted_profile_node_seq_iter != sorted_profile_node_seq.rend();
 			++sorted_profile_node_seq_iter)
 		{
 			const ProfileNode *profile_node = *sorted_profile_node_seq_iter;
 			const double self_seconds = convert_ticks_to_seconds(profile_node->get_self_ticks());
 			const double percent = self_seconds / total_seconds * 100;
-			const calls_t calls = calc_total_calls_from_parents(*profile_node);
+			const calls_t calls = calc_total_calls_from_parents(profile_node);
 			const double seconds_per_call = (calls > 0) ? (self_seconds / calls) : 0;
 
 			output_stream
@@ -621,12 +620,165 @@ namespace
 				<< calls
 				<< " get_calls : "
 				<< std::setprecision(6) << seconds_per_call
-				<< " seconds/call." << std::endl;
+				<< " seconds/call."
+				<< std::endl;
 		}
 		output_stream << std::endl;
 
 		output_stream << "--------------" << std::endl;
 		output_stream << "--------------" << std::endl;
+	}
+
+	void
+	ProfileGraph::report_call_graph_profile(
+			std::ostream &output_stream,
+			const profile_node_seq_type &profile_node_seq,
+			const float total_seconds) const
+	{
+		// Copy sequence of ProfileNode objects.
+		profile_node_seq_type sorted_profile_node_seq(
+				profile_node_seq.begin(), profile_node_seq.end());
+
+		// Sort sequence of ProfileNode objects according to time spent
+		// in each profile AND time spent in their children.
+		std::sort(
+				sorted_profile_node_seq.begin(),
+				sorted_profile_node_seq.end(),
+				boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _1)
+					< boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _2));
+
+		
+		output_stream << "Call Graph Profile" << std::endl;
+		output_stream << "------------------" << std::endl;
+		output_stream << std::endl;
+		
+		output_stream.setf(std::ios::fixed);
+
+		// Print out the call graph profile in order of time taken.
+		profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
+		for (
+			sorted_profile_node_seq_iter = sorted_profile_node_seq.rbegin();
+			sorted_profile_node_seq_iter != sorted_profile_node_seq.rend();
+			++sorted_profile_node_seq_iter)
+		{
+			const ProfileNode *profile_node = *sorted_profile_node_seq_iter;
+
+			ProfileNode::profile_count_const_iterator parent_begin = profile_node->parent_profiles_begin();
+			ProfileNode::profile_count_const_iterator parent_end = profile_node->parent_profiles_end();
+			output_stream << std::endl;
+			for (
+				ProfileNode::profile_count_const_iterator parent_iter = parent_begin;
+				parent_iter != parent_end;
+				++parent_iter)
+			{
+				const ProfileLink *parent_link = parent_iter.get();
+				output_stream
+					<< "        \""
+					<< parent_link->get_parent()->get_name().c_str()
+					<< "\"("
+					<< parent_link->get_ticks_in_child()
+					<< ") : children("
+					<< parent_link->get_ticks_in_child_children()
+					<< ") : "
+					<< parent_link->get_calls()
+					<< "/"
+					<< calc_total_calls_from_parents(profile_node)
+					<< std::endl;
+			}
+			
+			const double self_seconds = convert_ticks_to_seconds(
+					profile_node->get_self_ticks());
+			const double children_seconds = convert_ticks_to_seconds(
+					calc_ticks_in_all_children(profile_node));
+			const double self_and_children_seconds = self_seconds + children_seconds;
+			const double percent = self_and_children_seconds / total_seconds * 100;
+			output_stream
+				<< percent
+				<< "%  \""
+				<< profile_node->get_name().c_str()
+				<< "\"("
+				<< self_seconds << ") : children("
+				<< children_seconds
+				<< ")"
+				<< std::endl;
+
+			ProfileNode::profile_count_const_iterator child_begin = profile_node->child_profiles_begin();
+			ProfileNode::profile_count_const_iterator child_end = profile_node->child_profiles_end();
+			output_stream << std::endl;
+			for (
+				ProfileNode::profile_count_const_iterator child_iter = child_begin;
+				child_iter != child_end;
+				++child_iter)
+			{
+				const ProfileLink *child_link = child_iter.get();
+				output_stream
+					<< "        \""
+					<< child_link->get_child()->get_name().c_str()
+					<< "\"("
+					<< child_link->get_ticks_in_child()
+					<< ") : children("
+					<< child_link->get_ticks_in_child_children()
+					<< ") : "
+					<< child_link->get_calls()
+					<< "/"
+					<< calc_total_calls_from_parents(child_link->get_child())
+					<< std::endl;
+			}
+		}
+		output_stream << std::endl;
+
+		output_stream << "------------------" << std::endl;
+		output_stream << "------------------" << std::endl;
+	}
+
+	void
+	ProfileGraph::report(
+			std::ostream &output_stream) const
+	{
+		// If there are no recorded profiles then there is no
+		// reporting to be done.
+		if ( d_profile_node_map.empty() )
+		{
+			return;
+		}
+
+		// Sequence of all ProfileNode objects.
+		profile_node_seq_type profile_nodes;
+
+		// Copy ProfileNodes from map to vector.
+		profile_node_map_type::const_iterator profile_node_map_iter;
+		for (
+			profile_node_map_iter = d_profile_node_map.begin();
+			profile_node_map_iter != d_profile_node_map.end();
+			++profile_node_map_iter)
+		{
+			const ProfileNode *profile_node = &profile_node_map_iter->second;
+			profile_nodes.push_back(profile_node);
+		}
+
+		// Get the total number of ticks spent profiling.
+		const ticks_t total_ticks = std::accumulate(
+				profile_nodes.begin(),
+				profile_nodes.end(),
+				ticks_t(0),
+				boost::bind(std::plus<ticks_t>(),
+						_1,
+						boost::bind(&ProfileNode::get_self_ticks, _2)));
+		
+		const double total_seconds = convert_ticks_to_seconds(total_ticks);
+		
+		output_stream << std::endl;
+		output_stream << "Profile Report" << std::endl;
+		output_stream << "--------------" << std::endl;
+		output_stream << "--------------" << std::endl;
+		output_stream << std::endl;
+
+		report_flat_profile(output_stream, profile_nodes, total_seconds);
+
+		output_stream << std::endl;
+		output_stream << std::endl;
+
+		report_call_graph_profile(output_stream, profile_nodes, total_seconds);
 	}
 
 
