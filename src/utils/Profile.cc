@@ -25,6 +25,7 @@
 */
 
 #include <boost/cstdint.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
 #include <boost/pool/object_pool.hpp>
@@ -518,6 +519,34 @@ namespace
 	}
 
 
+	//! The call graph of profile nodes.
+	class ProfileGraph
+	{
+	public:
+		/**
+		 * Returns a ProfileNode object for 'profile_name' - creates one if necessary.
+		 */
+		ProfileNode &
+		get_or_create_profile_node_by_name(
+				const std::string &profile_name);
+
+		/**
+		 * Prints out a report of this call graph to @a output_stream
+		 * (if any profiling has been done).
+		 */
+		void
+		report(
+				std::ostream &output_stream) const;
+
+	private:
+
+		//! Maps profile name to ProfileNode object.
+		typedef std::map<std::string, ProfileNode> profile_node_map_type;
+
+		profile_node_map_type d_profile_node_map;
+	};
+
+
 	//! Keeps track of profiles on function call stack.
 	class ProfileManager
 	{
@@ -525,7 +554,8 @@ namespace
 		//! Return the sole instance of this class.
 		static ProfileManager &instance()
 		{
-			return s_instance;
+			static boost::scoped_ptr<ProfileManager> s_instance(new ProfileManager());
+			return *s_instance;
 		}
 
 		/**
@@ -566,37 +596,26 @@ namespace
 				ticks_t **resume_profile_time);
 
 		/**
-		 * Prints out a report of all profiles to @a output_stream
-		 * (if any profiling has been done).
+		 * Returns generated profile graph.
 		 */
-		void
-		report(
-				std::ostream &output_stream);
-
+		const ProfileGraph &
+		get_profile_graph() const
+		{
+			return d_profile_graph;
+		}
 
 	private:
 		ProfileManager() { }
 
-		static ProfileManager s_instance;
-
-		//! Returns a ProfileNode object for 'profile_name' - creates one if necessary.
-		ProfileNode &
-		get_or_create_profile_node_by_name(
-				const std::string& profile_name);
-
-		//! Maps profile name to ProfileNode object.
-		typedef std::map<std::string, ProfileNode> profile_node_map_type;
-
-		profile_node_map_type d_profile_node_map;
+		//! Contains profile call graph.
+		ProfileGraph d_profile_graph;
 
 		//! Stack of profile runs that are currently following the call stack.
 		std::stack<ProfileRun> d_profile_run_stack;
 	};
 
-	ProfileManager ProfileManager::s_instance;
-
 	ProfileNode &
-	ProfileManager::get_or_create_profile_node_by_name(
+	ProfileGraph::get_or_create_profile_node_by_name(
 			const std::string &profile_name)
 	{
 		// A default ProfileNode object is created for 'profile_name' if
@@ -618,7 +637,7 @@ namespace
 	ProfileManager::get_profile_cache(
 			const char *profile_name)
 	{
-		ProfileNode &profile_node = get_or_create_profile_node_by_name(profile_name);
+		ProfileNode &profile_node = d_profile_graph.get_or_create_profile_node_by_name(profile_name);
 
 		return &profile_node;
 	}
@@ -693,8 +712,8 @@ namespace
 	}
 
 	void
-	ProfileManager::report(
-			std::ostream &output_stream)
+	ProfileGraph::report(
+			std::ostream &output_stream) const
 	{
 		// If there are no recorded profiles then there is no
 		// reporting to be done.
@@ -874,7 +893,9 @@ namespace GPlatesUtils
 	profile_report_to_ostream(
 			std::ostream &output_stream)
 	{
-		ProfileManager::instance().report(output_stream);
+		const ProfileGraph &profile_graph = ProfileManager::instance().get_profile_graph();
+
+		profile_graph.report(output_stream);
 	}
 
 	void
