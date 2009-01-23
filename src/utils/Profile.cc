@@ -128,9 +128,6 @@ namespace
 		finished_profiling(
 				ProfileRun& parent_run);
 
-		void
-		finished_profiling();
-
 		const ticks_t &
 		get_self_ticks() const
 		{
@@ -371,13 +368,6 @@ namespace
 				const ProfileRun &run,
 				ProfileNode &parent);
 
-		void
-		update(
-				const ProfileRun &run)
-		{
-			d_self_ticks += run.get_self_ticks();
-		}
-
 		const std::string &
 		get_name() const
 		{
@@ -458,7 +448,8 @@ namespace
 		ProfileLink::pointer_type &parentLink = p->second;
 		parentLink->update(run);
 
-		update(run);
+		// Update how much time gets allocated to us.
+		d_self_ticks += run.get_self_ticks();
 	}
 
 	calls_t
@@ -507,15 +498,6 @@ namespace
 	{
 		parent_run.d_children_ticks += d_self_ticks + d_children_ticks;
 		d_profile_node->update(*this, *parent_run.d_profile_node);
-	}
-
-	//
-	// This is here since ProfileNode needs to be defined before this method.
-	//
-	void
-	ProfileRun::finished_profiling()
-	{
-		d_profile_node->update(*this);
 	}
 
 
@@ -585,15 +567,13 @@ namespace
 		 * Called when stopping a profile run.
 		 * @a suspend_profile_time is the time just
 		 * when profile is first stopped. This value is used to update
-		 * the ticks count of the current profile run. The caller
-		 * is required to assign to the returned reference the value
-		 * of @a get_ticks() when it returns to the code being profiled
-		 * only if this method returns true.
+		 * the ticks count of the current profile run.
+		 * The caller is required to assign to the returned reference
+		 * the value of @a get_ticks().
 		*/
-		bool
+		ticks_t &
 		stop_profile(
-				const ticks_t &suspend_profile_time,
-				ticks_t **resume_profile_time);
+				const ticks_t &suspend_profile_time);
 
 		/**
 		 * Returns generated profile graph.
@@ -605,7 +585,20 @@ namespace
 		}
 
 	private:
-		ProfileManager() { }
+		ProfileManager() :
+			d_root_profile_node("root node")
+		{
+			// The root profile run will always exist on the stack.
+			// It is used only to test for mismatching profile begin/end calls.
+			d_profile_run_stack.push( ProfileRun(d_root_profile_node) );
+		}
+
+		/**
+		 * Root profile node.
+		 * The only node that doesn't live in the @a ProfileGraph.
+		 * Used mainly as an aid to testing for mismatching profile begin/end calls.
+		 */
+		ProfileNode d_root_profile_node;
 
 		//! Contains profile call graph.
 		ProfileGraph d_profile_graph;
@@ -671,10 +664,9 @@ namespace
 		return run.start_profile();
 	}
 
-	bool
+	ticks_t &
 	ProfileManager::stop_profile(
-			const ticks_t &suspend_profile_time,
-			ticks_t **resume_profile_time)
+			const ticks_t &suspend_profile_time)
 	{
 		// Pop the current profile run off the stack - it should correspond
 		// to 'profile_node'.
@@ -683,32 +675,29 @@ namespace
 		ProfileRun current_run = d_profile_run_stack.top();
 		d_profile_run_stack.pop();
 
+		// The stack should always have the root profile run that never
+		// gets popped off the stack. This is how we check for mismatched
+		// profile begin/end calls. Here we've got too many profile end calls.
+		if (d_profile_run_stack.empty())
+		{
+			std::cerr << "Profiler encountered too many PROFILE_END calls - "
+					"number of PROFILE_BEGIN and PROFILE_END calls must match." << std::endl;
+			throw GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__);
+		}
+
 		// Stop the current profile run.
 		current_run.stop_profile(suspend_profile_time);
 
 		// Get the next profile run and reset its last clock.
-		if ( ! d_profile_run_stack.empty() )
-		{
-			ProfileRun &parent_run = d_profile_run_stack.top();
+		ProfileRun &parent_run = d_profile_run_stack.top();
 
-			// Get the current profile run to transfer its information to the
-			// ProfileNode object that it's associated with.
-			current_run.finished_profiling(parent_run);
+		// Get the current profile run to transfer its information to the
+		// ProfileNode object that it's associated with.
+		current_run.finished_profiling(parent_run);
 
-			// Caller will need to set the returned time when profiling of
-			// the get_parent profile actually resumes again.
-			*resume_profile_time = &parent_run.start_profile();
-
-			return true;
-		}
-		else
-		{
-			// Get the current profile run to transfer its information to the
-			// ProfileNode object that it's associated with.
-			current_run.finished_profiling();
-
-			return false;
-		}
+		// Caller will need to set the returned time when profiling of
+		// the get_parent profile actually resumes again.
+		return parent_run.start_profile();
 	}
 
 	void
@@ -882,11 +871,9 @@ namespace GPlatesUtils
 		// that way we can take as long as we like in between and it doesn't get counted.
 		ticks_t start_ticks = get_ticks();
 
-		ticks_t *end_ticks;
-		if (ProfileManager::instance().stop_profile(start_ticks, &end_ticks))
-		{
-			*end_ticks = get_ticks();
-		}
+		ticks_t &end_ticks = ProfileManager::instance().stop_profile(start_ticks);
+		
+		end_ticks = get_ticks();
 	}
 
 	void
