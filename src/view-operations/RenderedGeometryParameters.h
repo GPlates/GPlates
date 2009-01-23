@@ -91,13 +91,27 @@ namespace GPlatesViewOperations
 
 		/**
 		 * Colour to use for rendering those parts of geometry that are in focus.
+		 *
+		 * NOTE: We cannot use:
+		 *     const GPlatesGui::Colour FOCUS_COLOUR = GPlatesGui::Colour::WHITE;
+		 * because both 'FOCUS_COLOUR' and 'WHITE' are global variables and we
+		 * cannot be guaranteed that WHITE is constructed before FOCUS_COLOUR.
+		 * Solution is to make FOCUS_COLOUR a reference and use 'static' to avoid
+		 * multiple definitions linker error.
 		 */
-		const GPlatesGui::Colour FOCUS_COLOUR = GPlatesGui::Colour::WHITE;
+		static const GPlatesGui::Colour &FOCUS_COLOUR = GPlatesGui::Colour::WHITE;
 
 		/**
 		 * Colour to use for rendering those parts of geometry that are not in focus.
+		 *
+		 * NOTE: We cannot use:
+		 *     const GPlatesGui::Colour NOT_IN_FOCUS_COLOUR = GPlatesGui::Colour::GREY;
+		 * because both 'NOT_IN_FOCUS_COLOUR ' and 'GREY' are global variables and we
+		 * cannot be guaranteed that GREY is constructed before NOT_IN_FOCUS_COLOUR .
+		 * Solution is to make NOT_IN_FOCUS_COLOUR a reference and use 'static' to avoid
+		 * multiple definitions linker error.
 		 */
-		const GPlatesGui::Colour NOT_IN_FOCUS_COLOUR = GPlatesGui::Colour::GREY;
+		static const GPlatesGui::Colour &NOT_IN_FOCUS_COLOUR = GPlatesGui::Colour::GREY;
 	}
 }
 
