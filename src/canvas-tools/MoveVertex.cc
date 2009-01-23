@@ -36,7 +36,6 @@ GPlatesCanvasTools::MoveVertex::MoveVertex(
 		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
-		const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 		GPlatesGui::Globe &globe_,
@@ -50,7 +49,6 @@ GPlatesCanvasTools::MoveVertex::MoveVertex(
 		new GPlatesViewOperations::MoveVertexGeometryOperation(
 				&rendered_geometry_collection,
 				&rendered_geometry_factory,
-				digitise_render_parameters,
 				choose_canvas_tool,
 				query_proximity_threshold)),
 	d_is_in_drag(false)

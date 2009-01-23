@@ -36,7 +36,7 @@ installed:
   • ICU library
   • Boost library headers
   • Qt library (version 4.3 or newer)
-  • Geospatial Data Abstraction Library (GDAL) (1.2.6 or newer)
+  • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
 
 Corresponding package dependencies
 

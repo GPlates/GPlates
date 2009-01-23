@@ -61,27 +61,6 @@ namespace GPlatesViewOperations
 		~RenderedGeometryFactory()
 		{  }
 
-		/**
-		 * Default point size hint (roughly one screen-space pixel).
-		 * This is an integer instead of float because it should always be one.
-		 * If this value makes your default point too small then have a multiplying
-		 * factor in your rendered implementation.
-		 */
-		static const int DEFAULT_POINT_SIZE_HINT = 1;
-
-		/**
-		 * Default line width hint (roughly one screen-space pixel).
-		 * This is an integer instead of float because it should always be one.
-		 * If this value makes your default line width too small then have a multiplying
-		 * factor in your rendered implementation.
-		 */
-		static const int DEFAULT_LINE_WIDTH_HINT = 1;
-
-		/**
-		 * Default colour (white).
-		 */
-		static const GPlatesGui::Colour DEFAULT_COLOUR;
-
 		//
 		// Non-abstract methods
 		//
@@ -96,9 +75,9 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_geometry_on_sphere(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
-				float point_size_hint = DEFAULT_POINT_SIZE_HINT,
-				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+				const GPlatesGui::Colour &colour,
+				float point_size_hint,
+				float line_width_hint);
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a PointOnSphere.
@@ -107,8 +86,8 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_point_on_sphere(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
-				float point_size_hint = DEFAULT_POINT_SIZE_HINT)
+				const GPlatesGui::Colour &colour,
+				float point_size_hint)
 		{
 			return create_rendered_point_on_sphere(
 					point_on_sphere.clone_as_point(), colour, point_size_hint);
@@ -121,8 +100,8 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_point_on_sphere(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
-				float point_size_hint = DEFAULT_POINT_SIZE_HINT);
+				const GPlatesGui::Colour &colour,
+				float point_size_hint);
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a MultiPointOnSphere.
@@ -131,8 +110,8 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_multi_point_on_sphere(
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
-				float point_size_hint = DEFAULT_POINT_SIZE_HINT);
+				const GPlatesGui::Colour &colour,
+				float point_size_hint);
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a PolylineOnSphere.
@@ -141,8 +120,8 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
-				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+				const GPlatesGui::Colour &colour,
+				float line_width_hint);
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a PolygonOnSphere.
@@ -151,8 +130,8 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
-				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+				const GPlatesGui::Colour &colour,
+				float line_width_hint);
 
 		//
 		// Abstract methods
@@ -168,7 +147,7 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_dashed_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR) = 0;
+				const GPlatesGui::Colour &colour) = 0;
 
 		/**
 		 * Creates a sequence of dashed polyline rendered geometries from
@@ -182,7 +161,7 @@ namespace GPlatesViewOperations
 		rendered_geometry_seq_type
 		create_rendered_dashed_polyline_segments_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour = DEFAULT_COLOUR) = 0;
+				const GPlatesGui::Colour &colour) = 0;
 	};
 }
 

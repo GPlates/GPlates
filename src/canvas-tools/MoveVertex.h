@@ -45,7 +45,6 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesViewOperations
 {
-	class GeometryOperationRenderParameters;
 	class MoveVertexGeometryOperation;
 	class GeometryBuilderToolTarget;
 	class QueryProximityThreshold;
@@ -81,7 +80,6 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
-				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				// Ultimately would like to remove the following arguments...
@@ -94,7 +92,6 @@ namespace GPlatesCanvasTools
 							geom_builder_tool_target,
 							rendered_geometry_collection,
 							rendered_geometry_factory,
-							digitise_render_parameters,
 							choose_canvas_tool,
 							query_proximity_threshold,
 							globe,
@@ -143,7 +140,6 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
-				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				// Ultimately would like to remove the following arguments...

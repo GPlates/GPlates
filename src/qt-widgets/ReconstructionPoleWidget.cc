@@ -31,6 +31,7 @@
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "utils/MathUtils.h"
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
@@ -509,7 +510,10 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries()
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
-					*iter, white_colour);
+					*iter,
+					white_colour,
+					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
+					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
 
 		// Add to pole manipulation layer.
 		d_initial_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
@@ -547,7 +551,9 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_dragged_geometries()
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
 					d_accum_orientation->orient_geometry(*iter),
-					silver_colour);
+					silver_colour,
+					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
+					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
 
 		// Add to pole manipulation layer.
 		d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_geometry);

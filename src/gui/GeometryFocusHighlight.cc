@@ -26,17 +26,11 @@
 #include <boost/none.hpp>
 
 #include "GeometryFocusHighlight.h"
-#if 0
-<<<<<<< .working
-#include "utils/GeometryCreationUtils.h"
-#include <vector>
-=======
-#endif
 #include "gui/ColourTable.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
-// >>>>>>> .merge-right.r4570
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 GPlatesGui::GeometryFocusHighlight::GeometryFocusHighlight(
@@ -74,21 +68,6 @@ GPlatesGui::GeometryFocusHighlight::set_focus(
 void
 GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 {
-#if 0
-<<<<<<< .working
-	d_highlight_layer_ptr->clear();
-	if (d_focused_geometry) {
-		GPlatesGui::PlatesColourTable::const_iterator white = &GPlatesGui::Colour::WHITE;
-		GPlatesGui::RenderedGeometry rendered_geometry =
-				GPlatesGui::RenderedGeometry(d_focused_geometry->geometry(), white);
-		d_highlight_layer_ptr->push_back(rendered_geometry);
-
-		// add decorations as needed
-		rendered_geometry.geometry()->accept_visitor(*this);
-	
-	} else {
-=======
-#endif
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
@@ -105,13 +84,15 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
-						d_focused_geometry->geometry(), white);
+						d_focused_geometry->geometry(),
+						white,
+						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
+						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
 
 		d_highlight_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
 	else
 	{
-// >>>>>>> .merge-right.r4570
 		// No focused geometry, so nothing to draw.
 	}
 }

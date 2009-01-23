@@ -20,8 +20,6 @@ set(srcs
     GeometryBuilderToolTarget.cc
     GeometryBuilderToolTarget.h
     GeometryBuilderUndoCommands.h
-    GeometryOperationRenderParameters.cc
-    GeometryOperationRenderParameters.h
     GeometryType.h
     GlobeRenderedGeometryFactory.cc
     GlobeRenderedGeometryFactory.h
@@ -41,6 +39,7 @@ set(srcs
     RenderedGeometryLayer.cc
     RenderedGeometryLayer.h
     RenderedGeometryLayerVisitor.h
+    RenderedGeometryParameters.h
     RenderedGeometryProximity.cc
     RenderedGeometryProximity.h
     RenderedGeometryUtils.cc

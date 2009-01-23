@@ -52,7 +52,6 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesViewOperations
 {
-	class GeometryOperationRenderParameters;
 	class GeometryBuilderToolTarget;
 	class QueryProximityThreshold;
 	class RenderedGeometryCollection;
@@ -87,7 +86,6 @@ namespace GPlatesGui
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
-				const GPlatesViewOperations::GeometryOperationRenderParameters &geom_operation_render_parameters,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				Globe &globe,

@@ -32,7 +32,6 @@
 
 #include "GeometryBuilder.h"
 #include "GeometryType.h"
-#include "GeometryOperationRenderParameters.h"
 #include "RenderedGeometryCollection.h"
 
 
@@ -68,7 +67,6 @@ namespace GPlatesViewOperations
 				GeometryType::Value build_geom_type,
 				RenderedGeometryCollection *rendered_geometry_collection,
 				RenderedGeometryFactory *rendered_geometry_factory,
-				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool);
 
 		/**
@@ -138,11 +136,6 @@ namespace GPlatesViewOperations
 		 * when the undo/redo happens.
 		 */
 		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
-
-		/**
-		 * Parameters that specify how to draw digitised geometry.
-		 */
-		GeometryOperationRenderParameters d_geom_operation_render_parameters;
 
 		void
 		connect_to_geometry_builder_signals();

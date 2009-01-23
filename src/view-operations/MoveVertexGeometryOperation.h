@@ -31,7 +31,6 @@
 #include <QObject>
 
 #include "GeometryBuilder.h"
-#include "GeometryOperationRenderParameters.h"
 #include "RenderedGeometryCollection.h"
 #include "UndoRedo.h"
 
@@ -68,7 +67,6 @@ namespace GPlatesViewOperations
 		MoveVertexGeometryOperation(
 				RenderedGeometryCollection *rendered_geometry_collection,
 				RenderedGeometryFactory *rendered_geometry_factory,
-				const GeometryOperationRenderParameters &digitise_render_parameters,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				const QueryProximityThreshold &query_proximity_threshold);
 
@@ -145,11 +143,6 @@ namespace GPlatesViewOperations
 		 * when the undo/redo happens.
 		 */
 		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
-
-		/**
-		 * Parameters that specify how to draw digitised geometry.
-		 */
-		GeometryOperationRenderParameters d_geom_operation_render_parameters;
 
 		/**
 		 * Used to query the proximity threshold based on position on globe.

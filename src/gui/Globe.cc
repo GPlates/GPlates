@@ -279,14 +279,14 @@ namespace
 		double d_current_layer_far_depth;
 		double d_depth_range_per_layer;
 
-		//! Multiplying factor to get default point size of 1.0f to look like one screen-space pixel.
+		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.
 		static const float POINT_SIZE_ADJUSTMENT;
-		//! Multiplying factor to get default line width of 1.0f to look like one screen-space pixel.
+		//! Multiplying factor to get line width of 1.0f to look like one screen-space pixel.
 		static const float LINE_WIDTH_ADJUSTMENT;
 	};
 
-	const float PaintGeometry::POINT_SIZE_ADJUSTMENT = 1.5f;
-	const float PaintGeometry::LINE_WIDTH_ADJUSTMENT = 1.5f;
+	const float PaintGeometry::POINT_SIZE_ADJUSTMENT = 1.0f;
+	const float PaintGeometry::LINE_WIDTH_ADJUSTMENT = 1.0f;
 
 
 	void

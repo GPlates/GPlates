@@ -45,7 +45,6 @@ namespace GPlatesQtWidgets
 namespace GPlatesViewOperations
 {
 	class AddPointGeometryOperation;
-	class GeometryOperationRenderParameters;
 	class GeometryBuilderToolTarget;
 	class RenderedGeometryCollection;
 	class RenderedGeometryFactory;
@@ -82,7 +81,6 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
-				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				// Ultimately would like to remove the following arguments...
 				GPlatesGui::Globe &globe,
@@ -115,7 +113,6 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
-				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				// Ultimately would like to remove the following arguments...
 				GPlatesGui::Globe &globe,
