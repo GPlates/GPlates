@@ -177,8 +177,8 @@ namespace
 		static
 		pointer_type
 		create_profile_link(
-				ProfileNode &parent,
-				ProfileNode &child);
+				ProfileNode *parent,
+				ProfileNode *child);
 
 		//! Update with info from a get_child ProfileRun.
 		void
@@ -245,8 +245,8 @@ namespace
 
 	ProfileLink::pointer_type
 	ProfileLink::create_profile_link(
-			ProfileNode &parent,
-			ProfileNode &child)
+			ProfileNode *parent,
+			ProfileNode *child)
 	{
 		ProfileLink *link_mem = s_profile_link_pool.malloc();
 		if (link_mem == NULL)
@@ -255,7 +255,7 @@ namespace
 		}
 
 		return pointer_type(
-				new (link_mem) ProfileLink(&parent, &child),
+				new (link_mem) ProfileLink(parent, child),
 				boost::bind(
 						&profile_link_pool_type::destroy,
 						boost::ref(s_profile_link_pool),
@@ -365,7 +365,8 @@ namespace
 		ProfileNode(
 				const std::string &profileName) :
 			d_name(profileName),
-			d_self_ticks(0)
+			d_self_ticks(0),
+			d_most_recent_parent(NULL)
 		{ }
 
 		/**
@@ -421,6 +422,16 @@ namespace
 		profile_link_map_type d_parent_profiles;
 		profile_link_map_type d_child_profiles;
 
+		//! Used for speed optimisation purposes to try and avoid searching @a d_parent_profiles.
+		ProfileNode *d_most_recent_parent;
+		//! Used for speed optimisation purposes to try and avoid searching @a d_parent_profiles.
+		ProfileLink::pointer_type d_most_recent_parent_link;
+
+		//! Returns reference to parent link corresponding to @a parent_node.
+		ProfileLink::pointer_type &
+		get_parent_link(
+				ProfileNode *parent_node);
+
 		/**
 		 * Creates a ProfileLink and connects it between 'parent' and 'child'.
 		 * There must not already exist such a link.
@@ -428,14 +439,48 @@ namespace
 		static
 		void
 		create_call_graph_link(
-				ProfileNode &parent,
-				ProfileNode &child)
+				ProfileNode *parent,
+				ProfileNode *child)
 		{
 			ProfileLink::pointer_type link = ProfileLink::create_profile_link(parent, child);
-			child.d_parent_profiles[&parent] = link;
-			parent.d_child_profiles[&child] = link;
+			child->d_parent_profiles[parent] = link;
+			parent->d_child_profiles[child] = link;
 		}
 	};
+
+	inline
+	ProfileLink::pointer_type &
+	ProfileNode::get_parent_link(
+			ProfileNode *parent_node)
+	{
+		// An optimisation is to keep track of the most recent parent as that's the most
+		// likely scenario and avoids having to search our parent mappings. This is
+		// effective when 'this' profile node is in a tight loop that calls very many times
+		// because its parent will always be the same while in that loop. And these tight
+		// loops are exactly the place we want to optimise for speed so that our profiling
+		// code doesn't slow down program running time too much over non-profiled running time.
+		if (d_most_recent_parent != parent_node)
+		{
+			// We haven't got a cached version of the parent link (or it might not even
+			// exist yet) so search our mappings.
+			profile_link_map_type::iterator p = d_parent_profiles.find(parent_node);
+			if ( p == d_parent_profiles.end() )
+			{
+				// Create a ProfileLink between parent_node and us.
+				create_call_graph_link(parent_node, this);
+
+				// The previous call should've added a ProfileLink to our parent profiles.
+				p = d_parent_profiles.find(parent_node);
+				GPlatesGlobal::Assert(p != d_parent_profiles.end(),
+						GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			}
+
+			d_most_recent_parent_link = p->second;
+			d_most_recent_parent = parent_node;
+		}
+
+		return d_most_recent_parent_link;
+	}
 
 	void
 	ProfileNode::update(
@@ -443,21 +488,11 @@ namespace
 		ProfileNode &parent_node)
 	{
 		// Get the call graph ProfileLink to parent_node.
-		profile_link_map_type::iterator p = d_parent_profiles.find(&parent_node);
-		if ( p == d_parent_profiles.end() )
-		{
-			// Create a ProfileLink between parent_node and us.
-			create_call_graph_link(parent_node, *this);
-
-			// The previous call should've added a ProfileLink to our parent profiles.
-			p = d_parent_profiles.find(&parent_node);
-			GPlatesGlobal::Assert(p != d_parent_profiles.end(),
-					GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
-		}
+		// This will create one if it doesn't exist.
+		ProfileLink::pointer_type &parent_link = get_parent_link(&parent_node);
 
 		// Get this parent_link to update itself from info in 'run'.
-		ProfileLink::pointer_type &parentLink = p->second;
-		parentLink->update(run);
+		parent_link->update(run);
 
 		// Update how much time gets allocated to us.
 		d_self_ticks += run.get_self_ticks();
