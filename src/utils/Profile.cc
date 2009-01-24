@@ -626,6 +626,170 @@ namespace
 		return profile_nodes;
 	}
 
+
+	//! Keeps track of profiles on function call stack.
+	class ProfileManager
+	{
+	public:
+		//! Return the sole instance of this class.
+		static ProfileManager &instance()
+		{
+			static boost::scoped_ptr<ProfileManager> s_instance(new ProfileManager());
+			return *s_instance;
+		}
+
+		/**
+		 * An optimisation to avoid repeated lookups of the @a profile_name
+		 * string to find the @a ProfileNode each time the same segment of
+		 * source code is profiled.
+		 * The returned cache is subsequently passed to @a start_profile().
+		 */
+		void *
+		get_profile_cache(
+				const char *profile_name);
+
+		/**
+		 * Called when starting a profile run for 'profile_cache'.
+		 * @a suspend_profile_time is the time just
+		 * when profile is first started. This value is used to update
+		 * the ticks count of the previous profile run. The caller
+		 * is required to assign to the returned reference the value
+		 * of @a get_ticks() when it returns to the code being profiled.
+		*/
+		ticks_t &
+		start_profile(
+				void *profile_cache,
+				const ticks_t &suspend_profile_time);
+
+		/**
+		 * Called when stopping a profile run.
+		 * @a suspend_profile_time is the time just
+		 * when profile is first stopped. This value is used to update
+		 * the ticks count of the current profile run.
+		 * The caller is required to assign to the returned reference
+		 * the value of @a get_ticks().
+		*/
+		ticks_t &
+		stop_profile(
+				const ticks_t &suspend_profile_time);
+
+		/**
+		 * Returns true if all profile runs have finished.
+		 */
+		bool
+		have_all_profile_runs_finished() const
+		{
+			// If only the root profile run exists then it means all
+			// user added profiles have finished.
+			return d_profile_run_stack.size() == 1;
+		}
+
+		/**
+		 * Returns generated profile graph.
+		 */
+		const ProfileGraph &
+		get_profile_graph() const
+		{
+			return d_profile_graph;
+		}
+
+	private:
+		ProfileManager() :
+			d_root_profile_node("root node")
+		{
+			// The root profile run will always exist on the stack.
+			// It is used only to test for mismatching profile begin/end calls.
+			d_profile_run_stack.push( ProfileRun(d_root_profile_node) );
+		}
+
+		/**
+		 * Root profile node.
+		 * The only node that doesn't live in the @a ProfileGraph.
+		 * Used mainly as an aid to testing for mismatching profile begin/end calls.
+		 */
+		ProfileNode d_root_profile_node;
+
+		//! Contains profile call graph.
+		ProfileGraph d_profile_graph;
+
+		//! Stack of profile runs that are currently following the call stack.
+		std::stack<ProfileRun> d_profile_run_stack;
+	};
+
+	void *
+	ProfileManager::get_profile_cache(
+			const char *profile_name)
+	{
+		ProfileNode &profile_node = d_profile_graph.get_or_create_profile_node_by_name(profile_name);
+
+		return &profile_node;
+	}
+
+	ticks_t &
+	ProfileManager::start_profile(
+			void *profile_cache,
+			const ticks_t &suspend_profile_time)
+	{
+		ProfileNode &profile_node = *reinterpret_cast<ProfileNode *>(profile_cache);
+
+		// Get information about the current ProfileRun if there is one -
+		// it'll be the get_parent of the new ProfileRun that we'll push on the
+		// stack below.
+		if ( ! d_profile_run_stack.empty() )
+		{
+			ProfileRun &parentRun = d_profile_run_stack.top();
+
+			// Stop current profile run so we can start a new one.
+			parentRun.stop_profile(suspend_profile_time);
+		}
+
+		// The currently profiled object is now 'profile_node'. Push a
+		// reference to it and the current clock onto the stack.
+		// We add to the stack first and then set the time later so that we don't include
+		// the time it takes to push onto the stack.
+		d_profile_run_stack.push( ProfileRun(profile_node) );
+		ProfileRun &run = d_profile_run_stack.top();  // Get reference to pushed item.
+
+		// The caller is required to assign to the ticks_t& returned.
+		return run.start_profile();
+	}
+
+	ticks_t &
+	ProfileManager::stop_profile(
+			const ticks_t &suspend_profile_time)
+	{
+		// Pop the current profile run off the stack - it should correspond
+		// to 'profile_node'.
+		GPlatesGlobal::Assert(!d_profile_run_stack.empty(),
+			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		ProfileRun current_run = d_profile_run_stack.top();
+		d_profile_run_stack.pop();
+
+		// The stack should always have the root profile run that never
+		// gets popped off the stack. This is how we check for mismatched
+		// profile begin/end calls. Here we've got too many profile end calls.
+		if (d_profile_run_stack.empty())
+		{
+			std::cerr << "Profiler encountered too many PROFILE_END calls - "
+					"number of PROFILE_BEGIN and PROFILE_END calls must match." << std::endl;
+			throw GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__);
+		}
+
+		// Stop the current profile run.
+		current_run.stop_profile(suspend_profile_time);
+
+		// Get the next profile run and reset its last clock.
+		ProfileRun &parent_run = d_profile_run_stack.top();
+
+		// Get the current profile run to transfer its information to the
+		// ProfileNode object that it's associated with.
+		current_run.finished_profiling(parent_run);
+
+		// Caller will need to set the returned time when profiling of
+		// the get_parent profile actually resumes again.
+		return parent_run.start_profile();
+	}
+
 	//
 	// Printing of profiling statistics
 	//
@@ -906,170 +1070,6 @@ namespace
 		output_stream << std::endl;
 
 		report_call_graph_profile(output_stream, profile_graph, total_ticks);
-	}
-
-
-	//! Keeps track of profiles on function call stack.
-	class ProfileManager
-	{
-	public:
-		//! Return the sole instance of this class.
-		static ProfileManager &instance()
-		{
-			static boost::scoped_ptr<ProfileManager> s_instance(new ProfileManager());
-			return *s_instance;
-		}
-
-		/**
-		 * An optimisation to avoid repeated lookups of the @a profile_name
-		 * string to find the @a ProfileNode each time the same segment of
-		 * source code is profiled.
-		 * The returned cache is subsequently passed to @a start_profile().
-		 */
-		void *
-		get_profile_cache(
-				const char *profile_name);
-
-		/**
-		 * Called when starting a profile run for 'profile_cache'.
-		 * @a suspend_profile_time is the time just
-		 * when profile is first started. This value is used to update
-		 * the ticks count of the previous profile run. The caller
-		 * is required to assign to the returned reference the value
-		 * of @a get_ticks() when it returns to the code being profiled.
-		*/
-		ticks_t &
-		start_profile(
-				void *profile_cache,
-				const ticks_t &suspend_profile_time);
-
-		/**
-		 * Called when stopping a profile run.
-		 * @a suspend_profile_time is the time just
-		 * when profile is first stopped. This value is used to update
-		 * the ticks count of the current profile run.
-		 * The caller is required to assign to the returned reference
-		 * the value of @a get_ticks().
-		*/
-		ticks_t &
-		stop_profile(
-				const ticks_t &suspend_profile_time);
-
-		/**
-		 * Returns true if all profile runs have finished.
-		 */
-		bool
-		have_all_profile_runs_finished() const
-		{
-			// If only the root profile run exists then it means all
-			// user added profiles have finished.
-			return d_profile_run_stack.size() == 1;
-		}
-
-		/**
-		 * Returns generated profile graph.
-		 */
-		const ProfileGraph &
-		get_profile_graph() const
-		{
-			return d_profile_graph;
-		}
-
-	private:
-		ProfileManager() :
-			d_root_profile_node("root node")
-		{
-			// The root profile run will always exist on the stack.
-			// It is used only to test for mismatching profile begin/end calls.
-			d_profile_run_stack.push( ProfileRun(d_root_profile_node) );
-		}
-
-		/**
-		 * Root profile node.
-		 * The only node that doesn't live in the @a ProfileGraph.
-		 * Used mainly as an aid to testing for mismatching profile begin/end calls.
-		 */
-		ProfileNode d_root_profile_node;
-
-		//! Contains profile call graph.
-		ProfileGraph d_profile_graph;
-
-		//! Stack of profile runs that are currently following the call stack.
-		std::stack<ProfileRun> d_profile_run_stack;
-	};
-
-	void *
-	ProfileManager::get_profile_cache(
-			const char *profile_name)
-	{
-		ProfileNode &profile_node = d_profile_graph.get_or_create_profile_node_by_name(profile_name);
-
-		return &profile_node;
-	}
-
-	ticks_t &
-	ProfileManager::start_profile(
-			void *profile_cache,
-			const ticks_t &suspend_profile_time)
-	{
-		ProfileNode &profile_node = *reinterpret_cast<ProfileNode *>(profile_cache);
-
-		// Get information about the current ProfileRun if there is one -
-		// it'll be the get_parent of the new ProfileRun that we'll push on the
-		// stack below.
-		if ( ! d_profile_run_stack.empty() )
-		{
-			ProfileRun &parentRun = d_profile_run_stack.top();
-
-			// Stop current profile run so we can start a new one.
-			parentRun.stop_profile(suspend_profile_time);
-		}
-
-		// The currently profiled object is now 'profile_node'. Push a
-		// reference to it and the current clock onto the stack.
-		// We add to the stack first and then set the time later so that we don't include
-		// the time it takes to push onto the stack.
-		d_profile_run_stack.push( ProfileRun(profile_node) );
-		ProfileRun &run = d_profile_run_stack.top();  // Get reference to pushed item.
-
-		// The caller is required to assign to the ticks_t& returned.
-		return run.start_profile();
-	}
-
-	ticks_t &
-	ProfileManager::stop_profile(
-			const ticks_t &suspend_profile_time)
-	{
-		// Pop the current profile run off the stack - it should correspond
-		// to 'profile_node'.
-		GPlatesGlobal::Assert(!d_profile_run_stack.empty(),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
-		ProfileRun current_run = d_profile_run_stack.top();
-		d_profile_run_stack.pop();
-
-		// The stack should always have the root profile run that never
-		// gets popped off the stack. This is how we check for mismatched
-		// profile begin/end calls. Here we've got too many profile end calls.
-		if (d_profile_run_stack.empty())
-		{
-			std::cerr << "Profiler encountered too many PROFILE_END calls - "
-					"number of PROFILE_BEGIN and PROFILE_END calls must match." << std::endl;
-			throw GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__);
-		}
-
-		// Stop the current profile run.
-		current_run.stop_profile(suspend_profile_time);
-
-		// Get the next profile run and reset its last clock.
-		ProfileRun &parent_run = d_profile_run_stack.top();
-
-		// Get the current profile run to transfer its information to the
-		// ProfileNode object that it's associated with.
-		current_run.finished_profiling(parent_run);
-
-		// Caller will need to set the returned time when profiling of
-		// the get_parent profile actually resumes again.
-		return parent_run.start_profile();
 	}
 
 	//
