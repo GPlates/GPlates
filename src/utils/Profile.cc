@@ -559,6 +559,9 @@ namespace
 	class ProfileGraph
 	{
 	public:
+		//! Sequence of @a ProfileNode objects.
+		typedef std::vector<const ProfileNode *> profile_node_seq_type;
+
 		/**
 		 * Returns a ProfileNode object for 'profile_name' - creates one if necessary.
 		 */
@@ -567,33 +570,16 @@ namespace
 				const std::string &profile_name);
 
 		/**
-		 * Prints out a report of this call graph to @a output_stream
-		 * (if any profiling has been done).
+		 * Returns the sequence of all @a ProfileNode objects in the call graph.
 		 */
-		void
-		report(
-				std::ostream &output_stream) const;
+		profile_node_seq_type
+		get_call_graph() const;
 
 	private:
-		//! Sequence of @a ProfileNode objects.
-		typedef std::vector<const ProfileNode *> profile_node_seq_type;
-
 		//! Maps profile name to ProfileNode object.
 		typedef std::map<std::string, ProfileNode> profile_node_map_type;
 
 		profile_node_map_type d_profile_node_map;
-
-		void
-		report_flat_profile(
-				std::ostream &output_stream,
-				const profile_node_seq_type &profile_node_seq,
-				const ticks_t total_ticks) const;
-
-		void
-		report_call_graph_profile(
-				std::ostream &output_stream,
-				const profile_node_seq_type &profile_node_seq,
-				const ticks_t total_ticks) const;
 	};
 
 	ProfileNode &
@@ -615,14 +601,87 @@ namespace
 		return profile_node->second;
 	}
 
-	void
-	ProfileGraph::report_flat_profile(
-			std::ostream &output_stream,
-			const profile_node_seq_type &profile_node_seq,
-			const ticks_t total_ticks) const
+	ProfileGraph::profile_node_seq_type
+	ProfileGraph::get_call_graph() const
 	{
+		// Sequence of all ProfileNode objects.
+		profile_node_seq_type profile_nodes;
+
+		// If there are no recorded profiles then there is no
+		// reporting to be done.
+		if ( !d_profile_node_map.empty() )
+		{
+			// Copy ProfileNodes from map to vector.
+			profile_node_map_type::const_iterator profile_node_map_iter;
+			for (
+				profile_node_map_iter = d_profile_node_map.begin();
+				profile_node_map_iter != d_profile_node_map.end();
+				++profile_node_map_iter)
+			{
+				const ProfileNode *profile_node = &profile_node_map_iter->second;
+				profile_nodes.push_back(profile_node);
+			}
+		}
+
+		return profile_nodes;
+	}
+
+	//
+	// Printing of profiling statistics
+	//
+
+	void
+	print_accurate_time(double seconds, std::ostream &output_stream, int field_width)
+	{
+		// The most accurate timer is QueryPerformanceCounter and its overhead is
+		// about 0.5usec so no point printing more accurate than this.
+		// Also the linux timers are at best 1usec accurate so this figure seems
+		// a reasonable one.
+		const double accuracy = 1e-6;
+		seconds = accuracy * static_cast<boost::uint64_t>(seconds / accuracy  + 0.5);
+
+		const char *time_suffix;
+		double time;
+
+		if (seconds >= 1)
+		{
+			time = seconds;
+			time_suffix = "s";
+			field_width -= 1;
+		}
+		else if (seconds >= 1e-3)
+		{
+			time = 1e+3 * seconds;
+			time_suffix = "ms";
+			field_width -= 2;
+		}
+		else
+		{
+			time = 1e+6 * seconds;
+			time_suffix = "us";
+			field_width -= 2;
+		}
+
+		output_stream
+			<< std::resetiosflags(std::ios::fixed)
+			<< std::setprecision(3)
+			<< std::setw(field_width)
+			<< std::right
+			<< time
+			<< time_suffix;
+	}
+
+	void
+	report_flat_profile(
+			std::ostream &output_stream,
+			const ProfileGraph &profile_graph,
+			const ticks_t total_ticks)
+	{
+		// Get sequence of ProfileNode objects representing the call graph.
+		ProfileGraph::profile_node_seq_type profile_node_seq = profile_graph.get_call_graph();
+
 		// Copy sequence of ProfileNode objects.
-		profile_node_seq_type sorted_profile_node_seq(
+		ProfileGraph::profile_node_seq_type sorted_profile_node_seq(
 				profile_node_seq.begin(), profile_node_seq.end());
 
 		// Sort sequence of ProfileNode objects according to time spent
@@ -637,10 +696,15 @@ namespace
 		output_stream << "------------" << std::endl;
 		output_stream << std::endl;
 		
-		output_stream.setf(std::ios::fixed);
+		// Print header rows.
+		output_stream << "  %   cumulative   self                self        total       " << std::endl;
+		output_stream << " time   seconds   seconds    calls   time/call   time/call  name" << std::endl;
+
+		// Cumulative time.
+		ticks_t cumulative_ticks = 0;
 
 		// Print out the flat profile in order of time taken.
-		profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
+		ProfileGraph::profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
 		for (
 			sorted_profile_node_seq_iter = sorted_profile_node_seq.rbegin();
 			sorted_profile_node_seq_iter != sorted_profile_node_seq.rend();
@@ -649,21 +713,35 @@ namespace
 			const ProfileNode *profile_node = *sorted_profile_node_seq_iter;
 			const ticks_t self_ticks = profile_node->get_self_ticks();
 			const double self_seconds = convert_ticks_to_seconds(self_ticks);
+			const ticks_t children_ticks = calc_ticks_in_all_children(profile_node);
+			const double children_seconds = convert_ticks_to_seconds(children_ticks);
 			// If self_ticks == total_ticks then we want to  print 100% and
 			// not 99.9999997% so use exact arithmetic until final divide by 100.0.
 			const double percent = (self_ticks * 100 * 100 / total_ticks) / 100.0;
 			const calls_t calls = calc_total_calls_from_parents(profile_node);
-			const double seconds_per_call = (calls > 0) ? (self_seconds / calls) : 0;
+			const double self_seconds_per_call = (calls > 0) ? (self_seconds / calls) : 0;
+			const double self_plus_children_seconds_per_call =
+					(calls > 0) ? ((self_seconds + children_seconds) / calls) : 0;
+			cumulative_ticks += self_ticks;
+			const double cumulative_seconds = convert_ticks_to_seconds(cumulative_ticks);
 
 			output_stream
-				<< std::setprecision(2) << percent
-				<< "% \""
+				<< std::fixed << std::setprecision(2) << std::setw(6) << std::right
+				<< percent
+				<< std::fixed << std::setprecision(2) << std::setw(10) << std::right
+				<< cumulative_seconds
+				<< std::fixed << std::setprecision(2) << std::setw(9) << std::right
+				<< self_seconds
+				<< std::setw(9) << std::right
+				<< calls;
+
+			print_accurate_time(self_seconds_per_call, output_stream, 12/*field_width*/);
+			print_accurate_time(self_plus_children_seconds_per_call, output_stream, 12/*field_width*/);
+
+			output_stream
+				<< std::setw(0) << std::left
+				<< "  "
 				<< profile_node->get_name().c_str()
-				<< "\" : "
-				<< calls
-				<< " get_calls : "
-				<< std::setprecision(6) << seconds_per_call
-				<< " seconds/call."
 				<< std::endl;
 		}
 		output_stream << std::endl;
@@ -673,13 +751,16 @@ namespace
 	}
 
 	void
-	ProfileGraph::report_call_graph_profile(
+	report_call_graph_profile(
 			std::ostream &output_stream,
-			const profile_node_seq_type &profile_node_seq,
-			const ticks_t total_ticks) const
+			const ProfileGraph &profile_graph,
+			const ticks_t total_ticks)
 	{
+		// Get sequence of ProfileNode objects representing the call graph.
+		ProfileGraph::profile_node_seq_type profile_node_seq = profile_graph.get_call_graph();
+
 		// Copy sequence of ProfileNode objects.
-		profile_node_seq_type sorted_profile_node_seq(
+		ProfileGraph::profile_node_seq_type sorted_profile_node_seq(
 				profile_node_seq.begin(), profile_node_seq.end());
 
 		// Sort sequence of ProfileNode objects according to time spent
@@ -697,7 +778,7 @@ namespace
 		output_stream.setf(std::ios::fixed);
 
 		// Print out the call graph profile in order of time taken.
-		profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
+		ProfileGraph::profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
 		for (
 			sorted_profile_node_seq_iter = sorted_profile_node_seq.rbegin();
 			sorted_profile_node_seq_iter != sorted_profile_node_seq.rend();
@@ -774,30 +855,17 @@ namespace
 		output_stream << "------------------" << std::endl;
 	}
 
+	/**
+	 * Prints out a report of this call graph to @a output_stream
+	 * (if any profiling has been done).
+	 */
 	void
-	ProfileGraph::report(
-			std::ostream &output_stream) const
+	report(
+			const ProfileGraph &profile_graph,
+			std::ostream &output_stream)
 	{
-		// If there are no recorded profiles then there is no
-		// reporting to be done.
-		if ( d_profile_node_map.empty() )
-		{
-			return;
-		}
-
-		// Sequence of all ProfileNode objects.
-		profile_node_seq_type profile_nodes;
-
-		// Copy ProfileNodes from map to vector.
-		profile_node_map_type::const_iterator profile_node_map_iter;
-		for (
-			profile_node_map_iter = d_profile_node_map.begin();
-			profile_node_map_iter != d_profile_node_map.end();
-			++profile_node_map_iter)
-		{
-			const ProfileNode *profile_node = &profile_node_map_iter->second;
-			profile_nodes.push_back(profile_node);
-		}
+		// Get sequence of ProfileNode objects representing the call graph.
+		ProfileGraph::profile_node_seq_type profile_nodes = profile_graph.get_call_graph();
 
 		// Get the total number of ticks spent profiling.
 		const ticks_t total_ticks = std::accumulate(
@@ -816,16 +884,28 @@ namespace
 		output_stream << "--------------" << std::endl;
 		output_stream << std::endl;
 
-		output_stream << "Total profiled time: " << total_seconds << " seconds" << std::endl;
-
+		output_stream
+			<< "Total profiled time: "
+			<< std::fixed << std::setprecision(2) << std::setw(0) << std::left
+			<< total_seconds
+			<< " seconds"
+			<< std::endl;
 		output_stream << std::endl;
 
-		report_flat_profile(output_stream, profile_nodes, total_ticks);
+		report_flat_profile(output_stream, profile_graph, total_ticks);
 
 		output_stream << std::endl;
 		output_stream << std::endl;
 
-		report_call_graph_profile(output_stream, profile_nodes, total_ticks);
+		output_stream
+			<< "Total profiled time: "
+			<< std::fixed << std::setprecision(2) << std::setw(0) << std::left
+			<< total_seconds
+			<< " seconds"
+			<< std::endl;
+		output_stream << std::endl;
+
+		report_call_graph_profile(output_stream, profile_graph, total_ticks);
 	}
 
 
@@ -1100,7 +1180,7 @@ namespace GPlatesUtils
 
 		const ProfileGraph &profile_graph = ProfileManager::instance().get_profile_graph();
 
-		profile_graph.report(output_stream);
+		report(profile_graph, output_stream);
 	}
 
 	void
