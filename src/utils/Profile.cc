@@ -368,7 +368,10 @@ namespace
 			d_self_ticks(0)
 		{ }
 
-		//! Update from info in a ProfileRun - the 'parent' is given if there is one.
+		/**
+		 * Updates this profile node with profile counts in @a run and
+		 * updates link to parent node.
+		 */
 		void
 		update(
 				const ProfileRun &run,
@@ -399,14 +402,16 @@ namespace
 			return profile_count_const_iterator(d_parent_profiles, d_parent_profiles.end());
 		}
 
-		profile_count_const_iterator child_profiles_begin() const
+		profile_count_const_iterator
+		child_profiles_begin() const
 		{
-			return profile_count_const_iterator(d_child_profiles, d_parent_profiles.begin());
+			return profile_count_const_iterator(d_child_profiles, d_child_profiles.begin());
 		}
 
-		profile_count_const_iterator child_profiles_end() const
+		profile_count_const_iterator
+		child_profiles_end() const
 		{
-			return profile_count_const_iterator(d_child_profiles, d_parent_profiles.end());
+			return profile_count_const_iterator(d_child_profiles, d_child_profiles.end());
 		}
 
 	private:
@@ -547,13 +552,13 @@ namespace
 		report_flat_profile(
 				std::ostream &output_stream,
 				const profile_node_seq_type &profile_node_seq,
-				const float total_seconds) const;
+				const ticks_t total_ticks) const;
 
 		void
 		report_call_graph_profile(
 				std::ostream &output_stream,
 				const profile_node_seq_type &profile_node_seq,
-				const float total_seconds) const;
+				const ticks_t total_ticks) const;
 	};
 
 	ProfileNode &
@@ -579,7 +584,7 @@ namespace
 	ProfileGraph::report_flat_profile(
 			std::ostream &output_stream,
 			const profile_node_seq_type &profile_node_seq,
-			const float total_seconds) const
+			const ticks_t total_ticks) const
 	{
 		// Copy sequence of ProfileNode objects.
 		profile_node_seq_type sorted_profile_node_seq(
@@ -592,7 +597,7 @@ namespace
 				sorted_profile_node_seq.end(),
 				boost::bind(&ProfileNode::get_self_ticks, _1)
 						< boost::bind(&ProfileNode::get_self_ticks, _2));
-		
+	
 		output_stream << "Flat Profile" << std::endl;
 		output_stream << "------------" << std::endl;
 		output_stream << std::endl;
@@ -607,8 +612,11 @@ namespace
 			++sorted_profile_node_seq_iter)
 		{
 			const ProfileNode *profile_node = *sorted_profile_node_seq_iter;
-			const double self_seconds = convert_ticks_to_seconds(profile_node->get_self_ticks());
-			const double percent = self_seconds / total_seconds * 100;
+			const ticks_t self_ticks = profile_node->get_self_ticks();
+			const double self_seconds = convert_ticks_to_seconds(self_ticks);
+			// If self_ticks == total_ticks then we want to  print 100% and
+			// not 99.9999997% so use exact arithmetic until final divide by 100.0.
+			const double percent = (self_ticks * 100 * 100 / total_ticks) / 100.0;
 			const calls_t calls = calc_total_calls_from_parents(profile_node);
 			const double seconds_per_call = (calls > 0) ? (self_seconds / calls) : 0;
 
@@ -633,7 +641,7 @@ namespace
 	ProfileGraph::report_call_graph_profile(
 			std::ostream &output_stream,
 			const profile_node_seq_type &profile_node_seq,
-			const float total_seconds) const
+			const ticks_t total_ticks) const
 	{
 		// Copy sequence of ProfileNode objects.
 		profile_node_seq_type sorted_profile_node_seq(
@@ -647,7 +655,6 @@ namespace
 				boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _1)
 					< boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _2));
 
-		
 		output_stream << "Call Graph Profile" << std::endl;
 		output_stream << "------------------" << std::endl;
 		output_stream << std::endl;
@@ -665,7 +672,6 @@ namespace
 
 			ProfileNode::profile_count_const_iterator parent_begin = profile_node->parent_profiles_begin();
 			ProfileNode::profile_count_const_iterator parent_end = profile_node->parent_profiles_end();
-			output_stream << std::endl;
 			for (
 				ProfileNode::profile_count_const_iterator parent_iter = parent_begin;
 				parent_iter != parent_end;
@@ -676,9 +682,9 @@ namespace
 					<< "        \""
 					<< parent_link->get_parent()->get_name().c_str()
 					<< "\"("
-					<< parent_link->get_ticks_in_child()
+					<< convert_ticks_to_seconds(parent_link->get_ticks_in_child())
 					<< ") : children("
-					<< parent_link->get_ticks_in_child_children()
+					<< convert_ticks_to_seconds(parent_link->get_ticks_in_child_children())
 					<< ") : "
 					<< parent_link->get_calls()
 					<< "/"
@@ -686,12 +692,13 @@ namespace
 					<< std::endl;
 			}
 			
-			const double self_seconds = convert_ticks_to_seconds(
-					profile_node->get_self_ticks());
-			const double children_seconds = convert_ticks_to_seconds(
-					calc_ticks_in_all_children(profile_node));
-			const double self_and_children_seconds = self_seconds + children_seconds;
-			const double percent = self_and_children_seconds / total_seconds * 100;
+			const ticks_t self_ticks = profile_node->get_self_ticks();
+			const ticks_t children_ticks = calc_ticks_in_all_children(profile_node);
+			const double self_seconds = convert_ticks_to_seconds(self_ticks);
+			const double children_seconds = convert_ticks_to_seconds(children_ticks);
+			// If (self_ticks + children_ticks) == total_ticks then we want to  print 100% and
+			// not 99.9999997% so use exact arithmetic until final divide by 100.0.
+			const double percent = ((self_ticks + children_ticks) * 100 * 100 / total_ticks) / 100.0;
 			output_stream
 				<< percent
 				<< "%  \""
@@ -704,7 +711,6 @@ namespace
 
 			ProfileNode::profile_count_const_iterator child_begin = profile_node->child_profiles_begin();
 			ProfileNode::profile_count_const_iterator child_end = profile_node->child_profiles_end();
-			output_stream << std::endl;
 			for (
 				ProfileNode::profile_count_const_iterator child_iter = child_begin;
 				child_iter != child_end;
@@ -715,15 +721,17 @@ namespace
 					<< "        \""
 					<< child_link->get_child()->get_name().c_str()
 					<< "\"("
-					<< child_link->get_ticks_in_child()
+					<< convert_ticks_to_seconds(child_link->get_ticks_in_child())
 					<< ") : children("
-					<< child_link->get_ticks_in_child_children()
+					<< convert_ticks_to_seconds(child_link->get_ticks_in_child_children())
 					<< ") : "
 					<< child_link->get_calls()
 					<< "/"
 					<< calc_total_calls_from_parents(child_link->get_child())
 					<< std::endl;
 			}
+
+			output_stream << "------------------" << std::endl;
 		}
 		output_stream << std::endl;
 
@@ -773,12 +781,16 @@ namespace
 		output_stream << "--------------" << std::endl;
 		output_stream << std::endl;
 
-		report_flat_profile(output_stream, profile_nodes, total_seconds);
+		output_stream << "Total profiled time: " << total_seconds << " seconds" << std::endl;
+
+		output_stream << std::endl;
+
+		report_flat_profile(output_stream, profile_nodes, total_ticks);
 
 		output_stream << std::endl;
 		output_stream << std::endl;
 
-		report_call_graph_profile(output_stream, profile_nodes, total_seconds);
+		report_call_graph_profile(output_stream, profile_nodes, total_ticks);
 	}
 
 
