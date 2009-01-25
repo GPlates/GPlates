@@ -24,6 +24,8 @@
 
 #define DEBUG
 
+#include <map>
+
 #include <QtGlobal>
 #include <QHeaderView>
 #include <QTreeWidget>
@@ -69,6 +71,7 @@
 #include "feature-visitors/GmlTimePeriodFinder.h"
 #include "feature-visitors/XsStringFinder.h"
 #include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
+#include "feature-visitors/TopologySectionsFinder.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlMultiPoint.h"
@@ -270,6 +273,7 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_rendered_geom_factory(&rendered_geom_factory),
 	d_feature_focus_ptr(&feature_focus),
+	d_model_interface(&model_interface),
 	d_view_state_ptr(&view_state_),
 	d_create_feature_dialog(
 		new CreateFeatureDialog(model_interface, view_state_, this) ),
@@ -422,12 +426,31 @@ std::cout << "PlateClosureWidget::display_feature: ref valid" << std::endl;
 		button_clear_feature->setEnabled(true);
 	}
 
+
+	//
+	// Check for feature type
+	//
+ 	QString type("TopologicalClosedPlateBoundary");
+	if ( type == GPlatesUtils::make_qstring_from_icu_string(
+			feature_ref->feature_type().get_name()) ) 
+	{
+		std::cout << "TopologicalClosedPlateBoundary" << std::endl;
+		std::cout << "TopologicalClosedPlateBoundary" << std::endl;
+		std::cout << "TopologicalClosedPlateBoundary" << std::endl;
+		std::cout << "TopologicalClosedPlateBoundary" << std::endl;
+		std::cout << "TopologicalClosedPlateBoundary" << std::endl;
+
+		display_feature_topology( feature_ref, associated_rfg );
+	} 
+
+
 	
 	// Populate the widget from the FeatureHandle:
 	
 	// Feature Type.
 	lineedit_type->setText(GPlatesUtils::make_qstring_from_icu_string(
 			feature_ref->feature_type().build_aliased_name()));
+
 	
 	// Feature Name.
 	// FIXME: Need to adapt according to user's current codeSpace setting.
@@ -541,6 +564,90 @@ GPlatesQtWidgets::PlateClosureWidget::change_geometry_type(
 			*this, d_geometry_type, geom_type));
 #endif
 }
+
+void
+GPlatesQtWidgets::PlateClosureWidget::display_feature_topology(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
+{
+#ifdef DEBUG
+qDebug() << "PlateClosureWidget::display_feature_topology()";
+qDebug() << "feature_ref = " 
+<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+#endif
+
+	GPlatesGui::FeatureTableModel &segments_table = 
+		d_view_state_ptr->segments_feature_table_model();
+	segments_table.clear();
+
+	// get the section ids for this feature ref
+	std::vector<GPlatesModel::FeatureId> section_ids;
+	std::vector<bool> reverse_flags;
+
+	// Create a new TopologySectionsFinder 
+	GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder( 
+		section_ids, reverse_flags );
+
+	// Visit the feture ref, filling section_ids with feature id's
+	feature_ref->accept_visitor( topo_sections_finder );
+
+	// get a map from id to rg 
+	typedef std::map<
+		GPlatesModel::FeatureId,
+		GPlatesModel::ReconstructionGeometry::non_null_ptr_type > 
+			id_to_rg_map_type;
+
+	typedef std::map<
+		GPlatesModel::FeatureId,
+		GPlatesModel::ReconstructionGeometry::non_null_ptr_type >::iterator 	
+			id_to_rg_map_iterator_type;
+
+	id_to_rg_map_type rg_map;
+	id_to_rg_map_iterator_type rg_itr, rg_end;
+	
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator geom_itr =
+		d_view_state_ptr->reconstruction().geometries().begin();
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator geom_end =
+		d_view_state_ptr->reconstruction().geometries().end();
+	for ( ; geom_itr != geom_end; ++geom_itr)
+	{
+		GPlatesModel::ReconstructionGeometry *rg = geom_itr->get();
+		GPlatesModel::ReconstructedFeatureGeometry *rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+		if ( ! rfg) {
+			continue;
+		}
+		rg_map.insert( 
+			std::make_pair( rfg->feature_ref()->feature_id(), *geom_itr ) );
+	}
+
+		
+	// insert recon geom data to segments table
+	std::vector<GPlatesModel::FeatureId>::iterator section_itr;
+	std::vector<GPlatesModel::FeatureId>::iterator section_end = section_ids.end();
+	for (section_itr = section_ids.begin(); section_itr != section_end; ++section_itr)
+	{
+		GPlatesModel::FeatureId	section_id = *section_itr;
+#ifdef DEBUG
+qDebug() << "section_id = " 
+<< GPlatesUtils::make_qstring_from_icu_string( section_id.get() );
+#endif 
+		id_to_rg_map_iterator_type find_iter;
+		find_iter = rg_map.find( section_id );
+			
+		if ( find_iter != rg_map.end() )
+		{
+			segments_table.begin_insert_features(0, 0);
+			segments_table.geometry_sequence().push_back( find_iter->second );
+			segments_table.end_insert_features();
+		}
+	}
+}
+
+
+
+
+
 
 // 
 // Button Handlers  and support functions 
@@ -1025,17 +1132,11 @@ GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 void
 GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 {
-	//FIXME: d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().clear();
+	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	if (d_geometry_opt_ptr) 
 	{
-		// GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::BLACK;
-
-		//FIXME: d_view_state_ptr->globe_canvas().globe().rendered_geometry_layers().plate_closure_layer().push_back(
-				//FIXME: GPlatesGui::RenderedGeometry(*d_geometry_opt_ptr, colour));
-
-		
 		const GPlatesGui::Colour &colour = GPlatesGui::Colour::BLACK;
 
 		// Create rendered geometry.
@@ -1048,7 +1149,6 @@ GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 
 		// Add to pole manipulation layer.
 		d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
-
 	}
 
 	// update the canvas 

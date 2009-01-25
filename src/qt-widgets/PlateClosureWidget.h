@@ -241,6 +241,11 @@ namespace GPlatesQtWidgets
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
+		void
+		display_feature_topology(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+
 		/**
 		 * Configures widgets to accept new geometry of a specific type.
 		 * This will clear the coordinates table and purge the undo stack.
@@ -325,6 +330,8 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesViewOperations::RenderedGeometryFactory *d_rendered_geom_factory;
 
+
+
 		/**
 		 * Rendered geometry layer to render initial geometries.
 		 */
@@ -339,15 +346,15 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * The currently focused feature
-		*/
-
-		/**
 		 * This is our reference to the Feature Focus, which we use to let the rest of the
 		 * application know what the user just clicked on.
-		*/
+		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
 
+		/**
+		 * The model
+		 */ 
+		GPlatesModel::ModelInterface *d_model_interface;
 
 		/**
 		 * The Undo Stack that handles all the Undo Commands for this widget.
