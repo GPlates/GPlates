@@ -420,49 +420,6 @@ namespace GPlatesFeatureVisitors
 				GPlatesModel::InlinePropertyContainer &inline_property_container);
 
 
-
-#if 0
-		virtual
-		void
-		visit_enumeration(
-				GPlatesPropertyValues::Enumeration &enumeration);
-#endif
-
-#if 0
-		virtual
-		void
-		visit_gml_line_string(
-				GPlatesPropertyValues::GmlLineString &gml_line_string);
-
-		virtual
-		void
-		visit_gml_multi_point(
-				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
-
-		virtual
-		void
-		visit_gml_orientable_curve(
-				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
-#endif
-
-		virtual
-		void
-		visit_gml_point(
-				GPlatesPropertyValues::GmlPoint &gml_point);
-
-#if 0
-		virtual
-		void
-		visit_gml_polygon(
-				GPlatesPropertyValues::GmlPolygon &gml_polygon);
-
-		virtual
-		void
-		visit_gml_time_instant(
-				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
-#endif
-
-
 		virtual
 		void
 		visit_gml_time_period(
@@ -473,53 +430,6 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_constant_value(
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
-#if 0
-
-		virtual
-		void
-		visit_gpml_feature_reference(
-				GPlatesPropertyValues::GpmlFeatureReference &gpml_feature_reference);
-
-		virtual
-		void
-		visit_gpml_feature_snapshot_reference(
-				GPlatesPropertyValues::GpmlFeatureSnapshotReference &gpml_feature_snapshot_reference);
-
-		virtual
-		void
-		visit_gpml_finite_rotation(
-				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
-
-		virtual
-		void
-		visit_gpml_finite_rotation_slerp(
-				GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
-
-		virtual
-		void
-		visit_hot_spot_trail_mark(
-				GPlatesPropertyValues::GpmlHotSpotTrailMark &gpml_hot_spot_trail_mark);
-
-		virtual
-		void
-		visit_gpml_irregular_sampling(
-				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
-
-		virtual
-		void
-		visit_gpml_key_value_dictionary(
-				GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
-
-		virtual
-		void
-		visit_gpml_measure(
-				GPlatesPropertyValues::GpmlMeasure &gpml_measure);
-
-		virtual
-		void
-		visit_gpml_old_plates_header(
-				GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
-#endif
 
 		virtual
 		void
@@ -531,29 +441,6 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
-#if 0
-		virtual
-		void
-		visit_gpml_polarity_chron_id(
-				GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id);
-#endif
-
-		virtual
-		void
-		visit_gpml_property_delegate(
-				GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate);
-
-#if 0
-		virtual
-		void
-		visit_gpml_revision_id(
-				GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id);
-
-		void
-		write_gpml_time_sample(
-				GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
-
-#endif
 		void
 		write_gpml_time_window(
 				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
@@ -566,46 +453,12 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
-
-		virtual
-		void
-		visit_gpml_topological_intersection(
-				GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection);
-
+			GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
-
-#if 0
-
-		virtual
-		void
-		visit_uninterpreted_property_value(
-				GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val);
-
-		virtual
-		void
-		visit_xs_boolean(
-				GPlatesPropertyValues::XsBoolean &xs_boolean);
-
-		virtual
-		void
-		visit_xs_double(
-				GPlatesPropertyValues::XsDouble &xs_double);
-		
-		virtual
-		void
-		visit_xs_integer(
-				GPlatesPropertyValues::XsInteger &xs_integer);
-
-		virtual
-		void
-		visit_xs_string(
-				GPlatesPropertyValues::XsString &xs_string);
-#endif
+			GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
 
 		void
 		resolve_intersection(
@@ -750,7 +603,7 @@ namespace GPlatesFeatureVisitors
 			* and adjusts it's vertex list as needed
 			*
 			*/
-			void
+			int
 			get_vertex_list_from_node_relation(
 				NeighborRelation relation,
 				BoundaryFeature &node1,
