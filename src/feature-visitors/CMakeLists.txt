@@ -27,7 +27,6 @@ set(srcs
     KeyValueDictionaryFinder.h
     PlateIdFinder.cc
     PlateIdFinder.h
-
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
     ReconstructedFeatureGeometryFinder.cc
@@ -36,6 +35,8 @@ set(srcs
     ShapefileAttributeFinder.h
     TopologyResolver.cc
     TopologyResolver.h
+    TopologySectionsFinder.cc
+    TopologySectionsFinder.h
     ToQvariantConverter.cc
     ToQvariantConverter.h
     TotalReconstructionSequencePlateIdFinder.cc
