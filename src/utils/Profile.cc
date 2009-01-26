@@ -37,6 +37,7 @@
 #include <iterator>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <numeric>
 #include <functional>
@@ -695,7 +696,7 @@ namespace
 
 	private:
 		ProfileManager() :
-			d_root_profile_node("root node")
+			d_root_profile_node("<root>")
 		{
 			// The root profile run will always exist on the stack.
 			// It is used only to test for mismatching profile begin/end calls.
@@ -854,24 +855,24 @@ namespace
 				sorted_profile_node_seq.begin(),
 				sorted_profile_node_seq.end(),
 				boost::bind(&ProfileNode::get_self_ticks, _1)
-						< boost::bind(&ProfileNode::get_self_ticks, _2));
+						> boost::bind(&ProfileNode::get_self_ticks, _2));
 	
 		output_stream << "Flat Profile" << std::endl;
 		output_stream << "------------" << std::endl;
 		output_stream << std::endl;
 		
 		// Print header rows.
-		output_stream << "  %   cumulative   self                self        total       " << std::endl;
-		output_stream << " time   seconds   seconds    calls   time/call   time/call  name" << std::endl;
+		output_stream << "  %    cumulative    self               self        total       " << std::endl;
+		output_stream << " time    seconds    seconds   calls   time/call   time/call  name" << std::endl;
 
 		// Cumulative time.
 		ticks_t cumulative_ticks = 0;
 
 		// Print out the flat profile in order of time taken.
-		ProfileGraph::profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
+		ProfileGraph::profile_node_seq_type::iterator sorted_profile_node_seq_iter;
 		for (
-			sorted_profile_node_seq_iter = sorted_profile_node_seq.rbegin();
-			sorted_profile_node_seq_iter != sorted_profile_node_seq.rend();
+			sorted_profile_node_seq_iter = sorted_profile_node_seq.begin();
+			sorted_profile_node_seq_iter != sorted_profile_node_seq.end();
 			++sorted_profile_node_seq_iter)
 		{
 			const ProfileNode *profile_node = *sorted_profile_node_seq_iter;
@@ -894,7 +895,7 @@ namespace
 				<< percent
 				<< std::fixed << std::setprecision(2) << std::setw(10) << std::right
 				<< cumulative_seconds
-				<< std::fixed << std::setprecision(2) << std::setw(9) << std::right
+				<< std::fixed << std::setprecision(3) << std::setw(10) << std::right
 				<< self_seconds
 				<< std::setw(9) << std::right
 				<< calls;
@@ -933,22 +934,28 @@ namespace
 				sorted_profile_node_seq.begin(),
 				sorted_profile_node_seq.end(),
 				boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _1)
-					< boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _2));
+					> boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _2));
 
 		output_stream << "Call Graph Profile" << std::endl;
 		output_stream << "------------------" << std::endl;
 		output_stream << std::endl;
 		
-		output_stream.setf(std::ios::fixed);
+		// Print header rows.
+		output_stream << "index % time     self   children      called      name" << std::endl;
+		output_stream << "               seconds   seconds                      " << std::endl;
 
 		// Print out the call graph profile in order of time taken.
-		ProfileGraph::profile_node_seq_type::reverse_iterator sorted_profile_node_seq_iter;
+		ProfileGraph::profile_node_seq_type::iterator sorted_profile_node_seq_iter;
 		for (
-			sorted_profile_node_seq_iter = sorted_profile_node_seq.rbegin();
-			sorted_profile_node_seq_iter != sorted_profile_node_seq.rend();
+			sorted_profile_node_seq_iter = sorted_profile_node_seq.begin();
+			sorted_profile_node_seq_iter != sorted_profile_node_seq.end();
 			++sorted_profile_node_seq_iter)
 		{
 			const ProfileNode *profile_node = *sorted_profile_node_seq_iter;
+
+			// Index into sorted profile node sequence.
+			const int node_index = std::distance(
+					sorted_profile_node_seq.begin(), sorted_profile_node_seq_iter);
 
 			ProfileNode::profile_count_const_iterator parent_begin = profile_node->parent_profiles_begin();
 			ProfileNode::profile_count_const_iterator parent_end = profile_node->parent_profiles_end();
@@ -958,20 +965,36 @@ namespace
 				++parent_iter)
 			{
 				const ProfileLink *parent_link = parent_iter.get();
+
+				// Find parent node in the sorted profile node sequence and if it exists
+				// in that sequence (note: root profile node does not) then its index
+				// is its distance from beginning of sequence.
+				ProfileGraph::profile_node_seq_type::iterator parent_index_iter = std::find(
+						sorted_profile_node_seq.begin(),
+						sorted_profile_node_seq.end(),
+						parent_link->get_parent());
+				const int parent_node_index = (parent_index_iter != sorted_profile_node_seq.end())
+						? std::distance(sorted_profile_node_seq.begin(), parent_index_iter)
+						: -1;
+
 				output_stream
-					<< "        \""
-					<< parent_link->get_parent()->get_name().c_str()
-					<< "\"("
+					<< std::fixed << std::setprecision(3) << std::setw(22) << std::right
 					<< convert_ticks_to_seconds(parent_link->get_ticks_in_child())
-					<< ") : children("
+					<< std::fixed << std::setprecision(3) << std::setw(10) << std::right
 					<< convert_ticks_to_seconds(parent_link->get_ticks_in_child_children())
-					<< ") : "
+					<< std::setw(9) << std::right
 					<< parent_link->get_calls()
-					<< "/"
+					<< std::setw(0) << std::left
+					<< '/'
+					<< std::setw(12) << std::left
 					<< calc_total_calls_from_parents(profile_node)
+					<< std::setw(0) << std::left
+					<< parent_link->get_parent()->get_name().c_str()
+					<< std::setw(0) << std::left
+					<< " [" << parent_node_index + 1 << ']'
 					<< std::endl;
 			}
-			
+
 			const ticks_t self_ticks = profile_node->get_self_ticks();
 			const ticks_t children_ticks = calc_ticks_in_all_children(profile_node);
 			const double self_seconds = convert_ticks_to_seconds(self_ticks);
@@ -979,14 +1002,25 @@ namespace
 			// If (self_ticks + children_ticks) == total_ticks then we want to  print 100% and
 			// not 99.9999997% so use exact arithmetic until final divide by 100.0.
 			const double percent = ((self_ticks + children_ticks) * 100 * 100 / total_ticks) / 100.0;
+			const calls_t calls = calc_total_calls_from_parents(profile_node);
+
+			std::ostringstream index_field;
+			index_field << '[' << node_index + 1 << ']';
+
 			output_stream
+				<< std::setw(6) << std::left
+				<< index_field.str().c_str()
+				<< std::fixed << std::setprecision(1) << std::setw(6) << std::right
 				<< percent
-				<< "%  \""
-				<< profile_node->get_name().c_str()
-				<< "\"("
-				<< self_seconds << ") : children("
+				<< std::fixed << std::setprecision(3) << std::setw(10) << std::right
+				<< self_seconds
+				<< std::fixed << std::setprecision(3) << std::setw(10) << std::right
 				<< children_seconds
-				<< ")"
+				<< std::setw(10) << std::right
+				<< calls
+				<< std::setw(0) << std::left
+				<< "        "
+				<< profile_node->get_name().c_str()
 				<< std::endl;
 
 			ProfileNode::profile_count_const_iterator child_begin = profile_node->child_profiles_begin();
@@ -997,17 +1031,33 @@ namespace
 				++child_iter)
 			{
 				const ProfileLink *child_link = child_iter.get();
+
+				// Find child node in the sorted profile node sequence and if it exists
+				// in that sequence (which it should since root node will not be child
+				// of any nodes) then its index is its distance from beginning of sequence.
+				ProfileGraph::profile_node_seq_type::iterator child_index_iter = std::find(
+						sorted_profile_node_seq.begin(),
+						sorted_profile_node_seq.end(),
+						child_link->get_child());
+				const int child_node_index = (child_index_iter != sorted_profile_node_seq.end())
+						? std::distance(sorted_profile_node_seq.begin(), child_index_iter)
+						: -1;
+
 				output_stream
-					<< "        \""
-					<< child_link->get_child()->get_name().c_str()
-					<< "\"("
+					<< std::fixed << std::setprecision(3) << std::setw(22) << std::right
 					<< convert_ticks_to_seconds(child_link->get_ticks_in_child())
-					<< ") : children("
+					<< std::fixed << std::setprecision(3) << std::setw(10) << std::right
 					<< convert_ticks_to_seconds(child_link->get_ticks_in_child_children())
-					<< ") : "
+					<< std::setw(9) << std::right
 					<< child_link->get_calls()
-					<< "/"
+					<< std::setw(0) << std::left
+					<< '/'
+					<< std::setw(12) << std::left
 					<< calc_total_calls_from_parents(child_link->get_child())
+					<< std::setw(0) << std::left
+					<< child_link->get_child()->get_name().c_str()
+					<< std::setw(0) << std::left
+					<< " [" << child_node_index + 1 << ']'
 					<< std::endl;
 			}
 
