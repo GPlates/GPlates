@@ -55,21 +55,23 @@
     included in the time recorded for the profiled section of source
     code). This profiling can be very accurate as long no other
     cpu-intensive processes are running on the same machine AND the section of
-    profiled code is at least a few hundred machine cycles. The second
-	requirement is because there is a small inaccuracy in profiled times due
-	to calling and returning from calls to the profiling code itself. This
-	inaccuracy is designed to be as small as possible by not counting the time
-	spent inside the profiling code itself. As a result the inaccuracy is
-	only on the order of tens of machine cycles.
-	If you have a loop that is called very often but the code inside the loop
-	is small but yet consumes a significant amount of total program execution time
-	then inserting a profile call inside the loop iteration can significantly
-	slow down program running time since the time spent inside the profile call
-	itself (not the code being profiled) will be comparable to the time spent
-	in the profiled code. Note that the time spent inside the profile call itself
-	is not counted though (other than the inaccuracy mentioned above).
+    profiled code is at least a few microseconds. The second requirement is
+	because the overhead of profiling is on the order of a microsecond because
+	API calls like the WIN32 QueryPerformanceCounter() take about 0.6 microseconds
+	(in fact about 90% of the profiling overhead is due to QueryPerformanceCounter
+	call alone) giving an inaccuracy in profiling time of around the same amount.
+	And because the profile overhead is on the order of a microsecond - a profiled
+	code segment that consumes a large proportion of the program running time will
+	slow down program execution if it is also on the order of a microsecond.
+	For example a tight loop that consumes 100% of program running time will slow
+	down the total program running time by a factor of two if each loop iteration is
+	2 x 0.6 microseconds = 1.2 microseconds long (note: the "2 x" here is because
+	each profiled segment requires two calls to QueryPerformanceCounter). The program
+	will now require 1.2 microseconds for each loop iteration code segment plus
+	1.2 microseconds for the begin/end profile calls around each loop iteration
+	code segment thus slowing down the total program running time by a factor of two.
 
-    An example..
+    An example profile usage..
 
     #include "utils/Profile.h"
 

@@ -426,10 +426,10 @@ namespace
 		//! Used for speed optimisation purposes to try and avoid searching @a d_parent_profiles.
 		ProfileNode *d_most_recent_parent;
 		//! Used for speed optimisation purposes to try and avoid searching @a d_parent_profiles.
-		ProfileLink::pointer_type d_most_recent_parent_link;
+		ProfileLink *d_most_recent_parent_link;
 
 		//! Returns reference to parent link corresponding to @a parent_node.
-		ProfileLink::pointer_type &
+		ProfileLink *
 		get_parent_link(
 				ProfileNode *parent_node);
 
@@ -450,7 +450,7 @@ namespace
 	};
 
 	inline
-	ProfileLink::pointer_type &
+	ProfileLink *
 	ProfileNode::get_parent_link(
 			ProfileNode *parent_node)
 	{
@@ -476,7 +476,7 @@ namespace
 						GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
 			}
 
-			d_most_recent_parent_link = p->second;
+			d_most_recent_parent_link = p->second.get();
 			d_most_recent_parent = parent_node;
 		}
 
@@ -490,7 +490,7 @@ namespace
 	{
 		// Get the call graph ProfileLink to parent_node.
 		// This will create one if it doesn't exist.
-		ProfileLink::pointer_type &parent_link = get_parent_link(&parent_node);
+		ProfileLink *parent_link = get_parent_link(&parent_node);
 
 		// Get this parent_link to update itself from info in 'run'.
 		parent_link->update(run);
@@ -1195,25 +1195,34 @@ namespace GPlatesUtils
 	profile_begin(
 			void *profile_cache)
 	{
-		// The first and last things we do are call 'get_ticks()'
-		// that way we can take as long as we like in between and it doesn't get counted.
-		ticks_t start_ticks = get_ticks();
+		ticks_t suspend_profiling_ticks = get_ticks();
 
-		ticks_t &end_ticks = ProfileManager::instance().start_profile(profile_cache, start_ticks);
+		ticks_t &resume_profiling_ticks = ProfileManager::instance().start_profile(
+				profile_cache, suspend_profiling_ticks);
 
-		end_ticks = get_ticks();
+		// We could call 'get_ticks()' at beginning of this function and then again at
+		// the end to remove the time spent in the profiling code itself.
+		// However 90% of the time spent in profiling code is due to API calls like
+		// QueryPerformanceCount(), which lives in 'get_ticks()', so having two calls
+		// to 'get_ticks()' hardly increases our profiling accuracy and would just
+		// make the profiling code twice as slow.
+		resume_profiling_ticks = suspend_profiling_ticks;
 	}
 
 	void
 	profile_end()
 	{
-		// The first and last things we do are call 'get_ticks()'
-		// that way we can take as long as we like in between and it doesn't get counted.
-		ticks_t start_ticks = get_ticks();
+		ticks_t suspend_profiling_ticks = get_ticks();
 
-		ticks_t &end_ticks = ProfileManager::instance().stop_profile(start_ticks);
+		ticks_t &resume_profiling_ticks = ProfileManager::instance().stop_profile(suspend_profiling_ticks);
 		
-		end_ticks = get_ticks();
+		// We could call 'get_ticks()' at beginning of this function and then again at
+		// the end to remove the time spent in the profiling code itself.
+		// However 90% of the time spent in profiling code is due to API calls like
+		// QueryPerformanceCount(), which lives in 'get_ticks()', so having two calls
+		// to 'get_ticks()' hardly increases our profiling accuracy and would just
+		// make the profiling code twice as slow.
+		resume_profiling_ticks = suspend_profiling_ticks;
 	}
 
 	void
