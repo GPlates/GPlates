@@ -34,6 +34,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <algorithm>
 #include <iterator>
 #include <iostream>
 #include <fstream>
@@ -261,6 +262,14 @@ namespace
 						&profile_link_pool_type::destroy,
 						boost::ref(s_profile_link_pool),
 						_1));
+	}
+
+	inline
+	ticks_t
+	get_ticks(
+			const ProfileLink *profile_link)
+	{
+		return profile_link->get_ticks_in_child() + profile_link->get_ticks_in_child_children();
 	}
 
 
@@ -957,6 +966,17 @@ namespace
 			const int node_index = std::distance(
 					sorted_profile_node_seq.begin(), sorted_profile_node_seq_iter);
 
+
+			//
+			// Print out parents of current node
+			//
+
+
+			// Sort the parent links according to time spent time spent passing through each link.
+			typedef std::vector<const ProfileLink *> parent_profile_link_seq_type;
+			parent_profile_link_seq_type sorted_parent_links;
+
+			// Copy parent profile links into vector for sorting.
 			ProfileNode::profile_count_const_iterator parent_begin = profile_node->parent_profiles_begin();
 			ProfileNode::profile_count_const_iterator parent_end = profile_node->parent_profiles_end();
 			for (
@@ -964,7 +984,24 @@ namespace
 				parent_iter != parent_end;
 				++parent_iter)
 			{
-				const ProfileLink *parent_link = parent_iter.get();
+				sorted_parent_links.push_back(parent_iter.get());
+			}
+
+			// Sort in ascending order.
+			std::sort(
+					sorted_parent_links.begin(),
+					sorted_parent_links.end(),
+					boost::bind(&get_ticks, _1)
+						< boost::bind(&get_ticks, _2));
+
+			// Iterate through the sorted sequence of parent links and print them out.
+			parent_profile_link_seq_type::const_iterator sorted_parent_iter;
+			for (
+				sorted_parent_iter = sorted_parent_links.begin();
+				sorted_parent_iter != sorted_parent_links.end();
+				++sorted_parent_iter)
+			{
+				const ProfileLink *parent_link = *sorted_parent_iter;
 
 				// Find parent node in the sorted profile node sequence and if it exists
 				// in that sequence (note: root profile node does not) then its index
@@ -995,6 +1032,12 @@ namespace
 					<< std::endl;
 			}
 
+
+			//
+			// Print out current node
+			//
+
+
 			const ticks_t self_ticks = profile_node->get_self_ticks();
 			const ticks_t children_ticks = calc_ticks_in_all_children(profile_node);
 			const double self_seconds = convert_ticks_to_seconds(self_ticks);
@@ -1023,6 +1066,17 @@ namespace
 				<< profile_node->get_name().c_str()
 				<< std::endl;
 
+
+			//
+			// Print out children of current node
+			//
+
+
+			// Sort the child links according to time spent time spent passing through each link.
+			typedef std::vector<const ProfileLink *> child_profile_link_seq_type;
+			child_profile_link_seq_type sorted_child_links;
+
+			// Copy child profile links into vector for sorting.
 			ProfileNode::profile_count_const_iterator child_begin = profile_node->child_profiles_begin();
 			ProfileNode::profile_count_const_iterator child_end = profile_node->child_profiles_end();
 			for (
@@ -1030,7 +1084,24 @@ namespace
 				child_iter != child_end;
 				++child_iter)
 			{
-				const ProfileLink *child_link = child_iter.get();
+				sorted_child_links.push_back(child_iter.get());
+			}
+
+			// Sort in descending order.
+			std::sort(
+					sorted_child_links.begin(),
+					sorted_child_links.end(),
+					boost::bind(&get_ticks, _1)
+						> boost::bind(&get_ticks, _2));
+
+			// Iterate through the sorted sequence of child links and print them out.
+			child_profile_link_seq_type::const_iterator sorted_child_iter;
+			for (
+				sorted_child_iter = sorted_child_links.begin();
+				sorted_child_iter != sorted_child_links.end();
+				++sorted_child_iter)
+			{
+				const ProfileLink *child_link = *sorted_child_iter;
 
 				// Find child node in the sorted profile node sequence and if it exists
 				// in that sequence (which it should since root node will not be child
