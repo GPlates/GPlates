@@ -82,7 +82,7 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 
 	// Activate the pole manipulation rendered layer.
 	d_rendered_geom_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::PLATE_CLOSURE_LAYER);
+		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
 	// hide other tools ; show plate closure 
 	// d_layers_ptr->show_only_plate_closure_layer();

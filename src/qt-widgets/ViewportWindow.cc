@@ -1098,8 +1098,9 @@ GPlatesQtWidgets::ViewportWindow::highlight_segments_table_row(int i, bool state
 {
 	QModelIndex idx = d_segments_feature_table_model_ptr->index(i, 0);
 	
-	if (idx.isValid()) 
-	{
+	if (idx.isValid()) {
+		table_view_platepolygon_segments->selectionModel()->clear();
+
 		if ( state )
 		{
 			table_view_platepolygon_segments->selectionModel()->select(idx,
@@ -1921,7 +1922,7 @@ GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::CREATE_TOPOLOGY_LAYER);
 	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::PLATE_CLOSURE_LAYER);
+			GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
 	orthogonal_main_layers.set(

@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>182</width>
-    <height>519</height>
+    <width>198</width>
+    <height>559</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -22,7 +22,7 @@
    <item>
     <widget class="QLabel" name="label_type" >
      <property name="text" >
-      <string>Type:</string>
+      <string>Focused Feature Type:</string>
      </property>
      <property name="buddy" >
       <cstring>lineedit_type</cstring>
@@ -39,7 +39,7 @@
    <item>
     <widget class="QLabel" name="label_name" >
      <property name="text" >
-      <string>Name:</string>
+      <string>Feature Name</string>
      </property>
      <property name="buddy" >
       <cstring>lineedit_name</cstring>
@@ -54,63 +54,25 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="label_plate_id" >
-     <property name="text" >
-      <string>Plate ID:</string>
-     </property>
-     <property name="buddy" >
-      <cstring>lineedit_plate_id</cstring>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLineEdit" name="lineedit_plate_id" >
-     <property name="readOnly" >
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="label_valid_time" >
-     <property name="text" >
-      <string>Valid time:</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout" >
+    <layout class="QHBoxLayout" name="horizontalLayout_2" >
      <item>
-      <widget class="QLineEdit" name="lineedit_time_of_disappearance" >
-       <property name="readOnly" >
-        <bool>true</bool>
+      <widget class="QLabel" name="label_plate_id" >
+       <property name="text" >
+        <string>Plate ID:</string>
+       </property>
+       <property name="buddy" >
+        <cstring>lineedit_plate_id</cstring>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineedit_time_of_appearance" >
+      <widget class="QLineEdit" name="lineedit_plate_id" >
        <property name="readOnly" >
         <bool>true</bool>
        </property>
       </widget>
      </item>
     </layout>
-   </item>
-   <item>
-    <widget class="QLabel" name="label_clicked_geometry" >
-     <property name="text" >
-      <string>Clicked geometry:</string>
-     </property>
-     <property name="buddy" >
-      <cstring>lineedit_clicked_geometry</cstring>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLineEdit" name="lineedit_clicked_geometry" >
-     <property name="readOnly" >
-      <bool>true</bool>
-     </property>
-    </widget>
    </item>
    <item>
     <widget class="QLabel" name="label_coords" >
@@ -120,22 +82,37 @@
     </widget>
    </item>
    <item>
-    <widget class="QLineEdit" name="lineedit_first" />
+    <layout class="QHBoxLayout" name="horizontalLayout_4" >
+     <item>
+      <widget class="QLineEdit" name="lineedit_last" />
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_first" />
+     </item>
+    </layout>
    </item>
    <item>
-    <widget class="QLineEdit" name="lineedit_last" />
+    <layout class="QHBoxLayout" name="horizontalLayout_5" >
+     <item>
+      <widget class="QPushButton" name="button_use_coordinates_in_reverse" >
+       <property name="text" >
+        <string>Use in Reverse</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_use_reverse" >
+       <property name="readOnly" >
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
-    <widget class="QPushButton" name="button_use_coordinates_in_reverse" >
+    <widget class="QPushButton" name="button_append_feature" >
      <property name="text" >
-      <string>Use Coordinates in Reverse</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="button_choose_feature" >
-     <property name="text" >
-      <string>Choose Feature</string>
+      <string>Append Feature</string>
      </property>
     </widget>
    </item>
@@ -160,9 +137,45 @@
     </widget>
    </item>
    <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_6" >
+     <item>
+      <widget class="QPushButton" name="pushButton_2" >
+       <property name="text" >
+        <string>Insert Before</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton" >
+       <property name="text" >
+        <string>Insert After</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3" >
+     <item>
+      <widget class="QLabel" name="label_num_sections" >
+       <property name="text" >
+        <string>Total # of Sections</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_num_sections" >
+       <property name="readOnly" >
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
     <widget class="QPushButton" name="button_create_platepolygon" >
      <property name="text" >
-      <string>Create Plate...</string>
+      <string>Create New Feature...</string>
      </property>
     </widget>
    </item>
@@ -178,13 +191,7 @@
  <tabstops>
   <tabstop>lineedit_type</tabstop>
   <tabstop>lineedit_name</tabstop>
-  <tabstop>lineedit_plate_id</tabstop>
-  <tabstop>lineedit_clicked_geometry</tabstop>
-  <tabstop>lineedit_first</tabstop>
-  <tabstop>lineedit_last</tabstop>
-  <tabstop>button_use_coordinates_in_reverse</tabstop>
-  <tabstop>button_clear_feature</tabstop>
-  <tabstop>button_choose_feature</tabstop>
+  <tabstop>button_append_feature</tabstop>
   <tabstop>button_cancel</tabstop>
   <tabstop>button_create_platepolygon</tabstop>
  </tabstops>

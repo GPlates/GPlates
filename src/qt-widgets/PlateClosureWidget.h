@@ -34,6 +34,8 @@
 
 #include "global/types.h"
 
+#include "feature-visitors/TopologySectionsFinder.h"
+
 #include "maths/GeometryOnSphere.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
@@ -270,6 +272,20 @@ namespace GPlatesQtWidgets
 		void
 		draw_temporary_geometry();
 
+		void
+		draw_section_segments();
+
+		void
+		draw_head_and_tail_points();
+
+		void
+		draw_intersection_points();
+
+		void
+		draw_click_points();
+
+		void
+		draw_click_point();
 
 	private slots:
 
@@ -283,7 +299,7 @@ namespace GPlatesQtWidgets
 		 * The slot that gets called when the user clicks "Choose Feature".
 		 */
 		void
-		handle_choose_feature();
+		handle_append_feature();
 
 		/**
 		 * The slot that gets called when the user clicks "Remove Feature".
@@ -331,18 +347,16 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryFactory *d_rendered_geom_factory;
 
 
-
 		/**
-		 * Rendered geometry layer to render initial geometries.
+		 * Rendered geometry layers to draw into 
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_initial_geom_layer_ptr;
-
-		/**
-		 * Rendered geometry layer to render dragged geometries.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_dragged_geom_layer_ptr;
+			d_initial_geom_layer_ptr,
+			d_dragged_geom_layer_ptr,
+			d_section_segments_layer_ptr,
+			d_head_and_tail_points_layer_ptr,
+			d_intersection_points_layer_ptr,
+			d_click_points_layer_ptr;
 
 
 		/**
@@ -410,16 +424,10 @@ namespace GPlatesQtWidgets
 
 		std::vector<GPlatesMaths::PointOnSphere> d_vertex_list;
 		
-		/**
-		 * These vectors are all sychronized to the Segments table with d_tmp_index
-		 */
-		std::vector< std::pair<double, double> > d_click_points;
-
-		std::vector<bool> d_use_reverse_flags;
 
 		/**
 		 * These d_tmp_ vars are all set by the canvas tool, or the widget
-		 * and used during interation around the Segments Table (d_sections_ptrs)
+		 * and used during interation around the Segments Table (d_section_ptrs)
 		 * as the code bounces between visitor functions and intersection processing functions.
 		 */
 		int d_tmp_index;
@@ -427,7 +435,11 @@ namespace GPlatesQtWidgets
 		int d_tmp_prev_index;
 		int d_tmp_next_index;
 
+		// These control the behavior of the geom. visitors
 		bool d_check_type;
+		bool d_should_create_properties;
+
+		// These get set during the visit 
 		GPlatesGlobal::FeatureTypes d_tmp_feature_type;
 
 		bool d_tmp_index_use_reverse;
@@ -446,7 +458,6 @@ namespace GPlatesQtWidgets
 		int d_num_intersections_with_prev;
 		int d_num_intersections_with_next;
 
-		bool d_should_create_properties;
 
 		/**
 		* thise d_ vars keep track of the widget's current state as data is transfered from
@@ -462,13 +473,36 @@ namespace GPlatesQtWidgets
 		double d_click_point_lon;
 		const GPlatesMaths::PointOnSphere *d_click_point_ptr;
 
+		/**
+		 * These vectors are all sychronized to the Segments table with d_tmp_index
+		 */
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_section_ptrs;
+		std::vector<GPlatesModel::FeatureId> d_section_ids;
+		std::vector<std::pair<double, double> > d_click_points;
+		std::vector<bool> d_reverse_flags;
 
-		/** Because GpmlTopologicalSection is abstract we use non_null_ptr_type */
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
-			d_sections_ptrs;
+
+		std::vector<GPlatesMaths::PointOnSphere> d_head_points;
+		std::vector<GPlatesMaths::PointOnSphere> d_tail_points;
+		std::vector<GPlatesMaths::PointOnSphere> d_intersection_points;
+		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
+			d_section_segments;
+
+
+		/*
+		 * Set by display_feature, used by append_boundary_to_feature()
+		 * Used when editing a topology 
+        */
+		GPlatesModel::FeatureHandle::weak_ref d_topology_feature_ref;
+
+
+		// private functions 
 
 		void
 		create_child_rendered_layers();
+
+		void
+		show_numbers();
 	};
 }
 

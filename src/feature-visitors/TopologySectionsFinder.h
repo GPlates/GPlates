@@ -58,6 +58,7 @@
 #include "model/WeakReference.h"
 
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlTopologicalSection.h"
 
 #include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 
@@ -66,6 +67,7 @@ namespace GPlatesPropertyValues
 	class GpmlKeyValueDictionaryElement;
 	class GpmlTimeSample;
 	class GpmlTimeWindow;
+	class GpmlTopologicalSection;
 }
 
 
@@ -76,8 +78,10 @@ namespace GPlatesFeatureVisitors
 	public:
 		explicit
 		TopologySectionsFinder(
+			std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &sections_ptrs,
 			std::vector<GPlatesModel::FeatureId> &section_ids,
-			std::vector<bool> &section_reverse);
+			std::vector< std::pair<double, double> > &click_points,
+			std::vector<bool> &reverse_flags);
 
 		virtual
 		~TopologySectionsFinder () 
@@ -86,53 +90,64 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle);
+			GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
 		visit_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
+			GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
 		visit_inline_property_container(
-				GPlatesModel::InlinePropertyContainer &inline_property_container);
+			GPlatesModel::InlinePropertyContainer &inline_property_container);
 
 		virtual
 		void
 		visit_gpml_constant_value(
-				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+			GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 		virtual
 		void
 		visit_gpml_piecewise_aggregation(
-				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation);
+			GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation);
 
 		void
 		process_gpml_time_window(
-				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
+			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
 
 		virtual
 		void
 		visit_gpml_topological_polygon(
-			 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+		 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
 
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+			GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+
+		virtual
+		void
+		visit_gpml_topological_intersection(
+			GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection);
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+			GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
 
 		void
 		report();
 
 	private:
 
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
+			*d_section_ptrs;
+
 		std::vector<GPlatesModel::FeatureId> *d_section_ids;
+
+		std::vector< std::pair<double, double> > *d_click_points;
+
 		std::vector<bool> *d_reverse_flags;
 
 		TopologySectionsFinder(

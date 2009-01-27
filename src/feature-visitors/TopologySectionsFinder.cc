@@ -90,12 +90,18 @@
 #include "utils/UnicodeStringUtils.h"
 
 GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder( 
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &section_ptrs,
 		std::vector<GPlatesModel::FeatureId> &section_ids,
+		std::vector< std::pair<double, double> > &click_points,
 		std::vector<bool> &reverse_flags):
+	d_section_ptrs( &section_ptrs ),
 	d_section_ids( &section_ids ),
+	d_click_points( &click_points ),
 	d_reverse_flags( &reverse_flags )
 {
+	d_section_ptrs->clear();
 	d_section_ids->clear();
+	d_click_points->clear();
 	d_reverse_flags->clear();
 }
 
@@ -210,6 +216,7 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_polygon" << std::en
 	// loop over all the sections
 	for ( ; iter != end; ++iter) 
 	{
+		d_section_ptrs->push_back( *iter );
 		(*iter)->accept_visitor(*this);
 	}
 }
@@ -229,10 +236,27 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 	GPlatesModel::FeatureId src_geom_id = 
 		( gpml_toplogical_line_section.get_source_geometry() )->feature_id();
 
-	bool use_reverse = gpml_toplogical_line_section.get_reverse_order();
-
-	// fill the vectors
+	// feature id
 	d_section_ids->push_back( src_geom_id );
+
+	// check for intersection and click points
+	if ( gpml_toplogical_line_section.get_start_intersection() )
+	{
+		gpml_toplogical_line_section.get_start_intersection()->accept_visitor(*this);
+	} 
+	else if ( gpml_toplogical_line_section.get_end_intersection() )
+	{
+		gpml_toplogical_line_section.get_end_intersection()->accept_visitor(*this);
+	} 
+	else 
+	{
+		// fill in an 'empty' point 	
+		d_click_points->push_back( std::make_pair( 0, 0 ) );
+	}
+
+	
+	// use reverse 
+	bool use_reverse = gpml_toplogical_line_section.get_reverse_order();
 	d_reverse_flags->push_back( use_reverse );
 
 #ifdef DEBUG
@@ -241,6 +265,25 @@ qDebug() << "  use_reverse = " << use_reverse;
 #endif
 }
 
+
+void
+GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_intersection(
+	GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
+{  
+#ifdef DEBUG
+std::cout << "TopologySectionsFinder::visit_gpml_topological_intersection" << std::endl;
+#endif
+	// reference_point property value is a gml_point:
+	GPlatesMaths::PointOnSphere pos =
+		*( ( gpml_toplogical_intersection.reference_point() )->point() ); 
+
+std::cout << "llp=" << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
+
+	double click_point_lat = (GPlatesMaths::make_lat_lon_point( pos )).latitude();
+	double click_point_lon = (GPlatesMaths::make_lat_lon_point( pos )).longitude();
+	
+	d_click_points->push_back( std::make_pair( click_point_lat, click_point_lon ) );
+}
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
@@ -258,7 +301,11 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 
 	// fill the vectors
 	d_section_ids->push_back( src_geom_id );
+	
+	// fill in an 'empty' flag 	
 	d_reverse_flags->push_back( false );
+	// fill in an 'empty' point 	
+	d_click_points->push_back( std::make_pair( 0, 0 ) );
 
 #ifdef DEBUG
 qDebug() << "  src_geom_id = " << GPlatesUtils::make_qstring_from_icu_string(src_geom_id.get());
@@ -275,13 +322,17 @@ GPlatesFeatureVisitors::TopologySectionsFinder::report()
 	std::cout << "TopologySectionsFinder::report()" << std::endl;
 	std::cout << "number sections visited = " << d_section_ids->size() << std::endl;
 
-	std::vector<GPlatesModel::FeatureId>::iterator itr;
-	itr = d_section_ids->begin();
-	for ( ; itr != d_section_ids->end() ; ++itr)
+	std::vector<GPlatesModel::FeatureId>::iterator f_itr = d_section_ids->begin();
+	std::vector<std::pair<double, double> >::iterator c_itr = d_click_points->begin();
+	std::vector<bool>::iterator r_itr = d_reverse_flags->begin();
+
+	for ( ; f_itr != d_section_ids->end() ; ++f_itr, ++r_itr, ++c_itr)
 	{
-		qDebug() << "id =" 
-			<< GPlatesUtils::make_qstring_from_icu_string( itr->get() );
+		qDebug() << "id =" << GPlatesUtils::make_qstring_from_icu_string( f_itr->get() );
+		qDebug() << "reverse? = " << *r_itr;
+		qDebug() << "click_point_lat = " << c_itr->first << "; lon = " << c_itr->second;
 	}
 	std::cout << "-------------------------------------------------------------" << std::endl;
+
 }
 
