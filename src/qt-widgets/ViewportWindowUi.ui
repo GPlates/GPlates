@@ -19,7 +19,7 @@
    <string>GPlates</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >
+   <iconset>
     <normaloff>:/GPlates-icon-160x160-opaque.png</normaloff>:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget" />
@@ -159,7 +159,6 @@
    <addaction name="action_Move_Geometry" />
    <addaction name="action_Move_Vertex" />
    <addaction name="action_Manipulate_Pole" />
-   <addaction name="action_Create_Topology" />
    <addaction name="action_Plate_Closure" />
   </widget>
   <widget class="QDockWidget" name="dock_search_results" >
@@ -266,7 +265,7 @@
        </widget>
        <widget class="QWidget" name="tab_segments" >
         <attribute name="title" >
-         <string>Segments</string>
+         <string>Topology Sections</string>
         </attribute>
         <layout class="QHBoxLayout" >
          <property name="spacing" >
@@ -350,7 +349,7 @@
   </action>
   <action name="action_Quit" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_application_exit_16.png</normaloff>:/gnome_application_exit_16.png</iconset>
    </property>
    <property name="text" >
@@ -365,7 +364,7 @@
     <bool>true</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
    </property>
    <property name="text" >
@@ -387,7 +386,7 @@
   </action>
   <action name="action_Increment_Reconstruction_Time" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_seek_backward_16.png</normaloff>:/gnome_seek_backward_16.png</iconset>
    </property>
    <property name="text" >
@@ -399,7 +398,7 @@
   </action>
   <action name="action_Decrement_Reconstruction_Time" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_seek_forward_16.png</normaloff>:/gnome_seek_forward_16.png</iconset>
    </property>
    <property name="text" >
@@ -422,7 +421,7 @@
     <bool>true</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/drag_globe_35.png</normaloff>:/drag_globe_35.png</iconset>
    </property>
    <property name="text" >
@@ -443,7 +442,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_edit_find_22.png</normaloff>:/gnome_edit_find_22.png</iconset>
    </property>
    <property name="text" >
@@ -469,7 +468,7 @@
   </action>
   <action name="action_File_Errors" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_dialog_warning_16.png</normaloff>:/gnome_dialog_warning_16.png</iconset>
    </property>
    <property name="text" >
@@ -483,7 +482,7 @@
   </action>
   <action name="action_Zoom_In" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_zoom_in_16.png</normaloff>:/gnome_zoom_in_16.png</iconset>
    </property>
    <property name="text" >
@@ -495,7 +494,7 @@
   </action>
   <action name="action_Zoom_Out" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_zoom_out_16.png</normaloff>:/gnome_zoom_out_16.png</iconset>
    </property>
    <property name="text" >
@@ -507,7 +506,7 @@
   </action>
   <action name="action_Reset_Zoom_Level" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_zoom_original_16.png</normaloff>:/gnome_zoom_original_16.png</iconset>
    </property>
    <property name="text" >
@@ -522,7 +521,7 @@
     <bool>true</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/zoom_globe_35.png</normaloff>:/zoom_globe_35.png</iconset>
    </property>
    <property name="text" >
@@ -537,7 +536,7 @@
   </action>
   <action name="action_Export_Geometry_Snapshot" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_applets_screenshooter_16.png</normaloff>:/gnome_applets_screenshooter_16.png</iconset>
    </property>
    <property name="text" >
@@ -549,7 +548,7 @@
   </action>
   <action name="action_Manage_Feature_Collections" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_preferences_desktop_16.png</normaloff>:/gnome_preferences_desktop_16.png</iconset>
    </property>
    <property name="text" >
@@ -577,7 +576,7 @@
   </action>
   <action name="action_Move_Camera_Up" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_go_up_16.png</normaloff>:/gnome_go_up_16.png</iconset>
    </property>
    <property name="text" >
@@ -589,7 +588,7 @@
   </action>
   <action name="action_Move_Camera_Down" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_go_down_16.png</normaloff>:/gnome_go_down_16.png</iconset>
    </property>
    <property name="text" >
@@ -601,7 +600,7 @@
   </action>
   <action name="action_Move_Camera_Left" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_go_previous_16.png</normaloff>:/gnome_go_previous_16.png</iconset>
    </property>
    <property name="text" >
@@ -613,7 +612,7 @@
   </action>
   <action name="action_Move_Camera_Right" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_go_next_16.png</normaloff>:/gnome_go_next_16.png</iconset>
    </property>
    <property name="text" >
@@ -625,7 +624,7 @@
   </action>
   <action name="action_Rotate_Camera_Clockwise" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/human_view_refresh_16.png</normaloff>:/human_view_refresh_16.png</iconset>
    </property>
    <property name="text" >
@@ -637,7 +636,7 @@
   </action>
   <action name="action_Rotate_Camera_Anticlockwise" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/human_view_refresh_flipped_16.png</normaloff>:/human_view_refresh_flipped_16.png</iconset>
    </property>
    <property name="text" >
@@ -649,7 +648,7 @@
   </action>
   <action name="action_Reset_Camera_Orientation" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/reorient_poles_16.png</normaloff>:/reorient_poles_16.png</iconset>
    </property>
    <property name="text" >
@@ -667,7 +666,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_gtk_edit_22.png</normaloff>:/gnome_gtk_edit_22.png</iconset>
    </property>
    <property name="text" >
@@ -825,7 +824,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/digitise_polyline_35.png</normaloff>:/digitise_polyline_35.png</iconset>
    </property>
    <property name="text" >
@@ -849,7 +848,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
    </property>
    <property name="text" >
@@ -867,7 +866,7 @@
   </action>
   <action name="action_Delete_Feature" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_edit_delete_22.png</normaloff>:/gnome_edit_delete_22.png</iconset>
    </property>
    <property name="text" >
@@ -882,7 +881,7 @@
   </action>
   <action name="action_Add_Feature_To_Selection" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_list_add_22.png</normaloff>:/gnome_list_add_22.png</iconset>
    </property>
    <property name="text" >
@@ -891,7 +890,7 @@
   </action>
   <action name="action_Remove_Feature_From_Selection" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_list_remove_22.png</normaloff>:/gnome_list_remove_22.png</iconset>
    </property>
    <property name="text" >
@@ -900,7 +899,7 @@
   </action>
   <action name="action_Clear_Selection" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_window_close_22.png</normaloff>:/gnome_window_close_22.png</iconset>
    </property>
    <property name="text" >
@@ -909,7 +908,7 @@
   </action>
   <action name="action_Information_Dock_At_Bottom" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_go_down_16.png</normaloff>:/gnome_go_down_16.png</iconset>
    </property>
    <property name="text" >
@@ -918,7 +917,7 @@
   </action>
   <action name="action_Information_Dock_At_Top" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_go_up_16.png</normaloff>:/gnome_go_up_16.png</iconset>
    </property>
    <property name="text" >
@@ -927,7 +926,7 @@
   </action>
   <action name="action_Actions_Dock_At_Left" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_go_previous_16.png</normaloff>:/gnome_go_previous_16.png</iconset>
    </property>
    <property name="text" >
@@ -936,7 +935,7 @@
   </action>
   <action name="action_Actions_Dock_At_Right" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/gnome_go_next_16.png</normaloff>:/gnome_go_next_16.png</iconset>
    </property>
    <property name="text" >
@@ -951,7 +950,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/digitise_polygon_35.png</normaloff>:/digitise_polygon_35.png</iconset>
    </property>
    <property name="text" >
@@ -975,7 +974,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/digitise_multipoint_35.png</normaloff>:/digitise_multipoint_35.png</iconset>
    </property>
    <property name="text" >
@@ -1015,7 +1014,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/move_geometry_35.png</normaloff>:/move_geometry_35.png</iconset>
    </property>
    <property name="text" >
@@ -1039,7 +1038,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/move_vertex_35.png</normaloff>:/move_vertex_35.png</iconset>
    </property>
    <property name="text" >
@@ -1063,7 +1062,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
    </property>
    <property name="text" >
@@ -1079,30 +1078,6 @@
     <string>P</string>
    </property>
   </action>
-  <action name="action_Create_Topology" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="checked" >
-    <bool>false</bool>
-   </property>
-   <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
-     <normaloff>:/select_plate_35.png</normaloff>:/select_plate_35.png</iconset>
-   </property>
-   <property name="text" >
-    <string>Create New Topology</string>
-   </property>
-   <property name="iconText" >
-    <string>Create New Topology</string>
-   </property>
-   <property name="toolTip" >
-    <string>Create a new Topology T</string>
-   </property>
-   <property name="shortcut" >
-    <string>T</string>
-   </property>
-  </action>
   <action name="action_Plate_Closure" >
    <property name="checkable" >
     <bool>true</bool>
@@ -1111,7 +1086,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <iconset>
      <normaloff>:/select_plate_35.png</normaloff>:/select_plate_35.png</iconset>
    </property>
    <property name="text" >

@@ -164,7 +164,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 		return;
 	}
 
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click 1" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click >0 geometries " << std::endl;
 
 	// Populate the 'Clicked' FeatureTableModel.
 	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
@@ -195,16 +195,16 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click 1" << std::end
 
 	if (clicked_rfg) 
 	{
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
 		GPlatesModel::FeatureHandle::weak_ref clicked_ref = clicked_rfg->feature_ref();
 		if ( clicked_ref.is_valid()) {
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref YES" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref YES" << std::endl;
 			clicked_fid = clicked_ref->feature_id();
 		} else{
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref NO" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref NO" << std::endl;
 		}
 	} else {
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
 	}
 
 	// clear any previous selection
@@ -218,7 +218,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YE
 	int i = 0;
 	for ( ; iter != end ; ++iter)
 	{
-std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
+//std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
 		d_view_state_ptr->highlight_segments_table_row(i, false);
 
 		GPlatesModel::ReconstructionGeometry *index_rg = iter->get();
@@ -226,25 +226,25 @@ std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
 			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(index_rg);
 
 		if (index_rfg) {
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg YES" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg YES" << std::endl;
 			GPlatesModel::FeatureHandle::weak_ref index_ref = index_rfg->feature_ref();
 			if ( index_ref.is_valid()) {
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref YES" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref YES" << std::endl;
 				GPlatesModel::FeatureId index_fid = index_ref->feature_id();
 				if (clicked_fid == index_fid) {
-		std::cout << "=============================" << i << std::endl;
+// std::cout << "=============================" << i << std::endl;
 					d_view_state_ptr->highlight_segments_table_row(i, true);
 				}
 			} else {
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref NO" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref NO" << std::endl;
 			}
 		} else {
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg NO" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg NO" << std::endl;
 		}
 		++i;
 	}
 
-std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click 2" << std::endl;
+//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click 2" << std::endl;
 
 #if 0  
 // FIXME: remove this 

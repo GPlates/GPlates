@@ -241,9 +241,10 @@ std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.end(),
 		topology_resolver);
 
-	topology_resolver.report();
+	// topology_resolver.report();
 
 	PROFILE_END();
+
 #if 0
 #if 0
 std::cerr << "4 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;

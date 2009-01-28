@@ -95,6 +95,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 	{
 		// No focused geometry, so nothing to draw.
 	}
+
 }
 
 #if 0

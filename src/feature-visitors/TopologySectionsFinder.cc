@@ -277,7 +277,7 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_intersection" << st
 	GPlatesMaths::PointOnSphere pos =
 		*( ( gpml_toplogical_intersection.reference_point() )->point() ); 
 
-std::cout << "llp=" << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
+// std::cout << "llp=" << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
 
 	double click_point_lat = (GPlatesMaths::make_lat_lon_point( pos )).latitude();
 	double click_point_lon = (GPlatesMaths::make_lat_lon_point( pos )).longitude();

@@ -158,7 +158,7 @@ GPlatesGui::ChooseCanvasTool::choose_manipulate_pole_tool()
 void
 GPlatesGui::ChooseCanvasTool::choose_create_topology_tool()
 {
-	d_viewport_window->choose_create_topology_tool();
+	d_viewport_window->choose_plate_closure_platepolygon_tool();
 
 	d_most_recent_tool_type = CREATE_TOPOLOGY;
 

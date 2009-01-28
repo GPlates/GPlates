@@ -94,7 +94,7 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_5" >
      <item>
-      <widget class="QPushButton" name="button_use_coordinates_in_reverse" >
+      <widget class="QPushButton" name="button_use_reverse" >
        <property name="text" >
         <string>Use in Reverse</string>
        </property>
@@ -112,7 +112,7 @@
    <item>
     <widget class="QPushButton" name="button_append_feature" >
      <property name="text" >
-      <string>Append Feature</string>
+      <string>Add Feature</string>
      </property>
     </widget>
    </item>
@@ -130,29 +130,29 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="button_clear_feature" >
-     <property name="text" >
-      <string>Clear Focused Feature</string>
-     </property>
-    </widget>
-   </item>
-   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_6" >
      <item>
-      <widget class="QPushButton" name="pushButton_2" >
+      <widget class="QPushButton" name="button_insert_before" >
        <property name="text" >
         <string>Insert Before</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton" >
+      <widget class="QPushButton" name="button_insert_after" >
        <property name="text" >
         <string>Insert After</string>
        </property>
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_clear_feature" >
+     <property name="text" >
+      <string>Clear Focused Feature</string>
+     </property>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3" >
@@ -173,7 +173,7 @@
     </layout>
    </item>
    <item>
-    <widget class="QPushButton" name="button_create_platepolygon" >
+    <widget class="QPushButton" name="button_create_new" >
      <property name="text" >
       <string>Create New Feature...</string>
      </property>
@@ -192,8 +192,8 @@
   <tabstop>lineedit_type</tabstop>
   <tabstop>lineedit_name</tabstop>
   <tabstop>button_append_feature</tabstop>
+  <tabstop>button_create_new</tabstop>
   <tabstop>button_cancel</tabstop>
-  <tabstop>button_create_platepolygon</tabstop>
  </tabstops>
  <resources/>
  <connections/>

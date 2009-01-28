@@ -239,12 +239,27 @@ namespace GPlatesQtWidgets
 		clear();
 
 		void
+		fill_widgets(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+
+		void
 		display_feature(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		void
 		display_feature_topology(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+
+		void
+		display_feature_on_boundary(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+
+		void
+		display_feature_not_on_boundary(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
@@ -272,11 +287,17 @@ namespace GPlatesQtWidgets
 		void
 		draw_temporary_geometry();
 
+		void 
+		draw_focused_geometry();
+
+		void 
+		draw_focused_geometry_end_points();
+
 		void
 		draw_section_segments();
 
 		void
-		draw_head_and_tail_points();
+		draw_end_points();
 
 		void
 		draw_intersection_points();
@@ -306,6 +327,12 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		handle_remove_feature();
+
+		void
+		handle_insert_after();
+
+		void
+		handle_insert_before();
 
 
 		/**
@@ -353,8 +380,9 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_initial_geom_layer_ptr,
 			d_dragged_geom_layer_ptr,
+			d_focused_feature_layer_ptr,
 			d_section_segments_layer_ptr,
-			d_head_and_tail_points_layer_ptr,
+			d_end_points_layer_ptr,
 			d_intersection_points_layer_ptr,
 			d_click_points_layer_ptr;
 
@@ -403,17 +431,9 @@ namespace GPlatesQtWidgets
 		 * 
 		 * This may be boost::none if the digitisation widget has no
 		 * (valid) point data yet.
-		 *
-		 * The kind of geometry we get might not match the user's intention.
-		 * For example, if there are not enough points to make a gml:LineString
-		 * but there are enough for a gml:Point.
-		 * 
-		 * If the user were to manage to click a point, then click a point on the
-		 * exact opposite side of the globe, they should be congratulated with a
-		 * little music and fireworks show (and the geometry will stubbornly refuse
-		 * to update, because we can't create a PolylineOnSphere out of it).
 		 */
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
+			d_geometry_opt_ptr;
 
 		/**
 		* place holders for the widget data 
@@ -437,7 +457,8 @@ namespace GPlatesQtWidgets
 
 		// These control the behavior of the geom. visitors
 		bool d_check_type;
-		bool d_should_create_properties;
+		bool d_visit_to_get_end_points;
+		bool d_visit_to_create_properties;
 
 		// These get set during the visit 
 		GPlatesGlobal::FeatureTypes d_tmp_feature_type;
@@ -474,7 +495,7 @@ namespace GPlatesQtWidgets
 		const GPlatesMaths::PointOnSphere *d_click_point_ptr;
 
 		/**
-		 * These vectors are all sychronized to the Segments table with d_tmp_index
+		 * These vectors are sychronized to the 'Topology Sections' table with d_tmp_index
 		 */
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_section_ptrs;
 		std::vector<GPlatesModel::FeatureId> d_section_ids;
@@ -482,11 +503,21 @@ namespace GPlatesQtWidgets
 		std::vector<bool> d_reverse_flags;
 
 
-		std::vector<GPlatesMaths::PointOnSphere> d_head_points;
-		std::vector<GPlatesMaths::PointOnSphere> d_tail_points;
+		// collection of end points for all boundary features
+		std::vector<GPlatesMaths::PointOnSphere> d_head_end_points;
+		std::vector<GPlatesMaths::PointOnSphere> d_tail_end_points; 
+
+		// collection of intersection points for all boundary features
 		std::vector<GPlatesMaths::PointOnSphere> d_intersection_points;
+
+		
+		// collection of sub-segments for all boundary features
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
 			d_section_segments;
+
+		// collection of sub-segments for insert operation
+		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
+			d_insert_segments;
 
 
 		/*
@@ -494,10 +525,14 @@ namespace GPlatesQtWidgets
 		 * Used when editing a topology 
         */
 		GPlatesModel::FeatureHandle::weak_ref d_topology_feature_ref;
+		GPlatesModel::FeatureHandle::weak_ref d_focused_feature_ref;
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_geometry;
 
+		// end points for currently focused feature 
+		std::vector<GPlatesMaths::PointOnSphere> d_focus_head_end_points; 
+		std::vector<GPlatesMaths::PointOnSphere> d_focus_tail_end_points; 
 
 		// private functions 
-
 		void
 		create_child_rendered_layers();
 
