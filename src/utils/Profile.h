@@ -92,7 +92,7 @@
 	  ... // some code profiled under "func"
 
 	  // The call to foo() gets profiled under "foo()".
-	  PROFILE_CODE(foo());
+	  PROFILE_CODE(foo, foo());
 	}
 
     bar()
@@ -102,18 +102,18 @@
       // Start of block A
       ...  // This part of block is not profiled in "bar_blockA"
 
-      PROFILE_BEGIN("bar_blockA"); // profiling of "bar_blockA" begins here
+      PROFILE_BEGIN(bar_blockA, "bar_blockA"); // profiling of "bar_blockA" begins here
       foo();
       // profiling of "bar_blockA" stops here
-	  PROFILE_END();
+	  PROFILE_END(bar_blockA);
 
       ... // some more non-profiled code
 
       // Start of block B
-      PROFILE_BEGIN("bar_blockB"); // profiling of "bar_blockB" begins here
+      PROFILE_BEGIN(bar_blockB, "bar_blockB"); // profiling of "bar_blockB" begins here
       foo();
       // profiling of "bar_blockB" stops here
-	  PROFILE_END();
+	  PROFILE_END(bar_blockB);
     }
 
     foo()
@@ -134,24 +134,48 @@
 #if defined(PROFILE_GPLATES)
 
 /**
- * Starts profiling until a matching PROFILE_END is reached.
+ * Starts profiling until the matching PROFILE_END is reached or
+ * an exception is thrown or the function we're in returns early.
+ *
+ * @a name is a string of type "const char *".
  * All profiled sections of code with the same @a name have their time counts added.
  * The profile report will have an entry for each distinct @a name.
- * You need to match each PROFILE_BEGIN call with a matching PROFILE_END call.
+ *
+ * Use @a profile_tag to match each PROFILE_BEGIN call with a PROFILE_END call.
+ * @a profile_tag is an identifier and must use C++ naming rules.
+ * @a profile_tag must be unique within the current scope (in other words
+ * each PROFILE_BEGIN() call in the same scope/block must use a different
+ * @a profile_tag). It does not need to be unique with respect identifiers
+ * outside profiling (eg, local function variables near PROFILE_BEGIN()) since
+ * @a profile_tag is prefixed before being used as an identifier.
+ *
+ * If an exception is thrown before the matching PROFILE_END() or the function
+ * returns before the matching PROFILE_END() then PROFILE_END() is effectively
+ * called for you when the exception is thrown or the function returns early.
  */
-#define PROFILE_BEGIN(name) \
+#define PROFILE_BEGIN(profile_tag, name) \
+	/* Cache lookup of 'name' into static variable as it will never change. */ \
 	static void *PROFILE_ANONYMOUS_VARIABLE(gplates_profile_cache) = \
 			GPlatesUtils::profile_get_cache(name); \
-	GPlatesUtils::profile_begin(PROFILE_ANONYMOUS_VARIABLE(gplates_profile_cache));
+	/* Starting profiling for profile "name". */ \
+	GPlatesUtils::profile_begin(PROFILE_ANONYMOUS_VARIABLE(gplates_profile_cache)); \
+	/* Make sure PROFILE_END() is called if it is not reached - */ \
+	/* this can happen if an exception is thrown or function 'return's early. */ \
+	GPlatesUtils::ProfileBlockEnd PROFILE_SCOPE_VARIABLE(profile_tag);
 
 /**
- * Stops profiling the most recent call to PROFILE_BEGIN.
+ * Stops profiling the matching PROFILE_BEGIN call.
+ *
+ * Use @a profile_tag to match each PROFILE_BEGIN call with a PROFILE_END call.
+ * @a profile_tag is an identifier and must use C++ naming rules.
+ *
  * The total time spent between PROFILE_BEGIN and PROFILE_END is accumulated into
- * the profile node identified by @a name.
- * The profile report will have an entry for each distinct @a name.
- * You need to match each PROFILE_END call with a matching PROFILE_BEGIN call.
+ * the profile node identified by the matching PROFILE_BEGIN with same @a profile_tag.
  */
-#define PROFILE_END() \
+#define PROFILE_END(profile_tag) \
+	/* If PROFILE_END() has been reached then we can dismiss exception-safe/early-return. */ \
+	PROFILE_SCOPE_VARIABLE(profile_tag).dismiss(); \
+	/* Stop profiling that begin with matching PROFILE_BEGIN() call. */ \
 	GPlatesUtils::profile_end();
 
 /**
@@ -162,8 +186,9 @@
  * and PROFILE_END.
  */
 #define PROFILE_BLOCK(name) \
-	PROFILE_BEGIN(name); \
-	GPlatesUtils::ProfileBlockEnd PROFILE_UNUSED PROFILE_ANONYMOUS_VARIABLE(gplates_profile_block);
+	/* PROFILE_BEGIN() will call PROFILE_END() at end of scope if PROFILE_END() */ \
+	/* is not called explicitly by user (which is what's happening here). */ \
+	PROFILE_BEGIN(__LINE__/*Just need something unique*/, name);
 
 /**
  * Same as @a PROFILE_BLOCK except the name of the profile is the function
@@ -177,26 +202,37 @@
 /**
  * Starts profiling just before the source code expression @a code and stops
  * profiling just after.
+ *
+ * @a profile_tag is only used internally to match PROFILE_BEGIN and PROFILE_END calls.
+ * @a profile_tag is an identifier and must use C++ naming rules.
+ * @a profile_tag must be unique within the current scope (in other words
+ * each PROFILE_CODE() call in the same scope/block must use a different
+ * @a profile_tag). It does not need to be unique with respect identifiers
+ * outside profiling (eg, local function variables near PROFILE_BEGIN()) since
+ * @a profile_tag is prefixed before being used as an identifier.
+ *
  * There is no need to call PROFILE_END as PROFILE_CODE calls both PROFILE_BEGIN
  * and PROFILE_END.
  *
  * For example...
  *
- *   PROFILE_CODE(const bool test = foo() || bar(););
+ *   PROFILE_CODE(foo_or_bar, const bool test = foo() || bar(););
  *
  * ...is equivalent to...
  *
- *   PROFILE_BEGIN("const bool test = foo() || bar();");
+ *   PROFILE_BEGIN(foo_or_bar, "const bool test = foo() || bar();");
  *   const bool test = foo() || bar();
- *   PROFILE_END();
+ *   PROFILE_END(foo_or_bar);
  *
  */
-#define PROFILE_CODE(code) \
-	PROFILE_BEGIN(#code); \
+#define PROFILE_CODE(profile_tag, code) \
+	/* The PROFILE_CONCATENATE() is just to give the 'profile_tag' its own */ \
+	/* namespace effectively - to avoid name collision with PROFILE_BEGIN() */ \
+	PROFILE_BEGIN(PROFILE_CONCATENATE(code_, profile_tag), #code); \
 	{ \
 		code; \
 	} \
-	PROFILE_END();
+	PROFILE_END(PROFILE_CONCATENATE(code_, profile_tag));
 
 /**
  * Writes the profiling data as text to the output stream @a output_stream where
@@ -214,20 +250,21 @@
 
 #else // if defined(PROFILE_GPLATES) ...
 
-#define PROFILE_BEGIN(name)
-#define PROFILE_END()
+#define PROFILE_BEGIN(profile_tag, name)
+#define PROFILE_END(profile_tag)
 #define PROFILE_BLOCK(name)
 #define PROFILE_FUNC()
-#define PROFILE_CODE(code) code
+#define PROFILE_CODE(profile_tag, code) code
 #define PROFILE_REPORT_TO_OSTREAM(output_stream)
 #define PROFILE_REPORT_TO_FILE(filename)
 
 #endif // if defined(PROFILE_GPLATES) ... else ...
 
 
-#define PROFILE_CONCATENATE_DIRECT(s1, s2) s1##s2
-#define PROFILE_CONCATENATE(s1, s2)        PROFILE_CONCATENATE_DIRECT(s1, s2)
-#define PROFILE_ANONYMOUS_VARIABLE(name)   PROFILE_CONCATENATE(name, __LINE__)
+#define PROFILE_CONCATENATE_DIRECT(s1, s2)   s1##s2
+#define PROFILE_CONCATENATE(s1, s2)          PROFILE_CONCATENATE_DIRECT(s1, s2)
+#define PROFILE_SCOPE_VARIABLE(name)         PROFILE_CONCATENATE(gplates_profile_scope_, name)
+#define PROFILE_ANONYMOUS_VARIABLE(name)     PROFILE_CONCATENATE(name, __LINE__)
 
 #if defined (__GNUG__)
 #define PROFILE_UNUSED __attribute__ ((unused))
@@ -263,10 +300,34 @@ namespace GPlatesUtils
 	class ProfileBlockEnd
 	{
 	public:
+		ProfileBlockEnd() :
+			d_dismiss(false)
+		{ }
+
+		void
+		dismiss()
+		{
+			d_dismiss = true;
+		}
+
 		~ProfileBlockEnd()
 		{
-			profile_end();
+			if (!d_dismiss)
+			{
+				// Since this is a destructor we cannot let any exceptions escape.
+				// If one is thrown we just have to lump it and continue on.
+				try
+				{
+					profile_end();
+				}
+				catch (...)
+				{
+				}
+			}
 		}
+
+	private:
+		bool d_dismiss;
 	};
 }
 

@@ -130,13 +130,13 @@ namespace
 		finished_profiling(
 				ProfileRun& parent_run);
 
-		const ticks_t &
+		ticks_t
 		get_self_ticks() const
 		{
 			return d_self_ticks;
 		}
 
-		const ticks_t &
+		ticks_t
 		get_children_ticks() const
 		{
 			return d_children_ticks;
@@ -210,14 +210,14 @@ namespace
 			return d_parent;
 		}
 
-		const ticks_t &
+		ticks_t
 		get_ticks_in_child() const
 		{
 			return d_ticks_in_child;
 		}
 
-		const ticks_t &
-		get_ticks_in_child_children() const
+		ticks_t
+		get_ticks_in_childs_children() const
 		{
 			return d_ticks_in_childs_children;
 		}
@@ -269,7 +269,7 @@ namespace
 	get_ticks(
 			const ProfileLink *profile_link)
 	{
-		return profile_link->get_ticks_in_child() + profile_link->get_ticks_in_child_children();
+		return profile_link->get_ticks_in_child() + profile_link->get_ticks_in_childs_children();
 	}
 
 
@@ -395,7 +395,7 @@ namespace
 		}
 
 		//! The number of ticks counted - not including children.
-		const ticks_t &
+		ticks_t
 		get_self_ticks() const
 		{
 			return d_self_ticks;
@@ -497,15 +497,15 @@ namespace
 		const ProfileRun &run,
 		ProfileNode &parent_node)
 	{
+		// Update how much time gets allocated to us.
+		d_self_ticks += run.get_self_ticks();
+
 		// Get the call graph ProfileLink to parent_node.
 		// This will create one if it doesn't exist.
 		ProfileLink *parent_link = get_parent_link(&parent_node);
 
 		// Get this parent_link to update itself from info in 'run'.
 		parent_link->update(run);
-
-		// Update how much time gets allocated to us.
-		d_self_ticks += run.get_self_ticks();
 	}
 
 	calls_t
@@ -539,7 +539,7 @@ namespace
 			child_iter != child_end;
 			++child_iter)
 		{
-			ticks += child_iter->get_ticks_in_child() + child_iter->get_ticks_in_child_children();
+			ticks += child_iter->get_ticks_in_child() + child_iter->get_ticks_in_childs_children();
 		}
 		return ticks;
 	}
@@ -1018,7 +1018,7 @@ namespace
 					<< std::fixed << std::setprecision(3) << std::setw(22) << std::right
 					<< convert_ticks_to_seconds(parent_link->get_ticks_in_child())
 					<< std::fixed << std::setprecision(3) << std::setw(10) << std::right
-					<< convert_ticks_to_seconds(parent_link->get_ticks_in_child_children())
+					<< convert_ticks_to_seconds(parent_link->get_ticks_in_childs_children())
 					<< std::setw(9) << std::right
 					<< parent_link->get_calls()
 					<< std::setw(0) << std::left
@@ -1118,7 +1118,7 @@ namespace
 					<< std::fixed << std::setprecision(3) << std::setw(22) << std::right
 					<< convert_ticks_to_seconds(child_link->get_ticks_in_child())
 					<< std::fixed << std::setprecision(3) << std::setw(10) << std::right
-					<< convert_ticks_to_seconds(child_link->get_ticks_in_child_children())
+					<< convert_ticks_to_seconds(child_link->get_ticks_in_childs_children())
 					<< std::setw(9) << std::right
 					<< child_link->get_calls()
 					<< std::setw(0) << std::left

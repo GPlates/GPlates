@@ -179,7 +179,7 @@ time_t *tp=NULL;
 std::cerr << std::endl;
 std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
-	PROFILE_BEGIN("Model::create_reconstruction build reconstruction tree");
+	PROFILE_BEGIN(build_recon_tree, "Model::create_reconstruction build reconstruction tree");
 
 	ReconstructionGraph graph(time);
 	ReconstructionTreePopulator rtp(time, graph);
@@ -203,11 +203,11 @@ std::cerr << "1 Model::create_reconstruction(): time = " << std::time( tp ) << s
 		reconstructable_features_collection.end(),
 		rfgp);
 
-	PROFILE_END();
+	PROFILE_END(build_recon_tree);
 #if 0
 std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
-	PROFILE_BEGIN("Model::create_reconstruction map feature id to RFG");
+	PROFILE_BEGIN(map_feature_id_to_RFG, "Model::create_reconstruction map feature id to RFG");
 
 	// Visit the feature collections and build a map from feature id to RFG
 	GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder rfg_finder( *reconstruction );
@@ -219,11 +219,11 @@ std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << s
 
 	// rfg_finder.report();
 
-	PROFILE_END();
+	PROFILE_END(map_feature_id_to_RFG);
 #if 0
 //std::cerr << "3 Model::create_reconstruction(): time = " << std::time( tp ) << std::endl;
 #endif
-	PROFILE_BEGIN("Model::create_reconstruction build platepolygons");
+	PROFILE_BEGIN(build_platepolygons, "Model::create_reconstruction build platepolygons");
 
 	// Visit the feature collections and build the platepolygons 
 	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
@@ -243,7 +243,7 @@ std::cerr << "2 Model::create_reconstruction(): time = " << std::time( tp ) << s
 
 	// topology_resolver.report();
 
-	PROFILE_END();
+	PROFILE_END(build_platepolygons);
 
 #if 0
 #if 0
