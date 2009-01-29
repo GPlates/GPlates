@@ -89,7 +89,7 @@ namespace GPlatesViewOperations
 		 * Used to make point/vertex more visible or to emphasise it.
 		 */
 		const float LARGE_POINT_SIZE_HINT = 4.0f;
-		const float EXTRA_LARGE_POINT_SIZE_HINT = 7.0f;
+		const float EXTRA_LARGE_POINT_SIZE_HINT = 6.0f;
 
 		/**
 		 * Colour to use for rendering those parts of geometry that are in focus.

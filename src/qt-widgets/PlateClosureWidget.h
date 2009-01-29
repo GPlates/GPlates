@@ -123,10 +123,10 @@ namespace GPlatesQtWidgets
 		update_geometry();
 
 		/**
-		 * From the Segments Table, create the tmp. geom. and property value items 
+		 * From the Sections Table, create the tmp. geom. and property value items 
 		 */
 		void
-		create_sections_from_segments_table();
+		create_sections_from_sections_table();
 
 		/**
 		 * FIXME:
@@ -183,17 +183,6 @@ namespace GPlatesQtWidgets
 			return *d_create_feature_dialog;
 		}
 		
-		/**
-		 * Accessor for the QUndoStack used for digitisation operations.
-		 * 
-		 * This method allows the ViewportWindow to add it to the main QUndoGroup,
-		 * and lets the stack be set as active or inactive.
-		 */
-		QUndoStack &
-		undo_stack()
-		{
-			return d_undo_stack;
-		}
 
 		// Please keep these geometries ordered alphabetically.
 
@@ -265,7 +254,6 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Configures widgets to accept new geometry of a specific type.
-		 * This will clear the coordinates table and purge the undo stack.
 		 */
 		void
 		initialise_geometry(
@@ -285,6 +273,9 @@ namespace GPlatesQtWidgets
 		 * Draw the temporary geometry (if there is one) on the screen.
 		 */
 		void
+		draw_all_layers();
+
+		void 
 		draw_temporary_geometry();
 
 		void 
@@ -294,7 +285,7 @@ namespace GPlatesQtWidgets
 		draw_focused_geometry_end_points();
 
 		void
-		draw_section_segments();
+		draw_segments();
 
 		void
 		draw_end_points();
@@ -353,15 +344,6 @@ namespace GPlatesQtWidgets
 		void
 		handle_cancel();
 
-#if 0
-		/**
-		 * Feeds the ExportCoordinatesDialog a GeometryOnSphere, and
-		 * then displays it.
-		 */
-		void
-		handle_export();
-#endif
-
 	private:
 		/**
 		 * Used to draw rendered geometries.
@@ -378,10 +360,9 @@ namespace GPlatesQtWidgets
 		 * Rendered geometry layers to draw into 
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_initial_geom_layer_ptr,
-			d_dragged_geom_layer_ptr,
+			d_temporary_geometry_layer_ptr,
 			d_focused_feature_layer_ptr,
-			d_section_segments_layer_ptr,
+			d_segments_layer_ptr,
 			d_end_points_layer_ptr,
 			d_intersection_points_layer_ptr,
 			d_click_points_layer_ptr;
@@ -397,14 +378,6 @@ namespace GPlatesQtWidgets
 		 * The model
 		 */ 
 		GPlatesModel::ModelInterface *d_model_interface;
-
-		/**
-		 * The Undo Stack that handles all the Undo Commands for this widget.
-		 * 
-		 * We may want to move this stack into e.g. ViewState,
-		 * or use a @a QUndoGroup to manage this stack and others.
-		 */
-		QUndoStack d_undo_stack;
 
 		/**
 		 * The View State is used to access the digitisation layer in the globe in the
@@ -447,18 +420,18 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * These d_tmp_ vars are all set by the canvas tool, or the widget
-		 * and used during interation around the Segments Table (d_section_ptrs)
+		 * and used during interation around the Sections Table
 		 * as the code bounces between visitor functions and intersection processing functions.
 		 */
 		int d_tmp_index;
-		int d_tmp_segments_size;
+		int d_tmp_sections_size;
 		int d_tmp_prev_index;
 		int d_tmp_next_index;
 
 		// These control the behavior of the geom. visitors
-		bool d_check_type;
-		bool d_visit_to_get_end_points;
+		bool d_visit_to_check_type;
 		bool d_visit_to_create_properties;
+		bool d_visit_to_get_focus_end_points;
 
 		// These get set during the visit 
 		GPlatesGlobal::FeatureTypes d_tmp_feature_type;
@@ -482,10 +455,12 @@ namespace GPlatesQtWidgets
 
 		/**
 		* thise d_ vars keep track of the widget's current state as data is transfered from
-		* the Clicked Table to the Segments Table
+		* the Clicked Table to the Sections Table
 		*/
 		bool d_use_reverse;
 
+
+		// collection of intersection points
 		std::vector<GPlatesMaths::PointOnSphere> d_intersection_vertex_list;
 
 		GPlatesMaths::real_t d_closeness;
@@ -497,10 +472,11 @@ namespace GPlatesQtWidgets
 		/**
 		 * These vectors are sychronized to the 'Topology Sections' table with d_tmp_index
 		 */
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_section_ptrs;
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
+			d_section_ptrs;
 		std::vector<GPlatesModel::FeatureId> d_section_ids;
-		std::vector<std::pair<double, double> > d_click_points;
-		std::vector<bool> d_reverse_flags;
+		std::vector<std::pair<double, double> > d_section_click_points;
+		std::vector<bool> d_section_reverse_flags;
 
 
 		// collection of end points for all boundary features
@@ -509,16 +485,18 @@ namespace GPlatesQtWidgets
 
 		// collection of intersection points for all boundary features
 		std::vector<GPlatesMaths::PointOnSphere> d_intersection_points;
-
 		
 		// collection of sub-segments for all boundary features
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
-			d_section_segments;
+			d_segments;
 
 		// collection of sub-segments for insert operation
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
 			d_insert_segments;
 
+		// end points for currently focused feature 
+		std::vector<GPlatesMaths::PointOnSphere> d_focus_head_end_points; 
+		std::vector<GPlatesMaths::PointOnSphere> d_focus_tail_end_points; 
 
 		/*
 		 * Set by display_feature, used by append_boundary_to_feature()
@@ -528,11 +506,15 @@ namespace GPlatesQtWidgets
 		GPlatesModel::FeatureHandle::weak_ref d_focused_feature_ref;
 		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_geometry;
 
-		// end points for currently focused feature 
-		std::vector<GPlatesMaths::PointOnSphere> d_focus_head_end_points; 
-		std::vector<GPlatesMaths::PointOnSphere> d_focus_tail_end_points; 
+		/*
+		 * When a feature is selected , and on the topology boundary this is set
+		 * Used to access the d_section_FOO vectors
+		 */
+		int d_focused_index;
 
+		//
 		// private functions 
+		//
 		void
 		create_child_rendered_layers();
 

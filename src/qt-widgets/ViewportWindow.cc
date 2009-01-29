@@ -592,7 +592,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_task_panel_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog(*this,this),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
-	d_segments_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
+	d_sections_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path(""),
 	d_colour_table_ptr(NULL)
 {
@@ -722,18 +722,18 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	// Set up the Platepolygon Segments table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
-	table_view_platepolygon_segments->setModel(d_segments_feature_table_model_ptr.get());
-	table_view_platepolygon_segments->verticalHeader()->hide();
-	table_view_platepolygon_segments->resizeColumnsToContents();
-	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_platepolygon_segments->horizontalHeader());
-	table_view_platepolygon_segments->horizontalHeader()->setMinimumSectionSize(60);
-	table_view_platepolygon_segments->horizontalHeader()->setMovable(true);
-	table_view_platepolygon_segments->horizontalHeader()->setHighlightSections(false);
+	table_view_topology_sections->setModel(d_sections_feature_table_model_ptr.get());
+	table_view_topology_sections->verticalHeader()->hide();
+	table_view_topology_sections->resizeColumnsToContents();
+	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_topology_sections->horizontalHeader());
+	table_view_topology_sections->horizontalHeader()->setMinimumSectionSize(60);
+	table_view_topology_sections->horizontalHeader()->setMovable(true);
+	table_view_topology_sections->horizontalHeader()->setHighlightSections(false);
 
 	// When the user selects a row of the table, we should focus that feature.
-	QObject::connect(table_view_platepolygon_segments->selectionModel(),
+	QObject::connect(table_view_topology_sections->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-			d_segments_feature_table_model_ptr.get(),
+			d_sections_feature_table_model_ptr.get(),
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
 
 
@@ -766,7 +766,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					*d_canvas_ptr,
 					*this,
 					*d_feature_table_model_ptr,
-					*d_segments_feature_table_model_ptr,
+					*d_sections_feature_table_model_ptr,
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
@@ -1085,26 +1085,26 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::highlight_segments_table_clear() const
+GPlatesQtWidgets::ViewportWindow::highlight_sections_table_clear() const
 {
-	table_view_platepolygon_segments->selectionModel()->clear();
+	table_view_topology_sections->selectionModel()->clear();
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::highlight_segments_table_row(int i, bool state) const
+GPlatesQtWidgets::ViewportWindow::highlight_sections_table_row(int i, bool state) const
 {
-	QModelIndex idx = d_segments_feature_table_model_ptr->index(i, 0);
+	QModelIndex idx = d_sections_feature_table_model_ptr->index(i, 0);
 	
 	if (idx.isValid()) {
-		table_view_platepolygon_segments->selectionModel()->clear();
+		table_view_topology_sections->selectionModel()->clear();
 
 		if ( state )
 		{
-			table_view_platepolygon_segments->selectionModel()->select(idx,
+			table_view_topology_sections->selectionModel()->select(idx,
 					QItemSelectionModel::Select |
 					QItemSelectionModel::Current |
 					QItemSelectionModel::Rows);
-			table_view_platepolygon_segments->scrollTo(idx);
+			table_view_topology_sections->scrollTo(idx);
 		}
 	}
 }

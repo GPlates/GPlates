@@ -143,9 +143,9 @@ namespace GPlatesQtWidgets
 
 
 		GPlatesGui::FeatureTableModel &
-		segments_feature_table_model() 
+		sections_feature_table_model() 
 		{
-			return *d_segments_feature_table_model_ptr;
+			return *d_sections_feature_table_model_ptr;
 		}
 
 		void
@@ -182,13 +182,13 @@ namespace GPlatesQtWidgets
 		 * Clears the "Segments" feature table selection
 		 */
 		void
-		highlight_segments_table_clear() const;
+		highlight_sections_table_clear() const;
 
 		/**
 		 * Highlights a row in the "Segments" feature table.
 		 */
 		void
-		highlight_segments_table_row(int i, bool state) const;
+		highlight_sections_table_row(int i, bool state) const;
 
 
 		void
@@ -493,16 +493,18 @@ namespace GPlatesQtWidgets
 		TaskPanel *d_task_panel_ptr;    // Depends on FeatureFocus and the Model d_model_ptr.
 		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
 
-		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+		// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	
 
-		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_segments_feature_table_model_ptr;	// The 'Segments' table. Should be in ViewState. Depends on FeatureFocus.
+		// The 'Segments' table. Should be in ViewState. Depends on FeatureFocus.
+		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_sections_feature_table_model_ptr;	
 
 #if 0
 		// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	
 
 		// The 'Segments' table. Should be in ViewState. Depends on FeatureFocus.
-		GPlatesGui::FeatureTableModel *d_segments_feature_table_model_ptr;	
+		GPlatesGui::FeatureTableModel *d_sections_feature_table_model_ptr;	
 #endif
 
 		//  map a time value to a raster filename

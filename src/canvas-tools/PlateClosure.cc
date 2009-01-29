@@ -153,7 +153,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 	d_clicked_table_model_ptr->clear();
 
 	// Un-highlight all the rows of the 'Segments' Table 
-	d_view_state_ptr->highlight_segments_table_clear();
+	d_view_state_ptr->highlight_sections_table_clear();
 
 
 	if (sorted_hits.size() == 0) {
@@ -208,7 +208,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 	}
 
 	// clear any previous selection
-	d_view_state_ptr->highlight_segments_table_clear();
+	d_view_state_ptr->highlight_sections_table_clear();
 
 	// loop over each geom in the Segments Table
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
@@ -219,7 +219,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 	for ( ; iter != end ; ++iter)
 	{
 //std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
-		d_view_state_ptr->highlight_segments_table_row(i, false);
+		d_view_state_ptr->highlight_sections_table_row(i, false);
 
 		GPlatesModel::ReconstructionGeometry *index_rg = iter->get();
 		GPlatesModel::ReconstructedFeatureGeometry *index_rfg =
@@ -233,7 +233,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 				GPlatesModel::FeatureId index_fid = index_ref->feature_id();
 				if (clicked_fid == index_fid) {
 // std::cout << "=============================" << i << std::endl;
-					d_view_state_ptr->highlight_segments_table_row(i, true);
+					d_view_state_ptr->highlight_sections_table_row(i, true);
 				}
 			} else {
 //std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref NO" << std::endl;

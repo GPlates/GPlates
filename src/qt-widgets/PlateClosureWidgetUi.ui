@@ -82,12 +82,30 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" >
+    <layout class="QHBoxLayout" name="horizontalLayout_9" >
      <item>
-      <widget class="QLineEdit" name="lineedit_last" />
+      <widget class="QLabel" name="label_2" >
+       <property name="text" >
+        <string>First</string>
+       </property>
+      </widget>
      </item>
      <item>
+      <widget class="QLabel" name="label" >
+       <property name="text" >
+        <string>Last</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4" >
+     <item>
       <widget class="QLineEdit" name="lineedit_first" />
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_last" />
      </item>
     </layout>
    </item>
