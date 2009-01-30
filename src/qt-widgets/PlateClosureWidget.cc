@@ -288,6 +288,8 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	d_visit_to_create_properties = false;
 	d_visit_to_get_focus_end_points = false;
 
+	is_active = false;
+
 	// clear the lineedit widgets
 	clear_widgets();
 
@@ -563,6 +565,18 @@ GPlatesQtWidgets::PlateClosureWidget::fill_widgets(
 // Functions to display different features
 //
 
+
+
+void
+GPlatesQtWidgets::PlateClosureWidget::handle_reconstruction_time_change(
+		double new_time)
+{
+	if ( ! is_active ) { return; }
+
+	// else display something 
+	display_feature( d_focused_feature_ref, d_feature_focus_rfg);
+}
+
 //
 void
 GPlatesQtWidgets::PlateClosureWidget::display_feature_focus_modified(
@@ -588,6 +602,7 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature(
 std::cout << std::endl;
 std::cout << "PlateClosureWidget::display_feature:" << std::endl;
 #endif
+	show_numbers();
 
 	// Clear the widget fields
 	clear_widgets();
@@ -644,14 +659,16 @@ std::cout << "PlateClosureWidget::display_feature: invalid ref" << std::endl;
 			d_visit_to_create_properties = true;
 			update_geometry();
 			d_visit_to_create_properties = false;
+			return;
 		}
 
-		// if d_section_ptrs is not empty 
+		// if d_section_ptrs is not empty, a topology is defined, but no feature_ref is valid
 		if ( d_section_ptrs.size() != 0 ) 
 		{
 			d_visit_to_create_properties = true;
 			update_geometry();
 			d_visit_to_create_properties = false;
+			return;
 		}
 
 		// reset the references
@@ -687,6 +704,10 @@ qDebug() << "associated_rfg = NULL " ;
 
 	if ( feature_name == topology_type_name )
 	{
+		d_visit_to_create_properties = true;
+		update_geometry();
+		d_visit_to_create_properties = false;
+
 		if ( d_topology_feature_ref.is_valid() )
 		{
 			return; // a topology ref has been set ; don't do anything 
@@ -970,6 +991,8 @@ qDebug() << "PlateClosureWidget::display_feature_not_on_boundary()";
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_new_topology()
 {
+	is_active = true;
+
 	// adjust the widgets
 	button_new_topology->setEnabled(false);
 	button_edit_topology->setEnabled(false);
@@ -988,6 +1011,8 @@ GPlatesQtWidgets::PlateClosureWidget::handle_new_topology()
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_edit_topology()
 {
+	is_active = true;
+
 	// set the feature ref 
 	d_topology_feature_ref = d_focused_feature_ref;
 
@@ -1129,7 +1154,6 @@ GPlatesQtWidgets::PlateClosureWidget::handle_append_feature()
 	update_geometry();
 	d_visit_to_create_properties = false;
 
-// ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
 	// NOTE: this undoes the connection to the clicked table
 	d_feature_focus_ptr->unset_focus();
 
@@ -1258,6 +1282,8 @@ GPlatesQtWidgets::PlateClosureWidget::handle_apply()
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 {
+	is_active = false;
+
 	// clear the widgets
 	handle_clear();
 
@@ -1897,6 +1923,8 @@ GPlatesQtWidgets::PlateClosureWidget::draw_intersection_points()
 void
 GPlatesQtWidgets::PlateClosureWidget::draw_click_point()
 {
+std::cout << "GPlatesQtWidgets::PlateClosureWidget::draw_click_point()" << std::endl;
+
 	d_click_points_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 

@@ -821,6 +821,14 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 		SLOT( handle_create_new_feature( GPlatesModel::FeatureHandle::weak_ref ) )
 	);
 
+	// The PlateClosureWidget needs to know when the reconstruction time changes.
+	QObject::connect(
+		this, 
+		SIGNAL(reconstruction_time_changed( double)),
+		&(d_task_panel_ptr->plate_closure_widget()), 
+		SLOT(handle_reconstruction_time_change( double)));
+
+
 	// Add a progress bar to the status bar (Hidden until needed).
 	std::auto_ptr<QProgressBar> progress_bar(new QProgressBar(this));
 	progress_bar->setMaximumWidth(100);

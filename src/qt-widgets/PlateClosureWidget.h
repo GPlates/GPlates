@@ -233,6 +233,9 @@ namespace GPlatesQtWidgets
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		void
+		handle_reconstruction_time_change( double t );
+
+		void
 		display_feature(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
@@ -534,6 +537,8 @@ namespace GPlatesQtWidgets
 		 * Used to access the d_section_FOO vectors
 		 */
 		int d_focused_index;
+
+		bool is_active;
 
 		//
 		// private functions 
