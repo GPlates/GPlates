@@ -636,6 +636,7 @@ std::cout << "PlateClosureWidget::display_feature:" << std::endl;
 	if ( ! feature_ref.is_valid() ) 
 	{
 std::cout << "PlateClosureWidget::display_feature: invalid ref" << std::endl;
+
 		// if d_topology_reference has been set, then update_geometry
 		if ( d_topology_feature_ref.is_valid() )
 		{
@@ -644,8 +645,16 @@ std::cout << "PlateClosureWidget::display_feature: invalid ref" << std::endl;
 			update_geometry();
 			d_visit_to_create_properties = false;
 		}
-		
-		// else, reset the references
+
+		// if d_section_ptrs is not empty 
+		if ( d_section_ptrs.size() != 0 ) 
+		{
+			d_visit_to_create_properties = true;
+			update_geometry();
+			d_visit_to_create_properties = false;
+		}
+
+		// reset the references
 		d_geometry_opt_ptr = boost::none;
 		d_feature_focus_rfg = NULL;
 
@@ -1071,13 +1080,13 @@ std::cout << "use rever; tab 2 ; is valid; index=" << index << "; use=" << d_sec
 				lineedit_use_reverse->setText( tr("no") );
 			}
 
-/////
-			// Append the new boundary 
-			append_boundary_to_feature( d_topology_feature_ref );
+			if ( d_topology_feature_ref.is_valid() ) {
+				// Append the new boundary 
+				append_boundary_to_feature( d_topology_feature_ref );
+			}
 
 			// un-highlight the sections table row for this feature
 			d_view_state_ptr->highlight_sections_table_row( index, false );
-// ZZZZ
 			return;
 		}
 	}
