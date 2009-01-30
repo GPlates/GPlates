@@ -420,10 +420,7 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * What kind of geometry did we successfully build last?
-		 * 
-		 * This may be boost::none if the digitisation widget has no
-		 * (valid) point data yet.
+		 * The d_vertex_list gets processed into this geometry; may be boost::none 
 		 */
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
 			d_geometry_opt_ptr;
@@ -524,9 +521,8 @@ namespace GPlatesQtWidgets
         */
 
 		GPlatesModel::FeatureHandle::weak_ref d_focused_feature_ref;
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_focused_rfg;
-
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_geometry;
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_feature_focus_rfg;
+		// GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_feature_focus_rg_ptr;
 
 		/*
 		 * Set by  FIXME:
@@ -551,4 +547,5 @@ namespace GPlatesQtWidgets
 }
 
 #endif  // GPLATES_QTWIDGETS_PLATECLOSUREWIDGET_H
+
 
