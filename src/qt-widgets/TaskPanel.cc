@@ -62,9 +62,6 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			feature_focus, model_interface, view_state)),
 	d_reconstruction_pole_widget_ptr(
 		new ReconstructionPoleWidget(
-			rendered_geom_collection, rendered_geom_factory, view_state)),
-	d_create_topology_widget_ptr(
-		new CreateTopologyWidget(
 			rendered_geom_collection, rendered_geom_factory, view_state))
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
@@ -90,7 +87,6 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	set_up_digitisation_tab();
 	set_up_move_vertex_tab();
 	set_up_modify_pole_tab();
-	set_up_create_topology_tab();
 	set_up_plate_closure_tab();
 	
 	choose_feature_tab();
@@ -188,32 +184,10 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 }
 
 void
-GPlatesQtWidgets::TaskPanel::set_up_create_topology_tab()
-{
-	// Set up the layout to be used by the Modify Pole tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_create_topology);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
-	
-	// Add the main CreateTopologyWidget.
-	// As usual, Qt will take ownership of memory so we don't have to worry.
-	// We cannot set this parent widget in the TaskPanel initialiser list because
-	// setupUi() has not been called yet.
-	lay->addWidget(d_create_topology_widget_ptr);
-
-	// After the main widget and anything else we might want to cram in there,
-	// a spacer to eat up remaining space and push all the widgets to the top
-	// of the Modify Pole tab.
-	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
-}
-
-
-
-void
 GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab()
 {
 	// Set up the layout to be used by the Modify Pole tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_plate_closure);
+	QVBoxLayout *lay = new QVBoxLayout(tab_topology_tool);
 	lay->setSpacing(2);
 	lay->setContentsMargins(2, 2, 2, 2);
 	
@@ -228,3 +202,4 @@ GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab()
 	// of the tab.
 	// lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
+

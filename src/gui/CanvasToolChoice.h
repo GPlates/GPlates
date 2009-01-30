@@ -96,7 +96,6 @@ namespace GPlatesGui
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
-				GPlatesQtWidgets::CreateTopologyWidget &create_topology_widget,
 				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
@@ -170,12 +169,6 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
 		}
 
-		void
-		choose_create_topology_tool()
-		{
-			change_tool_if_necessary(d_create_topology_tool_ptr);
-		}
-
 	private:
 		/**
 		 * This is the ReorientGlobe tool which the user may choose.
@@ -221,11 +214,6 @@ namespace GPlatesGui
 		 * This is the ManipulatePole tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_manipulate_pole_tool_ptr;
-
-		/**
-		 * This is the ManipulatePole tool which the user may choose.
-		 */
-		CanvasTool::non_null_ptr_type d_create_topology_tool_ptr;
 
 		/**
 		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.

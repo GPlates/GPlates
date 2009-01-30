@@ -225,7 +225,7 @@ namespace GPlatesQtWidgets
 		 * Resets all fields to their defaults.
 		 */
 		void
-		clear();
+		clear_widgets();
 
 		void
 		fill_widgets(
@@ -234,6 +234,11 @@ namespace GPlatesQtWidgets
 
 		void
 		display_feature(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+
+		void
+		display_feature_focus_modified(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
@@ -273,6 +278,9 @@ namespace GPlatesQtWidgets
 		 * Draw the temporary geometry (if there is one) on the screen.
 		 */
 		void
+		draw_all_layers_clear();
+
+		void
 		draw_all_layers();
 
 		void 
@@ -302,6 +310,18 @@ namespace GPlatesQtWidgets
 	private slots:
 
 		/**
+		 * The slot that gets called when the user clicks "New Topology"
+		 */
+		void
+		handle_new_topology();
+
+		/**
+		 * The slot that gets called when the user clicks "Edit Topology"
+		 */
+		void
+		handle_edit_topology();
+
+		/**
 		 * The slot that gets called when the user clicks "Use Coordinates in Reverse".
 		 */
 		void
@@ -325,18 +345,18 @@ namespace GPlatesQtWidgets
 		void
 		handle_insert_before();
 
-
 		/**
 		 * The slot that gets called when the user clicks "Clear".
 		 */
 		void
 		handle_clear();
 
+
 		/**
-		 * The slot that gets called when the user clicks "Create".
+		 * The slot that gets called when the user clicks "Apply".
 		 */
 		void
-		handle_create();
+		handle_apply();
 
 		/**
 		 * The slot that gets called when the user clicks "Cancel".
@@ -502,9 +522,16 @@ namespace GPlatesQtWidgets
 		 * Set by display_feature, used by append_boundary_to_feature()
 		 * Used when editing a topology 
         */
-		GPlatesModel::FeatureHandle::weak_ref d_topology_feature_ref;
+
 		GPlatesModel::FeatureHandle::weak_ref d_focused_feature_ref;
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_focused_rfg;
+
 		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_geometry;
+
+		/*
+		 * Set by  FIXME:
+		 */ 
+		GPlatesModel::FeatureHandle::weak_ref d_topology_feature_ref;
 
 		/*
 		 * When a feature is selected , and on the topology boundary this is set

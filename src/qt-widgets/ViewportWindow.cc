@@ -688,13 +688,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(handle_reconstruction_time_change(
 					double)));
 
-	// Connect the reconstruction pole widget to the feature focus.
-	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
-			&(d_task_panel_ptr->create_topology_widget()), SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 
 	// Setup RenderedGeometryCollection.
 	initialise_rendered_geom_collection();
@@ -770,7 +763,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
-					d_task_panel_ptr->create_topology_widget(),
 					d_task_panel_ptr->plate_closure_widget(),
 					d_canvas_ptr->geometry_focus_highlight()));
 
@@ -820,8 +812,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			SLOT(reconstruct()));
 
 
-#if 0
-#endif
 	// If the user creates a new feature with the PlateClosureWidget, 
 	// then we need to create and append property values to it
 	QObject::connect(

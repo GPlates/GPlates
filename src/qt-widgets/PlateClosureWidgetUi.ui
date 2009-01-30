@@ -20,6 +20,24 @@
     <number>2</number>
    </property>
    <item>
+    <layout class="QHBoxLayout" name="layout_initializers" >
+     <item>
+      <widget class="QPushButton" name="button_new_topology" >
+       <property name="text" >
+        <string>New Topology</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_edit_topology" >
+       <property name="text" >
+        <string>Edit Topology</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
     <widget class="QLabel" name="label_type" >
      <property name="text" >
       <string>Focused Feature Type:</string>
@@ -75,23 +93,23 @@
     </layout>
    </item>
    <item>
-    <widget class="QLabel" name="label_coords" >
+    <widget class="QLabel" name="label_coordinates" >
      <property name="text" >
       <string>End-point Coordinates</string>
      </property>
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_9" >
+    <layout class="QHBoxLayout" name="layout_coordinates_labels" >
      <item>
-      <widget class="QLabel" name="label_2" >
+      <widget class="QLabel" name="label_first" >
        <property name="text" >
         <string>First</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label" >
+      <widget class="QLabel" name="label_last" >
        <property name="text" >
         <string>Last</string>
        </property>
@@ -100,17 +118,25 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" >
+    <layout class="QHBoxLayout" name="layout_coordinates" >
      <item>
-      <widget class="QLineEdit" name="lineedit_first" />
+      <widget class="QLineEdit" name="lineedit_first" >
+       <property name="readOnly" >
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineedit_last" />
+      <widget class="QLineEdit" name="lineedit_last" >
+       <property name="readOnly" >
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_5" >
+    <layout class="QHBoxLayout" name="layout_reverse" >
      <item>
       <widget class="QPushButton" name="button_use_reverse" >
        <property name="text" >
@@ -148,7 +174,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_6" >
+    <layout class="QHBoxLayout" name="layout_insert" >
      <item>
       <widget class="QPushButton" name="button_insert_before" >
        <property name="text" >
@@ -173,7 +199,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_3" >
+    <layout class="QHBoxLayout" name="layout_num_sections" >
      <item>
       <widget class="QLabel" name="label_num_sections" >
        <property name="text" >
@@ -191,27 +217,27 @@
     </layout>
    </item>
    <item>
-    <widget class="QPushButton" name="button_create_new" >
-     <property name="text" >
-      <string>Create New Feature...</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="button_cancel" >
-     <property name="text" >
-      <string>Cancel</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="layout_finalizers" >
+     <item>
+      <widget class="QPushButton" name="button_apply" >
+       <property name="text" >
+        <string>Apply</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_cancel" >
+       <property name="text" >
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>lineedit_type</tabstop>
-  <tabstop>lineedit_name</tabstop>
   <tabstop>button_append_feature</tabstop>
-  <tabstop>button_create_new</tabstop>
-  <tabstop>button_cancel</tabstop>
  </tabstops>
  <resources/>
  <connections/>

@@ -57,7 +57,6 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
-		GPlatesQtWidgets::CreateTopologyWidget &create_topology_widget,
 		GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
 		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight):
 d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(
@@ -123,12 +122,6 @@ d_manipulate_pole_tool_ptr(GPlatesCanvasTools::ManipulatePole::create(
 		globe_canvas,
 		view_state,
 		pole_widget)),
-d_create_topology_tool_ptr(GPlatesCanvasTools::CreateTopology::create(
-		rendered_geom_collection,
-		globe,
-		globe_canvas,
-		view_state,
-		create_topology_widget)),
 d_plate_closure_platepolygon_tool_ptr( GPlatesCanvasTools::PlateClosure::create(
 		rendered_geom_collection,
 		globe, 

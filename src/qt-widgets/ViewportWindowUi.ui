@@ -1090,13 +1090,13 @@
      <normaloff>:/select_plate_35.png</normaloff>:/select_plate_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Close Plate</string>
+    <string>Topology Tool</string>
    </property>
    <property name="iconText" >
-    <string>Close Plate</string>
+    <string>Topology Tool</string>
    </property>
    <property name="toolTip" >
-    <string>Close Plate</string>
+    <string>Topology Tool</string>
    </property>
    <property name="shortcut" >
     <string>C</string>

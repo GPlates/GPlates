@@ -74,14 +74,9 @@
        <string>Reconstruction Pole</string>
       </attribute>
      </widget>
-     <widget class="QWidget" name="tab_create_topology" >
+     <widget class="QWidget" name="tab_topology_tool" >
       <attribute name="title" >
-       <string>Create Topology</string>
-      </attribute>
-     </widget>
-     <widget class="QWidget" name="tab_plate_closure" >
-      <attribute name="title" >
-       <string>Close Plate</string>
+       <string>Topology Tool</string>
       </attribute>
      </widget>
     </widget>

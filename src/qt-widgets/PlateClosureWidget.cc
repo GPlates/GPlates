@@ -288,35 +288,69 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	d_visit_to_create_properties = false;
 	d_visit_to_get_focus_end_points = false;
 
-	// clear the widgets
-	clear();
+	// clear the lineedit widgets
+	clear_widgets();
 
-	// disable all the widget 
-	setDisabled(true);
+//WWWW
+	// Set the widget states
+	button_new_topology->setEnabled(true);
+	button_edit_topology->setEnabled(false);
+	label_type->setEnabled(false);
+	lineedit_type->setEnabled(false);
+	label_name->setEnabled(false);
+	lineedit_name->setEnabled(false);
+	label_plate_id->setEnabled(false);
+	lineedit_plate_id->setEnabled(false);
+	label_coordinates->setEnabled(false);
+	label_first->setEnabled(false);
+	label_last->setEnabled(false);
+	lineedit_first->setEnabled(false);
+	lineedit_last->setEnabled(false);
+	lineedit_use_reverse->setEnabled(false);
 	button_use_reverse->setEnabled(false);
 	button_append_feature->setEnabled(false);
 	button_remove_feature->setEnabled(false);
 	button_insert_before->setEnabled(false);
 	button_insert_after->setEnabled(false);
 	button_clear_feature->setEnabled(false);
-	button_create_new->setEnabled(false);
-	button_cancel->setEnabled(false);
-
+	label_num_sections->setEnabled(false);
+	lineedit_num_sections->setEnabled(false);
+	button_apply->setEnabled(false);
+	button_cancel->setEnabled(true);
 
 	// Subscribe to focus events. We can discard the FeatureFocus reference afterwards.
 	QObject::connect(&feature_focus,
-		SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
+		SIGNAL( focus_changed(
+			GPlatesModel::FeatureHandle::weak_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 		this,
-		SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
+		SLOT( display_feature(
+			GPlatesModel::FeatureHandle::weak_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 
 	QObject::connect(&feature_focus,
-		SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
+		SIGNAL( focused_feature_modified(
+			GPlatesModel::FeatureHandle::weak_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 		this,
-		SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
+		SLOT( display_feature_focus_modified(
+			GPlatesModel::FeatureHandle::weak_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
+
+	// New Topology button to start a new topology
+	QObject::connect(button_new_topology, 
+		SIGNAL(clicked()),
+		this, 
+		SLOT(handle_new_topology()));	
+	
+	// Edit Topology button to load the feature focus atopology
+	QObject::connect(button_edit_topology, 
+		SIGNAL(clicked()),
+		this, 
+		SLOT(handle_edit_topology()));	
+	
+
 
 	// Use Coordinates in Reverse
 	QObject::connect(button_use_reverse, 
@@ -352,11 +386,11 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 		this, 
 		SLOT(handle_clear()));
 	
-	// Create... button to open the Create Feature dialog.
-	QObject::connect(button_create_new, 
+	// New Topology button to open the Create Feature dialog if needed
+	QObject::connect(button_apply, 
 		SIGNAL(clicked()),
 		this, 
-		SLOT(handle_create()));	
+		SLOT(handle_apply()));	
 	
 	// Cancel button to cancel the process 
 	QObject::connect(button_cancel, 
@@ -421,7 +455,7 @@ void
 GPlatesQtWidgets::PlateClosureWidget::initialise_geometry(
 		GeometryType geom_type)
 {
-	clear();
+	clear_widgets();
 	d_use_reverse = false;
 	d_tmp_index_use_reverse = false;
 	d_geometry_type = geom_type;
@@ -454,7 +488,7 @@ GPlatesQtWidgets::PlateClosureWidget::set_click_point(double lat, double lon)
 
 // Clear all the widgets
 void
-GPlatesQtWidgets::PlateClosureWidget::clear()
+GPlatesQtWidgets::PlateClosureWidget::clear_widgets()
 {
 	lineedit_type->clear();
 	lineedit_name->clear();
@@ -529,6 +563,20 @@ GPlatesQtWidgets::PlateClosureWidget::fill_widgets(
 // Functions to display different features
 //
 
+//
+void
+GPlatesQtWidgets::PlateClosureWidget::display_feature_focus_modified(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
+{
+
+#ifdef DEBUG
+std::cout << std::endl;
+std::cout << "PlateClosureWidget::display_feature_focus_modified:" << std::endl;
+#endif
+	display_feature( feature_ref, associated_rfg);
+}
+
 // Display the clicked feature data in the widgets 
 void
 GPlatesQtWidgets::PlateClosureWidget::display_feature(
@@ -541,46 +589,97 @@ std::cout << std::endl;
 std::cout << "PlateClosureWidget::display_feature:" << std::endl;
 #endif
 
-	// Clear the fields first, then fill in those that we have data for.
-	clear();
+	// Clear the widget fields
+	clear_widgets();
+
+	// Set widget states
+#if 0
+	button_new_topology->setEnabled(true);
+	button_edit_topology->setEnabled(false);
+#endif
+	label_type->setEnabled(false);
+	lineedit_type->setEnabled(false);
+	label_name->setEnabled(false);
+	lineedit_name->setEnabled(false);
+	label_plate_id->setEnabled(false);
+	lineedit_plate_id->setEnabled(false);
+	label_coordinates->setEnabled(false);
+	label_first->setEnabled(false);
+	label_last->setEnabled(false);
+	lineedit_first->setEnabled(false);
+	lineedit_last->setEnabled(false);
+	lineedit_use_reverse->setEnabled(false);
+	button_use_reverse->setEnabled(false);
+	button_append_feature->setEnabled(false);
+	button_remove_feature->setEnabled(false);
+	button_insert_before->setEnabled(false);
+	button_insert_after->setEnabled(false);
+	button_clear_feature->setEnabled(false);
+#if 0
+	label_num_sections->setEnabled(false);
+	lineedit_num_sections->setEnabled(false);
+	button_apply->setEnabled(true);
+	button_cancel->setEnabled(true);
+#endif
+
+
+	// Clear all the layers
+	draw_all_layers_clear();
+
+	// draw the current click point
+	draw_click_point();
+
+
+	//
+	// Determine what to do with the focused feature
+	//
 
 	// always check your weak_refs!
 	if ( ! feature_ref.is_valid() ) 
 	{
 std::cout << "PlateClosureWidget::display_feature: invalid ref" << std::endl;
-		// Clear the focus layer from the last focus
-		d_focused_feature_layer_ptr->clear_rendered_geometries();
-		d_focus_head_end_points.clear();
-		d_focus_tail_end_points.clear();
+		// if d_topology_reference has been set, then update_geometry
+		if ( d_topology_feature_ref.is_valid() )
+		{
+			d_visit_to_create_properties = true;
+			update_geometry();
+			d_visit_to_create_properties = false;
+		}
 		return;
 	}
 
-	if ( associated_rfg ) {
+	// set the focused ref
+	d_focused_feature_ref = feature_ref;
+qDebug() << "feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+
+	// draw the geom and its end_points
+	draw_focused_geometry();
+
+	if ( associated_rfg ) 
+	{
 qDebug() << "associated_rfg = okay " ;
+		d_focused_rfg = associated_rfg;
 	} else {
 qDebug() << "associated_rfg = NULL " ;
 	}
-qDebug() << "feature_ref = " 
-<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
 
 	//
-	// Check for feature type
+	// Check feature type via qstrings 
 	//
- 	QString type("TopologicalClosedPlateBoundary");
-	if ( type == GPlatesUtils::make_qstring_from_icu_string(
-			feature_ref->feature_type().get_name()) ) 
+ 	QString topology_type_name ("TopologicalClosedPlateBoundary");
+	QString feature_name = GPlatesUtils::make_qstring_from_icu_string(
+		feature_ref->feature_type().get_name() );
+
+	if ( feature_name == topology_type_name )
 	{
-		// check if a topology is already loaded
-		if ( d_section_ptrs.size() != 0 ) 
-		{ 	
-			return ;
-		} 
-		// ref is valid, set the data 
-		d_topology_feature_ref = feature_ref;
-		display_feature_topology( feature_ref, associated_rfg );
-		return;
+		if ( d_topology_feature_ref.is_valid() )
+		{
+			return; // a topology ref has been set ; don't do anything 
+		}
+		// else, change widget state
+		button_edit_topology->setEnabled(true);
 	} 
-	else 
+	else // non-topology feature type selected 
 	{
 		// super-short-cut for empty boundary 
 		if ( d_section_ids.size() == 0 ) 
@@ -591,9 +690,8 @@ qDebug() << "feature_ref = "
 
 		// test if feature is already in the section table
 		GPlatesModel::FeatureId test_id = feature_ref->feature_id();
-#ifdef DEBUG
 qDebug() << "test_id = " << GPlatesUtils::make_qstring_from_icu_string( test_id.get() );
-#endif 
+
 		std::vector<GPlatesModel::FeatureId>::iterator section_itr = d_section_ids.begin();
 		std::vector<GPlatesModel::FeatureId>::iterator section_end = d_section_ids.end();
 		int i = 0;
@@ -606,6 +704,7 @@ qDebug() << "i = " << i << "; section_id = " << GPlatesUtils::make_qstring_from_
 			if ( test_id == section_id)
 			{
 				display_feature_on_boundary( feature_ref, associated_rfg );
+				// set focus data 
 				d_focused_index = i;
 				return;
 			}
@@ -628,29 +727,31 @@ GPlatesQtWidgets::PlateClosureWidget::display_feature_topology(
 {
 #ifdef DEBUG
 qDebug() << "PlateClosureWidget::display_feature_topology()";
-qDebug() << "feature_ref = " 
-<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
 #endif
 
-	// access the sections_table
+	// Clear the sections_table
 	GPlatesGui::FeatureTableModel &sections_table = 
 		d_view_state_ptr->sections_feature_table_model();
 	sections_table.clear();
 
-	// Create a new TopologySectionsFinder with d_FOO vectors
+	// Clear the working lists
+	d_section_ptrs.clear();
+	d_section_ids.clear();
+	d_section_click_points.clear();
+	d_section_reverse_flags.clear();
+	// etc.
+	// The call to update_geometry(); below does the rest of the working lists
+
+
+	// Create a new TopologySectionsFinder with d_section_ vectors
 	GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder( 
 		d_section_ptrs, d_section_ids, d_section_click_points, d_section_reverse_flags);
 
-	// Visit the feture ref, filling d_FOO vectors with data
+	// Visit the feture ref, filling d_section_ vectors with data
 	feature_ref->accept_visitor( topo_sections_finder );
 
-#ifdef DEBUG1
-topo_sections_finder.report();
-show_numbers();
-#endif
-
 	//
-	// Get a map of FeatureId to ReconstructionGeometry pointers 
+	// Get a map of FeatureId to ReconstructionGeometry pointers for reconstruction
 	//
 	typedef std::map<
 		GPlatesModel::FeatureId,
@@ -690,11 +791,8 @@ show_numbers();
 	{
 		GPlatesModel::FeatureId	section_id = *section_itr;
 
-#ifdef DEBUG1
-qDebug() << "section_id = " << GPlatesUtils::make_qstring_from_icu_string( section_id.get() );
-#endif 
-		id_to_rg_map_iterator_type find_iter;
-		find_iter = rg_map.find( section_id );
+		// try to find the id in the map
+		id_to_rg_map_iterator_type find_iter = rg_map.find( section_id );
 
 		if ( find_iter != rg_map.end() )
 		{
@@ -704,7 +802,7 @@ qDebug() << "section_id = " << GPlatesUtils::make_qstring_from_icu_string( secti
 		}
 	}
 
-	// update the d_section_FOO vectors from the table
+	// update the d_section_* vectors from the table
 	d_visit_to_create_properties = true;
 	update_geometry();
 	d_visit_to_create_properties = false;
@@ -717,13 +815,25 @@ qDebug() << "section_id = " << GPlatesUtils::make_qstring_from_icu_string( secti
 
 	// set the active widgets
 	setDisabled(false);
+
+	button_new_topology->setEnabled(false);
+	button_edit_topology->setEnabled(false);
+
+	label_coordinates->setEnabled(false);
+	label_first->setEnabled(false);
+	label_last->setEnabled(false);
+	lineedit_first->setEnabled(false);
+	lineedit_last->setEnabled(false);
+
+	lineedit_use_reverse->setEnabled(false);
 	button_use_reverse->setEnabled(false);
 	button_append_feature->setEnabled(false);
 	button_remove_feature->setEnabled(false);
 	button_insert_before->setEnabled(false);
 	button_insert_after->setEnabled(false);
 	button_clear_feature->setEnabled(false);
-	button_create_new->setEnabled(true);
+
+	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 }
 
@@ -747,7 +857,7 @@ qDebug() << "PlateClosureWidget::display_feature_on_boundary()";
 
 	// set the focus refs
 	d_focused_feature_ref = feature_ref;
-	d_focused_geometry = associated_rfg;
+	d_focused_rfg = associated_rfg;
 
 	// fill the widgets with feature data
 	fill_widgets( feature_ref, associated_rfg );
@@ -757,15 +867,30 @@ qDebug() << "PlateClosureWidget::display_feature_on_boundary()";
 	if (r) { lineedit_use_reverse->setText( tr("yes") ); }
 	if (!r) { lineedit_use_reverse->setText( tr("no") ); }
 
-	// set the active widgets
-	setDisabled(false);
+	// Set the widget states
+	button_new_topology->setEnabled(false);
+	button_edit_topology->setEnabled(false);
+	label_type->setEnabled(true);
+	lineedit_type->setEnabled(true);
+	label_name->setEnabled(true);
+	lineedit_name->setEnabled(true);
+	label_plate_id->setEnabled(true);
+	lineedit_plate_id->setEnabled(true);
+	label_coordinates->setEnabled(true);
+	label_first->setEnabled(true);
+	label_last->setEnabled(true);
+	lineedit_first->setEnabled(true);
+	lineedit_last->setEnabled(true);
+	lineedit_use_reverse->setEnabled(true);
 	button_use_reverse->setEnabled(true);
-	button_append_feature->setEnabled(false);
+	button_append_feature->setEnabled(true);
 	button_remove_feature->setEnabled(true);
 	button_insert_before->setEnabled(true);
 	button_insert_after->setEnabled(true);
 	button_clear_feature->setEnabled(true);
-	button_create_new->setEnabled(true);
+	label_num_sections->setEnabled(true);
+	lineedit_num_sections->setEnabled(true);
+	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 
 	// draw the layers
@@ -788,20 +913,35 @@ qDebug() << "PlateClosureWidget::display_feature_not_on_boundary()";
 
 	// set the focus refs
 	d_focused_feature_ref = feature_ref;
-	d_focused_geometry = associated_rfg;
+	d_focused_rfg = associated_rfg;
 
 	// fill the widgets with feature data
 	fill_widgets( feature_ref, associated_rfg );
 
-	// set the active widgets
-	setDisabled(false);
+	// Set the widget states
+	button_new_topology->setEnabled(true);
+	button_edit_topology->setEnabled(false);
+	label_type->setEnabled(true);
+	lineedit_type->setEnabled(true);
+	label_name->setEnabled(true);
+	lineedit_name->setEnabled(true);
+	label_plate_id->setEnabled(true);
+	lineedit_plate_id->setEnabled(true);
+	label_coordinates->setEnabled(true);
+	label_first->setEnabled(true);
+	label_last->setEnabled(true);
+	lineedit_first->setEnabled(true);
+	lineedit_last->setEnabled(true);
+	lineedit_use_reverse->setEnabled(false);
 	button_use_reverse->setEnabled(false);
 	button_append_feature->setEnabled(true);
 	button_remove_feature->setEnabled(false);
 	button_insert_before->setEnabled(false);
 	button_insert_after->setEnabled(false);
 	button_clear_feature->setEnabled(true);
-	button_create_new->setEnabled(true);
+	label_num_sections->setEnabled(false);
+	lineedit_num_sections->setEnabled(false);
+	button_apply->setEnabled(false);
 	button_cancel->setEnabled(true);
 
 	// draw the layers
@@ -814,6 +954,36 @@ qDebug() << "PlateClosureWidget::display_feature_not_on_boundary()";
 // 
 // Button Handlers  and support functions 
 // 
+void
+GPlatesQtWidgets::PlateClosureWidget::handle_new_topology()
+{
+	// adjust the widgets
+	button_new_topology->setEnabled(false);
+
+	// display the focused feature with intent to start a new boundary 
+	GPlatesQtWidgets::PlateClosureWidget::display_feature_not_on_boundary(
+		d_focused_feature_ref, d_focused_rfg );
+}
+
+void
+GPlatesQtWidgets::PlateClosureWidget::handle_edit_topology()
+{
+	// set the widget state
+	button_edit_topology->setEnabled(false);
+
+	// set the feature ref 
+	d_topology_feature_ref = d_focused_feature_ref;
+
+	// flip to the Topology Sections table
+	d_view_state_ptr->change_tab( 2 );
+
+	// de-select feature focus
+
+	// display the focused feature with intent to edit boundary
+	GPlatesQtWidgets::PlateClosureWidget::display_feature_topology(
+		d_focused_feature_ref, d_focused_rfg );
+}
+
 
 void
 GPlatesQtWidgets::PlateClosureWidget::handle_use_coordinates_in_reverse()
@@ -935,6 +1105,7 @@ GPlatesQtWidgets::PlateClosureWidget::handle_append_feature()
 	update_geometry();
 	d_visit_to_create_properties = false;
 
+// ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
 	// NOTE: this undoes the connection to the clicked table
 	d_feature_focus_ptr->unset_focus();
 
@@ -963,15 +1134,17 @@ GPlatesQtWidgets::PlateClosureWidget::handle_remove_feature()
 			sections_table.geometry_sequence().begin() + index);
 		sections_table.end_remove_features();
 
-		// remove the click_point and reverse flags
+		// remove the current click_point and reverse flags
 		d_section_click_points.erase( d_section_click_points.begin() + index );
 		d_section_reverse_flags.erase( d_section_reverse_flags.begin() + index );
 
 		// clear out the widgets
-		clear();
+		clear_widgets();
 
-		// process the sections table
+		// process the sections table 
 		update_geometry();
+// ZZZZ
+		append_boundary_to_feature( d_topology_feature_ref );
 	}
 
 }
@@ -995,19 +1168,21 @@ GPlatesQtWidgets::PlateClosureWidget::handle_clear()
 	// clear the "Clicked" table
 	d_view_state_ptr->feature_table_model().clear();
 
-	// clear the widget
-	clear();
+	// clear the widgets
+	clear_widgets();
 
 	// clear the focus data 
-	d_focus_head_end_points.clear();
-	d_focus_tail_end_points.clear();
 	d_focused_feature_layer_ptr->clear_rendered_geometries();
+
+	// FIXME: should we unset focus?
 }
 
 
 void
-GPlatesQtWidgets::PlateClosureWidget::handle_create()
+GPlatesQtWidgets::PlateClosureWidget::handle_apply()
 {
+	// check if d_topology_feature_ref is set 
+
 	// pointer to the Sections table
 	GPlatesGui::FeatureTableModel &sections_table = 
 		d_view_state_ptr->sections_feature_table_model();
@@ -1073,6 +1248,32 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 	// clear the widgets
 	handle_clear();
 
+	// Set the widget states
+	button_new_topology->setEnabled(true);
+	button_edit_topology->setEnabled(false);
+	label_type->setEnabled(false);
+	lineedit_type->setEnabled(false);
+	label_name->setEnabled(false);
+	lineedit_name->setEnabled(false);
+	label_plate_id->setEnabled(false);
+	lineedit_plate_id->setEnabled(false);
+	label_coordinates->setEnabled(false);
+	label_first->setEnabled(false);
+	label_last->setEnabled(false);
+	lineedit_first->setEnabled(false);
+	lineedit_last->setEnabled(false);
+	lineedit_use_reverse->setEnabled(false);
+	button_use_reverse->setEnabled(false);
+	button_append_feature->setEnabled(false);
+	button_remove_feature->setEnabled(false);
+	button_insert_before->setEnabled(false);
+	button_insert_after->setEnabled(false);
+	button_clear_feature->setEnabled(false);
+	label_num_sections->setEnabled(false);
+	lineedit_num_sections->setEnabled(false);
+	button_apply->setEnabled(false);
+	button_cancel->setEnabled(true);
+
 	// clear the tables
 	d_view_state_ptr->sections_feature_table_model().clear();
 	d_view_state_ptr->feature_table_model().clear();
@@ -1097,23 +1298,20 @@ GPlatesQtWidgets::PlateClosureWidget::handle_cancel()
 	d_intersection_points.clear();
 	d_segments.clear();
 	d_insert_segments.clear();
-	d_focus_head_end_points.clear();
-	d_focus_tail_end_points.clear();
-
-	// clear the drawing layers
-	d_temporary_geometry_layer_ptr->clear_rendered_geometries();
-	d_focused_feature_layer_ptr->clear_rendered_geometries();
-	d_segments_layer_ptr->clear_rendered_geometries();
-	d_end_points_layer_ptr->clear_rendered_geometries();
-	d_intersection_points_layer_ptr->clear_rendered_geometries();
-	d_click_points_layer_ptr->clear_rendered_geometries();
-
-	d_view_state_ptr->globe_canvas().update_canvas();
 
 	// NOTE: this undoes the connection to highlight_sections_table 
-	d_feature_focus_ptr->unset_focus();
+	if ( d_feature_focus_ptr->is_valid() ) {
+		d_feature_focus_ptr->unset_focus();
+	}
 
+	// clear the drawing layers
+	draw_all_layers_clear();
+	d_view_state_ptr->globe_canvas().update_canvas();
+
+	// reset widget defaults
 	initialise_geometry(PLATEPOLYGON);
+
+// FIXME: remove
 	show_numbers();
 }
 
@@ -1237,7 +1435,7 @@ void
 GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {  
-std::cout << "GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere()" << std::endl;
+// std::cout << "GPlatesQtWidgets::PlateClosureWidget::visit_polyline_on_sphere()" << std::endl;
 
 	// set type only
 	if (d_visit_to_check_type) {
@@ -1332,14 +1530,33 @@ GPlatesQtWidgets::PlateClosureWidget::update_geometry()
 {
 std::cout << "GPlatesQtWidgets::PlateClosureWidget::update_geometry()" << std::endl;
 
-	// clear all layers
+	// clear most of  layers
 	d_temporary_geometry_layer_ptr->clear_rendered_geometries();
+	d_focused_feature_layer_ptr->clear_rendered_geometries();
 	d_segments_layer_ptr->clear_rendered_geometries();
+	d_end_points_layer_ptr->clear_rendered_geometries();
 	d_intersection_points_layer_ptr->clear_rendered_geometries();
 	d_click_points_layer_ptr->clear_rendered_geometries();
-	d_end_points_layer_ptr->clear_rendered_geometries();
 
 	d_view_state_ptr->globe_canvas().update_canvas();
+
+	// clear some of the working lists
+
+	// DO NOT clear() these two ! used by create_sections_from_sections_table
+	// d_section_reverse_flags.clear()
+	// d_section_click_points.clear();
+
+	// all these get set by create_sections_from_sections_table
+	d_section_ids.clear();
+	d_vertex_list.clear();
+	d_section_ptrs.clear();
+	d_head_end_points.clear();
+	d_tail_end_points.clear();
+	d_intersection_points.clear();
+	d_segments.clear();
+	d_insert_segments.clear();
+	d_focus_head_end_points.clear();
+	d_focus_tail_end_points.clear();
 
 	// loop over Sections Table to fill d_vertex_list
 	create_sections_from_sections_table();
@@ -1362,15 +1579,32 @@ std::cout << "GPlatesQtWidgets::PlateClosureWidget::update_geometry()" << std::e
 // draw_ functions
 //
 void
+GPlatesQtWidgets::PlateClosureWidget::draw_all_layers_clear()
+{
+std::cout << "GPlatesQtWidgets::PlateClosureWidget::draw_all_layers_clear()" << std::endl;
+	// clear all layers
+	d_temporary_geometry_layer_ptr->clear_rendered_geometries();
+	d_focused_feature_layer_ptr->clear_rendered_geometries();
+	d_segments_layer_ptr->clear_rendered_geometries();
+	d_end_points_layer_ptr->clear_rendered_geometries();
+	d_intersection_points_layer_ptr->clear_rendered_geometries();
+	d_click_points_layer_ptr->clear_rendered_geometries();
+
+	d_view_state_ptr->globe_canvas().update_canvas();
+}
+
+void
 GPlatesQtWidgets::PlateClosureWidget::draw_all_layers()
 {
-
+std::cout << "GPlatesQtWidgets::PlateClosureWidget::draw_all_layers()" << std::endl;
+	// draw all the layers
 	draw_temporary_geometry();
 	draw_focused_geometry();
 	draw_segments();
 	draw_end_points();
 	draw_intersection_points();
 	draw_click_points();
+	draw_click_point();
 
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1381,6 +1615,8 @@ GPlatesQtWidgets::PlateClosureWidget::draw_all_layers()
 void
 GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()
 {
+std::cout << "GPlatesQtWidgets::PlateClosureWidget::draw_temporary_geometry()" << std::endl;
+
 	d_temporary_geometry_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1411,22 +1647,24 @@ GPlatesQtWidgets::PlateClosureWidget::draw_focused_geometry()
 	d_focused_feature_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
-	if (d_focused_geometry)
+	if (d_focused_rfg)
 	{
 		const GPlatesGui::Colour &colour = GPlatesGui::Colour::WHITE;
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
-				d_focused_geometry->geometry(),
+				d_focused_rfg->geometry(),
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
 				GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
 
 		d_focused_feature_layer_ptr->add_rendered_geometry(rendered_geometry);
 
-		// visit to get end 
+		// visit to get end_points
+		d_focus_head_end_points.clear();
+		d_focus_tail_end_points.clear();
 		d_visit_to_get_focus_end_points = true;
-		d_focused_geometry->geometry()->accept_visitor(*this);
+		d_focused_rfg->geometry()->accept_visitor(*this);
 		d_visit_to_get_focus_end_points = false;
 
 		// draw the focused end_points
@@ -1656,8 +1894,8 @@ GPlatesQtWidgets::PlateClosureWidget::draw_click_point()
 			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
 				pos_ptr,
 				colour,
-				GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_LINE_WIDTH_HINT);
+				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
+				GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
 
 		d_click_points_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
@@ -2306,25 +2544,32 @@ qDebug() << "PlateClosureWidget::compute_intersection: " << "use TAIL" ;
 
 void
 GPlatesQtWidgets::PlateClosureWidget::append_boundary_to_feature(
-	GPlatesModel::FeatureHandle::weak_ref feature)
+	GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
 
-#ifdef DEBUG
-// FIXME: remove this diagnostic 
-std::cout << "PlateClosureWidget::append_boundary_value_to_feature " << std::endl;
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+qDebug() << "PlateClosureWidget::append_boundary_value_to_feature() feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+
 static const GPlatesModel::PropertyName name_property_name =
 	GPlatesModel::PropertyName::create_gml("name");
 GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-string_finder.visit_feature_handle( *feature );
+string_finder.visit_feature_handle( *feature_ref );
 if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
 {
 	GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
 		 *string_finder.found_strings_begin();
-qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name=" 
-<< GPlatesUtils::make_qstring( name->value() );
-	}
-// FIXME: remove this diagnostic 
-#endif
+	qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name=" 
+	<< GPlatesUtils::make_qstring( name->value() );
+}
 
 	// do one final update ; create properties this time
 	d_visit_to_create_properties = true;
@@ -2333,14 +2578,12 @@ qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name="
 	update_geometry();
 
 	// find the prop to remove
-	GPlatesModel::PropertyName boundary = GPlatesModel::PropertyName::create_gpml("boundary");
+	GPlatesModel::PropertyName boundary_prop_name = 
+		GPlatesModel::PropertyName::create_gpml("boundary");
 
-	GPlatesModel::FeatureHandle::properties_iterator iter = 
-				d_topology_feature_ref->properties_begin();
-
-	GPlatesModel::FeatureHandle::properties_iterator end = 
-				d_topology_feature_ref->properties_end();
-
+	GPlatesModel::FeatureHandle::properties_iterator iter = feature_ref->properties_begin();
+	GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
+	// loop over properties
 	for ( ; iter != end; ++iter) 
 	{
 		// double check for validity and nullness
@@ -2350,20 +2593,25 @@ qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name="
 
 		// passed all checks, make the name and test
 		GPlatesModel::PropertyName test_name = (*iter)->property_name();
-		// qDebug() << "name = " 
-		// << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
 
-		if ( test_name == boundary )
+qDebug() << "name = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
+
+		if ( test_name == boundary_prop_name )
 		{
+qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
 			// Delete the old boundary 
 			GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-			d_topology_feature_ref->remove_property_container(iter, transaction);
+			feature_ref->remove_property_container(iter, transaction);
 			transaction.commit();
 			// FIXME: this seems to create NULL pointers in the properties collection
-			// see FIXME note above to check for NULL
+			// see FIXME note above to check for NULL? 
+			// Or is this to be expected?
+
+			// FIXME: do this?
+			// d_feature_focus_ptr->announce_modification_of_focused_feature();
 			break;
 		}
-	}
+	} // loop over properties
 
 	// create the TopologicalPolygon
 	GPlatesModel::PropertyValue::non_null_ptr_type topo_poly_value =
@@ -2382,7 +2630,7 @@ qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name="
 		GPlatesModel::PropertyName::create_gml("validTime");
 
 	GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-	time_period_finder.visit_feature_handle( *feature );
+	time_period_finder.visit_feature_handle( *feature_ref );
 
 	GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period = 
 		*time_period_finder.found_time_periods_begin();
@@ -2419,9 +2667,9 @@ qDebug() << "PlateClosureWidget::append_boundary_value_to_feature: name="
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
 		aggregation,
 		GPlatesModel::PropertyName::create_gpml("boundary"),
-		feature);
+		feature_ref);
 
-	// Set the ball rolling
+	// Set the ball rolling again ...
 	d_view_state_ptr->reconstruct();
 }
 

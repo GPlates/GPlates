@@ -25,6 +25,8 @@
 
 #include <queue>
 #include <QLocale>
+#include <QDebug>
+#include <QString>
 
 #include "PlateClosure.h"
 
@@ -36,6 +38,10 @@
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "global/InternalInconsistencyException.h"
+#include "utils/UnicodeStringUtils.h"
+#include "utils/GeometryCreationUtils.h"
+#include "feature-visitors/XsStringFinder.h"
+#include "property-values/XsString.h"
 
 GPlatesCanvasTools::PlateClosure::PlateClosure(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
@@ -80,15 +86,9 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 				" Ctrl+drag to reorient the globe."));
 	}
 
-	// Activate the pole manipulation rendered layer.
+	// Activate rendered layer.
 	d_rendered_geom_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
-
-	// hide other tools ; show plate closure 
-	// d_layers_ptr->show_only_plate_closure_layer();
-
-	// also show geom. focus 
-	// d_layers_ptr->show_geometry_focus_layer();
 
 	globe_canvas().update_canvas();
 
@@ -152,7 +152,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
 	d_clicked_table_model_ptr->clear();
 
-	// Un-highlight all the rows of the 'Segments' Table 
+	// Un-highlight all the rows of the Topology Sections Table 
 	d_view_state_ptr->highlight_sections_table_clear();
 
 
@@ -163,8 +163,6 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 		emit no_hits_found();
 		return;
 	}
-
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click >0 geometries " << std::endl;
 
 	// Populate the 'Clicked' FeatureTableModel.
 	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
@@ -180,11 +178,10 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 
 	int click_index = d_clicked_table_model_ptr->current_index().row();
 
-	// Highlight the 'Segments' Feature Table if needed
+	// Highlight the Topology Sections Feature Table if needed
 
 	// get the feature_id of the currently selected feature
 	GPlatesModel::FeatureId clicked_fid;
-
 	GPlatesModel::ReconstructionGeometry *clicked_rg = 
 		d_clicked_table_model_ptr->geometry_sequence().at(click_index).get();
 	GPlatesModel::ReconstructedFeatureGeometry *clicked_rfg =
@@ -200,7 +197,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 		if ( clicked_ref.is_valid()) {
 //std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref YES" << std::endl;
 			clicked_fid = clicked_ref->feature_id();
-		} else{
+		} else {
 //std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref NO" << std::endl;
 		}
 	} else {
@@ -210,7 +207,7 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 	// clear any previous selection
 	d_view_state_ptr->highlight_sections_table_clear();
 
-	// loop over each geom in the Segments Table
+	// loop over each geom in the Topology Sections Table
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator end;
 	iter = d_segments_table_model_ptr->geometry_sequence().begin();	
@@ -279,6 +276,28 @@ void
 GPlatesCanvasTools::PlateClosure::handle_create_new_feature(
 	GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
+
+// FIXME: remove this diagnostic 
+
+qDebug() << "GPlatesCanvasTools::PlateClosure::handle_create_new_feature";
+qDebug() << "GPlatesCanvasTools::PlateClosure::handle_create_new_feature";
+qDebug() << "feature_ref = " 
+<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+
+
+static const GPlatesModel::PropertyName name_property_name =
+	GPlatesModel::PropertyName::create_gml("name");
+GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
+string_finder.visit_feature_handle( *feature_ref );
+if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+{
+	GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
+		 *string_finder.found_strings_begin();
+	qDebug() << "GPlatesCanvasTools::PlateClosure::handle_create_new_feature name=" 
+	<< GPlatesUtils::make_qstring( name->value() );
+}
+
 	// finalize the new feature with the boundary prop value
 	d_plate_closure_widget_ptr->append_boundary_to_feature( feature_ref );
+
 }
