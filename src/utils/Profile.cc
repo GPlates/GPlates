@@ -73,6 +73,13 @@ namespace
 	convert_ticks_to_seconds(
 			ticks_t);
 
+	/**
+	 * Converts seconds to ticks.
+	 */
+	ticks_t
+	convert_seconds_to_ticks(
+			double);
+
 
 	class ProfileNode;
 
@@ -738,7 +745,7 @@ namespace
 	ticks_t &
 	ProfileManager::start_profile(
 			void *profile_cache,
-			const ticks_t &suspend_profile_time)
+			const ticks_t &suspend_parent_time)
 	{
 		ProfileNode &profile_node = *reinterpret_cast<ProfileNode *>(profile_cache);
 
@@ -750,7 +757,7 @@ namespace
 			ProfileRun &parentRun = d_profile_run_stack.top();
 
 			// Stop current profile run so we can start a new one.
-			parentRun.stop_profile(suspend_profile_time);
+			parentRun.stop_profile(suspend_parent_time);
 		}
 
 		// The currently profiled object is now 'profile_node'. Push a
@@ -766,7 +773,7 @@ namespace
 
 	ticks_t &
 	ProfileManager::stop_profile(
-			const ticks_t &suspend_profile_time)
+			const ticks_t &stop_time)
 	{
 		// Pop the current profile run off the stack - it should correspond
 		// to 'profile_node'.
@@ -786,7 +793,7 @@ namespace
 		}
 
 		// Stop the current profile run.
-		current_run.stop_profile(suspend_profile_time);
+		current_run.stop_profile(stop_time);
 
 		// Get the next profile run and reset its last clock.
 		ProfileRun &parent_run = d_profile_run_stack.top();
@@ -808,10 +815,11 @@ namespace
 	print_accurate_time(double seconds, std::ostream &output_stream, int field_width)
 	{
 		// The most accurate timer is QueryPerformanceCounter and its overhead is
-		// about 0.5usec so no point printing more accurate than this.
+		// about 130us on Windows XP and 650us on Windows Vista so no point printing
+		// more accurate than this.
 		// Also the linux timers are at best 1usec accurate so this figure seems
 		// a reasonable one.
-		const double accuracy = 1e-6;
+		const double accuracy = 1e-7/* 0.1 microseconds */;
 		seconds = accuracy * static_cast<boost::uint64_t>(seconds / accuracy  + 0.5);
 
 		const char *time_suffix;
@@ -1230,13 +1238,20 @@ namespace
 		timeval time;
 		gettimeofday(&time, NULL);
 
-		return time.tv_sec * 1000000 + time.tv_usec;
+		// Make each tick be 0.1 microseconds even though
+		// timer resolution is 1 microsecond at best because
+		// we want to subtract time spent in 'get_ticks()'
+		// call itself and this accuracy is better than
+		// 1 microsecond.
+		return 10 * (time.tv_sec * 1000000 + time.tv_usec);
 	}
 
 	double
 	get_seconds_per_tick()
 	{
-		return 1e-6;
+		// Each tick is 0.1 microseconds even though
+		// timer resolution is 1 microsecond at best.
+		return 1e-7;
 	}
 
 #endif // if defined(_WIN32) ... else ...
@@ -1248,9 +1263,77 @@ namespace
 	convert_ticks_to_seconds(
 			ticks_t ticks)
 	{
-		static double seconds_per_tick = get_seconds_per_tick();
-		return ticks * seconds_per_tick;
+		static double s_seconds_per_tick = get_seconds_per_tick();
+		return ticks * s_seconds_per_tick;
 	}
+
+	/**
+	 * Converts seconds to ticks.
+	 */
+	ticks_t
+	convert_seconds_to_ticks(
+			double seconds)
+	{
+		static double s_ticks_per_seconds = 1.0 / get_seconds_per_tick();
+		return static_cast<ticks_t>(seconds * s_ticks_per_seconds + 0.5);
+	}
+
+	/**
+	 * Calculates the time taken to execute a call to 'get_ticks()' in ticks.
+	 */
+	ticks_t
+	calc_ticks_taken_in_get_ticks_call()
+	{
+		const int NUM_TRIES = 10;
+		const int NUM_LOOP_ITERATIONS = 1000;
+
+		// If seconds per get_ticks() call is greater than this
+		// then we probably had a thread context switch in the middle
+		// of our timing loop. Time taken for a get_ticks() call should
+		// be around 1 microsecond for Linux/OSX and even less for Windows.
+		const double MAX_SECONDS_PER_GET_TICKS_CALL = 10e-6;
+
+		for (int tries = 0; tries < NUM_TRIES; ++tries)
+		{
+			// Make variable volatile so compiler doesn't optimise away
+			// the get_ticks() call in the loop.
+			volatile ticks_t dummy_ticks;
+
+			// Time a loop of NUM_LOOP_ITERATIONS calls to 'get_ticks()'
+			// because it consumes about 90% of the time spent inside
+			// profiling code.
+			const ticks_t start_ticks = get_ticks();
+			for (int loop_iter = 0; loop_iter < NUM_LOOP_ITERATIONS; ++loop_iter)
+			{
+				dummy_ticks = get_ticks();
+			}
+			const ticks_t end_ticks = get_ticks();
+
+			// How long does a get_ticks() call take.
+			const double seconds_per_get_ticks_call = convert_ticks_to_seconds(
+					end_ticks - start_ticks) / NUM_LOOP_ITERATIONS;
+
+			if (seconds_per_get_ticks_call < MAX_SECONDS_PER_GET_TICKS_CALL)
+			{
+				const ticks_t ticks_per_get_ticks_call = convert_seconds_to_ticks(
+						seconds_per_get_ticks_call);
+
+				std::cout << "accuracy = " << seconds_per_get_ticks_call << std::endl;
+				// Timing seems about right so return result.
+				return ticks_per_get_ticks_call;
+			}
+
+			// Timing doesn't seem right (maybe a thread context switch in
+			// middle of loop) so try timing it again.
+		}
+
+		return convert_seconds_to_ticks(MAX_SECONDS_PER_GET_TICKS_CALL);
+	}
+
+	/**
+	 * Actual time taken in 'get_ticks()' call in ticks.
+	 */
+	const ticks_t g_ticks_taken_in_get_ticks_call = calc_ticks_taken_in_get_ticks_call();
 }
 
 namespace GPlatesUtils
@@ -1266,10 +1349,12 @@ namespace GPlatesUtils
 	profile_begin(
 			void *profile_cache)
 	{
-		ticks_t suspend_profiling_ticks = get_ticks();
+		ticks_t suspend_parent_ticks = get_ticks();
 
-		ticks_t &resume_profiling_ticks = ProfileManager::instance().start_profile(
-				profile_cache, suspend_profiling_ticks);
+		ticks_t &start_ticks = ProfileManager::instance().start_profile(
+				profile_cache,
+				// Subtract time spent in 'get_ticks()' from parent profile.
+				suspend_parent_ticks - g_ticks_taken_in_get_ticks_call);
 
 		// We could call 'get_ticks()' at beginning of this function and then again at
 		// the end to remove the time spent in the profiling code itself.
@@ -1277,15 +1362,17 @@ namespace GPlatesUtils
 		// QueryPerformanceCount(), which lives in 'get_ticks()', so having two calls
 		// to 'get_ticks()' hardly increases our profiling accuracy and would just
 		// make the profiling code twice as slow.
-		resume_profiling_ticks = suspend_profiling_ticks;
+		start_ticks = suspend_parent_ticks;
 	}
 
 	void
 	profile_end()
 	{
-		ticks_t suspend_profiling_ticks = get_ticks();
+		ticks_t stop_ticks = get_ticks();
 
-		ticks_t &resume_profiling_ticks = ProfileManager::instance().stop_profile(suspend_profiling_ticks);
+		ticks_t &resume_parent_ticks = ProfileManager::instance().stop_profile(
+				// Subtract time spent in 'get_ticks()' from current profile.
+				stop_ticks - g_ticks_taken_in_get_ticks_call);
 		
 		// We could call 'get_ticks()' at beginning of this function and then again at
 		// the end to remove the time spent in the profiling code itself.
@@ -1293,7 +1380,7 @@ namespace GPlatesUtils
 		// QueryPerformanceCount(), which lives in 'get_ticks()', so having two calls
 		// to 'get_ticks()' hardly increases our profiling accuracy and would just
 		// make the profiling code twice as slow.
-		resume_profiling_ticks = suspend_profiling_ticks;
+		resume_parent_ticks = stop_ticks;
 	}
 
 	void
