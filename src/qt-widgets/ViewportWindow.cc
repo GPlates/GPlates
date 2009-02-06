@@ -638,10 +638,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
 	enable_or_disable_feature_actions(d_feature_focus.focused_feature());
-	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
-			this, SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
+	QObject::connect(
+		&d_feature_focus, 
+		SIGNAL(focus_changed(
+			GPlatesModel::FeatureHandle::weak_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+		this, 
+		SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
 
 	// Set up the Specify Fixed Plate dialog.
 	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
@@ -675,18 +678,41 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 
 	// Connect the reconstruction pole widget to the feature focus.
-	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
-			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+	QObject::connect(
+		&d_feature_focus, 
+		SIGNAL(focus_changed(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+		&(d_task_panel_ptr->reconstruction_pole_widget()), 
+		SLOT(set_focus(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 
 	// The Reconstruction Pole widget needs to know when the reconstruction time changes.
-	QObject::connect(this, SIGNAL(reconstruction_time_changed(
-					double)),
-			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(handle_reconstruction_time_change(
-					double)));
+	QObject::connect(
+		this, 
+		SIGNAL(reconstruction_time_changed( double) ),
+		&(d_task_panel_ptr->reconstruction_pole_widget()), 
+		SLOT(handle_reconstruction_time_change(double)) );
+
+
+	// Connect the topology tool widget to the feature focus.
+	QObject::connect(
+		&d_feature_focus, 
+		SIGNAL( focus_changed(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+		&(d_task_panel_ptr->plate_closure_widget()), 
+		SLOT( set_focus(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
+	// The Topology Tool widget needs to know when the reconstruction time changes.
+	QObject::connect(
+		this, 
+		SIGNAL(reconstruction_time_changed(double)),
+		&(d_task_panel_ptr->plate_closure_widget()), 
+		SLOT(handle_reconstruction_time_change(double)) );
 
 
 	// Setup RenderedGeometryCollection.
@@ -703,9 +729,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	table_view_clicked_geometries->verticalHeader()->hide();
 	table_view_clicked_geometries->resizeColumnsToContents();
 	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_clicked_geometries->horizontalHeader());
-	table_view_clicked_geometries->horizontalHeader()->setMinimumSectionSize(60);
+	table_view_clicked_geometries->horizontalHeader()->setMinimumSectionSize(90);
 	table_view_clicked_geometries->horizontalHeader()->setMovable(true);
 	table_view_clicked_geometries->horizontalHeader()->setHighlightSections(false);
+
 	// When the user selects a row of the table, we should focus that feature.
 	QObject::connect(table_view_clicked_geometries->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
@@ -713,21 +740,22 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
 
 
-	// Set up the Platepolygon Segments table.
+	// Set up the Topology Sections table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
 	table_view_topology_sections->setModel(d_sections_feature_table_model_ptr.get());
 	table_view_topology_sections->verticalHeader()->hide();
 	table_view_topology_sections->resizeColumnsToContents();
 	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_topology_sections->horizontalHeader());
-	table_view_topology_sections->horizontalHeader()->setMinimumSectionSize(60);
+	table_view_topology_sections->horizontalHeader()->setMinimumSectionSize(90);
 	table_view_topology_sections->horizontalHeader()->setMovable(true);
 	table_view_topology_sections->horizontalHeader()->setHighlightSections(false);
 
 	// When the user selects a row of the table, we should focus that feature.
-	QObject::connect(table_view_topology_sections->selectionModel(),
-			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-			d_sections_feature_table_model_ptr.get(),
-			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+	QObject::connect(
+		table_view_topology_sections->selectionModel(),
+		SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+		d_sections_feature_table_model_ptr.get(),
+		SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
 
 
 
@@ -806,11 +834,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	
 	// If the user creates a new feature with the DigitisationWidget, we need to reconstruct to
 	// make sure everything is displayed properly.
-	QObject::connect(&(d_task_panel_ptr->digitisation_widget().get_create_feature_dialog()),
-			SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
-			this,
-			SLOT(reconstruct()));
-
+	QObject::connect(
+		&(d_task_panel_ptr->digitisation_widget().get_create_feature_dialog()),
+		SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
+		this,
+		SLOT(reconstruct()));
 
 	// If the user creates a new feature with the PlateClosureWidget, 
 	// then we need to create and append property values to it
@@ -818,15 +846,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 		&(d_task_panel_ptr->plate_closure_widget().create_feature_dialog()),
 		SIGNAL( feature_created(GPlatesModel::FeatureHandle::weak_ref) ),
 		d_canvas_tool_adapter_ptr.get(),
-		SLOT( handle_create_new_feature( GPlatesModel::FeatureHandle::weak_ref ) )
-	);
-
-	// The PlateClosureWidget needs to know when the reconstruction time changes.
-	QObject::connect(
-		this, 
-		SIGNAL(reconstruction_time_changed( double)),
-		&(d_task_panel_ptr->plate_closure_widget()), 
-		SLOT(handle_reconstruction_time_change( double)));
+		SLOT( handle_create_new_feature( GPlatesModel::FeatureHandle::weak_ref ) ) );
 
 
 	// Add a progress bar to the status bar (Hidden until needed).
@@ -1102,7 +1122,7 @@ GPlatesQtWidgets::ViewportWindow::highlight_sections_table_row(int i, bool state
 					QItemSelectionModel::Select |
 					QItemSelectionModel::Current |
 					QItemSelectionModel::Rows);
-			table_view_topology_sections->scrollTo(idx);
+		//	table_view_topology_sections->scrollTo(idx);
 		}
 	}
 }
