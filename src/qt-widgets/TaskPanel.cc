@@ -200,6 +200,6 @@ GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab()
 	// After the main widget and anything else we might want to cram in there,
 	// a spacer to eat up remaining space and push all the widgets to the top
 	// of the tab.
-	// lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
