@@ -100,6 +100,11 @@ namespace GPlatesQtWidgets
 			NONE, INTERSECT_PREV, INTERSECT_NEXT, OVERLAP_PREV, OVERLAP_NEXT, OTHER
 		};
 		
+		// Get a map of FeatureId to ReconstructionGeometry pointers for reconstruction
+		typedef std::map<
+			GPlatesModel::FeatureId,
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type >
+				id_to_rg_map_type;
 
 		explicit
 		PlateClosureWidget(
@@ -115,40 +120,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_click_point( double lat, double lon );
-
-		/**
-		 * Updates the temporary geometry rendered on screen.
-		 */
-		void
-		update_geometry();
-
-		/**
-		 * From the Sections Table, create the tmp. geom. and property value items 
-		 */
-		void
-		create_sections_from_sections_table();
-
-		/**
-		 * FIXME:
-		 */
-		void
-		process_intersections();
-
-		/**
-		 * FIXME:
-		 */
-		void
-		compute_intersection(
-			const GPlatesMaths::PolylineOnSphere* node1_polyline,
-			const GPlatesMaths::PolylineOnSphere* node2_polyline,
-			NeighborRelation relation);
-
-		/**
-		 * Once the feature is created from the dialog, append a boundary prop. value.
-		 */
-		void
-		append_boundary_to_feature(
-			GPlatesModel::FeatureHandle::weak_ref feature);
 
 		/**
 		 * Sets the desired geometry type, d_geometry_type.
@@ -219,6 +190,56 @@ namespace GPlatesQtWidgets
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
 
 
+		/**
+		 * Updates the  geometry rendered on screen.
+		 */
+		void
+		update_geometry();
+
+		/**
+		 * From the Sections Table, create the tmp. geom. and property value items 
+		 */
+		void
+		create_sections_from_sections_table();
+
+		/**
+		 * FIXME:
+		 */
+		void
+		process_intersections();
+
+		/**
+		 * FIXME:
+		 */
+		void
+		compute_intersection(
+			const GPlatesMaths::PolylineOnSphere* node1_polyline,
+			const GPlatesMaths::PolylineOnSphere* node2_polyline,
+			NeighborRelation relation);
+
+		/**
+		 * 
+		 */
+		int
+		find_feature_in_topology(
+			GPlatesModel::FeatureHandle::weak_ref feature);
+
+
+		/**
+		 * Once the feature is created from the dialog, append a boundary prop. value.
+		 */
+		void
+		append_boundary_to_feature(
+			GPlatesModel::FeatureHandle::weak_ref feature);
+
+		void
+		fill_section_vectors_from_feature_ref(
+			GPlatesModel::FeatureHandle::weak_ref feature);
+
+
+		void
+		fill_section_table_from_section_ids();
+
 	public slots:
 		
 		/**
@@ -234,6 +255,11 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_reconstruction_time_change( double t );
+
+		void
+		set_focus(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		void
 		display_feature(
@@ -256,7 +282,7 @@ namespace GPlatesQtWidgets
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		void
-		display_feature_not_on_boundary(
+		display_feature_off_boundary(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
@@ -265,16 +291,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		initialise_geometry(
-				GeometryType geom_type);
-
-		/**
-		 * Configures widgets for a new geometry type while preserving the
-		 * points that are currently being digitised.
-		 * 
-		 * Triggered when the user switches to a different PlateClosure CanvasTool.
-		 */
-		void
-		change_geometry_type(
 				GeometryType geom_type);
 
 		/**
@@ -287,7 +303,7 @@ namespace GPlatesQtWidgets
 		draw_all_layers();
 
 		void 
-		draw_temporary_geometry();
+		draw_topology_geometry();
 
 		void 
 		draw_focused_geometry();
@@ -309,6 +325,15 @@ namespace GPlatesQtWidgets
 
 		void
 		draw_click_point();
+
+		void
+		activate();
+
+		void
+		deactivate();
+
+		void
+		connect_to_focus_signals( bool state );
 
 	private slots:
 
@@ -334,7 +359,7 @@ namespace GPlatesQtWidgets
 		 * The slot that gets called when the user clicks "Choose Feature".
 		 */
 		void
-		handle_append_feature();
+		handle_add_feature();
 
 		/**
 		 * The slot that gets called when the user clicks "Remove Feature".
@@ -347,6 +372,9 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_insert_before();
+
+		void
+		handle_insert_feature(int index);
 
 		/**
 		 * The slot that gets called when the user clicks "Clear".
@@ -383,7 +411,7 @@ namespace GPlatesQtWidgets
 		 * Rendered geometry layers to draw into 
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_temporary_geometry_layer_ptr,
+			d_topology_geometry_layer_ptr,
 			d_focused_feature_layer_ptr,
 			d_segments_layer_ptr,
 			d_end_points_layer_ptr,
@@ -423,20 +451,11 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * The d_vertex_list gets processed into this geometry; may be boost::none 
-		 */
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
-			d_geometry_opt_ptr;
-
-		/**
 		* place holders for the widget data 
 		*/
 		QString d_first_coord;
 		QString d_last_coord;
 
-
-		std::vector<GPlatesMaths::PointOnSphere> d_vertex_list;
-		
 
 		/**
 		 * These d_tmp_ vars are all set by the canvas tool, or the widget
@@ -448,6 +467,10 @@ namespace GPlatesQtWidgets
 		int d_tmp_prev_index;
 		int d_tmp_next_index;
 
+		// These control the behavior of the geom. visitors
+		bool d_is_active;
+		bool d_in_edit;
+		
 		// These control the behavior of the geom. visitors
 		bool d_visit_to_check_type;
 		bool d_visit_to_create_properties;
@@ -489,15 +512,26 @@ namespace GPlatesQtWidgets
 		double d_click_point_lon;
 		const GPlatesMaths::PointOnSphere *d_click_point_ptr;
 
-		/**
-		 * These vectors are sychronized to the 'Topology Sections' table with d_tmp_index
+		// end_points for currently focused feature 
+		std::vector<GPlatesMaths::PointOnSphere> d_feature_focus_head_points; 
+		std::vector<GPlatesMaths::PointOnSphere> d_feature_focus_tail_points; 
+
+		/*
+		 * This index is set when the feature focus references a feature on the boundary.
+		 * Used to access the d_section_FOO vectors during Add/Remove/Insert etc. operations
 		 */
+		int d_section_feature_focus_index;
+
+
+		/**
+		 * These vectors are sychronized to the 'Topology Sections' table 
+		 * via the d_section_feature_focus_index.
+		 */
+		std::vector<GPlatesModel::FeatureId> d_section_ids;
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
 			d_section_ptrs;
-		std::vector<GPlatesModel::FeatureId> d_section_ids;
 		std::vector<std::pair<double, double> > d_section_click_points;
 		std::vector<bool> d_section_reverse_flags;
-
 
 		// collection of end points for all boundary features
 		std::vector<GPlatesMaths::PointOnSphere> d_head_end_points;
@@ -514,31 +548,30 @@ namespace GPlatesQtWidgets
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
 			d_insert_segments;
 
-		// end points for currently focused feature 
-		std::vector<GPlatesMaths::PointOnSphere> d_focus_head_end_points; 
-		std::vector<GPlatesMaths::PointOnSphere> d_focus_tail_end_points; 
+		/**
+		 * An odered collection of all the 
+		 */
+		std::vector<GPlatesMaths::PointOnSphere> d_topology_vertices;
+
+		/**
+		 * The d_vertex_list gets processed into this geometry; may be boost::none 
+		 */
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
+			d_topology_geometry_opt_ptr;
 
 		/*
-		 * Set by display_feature, used by append_boundary_to_feature()
-		 * Used when editing a topology 
-        */
-
-		GPlatesModel::FeatureHandle::weak_ref d_focused_feature_ref;
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_feature_focus_rfg;
-		// GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_feature_focus_rg_ptr;
-
-		/*
-		 * Set by  FIXME:
+		 * 
 		 */ 
 		GPlatesModel::FeatureHandle::weak_ref d_topology_feature_ref;
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_topology_feature_rfg;
+
 
 		/*
-		 * When a feature is selected , and on the topology boundary this is set
-		 * Used to access the d_section_FOO vectors
+		 * These variables keep track during insert operations
 		 */
-		int d_focused_index;
-
-		bool is_active;
+		int d_insert_index;
+		GPlatesModel::FeatureHandle::weak_ref d_insert_feature_ref;
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_insert_feature_rfg;
 
 		//
 		// private functions 
@@ -546,8 +579,12 @@ namespace GPlatesQtWidgets
 		void
 		create_child_rendered_layers();
 
+		//void
+		//find_reconstruction_geometry_from_id( GPlatesModel::FeatureId );
+
 		void
 		show_numbers();
+
 	};
 }
 

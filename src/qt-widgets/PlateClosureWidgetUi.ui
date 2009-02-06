@@ -23,6 +23,15 @@
     <layout class="QHBoxLayout" name="layout_initializers" >
      <item>
       <widget class="QPushButton" name="button_new_topology" >
+       <property name="toolTip" >
+        <string>Start a new Topology; Then click features on the globe to choose boundary sections.</string>
+       </property>
+       <property name="statusTip" >
+        <string>Start a new Topology; Then click features on the globe to choose boundary sections.</string>
+       </property>
+       <property name="whatsThis" >
+        <string>Start a new Topology; Then click features on the globe to choose boundary sections.</string>
+       </property>
        <property name="text" >
         <string>New Topology</string>
        </property>
@@ -30,6 +39,15 @@
      </item>
      <item>
       <widget class="QPushButton" name="button_edit_topology" >
+       <property name="toolTip" >
+        <string>Edit the focused Topology;  Use the features on the globe, and buttons to adjust the boundary.</string>
+       </property>
+       <property name="statusTip" >
+        <string>Edit the focused Topology;  Use the features on the globe, and buttons to adjust the boundary.</string>
+       </property>
+       <property name="whatsThis" >
+        <string>Edit the focused Topology;  Use the features on the globe, and buttons to adjust the boundary.</string>
+       </property>
        <property name="text" >
         <string>Edit Topology</string>
        </property>
@@ -49,6 +67,12 @@
    </item>
    <item>
     <widget class="QLineEdit" name="lineedit_type" >
+     <property name="toolTip" >
+      <string>The type of the currently focused feature.</string>
+     </property>
+     <property name="whatsThis" >
+      <string>The type of the currently focused feature.</string>
+     </property>
      <property name="readOnly" >
       <bool>true</bool>
      </property>
@@ -66,6 +90,12 @@
    </item>
    <item>
     <widget class="QLineEdit" name="lineedit_name" >
+     <property name="toolTip" >
+      <string>The name of the currently focused feature.</string>
+     </property>
+     <property name="whatsThis" >
+      <string>The name of the currently focused feature.</string>
+     </property>
      <property name="readOnly" >
       <bool>true</bool>
      </property>
@@ -85,6 +115,12 @@
      </item>
      <item>
       <widget class="QLineEdit" name="lineedit_plate_id" >
+       <property name="toolTip" >
+        <string>The plate id of the currently focused feature</string>
+       </property>
+       <property name="whatsThis" >
+        <string>The plate id of the currently focused feature</string>
+       </property>
        <property name="readOnly" >
         <bool>true</bool>
        </property>
@@ -121,6 +157,12 @@
     <layout class="QHBoxLayout" name="layout_coordinates" >
      <item>
       <widget class="QLineEdit" name="lineedit_first" >
+       <property name="toolTip" >
+        <string>The first coordinate of the currently focused feature</string>
+       </property>
+       <property name="whatsThis" >
+        <string>The first coordinate of the currently focused feature</string>
+       </property>
        <property name="readOnly" >
         <bool>true</bool>
        </property>
@@ -128,6 +170,12 @@
      </item>
      <item>
       <widget class="QLineEdit" name="lineedit_last" >
+       <property name="toolTip" >
+        <string>The last coordinate of the currently focused feature</string>
+       </property>
+       <property name="whatsThis" >
+        <string>The last coordinate of the currently focused feature</string>
+       </property>
        <property name="readOnly" >
         <bool>true</bool>
        </property>
@@ -139,6 +187,15 @@
     <layout class="QHBoxLayout" name="layout_reverse" >
      <item>
       <widget class="QPushButton" name="button_use_reverse" >
+       <property name="toolTip" >
+        <string>Use the coordinates from the currently focused feature in the reverse sense.</string>
+       </property>
+       <property name="statusTip" >
+        <string>Use the coordinates from the currently focused feature in the reverse sense.</string>
+       </property>
+       <property name="whatsThis" >
+        <string>Use the coordinates from the currently focused feature in the reverse sense.</string>
+       </property>
        <property name="text" >
         <string>Use in Reverse</string>
        </property>
@@ -146,6 +203,12 @@
      </item>
      <item>
       <widget class="QLineEdit" name="lineedit_use_reverse" >
+       <property name="toolTip" >
+        <string>Shows if the focused feature is being used in reverse sense.</string>
+       </property>
+       <property name="whatsThis" >
+        <string>Shows if the focused feature is being used in reverse sense.</string>
+       </property>
        <property name="readOnly" >
         <bool>true</bool>
        </property>
@@ -154,7 +217,16 @@
     </layout>
    </item>
    <item>
-    <widget class="QPushButton" name="button_append_feature" >
+    <widget class="QPushButton" name="button_add_feature" >
+     <property name="toolTip" >
+      <string>Add the focused feature to the Topology Sections table.</string>
+     </property>
+     <property name="statusTip" >
+      <string>Add the focused feature to the Topology Sections table.</string>
+     </property>
+     <property name="whatsThis" >
+      <string>Add the focused feature to the Topology Sections table.</string>
+     </property>
      <property name="text" >
       <string>Add Feature</string>
      </property>
@@ -163,10 +235,13 @@
    <item>
     <widget class="QPushButton" name="button_remove_feature" >
      <property name="toolTip" >
-      <string>Select a feature in the Segments Table, then click here to Remove it from the boundary list.</string>
+      <string>Remove the focused feature from the Topology Sections table.</string>
+     </property>
+     <property name="statusTip" >
+      <string>Remove the focused feature from the Topology Sections table.</string>
      </property>
      <property name="whatsThis" >
-      <string>Remove a feature from the Segments Table.</string>
+      <string>Remove the focused feature from the Topology Sections table.</string>
      </property>
      <property name="text" >
       <string>Remove Feature</string>
@@ -177,6 +252,15 @@
     <layout class="QHBoxLayout" name="layout_insert" >
      <item>
       <widget class="QPushButton" name="button_insert_before" >
+       <property name="toolTip" >
+        <string>Set the focused feature as the insert spot;  Then click on a different feature to be inserted before this spot.</string>
+       </property>
+       <property name="statusTip" >
+        <string>Set the focused feature as the insert spot;  Then click on a different feature to be inserted before this spot.</string>
+       </property>
+       <property name="whatsThis" >
+        <string>Set the focused feature as the insert spot;  Then click on a different feature to be inserted before this spot.</string>
+       </property>
        <property name="text" >
         <string>Insert Before</string>
        </property>
@@ -184,6 +268,15 @@
      </item>
      <item>
       <widget class="QPushButton" name="button_insert_after" >
+       <property name="toolTip" >
+        <string comment="ttc" >Set the focused feature as the insert spot;  Then click on a different feature to be inserted after this spot.</string>
+       </property>
+       <property name="statusTip" >
+        <string comment="stc" >Set the focused feature as the insert spot;  Then click on a different feature to be inserted after this spot.</string>
+       </property>
+       <property name="whatsThis" >
+        <string comment="wtc" >Set the focused feature as the insert spot;  Then click on a different feature to be inserted after this spot.</string>
+       </property>
        <property name="text" >
         <string>Insert After</string>
        </property>
@@ -193,6 +286,15 @@
    </item>
    <item>
     <widget class="QPushButton" name="button_clear_feature" >
+     <property name="toolTip" >
+      <string>Clear the focused feature; No change to Topology Sections or boundary.</string>
+     </property>
+     <property name="statusTip" >
+      <string>Clear the focused feature; No change to Topology Sections or boundary.</string>
+     </property>
+     <property name="whatsThis" >
+      <string>Clear the focused feature; No change to Topology Sections or boundary.</string>
+     </property>
      <property name="text" >
       <string>Clear Focused Feature</string>
      </property>
@@ -209,6 +311,12 @@
      </item>
      <item>
       <widget class="QLineEdit" name="lineedit_num_sections" >
+       <property name="toolTip" >
+        <string>Shows the number of sections in the topology.</string>
+       </property>
+       <property name="whatsThis" >
+        <string>Shows the number of sections in the topology.</string>
+       </property>
        <property name="readOnly" >
         <bool>true</bool>
        </property>
@@ -220,6 +328,15 @@
     <layout class="QHBoxLayout" name="layout_finalizers" >
      <item>
       <widget class="QPushButton" name="button_apply" >
+       <property name="toolTip" >
+        <string>Apply the Topology Sections table to the Topology Feature as a new boundary.</string>
+       </property>
+       <property name="statusTip" >
+        <string>Apply the Topology Sections table to the Topology Feature as a new boundary.</string>
+       </property>
+       <property name="whatsThis" >
+        <string>Apply the Topology Sections table to the Topology Feature as a new boundary.</string>
+       </property>
        <property name="text" >
         <string>Apply</string>
        </property>
@@ -227,6 +344,15 @@
      </item>
      <item>
       <widget class="QPushButton" name="button_cancel" >
+       <property name="toolTip" >
+        <string>Cancel the edit or creation of this topology.</string>
+       </property>
+       <property name="statusTip" >
+        <string>Cancel the edit or creation of this topology.</string>
+       </property>
+       <property name="whatsThis" >
+        <string>Cancel the edit or creation of this topology.</string>
+       </property>
        <property name="text" >
         <string>Cancel</string>
        </property>
@@ -236,9 +362,6 @@
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>button_append_feature</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>
