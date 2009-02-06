@@ -41,7 +41,6 @@
 #include <QCloseEvent>
 #include <QStringList>
 #include <QUndoGroup>
-#include <QSplitter>
 
 #include "AboutDialog.h"
 #include "AnimateDialog.h"
@@ -179,13 +178,13 @@ namespace GPlatesQtWidgets
 		highlight_first_clicked_feature_table_row() const;
 
 		/**
-		 * Clears the "Segments" feature table selection
+		 * Clears the "Topology Sections" feature table selection
 		 */
 		void
 		highlight_sections_table_clear() const;
 
 		/**
-		 * Highlights a row in the "Segments" feature table.
+		 * Highlights a row in the "Topology Sections" feature table.
 		 */
 		void
 		highlight_sections_table_row(int i, bool state) const;
@@ -452,8 +451,6 @@ namespace GPlatesQtWidgets
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
 
-		QSplitter *d_central_splitter;
-
 		ReconstructionViewWidget d_reconstruction_view_widget;
 
 		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
@@ -472,16 +469,10 @@ namespace GPlatesQtWidgets
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 
-#if 0
-<<<<<<< .working
-		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
-		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
-		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		
-		EulerPoleDialog d_euler_pole_dialog;
-=======
-#endif
 
-		boost::scoped_ptr<GPlatesGui::CanvasToolChoice> d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
+		// Depends on FeatureFocus, because QueryFeature does. 
+		// Also depends on DigitisationWidget.
+		boost::scoped_ptr<GPlatesGui::CanvasToolChoice> d_canvas_tool_choice_ptr;		
 
 		boost::scoped_ptr<GPlatesGui::CanvasToolAdapter> d_canvas_tool_adapter_ptr;
 		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
@@ -496,16 +487,8 @@ namespace GPlatesQtWidgets
 		// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	
 
-		// The 'Segments' table. Should be in ViewState. Depends on FeatureFocus.
+		// The 'Topology Sections' table. Should be in ViewState. Depends on FeatureFocus.
 		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_sections_feature_table_model_ptr;	
-
-#if 0
-		// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
-		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	
-
-		// The 'Segments' table. Should be in ViewState. Depends on FeatureFocus.
-		GPlatesGui::FeatureTableModel *d_sections_feature_table_model_ptr;	
-#endif
 
 		//  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;
