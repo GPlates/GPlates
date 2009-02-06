@@ -70,10 +70,6 @@ GPlatesCanvasTools::PlateClosure::PlateClosure(
 void
 GPlatesCanvasTools::PlateClosure::handle_activation()
 {
-	// Clicking these canvas tools changes the type of geometry the user
-	// wishes to create, and may adjust the current table of coordinates accordingly.
-	d_plate_closure_widget_ptr->change_geometry_type(d_default_geom_type);
-
 	// FIXME:  We may have to adjust the message if we are using a Map View.
 	if (d_plate_closure_widget_ptr->geometry_type() ==
 			GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON) {
@@ -90,7 +86,10 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 	d_rendered_geom_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
-	globe_canvas().update_canvas();
+
+
+	d_plate_closure_widget_ptr->activate();
+	
 
 #if 0
 // FIXME: something is wrong with connect's arguments below, but I can't see what?
@@ -111,7 +110,9 @@ GPlatesCanvasTools::PlateClosure::handle_activation()
 
 void
 GPlatesCanvasTools::PlateClosure::handle_deactivation()
-{  }
+{
+	d_plate_closure_widget_ptr->deactivate();
+}
 
 
 void
@@ -152,10 +153,6 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
 	d_clicked_table_model_ptr->clear();
 
-	// Un-highlight all the rows of the Topology Sections Table 
-	d_view_state_ptr->highlight_sections_table_clear();
-
-
 	if (sorted_hits.size() == 0) {
 		d_view_state_ptr->status_message(tr("Clicked 0 geometries."));
 		// User clicked on empty space! Clear the currently focused feature.
@@ -175,73 +172,6 @@ std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click" << std::endl;
 	d_clicked_table_model_ptr->end_insert_features();
 	d_view_state_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
-
-	int click_index = d_clicked_table_model_ptr->current_index().row();
-
-	// Highlight the Topology Sections Feature Table if needed
-
-	// get the feature_id of the currently selected feature
-	GPlatesModel::FeatureId clicked_fid;
-	GPlatesModel::ReconstructionGeometry *clicked_rg = 
-		d_clicked_table_model_ptr->geometry_sequence().at(click_index).get();
-	GPlatesModel::ReconstructedFeatureGeometry *clicked_rfg =
-		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(clicked_rg);
-
-	// FIXME: check for the cast and valid ref before doing this:
-	// GPlatesModel::FeatureId clicked_fid = clicked_rfg->feature_ref()->feature_id();
-
-	if (clicked_rfg) 
-	{
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
-		GPlatesModel::FeatureHandle::weak_ref clicked_ref = clicked_rfg->feature_ref();
-		if ( clicked_ref.is_valid()) {
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref YES" << std::endl;
-			clicked_fid = clicked_ref->feature_id();
-		} else {
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED ref NO" << std::endl;
-		}
-	} else {
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click CLICKED rfg YES" << std::endl;
-	}
-
-	// clear any previous selection
-	d_view_state_ptr->highlight_sections_table_clear();
-
-	// loop over each geom in the Topology Sections Table
-	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
-	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator end;
-	iter = d_segments_table_model_ptr->geometry_sequence().begin();	
-	end = d_segments_table_model_ptr->geometry_sequence().end();
-	int i = 0;
-	for ( ; iter != end ; ++iter)
-	{
-//std::cout << "iiiiiiiiiiiiiiiiiiiiiiiiiiii=" << i << std::endl;
-		d_view_state_ptr->highlight_sections_table_row(i, false);
-
-		GPlatesModel::ReconstructionGeometry *index_rg = iter->get();
-		GPlatesModel::ReconstructedFeatureGeometry *index_rfg =
-			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(index_rg);
-
-		if (index_rfg) {
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg YES" << std::endl;
-			GPlatesModel::FeatureHandle::weak_ref index_ref = index_rfg->feature_ref();
-			if ( index_ref.is_valid()) {
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref YES" << std::endl;
-				GPlatesModel::FeatureId index_fid = index_ref->feature_id();
-				if (clicked_fid == index_fid) {
-// std::cout << "=============================" << i << std::endl;
-					d_view_state_ptr->highlight_sections_table_row(i, true);
-				}
-			} else {
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX ref NO" << std::endl;
-			}
-		} else {
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click INDEX rfg NO" << std::endl;
-		}
-		++i;
-	}
-
-//std::cout << "GPlatesCanvasTools::PlateClosure::handle_left_click 2" << std::endl;
 
 #if 0  
 // FIXME: remove this 
@@ -299,5 +229,9 @@ if (string_finder.found_strings_begin() != string_finder.found_strings_end())
 
 	// finalize the new feature with the boundary prop value
 	d_plate_closure_widget_ptr->append_boundary_to_feature( feature_ref );
-
 }
+
+
+
+
+
