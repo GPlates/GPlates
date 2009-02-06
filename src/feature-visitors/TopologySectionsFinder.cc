@@ -133,8 +133,8 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_feature_properties(
 	for ( ; iter != end; ++iter) {
 		// Elements of this properties vector can be NULL pointers.  (See the comment in
 		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) {
-			// FIXME: This d_current_property could go in the {Const,}FeatureVisitor base.
+		if (*iter != NULL) 
+		{
 			(*iter)->accept_visitor(*this);
 		}
 	}
@@ -176,18 +176,6 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation
 		process_gpml_time_window(*iter);
 	}
 }
-
-#if 0
-// FIXME: remove?
-void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_property_delegate(
-	GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate)
-{
-#ifdef DEBUG
-std::cout << "TopologySectionsFinder::visit_gpml_property_delegate()" << std::endl;
-#endif
-}
-#endif
 
 
 void
@@ -250,6 +238,7 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 	} 
 	else 
 	{
+		// FIXME: what to put here?
 		// fill in an 'empty' point 	
 		d_click_points->push_back( std::make_pair( 0, 0 ) );
 	}
@@ -304,6 +293,8 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 	
 	// fill in an 'empty' flag 	
 	d_reverse_flags->push_back( false );
+
+	// FIXME: what to put here?
 	// fill in an 'empty' point 	
 	d_click_points->push_back( std::make_pair( 0, 0 ) );
 
