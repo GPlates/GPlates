@@ -28,8 +28,10 @@
 #ifndef GPLATES_MODEL_RECONSTRUCTION_H
 #define GPLATES_MODEL_RECONSTRUCTION_H
 
+#include <map>
 #include <vector>
 #include "ReconstructionGeometry.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTree.h"
 #include "FeatureCollectionHandle.h"
 
@@ -64,6 +66,14 @@ namespace GPlatesModel
 		 * The type of the collection of RFGs.
 		 */
 		typedef std::vector<ReconstructionGeometry::non_null_ptr_type> geometry_collection_type;
+
+		/**
+		 * A map from feature id to RG
+		 */
+		typedef std::map<
+			GPlatesModel::FeatureId,
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
+				id_to_rfg_map_type;
 
 		/**
 		 * The type used to store the reference-count of an instance of this class.
@@ -114,6 +124,31 @@ namespace GPlatesModel
 		{
 			return d_reconstruction_feature_collections;
 		}
+
+
+		/**
+		 * Insert a feature_id, RG pair item into the map; 
+		 * called by ReconstructedFeatureGeometryPopulator during visit_GEOMETRY_TYPE calls
+		 */
+		void
+		insert_into_id_to_rfg_map( 
+			std::pair<
+				GPlatesModel::FeatureId, 
+				GPlatesModel::ReconstructionGeometry::non_null_ptr_type> item )
+		{
+			d_id_to_rfg_map.insert( item );
+		}
+
+
+		/**
+		 * Get a pointer to the id to rg map
+		*/
+		id_to_rfg_map_type *
+		id_to_rfg_map()
+		{
+			return &d_id_to_rfg_map;
+		}
+		
 
 		/**
 		 * Increment the reference-count of this instance.
@@ -192,6 +227,13 @@ namespace GPlatesModel
 		Reconstruction &
 		operator=(
 				const Reconstruction &);
+
+
+		/**
+		 * Map from feature_id to ReconstructionGeometry ptr 
+		 */
+		id_to_rfg_map_type d_id_to_rfg_map;
+
 	};
 
 

@@ -106,6 +106,10 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 
 	// Now for the second pass through the properties of the feature:  This time we reconstruct
 	// any geometries we find.
+
+	// set the feature id
+	d_accumulator->d_current_feature_id = feature_handle.feature_id();
+
 	d_accumulator->d_perform_reconstructions = true;
 	visit_feature_properties(feature_handle);
 
@@ -162,6 +166,12 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			// insert this feature into the map
+			d_recon_ptr->insert_into_id_to_rfg_map(
+				std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+			);
+
+
 		} else {
 			// We must be reconstructing using the identity rotation.
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
@@ -173,6 +183,11 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			// insert this feature into the map
+			d_recon_ptr->insert_into_id_to_rfg_map(
+				std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+			);
+
 		}
 	}
 }
@@ -201,6 +216,11 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			// insert this feature into the map
+			d_recon_ptr->insert_into_id_to_rfg_map(
+				std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+			);
+
 		} else {
 			// We must be reconstructing using the identity rotation.
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
@@ -212,6 +232,11 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			// insert this feature into the map
+			d_recon_ptr->insert_into_id_to_rfg_map(
+				std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+			);
+
 		}
 	}
 }
@@ -248,6 +273,11 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			// insert this feature into the map
+			d_recon_ptr->insert_into_id_to_rfg_map(
+				std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+			);
+
 		} else {
 			// We must be reconstructing using the identity rotation.
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
@@ -259,6 +289,11 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			// insert this feature into the map
+			d_recon_ptr->insert_into_id_to_rfg_map(
+				std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+			);
+
 		}
 	}
 }
@@ -289,6 +324,11 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			// insert this feature into the map
+			d_recon_ptr->insert_into_id_to_rfg_map(
+				std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+			);
+
 			
 			// Repeat the same procedure for each of the interior rings, if any.
 			GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
@@ -306,6 +346,14 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 								d_accumulator->d_time_of_appearance);
 				d_reconstruction_geometries_to_populate->push_back(interior_rfg_ptr);
 				d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+#if 0
+				// FIXME: what about features with many geometries?
+				// insert this feature into the map
+				d_recon_ptr->insert_into_id_to_rfg_map(
+					std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+				);
+#endif
+
 			}
 		} else {
 			// We must be reconstructing using the identity rotation.
@@ -319,6 +367,11 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
 			d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+			// insert this feature into the map
+			d_recon_ptr->insert_into_id_to_rfg_map(
+				std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+			);
+
 
 			// Repeat the same procedure for each of the interior rings, if any.
 			GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
@@ -333,6 +386,14 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 								d_accumulator->d_time_of_appearance);
 				d_reconstruction_geometries_to_populate->push_back(interior_rfg_ptr);
 				d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+#if 0
+				// FIXME: what about features with many geometries?
+				// insert this feature into the map
+				d_recon_ptr->insert_into_id_to_rfg_map(
+					std::make_pair( d_accumulator->d_current_feature_id, rfg_ptr)
+				);
+#endif
+
 			}
 		}
 	}
