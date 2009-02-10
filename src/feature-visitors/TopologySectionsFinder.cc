@@ -33,7 +33,6 @@
 
 #include "feature-visitors/ValueFinder.h"
 #include "feature-visitors/PlateIdFinder.h"
-#include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"

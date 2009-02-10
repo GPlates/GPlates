@@ -60,8 +60,6 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlTopologicalSection.h"
 
-#include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
-
 namespace GPlatesPropertyValues
 {
 	class GpmlKeyValueDictionaryElement;
