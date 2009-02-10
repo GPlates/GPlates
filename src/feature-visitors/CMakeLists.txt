@@ -29,8 +29,6 @@ set(srcs
     PlateIdFinder.h
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
-    ReconstructedFeatureGeometryFinder.cc
-    ReconstructedFeatureGeometryFinder.h
     ShapefileAttributeFinder.cc
     ShapefileAttributeFinder.h
     TopologyResolver.cc
