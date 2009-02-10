@@ -41,7 +41,6 @@
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructedFeatureGeometryPopulator.h"
 
-#include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 #include "feature-visitors/TopologyResolver.h"
 #include "feature-visitors/ComputationalMeshSolver.h"
 
