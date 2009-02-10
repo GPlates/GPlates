@@ -33,7 +33,6 @@
 
 #include "feature-visitors/ValueFinder.h"
 #include "feature-visitors/PlateIdFinder.h"
-#include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
@@ -97,7 +96,6 @@ GPlatesFeatureVisitors::TopologyResolver::TopologyResolver(
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::FeatureIdRegistry &registry,
-			GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &finder,
 			reconstruction_geometries_type &reconstructed_geometries,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
@@ -105,7 +103,6 @@ GPlatesFeatureVisitors::TopologyResolver::TopologyResolver(
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
 	d_feature_id_registry_ptr(&registry),
-	d_recon_finder_ptr(&finder),
 	d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  
@@ -124,7 +121,8 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_handle(
 	// super short-cut for features without boundary list properties
 	QString type("TopologicalClosedPlateBoundary");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.feature_type().get_name() ) ) { 
+			feature_handle.feature_type().get_name() ) ) 
+	{ 
 		// Quick-out: No need to continue.
 		return; 
 	}
@@ -396,7 +394,7 @@ qDebug() << "src_geom_fid="
 
 	// fill the working vertex list
 	d_working_vertex_list.clear();
-	d_recon_finder_ptr->get_vertex_list_from_feature_id(
+	get_vertex_list_from_feature_id(
 		d_working_vertex_list,
 		d_src_geom_fid);
 	
@@ -436,7 +434,7 @@ qDebug() << "intersection_geom_fid="
 
 		// Fill the working vertex list
 		d_node2_vertex_list.clear();
-		d_recon_finder_ptr->get_vertex_list_from_feature_id(
+		get_vertex_list_from_feature_id(
 			d_node2_vertex_list,
 			intersection_geom_fid);
 
@@ -506,7 +504,7 @@ qDebug() << "intersection_geom_fid="
 
 		// Fill the working vertex list
 		d_node2_vertex_list.clear();
-		d_recon_finder_ptr->get_vertex_list_from_feature_id(
+		get_vertex_list_from_feature_id(
 			d_node2_vertex_list,
 			intersection_geom_fid);
 
@@ -1011,7 +1009,7 @@ qDebug() << "TopologyResolver::g_v_l: " << "fid="
 			// only one boundary feature and it is a point
 			// find vertex of rotated point in layout
 			// put direcly into work list
-			d_recon_finder_ptr->get_vertex_list_from_feature_id( 
+			get_vertex_list_from_feature_id( 
 				work_vertex_list, 
 				fid );
 
@@ -1022,7 +1020,7 @@ qDebug() << "TopologyResolver::g_v_l: " << "fid="
 			// only one boundary feature and it is a line
 			// find vertex list from rotated polyline in layout
 			// put direcly into work list
-			d_recon_finder_ptr->get_vertex_list_from_feature_id( 
+			get_vertex_list_from_feature_id( 
 				work_vertex_list, 
 				fid );
 
@@ -1100,7 +1098,7 @@ qDebug() << "TopologyResolver::g_v_l step 2: NEXT_fid="
 		{
 			// find verts for iter
 			// put directly into work_vertex_list
-			d_recon_finder_ptr->get_vertex_list_from_feature_id( 
+			get_vertex_list_from_feature_id( 
 				work_vertex_list, 
 				iter_fid );
 
@@ -1121,7 +1119,7 @@ qDebug() << "TopologyResolver::g_v_l step 2: NEXT_fid="
 		//
 		std::list<GPlatesMaths::PointOnSphere> iter_vertex_list;
 
-		d_recon_finder_ptr->get_vertex_list_from_feature_id(
+		get_vertex_list_from_feature_id(
 			iter_vertex_list,
 			iter_fid );
 
@@ -1410,7 +1408,7 @@ std::cout << std::endl;
 	//
 
 	// get verts for node2 from Layout 
-	d_recon_finder_ptr->get_vertex_list_from_feature_id(
+	get_vertex_list_from_feature_id(
 		node2_vertex_list,
 		node2_fid );
 
@@ -1613,6 +1611,49 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 	}
 	return 0;
 }
+
+
+void
+GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_feature_id(
+	std::list<GPlatesMaths::PointOnSphere> &vertex_list,
+	GPlatesModel::FeatureId id)
+{
+#ifdef DEBUG
+std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
+#endif
+
+	// access the current RFG for this feature 
+	GPlatesModel::Reconstruction::id_to_rfg_map_type::iterator find_iter, map_end;
+	map_end = d_recon_ptr->id_to_rfg_map()->end();
+	find_iter = d_recon_ptr->id_to_rfg_map()->find( id );
+	
+	if ( find_iter != map_end )
+	{
+		// get the geometry on sphere
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type gos_ptr = 
+			(find_iter->second)->geometry();	
+
+		if (gos_ptr) 
+		{
+			// visit the geom on sphere ( calls functions defined in TopologyResolver.h )
+			// fill the d_rfg_vertex_list
+			gos_ptr->accept_visitor(*this);
+
+			// Copy the vertices from the d_rfg_vertex_list to the argument list
+			copy(
+				d_rfg_vertex_list.begin(),
+				d_rfg_vertex_list.end(),
+				back_inserter( vertex_list )
+			);
+
+#ifdef DEBUG
+std::cout << "TopologyResolver::get_vertex_list_from_feature_id: vertex_list.size() =" 
+<< vertex_list.size() << std::endl;
+#endif
+		}
+	}
+}
+
 
 
 void

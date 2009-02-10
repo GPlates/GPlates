@@ -47,9 +47,7 @@
 
 #include "property-values/GeoTimeInstant.h"
 
-#include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 #include "feature-visitors/TopologyResolver.h"
-
 
 #define POINT_OUTSIDE_POLYGON 0
 #define POINT_ON_POLYGON  1
@@ -126,7 +124,6 @@ namespace GPlatesFeatureVisitors
 				GPlatesModel::Reconstruction &recon,
 				GPlatesModel::ReconstructionTree &recon_tree,
 				GPlatesModel::FeatureIdRegistry &registry,
-				GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &rfg_finder,
 				GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 				reconstruction_geometries_type &reconstructed_geometries,
 				bool should_keep_features_without_recon_plate_id = true);
@@ -189,7 +186,6 @@ namespace GPlatesFeatureVisitors
 		GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
 		GPlatesModel::FeatureIdRegistry *d_feature_id_registry_ptr;
-		GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder *d_recon_finder_ptr;
 		GPlatesFeatureVisitors::TopologyResolver *d_topology_resolver_ptr;
 
 		reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
@@ -206,7 +202,6 @@ namespace GPlatesFeatureVisitors
 		ComputationalMeshSolver &
 		operator=(
 			const ComputationalMeshSolver &);
-
 
 		/** the number of features visited by this visitor */
 		int d_num_features;

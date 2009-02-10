@@ -47,6 +47,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/ConstGeometryOnSphereVisitor.h"
 
 #include "model/types.h"
 #include "model/FeatureId.h"
@@ -63,9 +64,6 @@
 
 #include "property-values/GeoTimeInstant.h"
 
-#include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
-
-
 #define POINT_OUTSIDE_POLYGON 0
 #define POINT_ON_POLYGON  1
 #define POINT_INSIDE_POLYGON  2
@@ -80,8 +78,11 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesFeatureVisitors
 {
-	class TopologyResolver: public GPlatesModel::FeatureVisitor
+	class TopologyResolver: 
+		public GPlatesModel::FeatureVisitor,
+		public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
+
 	public:
 
 		//
@@ -396,7 +397,6 @@ namespace GPlatesFeatureVisitors
 				GPlatesModel::Reconstruction &recon,
 				GPlatesModel::ReconstructionTree &recon_tree,
 				GPlatesModel::FeatureIdRegistry &registry,
-				GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &finder,
 				reconstruction_geometries_type &reconstructed_geometries,
 				bool should_keep_features_without_recon_plate_id = true);
 
@@ -459,6 +459,35 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gpml_topological_point(
 			GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+
+
+		/**
+		 * Geometry On Sphere visitors 
+		 */
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_rfg_vertex_list.clear();
+			d_rfg_vertex_list.push_back( *point_on_sphere );
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_rfg_vertex_list.clear();
+
+			GPlatesMaths::PolylineOnSphere::vertex_const_iterator beg = 
+				polyline_on_sphere->vertex_begin();
+			GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = 
+				polyline_on_sphere->vertex_end();
+
+			copy(beg, end, back_inserter( d_rfg_vertex_list ) );
+		}
+
 
 		void
 		resolve_intersection(
@@ -610,6 +639,15 @@ namespace GPlatesFeatureVisitors
 				BoundaryFeature &node2,
 				std::list<GPlatesMaths::PointOnSphere> &vertex_list );
 
+
+			/**
+			 * From the RFG in the reconstruction, get the vertex list
+			 */
+			void
+			get_vertex_list_from_feature_id(
+				std::list<GPlatesMaths::PointOnSphere> &vertex_list,
+				GPlatesModel::FeatureId id);
+
 		
 			/**
 			* This function is used to see if some point P is located
@@ -668,7 +706,6 @@ namespace GPlatesFeatureVisitors
 		GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
 		GPlatesModel::FeatureIdRegistry *d_feature_id_registry_ptr;	
-		GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder *d_recon_finder_ptr;
 
 		reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
@@ -684,6 +721,14 @@ namespace GPlatesFeatureVisitors
 		TopologyResolver &
 		operator=(
 			const TopologyResolver &);
+
+
+
+		/** 
+		 * A list of vertices obtained when visiting the geometry on spheres 
+		 */
+		std::list<GPlatesMaths::PointOnSphere> d_rfg_vertex_list;
+
 
 		//
 		// FROM GPlates 8

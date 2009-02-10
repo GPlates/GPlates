@@ -35,7 +35,6 @@
 
 #include "feature-visitors/ValueFinder.h"
 #include "feature-visitors/PlateIdFinder.h"
-#include "feature-visitors/ReconstructedFeatureGeometryFinder.h"
 
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
@@ -81,7 +80,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::FeatureIdRegistry &registry,
-			GPlatesFeatureVisitors::ReconstructedFeatureGeometryFinder &rfg_finder,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			reconstruction_geometries_type &reconstructed_geometries,
 			bool should_keep_features_without_recon_plate_id):
@@ -90,7 +88,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
 	d_feature_id_registry_ptr(&registry),
-	d_recon_finder_ptr(&rfg_finder),
 	d_topology_resolver_ptr(&topo_resolver),
 	d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
@@ -114,7 +111,9 @@ qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_han
 	// super short-cut 
 	// QString type("ComputationalMesh");
 	QString type("UnclassifiedFeature");
-	if ( type != GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() ) ) { 
+	if ( type != 
+		GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() ) )
+	{ 
 		// Quick-out: No need to continue.
 		return; 
 	}
@@ -233,7 +232,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 
 	feature_ids = d_topology_resolver_ptr->locate_point( point );
 
-std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::process_point: " 
+std::cout << "ComputationalMeshSolver::process_point: " 
 		<< llp << " found in " << feature_ids.size() << " plates." << std::endl;
 	
 	// loop over feature ids 
@@ -243,7 +242,7 @@ std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::process_point: "
 		GPlatesModel::FeatureHandle::weak_ref feature_ref =
 			d_feature_id_registry_ptr->find( *iter ).get();
 
-		// Plate ID.
+		// Plae ID.
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
@@ -257,6 +256,35 @@ std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::process_point: "
 				*plate_id_finder.found_plate_ids_begin();
 
 			std::cout << "	plate id = " << recon_plate_id << std::endl;
+			
+			// FIXME: now that we know what plate id the mesh point is in,
+			// draw it 
+
+#if 0
+			// get the color for the id 
+
+			GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
+
+			colour = colour_table.lookup(*rfg); // FIXME: look up by plate id
+
+			if (colour == colour_table.end()) {
+				colour = &GPlatesGui::Colour::OLIVE;
+			}
+
+			// Create a RenderedGeometry using the reconstructed geometry.
+
+			GPlatesViewOperations::RenderedGeometry rendered_geom =
+				rendered_geom_factory.create_rendered_geometry_on_sphere(
+					point->clone_as_geometry(),
+					*colour,
+					GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
+					GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
+`
+			// Add to the rendered layer.
+			computational_mesh_layer->add_rendered_geometry(rendered_geom);
+
+#endif
+			
 		}
 	}
 }
