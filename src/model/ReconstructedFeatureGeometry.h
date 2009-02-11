@@ -126,7 +126,7 @@ namespace GPlatesModel
 		 * Access (a reference to) the feature whose reconstructed geometry this RFG
 		 * contains.
 		 */
-		const FeatureHandle::weak_ref
+		const FeatureHandle::weak_ref &
 		feature_ref() const
 		{
 			return d_feature_ref;
