@@ -242,7 +242,7 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	button_clear_feature->setEnabled(false);
 	label_num_sections->setEnabled(false);
 	lineedit_num_sections->setEnabled(false);
-	button_apply->setEnabled(false);
+	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 
 
@@ -638,7 +638,7 @@ qDebug() << "PlateClosureWidget::display_feature:";
 	button_clear_feature->setEnabled(false);
 	label_num_sections->setEnabled(false);
 	lineedit_num_sections->setEnabled(false);
-	button_apply->setEnabled(false);
+	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 
 
@@ -822,7 +822,7 @@ qDebug() << "PlateClosureWidget::display_feature_topology():";
 	button_clear_feature->setEnabled(false);
 	label_num_sections->setEnabled(true);
 	lineedit_num_sections->setEnabled(true);
-	button_apply->setEnabled(false);
+	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 
 	// Clear the d_section_ vectors
@@ -933,7 +933,7 @@ qDebug() << "PlateClosureWidget::display_feature_on_boundary() invalid ref";
 	button_clear_feature->setEnabled(true);
 	label_num_sections->setEnabled(true);
 	lineedit_num_sections->setEnabled(true);
-	button_apply->setEnabled(false);
+	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 
 
@@ -984,7 +984,7 @@ qDebug() << "-----------------------------------------------------";
 	button_clear_feature->setEnabled(true);
 	label_num_sections->setEnabled(false);
 	lineedit_num_sections->setEnabled(false);
-	button_apply->setEnabled(false);
+	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 }
 
@@ -1453,7 +1453,7 @@ qDebug() << "PlateClosureWidget::handle_cancel()";
 	button_clear_feature->setEnabled(false);
 	label_num_sections->setEnabled(false);
 	lineedit_num_sections->setEnabled(false);
-	button_apply->setEnabled(false);
+	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 
 	//
