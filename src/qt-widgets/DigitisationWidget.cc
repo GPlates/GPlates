@@ -62,7 +62,10 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 	QWidget(parent_),
 	d_view_state_ptr(&view_state_),
 	d_export_coordinates_dialog(new ExportCoordinatesDialog(this)),
-	d_create_feature_dialog(new CreateFeatureDialog(model_interface, view_state_, this)),
+	d_create_feature_dialog(
+		new CreateFeatureDialog(
+			model_interface, view_state_, 
+			GPlatesQtWidgets::CreateFeatureDialog::NORMAL, this)),
 	d_new_geom_builder(&new_geometry_builder),
 	d_choose_canvas_tool(&choose_canvas_tool)
 {

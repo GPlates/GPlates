@@ -61,6 +61,7 @@ namespace GPlatesQtWidgets
 		CreateFeatureDialog(
 				GPlatesModel::ModelInterface &model_interface,
 				GPlatesQtWidgets::ViewportWindow &view_state_,
+				FeatureType creation_type,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -74,13 +75,6 @@ namespace GPlatesQtWidgets
 
 		bool
 		display();
-
-
-		void
-		set_topological() {
-			d_type = TOPOLOGICAL;
-		}
-	
 
 		GPlatesModel::FeatureHandle::weak_ref
 		get_feature_ref() {
@@ -107,6 +101,9 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_create();
+
+		void
+		handle_create_and_save();
 
 		void
 		handle_create_topological();
@@ -143,6 +140,11 @@ namespace GPlatesQtWidgets
 		ViewportWindow *d_view_state_ptr;
 
 		/**
+		* Type of feature to create 
+		*/
+		FeatureType d_creation_type;
+
+		/**
 		 * The geometry that is to be included with the feature.
 		 * Note that the coordinates may have to be moved to present-day, once we know
 		 * what plate ID the user wishes to assign to the feature.
@@ -173,11 +175,6 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt. This is a member so that we can enable and disable it as appropriate.
 		 */
 		QPushButton *d_button_create;
-
-		/**
-		* Type of feature to create 
-		*/
-		FeatureType d_type;
 
 		/**
 		* the newly created feature

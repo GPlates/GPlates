@@ -267,6 +267,10 @@ namespace
 		{ "Volcano", "unclassifiedGeometry" },
 	};
 	
+	static const FeatureTypeInfo topological_feature_type_info_table[] = {
+		{ "TopologicalClosedPlateBoundary", "boundary" },
+	};
+
 	/**
 	 * Converts the above table into a multimap.
 	 */
@@ -400,12 +404,22 @@ namespace
 	 */
 	void
 	populate_feature_types_list(
-			QListWidget &list_widget)
+			QListWidget &list_widget,
+			GPlatesQtWidgets::CreateFeatureDialog::FeatureType creation_type)
 	{
 		std::list<GPlatesModel::FeatureType> list;
+
 		// Build a list of all FeatureTypes mentioned in the table.
 		const FeatureTypeInfo *table_it = feature_type_info_table;
 		const FeatureTypeInfo *table_end = table_it + NUM_ELEMS(feature_type_info_table);
+
+		// Reset the table for TOPOLOGICAL types
+		if( creation_type == GPlatesQtWidgets::CreateFeatureDialog::TOPOLOGICAL)
+		{
+			table_it = topological_feature_type_info_table;
+			table_end = table_it + NUM_ELEMS(topological_feature_type_info_table);
+		}
+
 		for ( ; table_it != table_end; ++table_it) {
 			list.push_back(GPlatesModel::FeatureType::create_gpml(table_it->gpml_type));
 		}
@@ -415,7 +429,7 @@ namespace
 		// FIXME: For extra brownie points, filter -this- list based on features
 		// which you couldn't possibly create given the digitised geometry.
 		// E.g. no Cratons made from PolylineOnSphere!
-		
+
 		list_widget.clear();
 		// Add all the feature types from the finished list.
 		std::list<GPlatesModel::FeatureType>::const_iterator list_it = list.begin();
@@ -521,10 +535,12 @@ namespace
 GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 		GPlatesModel::ModelInterface &model_interface,
 		GPlatesQtWidgets::ViewportWindow &view_state_,
+		FeatureType creation_type,
 		QWidget *parent_):
 	QDialog(parent_),
 	d_model_ptr(&model_interface),
 	d_view_state_ptr(&view_state_),
+	d_creation_type(creation_type),
 	d_geometry_opt_ptr(boost::none),
 	d_plate_id_widget(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
@@ -565,6 +581,9 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_button_box()
 			this, SLOT(handle_prev()));
 	QObject::connect(button_next, SIGNAL(clicked()),
 			this, SLOT(handle_next()));
+
+	QObject::connect(button_create_and_save, SIGNAL(clicked()),
+			this, SLOT(handle_create_and_save()));
 }
 
 
@@ -572,7 +591,7 @@ void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_type_page()
 {
 	// Populate list of feature types.
-	populate_feature_types_list(*listwidget_feature_types);
+	populate_feature_types_list( *listwidget_feature_types, d_creation_type);
 	
 	// Pushing Enter or double-clicking should cause the page to advance.
 	QObject::connect(listwidget_feature_types, SIGNAL(itemActivated(QListWidgetItem *)),
@@ -711,6 +730,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 	// Enable all buttons and then disable buttons appropriately.
 	button_prev->setEnabled(true);
 	button_next->setEnabled(true);
+	button_create_and_save->setEnabled(true);
 	d_button_create->setEnabled(true);
 	
 	// Disable buttons which are not valid for the page,
@@ -721,6 +741,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 			listwidget_feature_types->setFocus();
 			button_prev->setEnabled(false);
 			d_button_create->setEnabled(false);
+			button_create_and_save->setEnabled(false);
 			break;
 
 	case 1:
@@ -728,6 +749,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 			set_up_geometric_property_list();
 			listwidget_geometry_destinations->setFocus();
 			d_button_create->setEnabled(false);
+			button_create_and_save->setEnabled(false);
 			break;
 
 	case 2:
@@ -742,7 +764,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 {
-	if (d_type == TOPOLOGICAL)
+	if (d_creation_type == TOPOLOGICAL)
 	{
 		handle_create_topological();
 		return;
@@ -816,6 +838,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		return;
 	}
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection;
+
 	if (collection_item->is_create_new_collection_item()) {
 		GPlatesAppState::ApplicationState::file_info_iterator new_file = 
 				d_view_state_ptr->create_empty_reconstructable_file();
@@ -861,6 +884,16 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 }
 
 void
+GPlatesQtWidgets::CreateFeatureDialog::handle_create_and_save()
+{
+	// do the regular creation process
+	handle_create();
+
+	// and now open the manage feature collections dialog
+	d_view_state_ptr->pop_up_manage_feature_collections_dialog();
+}
+
+void
 GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 {
 	// Get the PropertyName the user has selected for geometry to go into.
@@ -869,7 +902,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 			listwidget_geometry_destinations->currentItem());
 	if (geom_prop_name_item == NULL) {
 		QMessageBox::critical(this, tr("No geometry destination selected"),
-				tr("Please select a property name to use for your digitised geometry."));
+				tr("Please select a property name to use for your topology."));
 		return;
 	}
 	const GPlatesModel::PropertyName geom_prop_name = geom_prop_name_item->get_name();
@@ -895,8 +928,15 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 				tr("Please select a feature collection to add the new feature to."));
 		return;
 	}
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection = 
-		collection_item->get_collection();
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection;
+
+	if (collection_item->is_create_new_collection_item()) {
+		GPlatesAppState::ApplicationState::file_info_iterator new_file =
+			d_view_state_ptr->create_empty_reconstructable_file();
+		collection = *(new_file->get_feature_collection());
+	} else {
+		collection = collection_item->get_collection();
+	}
 	
 	// Actually create the Feature!
 	GPlatesModel::FeatureHandle::weak_ref feature = 
@@ -931,5 +971,6 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 
 	emit feature_created(feature);
 	accept();
+
 }
 

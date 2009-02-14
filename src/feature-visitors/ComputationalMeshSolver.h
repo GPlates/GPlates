@@ -45,6 +45,8 @@
 #include "model/PropertyName.h"
 #include "model/Reconstruction.h"
 
+#include "gui/PlatesColourTable.h"
+
 #include "property-values/GeoTimeInstant.h"
 
 #include "feature-visitors/TopologyResolver.h"
@@ -206,6 +208,8 @@ namespace GPlatesFeatureVisitors
 		/** the number of features visited by this visitor */
 		int d_num_features;
 		int d_num_meshes;
+
+		GPlatesGui::ColourTable *d_colour_table_ptr;
 	};
 
 }

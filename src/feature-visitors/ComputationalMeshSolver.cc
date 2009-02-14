@@ -70,6 +70,7 @@
 #include "maths/PolylineIntersections.h"
 
 #include "gui/ProximityTests.h"
+#include "gui/PlatesColourTable.h"
 
 #include "utils/UnicodeStringUtils.h"
 #include "utils/FeatureHandleToOldId.h"
@@ -94,6 +95,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 {  
 	d_num_features = 0;
 	d_num_meshes = 0;
+
+	d_colour_table_ptr = GPlatesGui::PlatesColourTable::Instance();
 }
 
 
@@ -263,9 +266,9 @@ std::cout << "ComputationalMeshSolver::process_point: "
 #if 0
 			// get the color for the id 
 
-			GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
+			GPlatesGui::ColourTable::const_iterator colour = d_colour_table.end();
 
-			colour = colour_table.lookup(*rfg); // FIXME: look up by plate id
+			colour = d_colour_table_ptr.lookup(*rfg); // FIXME: look up by plate id
 
 			if (colour == colour_table.end()) {
 				colour = &GPlatesGui::Colour::OLIVE;

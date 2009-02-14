@@ -198,7 +198,9 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 	d_model_interface(&model_interface),
 	d_view_state_ptr(&view_state_),
 	d_create_feature_dialog(
-		new CreateFeatureDialog(model_interface, view_state_, this) ),
+		new CreateFeatureDialog(
+			model_interface, view_state_, 
+			GPlatesQtWidgets::CreateFeatureDialog::TOPOLOGICAL, this) ),
 	d_geometry_type(GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON),
 	d_topology_geometry_opt_ptr(boost::none)
 {
@@ -311,18 +313,12 @@ GPlatesQtWidgets::PlateClosureWidget::PlateClosureWidget(
 void
 GPlatesQtWidgets::PlateClosureWidget::activate()
 {
-#ifdef DEBUG1
-qDebug() << "PlateClosureWidget::activate:";
-#endif
 	d_is_active = true;
 }
 
 void
 GPlatesQtWidgets::PlateClosureWidget::deactivate()
 {
-#ifdef DEBUG1
-qDebug() << "PlateClosureWidget::deactivate:";
-#endif
 	d_is_active = false;
 }
 
@@ -462,7 +458,6 @@ GPlatesQtWidgets::PlateClosureWidget::fill_widgets(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
 {
-qDebug() << "PlateClosureWidget::fill_widgets()";
 	// Populate the widget from the FeatureHandle:
 	
 	// Feature Type.
@@ -542,7 +537,6 @@ GPlatesQtWidgets::PlateClosureWidget::handle_reconstruction_time_change(
 		double new_time)
 {
 	if (! d_is_active) { return; }
-qDebug() << "PlateClosureWidget::handle_reconstruction_time_change:";
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
@@ -1267,11 +1261,6 @@ qDebug() << "PlateClosureWidget::handle_insert_after()";
 	d_insert_index += 1;
 
 qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
 
 	// unset the focus 
 	d_feature_focus_ptr->unset_focus(); // will call display_feature() with NULL ref
@@ -1290,11 +1279,6 @@ qDebug() << "PlateClosureWidget::handle_insert_before()";
 	// set the insert index
 	d_insert_index = find_feature_in_topology( d_feature_focus_ptr->focused_feature() );
 
-qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
-qDebug() << "d_insert_index = " << d_insert_index;
 qDebug() << "d_insert_index = " << d_insert_index;
 
 	// unset the focus 
@@ -1347,9 +1331,6 @@ qDebug() << "PlateClosureWidget::handle_apply()";
 	// no topology feature ref exisits, so fire up the feature creation dialog
 	if ( ! d_topology_feature_ref.is_valid() )
 	{
-		// tell the dialog that we are creating a topological feature
-		d_create_feature_dialog->set_topological();
-
 		// show the dialog
 		bool success = d_create_feature_dialog->display();
 
@@ -1669,6 +1650,7 @@ qDebug() << "PlateClosureWidget::visit_polyline_on_sphere(): VERTS";
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = 
 		polyline_on_sphere->vertex_end();
 
+	// create a list of this polyline's vertices
 	std::vector<GPlatesMaths::PointOnSphere> polyline_vertices;
 	polyline_vertices.clear();
 	
@@ -1677,20 +1659,24 @@ qDebug() << "PlateClosureWidget::visit_polyline_on_sphere(): VERTS";
 		polyline_vertices.push_back( *iter );
 	}
 
-	// set the head and tail end_points
-	d_head_end_points.push_back( *(polyline_on_sphere->vertex_begin()) );
-	d_tail_end_points.push_back( *(--polyline_on_sphere->vertex_end()) );
-
 	// check for reverse flag
 	if (d_tmp_index_use_reverse) 
 	{
 		d_tmp_index_vertex_list.insert( d_tmp_index_vertex_list.end(), 
 			polyline_vertices.rbegin(), polyline_vertices.rend() );
+
+		// set the head and tail end_points
+		d_head_end_points.push_back( *(--polyline_on_sphere->vertex_end()) );
+		d_tail_end_points.push_back( *(polyline_on_sphere->vertex_begin()) );
 	}
 	else 
 	{
 		d_tmp_index_vertex_list.insert( d_tmp_index_vertex_list.end(), 
 			polyline_vertices.begin(), polyline_vertices.end() );
+
+		// set the head and tail end_points
+		d_head_end_points.push_back( *(polyline_on_sphere->vertex_begin()) );
+		d_tail_end_points.push_back( *(--polyline_on_sphere->vertex_end()) );
 	}
 
 	// return early if properties are not needed
