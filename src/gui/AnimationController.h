@@ -1,0 +1,393 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * $Revision$
+ * $Date$ 
+ * 
+ * Copyright (C) 2009 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+ 
+#ifndef GPLATES_GUI_ANIMATIONCONTROLLER_H
+#define GPLATES_GUI_ANIMATIONCONTROLLER_H
+
+#include <QTimer>
+
+namespace GPlatesQtWidgets
+{
+	// NOTE: We only need this for the mythical 'ViewState' of legend.
+	class ViewportWindow;
+}
+
+namespace GPlatesGui
+{
+	/**
+	 * The behind-the-scenes logic for the AnimateDialog and AnimateControlWidget.
+	 *
+	 * This class probably belongs to the Presentation tier, due to it relying on
+	 * QObject signals and slots (requires 'moc' processing, but not an actual
+	 * qt widget).
+	 */
+	class AnimationController : 
+			public QObject
+	{
+		Q_OBJECT
+		
+	public:
+	
+		explicit
+		AnimationController(
+				GPlatesQtWidgets::ViewportWindow &view_state);
+
+		virtual
+		~AnimationController()
+		{  }
+
+		/**
+		 * Returns the current reconstruction time the View is looking at.
+		 * Naturally, you could go straight to the view for this, but
+		 * accessing it from here may be more convenient - and also reduces
+		 * dependencies on ViewState, which is A Good Thing.
+		 */
+		const double
+		view_time() const;
+
+		/**
+		 * The time that the animation will begin at. This may be before
+		 * or after the @a end_time() - the increment will be adjusted
+		 * automatically.
+		 */
+		const double
+		start_time() const;
+
+		/**
+		 * The time that the animation will begin at. This may be before
+		 * or after the @a end_time() - the increment will be adjusted
+		 * automatically.
+		 */
+		const double
+		end_time() const;
+
+		/**
+		 * Returns the user-friendly 'increment' value,
+		 * which will always be a positive number.
+		 */
+		const double
+		time_increment() const;
+		
+		bool
+		is_playing() const;
+
+		const double
+		frames_per_second() const;
+		
+		bool
+		should_finish_exactly_on_end_time() const;
+		
+		bool
+		should_loop() const;
+
+		bool
+		should_adjust_bounds_to_contain_current_time() const;
+
+		static
+		inline
+		double
+		min_reconstruction_time()
+		{
+			// This value denotes the present-day.
+			return 0.0;
+		}
+
+		static
+		inline
+		double
+		max_reconstruction_time()
+		{
+			// This value denotes a time 10000 million years ago.
+			return 10000.0;
+		}
+
+		static
+		bool
+		is_valid_reconstruction_time(
+				const double &time);
+
+	public slots:
+
+		/**
+		 * Initiates the animation. If the animation is already playing,
+		 * this will do nothing. If the animation is unplayable (for
+		 * instance, a total time range smaller than the increment), this
+		 * will do nothing.
+		 *
+		 * If the animation is already at the end and the 'loop' option
+		 * is set, the animation will be rewound and played from the
+		 * beginning.
+		 */
+		void
+		play();
+		
+		/**
+		 * Ceases animation. The current view time will be left as-is,
+		 * not reset to the beginning.
+		 */
+		void
+		pause();
+		
+		/**
+		 * Increments or decrements the view time so as to progress
+		 * forwards through the animation by one @a time_increment().
+		 */
+		void
+		step_forward();
+
+		/**
+		 * Increments or decrements the view time so as to progress
+		 * backwards through the animation by one @a time_increment().
+		 */
+		void
+		step_back();
+
+		/**
+		 * Moves the view time to match the animation's start time.
+		 */
+		void
+		seek_beginning();
+		
+		/**
+		 * Moves the view time to match the animation's end time.
+		 */
+		void
+		seek_end();
+		
+		/**
+		 * Modifies the view time as requested by a dialog's widget such as
+		 * a slider or part of the animation process and ensures signals are
+		 * emitted to the Qt dialogs and widgets accordingly.
+		 */
+		void
+		set_view_time(
+				const double new_time);
+
+		void
+		set_start_time(
+				const double new_time);
+
+		void
+		set_end_time(
+				const double new_time);
+		
+		/**
+		 * Sets the geological time increment between frames.
+		 * This sets the user-friendly version of the increment, which will
+		 * always be a positive number. d_time_increment is set to a positive
+		 * or negative number depending on the start and end range.
+		 */
+		void
+		set_time_increment(
+				const double new_abs_increment);
+
+		void
+		set_frames_per_second(
+				const double fps);
+		
+		void
+		set_should_finish_exactly_on_end_time(
+				bool finish_exactly);
+		
+		void
+		set_should_loop(
+				bool loop);
+
+		void
+		set_should_adjust_bounds_to_contain_current_time(
+				bool adjust_bounds);
+
+
+		// FIXME: Should this really be public and dialog-called, or should it be
+		// private and inscrutable?
+		/**
+		 * Modify the current time, if necessary, to ensure that it lies within the
+		 * [closed, closed] range of the boundary times.
+		 */
+		void
+		ensure_current_time_lies_within_bounds();
+
+		/**
+		 * Modify the boundary times, if necessary, to ensure that they contain the current
+		 * time.
+		 */
+		void
+		ensure_bounds_contain_current_time();
+		
+		void
+		swap_start_and_end_times();
+
+	signals:
+	
+		void
+		view_time_changed(
+				double new_time);
+
+		void
+		start_time_changed(
+				double new_time);
+
+		void
+		end_time_changed(
+				double new_time);
+
+		void
+		time_increment_changed(
+				double new_increment);
+
+		void
+		frames_per_second_changed(
+				double fps);
+		
+		void
+		finish_exactly_on_end_time_changed(
+				bool finish_exactly_on_end_time);
+		
+		void
+		should_loop_changed(
+				bool should_loop);
+
+		void
+		should_adjust_bounds_to_contain_current_time_changed(
+				bool adjust_bounds);
+
+		void
+		animation_started();
+
+		void
+		animation_paused();
+
+	private slots:
+
+		/**
+		 * Triggered whenever the internal QTimer ticks.
+		 */
+		void
+		react_animation_playback_step();
+
+		/**
+		 * Triggered whenever the view time changes, either by our animation
+		 * or by the user from the time-control buttons. This is used to
+		 * check the current time against the animation bounds.
+		 */
+		void
+		react_view_time_changed();
+
+	private:
+		/**
+		 * This is the view state which will be used to query and modify the current
+		 * view time.
+		 */
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+
+		/**
+		 * This QTimer instance triggers the frame updates during animation playback.
+		 */
+		QTimer d_timer;
+		
+		/**
+		 * This is the starting time of the animation.
+		 */
+		double d_start_time;
+
+		/**
+		 * This is the ending time of the animation. Note that the animation may not
+		 * stop exactly on the end time if the "Finish animation exactly at end time"
+		 * option is not enabled.
+		 */
+		double d_end_time;
+
+		/**
+		 * This is the increment applied to the current time in successive frames of the
+		 * animation.
+		 *
+		 * This value is either greater than zero or less than zero.
+		 *
+		 * The user specifies the absolute value of this time increment in the "time
+		 * increment" widget in the AnimateDialog.  The value in the "time increment"
+		 * widget is constrained to be greater than zero. The @a recalculate_increment
+		 * function examines the value in the "time increment" dialog, and determines
+		 * whether the value of this datum must be greater than zero or less than zero
+		 * in order to successively increment the current-time from the start-time to
+		 * the end-time.
+		 */
+		double d_time_increment;
+		
+		/**
+		 * This is the number of frames to display per second. This value is used to
+		 * calculate the number of milliseconds of delay between each animation step.
+		 */
+		double d_frames_per_second;
+
+		/**
+		 * This option controls whether animations whose duration is not an exact
+		 * multiple of the increment should end their animation on the last valid
+		 * time-step, or jump directly to the specified end time at the conclusion
+		 * of the animation.
+		 */
+		bool d_finish_exactly_on_end_time;
+		
+		/**
+		 * This option controls whether animations should loop or simply stop
+		 * once they reach the end time.
+		 */
+		bool d_loop;
+		
+		/**
+		 * This option controls whether start and end times should be adjusted
+		 * to contain the current time whenever the current time lies outside
+		 * the bounds.
+		 */
+		bool d_adjust_bounds_to_contain_current_time;
+		
+		/**
+		 * Does the work of configuring and starting the timer, beginning the
+		 * animation and emitting an appropriate signal.
+		 */
+		void
+		start_animation_timer();
+		
+		/**
+		 * Stops the timer, pausing the animation and emitting an appropriate signal.
+		 */
+		void
+		stop_animation_timer();
+
+
+		/**
+		 * Double-checks the value of the member datum @a d_time_increment.
+		 *
+		 * This function examines the current time range and determines whether
+		 * the value of this datum must be greater than zero or less than zero in
+		 * order to successively increment the current-time from the start-time to the
+		 * end-time.
+		 */
+		void
+		recalculate_increment();
+
+	};
+}
+
+#endif

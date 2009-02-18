@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -54,6 +54,7 @@
 #include "SetCameraViewpointDialog.h"
 #include "SetRasterSurfaceExtentDialog.h"
 #include "SpecifyFixedPlateDialog.h"
+#include "SpecifyTimeIncrementDialog.h"
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
 #include "ShapefileAttributeViewerDialog.h"
@@ -61,6 +62,7 @@
 
 #include "file-io/FeatureCollectionFileFormat.h"
 
+#include "gui/AnimationController.h"
 #include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
@@ -228,6 +230,9 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_total_reconstruction_poles_dialog();
 	
+		void
+		pop_up_animate_dialog();
+
 		void
 		open_raster();
 
@@ -408,9 +413,10 @@ namespace GPlatesQtWidgets
 
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
-		ReconstructionViewWidget d_reconstruction_view_widget;
 		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
+		GPlatesGui::AnimationController d_animation_controller;
 
+		ReconstructionViewWidget d_reconstruction_view_widget;
 		AboutDialog d_about_dialog;
 		AnimateDialog d_animate_dialog;
 		TotalReconstructionPolesDialog d_total_reconstruction_poles_dialog;
@@ -421,8 +427,8 @@ namespace GPlatesQtWidgets
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
 		SetRasterSurfaceExtentDialog d_set_raster_surface_extent_dialog;
 		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
+		SpecifyTimeIncrementDialog d_specify_time_increment_dialog;
 
-		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		boost::scoped_ptr<GPlatesGui::CanvasToolChoice> d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
 		boost::scoped_ptr<GPlatesGui::CanvasToolAdapter> d_canvas_tool_adapter_ptr;
@@ -499,9 +505,6 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_set_camera_viewpoint_dialog();
 		
-		void
-		pop_up_animate_dialog();
-
 		void
 		pop_up_about_dialog();
 

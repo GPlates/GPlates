@@ -28,7 +28,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>21</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -56,8 +56,9 @@
      <string>&amp;Reconstruction</string>
     </property>
     <addaction name="action_Reconstruct_to_Time" />
-    <addaction name="action_Increment_Reconstruction_Time" />
-    <addaction name="action_Decrement_Reconstruction_Time" />
+    <addaction name="action_Increment_Animation_Time_Backwards" />
+    <addaction name="action_Increment_Animation_Time_Forwards" />
+    <addaction name="action_Specify_Time_Increment" />
     <addaction name="action_Animate" />
     <addaction name="separator" />
     <addaction name="action_Specify_Fixed_Plate" />
@@ -368,26 +369,26 @@
     <string>Specify &amp;Fixed Plate...</string>
    </property>
   </action>
-  <action name="action_Increment_Reconstruction_Time" >
+  <action name="action_Increment_Animation_Time_Backwards" >
    <property name="icon" >
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_16.png</iconset>
    </property>
    <property name="text" >
-    <string>&amp;Increment Reconstruction Time</string>
+    <string>Step &amp;backwards one increment</string>
    </property>
    <property name="shortcut" >
-    <string>Ctrl+I</string>
+    <string>Ctrl+Shift+I</string>
    </property>
   </action>
-  <action name="action_Decrement_Reconstruction_Time" >
+  <action name="action_Increment_Animation_Time_Forwards" >
    <property name="icon" >
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_16.png</iconset>
    </property>
    <property name="text" >
-    <string>&amp;Decrement Reconstruction Time</string>
+    <string>Step forwards one &amp;increment</string>
    </property>
    <property name="shortcut" >
-    <string>Ctrl+Shift+I</string>
+    <string>Ctrl+I</string>
    </property>
   </action>
   <action name="action_Animate" >
@@ -883,7 +884,7 @@
     <string>Redo (Placeholder)</string>
    </property>
    <property name="shortcut" >
-    <string>Ctrl+R</string>
+    <string>Ctrl+Shift+Z</string>
    </property>
   </action>
   <action name="action_Move_Geometry" >
@@ -963,6 +964,11 @@
   <action name="action_View_Shapefile_Attributes" >
    <property name="text" >
     <string>View &amp;Shapefile Attributes</string>
+   </property>
+  </action>
+  <action name="action_Specify_Time_Increment" >
+   <property name="text" >
+    <string>Specify Time I&amp;ncrement...</string>
    </property>
   </action>
  </widget>

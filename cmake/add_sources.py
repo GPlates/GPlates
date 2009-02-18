@@ -90,7 +90,7 @@ def add_sources_to_cmake_lists_file(cmake_lists_filename, directory, name):
     file_include_regexp = re.compile(r'\S+\.cc$|\S+\.h$|\S+\.ui$|\S+\.qrc$')
     
     # What of the above pattern to exclude from source file list.
-    file_exclude_regexp = re.compile(r'_pch\.h$')
+    file_exclude_regexp = re.compile(r'\S+Ui\.h$|^moc_\S+\.cc|_pch\.h$|^qrc_\S+\.cc$')
     
     # Modify file contents with new 'set(src ... )' expression.
     file_contents = get_sources(file_contents, srcs_regexp, directory, file_include_regexp, file_exclude_regexp)

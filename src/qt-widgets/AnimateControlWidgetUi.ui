@@ -1,0 +1,182 @@
+<ui version="4.0" >
+ <class>AnimateControlWidget</class>
+ <widget class="QWidget" name="AnimateControlWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>518</width>
+    <height>34</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Animation Control</string>
+  </property>
+  <layout class="QHBoxLayout" >
+   <property name="spacing" >
+    <number>2</number>
+   </property>
+   <property name="leftMargin" >
+    <number>1</number>
+   </property>
+   <property name="topMargin" >
+    <number>1</number>
+   </property>
+   <property name="rightMargin" >
+    <number>1</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>1</number>
+   </property>
+   <item>
+    <widget class="QPushButton" name="button_play_or_pause" >
+     <property name="toolTip" >
+      <string>This button will source it's icon and tooltip from the other two, which will be hidden.</string>
+     </property>
+     <property name="text" >
+      <string/>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_media_playback_start_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="checkable" >
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_play" >
+     <property name="toolTip" >
+      <string>Play the animation</string>
+     </property>
+     <property name="text" >
+      <string/>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_media_playback_start_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="checkable" >
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_pause" >
+     <property name="toolTip" >
+      <string>Pause the animation</string>
+     </property>
+     <property name="text" >
+      <string/>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_media_playback_pause_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="checkable" >
+      <bool>true</bool>
+     </property>
+     <property name="checked" >
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_seek_beginning" >
+     <property name="toolTip" >
+      <string>Seek to the beginning of the animation</string>
+     </property>
+     <property name="text" >
+      <string/>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_media_skip_backward_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_step_backwards" >
+     <property name="toolTip" >
+      <string>Step backwards one increment  Shift+Ctrl+I</string>
+     </property>
+     <property name="text" >
+      <string/>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="autoRepeat" >
+      <bool>true</bool>
+     </property>
+     <property name="autoRepeatInterval" >
+      <number>200</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_step_forwards" >
+     <property name="toolTip" >
+      <string>Step forwards one increment  Ctrl+I</string>
+     </property>
+     <property name="text" >
+      <string/>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="autoRepeat" >
+      <bool>true</bool>
+     </property>
+     <property name="autoRepeatInterval" >
+      <number>200</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QSlider" name="slider_current_time" >
+     <property name="orientation" >
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections/>
+</ui>

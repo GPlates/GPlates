@@ -1,24 +1,18 @@
 <ui version="4.0" >
- <class>ReconstructionViewWidget</class>
- <widget class="QWidget" name="ReconstructionViewWidget" >
+ <class>ProjectionControlWidget</class>
+ <widget class="QWidget" name="ProjectionControlWidget" >
   <property name="geometry" >
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>712</width>
-    <height>442</height>
+    <width>217</width>
+    <height>29</height>
    </rect>
-  </property>
-  <property name="sizePolicy" >
-   <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-    <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
-   </sizepolicy>
   </property>
   <property name="windowTitle" >
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QHBoxLayout" >
    <property name="spacing" >
     <number>2</number>
    </property>
@@ -35,20 +29,23 @@
     <number>1</number>
    </property>
    <item>
-    <widget class="QWidget" native="1" name="awesomebar_place_holder" >
+    <widget class="QLabel" name="label_projections" >
      <property name="sizePolicy" >
-      <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
-       <horstretch>100</horstretch>
+      <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+       <horstretch>1</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
+     </property>
+     <property name="text" >
+      <string>Projection:</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QWidget" native="1" name="canvas_taskpanel_place_holder" >
+    <widget class="QComboBox" name="combo_projections" >
      <property name="sizePolicy" >
-      <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
-       <horstretch>100</horstretch>
+      <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+       <horstretch>10</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
@@ -56,8 +53,6 @@
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
- </resources>
+ <resources/>
  <connections/>
 </ui>
