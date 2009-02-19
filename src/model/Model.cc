@@ -237,7 +237,7 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.end(),
 		solver);
 
-	solver.report();
+	// solver.report();
 
 	PROFILE_END(solve_mesh);
 

@@ -88,7 +88,7 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_geometries_widget_and_open();
-	
+
 		/**
 		 * We need to reimplement setVisible() because reimplementing closeEvent() is not
 		 * enough - the default buttonbox "Close" button only appears to hide the dialog.
@@ -106,6 +106,9 @@ namespace GPlatesQtWidgets
 
 	private:
 		
+		void
+		pop_up();
+
 		/**
 		 * The Feature observed by the dialog.
 		 * Note that this could become invalid at any time.

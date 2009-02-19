@@ -1,16 +1,16 @@
 <ui version="4.0" >
- <class>SpecifyFixedPlateDialog</class>
- <widget class="QDialog" name="SpecifyFixedPlateDialog" >
+ <class>SpecifyTimeIncrementDialog</class>
+ <widget class="QDialog" name="SpecifyTimeIncrementDialog" >
   <property name="geometry" >
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>223</width>
-    <height>133</height>
+    <width>251</width>
+    <height>121</height>
    </rect>
   </property>
   <property name="windowTitle" >
-   <string>Specify Fixed Plate</string>
+   <string>Specify Time Increment</string>
   </property>
   <property name="modal" >
    <bool>true</bool>
@@ -36,14 +36,24 @@
      <item>
       <widget class="QLabel" name="label_2" >
        <property name="text" >
-        <string>Fixed plate:</string>
+        <string>Time increment:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="spinBox" >
+      <widget class="QDoubleSpinBox" name="spinbox_increment" >
        <property name="maximum" >
-        <number>9999</number>
+        <double>9999.000000000000000</double>
+       </property>
+       <property name="singleStep" >
+        <double>0.100000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label" >
+       <property name="text" >
+        <string>M.</string>
        </property>
       </widget>
      </item>
@@ -93,16 +103,9 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="okButton" >
+      <widget class="QPushButton" name="button_close" >
        <property name="text" >
-        <string>OK</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="cancelButton" >
-       <property name="text" >
-        <string>Cancel</string>
+        <string>Close</string>
        </property>
       </widget>
      </item>
@@ -113,9 +116,9 @@
  <resources/>
  <connections>
   <connection>
-   <sender>okButton</sender>
+   <sender>button_close</sender>
    <signal>clicked()</signal>
-   <receiver>SpecifyFixedPlateDialog</receiver>
+   <receiver>SpecifyTimeIncrementDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel" >
@@ -125,22 +128,6 @@
     <hint type="destinationlabel" >
      <x>96</x>
      <y>254</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cancelButton</sender>
-   <signal>clicked()</signal>
-   <receiver>SpecifyFixedPlateDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel" >
-     <x>369</x>
-     <y>253</y>
-    </hint>
-    <hint type="destinationlabel" >
-     <x>179</x>
-     <y>282</y>
     </hint>
    </hints>
   </connection>

@@ -14,6 +14,8 @@ set(srcs
     AbstractWindow.h
     AgeColourTable.cc
     AgeColourTable.h
+    AnimationController.cc
+    AnimationController.h
     CanvasTool.cc
     CanvasTool.h
     CanvasToolAdapter.cc

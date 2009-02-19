@@ -21,6 +21,9 @@ set(srcs
     AddPropertyDialog.cc
     AddPropertyDialog.h
     AddPropertyDialogUi.ui
+    AnimateControlWidget.cc
+    AnimateControlWidget.h
+    AnimateControlWidgetUi.ui
     AnimateDialog.cc
     AnimateDialog.h
     AnimateDialogUi.ui
@@ -129,6 +132,9 @@ set(srcs
     PlateClosureWidget.cc
     PlateClosureWidget.h
     PlateClosureWidgetUi.ui
+    ProjectionControlWidget.cc
+    ProjectionControlWidget.h
+    ProjectionControlWidgetUi.ui
     PropertyValueNotSupportedException.h
     QueryFeaturePropertiesWidget.cc
     QueryFeaturePropertiesWidget.h
@@ -165,9 +171,15 @@ set(srcs
     SpecifyFixedPlateDialog.cc
     SpecifyFixedPlateDialog.h
     SpecifyFixedPlateDialogUi.ui
+    SpecifyTimeIncrementDialog.cc
+    SpecifyTimeIncrementDialog.h
+    SpecifyTimeIncrementDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
     TaskPanelUi.ui
+    TimeControlWidget.cc
+    TimeControlWidget.h
+    TimeControlWidgetUi.ui
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui
@@ -178,6 +190,10 @@ set(srcs
     ViewportWindow.cc
     ViewportWindow.h
     ViewportWindowUi.ui
+    ZoomControlWidget.cc
+    ZoomControlWidget.h
+    ZoomControlWidgetUi.ui
+    ZoomSliderWidget.cc
     ZoomSliderWidget.h
 )
 

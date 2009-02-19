@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,18 +26,136 @@
 #include <QLocale>
 #include <QHBoxLayout>
 #include <QSplitter>
+#include <QFrame>
+#include <QLabel>
+#include <QSizePolicy>
 
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
 #include "GlobeCanvas.h"
+#include "AnimateControlWidget.h"
+#include "ZoomControlWidget.h"
+#include "TimeControlWidget.h"
+#include "ProjectionControlWidget.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 #include "utils/FloatingPointComparisons.h"
 
 
+namespace
+{
+	/**
+	 * Wraps Qt widget up inside a frame suitably styled for ReconstructionViewWidget.
+	 * Frame takes ownership of your widget, but you need to add the returned Frame
+	 * to something so Qt can take ownership of the whole thing.
+	 */
+	QFrame *
+	wrap_with_frame(
+			QWidget *widget)
+	{
+		QFrame *frame = new QFrame();
+		frame->setFrameShape(QFrame::StyledPanel);
+		frame->setFrameShadow(QFrame::Sunken);
+		QHBoxLayout *hbox = new QHBoxLayout(frame);
+		hbox->setSpacing(2);
+		hbox->setContentsMargins(0, 0, 0, 0);
+		hbox->addWidget(widget);
+		return frame;
+	}
+
+	/**
+	 * Wraps Qt layout (or spacer) up inside a frame suitably styled for ReconstructionViewWidget.
+	 * Frame takes ownership of your item, but you need to add the returned Frame
+	 * to something so Qt can take ownership of the whole thing.
+	 */
+	QFrame *
+	wrap_with_frame(
+			QLayoutItem *item)
+	{
+		QFrame *frame = new QFrame();
+		frame->setFrameShape(QFrame::StyledPanel);
+		frame->setFrameShadow(QFrame::Sunken);
+		QHBoxLayout *hbox = new QHBoxLayout(frame);
+		hbox->setSpacing(2);
+		hbox->setContentsMargins(0, 0, 0, 0);
+		hbox->addItem(item);
+		return frame;
+	}
+	
+	/**
+	 * This function is a bit of a hack, but we need this hack in enough places
+	 * in our hybrid Designer/C++ laid-out ReconstructionViewWidget that it's worthwhile
+	 * compressing it into an anonymous namespace function.
+	 *
+	 * The problem: We want to replace a 'placeholder' widget that we set up in the
+	 * designer with a widget we created in code via new.
+	 *
+	 * The solution: make an 'invisible' layout inside the placeholder (@a outer_widget),
+	 * then add the real widget (@a inner_widget) to that layout.
+	 */
+	void
+	cram_widget_into_widget(
+			QWidget *inner_widget,
+			QWidget *outer_widget)
+	{
+		QHBoxLayout *invisible_layout = new QHBoxLayout(outer_widget);
+		invisible_layout->setSpacing(0);
+		invisible_layout->setContentsMargins(0, 0, 0, 0);
+		invisible_layout->addWidget(inner_widget);
+	}
+	
+	/**
+	 * Slightly less awkward way to summon a horizontal spacer.
+	 */
+	QSpacerItem *
+	new_horizontal_spacer()
+	{
+		return new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+	}
+	
+	/**
+	 * Creates the label used for camera coordinate display.
+	 */
+	QLabel *
+	new_camera_coords_label()
+	{
+		QLabel *label_ptr = new QLabel(QObject::tr("(lat: ---.-- ; lon: ---.-- )"));
+		
+		QSizePolicy size(QSizePolicy::Preferred, QSizePolicy::Preferred);
+		size.setHorizontalStretch(0);
+		size.setVerticalStretch(0);
+		size.setHeightForWidth(label_ptr->sizePolicy().hasHeightForWidth());
+		label_ptr->setSizePolicy(size);
+		label_ptr->setMinimumSize(QSize(170, 0));
+		
+		return label_ptr;
+	}
+
+	/**
+	 * Creates the label used for mouse coordinate display.
+	 */
+	QLabel *
+	new_mouse_coords_label()
+	{
+		QLabel *label_ptr = new QLabel(QObject::tr("(lat: ---.-- ; lon: ---.-- ) (off globe)"));
+		
+		QSizePolicy size(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
+		size.setHorizontalStretch(0);
+		size.setVerticalStretch(0);
+		size.setHeightForWidth(label_ptr->sizePolicy().hasHeightForWidth());
+		label_ptr->setSizePolicy(size);
+		label_ptr->setMinimumSize(QSize(231, 0));
+		
+		return label_ptr;
+	}
+}
+
+
+
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesGui::AnimationController &animation_controller,
 		ViewportWindow &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
@@ -63,6 +181,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	d_zoom_slider_widget = new ZoomSliderWidget(d_globe_canvas_ptr->viewport_zoom(), this);
 
 
+	// Construct the Awesome Bar. This used to go on top, but we want to push this
+	// down so it goes to the left of the splitter, giving the TaskPanel some more
+	// room.
+	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(animation_controller);
+
+	// Construct the "View Bar" for the bottom.
+	std::auto_ptr<QWidget> viewbar = construct_viewbar(d_globe_canvas_ptr->viewport_zoom());
+
+
+	// With all our widgets constructed, on to the main canvas layout:-
+
 	// Create a tiny invisible widget with a tiny invisible horizontal layout to
 	// hold the "canvas" area (including the zoom slider). This layout will glue
 	// the zoom slider to the right hand side of the canvas. We set a custom size
@@ -72,42 +201,45 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QSizePolicy canvas_widget_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	canvas_widget_size_policy.setHorizontalStretch(255);
 	canvas_widget->setSizePolicy(canvas_widget_size_policy);
-	QHBoxLayout *canvas_widget_layout = new QHBoxLayout(canvas_widget);
-	canvas_widget_layout->setSpacing(0);
-	canvas_widget_layout->setContentsMargins(0, 0, 0, 0);
+	// Another hack (but for stretchable-task-panel reasons I'm having to do things
+	// this way for now), add two AwesomeBars to the top of this canvas_widget,
+	// allowing the TaskPanel to consume more vertical space.
+	QVBoxLayout *bars_plus_canvas_layout = new QVBoxLayout(canvas_widget);
+	bars_plus_canvas_layout->setSpacing(2);
+	bars_plus_canvas_layout->setContentsMargins(0, 0, 0, 0);
+	bars_plus_canvas_layout->addWidget(awesomebar_one.release());
+	// Globe and slider:
+	QHBoxLayout *canvas_widget_layout = new QHBoxLayout();
+	bars_plus_canvas_layout->addItem(canvas_widget_layout);
+	canvas_widget_layout->setSpacing(2);
+	canvas_widget_layout->setContentsMargins(2, 4, 0, 0);
 	// Add GlobeCanvas and ZoomSliderWidget to this hand-made widget.
+	// NOTE: If we had a MapCanvas, we'd add it here too.
 	canvas_widget_layout->addWidget(d_globe_canvas_ptr);
 	canvas_widget_layout->addWidget(d_zoom_slider_widget);
-	// Then add that widget (globe + zoom slider) to the QSplitter.
-	d_splitter_widget->addWidget(canvas_widget);
 	
-	// Add the QSplitter to the placeholder widget in the ReconstructionViewWidget.
+	// Then add that widget (globe (+ map) + zoom slider) to the QSplitter.
+	d_splitter_widget->addWidget(canvas_widget);
+	// The splitter should eat as much space as possible.
+	QSizePolicy splitter_size(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	d_splitter_widget->setSizePolicy(splitter_size);
+	
+	// Add the QSplitter and the View Bar to the placeholder widget in the ReconstructionViewWidget.
 	// Note this is a bit of a hack, relying on the canvas_taskpanel_place_holder widget
 	// set up in the Designer.
-	// We need to make an 'invisible' QLayout inside that widget first, with zero margins
-	// and spacing. Just to hold one QSplitter widget. Trust me, without this, we end
-	// up with seriously weird vertical stretching in the ReconstructionViewWidget.
-	QHBoxLayout *splitter_layout = new QHBoxLayout(canvas_taskpanel_place_holder);
-	splitter_layout->setSpacing(0);
-	splitter_layout->setContentsMargins(0, 0, 0, 0);
-	splitter_layout->addWidget(d_splitter_widget);
-	
+	// FIXME: I am not yet replacing the use of canvas_taskpanel_place_holder with 'this',
+	// as a bug emerges where the globe does not render properly. This can be fixed,
+	// but the current method works and there are more urgent things to attack right now.
+	QVBoxLayout *splitter_plus_viewbar_layout = new QVBoxLayout(canvas_taskpanel_place_holder);
+	splitter_plus_viewbar_layout->setSpacing(2);
+	splitter_plus_viewbar_layout->setContentsMargins(0, 0, 0, 0);
+	splitter_plus_viewbar_layout->addWidget(d_splitter_widget);
+	splitter_plus_viewbar_layout->addWidget(viewbar.release());
 
-	// Set up the Reconstruction Time spinbox and buttons.
-	spinbox_reconstruction_time->setRange(
-			ReconstructionViewWidget::min_reconstruction_time(),
-			ReconstructionViewWidget::max_reconstruction_time());
-	spinbox_reconstruction_time->setValue(0.0);
-	QObject::connect(spinbox_reconstruction_time, SIGNAL(editingFinished()),
-			this, SLOT(propagate_reconstruction_time()));
-	QObject::connect(spinbox_reconstruction_time, SIGNAL(editingFinished()),
-			d_globe_canvas_ptr, SLOT(setFocus()));
 
-	QObject::connect(button_reconstruction_increment, SIGNAL(clicked()),
-			this, SLOT(increment_reconstruction_time()));
-	QObject::connect(button_reconstruction_decrement, SIGNAL(clicked()),
-			this, SLOT(decrement_reconstruction_time()));
 
+#if 0
+<<<<<<< .working
 	// Set up the Reconstruction Time slider 
 	slider_reconstruction_time->setRange(0, 300); // FIXME : use the above values? 
 	slider_reconstruction_time->setValue(0);
@@ -142,6 +274,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(d_zoom_slider_widget, SIGNAL(slider_moved(int)),
 			&vzoom, SLOT(set_zoom_level(int)));
 
+=======
+#endif
+	// Miscellaneous signal / slot connections that ReconstructionViewWidget deals with.
+	
 	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
 			d_globe_canvas_ptr, SLOT(notify_of_orientation_change()));
 	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),
@@ -151,6 +287,98 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 	recalc_camera_position();
 }
+
+
+std::auto_ptr<QWidget>
+GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
+		GPlatesGui::AnimationController &animation_controller)
+{
+	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
+	// auto_ptr will keep tabs on the memory for us until we can return it
+	// and add it to the main ReconstructionViewWidget somewhere.
+	std::auto_ptr<QWidget> awesomebar_widget(new QWidget);
+	QHBoxLayout *awesomebar_layout = new QHBoxLayout(awesomebar_widget.get());
+	awesomebar_layout->setSpacing(2);
+	awesomebar_layout->setContentsMargins(0, 0, 0, 0);
+	
+	// Create the AnimateControlWidget.
+	d_animate_control_widget_ptr = new AnimateControlWidget(animation_controller, awesomebar_widget.get());
+
+	// Create the TimeControlWidget.
+	d_time_control_widget_ptr = new TimeControlWidget(animation_controller, awesomebar_widget.get());
+	QObject::connect(d_time_control_widget_ptr, SIGNAL(editing_finished()),
+			d_globe_canvas_ptr, SLOT(setFocus()));
+	
+	// Insert Time and Animate controls.
+	awesomebar_layout->addWidget(wrap_with_frame(d_time_control_widget_ptr));
+	awesomebar_layout->addWidget(wrap_with_frame(d_animate_control_widget_ptr));
+
+	return awesomebar_widget;
+}
+
+
+std::auto_ptr<QWidget>
+GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
+		GPlatesGui::ViewportZoom &vzoom)
+{
+	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
+	// auto_ptr will keep tabs on the memory for us until we can return it
+	// and add it to the main ReconstructionViewWidget somewhere.
+	std::auto_ptr<QWidget> awesomebar_widget(new QWidget);
+	QHBoxLayout *awesomebar_layout = new QHBoxLayout(awesomebar_widget.get());
+	awesomebar_layout->setSpacing(2);
+	awesomebar_layout->setContentsMargins(0, 0, 0, 0);
+		
+	// Insert Zoom and Projection controls.
+	awesomebar_layout->addWidget(wrap_with_frame(new ProjectionControlWidget(awesomebar_widget.get())));
+
+	return awesomebar_widget;
+}
+
+
+std::auto_ptr<QWidget>
+GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
+		GPlatesGui::ViewportZoom &vzoom)
+{
+	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
+	// auto_ptr will keep tabs on the memory for us until we can return it
+	// and add it to the main ReconstructionViewWidget somewhere.
+	std::auto_ptr<QWidget> viewbar_widget(new QWidget);
+	QHBoxLayout *viewbar_layout = new QHBoxLayout(viewbar_widget.get());
+	viewbar_layout->setSpacing(2);
+	viewbar_layout->setContentsMargins(0, 0, 0, 0);
+	
+	// Create the Camera Coordinates label widget.
+	d_label_camera_coords = new_camera_coords_label();
+	QWidget *camera_coords_widget = new QWidget(viewbar_widget.get());
+	QHBoxLayout *camera_coords_layout = new QHBoxLayout(camera_coords_widget);
+	camera_coords_layout->setSpacing(2);
+	camera_coords_layout->setContentsMargins(2, 2, 2, 2);
+	camera_coords_layout->addWidget(new QLabel(tr("Camera:")));
+	camera_coords_layout->addWidget(d_label_camera_coords);
+
+	// Create the Mouse Coordinates label widget.
+	d_label_mouse_coords = new_mouse_coords_label();
+	QWidget *mouse_coords_widget = new QWidget(viewbar_widget.get());
+	QHBoxLayout *mouse_coords_layout = new QHBoxLayout(mouse_coords_widget);
+	mouse_coords_layout->setSpacing(2);
+	mouse_coords_layout->setContentsMargins(2, 2, 2, 2);
+	mouse_coords_layout->addWidget(new QLabel(tr("Mouse:")));
+	mouse_coords_layout->addWidget(d_label_mouse_coords);
+
+	// Create the ZoomControlWidget.
+	d_zoom_control_widget_ptr = new ZoomControlWidget(vzoom, viewbar_widget.get());
+	QObject::connect(d_zoom_control_widget_ptr, SIGNAL(editing_finished()),
+			d_globe_canvas_ptr, SLOT(setFocus()));
+
+	// Insert Zoom control and coordinate labels.
+	viewbar_layout->addWidget(wrap_with_frame(d_zoom_control_widget_ptr));
+	viewbar_layout->addWidget(wrap_with_frame(camera_coords_widget));
+	viewbar_layout->addWidget(wrap_with_frame(mouse_coords_widget));
+
+	return viewbar_widget;
+}
+
 
 
 void
@@ -163,46 +391,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::insert_task_panel(
 }
 
 
-bool
-GPlatesQtWidgets::ReconstructionViewWidget::is_valid_reconstruction_time(
-		const double &time)
-{
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
-	// Firstly, ensure that the time is not less than the minimum reconstruction time.
-	if (time < ReconstructionViewWidget::min_reconstruction_time() &&
-			! geo_times_are_approx_equal(time,
-					ReconstructionViewWidget::min_reconstruction_time())) {
-		return false;
-	}
-
-	// Secondly, ensure that the time is not greater than the maximum reconstruction time.
-	if (time > ReconstructionViewWidget::max_reconstruction_time() &&
-			! geo_times_are_approx_equal(time,
-					ReconstructionViewWidget::min_reconstruction_time())) {
-		return false;
-	}
-
-	// Otherwise, it's a valid time.
-	return true;
-}
-
-
 void
-GPlatesQtWidgets::ReconstructionViewWidget::set_reconstruction_time(
-		double new_recon_time)
+GPlatesQtWidgets::ReconstructionViewWidget::activate_time_spinbox()
 {
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
-	// Ensure the new reconstruction time is valid.
-	if ( ! ReconstructionViewWidget::is_valid_reconstruction_time(new_recon_time)) {
-		return;
-	}
-
-	if ( ! geo_times_are_approx_equal(reconstruction_time(), new_recon_time)) {
-		spinbox_reconstruction_time->setValue(new_recon_time);
-		propagate_reconstruction_time();
-	}
+	d_time_control_widget_ptr->activate_time_spinbox();
 }
 
 
@@ -224,7 +416,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 	position_as_string.append(lon);
 	position_as_string.append(QObject::tr(")"));
 
-	label_camera_coords->setText(position_as_string);
+	d_label_camera_coords->setText(position_as_string);
 }
 
 
@@ -247,23 +439,15 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 		position_as_string.append(QObject::tr(" (off globe)"));
 	}
 
-	label_mouse_coords->setText(position_as_string);
-}
-
-
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::propagate_zoom_percent()
-{
-	d_globe_canvas_ptr->viewport_zoom().set_zoom_percent(zoom_percent());
+	d_label_mouse_coords->setText(position_as_string);
 }
 
 
 void
-GPlatesQtWidgets::ReconstructionViewWidget::handle_zoom_change()
+GPlatesQtWidgets::ReconstructionViewWidget::activate_zoom_spinbox()
 {
-	spinbox_zoom_percent->setValue(d_globe_canvas_ptr->viewport_zoom().zoom_percent());
-	d_zoom_slider_widget->set_zoom_value(d_globe_canvas_ptr->viewport_zoom().zoom_level());
+	d_zoom_control_widget_ptr->activate_zoom_spinbox();
 }
+
 
 

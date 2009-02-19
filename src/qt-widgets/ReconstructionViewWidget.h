@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -36,6 +36,7 @@
 #include <memory>
 #include <QWidget>
 #include <QSplitter>
+#include <QLabel>
 #include "ReconstructionViewWidgetUi.h"
 
 #include "ZoomSliderWidget.h"
@@ -51,10 +52,18 @@ namespace GPlatesViewOperations
 	class RenderedGeometryCollection;
 }
 
+namespace GPlatesGui
+{
+	class AnimationController;
+}
+
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
 	class GlobeCanvas;
+	class AnimateControlWidget;
+	class ZoomControlWidget;
+	class TimeControlWidget;
 	class TaskPanel;
 
 
@@ -67,43 +76,10 @@ namespace GPlatesQtWidgets
 	public:
 		ReconstructionViewWidget(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::AnimationController &animation_controller,
 				ViewportWindow &view_state,
 				QWidget *parent_ = NULL);
 
-		static
-		inline
-		double
-		min_reconstruction_time()
-		{
-			// This value denotes the present-day.
-			return 0.0;
-		}
-
-		static
-		inline
-		double
-		max_reconstruction_time()
-		{
-			// This value denotes a time 10000 million years ago.
-			return 10000.0;
-		}
-
-		static
-		bool
-		is_valid_reconstruction_time(
-				const double &time);
-
-		double
-		reconstruction_time() const
-		{
-			return spinbox_reconstruction_time->value();
-		}
-
-		double
-		zoom_percent() const
-		{
-			return spinbox_zoom_percent->value();
-		}
 
 		GlobeCanvas &
 		globe_canvas() const
@@ -124,13 +100,11 @@ namespace GPlatesQtWidgets
 
 	public slots:
 		void
-		activate_time_spinbox()
-		{
-			spinbox_reconstruction_time->setFocus();
-			spinbox_reconstruction_time->selectAll();
-		}
+		activate_time_spinbox();
 
 		void
+#if 0
+<<<<<<< .working
 		set_reconstruction_time(
 				double new_recon_time);
 
@@ -164,6 +138,9 @@ namespace GPlatesQtWidgets
 		}
 
 		void
+=======
+>>>>>>> .merge-right.r4916
+#endif
 		recalc_camera_position();
 
 		void
@@ -172,32 +149,42 @@ namespace GPlatesQtWidgets
 				bool is_on_globe);
 		
 		void
-		activate_zoom_spinbox()
-		{
-			spinbox_zoom_percent->setFocus();
-			spinbox_zoom_percent->selectAll();
-		}
-		
-	signals:
-		void
-		reconstruction_time_changed(
-				double new_reconstruction_time);
-	
-	private slots:
-	
-		void
-		propagate_zoom_percent();
-
-		void
-		handle_zoom_change();
+		activate_zoom_spinbox();
 
 	private:
+		
+		std::auto_ptr<QWidget>
+		construct_awesomebar_one(
+				GPlatesGui::AnimationController &animation_controller);
 
-#if 0
-		GlobeCanvas *d_canvas_ptr;
-#endif
+		std::auto_ptr<QWidget>
+		construct_awesomebar_two(
+				GPlatesGui::ViewportZoom &vzoom);
+
+		std::auto_ptr<QWidget>
+		construct_viewbar(
+				GPlatesGui::ViewportZoom &vzoom);
+
+		/**
+		 * The QSplitter responsible for dividing the interface between canvas
+		 * and TaskPanel.
+		 */
 		QSplitter *d_splitter_widget;
+
+		/**
+		 * The camera coordinates label.
+		 */
+		QLabel *d_label_camera_coords;
+
+		/**
+		 * The mouse coordinates label.
+		 */
+		QLabel *d_label_mouse_coords;
+
 		GlobeCanvas *d_globe_canvas_ptr;
+		AnimateControlWidget *d_animate_control_widget_ptr;
+		ZoomControlWidget *d_zoom_control_widget_ptr;
+		TimeControlWidget *d_time_control_widget_ptr;
 		ZoomSliderWidget *d_zoom_slider_widget;
 	};
 }

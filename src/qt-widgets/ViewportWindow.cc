@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -568,10 +568,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_reconstruction_ptr(d_model_ptr->create_empty_reconstruction(0.0, 0)),
 	d_recon_time(0.0),
 	d_recon_root(0),
-	d_reconstruction_view_widget(d_rendered_geom_collection, *this, this),
 	d_feature_focus(),
+	d_animation_controller(*this),
+	d_reconstruction_view_widget(d_rendered_geom_collection, d_animation_controller, *this, this),
 	d_about_dialog(*this, this),
-	d_animate_dialog(*this, this),
+	d_animate_dialog(d_animation_controller, this),
 	d_total_reconstruction_poles_dialog(*this, this),
 	d_feature_properties_dialog(*this, d_feature_focus, this),
 	d_license_dialog(&d_about_dialog),
@@ -580,7 +581,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_set_camera_viewpoint_dialog(*this, this),
 	d_set_raster_surface_extent_dialog(*this, this),
 	d_specify_fixed_plate_dialog(d_recon_root, this),
-	d_animate_dialog_has_been_shown(false),
+	d_specify_time_increment_dialog(d_animation_controller, this),
 	d_geom_builder_tool_target(
 			d_digitise_geometry_builder,
 			d_focused_feature_geometry_builder,
@@ -651,15 +652,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
 			this, SLOT(reconstruct_with_root(unsigned long)));
 
-	// Set up the Animate dialog.
-	QObject::connect(&d_animate_dialog, SIGNAL(current_time_changed(double)),
-			&d_reconstruction_view_widget, SLOT(set_reconstruction_time(double)));
-
 	// Set up the Reconstruction View widget.
 	setCentralWidget(&d_reconstruction_view_widget);
 
-	QObject::connect(&d_reconstruction_view_widget, SIGNAL(reconstruction_time_changed(double)),
-			this, SLOT(reconstruct_to_time(double)));
 	QObject::connect(d_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
 			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
 
@@ -1018,10 +1013,12 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// Reconstruction Menu:
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(activate_time_spinbox()));
-	QObject::connect(action_Increment_Reconstruction_Time, SIGNAL(triggered()),
-			&d_reconstruction_view_widget, SLOT(increment_reconstruction_time()));
-	QObject::connect(action_Decrement_Reconstruction_Time, SIGNAL(triggered()),
-			&d_reconstruction_view_widget, SLOT(decrement_reconstruction_time()));
+	QObject::connect(action_Increment_Animation_Time_Forwards, SIGNAL(triggered()),
+			&d_animation_controller, SLOT(step_forward()));
+	QObject::connect(action_Increment_Animation_Time_Backwards, SIGNAL(triggered()),
+			&d_animation_controller, SLOT(step_back()));
+	QObject::connect(action_Specify_Time_Increment, SIGNAL(triggered()),
+			&d_specify_time_increment_dialog, SLOT(exec()));
 	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
 	// ----
@@ -1271,6 +1268,13 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_specify_fixed_plate_dialog()
 {
 	d_specify_fixed_plate_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_specify_fixed_plate_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_specify_fixed_plate_dialog.raise();
 }
 
 
@@ -1286,6 +1290,8 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
 	d_set_camera_viewpoint_dialog.set_lat_lon(cur_llp.latitude(), cur_llp.longitude());
 	if (d_set_camera_viewpoint_dialog.exec())
 	{
+		// Note: d_set_camera_viewpoint_dialog is modal and should not need the 'raise' hacks
+		// that the other dialogs use.
 		try {
 			GPlatesMaths::LatLonPoint desired_centre(
 					d_set_camera_viewpoint_dialog.latitude(),
@@ -1314,17 +1320,26 @@ GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog()
 	d_total_reconstruction_poles_dialog.update();
 
 	d_total_reconstruction_poles_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_total_reconstruction_poles_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_total_reconstruction_poles_dialog.raise();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 {
-	if ( ! d_animate_dialog_has_been_shown) {
-		d_animate_dialog.set_start_time_value_to_view_time();
-		d_animate_dialog.set_current_time_value_to_view_time();
-		d_animate_dialog_has_been_shown = true;
-	}
 	d_animate_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_animate_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_animate_dialog.raise();
 }
 
 
@@ -1332,6 +1347,13 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 {
 	d_about_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_about_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_about_dialog.raise();
 }
 
 
@@ -1339,6 +1361,13 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
 {
 	d_license_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_license_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_license_dialog.raise();
 }
 
 
@@ -1577,6 +1606,13 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
 {
 	d_read_errors_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_read_errors_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_read_errors_dialog.raise();
 }
 
 
@@ -1584,6 +1620,13 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_manage_feature_collections_dialog()
 {
 	d_manage_feature_collections_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_manage_feature_collections_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_manage_feature_collections_dialog.raise();
 }
 
 
@@ -1997,7 +2040,11 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_set_raster_surface_extent_dialog()
 {
 	d_set_raster_surface_extent_dialog.exec();
+	// d_set_raster_surface_extent_dialog is modal and should not need the 'raise' hack
+	// other dialogs use.
 }
+
+
 GPlatesViewOperations::RenderedGeometryFactory &
 GPlatesQtWidgets::ViewportWindow::get_rendered_geometry_factory()
 {
@@ -2034,4 +2081,11 @@ GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()
 {
 	d_shapefile_attribute_viewer_dialog.show();
 	d_shapefile_attribute_viewer_dialog.update();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_shapefile_attribute_viewer_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_shapefile_attribute_viewer_dialog.raise();
 }
