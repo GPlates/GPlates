@@ -31,8 +31,9 @@
 
 #include "DigitisationWidget.h"
 #include "ReconstructionPoleWidget.h"
-#include "CreateTopologyWidget.h"
 #include "PlateClosureWidget.h"
+#include "BuildTopologyWidget.h"
+#include "EditTopologyWidget.h"
 #include "ActionButtonBox.h"
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
@@ -127,6 +128,28 @@ namespace GPlatesQtWidgets
 			return *d_plate_closure_widget_ptr;
 		}
 	
+		/**
+		 * Accessor for the BuildTopology Widget 
+		 *
+		 * This lets the build topology canvas tool interact with the widget.
+		 */
+		BuildTopologyWidget &
+		build_topology_widget() const
+		{
+			return *d_build_topology_widget_ptr;
+		}
+	
+		/**
+		 * Accessor for the EditTopologyWidget 
+		 *
+		 * This lets the Edit topology canvas tool interact with the widget.
+		 */
+		EditTopologyWidget &
+		edit_topology_widget() const
+		{
+			return *d_edit_topology_widget_ptr;
+		}
+	
 
 	public slots:
 		
@@ -159,6 +182,18 @@ namespace GPlatesQtWidgets
 		{
 			tabwidget_task_panel->setCurrentWidget(tab_topology_tool);
 		}		
+		
+		void
+		choose_build_topology_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_build_topology);
+		}
+		
+		void
+		choose_edit_topology_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_edit_topology);
+		}
 		
 	private:
 		
@@ -204,6 +239,20 @@ namespace GPlatesQtWidgets
 		void
 		set_up_plate_closure_tab();
 
+		/**
+		 * Sets up the "Build Topology" tab in the Extra Creamy Task Panel.
+		 * This adds the special BuildTopologyWidget.
+		 */
+		void
+		set_up_build_topology_tab();
+
+		/**
+		 * Sets up the "Edit Topology" tab in the Extra Creamy Task Panel.
+		 * This adds the special EditTopologyWidget.
+		 */
+		void
+		set_up_edit_topology_tab();
+
 
 		/**
 		 * Widget responsible for the buttons in the Feature Tab.
@@ -239,6 +288,18 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::PlateClosureWidget *d_plate_closure_widget_ptr;
+
+		/**
+		 * Widget responsible for the controls in the Build Topology Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::BuildTopologyWidget *d_build_topology_widget_ptr;
+
+		/**
+		 * Widget responsible for the controls in the Edit Topology Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::EditTopologyWidget *d_edit_topology_widget_ptr;
 
 		/**
 		 * Widget responsible for the controls in the Modify Pole Tab.

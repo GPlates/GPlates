@@ -35,10 +35,13 @@
 #include "canvas-tools/MoveGeometry.h"
 #include "canvas-tools/MoveVertex.h"
 #include "canvas-tools/ManipulatePole.h"
-#include "canvas-tools/CreateTopology.h"
+#include "canvas-tools/BuildTopology.h"
+#include "canvas-tools/EditTopology.h"
 
 #include "qt-widgets/DigitisationWidget.h"
 #include "qt-widgets/PlateClosureWidget.h"
+#include "qt-widgets/BuildTopologyWidget.h"
+#include "qt-widgets/EditTopologyWidget.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -58,6 +61,8 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 		GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
+		GPlatesQtWidgets::BuildTopologyWidget &build_topology_widget,
+		GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight):
 d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(
 		globe,
@@ -131,6 +136,26 @@ d_plate_closure_platepolygon_tool_ptr( GPlatesCanvasTools::PlateClosure::create(
 		feature_table_model_segments, 
 		plate_closure_widget, 
 		GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON, 
+		feature_focus)),
+d_build_topology_tool_ptr( GPlatesCanvasTools::BuildTopology::create(
+		rendered_geom_collection,
+		globe, 
+		globe_canvas, 
+		view_state, 
+		clicked_table_model, 
+		feature_table_model_segments, 
+		build_topology_widget, 
+		GPlatesQtWidgets::BuildTopologyWidget::PLATEPOLYGON, 
+		feature_focus)),
+d_edit_topology_tool_ptr( GPlatesCanvasTools::EditTopology::create(
+		rendered_geom_collection,
+		globe, 
+		globe_canvas, 
+		view_state, 
+		clicked_table_model, 
+		feature_table_model_segments, 
+		edit_topology_widget, 
+		GPlatesQtWidgets::EditTopologyWidget::PLATEPOLYGON, 
 		feature_focus)),
 d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {

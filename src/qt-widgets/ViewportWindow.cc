@@ -80,6 +80,7 @@
 #include "file-io/ShapeFileReader.h"
 #include "file-io/GpmlOnePointSixReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
+#include "utils/UnicodeStringUtils.h"
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
@@ -715,6 +716,44 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 		SLOT(handle_reconstruction_time_change(double)) );
 
 
+	// BuildTopologyWidget is connected to the feature focus.
+	QObject::connect(
+		&d_feature_focus, 
+		SIGNAL( focus_changed(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+		&(d_task_panel_ptr->build_topology_widget()), 
+		SLOT( set_focus(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
+	// BuildTopologyWidget needs to know when the reconstruction time changes.
+	QObject::connect(
+		this, 
+		SIGNAL( reconstruction_time_changed(double)),
+		&(d_task_panel_ptr->build_topology_widget()), 
+		SLOT( handle_reconstruction_time_change(double)) );
+
+	// EditTopologyWidget is connected to the feature focus.
+	QObject::connect(
+		&d_feature_focus, 
+		SIGNAL( focus_changed(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+		&(d_task_panel_ptr->edit_topology_widget()), 
+		SLOT( set_focus(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+
+	// EditTopologyWidget needs to know when the reconstruction time changes.
+	QObject::connect(
+		this, 
+		SIGNAL(reconstruction_time_changed(double)),
+		&(d_task_panel_ptr->edit_topology_widget()), 
+		SLOT(handle_reconstruction_time_change(double)) );
+
+
+
 	// Setup RenderedGeometryCollection.
 	initialise_rendered_geom_collection();
 
@@ -792,6 +831,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					d_task_panel_ptr->plate_closure_widget(),
+					d_task_panel_ptr->build_topology_widget(),
+					d_task_panel_ptr->edit_topology_widget(),
 					d_canvas_ptr->geometry_focus_highlight()));
 
 	// Set up the Canvas Tool Adapter for handling globe click and drag events.
@@ -844,6 +885,14 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// then we need to create and append property values to it
 	QObject::connect(
 		&(d_task_panel_ptr->plate_closure_widget().create_feature_dialog()),
+		SIGNAL( feature_created(GPlatesModel::FeatureHandle::weak_ref) ),
+		d_canvas_tool_adapter_ptr.get(),
+		SLOT( handle_create_new_feature( GPlatesModel::FeatureHandle::weak_ref ) ) );
+
+	// If the user creates a new feature with the BuildTopologyWidget, 
+	// then we need to create and append property values to it
+	QObject::connect(
+		&(d_task_panel_ptr->build_topology_widget().create_feature_dialog()),
 		SIGNAL( feature_created(GPlatesModel::FeatureHandle::weak_ref) ),
 		d_canvas_tool_adapter_ptr.get(),
 		SLOT( handle_create_new_feature( GPlatesModel::FeatureHandle::weak_ref ) ) );
@@ -902,9 +951,17 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
 			d_choose_canvas_tool.get(), SLOT(choose_manipulate_pole_tool()));
 
+	// FIXME: remove this old code : 
 	QObject::connect(action_Plate_Closure, SIGNAL(triggered()),
 			this, SLOT(choose_plate_closure_platepolygon_tool()));
+	action_Plate_Closure->setVisible(false);
 
+
+	QObject::connect(action_Build_Topology, SIGNAL(triggered()),
+			this, SLOT(choose_build_topology_tool()));
+
+	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
+			this, SLOT(choose_edit_topology_tool()));
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
@@ -1351,6 +1408,8 @@ GPlatesQtWidgets::ViewportWindow::choose_plate_closure_platepolygon_tool()
 	d_task_panel_ptr->choose_plate_closure_tab();
 }
 
+
+
 void
 GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 {
@@ -1381,6 +1440,25 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 	d_task_panel_ptr->choose_modify_pole_tab();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
+{
+	uncheck_all_tools();
+	action_Build_Topology->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_build_topology_tool();
+	d_task_panel_ptr->choose_build_topology_tab();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
+{
+	uncheck_all_tools();
+	action_Edit_Topology->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_edit_topology_tool();
+	d_task_panel_ptr->choose_edit_topology_tab();
+}
+
+
 
 
 void
@@ -1396,6 +1474,8 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Move_Geometry->setChecked(false);
 	action_Move_Vertex->setChecked(false);
 	action_Manipulate_Pole->setChecked(false);
+	action_Edit_Topology->setChecked(false);
+	action_Build_Topology->setChecked(false);
 }
 
 
@@ -1411,7 +1491,24 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	action_Move_Geometry->setEnabled(enable);
 	//action_Move_Vertex->setEnabled(enable);
 	action_Manipulate_Pole->setEnabled(enable);
-#if 0		// Delete Feature is nontrivial to implement (in the model) properly.
+
+
+	action_Edit_Topology->setEnabled(enable);
+	if ( enable ) 
+	{
+		// reset to false if features is not of correct type
+		QString topology_type_name ("TopologicalClosedPlateBoundary");
+		QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+			focused_feature->feature_type().get_name() );
+		if ( feature_type_name != topology_type_name )
+		{
+			action_Edit_Topology->setEnabled(false);
+		}
+	}
+
+
+#if 0		
+	// Delete Feature is nontrivial to implement (in the model) properly.
 	action_Delete_Feature->setEnabled(enable);
 #else
 	action_Delete_Feature->setDisabled(true);

@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>183</width>
+    <width>594</width>
     <height>599</height>
    </rect>
   </property>
@@ -34,16 +34,7 @@
    <property name="spacing" >
     <number>0</number>
    </property>
-   <property name="leftMargin" >
-    <number>0</number>
-   </property>
-   <property name="topMargin" >
-    <number>0</number>
-   </property>
-   <property name="rightMargin" >
-    <number>0</number>
-   </property>
-   <property name="bottomMargin" >
+   <property name="margin" >
     <number>0</number>
    </property>
    <item>
@@ -52,7 +43,7 @@
       <enum>QTabWidget::North</enum>
      </property>
      <property name="currentIndex" >
-      <number>3</number>
+      <number>6</number>
      </property>
      <widget class="QWidget" name="tab_feature" >
       <attribute name="title" >
@@ -77,6 +68,16 @@
      <widget class="QWidget" name="tab_topology_tool" >
       <attribute name="title" >
        <string>Topology Tool</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_build_topology" >
+      <attribute name="title" >
+       <string>Build New Topology</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_edit_topology" >
+      <attribute name="title" >
+       <string>Edit Topology</string>
       </attribute>
      </widget>
     </widget>

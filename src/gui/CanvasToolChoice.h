@@ -46,8 +46,9 @@ namespace GPlatesQtWidgets
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
 	class ReconstructionPoleWidget;
-	class CreateTopologyWidget;
 	class PlateClosureWidget;
+	class BuildTopologyWidget;
+	class EditTopologyWidget;
 }
 
 namespace GPlatesViewOperations
@@ -96,7 +97,9 @@ namespace GPlatesGui
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
-				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget_,
+				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
+				GPlatesQtWidgets::BuildTopologyWidget &build_topology_widget,
+				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		~CanvasToolChoice()
@@ -169,6 +172,18 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
 		}
 
+		void
+		choose_build_topology_tool()
+		{
+			change_tool_if_necessary(d_build_topology_tool_ptr);
+		}
+
+		void
+		choose_edit_topology_tool()
+		{
+			change_tool_if_necessary(d_edit_topology_tool_ptr);
+		}
+
 	private:
 		/**
 		 * This is the ReorientGlobe tool which the user may choose.
@@ -219,6 +234,16 @@ namespace GPlatesGui
 		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_plate_closure_platepolygon_tool_ptr;
+
+		/**
+		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_build_topology_tool_ptr;
+
+		/**
+		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
 
 		/**
 		 * The current choice of CanvasTool.
