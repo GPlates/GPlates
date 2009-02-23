@@ -61,6 +61,10 @@ namespace GPlatesGui
 			lookup(
 					const GPlatesModel::ReconstructedFeatureGeometry &feature) const;
 
+			ColourTable::const_iterator
+			lookup_by_plate_id(
+					GPlatesModel::integer_plate_id_type id) const;
+
 		protected:
 			/**
 			 * Private constructor to enforce singleton design.

@@ -68,6 +68,33 @@ GPlatesGui::PlatesColourTable::lookup(
 }
 
 
+GPlatesGui::ColourTable::const_iterator
+GPlatesGui::PlatesColourTable::lookup_by_plate_id(
+		GPlatesModel::integer_plate_id_type id) const
+{
+	// First, ensure that the ID isn't greater than the highest ID in the
+	// ID table (which would result in an out-of-bounds index).
+	if (id > d_highest_known_rid) {
+
+		// The ID is outside the bounds of this table.
+		return end();
+	}
+
+	// Now, convert the ID into an index into the 'ID table'.
+	size_t idx = static_cast< size_t >(id);
+	const Colour *colour_ptr = d_id_table[idx];
+	if (colour_ptr == NULL) {
+
+		// There is no entry for this ID in the table.
+		return end();
+
+	} else {
+		return const_iterator(colour_ptr);
+	}
+}
+
+
+
 GPlatesGui::PlatesColourTable::PlatesColourTable():
 		d_highest_known_rid(0) /* no default ctor, so must initialise now */
 {
