@@ -83,6 +83,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			GPlatesModel::FeatureIdRegistry &registry,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			reconstruction_geometries_type &reconstructed_geometries,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type layer,
+			GPlatesViewOperations::RenderedGeometryFactory &factory,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
@@ -91,6 +93,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_feature_id_registry_ptr(&registry),
 	d_topology_resolver_ptr(&topo_resolver),
 	d_reconstruction_geometries_to_populate(&reconstructed_geometries),
+	d_rendered_layer(layer),
+	d_rendered_geom_factory(factory),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  
 	d_num_features = 0;
@@ -237,7 +241,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 
 std::cout << "ComputationalMeshSolver::process_point: " 
 		<< llp << " found in " << feature_ids.size() << " plates." << std::endl;
-	
+
 	// loop over feature ids 
 	for (iter = feature_ids.begin(); iter != feature_ids.end(); ++iter)
 	{
@@ -258,36 +262,31 @@ std::cout << "ComputationalMeshSolver::process_point: "
 			GPlatesModel::integer_plate_id_type recon_plate_id =
 				*plate_id_finder.found_plate_ids_begin();
 
+// FIXME: remove this diag output 
 			std::cout << "	plate id = " << recon_plate_id << std::endl;
 			
-			// FIXME: now that we know what plate id the mesh point is in,
-			// draw it 
-
-#if 0
 			// get the color for the id 
-
-			GPlatesGui::ColourTable::const_iterator colour = d_colour_table.end();
-
-			colour = d_colour_table_ptr.lookup(*rfg); // FIXME: look up by plate id
-
-			if (colour == colour_table.end()) {
-				colour = &GPlatesGui::Colour::OLIVE;
+			GPlatesGui::ColourTable::const_iterator colour = d_colour_table_ptr->end();
+			colour = d_colour_table_ptr->lookup_by_plate_id( recon_plate_id ); 
+			if (colour == d_colour_table_ptr->end()) { 
+				colour = &GPlatesGui::Colour::OLIVE; 
 			}
+
+// FIXME: remove this diag output 
+			std::cout << "	rgb = " << colour->red() << "," << colour->green() << "," 
+				<< colour->blue() << "," << std::endl;
 
 			// Create a RenderedGeometry using the reconstructed geometry.
 
 			GPlatesViewOperations::RenderedGeometry rendered_geom =
-				rendered_geom_factory.create_rendered_geometry_on_sphere(
-					point->clone_as_geometry(),
+				d_rendered_geom_factory.create_rendered_geometry_on_sphere(
+				point.clone_as_geometry(),
 					*colour,
 					GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
 					GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
-`
-			// Add to the rendered layer.
-			computational_mesh_layer->add_rendered_geometry(rendered_geom);
 
-#endif
-			
+			// Add to the rendered layer.
+			d_rendered_layer->add_rendered_geometry(rendered_geom);
 		}
 	}
 }

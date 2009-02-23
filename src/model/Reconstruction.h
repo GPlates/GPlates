@@ -88,11 +88,14 @@ namespace GPlatesModel
 		static
 		const non_null_ptr_type
 		create(
-				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_,
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_)
+			ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_,
+				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_,
+				const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_feature_collections_)
 		{
-			non_null_ptr_type ptr(new Reconstruction(reconstruction_tree_ptr_,
-							reconstruction_feature_collections_),
+			non_null_ptr_type ptr(new Reconstruction(
+							reconstruction_tree_ptr_,
+							reconstruction_feature_collections_,
+							reconstructable_feature_collections_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -125,6 +128,15 @@ namespace GPlatesModel
 			return d_reconstruction_feature_collections;
 		}
 
+		/**
+		 * Access the feature collections containing the reconstructable features used to
+		 * create this reconstruction.
+		 */
+		const std::vector<FeatureCollectionHandle::weak_ref> &
+		reconstructable_feature_collections() const
+		{
+			return d_reconstructable_feature_collections;
+		}
 
 		/**
 		 * Insert a feature_id, RG pair item into the map; 
@@ -204,16 +216,24 @@ namespace GPlatesModel
 		std::vector<FeatureCollectionHandle::weak_ref> d_reconstruction_feature_collections;
 
 		/**
+		 * Access the feature collections containing the reconstructable features used to
+		 * create this reconstruction.
+		 */
+		std::vector<FeatureCollectionHandle::weak_ref> d_reconstructable_feature_collections;
+
+		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
 		explicit
 		Reconstruction(
 				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_,
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_):
+				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_,
+				const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_feature_collections_):
 			d_ref_count(0),
 			d_reconstruction_tree_ptr(reconstruction_tree_ptr_),
-			d_reconstruction_feature_collections(reconstruction_feature_collections_)
+			d_reconstruction_feature_collections(reconstruction_feature_collections_),
+			d_reconstructable_feature_collections(reconstructable_feature_collections_)
 		{  }
 
 		// This constructor should never be defined, because we don't want to allow

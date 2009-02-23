@@ -306,7 +306,7 @@ namespace GPlatesQtWidgets
 		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
 		typedef std::list<file_info_iterator> active_files_collection_type;
 		typedef active_files_collection_type::iterator active_files_iterator;
-		
+
 		/**
 		 * Returns the current colour table in use.
 		 */

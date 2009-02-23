@@ -35,6 +35,7 @@
 #include "Reconstruction.h"
 #include "RevisionId.h"
 #include "types.h"
+#include "FeatureIdRegistry.h"
 
 
 namespace GPlatesModel
@@ -203,6 +204,15 @@ namespace GPlatesModel
 		create_empty_reconstruction(
 				const double &time,
 				integer_plate_id_type root) = 0;
+
+
+		/**
+		 * Return a pointer to the id registry 
+		 */
+		virtual
+		FeatureIdRegistry &
+		get_feature_id_registry() = 0;
+
 
 		/**
 		 * Searches the feature id registry to locate a FeatureHandle

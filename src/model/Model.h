@@ -87,6 +87,12 @@ namespace GPlatesModel
 		get_feature_for_id(
 				const GPlatesModel::FeatureId &feature_id);
 
+		FeatureIdRegistry &
+		get_feature_id_registry() 
+		{
+			return  d_feature_id_registry;
+		}
+
 #ifdef HAVE_PYTHON
 		// A Python wrapper for create_reconstruction
 		boost::python::tuple

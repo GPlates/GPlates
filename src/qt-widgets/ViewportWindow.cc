@@ -84,6 +84,43 @@
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
+#include "feature-visitors/TopologyResolver.h"
+#include "feature-visitors/ComputationalMeshSolver.h"
+
+
+// FIXME: TEST: grabbed from Model.cc, maybe should be abstracted out someplace?
+namespace 
+{
+	template< typename FeatureCollectionIterator >
+	void
+	visit_feature_collections(
+			FeatureCollectionIterator collections_begin, 
+			FeatureCollectionIterator collections_end,
+			GPlatesModel::FeatureVisitor &visitor) {
+
+		using namespace GPlatesModel;
+
+		// We visit each of the features in each of the feature collections in
+		// the given range.
+		FeatureCollectionIterator collections_iter = collections_begin;
+		for ( ; collections_iter != collections_end; ++collections_iter) {
+
+			FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
+
+			// Before we dereference the weak_ref using 'operator->',
+			// let's be sure that it's valid to dereference.
+			if (feature_collection.is_valid()) {
+				FeatureCollectionHandle::features_iterator iter =
+						feature_collection->features_begin();
+				FeatureCollectionHandle::features_iterator end =
+						feature_collection->features_end();
+				for ( ; iter != end; ++iter) {
+					(*iter)->accept_visitor(visitor);
+				}
+			}
+		}
+	}
+}
 
 
 void
@@ -491,9 +528,49 @@ namespace
 		// Clear all RenderedGeometry's before adding new ones.
 		reconstruction_layer->clear_rendered_geometries();
 
+//
+// FIXME: TEST of drawing computational mesh features with plate id color 
+//
+
+		// Get a ptr to the computational mesh rendered layer.
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer =
+			rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
+
+		// Activate the comp_mesh_layer.
+		comp_mesh_layer->set_active();
+
+		// Clear all RenderedGeometry's before adding new ones.
+		comp_mesh_layer->clear_rendered_geometries();
+
 		try {
 			reconstruction = create_reconstruction(active_reconstructable_files, 
 					active_reconstruction_files, model_ptr, recon_time, recon_root);
+
+//
+// FIXME: test of new location for TopologyResolver
+//
+			// Visit the feature collections and build topologies 
+			GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
+				recon_time, 
+				recon_root, 
+				*reconstruction,
+				reconstruction->reconstruction_tree(),
+				model_ptr->get_feature_id_registry(),
+				reconstruction->geometries(),
+				true); // keep features without recon plate id
+
+			visit_feature_collections(
+				reconstruction->reconstructable_feature_collections().begin(),
+				reconstruction->reconstructable_feature_collections().end(),
+				topology_resolver);
+
+			// topology_resolver.report();
+
+
+			//
+			// now, put all the RFG's in the reconstruction_layer 
+			//
 
 			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 					reconstruction->geometries().begin();
@@ -540,9 +617,36 @@ namespace
 				reconstruction_layer->add_rendered_geometry(rendered_geom);
 			}
 
+//
+// FIXME: TEST of new location for ComputationalMeshSolver 
+// inlcuding drawing computational mesh features with plate id color 
+//
+			// Visit the feature collections and fill computational meshes with 
+			// nice juicy velocity data
+			GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
+				recon_time, 
+				recon_root, 
+				*reconstruction,
+				reconstruction->reconstruction_tree(),
+				model_ptr->get_feature_id_registry(),
+				topology_resolver,
+				reconstruction->geometries(),
+				comp_mesh_layer,
+				rendered_geom_factory, 
+				true); // keep features without recon plate id
+			
+			visit_feature_collections(
+				reconstruction->reconstructable_feature_collections().begin(),
+				reconstruction->reconstructable_feature_collections().end(),
+				solver);
+
+			// solver.report();
+
+
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
 			//for_each(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), render(canvas_ptr, &GlobeCanvas::draw_point, point_colour))
 			// for_each(reconstruction->polyline_geometries().begin(), reconstruction->polyline_geometries().end(), polyline_point);
+
 		} catch (GPlatesGlobal::Exception &e) {
 			std::cerr << e << std::endl;
 		}
@@ -1008,7 +1112,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 #endif
 	// ----
 	QObject::connect(action_Clear_Selection, SIGNAL(triggered()),
-			&d_feature_focus, SLOT(unset_focus()));
+	&d_feature_focus, SLOT(unset_focus()));
 
 	// Reconstruction Menu:
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
@@ -1081,7 +1185,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// ----
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
-	
+
 	// Help Menu:
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
@@ -2057,6 +2161,11 @@ GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 	// Reconstruction rendered layer is always active.
 	d_rendered_geom_collection.set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
+
+// FIXME: TEST
+	// COMPUTATIONAL_MESH_LAYER is always active
+	d_rendered_geom_collection.set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
 
 	// Specify which main rendered layers are orthogonal to each other - when
 	// one is activated the others are automatically deactivated.

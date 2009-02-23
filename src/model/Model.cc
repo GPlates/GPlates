@@ -186,7 +186,10 @@ GPlatesModel::Model::create_reconstruction(
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
 	Reconstruction::non_null_ptr_type reconstruction =
-			Reconstruction::create(tree, reconstruction_features_collection);
+			Reconstruction::create(
+				tree, 
+				reconstruction_features_collection,
+				reconstructable_features_collection);
 
 	ReconstructedFeatureGeometryPopulator rfgp(time, root, *reconstruction,
 			reconstruction->reconstruction_tree(),
@@ -198,6 +201,9 @@ GPlatesModel::Model::create_reconstruction(
 		rfgp);
 
 	PROFILE_END(build_recon_tree);
+
+// FIXME: moved to ViewportWindow  render_model()
+#if 0
 
 	PROFILE_BEGIN(build_platepolygons, "Model::create_reconstruction build platepolygons");
 
@@ -216,7 +222,7 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.end(),
 		topology_resolver);
 
-	// topology_resolver.report();
+	topology_resolver.report();
 
 	PROFILE_END(build_platepolygons);
 
@@ -240,6 +246,7 @@ GPlatesModel::Model::create_reconstruction(
 	// solver.report();
 
 	PROFILE_END(solve_mesh);
+#endif
 
 	return reconstruction;
 }
@@ -257,7 +264,8 @@ GPlatesModel::Model::create_empty_reconstruction(
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
 	std::vector<FeatureCollectionHandle::weak_ref> empty_vector;
-	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree, empty_vector);
+	Reconstruction::non_null_ptr_type reconstruction = 
+		Reconstruction::create(tree, empty_vector, empty_vector);
 
 	return reconstruction;
 }
