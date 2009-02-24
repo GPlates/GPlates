@@ -239,8 +239,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 
 	feature_ids = d_topology_resolver_ptr->locate_point( point );
 
-std::cout << "ComputationalMeshSolver::process_point: " 
-		<< llp << " found in " << feature_ids.size() << " plates." << std::endl;
+//std::cout << "ComputationalMeshSolver::process_point: " << llp << " found in " << feature_ids.size() << " plates." << std::endl;
 
 	// loop over feature ids 
 	for (iter = feature_ids.begin(); iter != feature_ids.end(); ++iter)
@@ -263,7 +262,7 @@ std::cout << "ComputationalMeshSolver::process_point: "
 				*plate_id_finder.found_plate_ids_begin();
 
 // FIXME: remove this diag output 
-			std::cout << "	plate id = " << recon_plate_id << std::endl;
+//			std::cout << "	plate id = " << recon_plate_id << std::endl;
 			
 			// get the color for the id 
 			GPlatesGui::ColourTable::const_iterator colour = d_colour_table_ptr->end();
@@ -271,10 +270,6 @@ std::cout << "ComputationalMeshSolver::process_point: "
 			if (colour == d_colour_table_ptr->end()) { 
 				colour = &GPlatesGui::Colour::OLIVE; 
 			}
-
-// FIXME: remove this diag output 
-			std::cout << "	rgb = " << colour->red() << "," << colour->green() << "," 
-				<< colour->blue() << "," << std::endl;
 
 			// Create a RenderedGeometry using the reconstructed geometry.
 
