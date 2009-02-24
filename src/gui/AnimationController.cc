@@ -50,28 +50,28 @@ GPlatesGui::AnimationController::AnimationController(
 }
 
 
-const double
+const double &
 GPlatesGui::AnimationController::view_time() const
 {
 	return d_view_state_ptr->reconstruction_time();
 }
 
 
-const double
+const double &
 GPlatesGui::AnimationController::start_time() const
 {
 	return d_start_time;
 }
 
 
-const double
+const double &
 GPlatesGui::AnimationController::end_time() const
 {
 	return d_end_time;
 }
 
 
-const double
+double
 GPlatesGui::AnimationController::time_increment() const
 {
 	return std::fabs(d_time_increment);
@@ -85,7 +85,7 @@ GPlatesGui::AnimationController::is_playing() const
 }
 
 
-const double
+const double &
 GPlatesGui::AnimationController::frames_per_second() const
 {
 	return d_frames_per_second;

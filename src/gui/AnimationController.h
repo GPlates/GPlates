@@ -64,7 +64,7 @@ namespace GPlatesGui
 		 * accessing it from here may be more convenient - and also reduces
 		 * dependencies on ViewState, which is A Good Thing.
 		 */
-		const double
+		const double &
 		view_time() const;
 
 		/**
@@ -72,7 +72,7 @@ namespace GPlatesGui
 		 * or after the @a end_time() - the increment will be adjusted
 		 * automatically.
 		 */
-		const double
+		const double &
 		start_time() const;
 
 		/**
@@ -80,20 +80,20 @@ namespace GPlatesGui
 		 * or after the @a end_time() - the increment will be adjusted
 		 * automatically.
 		 */
-		const double
+		const double &
 		end_time() const;
 
 		/**
 		 * Returns the user-friendly 'increment' value,
 		 * which will always be a positive number.
 		 */
-		const double
+		double
 		time_increment() const;
 		
 		bool
 		is_playing() const;
 
-		const double
+		const double &
 		frames_per_second() const;
 		
 		bool
