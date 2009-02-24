@@ -457,6 +457,9 @@ namespace GPlatesQtWidgets
 		//! Must be declared before 'd_reconstruction_view_widget'.
 		GPlatesViewOperations::RenderedGeometryCollection d_rendered_geom_collection;
 
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type 
+			d_comp_mesh_layer;
+
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
 

@@ -506,6 +506,7 @@ namespace
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root,
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer,
 			GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 			GPlatesGui::ColourTable &colour_table)
 	{
@@ -527,21 +528,6 @@ namespace
 
 		// Clear all RenderedGeometry's before adding new ones.
 		reconstruction_layer->clear_rendered_geometries();
-
-//
-// FIXME: TEST of drawing computational mesh features with plate id color 
-//
-
-		// Get a ptr to the computational mesh rendered layer.
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer =
-			rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
-
-		// Activate the comp_mesh_layer.
-		comp_mesh_layer->set_active();
-
-		// Clear all RenderedGeometry's before adding new ones.
-		comp_mesh_layer->clear_rendered_geometries();
 
 		try {
 			reconstruction = create_reconstruction(active_reconstructable_files, 
@@ -617,10 +603,13 @@ namespace
 				reconstruction_layer->add_rendered_geometry(rendered_geom);
 			}
 
-//
 // FIXME: TEST of new location for ComputationalMeshSolver 
-// inlcuding drawing computational mesh features with plate id color 
-//
+			// Activate the comp_mesh_layer.
+			comp_mesh_layer->set_active();
+		
+			// Clear all RenderedGeometry's before adding new ones.
+			comp_mesh_layer->clear_rendered_geometries();
+
 			// Visit the feature collections and fill computational meshes with 
 			// nice juicy velocity data
 			GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
@@ -859,7 +848,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Render everything on the screen in present-day positions.
 	render_model(d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, 0.0, d_recon_root,
-			d_rendered_geom_collection, get_rendered_geometry_factory(), *get_colour_table());
+			d_rendered_geom_collection, d_comp_mesh_layer,
+			get_rendered_geometry_factory(), *get_colour_table());
 
 	// Set up the Clicked table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
@@ -1351,7 +1341,8 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
 	render_model(d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root,
-			d_rendered_geom_collection, get_rendered_geometry_factory(), *get_colour_table());
+			d_rendered_geom_collection, d_comp_mesh_layer,
+			get_rendered_geometry_factory(), *get_colour_table());
 
 	if (d_total_reconstruction_poles_dialog.isVisible()) {
 		d_total_reconstruction_poles_dialog.update();
@@ -2166,6 +2157,10 @@ GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 	// COMPUTATIONAL_MESH_LAYER is always active
 	d_rendered_geom_collection.set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
+
+	d_comp_mesh_layer =
+		d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
+			GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
 
 	// Specify which main rendered layers are orthogonal to each other - when
 	// one is activated the others are automatically deactivated.
