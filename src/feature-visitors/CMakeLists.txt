@@ -25,6 +25,7 @@ set(srcs
     KeyValueDictionaryFinder.h
     PlateIdFinder.cc
     PlateIdFinder.h
+    PropertyValueFinder.h
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
     ShapefileAttributeFinder.cc

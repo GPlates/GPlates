@@ -77,6 +77,77 @@ namespace
 		};
 	}
 
+	/**
+	 * Attempts to extract a feature id from PLATES header.
+	 * Returns true if successful and result is stored in @a feature_id.
+	 */
+	bool
+	extract_feature_id_from_header(
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			UnicodeString &feature_id)
+	{
+		static const UnicodeString identity_start_tag(" <identity>");
+		static const UnicodeString identity_end_tag("</identity>");
+		static const int32_t identity_start_tag_length = identity_start_tag.length();
+		static const int32_t identity_end_tag_length = identity_end_tag.length();
+
+		UnicodeString geog_description = header->geographic_description();
+
+		// Search for the identity start tag.
+		const int32_t identity_start_index = geog_description.indexOf(identity_start_tag);
+		if (identity_start_index < 0)
+		{
+			return false;
+		}
+
+		// Search for the identity end tag (starting at end of the identity start tag).
+		const int32_t identity_end_index = geog_description.indexOf(
+				identity_end_tag,
+				identity_start_index + identity_start_tag_length);
+		if (identity_end_index < 0)
+		{
+			return false;
+		}
+
+		// The feature id is between end of start tag and start of end tag.
+		geog_description.extractBetween(
+				identity_start_index + identity_start_tag_length,
+				identity_end_index,
+				feature_id);
+
+		// Remove feature id and start/end id tage from the geographic description in
+		// PLATES header so we don't get two feature ids written out if save to PLATES header later.
+		// The PLATES writer will automatically append the feature id to each feature.
+		geog_description.removeBetween(
+				identity_start_index,
+				identity_end_index + identity_end_tag_length);
+
+		// Store back to original header.
+		header->set_geographic_description(geog_description);
+
+		return true;
+	}
+
+	/**
+	 * Creates a feature of type @a feature_type.
+	 * If feature id can be extracted from the PLATES header then use that
+	 * otherwise auto-generate one.
+	 */
+	GPlatesModel::FeatureHandle::weak_ref
+	create_feature(
+			GPlatesModel::ModelInterface &model, 
+			const GPlatesModel::FeatureType &feature_type,
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header)
+	{
+		UnicodeString feature_id;
+		if (extract_feature_id_from_header(header, feature_id))
+		{
+			return model.create_feature(feature_type, GPlatesModel::FeatureId(feature_id), collection);
+		}
+
+		return model.create_feature(feature_type, collection);
+	}
 
 	/**
 	 * This function assumes that 'create_feature_with_geometry' has ensured that 'points'
@@ -181,8 +252,8 @@ namespace
 		using namespace GPlatesPropertyValues;
 		using namespace GPlatesModel;
 
-		FeatureHandle::weak_ref feature_handle =
-				model.create_feature(feature_type, collection);
+		GPlatesModel::FeatureHandle::weak_ref feature_handle =
+				create_feature(model, feature_type, collection, header);
 
 		const integer_plate_id_type plate_id = header->plate_id_number();
 		const GeoTimeInstant geo_time_instant_begin(
