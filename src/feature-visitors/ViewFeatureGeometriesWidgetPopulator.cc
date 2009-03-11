@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -563,7 +563,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geome
 		if ( ! rfg) {
 			continue;
 		}
-		if (rfg->feature_ref().references(feature_handle)) {
+		if (rfg->references(feature_handle)) {
 			ReconstructedGeometryInfo info(rfg->property(), rfg->geometry());
 			d_rfg_geometries.push_back(info);
 		}

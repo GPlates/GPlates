@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -94,9 +94,9 @@ namespace
 				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(geometry.get());
 		if (rfg) {
 			// It's an RFG, so let's look at the feature it's referencing.
-			if (rfg->feature_ref().is_valid()) {
+			if (rfg->is_valid()) {
 				return boost::optional<GPlatesModel::FeatureHandle::weak_ref>(
-						rfg->feature_ref());
+						rfg->get_feature_ref());
 			}
 			// Else, the weak-ref is not valid, so we'll return boost::none instead.
 			return boost::none;
@@ -757,7 +757,7 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
 	if (rfg) {
 		// It's an RFG, so let's look at the feature it's referencing.
-		if ( ! rfg->feature_ref().is_valid()) {
+		if ( ! rfg->is_valid()) {
 			return;
 		}
 
@@ -766,7 +766,7 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 		//
 		// FIXME: If we end up using this class elsewhere, e.g. search results, we may
 		// want to re-evaluate this behaviour.
-		d_feature_focus_ptr->set_focus(rfg->feature_ref(), rfg);
+		d_feature_focus_ptr->set_focus(rfg->get_feature_ref(), rfg);
 	}
 }
 
@@ -795,7 +795,7 @@ GPlatesGui::FeatureTableModel::handle_feature_modified(
 				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
 		if (rfg) {
 			// It's an RFG, so let's look at the feature it's referencing.
-			if (rfg->feature_ref() == modified_feature_ref) {
+			if (rfg->get_feature_ref() == modified_feature_ref) {
 				QModelIndex idx_begin = index(row, 0);
 				QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
 				emit dataChanged(idx_begin, idx_end);

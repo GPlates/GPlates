@@ -119,6 +119,7 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 			const GPlatesModel::FeatureHandle& feature_handle = **iter;
 			writer->write_feature(feature_handle);
 		}
+		feature_collection->set_contains_unsaved_changes(false);
 	}
 }
 
@@ -175,7 +176,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 		try
 		{
 			// Read the feature collection from file.
-			GPlatesFileIO::read_feature_collection_file(file, *d_model_ptr, read_errors);
+			GPlatesFileIO::read_feature_collection_file(file, d_model, read_errors);
 
 			switch ( GPlatesFileIO::get_feature_collection_file_format(file) )
 			{
@@ -244,7 +245,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 			case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 				GPlatesFileIO::ShapeFileReader::set_property_mapper(
 					boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
-				GPlatesFileIO::ShapeFileReader::read_file(file,*d_model_ptr,read_errors);
+				GPlatesFileIO::ShapeFileReader::read_file(file, d_model, read_errors);
 
 				if (file.get_feature_collection())
 				{
@@ -342,7 +343,7 @@ GPlatesQtWidgets::ViewportWindow::reload_file(
 		}
 
 		// Read the feature collection from file.
-		GPlatesFileIO::read_feature_collection_file(*file_it, *d_model_ptr, read_errors);
+		GPlatesFileIO::read_feature_collection_file(*file_it, d_model, read_errors);
 
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
@@ -399,7 +400,7 @@ GPlatesQtWidgets::ViewportWindow::create_empty_reconstructable_file()
 {
 	// Create an empty "file" - does not correspond to anything on disk yet.
 	GPlatesFileIO::FileInfo file;
-	file.set_feature_collection(d_model_ptr->create_feature_collection());
+	file.set_feature_collection(d_model->create_feature_collection());
 
 	GPlatesAppState::ApplicationState::file_info_iterator new_file =
 	GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
@@ -438,7 +439,7 @@ namespace
 	create_reconstruction(
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
-			GPlatesModel::ModelInterface *model_ptr,
+			GPlatesModel::ModelInterface &model,
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root) {
 
@@ -454,14 +455,14 @@ namespace
 				active_reconstruction_files,
 				reconstruction_features_collection);
 
-		return model_ptr->create_reconstruction(reconstructable_features_collection,
+		return model->create_reconstruction(reconstructable_features_collection,
 				reconstruction_features_collection, recon_time, recon_root);
 	}
 
 
 	void
 	render_model(
-			GPlatesModel::ModelInterface *model_ptr, 
+			GPlatesModel::ModelInterface &model, 
 			GPlatesModel::Reconstruction::non_null_ptr_type &reconstruction,
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
@@ -492,7 +493,7 @@ namespace
 
 		try {
 			reconstruction = create_reconstruction(active_reconstructable_files, 
-					active_reconstruction_files, model_ptr, recon_time, recon_root);
+					active_reconstruction_files, model, recon_time, recon_root);
 
 			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 					reconstruction->geometries().begin();
@@ -563,8 +564,8 @@ GPlatesQtWidgets::ViewportWindow::get_colour_table()
 }
 
 GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
-	d_model_ptr(new GPlatesModel::Model()),
-	d_reconstruction_ptr(d_model_ptr->create_empty_reconstruction(0.0, 0)),
+	d_model(),
+	d_reconstruction_ptr(d_model->create_empty_reconstruction(0.0, 0)),
 	d_recon_time(0.0),
 	d_recon_root(0),
 	d_feature_focus(),
@@ -604,7 +605,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	std::auto_ptr<TaskPanel> task_panel_auto_ptr(new TaskPanel(
 			d_feature_focus,
-			*d_model_ptr,
+			d_model,
 			d_rendered_geom_collection,
 			d_canvas_ptr->get_rendered_geometry_factory(),
 			d_digitise_geometry_builder,
@@ -685,7 +686,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	initialise_rendered_geom_collection();
 
 	// Render everything on the screen in present-day positions.
-	render_model(d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
+	render_model(d_model, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, 0.0, d_recon_root,
 			d_rendered_geom_collection, get_rendered_geometry_factory(), *get_colour_table());
 
@@ -1079,7 +1080,7 @@ GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
 void
 GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
-	render_model(d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
+	render_model(d_model, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root,
 			d_rendered_geom_collection, get_rendered_geometry_factory(), *get_colour_table());
 
@@ -1590,7 +1591,7 @@ GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
 
-	GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(file_info,*d_model_ptr,read_errors);
+	GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(file_info, d_model, read_errors);
 
 	d_read_errors_dialog.update();
 
@@ -1746,7 +1747,7 @@ GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
 #if 0		// Cannot call ModelInterface::remove_feature() as it is #if0'd out and not implemented in Model!
 		// FIXME: figure out FeatureCollectionHandle::weak_ref that feature_ref belongs to.
 		// Possibly implement that as part of ModelUtils.
-		d_model_ptr->remove_feature(feature_ref, collection_ref);
+		d_model->remove_feature(feature_ref, collection_ref);
 #endif
 		d_feature_focus.announce_deletion_of_focused_feature();
 	}

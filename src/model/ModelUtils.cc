@@ -26,6 +26,7 @@
  */
 
 #include "ModelUtils.h"
+#include "Model.h"
 #include "DummyTransactionHandle.h"
 #include "FeatureHandle.h"
 #include "FeatureRevision.h"
@@ -203,7 +204,7 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 {
 	FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
 	FeatureHandle::weak_ref feature_handle =
-			model.create_feature(feature_type, target_collection);
+			model->create_feature(feature_type, target_collection);
 
 	PropertyContainer::non_null_ptr_type total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples);

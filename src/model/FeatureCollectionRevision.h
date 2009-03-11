@@ -38,6 +38,7 @@
 namespace GPlatesModel
 {
 	class DummyTransactionHandle;
+	class FeatureCollectionHandle;
 
 	/**
 	 * A feature collection revision contains the revisioned content of a conceptual feature
@@ -251,7 +252,26 @@ namespace GPlatesModel
 				DummyTransactionHandle &transaction);
 
 		/**
+		 * Set the pointer to the FeatureCollectionHandle which contains this revision.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * This function should only be invoked by a FeatureCollectionHandle instance when
+		 * it has changed its revision.  This is part of the mechanism which tracks whether
+		 * a feature collection contains unsaved changes, and (later) part of the Bubble-Up
+		 * mechanism.
+		 */
+		void
+		set_handle_ptr(
+				FeatureCollectionHandle *new_ptr)
+		{
+			d_handle_ptr = new_ptr;
+		}
+
+		/**
 		 * Increment the reference-count of this instance.
+		 *
+		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
 		 * GPlatesUtils::non_null_intrusive_ptr.
@@ -264,6 +284,8 @@ namespace GPlatesModel
 		/**
 		 * Decrement the reference-count of this instance, and return the new
 		 * reference-count.
+		 *
+		 * Client code should not use this function!
 		 *
 		 * This function is used by boost::intrusive_ptr and
 		 * GPlatesUtils::non_null_intrusive_ptr.
@@ -281,6 +303,22 @@ namespace GPlatesModel
 		mutable ref_count_type d_ref_count;
 
 		/**
+		 * The FeatureCollectionHandle which contains this revision.
+		 *
+		 * Note that this should be held via a (regular, raw) pointer rather than a
+		 * ref-counting pointer (or any other type of smart pointer) because:
+		 *  -# The FeatureCollectionHandle instance conceptually manages the instance of
+		 * this class, not the other way around.
+		 *  -# A FeatureCollectionHandle instance will outlive the revisions it contains;
+		 * thus, it doesn't make sense for a FeatureCollectionHandle to have its memory
+		 * managed by its contained revisions.
+		 *  -# Class FeatureCollectionHandle contains a ref-counting pointer to class
+		 * FeatureCollectionRevision, and we don't want to set up a ref-counting loop
+		 * (which would lead to memory leaks).
+		 */
+		FeatureCollectionHandle *d_handle_ptr;
+
+		/**
 		 * The collection of features contained within this feature collection.
 		 *
 		 * Any of the pointers in this container might be NULL.
@@ -290,7 +328,8 @@ namespace GPlatesModel
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		FeatureCollectionRevision() :
-			d_ref_count(0)
+			d_ref_count(0),
+			d_handle_ptr(NULL)
 		{  }
 
 		/*
@@ -310,6 +349,7 @@ namespace GPlatesModel
 		FeatureCollectionRevision(
 				const FeatureCollectionRevision &other) :
 			d_ref_count(0),
+			d_handle_ptr(NULL),
 			d_features(other.d_features)
 		{  }
 

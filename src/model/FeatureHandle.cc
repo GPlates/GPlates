@@ -1,13 +1,13 @@
 /* $Id$ */
 
 /**
- * @file 
- * File specific comments.
+ * \file 
+ * Contains the definitions of the member functions of the class FeatureHandle.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,39 +25,24 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_COLOURTABLE_H
-#define GPLATES_GUI_COLOURTABLE_H
-
-#include "Colour.h"
+#include "FeatureHandle.h"
+#include "WeakObserverVisitor.h"
 
 
-namespace GPlatesModel
+GPlatesModel::FeatureHandle::~FeatureHandle()
 {
-	class ReconstructedFeatureGeometry;
+	weak_observer_unsubscribe_forward(d_first_const_weak_observer);
+	weak_observer_unsubscribe_forward(d_first_weak_observer);
 }
 
-namespace GPlatesGui
+
+void
+GPlatesModel::FeatureHandle::apply_weak_observer_visitor(
+		WeakObserverVisitor<FeatureHandle> &visitor)
 {
-	class ColourTable
-	{
-	public:
-		typedef const Colour *const_iterator;
-
-		virtual
-		~ColourTable()
-		{  }
-   
-		const_iterator
-		end() const
-		{
-			return NULL;
-		}
-
-		virtual
-		const_iterator
-		lookup(
-				const GPlatesModel::ReconstructedFeatureGeometry &feature) const = 0;
-	};
+	weak_observer_type *curr = first_weak_observer();
+	while (curr != NULL) {
+		curr->accept_weak_observer_visitor(visitor);
+		curr = curr->next_link_ptr();
+	}
 }
-
-#endif  /* GPLATES_GUI_COLOURTABLE_H */

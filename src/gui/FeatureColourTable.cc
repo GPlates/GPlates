@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,9 +29,8 @@
 #include <algorithm>
 
 #include "FeatureColourTable.h"
-#include "model/WeakReference.h"
-#include "model/FeatureType.h"
-#include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
+
 
 GPlatesGui::FeatureColourTable *
 GPlatesGui::FeatureColourTable::Instance()
@@ -43,6 +42,7 @@ GPlatesGui::FeatureColourTable::Instance()
 	}
 	return d_instance;
 }
+
 
 GPlatesGui::FeatureColourTable::FeatureColourTable()
 {
@@ -176,25 +176,26 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 	//see file-io/FeaturePropertiesMap.h
 }
 
+
 GPlatesGui::ColourTable::const_iterator
 GPlatesGui::FeatureColourTable::lookup(
 		const GPlatesModel::ReconstructedFeatureGeometry &feature_geometry) const
 {
 	GPlatesGui::ColourTable::const_iterator colour = NULL;
 
-	GPlatesModel::FeatureHandle::weak_ref ref = feature_geometry.feature_ref();
-	if( ref.is_valid() )
-	{	
-		GPlatesModel::FeatureType feature = ref->feature_type();
-		colour_map_type::const_iterator iter = d_colours.find(feature);	
-		if( iter == d_colours.end() )
+	if (feature_geometry.is_valid()) {
+		GPlatesModel::FeatureType feature_type =
+				feature_geometry.feature_handle_ptr()->feature_type();
+		colour_map_type::const_iterator iter = d_colours.find(feature_type);
+		if (iter == d_colours.end()) {
 			colour = NULL;
-		else
+		} else {
 			colour = &(iter->second);
+		}
 	}
-	
 	return colour;
 }
+
 
 GPlatesGui::FeatureColourTable *
 GPlatesGui::FeatureColourTable::d_instance;

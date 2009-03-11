@@ -1,13 +1,13 @@
 /* $Id$ */
 
 /**
- * @file 
+ * \file 
  * File specific comments.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,39 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_COLOURTABLE_H
-#define GPLATES_GUI_COLOURTABLE_H
+#include "WeakObserverVisitor.h"
 
-#include "Colour.h"
-
-
-namespace GPlatesModel
-{
-	class ReconstructedFeatureGeometry;
-}
-
-namespace GPlatesGui
-{
-	class ColourTable
-	{
-	public:
-		typedef const Colour *const_iterator;
-
-		virtual
-		~ColourTable()
-		{  }
-   
-		const_iterator
-		end() const
-		{
-			return NULL;
-		}
-
-		virtual
-		const_iterator
-		lookup(
-				const GPlatesModel::ReconstructedFeatureGeometry &feature) const = 0;
-	};
-}
-
-#endif  /* GPLATES_GUI_COLOURTABLE_H */
+// This definition can't be in the header file, or we get multiple definitions at link time.
+// Because it's a virtual function, it's meaningless to declare it 'inline' (and that doesn't
+// solve the problem anyway).
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::
+		~WeakObserverVisitor()
+{  }

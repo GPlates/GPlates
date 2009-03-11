@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -40,6 +40,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
+#include "model/Model.h"
 #include "model/FeatureRevision.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/DummyTransactionHandle.h"
@@ -143,10 +144,10 @@ namespace
 		UnicodeString feature_id;
 		if (extract_feature_id_from_header(header, feature_id))
 		{
-			return model.create_feature(feature_type, GPlatesModel::FeatureId(feature_id), collection);
+			return model->create_feature(feature_type, GPlatesModel::FeatureId(feature_id), collection);
 		}
 
-		return model.create_feature(feature_type, collection);
+		return model->create_feature(feature_type, collection);
 	}
 
 	/**
@@ -1349,7 +1350,7 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	boost::shared_ptr<DataSource> source( 
 			new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::PlatesLine));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-			= model.create_feature_collection();
+			= model->create_feature_collection();
 	
 	LineReader in(input);
 	while (in) {

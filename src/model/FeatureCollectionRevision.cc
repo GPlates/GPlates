@@ -36,6 +36,7 @@ GPlatesModel::FeatureCollectionRevision::append_feature(
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.
 	d_features.push_back(get_intrusive_ptr(new_feature));
+	new_feature->set_feature_collection_handle_ptr(d_handle_ptr);
 	return (size() - 1);
 }
 
@@ -45,6 +46,15 @@ GPlatesModel::FeatureCollectionRevision::remove_feature(
 		feature_collection_type::size_type index,
 		DummyTransactionHandle &transaction)
 {
+	if (d_features[index] == NULL) {
+		// That's strange, it appears that the feature at this index has already been
+		// removed.  (Note that this should not occur.)  Since this has happened, we should
+		// log a warning about this strange behaviour, so we can work out why.
+		// FIXME: Log a warning.
+		return;  // Nothing to do.
+	}
+	d_features[index]->set_feature_collection_handle_ptr(NULL);
+
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.
 	if (index < size()) {
 		d_features[index] = NULL;

@@ -397,7 +397,7 @@ namespace GPlatesQtWidgets
 			GPlatesFileIO::FileInfo &file_info);
 
 	private:
-		GPlatesModel::ModelInterface *d_model_ptr;
+		GPlatesModel::ModelInterface d_model;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
 
 		//@{

@@ -40,6 +40,8 @@
 #include "feature-visitors/PlateIdFinder.h" 
 #include "feature-visitors/ShapefileAttributeFinder.h"
 
+#include "model/Model.h"
+#include "model/ModelUtils.h"
 #include "model/QualifiedXmlName.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
@@ -751,7 +753,7 @@ GPlatesFileIO::ShapeFileReader::create_polygon_feature_from_list(
 		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
-			model.create_feature(feature_type,collection);
+			model->create_feature(feature_type,collection);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 		GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
@@ -785,7 +787,7 @@ GPlatesFileIO::ShapeFileReader::create_line_feature_from_list(
 		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
-			model.create_feature(feature_type,collection);
+			model->create_feature(feature_type,collection);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
@@ -820,7 +822,7 @@ GPlatesFileIO::ShapeFileReader::create_point_feature_from_pair(
 		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
-			model.create_feature(feature_type,collection);
+			model->create_feature(feature_type,collection);
 
 	const GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
 		GPlatesPropertyValues::GmlPoint::create(point);
@@ -850,7 +852,7 @@ GPlatesFileIO::ShapeFileReader::create_point_feature_from_point_on_sphere(
 		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
-			model.create_feature(feature_type,collection);
+			model->create_feature(feature_type,collection);
 
 	const GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
 		GPlatesPropertyValues::GmlPoint::create(point);
@@ -880,7 +882,7 @@ GPlatesFileIO::ShapeFileReader::create_multi_point_feature_from_list(
 		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
-			model.create_feature(feature_type,collection);
+			model->create_feature(feature_type,collection);
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
 		GPlatesMaths::MultiPointOnSphere::create_on_heap(list_of_points);
@@ -1134,7 +1136,7 @@ GPlatesFileIO::ShapeFileReader::read_file(
 	}
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-		= model.create_feature_collection();
+		= model->create_feature_collection();
 
 	reader.read_features(model,collection,read_errors);
 

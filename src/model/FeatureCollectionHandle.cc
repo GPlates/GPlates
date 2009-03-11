@@ -1,13 +1,13 @@
 /* $Id$ */
 
 /**
- * @file 
- * File specific comments.
+ * \file 
+ * Contains the definitions of the member functions of the class FeatureCollectionHandle.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,39 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_COLOURTABLE_H
-#define GPLATES_GUI_COLOURTABLE_H
-
-#include "Colour.h"
+#include "FeatureCollectionHandle.h"
 
 
-namespace GPlatesModel
+GPlatesModel::FeatureCollectionHandle::~FeatureCollectionHandle()
 {
-	class ReconstructedFeatureGeometry;
+	weak_observer_unsubscribe_forward(d_first_const_weak_observer);
+	weak_observer_unsubscribe_forward(d_first_weak_observer);
 }
-
-namespace GPlatesGui
-{
-	class ColourTable
-	{
-	public:
-		typedef const Colour *const_iterator;
-
-		virtual
-		~ColourTable()
-		{  }
-   
-		const_iterator
-		end() const
-		{
-			return NULL;
-		}
-
-		virtual
-		const_iterator
-		lookup(
-				const GPlatesModel::ReconstructedFeatureGeometry &feature) const = 0;
-	};
-}
-
-#endif  /* GPLATES_GUI_COLOURTABLE_H */

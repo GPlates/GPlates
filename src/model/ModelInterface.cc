@@ -1,13 +1,13 @@
 /* $Id$ */
 
 /**
- * @file 
+ * \file 
  * File specific comments.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,39 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_COLOURTABLE_H
-#define GPLATES_GUI_COLOURTABLE_H
-
-#include "Colour.h"
+#include "ModelInterface.h"
+#include "Model.h"
 
 
-namespace GPlatesModel
-{
-	class ReconstructedFeatureGeometry;
-}
+GPlatesModel::ModelInterface::ModelInterface():
+	d_model_ptr(new Model())
+{  }
 
-namespace GPlatesGui
-{
-	class ColourTable
-	{
-	public:
-		typedef const Colour *const_iterator;
 
-		virtual
-		~ColourTable()
-		{  }
-   
-		const_iterator
-		end() const
-		{
-			return NULL;
-		}
-
-		virtual
-		const_iterator
-		lookup(
-				const GPlatesModel::ReconstructedFeatureGeometry &feature) const = 0;
-	};
-}
-
-#endif  /* GPLATES_GUI_COLOURTABLE_H */

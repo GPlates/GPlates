@@ -15,14 +15,17 @@ set(srcs
     ConstFeatureVisitor.h
     DummyTransactionHandle.cc
     DummyTransactionHandle.h
+    FeatureCollectionHandle.cc
     FeatureCollectionHandle.h
     FeatureCollectionRevision.cc
     FeatureCollectionRevision.h
+    FeatureHandle.cc
     FeatureHandle.h
     FeatureId.h
     FeatureRevision.cc
     FeatureRevision.h
     FeatureStore.h
+    FeatureStoreRootHandle.cc
     FeatureStoreRootHandle.h
     FeatureStoreRootRevision.cc
     FeatureStoreRootRevision.h
@@ -32,6 +35,7 @@ set(srcs
     InlinePropertyContainer.h
     Model.cc
     Model.h
+    ModelInterface.cc
     ModelInterface.h
     ModelUtils.cc
     ModelUtils.h
@@ -41,6 +45,8 @@ set(srcs
     QualifiedXmlName.h
     ReconstructedFeatureGeometry.cc
     ReconstructedFeatureGeometry.h
+    ReconstructedFeatureGeometryFinder.cc
+    ReconstructedFeatureGeometryFinder.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
     Reconstruction.cc
@@ -64,6 +70,8 @@ set(srcs
     TemporaryGeometry.h
     types.h
     WeakObserver.h
+    WeakObserverVisitor.cc
+    WeakObserverVisitor.h
     WeakReference.h
     XmlAttributeName.h
     XmlAttributeValue.h

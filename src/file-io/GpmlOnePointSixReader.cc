@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -50,6 +50,7 @@
 
 #include "maths/LatLonPointConversions.h"
 
+#include "model/Model.h"
 #include "model/FeatureRevision.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/DummyTransactionHandle.h"
@@ -235,7 +236,7 @@ namespace
 		Model::FeatureType feature_type(xml_elem->get_name());
 
 		Model::FeatureHandle::weak_ref feature = 
-			model.create_feature(feature_type, collection);
+			model->create_feature(feature_type, collection);
 
 		// Read properties of the feature.
 		PropertyList properties;
@@ -288,13 +289,13 @@ namespace
 		Model::FeatureHandle::weak_ref feature;
 
 		if (feature_id && revision_id) {
-			feature = model.create_feature(feature_type, *feature_id, *revision_id, collection);
+			feature = model->create_feature(feature_type, *feature_id, *revision_id, collection);
 		} else if (feature_id) {
-			feature = model.create_feature(feature_type, *feature_id, collection);
+			feature = model->create_feature(feature_type, *feature_id, collection);
 		} else if (revision_id) {
-			feature = model.create_feature(feature_type, *revision_id, collection);
+			feature = model->create_feature(feature_type, *revision_id, collection);
 		} else {
-			feature = model.create_feature(feature_type, collection);
+			feature = model->create_feature(feature_type, collection);
 		}
 
 		// Add properties to feature.
@@ -474,7 +475,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 	boost::shared_ptr<DataSource> source( 
 			new LocalFileDataSource(filename, DataFormats::GpmlOnePointSix));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
-			model.create_feature_collection();
+			model->create_feature_collection();
 
 	GpmlReaderUtils::ReaderParams params(reader, source, read_errors);
 	boost::shared_ptr<Model::XmlElementNode::AliasToNamespaceMap> alias_map(

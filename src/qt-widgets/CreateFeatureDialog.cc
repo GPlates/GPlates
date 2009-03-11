@@ -41,6 +41,7 @@
 #include "ViewportWindow.h"
 #include "qt-widgets/ApplicationState.h"
 #include "model/types.h"
+#include "model/Model.h"
 #include "model/PropertyName.h"
 #include "model/FeatureType.h"
 #include "model/FeatureCollectionHandle.h"
@@ -805,7 +806,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		collection = collection_item->get_collection();
 	}
 	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
+	GPlatesModel::FeatureHandle::weak_ref feature = (*d_model_ptr)->create_feature(type, collection);
 	
 
 	// Add a (possibly ConstantValue-wrapped, see GeometricPropertyValueConstructor)
