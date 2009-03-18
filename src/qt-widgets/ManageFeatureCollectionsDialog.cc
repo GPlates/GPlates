@@ -56,7 +56,7 @@ namespace
 		 */
 		enum ColumnName
 		{
-			FILENAME, FORMAT, IN_USE, ACTIONS
+			FILENAME, FORMAT, LAYER_TYPES, ACTIONS
 		};
 	}
 	
@@ -262,7 +262,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	QHeaderView *header = table_feature_collections->horizontalHeader();
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
-	header->resizeSection(ColumnNames::IN_USE, 88);
+	header->resizeSection(ColumnNames::LAYER_TYPES, 88);
 	header->resizeSection(ColumnNames::ACTIONS, 216);
 
 	// Enforce minimum row height for the Actions widget's sake.
@@ -305,7 +305,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_state()
 	for (; row < end; ++row) {
 		// Update the State widget.
 		ManageFeatureCollectionsStateWidget *state_widget = dynamic_cast<ManageFeatureCollectionsStateWidget *>(
-				table_feature_collections->cellWidget(row, ColumnNames::IN_USE));
+				table_feature_collections->cellWidget(row, ColumnNames::LAYER_TYPES));
 		if (state_widget) {
 			GPlatesAppState::ApplicationState::file_info_iterator file_it =
 					state_widget->get_file_info_iterator();
@@ -668,11 +668,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	format_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FORMAT, format_item);
 
-	// Add in use status.
+	// Add layer type / in use status.
 	ManageFeatureCollectionsStateWidget *state_widget_ptr =
 			new ManageFeatureCollectionsStateWidget(*this, file_it, 
 					in_use_reconstructable, in_use_reconstruction, this);
-	table_feature_collections->setCellWidget(row, ColumnNames::IN_USE, state_widget_ptr);
+	table_feature_collections->setCellWidget(row, ColumnNames::LAYER_TYPES, state_widget_ptr);
 	
 	// Add action buttons widget.
 	ManageFeatureCollectionsActionWidget *action_widget_ptr =

@@ -56,48 +56,15 @@
      <string>&amp;Reconstruction</string>
     </property>
     <addaction name="action_Reconstruct_to_Time" />
+    <addaction name="separator" />
     <addaction name="action_Increment_Animation_Time_Backwards" />
     <addaction name="action_Increment_Animation_Time_Forwards" />
-    <addaction name="action_Specify_Time_Increment" />
+    <addaction name="action_Reset_Animation" />
+    <addaction name="action_Play" />
     <addaction name="action_Animate" />
     <addaction name="separator" />
-    <addaction name="action_Specify_Fixed_Plate" />
+    <addaction name="action_Specify_Anchored_Plate_ID" />
     <addaction name="action_View_Reconstruction_Poles" />
-   </widget>
-   <widget class="QMenu" name="menu_View" >
-    <property name="title" >
-     <string>&amp;View</string>
-    </property>
-    <widget class="QMenu" name="menu_Colour_Geometries_By" >
-     <property name="title" >
-      <string>&amp;Colour Geometries By</string>
-     </property>
-     <addaction name="action_Colour_By_Plate_ID" />
-     <addaction name="action_Colour_By_Single_Colour" />
-     <addaction name="action_Colour_By_Feature_Type" />
-     <addaction name="action_Colour_By_Age" />
-    </widget>
-    <addaction name="menu_Colour_Geometries_By" />
-    <addaction name="separator" />
-    <addaction name="action_Show_Raster" />
-    <addaction name="action_Set_Raster_Surface_Extent" />
-    <addaction name="separator" />
-    <addaction name="action_Set_Camera_Viewpoint" />
-    <addaction name="action_Move_Camera_Up" />
-    <addaction name="action_Move_Camera_Down" />
-    <addaction name="action_Move_Camera_Left" />
-    <addaction name="action_Move_Camera_Right" />
-    <addaction name="separator" />
-    <addaction name="action_Rotate_Camera_Clockwise" />
-    <addaction name="action_Rotate_Camera_Anticlockwise" />
-    <addaction name="action_Reset_Camera_Orientation" />
-    <addaction name="separator" />
-    <addaction name="action_Set_Zoom" />
-    <addaction name="action_Zoom_In" />
-    <addaction name="action_Zoom_Out" />
-    <addaction name="action_Reset_Zoom_Level" />
-    <addaction name="separator" />
-    <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
    <widget class="QMenu" name="menu_Edit" >
     <property name="title" >
@@ -113,10 +80,69 @@
     <addaction name="separator" />
     <addaction name="action_Clear_Selection" />
    </widget>
+   <widget class="QMenu" name="menu_Layers" >
+    <property name="title" >
+     <string>&amp;Layers</string>
+    </property>
+    <widget class="QMenu" name="menu_Colour_Geometries_By" >
+     <property name="title" >
+      <string>Geometry &amp;Colours</string>
+     </property>
+     <addaction name="action_Colour_By_Plate_ID" />
+     <addaction name="action_Colour_By_Single_Colour" />
+     <addaction name="action_Colour_By_Feature_Type" />
+     <addaction name="action_Colour_By_Age" />
+    </widget>
+    <addaction name="menu_Colour_Geometries_By" />
+    <addaction name="separator" />
+    <addaction name="action_Show_Raster" />
+    <addaction name="action_Set_Raster_Surface_Extent" />
+    <addaction name="separator" />
+    <addaction name="action_Show_Reconstructable_Features" />
+    <addaction name="action_Show_Instantaneous_Features" />
+    <addaction name="action_Show_Topologies" />
+   </widget>
+   <widget class="QMenu" name="menu_View" >
+    <property name="title" >
+     <string>&amp;View</string>
+    </property>
+    <widget class="QMenu" name="menu_Move_Camera" >
+     <property name="title" >
+      <string>&amp;Move Camera</string>
+     </property>
+     <addaction name="action_Move_Camera_Up" />
+     <addaction name="action_Move_Camera_Down" />
+     <addaction name="action_Move_Camera_Left" />
+     <addaction name="action_Move_Camera_Right" />
+    </widget>
+    <widget class="QMenu" name="menu_Camera_Zoom" >
+     <property name="title" >
+      <string>Camera &amp;Zoom</string>
+     </property>
+     <addaction name="action_Set_Zoom" />
+     <addaction name="action_Zoom_In" />
+     <addaction name="action_Zoom_Out" />
+     <addaction name="action_Reset_Zoom_Level" />
+    </widget>
+    <widget class="QMenu" name="menu_Rotate_Camera" >
+     <property name="title" >
+      <string>&amp;Rotate Camera</string>
+     </property>
+     <addaction name="action_Rotate_Camera_Clockwise" />
+     <addaction name="action_Rotate_Camera_Anticlockwise" />
+     <addaction name="action_Reset_Camera_Orientation" />
+    </widget>
+    <addaction name="action_Set_Camera_Viewpoint" />
+    <addaction name="menu_Move_Camera" />
+    <addaction name="menu_Rotate_Camera" />
+    <addaction name="menu_Camera_Zoom" />
+    <addaction name="action_Export_Geometry_Snapshot" />
+   </widget>
    <addaction name="menu_File" />
    <addaction name="menu_Edit" />
-   <addaction name="menu_Reconstruction" />
    <addaction name="menu_View" />
+   <addaction name="menu_Reconstruction" />
+   <addaction name="menu_Layers" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
@@ -364,9 +390,9 @@
     <string>Ctrl+T</string>
    </property>
   </action>
-  <action name="action_Specify_Fixed_Plate" >
+  <action name="action_Specify_Anchored_Plate_ID" >
    <property name="text" >
-    <string>Specify &amp;Fixed Plate...</string>
+    <string>Specify A&amp;nchored Plate ID...</string>
    </property>
   </action>
   <action name="action_Increment_Animation_Time_Backwards" >
@@ -374,7 +400,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Step &amp;backwards one increment</string>
+    <string>Step &amp;Backward One Frame</string>
    </property>
    <property name="shortcut" >
     <string>Ctrl+Shift+I</string>
@@ -385,7 +411,10 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Step forwards one &amp;increment</string>
+    <string>Step &amp;Forward One Frame</string>
+   </property>
+   <property name="iconText" >
+    <string>Step Forward One Frame</string>
    </property>
    <property name="shortcut" >
     <string>Ctrl+I</string>
@@ -393,7 +422,7 @@
   </action>
   <action name="action_Animate" >
    <property name="text" >
-    <string>&amp;Animate...</string>
+    <string>&amp;Configure Animation...</string>
    </property>
   </action>
   <action name="action_Drag_Globe" >
@@ -410,10 +439,10 @@
     <string>Drag Globe</string>
    </property>
    <property name="toolTip" >
-    <string>Re-orient Globe  R</string>
+    <string>Drag Globe  D</string>
    </property>
    <property name="shortcut" >
-    <string>R</string>
+    <string>D</string>
    </property>
   </action>
   <action name="action_Query_Feature" >
@@ -487,7 +516,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Reset Zoo&amp;m Level</string>
+    <string>Reset Zoo&amp;m</string>
    </property>
    <property name="shortcut" >
     <string>1</string>
@@ -528,6 +557,9 @@
    <property name="text" >
     <string>&amp;Manage Feature Collections</string>
    </property>
+   <property name="shortcut" >
+    <string>Ctrl+M</string>
+   </property>
   </action>
   <action name="action_Open_Feature_Collection" >
    <property name="text" >
@@ -542,10 +574,10 @@
     <bool>false</bool>
    </property>
    <property name="text" >
-    <string>Set Camera &amp;Viewpoint...</string>
+    <string>Set Camera &amp;Position...</string>
    </property>
    <property name="shortcut" >
-    <string>Ctrl+L</string>
+    <string>Ctrl+P</string>
    </property>
   </action>
   <action name="action_Move_Camera_Up" >
@@ -553,7 +585,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_up_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Move Camera &amp;Up</string>
+    <string>Move &amp;Up</string>
    </property>
    <property name="shortcut" >
     <string>Up</string>
@@ -564,7 +596,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_down_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Move Camera &amp;Down</string>
+    <string>Move &amp;Down</string>
    </property>
    <property name="shortcut" >
     <string>Down</string>
@@ -575,7 +607,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_previous_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Move Camera &amp;Left</string>
+    <string>Move &amp;Left</string>
    </property>
    <property name="shortcut" >
     <string>Left</string>
@@ -586,7 +618,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_next_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Move Camera &amp;Right</string>
+    <string>Move &amp;Right</string>
    </property>
    <property name="shortcut" >
     <string>Right</string>
@@ -597,7 +629,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_view_refresh_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Rotate Camera Clock&amp;wise</string>
+    <string>Rotate Clock&amp;wise</string>
    </property>
    <property name="shortcut" >
     <string>]</string>
@@ -608,7 +640,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_view_refresh_flipped_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Rotate Camera &amp;Anti-clockwise</string>
+    <string>Rotate &amp;Anti-clockwise</string>
    </property>
    <property name="shortcut" >
     <string>[</string>
@@ -619,7 +651,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/reorient_poles_16.png</iconset>
    </property>
    <property name="text" >
-    <string>Reset Camera Orie&amp;ntation</string>
+    <string>Reset Orie&amp;ntation</string>
    </property>
    <property name="shortcut" >
     <string>^</string>
@@ -663,7 +695,7 @@
     <bool>true</bool>
    </property>
    <property name="text" >
-    <string>&amp;Show Raster</string>
+    <string>Show &amp;Raster</string>
    </property>
    <property name="toolTip" >
     <string>A toggle operation which controls whether rasters are shown.</string>
@@ -971,7 +1003,55 @@
     <string>Specify Time I&amp;ncrement...</string>
    </property>
   </action>
+  <action name="action_Reset_Animation" >
+   <property name="text" >
+    <string>&amp;Reset Animation</string>
+   </property>
+  </action>
+  <action name="action_Play" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Pla&amp;y Animation</string>
+   </property>
+  </action>
+  <action name="action_Show_Reconstructable_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Reconstructable &amp;Features</string>
+   </property>
+  </action>
+  <action name="action_Show_Topologies" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show &amp;Topologies</string>
+   </property>
+  </action>
+  <action name="action_Show_Instantaneous_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show &amp;Instantaneous Features</string>
+   </property>
+  </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections/>
 </ui>

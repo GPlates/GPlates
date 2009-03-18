@@ -31,7 +31,7 @@
    <item>
     <widget class="QPushButton" name="button_reconstruction_increment" >
      <property name="toolTip" >
-      <string>Step backwards one increment  Ctrl+Shift+I</string>
+      <string>Step backwards one frame  Ctrl+Shift+I</string>
      </property>
      <property name="icon" >
       <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_22.png</iconset>
@@ -53,7 +53,7 @@
    <item>
     <widget class="QPushButton" name="button_reconstruction_decrement" >
      <property name="toolTip" >
-      <string>Step forwards one increment  Ctrl+I</string>
+      <string>Step forwards one frame  Ctrl+I</string>
      </property>
      <property name="icon" >
       <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_22.png</iconset>

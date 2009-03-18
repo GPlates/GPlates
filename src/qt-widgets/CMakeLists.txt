@@ -159,9 +159,9 @@ set(srcs
     ShapefileAttributeWidgetUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
-    SpecifyFixedPlateDialog.cc
-    SpecifyFixedPlateDialog.h
-    SpecifyFixedPlateDialogUi.ui
+    SpecifyAnchoredPlateIdDialog.cc
+    SpecifyAnchoredPlateIdDialog.h
+    SpecifyAnchoredPlateIdDialogUi.ui
     SpecifyTimeIncrementDialog.cc
     SpecifyTimeIncrementDialog.h
     SpecifyTimeIncrementDialogUi.ui

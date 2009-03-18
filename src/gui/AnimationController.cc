@@ -203,6 +203,18 @@ GPlatesGui::AnimationController::pause()
 
 
 void
+GPlatesGui::AnimationController::set_play_or_pause(
+		bool lets_play)
+{
+	if (lets_play) {
+		play();
+	} else {
+		pause();
+	}
+}
+
+
+void
 GPlatesGui::AnimationController::step_forward()
 {
 	// Step forward through the animation, towards the 'end' time.
@@ -456,6 +468,7 @@ GPlatesGui::AnimationController::start_animation_timer()
 	d_timer.start(static_cast<int>(frame_duration_millisecs));
 
 	emit animation_started();
+	emit animation_state_changed(true);
 }
 
 
@@ -465,6 +478,7 @@ GPlatesGui::AnimationController::stop_animation_timer()
 	d_timer.stop();
 
 	emit animation_paused();
+	emit animation_state_changed(false);
 }
 
 

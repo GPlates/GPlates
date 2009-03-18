@@ -58,6 +58,27 @@ namespace
 			return QObject::tr("<invalid>");
 		}
 	}
+
+
+	/**
+	 * We now have four of these plate ID fields.
+	 */
+	void
+	fill_plate_id_field(
+			QLineEdit *field,
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			const GPlatesModel::PropertyName &property_name)
+	{
+		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(property_name);
+		plate_id_finder.visit_feature_handle(*feature_ref);
+		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+			// The feature has a plate ID of the desired kind.
+			GPlatesModel::integer_plate_id_type plate_id =
+					*plate_id_finder.found_plate_ids_begin();
+			
+			field->setText(QString::number(plate_id));
+		}
+	}
 }
 
 
@@ -92,9 +113,16 @@ GPlatesQtWidgets::FeatureSummaryWidget::clear()
 	lineedit_type->clear();
 	lineedit_name->clear();
 	lineedit_plate_id->clear();
+	lineedit_conjugate_plate_id->clear();
+	lineedit_left_plate_id->clear();
+	lineedit_right_plate_id->clear();
 	lineedit_time_of_appearance->clear();
 	lineedit_time_of_disappearance->clear();
 	lineedit_clicked_geometry->clear();
+
+	// Show/Hide some of the Plate ID fields depending on if they have anything
+	// useful to report.
+	hide_plate_id_fields_as_appropriate();
 }
 
 
@@ -135,17 +163,28 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	}
 
 	// Plate ID.
-	static const GPlatesModel::PropertyName plate_id_property_name =
-		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-	plate_id_finder.visit_feature_handle(*feature_ref);
-	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
-		// The feature has a reconstruction plate ID.
-		GPlatesModel::integer_plate_id_type recon_plate_id =
-				*plate_id_finder.found_plate_ids_begin();
-		
-		lineedit_plate_id->setText(QString::number(recon_plate_id));
-	}
+	static const GPlatesModel::PropertyName recon_plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	fill_plate_id_field(lineedit_plate_id, feature_ref, recon_plate_id_property_name);
+
+	// Conjugate Plate ID.
+	// NOTE: Isochrons also have a 'conjugate' property, which is the proper
+	// feature-centric reference to the twin of that Isochron, which no-one uses yet.
+	// We also have a backwards-compatible PLATES4 header to think about.
+	static const GPlatesModel::PropertyName conjugate_plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
+	fill_plate_id_field(lineedit_conjugate_plate_id, feature_ref, conjugate_plate_id_property_name);
+
+	// Left Plate ID.
+	static const GPlatesModel::PropertyName left_plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("leftPlate");
+	fill_plate_id_field(lineedit_left_plate_id, feature_ref, left_plate_id_property_name);
+
+	// Right Plate ID.
+	static const GPlatesModel::PropertyName right_plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("rightPlate");
+	fill_plate_id_field(lineedit_right_plate_id, feature_ref, right_plate_id_property_name);
+	
 	
 	// Valid Time (Assuming a gml:TimePeriod, rather than a gml:TimeInstant!)
 	static const GPlatesModel::PropertyName valid_time_property_name =
@@ -174,6 +213,31 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 			lineedit_clicked_geometry->setText(tr("<No longer valid>"));
 		}
 	}
+	
+	// Show/Hide some of the Plate ID fields depending on if they have anything
+	// useful to report.
+	hide_plate_id_fields_as_appropriate();
 }
 
+
+void
+GPlatesQtWidgets::FeatureSummaryWidget::hide_plate_id_fields_as_appropriate()
+{
+	// Note that we'll always show the reconstuction "Plate ID" field, because it's
+	// just so damn awesome.
+	
+	// Hide the Conjugate field if no data, show otherwise.
+	bool has_conjugate_data = ! lineedit_conjugate_plate_id->text().isEmpty();
+	lineedit_conjugate_plate_id->setVisible(has_conjugate_data);
+	label_conjugate_plate_id->setVisible(has_conjugate_data);
+
+	// Hide the Left Plate and Right Plate fields as a pair.
+	bool has_left_data = ! lineedit_left_plate_id->text().isEmpty();
+	bool has_right_data = ! lineedit_right_plate_id->text().isEmpty();
+
+	lineedit_left_plate_id->setVisible(has_left_data || has_right_data);
+	label_left_plate_id->setVisible(has_left_data || has_right_data);
+	lineedit_right_plate_id->setVisible(has_left_data || has_right_data);
+	label_right_plate_id->setVisible(has_left_data || has_right_data);
+}
 

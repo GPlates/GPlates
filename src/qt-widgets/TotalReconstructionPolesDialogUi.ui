@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>790</width>
+    <width>800</width>
     <height>460</height>
    </rect>
   </property>
@@ -53,7 +53,7 @@
      <item>
       <widget class="QLabel" name="label_reference_plate" >
        <property name="text" >
-        <string>Ma, with stationary plate ID</string>
+        <string>Ma, with anchored plate ID</string>
        </property>
       </widget>
      </item>
@@ -201,7 +201,7 @@
      </widget>
      <widget class="QWidget" name="tab_table_composed" >
       <attribute name="title" >
-       <string>&amp;Equivalent Rotations rel. Stat. Plate</string>
+       <string>&amp;Equivalent Rotations rel. Anchored Plate</string>
       </attribute>
       <layout class="QGridLayout" >
        <item row="1" column="0" >
@@ -249,7 +249,7 @@
        <item row="0" column="0" >
         <widget class="QLabel" name="label_equivalent_rotations" >
          <property name="text" >
-          <string>Each equivalent rotation describes the motion of a plate relative to the currently-specified stationary plate.</string>
+          <string>Each equivalent rotation describes the motion of a plate relative to the currently anchored plate ID.</string>
          </property>
         </widget>
        </item>
@@ -306,7 +306,7 @@
          </column>
          <column>
           <property name="text" >
-           <string>Equivalent rotation rel. stationary plate</string>
+           <string>Equivalent rotation rel. anchored plate</string>
           </property>
          </column>
         </widget>
@@ -353,7 +353,7 @@
      </widget>
      <widget class="QWidget" name="tab_path_to_root" >
       <attribute name="title" >
-       <string>&amp;Plate Circuits to Stat. Plate</string>
+       <string>&amp;Plate Circuits to Anchored Plate</string>
       </attribute>
       <layout class="QGridLayout" >
        <item row="1" column="0" >
@@ -378,7 +378,7 @@
          </column>
          <column>
           <property name="text" >
-           <string>Equivalent rotation rel. stationary plate</string>
+           <string>Equivalent rotation rel. anchored plate</string>
           </property>
          </column>
         </widget>
@@ -417,7 +417,7 @@
        <item row="0" column="0" >
         <widget class="QLabel" name="label_plate_circuits" >
          <property name="text" >
-          <string>Each branch can be expanded to list the circuit of relative rotations from a plate to the stationary plate.</string>
+          <string>Each branch can be expanded to list the circuit of relative rotations from a plate to the anchored plate.</string>
          </property>
         </widget>
        </item>

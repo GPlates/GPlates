@@ -53,7 +53,7 @@
 #include "ReconstructionViewWidget.h"
 #include "SetCameraViewpointDialog.h"
 #include "SetRasterSurfaceExtentDialog.h"
-#include "SpecifyFixedPlateDialog.h"
+#include "SpecifyAnchoredPlateIdDialog.h"
 #include "SpecifyTimeIncrementDialog.h"
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
@@ -426,7 +426,7 @@ namespace GPlatesQtWidgets
 		ReadErrorAccumulationDialog d_read_errors_dialog;
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
 		SetRasterSurfaceExtentDialog d_set_raster_surface_extent_dialog;
-		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
+		SpecifyAnchoredPlateIdDialog d_specify_anchored_plate_id_dialog;
 		SpecifyTimeIncrementDialog d_specify_time_increment_dialog;
 
 		GlobeCanvas *d_canvas_ptr;
@@ -500,7 +500,7 @@ namespace GPlatesQtWidgets
 
 	private slots:
 		void
-		pop_up_specify_fixed_plate_dialog();
+		pop_up_specify_anchored_plate_id_dialog();
 
 		void
 		pop_up_set_camera_viewpoint_dialog();

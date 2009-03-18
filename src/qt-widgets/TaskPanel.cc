@@ -37,6 +37,31 @@
 #include "gui/FeatureFocus.h"
 
 
+namespace
+{
+	/**
+	 * For use with set_up_xxxx_tab methods: Adds a standard vertical box
+	 * layout to the taskpanel page, and returns it for convenience.
+	 *
+	 * You don't have to use this if you want to set up a TaskPanel page
+	 * with some unusual layout - this function is just to help keep things
+	 * consistent.
+	 */
+	QLayout *
+	add_default_layout(
+			QWidget* page)
+	{
+		// Set up the layout to be used by the tab.
+		// The layout will be parented to the widget, and cleaned up by Qt.
+		QVBoxLayout *lay = new QVBoxLayout(page);
+		lay->setSpacing(2);
+		lay->setContentsMargins(2, 2, 2, 2);
+		return lay;
+	}
+}
+
+
+
 GPlatesQtWidgets::TaskPanel::TaskPanel(
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesModel::ModelInterface &model_interface,
@@ -85,9 +110,7 @@ GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
 		GPlatesGui::FeatureFocus &feature_focus)
 {
 	// Set up the layout to be used by the Feature tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_feature);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
+	QLayout *lay = add_default_layout(tab_feature);
 	
 	// Add a summary of the currently-focused Feature.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
@@ -100,7 +123,7 @@ GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
 	// as we have less than five buttons right now.
 	ab_lay->addWidget(d_feature_action_button_box_ptr);
 	ab_lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Minimum));
-	lay->addLayout(ab_lay);
+	lay->addItem(ab_lay);
 	
 	// After the action buttons, a spacer to eat up remaining space and push all
 	// the widgets to the top of the Feature tab.
@@ -112,9 +135,7 @@ void
 GPlatesQtWidgets::TaskPanel::set_up_digitisation_tab()
 {
 	// Set up the layout to be used by the Digitisation tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_digitisation);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
+	QLayout *lay = add_default_layout(tab_digitisation);
 	
 	// Add a summary of the current geometry being digitised.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
@@ -133,9 +154,7 @@ void
 GPlatesQtWidgets::TaskPanel::set_up_move_vertex_tab()
 {
 	// Set up the layout to be used by the Move Vertex tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_move_vertex);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
+	QLayout *lay = add_default_layout(tab_move_vertex);
 	
 	// Add a summary of the current geometry being modified by move vertex tool.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
@@ -154,9 +173,7 @@ void
 GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 {
 	// Set up the layout to be used by the Modify Pole tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_modify_pole);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
+	QLayout *lay = add_default_layout(tab_modify_pole);
 	
 	// Add the main ReconstructionPoleWidget.
 	// As usual, Qt will take ownership of memory so we don't have to worry.

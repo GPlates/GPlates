@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>458</width>
-    <height>567</height>
+    <width>462</width>
+    <height>574</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -46,21 +46,21 @@
      <item>
       <widget class="QLabel" name="label_reconstruction_info" >
        <property name="text" >
-        <string>Reconstructed relative to the root plate ID</string>
+        <string>Reconstructed relative to the anchored plate ID</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QLineEdit" name="lineedit_root_plateid" >
        <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Preferred" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="maximumSize" >
         <size>
-         <width>48</width>
+         <width>96</width>
          <height>16777215</height>
         </size>
        </property>
@@ -69,6 +69,23 @@
        </property>
       </widget>
      </item>
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>16</width>
+         <height>23</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
      <item>
       <widget class="QLabel" name="label_reconstruction_info_2" >
        <property name="text" >
@@ -79,14 +96,14 @@
      <item>
       <widget class="QLineEdit" name="lineedit_reconstruction_time" >
        <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Preferred" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="maximumSize" >
         <size>
-         <width>32</width>
+         <width>96</width>
          <height>16777215</height>
         </size>
        </property>
@@ -109,8 +126,8 @@
        </property>
        <property name="sizeHint" >
         <size>
-         <width>40</width>
-         <height>20</height>
+         <width>16</width>
+         <height>23</height>
         </size>
        </property>
       </spacer>

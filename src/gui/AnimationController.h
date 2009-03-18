@@ -149,7 +149,15 @@ namespace GPlatesGui
 		 */
 		void
 		pause();
-		
+
+		/**
+		 * Convenience function to call play() or pause() depending on bool.
+		 * Useful if you need to connect to a signal that offers the same.
+		 */
+		void
+		set_play_or_pause(
+				bool lets_play);
+
 		/**
 		 * Increments or decrements the view time so as to progress
 		 * forwards through the animation by one @a time_increment().
@@ -278,6 +286,16 @@ namespace GPlatesGui
 
 		void
 		animation_paused();
+
+		/**
+		 * Convenience signal which is emitted at the same time that
+		 * @a animation_started() and @a animation_paused() are,
+		 * to aid signal/slot connections that would ideally like
+		 * a bool.
+		 */
+		void
+		animation_state_changed(
+				bool is_playing);
 
 	private slots:
 

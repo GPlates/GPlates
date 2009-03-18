@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>183</width>
-    <height>359</height>
+    <height>386</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -54,6 +54,12 @@
      <property name="currentIndex" >
       <number>0</number>
      </property>
+     <property name="elideMode" >
+      <enum>Qt::ElideNone</enum>
+     </property>
+     <property name="usesScrollButtons" >
+      <bool>true</bool>
+     </property>
      <widget class="QWidget" name="tab_feature" >
       <attribute name="title" >
        <string>Current Feature</string>
@@ -78,6 +84,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections/>
 </ui>

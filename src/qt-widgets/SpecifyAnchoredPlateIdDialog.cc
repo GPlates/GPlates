@@ -23,10 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#include "SpecifyFixedPlateDialog.h"
+#include "SpecifyAnchoredPlateIdDialog.h"
 
 
-GPlatesQtWidgets::SpecifyFixedPlateDialog::SpecifyFixedPlateDialog(
+GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::SpecifyAnchoredPlateIdDialog(
 		unsigned long init_value,
 		QWidget *parent_):
 	QDialog(parent_),

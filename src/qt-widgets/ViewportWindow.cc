@@ -580,7 +580,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_read_errors_dialog(this),
 	d_set_camera_viewpoint_dialog(*this, this),
 	d_set_raster_surface_extent_dialog(*this, this),
-	d_specify_fixed_plate_dialog(d_recon_root, this),
+	d_specify_anchored_plate_id_dialog(d_recon_root, this),
 	d_specify_time_increment_dialog(d_animation_controller, this),
 	d_geom_builder_tool_target(
 			d_digitise_geometry_builder,
@@ -644,8 +644,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
 			this, SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
 
-	// Set up the Specify Fixed Plate dialog.
-	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
+	// Set up the Specify Anchored Plate ID dialog.
+	QObject::connect(&d_specify_anchored_plate_id_dialog, SIGNAL(value_changed(unsigned long)),
 			this, SLOT(reconstruct_with_root(unsigned long)));
 
 	// Set up the Reconstruction View widget.
@@ -891,13 +891,17 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			&d_animation_controller, SLOT(step_forward()));
 	QObject::connect(action_Increment_Animation_Time_Backwards, SIGNAL(triggered()),
 			&d_animation_controller, SLOT(step_back()));
-	QObject::connect(action_Specify_Time_Increment, SIGNAL(triggered()),
-			&d_specify_time_increment_dialog, SLOT(exec()));
 	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
+	QObject::connect(action_Reset_Animation, SIGNAL(triggered()),
+			&d_animation_controller, SLOT(seek_beginning()));
+	QObject::connect(action_Play, SIGNAL(triggered(bool)),
+			&d_animation_controller, SLOT(set_play_or_pause(bool)));
+	QObject::connect(&d_animation_controller, SIGNAL(animation_state_changed(bool)),
+			action_Play, SLOT(setChecked(bool)));
 	// ----
-	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(triggered()),
-			this, SLOT(pop_up_specify_fixed_plate_dialog()));
+	QObject::connect(action_Specify_Anchored_Plate_ID, SIGNAL(triggered()),
+			this, SLOT(pop_up_specify_anchored_plate_id_dialog()));
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
 			this, SLOT(pop_up_total_reconstruction_poles_dialog()));
 	
@@ -1100,16 +1104,16 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_specify_fixed_plate_dialog()
+GPlatesQtWidgets::ViewportWindow::pop_up_specify_anchored_plate_id_dialog()
 {
-	d_specify_fixed_plate_dialog.show();
+	d_specify_anchored_plate_id_dialog.show();
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
 	// a second time, when the dialog is still open, should make the dialog 'active'
 	// and return keyboard focus to it.
-	d_specify_fixed_plate_dialog.activateWindow();
+	d_specify_anchored_plate_id_dialog.activateWindow();
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_specify_fixed_plate_dialog.raise();
+	d_specify_anchored_plate_id_dialog.raise();
 }
 
 
@@ -1568,7 +1572,7 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	d_read_errors_dialog.reject();
 	d_set_camera_viewpoint_dialog.reject();
 	d_set_raster_surface_extent_dialog.reject();
-	d_specify_fixed_plate_dialog.reject();
+	d_specify_anchored_plate_id_dialog.reject();
 	d_shapefile_attribute_viewer_dialog.reject();
 }
 
