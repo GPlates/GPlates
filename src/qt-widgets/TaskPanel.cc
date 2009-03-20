@@ -110,7 +110,9 @@ GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
 		GPlatesGui::FeatureFocus &feature_focus)
 {
 	// Set up the layout to be used by the Feature tab.
-	QLayout *lay = add_default_layout(tab_feature);
+	QVBoxLayout *lay = new QVBoxLayout(tab_feature);
+	lay->setSpacing(2);
+	lay->setContentsMargins(2, 2, 2, 2);
 	
 	// Add a summary of the currently-focused Feature.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
@@ -123,7 +125,7 @@ GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
 	// as we have less than five buttons right now.
 	ab_lay->addWidget(d_feature_action_button_box_ptr);
 	ab_lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Minimum));
-	lay->addItem(ab_lay);
+	lay->addLayout(ab_lay);
 	
 	// After the action buttons, a spacer to eat up remaining space and push all
 	// the widgets to the top of the Feature tab.
