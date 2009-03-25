@@ -151,7 +151,11 @@ namespace GPlatesFeatureVisitors
 		std::list<GPlatesMaths::PointOnSphere> d_working_vertex_list;
 		std::list<GPlatesMaths::PointOnSphere> d_node2_vertex_list;
 
-		const GPlatesMaths::PointOnSphere *d_click_point_ptr;
+		const GPlatesMaths::PointOnSphere *d_ref_point_ptr;
+		GPlatesModel::FeatureId d_ref_point_plate_id_fid;
+
+		std::list<GPlatesMaths::PointOnSphere> d_ref_point_list;
+		std::list<GPlatesMaths::PointOnSphere> d_proximity_point_list;
 
 		GPlatesMaths::real_t d_closeness;
 
