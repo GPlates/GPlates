@@ -2452,7 +2452,7 @@ qDebug() << "EditTopologyWidget::process_intersections: "
 			GPlatesPropertyValues::GmlPoint::create( const_pos );
 
 		// reference_point_plate_id
-		const GPlatesModel::FeatureId index_fid(d_tmp_index_fid);
+		const GPlatesModel::FeatureId index_fid( prev_fid );
 
 		const GPlatesModel::PropertyName prop_name2 =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
@@ -2518,13 +2518,13 @@ qDebug() << "EditTopologyWidget::process_intersections: "
 	if ( d_visit_to_create_properties && (d_num_intersections_with_next != 0) )
 	{
 		// if there was an intersection, create a endIntersection property value
-		GPlatesModel::ReconstructionGeometry *rg = next->get();
+		GPlatesModel::ReconstructionGeometry *next_rg = next->get();
 
-		GPlatesModel::ReconstructedFeatureGeometry *rfg =
-			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
+		GPlatesModel::ReconstructedFeatureGeometry *next_rfg =
+			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(next_rg);
 
 		// intersection_geometry
-		const GPlatesModel::FeatureId next_fid = rfg->feature_ref()->feature_id();
+		const GPlatesModel::FeatureId next_fid = next_rfg->feature_ref()->feature_id();
 
 		const GPlatesModel::PropertyName prop_name1 =
 			GPlatesModel::PropertyName::create_gpml("centerLineOf");
@@ -2532,6 +2532,7 @@ qDebug() << "EditTopologyWidget::process_intersections: "
 		const GPlatesPropertyValues::TemplateTypeParameterType value_type1 =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString" );
 
+		// create the intersectionGeometry property delegate
 		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type geom_delegte = 
 			GPlatesPropertyValues::GpmlPropertyDelegate::create( 
 				next_fid,
@@ -2544,7 +2545,7 @@ qDebug() << "EditTopologyWidget::process_intersections: "
 			GPlatesPropertyValues::GmlPoint::create( const_pos );
 
 		// reference_point_plate_id
-		const GPlatesModel::FeatureId index_fid(d_tmp_index_fid);
+		const GPlatesModel::FeatureId index_fid( next_fid );
 
 		const GPlatesModel::PropertyName prop_name2 =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
