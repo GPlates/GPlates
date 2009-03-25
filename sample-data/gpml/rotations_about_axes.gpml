@@ -13,10 +13,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> TEST ROTATION FILE</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -27,7 +26,7 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
@@ -58,10 +57,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> FIXED TO MANLE SPIN AXIS (000)</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -72,10 +70,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                    <gml:timePosition>300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description> FIXED TO MANLE SPIN AXIS (000)</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -104,10 +101,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about X axis going ccw fwd in time (101 = yellow )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -125,10 +121,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                    <gml:timePosition>300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about X axis going ccw fwd in time (101 = yellow )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -157,10 +152,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about Y axis cw going fwd in time ( 102 = red ) </gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -178,10 +172,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                    <gml:timePosition>300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about Y axis cw going fwd in time ( 102 = red ) </gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -210,10 +203,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about Z axis going cw fwd in time( 103 = blue )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -231,10 +223,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                    <gml:timePosition>300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about Z axis going cw fwd in time( 103 = blue )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -263,10 +254,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about X axis going ccw fwd in time (104 = green )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -284,10 +274,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                    <gml:timePosition>300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about X axis going ccw fwd in time (104 = green )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -316,10 +305,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about Y axis cw going fwd in time ( 105 = red ) </gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -337,10 +325,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                    <gml:timePosition>300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about Y axis cw going fwd in time ( 105 = red ) </gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -369,10 +356,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                    <gml:timePosition>0</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about Z axis going cw fwd in time( 106 = blue )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -390,10 +376,9 @@
                             </gpml:value>
                             <gpml:validTime>
                                 <gml:TimeInstant>
-                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">300</gml:timePosition>
+                                    <gml:timePosition>300</gml:timePosition>
                                 </gml:TimeInstant>
                             </gpml:validTime>
-                            <gml:description>rot about Z axis going cw fwd in time( 106 = blue )</gml:description>
                             <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
                         </gpml:TimeSample>
                     </gpml:timeSample>
@@ -407,6 +392,50 @@
             </gpml:totalReconstructionPole>
             <gpml:fixedReferenceFrame>0</gpml:fixedReferenceFrame>
             <gpml:movingReferenceFrame>106</gpml:movingReferenceFrame>
+        </gpml:TotalReconstructionSequence>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:TotalReconstructionSequence>
+            <gpml:identity>GPlates-cb98ea22-acb8-47e0-9e17-2a1e5d4563c4</gpml:identity>
+            <gpml:revision>GPlates-38da9a6c-10c5-4baf-91de-0080c97a8431</gpml:revision>
+            <gpml:totalReconstructionPole>
+                <gpml:IrregularSampling>
+                    <gpml:timeSample>
+                        <gpml:TimeSample>
+                            <gpml:value>
+                                <gpml:ZeroFiniteRotation/>
+                            </gpml:value>
+                            <gpml:validTime>
+                                <gml:TimeInstant>
+                                    <gml:timePosition>0</gml:timePosition>
+                                </gml:TimeInstant>
+                            </gpml:validTime>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:TimeSample>
+                    </gpml:timeSample>
+                    <gpml:timeSample>
+                        <gpml:TimeSample>
+                            <gpml:value>
+                                <gpml:ZeroFiniteRotation/>
+                            </gpml:value>
+                            <gpml:validTime>
+                                <gml:TimeInstant>
+                                    <gml:timePosition>300</gml:timePosition>
+                                </gml:TimeInstant>
+                            </gpml:validTime>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:TimeSample>
+                    </gpml:timeSample>
+                    <gpml:interpolationFunction>
+                        <gpml:FiniteRotationSlerp>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:FiniteRotationSlerp>
+                    </gpml:interpolationFunction>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                </gpml:IrregularSampling>
+            </gpml:totalReconstructionPole>
+            <gpml:fixedReferenceFrame>0</gpml:fixedReferenceFrame>
+            <gpml:movingReferenceFrame>707</gpml:movingReferenceFrame>
         </gpml:TotalReconstructionSequence>
     </gml:featureMember>
 </gpml:FeatureCollection>

@@ -19,23 +19,23 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>Point1</gml:name>
+            <gml:name>Point 1</gml:name>
             <gpml:oldPlatesHeader>
                 <gpml:OldPlatesHeader>
                     <gpml:regionNumber>0</gpml:regionNumber>
                     <gpml:referenceNumber>0</gpml:referenceNumber>
                     <gpml:stringNumber>0</gpml:stringNumber>
-                    <gpml:geographicDescription>Point1</gpml:geographicDescription>
+                    <gpml:geographicDescription>Point 1</gpml:geographicDescription>
                     <gpml:plateIdNumber>101</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
@@ -65,7 +65,7 @@
                         <gml:OrientableCurve gml:orientation="+">
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">35 10 15 10 10 10 5 10 </gml:posList>
+                                    <gml:posList gml:dimension="2">35 10 15 10 10 10 5 10 -5 10</gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -77,12 +77,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
@@ -126,23 +126,23 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>Point22</gml:name>
+            <gml:name>Point 22</gml:name>
             <gpml:oldPlatesHeader>
                 <gpml:OldPlatesHeader>
                     <gpml:regionNumber>0</gpml:regionNumber>
                     <gpml:referenceNumber>0</gpml:referenceNumber>
                     <gpml:stringNumber>0</gpml:stringNumber>
-                    <gpml:geographicDescription>Point22</gpml:geographicDescription>
+                    <gpml:geographicDescription>Point 22</gpml:geographicDescription>
                     <gpml:plateIdNumber>101</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
@@ -162,7 +162,7 @@
             <gpml:revision>GPlates-8da5db7b-c82a-47f9-a2f3-1b4bfffc4534</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>102</gpml:value>
+                    <gpml:value>106</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
@@ -175,23 +175,23 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>Point2</gml:name>
+            <gml:name>Point 2</gml:name>
             <gpml:oldPlatesHeader>
                 <gpml:OldPlatesHeader>
                     <gpml:regionNumber>0</gpml:regionNumber>
                     <gpml:referenceNumber>0</gpml:referenceNumber>
                     <gpml:stringNumber>0</gpml:stringNumber>
-                    <gpml:geographicDescription>Point2</gpml:geographicDescription>
+                    <gpml:geographicDescription>Point 2</gpml:geographicDescription>
                     <gpml:plateIdNumber>102</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
@@ -233,12 +233,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
@@ -282,23 +282,23 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>Point3</gml:name>
+            <gml:name>Point 3</gml:name>
             <gpml:oldPlatesHeader>
                 <gpml:OldPlatesHeader>
                     <gpml:regionNumber>0</gpml:regionNumber>
                     <gpml:referenceNumber>0</gpml:referenceNumber>
                     <gpml:stringNumber>0</gpml:stringNumber>
-                    <gpml:geographicDescription>Point3</gpml:geographicDescription>
+                    <gpml:geographicDescription>Point 3</gpml:geographicDescription>
                     <gpml:plateIdNumber>103</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
@@ -328,7 +328,7 @@
                         <gml:OrientableCurve gml:orientation="+">
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">35 20 15 20 10 20 5 20 </gml:posList>
+                                    <gml:posList gml:dimension="2">35 20 15 20 10 20 5 20 -5 20</gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -340,12 +340,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
@@ -398,12 +398,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
@@ -447,23 +447,23 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>Point33</gml:name>
+            <gml:name>Point 33</gml:name>
             <gpml:oldPlatesHeader>
                 <gpml:OldPlatesHeader>
                     <gpml:regionNumber>0</gpml:regionNumber>
                     <gpml:referenceNumber>0</gpml:referenceNumber>
                     <gpml:stringNumber>0</gpml:stringNumber>
-                    <gpml:geographicDescription>Point33</gpml:geographicDescription>
+                    <gpml:geographicDescription>Point 33</gpml:geographicDescription>
                     <gpml:plateIdNumber>104</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
@@ -505,12 +505,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
@@ -563,12 +563,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
@@ -621,12 +621,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>

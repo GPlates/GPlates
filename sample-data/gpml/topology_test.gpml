@@ -162,7 +162,7 @@
             <gpml:revision>GPlates-8da5db7b-c82a-47f9-a2f3-1b4bfffc4534</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>102</gpml:value>
+                    <gpml:value>106</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
@@ -1122,12 +1122,12 @@
                 <gml:TimePeriod>
                     <gml:begin>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:begin>
                     <gml:end>
                         <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                         </gml:TimeInstant>
                     </gml:end>
                 </gml:TimePeriod>
@@ -1197,12 +1197,12 @@
                                 <gml:TimePeriod>
                                     <gml:begin>
                                         <gml:TimeInstant>
-                                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
                                         </gml:TimeInstant>
                                     </gml:begin>
                                     <gml:end>
                                         <gml:TimeInstant>
-                                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
                                         </gml:TimeInstant>
                                     </gml:end>
                                 </gml:TimePeriod>
@@ -1213,5 +1213,42 @@
                 </gpml:PiecewiseAggregation>
             </gpml:boundary>
         </gpml:TopologicalClosedPlateBoundary>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:AseismicRidge>
+            <gpml:identity>GPlates-c77dafb0-c180-4d46-b5e7-e155d790828f</gpml:identity>
+            <gpml:revision>GPlates-09f75544-e1ae-4787-b82d-93b3d2e1d816</gpml:revision>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:LineString>
+                            <gml:posList gml:dimension="2">2.98068 -8.23257 5.75554 -4.17451 2.7676 -2.66419 5.96947 1.39094 1.70273 3.51512 </gml:posList>
+                        </gml:LineString>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>555</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>marko</gml:name>
+        </gpml:AseismicRidge>
     </gml:featureMember>
 </gpml:FeatureCollection>
