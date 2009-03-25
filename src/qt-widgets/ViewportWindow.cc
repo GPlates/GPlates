@@ -629,7 +629,7 @@ namespace
 				reconstruction->reconstructable_feature_collections().end(),
 				solver);
 
-			// solver.report();
+			solver.report();
 
 
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
