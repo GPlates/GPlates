@@ -23,7 +23,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+
 // #define DEBUG
+//#define DEBUG_VISIT
+//#define DEBUG_RESOLVE_INTERSECTION
+//#define DEBUG_RESOLVE_BOUNDARY
+//#define DEBUG_GET_VERTEX_LIST
+//#define DEBUG_BOUNDS
+//#define DEBUG_POINT_IN_POLYGON
+
 
 #ifdef _MSC_VER
 #define copysign _copysign
@@ -233,9 +241,6 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-#ifdef DEBUG
-std::cout << "TopologyResolver::visit_gml_time_period() " << std::endl;
-#endif
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
@@ -266,9 +271,6 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-#ifdef DEBUG
-std::cout << "TopologyResolver::visit_gpml_plate_id() " << std::endl;
-#endif
 	static GPlatesModel::PropertyName reconstruction_plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -291,10 +293,6 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gpml_piecewise_aggregation(
 		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
-#ifdef DEBUG
-std::cout << "TopologyResolver::visit_gpml_piecewise_aggregation() " << std::endl;
-#endif
-
 	if ( ! d_accumulator->d_perform_reconstructions ) {
 		return;
 	}
@@ -331,9 +329,6 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_polygon(
 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
 {
-#ifdef DEBUG
-std::cout << "TopologyResolver::visit_gpml_topological_polygon" << std::endl;
-#endif
 	if ( ! d_accumulator->d_perform_reconstructions ) {
 		return;
 	}
@@ -365,7 +360,7 @@ GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_line_section(
 	GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
 {  
 
-#ifdef DEBUG
+#ifdef DEBUG_VISIT
 std::cout << "TopologyResolver::visit_gpml_topological_line_section" << std::endl;
 #endif
 	if ( ! d_accumulator->d_perform_reconstructions ) {
@@ -383,8 +378,8 @@ std::cout << "TopologyResolver::visit_gpml_topological_line_section" << std::end
 	GPlatesModel::FeatureId src_geom_fid = 
 		( gpml_toplogical_line_section.get_source_geometry() )->feature_id();
 
-#ifdef DEBUG
-qDebug() << "src_geom_fid=" 
+#ifdef DEBUG_VISIT
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: src_geom_fid=" 
 	<< GPlatesUtils::make_qstring_from_icu_string( src_geom_fid.get() );
 #endif
 
@@ -400,16 +395,16 @@ qDebug() << "src_geom_fid="
 	
 	// Set reverse flag 
 	d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
-#ifdef DEBUG
-qDebug() << "use_reverse=" << d_use_reverse;
+#ifdef DEBUG_VISIT
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: use_reverse=" << d_use_reverse;
 #endif
 
 
 	// Check for, and process intersections
 	if ( gpml_toplogical_line_section.get_start_intersection() )
 	{
-#ifdef DEBUG
-qDebug() << "FOUND: start_intersection";
+#ifdef DEBUG_VISIT
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: FOUND: start_intersection";
 #endif
 
 		// DO NOT VISIT with this call:
@@ -425,8 +420,8 @@ qDebug() << "FOUND: start_intersection";
 		// first, get the feature id:
 		GPlatesModel::FeatureId intersection_geom_fid = 
 			( start.intersection_geometry() )->feature_id();
-#ifdef DEBUG
-qDebug() << "intersection_geom_fid=" 
+#ifdef DEBUG_VISIT
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: intersection_geom_fid=" 
 << GPlatesUtils::make_qstring_from_icu_string(intersection_geom_fid.get());
 #endif
 
@@ -441,12 +436,12 @@ qDebug() << "intersection_geom_fid="
 		// reference_point property value is a gml_point: 
 		GPlatesMaths::PointOnSphere pos = 
 			*( ( start.reference_point() )->point() );
-#ifdef DEBUG
-std::cout << "reference_point= " << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
+#ifdef DEBUG_VISIT
+std::cout << "TopologyResolver::visit_gpml_topological_line_section: reference_point= " << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
 #endif
 
 		// Fill the working data
-		d_click_point_ptr = ( ( start.reference_point() )->point() ).get();
+		d_ref_point_ptr = ( ( start.reference_point() )->point() ).get();
 
 		// reference_point_plate_id property value is a PropertyDelegate
 		// DO NOT visit the delegate with:
@@ -455,16 +450,18 @@ std::cout << "reference_point= " << GPlatesMaths::make_lat_lon_point( pos ) << s
 		// first, get the feature id:
 		GPlatesModel::FeatureId ref_point_plate_id_fid = 
 			( start.reference_point_plate_id() )->feature_id();
-#ifdef DEBUG
-qDebug() << "ref_point_plate_id_fid=" 
+#ifdef DEBUG_VISIT
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: ref_point_plate_id_fid=" 
 << GPlatesUtils::make_qstring_from_icu_string( ref_point_plate_id_fid.get() );
 #endif
+		// Fill the working data
+		d_ref_point_plate_id_fid = ref_point_plate_id_fid;
 
-#ifdef DEBUG
+#ifdef DEBUG_VISIT
 		// next, get the target_property name
 		const GPlatesModel::PropertyName &prop_name =
 			( start.reference_point_plate_id() )->target_property();
-qDebug() << "ref_point_plate_id_prop_name =" 
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: ref_point_plate_id_prop_name =" 
 << GPlatesUtils::make_qstring_from_icu_string( prop_name.get_name() );
 #endif
 
@@ -477,8 +474,8 @@ qDebug() << "ref_point_plate_id_prop_name ="
 
 	if ( gpml_toplogical_line_section.get_end_intersection() )
 	{
-#ifdef DEBUG
-qDebug() << "FOUND: end_intersection";
+#ifdef DEBUG_VISIT
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: FOUND: end_intersection";
 #endif
 
 		// DO NOT VISIT with this call:
@@ -495,8 +492,8 @@ qDebug() << "FOUND: end_intersection";
 		GPlatesModel::FeatureId intersection_geom_fid = 
 			( end.intersection_geometry() )->feature_id();
 
-#ifdef DEBUG
-qDebug() << "intersection_geom_fid=" 
+#ifdef DEBUG_VISIT
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: intersection_geom_fid=" 
 << GPlatesUtils::make_qstring_from_icu_string(intersection_geom_fid.get());
 #endif
 
@@ -511,12 +508,12 @@ qDebug() << "intersection_geom_fid="
 		// reference_point property value is a gml_point: 
 		GPlatesMaths::PointOnSphere pos = 
 			*( ( end.reference_point() )->point() );
-#ifdef DEBUG
-std::cout << "reference_point= " << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
+#ifdef DEBUG_VISIT
+std::cout << "TopologyResolver::visit_gpml_topological_line_section: reference_point= " << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
 #endif
 
 		// Fill the working data
-		d_click_point_ptr = ( ( end.reference_point() )->point() ).get();
+		d_ref_point_ptr = ( ( end.reference_point() )->point() ).get();
 
 		// reference_point_plate_id property value is a PropertyDelegate
 		// DO NOT visit the delegate with:
@@ -525,16 +522,19 @@ std::cout << "reference_point= " << GPlatesMaths::make_lat_lon_point( pos ) << s
 		// first, get the feature id:
 		GPlatesModel::FeatureId ref_point_plate_id_fid = 
 			( end.reference_point_plate_id() )->feature_id();
-#ifdef DEBUG
-qDebug() << "ref_point_plate_id_fid=" 
+#ifdef DEBUG_VISIT
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: ref_point_plate_id_fid=" 
 << GPlatesUtils::make_qstring_from_icu_string( ref_point_plate_id_fid.get() );
 #endif
 
-#ifdef DEBUG
+		// Fill the working data
+		d_ref_point_plate_id_fid = ref_point_plate_id_fid;
+
+#ifdef DEBUG_VISIT
 		// next, get the target_property name
 		const GPlatesModel::PropertyName &prop_name =
 			( end.reference_point_plate_id() )->target_property();
-qDebug() << "ref_point_plate_id_prop_name =" 
+qDebug() << "TopologyResolver::visit_gpml_topological_line_section: ref_point_plate_id_prop_name =" 
 << GPlatesUtils::make_qstring_from_icu_string( prop_name.get_name() );
 #endif
 
@@ -566,11 +566,11 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_intersection(
 	std::string src_geometry_id = GPlatesUtils::get_old_id( src_geometry_ref );
 	std::string intersection_id = GPlatesUtils::get_old_id( intersection_ref );
 
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 std::cout << "TopologyResolver::resolve_intersection: " << std::endl;
-std::cout << "src_geometry_id= " << src_geometry_id << std::endl;
-std::cout << "intersection_id= " << intersection_id << std::endl;
-std::cout << "node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: src_geometry_id= " << src_geometry_id << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: intersection_id= " << intersection_id << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
 #endif
 
 	if ( d_working_vertex_list.size() < 2 )
@@ -615,7 +615,7 @@ std::cout << "node2_vertex_list.size=" << d_node2_vertex_list.size() << std::end
 		intersection_points,
 		partitioned_lines);
 
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 std::cout << "TopologyResolver::resolve_intersection: " 
 << "num_intersect = " << num_intersect << std::endl;
 #endif
@@ -624,14 +624,14 @@ std::cout << "TopologyResolver::resolve_intersection: "
 	switch ( relation )
 	{
 		case GPlatesFeatureVisitors::TopologyResolver::INTERSECT_PREV :
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 std::cout << "TopologyResolver::resolve_intersection: INTERSECT_PREV: " << std::endl;
 #endif
 			d_num_intersections_with_prev = num_intersect;
 			break;
 
 		case GPlatesFeatureVisitors::TopologyResolver::INTERSECT_NEXT:
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 std::cout << "TopologyResolver::resolve_intersection: INTERSECT_NEXT: " << std::endl;
 #endif
 			d_num_intersections_with_next = num_intersect;
@@ -676,33 +676,72 @@ std::cout << "TopologyResolver::resolve_intersection: INTERSECT_NEXT: " << std::
 		//delete node1_polyline.get();
 		//delete node2_polyline.get();
 
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter, end;
 iter = parts.first.front()->vertex_begin();
 end = parts.first.front()->vertex_end();
-std::cout << "TopologyResolver::resolve_intersection:: HEAD: verts:" << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: HEAD: verts:" << std::endl;
 for ( ; iter != end; ++iter) {
-std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 }
 
 iter = parts.first.back()->vertex_begin();
 end = parts.first.back()->vertex_end();
-std::cout << "TopologyResolver::resolve_intersection:: TAIL: verts:" << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: TAIL: verts:" << std::endl;
 for ( ; iter != end; ++iter) {
-std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 }
 #endif
 
-
-
 		// now check which element of parts.first
-		// is closest to click_point:
+		// is closest to ref_point:
+		const GPlatesMaths::PointOnSphere *proximity_test_point_ptr;
 
-// FIXME :
-// we should first rotate the click point with the plate id of intersection_geometry_fid 
-// before calling is_close_to()
+		// rotate the click point with the plate id set in d_ref_point_plate_id_fid
+		// before calling is_close_to()
 
-// PROXIMITY
+		// set the pointer by default
+		proximity_test_point_ptr = d_ref_point_ptr;
+
+		// save the un-rotated click points
+		d_ref_point_list.push_back( *d_ref_point_ptr );
+
+		// get a feature handle for the d_ref_point_plate_id_fid
+		GPlatesModel::FeatureHandle::weak_ref ref_point_feature_ref = 
+			( d_feature_id_registry_ptr->find( d_ref_point_plate_id_fid ) ).get();
+
+		// get the plate id for that feature
+		static const GPlatesModel::PropertyName plate_id_property_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+
+		plate_id_finder.visit_feature_handle( *ref_point_feature_ref );
+
+		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+		{
+			// The feature has a reconstruction plate ID.
+			GPlatesModel::integer_plate_id_type recon_plate_id =
+				*plate_id_finder.found_plate_ids_begin();
+
+#ifdef DEBUG_RESOLVE_INTERSECTION
+std::cout << "TopologyResolver::resolve_intersection: MOVE the click point with plate id " << recon_plate_id << std::endl;
+#endif
+
+			const GPlatesMaths::FiniteRotation &r = 
+				d_recon_tree_ptr->get_composed_absolute_rotation( recon_plate_id ).first;
+
+			// reconstruct the point 
+			const GPlatesMaths::PointOnSphere recon_point = 
+				GPlatesMaths::operator*(r, *d_ref_point_ptr);
+
+			// reset the pointer
+			proximity_test_point_ptr = &recon_point;
+
+			// save the rotated click points
+			d_proximity_point_list.push_back( *proximity_test_point_ptr );
+		}
+
+		// test PROXIMITY
 		GPlatesMaths::real_t closeness_inclusion_threshold = 0.9;
 		const GPlatesMaths::real_t cit_sqrd =
 			closeness_inclusion_threshold * closeness_inclusion_threshold;
@@ -716,14 +755,14 @@ std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 
 		// set head closeness
 		click_close_to_head = parts.first.front()->is_close_to(
-			*d_click_point_ptr,
+			*proximity_test_point_ptr,
 			closeness_inclusion_threshold,
 			latitude_exclusion_threshold,
 			closeness_head);
 
 		// set tail closeness
 		click_close_to_tail = parts.first.back()->is_close_to(
-			*d_click_point_ptr,
+			*proximity_test_point_ptr,
 			closeness_inclusion_threshold,
 			latitude_exclusion_threshold,
 			closeness_tail);
@@ -744,6 +783,7 @@ std::cout << "llp=" << GPlatesMaths::make_lat_lon_point(*iter) << std::endl;
 			// FIXME : freak out!
 		}
 
+//#ifdef DEBUG_RESOLVE_INTERSECTION
 #ifdef DEBUG
 std::cout << "TopologyResolver::resolve_intersection: "
 << "closeness_head=" << closeness_head << " and " 
@@ -754,8 +794,9 @@ std::cout << "TopologyResolver::resolve_intersection: "
 		if ( closeness_head > closeness_tail )
 		{
 
+//#ifdef DEBUG_RESOLVE_INTERSECTION
 #ifdef DEBUG
-qDebug() << "TopologyResolver::resolve_intersection: " << "use HEAD of: " 
+qDebug() << "TopologyResolver::resolve_intersection: use HEAD of: " 
 << GPlatesUtils::make_qstring_from_icu_string( source_geometry_feature_id.get() );
 #endif
 
@@ -782,8 +823,9 @@ qDebug() << "TopologyResolver::resolve_intersection: " << "use HEAD of: "
 		else if ( closeness_tail > closeness_head )
 		{
 			d_closeness = closeness_tail;
+//#ifdef DEBUG_RESOLVE_INTERSECTION
 #ifdef DEBUG
-qDebug() << "TopologyResolver::resolve_intersection: " << "use TAIL of: " 
+qDebug() << "TopologyResolver::resolve_intersection: use TAIL of: " 
 << GPlatesUtils::make_qstring_from_icu_string( source_geometry_feature_id.get() );
 #endif
 
@@ -831,7 +873,7 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_point(
 	GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
 {  
-#ifdef DEBUG
+#ifdef DEBUG_VISIT
 std::cout << "TopologyResolver::visit_gpml_topological_point" << std::endl;
 #endif
 	if ( ! d_accumulator->d_perform_reconstructions ) {
@@ -847,7 +889,7 @@ std::cout << "TopologyResolver::visit_gpml_topological_point" << std::endl;
 	// Access  directly the data
 	d_src_geom_fid = ( gpml_toplogical_point.get_source_geometry() )->feature_id();
 
-#ifdef DEBUG
+#ifdef DEBUG_VISIT
 qDebug() << "fid=" << GPlatesUtils::make_qstring_from_icu_string( d_src_geom_fid.get() );
 #endif
 }
@@ -913,8 +955,8 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_boundary( PlatePolygon &plate 
 	// iterate over the list of boundary features to get the list of vertices 
 	plate.d_vertex_list = get_vertex_list( d_boundary_list.begin(), d_boundary_list.end() );
 
-#ifdef DEBUG
 // FIXME: diagnostic output
+#ifdef DEBUG_RESOLVE_BOUNDARY
 std::cout << "TopologyResolver::resolve_boundary() " << std::endl;
 for ( ; iter != d_boundary_list.end() ; ++iter) 
 {
@@ -929,6 +971,8 @@ std::cout << "TopologyResolver::resolve_boundary() plate.d_vertex_list.size() "
 	if (plate.d_vertex_list.size() == 0 ) {
 		return;
 	}
+
+	// RFG for the polygon 
 
 	// create a polygon on sphere
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type reconstructed_geom = 
@@ -946,13 +990,32 @@ std::cout << "TopologyResolver::resolve_boundary() plate.d_vertex_list.size() "
 	d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
  	d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
 
-	// clean up
+
+	//
+	// RFG for the proximity rotated reference points 
+	//
+	if ( d_proximity_point_list.size() != 0) 
+	{
+#ifdef DEBUG_RESOLVE_BOUNDARY
+std::cout << "TopologyResolver::resolve_boundary(): d_proximity_point_list.size()=" << d_proximity_point_list.size() << std::endl;
+#endif
+
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type ref_points = 
+			GPlatesMaths::MultiPointOnSphere::create_on_heap( d_proximity_point_list );
+
+	// create an RFG
+	GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type b_rfg_ptr =
+		GPlatesModel::ReconstructedFeatureGeometry::create(
+			ref_points,
+			*d_accumulator->d_current_property->collection_handle_ptr(),
+			*d_accumulator->d_current_property);
+
+		d_reconstruction_geometries_to_populate->push_back(b_rfg_ptr);
+ 		d_reconstruction_geometries_to_populate->back()->set_reconstruction_ptr(d_recon_ptr);
+	}
 
 	// compute_bounds 
-
 	compute_bounds( plate );
-
-	// delete reconstructed_geom.get();
 }
 
 
@@ -976,7 +1039,7 @@ GPlatesFeatureVisitors::TopologyResolver::get_vertex_list(
 	m_ridge_transform_list.clear();
 #endif
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l: d_boundary_list.size()=" 
 << d_boundary_list.size() << std::endl;
 #endif
@@ -998,7 +1061,7 @@ std::cout << "TopologyResolver::g_v_l: d_boundary_list.size()="
 
 		GPlatesModel::FeatureId fid = node.m_feature_id;
 		
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 qDebug() << "TopologyResolver::g_v_l: " << "d_boundary_list.size()==1; ";
 qDebug() << "TopologyResolver::g_v_l: " << "fid=" 
 	<< GPlatesUtils::make_qstring_from_icu_string(fid.get());
@@ -1050,7 +1113,7 @@ qDebug() << "TopologyResolver::g_v_l: " << "fid="
 	//
 	for (iter = pos1; iter != pos2; ++iter)
 	{
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l() step 1: iterator math" << std::endl;
 #endif
 		// 
@@ -1084,7 +1147,7 @@ std::cout << "TopologyResolver::g_v_l() step 1: iterator math" << std::endl;
 		GPlatesModel::FeatureId iter_fid = iter->m_feature_id;
 		GPlatesModel::FeatureId next_fid = next->m_feature_id;
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 qDebug() << "TopologyResolver::g_v_l step 2: PREV_fid=" 
 	<< GPlatesUtils::make_qstring_from_icu_string( prev_fid.get());
 qDebug() << "TopologyResolver::g_v_l step 2: ITER_fid=" 
@@ -1123,7 +1186,7 @@ qDebug() << "TopologyResolver::g_v_l step 2: NEXT_fid="
 			iter_vertex_list,
 			iter_fid );
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l step 3 gvl_fid: ";
 std::cout << "iter_vertex_list.size()=" << iter_vertex_list.size() << "; ";
 std::cout << std::endl;
@@ -1145,6 +1208,8 @@ std::cout << std::endl;
 
 		if (num_next > 1) 
 		{
+			qDebug() << "WARNING:";
+			qDebug() << "WARNING:";
 			qDebug() << "TopologyResolver::g_v_l step 4: " << "num_NEXT=" << num_next;
 			qDebug() << "TopologyResolver::g_v_l step 4: " 
 				<< "PREV_fid=" << GPlatesUtils::make_qstring_from_icu_string( prev_fid.get());
@@ -1154,7 +1219,7 @@ std::cout << std::endl;
 				<< "NEXT_fid=" << GPlatesUtils::make_qstring_from_icu_string( next_fid.get());
 		}
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l step 4 post-NEXT: "
 << "iter_vertex_list.size()=" << iter_vertex_list.size() << "; "
 << std::endl;
@@ -1171,6 +1236,8 @@ std::cout << "TopologyResolver::g_v_l step 4 post-NEXT: "
 
 		if (num_prev > 1) 
 		{
+			qDebug() << "WARNING:";
+			qDebug() << "WARNING:";
 			qDebug() << "TopologyResolver::g_v_l step 4: " << "num_PREV=" << num_prev;
 			qDebug() << "TopologyResolver::g_v_l step 4: " 
 				<< "PREV_fid=" << GPlatesUtils::make_qstring_from_icu_string( prev_fid.get());
@@ -1180,7 +1247,7 @@ std::cout << "TopologyResolver::g_v_l step 4 post-NEXT: "
 				<< "NEXT_fid=" << GPlatesUtils::make_qstring_from_icu_string( next_fid.get());
 		}
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l step 4 post-PREV: "
 << "iter_vertex_list.size()=" << iter_vertex_list.size() << "; "
 << std::endl;
@@ -1194,7 +1261,7 @@ std::cout << "TopologyResolver::g_v_l step 4 post-PREV: "
 		//
 		if ( iter->m_use_reverse )
 		{
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l step 5 rev?: " 
 << "iter->m_use_reverse=true" << std::endl;
 #endif
@@ -1330,7 +1397,7 @@ std::cout << "TopologyResolver::g_v_l step 5 rev?: "
 
 #endif // TYPE
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l step 6 copy: "
 << "iter_vertex_list.size()=" << iter_vertex_list.size() << "; "
 << std::endl;
@@ -1341,7 +1408,7 @@ std::cout << "TopologyResolver::g_v_l step 6 copy: "
 	//
 	// Step 7: return working vertex list
 	//
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l step 7: "
 << "work_vertex_list.size()=" << work_vertex_list.size() << "; "
 << std::endl;
@@ -1376,7 +1443,7 @@ GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_node_relation(
 	GPlatesModel::FeatureId node2_fid = node2.m_feature_id;
 
 // FIX : remove this diagnostic output
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << std::endl;
 std::cout << "TopologyResolver::g_v_l_f_n_r: " << "relation=" << relation << std::endl;
 qDebug() << "TopologyResolver::g_v_l_f_n_r: " << "node1_fid=" 
@@ -1429,7 +1496,7 @@ std::cout << std::endl;
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type node1_polyline = 
 		GPlatesMaths::PolylineOnSphere::create_on_heap( vertex_list );
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 const GPlatesMaths::PolylineOnSphere& pl1 = *node1_polyline;
 GPlatesMaths::PolylineOnSphere::VertexConstIterator itr1 = pl1.vertex_begin();
 GPlatesMaths::PolylineOnSphere::VertexConstIterator end1 = pl1.vertex_end();
@@ -1444,7 +1511,7 @@ std::cout << std::endl;
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type node2_polyline = 
 		GPlatesMaths::PolylineOnSphere::create_on_heap( node2_vertex_list );
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 const GPlatesMaths::PolylineOnSphere& pl2 = *node2_polyline;
 GPlatesMaths::PolylineOnSphere::VertexConstIterator itr2 = pl2.vertex_begin();
 GPlatesMaths::PolylineOnSphere::VertexConstIterator end2 = pl2.vertex_end();
@@ -1472,7 +1539,7 @@ std::cout << std::endl;
 		intersection_points,
 		partitioned_lines);
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l_f_n_r: "
 << "num_intersect = " << num_intersect << std::endl;
 #endif
@@ -1603,7 +1670,7 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 	// end of else if ( num_intersect == 1 )
 	else 
 	{
-		// num_intersect must be 2 or greater oh no!
+		// num_intersect must be 2 or greater oh no!_GET_VERTEX_LIST
 		std::cerr << "TopologyResolver::g_v_l_f_n_r: "
 		<< "WARN: num_intersect=" << num_intersect
 		<< std::endl;
@@ -1618,7 +1685,7 @@ GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_feature_id(
 	std::list<GPlatesMaths::PointOnSphere> &vertex_list,
 	GPlatesModel::FeatureId id)
 {
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 #endif
 
@@ -1646,7 +1713,7 @@ std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 				back_inserter( vertex_list )
 			);
 
-#ifdef DEBUG
+#ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::get_vertex_list_from_feature_id: vertex_list.size() =" 
 << vertex_list.size() << std::endl;
 #endif
@@ -1713,7 +1780,7 @@ GPlatesFeatureVisitors::TopologyResolver::compute_bounds( PlatePolygon &plate )
 
 	}
 
-#ifdef DEBUG
+#ifdef DEBUG_BOUNDS
 std::cout << "TopologyResolver::compute_bounds: max_lat = " << plate.d_max_lat << std::endl;
 std::cout << "TopologyResolver::compute_bounds: min_lat = " << plate.d_min_lat << std::endl;
 std::cout << "TopologyResolver::compute_bounds: max_lon = " << plate.d_max_lon << std::endl;
@@ -1735,7 +1802,7 @@ std::cout << "TopologyResolver::compute_bounds: lon_sum = " << lon_sum << std::e
 			plate.d_pole = static_cast<int>(copysign(1.0, plate.d_min_lat));
 		}
 	}
-#ifdef DEBUG
+#ifdef DEBUG_BOUNDS
 std::cout << "TopologyResolver::compute_bounds: plate.d_pole = " << plate.d_pole << std::endl;
 #endif
 }
@@ -1784,7 +1851,7 @@ GPlatesFeatureVisitors::TopologyResolver::is_point_in_on_out (
 	// test point's plat
 	double plat = p.latitude();
 		
-#ifdef DEBUG
+#ifdef DEBUG_POINT_IN_POLYGON
 std::cout << "TopologyResolver::is_point_in_on_out: " << std::endl;
 std::cout << "llp" << p << std::endl;
 std::cout << "pos" << test_point << std::endl;
@@ -1792,7 +1859,7 @@ std::cout << "pos" << test_point << std::endl;
 
 	if (plate.d_pole) 
 	{	
-#ifdef DEBUG
+#ifdef DEBUG_POINT_IN_POLYGON
 std::cout << "TopologyResolver::is_point_in_on_out: plate contains N or S pole." << std::endl;
 #endif
 		/* Case 1 of an enclosed polar cap */
@@ -1871,7 +1938,7 @@ GPlatesFeatureVisitors::TopologyResolver::is_point_in_on_out_counter (
 	int &count_south) 
 const
 {
-#ifdef DEBUG
+#ifdef DEBUG_POINT_IN_POLYGON
 std::cout << "TopologyResolver::is_point_in_on_out_counter: " << std::endl;
 #endif
 
@@ -1920,7 +1987,7 @@ std::cout << "TopologyResolver::is_point_in_on_out_counter: " << std::endl;
 		double v2lat = v2.latitude();
 		double v2lon = v2.longitude();
 
-#ifdef DEBUG
+#ifdef DEBUG_POINT_IN_POLYGON
 std::cout << "is_point_in_on_out_counter: v1 = " << v1lat << ", " << v1lon << std::endl;
 std::cout << "is_point_in_on_out_counter: v2 = " << v2lat << ", " << v2lon << std::endl; 
 #endif
