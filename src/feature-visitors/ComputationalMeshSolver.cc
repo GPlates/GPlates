@@ -99,6 +99,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 {  
 	d_num_features = 0;
 	d_num_meshes = 0;
+	d_num_points = 0;
+	d_num_points_on_multiple_plates = 0;
 
 	d_colour_table_ptr = GPlatesGui::PlatesColourTable::Instance();
 }
@@ -223,6 +225,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 	GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint_ptr->end();
 	for ( ; iter != end; ++iter)
 	{
+		d_num_points += 1;
 		process_point(*iter);
 	}
 }
@@ -237,23 +240,29 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 	std::vector<GPlatesModel::FeatureId> feature_ids;
 	std::vector<GPlatesModel::FeatureId>::iterator iter;
 
+	std::list<GPlatesModel::integer_plate_id_type> plate_ids;
+	std::list<GPlatesModel::integer_plate_id_type>::iterator p_iter;
+
 	feature_ids = d_topology_resolver_ptr->locate_point( point );
 
-//std::cout << "ComputationalMeshSolver::process_point: " << llp << " found in " << feature_ids.size() << " plates." << std::endl;
+#ifdef DEBUG
+// FIXME
+std::cout << "ComputationalMeshSolver::process_point: " << llp << " found in " << feature_ids.size() << " plates." << std::endl;
+#endif
 
 	// loop over feature ids 
 	for (iter = feature_ids.begin(); iter != feature_ids.end(); ++iter)
 	{
 		// FIXME: check for boost::none on calls to registry
-		GPlatesModel::FeatureHandle::weak_ref feature_ref =
+		GPlatesModel::FeatureHandle::weak_ref ref =
 			d_feature_id_registry_ptr->find( *iter ).get();
 
-		// Plae ID.
+		// Get all the Plate ID for this point 
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
 
-		plate_id_finder.visit_feature_handle(*feature_ref);
+		plate_id_finder.visit_feature_handle(*ref);
 
 		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
 		{
@@ -261,29 +270,54 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 			GPlatesModel::integer_plate_id_type recon_plate_id =
 				*plate_id_finder.found_plate_ids_begin();
 
-// FIXME: remove this diag output 
-//			std::cout << "	plate id = " << recon_plate_id << std::endl;
-			
-			// get the color for the id 
-			GPlatesGui::ColourTable::const_iterator colour = d_colour_table_ptr->end();
-			colour = d_colour_table_ptr->lookup_by_plate_id( recon_plate_id ); 
-			if (colour == d_colour_table_ptr->end()) { 
-				colour = &GPlatesGui::Colour::OLIVE; 
-			}
-
-			// Create a RenderedGeometry using the reconstructed geometry.
-
-			GPlatesViewOperations::RenderedGeometry rendered_geom =
-				d_rendered_geom_factory.create_rendered_geometry_on_sphere(
-				point.clone_as_geometry(),
-					*colour,
-					GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
-
-			// Add to the rendered layer.
-			d_rendered_layer->add_rendered_geometry(rendered_geom);
+			plate_ids.push_back( recon_plate_id );
 		}
 	}
+
+
+	if ( plate_ids.empty() ) {
+		// do not paint the point any color ; leave it 
+		return; 
+	}
+
+	// update the stats
+	if ( plate_ids.size() > 1) { 
+		d_num_points_on_multiple_plates += 1;
+	}
+
+	// sort the plate ids
+	plate_ids.sort();
+	plate_ids.reverse();
+
+
+#ifdef DEBUG
+// FIXME: remove this diagnostic 
+std::cout << "plate ids: (";
+for ( p_iter = plate_ids.begin(); p_iter != plate_ids.end(); ++p_iter)
+{
+	std::cout << *p_iter << ", ";
+}
+std::cout << ")" << std::endl;
+#endif
+
+
+	// get the color for the highest numeric id 
+	GPlatesGui::ColourTable::const_iterator colour = d_colour_table_ptr->end();
+	colour = d_colour_table_ptr->lookup_by_plate_id( plate_ids.front() ); 
+	if (colour == d_colour_table_ptr->end()) { 
+		colour = &GPlatesGui::Colour::OLIVE; 
+	}
+
+	// Create a RenderedGeometry using the reconstructed geometry.
+	GPlatesViewOperations::RenderedGeometry rendered_geom =
+		d_rendered_geom_factory.create_rendered_geometry_on_sphere(
+		point.clone_as_geometry(),
+			*colour,
+			GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT,
+			GPlatesViewOperations::GeometryOperationParameters::LINE_WIDTH_HINT);
+
+	// Add to the rendered layer.
+	d_rendered_layer->add_rendered_geometry(rendered_geom);
 }
 
 
@@ -345,6 +379,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::report()
 	std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::report() " << std::endl;
 	std::cout << "number features visited = " << d_num_features << std::endl;
 	std::cout << "number meshes visited = " << d_num_meshes << std::endl;
+	std::cout << "number points visited = " << d_num_points << std::endl;
+	std::cout << "number points on multiple plates = " << d_num_points_on_multiple_plates << std::endl;
 }
 
 

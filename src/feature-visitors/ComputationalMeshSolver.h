@@ -219,6 +219,8 @@ namespace GPlatesFeatureVisitors
 		/** the number of features visited by this visitor */
 		int d_num_features;
 		int d_num_meshes;
+		int d_num_points;
+		int d_num_points_on_multiple_plates;
 
 		GPlatesGui::PlatesColourTable *d_colour_table_ptr;
 	};
