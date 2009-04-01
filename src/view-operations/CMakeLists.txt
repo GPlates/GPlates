@@ -11,18 +11,25 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    ActiveGeometryOperation.h
     AddPointGeometryOperation.cc
     AddPointGeometryOperation.h
+    DeleteVertexGeometryOperation.cc
+    DeleteVertexGeometryOperation.h
     FocusedFeatureGeometryManipulator.cc
     FocusedFeatureGeometryManipulator.h
     GeometryBuilder.cc
     GeometryBuilder.h
-    GeometryBuilderToolTarget.cc
-    GeometryBuilderToolTarget.h
     GeometryBuilderUndoCommands.h
+    GeometryOperation.cc
+    GeometryOperation.h
+    GeometryOperationTarget.cc
+    GeometryOperationTarget.h
+    GeometryOperationUndo.cc
+    GeometryOperationUndo.h
     GeometryType.h
-    GlobeRenderedGeometryFactory.cc
-    GlobeRenderedGeometryFactory.h
+    InsertVertexGeometryOperation.cc
+    InsertVertexGeometryOperation.h
     InternalGeometryBuilder.cc
     InternalGeometryBuilder.h
     MoveVertexGeometryOperation.cc
@@ -49,6 +56,7 @@ set(srcs
     RenderedPointOnSphere.h
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
+    RenderedReconstructionGeometry.h
     UndoRedo.cc
     UndoRedo.h
 )

@@ -436,12 +436,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The type used for the reference-count.
-		 */
-		typedef long ref_count_type;
-
-
-		/**
 		 * The possible return values from the construction-parameter
 		 * validation functions
 		 * @a evaluate_construction_parameter_validity and
@@ -1123,26 +1117,6 @@ namespace GPlatesMaths
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
 		}
 		poly.d_seq.swap(tmp_seq);
-	}
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const PolylineOnSphere *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const PolylineOnSphere *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
 	}
 
 

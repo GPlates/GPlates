@@ -78,7 +78,7 @@ GPlatesViewOperations::get_num_active_non_empty_layers(
 {
 	CountNonEmptyRenderedGeometries count;
 
-	ConstVisitRenderedGeometryLayers get_count(
+	ConstVisitFunctionOnRenderedGeometryLayers get_count(
 			boost::ref(count),
 			main_layers,
 			only_if_main_layer_active);
@@ -107,7 +107,7 @@ GPlatesViewOperations::activate_rendered_geometry_layers(
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active)
 {
-	VisitRenderedGeometryLayers activate(
+	VisitFunctionOnRenderedGeometryLayers activate(
 			boost::bind(&RenderedGeometryLayer::set_active, _1, true),
 			main_layers,
 			only_if_main_layer_active);
@@ -134,7 +134,7 @@ GPlatesViewOperations::deactivate_rendered_geometry_layers(
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active)
 {
-	VisitRenderedGeometryLayers deactivate(
+	VisitFunctionOnRenderedGeometryLayers deactivate(
 			boost::bind(&RenderedGeometryLayer::set_active, _1, false),
 			main_layers,
 			only_if_main_layer_active);
@@ -143,7 +143,7 @@ GPlatesViewOperations::deactivate_rendered_geometry_layers(
 }
 
 
-GPlatesViewOperations::VisitRenderedGeometryLayers::VisitRenderedGeometryLayers(
+GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::VisitFunctionOnRenderedGeometryLayers(
 		rendered_geometry_layer_function_type rendered_geom_layer_function,
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active) :
@@ -154,14 +154,14 @@ d_only_if_main_layer_active(only_if_main_layer_active)
 }
 
 void
-GPlatesViewOperations::VisitRenderedGeometryLayers::call_function(
+GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::call_function(
 		RenderedGeometryCollection &rendered_geom_collection)
 {
 	rendered_geom_collection.accept_visitor(*this);
 }
 
 bool
-GPlatesViewOperations::VisitRenderedGeometryLayers::visit_main_rendered_layer(
+GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::visit_main_rendered_layer(
 		RenderedGeometryCollection &rendered_geometry_collection,
 		RenderedGeometryCollection::MainLayerType main_layer_type)
 {
@@ -176,7 +176,7 @@ GPlatesViewOperations::VisitRenderedGeometryLayers::visit_main_rendered_layer(
 }
 
 bool
-GPlatesViewOperations::VisitRenderedGeometryLayers::visit_rendered_geometry_layer(
+GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::visit_rendered_geometry_layer(
 		RenderedGeometryLayer &rendered_geometry_layer)
 {
 	// If we get here then we've been approved for calling user-specified
@@ -188,7 +188,7 @@ GPlatesViewOperations::VisitRenderedGeometryLayers::visit_rendered_geometry_laye
 }
 
 
-GPlatesViewOperations::ConstVisitRenderedGeometryLayers::ConstVisitRenderedGeometryLayers(
+GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::ConstVisitFunctionOnRenderedGeometryLayers(
 		rendered_geometry_layer_function_type rendered_geom_layer_function,
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active) :
@@ -199,14 +199,14 @@ d_only_if_main_layer_active(only_if_main_layer_active)
 }
 
 void
-GPlatesViewOperations::ConstVisitRenderedGeometryLayers::call_function(
+GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::call_function(
 		const RenderedGeometryCollection &rendered_geom_collection)
 {
 	rendered_geom_collection.accept_visitor(*this);
 }
 
 bool
-GPlatesViewOperations::ConstVisitRenderedGeometryLayers::visit_main_rendered_layer(
+GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::visit_main_rendered_layer(
 		const RenderedGeometryCollection &rendered_geometry_collection,
 		RenderedGeometryCollection::MainLayerType main_layer_type)
 {
@@ -221,7 +221,7 @@ GPlatesViewOperations::ConstVisitRenderedGeometryLayers::visit_main_rendered_lay
 }
 
 bool
-GPlatesViewOperations::ConstVisitRenderedGeometryLayers::visit_rendered_geometry_layer(
+GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::visit_rendered_geometry_layer(
 		const RenderedGeometryLayer &rendered_geometry_layer)
 {
 	// If we get here then we've been approved for calling user-specified

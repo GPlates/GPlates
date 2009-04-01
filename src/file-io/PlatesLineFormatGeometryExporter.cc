@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -155,7 +155,6 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::export_geometry(
 	print_plates_feature_termination_line(*d_stream_ptr);
 }
 
-
 void
 GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_point_on_sphere(
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
@@ -227,3 +226,9 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_polyline_on_sphere(
 }
 
 
+void
+GPlatesFileIO::PlatesLineFormatGeometryExporter::write_terminating_point()
+{
+	// Write the final terminating point.
+	print_plates_feature_termination_line(*d_stream_ptr);
+}

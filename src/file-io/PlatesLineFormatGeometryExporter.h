@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -49,8 +49,8 @@ namespace GPlatesFileIO
 	 * pattern structure.
 	 */
 	class PlatesLineFormatGeometryExporter :
-			public GPlatesMaths::ConstGeometryOnSphereVisitor,
 			public GPlatesFileIO::GeometryExporter,
+			private GPlatesMaths::ConstGeometryOnSphereVisitor,
 			private boost::noncopyable
 	{
 	public:
@@ -65,32 +65,27 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * You should call this method on the geometry you wish to write,
-		 * rather than directly calling ->accept_visitor(*this) on the geometry,
-		 * since we need to write the final terminating point. (and possibly a
-		 * dummy header?)
+		 * Export a geometry and write the final terminating point.
+		 * It is not possible to call ->accept_visitor(*this) on the geometry since
+		 * we inherit privately from GPlatesMaths::ConstGeometryOnSphereVisitor.
 		 */
 		virtual
 		void
 		export_geometry(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr);
 
-		// Please keep these geometries ordered alphabetically.
-
-		virtual
+		/**
+		 * Export one or more geometries of a feature and write the final
+		 * terminating point after the last geometry.
+		 * The caller is responsible for assembling the geometry(s) or a feature.
+		 * 'GeometryForwardIter' is a forward iterator over GPlatesMaths::GeometryOnSphere
+		 * pointers (or anything that acts like a pointer).
+		 */
+		template <typename GeometryForwardIter>
 		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere);
-
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere);
-
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
+		export_feature_geometries(
+				GeometryForwardIter geometries_begin,
+				GeometryForwardIter geometries_end);
 
 	private:
 		
@@ -111,8 +106,56 @@ namespace GPlatesFileIO
 		 */
 		bool d_polygon_terminating_point;
 
+
+		// Please keep these geometries ordered alphabetically.
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere);
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere);
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
+
+		/**
+		 * Writes the terminating point to signal no more geometry(s) for a feature.
+		 */
+		void
+		write_terminating_point();
 	};
 
+
+	template <typename GeometryForwardIter>
+	void
+	PlatesLineFormatGeometryExporter::export_feature_geometries(
+			GeometryForwardIter geometries_begin,
+			GeometryForwardIter geometries_end)
+	{
+		if (geometries_begin == geometries_end)
+		{
+			return;
+		}
+
+		// Export each geometry of the feature.
+		GeometryForwardIter geometries_iter;
+		for (geometries_iter = geometries_begin;
+			geometries_iter != geometries_end;
+			++geometries_iter)
+		{
+			// Write the coordinate list of the geometry.
+			(*geometries_iter)->accept_visitor(*this);
+		}
+
+		// Write the final terminating point.
+		write_terminating_point();
+	}
 }
 
 #endif  // GPLATES_FILEIO_PLATESLINEFORMATGEOMETRYEXPORTER_H

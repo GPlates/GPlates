@@ -1,13 +1,12 @@
 /* $Id$ */
 
 /**
- * \file 
- * Uses the 
+ * \file Displays lat/lon points of geometry being modified by a canvas tool.
  * 
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,12 +28,13 @@
 #include <QWidget>
 #include <QTreeWidget>
 
-#include "MoveVertexWidget.h"
+#include "ModifyGeometryWidget.h"
 #include "LatLonCoordinatesTable.h"
-#include "view-operations/GeometryBuilderToolTarget.h"
+#include "view-operations/GeometryOperationTarget.h"
 
-GPlatesQtWidgets::MoveVertexWidget::MoveVertexWidget(
-		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+GPlatesQtWidgets::ModifyGeometryWidget::ModifyGeometryWidget(
+		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		QWidget *parent_):
 	QWidget(parent_)
 {
@@ -47,35 +47,36 @@ GPlatesQtWidgets::MoveVertexWidget::MoveVertexWidget(
 	// and fills in the table accordingly.
 	d_lat_lon_coordinates_table.reset(new LatLonCoordinatesTable(
 			coordinates_table(),
-			geom_builder_tool_target.get_geometry_builder_for_active_tool()));
+			geometry_operation_target.get_current_geometry_builder(),
+			&active_geometry_operation));
 
-	connect_to_geometry_builder_tool_target(geom_builder_tool_target);
+	connect_to_geometry_builder_tool_target(geometry_operation_target);
 }
 
-GPlatesQtWidgets::MoveVertexWidget::~MoveVertexWidget()
+GPlatesQtWidgets::ModifyGeometryWidget::~ModifyGeometryWidget()
 {
 	// boost::scoped_ptr destructor needs complete type.
 }
 
 void
-GPlatesQtWidgets::MoveVertexWidget::connect_to_geometry_builder_tool_target(
-		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target)
+GPlatesQtWidgets::ModifyGeometryWidget::connect_to_geometry_builder_tool_target(
+		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target)
 {
 	// Change geometry type in our table.
 	QObject::connect(
-			&geom_builder_tool_target,
-			SIGNAL(switched_move_vertex_geometry_builder(
-					GPlatesViewOperations::GeometryBuilderToolTarget &,
+			&geometry_operation_target,
+			SIGNAL(switched_geometry_builder(
+					GPlatesViewOperations::GeometryOperationTarget &,
 					GPlatesViewOperations::GeometryBuilder *)),
 			this,
-			SLOT(switched_move_vertex_geometry_builder(
-					GPlatesViewOperations::GeometryBuilderToolTarget &,
+			SLOT(switched_geometry_builder(
+					GPlatesViewOperations::GeometryOperationTarget &,
 					GPlatesViewOperations::GeometryBuilder *)));
 }
 
 void
-GPlatesQtWidgets::MoveVertexWidget::switched_move_vertex_geometry_builder(
-		GPlatesViewOperations::GeometryBuilderToolTarget &,
+GPlatesQtWidgets::ModifyGeometryWidget::switched_geometry_builder(
+		GPlatesViewOperations::GeometryOperationTarget &,
 		GPlatesViewOperations::GeometryBuilder *new_geom_builder)
 {
 	d_lat_lon_coordinates_table->set_geometry_builder(new_geom_builder);

@@ -28,6 +28,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
+#include "canvas-tools/CanvasToolType.h"
 #include "gui/CanvasTool.h"
 #include "view-operations/GeometryType.h"
 
@@ -44,10 +45,11 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesViewOperations
 {
+	class ActiveGeometryOperation;
 	class AddPointGeometryOperation;
-	class GeometryBuilderToolTarget;
+	class GeometryOperationTarget;
+	class QueryProximityThreshold;
 	class RenderedGeometryCollection;
-	class RenderedGeometryFactory;
 }
 
 namespace GPlatesCanvasTools
@@ -78,10 +80,12 @@ namespace GPlatesCanvasTools
 		const non_null_ptr_type
 		create(
 				GPlatesViewOperations::GeometryType::Value geom_type,
-				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				// Ultimately would like to remove the following arguments...
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
@@ -110,10 +114,12 @@ namespace GPlatesCanvasTools
 		// instantiation of this type on the stack.
 		DigitiseGeometry(
 				GPlatesViewOperations::GeometryType::Value geom_type,
-				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				// Ultimately would like to remove the following arguments...
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
@@ -133,7 +139,12 @@ namespace GPlatesCanvasTools
 		/**
 		 * Used to select target of our add point operation.
 		 */
-		GPlatesViewOperations::GeometryBuilderToolTarget *d_geom_builder_tool_target;
+		GPlatesViewOperations::GeometryOperationTarget *d_geometry_operation_target;
+
+		/**
+		 * The type of this canvas tool.
+		 */
+		GPlatesCanvasTools::CanvasToolType::Value d_canvas_tool_type;
 
 		/**
 		 * This is the type of geometry this particular DigitiseGeometry tool

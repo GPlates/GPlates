@@ -106,7 +106,7 @@ namespace GPlatesViewOperations
 	 *
 	 * The above functions use this class.
 	 */
-	class VisitRenderedGeometryLayers :
+	class VisitFunctionOnRenderedGeometryLayers :
 		private RenderedGeometryCollectionVisitor
 	{
 	public:
@@ -123,9 +123,9 @@ namespace GPlatesViewOperations
 		 *        each @a RenderedGeometryLayer.
 		 * @param main_layers the list of main layers to visit.
 		 * @param only_if_main_layer_active only calls function on
-		 *        @a RenderedGeometryLayer objects that belond to active main layers.
+		 *        @a RenderedGeometryLayer objects that belong to active main layers.
 		 */
-		VisitRenderedGeometryLayers(
+		VisitFunctionOnRenderedGeometryLayers(
 				rendered_geometry_layer_function_type rendered_geom_layer_function,
 				RenderedGeometryCollection::main_layers_update_type main_layers =
 						RenderedGeometryCollection::ALL_MAIN_LAYERS,
@@ -160,7 +160,7 @@ namespace GPlatesViewOperations
 	 *
 	 * The above functions use this class.
 	 */
-	class ConstVisitRenderedGeometryLayers :
+	class ConstVisitFunctionOnRenderedGeometryLayers :
 		private ConstRenderedGeometryCollectionVisitor
 	{
 	public:
@@ -177,9 +177,9 @@ namespace GPlatesViewOperations
 		 *        each @a RenderedGeometryLayer.
 		 * @param main_layers the list of main layers to visit.
 		 * @param only_if_main_layer_active only calls function on
-		 *        @a RenderedGeometryLayer objects that belond to active main layers.
+		 *        @a RenderedGeometryLayer objects that belong to active main layers.
 		 */
-		ConstVisitRenderedGeometryLayers(
+		ConstVisitFunctionOnRenderedGeometryLayers(
 				rendered_geometry_layer_function_type rendered_geom_layer_function,
 				RenderedGeometryCollection::main_layers_update_type main_layers =
 						RenderedGeometryCollection::ALL_MAIN_LAYERS,

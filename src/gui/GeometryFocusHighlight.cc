@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,7 @@
 
 #include "GeometryFocusHighlight.h"
 #include "gui/ColourTable.h"
+#include "model/ReconstructedFeatureGeometryFinder.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -34,9 +35,7 @@
 
 
 GPlatesGui::GeometryFocusHighlight::GeometryFocusHighlight(
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection):
-d_rendered_geom_factory(&rendered_geom_factory),
 d_rendered_geom_collection(&rendered_geom_collection),
 d_highlight_layer_ptr(
 		rendered_geom_collection.get_main_rendered_layer(
@@ -78,21 +77,47 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 	// Clear all geometries from layer before adding them.
 	d_highlight_layer_ptr->clear_rendered_geometries();
 
-	if (d_focused_geometry)
+	if (!d_focused_geometry)
 	{
-		const GPlatesGui::Colour &white = GPlatesGui::Colour::WHITE;
+		// There's no focused geometry so there's nothing to draw.
+		// NOTE: we do this after clearing the rendered geometries so that
+		// any previously focused geometry is no longer highlighted.
+		return;
+	}
+
+	//
+	// Since a feature can have multiple geometry properties we need
+	// to highlight them all even though only one geometry was clicked by the user.
+	//
+
+	// The reconstruction that the focused geometry came from.
+	const GPlatesModel::Reconstruction *reconstruction = d_focused_geometry->reconstruction();
+
+	// Iterate through the RFGs belonging to the same 'reconstruction' that the
+	// clicked geometry came from and that belong to the focused feature.
+	GPlatesModel::ReconstructedFeatureGeometryFinder rfgFinder(reconstruction);
+	rfgFinder.find_rfgs_of_feature(d_feature);
+
+	GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator rfgIter;
+	for (rfgIter = rfgFinder.found_rfgs_begin();
+		rfgIter != rfgFinder.found_rfgs_end();
+		++rfgIter)
+	{
+		GPlatesModel::ReconstructedFeatureGeometry *rfg = rfgIter->get();
+
+		// If the RFG is the same as the focused geometry (the geometry that the
+		// user clicked on) then highlight it in a different colour.
+		const GPlatesGui::Colour &highlight_colour = (rfg == d_focused_geometry.get())
+			? GPlatesViewOperations::FocusedFeatureParameters::CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR
+			: GPlatesViewOperations::FocusedFeatureParameters::NON_CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR;
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
-						d_focused_geometry->geometry(),
-						white,
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+						rfg->geometry(),
+						highlight_colour,
 						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
 						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
 
 		d_highlight_layer_ptr->add_rendered_geometry(rendered_geometry);
-	}
-	else
-	{
-		// No focused geometry, so nothing to draw.
 	}
 }

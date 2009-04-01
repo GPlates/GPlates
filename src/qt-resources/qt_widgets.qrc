@@ -65,6 +65,8 @@
     <file>info_sign_16.png</file>
     <file>move_geometry_35.png</file>
     <file>move_vertex_35.png</file>
+    <file>delete_vertex_35.png</file>
+    <file>insert_vertex_35.png</file>
     <file>plate_pole_modification_35.png</file>
     <file>query_feature_35.png</file>
     <file>reorient_poles_16.png</file>

@@ -53,22 +53,6 @@ namespace GPlatesMaths
 	class SmallCircle;
 	class GridOnSphere;
 
-	void
-	intrusive_ptr_add_ref(
-			const PointOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PointOnSphere *p);
-
-	void
-	intrusive_ptr_add_ref(
-			const PolylineOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PolylineOnSphere *p);
-
 
 	/** 
 	 * This class represents a so-called "finite rotation" of plate tectonics.

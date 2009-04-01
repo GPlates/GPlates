@@ -34,7 +34,7 @@
 const GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type
 GPlatesModel::ReconstructedFeatureGeometry::get_non_null_pointer()
 {
-	if (ref_count() == 0) {
+	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
 		// Presumably, the programmer obtained the raw ReconstructedFeatureGeometry pointer

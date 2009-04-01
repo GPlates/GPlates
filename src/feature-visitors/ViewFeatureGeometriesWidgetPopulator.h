@@ -28,14 +28,17 @@
 #ifndef GPLATES_FEATUREVISITORS_VIEWFEATUREGEOMETRIESWIDGETPOPULATOR_H
 #define GPLATES_FEATUREVISITORS_VIEWFEATUREGEOMETRIESWIDGETPOPULATOR_H
 
-#include <list>
+#include <vector>
 #include <boost/optional.hpp>
 #include <QTreeWidget>
+
+#include "gui/TreeWidgetBuilder.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
 #include "model/Reconstruction.h"
+#include "model/ReconstructedFeatureGeometry.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -44,61 +47,31 @@
 namespace GPlatesFeatureVisitors
 {
 	class ViewFeatureGeometriesWidgetPopulator:
-			public GPlatesModel::FeatureVisitor
+			private GPlatesModel::FeatureVisitor
 	{
 	public:
-		
-		/**
-		 * Records details about the top-level items (properties) that we are building.
-		 * This allows us to add all top-level items in a single pass, after we have figured
-		 * out whether the property contains geometry or not.
-		 */
-		struct PropertyInfo
-		{
-			bool is_geometric_property;
-			QTreeWidgetItem *item;
-		};
-
-		typedef std::vector<PropertyInfo> property_info_vector_type;
-		typedef property_info_vector_type::const_iterator property_info_vector_const_iterator;
-
-		/**
-		 * Stores the reconstructed geometry and the property it belongs to.
-		 *
-		 * This allows us to display the reconstructed coordinates at the same time as the
-		 * present-day coordinates.
-		 */
-		struct ReconstructedGeometryInfo
-		{
-			const GPlatesModel::FeatureHandle::properties_iterator d_property;
-			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry;
-			
-			ReconstructedGeometryInfo(
-					const GPlatesModel::FeatureHandle::properties_iterator property,
-					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry):
-				d_property(property),
-				d_geometry(geometry)
-			{  }
-		};
-
-		// FIXME:  Since this container contains ReconstructedGeometryInfo instances, which
-		// are effectively just a few pointers (inexpensive to copy, and no conceptual
-		// problems with copying), would this container be better as a 'std::vector'?
-		typedef std::list<ReconstructedGeometryInfo> geometries_for_property_type;
-		typedef geometries_for_property_type::const_iterator geometries_for_property_const_iterator;
-
 
 		explicit
 		ViewFeatureGeometriesWidgetPopulator(
 				GPlatesModel::Reconstruction &reconstruction,
 				QTreeWidget &tree_widget):
 			d_reconstruction_ptr(&reconstruction),
-			d_tree_widget_ptr(&tree_widget)
+			d_tree_widget_ptr(&tree_widget),
+			d_tree_widget_builder(&tree_widget)
 		{  }
 
-		virtual
-		~ViewFeatureGeometriesWidgetPopulator() {  }
+		/**
+		 * Populates the tree widget passed into constructor with the properties of
+		 * @a feature_handle.
+		 * @a focused_rfg is the clicked geometry, if any, and is the only geometry
+		 * property that is expanded in the widget.
+		 */
+		void
+		populate(
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
 
+	private:
 		virtual
 		void
 		visit_feature_handle(
@@ -149,6 +122,43 @@ namespace GPlatesFeatureVisitors
 	private:
 		
 		/**
+		 * Records details about the top-level items (properties) that we are building.
+		 * This allows us to add all top-level items in a single pass, after we have figured
+		 * out whether the property contains geometry or not.
+		 */
+		struct PropertyInfo
+		{
+			bool is_geometric_property;
+			GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle;
+		};
+
+		typedef std::vector<PropertyInfo> property_info_vector_type;
+		typedef property_info_vector_type::const_iterator property_info_vector_const_iterator;
+
+		/**
+		 * Stores the reconstructed geometry and the property it belongs to.
+		 *
+		 * This allows us to display the reconstructed coordinates at the same time as the
+		 * present-day coordinates.
+		 */
+		struct ReconstructedGeometryInfo
+		{
+			GPlatesModel::FeatureHandle::properties_iterator d_property;
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry;
+			
+			ReconstructedGeometryInfo(
+					const GPlatesModel::FeatureHandle::properties_iterator property,
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry):
+				d_property(property),
+				d_geometry(geometry)
+			{  }
+		};
+
+		typedef std::vector<ReconstructedGeometryInfo> geometries_for_property_type;
+		typedef geometries_for_property_type::const_iterator geometries_for_property_const_iterator;
+
+
+		/**
 		 * The Reconstruction which we will scan for RFGs from.
 		 */
 		GPlatesModel::Reconstruction *d_reconstruction_ptr;
@@ -159,15 +169,14 @@ namespace GPlatesFeatureVisitors
 		QTreeWidget *d_tree_widget_ptr;
 		
 		/**
-		 * A stack of tree widget items, used to keep track of where we must add new
-		 * leaf nodes.
+		 * Used to build the QTreeWidget from QTreeWidgetItems.
 		 */
-		std::vector<QTreeWidgetItem *> d_tree_widget_item_stack;
-		
-		/**
-		 * When visiting a FeatureHandle, this member will record the properties_iterator
-		 * of the last property visited.
-		 */
+		GPlatesGui::TreeWidgetBuilder d_tree_widget_builder;
+
+		//! The focused geometry if any.
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_focused_geometry;
+
+		//! The last property visited when iterating through the property values.
 		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_last_property_visited;
 
 		/**
@@ -191,7 +200,7 @@ namespace GPlatesFeatureVisitors
 		 */
 		void
 		populate_rfg_geometries_for_feature(
-				const GPlatesModel::FeatureHandle &feature_handle);
+				GPlatesModel::FeatureHandle &feature_handle);
 
 		/**
 		 * Searches the d_rfg_geometries table for geometry matching the given property.
@@ -201,13 +210,7 @@ namespace GPlatesFeatureVisitors
 				const GPlatesModel::FeatureHandle::properties_iterator property);
 
 
-		QTreeWidgetItem *
-		add_child(
-				const QString &name,
-				const QString &value);
-
-
-		QTreeWidgetItem *
+		void
 		add_child_then_visit_value(
 				const QString &name,
 				const QString &value,

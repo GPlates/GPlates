@@ -141,6 +141,9 @@ namespace GPlatesViewOperations
 			NullCommandIdImpl &
 			instance()
 			{
+				// Defining locally avoids problem with undefined initialisation
+				// order of non-local static variables.
+				static NullCommandIdImpl s_instance;
 				return s_instance;
 			}
 
@@ -161,10 +164,7 @@ namespace GPlatesViewOperations
 		private:
 			NullCommandIdImpl()
 			{  }
-
-			static NullCommandIdImpl s_instance;
 		};
-		NullCommandIdImpl NullCommandIdImpl::s_instance;
 
 		/**
 		 * A decorator command that makes an existing undo command mergeable.

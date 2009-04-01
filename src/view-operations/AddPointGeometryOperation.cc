@@ -28,25 +28,35 @@
 #include <QUndoCommand>
 
 #include "AddPointGeometryOperation.h"
+
+#include "ActiveGeometryOperation.h"
+#include "GeometryOperationUndo.h"
 #include "GeometryBuilderUndoCommands.h"
+#include "QueryProximityThreshold.h"
 #include "RenderedGeometryFactory.h"
 #include "RenderedGeometryParameters.h"
+#include "RenderedGeometryProximity.h"
 #include "RenderedGeometryUtils.h"
 #include "UndoRedo.h"
 #include "gui/ChooseCanvasTool.h"
 #include "maths/PointOnSphere.h"
+#include "maths/ProximityCriteria.h"
 
 
 GPlatesViewOperations::AddPointGeometryOperation::AddPointGeometryOperation(
 		GeometryType::Value build_geom_type,
+		GeometryOperationTarget &geometry_operation_target,
+		ActiveGeometryOperation &active_geometry_operation,
 		RenderedGeometryCollection *rendered_geometry_collection,
-		RenderedGeometryFactory *rendered_geometry_factory,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool) :
+		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		const QueryProximityThreshold &query_proximity_threshold) :
 d_build_geom_type(build_geom_type),
+d_geometry_operation_target(&geometry_operation_target),
+d_active_geometry_operation(&active_geometry_operation),
 d_geometry_builder(NULL),
 d_rendered_geometry_collection(rendered_geometry_collection),
-d_rendered_geometry_factory(rendered_geometry_factory),
-d_choose_canvas_tool(&choose_canvas_tool)
+d_choose_canvas_tool(&choose_canvas_tool),
+d_query_proximity_threshold(&query_proximity_threshold)
 {
 }
 
@@ -55,6 +65,15 @@ GPlatesViewOperations::AddPointGeometryOperation::activate(
 		GeometryBuilder *geometry_builder,
 		RenderedGeometryCollection::MainLayerType main_layer_type)
 {
+	// Do nothing if NULL geometry builder.
+	if (geometry_builder == NULL)
+	{
+		return;
+	}
+
+	// Let others know we're the currently activated GeometryOperation.
+	d_active_geometry_operation->set_active_geometry_operation(this);
+
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
@@ -65,11 +84,19 @@ GPlatesViewOperations::AddPointGeometryOperation::activate(
 	// Activate the main rendered layer.
 	d_rendered_geometry_collection->set_main_layer_active(main_layer_type);
 
+	// Deactivate all rendered geometry layers of our main rendered layer.
+	// This hides what other tools have drawn into our main rendered layer.
+	deactivate_rendered_geometry_layers(*d_rendered_geometry_collection, main_layer_type);
+
 	connect_to_geometry_builder_signals();
 
 	// Create the rendered geometry layers required by the GeometryBuilder state
 	// and activate/deactivate appropriate layers.
 	create_rendered_geometry_layers();
+
+	// Activate our render layers so they become visible.
+	d_lines_layer_ptr->set_active(true);
+	d_points_layer_ptr->set_active(true);
 
 	// Fill the rendered layers with RenderedGeometry objects by querying
 	// the GeometryBuilder state.
@@ -79,6 +106,15 @@ GPlatesViewOperations::AddPointGeometryOperation::activate(
 void
 GPlatesViewOperations::AddPointGeometryOperation::deactivate()
 {
+	// Do nothing if NULL geometry builder.
+	if (d_geometry_builder == NULL)
+	{
+		return;
+	}
+
+	// Let others know there's no currently activated GeometryOperation.
+	d_active_geometry_operation->set_no_active_geometry_operation();
+
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
@@ -95,8 +131,22 @@ GPlatesViewOperations::AddPointGeometryOperation::deactivate()
 
 void
 GPlatesViewOperations::AddPointGeometryOperation::add_point(
+		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
 {
+	// Do nothing if NULL geometry builder.
+	if (d_geometry_builder == NULL)
+	{
+		return;
+	}
+
+	// First see if the point to be added is too close to an existing point.
+	// If it is then don't add it.
+	if (too_close_to_existing_points(clicked_pos_on_sphere, oriented_pos_on_sphere))
+	{
+		return;
+	}
+
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
@@ -105,29 +155,80 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 	const int num_geom_points =
 		d_geometry_builder->get_num_points_in_current_geometry();
 
-	// Group two undo commands into one.
+	// The command that does the actual adding of the point.
+	std::auto_ptr<QUndoCommand> add_point_command(
+			new GeometryBuilderInsertPointUndoCommand(
+					d_geometry_builder,
+					num_geom_points,
+					oriented_pos_on_sphere));
+
+	// Command wraps add point command with handing canvas tool choice and
+	// add point tool activation.
 	std::auto_ptr<QUndoCommand> undo_command(
-		new UndoRedo::GroupUndoCommand(QObject::tr("add point")));
-
-	// Add child undo command for adding a point.
-	new GPlatesViewOperations::GeometryBuilderInsertPointUndoCommand(
-			d_geometry_builder,
-			num_geom_points,
-			oriented_pos_on_sphere,
-			undo_command.get());
-
-	// Add child undo command for selecting the most recently selected digitise geometry tool.
-	// When or if this undo/redo command gets called one of the digitisation tools may not
-	// be active so make sure it gets activated so user can see what's being undone/redone.
-	new GPlatesGui::ChooseCanvasToolUndoCommand(
-			d_choose_canvas_tool,
-			&GPlatesGui::ChooseCanvasTool::choose_most_recent_digitise_geometry_tool,
-			undo_command.get());
+			new GeometryOperationUndoCommand(
+					QObject::tr("add point"),
+					add_point_command,
+					this,
+					d_geometry_operation_target,
+					d_main_layer_type,
+					d_choose_canvas_tool,
+					&GPlatesGui::ChooseCanvasTool::choose_most_recent_digitise_geometry_tool));
 
 	// Push command onto undo list.
 	// Note: the command's redo() gets executed inside the push() call and this is where
-	// the point is initially added.
+	// the vertex is initially inserted.
 	UndoRedo::instance().get_active_undo_stack().push(undo_command.release());
+}
+
+bool
+GPlatesViewOperations::AddPointGeometryOperation::too_close_to_existing_points(
+		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+{
+	// We currently only support one internal geometry so set geom index to zero.
+	const GeometryBuilder::GeometryIndex geom_index = 0;
+
+	// Number of points in the geometry (is zero if no geometry).
+	const unsigned int num_points_in_geom = (d_geometry_builder->get_num_geometries() > 0)
+			? d_geometry_builder->get_num_points_in_geometry(geom_index) : 0;
+
+	if (num_points_in_geom == 0)
+	{
+		return false;
+	}
+
+	const double closeness_inclusion_threshold =
+		d_query_proximity_threshold->current_proximity_inclusion_threshold(
+				clicked_pos_on_sphere);
+
+	GPlatesMaths::ProximityCriteria proximity_criteria(
+			oriented_pos_on_sphere,
+			closeness_inclusion_threshold);
+
+	GeometryBuilder::point_const_iterator_type builder_geom_begin =
+		d_geometry_builder->get_geometry_point_begin(geom_index);
+	GeometryBuilder::point_const_iterator_type builder_geom_end =
+		d_geometry_builder->get_geometry_point_end(geom_index);
+
+	GeometryBuilder::point_const_iterator_type builder_geom_iter;
+	for (builder_geom_iter = builder_geom_begin;
+		builder_geom_iter != builder_geom_end;
+		++builder_geom_iter)
+	{
+		const GPlatesMaths::PointOnSphere &point_on_sphere = *builder_geom_iter;
+
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
+				point_on_sphere.test_proximity(proximity_criteria);
+
+		// If we got a hit then we're too close to an existing point.
+		if (hit)
+		{
+			return true;
+		}
+	}
+
+	// Not too close to any existing points.
+	return false;
 }
 
 void
@@ -190,13 +291,6 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_geometries()
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
-
-	// Deactivate all rendered geometry layers our the main rendered layer.
-	deactivate_rendered_geometry_layers(*d_rendered_geometry_collection, d_main_layer_type);
-
-	// Activate our render layers so they become visible.
-	d_lines_layer_ptr->set_active(true);
-	d_points_layer_ptr->set_active(true);
 
 	// Clear all RenderedGeometry objects from the render layers first.
 	d_lines_layer_ptr->clear_rendered_geometries();
@@ -264,8 +358,7 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_multipoint_on_
 	{
 		const GPlatesMaths::PointOnSphere &point_on_sphere = *builder_geom_iter;
 
-		RenderedGeometry rendered_geom =
-			d_rendered_geometry_factory->create_rendered_point_on_sphere(
+		RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
 					point_on_sphere,
 					GeometryOperationParameters::FOCUS_COLOUR,
 					GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
@@ -289,8 +382,7 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 						d_geometry_builder->get_geometry_point_begin(geom_index),
 						d_geometry_builder->get_geometry_point_end(geom_index));
 
-		RenderedGeometry polyline_rendered_geom =
-			d_rendered_geometry_factory->create_rendered_polyline_on_sphere(
+		RenderedGeometry polyline_rendered_geom = create_rendered_polyline_on_sphere(
 					polyline_on_sphere,
 					GeometryOperationParameters::FOCUS_COLOUR,
 					GeometryOperationParameters::LINE_WIDTH_HINT);
@@ -301,8 +393,7 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 		const GPlatesMaths::PointOnSphere &end_point_on_sphere =
 			d_geometry_builder->get_geometry_point(geom_index, num_points_in_geom - 1);
 
-		RenderedGeometry end_point_rendered_geom =
-			d_rendered_geometry_factory->create_rendered_point_on_sphere(
+		RenderedGeometry end_point_rendered_geom = create_rendered_point_on_sphere(
 					end_point_on_sphere,
 					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 					GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
@@ -316,8 +407,7 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 		const GPlatesMaths::PointOnSphere &point_on_sphere =
 			d_geometry_builder->get_geometry_point(geom_index, 0);
 
-		RenderedGeometry rendered_geom =
-			d_rendered_geometry_factory->create_rendered_point_on_sphere(
+		RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
 					point_on_sphere,
 					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 					GeometryOperationParameters::REGULAR_POINT_SIZE_HINT);
@@ -350,8 +440,7 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polygon_on_sph
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type end_segment_polyline_on_sphere =
 				GPlatesMaths::PolylineOnSphere::create_on_heap(end_segment, end_segment + 2);
 
-		RenderedGeometry end_segment_polyline_rendered_geom =
-			d_rendered_geometry_factory->create_rendered_polyline_on_sphere(
+		RenderedGeometry end_segment_polyline_rendered_geom = create_rendered_polyline_on_sphere(
 					end_segment_polyline_on_sphere,
 					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 					GeometryOperationParameters::LINE_WIDTH_HINT);

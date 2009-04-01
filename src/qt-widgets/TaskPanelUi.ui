@@ -70,9 +70,9 @@
        <string>New Geometry</string>
       </attribute>
      </widget>
-     <widget class="QWidget" name="tab_move_vertex" >
+     <widget class="QWidget" name="tab_modify_geometry" >
       <attribute name="title" >
-       <string>Move Vertex</string>
+       <string>Modify Geometry</string>
       </attribute>
      </widget>
      <widget class="QWidget" name="tab_modify_pole" >

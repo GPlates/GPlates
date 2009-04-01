@@ -43,15 +43,15 @@ namespace GPlatesGui
 
 namespace GPlatesViewOperations
 {
+	class ActiveGeometryOperation;
 	class GeometryBuilder;
-	class GeometryBuilderToolTarget;
+	class GeometryOperationTarget;
 	class RenderedGeometryCollection;
-	class RenderedGeometryFactory;
 }
 
 namespace GPlatesQtWidgets
 {
-	class MoveVertexWidget;
+	class ModifyGeometryWidget;
 	class ViewportWindow;
 
 	/**
@@ -69,9 +69,9 @@ namespace GPlatesQtWidgets
 				GPlatesGui::FeatureFocus &feature_focus_,
 				GPlatesModel::ModelInterface &model_interface,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 				GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
-				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				ViewportWindow &view_state_,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
@@ -128,9 +128,9 @@ namespace GPlatesQtWidgets
 		}		
 		
 		void
-		choose_move_vertex_tab()
+		choose_modify_geometry_tab()
 		{
-			tabwidget_task_panel->setCurrentWidget(tab_move_vertex);
+			tabwidget_task_panel->setCurrentWidget(tab_modify_geometry);
 		}		
 
 		void
@@ -161,12 +161,12 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Sets up the "Move Vertex" tab in the eXtreme Task Panel.
+		 * Sets up the "Modify Geometry" tab in the eXtreme Task Panel.
 		 * This connects all the QToolButtons in the "Digitisation" tab to QActions,
-		 * and adds the special MoveVertexWidget.
+		 * and adds the special ModifyGeometryWidget.
 		 */
 		void
-		set_up_move_vertex_tab();
+		set_up_modify_geometry_tab();
 
 
 		/**
@@ -201,10 +201,10 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::DigitisationWidget *d_digitisation_widget_ptr;
 
 		/**
-		 * Widget responsible for the controls in the Move Vertex Tab.
+		 * Widget responsible for the controls in the Modify Geometry Tab.
 		 * Memory managed by Qt.
 		 */
-		GPlatesQtWidgets::MoveVertexWidget *d_move_vertex_widget_ptr;
+		GPlatesQtWidgets::ModifyGeometryWidget *d_modify_geometry_widget_ptr;
 
 		/**
 		 * Widget responsible for the controls in the Modify Pole Tab.

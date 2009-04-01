@@ -34,6 +34,7 @@
 #include "maths/UnitVector3D.h"
 #include "maths/LatLonPointConversions.h"
 #include "utils/UnicodeStringUtils.h"
+//#include "utils/Profile.h"
 
 
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
@@ -124,9 +125,12 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::property_tree() const
 
 void
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::display_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
 {
 	d_feature_ref = feature_ref;
+	d_focused_rfg = focused_rfg;
+
 	refresh_display();
 }
 
@@ -208,8 +212,10 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 		}
 	}
 
+	//PROFILE_BLOCK("QueryFeaturePropertiesWidgetPopulator");
+
 	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
 			property_tree());
-	populator.visit_feature_handle(*d_feature_ref);
+	populator.populate(*d_feature_ref, d_focused_rfg);
 }
 

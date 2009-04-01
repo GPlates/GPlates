@@ -119,9 +119,9 @@ set(srcs
     ManageFeatureCollectionsStateWidget.cc
     ManageFeatureCollectionsStateWidget.h
     ManageFeatureCollectionsStateWidgetUi.ui
-    MoveVertexWidget.cc
-    MoveVertexWidget.h
-    MoveVertexWidgetUi.ui
+    ModifyGeometryWidget.cc
+    ModifyGeometryWidget.h
+    ModifyGeometryWidgetUi.ui
     NoActiveEditWidgetException.h
     ProjectionControlWidget.cc
     ProjectionControlWidget.h

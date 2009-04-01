@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,6 +26,8 @@
  */
 
 #include <sstream>
+#include <boost/optional.hpp>
+
 #include "GreatCircleArc.h"
 #include "Vector3D.h"
 #include "FiniteRotation.h"
@@ -160,6 +162,100 @@ namespace
 		return perp.get_normalisation();
 	}
 
+	/**
+	 * Feature type of @a GreatCircleArc.
+	 */
+	enum GreatCircleArcFeature { GCA_START_POINT, GCA_END_POINT, GCA_ARC };
+
+	/**
+	 * Returns feature of @a great_circle_arc that is closest to @a test_point.
+	 * The closeness (dot product) of closest point on GCA to @a test_point is returned
+	 * in @a closeness.
+	 * If, and only if, the returned feature is @a GCA_ARC then the closest point on the
+	 * great circle arc is returned in @a closest_point_on_great_circle_arc.
+	 */
+	GreatCircleArcFeature
+	calculate_closest_feature(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc,
+			const GPlatesMaths::PointOnSphere &test_point,
+			boost::optional<GPlatesMaths::UnitVector3D> &closest_point_on_great_circle_arc,
+			GPlatesMaths::real_t &closeness)
+	{
+		/*
+		 * The following acronyms will be used:
+		 * - GC = great-circle
+		 * - GCA = great-circle-arc
+		 */
+
+		// Firstly, let's check whether this arc has a determinate rotation axis.  If it doesn't,
+		// then its start-point will be coincident with its end-point, which will mean the arc is
+		// point-like, in which case, we can fall back to point comparisons.
+		if ( ! great_circle_arc.is_zero_length()) {
+			// The arc has a determinate rotation axis.
+
+			// First, a few convenient aliases.
+			const GPlatesMaths::UnitVector3D &n = great_circle_arc.rotation_axis();  // The "normal" to the GC.
+			const GPlatesMaths::UnitVector3D &t = test_point.position_vector();
+
+			// A few more convenient aliases.
+			const GPlatesMaths::UnitVector3D &a = great_circle_arc.start_point().position_vector();
+			const GPlatesMaths::UnitVector3D &b = great_circle_arc.end_point().position_vector();
+
+			// The unit-vector of the "closest point" on the GC.
+			const GPlatesMaths::UnitVector3D c = calculate_u_of_closest(t, n);
+
+			GPlatesMaths::real_t closeness_a_to_b = dot(a, b);
+			GPlatesMaths::real_t closeness_c_to_a = dot(c, a);
+			GPlatesMaths::real_t closeness_c_to_b = dot(c, b);
+
+			if (closeness_c_to_a.isPreciselyGreaterThan(closeness_a_to_b.dval()) &&
+				closeness_c_to_b.isPreciselyGreaterThan(closeness_a_to_b.dval())) {
+
+				/*
+				 * C is closer to A than B is to A, and also closer to
+				 * B than A is to B, so C must lie _between_ A and B,
+				 * which means it lies on the GCA.
+				 *
+				 * Hence, C is the closest point on the GCA to
+				 * 'test_point'.
+				 */
+				closeness = dot(t, c);
+				closest_point_on_great_circle_arc = c;
+				return GCA_ARC;
+
+			} else {
+
+				/*
+				 * C does not lie between A and B, so either A or B
+				 * will be the closest point on the GCA to
+				 * 'test_point'.
+				 */
+				if (closeness_c_to_a.isPreciselyGreaterThan(closeness_c_to_b.dval())) {
+
+					/*
+					 * C is closer to A than it is to B, so by
+					 * Pythagoras' Theorem (which still holds
+					 * approximately, since we're dealing with a
+					 * thin, almost-cylindrical, strip of spherical
+					 * surface around the equator) we assert that
+					 * 'test_point' must be closer to A than it is
+					 * to B.
+					 */
+					closeness = dot(t, a);
+					return GCA_START_POINT;
+
+				} else {
+
+					closeness = dot(t, b);
+					return GCA_END_POINT;
+				}
+			}
+		}
+
+		// The arc is point-like so return the start point.
+		closeness = calculate_closeness(test_point, great_circle_arc.start_point());
+		return GCA_START_POINT;
+	}
 }
 
 
@@ -182,11 +278,7 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 	if ( ! is_zero_length()) {
 		// The arc has a determinate rotation axis.
 
-		// First, a few convenient aliases.
-		const UnitVector3D &n = rotation_axis();  // The "normal" to the GC.
-		const UnitVector3D &t = test_point.position_vector();
-
-		real_t closeness_to_poles = abs(dot(t, n));
+		real_t closeness_to_poles = abs(dot(test_point.position_vector(), rotation_axis()));
 
 		// This first if-statement should weed out most of the no-hopers.
 		if (closeness_to_poles.isPreciselyGreaterThan(latitude_exclusion_threshold.dval())) {
@@ -199,76 +291,40 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 			return false;
 
 		} else {
-
-			/*
-			 * 'test_point' is sufficiently far from the poles (and hence,
-			 * close to the GC) that it could be "close to" this GCA.
-			 *
-			 * In particular, because 'test_point' is far from the poles,
-			 * it cannot be coincident with either of the poles, and hence
-			 * there must exist a unique and well-defined "closest point"
-			 * on the GC to 'test_point'.
-			 */
-
-			// A few more convenient aliases.
-			const UnitVector3D &a = start_point().position_vector();
-			const UnitVector3D &b = end_point().position_vector();
-
-			// The unit-vector of the "closest point" on the GC.
-			const UnitVector3D c = calculate_u_of_closest(t, n);
-
-			real_t closeness_a_to_b = dot(a, b);
-			real_t closeness_c_to_a = dot(c, a);
-			real_t closeness_c_to_b = dot(c, b);
-
-			if (closeness_c_to_a.isPreciselyGreaterThan(closeness_a_to_b.dval()) &&
-			    closeness_c_to_b.isPreciselyGreaterThan(closeness_a_to_b.dval())) {
-
-				/*
-				 * C is closer to A than B is to A, and also closer to
-				 * B than A is to B, so C must lie _between_ A and B,
-				 * which means it lies on the GCA.
-				 *
-				 * Hence, C is the closest point on the GCA to
-				 * 'test_point'.
-				 */
-				closeness = dot(t, c);
-				return (closeness.isPreciselyGreaterThan(closeness_inclusion_threshold.dval()));
-
-			} else {
-
-				/*
-				 * C does not lie between A and B, so either A or B
-				 * will be the closest point on the GCA to
-				 * 'test_point'.
-				 */
-				if (closeness_c_to_a.isPreciselyGreaterThan(closeness_c_to_b.dval())) {
-
-					/*
-					 * C is closer to A than it is to B, so by
-					 * Pythagoras' Theorem (which still holds
-					 * approximately, since we're dealing with a
-					 * thin, almost-cylindrical, strip of spherical
-					 * surface around the equator) we assert that
-					 * 'test_point' must be closer to A than it is
-					 * to B.
-					 */
-					closeness = dot(t, a);
-
-				} else {
-
-					closeness = dot(t, b);
-				}
-
-				return (closeness.isPreciselyGreaterThan(closeness_inclusion_threshold.dval()));
-			}
+			// Get the closest feature of this GCA to 'test_point'.
+			boost::optional<UnitVector3D> closest_point_on_great_circle_arc;
+			calculate_closest_feature(
+					*this, test_point, closest_point_on_great_circle_arc, closeness);
+			
+			return closeness.isPreciselyGreaterThan(closeness_inclusion_threshold.dval());
 		}
-	} else {
-		// The arc is point-like.
-		return start_point().is_close_to(test_point, closeness_inclusion_threshold, closeness);
 	}
+
+	// The arc is point-like.
+	return start_point().is_close_to(test_point, closeness_inclusion_threshold, closeness);
 }
 
+GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::GreatCircleArc::get_closest_point(
+		const PointOnSphere &test_point) const
+{
+	// Get the closest feature of this GCA to 'test_point'.
+	real_t closeness;
+	boost::optional<UnitVector3D> closest_point_on_great_circle_arc;
+	const GreatCircleArcFeature gca_feature = calculate_closest_feature(
+			*this, test_point, closest_point_on_great_circle_arc, closeness);
+
+	if (gca_feature == GCA_ARC)
+	{
+		return PointOnSphere::create_on_heap(*closest_point_on_great_circle_arc);
+	}
+	else if (gca_feature == GCA_END_POINT)
+	{
+		return end_point().get_non_null_pointer();
+	}
+
+	return start_point().get_non_null_pointer();
+}
 
 bool
 GPlatesMaths::arcs_are_near_each_other(

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,24 +25,14 @@
 
 #include "FeatureFocus.h"
 #include "model/Reconstruction.h"
+#include "model/ReconstructedFeatureGeometryFinder.h"
 
 
 void
 GPlatesGui::FeatureFocus::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref new_feature_ref)
 {
-	if ( ! new_feature_ref.is_valid()) {
-		unset_focus();
-		return;
-	}
-	if (d_focused_feature == new_feature_ref) {
-		// Avoid infinite signal/slot loops like the plague!
-		return;
-	}
-	d_focused_feature = new_feature_ref;
-	d_associated_rfg = NULL;
-
-	emit focus_changed(d_focused_feature, d_associated_rfg);
+	set_focus(new_feature_ref, NULL);
 }
 
 
@@ -51,18 +41,7 @@ GPlatesGui::FeatureFocus::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type new_associated_rfg)
 {
-	if ( ! new_feature_ref.is_valid()) {
-		unset_focus();
-		return;
-	}
-	if (d_focused_feature == new_feature_ref) {
-		// Avoid infinite signal/slot loops like the plague!
-		return;
-	}
-	d_focused_feature = new_feature_ref;
-	d_associated_rfg = new_associated_rfg.get();
-
-	emit focus_changed(d_focused_feature, d_associated_rfg);
+	set_focus(new_feature_ref, new_associated_rfg.get());
 }
 
 
@@ -75,12 +54,24 @@ GPlatesGui::FeatureFocus::set_focus(
 		unset_focus();
 		return;
 	}
-	if (d_focused_feature == new_feature_ref) {
+	if (d_focused_feature == new_feature_ref &&
+		d_associated_rfg == new_associated_rfg)
+	{
 		// Avoid infinite signal/slot loops like the plague!
 		return;
 	}
+
 	d_focused_feature = new_feature_ref;
 	d_associated_rfg = new_associated_rfg;
+
+	if (new_associated_rfg)
+	{
+		d_associated_geometry_property = new_associated_rfg->property();
+	}
+	else
+	{
+		d_associated_geometry_property = boost::none;
+	}
 
 	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
@@ -91,6 +82,7 @@ GPlatesGui::FeatureFocus::unset_focus()
 {
 	d_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
 	d_associated_rfg = NULL;
+	d_associated_geometry_property = boost::none;
 
 	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
@@ -102,52 +94,54 @@ GPlatesGui::FeatureFocus::find_new_associated_rfg(
 {
 	using namespace GPlatesModel;
 
-	if (( ! is_valid()) || ( ! associated_rfg())) {
-		// There is either no focused feature, or no RFG associated with the focused
-		// feature.  Either way, there's nothing for us to do here.
+	if (( ! is_valid()) || ( ! associated_geometry_property())) {
+		// There is either no focused feature, or no geometry property associated with the
+		// most recent RFG of the focused feature.
+		// Either way, there's nothing for us to do here.
+		// Note that it's ok to have no RFG though - we can still find a new RFG
+		// if we have a geometry property.
 		return;
 	}
-	FeatureHandle::properties_iterator current_geometry_property = associated_rfg()->property();
 
-	Reconstruction::geometry_collection_type::const_iterator iter =
-			reconstruction.geometries().begin();
-	Reconstruction::geometry_collection_type::const_iterator end =
-			reconstruction.geometries().end();
-	for ( ; iter != end; ++iter) {
-		GPlatesModel::ReconstructionGeometry *rg = iter->get();
+	// Iterate through the RFGs (belonging to 'reconstruction')
+	// that are observing the focused feature.
+	GPlatesModel::ReconstructedFeatureGeometryFinder rfgFinder(&reconstruction);
+	rfgFinder.find_rfgs_of_feature(d_focused_feature);
 
-		// We use a dynamic cast here (despite the fact that dynamic casts are generally
-		// considered bad form) because we only care about one specific derivation.
-		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
-		// "if ... else if ..." chain would imply that we should be using polymorphism --
-		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
-		// the "if ... else if ..." chain each time a new derivation is added.)
-		GPlatesModel::ReconstructedFeatureGeometry *new_rfg =
-				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
-		if (new_rfg) { 
-			// It's an RFG, so let's look at its geometry property.
-			FeatureHandle::properties_iterator new_geometry_property =
-					new_rfg->property();
-			if (new_geometry_property == current_geometry_property) {
-				// We have a match!
-				d_associated_rfg = new_rfg;
-				emit focus_changed(d_focused_feature, d_associated_rfg);
-				return;
-			}
+	GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator rfgIter;
+	for (rfgIter = rfgFinder.found_rfgs_begin();
+		rfgIter != rfgFinder.found_rfgs_end();
+		++rfgIter)
+	{
+		GPlatesModel::ReconstructedFeatureGeometry *new_rfg = rfgIter->get();
+
+		// Look at the new rfg's geometry property.
+		FeatureHandle::properties_iterator new_geometry_property = new_rfg->property();
+		if (new_geometry_property == d_associated_geometry_property)
+		{
+			// We have a match!
+			d_associated_rfg = new_rfg;
+			emit focus_changed(d_focused_feature, d_associated_rfg);
+			return;
 		}
 	}
+
 	// Otherwise, looked at all reconstruction geometries in the new reconstruction, without
 	// finding a match.  Thus, it appears that there is no RFG in the new reconstruction which
-	// corresponds to the current associated RFG.
+	// corresponds to the current associated geometry property.
 	//
-	// Note a minor irritation with this approach:  When there is no RFG found, we lose the
-	// associated RFG.  This will be apparent to the user if he increments the reconstruction
-	// time to a time when there is no RFG (meaning that the associated RFG will become NULL),
-	// then steps back one increment -- even though the RFG should exist at this time, since
-	// we've dropped the RFG, we won't search for a matching one at that time.  A possible way
-	// around this might be to store the 'FeatureHandle::properties_iterator' for the current
-	// geometry property, in addition to the current associated RFG.
+	// When there is no RFG found, we lose the associated RFG.  This will be apparent to the user
+	// if he increments the reconstruction time to a time when there is no RFG (meaning that the
+	// associated RFG will become NULL). However the geometry property used by the RFG will
+	// still be non-null so when the user then steps back one increment to where he was before
+	// a new RFG will be found that uses the same geometry property and so the RFG will be
+	// non-null once again.
 	d_associated_rfg = NULL;
+
+	// NOTE: We don't change the associated geometry property since the focused feature
+	// hasn't changed and hence it's still applicable. We'll be using the geometry property
+	// to find the associated RFG when/if one comes back into existence.
+
 	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
 

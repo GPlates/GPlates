@@ -44,14 +44,6 @@ namespace GPlatesModel
 	// a ReconstructionTree) so this header cannot #include the header for ReconstructionTree.
 	class ReconstructionTree;
 
-	void
-	intrusive_ptr_add_ref(
-			const ReconstructionTree *p);
-
-	void
-	intrusive_ptr_release(
-			const ReconstructionTree *p);
-
 
 	/**
 	 * A reconstruction graph is a collection of reconstruction tree edges.

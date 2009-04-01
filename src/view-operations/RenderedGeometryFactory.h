@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * Partially abstract interface for creating @a RenderedGeometry types.
+ * Object factory for creating @a RenderedGeometry types.
  * $Revision$
  * $Date$
  * 
@@ -36,133 +36,139 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
+#include "model/ReconstructionGeometry.h"
 
 
 namespace GPlatesViewOperations
 {
-	/**
-	 * Partially abstract interface for creating @a RenderedGeometry types.
-	 *
-	 * This interface is partially abstract because some types of @a RenderedGeometry
-	 * contain implementations that are dependent on the canvas view (there
-	 * is a globe canvas view and a map projections canvas view).
-	 * An example is dashed lines - which vary the number of dashes as the user
-	 * zooms the viewport in order to keep the dashed line from zooming.
+	/*
+	 * Object factory functions for creating @a RenderedGeometry types.
 	 */
-	class RenderedGeometryFactory
+
+	namespace RenderedGeometryFactory
 	{
-	public:
 		/**
 		 * Typedef for sequence of @a RenderedGeometry objects.
 		 */
 		typedef std::vector<RenderedGeometry> rendered_geometry_seq_type;
 
-		virtual
-		~RenderedGeometryFactory()
-		{  }
-
-		//
-		// Non-abstract methods
-		//
+		/**
+		 * Default point size hint (roughly one screen-space pixel).
+		 * This is an integer instead of float because it should always be one.
+		 * If this value makes your default point too small then have a multiplying
+		 * factor in your rendered implementation.
+		 */
+		const int DEFAULT_POINT_SIZE_HINT = 1;
 
 		/**
-		 * Creates a @a RenderedGeometry for a @a GeometryOnSphere.
-		 *
-		 * Both @a point_size_hint and @a line_width_hint are needed since
-		 * the caller may not know what type of geometry it passed us. 
+		 * Default line width hint (roughly one screen-space pixel).
+		 * This is an integer instead of float because it should always be one.
+		 * If this value makes your default line width too small then have a multiplying
+		 * factor in your rendered implementation.
 		 */
-		virtual
-		RenderedGeometry
-		create_rendered_geometry_on_sphere(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour,
-				float point_size_hint,
-				float line_width_hint);
+		const int DEFAULT_LINE_WIDTH_HINT = 1;
 
 		/**
-		 * Creates a @a RenderedGeometry for a @a PointOnSphere.
+		 * Default colour (white).
 		 */
-		virtual
-		RenderedGeometry
-		create_rendered_point_on_sphere(
-				const GPlatesMaths::PointOnSphere &point_on_sphere,
-				const GPlatesGui::Colour &colour,
-				float point_size_hint)
-		{
-			return create_rendered_point_on_sphere(
-					point_on_sphere.clone_as_point(), colour, point_size_hint);
-		}
+		const GPlatesGui::Colour DEFAULT_COLOUR = GPlatesGui::Colour::get_white();
+	}
 
-		/**
-		 * Creates a @a RenderedGeometry for a @a PointOnSphere.
-		 */
-		virtual
-		RenderedGeometry
-		create_rendered_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour,
-				float point_size_hint);
+	/**
+	 * Creates a @a RenderedGeometry for a @a GeometryOnSphere.
+	 *
+	 * Both @a point_size_hint and @a line_width_hint are needed since
+	 * the caller may not know what type of geometry it passed us. 
+	 */
+	RenderedGeometry
+	create_rendered_geometry_on_sphere(
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float point_size_hint = RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT,
+			float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
-		/**
-		 * Creates a @a RenderedGeometry for a @a MultiPointOnSphere.
-		 */
-		virtual
-		RenderedGeometry
-		create_rendered_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour,
-				float point_size_hint);
+	/**
+	 * Creates a @a RenderedGeometry for a @a PointOnSphere.
+	 */
+	RenderedGeometry
+	create_rendered_point_on_sphere(
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float point_size_hint = RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT);
 
-		/**
-		 * Creates a @a RenderedGeometry for a @a PolylineOnSphere.
-		 */
-		virtual
-		RenderedGeometry
-		create_rendered_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour,
-				float line_width_hint);
+	/**
+	 * Creates a @a RenderedGeometry for a @a PointOnSphere.
+	 */
+	inline
+	RenderedGeometry
+	create_rendered_point_on_sphere(
+			const GPlatesMaths::PointOnSphere &point_on_sphere,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float point_size_hint = RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT)
+	{
+		return create_rendered_point_on_sphere(
+				point_on_sphere.clone_as_point(), colour, point_size_hint);
+	}
 
-		/**
-		 * Creates a @a RenderedGeometry for a @a PolygonOnSphere.
-		 */
-		virtual
-		RenderedGeometry
-		create_rendered_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour,
-				float line_width_hint);
+	/**
+	 * Creates a @a RenderedGeometry for a @a MultiPointOnSphere.
+	 */
+	RenderedGeometry
+	create_rendered_multi_point_on_sphere(
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float point_size_hint = RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT);
 
-		//
-		// Abstract methods
-		//
+	/**
+	 * Creates a @a RenderedGeometry for a @a PolylineOnSphere.
+	 */
+	RenderedGeometry
+	create_rendered_polyline_on_sphere(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
-		/**
-		 * Creates a dashed polyline from the specified @a PolylineOnSphere.
-		 *
-		 * The individual polyline segments are dashed in such a way that they
-		 * look continuous across the entire polyline.
-		 */
-		virtual
-		RenderedGeometry
-		create_rendered_dashed_polyline(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour) = 0;
+	/**
+	 * Creates a @a RenderedGeometry for a @a PolygonOnSphere.
+	 */
+	RenderedGeometry
+	create_rendered_polygon_on_sphere(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
-		/**
-		 * Creates a sequence of dashed polyline rendered geometries from
-		 * the specified @a PolylineOnSphere - one for each line segment.
-		 *
-		 * The individual polyline segments are dashed in such a way that they
-		 * look continuous across the entire polyline.
-		 * The difference with the above method is each segment can be queried individually.
-		 */
-		virtual
-		rendered_geometry_seq_type
-		create_rendered_dashed_polyline_segments_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::Colour &colour) = 0;
-	};
+	/**
+	 * Creates a dashed polyline from the specified @a PolylineOnSphere.
+	 *
+	 * The individual polyline segments are dashed in such a way that they
+	 * look continuous across the entire polyline.
+	 */
+	RenderedGeometry
+	create_rendered_dashed_polyline(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR);
+
+	/**
+	 * Creates a sequence of dashed polyline rendered geometries from
+	 * the specified @a PolylineOnSphere - one for each line segment.
+	 *
+	 * The individual polyline segments are dashed in such a way that they
+	 * look continuous across the entire polyline.
+	 * The difference with the above method is each segment can be queried individually.
+	 */
+	RenderedGeometryFactory::rendered_geometry_seq_type
+	create_rendered_dashed_polyline_segments_on_sphere(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR);
+
+	/**
+	 * Creates a composite @a RenderedGeometry containing another @a RenderedGeometry
+	 * and a @a ReconstructionGeometry associated with it.
+	 */
+	RenderedGeometry
+	create_rendered_reconstruction_geometry(
+			GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
+			RenderedGeometry rendered_geom);
 }
 
 #endif // GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYFACTORY_H

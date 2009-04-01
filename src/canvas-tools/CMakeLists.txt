@@ -11,10 +11,15 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    CanvasToolType.h
     ClickGeometry.cc
     ClickGeometry.h
+    DeleteVertex.cc
+    DeleteVertex.h
     DigitiseGeometry.cc
     DigitiseGeometry.h
+    InsertVertex.cc
+    InsertVertex.h
     ManipulatePole.cc
     ManipulatePole.h
     MoveGeometry.cc

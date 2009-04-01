@@ -31,6 +31,8 @@ set(srcs
     ColourTable.h
     CsvExport.cc
     CsvExport.h
+    EnableCanvasTool.cc
+    EnableCanvasTool.h
     FeatureColourTable.cc
     FeatureColourTable.h
     FeatureFocus.cc
@@ -75,6 +77,8 @@ set(srcs
     TemporaryGeometryFocus.h
     Texture.cc
     Texture.h
+    TreeWidgetBuilder.cc
+    TreeWidgetBuilder.h
     Viewport.h
     ViewportProjection.h
     ViewportZoom.cc

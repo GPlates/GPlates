@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -50,7 +50,7 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::PointOnSphere& oriented_pos_on_globe,
 				QUndoCommand *parent = 0) :
 		QUndoCommand(parent),
-		d_digitisation_state_ptr(digitisation_state_ptr),
+		d_geometry_builder(digitisation_state_ptr),
 		d_point_index_to_insert_at(point_index_to_insert_at),
 		d_oriented_pos_on_globe(oriented_pos_on_globe)
 		{
@@ -68,7 +68,7 @@ namespace GPlatesViewOperations
 			// Add point to geometry builder.
 			// This will also cause GeometryBuilder to emit a signal to
 			// its observers.
-			d_undo_operation = d_digitisation_state_ptr->insert_point_into_current_geometry(
+			d_undo_operation = d_geometry_builder->insert_point_into_current_geometry(
 				d_point_index_to_insert_at,
 				d_oriented_pos_on_globe);
 		}
@@ -83,13 +83,66 @@ namespace GPlatesViewOperations
 
 			// The undo operation will also cause GeometryBuilder to emit
 			// a signal to its observers.
-			d_digitisation_state_ptr->undo(d_undo_operation);
+			d_geometry_builder->undo(d_undo_operation);
 		}
 
 	private:
-		GeometryBuilder* d_digitisation_state_ptr;
+		GeometryBuilder* d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_insert_at;
 		GPlatesMaths::PointOnSphere d_oriented_pos_on_globe;
+		GeometryBuilder::UndoOperation d_undo_operation;
+	};
+
+
+	/**
+	 * Command to remove/undo a point from the current geometry of @a GeometryBuilder.
+	 */
+	class GeometryBuilderRemovePointUndoCommand :
+		public QUndoCommand
+	{
+	public:
+		GeometryBuilderRemovePointUndoCommand(
+				GeometryBuilder* geometry_builder,
+				GeometryBuilder::PointIndex point_index_to_remove_at,
+				QUndoCommand *parent = 0) :
+		QUndoCommand(parent),
+		d_geometry_builder(geometry_builder),
+		d_point_index_to_remove_at(point_index_to_remove_at)
+		{
+			setText(QObject::tr("remove point"));
+		}
+
+		virtual
+		void
+		redo()
+		{
+			// Delay any notification of changes to the rendered geometry collection
+			// until end of current scope block.
+			RenderedGeometryCollection::UpdateGuard update_guard;
+
+			// Remove point from geometry builder.
+			// This will also cause GeometryBuilder to emit a signal to
+			// its observers.
+			d_undo_operation = d_geometry_builder->remove_point_from_current_geometry(
+				d_point_index_to_remove_at);
+		}
+
+		virtual
+		void
+		undo()
+		{
+			// Delay any notification of changes to the rendered geometry collection
+			// until end of current scope block.
+			RenderedGeometryCollection::UpdateGuard update_guard;
+
+			// The undo operation will also cause GeometryBuilder to emit
+			// a signal to its observers.
+			d_geometry_builder->undo(d_undo_operation);
+		}
+
+	private:
+		GeometryBuilder* d_geometry_builder;
+		GeometryBuilder::PointIndex d_point_index_to_remove_at;
 		GeometryBuilder::UndoOperation d_undo_operation;
 	};
 
@@ -102,13 +155,13 @@ namespace GPlatesViewOperations
 	{
 	public:
 		GeometryBuilderMovePointUndoCommand(
-				GeometryBuilder* digitisation_state_ptr,
+				GeometryBuilder* geometry_builder,
 				GeometryBuilder::PointIndex point_index_to_move,
 				const GPlatesMaths::PointOnSphere& oriented_pos_on_globe,
 				bool is_intermediate_move,
 				QUndoCommand *parent = 0) :
 		QUndoCommand(parent),
-		d_digitisation_state_ptr(digitisation_state_ptr),
+		d_geometry_builder(geometry_builder),
 		d_point_index_to_move(point_index_to_move),
 		d_oriented_pos_on_globe(oriented_pos_on_globe),
 		d_is_intermediate_move(is_intermediate_move)
@@ -127,7 +180,7 @@ namespace GPlatesViewOperations
 			// Move point in geometry builder.
 			// This will also cause GeometryBuilder to emit a signal to
 			// its observers.
-			d_undo_operation = d_digitisation_state_ptr->move_point_in_current_geometry(
+			d_undo_operation = d_geometry_builder->move_point_in_current_geometry(
 				d_point_index_to_move,
 				d_oriented_pos_on_globe,
 				d_is_intermediate_move);
@@ -143,7 +196,7 @@ namespace GPlatesViewOperations
 
 			// The undo operation will also cause GeometryBuilder to emit
 			// a signal to its observers.
-			d_digitisation_state_ptr->undo(d_undo_operation);
+			d_geometry_builder->undo(d_undo_operation);
 		}
 
 		/**
@@ -188,7 +241,7 @@ namespace GPlatesViewOperations
 		}
 
 	private:
-		GeometryBuilder* d_digitisation_state_ptr;
+		GeometryBuilder* d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_move;
 		GPlatesMaths::PointOnSphere d_oriented_pos_on_globe;
 		bool d_is_intermediate_move;
@@ -207,12 +260,12 @@ namespace GPlatesViewOperations
 		 * Default command id is -1 which prevents merging of commands.
 		 */
 		GeometryBuilderSetGeometryTypeUndoCommand(
-				GeometryBuilder* digitisation_state_ptr,
+				GeometryBuilder* geometry_builder,
 				GeometryType::Value geom_type_to_build,
 				UndoRedo::CommandId commandId = UndoRedo::CommandId(),
 				QUndoCommand *parent = 0) :
 		QUndoCommand(parent),
-		d_digitisation_state_ptr(digitisation_state_ptr),
+		d_geometry_builder(geometry_builder),
 		d_geom_type_to_build(geom_type_to_build),
 		d_commandId(commandId)
 		{
@@ -258,7 +311,7 @@ namespace GPlatesViewOperations
 			// Set geometry type to build in geometry builder.
 			// This will also cause GeometryBuilder to emit a signal to
 			// its observers.
-			d_undo_operation = d_digitisation_state_ptr->set_geometry_type_to_build(
+			d_undo_operation = d_geometry_builder->set_geometry_type_to_build(
 				d_geom_type_to_build);
 		}
 
@@ -272,11 +325,11 @@ namespace GPlatesViewOperations
 
 			// The undo operation will also cause GeometryBuilder to emit
 			// a signal to its observers.
-			d_digitisation_state_ptr->undo(d_undo_operation);
+			d_geometry_builder->undo(d_undo_operation);
 		}
 
 	private:
-		GeometryBuilder* d_digitisation_state_ptr;
+		GeometryBuilder* d_geometry_builder;
 		GeometryType::Value d_geom_type_to_build;
 		GeometryBuilder::UndoOperation d_undo_operation;
 		UndoRedo::CommandId d_commandId;
@@ -291,10 +344,10 @@ namespace GPlatesViewOperations
 	{
 	public:
 		GeometryBuilderClearAllGeometries(
-				GPlatesViewOperations::GeometryBuilder* digitisation_state_ptr,
+				GPlatesViewOperations::GeometryBuilder* geometry_builder,
 				QUndoCommand *parent = 0) :
 		QUndoCommand(parent),
-		d_digitisation_state_ptr(digitisation_state_ptr)
+		d_geometry_builder(geometry_builder)
 		{
 			setText(QObject::tr("clear geometry"));
 		}
@@ -307,7 +360,7 @@ namespace GPlatesViewOperations
 			// until end of current scope block.
 			RenderedGeometryCollection::UpdateGuard update_guard;
 
-			d_undo_operation = d_digitisation_state_ptr->clear_all_geometries();
+			d_undo_operation = d_geometry_builder->clear_all_geometries();
 		}
 
 		virtual
@@ -318,11 +371,11 @@ namespace GPlatesViewOperations
 			// until end of current scope block.
 			RenderedGeometryCollection::UpdateGuard update_guard;
 
-			d_digitisation_state_ptr->undo(d_undo_operation);
+			d_geometry_builder->undo(d_undo_operation);
 		}
 
 	private:
-		GeometryBuilder* d_digitisation_state_ptr;
+		GeometryBuilder* d_geometry_builder;
 		GeometryBuilder::UndoOperation d_undo_operation;
 	};
 }

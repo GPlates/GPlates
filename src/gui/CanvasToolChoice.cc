@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,10 +27,13 @@
 
 #include "CanvasToolChoice.h"
 
+#include "canvas-tools/CanvasToolType.h"
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
 #include "canvas-tools/ClickGeometry.h"
+#include "canvas-tools/DeleteVertex.h"
 #include "canvas-tools/DigitiseGeometry.h"
+#include "canvas-tools/InsertVertex.h"
 #include "canvas-tools/MoveGeometry.h"
 #include "canvas-tools/MoveVertex.h"
 #include "canvas-tools/ManipulatePole.h"
@@ -42,8 +45,8 @@
 
 GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
-		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 		Globe &globe,
@@ -73,28 +76,34 @@ d_click_geometry_tool_ptr(GPlatesCanvasTools::ClickGeometry::create(
 		geometry_focus_highlight)),
 d_digitise_polyline_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(
 		GPlatesViewOperations::GeometryType::POLYLINE,
-		geom_builder_tool_target,
+		geometry_operation_target,
+		active_geometry_operation,
 		rendered_geom_collection,
-		rendered_geom_factory,
 		choose_canvas_tool,
+		GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE,
+		query_proximity_threshold,
 		globe,
 		globe_canvas,
 		view_state)),
 d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(
 		GPlatesViewOperations::GeometryType::MULTIPOINT,
-		geom_builder_tool_target,
+		geometry_operation_target,
+		active_geometry_operation,
 		rendered_geom_collection,
-		rendered_geom_factory,
 		choose_canvas_tool,
+		GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT,
+		query_proximity_threshold,
 		globe,
 		globe_canvas,
 		view_state)),
 d_digitise_polygon_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(
 		GPlatesViewOperations::GeometryType::POLYGON,
-		geom_builder_tool_target,
+		geometry_operation_target,
+		active_geometry_operation,
 		rendered_geom_collection,
-		rendered_geom_factory,
 		choose_canvas_tool,
+		GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON,
+		query_proximity_threshold,
 		globe,
 		globe_canvas,
 		view_state)),
@@ -103,9 +112,27 @@ d_move_geometry_tool_ptr(GPlatesCanvasTools::MoveGeometry::create(
 		globe_canvas,
 		view_state)),
 d_move_vertex_tool_ptr(GPlatesCanvasTools::MoveVertex::create(
-		geom_builder_tool_target,
+		geometry_operation_target,
+		active_geometry_operation,
 		rendered_geom_collection,
-		rendered_geom_factory,
+		choose_canvas_tool,
+		query_proximity_threshold,
+		globe,
+		globe_canvas,
+		view_state)),
+d_delete_vertex_tool_ptr(GPlatesCanvasTools::DeleteVertex::create(
+		geometry_operation_target,
+		active_geometry_operation,
+		rendered_geom_collection,
+		choose_canvas_tool,
+		query_proximity_threshold,
+		globe,
+		globe_canvas,
+		view_state)),
+d_insert_vertex_tool_ptr(GPlatesCanvasTools::InsertVertex::create(
+		geometry_operation_target,
+		active_geometry_operation,
+		rendered_geom_collection,
 		choose_canvas_tool,
 		query_proximity_threshold,
 		globe,

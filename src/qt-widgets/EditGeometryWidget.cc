@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -522,13 +522,13 @@ namespace
 		switch(which_type)
 		{
 		case 0:
-			return GPlatesUtils::create_polyline_on_sphere(points, validity);
+			return geometry_opt_ptr_type(GPlatesUtils::create_polyline_on_sphere(points, validity));
 		case 1:
-			return GPlatesUtils::create_multipoint_on_sphere(points, validity);
+			return geometry_opt_ptr_type(GPlatesUtils::create_multipoint_on_sphere(points, validity));
 		case 2:
-			return GPlatesUtils::create_point_on_sphere(points, validity);
+			return geometry_opt_ptr_type(GPlatesUtils::create_point_on_sphere(points, validity));
 		case 3:
-			return GPlatesUtils::create_polygon_on_sphere(points, validity);
+			return geometry_opt_ptr_type(GPlatesUtils::create_polygon_on_sphere(points, validity));
 		default:
 			return boost::none;
 		}
@@ -1131,7 +1131,7 @@ GPlatesQtWidgets::EditGeometryWidget::set_geometry_for_property_value()
 				combobox_geometry_type->currentIndex());
 		if (geometry_opt_ptr) {
 			GPlatesFeatureVisitors::GeometrySetter geometry_setter(*geometry_opt_ptr);
-			d_property_value_ptr->accept_visitor(geometry_setter);
+			geometry_setter.set_geometry(d_property_value_ptr.get());
 			return true;
 		}
 	}

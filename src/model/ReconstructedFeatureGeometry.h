@@ -300,27 +300,6 @@ namespace GPlatesModel
 		operator=(
 				const ReconstructedFeatureGeometry &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const ReconstructedFeatureGeometry *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const ReconstructedFeatureGeometry *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H

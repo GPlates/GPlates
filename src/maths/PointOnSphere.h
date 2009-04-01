@@ -79,12 +79,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The type used for the reference-count.
-		 */
-		typedef long ref_count_type;
-
-
-		/**
 		 * Create a new PointOnSphere instance on the heap from the unit vector
 		 * @a position_vector_.
 		 *
@@ -445,26 +439,6 @@ namespace GPlatesMaths
 	operator<<(
 			std::ostream &os,
 			const PointOnSphere &p);
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const PointOnSphere *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const PointOnSphere *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
 
 
 	/**

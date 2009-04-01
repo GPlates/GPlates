@@ -33,6 +33,7 @@
 #include "FeatureCollectionHandle.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
@@ -71,7 +72,8 @@ namespace GPlatesModel
 	 * should always access the "current" instance (whichever FeatureStoreRootRevision instance
 	 * it may be) through the feature store root handle.
 	 */
-	class FeatureStoreRootRevision
+	class FeatureStoreRootRevision :
+			public GPlatesUtils::ReferenceCount<FeatureStoreRootRevision>
 	{
 	public:
 		/**
@@ -90,11 +92,6 @@ namespace GPlatesModel
 		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStoreRootRevision,
 				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * The type used to contain the feature collections.
@@ -255,35 +252,7 @@ namespace GPlatesModel
 				feature_collection_container_type::size_type index,
 				DummyTransactionHandle &transaction);
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const {
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const {
-			return --d_ref_count;
-		}
-
 	private:
-
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		/**
 		 * The container of feature collections contained within this feature store root.
@@ -296,8 +265,7 @@ namespace GPlatesModel
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		FeatureStoreRootRevision() :
-			d_ref_count(0)
+		FeatureStoreRootRevision()
 		{  }
 
 		/**
@@ -316,7 +284,7 @@ namespace GPlatesModel
 		 */
 		FeatureStoreRootRevision(
 				const FeatureStoreRootRevision &other) :
-			d_ref_count(0),
+			GPlatesUtils::ReferenceCount<FeatureStoreRootRevision>(),
 			d_feature_collections(other.d_feature_collections)
 		{  }
 
@@ -333,25 +301,6 @@ namespace GPlatesModel
 				const FeatureStoreRootRevision &);
 
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const FeatureStoreRootRevision *p) {
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const FeatureStoreRootRevision *p) {
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_FEATURESTOREROOTREVISION_H

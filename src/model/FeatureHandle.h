@@ -37,6 +37,7 @@
 #include "WeakReference.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
@@ -76,7 +77,8 @@ namespace GPlatesModel
 	 * The feature handle also contains the properties of a feature which can never change: the
 	 * feature type and the feature ID.
 	 */
-	class FeatureHandle
+	class FeatureHandle :
+			public GPlatesUtils::ReferenceCount<FeatureHandle>
 	{
 	public:
 		/**
@@ -101,11 +103,6 @@ namespace GPlatesModel
 		 * This definition is used for template magic.
 		 */
 		typedef FeatureHandle this_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * The type which contains the revisioning component of a feature.
@@ -551,41 +548,7 @@ namespace GPlatesModel
 			return d_last_weak_observer;
 		}
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
 	private:
-
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		/**
 		 * The current revision of this feature.
@@ -646,7 +609,6 @@ namespace GPlatesModel
 		FeatureHandle(
 				const FeatureType &feature_type_,
 				const FeatureId &feature_id_) :
-			d_ref_count(0),
 			d_current_revision(FeatureRevision::create()),
 			d_feature_type(feature_type_),
 			d_feature_id(feature_id_),
@@ -665,7 +627,6 @@ namespace GPlatesModel
 		FeatureHandle(
 				const FeatureType &feature_type_,
 				const RevisionId &revision_id_) :
-			d_ref_count(0),
 			d_current_revision(FeatureRevision::create(revision_id_)),
 			d_feature_type(feature_type_),
 			d_first_const_weak_observer(NULL),
@@ -684,7 +645,6 @@ namespace GPlatesModel
 				const FeatureType &feature_type_,
 				const FeatureId &feature_id_,
 				const RevisionId &revision_id_) :
-			d_ref_count(0),
 			d_current_revision(FeatureRevision::create(revision_id_)),
 			d_feature_type(feature_type_),
 			d_feature_id(feature_id_),
@@ -711,7 +671,7 @@ namespace GPlatesModel
 		 */
 		FeatureHandle(
 				const FeatureHandle &other) :
-			d_ref_count(0),
+			GPlatesUtils::ReferenceCount<FeatureHandle>(),
 			d_current_revision(other.d_current_revision),
 			d_feature_type(other.d_feature_type),
 			d_feature_id(other.d_feature_id),
@@ -730,27 +690,6 @@ namespace GPlatesModel
 		operator=(
 				const FeatureHandle &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const FeatureHandle *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const FeatureHandle *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 
 	/**
 	 * Get the first weak observer of the publisher pointed-to by @a publisher_ptr.

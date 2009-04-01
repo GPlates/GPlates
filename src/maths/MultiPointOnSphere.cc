@@ -42,7 +42,7 @@ GPlatesMaths::MultiPointOnSphere::s_min_num_collection_points = 1;
 const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 GPlatesMaths::MultiPointOnSphere::get_non_null_pointer() const
 {
-	if (ref_count() == 0) {
+	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
 		// Presumably, the programmer obtained the raw MultiPointOnSphere pointer from

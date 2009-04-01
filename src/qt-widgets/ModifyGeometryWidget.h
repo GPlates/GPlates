@@ -1,13 +1,12 @@
 /* $Id$ */
 
 /**
- * \file 
- * Uses the 
+ * \file Displays lat/lon points of geometry being modified by a canvas tool.
  * 
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,41 +24,43 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QTWIDGETS_MOVEVERTEXWIDGET_H
-#define GPLATES_QTWIDGETS_MOVEVERTEXWIDGET_H
+#ifndef GPLATES_QTWIDGETS_MODIFYGEOMETRYWIDGET_H
+#define GPLATES_QTWIDGETS_MODIFYGEOMETRYWIDGET_H
 
 #include <QDebug>
 #include <QWidget>
 #include <QTreeWidget>
 #include <boost/scoped_ptr.hpp>
-#include "MoveVertexWidgetUi.h"
+#include "ModifyGeometryWidgetUi.h"
 
 #include "maths/GeometryOnSphere.h"
 
 
 namespace GPlatesViewOperations
 {
+	class ActiveGeometryOperation;
 	class GeometryBuilder;
-	class GeometryBuilderToolTarget;
+	class GeometryOperationTarget;
 }
 
 namespace GPlatesQtWidgets
 {
 	class LatLonCoordinatesTable;
 
-	class MoveVertexWidget:
+	class ModifyGeometryWidget:
 			public QWidget, 
-			protected Ui_MoveVertexWidget
+			protected Ui_ModifyGeometryWidget
 	{
 		Q_OBJECT
 
 	public:
 		explicit
-		MoveVertexWidget(
-				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+		ModifyGeometryWidget(
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				QWidget *parent_ = NULL);
 
-		~MoveVertexWidget();
+		~ModifyGeometryWidget();
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -67,18 +68,17 @@ namespace GPlatesQtWidgets
 		//       to not be able to connect them at runtime.
 
 		/**
-		 * Listen for changes to the geometry builder targeted by
-		 * the move vertex tool.
+		 * Listen for changes to the geometry builder targeted geometry operations.
 		 */
 		void
-		switched_move_vertex_geometry_builder(
-				GPlatesViewOperations::GeometryBuilderToolTarget &,
+		switched_geometry_builder(
+				GPlatesViewOperations::GeometryOperationTarget &,
 				GPlatesViewOperations::GeometryBuilder *);
 
 	private:
 		void
 		connect_to_geometry_builder_tool_target(
-				GPlatesViewOperations::GeometryBuilderToolTarget &);
+				GPlatesViewOperations::GeometryOperationTarget &);
 
 		QTreeWidget *
 		coordinates_table()
@@ -94,4 +94,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif // GPLATES_QTWIDGETS_MOVEVERTEXWIDGET_H
+#endif // GPLATES_QTWIDGETS_MODIFYGEOMETRYWIDGET_H

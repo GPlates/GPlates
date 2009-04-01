@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file Derived @a CanvasTool to move vertices of temporary or focused feature geometry.
  * $Revision$
  * $Date$ 
  * 
@@ -45,11 +45,11 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesViewOperations
 {
+	class ActiveGeometryOperation;
 	class MoveVertexGeometryOperation;
-	class GeometryBuilderToolTarget;
+	class GeometryOperationTarget;
 	class QueryProximityThreshold;
 	class RenderedGeometryCollection;
-	class RenderedGeometryFactory;
 }
 
 namespace GPlatesCanvasTools
@@ -77,9 +77,9 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				// Ultimately would like to remove the following arguments...
@@ -89,9 +89,9 @@ namespace GPlatesCanvasTools
 		{
 			return MoveVertex::non_null_ptr_type(
 					new MoveVertex(
-							geom_builder_tool_target,
+							geometry_operation_target,
+							active_geometry_operation,
 							rendered_geometry_collection,
-							rendered_geometry_factory,
 							choose_canvas_tool,
 							query_proximity_threshold,
 							globe,
@@ -133,13 +133,20 @@ namespace GPlatesCanvasTools
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
+		void
+		handle_move_without_drag(
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+
 	protected:
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		MoveVertex(
-				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				// Ultimately would like to remove the following arguments...
@@ -160,7 +167,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * Used to select target of our move vertex operation.
 		 */
-		GPlatesViewOperations::GeometryBuilderToolTarget *d_geom_builder_tool_target;
+		GPlatesViewOperations::GeometryOperationTarget *d_geometry_operation_target;
 
 		/**
 		 * Digitise operation for moving a vertex in digitised geometry.

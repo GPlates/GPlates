@@ -377,7 +377,7 @@ GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 {
 	// This gets put in all public methods that modify geometry state.
 	// It checks for geometry type changes and emits begin_update/end_update signals.
-	UpdateGuard update_guard(*this);
+	UpdateGuard update_guard(*this, is_intermediate_move);
 
 	InternalGeometryBuilder &geometry = get_current_geometry_builder();
 
@@ -400,8 +400,8 @@ GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 					point_index, old_oriented_pos_on_globe)) );
 }
 
-GPlatesViewOperations::InternalGeometryBuilder&
-GPlatesViewOperations::GeometryBuilder::get_current_geometry_builder()
+const GPlatesViewOperations::InternalGeometryBuilder&
+GPlatesViewOperations::GeometryBuilder::get_current_geometry_builder() const
 {
 	GPlatesGlobal::Assert(d_current_geometry_index < d_geometry_builder_seq.size(),
 		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
@@ -701,11 +701,20 @@ GPlatesViewOperations::GeometryBuilder::get_current_geometry_index() const
 }
 
 void
-GPlatesViewOperations::GeometryBuilder::begin_update_geometry()
+GPlatesViewOperations::GeometryBuilder::begin_update_geometry(
+		bool is_intermediate_move)
 {
 	if (d_update_geometry_depth == 0)
 	{
 		emit started_updating_geometry();
+
+		if (!is_intermediate_move)
+		{
+			// Some clients are only interested in knowing about operations that
+			// are not intermediate moves. This significantly reduces the number
+			// of notifications they get when the user is dragging vertices.
+			emit started_updating_geometry_excluding_intermediate_moves();
+		}
 	}
 
 	// Increment nested call depth.
@@ -713,7 +722,8 @@ GPlatesViewOperations::GeometryBuilder::begin_update_geometry()
 }
 
 void
-GPlatesViewOperations::GeometryBuilder::end_update_geometry()
+GPlatesViewOperations::GeometryBuilder::end_update_geometry(
+		bool is_intermediate_move)
 {
 	// Decrement nested call depth.
 	--d_update_geometry_depth;
@@ -755,6 +765,14 @@ GPlatesViewOperations::GeometryBuilder::end_update_geometry()
 	// Notify observers that we've stopped updating geometry.
 	//
 	emit stopped_updating_geometry();
+
+	if (!is_intermediate_move)
+	{
+		// Some clients are only interested in knowing about operations that
+		// are not intermediate moves. This significantly reduces the number
+		// of notifications they get when the user is dragging vertices.
+		emit stopped_updating_geometry_excluding_intermediate_moves();
+	}
 }
 
 GPlatesViewOperations::GeometryBuilder::UndoOperation
@@ -766,10 +784,12 @@ GPlatesViewOperations::GeometryBuilder::create_composite_undo_operation(
 }
 
 GPlatesViewOperations::GeometryBuilder::UpdateGuard::UpdateGuard(
-		GeometryBuilder &geometry_builder) :
-d_geometry_builder(geometry_builder)
+		GeometryBuilder &geometry_builder,
+		bool is_intermediate_move) :
+d_geometry_builder(geometry_builder),
+d_is_intermediate_move(is_intermediate_move)
 {
-	d_geometry_builder.begin_update_geometry();
+	d_geometry_builder.begin_update_geometry(d_is_intermediate_move);
 }
 
 
@@ -779,7 +799,7 @@ GPlatesViewOperations::GeometryBuilder::UpdateGuard::~UpdateGuard()
 	// If one is thrown we just have to lump it and continue on.
 	try
 	{
-		d_geometry_builder.end_update_geometry();
+		d_geometry_builder.end_update_geometry(d_is_intermediate_move);
 	}
 	catch (...)
 	{

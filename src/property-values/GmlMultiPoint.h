@@ -30,8 +30,8 @@
 
 #include <vector>
 #include "model/PropertyValue.h"
-#include "maths/GeometryForwardDeclarations.h"
 #include "maths/PointOnSphere.h"
+#include "maths/MultiPointOnSphere.h"
 
 
 namespace GPlatesPropertyValues

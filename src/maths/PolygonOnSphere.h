@@ -383,12 +383,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The type used for the reference-count.
-		 */
-		typedef long ref_count_type;
-
-
-		/**
 		 * The possible return values from the construction-parameter
 		 * validation functions
 		 * @a evaluate_construction_parameter_validity and
@@ -1129,27 +1123,6 @@ namespace GPlatesMaths
 		}
 		poly.d_seq.swap(tmp_seq);
 	}
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const PolygonOnSphere *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const PolygonOnSphere *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 namespace std

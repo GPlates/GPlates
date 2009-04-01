@@ -342,6 +342,17 @@ namespace GPlatesViewOperations
 		started_updating_geometry();
 
 		/**
+		 * Geometry modifications have started.
+		 *
+		 * Same as above except this signal is not emitted if the geometry operations
+		 * consist only of one or more intermediate move operations.
+		 * This can significantly reduce the number of signals received when the
+		 * user is dragging vertices.
+		 */
+		void
+		started_updating_geometry_excluding_intermediate_moves();
+
+		/**
 		 * Geometry modifications have stopped.
 		 *
 		 * This signal is preceeded by the @a started_updating_geometry signal
@@ -353,6 +364,17 @@ namespace GPlatesViewOperations
 		 */
 		void
 		stopped_updating_geometry();
+
+		/**
+		 * Geometry modifications have stopped.
+		 *
+		 * Same as above except this signal is not emitted if the geometry operations
+		 * consist only of one or more intermediate move operations.
+		 * This can significantly reduce the number of signals received when the
+		 * user is dragging vertices.
+		 */
+		void
+		stopped_updating_geometry_excluding_intermediate_moves();
 
 		/**
 		 * The actual type of geometry at @a geometry_index has changed
@@ -432,11 +454,13 @@ namespace GPlatesViewOperations
 			public boost::noncopyable
 		{
 			UpdateGuard(
-					GeometryBuilder &);
+					GeometryBuilder &,
+					bool is_intermediate_move = false);
 
 			~UpdateGuard();
 
 			GeometryBuilder &d_geometry_builder;
+			bool d_is_intermediate_move;
 		};
 
 		/**
@@ -484,10 +508,12 @@ namespace GPlatesViewOperations
 		static const GeometryIndex DEFAULT_GEOMETRY_INDEX = 0;
 
 		void
-		begin_update_geometry();
+		begin_update_geometry(
+				bool is_intermedate_move);
 
 		void
-		end_update_geometry();
+		end_update_geometry(
+				bool is_intermedate_move);
 
 		const InternalGeometryBuilder&
 		get_current_geometry_builder() const;
@@ -531,10 +557,11 @@ namespace GPlatesViewOperations
 	}
 
 	inline
-	const InternalGeometryBuilder &
-	GeometryBuilder::get_current_geometry_builder() const
+	InternalGeometryBuilder &
+	GeometryBuilder::get_current_geometry_builder()
 	{
-		return const_cast<GeometryBuilder*>(this)->get_current_geometry_builder();
+		return const_cast<InternalGeometryBuilder &>(
+				static_cast<const GeometryBuilder*>(this)->get_current_geometry_builder());
 	}
 
 	template <typename ForwardPointIter>

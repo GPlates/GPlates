@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,8 +32,8 @@
 
 GPlatesGui::ChooseCanvasTool::ChooseCanvasTool(
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
-d_most_recent_tool_type(NONE),
-d_most_recent_digitise_geom_tool_type(NONE),
+d_most_recent_tool_type(GPlatesCanvasTools::CanvasToolType::NONE),
+d_most_recent_digitise_geom_tool_type(GPlatesCanvasTools::CanvasToolType::NONE),
 d_viewport_window(&viewport_window)
 {
 }
@@ -43,15 +43,15 @@ GPlatesGui::ChooseCanvasTool::choose_most_recent_digitise_geometry_tool()
 {
 	switch (d_most_recent_digitise_geom_tool_type)
 	{
-	case DIGITISE_POLYLINE:
+	case GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE:
 		choose_digitise_polyline_tool();
 		break;
 
-	case DIGITISE_MULTIPOINT:
+	case GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT:
 		choose_digitise_multipoint_tool();
 		break;
 
-	case DIGITISE_POLYGON:
+	case GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON:
 		choose_digitise_polygon_tool();
 		break;
 
@@ -66,7 +66,7 @@ GPlatesGui::ChooseCanvasTool::choose_drag_globe_tool()
 {
 	d_viewport_window->choose_drag_globe_tool();
 
-	d_most_recent_tool_type = DRAG_GLOBE;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
@@ -76,7 +76,7 @@ GPlatesGui::ChooseCanvasTool::choose_zoom_globe_tool()
 {
 	d_viewport_window->choose_zoom_globe_tool();
 
-	d_most_recent_tool_type = ZOOM_GLOBE;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::ZOOM_GLOBE;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
@@ -86,7 +86,7 @@ GPlatesGui::ChooseCanvasTool::choose_click_geometry_tool()
 {
 	d_viewport_window->choose_click_geometry_tool();
 
-	d_most_recent_tool_type = CLICK_GEOMETRY;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::CLICK_GEOMETRY;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
@@ -96,8 +96,8 @@ GPlatesGui::ChooseCanvasTool::choose_digitise_polyline_tool()
 {
 	d_viewport_window->choose_digitise_polyline_tool();
 
-	d_most_recent_tool_type = DIGITISE_POLYLINE;
-	d_most_recent_digitise_geom_tool_type = DIGITISE_POLYLINE;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE;
+	d_most_recent_digitise_geom_tool_type = GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
@@ -107,8 +107,8 @@ GPlatesGui::ChooseCanvasTool::choose_digitise_multipoint_tool()
 {
 	d_viewport_window->choose_digitise_multipoint_tool();
 
-	d_most_recent_tool_type = DIGITISE_MULTIPOINT;
-	d_most_recent_digitise_geom_tool_type = DIGITISE_MULTIPOINT;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT;
+	d_most_recent_digitise_geom_tool_type = GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
@@ -118,8 +118,8 @@ GPlatesGui::ChooseCanvasTool::choose_digitise_polygon_tool()
 {
 	d_viewport_window->choose_digitise_polygon_tool();
 
-	d_most_recent_tool_type = DIGITISE_POLYGON;
-	d_most_recent_digitise_geom_tool_type = DIGITISE_POLYGON;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON;
+	d_most_recent_digitise_geom_tool_type = GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
@@ -129,7 +129,7 @@ GPlatesGui::ChooseCanvasTool::choose_move_geometry_tool()
 {
 	d_viewport_window->choose_move_geometry_tool();
 
-	d_most_recent_tool_type = MOVE_GEOMETRY;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::MOVE_GEOMETRY;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
@@ -139,7 +139,27 @@ GPlatesGui::ChooseCanvasTool::choose_move_vertex_tool()
 {
 	d_viewport_window->choose_move_vertex_tool();
 
-	d_most_recent_tool_type = MOVE_VERTEX;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::MOVE_VERTEX;
+
+	emit chose_canvas_tool(*this, d_most_recent_tool_type);
+}
+
+void
+GPlatesGui::ChooseCanvasTool::choose_insert_vertex_tool()
+{
+	d_viewport_window->choose_insert_vertex_tool();
+
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::INSERT_VERTEX;
+
+	emit chose_canvas_tool(*this, d_most_recent_tool_type);
+}
+
+void
+GPlatesGui::ChooseCanvasTool::choose_delete_vertex_tool()
+{
+	d_viewport_window->choose_delete_vertex_tool();
+
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::DELETE_VERTEX;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
@@ -149,7 +169,7 @@ GPlatesGui::ChooseCanvasTool::choose_manipulate_pole_tool()
 {
 	d_viewport_window->choose_manipulate_pole_tool();
 
-	d_most_recent_tool_type = MANIPULATE_POLE;
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::MANIPULATE_POLE;
 
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }

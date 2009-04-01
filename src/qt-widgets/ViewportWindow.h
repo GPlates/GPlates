@@ -63,19 +63,20 @@
 #include "file-io/FeatureCollectionFileFormat.h"
 
 #include "gui/AnimationController.h"
+#include "gui/ChooseCanvasTool.h"
 #include "gui/ColourTable.h"
+#include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
-#include "gui/ChooseCanvasTool.h"
 
 #include "maths/GeometryOnSphere.h"
 
 #include "model/ModelInterface.h"
 
-
+#include "view-operations/ActiveGeometryOperation.h"
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
-#include "view-operations/GeometryBuilderToolTarget.h"
+#include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -84,11 +85,6 @@ namespace GPlatesGui
 	class CanvasToolAdapter;
 	class CanvasToolChoice;
 	class ChooseCanvasTool;
-}
-
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryFactory;
 }
 
 namespace GPlatesQtWidgets
@@ -173,6 +169,50 @@ namespace GPlatesQtWidgets
 		pop_up_license_dialog();
 
 		void
+		enable_drag_globe_tool(
+				bool enable = true);
+
+		void
+		enable_zoom_globe_tool(
+				bool enable = true);
+
+		void
+		enable_click_geometry_tool(
+				bool enable = true);
+
+		void
+		enable_digitise_polyline_tool(
+				bool enable = true);
+
+		void
+		enable_digitise_multipoint_tool(
+				bool enable = true);
+
+		void
+		enable_digitise_polygon_tool(
+				bool enable = true);
+
+		void
+		enable_move_geometry_tool(
+				bool enable = true);
+
+		void
+		enable_move_vertex_tool(
+				bool enable = true);
+
+		void
+		enable_delete_vertex_tool(
+				bool enable = true);
+
+		void
+		enable_insert_vertex_tool(
+				bool enable = true);
+
+		void
+		enable_manipulate_pole_tool(
+				bool enable = true);
+
+		void
 		choose_drag_globe_tool();
 
 		void
@@ -195,6 +235,12 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_move_vertex_tool();
+
+		void
+		choose_delete_vertex_tool();
+
+		void
+		choose_insert_vertex_tool();
 
 		void
 		choose_manipulate_pole_tool();
@@ -432,10 +478,12 @@ namespace GPlatesQtWidgets
 		GlobeCanvas *d_canvas_ptr;
 		boost::scoped_ptr<GPlatesGui::CanvasToolChoice> d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
 		boost::scoped_ptr<GPlatesGui::CanvasToolAdapter> d_canvas_tool_adapter_ptr;
-		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
+		GPlatesGui::ChooseCanvasTool d_choose_canvas_tool;
 		GPlatesViewOperations::GeometryBuilder d_digitise_geometry_builder;
 		GPlatesViewOperations::GeometryBuilder d_focused_feature_geometry_builder;
-		GPlatesViewOperations::GeometryBuilderToolTarget d_geom_builder_tool_target;
+		GPlatesViewOperations::GeometryOperationTarget d_geometry_operation_target;
+		GPlatesViewOperations::ActiveGeometryOperation d_active_geometry_operation;
+		GPlatesGui::EnableCanvasTool d_enable_canvas_tool;
 		GPlatesViewOperations::FocusedFeatureGeometryManipulator d_focused_feature_geom_manipulator;
 
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
@@ -473,14 +521,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_dock_context_menus();
-
-		/**
-		 * Returns rendered geometry factory.
-		 *
-		 * Since this is canvas-specific it could be moved to a base Canvas interface.
-		 */
-		GPlatesViewOperations::RenderedGeometryFactory &
-		get_rendered_geometry_factory();
 
 		void
 		uncheck_all_tools();

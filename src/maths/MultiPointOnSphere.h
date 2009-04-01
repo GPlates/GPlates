@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <algorithm>  // std::swap
+#include <iterator>   // std::distance
 
 #include "GeometryOnSphere.h"
 #include "PointOnSphere.h"
@@ -101,12 +102,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The type used for the reference-count.
-		 */
-		typedef long ref_count_type;
-
-
-		/**
 		 * The possible return values from the construction-parameter
 		 * validation function
 		 * @a evaluate_construction_parameter_validity.
@@ -116,6 +111,34 @@ namespace GPlatesMaths
 			VALID,
 			INVALID_INSUFFICIENT_POINTS
 		};
+
+
+		/**
+		 * Evaluate the validity of the construction-parameters.
+		 *
+		 * What this actually means in plain(er) English is that you
+		 * can use this function to check whether you would be able to
+		 * construct a multi-point instance from a given set of parameters
+		 * (ie, your collection of points in the range @a begin / @a end).
+		 *
+		 * If you pass this function what turns out to be invalid
+		 * construction-parameters, it will politely return an error
+		 * diagnostic.  If you were to pass these same invalid
+		 * parameters to the creation functions down below, you would
+		 * get an exception thrown back at you.
+		 *
+		 * It's not terribly difficult to obtain a collection which
+		 * qualifias as valid parameters (at least one point in the
+		 * collection -- nothing particularly unreasonable) but the
+		 * creation functions are fairly unsympathetic if your
+		 * parameters @em do turn out to be invalid.
+		 */
+		template<typename ForwardIterPointOnSphere>
+		static
+		ConstructionParameterValidity
+		evaluate_construction_parameter_validity(
+				ForwardIterPointOnSphere begin,
+				ForwardIterPointOnSphere end);
 
 
 		/**
@@ -145,7 +168,25 @@ namespace GPlatesMaths
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
-				const C &coll);
+				const C &coll)
+		{
+			return evaluate_construction_parameter_validity(coll.begin(), coll.end());
+		}
+
+
+		/**
+		 * Create a new MultiPointOnSphere instance on the heap from the sequence of points
+		 * in the range @a begin / @a end, and return an intrusive_ptr which points to the
+		 * newly-created instance.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		template <typename ForwardIterPointOnSphere>
+		static
+		const non_null_ptr_to_const_type
+		create_on_heap(
+				ForwardIterPointOnSphere begin,
+				ForwardIterPointOnSphere end);
 
 
 		/**
@@ -160,7 +201,10 @@ namespace GPlatesMaths
 		static
 		const non_null_ptr_to_const_type
 		create_on_heap(
-				const C &coll);
+				const C &coll)
+		{
+			return create_on_heap(coll.begin(), coll.end());
+		}
 
 
 		/**
@@ -399,12 +443,13 @@ namespace GPlatesMaths
 			const MultiPointOnSphere &mp2);
 
 
-	template<typename C>
+	template<typename ForwardIterPointOnSphere>
 	MultiPointOnSphere::ConstructionParameterValidity
 	MultiPointOnSphere::evaluate_construction_parameter_validity(
-			const C &coll)
+			ForwardIterPointOnSphere begin,
+			ForwardIterPointOnSphere end)
 	{
-		if (coll.empty()) {
+		if (begin == end) {
 			return INVALID_INSUFFICIENT_POINTS;
 		} else {
 			return VALID;
@@ -448,42 +493,23 @@ namespace GPlatesMaths
 	};
 
 
-	template<typename C>
+	template<typename ForwardIterPointOnSphere>
 	const MultiPointOnSphere::non_null_ptr_to_const_type
 	MultiPointOnSphere::create_on_heap(
-			const C &coll)
+			ForwardIterPointOnSphere begin,
+			ForwardIterPointOnSphere end)
 	{
-		ConstructionParameterValidity v = evaluate_construction_parameter_validity(coll);
+		ConstructionParameterValidity v = evaluate_construction_parameter_validity(begin, end);
 		if (v != VALID) {
 			throw InsufficientPointsForMultiPointConstructionError(__FILE__, __LINE__);
 		}
 
 		MultiPointOnSphere::non_null_ptr_type ptr(new MultiPointOnSphere(),
 				GPlatesUtils::NullIntrusivePointerHandler());
-		ptr->d_points.reserve(coll.size());
-		ptr->d_points.assign(coll.begin(), coll.end());
+		ptr->d_points.reserve(std::distance(begin, end));
+		ptr->d_points.assign(begin, end);
 
 		return ptr;
-	}
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const MultiPointOnSphere *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const MultiPointOnSphere *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
 	}
 
 

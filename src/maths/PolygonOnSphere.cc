@@ -69,7 +69,7 @@ GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
 const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 GPlatesMaths::PolygonOnSphere::get_non_null_pointer() const
 {
-	if (ref_count() == 0) {
+	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
 		// Presumably, the programmer obtained the raw PolygonOnSphere pointer from inside

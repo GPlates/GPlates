@@ -25,9 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/bind.hpp>
 #include <QLocale>
 
 #include "QueryFeaturePropertiesWidgetPopulator.h"
+
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/FeatureRevision.h"
@@ -59,37 +61,71 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "utils/UnicodeStringUtils.h"
+//#include "utils/Profile.h"
 
-namespace
-{
-
-}
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
+		GPlatesModel::FeatureHandle &feature_handle,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
 {
 	d_tree_widget_ptr->clear();
 
+	d_tree_widget_builder.reset();
+
+	// Visit the feature handle.
+	if (focused_rfg)
+	{
+		// The focused geometry property will be expanded but the others won't.
+		// This serves two purposes:
+		//   1) highlights to the user which geometry (of the feature) is in focus.
+		//   2) serves a dramatic optimisation for large number of geometries in feature.
+		d_focused_geometry = focused_rfg->property();
+	}
+	visit_feature_handle(feature_handle);
+
+	// Now that we've accumulated the tree widget item hierarchy we can
+	// add the hierarchy to Qt efficiently by adding all children of each
+	// tree widget item in one call using a QList.
+	d_tree_widget_builder.update_qtree_widget_with_added_or_inserted_items();
+}
+
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_feature_handle(
+		GPlatesModel::FeatureHandle &feature_handle)
+{
 	// Now visit each of the properties in turn.
 	visit_feature_properties(feature_handle);
 }
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_feature_properties(
+		GPlatesModel::FeatureHandle &feature_handle)
 {
-	QStringList fields;
-	fields.push_back(GPlatesUtils::make_qstring_from_icu_string(
-			inline_property_container.property_name().build_aliased_name()));
-	fields.push_back(QString());
-	// FIXME:  This next line could result in memory leaks.
-	QTreeWidgetItem *item = new QTreeWidgetItem(d_tree_widget_ptr, fields);
-	d_tree_widget_ptr->addTopLevelItem(item);
+	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
+	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
+	for ( ; iter != end; ++iter) {
+		// Elements of this properties vector can be NULL pointers.  (See the comment in
+		// "model/FeatureRevision.h" for more details.)
+		if (*iter != NULL) {
+			d_last_property_visited = iter;
+			(*iter)->accept_visitor(*this);
+		}
+	}
+}
 
-	d_tree_widget_item_stack.clear();
-	d_tree_widget_item_stack.push_back(item);
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_inline_property_container(
+		GPlatesModel::InlinePropertyContainer &inline_property_container)
+{
+	const QString name = GPlatesUtils::make_qstring_from_icu_string(
+			inline_property_container.property_name().build_aliased_name());
+
+	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+			add_child_to_current_item(d_tree_widget_builder, name);
 
 #if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output,
@@ -98,31 +134,63 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_inline_prop
 			inline_property_container.xml_attributes().end());
 #endif
 
+	// If the current property is the focused geometry then scroll to it
+	// so the user can see it.
+	if (d_focused_geometry == d_last_property_visited)
+	{
+		// Call QTreeWidget::scrollToItem() passing the current item, but do it later
+		// when the item is attached to the QTreeWidget otherwise it will have no effect.
+		d_tree_widget_builder.add_function(
+				item_handle,
+				boost::bind(
+						&QTreeWidget::scrollToItem,
+						_2, // will be the QTreeWidget that the tree widget builder uses
+						_1, // will be the QTreeWidgetItem we're attaching this function to
+						QAbstractItemView::EnsureVisible));
+	}
+
+	d_tree_widget_builder.push_current_item(item_handle);
+
 	visit_property_values(inline_property_container);
+
+	d_tree_widget_builder.pop_current_item();
 }
 
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_enumeration(
-		const GPlatesPropertyValues::Enumeration &enumeration)
+		GPlatesPropertyValues::Enumeration &enumeration)
 {
 	static const int which_column = 1;
 	QString qstring = GPlatesUtils::make_qstring_from_icu_string(enumeration.value().get());
 
 	// This assumes that the stack is non-empty.
-	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_string(
-		const GPlatesPropertyValues::GmlLineString &gml_line_string)
+		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	// First, add a branch for the "gml:posList".
-	d_tree_widget_item_stack.back()->setExpanded(true);
+	// The focused geometry property will be expanded but the others won't.
+	// This serves two purposes:
+	//   1) highlights to the user which geometry (of the feature) is in focus.
+	//   2) serves a dramatic optimisation for large number of geometries in feature.
+	if (d_focused_geometry == d_last_property_visited)
+	{
+		// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+		// when the item is attached to the QTreeWidget otherwise it will have no effect.
+		add_function_to_current_item(d_tree_widget_builder,
+				boost::bind(
+						&QTreeWidgetItem::setExpanded,
+						_1, // will be the QTreeWidgetItem we're attaching this function to
+						true));
+	}
 
-	QTreeWidgetItem *pos_list_item = add_child(QObject::tr("gml:posList"), QString());
-	d_tree_widget_item_stack.push_back(pos_list_item);
+	// First, add a branch for the "gml:posList".
+	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gml:posList"));
 
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
@@ -147,16 +215,14 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_st
 		point.append(lat);
 		point.append(QObject::tr(" ; "));
 		point.append(lon);
-
-		add_child(point_id, point);
+		
+		add_child(d_tree_widget_builder, item_handle, point_id, point);
 	}
-
-	d_tree_widget_item_stack.pop_back();
 }
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_point(
-		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	// FIXME: Check if the following is the appropriate form of output.
 	// Do we want a multi-point to look more like a polyline here, or do 
@@ -177,7 +243,13 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_p
 	//
 	// 
 
-	d_tree_widget_item_stack.back()->setExpanded(true);
+	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+	// when the item is attached to the QTreeWidget otherwise it will have no effect.
+	add_function_to_current_item(d_tree_widget_builder,
+			boost::bind(
+					&QTreeWidgetItem::setExpanded,
+					_1, // will be the QTreeWidgetItem we're attaching this function to
+					true));
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type 
 		multi_point_ptr = gml_multi_point.multipoint();
@@ -195,21 +267,36 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_p
 		point_member.append(QObject::tr("#"));
 		point_member.append(locale.toString(point_number));
 
-		QTreeWidgetItem *member_list_item = add_child(point_member, QString());
-		d_tree_widget_item_stack.push_back(member_list_item);
+		const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+				add_child_to_current_item(d_tree_widget_builder, point_member);
+
+		d_tree_widget_builder.push_current_item(item_handle);
 
 		write_multipoint_member(*iter);
 
-		d_tree_widget_item_stack.pop_back();
+		d_tree_widget_builder.pop_current_item();
 
 	}
 }
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orientable_curve(
-		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
-	d_tree_widget_item_stack.back()->setExpanded(true);
+	// The focused geometry property will be expanded but the others won't.
+	// This serves two purposes:
+	//   1) highlights to the user which geometry (of the feature) is in focus.
+	//   2) serves a dramatic optimisation for large number of geometries in feature.
+	if (d_focused_geometry == d_last_property_visited)
+	{
+		// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+		// when the item is attached to the QTreeWidget otherwise it will have no effect.
+		add_function_to_current_item(d_tree_widget_builder,
+				boost::bind(
+						&QTreeWidgetItem::setExpanded,
+						_1, // will be the QTreeWidgetItem we're attaching this function to
+						true));
+	}
 
 	// FIXME:  Ensure that 'gml_orientable_curve.base_curve()' is not NULL.
 	add_child_then_visit_value(QObject::tr("gml:baseCurve"), QString(),
@@ -225,7 +312,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orienta
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
-		const GPlatesPropertyValues::GmlPoint &gml_point)
+		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 #if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:Point");
@@ -237,11 +324,17 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 	d_output.write_line_of_decimal_duple_content(llp.longitude().dval(), llp.latitude().dval());
 #endif
 
-	// First, add a branch for the "gml:posList".
-	d_tree_widget_item_stack.back()->setExpanded(true);
+	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+	// when the item is attached to the QTreeWidget otherwise it will have no effect.
+	add_function_to_current_item(d_tree_widget_builder,
+			boost::bind(
+					&QTreeWidgetItem::setExpanded,
+					_1, // will be the QTreeWidgetItem we're attaching this function to
+					true));
 
-	QTreeWidgetItem *pos_list_item = add_child(QObject::tr("gml:position"), QString());
-	d_tree_widget_item_stack.push_back(pos_list_item);
+	// First, add a branch for the "gml:posList".
+	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gml:position"));
 
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
@@ -264,14 +357,12 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 	point.append(QObject::tr(" ; "));
 	point.append(lon);
 
-	add_child(point_id, point);
-
-	d_tree_widget_item_stack.pop_back();
+	add_child(d_tree_widget_builder, item_handle, point_id, point);
 }
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon(
-		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
+		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// FIXME: Check if the following is the appropriate form of output.
 	// I'm going to export this in the same form as a gml:polygon appears in an 
@@ -289,18 +380,26 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon
 	//		- #2 (lat;lon)		<lat> ; <lon>	
 	//
 
-	// First, add a branch for the "gml:exterior".
-	d_tree_widget_item_stack.back()->setExpanded(true);
+	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+	// when the item is attached to the QTreeWidget otherwise it will have no effect.
+	add_function_to_current_item(d_tree_widget_builder,
+			boost::bind(
+					&QTreeWidgetItem::setExpanded,
+					_1, // will be the QTreeWidgetItem we're attaching this function to
+					true));
 
-	QTreeWidgetItem *exterior_item = add_child(QObject::tr("gml:exterior"), QString());
-	d_tree_widget_item_stack.push_back(exterior_item);
+	// First, add a branch for the "gml:exterior".
+	const GPlatesGui::TreeWidgetBuilder::item_handle_type exterior_item_handle =
+			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gml:exterior"));
+
+	d_tree_widget_builder.push_current_item(exterior_item_handle);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
 			gml_polygon.exterior();
 
 	write_polygon_ring(polygon_ptr);
 
-	d_tree_widget_item_stack.pop_back();
+	d_tree_widget_builder.pop_current_item();
 
 	// Now handle any internal rings.
 	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
@@ -313,19 +412,21 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon
 		interior.append(QObject::tr(" #"));
 		interior.append(ring_number);
 
-		QTreeWidgetItem *interior_item = add_child(interior, QString());
-		d_tree_widget_item_stack.push_back(interior_item);
+		const GPlatesGui::TreeWidgetBuilder::item_handle_type interior_item_handle =
+				add_child_to_current_item(d_tree_widget_builder, interior);
+
+		d_tree_widget_builder.push_current_item(interior_item_handle);
 
 		write_polygon_ring(*iter);
 
-		d_tree_widget_item_stack.pop_back();
+		d_tree_widget_builder.pop_current_item();
 	}
 	
 }
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_instant(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+		GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	static const int which_column = 1;
 	QLocale locale;
@@ -341,7 +442,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_in
 	}
 
 	// This assumes that the stack is non-empty.
-	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 #if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:TimeInstant");
 	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:timePosition",
@@ -362,9 +463,15 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_in
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_period(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-	d_tree_widget_item_stack.back()->setExpanded(true);
+	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+	// when the item is attached to the QTreeWidget otherwise it will have no effect.
+	add_function_to_current_item(d_tree_widget_builder,
+			boost::bind(
+					&QTreeWidgetItem::setExpanded,
+					_1, // will be the QTreeWidgetItem we're attaching this function to
+					true));
 
 	// FIXME:  Ensure that 'gml_time_period.begin()' and 'gml_time_period.end()' are not NULL.
 	add_child_then_visit_value(QObject::tr("gml:begin"), QString(), *gml_time_period.begin());
@@ -374,7 +481,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_pe
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_constant_value(
-		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
@@ -382,7 +489,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_consta
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_finite_rotation(
-		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
 #if 0
 	if (gpml_finite_rotation.is_zero_rotation()) {
@@ -410,7 +517,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_finite
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_finite_rotation_slerp(
-		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
+		GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
 {
 #if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:FiniteRotationSlerp");
@@ -424,7 +531,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_finite
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_irregular_sampling(
-		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+		GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
 #if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:IrregularSampling");
@@ -452,38 +559,45 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_irregu
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_value_dictionary(
-		const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+		GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
 {
-	d_tree_widget_item_stack.back()->setExpanded(true);
+	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+	// when the item is attached to the QTreeWidget otherwise it will have no effect.
+	add_function_to_current_item(d_tree_widget_builder,
+			boost::bind(
+					&QTreeWidgetItem::setExpanded,
+					_1, // will be the QTreeWidgetItem we're attaching this function to
+					true));
 
-	QTreeWidgetItem *shapefile_list_item = add_child(QObject::tr("gpml:elements"), QString());
-	d_tree_widget_item_stack.push_back(shapefile_list_item);
+	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:elements"));
+	d_tree_widget_builder.push_current_item(item_handle);
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator 
 		iter = gpml_key_value_dictionary.elements().begin(),
 		end = gpml_key_value_dictionary.elements().end();
 	for ( ; iter != end; ++iter) {
 		add_gpml_key_value_dictionary_element(*iter);
 	}
-	d_tree_widget_item_stack.pop_back();
+	d_tree_widget_builder.pop_current_item();
 }
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_id(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const int which_column = 1;
 	QString qstring = QString::number(gpml_plate_id.value());
 
 	// This assumes that the stack is non-empty.
-	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
 
 #if 0
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_time_sample(
-		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
+		GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 {
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:TimeSample");
 	{
@@ -510,46 +624,52 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_time_s
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_plates_header(
-		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
+		GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
-	d_tree_widget_item_stack.back()->setExpanded(true);
+	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
+	// when the item is attached to the QTreeWidget otherwise it will have no effect.
+	add_function_to_current_item(d_tree_widget_builder,
+			boost::bind(
+					&QTreeWidgetItem::setExpanded,
+					_1, // will be the QTreeWidgetItem we're attaching this function to
+					true));
 
 	QLocale locale;
 	const GPlatesPropertyValues::GpmlOldPlatesHeader &header = gpml_old_plates_header;
-	add_child(QObject::tr("gpml:regionNumber"), locale.toString(header.region_number()));
-	add_child(QObject::tr("gpml:referenceNumber"), QString::number(header.reference_number()));
-	add_child(QObject::tr("gpml:stringNumber"), QString::number(header.string_number()));
-	add_child(QObject::tr("gpml:geographicDescription"),
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:regionNumber"), locale.toString(header.region_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:referenceNumber"), QString::number(header.reference_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:stringNumber"), QString::number(header.string_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:geographicDescription"),
 			GPlatesUtils::make_qstring_from_icu_string(header.geographic_description()));
-	add_child(QObject::tr("gpml:plateIdNumber"), QString::number(header.plate_id_number()));
-	add_child(QObject::tr("gpml:ageOfAppearance"), locale.toString(header.age_of_appearance()));
-	add_child(QObject::tr("gpml:ageOfDisappearance"), locale.toString(header.age_of_disappearance()));
-	add_child(QObject::tr("gpml:dataTypeCode"),
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:plateIdNumber"), QString::number(header.plate_id_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:ageOfAppearance"), locale.toString(header.age_of_appearance()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:ageOfDisappearance"), locale.toString(header.age_of_disappearance()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:dataTypeCode"),
 			GPlatesUtils::make_qstring_from_icu_string(header.data_type_code()));
-	add_child(QObject::tr("gpml:dataTypeCodeNumber"), QString::number(header.data_type_code_number()));
-	add_child(QObject::tr("gpml:dataTypeCodeNumberAdditional"),
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:dataTypeCodeNumber"), QString::number(header.data_type_code_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:dataTypeCodeNumberAdditional"),
 			GPlatesUtils::make_qstring_from_icu_string(header.data_type_code_number_additional()));
-	add_child(QObject::tr("gpml:conjugatePlateIdNumber"), QString::number(header.conjugate_plate_id_number()));
-	add_child(QObject::tr("gpml:colourCode"), QString::number(header.colour_code()));
-	add_child(QObject::tr("gpml:numberOfPoints"), QString::number(header.number_of_points()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:conjugatePlateIdNumber"), QString::number(header.conjugate_plate_id_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:colourCode"), QString::number(header.colour_code()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:numberOfPoints"), QString::number(header.number_of_points()));
 }
 
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_boolean(
-		const GPlatesPropertyValues::XsBoolean &xs_boolean)
+		GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	static const int which_column = 1;
 	QString qstring = QVariant(xs_boolean.value()).toString();
 
 	// This assumes that the stack is non-empty.
-	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_double(
-	const GPlatesPropertyValues::XsDouble& xs_double)
+	GPlatesPropertyValues::XsDouble& xs_double)
 {
 	static const int which_column = 1;
 
@@ -558,12 +678,12 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_double(
 	QString qstring = locale.toString(xs_double.value());
 
 	// This assumes that the stack is non-empty.
-	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_integer(
-	const GPlatesPropertyValues::XsInteger& xs_integer)
+	GPlatesPropertyValues::XsInteger& xs_integer)
 {
 	static const int which_column = 1;
 
@@ -572,62 +692,38 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_integer(
 	QString qstring = locale.toString(xs_integer.value());
 
 	// This assumes that the stack is non-empty.
-	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_string(
-		const GPlatesPropertyValues::XsString &xs_string)
+		GPlatesPropertyValues::XsString &xs_string)
 {
 	static const int which_column = 1;
 	QString qstring = GPlatesUtils::make_qstring(xs_string.value());
 
 	// This assumes that the stack is non-empty.
-	d_tree_widget_item_stack.back()->setText(which_column, qstring);
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
 
-QTreeWidgetItem *
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_child(
-		const QString &name,
-		const QString &value)
-{
-	QStringList fields;
-	fields.push_back(name);
-	fields.push_back(value);
-
-	// FIXME:  This next line could result in memory leaks.
-	QTreeWidgetItem *item = new QTreeWidgetItem(d_tree_widget_item_stack.back(), fields);
-	d_tree_widget_item_stack.back()->addChild(item);
-
-	return item;
-}
-
-
-QTreeWidgetItem *
+void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_child_then_visit_value(
 		const QString &name,
 		const QString &value,
-		const GPlatesModel::PropertyValue &property_value_to_visit)
+		GPlatesModel::PropertyValue &property_value_to_visit)
 {
-	QStringList fields;
-	fields.push_back(name);
-	fields.push_back(value);
+	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+			add_child_to_current_item(d_tree_widget_builder, name, value);
 
-	// FIXME:  This next line could result in memory leaks.
-	QTreeWidgetItem *item = new QTreeWidgetItem(d_tree_widget_item_stack.back(), fields);
-	d_tree_widget_item_stack.back()->addChild(item);
-
-	d_tree_widget_item_stack.push_back(item);
+	d_tree_widget_builder.push_current_item(item_handle);
 	property_value_to_visit.accept_visitor(*this);
-	d_tree_widget_item_stack.pop_back();
-
-	return item;
+	d_tree_widget_builder.pop_current_item();
 }
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_value_dictionary_element(
-			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
 {
 
 	QString key_string = GPlatesUtils::make_qstring_from_icu_string(element.key()->value().get());
@@ -641,9 +737,9 @@ void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_ring(
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
 {
+	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gml:posList"));
 
-	QTreeWidgetItem *pos_list_item = add_child(QObject::tr("gml:posList"), QString());
-	d_tree_widget_item_stack.push_back(pos_list_item);
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
 
@@ -666,10 +762,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_rin
 		point.append(QObject::tr(" ; "));
 		point.append(lon);
 
-		add_child(point_id, point);
+		add_child(d_tree_widget_builder, item_handle, point_id, point);
 	}
-
-	d_tree_widget_item_stack.pop_back();
 }
 
 void
@@ -681,8 +775,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_multipoint_
 		QString gml_pos;
 		gml_pos.append(QObject::tr("gml:pos"));
 
-		QTreeWidgetItem *gml_pos_item = add_child(gml_pos, QString());
-		d_tree_widget_item_stack.push_back(gml_pos_item);
+		const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
+				add_child_to_current_item(d_tree_widget_builder, gml_pos);
 
 		QString pos;
 		pos.append(QObject::tr(" (lat ; lon)"));
@@ -696,7 +790,5 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_multipoint_
 		point_string.append(QObject::tr(" ; "));
 		point_string.append(lon);
 
-		add_child(pos, point_string);
-
-		d_tree_widget_item_stack.pop_back();
+		add_child(d_tree_widget_builder, item_handle, pos, point_string);
 }

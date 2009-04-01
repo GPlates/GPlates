@@ -179,6 +179,8 @@
    <addaction name="action_Digitise_New_Polygon" />
    <addaction name="action_Move_Geometry" />
    <addaction name="action_Move_Vertex" />
+   <addaction name="action_Insert_Vertex" />
+   <addaction name="action_Delete_Vertex" />
    <addaction name="action_Manipulate_Pole" />
   </widget>
   <widget class="QDockWidget" name="dock_search_results" >
@@ -963,6 +965,52 @@
    </property>
    <property name="shortcut" >
     <string>V</string>
+   </property>
+  </action>
+  <action name="action_Delete_Vertex" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/delete_vertex_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Delete Verte&amp;x</string>
+   </property>
+   <property name="iconText" >
+    <string>Delete Verte&amp;x</string>
+   </property>
+   <property name="toolTip" >
+    <string>Delete Vertex  X</string>
+   </property>
+   <property name="shortcut" >
+    <string>X</string>
+   </property>
+  </action>
+  <action name="action_Insert_Vertex" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/insert_vertex_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Insert Vertex</string>
+   </property>
+   <property name="iconText" >
+    <string>&amp;Insert Vertex</string>
+   </property>
+   <property name="toolTip" >
+    <string>Insert Vertex  I</string>
+   </property>
+   <property name="shortcut" >
+    <string>I</string>
    </property>
   </action>
   <action name="action_Manipulate_Pole" >

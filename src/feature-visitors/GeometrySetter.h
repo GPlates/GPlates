@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,6 +35,12 @@
 #include "maths/GeometryOnSphere.h"
 
 
+namespace GPlatesModel
+{
+	class PropertyValue;
+	class PropertyContainer;
+}
+
 namespace GPlatesFeatureVisitors
 {
 	/**
@@ -49,11 +55,15 @@ namespace GPlatesFeatureVisitors
 	 *  -# GmlPolygon (although the differentiation between the interior and exterior rings is
 	 * lost)
 	 *
-	 * You probably want to use it by taking your (miscellaneous) PropertyValue and
-	 * calling ->accept_visitor(*this GeometrySetter) on it directly.
+	 * NOTE: The interface is deliberately limited to setting property values directly
+	 * or in a property container. We disable setting geometry on a feature because
+	 * it is not obvious which geometry property should be changed. It is up to the
+	 * client to determine this before using this interface. Currently multiple geometries
+	 * are supported as separate property values (and currently there is no support for
+	 * multiple geometry properties in a single property container).
 	 */
 	class GeometrySetter:
-			public GPlatesModel::FeatureVisitor
+			private GPlatesModel::FeatureVisitor
 	{
 	public:
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr_type;
@@ -67,12 +77,24 @@ namespace GPlatesFeatureVisitors
 		virtual
 		~GeometrySetter()
 		{  }
-		
-		virtual
-		void
-		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle);
 
+		/**
+		 * Sets the geometry contained in @a geometry_property to the geometry
+		 * specified in the constructor.
+		 */
+		void
+		set_geometry(
+				GPlatesModel::PropertyValue *geometry_property);
+
+		/**
+		 * Sets the geometry contained in @a geometry_property_container to the geometry
+		 * specified in the constructor.
+		 */
+		void
+		set_geometry(
+				GPlatesModel::PropertyContainer *geometry_property_container);
+		
+	private:
 		virtual
 		void
 		visit_gml_line_string(

@@ -30,15 +30,77 @@
 
 #include "ClickGeometry.h"
 
-#include "gui/ProximityTests.h"
 #include "global/InternalInconsistencyException.h"
+#include "maths/ProximityCriteria.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
 #include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryProximity.h"
+#include "view-operations/RenderedGeometryVisitor.h"
+#include "view-operations/RenderedReconstructionGeometry.h"
 
+
+namespace
+{
+	/**
+	 * A rendered geometry visitor that adds reconstruction geometries to a sequence.
+	 */
+	class AddReconstructionGeometriesToFeatureTable :
+			public GPlatesViewOperations::ConstRenderedGeometryVisitor
+	{
+	public:
+		AddReconstructionGeometriesToFeatureTable(
+				GPlatesGui::FeatureTableModel::geometry_sequence_type &recon_geom_seq) :
+			d_recon_geom_seq(recon_geom_seq)
+		{  }
+
+		virtual
+		void
+		visit_rendered_reconstruction_geometry(
+				const GPlatesViewOperations::RenderedReconstructionGeometry &rendered_recon_geom)
+		{
+			d_recon_geom_seq.push_back(rendered_recon_geom.get_reconstruction_geometry());
+		}
+
+	private:
+		GPlatesGui::FeatureTableModel::geometry_sequence_type &d_recon_geom_seq;
+	};
+
+	/**
+	 * Adds @a ReconstructionGeometry objects in the sorted proximity hits to the feature table model.
+	 */
+	void
+	add_clicked_reconstruction_geoms_to_feature_table_model(
+			GPlatesGui::FeatureTableModel *clicked_table_model,
+			const GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type &sorted_hits)
+	{
+		clicked_table_model->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
+
+		// The sequence of ReconstructionGeometry's were going to add to.
+		GPlatesGui::FeatureTableModel::geometry_sequence_type &recon_geom_seq =
+				clicked_table_model->geometry_sequence();
+
+		// Used to add reconstruction geometries to clicked table model.
+		AddReconstructionGeometriesToFeatureTable add_recon_geoms(recon_geom_seq);
+
+		GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type::const_iterator sorted_iter;
+		for (sorted_iter = sorted_hits.begin(); sorted_iter != sorted_hits.end(); ++sorted_iter)
+		{
+			GPlatesViewOperations::RenderedGeometry rendered_geom =
+					sorted_iter->d_rendered_geom_layer->get_rendered_geometry(
+							sorted_iter->d_rendered_geom_index);
+
+			// If rendered geometry contains a reconstruction geometry then add that
+			// to the clicked table model.
+			rendered_geom.accept_visitor(add_recon_geoms);
+		}
+
+		clicked_table_model->end_insert_features();
+	}
+}
 
 const GPlatesCanvasTools::ClickGeometry::non_null_ptr_type
 GPlatesCanvasTools::ClickGeometry::create(
@@ -113,9 +175,19 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 			globe_canvas().current_proximity_inclusion_threshold(click_pos_on_globe);
 	
 	// What did the user click on just now?
-	std::priority_queue<GPlatesGui::ProximityTests::ProximityHit> sorted_hits;
-	GPlatesGui::ProximityTests::find_close_rfgs(sorted_hits, view_state().reconstruction(),
-			oriented_click_pos_on_globe, proximity_inclusion_threshold);
+	GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type sorted_hits;
+
+	// Test for proximity to the RenderedGeometry objects in the reconstruction layer.
+	// These RenderedGeometry objects each contain a ReconstructionGeometry.
+	// If the reconstruction main layer is inactive or parts of it are inactive (ie, child
+	// layers) then they don't get tested.
+	// Only what's visible gets tested which is what we want.
+	GPlatesMaths::ProximityCriteria criteria(oriented_click_pos_on_globe, proximity_inclusion_threshold);
+	GPlatesViewOperations::test_proximity(
+			sorted_hits,
+			*d_rendered_geom_collection,
+			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
+			criteria);
 	
 	// Give the user some useful feedback in the status bar.
 	if (sorted_hits.size() == 0) {
@@ -135,15 +207,10 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 		emit no_hits_found();
 		return;
 	}
+
 	// Populate the 'Clicked' FeatureTableModel.
-	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
-	while ( ! sorted_hits.empty())
-	{
-		d_clicked_table_model_ptr->geometry_sequence().push_back(
-				sorted_hits.top().d_recon_geometry);
-		sorted_hits.pop();
-	}
-	d_clicked_table_model_ptr->end_insert_features();
+	add_clicked_reconstruction_geoms_to_feature_table_model(d_clicked_table_model_ptr, sorted_hits);
+
 	d_view_state_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
 

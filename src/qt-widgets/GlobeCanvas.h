@@ -53,7 +53,6 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
-#include "view-operations/GlobeRenderedGeometryFactory.h"
 #include "view-operations/QueryProximityThreshold.h"
 
 namespace GPlatesViewOperations
@@ -160,12 +159,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		draw_vector_output();
-
-		GPlatesViewOperations::RenderedGeometryFactory &
-		get_rendered_geometry_factory()
-		{
-			return d_rendered_geom_factory;
-		}
 
 		GPlatesGui::Globe &
 		globe()
@@ -409,6 +402,16 @@ namespace GPlatesQtWidgets
 				Qt::KeyboardModifiers modifiers);
 
 		/**
+		 * The mouse position moved but the left mouse button is NOT down.
+		 */
+		void
+		mouse_moved_without_drag(
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+
+		/**
 		 * This signal should only be emitted if the zoom is actually different to what it
 		 * was.
 		 */
@@ -472,11 +475,6 @@ namespace GPlatesQtWidgets
 		double d_larger_dim;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
-
-		/**
-		 * Used to create the @a RenderedGeometry objects.
-		 */
-		GPlatesViewOperations::GlobeRenderedGeometryFactory d_rendered_geom_factory;
 
 		//
 		// Some of these must go after 'd_rendered_geom_factory' as they use it.

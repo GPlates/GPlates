@@ -1,6 +1,6 @@
 <ui version="4.0" >
- <class>MoveVertexWidget</class>
- <widget class="QWidget" name="MoveVertexWidget" >
+ <class>ModifyGeometryWidget</class>
+ <widget class="QWidget" name="ModifyGeometryWidget" >
   <property name="geometry" >
    <rect>
     <x>0</x>

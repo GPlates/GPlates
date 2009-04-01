@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,7 +28,10 @@
 #include <ostream>
 #include <fstream>
 #include <vector>
+#include <numeric>
 #include <unicode/ustream.h>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 
 #include "PlatesLineFormatWriter.h"
 #include "PlatesLineFormatHeaderVisitor.h"
@@ -59,57 +62,68 @@ namespace
 	/**
 	 * Visitor determines number of points in a derived GeometryOnSphere object.
 	 */
-	class NumberOfGeometryPointsVisitor :
-		public GPlatesMaths::ConstGeometryOnSphereVisitor
+	class NumberOfGeometryPoints :
+		private GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
-		NumberOfGeometryPointsVisitor()
-			: d_number_of_points(0)
-		{ }
+		NumberOfGeometryPoints() :
+			d_number_of_points(0)
+		{  }
 
-		int
-			get_number_of_points(
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
+		unsigned int
+		get_number_of_points(
+				const GPlatesMaths::GeometryOnSphere *geometry)
 		{
 			geometry->accept_visitor(*this);
 			return d_number_of_points;
 		}
 
+	private:
+		int d_number_of_points;
+
 		virtual
-			void
-			visit_multi_point_on_sphere(
-			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 		{
 			d_number_of_points = multi_point_on_sphere->number_of_points();
 		}
 
 		virtual
-			void
-			visit_point_on_sphere(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
 		{
 			d_number_of_points = 1;
 		}
 
 		virtual
-			void
-			visit_polygon_on_sphere(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
 			d_number_of_points = polygon_on_sphere->number_of_vertices() + 1;
 		}
 
 		virtual
-			void
-			visit_polyline_on_sphere(
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{
 			d_number_of_points = polyline_on_sphere->number_of_vertices();
 		}
-
-	private:
-		int d_number_of_points;
 	};
+
+	/**
+	 * Returns number of points in geometry.
+	 */
+	unsigned int
+	get_number_of_points_in_geometry(
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
+	{
+		NumberOfGeometryPoints num_geom_points;
+		return num_geom_points.get_number_of_points(geometry.get());
+	}
 }
 
 
@@ -147,28 +161,30 @@ GPlatesFileIO::PlatesLineFormatWriter::write_feature(
 	// If we have a valid header and at least one geometry then we can output for the current feature.
 	if (valid_header && d_feature_accumulator.have_geometry())
 	{
-		// For each GeometryOnSphere write out a header and the geometry data.
-		for(
-			FeatureAccumulator::geometries_const_iterator_type geometry_iter =
-				d_feature_accumulator.geometries_begin();
-			geometry_iter != d_feature_accumulator.geometries_end();
-			++geometry_iter)
-		{
-			// Get number of points in current geometry.
-			NumberOfGeometryPointsVisitor number_of_points_visitor;
-			old_plates_header.number_of_points =
-				number_of_points_visitor.get_number_of_points(*geometry_iter);
+		using boost::lambda::_1;
+		using boost::lambda::_2;
+		using boost::lambda::bind;
 
-			// Write out the header.
-			print_header_lines(old_plates_header);
+		// Calculate total number of geometry points in the current feature.
+		const unsigned int number_points_in_feature = std::accumulate(
+				d_feature_accumulator.geometries_begin(),
+				d_feature_accumulator.geometries_end(),
+				0 /*initial_value*/,
+				_1 + bind(&get_number_of_points_in_geometry, _2));
 
-			// Write out the geometry.
-			PlatesLineFormatGeometryExporter geometry_exporter(*d_output_stream);
-			geometry_exporter.export_geometry(*geometry_iter);
-		}
+		// Store the total number of geometry points in old plates header.
+		old_plates_header.number_of_points = number_points_in_feature;
+
+		// Write out the header.
+		print_header_lines(old_plates_header);
+
+		// For each geometry of the current feature write out the geometry data.
+		PlatesLineFormatGeometryExporter geometry_exporter(*d_output_stream);
+		geometry_exporter.export_feature_geometries(
+				d_feature_accumulator.geometries_begin(),
+				d_feature_accumulator.geometries_end());
 	}
 }
-
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(

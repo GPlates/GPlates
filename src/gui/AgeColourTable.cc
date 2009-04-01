@@ -53,19 +53,19 @@ GPlatesGui::AgeColourTable::lookup(
 
 	if( ! feature_geometry.reconstruction_feature_time()) {
 		// The feature does not have a gml:validTime property.
-		return &GPlatesGui::Colour::MAROON;
+		return &GPlatesGui::Colour::get_maroon();
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant geo_time = *(feature_geometry.reconstruction_feature_time());
 	if(geo_time.is_distant_past()) {
 		// The feature's time of appearance is the distant past.
 		// We cannot calculate the 'age' from the point of view of the current recon time.
-		colour = &GPlatesGui::Colour::OLIVE;
+		colour = &GPlatesGui::Colour::get_olive();
 		
 	} else if(geo_time.is_distant_future()) {
 		// The feature's time of appearance is the distant future.
 		// What the hell.
-		colour = &GPlatesGui::Colour::RED;
+		colour = &GPlatesGui::Colour::get_red();
 		
 	} else if (geo_time.is_real()) {
 		double age = geo_time.value() - d_viewport_window->reconstruction_time();
@@ -74,7 +74,7 @@ GPlatesGui::AgeColourTable::lookup(
 			// If (for some reason) we are drawing things without regard to their
 			// valid time, we will display this with the same colour as the
 			// 'distant past' case.
-			colour = &GPlatesGui::Colour::OLIVE; 
+			colour = &GPlatesGui::Colour::get_olive(); 
 			
 		} else {
 			// A valid time of appearance with a usable 'age' relative to the

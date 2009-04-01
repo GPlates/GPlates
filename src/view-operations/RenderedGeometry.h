@@ -27,8 +27,9 @@
 #ifndef GPLATES_GUI_RENDEREDGEOMETRY_H
 #define GPLATES_GUI_RENDEREDGEOMETRY_H
 
-#include <boost/shared_ptr.hpp>
+#include <boost/intrusive_ptr.hpp>
 
+#include "RenderedGeometryImpl.h"
 #include "maths/ProximityHitDetail.h"
 
 
@@ -40,7 +41,6 @@ namespace GPlatesMaths
 namespace GPlatesViewOperations
 {
 	class ConstRenderedGeometryVisitor;
-	class RenderedGeometryImpl;
 
 	/**
 	 * This class describes a geometry which has been rendered for display.
@@ -51,7 +51,7 @@ namespace GPlatesViewOperations
 		/**
 		 * Typedef for pointer to a @a RenderedGeometry implementation.
 		 */
-		typedef boost::shared_ptr<RenderedGeometryImpl> impl_ptr_type;
+		typedef boost::intrusive_ptr<RenderedGeometryImpl> impl_ptr_type;
 
 		/**
 		 * Creates a @a RenderedGeometry object that has no implementation.

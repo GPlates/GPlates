@@ -1,0 +1,294 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * Inserts a vertex into a geometry when the user clicks on an existing line segment (for
+ * polylines and polygons) or anywhere for multipoints - also, for polylines and polygons,
+ * will add point at beginning or end (whichever is closest to click point) if click point
+ * is not on a line segment.
+ * $Revision$
+ * $Date$
+ * 
+ * Copyright (C) 2009 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#ifndef GPLATES_VIEWOPERATIONS_INSERTVERTEXGEOMETRYOPERATION_H
+#define GPLATES_VIEWOPERATIONS_INSERTVERTEXGEOMETRYOPERATION_H
+
+#include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
+#include <QObject>
+
+#include "GeometryBuilder.h"
+#include "GeometryOperation.h"
+#include "RenderedGeometryCollection.h"
+#include "UndoRedo.h"
+
+
+namespace GPlatesMaths
+{
+	class PointOnSphere;
+}
+
+namespace GPlatesGui
+{
+	class ChooseCanvasTool;
+}
+
+namespace GPlatesViewOperations
+{
+	class ActiveGeometryOperation;
+	class GeometryBuilder;
+	class GeometryOperationTarget;
+	class QueryProximityThreshold;
+	class RenderedGeometryCollection;
+	class RenderedGeometryLayer;
+	struct RenderedGeometryProximityHit;
+
+	/**
+	 * Deletes a vertex in @a GeometryBuilder and manages @a RenderedGeometry objects
+	 * in a @a RenderedGeometryCollection layer.
+	 */
+	class InsertVertexGeometryOperation :
+		public GeometryOperation,
+		private boost::noncopyable
+	{
+		Q_OBJECT
+
+	public:
+		InsertVertexGeometryOperation(
+				GeometryOperationTarget &geometry_operation_target,
+				ActiveGeometryOperation &active_geometry_operation,
+				RenderedGeometryCollection *rendered_geometry_collection,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const QueryProximityThreshold &query_proximity_threshold);
+
+		/**
+		 * Activate this operation and attach to specified @a GeometryBuilder
+		 * and render into specified main rendered layer.
+		 */
+		virtual
+		void
+		activate(
+				GeometryBuilder *,
+				RenderedGeometryCollection::MainLayerType main_layer_type);
+
+		//! Deactivate this operation.
+		virtual
+		void
+		deactivate();
+
+		//! User has just clicked on the sphere.
+		void
+		left_click(
+				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+		//! The mouse has moved but it is not a drag because mouse button is not pressed.
+		void
+		mouse_move(
+				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+	public slots:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
+		void
+		geometry_builder_stopped_updating_geometry();
+
+	private:
+		/**
+		 * This is used to build geometry. We insert vertices with it.
+		 */
+		GeometryBuilder *d_geometry_builder;
+
+		/**
+		 * Used by undo/redo.
+		 */
+		GeometryOperationTarget *d_geometry_operation_target;
+
+		/**
+		 * We call this when we activate/deactivate.
+		 */
+		ActiveGeometryOperation *d_active_geometry_operation;
+
+		/**
+		 * This is where we render our geometries and activate our render layer.
+		 */
+		RenderedGeometryCollection *d_rendered_geometry_collection;
+
+		/**
+		 * The main rendered layer we're currently rendering into.
+		 */
+		RenderedGeometryCollection::MainLayerType d_main_layer_type;
+
+		/**
+		 * Rendered geometry layer used for line segments.
+		 */
+		RenderedGeometryCollection::child_layer_owner_ptr_type d_line_segments_layer_ptr;
+
+		/**
+		 * Rendered geometry layer used for points.
+		 */
+		RenderedGeometryCollection::child_layer_owner_ptr_type d_points_layer_ptr;
+
+		/**
+		 * Rendered geometry layer used for the single highlighted point (the point
+		 * that the mouse cursor is currently hovering over if any).
+		 */
+		RenderedGeometryCollection::child_layer_owner_ptr_type d_highlight_layer_ptr;
+
+		/**
+		 * Used by undo/redo to make sure appropriate tool is active
+		 * when the undo/redo happens.
+		 */
+		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
+
+		/**
+		 * Used to query the proximity threshold based on position on globe.
+		 */
+		const QueryProximityThreshold *d_query_proximity_threshold;
+
+		/**
+		 * Insert a vertex on the specified line segment.
+		 */
+		void
+		insert_vertex_on_line_segment(
+				const unsigned int line_segment_index,
+				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+		/**
+		 * Insert a vertex off the specified line segment.
+		 * The insertion order of specified vertex in geometry depends on
+		 * the type of geometry our @a GeometryBuilder is trying to build
+		 * and the number of points in the geometry.
+		 */
+		void
+		insert_vertex_off_line_segment(
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+		/**
+		 * Perform the actual insert vertex command.
+		 */
+		void insert_vertex(
+				const GeometryBuilder::PointIndex insert_vertex_index,
+				const GPlatesMaths::PointOnSphere &insert_pos_on_sphere);
+
+		/**
+		 * Projects the specified point onto the specified line segment.
+		 * Note: specified point must satisfy proximity test with
+		 * specified line segment and must fail proximity test with the
+		 * line segment's end points - this ensures we can successfully
+		 * perform the projection.
+		 */
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		project_point_onto_line_segment(
+				const unsigned int line_segment_index,
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+		/**
+		 * Tests proximity of specified point to the rendered geometries
+		 * in the specified rendered geometry layer.
+		 * Returns the closest rendered geometry if any otherwise returns false.
+		 */
+		boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
+		test_proximity_to_rendered_geom_layer(
+				const RenderedGeometryLayer &rendered_geom_layer,
+				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+		/**
+		 * Returns point index of closest point (in geometry contained in our
+		 * geometry builder) to the specified point.
+		 * If there are no points in the geometry then returns false.
+		 */
+		boost::optional<const GeometryBuilder::PointIndex>
+		get_closest_geometry_point_to(
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+		void
+		connect_to_geometry_builder_signals();
+
+		void
+		disconnect_from_geometry_builder_signals();
+
+		void
+		create_rendered_geometry_layers();
+
+		/**
+		 * Update all @a RenderedGeometry objects.
+		 */
+		void
+		update_rendered_geometries();
+
+		void
+		update_rendered_geometry(
+				GeometryBuilder::GeometryIndex geom_index);
+
+		void
+		update_rendered_polyline_on_sphere(
+				GeometryBuilder::GeometryIndex geom_index);
+
+		void
+		update_rendered_polygon_on_sphere(
+				GeometryBuilder::GeometryIndex geom_index);
+
+		void
+		add_rendered_points(
+				GeometryBuilder::GeometryIndex geom_index);
+
+		void
+		add_rendered_lines(
+				GeometryBuilder::GeometryIndex geom_index,
+				const GeometryType::Value actual_geom_type);
+
+		void
+		update_highlight_rendered_layer(
+				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+		void
+		add_rendered_highlight_on_line_segment(
+				const unsigned int line_segment_index,
+				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+
+		void
+		add_rendered_highlight_off_line_segment(
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+		void
+		add_rendered_highlight_line_segment(
+				const unsigned int highlight_line_segment_index);
+
+		void
+		add_rendered_highlight_line_segment(
+				const GPlatesMaths::PointOnSphere &start_point,
+				const GPlatesMaths::PointOnSphere &end_point);
+
+		template <typename ForwardIterPointOnSphere>
+		void
+		add_rendered_highlight_line_segment(
+				ForwardIterPointOnSphere begin_point_on_sphere,
+				ForwardIterPointOnSphere end_point_on_sphere);
+	};
+}
+
+#endif // GPLATES_VIEWOPERATIONS_INSERTVERTEXGEOMETRYOPERATION_H
