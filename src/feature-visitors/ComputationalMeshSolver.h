@@ -32,6 +32,7 @@
 
 #include "global/types.h"
 
+#include "maths/types.h"
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -125,9 +126,11 @@ namespace GPlatesFeatureVisitors
 		explicit
 		ComputationalMeshSolver(
 			const double &recon_time,
+			const double &recon_time_2,
 			unsigned long root_plate_id,
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
+			GPlatesModel::ReconstructionTree &recon_tree_2,
 			GPlatesModel::FeatureIdRegistry &registry,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			reconstruction_geometries_type &reconstructed_geometries,
@@ -192,6 +195,7 @@ namespace GPlatesFeatureVisitors
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
 		GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
+		GPlatesModel::ReconstructionTree *d_recon_tree_2_ptr;
 		GPlatesModel::FeatureIdRegistry *d_feature_id_registry_ptr;
 		GPlatesFeatureVisitors::TopologyResolver *d_topology_resolver_ptr;
 

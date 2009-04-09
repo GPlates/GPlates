@@ -68,6 +68,7 @@
 #include "maths/LatLonPointConversions.h"
 #include "maths/ProximityCriteria.h"
 #include "maths/PolylineIntersections.h"
+#include "maths/CalculateVelocityOfPoint.h"
 
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
@@ -77,9 +78,11 @@
 
 GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			const double &recon_time,
+			const double &recon_time_2,
 			unsigned long root_plate_id,
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
+			GPlatesModel::ReconstructionTree &recon_tree_2,
 			GPlatesModel::FeatureIdRegistry &registry,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			reconstruction_geometries_type &reconstructed_geometries,
@@ -90,6 +93,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
+	d_recon_tree_2_ptr(&recon_tree_2),
 	d_feature_id_registry_ptr(&registry),
 	d_topology_resolver_ptr(&topo_resolver),
 	d_reconstruction_geometries_to_populate(&reconstructed_geometries),
@@ -243,6 +247,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 	std::list<GPlatesModel::integer_plate_id_type> plate_ids;
 	std::list<GPlatesModel::integer_plate_id_type>::iterator p_iter;
 
+	// Locate the point
 	feature_ids = d_topology_resolver_ptr->locate_point( point );
 
 #ifdef DEBUG
@@ -289,7 +294,6 @@ std::cout << "ComputationalMeshSolver::process_point: " << llp << " found in " <
 	plate_ids.sort();
 	plate_ids.reverse();
 
-
 #ifdef DEBUG
 // FIXME: remove this diagnostic 
 std::cout << "plate ids: (";
@@ -300,13 +304,18 @@ for ( p_iter = plate_ids.begin(); p_iter != plate_ids.end(); ++p_iter)
 std::cout << ")" << std::endl;
 #endif
 
+	// get the highest numeric id 
+	GPlatesModel::integer_plate_id_type plate_id = plate_ids.front();
+		
 
 	// get the color for the highest numeric id 
 	GPlatesGui::ColourTable::const_iterator colour = d_colour_table_ptr->end();
-	colour = d_colour_table_ptr->lookup_by_plate_id( plate_ids.front() ); 
+	colour = d_colour_table_ptr->lookup_by_plate_id( plate_id ); 
 	if (colour == d_colour_table_ptr->end()) { 
 		colour = &GPlatesGui::Colour::OLIVE; 
 	}
+
+	
 
 	// Create a RenderedGeometry using the reconstructed geometry.
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
@@ -318,6 +327,24 @@ std::cout << ")" << std::endl;
 
 	// Add to the rendered layer.
 	d_rendered_layer->add_rendered_geometry(rendered_geom);
+
+
+	// get the finite rotation for this palte id
+	GPlatesMaths::FiniteRotation fr_t1 = 
+		d_recon_tree_ptr->get_composed_absolute_rotation( plate_id ).first;
+
+	GPlatesMaths::FiniteRotation fr_t2 = 
+		d_recon_tree_2_ptr->get_composed_absolute_rotation( plate_id ).first;
+
+	// compute the velocity for this point
+	GPlatesMaths::real_t colat_v;	
+	GPlatesMaths::real_t lon_v;
+
+	std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t > velocity_pair = 
+		GPlatesMaths::CalculateVelocityOfPoint( point, fr_t1, fr_t2 );
+
+#if 0
+#endif
 }
 
 

@@ -67,6 +67,10 @@
 #include "model/types.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/DummyTransactionHandle.h"
+#include "model/ReconstructionGraph.h"
+#include "model/ReconstructionTreePopulator.h"
+#include "model/ReconstructionTree.h"
+
 #include "file-io/FeatureWriter.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
@@ -603,7 +607,32 @@ namespace
 				reconstruction_layer->add_rendered_geometry(rendered_geom);
 			}
 
-// FIXME: TEST of new location for ComputationalMeshSolver 
+			// FIXME: TEST of new location for ComputationalMeshSolver 
+
+			//
+			// Create a second recon tree 
+			//
+			// FIXME: should this '1' should be user controllable?
+			const double recon_time_2 = recon_time + 1;
+
+			GPlatesModel::ReconstructionGraph graph2(recon_time_2);
+			GPlatesModel::ReconstructionTreePopulator rtp(recon_time_2, graph2);
+
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> 
+				reconstruction_features_collection;
+
+			get_features_collection_from_file_info_collection(
+				active_reconstruction_files,
+				reconstruction_features_collection);
+
+			visit_feature_collections(
+				reconstruction_features_collection.begin(),
+				reconstruction_features_collection.end(),
+				rtp);
+
+			GPlatesModel::ReconstructionTree::non_null_ptr_type tree_2 = 
+				graph2.build_tree(recon_root);
+
 			// Activate the comp_mesh_layer.
 			comp_mesh_layer->set_active();
 		
@@ -614,9 +643,11 @@ namespace
 			// nice juicy velocity data
 			GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
 				recon_time, 
+				recon_time_2,
 				recon_root, 
 				*reconstruction,
 				reconstruction->reconstruction_tree(),
+				*tree_2,
 				model_ptr->get_feature_id_registry(),
 				topology_resolver,
 				reconstruction->geometries(),
@@ -631,10 +662,6 @@ namespace
 
 			solver.report();
 
-
-			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
-			//for_each(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), render(canvas_ptr, &GlobeCanvas::draw_point, point_colour))
-			// for_each(reconstruction->polyline_geometries().begin(), reconstruction->polyline_geometries().end(), polyline_point);
 
 		} catch (GPlatesGlobal::Exception &e) {
 			std::cerr << e << std::endl;

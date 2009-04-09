@@ -35,6 +35,7 @@
 
 #include <map>
 #include <utility>  /* std::pair */
+#include <boost/optional.hpp>
 
 #include "global/types.h"
 #include "maths/FiniteRotation.h"
@@ -43,24 +44,6 @@
 
 namespace GPlatesMaths
 {
-	typedef
-	 std::map< GPlatesGlobal::rid_t, FiniteRotation >
-	  RotationsByPlate;
-
-
-	/**
-	 * Given an empty @a rot_cache (which will come to contain the
-	 * collection of all plates which can be rotated), populate it 
-	 * with the finite rotations which will rotate the plates to 
-	 * their positions at time @a t.
-	 *
-	 * This function is a non-recursive "wrapper" around the recursive
-	 * function @a CheckRotation.
-	 */
-	void
-	PopulateRotatableData(RotationsByPlate &rot_cache, const real_t &t);
-
-
 	/**
 	 * Calculate the colatitudinal and longitudinal components of the
 	 * velocity of a PointOnSphere @a point undergoing rotation.
@@ -77,11 +60,8 @@ namespace GPlatesMaths
 	std::pair< real_t, real_t >
 	CalculateVelocityOfPoint(
 		const PointOnSphere &point, 
-		const rid_t &plate_id, 
-		const RotationsByPlate &rotations_for_time_t1,
-		const RotationsByPlate &rotations_for_time_t2,
-		PointOnSphere &rotated_point 
-		);
+		FiniteRotation fr_t1,
+	    FiniteRotation fr_t2);
 
 }
 
