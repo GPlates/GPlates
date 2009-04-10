@@ -34,11 +34,13 @@ namespace GPlatesPropertyValues
 	// Forward declarations for the member functions.
 	// Please keep these ordered alphabetically.
 	class Enumeration;
+	class GmlDomainSet;
 	class GmlLineString;
 	class GmlMultiPoint;
 	class GmlOrientableCurve;
 	class GmlPoint;
 	class GmlPolygon;
+	class GmlRangeSet;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
 	class GpmlConstantValue;
@@ -180,6 +182,11 @@ namespace GPlatesModel
 		void
 		visit_enumeration(
 				const GPlatesPropertyValues::Enumeration &enumeration) {  }
+
+		virtual
+		void
+		visit_gml_domain_set(
+				const GPlatesPropertyValues::GmlDomainSet &gml_domain_set) {  }
 
 		virtual
 		void

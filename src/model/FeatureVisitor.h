@@ -34,6 +34,7 @@ namespace GPlatesPropertyValues
 	// Forward declarations for the member functions.
 	// Please keep these ordered alphabetically.
 	class Enumeration;
+	class GmlDomainSet;
 	class GmlLineString;
 	class GmlMultiPoint;
 	class GmlOrientableCurve;
@@ -163,6 +164,12 @@ namespace GPlatesModel
 		void
 		visit_gml_line_string(
 				GPlatesPropertyValues::GmlLineString &gml_line_string)
+		{  }
+
+		virtual
+		void
+		visit_gml_domain_set(
+				GPlatesPropertyValues::GmlDomainSet &gml_domain_set)
 		{  }
 
 		virtual
