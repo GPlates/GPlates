@@ -68,7 +68,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create( 
-			const GmlMultiPoint::non_null_ptr_type &mp) {
+			GmlMultiPoint::non_null_ptr_type &mp) {
 			non_null_ptr_type domain_set_ptr(
 					new GmlDomainSet( mp ),
 					GPlatesUtils::NullIntrusivePointerHandler());
@@ -91,9 +91,9 @@ namespace GPlatesPropertyValues
 		/**
 		 * Access the GmlMultiPoint which encodes the geometry of this instance.
 		 */
-		const GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint,
+		const GPlatesUtils::non_null_intrusive_ptr<GmlMultiPoint,
 				GPlatesUtils::NullIntrusivePointerHandler>
-		multi_point() const
+		get_gml_multi_point() const
 		{
 			return d_multi_point;
 		}
@@ -106,8 +106,8 @@ namespace GPlatesPropertyValues
 		 * contains this PropertyValue.
 		 */
 		void
-		set_multi_point(
-				GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint,
+		set_gml_multi_point(
+				GPlatesUtils::non_null_intrusive_ptr<GmlMultiPoint,
 						GPlatesUtils::NullIntrusivePointerHandler> mp)
 		{
 			d_multi_point = mp;
@@ -143,11 +143,13 @@ namespace GPlatesPropertyValues
 
 	protected:
 
+#if 0
+#endif
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		explicit
 		GmlDomainSet(
-				GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint,
+				GPlatesUtils::non_null_intrusive_ptr<GmlMultiPoint,
 						GPlatesUtils::NullIntrusivePointerHandler> multi_point_):
 			PropertyValue(),
 			d_multi_point( multi_point_ )

@@ -62,6 +62,7 @@
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlOldPlatesHeader.h"
+#include "property-values/GmlDomainSet.h"
 
 #include "maths/PolylineOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
@@ -123,7 +124,8 @@ qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_han
 
 	// super short-cut 
 	// QString type("ComputationalMesh");
-	QString type("UnclassifiedFeature");
+	// QString type("UnclassifiedFeature");
+	QString type("Coverage");
 	if ( type != 
 		GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() ) )
 	{ 
@@ -398,6 +400,14 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 	}
 }
 
+
+
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_domain_set(
+		GPlatesPropertyValues::GmlDomainSet &gml_domain_set)
+{
+	( gml_domain_set.get_gml_multi_point() )->accept_visitor(*this);
+}
 
 
 void

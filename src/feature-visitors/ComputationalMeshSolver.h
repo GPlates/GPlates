@@ -177,8 +177,10 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
+		virtual
 		void
-		resolve_boundary();
+		visit_gml_domain_set(
+				GPlatesPropertyValues::GmlDomainSet &gml_domain_set);
 
 		void
 		report();

@@ -73,6 +73,7 @@
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalIntersection.h"
 #include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GmlDomainSet.h"
 #include "ReadErrors.h"
 
 
@@ -466,6 +467,13 @@ namespace GPlatesFileIO
 
 		AS_PROP_VAL(create_key_value_dictionary)
 
+#if 0
+		GPlatesPropertyValues::GmlDomainSet::non_null_ptr_type
+		create_domain_set(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_domain_set)
+#endif
 	}
 }
 

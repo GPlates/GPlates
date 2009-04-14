@@ -538,13 +538,14 @@ namespace
 	}
 
 	const PropertyCreationUtils::PropertyCreatorMap
-	get_computational_mesh_properties()
+	get_coverage_properties()
 	{
-		PropertyCreationUtils::PropertyCreatorMap map = 
-			get_reconstructable_feature_properties();
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();
 
-		map[ PropertyName::create_gpml("locations") ] = 
-			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+#if 0
+		map[ PropertyName::create_gpml("domainSet") ] = 
+			GET_PROP_VAL_NAME(create_domain_set);
+#endif
 
 		return map;
 	}
@@ -846,10 +847,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_inferred_paleo_boundary_properties();
 	d_map[ FeatureType::create_gpml("OldPlatesGridMark") ] =
 		get_old_plates_grid_mark_properties();
-
-	// Computational Mesh features
-	d_map[ FeatureType::create_gpml("ComputationalMesh") ] =
-		get_computational_mesh_properties();
+	d_map[ FeatureType::create_gpml("Coverage") ] =
+		get_coverage_properties();
 
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =
