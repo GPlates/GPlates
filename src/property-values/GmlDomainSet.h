@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_PROPERTYVALUES_GMLPOINT_H
-#define GPLATES_PROPERTYVALUES_GMLPOINT_H
+#ifndef GPLATES_PROPERTYVALUES_GMLDOMAINSET_H
+#define GPLATES_PROPERTYVALUES_GMLDOMAINSET_H
 
 #include <utility>  /* std::pair */
 #include "model/PropertyValue.h"
@@ -184,4 +184,4 @@ namespace GPlatesPropertyValues
 
 }
 
-#endif  // GPLATES_PROPERTYVALUES_GMLPOINT_H
+#endif  // GPLATES_PROPERTYVALUES_GMLDOMAINSET_H
