@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/none.hpp>
 #include "FeatureFocus.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructedFeatureGeometryFinder.h"
