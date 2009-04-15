@@ -260,7 +260,7 @@ namespace GPlatesGui
 		 * Accessor for the geometry property used by the most recent RFG associated with the
 		 * currently-focused feature (if there is one).
 		 */
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
+		const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &
 		associated_geometry_property() const
 		{
 			return d_associated_geometry_property;
