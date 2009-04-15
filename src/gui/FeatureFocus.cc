@@ -118,7 +118,7 @@ GPlatesGui::FeatureFocus::find_new_associated_rfg(
 
 		// Look at the new rfg's geometry property.
 		FeatureHandle::properties_iterator new_geometry_property = new_rfg->property();
-		if (new_geometry_property == d_associated_geometry_property)
+		if (new_geometry_property == *d_associated_geometry_property)
 		{
 			// We have a match!
 			d_associated_rfg = new_rfg;
