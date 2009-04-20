@@ -304,7 +304,8 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 #endif
 
 	if ( ! d_qfile_ptr->open(QIODevice::WriteOnly | QIODevice::Text)) {
-		throw ErrorOpeningFileForWritingException(file_info.get_qfileinfo().filePath());
+		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+				file_info.get_qfileinfo().filePath());
 	}
 
 	if (use_gzip) {

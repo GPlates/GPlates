@@ -40,16 +40,11 @@ namespace GPlatesGlobal
 	class InternalObjectInconsistencyException:
 			public Exception
 	{
-		public:
-			// FIXME:  This class should have a constructor which accepts:
-			//  - a const char *filename
-			//  - an int line-number
-			//  - a const char *funcname
-			// or possibly an instance of a class (which will look like
-			// CallStackTracker) whose constructor accepts these items).
-
-			virtual
-			~InternalObjectInconsistencyException() {  }
+	public:
+		InternalObjectInconsistencyException(
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			Exception(exception_source)
+		{  }
 	};
 }
 

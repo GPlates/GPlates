@@ -55,7 +55,8 @@ namespace
 		if (error != GL_NO_ERROR)
 		{
 			std::cout << message << ": openGL error: " << gluErrorString(error) << std::endl;
-			throw GPlatesGui::OpenGLException("OpenGL error in SvgExport");
+			throw GPlatesGui::OpenGLException(GPLATES_EXCEPTION_SOURCE,
+					"OpenGL error in SvgExport");
 		}
 		return error;
 	}

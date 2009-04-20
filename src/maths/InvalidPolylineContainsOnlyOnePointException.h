@@ -49,20 +49,16 @@ namespace GPlatesMaths
 		 * Instantiate the exception.
 		 */
 		InvalidPolylineContainsOnlyOnePointException(
-				const char *filename,
-				int line_num):
-			d_filename(filename),
-			d_line_num(line_num)
-		{  }
-
-		virtual
-		~InvalidPolylineContainsOnlyOnePointException()
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			GPlatesGlobal::InternalObjectInconsistencyException(exception_source),
+			d_filename(exception_source.get_filename()),
+			d_line_num(exception_source.get_line_num())
 		{  }
 
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			return "InvalidPolylineContainsOnlyOnePointException";
 		}

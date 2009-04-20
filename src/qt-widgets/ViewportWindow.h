@@ -45,6 +45,7 @@
 #include "AboutDialog.h"
 #include "AnimateDialog.h"
 #include "ApplicationState.h"
+#include "ExportReconstructedFeatureGeometryDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
 #include "LicenseDialog.h"
@@ -274,6 +275,9 @@ namespace GPlatesQtWidgets
 		}
 
 		void
+		pop_up_export_reconstruction_dialog();
+
+		void
 		pop_up_total_reconstruction_poles_dialog();
 	
 		void
@@ -473,6 +477,7 @@ namespace GPlatesQtWidgets
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
 		SetRasterSurfaceExtentDialog d_set_raster_surface_extent_dialog;
 		SpecifyAnchoredPlateIdDialog d_specify_anchored_plate_id_dialog;
+		ExportReconstructedFeatureGeometryDialog d_export_rfg_dialog;
 		SpecifyTimeIncrementDialog d_specify_time_increment_dialog;
 
 		GlobeCanvas *d_canvas_ptr;

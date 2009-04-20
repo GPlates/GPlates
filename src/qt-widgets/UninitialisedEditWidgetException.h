@@ -42,15 +42,13 @@ namespace GPlatesQtWidgets
 	{
 		public:
 			explicit
-			UninitialisedEditWidgetException()
-			{  }
-			
-			virtual
-			~UninitialisedEditWidgetException()
+			UninitialisedEditWidgetException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				GPlatesGlobal::PreconditionViolationError(exception_source)
 			{  }
 			
 			const char *
-			ExceptionName() const
+			exception_name() const
 			{
 				return "UninitialisedEditWidgetException";
 			}

@@ -42,7 +42,6 @@
 #include <QSizePolicy>
 
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
-#include "feature-visitors/PlateIdFinder.h"
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
 #include "gui/Texture.h"

@@ -48,12 +48,14 @@ GPlatesMaths::LatLonPoint::LatLonPoint(
 	if ( ! LatLonPoint::is_valid_latitude(lat)) {
 
 		// It's not a valid latitude.
-		throw InvalidLatLonException(lat, InvalidLatLonException::Latitude);
+		throw InvalidLatLonException(GPLATES_EXCEPTION_SOURCE,
+				lat, InvalidLatLonException::Latitude);
 	}
 	if ( ! LatLonPoint::is_valid_longitude(lon)) {
 
 		// It's not a valid longitude.
-		throw InvalidLatLonException(lon, InvalidLatLonException::Longitude);
+		throw InvalidLatLonException(GPLATES_EXCEPTION_SOURCE,
+				lon, InvalidLatLonException::Longitude);
 	}
 }
 

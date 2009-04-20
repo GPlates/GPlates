@@ -28,8 +28,6 @@
 #ifndef GPLATES_MATHS_UNABLETOEXTENDPOINTLIKEARCEXCEPTION_H
 #define GPLATES_MATHS_UNABLETOEXTENDPOINTLIKEARCEXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
 #include "global/PreconditionViolationError.h"
 #include "GreatCircleArc.h"
 
@@ -44,14 +42,11 @@ namespace GPlatesMaths
 			public GPlatesGlobal::PreconditionViolationError
 	{
 	public:
-		explicit
 		UnableToExtendPointlikeArcException(
-				const GreatCircleArc &arc_):
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				const GreatCircleArc &arc_) :
+			GPlatesGlobal::PreconditionViolationError(exception_source),
 			d_arc(arc_)
-		{  }
-
-		virtual
-		~UnableToExtendPointlikeArcException()
 		{  }
 
 		const GreatCircleArc &
@@ -62,7 +57,7 @@ namespace GPlatesMaths
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "UnableToExtendPointlikeArcException";
@@ -75,6 +70,7 @@ namespace GPlatesMaths
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 		}
+
 	private:
 		GreatCircleArc d_arc;
 	};

@@ -38,8 +38,10 @@ namespace GPlatesMaths
 	class MathematicalException : public GPlatesGlobal::Exception
 	{
 		public:
-			virtual
-			~MathematicalException() {  }
+			MathematicalException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				Exception(exception_source)
+			{  }
 	};
 }
 

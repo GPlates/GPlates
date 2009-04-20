@@ -19,12 +19,8 @@ set(srcs
     GeometryFinder.h
     GeometrySetter.cc
     GeometrySetter.h
-    GmlTimePeriodFinder.cc
-    GmlTimePeriodFinder.h
     KeyValueDictionaryFinder.cc
     KeyValueDictionaryFinder.h
-    PlateIdFinder.cc
-    PlateIdFinder.h
     PropertyValueFinder.h
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
@@ -42,8 +38,6 @@ set(srcs
     TotalReconstructionSequenceTimePeriodFinder.h
     ViewFeatureGeometriesWidgetPopulator.cc
     ViewFeatureGeometriesWidgetPopulator.h
-    XsStringFinder.cc
-    XsStringFinder.h
 )
 
 

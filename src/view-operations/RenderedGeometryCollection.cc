@@ -453,7 +453,7 @@ void
 GPlatesViewOperations::RenderedGeometryCollection::end_update_collection()
 {
 	GPlatesGlobal::Assert(d_update_collection_depth > 0,
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	--d_update_collection_depth;
 
@@ -585,7 +585,7 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 {
 	GPlatesGlobal::Assert(
 			layer_index < d_layer_storage.size(),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_layer_storage[layer_index];
 }
@@ -636,7 +636,7 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 	// Make sure slot isn't already being used.
 	GPlatesGlobal::Assert(
 			d_layer_storage[layer_index] == NULL,
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Pass main layer to RenderedGeometryLayer so it can return it to us
 	// when it emits its layer_was_updated signal.
@@ -657,13 +657,13 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 
 	GPlatesGlobal::Assert(
 			layer_index < d_layer_storage.size(),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Make sure layer index is actually being used.
 	GPlatesGlobal::Assert(
 			std::find(d_layers.begin(), d_layers.end(), layer_index) !=
 					d_layers.end(),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Remove from list of layers in use.
 	d_layers.remove(layer_index);

@@ -37,7 +37,6 @@
 #include "ShapefileXmlReader.h"
 #include "ShapefileXmlWriter.h"
 
-#include "feature-visitors/PlateIdFinder.h" 
 #include "feature-visitors/ShapefileAttributeFinder.h"
 
 #include "model/Model.h"

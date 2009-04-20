@@ -46,7 +46,8 @@
 #include "EditWidgetChooser.h"
 #include "NoActiveEditWidgetException.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "feature-visitors/PlateIdFinder.h"
+#include "feature-visitors/PropertyValueFinder.h"
+#include "property-values/GpmlPlateId.h"
 
 
 namespace
@@ -63,12 +64,13 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		// Find it.
-		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-		plate_id_finder.visit_feature_handle(*feature_ref);
-		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+		if (GPlatesFeatureVisitors::get_property_value(
+				*feature_ref, plate_id_property_name, &recon_plate_id))
+		{
 			// Set it.
 			edit_geometry_widget_ptr->set_reconstruction_plate_id(
-					*plate_id_finder.found_plate_ids_begin());
+					recon_plate_id->value());
 		} else {
 			// Unset it.
 			edit_geometry_widget_ptr->unset_reconstruction_plate_id();
@@ -279,7 +281,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::create_property_value_from_widget()
 	if (d_active_widget_ptr != NULL) {
 		return d_active_widget_ptr->create_property_value_from_widget();
 	} else {
-		throw NoActiveEditWidgetException();
+		throw NoActiveEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 
@@ -290,7 +292,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::update_property_value_from_widget()
 	if (d_active_widget_ptr != NULL) {
 		return d_active_widget_ptr->update_property_value_from_widget();
 	} else {
-		throw NoActiveEditWidgetException();
+		throw NoActiveEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 

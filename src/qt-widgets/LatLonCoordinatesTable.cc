@@ -489,7 +489,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::change_actual_geometry_type(
 	GPlatesGlobal::Assert(
 		boost::numeric_cast<unsigned int>(geometry_index) <
 				get_num_top_level_items(d_tree_widget_builder),
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const QString label = get_geometry_type_text(geometry_type);
 
@@ -511,7 +511,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_geometry(
 	GPlatesGlobal::Assert(
 			boost::numeric_cast<unsigned int>(geometry_index) <=
 					get_num_top_level_items(d_tree_widget_builder),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Get actual type of geometry.
 	const GPlatesViewOperations::GeometryType::Value geom_type =
@@ -557,7 +557,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::remove_geometry(
 	GPlatesGlobal::Assert(
 			boost::numeric_cast<unsigned int>(geometry_index) <
 					get_num_top_level_items(d_tree_widget_builder),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Delete top-level tree widget item corresponding to removed geometry.
 	d_tree_widget_builder.destroy_item(
@@ -601,7 +601,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_geometry(
 	GPlatesGlobal::Assert(
 			boost::numeric_cast<unsigned int>(geometry_index) <
 					get_num_top_level_items(d_tree_widget_builder),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const GPlatesMaths::LatLonPoint& lat_lon_point =
 		GPlatesMaths::make_lat_lon_point(oriented_pos_on_globe);
@@ -646,7 +646,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::move_point_in_current_geometry(
 	GPlatesGlobal::Assert(
 			boost::numeric_cast<unsigned int>(geometry_index) <
 					get_num_top_level_items(d_tree_widget_builder),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const GPlatesMaths::LatLonPoint& lat_lon_point =
 		GPlatesMaths::make_lat_lon_point(new_oriented_pos_on_globe);
@@ -696,7 +696,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::remove_point_from_geometry(
 	GPlatesGlobal::Assert(
 			boost::numeric_cast<unsigned int>(geometry_index) <
 					get_num_top_level_items(d_tree_widget_builder),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type geom_item_handle =
 			get_top_level_item_handle(d_tree_widget_builder, geometry_index);
@@ -704,7 +704,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::remove_point_from_geometry(
 	GPlatesGlobal::Assert(
 			boost::numeric_cast<unsigned int>(point_index) <
 					d_tree_widget_builder.get_num_children(geom_item_handle),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type coord_item_handle =
 			d_tree_widget_builder.get_child_item_handle(geom_item_handle, point_index);
@@ -721,7 +721,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::get_coord_item(
 	GPlatesGlobal::Assert(
 			boost::numeric_cast<unsigned int>(geometry_index) <
 					get_num_top_level_items(d_tree_widget_builder),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type geom_item_handle =
 			get_top_level_item_handle(d_tree_widget_builder, geometry_index);
@@ -729,7 +729,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::get_coord_item(
 	GPlatesGlobal::Assert(
 			boost::numeric_cast<unsigned int>(point_index) <
 					d_tree_widget_builder.get_num_children(geom_item_handle),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type coord_item_handle =
 			d_tree_widget_builder.get_child_item_handle(geom_item_handle, point_index);

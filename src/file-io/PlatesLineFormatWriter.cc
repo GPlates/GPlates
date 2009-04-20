@@ -134,7 +134,7 @@ GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
 	d_output_file.reset( new QFile(file_info.get_qfileinfo().filePath()) );
 	if ( ! d_output_file->open(QIODevice::WriteOnly | QIODevice::Text) )
 	{
-		throw ErrorOpeningFileForWritingException(
+		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
 			file_info.get_qfileinfo().filePath());
 	}
 

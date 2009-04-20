@@ -28,8 +28,6 @@
 #ifndef GPLATES_UTILS_NULLNONNULLINTRUSIVEPOINTEREXCEPTION_H
 #define GPLATES_UTILS_NULLNONNULLINTRUSIVEPOINTEREXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
 #include "global/PreconditionViolationError.h"
 
 
@@ -43,16 +41,15 @@ namespace GPlatesUtils
 			public GPlatesGlobal::PreconditionViolationError
 	{
 	public:
-		NullNonNullIntrusivePointerException()
+		NullNonNullIntrusivePointerException(
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			GPlatesGlobal::PreconditionViolationError(exception_source)
 		{  }
 
-		virtual
-		~NullNonNullIntrusivePointerException()
-		{  }
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "NullNonNullIntrusivePointerException";

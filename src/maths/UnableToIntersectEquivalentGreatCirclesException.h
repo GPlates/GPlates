@@ -28,8 +28,6 @@
 #ifndef GPLATES_MATHS_UNABLETOINTERSECTEQUIVALENTGREATCIRCLESEXCEPTION_H
 #define GPLATES_MATHS_UNABLETOINTERSECTEQUIVALENTGREATCIRCLESEXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
 #include "global/PreconditionViolationError.h"
 #include "GreatCircleArc.h"
 
@@ -45,20 +43,18 @@ namespace GPlatesMaths
 	{
 	public:
 		UnableToIntersectEquivalentGreatCirclesException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
 				const GreatCircleArc &arc1_,
-				const GreatCircleArc &arc2_):
+				const GreatCircleArc &arc2_) :
+			GPlatesGlobal::PreconditionViolationError(exception_source),
 			d_arc1(arc1_),
 			d_arc2(arc2_)
-		{  }
-
-		virtual
-		~UnableToIntersectEquivalentGreatCirclesException()
 		{  }
 
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "UnableToIntersectEquivalentGreatCirclesException";
@@ -71,6 +67,7 @@ namespace GPlatesMaths
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 		}
+
 	private:
 		GreatCircleArc d_arc1;
 		GreatCircleArc d_arc2;

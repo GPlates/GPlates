@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,7 +39,9 @@
 #include <vector>
 #include <QStringList>
 #include <QTextStream>
-#include <QtGui/QApplication>
+
+#include "gui/GPlatesQApplication.h"
+#include "gui/GPlatesQtMsgHandler.h"
 #include "qt-widgets/ViewportWindow.h"
 
 
@@ -101,10 +103,15 @@ namespace {
 	}
 }
 
-
-int main(int argc, char* argv[])
+int internal_main(int argc, char* argv[])
 {
-	QApplication application(argc, argv);
+	// Log qWarning, qCritical, qFatal messages to a log file.
+	GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler();
+
+	// GPlatesQApplication is a QApplication that also handles uncaught exceptions
+	// in the Qt event thread.
+	GPlatesGui::GPlatesQApplication application(argc, argv);
+
 	Q_INIT_RESOURCE(qt_widgets);
 
 	// All the libtool cruft causes the value of 'argv[0]' to be not what the user invoked,
@@ -121,4 +128,11 @@ int main(int argc, char* argv[])
 	viewport_window.reconstruct_to_time_with_root(0.0, 0);
 
 	return application.exec();
+}
+
+
+int main(int argc, char* argv[])
+{
+	// Handle any uncaught exceptions that occur in main() but outside the Qt event thread.
+	return GPlatesGui::GPlatesQApplication::call_main(internal_main, argc, argv);
 }

@@ -92,12 +92,12 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
 {
 	if ( ! GPlatesFileIO::is_writable(file_info)) {
-		throw GPlatesFileIO::ErrorOpeningFileForWritingException(
+		throw GPlatesFileIO::ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
 				file_info.get_qfileinfo().filePath());
 	}
 
 	if ( ! file_info.get_feature_collection()) {
-		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(
+		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
 				"Attempted to write an empty feature collection.");
 	}
 
@@ -149,7 +149,7 @@ GPlatesQtWidgets::ViewportWindow::save_file_copy(
 {
 	GPlatesFileIO::FileInfo file_copy(file_info.get_qfileinfo().filePath());
 	if ( ! features_to_save->get_feature_collection()) {
-		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(
+		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
 				"Attempted to write an empty feature collection.");
 	}
 	file_copy.set_feature_collection(*(features_to_save->get_feature_collection()));
@@ -587,6 +587,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_set_camera_viewpoint_dialog(*this, this),
 	d_set_raster_surface_extent_dialog(*this, this),
 	d_specify_anchored_plate_id_dialog(d_recon_root, this),
+	d_export_rfg_dialog(this),
 	d_specify_time_increment_dialog(d_animation_controller, this),
 	d_choose_canvas_tool(*this),
 	d_geometry_operation_target(
@@ -925,6 +926,9 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(pop_up_specify_anchored_plate_id_dialog()));
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
 			this, SLOT(pop_up_total_reconstruction_poles_dialog()));
+	// ----
+	QObject::connect(action_Export_Reconstruction, SIGNAL(triggered()),
+			this, SLOT(pop_up_export_reconstruction_dialog()));
 	
 	// View Menu:
 	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
@@ -1228,6 +1232,23 @@ GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_license_dialog.raise();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
+{
+	GPlatesViewOperations::ExportReconstructedFeatureGeometries::active_files_collection_type
+			active_reconstructable_files(
+					d_active_reconstructable_files.begin(),
+					d_active_reconstructable_files.end());
+
+	d_export_rfg_dialog.export_visible_reconstructed_feature_geometries(
+			*d_reconstruction_ptr,
+			d_rendered_geom_collection,
+			active_reconstructable_files,
+			d_recon_root,
+			d_recon_time);
 }
 
 

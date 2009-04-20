@@ -31,11 +31,11 @@
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"
 #include "utils/UnicodeStringUtils.h"
-#include "feature-visitors/PlateIdFinder.h"
-#include "feature-visitors/GmlTimePeriodFinder.h"
-#include "feature-visitors/XsStringFinder.h"
+#include "feature-visitors/PropertyValueFinder.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/XsString.h"
 
 
 namespace
@@ -69,14 +69,13 @@ namespace
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			const GPlatesModel::PropertyName &property_name)
 	{
-		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(property_name);
-		plate_id_finder.visit_feature_handle(*feature_ref);
-		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+		const GPlatesPropertyValues::GpmlPlateId *plate_id;
+		if (GPlatesFeatureVisitors::get_property_value(
+				*feature_ref, property_name, &plate_id))
+		{
 			// The feature has a plate ID of the desired kind.
-			GPlatesModel::integer_plate_id_type plate_id =
-					*plate_id_finder.found_plate_ids_begin();
 			
-			field->setText(QString::number(plate_id));
+			field->setText(QString::number(plate_id->value()));
 		}
 	}
 }
@@ -151,13 +150,11 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	// FIXME: Need to adapt according to user's current codeSpace setting.
 	static const GPlatesModel::PropertyName name_property_name = 
 		GPlatesModel::PropertyName::create_gml("name");
-	GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-	string_finder.visit_feature_handle(*feature_ref);
-	if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
+
+	const GPlatesPropertyValues::XsString *name;
+	if (GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, &name))
+	{
 		// The feature has one or more name properties. Use the first one for now.
-		GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
-				*string_finder.found_strings_begin();
-		
 		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
 		lineedit_name->setCursorPosition(0);
 	}
@@ -189,12 +186,12 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	// Valid Time (Assuming a gml:TimePeriod, rather than a gml:TimeInstant!)
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
-	GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-	time_period_finder.visit_feature_handle(*feature_ref);
-	if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
+
+	const GPlatesPropertyValues::GmlTimePeriod *time_period;
+	if (GPlatesFeatureVisitors::get_property_value(
+			*feature_ref, valid_time_property_name, &time_period))
+	{
 		// The feature has a gml:validTime property.
-		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-				*time_period_finder.found_time_periods_begin();
 		
 		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
 		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));

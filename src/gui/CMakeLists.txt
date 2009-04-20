@@ -49,6 +49,10 @@ set(srcs
     Globe.cc
     Globe.h
     GlobeOrientation.h
+    GPlatesQApplication.cc
+    GPlatesQApplication.h
+    GPlatesQtMsgHandler.cc
+    GPlatesQtMsgHandler.h
     GuiException.h
     Interface.h
     NurbsRenderer.cc

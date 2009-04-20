@@ -61,7 +61,8 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 		 << "(" << origin << " and " << next_along_lat
 		 << ") which were expected\n"
 		 << "to lie on the same line of latitude, but do not.";
-		throw InvalidGridException(oss.str().c_str());
+		throw InvalidGridException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 
 	/*
@@ -76,7 +77,8 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 		 << "(" << origin << " and " << next_along_lon
 		 << ") which were expected\n"
 		 << "to lie on the same line of longitude, but do not.";
-		throw InvalidGridException(oss.str().c_str());
+		throw InvalidGridException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 
 	/*
@@ -121,7 +123,8 @@ GPlatesMaths::GridOnSphere::EnsureValidOrigin(const PointOnSphere &o) {
 		std::ostringstream oss;
 		oss << "Attempted to define a grid using an origin\n"
 		 << o << " which lies on the North pole.";
-		throw InvalidGridException(oss.str().c_str());
+		throw InvalidGridException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 	if (dp <= -1.0) {
 
@@ -129,7 +132,8 @@ GPlatesMaths::GridOnSphere::EnsureValidOrigin(const PointOnSphere &o) {
 		std::ostringstream oss;
 		oss << "Attempted to define a grid using an origin\n"
 		 << o << " which lies on the South pole.";
-		throw InvalidGridException(oss.str().c_str());
+		throw InvalidGridException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 }
 
@@ -282,7 +286,8 @@ GPlatesMaths::GridOnSphere::AssertInvariantHolds() const {
 		 << "great circle (normal: " << _line_of_lon.normal() << ")\n"
 		 << "and small circle (normal: " << _line_of_lat.normal()
 		 << ").";
-		throw ViolatedClassInvariantException(oss.str().c_str());
+		throw ViolatedClassInvariantException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 
 	/*
@@ -296,13 +301,15 @@ GPlatesMaths::GridOnSphere::AssertInvariantHolds() const {
 		std::ostringstream oss;
 		oss << "Grid origin " << _origin << " does not lie on\n"
 		 << "great circle (normal: " << _line_of_lon.normal() << ").";
-		throw ViolatedClassInvariantException(oss.str().c_str());
+		throw ViolatedClassInvariantException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 	if ( ! _line_of_lat.contains(_origin)) {
 
 		std::ostringstream oss;
 		oss << "Grid origin " << _origin << " does not lie on\n"
 		 << "small circle (normal: " << _line_of_lat.normal() << ").";
-		throw ViolatedClassInvariantException(oss.str().c_str());
+		throw ViolatedClassInvariantException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 }

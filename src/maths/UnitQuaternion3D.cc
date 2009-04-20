@@ -94,7 +94,8 @@ GPlatesMaths::UnitQuaternion3D::get_rotation_params(
 		 << "of a quaternion which represents the identity rotation:\n"
 		 << (*this);
 
-		throw IndeterminateResultException(oss.str().c_str());
+		throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 
 	/*
@@ -189,7 +190,8 @@ GPlatesMaths::UnitQuaternion3D::create(
 			 << q
 			 << " because its norm is 0.";
 
-			throw IndeterminateResultException(oss.str().c_str());
+			throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
+					oss.str().c_str());
 		}
 		real_t one_on_norm = 1.0 / norm;
 
@@ -238,7 +240,8 @@ GPlatesMaths::UnitQuaternion3D::assert_invariant() const {
 		 << sqrt(norm_sqrd)
 		 << ".";
 
-		throw ViolatedClassInvariantException(oss.str().c_str());
+		throw ViolatedClassInvariantException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 }
 

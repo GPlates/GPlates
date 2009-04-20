@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,9 +30,15 @@
 
 #include <iosfwd>
 #include <string>
-#include <boost/current_function.hpp>
 
-#define GPLATES_EXCEPTION_SOURCE __FILE__, __LINE__, BOOST_CURRENT_FUNCTION
+#include "utils/CallStackTracker.h"
+
+
+// Note: we don't use BOOST_CURRENT_FUNCTION anymore since it can produce some pretty
+// verbose output when a function has arguments that are template types.
+// The filename and line number are all that are really needed.
+#define GPLATES_EXCEPTION_SOURCE \
+		GPlatesUtils::CallStack::Trace(__FILE__, __LINE__)
 
 
 namespace GPlatesGlobal
@@ -43,12 +49,20 @@ namespace GPlatesGlobal
 	class Exception
 	{
 		public:
-			// FIXME:  This class should have a constructor which accepts:
-			//  - a const char *filename
-			//  - an int line-number
-			//  - a const char *funcname
-			// or possibly an instance of a class (which will look like
-			// CallStackTracker) whose constructor accepts these items).
+			/**
+			 * Constructor collects the current call stack trace as generated
+			 * by @a CallStack.
+			 * This is done in the constructor since that's where the exception
+			 * is generated.
+			 * Also adds the location at which exception the is thrown
+			 * to the call stack trace.
+			 * The location is given by the constructor arguments.
+			 *
+			 * You can conveniently call like:
+			 *     throw Exception(GPLATES_EXCEPTION_SOURCE);
+			 */
+			Exception(
+					const GPlatesUtils::CallStack::Trace &exception_source);
 
 			virtual
 			~Exception() {  }
@@ -65,34 +79,67 @@ namespace GPlatesGlobal
 			write(
 					std::ostream &os) const;
 
+			/**
+			 * Returns a string containing the call stack trace to the location
+			 * at which this exception was thrown.
+			 */
+			void
+			get_call_stack_trace_string(
+					std::string	&call_stack_trace_string) const
+			{
+				call_stack_trace_string = d_call_stack_trace_string;
+			}
+
 		protected:
 			/**
 			 * @return The name of this Exception.
-			 *
-			 * FIXME:  This should be renamed to 'exception_name'.
 			 */
 			virtual
 			const char *
-			ExceptionName() const = 0;
+			exception_name() const = 0;
 
 			/**
-			 * @return The Exception's message as a string.
-			 *
-			 * FIXME:  Rather than creating a string for the message, there should be a
-			 * 'write_message' function which accepts this same ostream.
+			 * Derived classes are can override this method and write their
+			 * special message to the stream @a os.
+			 * Default is to do write nothing.
+			 * This is ok for those exceptions where the exception class name
+			 * provides enough description because @a write will output the
+			 * exception class name.
 			 */
-			virtual
-			std::string
-			Message() const
-			{
-				return std::string();
-			}
-
 			virtual
 			void
 			write_message(
 					std::ostream &os) const
 			{  }
+
+			/**
+			 * A convenience method so derived classes that contain only a string message
+			 * can call without having to include <ostream> in the header and hence
+			 * slow down compilation.
+			 * This way it's defined in one place and in a ".cc" file rather than
+			 * required each derived class to have a ".cc" file.
+			 */
+			void
+			write_string_message(
+					std::ostream &os,
+					const std::string &message) const;
+
+		private:
+			/**
+			 * Stores the call stack trace at the point this exception was thrown.
+			 * This has to be stored since the location at which we catch the exception
+			 * and retrieve this string is different to the location at which the exception
+			 * is thrown. And the call stack trace differs between those two locations.
+			 */
+			std::string d_call_stack_trace_string;
+
+			/**
+			 * Generates the call stack trace string.
+			 * Must be called in the constructor since that's where the exception
+			 * is thrown and that's where we want to record the call stack trace.
+			 */
+			void
+			generate_call_stack_trace_string();
 	};
 
 

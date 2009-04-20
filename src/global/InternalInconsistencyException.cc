@@ -28,11 +28,9 @@
 #include <sstream>
 #include "InternalInconsistencyException.h"
 
-std::string
-GPlatesGlobal::InternalInconsistencyException::Message() const {
-
-	std::ostringstream oss;
-
-	oss << m_file << ":" << m_line << ": " << m_msg;
-	return oss.str();
+void
+GPlatesGlobal::InternalInconsistencyException::write_message(
+		std::ostream &os) const
+{
+	os << m_file << ":" << m_line << ": " << m_msg;
 }

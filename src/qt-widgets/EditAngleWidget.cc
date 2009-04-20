@@ -94,7 +94,7 @@ GPlatesQtWidgets::EditAngleWidget::update_property_value_from_widget()
 			return false;
 		}
 	} else {
-		throw UninitialisedEditWidgetException();
+		throw UninitialisedEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 

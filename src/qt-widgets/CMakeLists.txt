@@ -35,7 +35,6 @@ set(srcs
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
-    DigitisationUndoParadoxException.h
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
@@ -91,6 +90,8 @@ set(srcs
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportReconstructedFeatureGeometryDialog.cc
+    ExportReconstructedFeatureGeometryDialog.h
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui

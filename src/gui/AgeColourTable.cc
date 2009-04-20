@@ -24,7 +24,6 @@
  */
 
 #include "AgeColourTable.h"
-#include "feature-visitors/GmlTimePeriodFinder.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "ColourSpectrum.h"
 

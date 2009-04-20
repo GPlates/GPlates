@@ -87,7 +87,8 @@ GPlatesViewOperations::MoveVertexGeometryOperation::activate(
 
 	// Deactivate all rendered geometry layers of our main rendered layer.
 	// This hides what other tools have drawn into our main rendered layer.
-	deactivate_rendered_geometry_layers(*d_rendered_geometry_collection, main_layer_type);
+	RenderedGeometryUtils::deactivate_rendered_geometry_layers(
+			*d_rendered_geometry_collection, main_layer_type);
 
 	connect_to_geometry_builder_signals();
 

@@ -145,7 +145,7 @@ GPlatesFeatureVisitors::GeometryFinder::first_geometry_found() const
 {
 	if ( ! has_found_geometries()) {
 		// Whoops, the container's empty.
-		throw GPlatesGlobal::RetrievalFromEmptyContainerException(__FILE__, __LINE__);
+		throw GPlatesGlobal::RetrievalFromEmptyContainerException(GPLATES_EXCEPTION_SOURCE);
 	}
 	return *(found_geometries_begin());
 }

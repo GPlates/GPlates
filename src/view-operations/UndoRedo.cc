@@ -313,7 +313,7 @@ d_command_id_factory(new UndoRedoInternal::CommandIdFactory())
 	const UndoStackHandle default_stack_handle = create_undo_stack();
 
 	GPlatesGlobal::Assert(default_stack_handle == DEFAULT_UNDO_STACK_HANDLE,
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	set_active_undo_stack(default_stack_handle);
 
@@ -352,7 +352,7 @@ GPlatesViewOperations::UndoRedo::set_active_undo_stack(
 {
 	GPlatesGlobal::Assert(
 		boost::numeric_cast<undo_stack_ptr_seq_type::size_type>(undo_stack_handle) < d_undo_stack_seq.size(),
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	d_active_stack_handle = undo_stack_handle;
 	d_undo_stack_seq[d_active_stack_handle]->setActive(true);
@@ -375,7 +375,7 @@ void
 GPlatesViewOperations::UndoRedo::end_unique_command_id_scope()
 {
 	GPlatesGlobal::Assert(!d_unique_command_id_scope_stack.empty(),
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	d_unique_command_id_scope_stack.pop();
 }
@@ -384,7 +384,7 @@ GPlatesViewOperations::UndoRedo::CommandId
 GPlatesViewOperations::UndoRedo::get_unique_command_id_scope() const
 {
 	GPlatesGlobal::Assert(!d_unique_command_id_scope_stack.empty(),
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_unique_command_id_scope_stack.top();
 }

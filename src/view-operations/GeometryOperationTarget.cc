@@ -225,7 +225,7 @@ GPlatesViewOperations::GeometryOperationTarget::set_internal_state(
 	TargetChooser* target_chooser = boost::any_cast<TargetChooser>(&internal_state);
 
 	GPlatesGlobal::Assert(target_chooser != NULL,
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	d_target_chooser = *target_chooser;
 

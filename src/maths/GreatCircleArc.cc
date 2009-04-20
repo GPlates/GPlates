@@ -86,7 +86,8 @@ GPlatesMaths::GreatCircleArc::create(
 		 << " and "
 		 << p2
 		 << ".";
-		throw IndeterminateResultException(oss.str().c_str());
+		throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 
 	/*
@@ -138,7 +139,7 @@ const GPlatesMaths::UnitVector3D &
 GPlatesMaths::GreatCircleArc::rotation_axis() const
 {
 	if (is_zero_length()) {
-		throw IndeterminateArcRotationAxisException(*this);
+		throw IndeterminateArcRotationAxisException(GPLATES_EXCEPTION_SOURCE, *this);
 	}
 	return *d_rot_axis;
 }

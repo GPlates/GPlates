@@ -231,7 +231,7 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 		if ( ! feature_ref.is_valid()) {
 			// FIXME:  Replace this exception with a problem-specific exception which
 			// doesn't contain a string.
-			throw GPlatesGlobal::InternalInconsistencyException(__FILE__, __LINE__,
+			throw GPlatesGlobal::InternalInconsistencyException(GPLATES_EXCEPTION_SOURCE,
 					"Invalid FeatureHandle::weak_ref returned from proximity tests.");
 		}
 		d_feature_focus_ptr->set_focus(feature_ref, rfg);

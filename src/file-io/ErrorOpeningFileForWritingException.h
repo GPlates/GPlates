@@ -33,21 +33,26 @@
 
 #include <QString>
 
+#include "global/GPlatesException.h"
+
+
 namespace GPlatesFileIO
 {
 	/**
 	 * This exception is thrown when an error is encountered while attempting to open a file
 	 * for writing.
 	 */
-	class ErrorOpeningFileForWritingException
+	class ErrorOpeningFileForWritingException :
+			public GPlatesGlobal::Exception
 	{
 	public:
 		/**
 		 * Instantiate an exception for a file named @a filename.
 		 */
-		explicit
 		ErrorOpeningFileForWritingException(
-				const QString &filename_):
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				const QString &filename_) :
+			Exception(exception_source),
 			d_filename(filename_)
 		{  }
 
@@ -59,6 +64,18 @@ namespace GPlatesFileIO
 		{
 			return d_filename;
 		}
+
+	protected:
+		virtual const char *
+		exception_name() const {
+
+			return "ErrorOpeningFileForWritingException";
+		}
+
+		virtual
+		void
+		write_message(
+				std::ostream &os) const;
 
 	private:
 		/**

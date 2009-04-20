@@ -28,8 +28,7 @@
 #ifndef GPLATES_MATHS_INVALIDLATLONEXCEPTION_H
 #define GPLATES_MATHS_INVALIDLATLONEXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
+#include <iosfwd>
 #include "global/PreconditionViolationError.h"
 
 
@@ -56,8 +55,10 @@ namespace GPlatesMaths
 		 * invalid longitude.
 		 */
 		InvalidLatLonException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
 				const double &invalid_value_,
-				LatOrLon lat_or_lon_):
+				LatOrLon lat_or_lon_) :
+			GPlatesGlobal::PreconditionViolationError(exception_source),
 			d_invalid_value(invalid_value_),
 			d_lat_or_lon(lat_or_lon_)
 		{  }
@@ -80,7 +81,7 @@ namespace GPlatesMaths
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "InvalidLatLonException";
@@ -89,13 +90,8 @@ namespace GPlatesMaths
 		virtual
 		void
 		write_message(
-				std::ostream &os) const
-		{
-			// FIXME:  This function should really be defined in a .cc file.
-			os << "invalid "
-					<< ((lat_or_lon() == Latitude) ? "latitude" : "longitude")
-					<< " value " << d_invalid_value;
-		}
+				std::ostream &os) const;
+
 	private:
 		const double d_invalid_value;
 		LatOrLon d_lat_or_lon;

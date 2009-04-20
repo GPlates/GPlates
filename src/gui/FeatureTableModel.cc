@@ -37,12 +37,12 @@
 #include "model/types.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
-#include "feature-visitors/PlateIdFinder.h"
-#include "feature-visitors/GmlTimePeriodFinder.h"
-#include "feature-visitors/XsStringFinder.h"
 #include "feature-visitors/GeometryFinder.h"
+#include "feature-visitors/PropertyValueFinder.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/XsString.h"
 #include "utils/UnicodeStringUtils.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/PointOnSphere.h"
@@ -128,18 +128,16 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-		plate_id_finder.visit_feature_handle(feature);
-		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+		if (GPlatesFeatureVisitors::get_property_value(
+				feature, plate_id_property_name, &recon_plate_id))
+		{
 			// The feature has a reconstruction plate ID.
-			GPlatesModel::integer_plate_id_type recon_plate_id =
-					*plate_id_finder.found_plate_ids_begin();
-
 			if (should_print_debugging_message) {
 				std::cerr << "Debug log: No cached reconstruction plate ID in RFG,\n"
 						<< "but reconstruction plate ID found in feature." << std::endl;
 			}
-			return QVariant(static_cast<quint32>(recon_plate_id));
+			return QVariant(static_cast<quint32>(recon_plate_id->value()));
 		} else {
 			// The feature doesn't have a reconstruction plate ID.
 			return QVariant();
@@ -217,15 +215,14 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref) {
-			GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-			time_period_finder.visit_feature_handle(**weak_ref);
-			if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
+			const GPlatesPropertyValues::GmlTimePeriod *time_period;
+			if (GPlatesFeatureVisitors::get_property_value(
+					**weak_ref, valid_time_property_name, &time_period))
+			{
 				// The feature has a gml:validTime property.
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
 				// in the latter case it has a slightly different meaning and we should be displaying the
 				// gpml:reconstructedTime property instead.
-				GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-						*time_period_finder.found_time_periods_begin();
 				return format_time_instant(*(time_period->begin()));
 			}
 		}
@@ -243,15 +240,14 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref) {
-			GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-			time_period_finder.visit_feature_handle(**weak_ref);
-			if (time_period_finder.found_time_periods_begin() != time_period_finder.found_time_periods_end()) {
+			const GPlatesPropertyValues::GmlTimePeriod *time_period;
+			if (GPlatesFeatureVisitors::get_property_value(
+					**weak_ref, valid_time_property_name, &time_period))
+			{
 				// The feature has a gml:validTime property.
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
 				// in the latter case it has a slightly different meaning and we should be displaying the
 				// gpml:reconstructedTime property instead.
-				GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-						*time_period_finder.found_time_periods_begin();
 				return format_time_instant(*(time_period->end()));
 			}
 		}
@@ -270,13 +266,12 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref) {
-			GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-			string_finder.visit_feature_handle(**weak_ref);
-			if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
+			const GPlatesPropertyValues::XsString *name;
+			if (GPlatesFeatureVisitors::get_property_value(
+					**weak_ref, name_property_name, &name))
+			{
 				// The feature has one or more name properties.  Use the first one
 				// for now.
-				GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
-						*string_finder.found_strings_begin();
 				return GPlatesUtils::make_qstring(name->value());
 			}
 		}
@@ -294,13 +289,12 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref) {
-			GPlatesFeatureVisitors::XsStringFinder string_finder(description_property_name);
-			string_finder.visit_feature_handle(**weak_ref);
-			if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
+			const GPlatesPropertyValues::XsString *description;
+			if (GPlatesFeatureVisitors::get_property_value(
+					**weak_ref, description_property_name, &description))
+			{
 				// The feature has one or more description properties.  Use the
 				// first one for now.
-				GPlatesPropertyValues::XsString::non_null_ptr_to_const_type description =
-						*string_finder.found_strings_begin();
 				return GPlatesUtils::make_qstring(description->value());
 			}
 		}

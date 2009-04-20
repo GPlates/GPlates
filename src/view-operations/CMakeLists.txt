@@ -16,6 +16,8 @@ set(srcs
     AddPointGeometryOperation.h
     DeleteVertexGeometryOperation.cc
     DeleteVertexGeometryOperation.h
+    ExportReconstructedFeatureGeometries.cc
+    ExportReconstructedFeatureGeometries.h
     FocusedFeatureGeometryManipulator.cc
     FocusedFeatureGeometryManipulator.h
     GeometryBuilder.cc

@@ -30,7 +30,6 @@
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "model/ReconstructionTree.h"
 #include "feature-visitors/GeometrySetter.h"
-#include "feature-visitors/PlateIdFinder.h"
 #include "qt-widgets/ViewportWindow.h"
 
 

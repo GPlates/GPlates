@@ -35,6 +35,7 @@
 #include <QTextStream>
 #include <QString>
 
+#include "GMTFormatHeader.h"
 #include "FileInfo.h"
 #include "FeatureWriter.h"
 #include "model/ConstFeatureVisitor.h"
@@ -49,8 +50,6 @@
 
 namespace GPlatesFileIO
 {
-	class GMTHeaderFormatter;
-
 	class GMTFormatWriter :
 		public FeatureWriter,
 		private GPlatesModel::ConstFeatureVisitor
@@ -181,29 +180,11 @@ namespace GPlatesFileIO
 			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_feature_geometries;
 		};
 
-		//! Prints lines of header and keeps track of writing starting '>' character.
-		class HeaderPrinter
-		{
-		public:
-			HeaderPrinter()
-				: d_is_first_header_in_file(true)
-			{ }
-
-			void
-				print_header_lines(
-				QTextStream& output_stream,
-				std::vector<QString>& header_lines);
-
-		private:
-			//! Is the next feature to be written the first one ?
-			bool d_is_first_header_in_file;
-		};
-
 		boost::scoped_ptr<QFile> d_output_file;
 		boost::scoped_ptr<QTextStream> d_output_stream;
-		boost::scoped_ptr<GMTHeaderFormatter> d_feature_header;
+		boost::scoped_ptr<GMTFormatHeader> d_feature_header;
 		FeatureAccumulator d_feature_accumulator;
-		HeaderPrinter d_header_printer;
+		GMTHeaderPrinter d_header_printer;
 	};
 }
 

@@ -728,7 +728,7 @@ GPlatesQtWidgets::EditGeometryWidget::configure_for_property_value_type(
 	if (type_index != -1) {
 		combobox_geometry_type->setCurrentIndex(type_index);
 	} else {
-		throw PropertyValueNotSupportedException();
+		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 
@@ -876,11 +876,13 @@ GPlatesQtWidgets::EditGeometryWidget::create_property_value_from_widget() const
 		} else {
 			// Might happen, if EditGeometryWidget and the GeometricPropertyValueConstructor
 			// disagree on what is implemented and what is not.
-			throw InvalidPropertyValueException(tr("There was an error converting the digitised geometry to a usable property value."));
+			throw InvalidPropertyValueException(GPLATES_EXCEPTION_SOURCE,
+					tr("There was an error converting the digitised geometry to a usable property value."));
 		}
 	} else {
 		// FIXME: Wording.
-		throw InvalidPropertyValueException(tr("There was an error creating the geometry. Check there are sufficient points in the table."));
+		throw InvalidPropertyValueException(GPLATES_EXCEPTION_SOURCE,
+				tr("There was an error creating the geometry. Check there are sufficient points in the table."));
 	}
 }
 
@@ -900,7 +902,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_property_value_from_widget()
 			return false;
 		}
 	} else {
-		throw UninitialisedEditWidgetException();
+		throw UninitialisedEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 

@@ -56,7 +56,7 @@ GPlatesGui::Quadrics::Quadrics()
 	if (d_quadric == 0) {
 
 		// not enough memory to allocate object
-		throw OpenGLBadAllocException(
+		throw OpenGLBadAllocException(GPLATES_EXCEPTION_SOURCE,
 		 "Not enough memory for OpenGL to create new quadric.");
 	}
 	// Previously, the type-parameter of the cast was 'void (*)()'.

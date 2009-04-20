@@ -150,8 +150,9 @@ namespace
 				double depth_range_far)
 		{
 			// Count the number of layers that we're going to draw.
-			const unsigned num_layers_to_draw = get_num_active_non_empty_layers(
-					rendered_geometry_collection);
+			const unsigned num_layers_to_draw =
+					GPlatesViewOperations::RenderedGeometryUtils::get_num_active_non_empty_layers(
+							rendered_geometry_collection);
 
 			// Divide our given depth range equally amongst the layers.
 			// Draw layers back to front as we visit them.

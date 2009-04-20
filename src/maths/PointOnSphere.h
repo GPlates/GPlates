@@ -491,7 +491,7 @@ GPlatesMaths::populate_point_on_sphere_sequence(
 		// greater than zero, so there must be at least one element.
 		ForwardIter back_iter = source_seq_end;
 		--back_iter;
-		throw TrailingLatLonCoordinateException(
+		throw TrailingLatLonCoordinateException(GPLATES_EXCEPTION_SOURCE,
 				*back_iter,
 				std::distance(source_seq_begin, source_seq_end));
 	}
@@ -500,14 +500,16 @@ GPlatesMaths::populate_point_on_sphere_sequence(
 	for (unsigned coord_index = 0; iter != end; ++iter, ++coord_index) {
 		double lon = *iter;
 		if ( ! LatLonPoint::is_valid_longitude(lon)) {
-			throw InvalidLatLonCoordinateException(lon,
+			throw InvalidLatLonCoordinateException(GPLATES_EXCEPTION_SOURCE,
+					lon,
 					InvalidLatLonCoordinateException::LongitudeCoord,
 					coord_index);
 		}
 		++iter;
 		double lat = *iter;
 		if ( ! LatLonPoint::is_valid_latitude(lat)) {
-			throw InvalidLatLonCoordinateException(lat,
+			throw InvalidLatLonCoordinateException(GPLATES_EXCEPTION_SOURCE,
+					lat,
 					InvalidLatLonCoordinateException::LatitudeCoord,
 					coord_index);
 		}

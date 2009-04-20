@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,37 +28,96 @@
 
 #include "RenderedGeometryUtils.h"
 
+#include "RenderedReconstructionGeometry.h"
+#include "RenderedGeometryVisitor.h"
+
 
 namespace GPlatesViewOperations
 {
-	namespace
+	namespace RenderedGeometryUtils
 	{
-		/**
-		 * Increments count for every non-empty @a RenderedGeometryLayer.
-		 */
-		struct CountNonEmptyRenderedGeometries
+		namespace
 		{
-			CountNonEmptyRenderedGeometries() :
-			d_count(0)
-			{  }
-
-			void
-			operator()(
-					const RenderedGeometryLayer &rendered_geom_layer)
+			/**
+			 * Increments count for every non-empty @a RenderedGeometryLayer.
+			 */
+			class CountNonEmptyRenderedGeometries
 			{
-				if (rendered_geom_layer.is_active() && !rendered_geom_layer.is_empty())
-				{
-					++d_count;
-				}
-			}
+			public:
+				CountNonEmptyRenderedGeometries() :
+				d_count(0)
+				{  }
 
-			unsigned d_count;
-		};
+				void
+				operator()(
+						const RenderedGeometryLayer &rendered_geom_layer)
+				{
+					if (rendered_geom_layer.is_active() && !rendered_geom_layer.is_empty())
+					{
+						++d_count;
+					}
+				}
+
+				unsigned int
+				get_count() const
+				{
+					return d_count;
+				}
+
+			private:
+				unsigned int d_count;
+			};
+
+
+			/**
+			 * Retrieves any @a ReconstructionGeometry objects from @a RenderedGeometryLayer.
+			 */
+			class CollectReconstructionGeometries :
+				public ConstRenderedGeometryVisitor
+			{
+			public:
+				CollectReconstructionGeometries(
+						reconstruction_geom_seq_type &reconstruction_geom_seq) :
+					d_reconstruction_geom_seq(reconstruction_geom_seq)
+				{  }
+
+				void
+				operator()(
+						const RenderedGeometryLayer &rendered_geom_layer)
+				{
+					if (!rendered_geom_layer.is_active())
+					{
+						return;
+					}
+
+					// Visit each RenderedGeometry in the layer to collect its
+					// ReconstructionGeometry if it has one.
+					std::for_each(
+							rendered_geom_layer.rendered_geometry_begin(),
+							rendered_geom_layer.rendered_geometry_end(),
+							boost::bind(&RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
+				}
+
+
+				virtual
+				void
+				visit_rendered_reconstruction_geometry(
+						const RenderedReconstructionGeometry &rendered_recon_geom)
+				{
+					d_reconstruction_geom_seq.push_back(
+							rendered_recon_geom.get_reconstruction_geometry());
+				}
+
+
+			private:
+				reconstruction_geom_seq_type &d_reconstruction_geom_seq;
+			};
+		}
 	}
 }
 
 unsigned int
-GPlatesViewOperations::get_num_active_non_empty_layers(
+GPlatesViewOperations::RenderedGeometryUtils::get_num_active_non_empty_layers(
 		const RenderedGeometryCollection &rendered_geom_collection,
 		RenderedGeometryCollection::MainLayerType main_layer_type,
 		bool only_if_main_layer_active)
@@ -71,7 +130,7 @@ GPlatesViewOperations::get_num_active_non_empty_layers(
 }
 
 unsigned int
-GPlatesViewOperations::get_num_active_non_empty_layers(
+GPlatesViewOperations::RenderedGeometryUtils::get_num_active_non_empty_layers(
 		const RenderedGeometryCollection &rendered_geom_collection,
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active)
@@ -85,11 +144,11 @@ GPlatesViewOperations::get_num_active_non_empty_layers(
 
 	get_count.call_function(rendered_geom_collection);
 
-	return count.d_count;
+	return count.get_count();
 }
 
 void
-GPlatesViewOperations::activate_rendered_geometry_layers(
+GPlatesViewOperations::RenderedGeometryUtils::activate_rendered_geometry_layers(
 		RenderedGeometryCollection &rendered_geom_collection,
 		RenderedGeometryCollection::MainLayerType main_layer_type,
 		bool only_if_main_layer_active)
@@ -102,7 +161,7 @@ GPlatesViewOperations::activate_rendered_geometry_layers(
 }
 
 void
-GPlatesViewOperations::activate_rendered_geometry_layers(
+GPlatesViewOperations::RenderedGeometryUtils::activate_rendered_geometry_layers(
 		RenderedGeometryCollection &rendered_geom_collection,
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active)
@@ -116,7 +175,7 @@ GPlatesViewOperations::activate_rendered_geometry_layers(
 }
 
 void
-GPlatesViewOperations::deactivate_rendered_geometry_layers(
+GPlatesViewOperations::RenderedGeometryUtils::deactivate_rendered_geometry_layers(
 		RenderedGeometryCollection &rendered_geom_collection,
 		RenderedGeometryCollection::MainLayerType main_layer_type,
 		bool only_if_main_layer_active)
@@ -129,7 +188,7 @@ GPlatesViewOperations::deactivate_rendered_geometry_layers(
 }
 
 void
-GPlatesViewOperations::deactivate_rendered_geometry_layers(
+GPlatesViewOperations::RenderedGeometryUtils::deactivate_rendered_geometry_layers(
 		RenderedGeometryCollection &rendered_geom_collection,
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active)
@@ -143,7 +202,43 @@ GPlatesViewOperations::deactivate_rendered_geometry_layers(
 }
 
 
-GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::VisitFunctionOnRenderedGeometryLayers(
+bool
+GPlatesViewOperations::RenderedGeometryUtils::get_reconstruction_geometries(
+		reconstruction_geom_seq_type &reconstruction_geom_seq,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		RenderedGeometryCollection::MainLayerType main_layer_type,
+		bool only_if_main_layer_active)
+{
+	RenderedGeometryCollection::main_layers_update_type main_layers;
+	main_layers.set(main_layer_type);
+
+	return get_reconstruction_geometries(
+			reconstruction_geom_seq, rendered_geom_collection,
+			main_layers, only_if_main_layer_active);
+}
+
+
+bool
+GPlatesViewOperations::RenderedGeometryUtils::get_reconstruction_geometries(
+		reconstruction_geom_seq_type &reconstruction_geom_seq,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		RenderedGeometryCollection::main_layers_update_type main_layers,
+		bool only_if_main_layer_active)
+{
+	CollectReconstructionGeometries collect_recon_geoms(reconstruction_geom_seq);
+
+	ConstVisitFunctionOnRenderedGeometryLayers collect_recon_geoms_visitor(
+			boost::ref(collect_recon_geoms),
+			main_layers,
+			only_if_main_layer_active);
+
+	collect_recon_geoms_visitor.call_function(rendered_geom_collection);
+
+	return !reconstruction_geom_seq.empty();
+}
+
+
+GPlatesViewOperations::RenderedGeometryUtils::VisitFunctionOnRenderedGeometryLayers::VisitFunctionOnRenderedGeometryLayers(
 		rendered_geometry_layer_function_type rendered_geom_layer_function,
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active) :
@@ -154,14 +249,14 @@ d_only_if_main_layer_active(only_if_main_layer_active)
 }
 
 void
-GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::call_function(
+GPlatesViewOperations::RenderedGeometryUtils::VisitFunctionOnRenderedGeometryLayers::call_function(
 		RenderedGeometryCollection &rendered_geom_collection)
 {
 	rendered_geom_collection.accept_visitor(*this);
 }
 
 bool
-GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::visit_main_rendered_layer(
+GPlatesViewOperations::RenderedGeometryUtils::VisitFunctionOnRenderedGeometryLayers::visit_main_rendered_layer(
 		RenderedGeometryCollection &rendered_geometry_collection,
 		RenderedGeometryCollection::MainLayerType main_layer_type)
 {
@@ -176,7 +271,7 @@ GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::visit_main_rendere
 }
 
 bool
-GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::visit_rendered_geometry_layer(
+GPlatesViewOperations::RenderedGeometryUtils::VisitFunctionOnRenderedGeometryLayers::visit_rendered_geometry_layer(
 		RenderedGeometryLayer &rendered_geometry_layer)
 {
 	// If we get here then we've been approved for calling user-specified
@@ -188,7 +283,7 @@ GPlatesViewOperations::VisitFunctionOnRenderedGeometryLayers::visit_rendered_geo
 }
 
 
-GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::ConstVisitFunctionOnRenderedGeometryLayers(
+GPlatesViewOperations::RenderedGeometryUtils::ConstVisitFunctionOnRenderedGeometryLayers::ConstVisitFunctionOnRenderedGeometryLayers(
 		rendered_geometry_layer_function_type rendered_geom_layer_function,
 		RenderedGeometryCollection::main_layers_update_type main_layers,
 		bool only_if_main_layer_active) :
@@ -199,14 +294,14 @@ d_only_if_main_layer_active(only_if_main_layer_active)
 }
 
 void
-GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::call_function(
+GPlatesViewOperations::RenderedGeometryUtils::ConstVisitFunctionOnRenderedGeometryLayers::call_function(
 		const RenderedGeometryCollection &rendered_geom_collection)
 {
 	rendered_geom_collection.accept_visitor(*this);
 }
 
 bool
-GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::visit_main_rendered_layer(
+GPlatesViewOperations::RenderedGeometryUtils::ConstVisitFunctionOnRenderedGeometryLayers::visit_main_rendered_layer(
 		const RenderedGeometryCollection &rendered_geometry_collection,
 		RenderedGeometryCollection::MainLayerType main_layer_type)
 {
@@ -221,7 +316,7 @@ GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::visit_main_re
 }
 
 bool
-GPlatesViewOperations::ConstVisitFunctionOnRenderedGeometryLayers::visit_rendered_geometry_layer(
+GPlatesViewOperations::RenderedGeometryUtils::ConstVisitFunctionOnRenderedGeometryLayers::visit_rendered_geometry_layer(
 		const RenderedGeometryLayer &rendered_geometry_layer)
 {
 	// If we get here then we've been approved for calling user-specified

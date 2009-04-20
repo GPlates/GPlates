@@ -43,7 +43,8 @@ GPlatesModel::ReconstructedFeatureGeometry::get_non_null_pointer()
 		// ref-counting pointers have expired and the instance has actually been deleted.
 		//
 		// Regardless of how this happened, this is an error.
-		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(this, __FILE__, __LINE__);
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
+				this);
 	} else {
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.

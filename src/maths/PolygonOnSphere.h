@@ -1037,12 +1037,12 @@ namespace GPlatesMaths
 		 * presumably describes why the points are invalid.
 		 */
 		InvalidPointsForPolygonConstructionError(
-				PolygonOnSphere::ConstructionParameterValidity cpv,
-				const char *filename,
-				int line_num):
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				PolygonOnSphere::ConstructionParameterValidity cpv) :
+			GPlatesGlobal::PreconditionViolationError(exception_source),
 			d_cpv(cpv),
-			d_filename(filename),
-			d_line_num(line_num)
+			d_filename(exception_source.get_filename()),
+			d_line_num(exception_source.get_line_num())
 		{  }
 
 		virtual
@@ -1052,30 +1052,15 @@ namespace GPlatesMaths
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			return "InvalidPointsForPolygonConstructionError";
 		}
 
-		// FIXME: This would be better as a 'const std::string'.
 		virtual
-		std::string
-		Message() const
-		{
-			switch (d_cpv) {
-			case PolygonOnSphere::VALID:
-				return "valid";
-			case PolygonOnSphere::INVALID_INSUFFICIENT_DISTINCT_POINTS:
-				return "insufficient distinct points";
-			case PolygonOnSphere::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
-				return "antipodal segment endpoints";
-			}
-			// Control-flow should never reach the end of this function.
-			// FIXME:  We should assert this.
-			// We'll return an empty string to placate the compiler, which is
-			// complaining about control reaching end of non-void function.
-			return std::string();
-		}
+		void
+		write_message(
+				std::ostream &os) const;
 
 	private:
 		PolygonOnSphere::ConstructionParameterValidity d_cpv;
@@ -1095,7 +1080,7 @@ namespace GPlatesMaths
 		ConstructionParameterValidity v =
 				evaluate_construction_parameter_validity(begin, end, invalid_points);
 		if (v != VALID) {
-			throw InvalidPointsForPolygonConstructionError(v, __FILE__, __LINE__);
+			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, v);
 		}
 
 		// Make it easier to provide strong exception safety by appending the new segments

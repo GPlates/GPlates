@@ -28,7 +28,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>29</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -65,6 +65,8 @@
     <addaction name="separator" />
     <addaction name="action_Specify_Anchored_Plate_ID" />
     <addaction name="action_View_Reconstruction_Poles" />
+    <addaction name="separator" />
+    <addaction name="action_Export_Reconstruction" />
    </widget>
    <widget class="QMenu" name="menu_Edit" >
     <property name="title" >
@@ -1095,6 +1097,11 @@
    </property>
    <property name="text" >
     <string>Show &amp;Instantaneous Features</string>
+   </property>
+  </action>
+  <action name="action_Export_Reconstruction" >
+   <property name="text" >
+    <string>E&amp;xport Reconstruction Geometries...</string>
    </property>
   </action>
  </widget>

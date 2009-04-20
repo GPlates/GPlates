@@ -148,7 +148,7 @@ GPlatesViewOperations::test_proximity(
 	// Setup to do proximity
 	// This object will traverse all active RenderedGeoemtryLayers in the specified main layer of
 	// RenderedGeometryCollection and call the above object on each RenderedGeometryLayer.
-	ConstVisitFunctionOnRenderedGeometryLayers proximity_tester(
+	RenderedGeometryUtils::ConstVisitFunctionOnRenderedGeometryLayers proximity_tester(
 			boost::ref(proximity_accumulator),
 			main_layers_to_test,
 			only_if_main_layer_active);

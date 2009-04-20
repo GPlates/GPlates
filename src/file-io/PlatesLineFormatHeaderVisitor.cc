@@ -35,6 +35,8 @@
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 
+#include "property-values/XsBoolean.h"
+#include "property-values/Enumeration.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
@@ -655,7 +657,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gpml_plate_id(
 	} else if (*d_accum.current_propname == reconstructedPlateId) {
 		// Nothing to do here.
 	} else {
-		// We've encountered a plate ID inside an unrecognised property-name_property_name.
+		// We've encountered a plate ID inside an unrecognised property-name.
 		// FIXME:  Should we complain/warn/log about this?
 	}
 }
@@ -701,7 +703,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_xs_string(
 		}
 	} else {
 		// The name_property_name was already set, which means that there was already a
-		// "gml:name_property_name" property.
+		// "gml:name" property.
 		// FIXME: Should we warn about this?
 	}
 }

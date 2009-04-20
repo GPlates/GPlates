@@ -44,22 +44,30 @@ namespace GPlatesGui
 			 * @param msg is a description of the conditions
 			 * in which the problem occurs.
 			 */
-			explicit
-			OpenGLBadAllocException(const char *msg)
-				: _msg(msg) {  }
+			OpenGLBadAllocException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const char *msg) :
+				GuiException(exception_source),
+				_msg(msg)
+			{  }
 
 			virtual
 			~OpenGLBadAllocException() {  }
 
 		protected:
 			virtual const char *
-			ExceptionName() const {
+			exception_name() const {
 
 				return "OpenGLBadAllocException";
 			}
 
-			virtual std::string
-			Message() const { return _msg; }
+			virtual
+			void
+			write_message(
+					std::ostream &os) const
+			{
+				write_string_message(os, _msg);
+			}
 
 		private:
 			std::string _msg;
