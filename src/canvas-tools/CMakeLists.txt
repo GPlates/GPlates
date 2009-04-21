@@ -13,12 +13,17 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     BuildTopology.cc
     BuildTopology.h
+    CanvasToolType.h
     ClickGeometry.cc
     ClickGeometry.h
+    DeleteVertex.cc
+    DeleteVertex.h
     DigitiseGeometry.cc
     DigitiseGeometry.h
     EditTopology.cc
     EditTopology.h
+    InsertVertex.cc
+    InsertVertex.h
     ManipulatePole.cc
     ManipulatePole.h
     MoveGeometry.cc

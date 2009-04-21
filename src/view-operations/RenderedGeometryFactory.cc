@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * Partially abstract interface for creating @a RenderedGeometry types.
+ * Object factory for creating @a RenderedGeometry types.
  * $Revision$
  * $Date$
  * 
@@ -29,6 +29,7 @@
 #include "RenderedPointOnSphere.h"
 #include "RenderedPolygonOnSphere.h"
 #include "RenderedPolylineOnSphere.h"
+#include "RenderedReconstructionGeometry.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 namespace GPlatesViewOperations
@@ -44,12 +45,10 @@ namespace GPlatesViewOperations
 		{
 		public:
 			CreateRenderedGeometryFromGeometryOnSphere(
-				RenderedGeometryFactory *rendered_geom_factory,
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
 				const GPlatesGui::Colour &colour,
 				float point_size_hint,
 				float line_width_hint) :
-			d_rendered_geom_factory(rendered_geom_factory),
 			d_geom_on_sphere(geom_on_sphere),
 			d_colour(colour),
 			d_point_size_hint(point_size_hint),
@@ -77,7 +76,7 @@ namespace GPlatesViewOperations
 			visit_multi_point_on_sphere(
 					GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 			{
-				d_rendered_geom = d_rendered_geom_factory->create_rendered_multi_point_on_sphere(
+				d_rendered_geom = create_rendered_multi_point_on_sphere(
 						multi_point_on_sphere, d_colour, d_point_size_hint);
 			}
 
@@ -86,7 +85,7 @@ namespace GPlatesViewOperations
 			visit_point_on_sphere(
 					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_rendered_geom = d_rendered_geom_factory->create_rendered_point_on_sphere(
+				d_rendered_geom = create_rendered_point_on_sphere(
 						*point_on_sphere, d_colour, d_point_size_hint);
 			}
 
@@ -95,7 +94,7 @@ namespace GPlatesViewOperations
 			visit_polygon_on_sphere(
 					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 			{
-				d_rendered_geom = d_rendered_geom_factory->create_rendered_polygon_on_sphere(
+				d_rendered_geom = create_rendered_polygon_on_sphere(
 						polygon_on_sphere, d_colour, d_line_width_hint);
 			}
 
@@ -104,11 +103,10 @@ namespace GPlatesViewOperations
 			visit_polyline_on_sphere(
 					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 			{
-				d_rendered_geom = d_rendered_geom_factory->create_rendered_polyline_on_sphere(
+				d_rendered_geom = create_rendered_polyline_on_sphere(
 						polyline_on_sphere, d_colour, d_line_width_hint);
 			}
 
-			RenderedGeometryFactory *d_rendered_geom_factory;
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geom_on_sphere;
 			const GPlatesGui::Colour &d_colour;
 			float d_point_size_hint;
@@ -119,9 +117,8 @@ namespace GPlatesViewOperations
 }
 
 
-
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+GPlatesViewOperations::create_rendered_geometry_on_sphere(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float point_size_hint,
@@ -130,13 +127,13 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphe
 	// This is used to determine the derived type of 'geom_on_sphere'
 	// and create a RenderedGeometryImpl for it.
 	CreateRenderedGeometryFromGeometryOnSphere create_rendered_geom(
-			this, geom_on_sphere, colour, point_size_hint, line_width_hint);
+			geom_on_sphere, colour, point_size_hint, line_width_hint);
 
 	return create_rendered_geom.create_rendered_geometry();
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+GPlatesViewOperations::create_rendered_point_on_sphere(
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float point_size_hint)
@@ -148,7 +145,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::RenderedGeometryFactory::create_rendered_multi_point_on_sphere(
+GPlatesViewOperations::create_rendered_multi_point_on_sphere(
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float point_size_hint)
@@ -160,7 +157,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_multi_point_on_s
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphere(
+GPlatesViewOperations::create_rendered_polyline_on_sphere(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float line_width_hint)
@@ -172,13 +169,73 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphe
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_sphere(
+GPlatesViewOperations::create_rendered_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float line_width_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedPolygonOnSphere(
 			polygon_on_sphere, colour, line_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_dashed_polyline(
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline,
+		const GPlatesGui::Colour &colour)
+{
+	// Until this is implemented we'll just return a regular polyline.
+	return create_rendered_polyline_on_sphere(polyline, colour);
+}
+
+GPlatesViewOperations::RenderedGeometryFactory::rendered_geometry_seq_type
+GPlatesViewOperations::create_rendered_dashed_polyline_segments_on_sphere(
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline,
+		const GPlatesGui::Colour &colour)
+{
+	//
+	// Until this is implemented we'll just return a regular polyline for
+	// each segment of the input polyline.
+	//
+
+	// The sequence we'll return.
+	RenderedGeometryFactory::rendered_geometry_seq_type polyline_seq;
+	polyline_seq.reserve(polyline->number_of_segments());
+
+	// Iterate over great circle arcs of the input polyline.
+	GPlatesMaths::PolylineOnSphere::const_iterator polyline_iter;
+	for (polyline_iter = polyline->begin();
+		polyline_iter != polyline->end();
+		++polyline_iter)
+	{
+		// Start and end point of current segment.
+		GPlatesMaths::PointOnSphere segment[2] =
+		{
+			// Start and end point of current segment.
+			polyline_iter->start_point(),
+			polyline_iter->end_point()
+		};
+
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_segment =
+			GPlatesMaths::PolylineOnSphere::create_on_heap(segment, segment + 2);
+
+		const RenderedGeometry rendered_geom_segment =
+			create_rendered_polyline_on_sphere(polyline_segment, colour);
+
+		polyline_seq.push_back(rendered_geom_segment);
+	}
+
+	return polyline_seq;
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_reconstruction_geometry(
+		GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
+		RenderedGeometry rendered_geom)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedReconstructionGeometry(
+			reconstruction_geom, rendered_geom));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

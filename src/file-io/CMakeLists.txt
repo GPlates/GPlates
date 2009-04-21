@@ -13,6 +13,7 @@ include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
     ErrorOpeningFileForReadingException.h
+    ErrorOpeningFileForWritingException.cc
     ErrorOpeningFileForWritingException.h
     ErrorOpeningPipeFromGzipException.h
     ErrorOpeningPipeToGzipException.h
@@ -31,6 +32,10 @@ set(srcs
     GeometryExporter.h
     GMTFormatGeometryExporter.cc
     GMTFormatGeometryExporter.h
+    GMTFormatHeader.cc
+    GMTFormatHeader.h
+    GMTFormatReconstructedFeatureGeometryExport.cc
+    GMTFormatReconstructedFeatureGeometryExport.h
     GMTFormatWriter.cc
     GMTFormatWriter.h
     GpmlOnePointFiveOutputVisitor.cc
@@ -63,6 +68,8 @@ set(srcs
     ReadErrorOccurrence.cc
     ReadErrorOccurrence.h
     ReadErrors.h
+    ReconstructedFeatureGeometryExport.cc
+    ReconstructedFeatureGeometryExport.h
     ShapeFileReader.cc
     ShapeFileReader.h
     ShapefileXmlReader.cc

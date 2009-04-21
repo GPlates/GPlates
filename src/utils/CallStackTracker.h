@@ -2,12 +2,12 @@
 
 /**
  * \file
- * Contains the definition of the class CallStackTracker.
+ * Used to manually keep track of the call stack.
  *
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,12 +28,17 @@
 #ifndef GPLATES_UTILS_CALLSTACKTRACKER_H
 #define GPLATES_UTILS_CALLSTACKTRACKER_H
 
+#include <vector>
+#include <boost/noncopyable.hpp>
+
+
 /**
  * Do not invoke this macro directly.
  *
  * This macro is used by the TRACK_CALL_STACK macro.
  */
-#define CALL_STACK_MAGIC2(x) GPlatesUtils::CallStackTracker call_stack_tracker##x(__FILE__, __LINE__);
+#define CALL_STACK_MAGIC2(x) \
+		GPlatesUtils::CallStackTracker call_stack_tracker##x(__FILE__, __LINE__);
 
 /**
  * Do not invoke this macro directly.
@@ -45,7 +50,7 @@
 /**
  * Track the call stack.
  *
- * This is a convenience macro to simplify the use of class GPlatesUtils::CallStackTracker.
+ * This is a convenience macro to simplify the use of class GPlatesUtils::CallStack.
  *
  * Invoke this macro function at the start of any function block (or, indeed, any other blocks)
  * which you wish to track:
@@ -63,6 +68,108 @@
 namespace GPlatesUtils
 {
 	/**
+	 * This class is a singleton that keeps track of the call stack.
+	 */
+	class CallStack :
+			public boost::noncopyable
+	{
+	public:
+		//! Returns singleton instance of this class.
+		static
+		CallStack &
+		instance()
+		{
+			static CallStack s_call_stack_tracker;
+			return s_call_stack_tracker;
+		}
+
+
+		/**
+		 * Keeps track of the location of a specific trace in the call stack.
+		 */
+		class Trace
+		{
+		public:
+			Trace(
+					const char *filename,
+					int line_num) :
+				d_filename(filename),
+				d_line_num(line_num)
+			{  }
+
+			//! Get filename.
+			const char *
+			get_filename() const
+			{
+				return d_filename;
+			}
+
+			//! Get line number.
+			int
+			get_line_num() const
+			{
+				return d_line_num;
+			}
+
+		private:
+			const char *d_filename;
+			int d_line_num;
+		};
+
+		//! Typedef for a stack of @a CallStackElement objects.
+		typedef std::vector<Trace> trace_seq_type;
+
+		//! Typedef for iterator over const @a Trace objects.
+		typedef trace_seq_type::const_iterator trace_const_iterator;
+
+
+		/**
+		 * Start tracking a new stack trace .
+		 */
+		void
+		push(
+				const Trace &);
+
+		/**
+		 * Stop tracking matching stack trace from @a push.
+		 * Calls to @a pop must match calls to @a push.
+		 */
+		void
+		pop();
+
+		/**
+		 * Begin iterator of current call stack sequence.
+		 * Dereferencing iterator gives a @a Trace object.
+		 * Should not call @a push or @a pop between calls to
+		 * @a call_stack_begin and @a call_stack_end.
+		 */
+		trace_const_iterator
+		call_stack_begin()
+		{
+			return d_call_stack.begin();
+		}
+
+		/**
+		 * End iterator of current call stack sequence.
+		 * Should not call @a push or @a pop between calls to
+		 * @a call_stack_begin and @a call_stack_end.
+		 */
+		trace_const_iterator
+		call_stack_end()
+		{
+			return d_call_stack.end();
+		}
+
+	private:
+		//! Constructor is private for singleton.
+		CallStack()
+		{  }
+
+		trace_seq_type d_call_stack;
+	};
+
+
+	/**
 	 * This class provides a means to track the call stack.
 	 *
 	 * Instances of this class should be instantiated on the stack (ie, as local variables) at
@@ -72,10 +179,6 @@ namespace GPlatesUtils
 	 * be automatically translated by the compiler into the current file name and line number,
 	 * respectively.
 	 *
-	 * When the program is executed, whenever a tracked block begins (ie, whenever an instance
-	 * of this class is instantiated on the stack), a message will be printed to the standard
-	 * error stream.  When the tracked block ends, another message will be printed.
-	 *
 	 * The macro @a TRACK_CALL_STACK() can be used to simplify the use of this class.  Wherever
 	 * you wish to track the call stack, simply invoke the macro function:
 	 *
@@ -83,28 +186,29 @@ namespace GPlatesUtils
 	 *  TRACK_CALL_STACK()
 	 * @endcode
 	 *
-	 * This macro will supply the appropriate arguments to the CallStackTracker constructor.
+	 * This macro will supply the appropriate arguments to the CallStack constructor.
 	 */
 	class CallStackTracker
 	{
 	public:
 		CallStackTracker(
-				const char *filename,
-				int line_num);
+				const CallStack::Trace &trace)
+		{
+			CallStack::instance().push(trace);
+		}
 
-		~CallStackTracker();
-	private:
-		const char *d_filename;
-		int d_line_num;
-
-		// Don't allow copy-construction.
-		CallStackTracker(
-				const CallStackTracker &);
-
-		// Don't allow copy-assignment.
-		CallStackTracker &
-		operator=(
-				const CallStackTracker &);
+		~CallStackTracker()
+		{
+			// Since this is a destructor we cannot let any exceptions escape.
+			// If one is thrown we just have to lump it and continue on.
+			try
+			{
+				CallStack::instance().pop();
+			}
+			catch (...)
+			{
+			}
+		}
 	};
 }
 

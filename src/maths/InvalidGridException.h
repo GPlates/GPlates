@@ -44,21 +44,27 @@ namespace GPlatesMaths
 			 * @param msg is a description of the conditions
 			 * which cause the grid to be invalid.
 			 */
-			InvalidGridException(const char *msg)
-				: _msg(msg) {  }
-
-			virtual
-			~InvalidGridException() {  }
+			InvalidGridException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const char *msg) :
+				MathematicalException(exception_source),
+				_msg(msg)
+			{  }
 
 		protected:
 			virtual const char *
-			ExceptionName() const {
+			exception_name() const {
 
 				return "InvalidGridException";
 			}
 
-			virtual std::string
-			Message() const { return _msg; }
+			virtual
+			void
+			write_message(
+					std::ostream &os) const
+			{
+				write_string_message(os, _msg);
+			}
 
 		private:
 			std::string _msg;

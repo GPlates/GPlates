@@ -26,7 +26,9 @@
 #ifndef GPLATES_MODEL_MODELUTILS_H
 #define GPLATES_MODEL_MODELUTILS_H
 
-#include "Model.h"
+#include "ModelInterface.h"
+#include "FeatureCollectionHandle.h"
+#include "FeatureHandle.h"
 #include "InlinePropertyContainer.h"
 #include "DummyTransactionHandle.h"
 #include "PropertyName.h"

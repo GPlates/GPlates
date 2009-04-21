@@ -3,9 +3,9 @@
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,22 +22,16 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#include "SpecifyFixedPlateDialog.h"
+
+#include <ostream>
+
+#include "AssertionFailureException.h"
 
 
-GPlatesQtWidgets::SpecifyFixedPlateDialog::SpecifyFixedPlateDialog(
-		unsigned long init_value,
-		QWidget *parent_):
-	QDialog(parent_),
-	d_value(init_value)
+void
+GPlatesGlobal::AssertionFailureException::write_message(
+		std::ostream &os) const
 {
-	setupUi(this);
-
-	spinBox->setRange(0, 999999999);
-	spinBox->setValue(d_value);
-	QObject::connect(spinBox, SIGNAL(valueChanged(int)),
-			this, SLOT(change_value(int)));
-	QObject::connect(this, SIGNAL(accepted()),
-			this, SLOT(propagate_value()));
+	os << "Assertion failure: " << exception_name() << " in " <<
+			d_filename << ":" << d_line_num << std::endl;
 }

@@ -30,7 +30,7 @@
 
 #include <vector>
 #include "model/PropertyValue.h"
-#include "maths/GeometryForwardDeclarations.h"
+#include "maths/PolylineOnSphere.h"
 
 
 namespace GPlatesPropertyValues

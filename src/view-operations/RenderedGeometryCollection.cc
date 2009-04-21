@@ -323,11 +323,12 @@ GPlatesViewOperations::RenderedGeometryCollection::restore_main_layer_active_sta
 	}
 }
 
-template <class RenderedGeometryCollectionVisitorType>
+template <class RenderedGeometryLayerType,
+		class RenderedGeometryCollectionVisitorType>
 void
 GPlatesViewOperations::RenderedGeometryCollection::visit_rendered_geometry_layer(
 		RenderedGeometryCollectionVisitorType &visitor,
-		RenderedGeometryLayer &rendered_geom_layer)
+		RenderedGeometryLayerType &rendered_geom_layer)
 {
 	// Ask the visitor if it wants to visit this RenderedGeometryLayer.
 	// It can query the active status of this RenderedGeometryLayer to decide.
@@ -337,23 +338,26 @@ GPlatesViewOperations::RenderedGeometryCollection::visit_rendered_geometry_layer
 	}
 }
 
-template <class RenderedGeometryCollectionVisitorType>
+template <class RenderedGeometryLayerType,
+		class RenderedGeometryCollectionType,
+		class RenderedGeometryCollectionVisitorType>
 void
 GPlatesViewOperations::RenderedGeometryCollection::visit_main_rendered_layer(
 		RenderedGeometryCollectionVisitorType &visitor,
-		MainLayerType main_layer_type)
+		MainLayerType main_layer_type,
+		RenderedGeometryCollectionType &rendered_geom_collection)
 {
 	// Ask the visitor if it wants to visit this main layer.
 	// It can query the active status of this main layer and use that to decide.
-	if (visitor.visit_main_rendered_layer(*this, main_layer_type))
+	if (visitor.visit_main_rendered_layer(rendered_geom_collection, main_layer_type))
 	{
-		const MainLayer &main_layer = d_main_layer_seq[main_layer_type];
+		const MainLayer &main_layer = rendered_geom_collection.d_main_layer_seq[main_layer_type];
 
 		//
 		// Visit the main render layer first.
 		//
 
-		RenderedGeometryLayer &main_rendered_geom_layer = *main_layer.d_rendered_geom_layer;
+		RenderedGeometryLayerType &main_rendered_geom_layer = *main_layer.d_rendered_geom_layer;
 
 		visit_rendered_geometry_layer(
 				visitor,
@@ -370,8 +374,9 @@ GPlatesViewOperations::RenderedGeometryCollection::visit_main_rendered_layer(
 		{
 			const RenderedGeometryLayerIndex child_layer_index = *child_layer_iter;
 
-			RenderedGeometryLayer *child_rendered_geom_layer =
-				d_rendered_geometry_layer_manager.get_rendered_geometry_layer(child_layer_index);
+			RenderedGeometryLayerType *child_rendered_geom_layer =
+					rendered_geom_collection.d_rendered_geometry_layer_manager.
+							get_rendered_geometry_layer(child_layer_index);
 
 			// Visit child rendered geometry layer.
 			visit_rendered_geometry_layer(
@@ -381,16 +386,19 @@ GPlatesViewOperations::RenderedGeometryCollection::visit_main_rendered_layer(
 	}
 }
 
-template <class RenderedGeometryCollectionVisitorType>
+template <class RenderedGeometryLayerType,
+		class RenderedGeometryCollectionType,
+		class RenderedGeometryCollectionVisitorType>
 void
 GPlatesViewOperations::RenderedGeometryCollection::accept_visitor_internal(
-		RenderedGeometryCollectionVisitorType &visitor)
+		RenderedGeometryCollectionVisitorType &visitor,
+		RenderedGeometryCollectionType &rendered_geom_collection)
 {
 	// Visit each main rendered layer.
 	main_layer_seq_type::size_type main_layer_index;
 	for (
 		main_layer_index = 0;
-		main_layer_index < d_main_layer_seq.size();
+		main_layer_index < rendered_geom_collection.d_main_layer_seq.size();
 		++main_layer_index)
 	{
 		// The static_cast is a bit dangerous.
@@ -398,9 +406,10 @@ GPlatesViewOperations::RenderedGeometryCollection::accept_visitor_internal(
 		MainLayerType main_layer_type =
 			static_cast<MainLayerType>(main_layer_index);
 
-		visit_main_rendered_layer(
+		visit_main_rendered_layer<RenderedGeometryLayerType>(
 				visitor,
-				main_layer_type);
+				main_layer_type,
+				rendered_geom_collection);
 	}
 }
 
@@ -408,17 +417,14 @@ void
 GPlatesViewOperations::RenderedGeometryCollection::accept_visitor(
 		ConstRenderedGeometryCollectionVisitor &visitor) const
 {
-	// We don't want to write the same visitor traversal code for
-	// const and non-const visitors so write the traversal code for
-	// non-const and cast away our const to use it.
-	const_cast<RenderedGeometryCollection*>(this)->accept_visitor_internal(visitor);
+	accept_visitor_internal<const RenderedGeometryLayer>(visitor, *this);
 }
 
 void
 GPlatesViewOperations::RenderedGeometryCollection::accept_visitor(
 		RenderedGeometryCollectionVisitor &visitor)
 {
-	accept_visitor_internal(visitor);
+	accept_visitor_internal<RenderedGeometryLayer>(visitor, *this);
 }
 
 void
@@ -447,7 +453,7 @@ void
 GPlatesViewOperations::RenderedGeometryCollection::end_update_collection()
 {
 	GPlatesGlobal::Assert(d_update_collection_depth > 0,
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	--d_update_collection_depth;
 
@@ -573,23 +579,24 @@ GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard::~UpdateGuard()
 	}
 }
 
-GPlatesViewOperations::RenderedGeometryLayer *
-GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::get_rendered_geometry_layer(
-		RenderedGeometryLayerIndex layer_index)
-{
-	GPlatesGlobal::Assert(
-			layer_index < d_layer_storage.size(),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
-
-	return d_layer_storage[layer_index];
-}
-
 const GPlatesViewOperations::RenderedGeometryLayer *
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::get_rendered_geometry_layer(
 		RenderedGeometryLayerIndex layer_index) const
 {
-	return const_cast<RenderedGeometryLayerManager *>(this)
-		->get_rendered_geometry_layer(layer_index);
+	GPlatesGlobal::Assert(
+			layer_index < d_layer_storage.size(),
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+
+	return d_layer_storage[layer_index];
+}
+
+GPlatesViewOperations::RenderedGeometryLayer *
+GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::get_rendered_geometry_layer(
+		RenderedGeometryLayerIndex layer_index)
+{
+	return const_cast<RenderedGeometryLayer *>(
+			static_cast<const RenderedGeometryLayerManager *>(this)->
+					get_rendered_geometry_layer(layer_index));
 }
 
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerIndex
@@ -629,7 +636,7 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 	// Make sure slot isn't already being used.
 	GPlatesGlobal::Assert(
 			d_layer_storage[layer_index] == NULL,
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Pass main layer to RenderedGeometryLayer so it can return it to us
 	// when it emits its layer_was_updated signal.
@@ -650,13 +657,13 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 
 	GPlatesGlobal::Assert(
 			layer_index < d_layer_storage.size(),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Make sure layer index is actually being used.
 	GPlatesGlobal::Assert(
 			std::find(d_layers.begin(), d_layers.end(), layer_index) !=
 					d_layers.end(),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Remove from list of layers in use.
 	d_layers.remove(layer_index);

@@ -97,7 +97,7 @@ namespace
 
 	void
 	fill_header_from_feature(
-		GPlatesModel::FeatureHandle::const_weak_ref feature_handle,
+		GPlatesModel::FeatureHandle::weak_ref feature_handle,
 		QTableWidget *table_widget)
 	{
 		static const GPlatesModel::PropertyName shapefile_attribute_property_name =
@@ -136,7 +136,7 @@ namespace
 
 	void
 	fill_row_from_feature(
-		GPlatesModel::FeatureHandle::const_weak_ref feature_handle,
+		GPlatesModel::FeatureHandle::weak_ref feature_handle,
 		QTableWidget* table_widget,
 		int row)
 	{
@@ -184,13 +184,13 @@ namespace
 
 	void
 	fill_table_from_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection,
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection,
 		QTableWidget *table_widget)
 	{
 
 		if (feature_collection.is_valid())
 		{
-			GPlatesModel::FeatureCollectionHandle::features_const_iterator
+			GPlatesModel::FeatureCollectionHandle::features_iterator
 				iter = feature_collection->features_begin(),
 				end = feature_collection->features_end();
 
@@ -282,14 +282,14 @@ GPlatesQtWidgets::ShapefileAttributeViewerDialog::update_table()
 
 	if (index >= 0 && index < static_cast<int>(d_fileinfo_vector.size()))
 	{
-		const GPlatesFileIO::FileInfo info = d_fileinfo_vector.at(index);
+		GPlatesFileIO::FileInfo info = d_fileinfo_vector.at(index);
 
 		//std::cerr << index << " " << info.get_qfileinfo().fileName().toStdString().c_str() << std::endl;
 
 		// Check that the feature collection exists.
 		if (info.get_feature_collection())
 		{
-			GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
+			GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 				*info.get_feature_collection();
 			fill_table_from_feature_collection(feature_collection,table_attributes);
 		}

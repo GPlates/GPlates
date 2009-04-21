@@ -28,13 +28,15 @@
 #ifndef GPLATES_FEATUREVISITORS_QUERYFEATUREPROPERTIESWIDGETPOPULATOR_H
 #define GPLATES_FEATUREVISITORS_QUERYFEATUREPROPERTIESWIDGETPOPULATOR_H
 
-#include <vector>
+#include <boost/optional.hpp>
 #include <QTreeWidget>
 
+#include "gui/TreeWidgetBuilder.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyValue.h"
+#include "model/ReconstructedFeatureGeometry.h"
 
 namespace GPlatesPropertyValues
 {
@@ -46,148 +48,163 @@ namespace GPlatesFeatureVisitors
 {
 
 	class QueryFeaturePropertiesWidgetPopulator:
-			public GPlatesModel::ConstFeatureVisitor
+			private GPlatesModel::FeatureVisitor
 	{
 	public:
-
 		explicit
 		QueryFeaturePropertiesWidgetPopulator(
 				QTreeWidget &tree_widget):
-			d_tree_widget_ptr(&tree_widget) {  }
+			d_tree_widget_ptr(&tree_widget),
+			d_tree_widget_builder(&tree_widget)
+		{  }
 
-		virtual
-		~QueryFeaturePropertiesWidgetPopulator() {  }
+		/**
+		 * Populates the tree widget passed into constructor with the properties of
+		 * @a feature_handle.
+		 * @a focused_rfg is the clicked geometry, if any, and is the only geometry
+		 * property that is expanded in the widget.
+		 */
+		void
+		populate(
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
 
+	private:
 		virtual
 		void
 		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
+				GPlatesModel::FeatureHandle &feature_handle);
+
+		virtual
+		void
+		visit_feature_properties(
+				GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
 		visit_inline_property_container(
-				const GPlatesModel::InlinePropertyContainer &inline_property_container);
+				GPlatesModel::InlinePropertyContainer &inline_property_container);
 
 		virtual
 		void
 		visit_enumeration(
-				const GPlatesPropertyValues::Enumeration &enumeration);
+				GPlatesPropertyValues::Enumeration &enumeration);
 
 		virtual
 		void
 		visit_gml_line_string(
-				const GPlatesPropertyValues::GmlLineString &gml_line_string);
+				GPlatesPropertyValues::GmlLineString &gml_line_string);
 
 		virtual
 		void
 		visit_gml_multi_point(
-				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
 
 		virtual
 		void
 		visit_gml_orientable_curve(
-				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
+				GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
 
 		virtual
 		void
 		visit_gml_point(
-				const GPlatesPropertyValues::GmlPoint &gml_point);
+				GPlatesPropertyValues::GmlPoint &gml_point);
 
 		virtual
 		void
 		visit_gml_polygon(
-				const GPlatesPropertyValues::GmlPolygon	&gml_polygon);
+				GPlatesPropertyValues::GmlPolygon	&gml_polygon);
 
 		virtual
 		void
 		visit_gml_time_instant(
-				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
+				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
 
 		virtual
 		void
 		visit_gml_time_period(
-				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
+				GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
 		virtual
 		void
 		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 		virtual
 		void
 		visit_gpml_finite_rotation(
-				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
 
 		virtual
 		void
 		visit_gpml_finite_rotation_slerp(
-				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
+				GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
 
 		virtual
 		void
 		visit_gpml_irregular_sampling(
-				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
 		virtual
 		void
 		visit_gpml_key_value_dictionary(
-				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
+				GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 
 		virtual
 		void
 		visit_gpml_plate_id(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 
 
 		virtual
 		void
 		visit_gpml_old_plates_header(
-				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
+				GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
 
 		virtual
 		void
 		visit_xs_boolean(
-				const GPlatesPropertyValues::XsBoolean &xs_boolean);
+				GPlatesPropertyValues::XsBoolean &xs_boolean);
 
 		virtual
 		void
 		visit_xs_double(
-				const GPlatesPropertyValues::XsDouble &xs_double);
+				GPlatesPropertyValues::XsDouble &xs_double);
 
 		virtual
 		void
 		visit_xs_integer(
-				const GPlatesPropertyValues::XsInteger& xs_integer);
+				GPlatesPropertyValues::XsInteger& xs_integer);
 
 		virtual
 		void
 		visit_xs_string(
-				const GPlatesPropertyValues::XsString &xs_string);
+				GPlatesPropertyValues::XsString &xs_string);
 
 
 
 	private:
-
 		QTreeWidget *d_tree_widget_ptr;
-		std::vector<QTreeWidgetItem *> d_tree_widget_item_stack;
 
+		//! Used to build the QTreeWidget from QTreeWidgetItems.
+		GPlatesGui::TreeWidgetBuilder d_tree_widget_builder;
 
-		QTreeWidgetItem *
-		add_child(
-				const QString &name,
-				const QString &value);
+		//! The focused geometry if any.
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_focused_geometry;
 
+		//! The last property visited when iterating through the property values.
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_last_property_visited;
 
-		QTreeWidgetItem *
+		void
 		add_child_then_visit_value(
 				const QString &name,
 				const QString &value,
-				const GPlatesModel::PropertyValue &property_value_to_visit);
+				GPlatesModel::PropertyValue &property_value_to_visit);
 
 		void
 		add_gpml_key_value_dictionary_element(
-				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
 
 
 		void

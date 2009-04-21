@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -53,10 +53,10 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesViewOperations
 {
-	class GeometryBuilderToolTarget;
+	class ActiveGeometryOperation;
+	class GeometryOperationTarget;
 	class QueryProximityThreshold;
 	class RenderedGeometryCollection;
-	class RenderedGeometryFactory;
 }
 
 namespace GPlatesGui
@@ -85,8 +85,8 @@ namespace GPlatesGui
 		 */
 		CanvasToolChoice(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
-				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				Globe &globe,
@@ -100,6 +100,8 @@ namespace GPlatesGui
 				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
 				GPlatesQtWidgets::BuildTopologyWidget &build_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
+				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		~CanvasToolChoice()
@@ -167,6 +169,18 @@ namespace GPlatesGui
 		}
 
 		void
+		choose_delete_vertex_tool()
+		{
+			change_tool_if_necessary(d_delete_vertex_tool_ptr);
+		}
+
+		void
+		choose_insert_vertex_tool()
+		{
+			change_tool_if_necessary(d_insert_vertex_tool_ptr);
+		}
+
+		void
 		choose_manipulate_pole_tool()
 		{
 			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
@@ -224,6 +238,16 @@ namespace GPlatesGui
 		 * This is the MoveVertex tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_move_vertex_tool_ptr;
+
+		/**
+		 * This is the DeleteVertex tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_delete_vertex_tool_ptr;
+
+		/**
+		 * This is the InsertVertex tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_insert_vertex_tool_ptr;
 
 		/**
 		 * This is the ManipulatePole tool which the user may choose.

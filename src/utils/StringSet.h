@@ -33,7 +33,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include <unicode/unistr.h>
 
-#include "UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesUtils {
@@ -177,11 +177,10 @@ namespace GPlatesUtils {
 		 *
 		 * See the class comment for StringSet for more information.
 		 */
-		class StringSetImpl
+		class StringSetImpl :
+				public GPlatesUtils::ReferenceCount<StringSetImpl>
 		{
 		public:
-			typedef long ref_count_type;
-
 			static
 			const boost::intrusive_ptr<StringSetImpl>
 			create()
@@ -193,18 +192,6 @@ namespace GPlatesUtils {
 			~StringSetImpl()
 			{  }
 
-			void
-			increment_ref_count()
-			{
-				++d_ref_count;
-			}
-
-			ref_count_type
-			decrement_ref_count()
-			{
-				return --d_ref_count;
-			}
-
 			StringSet::collection_type &
 			collection()
 			{
@@ -212,13 +199,11 @@ namespace GPlatesUtils {
 			}
 
 		private:
-			ref_count_type d_ref_count;
 			StringSet::collection_type d_collection;
 
 			// This constructor should not be public, because we don't want to allow
 			// instantiation of this type on the stack.
-			StringSetImpl() :
-				d_ref_count(0)
+			StringSetImpl()
 			{  }
 
 			// This constructor should never be defined, because we don't want/need to
@@ -635,27 +620,6 @@ namespace GPlatesUtils {
 		operator=(
 				const StringSet &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			StringSet::StringSetImpl *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			StringSet::StringSetImpl *p)
-	{
-		if (p->decrement_ref_count() == 0)
-		{
-			delete p;
-		}
-	}
 }
 
 

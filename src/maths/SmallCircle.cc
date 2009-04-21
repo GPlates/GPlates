@@ -87,6 +87,7 @@ GPlatesMaths::SmallCircle::AssertInvariantHolds () const
 		std::ostringstream oss;
 		oss << "Small circle has invalid cos(colatitude) of "
 		 << _cos_colat << ".";
-		throw ViolatedClassInvariantException(oss.str().c_str());
+		throw ViolatedClassInvariantException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 }

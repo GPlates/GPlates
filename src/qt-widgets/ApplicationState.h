@@ -43,6 +43,7 @@ namespace GPlatesAppState {
 	{
 	public:
 		typedef std::list<GPlatesFileIO::FileInfo>::iterator file_info_iterator;
+		typedef std::list<GPlatesFileIO::FileInfo>::const_iterator file_info_const_iterator;
 
 		file_info_iterator
 		files_begin() 

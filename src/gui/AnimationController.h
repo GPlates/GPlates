@@ -64,7 +64,7 @@ namespace GPlatesGui
 		 * accessing it from here may be more convenient - and also reduces
 		 * dependencies on ViewState, which is A Good Thing.
 		 */
-		const double
+		const double &
 		view_time() const;
 
 		/**
@@ -72,7 +72,7 @@ namespace GPlatesGui
 		 * or after the @a end_time() - the increment will be adjusted
 		 * automatically.
 		 */
-		const double
+		const double &
 		start_time() const;
 
 		/**
@@ -80,20 +80,20 @@ namespace GPlatesGui
 		 * or after the @a end_time() - the increment will be adjusted
 		 * automatically.
 		 */
-		const double
+		const double &
 		end_time() const;
 
 		/**
 		 * Returns the user-friendly 'increment' value,
 		 * which will always be a positive number.
 		 */
-		const double
+		double
 		time_increment() const;
 		
 		bool
 		is_playing() const;
 
-		const double
+		const double &
 		frames_per_second() const;
 		
 		bool
@@ -149,7 +149,15 @@ namespace GPlatesGui
 		 */
 		void
 		pause();
-		
+
+		/**
+		 * Convenience function to call play() or pause() depending on bool.
+		 * Useful if you need to connect to a signal that offers the same.
+		 */
+		void
+		set_play_or_pause(
+				bool lets_play);
+
 		/**
 		 * Increments or decrements the view time so as to progress
 		 * forwards through the animation by one @a time_increment().
@@ -278,6 +286,16 @@ namespace GPlatesGui
 
 		void
 		animation_paused();
+
+		/**
+		 * Convenience signal which is emitted at the same time that
+		 * @a animation_started() and @a animation_paused() are,
+		 * to aid signal/slot connections that would ideally like
+		 * a bool.
+		 */
+		void
+		animation_state_changed(
+				bool is_playing);
 
 	private slots:
 

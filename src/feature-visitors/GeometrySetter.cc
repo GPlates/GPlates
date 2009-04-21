@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -43,15 +43,19 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
-
 void
-GPlatesFeatureVisitors::GeometrySetter::visit_feature_handle(
-		GPlatesModel::FeatureHandle &feature_handle)
+GPlatesFeatureVisitors::GeometrySetter::set_geometry(
+		GPlatesModel::PropertyValue *geometry_property)
 {
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
+	geometry_property->accept_visitor(*this);
 }
 
+void
+GPlatesFeatureVisitors::GeometrySetter::set_geometry(
+		GPlatesModel::PropertyContainer *geometry_property_container)
+{
+	geometry_property_container->accept_visitor(*this);
+}
 
 void
 GPlatesFeatureVisitors::GeometrySetter::visit_gml_line_string(

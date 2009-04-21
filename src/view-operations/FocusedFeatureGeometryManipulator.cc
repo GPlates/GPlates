@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,6 @@
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "model/ReconstructionTree.h"
 #include "feature-visitors/GeometrySetter.h"
-#include "feature-visitors/PlateIdFinder.h"
 #include "qt-widgets/ViewportWindow.h"
 
 
@@ -393,9 +392,13 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 		// Reconstruct back to present day.
 		geometry_on_sphere = reconstruct(geometry_on_sphere, true/*reverse_reconstruct*/);
 
-		// Set the actual geometry in the geometry property of the focused feature.
+		// Set the actual geometry in the geometry property of the focused geometry.
 		GPlatesFeatureVisitors::GeometrySetter geometry_setter(geometry_on_sphere);
-		d_feature->accept_visitor(geometry_setter);
+
+		// Since we can have multiple geometry properties per feature we make sure we
+		// set the geometry that the user actually clicked on.
+		GPlatesModel::PropertyContainer &geom_prop_container = **d_focused_geometry->property();
+		geometry_setter.set_geometry(&geom_prop_container);
 
 		// Announce that we've modified the focused feature.
 		d_feature_focus->announce_modification_of_focused_feature();

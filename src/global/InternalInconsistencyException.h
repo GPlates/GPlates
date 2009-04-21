@@ -55,37 +55,35 @@ namespace GPlatesGlobal {
 	 public:
 
 		/**
-		 * @param file is the filename as provided by __FILE__.
-		 * @param line is the line number as provided by __LINE__.
+		 * @param exception_source should be supplied using the @c GPLATES_EXCEPTION_SOURCE macro,
 		 * @param msg is a message describing the situation.
 		 */
 		InternalInconsistencyException(
-		 const std::string &file,
-		 int line,
-		 const std::string &msg) :
-		 m_file(file),
-		 m_line(line),
-		 m_msg(msg) {  }
-
-		virtual
-		~InternalInconsistencyException() {  }
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				const std::string &msg) :
+			Exception(exception_source),
+			m_file(exception_source.get_filename()),
+			m_line(exception_source.get_line_num()),
+			m_msg(msg)
+		{  }
 
 	 protected:
 
 		virtual
 		const char *
-		ExceptionName() const {
+		exception_name() const {
 
 			return "InternalInconsistencyException";
 		}
 
 		virtual
-		std::string
-		Message() const;
+		void
+		write_message(
+				std::ostream &os) const;
 
 	 private:
 
-		std::string m_file;
+		const char *m_file;
 		int m_line;
 		std::string m_msg;
 

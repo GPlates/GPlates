@@ -31,9 +31,9 @@
 #include <map>  // std::multimap
 
 #include "ReconstructionGraph.h"
-#include "maths/GeometryForwardDeclarations.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
@@ -44,7 +44,8 @@ namespace GPlatesModel
 	 *
 	 * A reconstruction tree is created from a ReconstructionGraph.
 	 */
-	class ReconstructionTree
+	class ReconstructionTree :
+			public GPlatesUtils::ReferenceCount<ReconstructionTree>
 	{
 	public:
 		/**
@@ -54,11 +55,6 @@ namespace GPlatesModel
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * This type is used to reference an edge in this graph.
@@ -206,40 +202,7 @@ namespace GPlatesModel
 		get_composed_absolute_rotation(
 				integer_plate_id_type moving_plate_id) const;
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
 	private:
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		ReconstructionGraph d_graph;
 
@@ -266,7 +229,6 @@ namespace GPlatesModel
 		ReconstructionTree(
 				integer_plate_id_type root_plate_id_,
 				const double &reconstruction_time_):
-			d_ref_count(0),
 			d_graph(reconstruction_time_),
 			d_root_plate_id(root_plate_id_)
 		{  }
@@ -286,7 +248,7 @@ namespace GPlatesModel
 		 */
 		ReconstructionTree(
 				const ReconstructionTree &other):
-			d_ref_count(0),
+			GPlatesUtils::ReferenceCount<ReconstructionTree>(),
 			d_graph(other.d_graph),
 			d_edges_by_moving_plate_id(other.d_edges_by_moving_plate_id),
 			d_rootmost_edges(other.d_rootmost_edges),
@@ -299,27 +261,6 @@ namespace GPlatesModel
 		operator=(
 				const ReconstructionTree &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const ReconstructionTree *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const ReconstructionTree *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_RECONSTRUCTIONTREE_H

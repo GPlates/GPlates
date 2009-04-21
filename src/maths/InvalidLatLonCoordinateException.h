@@ -28,8 +28,6 @@
 #ifndef GPLATES_MATHS_INVALIDLATLONCOORDINATEEXCEPTION_H
 #define GPLATES_MATHS_INVALIDLATLONCOORDINATEEXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
 #include "global/ExternalResourceFailureException.h"
 
 
@@ -59,9 +57,11 @@ namespace GPlatesMaths
 		 * @param coord_index_ is the length of the sequence in question.
 		 */
 		InvalidLatLonCoordinateException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
 				const double &invalid_coord_,
 				CoordinateType coordinate_type_,
 				size_type coord_index_):
+			ExternalResourceFailureException(exception_source),
 			d_invalid_coord(invalid_coord_),
 			d_coordinate_type(coordinate_type_),
 			d_coord_index(coord_index_)
@@ -91,7 +91,7 @@ namespace GPlatesMaths
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "InvalidLatLonCoordinateException";
@@ -100,14 +100,8 @@ namespace GPlatesMaths
 		virtual
 		void
 		write_message(
-				std::ostream &os) const
-		{
-			// FIXME:  This function should really be defined in a .cc file.
-			os << "invalid "
-					<< ((coordinate_type() == LatitudeCoord) ? "latitude" : "longitude")
-					<< " coordinate " << d_invalid_coord
-					<< " at index " << d_coord_index << " in sequence";
-		}
+				std::ostream &os) const;
+
 	private:
 		const double d_invalid_coord;
 		CoordinateType d_coordinate_type;

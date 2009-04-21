@@ -31,6 +31,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesMaths
@@ -43,7 +44,8 @@ namespace GPlatesMaths
 	 * hit -- for example, the specific vertex (point) or segment (GCA) of a polyline which was
 	 * hit.
 	 */
-	class ProximityHitDetail
+	class ProximityHitDetail :
+			public GPlatesUtils::ReferenceCount<ProximityHitDetail>
 	{
 	public:
 		/**
@@ -60,11 +62,6 @@ namespace GPlatesMaths
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
-
-		/**
 		 * This is used when there was no proximity hit, and thus no detail.
 		 */
 		static const maybe_null_ptr_type null;
@@ -79,7 +76,6 @@ namespace GPlatesMaths
 		 */
 		ProximityHitDetail(
 				const double &closeness_):
-			d_ref_count(0),
 			d_closeness(closeness_)
 		{  }
 
@@ -98,41 +94,7 @@ namespace GPlatesMaths
 		accept_visitor(
 				ProximityHitDetailVisitor &) = 0;
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
 	private:
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
-
 		/**
 		 * The "closeness" of the hit.
 		 */
@@ -150,26 +112,6 @@ namespace GPlatesMaths
 		operator=(
 				const ProximityHitDetail &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const ProximityHitDetail *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const ProximityHitDetail *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
 
 
 	inline

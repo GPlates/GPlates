@@ -85,7 +85,7 @@ namespace GPlatesQtWidgets
 	
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			return "DigitisationUndoParadoxException";
 		}

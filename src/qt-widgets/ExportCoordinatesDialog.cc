@@ -268,7 +268,7 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry(
 
 	// Make sure we created a geometry exporter.
 	GPlatesGlobal::Assert(geometry_exporter.get() != NULL,
-		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Export the geometry.
 	geometry_exporter->export_geometry(*d_geometry_opt_ptr);

@@ -35,6 +35,7 @@
 #include <boost/shared_ptr.hpp>
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 #include "utils/StringSet.h"
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
@@ -49,14 +50,10 @@ namespace GPlatesModel {
 	 * XmlNode is the base class for a hierarchy used to store an uninterpreted
 	 * XML tree in memory.
 	 */
-	class XmlNode
+	class XmlNode :
+			public GPlatesUtils::ReferenceCount<XmlNode>
 	{
 	public:
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
-
 		typedef GPlatesUtils::non_null_intrusive_ptr<XmlNode,
 				GPlatesUtils::NullIntrusivePointerHandler>
 						non_null_ptr_type;
@@ -104,47 +101,15 @@ namespace GPlatesModel {
 			return d_col_num;
 		}
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
 
 	protected:
 		XmlNode(
 				const qint64 &line_num,
 				const qint64 &col_num) :
-			d_ref_count(0), d_line_num(line_num), d_col_num(col_num)
+			d_line_num(line_num), d_col_num(col_num)
 		{ }
 
 	private:
-		mutable ref_count_type d_ref_count;
-
 		qint64 d_line_num;
 		qint64 d_col_num;
 
@@ -390,28 +355,6 @@ namespace GPlatesModel {
 				const XmlElementNode::non_null_ptr_type &elem)
 		{ }
 	};
-
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const XmlNode *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const XmlNode *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif // GPLATES_MODEL_XMLNODE_H

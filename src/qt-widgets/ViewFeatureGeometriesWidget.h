@@ -31,6 +31,7 @@
 
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
 
 
 namespace GPlatesQtWidgets
@@ -72,14 +73,15 @@ namespace GPlatesQtWidgets
 		refresh_display();
 
 		/**
-		 * Updates the dialog to display and edit the geometry of a new Feature.
+		 * Updates the dialog to display the geometry of a new Feature.
 		 * Any changes that might be uncommited from the previous Feature will be discarded.
 		 *
 		 * Called by FeaturePropertiesDialog after the weak_ref is checked for validity.
 		 */
 		void
 		edit_feature(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
 
 	private slots:
 		
@@ -99,6 +101,11 @@ namespace GPlatesQtWidgets
 		 * This is the feature we are displaying. Make sure to check this ref is_valid()!
 		 */
 		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
+
+		/**
+		 * The @a ReconstructedFeatureGeometry associated with the feature that is in focus.
+		 */
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_focused_rfg;
 	};
 }
 

@@ -27,6 +27,7 @@
 
 #include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 #include "utils/UnicodeStringUtils.h"
+//#include "utils/Profile.h"
 #include "qt-widgets/ViewportWindow.h"
 
 
@@ -64,14 +65,20 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 		// time changes.
 		return;
 	}
-	
+
+	//PROFILE_BEGIN(populate, "ViewFeatureGeometriesWidgetPopulator");
+
 	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
 			d_view_state_ptr->reconstruction(), *tree_geometry);
-	populator.visit_feature_handle(*d_feature_ref);
+	populator.populate(*d_feature_ref, d_focused_rfg);
 	
 	double time = d_view_state_ptr->reconstruction_time();
 	unsigned long root = d_view_state_ptr->reconstruction_root();
+
+	//PROFILE_END(populate);
 	
+	//PROFILE_BLOCK("resize columns for ViewFeatureGeometriesWidget");
+
 	lineedit_root_plateid->setText(tr("%1").arg(root));
 	lineedit_reconstruction_time->setText(tr("%L1").arg(time));
 	tree_geometry->resizeColumnToContents(0);
@@ -82,9 +89,12 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 
 void
 GPlatesQtWidgets::ViewFeatureGeometriesWidget::edit_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
 {
 	d_feature_ref = feature_ref;
+	d_focused_rfg = focused_rfg;
+
 	refresh_display();
 }
 

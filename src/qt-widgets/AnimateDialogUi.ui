@@ -313,10 +313,10 @@
            <bool>true</bool>
           </property>
           <property name="text" >
-           <string>&amp;Rewind</string>
+           <string>&amp;Reset</string>
           </property>
           <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_media_skip_backward_22.png</iconset>
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/seek_beginning_22.png</iconset>
           </property>
           <property name="iconSize" >
            <size>
@@ -332,7 +332,7 @@
         <item>
          <widget class="QPushButton" name="button_Start" >
           <property name="text" >
-           <string>&amp;Start</string>
+           <string>&amp;Play</string>
           </property>
           <property name="icon" >
            <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_media_playback_start_22.png</iconset>
@@ -389,7 +389,7 @@
         <item>
          <widget class="QLabel" name="label_Frames_per_second" >
           <property name="text" >
-           <string>Frames &amp;per second:</string>
+           <string>Frames per &amp;second:</string>
           </property>
           <property name="buddy" >
            <cstring>widget_Frames_per_second</cstring>

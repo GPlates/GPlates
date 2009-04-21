@@ -30,7 +30,7 @@
 
 #include <utility>  /* std::pair */
 #include "model/PropertyValue.h"
-#include "maths/GeometryForwardDeclarations.h"
+#include "maths/PointOnSphere.h"
 
 
 namespace GPlatesPropertyValues

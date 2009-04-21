@@ -103,44 +103,6 @@ namespace GPlatesQtWidgets
 		activate_time_spinbox();
 
 		void
-#if 0
-<<<<<<< .working
-		set_reconstruction_time(
-				double new_recon_time);
-
-		void
-		set_reconstruction_time_int(
-				int new_recon_time)
-		{
-			double d = static_cast<double>(new_recon_time);
-			set_reconstruction_time(d);
-		}
-
-		void
-		increment_reconstruction_time()
-		{
-			set_reconstruction_time(reconstruction_time() + 1.0);
-		}
-
-		void
-		decrement_reconstruction_time()
-		{
-			set_reconstruction_time(reconstruction_time() - 1.0);
-		}
-
-		void
-		propagate_reconstruction_time()
-		{
-			emit reconstruction_time_changed(reconstruction_time());
-			// synchronize with reconstruction_time_slider
-			int i = static_cast<int>( reconstruction_time() );
-			slider_reconstruction_time->setValue(i);
-		}
-
-		void
-=======
->>>>>>> .merge-right.r4916
-#endif
 		recalc_camera_position();
 
 		void

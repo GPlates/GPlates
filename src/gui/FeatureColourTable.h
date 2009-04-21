@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,16 +30,13 @@
 
 #include <map>
 
-#include "Colour.h"
 #include "ColourTable.h"
+#include "model/FeatureType.h"
 
-#include "model/types.h"
-#include "model/Model.h"
-#include "model/FeatureHandle.h"
 
 namespace GPlatesGui 
 {
-	class FeatureColourTable :
+	class FeatureColourTable:
 			public ColourTable
 	{
 	public:

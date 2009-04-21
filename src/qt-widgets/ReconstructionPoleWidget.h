@@ -62,7 +62,6 @@ namespace GPlatesQtWidgets
 
 		ReconstructionPoleWidget(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 				ViewportWindow &view_state,
 				QWidget *parent_ = NULL);
 
@@ -172,11 +171,6 @@ namespace GPlatesQtWidgets
 		 * Used to draw rendered geometries.
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
-
-		/**
-		 * Used to create @a RenderedGeometry objects.
-		 */
-		GPlatesViewOperations::RenderedGeometryFactory *d_rendered_geom_factory;
 
 		/**
 		 * Rendered geometry layer to render initial geometries.

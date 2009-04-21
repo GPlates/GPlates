@@ -63,13 +63,9 @@ namespace GPlatesViewOperations
 		enum MainLayerType
 		{
 			RECONSTRUCTION_LAYER,
-			COMPUTATIONAL_MESH_LAYER,
 			DIGITISATION_LAYER,
 			GEOMETRY_FOCUS_HIGHLIGHT_LAYER,
-			GEOMETRY_FOCUS_MANIPULATION_LAYER,
 			POLE_MANIPULATION_LAYER,
-			CREATE_TOPOLOGY_LAYER,
-			TOPOLOGY_TOOL_LAYER,
 			MOUSE_MOVEMENT_LAYER,
 
 			NUM_LAYERS // Must be the last enum.
@@ -499,22 +495,32 @@ namespace GPlatesViewOperations
 		signal_update(
 				main_layers_update_type main_layers_updated);
 
-		template <class RenderedGeometryCollectionVisitorType>
+		template <class RenderedGeometryLayerType,
+				class RenderedGeometryCollectionType,
+				class RenderedGeometryCollectionVisitorType>
+		static
 		void
 		accept_visitor_internal(
-				RenderedGeometryCollectionVisitorType &visitor);
+				RenderedGeometryCollectionVisitorType &visitor,
+				RenderedGeometryCollectionType &rendered_geom_collection);
 
-		template <class RenderedGeometryCollectionVisitorType>
+		template <class RenderedGeometryLayerType,
+				class RenderedGeometryCollectionType,
+				class RenderedGeometryCollectionVisitorType>
+		static
 		void
 		visit_main_rendered_layer(
 				RenderedGeometryCollectionVisitorType &visitor,
-				MainLayerType main_layer_type);
+				MainLayerType main_layer_type,
+				RenderedGeometryCollectionType &rendered_geom_collection);
 
-		template <class RenderedGeometryCollectionVisitorType>
+		template <class RenderedGeometryLayerType,
+				class RenderedGeometryCollectionVisitorType>
+		static
 		void
 		visit_rendered_geometry_layer(
 				RenderedGeometryCollectionVisitorType &visitor,
-				RenderedGeometryLayer &rendered_geom_layer);
+				RenderedGeometryLayerType &rendered_geom_layer);
 
 		/**
 		 * Observe specified @a RenderedGeometryLayer for updates.

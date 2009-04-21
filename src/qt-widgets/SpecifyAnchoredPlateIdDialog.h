@@ -23,29 +23,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_SPECIFYFIXEDPLATEDIALOG_H
-#define GPLATES_QTWIDGETS_SPECIFYFIXEDPLATEDIALOG_H
+#ifndef GPLATES_QTWIDGETS_SPECIFYANCHOREDPLATEIDDIALOG_H
+#define GPLATES_QTWIDGETS_SPECIFYANCHOREDPLATEIDDIALOG_H
 
 #include <QDialog>
-#include "SpecifyFixedPlateDialogUi.h"
+#include "SpecifyAnchoredPlateIdDialogUi.h"
 
 
 namespace GPlatesQtWidgets
 {
-	class SpecifyFixedPlateDialog: 
+	class SpecifyAnchoredPlateIdDialog: 
 			public QDialog,
-			protected Ui_SpecifyFixedPlateDialog 
+			protected Ui_SpecifyAnchoredPlateIdDialog 
 	{
 		Q_OBJECT
 		
 	public:
 		explicit
-		SpecifyFixedPlateDialog(
+		SpecifyAnchoredPlateIdDialog(
 				unsigned long init_value,
 				QWidget *parent_ = NULL);
 
 		virtual
-		~SpecifyFixedPlateDialog()
+		~SpecifyAnchoredPlateIdDialog()
 		{  }
 
 	public slots:
@@ -73,4 +73,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_SPECIFYFIXEDPLATEDIALOG_H
+#endif  // GPLATES_QTWIDGETS_SPECIFYANCHOREDPLATEIDDIALOG_H

@@ -84,7 +84,7 @@
 #include "file-io/ShapeFileReader.h"
 #include "file-io/GpmlOnePointSixReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
-#include "utils/UnicodeStringUtils.h"
+#include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
@@ -133,12 +133,12 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
 {
 	if ( ! GPlatesFileIO::is_writable(file_info)) {
-		throw GPlatesFileIO::ErrorOpeningFileForWritingException(
+		throw GPlatesFileIO::ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
 				file_info.get_qfileinfo().filePath());
 	}
 
 	if ( ! file_info.get_feature_collection()) {
-		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(
+		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
 				"Attempted to write an empty feature collection.");
 	}
 
@@ -161,6 +161,7 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 			const GPlatesModel::FeatureHandle& feature_handle = **iter;
 			writer->write_feature(feature_handle);
 		}
+		feature_collection->set_contains_unsaved_changes(false);
 	}
 }
 
@@ -189,7 +190,7 @@ GPlatesQtWidgets::ViewportWindow::save_file_copy(
 {
 	GPlatesFileIO::FileInfo file_copy(file_info.get_qfileinfo().filePath());
 	if ( ! features_to_save->get_feature_collection()) {
-		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(
+		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
 				"Attempted to write an empty feature collection.");
 	}
 	file_copy.set_feature_collection(*(features_to_save->get_feature_collection()));
@@ -217,7 +218,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 		try
 		{
 			// Read the feature collection from file.
-			GPlatesFileIO::read_feature_collection_file(file, *d_model_ptr, read_errors);
+			GPlatesFileIO::read_feature_collection_file(file, d_model, read_errors);
 
 			switch ( GPlatesFileIO::get_feature_collection_file_format(file) )
 			{
@@ -286,7 +287,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 			case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 				GPlatesFileIO::ShapeFileReader::set_property_mapper(
 					boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
-				GPlatesFileIO::ShapeFileReader::read_file(file,*d_model_ptr,read_errors);
+				GPlatesFileIO::ShapeFileReader::read_file(file, d_model, read_errors);
 
 				if (file.get_feature_collection())
 				{
@@ -384,7 +385,7 @@ GPlatesQtWidgets::ViewportWindow::reload_file(
 		}
 
 		// Read the feature collection from file.
-		GPlatesFileIO::read_feature_collection_file(*file_it, *d_model_ptr, read_errors);
+		GPlatesFileIO::read_feature_collection_file(*file_it, d_model, read_errors);
 
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
@@ -441,7 +442,7 @@ GPlatesQtWidgets::ViewportWindow::create_empty_reconstructable_file()
 {
 	// Create an empty "file" - does not correspond to anything on disk yet.
 	GPlatesFileIO::FileInfo file;
-	file.set_feature_collection(d_model_ptr->create_feature_collection());
+	file.set_feature_collection(d_model->create_feature_collection());
 
 	GPlatesAppState::ApplicationState::file_info_iterator new_file =
 	GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
@@ -480,7 +481,7 @@ namespace
 	create_reconstruction(
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
-			GPlatesModel::ModelInterface *model_ptr,
+			GPlatesModel::ModelInterface &model,
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root) {
 
@@ -496,22 +497,20 @@ namespace
 				active_reconstruction_files,
 				reconstruction_features_collection);
 
-		return model_ptr->create_reconstruction(reconstructable_features_collection,
+		return model->create_reconstruction(reconstructable_features_collection,
 				reconstruction_features_collection, recon_time, recon_root);
 	}
 
 
 	void
 	render_model(
-			GPlatesModel::ModelInterface *model_ptr, 
+			GPlatesModel::ModelInterface &model, 
 			GPlatesModel::Reconstruction::non_null_ptr_type &reconstruction,
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root,
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer,
-			GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 			GPlatesGui::ColourTable &colour_table)
 	{
 		// Delay any notification of changes to the rendered geometry collection
@@ -535,7 +534,7 @@ namespace
 
 		try {
 			reconstruction = create_reconstruction(active_reconstructable_files, 
-					active_reconstruction_files, model_ptr, recon_time, recon_root);
+					active_reconstruction_files, model, recon_time, recon_root);
 
 //
 // FIXME: test of new location for TopologyResolver
@@ -589,22 +588,28 @@ namespace
 
 				if (colour == colour_table.end()) {
 					// Anything not in the table uses the 'Olive' colour.
-					colour = &GPlatesGui::Colour::OLIVE;
+					colour = &GPlatesGui::Colour::get_olive();
 				}
 
-				// Create a RenderedGeometry using the reconstructed geometry.
+				// Create a RenderedGeometry for drawing the reconstructed geometry.
 				GPlatesViewOperations::RenderedGeometry rendered_geom =
-					rendered_geom_factory.create_rendered_geometry_on_sphere(
+					GPlatesViewOperations::create_rendered_geometry_on_sphere(
 							(*iter)->geometry(),
 							*colour,
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
 
+				// Create a RenderedGeometry for storing the reconstructed geometry
+				// and the RenderedGeometry used for drawing it.
+				GPlatesViewOperations::RenderedGeometry rendered_reconstruction_geom =
+					GPlatesViewOperations::create_rendered_reconstruction_geometry(
+							*iter, rendered_geom);
+
 				// Add to the reconstruction rendered layer.
 				// Updates to the canvas will be taken care of since canvas listens
 				// to the update signal of RenderedGeometryCollection which in turn
 				// listens to its rendered layers.
-				reconstruction_layer->add_rendered_geometry(rendered_geom);
+				reconstruction_layer->add_rendered_geometry(rendered_reconstruction_geom);
 			}
 
 			// FIXME: TEST of new location for ComputationalMeshSolver 
@@ -684,8 +689,8 @@ GPlatesQtWidgets::ViewportWindow::get_colour_table()
 }
 
 GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
-	d_model_ptr(new GPlatesModel::Model()),
-	d_reconstruction_ptr(d_model_ptr->create_empty_reconstruction(0.0, 0)),
+	d_model(),
+	d_reconstruction_ptr(d_model->create_empty_reconstruction(0.0, 0)),
 	d_recon_time(0.0),
 	d_recon_root(0),
 	d_feature_focus(),
@@ -700,13 +705,16 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_read_errors_dialog(this),
 	d_set_camera_viewpoint_dialog(*this, this),
 	d_set_raster_surface_extent_dialog(*this, this),
-	d_specify_fixed_plate_dialog(d_recon_root, this),
+	d_specify_anchored_plate_id_dialog(d_recon_root, this),
+	d_export_rfg_dialog(this),
 	d_specify_time_increment_dialog(d_animation_controller, this),
-	d_geom_builder_tool_target(
+	d_choose_canvas_tool(*this),
+	d_geometry_operation_target(
 			d_digitise_geometry_builder,
 			d_focused_feature_geometry_builder,
-			d_rendered_geom_collection,
-			d_feature_focus),
+			d_feature_focus,
+			d_choose_canvas_tool),
+	d_enable_canvas_tool(*this, d_feature_focus, d_geometry_operation_target),
 	d_focused_feature_geom_manipulator(
 			d_focused_feature_geometry_builder,
 			d_feature_focus,
@@ -726,13 +734,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	std::auto_ptr<TaskPanel> task_panel_auto_ptr(new TaskPanel(
 			d_feature_focus,
-			*d_model_ptr,
+			d_model,
 			d_rendered_geom_collection,
-			d_canvas_ptr->get_rendered_geometry_factory(),
 			d_digitise_geometry_builder,
-			d_geom_builder_tool_target,
+			d_geometry_operation_target,
+			d_active_geometry_operation,
 			*this,
-			*d_choose_canvas_tool,
+			d_choose_canvas_tool,
 			this));
 	d_task_panel_ptr = task_panel_auto_ptr.get();
 
@@ -757,7 +765,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	task_panel_dock->setFloating(true);
 #endif
 	set_up_task_panel_actions();
-	
+
+	// Enable/disable canvas tools according to the current state.
+	d_enable_canvas_tool.initialise();
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
 	enable_or_disable_feature_actions(d_feature_focus.focused_feature());
 	QObject::connect(
@@ -768,8 +778,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 		this, 
 		SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
 
-	// Set up the Specify Fixed Plate dialog.
-	QObject::connect(&d_specify_fixed_plate_dialog, SIGNAL(value_changed(unsigned long)),
+	// Set up the Specify Anchored Plate ID dialog.
+	QObject::connect(&d_specify_anchored_plate_id_dialog, SIGNAL(value_changed(unsigned long)),
 			this, SLOT(reconstruct_with_root(unsigned long)));
 
 	// Set up the Reconstruction View widget.
@@ -811,72 +821,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 		&(d_task_panel_ptr->reconstruction_pole_widget()), 
 		SLOT(handle_reconstruction_time_change(double)) );
 
-
-	// Connect the topology tool widget to the feature focus.
-	QObject::connect(
-		&d_feature_focus, 
-		SIGNAL( focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
-		&(d_task_panel_ptr->plate_closure_widget()), 
-		SLOT( set_focus(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
-
-	// The Topology Tool widget needs to know when the reconstruction time changes.
-	QObject::connect(
-		this, 
-		SIGNAL(reconstruction_time_changed(double)),
-		&(d_task_panel_ptr->plate_closure_widget()), 
-		SLOT(handle_reconstruction_time_change(double)) );
-
-
-	// BuildTopologyWidget is connected to the feature focus.
-	QObject::connect(
-		&d_feature_focus, 
-		SIGNAL( focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
-		&(d_task_panel_ptr->build_topology_widget()), 
-		SLOT( set_focus(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
-
-	// BuildTopologyWidget needs to know when the reconstruction time changes.
-	QObject::connect(
-		this, 
-		SIGNAL( reconstruction_time_changed(double)),
-		&(d_task_panel_ptr->build_topology_widget()), 
-		SLOT( handle_reconstruction_time_change(double)) );
-
-	// EditTopologyWidget is connected to the feature focus.
-	QObject::connect(
-		&d_feature_focus, 
-		SIGNAL( focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
-		&(d_task_panel_ptr->edit_topology_widget()), 
-		SLOT( set_focus(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
-
-	// EditTopologyWidget needs to know when the reconstruction time changes.
-	QObject::connect(
-		this, 
-		SIGNAL(reconstruction_time_changed(double)),
-		&(d_task_panel_ptr->edit_topology_widget()), 
-		SLOT(handle_reconstruction_time_change(double)) );
-
-
-
 	// Setup RenderedGeometryCollection.
 	initialise_rendered_geom_collection();
 
 	// Render everything on the screen in present-day positions.
-	render_model(d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
+	render_model(d_model, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, 0.0, d_recon_root,
-			d_rendered_geom_collection, d_comp_mesh_layer,
-			get_rendered_geometry_factory(), *get_colour_table());
+			d_rendered_geom_collection, *get_colour_table());
 
 	// Set up the Clicked table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
@@ -934,9 +885,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_canvas_tool_choice_ptr.reset(
 			new GPlatesGui::CanvasToolChoice(
 					d_rendered_geom_collection,
-					get_rendered_geometry_factory(),
-					d_geom_builder_tool_target,
-					*d_choose_canvas_tool,
+					d_geometry_operation_target,
+					d_active_geometry_operation,
+					d_choose_canvas_tool,
 					*d_canvas_ptr,
 					d_canvas_ptr->globe(),
 					*d_canvas_ptr,
@@ -946,7 +897,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
-					d_task_panel_ptr->plate_closure_widget(),
 					d_task_panel_ptr->build_topology_widget(),
 					d_task_panel_ptr->edit_topology_widget(),
 					d_canvas_ptr->geometry_focus_highlight()));
@@ -989,13 +939,21 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					const GPlatesMaths::PointOnSphere &,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
 	
+	QObject::connect(d_canvas_ptr, SIGNAL(mouse_moved_without_drag(
+					const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &)),
+			d_canvas_tool_adapter_ptr.get(), SLOT(handle_move_without_drag(
+					const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &)));
+
 	// If the user creates a new feature with the DigitisationWidget, we need to reconstruct to
 	// make sure everything is displayed properly.
-	QObject::connect(
-		&(d_task_panel_ptr->digitisation_widget().get_create_feature_dialog()),
-		SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
-		this,
-		SLOT(reconstruct()));
+	QObject::connect(&(d_task_panel_ptr->digitisation_widget().get_create_feature_dialog()),
+			SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
+			this,
+			SLOT(reconstruct()));
 
 	// If the user creates a new feature with the PlateClosureWidget, 
 	// then we need to create and append property values to it
@@ -1042,30 +1000,30 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 
 	// Main Tools:
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_drag_globe_tool()));
+			&d_choose_canvas_tool, SLOT(choose_drag_globe_tool()));
 	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_zoom_globe_tool()));
-
+			&d_choose_canvas_tool, SLOT(choose_zoom_globe_tool()));
 	QObject::connect(action_Click_Geometry, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_click_geometry_tool()));
-
+			&d_choose_canvas_tool, SLOT(choose_click_geometry_tool()));
 	QObject::connect(action_Digitise_New_Polyline, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_digitise_polyline_tool()));
+			&d_choose_canvas_tool, SLOT(choose_digitise_polyline_tool()));
 	QObject::connect(action_Digitise_New_MultiPoint, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_digitise_multipoint_tool()));
+			&d_choose_canvas_tool, SLOT(choose_digitise_multipoint_tool()));
 	QObject::connect(action_Digitise_New_Polygon, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_digitise_polygon_tool()));
-
+			&d_choose_canvas_tool, SLOT(choose_digitise_polygon_tool()));
 	QObject::connect(action_Move_Geometry, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_move_geometry_tool()));
+			&d_choose_canvas_tool, SLOT(choose_move_geometry_tool()));
 	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_move_vertex_tool()));
+			&d_choose_canvas_tool, SLOT(choose_move_vertex_tool()));
+	QObject::connect(action_Delete_Vertex, SIGNAL(triggered()),
+			&d_choose_canvas_tool, SLOT(choose_delete_vertex_tool()));
+	QObject::connect(action_Insert_Vertex, SIGNAL(triggered()),
+			&d_choose_canvas_tool, SLOT(choose_insert_vertex_tool()));
 	// FIXME: The Move Geometry tool, although it has an awesome icon,
 	// is to be disabled until it can be implemented.
 	action_Move_Geometry->setVisible(false);
-
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
-			d_choose_canvas_tool.get(), SLOT(choose_manipulate_pole_tool()));
+			&d_choose_canvas_tool, SLOT(choose_manipulate_pole_tool()));
 
 	// FIXME: remove this old code : 
 	QObject::connect(action_Plate_Closure, SIGNAL(triggered()),
@@ -1138,29 +1096,26 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			&d_animation_controller, SLOT(step_forward()));
 	QObject::connect(action_Increment_Animation_Time_Backwards, SIGNAL(triggered()),
 			&d_animation_controller, SLOT(step_back()));
-	QObject::connect(action_Specify_Time_Increment, SIGNAL(triggered()),
-			&d_specify_time_increment_dialog, SLOT(exec()));
 	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
+	QObject::connect(action_Reset_Animation, SIGNAL(triggered()),
+			&d_animation_controller, SLOT(seek_beginning()));
+	QObject::connect(action_Play, SIGNAL(triggered(bool)),
+			&d_animation_controller, SLOT(set_play_or_pause(bool)));
+	QObject::connect(&d_animation_controller, SIGNAL(animation_state_changed(bool)),
+			action_Play, SLOT(setChecked(bool)));
 	// ----
-	QObject::connect(action_Specify_Fixed_Plate, SIGNAL(triggered()),
-			this, SLOT(pop_up_specify_fixed_plate_dialog()));
+	QObject::connect(action_Specify_Anchored_Plate_ID, SIGNAL(triggered()),
+			this, SLOT(pop_up_specify_anchored_plate_id_dialog()));
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
 			this, SLOT(pop_up_total_reconstruction_poles_dialog()));
+	// ----
+	QObject::connect(action_Export_Reconstruction, SIGNAL(triggered()),
+			this, SLOT(pop_up_export_reconstruction_dialog()));
 	
 	// View Menu:
 	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
 			this, SLOT(enable_raster_display()));
-	QObject::connect(action_Show_Points, SIGNAL(triggered()),
-			this, SLOT(enable_point_display()));
-	QObject::connect(action_Show_Lines, SIGNAL(triggered()),
-			this, SLOT(enable_line_display()));
-	QObject::connect(action_Show_Polygons, SIGNAL(triggered()),
-			this, SLOT(enable_polygon_display()));
-	QObject::connect(action_Show_Topologies, SIGNAL(triggered()),
-			this, SLOT(enable_topology_display()));
-	QObject::connect(action_Show_Multipoint, SIGNAL(triggered()),
-			this, SLOT(enable_multipoint_display()));
 	QObject::connect(action_Set_Raster_Surface_Extent, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_raster_surface_extent_dialog()));
 	// ----
@@ -1202,7 +1157,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// ----
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
-
+	
 	// Help Menu:
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
@@ -1366,10 +1321,9 @@ GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
 void
 GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
-	render_model(d_model_ptr, d_reconstruction_ptr, d_active_reconstructable_files, 
+	render_model(d_model, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root,
-			d_rendered_geom_collection, d_comp_mesh_layer,
-			get_rendered_geometry_factory(), *get_colour_table());
+			d_rendered_geom_collection, *get_colour_table());
 
 	if (d_total_reconstruction_poles_dialog.isVisible()) {
 		d_total_reconstruction_poles_dialog.update();
@@ -1377,9 +1331,9 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	if (action_Show_Raster->isChecked() && ! d_time_dependent_raster_map.isEmpty()) {	
 		update_time_dependent_raster();
 	}
-	if (d_feature_focus.is_valid() && d_feature_focus.associated_rfg()) {
-		// There's a focused feature and it has an associated RFG.  We need to update the
-		// associated RFG for the new reconstruction.
+	if (d_feature_focus.is_valid()) {
+		// There's a focused feature.
+		// We need to update the associated RFG for the new reconstruction.
 		d_feature_focus.find_new_associated_rfg(*d_reconstruction_ptr);
 	}
 	d_canvas_ptr->update_canvas();
@@ -1387,9 +1341,16 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_specify_fixed_plate_dialog()
+GPlatesQtWidgets::ViewportWindow::pop_up_specify_anchored_plate_id_dialog()
 {
-	d_specify_fixed_plate_dialog.show();
+	d_specify_anchored_plate_id_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_specify_anchored_plate_id_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_specify_anchored_plate_id_dialog.raise();
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
 	// a second time, when the dialog is still open, should make the dialog 'active'
 	// and return keyboard focus to it.
@@ -1494,6 +1455,111 @@ GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
+{
+	GPlatesViewOperations::ExportReconstructedFeatureGeometries::active_files_collection_type
+			active_reconstructable_files(
+					d_active_reconstructable_files.begin(),
+					d_active_reconstructable_files.end());
+
+	d_export_rfg_dialog.export_visible_reconstructed_feature_geometries(
+			*d_reconstruction_ptr,
+			d_rendered_geom_collection,
+			active_reconstructable_files,
+			d_recon_root,
+			d_recon_time);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_drag_globe_tool(
+		bool enable)
+{
+	action_Drag_Globe->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_zoom_globe_tool(
+		bool enable)
+{
+	action_Zoom_Globe->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_click_geometry_tool(
+		bool enable)
+{
+	action_Click_Geometry->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_digitise_polyline_tool(
+		bool enable)
+{
+	action_Digitise_New_Polyline->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_digitise_multipoint_tool(
+		bool enable)
+{
+	action_Digitise_New_MultiPoint->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_digitise_polygon_tool(
+		bool enable)
+{
+	action_Digitise_New_Polygon->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_move_geometry_tool(
+		bool enable)
+{
+	action_Move_Geometry->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_move_vertex_tool(
+		bool enable)
+{
+	action_Move_Vertex->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_delete_vertex_tool(
+		bool enable)
+{
+	action_Delete_Vertex->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_insert_vertex_tool(
+		bool enable)
+{
+	action_Insert_Vertex->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_manipulate_pole_tool(
+		bool enable)
+{
+	action_Manipulate_Pole->setEnabled(enable);
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 {
 	uncheck_all_tools();
@@ -1578,7 +1644,29 @@ GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 	action_Move_Vertex->setChecked(true);
 	d_canvas_tool_choice_ptr->choose_move_vertex_tool();
 
-	d_task_panel_ptr->choose_move_vertex_tab();
+	d_task_panel_ptr->choose_modify_geometry_tab();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
+{
+	uncheck_all_tools();
+	action_Delete_Vertex->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_delete_vertex_tool();
+
+	d_task_panel_ptr->choose_modify_geometry_tab();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
+{
+	uncheck_all_tools();
+	action_Insert_Vertex->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_insert_vertex_tool();
+
+	d_task_panel_ptr->choose_modify_geometry_tab();
 }
 
 
@@ -1624,6 +1712,8 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Plate_Closure->setChecked(false);
 	action_Move_Geometry->setChecked(false);
 	action_Move_Vertex->setChecked(false);
+	action_Delete_Vertex->setChecked(false);
+	action_Insert_Vertex->setChecked(false);
 	action_Manipulate_Pole->setChecked(false);
 	action_Edit_Topology->setChecked(false);
 	action_Build_Topology->setChecked(false);
@@ -1634,14 +1724,10 @@ void
 GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 		GPlatesModel::FeatureHandle::weak_ref focused_feature)
 {
+	// Note: enabling/disabling canvas tools is now done in class 'EnableCanvasTool'.
 	bool enable = focused_feature.is_valid();
 	action_Query_Feature->setEnabled(enable);
 	action_Edit_Feature->setEnabled(enable);
-	// FIXME: Move Geometry and Move Vertex could also be used for temporary
-	// GeometryOnSphere manipulation, once we have a canonical location for them.
-	action_Move_Geometry->setEnabled(enable);
-	//action_Move_Vertex->setEnabled(enable);
-	action_Manipulate_Pole->setEnabled(enable);
 
 
 	action_Edit_Topology->setEnabled(enable);
@@ -1905,7 +1991,7 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	d_read_errors_dialog.reject();
 	d_set_camera_viewpoint_dialog.reject();
 	d_set_raster_surface_extent_dialog.reject();
-	d_specify_fixed_plate_dialog.reject();
+	d_specify_anchored_plate_id_dialog.reject();
 	d_shapefile_attribute_viewer_dialog.reject();
 }
 
@@ -1928,7 +2014,7 @@ GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
 
-	GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(file_info,*d_model_ptr,read_errors);
+	GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(file_info, d_model, read_errors);
 
 	d_read_errors_dialog.update();
 
@@ -1954,6 +2040,11 @@ GPlatesQtWidgets::ViewportWindow::enable_raster_display()
 		d_canvas_ptr->disable_raster_display();
 	}
 }
+
+
+
+
+
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_point_display()
@@ -2026,9 +2117,6 @@ GPlatesQtWidgets::ViewportWindow::enable_multipoint_display()
 void
 GPlatesQtWidgets::ViewportWindow::open_raster()
 {
-
-
-
 	QString filename = QFileDialog::getOpenFileName(0,
 		QObject::tr("Open File"), d_open_file_path, QObject::tr("Raster files (*.jpg *.jpeg)") );
 
@@ -2152,7 +2240,7 @@ GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
 #if 0		// Cannot call ModelInterface::remove_feature() as it is #if0'd out and not implemented in Model!
 		// FIXME: figure out FeatureCollectionHandle::weak_ref that feature_ref belongs to.
 		// Possibly implement that as part of ModelUtils.
-		d_model_ptr->remove_feature(feature_ref, collection_ref);
+		d_model->remove_feature(feature_ref, collection_ref);
 #endif
 		d_feature_focus.announce_deletion_of_focused_feature();
 	}
@@ -2166,28 +2254,12 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_raster_surface_extent_dialog()
 	// other dialogs use.
 }
 
-
-GPlatesViewOperations::RenderedGeometryFactory &
-GPlatesQtWidgets::ViewportWindow::get_rendered_geometry_factory()
-{
-	return d_canvas_ptr->get_rendered_geometry_factory();
-}
-
 void
 GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 {
 	// Reconstruction rendered layer is always active.
 	d_rendered_geom_collection.set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
-
-// FIXME: TEST
-	// COMPUTATIONAL_MESH_LAYER is always active
-	d_rendered_geom_collection.set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
-
-	d_comp_mesh_layer =
-		d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-			GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
 
 	// Specify which main rendered layers are orthogonal to each other - when
 	// one is activated the others are automatically deactivated.
@@ -2197,13 +2269,20 @@ GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
 	orthogonal_main_layers.set(
+			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
+	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::CREATE_TOPOLOGY_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_MANIPULATION_LAYER);
+
+// FIXME: TEST
+	// COMPUTATIONAL_MESH_LAYER is always active
+	d_rendered_geom_collection.set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
+
+	d_comp_mesh_layer =
+		d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
+			GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
 
 	d_rendered_geom_collection.set_orthogonal_main_layers(orthogonal_main_layers);
 }

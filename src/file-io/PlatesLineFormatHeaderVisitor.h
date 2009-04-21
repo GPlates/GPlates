@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,8 +28,10 @@
 #define GPLATES_FILEIO_PLATESLINEFORMATHEADERVISITOR_H
 
 #include <boost/optional.hpp>
+#include <unicode/unistr.h>
 
 #include "model/ConstFeatureVisitor.h"
+#include "model/FeatureType.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlOldPlatesHeader.h"
@@ -76,9 +78,9 @@ namespace GPlatesFileIO
 		* no '999' plate id, nor 'XX' data type in the PLATES4 format).
 		*/
 		OldPlatesHeader() : 
-		region_number(0),
-			reference_number(0),
-			string_number(0),
+			region_number(99),
+			reference_number(99),
+			string_number(9999),
 			geographic_description("This header contains only default values."),
 			plate_id_number(999),
 			age_of_appearance(999.0),
@@ -101,6 +103,8 @@ namespace GPlatesFileIO
 		private GPlatesModel::ConstFeatureVisitor
 	{
 	public:
+		PlatesLineFormatHeaderVisitor();
+
 		/**
 		* Visits @a feature_handle and collects old plates header information.
 		*
@@ -114,7 +118,6 @@ namespace GPlatesFileIO
 			OldPlatesHeader& old_plates_header);
 
 	private:
-
 		virtual
 			void
 			visit_feature_handle(
@@ -150,22 +153,49 @@ namespace GPlatesFileIO
 			visit_gpml_plate_id(
 			const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
+		virtual
+			void
+			visit_xs_string(
+			const GPlatesPropertyValues::XsString &xs_string);
+
+		/**
+		 * Determines Plates header data type code from the specified feature.
+		 * If the feature cannot be mapped to a plates data type then "XX" is returned.
+		 */
+		UnicodeString
+		get_plates_data_type_code(
+				const GPlatesModel::FeatureHandle &feature_handle) const;
+
+		/**
+		 * Creates map of feature types to valid Plates data types.
+		 */
+		void
+		build_plates_data_type_code_map();
+
 		struct PlatesHeaderAccumulator
 		{
 			boost::optional<OldPlatesHeader> old_plates_header;
-
-			boost::optional<UnicodeString> feature_type;
-			boost::optional<UnicodeString> feature_id;
 
 			boost::optional<GPlatesModel::integer_plate_id_type> plate_id;
 			boost::optional<GPlatesModel::integer_plate_id_type> conj_plate_id;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_appearance;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_disappearance;
+			boost::optional<UnicodeString> geographic_description;
 
 			boost::optional<GPlatesModel::PropertyName> current_propname;
 		};
 
+		typedef UnicodeString (*get_data_type_code_function_type)(
+				const GPlatesModel::FeatureHandle &feature_handle);
+
+		/**
+		 * Maps feature type to plates header data type code.
+		 */
+		typedef std::map<GPlatesModel::FeatureType, get_data_type_code_function_type>
+				plates_data_type_code_map_type;
+
 		PlatesHeaderAccumulator d_accum;
+		plates_data_type_code_map_type d_plates_data_type_code_map;
 	};
 }
 

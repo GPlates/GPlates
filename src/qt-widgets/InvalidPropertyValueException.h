@@ -48,14 +48,11 @@ namespace GPlatesQtWidgets
 			 * details of the failure. This will be presented to the user via a
 			 * message box spawned from the AddPropertyDialog.
 			 */
-			explicit
 			InvalidPropertyValueException(
-					const QString &reason_):
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const QString &reason_) :
+				GPlatesGlobal::PreconditionViolationError(exception_source),
 				d_reason(reason_)
-			{  }
-			
-			virtual
-			~InvalidPropertyValueException()
 			{  }
 			
 			const QString &
@@ -65,7 +62,7 @@ namespace GPlatesQtWidgets
 			}
 			
 			const char *
-			ExceptionName() const
+			exception_name() const
 			{
 				return "InvalidPropertyValueException";
 			}

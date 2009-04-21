@@ -50,28 +50,28 @@ GPlatesGui::AnimationController::AnimationController(
 }
 
 
-const double
+const double &
 GPlatesGui::AnimationController::view_time() const
 {
 	return d_view_state_ptr->reconstruction_time();
 }
 
 
-const double
+const double &
 GPlatesGui::AnimationController::start_time() const
 {
 	return d_start_time;
 }
 
 
-const double
+const double &
 GPlatesGui::AnimationController::end_time() const
 {
 	return d_end_time;
 }
 
 
-const double
+double
 GPlatesGui::AnimationController::time_increment() const
 {
 	return std::fabs(d_time_increment);
@@ -85,7 +85,7 @@ GPlatesGui::AnimationController::is_playing() const
 }
 
 
-const double
+const double &
 GPlatesGui::AnimationController::frames_per_second() const
 {
 	return d_frames_per_second;
@@ -199,6 +199,18 @@ void
 GPlatesGui::AnimationController::pause()
 {
 	stop_animation_timer();
+}
+
+
+void
+GPlatesGui::AnimationController::set_play_or_pause(
+		bool lets_play)
+{
+	if (lets_play) {
+		play();
+	} else {
+		pause();
+	}
 }
 
 
@@ -456,6 +468,7 @@ GPlatesGui::AnimationController::start_animation_timer()
 	d_timer.start(static_cast<int>(frame_duration_millisecs));
 
 	emit animation_started();
+	emit animation_state_changed(true);
 }
 
 
@@ -465,6 +478,7 @@ GPlatesGui::AnimationController::stop_animation_timer()
 	d_timer.stop();
 
 	emit animation_paused();
+	emit animation_state_changed(false);
 }
 
 
@@ -531,5 +545,4 @@ GPlatesGui::AnimationController::recalculate_increment()
 	// not the magnitude, and therefore does not need to emit
 	// a signal back to the GUI.
 }
-
 

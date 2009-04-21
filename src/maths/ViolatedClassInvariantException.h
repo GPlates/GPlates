@@ -43,21 +43,30 @@ namespace GPlatesMaths
 			 * @param msg is a description of the conditions
 			 * which cause the invariant to be violated.
 			 */
-			ViolatedClassInvariantException(const char *msg)
-				: _msg(msg) {  }
+			ViolatedClassInvariantException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const char *msg) :
+				MathematicalException(exception_source),
+				_msg(msg)
+			{  }
 
 			virtual
 			~ViolatedClassInvariantException() {  }
 
 		protected:
 			virtual const char *
-			ExceptionName() const {
+			exception_name() const {
 
 				return "ViolatedClassInvariantException";
 			}
 
-			virtual std::string
-			Message() const { return _msg; }
+			virtual
+			void
+			write_message(
+					std::ostream &os) const
+			{
+				write_string_message(os, _msg);
+			}
 
 		private:
 			std::string _msg;

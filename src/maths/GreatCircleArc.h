@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -181,6 +181,13 @@ namespace GPlatesMaths
 				const real_t &closeness_inclusion_threshold,
 				const real_t &latitude_exclusion_threshold,
 				real_t &closeness) const;
+
+		/**
+		 * Finds the closest point on this arc to @a test_point.
+		 */
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		get_closest_point(
+				const PointOnSphere &test_point) const;
 
 	protected:
 

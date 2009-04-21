@@ -28,48 +28,24 @@
 #ifndef GPLATES_MATHS_GEOMETRYFORWARDDECLARATIONS_H
 #define GPLATES_MATHS_GEOMETRYFORWARDDECLARATIONS_H
 
-#include "utils/non_null_intrusive_ptr.h"
-
-
+/*
+ * Forward declarations for the GeometryOnSphere derivations.
+ *
+ * Because these classes inherit from class GPlatesUtils::ReferenceCount (well indirectly)
+ * any usage of 'intrusive_ptr' will rely on it. And including 'utils/ReferenceCount.h'
+ * won't help because the compiler needs to know it can convert from PointOnSphere,
+ * for example, to ReferenceCount and it can't know that from the forward declaration only.
+ *
+ * So these forward declarations will work fine if no methods are called on
+ * the 'intrusive_ptr'. For example, copy constructor, destructor, constructor.
+ * Typically this will mean your methods or functions cannot be defined in the header file.
+ */
 namespace GPlatesMaths
 {
 	class MultiPointOnSphere;
 	class PointOnSphere;
 	class PolylineOnSphere;
 	class PolygonOnSphere;
-
-	void
-	intrusive_ptr_add_ref(
-			const MultiPointOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const MultiPointOnSphere *p);
-
-	void
-	intrusive_ptr_add_ref(
-			const PointOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PointOnSphere *p);
-
-	void
-	intrusive_ptr_add_ref(
-			const PolylineOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PolylineOnSphere *p);
-
-	void
-	intrusive_ptr_add_ref(
-			const PolygonOnSphere *p);
-
-	void
-	intrusive_ptr_release(
-			const PolygonOnSphere *p);
-
 }
 
 #endif  // GPLATES_MATHS_GEOMETRYFORWARDDECLARATIONS_H

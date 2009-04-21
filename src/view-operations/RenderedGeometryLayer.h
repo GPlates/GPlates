@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -45,6 +45,9 @@ namespace GPlatesViewOperations
 		Q_OBJECT
 
 	public:
+		//! Typedef for sequence of @a RenderedGeometry objects.
+		typedef std::vector<RenderedGeometry> rendered_geom_seq_type;
+
 		/**
 		 * Typedef for arbitrary user-supplied data that will be returned when
 		 * @a layer_was_updated signal is emitted.
@@ -94,6 +97,20 @@ namespace GPlatesViewOperations
 			return d_rendered_geom_seq[rendered_geom_index];
 		}
 
+		//! Begin iterator over sequence of @a RenderedGeometry objects.
+		rendered_geom_seq_type::const_iterator
+		rendered_geometry_begin() const
+		{
+			return d_rendered_geom_seq.begin();
+		}
+
+		//! End iterator over sequence of @a RenderedGeometry objects.
+		rendered_geom_seq_type::const_iterator
+		rendered_geometry_end() const
+		{
+			return d_rendered_geom_seq.end();
+		}
+
 		void
 		add_rendered_geometry(
 				RenderedGeometry);
@@ -129,8 +146,6 @@ namespace GPlatesViewOperations
 				GPlatesViewOperations::RenderedGeometryLayer::user_data_type user_data);
 
 	private:
-		typedef std::vector<RenderedGeometry> rendered_geom_seq_type;
-
 		user_data_type d_user_data;
 		rendered_geom_seq_type d_rendered_geom_seq;
 		bool d_is_active;

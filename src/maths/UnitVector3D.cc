@@ -108,7 +108,8 @@ GPlatesMaths::UnitVector3D::AssertInvariant(
 				<< "\n(this assertion was invoked on line "
 				<< line
 				<< "of the header file).";
-		throw ViolatedUnitVectorInvariantException(oss.str().c_str());
+		throw ViolatedUnitVectorInvariantException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 }
 

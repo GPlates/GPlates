@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,6 +29,8 @@
 
 #include <QObject>
 #include <QUndoCommand>
+
+#include "canvas-tools/CanvasToolType.h"
 
 
 namespace GPlatesQtWidgets
@@ -86,25 +88,6 @@ namespace GPlatesGui
 		Q_OBJECT
 
 	public:
-		/**
-		 * Type of canvas tool.
-		 */
-		enum ToolType
-		{
-			NONE,
-
-			DRAG_GLOBE,
-			ZOOM_GLOBE,
-			CLICK_GEOMETRY,
-			DIGITISE_POLYLINE,
-			DIGITISE_MULTIPOINT,
-			DIGITISE_POLYGON,
-			MOVE_GEOMETRY,
-			MOVE_VERTEX,
-			MANIPULATE_POLE,
-			CREATE_TOPOLOGY
-		};
-
 		ChooseCanvasTool(
 			GPlatesQtWidgets::ViewportWindow &);
 
@@ -145,10 +128,13 @@ namespace GPlatesGui
 		choose_move_vertex_tool();
 
 		void
-		choose_manipulate_pole_tool();
+		choose_delete_vertex_tool();
 
 		void
-		choose_create_topology_tool();
+		choose_insert_vertex_tool();
+
+		void
+		choose_manipulate_pole_tool();
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -161,22 +147,21 @@ namespace GPlatesGui
 		void
 		chose_canvas_tool(
 				GPlatesGui::ChooseCanvasTool &,
-				GPlatesGui::ChooseCanvasTool::ToolType);
+				GPlatesCanvasTools::CanvasToolType::Value);
 
 	private:
 		/**
 		 * Most recent tool type chosen.
 		 */
-		ToolType d_most_recent_tool_type;
+		GPlatesCanvasTools::CanvasToolType::Value d_most_recent_tool_type;
 
 		/**
 		 * Most recent of the three digitise geometry tools chosen.
 		 */
-		ToolType d_most_recent_digitise_geom_tool_type;
+		GPlatesCanvasTools::CanvasToolType::Value d_most_recent_digitise_geom_tool_type;
 
 		/**
 		 * Used to do the actual choosing of canvas tool.
-		 * Ultimately that functionality could be moved into this class.
 		 */
 		GPlatesQtWidgets::ViewportWindow *d_viewport_window;
 	};

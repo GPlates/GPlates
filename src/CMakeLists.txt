@@ -49,7 +49,7 @@ set(GPlates_no_gui_SRCS
 set(gui_LIBS
 	qt-resources qt-widgets gui canvas-tools view-operations)
 set(app_LIBS
-	file-io model feature-visitors property-values)
+	model file-io feature-visitors property-values app-logic)
 set(util_LIBS
 	maths utils global)
 set(GPlates_LIBS

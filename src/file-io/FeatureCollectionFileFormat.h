@@ -81,20 +81,23 @@ namespace GPlatesFileIO
 		};
 	}
 
-	//@{
 	/**
-	* Determine feature collection file type based on file extension.
-	*
-	* @param file_info file whose extension used to determine file format.
-	*/
+	 * Determine feature collection file type based on file extension.
+	 *
+	 * @param file_info file whose extension used to determine file format.
+	 */
 	FeatureCollectionFileFormat::Format
 		get_feature_collection_file_format(
 		const FileInfo& file_info);
 
+	/**
+	 * Determine feature collection file type based on file extension.
+	 *
+	 * @param file_info file whose extension used to determine file format.
+	 */
 	FeatureCollectionFileFormat::Format
 		get_feature_collection_file_format(
 		const QFileInfo& file_info);
-	//@}
 
 	/**
 	* Creates and returns a feature collection writer.

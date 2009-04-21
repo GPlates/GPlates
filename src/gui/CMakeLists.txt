@@ -31,6 +31,8 @@ set(srcs
     ColourTable.h
     CsvExport.cc
     CsvExport.h
+    EnableCanvasTool.cc
+    EnableCanvasTool.h
     FeatureColourTable.cc
     FeatureColourTable.h
     FeatureFocus.cc
@@ -47,6 +49,10 @@ set(srcs
     Globe.cc
     Globe.h
     GlobeOrientation.h
+    GPlatesQApplication.cc
+    GPlatesQApplication.h
+    GPlatesQtMsgHandler.cc
+    GPlatesQtMsgHandler.h
     GuiException.h
     Interface.h
     NurbsRenderer.cc
@@ -75,6 +81,8 @@ set(srcs
     TemporaryGeometryFocus.h
     Texture.cc
     Texture.h
+    TreeWidgetBuilder.cc
+    TreeWidgetBuilder.h
     Viewport.h
     ViewportProjection.h
     ViewportZoom.cc

@@ -28,12 +28,14 @@
 
 #include "gui/FeatureFocus.h"
 #include "qt-widgets/ViewportWindow.h"
+#include "feature-visitors/PropertyValueFinder.h"
 #include "feature-visitors/QueryFeaturePropertiesWidgetPopulator.h"
-#include "feature-visitors/PlateIdFinder.h"
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
 #include "maths/LatLonPointConversions.h"
+#include "property-values/GpmlPlateId.h"
 #include "utils/UnicodeStringUtils.h"
+//#include "utils/Profile.h"
 
 
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
@@ -124,9 +126,12 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::property_tree() const
 
 void
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::display_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
 {
 	d_feature_ref = feature_ref;
+	d_focused_rfg = focused_rfg;
+
 	refresh_display();
 }
 
@@ -152,13 +157,13 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 	// reconstruction plate ID.
 	static const GPlatesModel::PropertyName plate_id_property_name = 
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-	plate_id_finder.visit_feature_handle(*d_feature_ref);
-	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+
+	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+	if (GPlatesFeatureVisitors::get_property_value(
+			*d_feature_ref, plate_id_property_name, &recon_plate_id))
+	{
 		// The feature has a reconstruction plate ID.
-		GPlatesModel::integer_plate_id_type recon_plate_id =
-				*plate_id_finder.found_plate_ids_begin();
-		set_plate_id(recon_plate_id);
+		set_plate_id(recon_plate_id->value());
 
 		GPlatesModel::integer_plate_id_type root_plate_id =
 				view_state().reconstruction_root();
@@ -173,7 +178,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 		std::pair<GPlatesMaths::FiniteRotation,
 				GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
 				absolute_rotation =
-						recon_tree.get_composed_absolute_rotation(recon_plate_id);
+						recon_tree.get_composed_absolute_rotation(recon_plate_id->value());
 
 		// FIXME:  Do we care about the reconstruction circumstance?
 		// (For example, there may have been no match for the reconstruction plate ID.)
@@ -208,8 +213,10 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 		}
 	}
 
+	//PROFILE_BLOCK("QueryFeaturePropertiesWidgetPopulator");
+
 	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
 			property_tree());
-	populator.visit_feature_handle(*d_feature_ref);
+	populator.populate(*d_feature_ref, d_focused_rfg);
 }
 

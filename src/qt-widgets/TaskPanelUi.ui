@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>594</width>
-    <height>599</height>
+    <width>183</width>
+    <height>386</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -45,6 +45,12 @@
      <property name="currentIndex" >
       <number>6</number>
      </property>
+     <property name="elideMode" >
+      <enum>Qt::ElideNone</enum>
+     </property>
+     <property name="usesScrollButtons" >
+      <bool>true</bool>
+     </property>
      <widget class="QWidget" name="tab_feature" >
       <attribute name="title" >
        <string>Current Feature</string>
@@ -55,9 +61,9 @@
        <string>New Geometry</string>
       </attribute>
      </widget>
-     <widget class="QWidget" name="tab_move_vertex" >
+     <widget class="QWidget" name="tab_modify_geometry" >
       <attribute name="title" >
-       <string>Move Vertex</string>
+       <string>Modify Geometry</string>
       </attribute>
      </widget>
      <widget class="QWidget" name="tab_modify_pole" >
@@ -84,6 +90,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections/>
 </ui>

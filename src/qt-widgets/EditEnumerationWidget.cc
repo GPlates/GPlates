@@ -179,7 +179,7 @@ GPlatesQtWidgets::EditEnumerationWidget::configure_for_property_value_type(
 		combobox_enumeration->clear();
 		combobox_enumeration->addItems(get_enumeration_string_list(d_property_value_name));
 	} else {
-		throw PropertyValueNotSupportedException();
+		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 
@@ -231,7 +231,7 @@ GPlatesQtWidgets::EditEnumerationWidget::create_property_value_from_widget() con
 						GPlatesUtils::make_icu_string_from_qstring(value));
 		return property_value;
 	} else {
-		throw PropertyValueNotSupportedException();
+		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 
@@ -251,7 +251,7 @@ GPlatesQtWidgets::EditEnumerationWidget::update_property_value_from_widget()
 			return false;
 		}
 	} else {
-		throw UninitialisedEditWidgetException();
+		throw UninitialisedEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 

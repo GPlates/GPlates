@@ -252,10 +252,10 @@ GPlatesQtWidgets::AnimateDialog::set_start_button_state(
 	static const QIcon icon_stop(":/gnome_media_playback_stop_22.png");
 	
 	if (animation_is_playing) {
-		button_Start->setText(tr("Pau&se"));
+		button_Start->setText(tr("&Pause"));
 		button_Start->setIcon(icon_pause);
 	} else {
-		button_Start->setText(tr("&Start"));
+		button_Start->setText(tr("&Play"));
 		button_Start->setIcon(icon_play);
 	}
 }

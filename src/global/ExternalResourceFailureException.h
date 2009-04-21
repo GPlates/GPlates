@@ -41,15 +41,14 @@ namespace GPlatesGlobal
 			public Exception
 	{
 		public:
-			// FIXME:  This class should have a constructor which accepts:
-			//  - a const char *filename
-			//  - an int line-number
-			//  - a const char *funcname
-			// or possibly an instance of a class (which will look like
-			// CallStackTracker) whose constructor accepts these items).
-
-			virtual
-			~ExternalResourceFailureException() {  }
+			/**
+			 * An alternative constructor that adds the location at which exception is thrown
+			 * to the call stack trace.
+			 */
+			ExternalResourceFailureException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				Exception(exception_source)
+			{  }
 	};
 }
 

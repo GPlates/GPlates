@@ -117,6 +117,16 @@ namespace GPlatesGui
 		handle_create_new_feature(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref);
 
+		/**
+		 * The mouse position moved but the left mouse button is NOT down.
+		 */
+		void
+		handle_move_without_drag(
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+
 	private:
 		const CanvasToolChoice *d_canvas_tool_choice_ptr;
 	};

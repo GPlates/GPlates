@@ -17,15 +17,13 @@ set(srcs
     FeatureHandleToOldId.h
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
-    GeometryCreationUtils.cc
     GeometryCreationUtils.h
     MathUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
-    Profile.cc
-    Profile.h
+    ReferenceCount.h
     StringFormattingUtils.cc
     StringFormattingUtils.h
     StringSet.cc

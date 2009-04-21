@@ -192,6 +192,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 	// With all our widgets constructed, on to the main canvas layout:-
 
+	// Construct the Awesome Bar. This used to go on top, but we want to push this
+	// down so it goes to the left of the splitter, giving the TaskPanel some more
+	// room.
+	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(animation_controller);
+
+	// Construct the "View Bar" for the bottom.
+	std::auto_ptr<QWidget> viewbar = construct_viewbar(d_globe_canvas_ptr->viewport_zoom());
+
+
+	// With all our widgets constructed, on to the main canvas layout:-
+
 	// Create a tiny invisible widget with a tiny invisible horizontal layout to
 	// hold the "canvas" area (including the zoom slider). This layout will glue
 	// the zoom slider to the right hand side of the canvas. We set a custom size
@@ -237,45 +248,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	splitter_plus_viewbar_layout->addWidget(viewbar.release());
 
 
-
-#if 0
-<<<<<<< .working
-	// Set up the Reconstruction Time slider 
-	slider_reconstruction_time->setRange(0, 300); // FIXME : use the above values? 
-	slider_reconstruction_time->setValue(0);
-	slider_reconstruction_time->setInvertedAppearance( true );
-	slider_reconstruction_time->setInvertedControls( true );
-
-	// synchronize the slider and spinbox 
-	QObject::connect(slider_reconstruction_time, SIGNAL(valueChanged(int)),
-			this, SLOT(set_reconstruction_time_int(int)));
-
-
-	// Listen for zoom events, everything is now handled through ViewportZoom.
-	GPlatesGui::ViewportZoom &vzoom = d_globe_canvas_ptr->viewport_zoom();
-	QObject::connect(&vzoom, SIGNAL(zoom_changed()),
-			this, SLOT(handle_zoom_change()));
-
-	// Zoom buttons.
-	QObject::connect(button_zoom_in, SIGNAL(clicked()),
-			&vzoom, SLOT(zoom_in()));
-	QObject::connect(button_zoom_out, SIGNAL(clicked()),
-			&vzoom, SLOT(zoom_out()));
-	QObject::connect(button_zoom_reset, SIGNAL(clicked()),
-			&vzoom, SLOT(reset_zoom()));
-
-	// Zoom spinbox.
-	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
-			this, SLOT(propagate_zoom_percent()));
-	QObject::connect(spinbox_zoom_percent, SIGNAL(editingFinished()),
-			d_globe_canvas_ptr, SLOT(setFocus()));
-
-	// Zoom slider.
-	QObject::connect(d_zoom_slider_widget, SIGNAL(slider_moved(int)),
-			&vzoom, SLOT(set_zoom_level(int)));
-
-=======
-#endif
 	// Miscellaneous signal / slot connections that ReconstructionViewWidget deals with.
 	
 	QObject::connect(&(d_globe_canvas_ptr->globe().orientation()), SIGNAL(orientation_changed()),

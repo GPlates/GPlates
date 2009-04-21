@@ -159,7 +159,7 @@ namespace
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 		default:
-			throw GPlatesFileIO::FileFormatNotSupportedException(
+			throw GPlatesFileIO::FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
 				"Chosen file format is not currently supported.");
 		}
 	}
@@ -261,7 +261,8 @@ GPlatesFileIO::get_feature_collection_writer(
 {
 	if ( ! is_writable(file_info) )
 	{
-		throw ErrorOpeningFileForWritingException(file_info.get_qfileinfo().filePath());
+		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+				file_info.get_qfileinfo().filePath());
 	}
 
 	// Assert GMT format compatilibity.
@@ -272,7 +273,7 @@ GPlatesFileIO::get_feature_collection_writer(
 	case FeatureCollectionWriteFormat::GMT_PREFER_PLATES4_STYLE_HEADER:
 		GPlatesGlobal::Assert(
 			get_feature_collection_file_format(file_info) == FeatureCollectionFileFormat::GMT,
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 		break;
 	default:
 		break;
@@ -297,7 +298,8 @@ GPlatesFileIO::get_feature_collection_writer(
 			new GMTFormatWriter(file_info, GMTFormatWriter::PREFER_PLATES4_STYLE_HEADER));
 
 	default:
-		throw FileFormatNotSupportedException("Chosen write format is not currently supported.");
+		throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
+				"Chosen write format is not currently supported.");
 	}
 }
 
@@ -330,7 +332,7 @@ GPlatesFileIO::read_feature_collection_file(
 			break;
 
 		default:
-			throw FileFormatNotSupportedException(
+			throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
 				"File extension is '.gpml' or '.gpml.gz' but file format is neither.");
 		}
 		break;
@@ -350,6 +352,7 @@ GPlatesFileIO::read_feature_collection_file(
 	case FeatureCollectionFileFormat::GMT:
 	case FeatureCollectionFileFormat::UNKNOWN:
 	default:
-		throw FileFormatNotSupportedException("Chosen file format is not currently supported.");
+		throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
+				"Chosen file format is not currently supported.");
 	}
 }

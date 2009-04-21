@@ -48,11 +48,10 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 
-#include "utils/Profile.h"
-
 GPlatesModel::Model::Model():
 	d_feature_store(FeatureStore::create())
 {  }
+
 
 const GPlatesModel::FeatureCollectionHandle::weak_ref
 GPlatesModel::Model::create_feature_collection()
@@ -67,6 +66,7 @@ GPlatesModel::Model::create_feature_collection()
 	return (*iter)->reference();
 }
 
+
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::Model::create_feature(
 		const FeatureType &feature_type,
@@ -75,6 +75,7 @@ GPlatesModel::Model::create_feature(
 	FeatureId feature_id;
 	return create_feature(feature_type, feature_id, target_collection);
 }
+
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::Model::create_feature(
@@ -92,6 +93,7 @@ GPlatesModel::Model::create_feature(
 	d_feature_id_registry.register_feature(feature_handle->reference());
 	return feature_handle->reference();
 }
+
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::Model::create_feature(
@@ -137,8 +139,8 @@ namespace
 	visit_feature_collections(
 			FeatureCollectionIterator collections_begin, 
 			FeatureCollectionIterator collections_end,
-			GPlatesModel::FeatureVisitor &visitor) {
-
+			GPlatesModel::FeatureVisitor &visitor)
+	{
 		using namespace GPlatesModel;
 
 		// We visit each of the features in each of the feature collections in
@@ -164,9 +166,8 @@ namespace
 }
 
 
-const GPlatesModel::Reconstruction::non_null_ptr_type
-GPlatesModel::Model::create_reconstruction(
-		const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+const GPlatesModel::ReconstructionTree::non_null_ptr_type
+GPlatesModel::Model::create_reconstruction_tree(
 		const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 		const double &time,
 		GPlatesModel::integer_plate_id_type root)
@@ -185,6 +186,19 @@ GPlatesModel::Model::create_reconstruction(
 
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
+	return tree;
+}
+
+
+const GPlatesModel::Reconstruction::non_null_ptr_type
+GPlatesModel::Model::create_reconstruction(
+		const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const double &time,
+		GPlatesModel::integer_plate_id_type root)
+{
+	ReconstructionTree::non_null_ptr_type tree =
+			create_reconstruction_tree(reconstruction_features_collection, time, root);
 	Reconstruction::non_null_ptr_type reconstruction =
 			Reconstruction::create(
 				tree, 

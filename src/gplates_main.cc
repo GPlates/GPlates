@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,7 +39,9 @@
 #include <vector>
 #include <QStringList>
 #include <QTextStream>
-#include <QtGui/QApplication>
+
+#include "gui/GPlatesQApplication.h"
+#include "gui/GPlatesQtMsgHandler.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "utils/Profile.h"
 
@@ -102,13 +104,15 @@ namespace {
 	}
 }
 
-
-int call_main(int argc, char* argv[])
+int internal_main(int argc, char* argv[])
 {
-	// Profiles local object constructors and destructors.
-	PROFILE_BLOCK("application startup and shutdown");
+	// Log qWarning, qCritical, qFatal messages to a log file.
+	GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler();
 
-	QApplication application(argc, argv);
+	// GPlatesQApplication is a QApplication that also handles uncaught exceptions
+	// in the Qt event thread.
+	GPlatesGui::GPlatesQApplication application(argc, argv);
+
 	Q_INIT_RESOURCE(qt_widgets);
 
 	// All the libtool cruft causes the value of 'argv[0]' to be not what the user invoked,
@@ -132,13 +136,6 @@ int call_main(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-	const int return_code = call_main(argc, argv);
-
-	// We wrap 'main' inside 'call_main' because we want all profiles
-	// to have completed before we do profile reporting and we only
-	// want to do profile reporting if no exceptions have made their
-	// way back to 'main'.
-	PROFILE_REPORT_TO_FILE("profile.txt");
-
-	return return_code;
+	// Handle any uncaught exceptions that occur in main() but outside the Qt event thread.
+	return GPlatesGui::GPlatesQApplication::call_main(internal_main, argc, argv);
 }

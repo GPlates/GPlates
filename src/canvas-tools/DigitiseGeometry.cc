@@ -29,16 +29,18 @@
 
 #include "qt-widgets/ViewportWindow.h"
 #include "view-operations/AddPointGeometryOperation.h"
-#include "view-operations/GeometryBuilderToolTarget.h"
+#include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 const GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type
 GPlatesCanvasTools::DigitiseGeometry::create(
 		GPlatesViewOperations::GeometryType::Value geom_type,
-		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 		// Ultimately would like to remove the following arguments...
 		GPlatesGui::Globe &globe,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas,
@@ -47,10 +49,12 @@ GPlatesCanvasTools::DigitiseGeometry::create(
 	return DigitiseGeometry::non_null_ptr_type(
 			new DigitiseGeometry(
 					geom_type,
-					geom_builder_tool_target,
+					geometry_operation_target,
+					active_geometry_operation,
 					rendered_geometry_collection,
-					rendered_geometry_factory,
 					choose_canvas_tool,
+					canvas_tool_type,
+					query_proximity_threshold,
 					// Ultimately would like to remove the following arguments...
 					globe,
 					globe_canvas,
@@ -60,10 +64,12 @@ GPlatesCanvasTools::DigitiseGeometry::create(
 
 GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
 		GPlatesViewOperations::GeometryType::Value geom_type,
-		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geometry_factory,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 		// Ultimately would like to remove the following arguments...
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
@@ -71,14 +77,17 @@ GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
 	CanvasTool(globe_, globe_canvas_),
 	d_view_state_ptr(&view_state_),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
-	d_geom_builder_tool_target(&geom_builder_tool_target),
+	d_geometry_operation_target(&geometry_operation_target),
+	d_canvas_tool_type(canvas_tool_type),
 	d_default_geom_type(geom_type),
 	d_add_point_geometry_operation(
 		new GPlatesViewOperations::AddPointGeometryOperation(
 				geom_type,
+				geometry_operation_target,
+				active_geometry_operation,
 				&rendered_geometry_collection,
-				&rendered_geometry_factory,
-				choose_canvas_tool))
+				choose_canvas_tool,
+				query_proximity_threshold))
 {
 }
 
@@ -95,17 +104,17 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	// until end of current scope block.
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
-	// Tell everyone we're activating digitise geometry tool.
-	d_geom_builder_tool_target->activate(
-			GPlatesViewOperations::GeometryBuilderToolTarget::DIGITISE_GEOMETRY);
-
 	// Ask which GeometryBuilder we are to operate on.
+	// Note: we must pass the type of canvas tool in (see GeometryOperationTarget for explanation).
+	// Returned GeometryBuilder should not be NULL but might be if tools are not
+	// enable/disabled properly.
 	GPlatesViewOperations::GeometryBuilder *geometry_builder =
-			d_geom_builder_tool_target->get_geometry_builder_for_active_tool();
+			d_geometry_operation_target->get_and_set_current_geometry_builder_for_newly_activated_tool(
+					d_canvas_tool_type);
 
 	// Ask which main rendered layer we are to operate on.
 	const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_layer_type =
-			d_geom_builder_tool_target->get_main_rendered_layer_for_active_tool();
+			GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER;
 
 	// In addition to adding points - our dual responsibility is to change
 	// the type of geometry the builder is attempting to build.
@@ -147,5 +156,5 @@ GPlatesCanvasTools::DigitiseGeometry::handle_left_click(
 		bool is_on_globe)
 {
 	// Plain and simple append point.
-	d_add_point_geometry_operation->add_point(oriented_click_pos_on_globe);
+	d_add_point_geometry_operation->add_point(click_pos_on_globe, oriented_click_pos_on_globe);
 }

@@ -38,7 +38,6 @@ namespace GPlatesViewOperations
 {
 	class RenderedGeometryLayer;
 	class RenderedGeometryCollection;
-	class RenderedGeometryFactory;
 }
 
 
@@ -55,7 +54,6 @@ namespace GPlatesGui
 	public:
 
 		GeometryFocusHighlight(
-			GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection);
 
 		virtual
@@ -110,8 +108,6 @@ namespace GPlatesGui
 		 * would be a null pointer.
 		 */
 		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_geometry;
-
-		GPlatesViewOperations::RenderedGeometryFactory *d_rendered_geom_factory;
 
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 

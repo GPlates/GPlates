@@ -42,7 +42,6 @@
 #include <QSizePolicy>
 
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
-#include "feature-visitors/PlateIdFinder.h"
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
 #include "gui/Texture.h"
@@ -190,7 +189,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
 	d_globe(rendered_geom_collection),
-	d_geometry_focus_highlight(d_rendered_geom_factory, rendered_geom_collection)
+	d_geometry_focus_highlight(rendered_geom_collection)
 {
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
@@ -478,7 +477,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		QMouseEvent *move_event) 
 {
 	update_mouse_pointer_pos(move_event);
-
+	
 	if (d_mouse_press_info) {
 		// Call it a drag if EITHER:
 		//  * the mouse moved at least 2 pixels in one direction and 1 pixel in the other;
@@ -504,6 +503,21 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
 		}
+	}
+	else
+	{
+		//
+		// The mouse has moved but the left mouse button is not currently pressed.
+		// This could mean no mouse buttons are currently pressed or it could mean a
+		// button other than the left mouse button is currently pressed.
+		// Either way it is an mouse movement that is not currently invoking a
+		// canvas tool operation.
+		//
+		emit mouse_moved_without_drag(
+				virtual_mouse_pointer_pos_on_globe(),
+				d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
+				mouse_pointer_is_on_globe(),
+				d_globe.Orient(centre_of_viewport()));
 	}
 }
 

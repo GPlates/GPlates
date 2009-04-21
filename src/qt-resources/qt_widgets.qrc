@@ -68,11 +68,15 @@
     <file>info_sign_16.png</file>
     <file>move_geometry_35.png</file>
     <file>move_vertex_35.png</file>
+    <file>delete_vertex_35.png</file>
+    <file>insert_vertex_35.png</file>
     <file>plate_pole_modification_35.png</file>
     <file>query_feature_35.png</file>
     <file>reorient_poles_16.png</file>
     <file>reorient_poles_22.png</file>
     <file>save_a_copy_22.png</file>
+    <file>seek_beginning_22.png</file>
+    <file>seek_end_22.png</file>
     <file>select_plate_35.png</file>
     <file>spin_globe_35.png</file>
     <file>tango_emblem_unreadable_22.png</file>

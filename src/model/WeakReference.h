@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_WEAKREFERENCE_H
 
 #include "WeakObserver.h"
+#include "WeakObserverVisitor.h"
 
 
 namespace GPlatesModel
@@ -56,9 +57,9 @@ namespace GPlatesModel
 	 * without keeping the objects alive. Specifically, weak references are used to implement
 	 * references in the Presenter to objects inside the Model. 
 	 */
-	template<typename H, typename ConstH>
+	template<typename H>
 	class WeakReference:
-			public WeakObserver<H, ConstH>
+			public WeakObserver<H>
 	{
 	public:
 		/**
@@ -67,13 +68,6 @@ namespace GPlatesModel
 		 * (For example, 'FeatureCollectionHandle' or 'const FeatureCollectionHandle'.)
 		 */
 		typedef H handle_type;
-
-		/**
-		 * This is the const-type of the handle.
-		 *
-		 * (For example, 'const FeatureCollectionHandle'.)
-		 */
-		typedef ConstH const_handle_type;
 
 		/**
 		 * Default constructor.
@@ -97,7 +91,11 @@ namespace GPlatesModel
 		explicit
 		WeakReference(
 				handle_type &handle):
-			WeakObserver<H, ConstH>(handle)
+			WeakObserver<H>(handle)
+		{  }
+
+		virtual
+		~WeakReference()
 		{  }
 
 		/**
@@ -118,11 +116,11 @@ namespace GPlatesModel
 		handle_type *
 		handle_ptr() const
 		{
-			return WeakObserver<H, ConstH>::publisher_ptr();
+			return WeakObserver<H>::publisher_ptr();
 		}
 
 		/**
-		 * Return whether this iterator is valid to be dereferenced.
+		 * Return whether this pointer is valid to be dereferenced.
 		 *
 		 * This function will not throw.
 		 */
@@ -144,7 +142,7 @@ namespace GPlatesModel
 		operator=(
 				const WeakReference &other)
 		{
-			WeakObserver<H, ConstH>::operator=(other);
+			WeakObserver<H>::operator=(other);
 			return *this;
 		}
 
@@ -155,7 +153,7 @@ namespace GPlatesModel
 		 */
 		bool
 		references(
-				const_handle_type &that_handle) const
+				const handle_type &that_handle) const
 		{
 			return (handle_ptr() == &that_handle);
 		}
@@ -229,6 +227,18 @@ namespace GPlatesModel
 		{
 			return handle_ptr();
 		}
+
+		/**
+		 * Accept a WeakObserverVisitor instance.
+		 */
+		virtual
+		void
+		accept_weak_observer_visitor(
+				WeakObserverVisitor<H> &visitor)
+		{
+			visitor.visit_weak_reference(*this);
+		}
+
 	};
 
 }

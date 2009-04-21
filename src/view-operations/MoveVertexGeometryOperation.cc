@@ -25,13 +25,14 @@
  */
 
 #include <memory>
-#include <boost/bind.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <QUndoCommand>
 
-#include "GeometryBuilderUndoCommands.h"
-#include "RenderedGeometryProximity.h"
 #include "MoveVertexGeometryOperation.h"
+
+#include "ActiveGeometryOperation.h"
+#include "GeometryBuilderUndoCommands.h"
+#include "GeometryOperationUndo.h"
+#include "RenderedGeometryProximity.h"
 #include "QueryProximityThreshold.h"
 #include "RenderedGeometryFactory.h"
 #include "RenderedGeometryLayerVisitor.h"
@@ -43,164 +44,16 @@
 #include "maths/ProximityCriteria.h"
 
 
-namespace GPlatesViewOperations
-{
-	namespace
-	{
-		/**
-		 * Undo/redo command for grouping child commands into one command.
-		 * The base @a QUndoCommand already does this - we just add
-		 * @a RenderedGeometryCollection update guards to ensure only one
-		 * update signal is generated within a @a redo or @a undo call.
-		 */
-		class GroupMoveVertexUndoCommand :
-			public QUndoCommand
-		{
-		public:
-			GroupMoveVertexUndoCommand(
-					const QString &text_,
-					UndoRedo::CommandId command_id,
-					MoveVertexGeometryOperation *move_vertex_operation,
-					GeometryBuilder *geometry_builder,
-					GeometryBuilder::PointIndex selected_vertex_index,
-					const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
-					bool is_intermediate_move,
-					RenderedGeometryCollection::MainLayerType main_layer_type,
-					RenderedGeometryCollection &rendered_geom_collection,
-					GPlatesGui::ChooseCanvasTool *choose_canvas_tool,
-					QUndoCommand *parent_ = 0) :
-				QUndoCommand(text_, parent_),
-				d_first_redo(true),
-				d_command_id(command_id),
-				d_move_vertex_operation(move_vertex_operation),
-				d_geometry_builder(geometry_builder),
-				d_main_layer_type(main_layer_type),
-				d_rendered_geom_collection(&rendered_geom_collection),
-				d_move_vertex_command(
-					// Add child undo command for moving a vertex.
-					new GeometryBuilderMovePointUndoCommand(
-							geometry_builder,
-							selected_vertex_index,
-							oriented_pos_on_sphere,
-							is_intermediate_move)),
-				d_choose_canvas_tool_command(
-					// Add child undo command for selecting the move vertex tool.
-					// When or if this undo/redo command gets called the move
-					// vertex tool may not be active so make sure it gets activated
-					// so user can see what's being undone/redone.
-					new GPlatesGui::ChooseCanvasToolUndoCommand(
-							choose_canvas_tool,
-							&GPlatesGui::ChooseCanvasTool::choose_move_vertex_tool))
-			{
-			}
-
-			virtual
-			void
-			redo()
-			{
-				// Delay any notification of changes to the rendered geometry collection
-				// until end of current scope block.
-				GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
-				// Visit child commands.
-				//
-				// 1) Activate canvas tool - show appropriate high-level GUI stuff.
-				// 2) Activate move vertex operation so it's in same state as when
-				//    it performed the original operation.
-				// 3) Redo the move vertex operation.
-
-				d_choose_canvas_tool_command->redo();
-
-				// Don't do anything the first call to 'redo()' because the
-				// move vertex operation is already activated.
-				if (!d_first_redo)
-				{
-					d_move_vertex_operation->deactivate();
-					d_move_vertex_operation->activate(d_geometry_builder, d_main_layer_type);
-				}
-
-				d_move_vertex_command->redo();
-
-				d_first_redo = false;
-			}
-
-			virtual
-			void
-			undo()
-			{
-				// Delay any notification of changes to the rendered geometry collection
-				// until end of current scope block.
-				GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
-				// Visit child commands.
-				//
-				// 1) Activate canvas tool - show appropriate high-level GUI stuff.
-				// 2) Activate move vertex operation so it's in same state as when
-				//    it performed the original operation.
-				// 3) Undo the move vertex operation.
-				d_choose_canvas_tool_command->undo();
-				d_move_vertex_operation->deactivate();
-				d_move_vertex_operation->activate(d_geometry_builder, d_main_layer_type);
-				d_move_vertex_command->undo();
-			}
-
-			virtual
-			int
-			id() const
-			{
-				return d_command_id.get_id();
-			}
-
-			/**
-			 * Merge this move command with another move command.
-			 * Returns @a true if merged in which case other command will be
-			 * deleted by Qt and this command will coalesce both commands.
-			 */
-			virtual
-			bool
-			mergeWith(
-					const QUndoCommand *other_command)
-			{
-				// If other command is same type as us then coalesce its command into us.
-				const GroupMoveVertexUndoCommand *other_group_move_command =
-					dynamic_cast<const GroupMoveVertexUndoCommand *>(other_command);
-
-				if (other_group_move_command != NULL)
-				{
-					// Merge the other move vertex command with ours.
-					d_move_vertex_command->mergeWith(
-							other_group_move_command->d_move_vertex_command.get());
-
-					// Forget about the other select canvas tool command as it does
-					// the same as ours.
-
-					return true;
-				}
-
-				return false;
-			}
-
-		private:
-			bool d_first_redo;
-			UndoRedo::CommandId d_command_id;
-			MoveVertexGeometryOperation *d_move_vertex_operation;
-			GeometryBuilder *d_geometry_builder;
-			RenderedGeometryCollection::MainLayerType d_main_layer_type;
-			RenderedGeometryCollection *d_rendered_geom_collection;
-			boost::scoped_ptr<GeometryBuilderMovePointUndoCommand> d_move_vertex_command;
-			boost::scoped_ptr<GPlatesGui::ChooseCanvasToolUndoCommand> d_choose_canvas_tool_command;
-		};
-	}
-}
-
 GPlatesViewOperations::MoveVertexGeometryOperation::MoveVertexGeometryOperation(
+		GeometryOperationTarget &geometry_operation_target,
+		ActiveGeometryOperation &active_geometry_operation,
 		RenderedGeometryCollection *rendered_geometry_collection,
-		RenderedGeometryFactory *rendered_geometry_factory,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		const QueryProximityThreshold &query_proximity_threshold) :
 d_geometry_builder(NULL),
+d_geometry_operation_target(&geometry_operation_target),
+d_active_geometry_operation(&active_geometry_operation),
 d_rendered_geometry_collection(rendered_geometry_collection),
-d_rendered_geometry_factory(rendered_geometry_factory),
 d_choose_canvas_tool(&choose_canvas_tool),
 d_query_proximity_threshold(&query_proximity_threshold),
 d_selected_vertex_index(0),
@@ -213,6 +66,15 @@ GPlatesViewOperations::MoveVertexGeometryOperation::activate(
 		GeometryBuilder *geometry_builder,
 		RenderedGeometryCollection::MainLayerType main_layer_type)
 {
+	// Do nothing if NULL geometry builder.
+	if (geometry_builder == NULL)
+	{
+		return;
+	}
+
+	// Let others know we're the currently activated GeometryOperation.
+	d_active_geometry_operation->set_active_geometry_operation(this);
+
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
@@ -223,11 +85,21 @@ GPlatesViewOperations::MoveVertexGeometryOperation::activate(
 	// Activate the main rendered layer.
 	d_rendered_geometry_collection->set_main_layer_active(main_layer_type);
 
+	// Deactivate all rendered geometry layers of our main rendered layer.
+	// This hides what other tools have drawn into our main rendered layer.
+	RenderedGeometryUtils::deactivate_rendered_geometry_layers(
+			*d_rendered_geometry_collection, main_layer_type);
+
 	connect_to_geometry_builder_signals();
 
 	// Create the rendered geometry layers required by the GeometryBuilder state
 	// and activate/deactivate appropriate layers.
 	create_rendered_geometry_layers();
+
+	// Activate our render layers so they become visible.
+	d_lines_layer_ptr->set_active(true);
+	d_points_layer_ptr->set_active(true);
+	d_highlight_point_layer_ptr->set_active(true);
 
 	// Fill the rendered layers with RenderedGeometry objects by querying
 	// the GeometryBuilder state.
@@ -237,6 +109,17 @@ GPlatesViewOperations::MoveVertexGeometryOperation::activate(
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::deactivate()
 {
+	// Do nothing if NULL geometry builder.
+	if (d_geometry_builder == NULL)
+	{
+		return;
+	}
+
+	emit_unhighlight_signal(d_geometry_builder);
+
+	// Let others know there's no currently activated GeometryOperation.
+	d_active_geometry_operation->set_no_active_geometry_operation();
+
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
@@ -259,6 +142,12 @@ GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
 		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
 {
+	// Do nothing if NULL geometry builder.
+	if (d_geometry_builder == NULL)
+	{
+		return;
+	}
+
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
@@ -267,25 +156,15 @@ GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
 	// See if the user selected a vertex with their mouse click.
 	//
 
-	const double closeness_inclusion_threshold =
-		d_query_proximity_threshold->current_proximity_inclusion_threshold(
-				clicked_pos_on_sphere);
-
-	GPlatesMaths::ProximityCriteria proximity_criteria(
-			oriented_pos_on_sphere,
-			closeness_inclusion_threshold);
-
-	sorted_digitisation_proximity_hits_type sorted_hits;
-	if (test_proximity(sorted_hits, *d_points_layer_ptr, proximity_criteria))
+	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
+			clicked_pos_on_sphere, oriented_pos_on_sphere);
+	if (closest_hit)
 	{
-		// Only interested in the closest vertex in the layer.
-		const RenderedGeometryProximityHit &closest_hit = sorted_hits.front();
-
 		// The index of the vertex selected corresponds to index of vertex in
 		// the geometry.
 		// NOTE: this will have to be changed when multiple internal geometries are
 		// possible in the GeometryBuilder.
-		d_selected_vertex_index = closest_hit.d_rendered_geom_index;
+		d_selected_vertex_index = closest_hit->d_rendered_geom_index;
 
 		// Get a unique command id so that all move vertex commands in the
 		// current mouse drag will be merged together.
@@ -293,6 +172,9 @@ GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
 		d_move_vertex_command_id = UndoRedo::instance().get_unique_command_id();
 
 		d_is_vertex_selected = true;
+
+		// Highlight the vertex the mouse is currently hovering over.
+		update_highlight_rendered_point(d_selected_vertex_index);
 	}
 }
 
@@ -300,6 +182,12 @@ void
 GPlatesViewOperations::MoveVertexGeometryOperation::update_drag(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
 {
+	// Do nothing if NULL geometry builder.
+	if (d_geometry_builder == NULL)
+	{
+		return;
+	}
+
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
@@ -308,6 +196,9 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_drag(
 	if (d_is_vertex_selected)
 	{
 		move_vertex(oriented_pos_on_sphere, true/*is_intermediate_move*/);
+
+		// Highlight the vertex the mouse is currently hovering over.
+		update_highlight_rendered_point(d_selected_vertex_index);
 	}
 }
 
@@ -315,18 +206,92 @@ void
 GPlatesViewOperations::MoveVertexGeometryOperation::end_drag(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
 {
+	// Do nothing if NULL geometry builder.
+	if (d_geometry_builder == NULL)
+	{
+		return;
+	}
+
 	// If a vertex was selected when user first clicked mouse then move the vertex.
 	if (d_is_vertex_selected)
 	{
 		// Do the final move vertex command to signal that this is the final
 		// move of this drag.
 		move_vertex(oriented_pos_on_sphere, false/*is_intermediate_move*/);
+
+		// Highlight the vertex the mouse is currently hovering over.
+		update_highlight_rendered_point(d_selected_vertex_index);
 	}
 
 	// Release our handle on the command id.
 	d_move_vertex_command_id = UndoRedo::CommandId();
 
 	d_is_vertex_selected = false;
+}
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
+		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+{
+	// Do nothing if NULL geometry builder.
+	if (d_geometry_builder == NULL)
+	{
+		return;
+	}
+
+	//
+	// See if the mouse cursor is near a vertex and highlight it if it is.
+	//
+
+	// Clear any currently highlighted point first.
+	d_highlight_point_layer_ptr->clear_rendered_geometries();
+
+	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
+			clicked_pos_on_sphere, oriented_pos_on_sphere);
+	if (closest_hit)
+	{
+		const GeometryBuilder::PointIndex highlight_vertex_index = closest_hit->d_rendered_geom_index;
+
+		update_highlight_rendered_point(highlight_vertex_index);
+
+		// Currently only one internal geometry is supported so set geometry index to zero.
+		const GeometryBuilder::GeometryIndex geometry_index = 0;
+
+		emit_highlight_point_signal(d_geometry_builder,
+				geometry_index,
+				highlight_vertex_index,
+				GeometryOperationParameters::HIGHLIGHT_COLOUR);
+	}
+	else
+	{
+		emit_unhighlight_signal(d_geometry_builder);
+	}
+}
+
+boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
+GPlatesViewOperations::MoveVertexGeometryOperation::test_proximity_to_points(
+		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+{
+	const double closeness_inclusion_threshold =
+		d_query_proximity_threshold->current_proximity_inclusion_threshold(
+				clicked_pos_on_sphere);
+
+	GPlatesMaths::ProximityCriteria proximity_criteria(
+			oriented_pos_on_sphere,
+			closeness_inclusion_threshold);
+
+	sorted_rendered_geometry_proximity_hits_type sorted_hits;
+	if (!test_proximity(sorted_hits, *d_points_layer_ptr, proximity_criteria))
+	{
+		return boost::none;
+	}
+
+	// Only interested in the closest vertex in the layer.
+	const RenderedGeometryProximityHit &closest_hit = sorted_hits.front();
+
+	return closest_hit;
 }
 
 void
@@ -344,6 +309,13 @@ GPlatesViewOperations::MoveVertexGeometryOperation::create_rendered_geometry_lay
 	// Create a rendered layer to draw the points in the geometry on top of the lines.
 	// NOTE: this must be created second to get drawn on top.
 	d_points_layer_ptr =
+		d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
+				d_main_layer_type);
+
+	// Create a rendered layer to draw a single point in the geometry on top of the usual points
+	// when the mouse cursor hovers over one of them.
+	// NOTE: this must be created third to get drawn on top of the points.
+	d_highlight_point_layer_ptr =
 		d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
 				d_main_layer_type);
 
@@ -388,20 +360,30 @@ GPlatesViewOperations::MoveVertexGeometryOperation::move_vertex(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 		bool is_intermediate_move)
 {
-	// Group two undo commands into one - move vertex and select move-vertex
-	// canvas tool.
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block.
+	RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// The command that does the actual moving of vertex.
+	std::auto_ptr<QUndoCommand> move_vertex_command(
+			new GeometryBuilderMovePointUndoCommand(
+					d_geometry_builder,
+					d_selected_vertex_index,
+					oriented_pos_on_sphere,
+					is_intermediate_move));
+
+	// Command wraps move vertex command with handing canvas tool choice and
+	// move vertex tool activation.
 	std::auto_ptr<QUndoCommand> undo_command(
-		new GroupMoveVertexUndoCommand(
-		QObject::tr("move vertex"),
-		d_move_vertex_command_id,
-		this,
-		d_geometry_builder,
-		d_selected_vertex_index,
-		oriented_pos_on_sphere,
-		is_intermediate_move,
-		d_main_layer_type,
-		*d_rendered_geometry_collection,
-		d_choose_canvas_tool));
+			new GeometryOperationUndoCommand(
+					QObject::tr("move vertex"),
+					move_vertex_command,
+					this,
+					d_geometry_operation_target,
+					d_main_layer_type,
+					d_choose_canvas_tool,
+					&GPlatesGui::ChooseCanvasTool::choose_move_vertex_tool,
+					d_move_vertex_command_id));
 
 	// Push command onto undo list.
 	// Note: the command's redo() gets executed inside the push() call and this is where
@@ -416,17 +398,18 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_rendered_geometries()
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
 
-	// Deactivate all rendered geometry layers of the main rendered layer 'main_layer_type'.
-	deactivate_rendered_geometry_layers(*d_rendered_geometry_collection, d_main_layer_type);
-
-	// Activate our render layers so they become visible.
-	d_lines_layer_ptr->set_active(true);
-	d_points_layer_ptr->set_active(true);
-
 	// Clear all RenderedGeometry objects from the render layers first.
 	d_lines_layer_ptr->clear_rendered_geometries();
 	d_points_layer_ptr->clear_rendered_geometries();
+	d_highlight_point_layer_ptr->clear_rendered_geometries();
 
+	// If a vertex is currently selected then draw it highlighted.
+	if (d_is_vertex_selected)
+	{
+		update_highlight_rendered_point(d_selected_vertex_index);
+	}
+
+	// Iterate through the internal geometries (currently only one is supported).
 	for (GeometryBuilder::GeometryIndex geom_index = 0;
 		geom_index < d_geometry_builder->get_num_geometries();
 		++geom_index)
@@ -474,8 +457,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_lines_for_polyl
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 		GPlatesMaths::PolylineOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
 
-	RenderedGeometry rendered_geom =
-		d_rendered_geometry_factory->create_rendered_polyline_on_sphere(
+	RenderedGeometry rendered_geom = create_rendered_polyline_on_sphere(
 				polyline_on_sphere,
 				GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 				GeometryOperationParameters::LINE_WIDTH_HINT);
@@ -497,8 +479,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_lines_for_polyg
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 		GPlatesMaths::PolygonOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
 
-	RenderedGeometry rendered_geom =
-		d_rendered_geometry_factory->create_rendered_polygon_on_sphere(
+	RenderedGeometry rendered_geom = create_rendered_polygon_on_sphere(
 				polygon_on_sphere,
 				GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 				GeometryOperationParameters::LINE_WIDTH_HINT);
@@ -523,8 +504,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_points(
 	{
 		const GPlatesMaths::PointOnSphere &point_on_sphere = *builder_geom_iter;
 
-		RenderedGeometry rendered_geom =
-			d_rendered_geometry_factory->create_rendered_point_on_sphere(
+		RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
 			point_on_sphere,
 			GeometryOperationParameters::FOCUS_COLOUR,
 			GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
@@ -532,4 +512,26 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_points(
 		// Add to the points layer.
 		d_points_layer_ptr->add_rendered_geometry(rendered_geom);
 	}
+}
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::update_highlight_rendered_point(
+		const GeometryBuilder::PointIndex highlight_point_index)
+{
+	// Clear any geometry before adding.
+	d_highlight_point_layer_ptr->clear_rendered_geometries();
+
+	// Currently only one internal geometry is supported so set geometry index to zero.
+	const GeometryBuilder::GeometryIndex geometry_index = 0;
+
+	// Get the highlighted point.
+	const GPlatesMaths::PointOnSphere &highlight_point_on_sphere =
+			d_geometry_builder->get_geometry_point(geometry_index, highlight_point_index);
+
+	RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
+		highlight_point_on_sphere,
+		GeometryOperationParameters::HIGHLIGHT_COLOUR,
+		GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
+
+	d_highlight_point_layer_ptr->add_rendered_geometry(rendered_geom);
 }

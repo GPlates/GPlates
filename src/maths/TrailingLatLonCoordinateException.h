@@ -28,8 +28,6 @@
 #ifndef GPLATES_MATHS_TRAILINGLATLONCOORDINATEEXCEPTION_H
 #define GPLATES_MATHS_TRAILINGLATLONCOORDINATEEXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
 #include "global/ExternalResourceFailureException.h"
 
 
@@ -50,14 +48,12 @@ namespace GPlatesMaths
 		 * @param sequence_len_ is the length of the sequence in question.
 		 */
 		TrailingLatLonCoordinateException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
 				const double &trailing_coord_,
-				size_type sequence_len_):
+				size_type sequence_len_) :
+			GPlatesGlobal::ExternalResourceFailureException(exception_source),
 			d_trailing_coord(trailing_coord_),
 			d_sequence_len(sequence_len_)
-		{  }
-
-		virtual
-		~TrailingLatLonCoordinateException()
 		{  }
 
 		const double &
@@ -74,7 +70,7 @@ namespace GPlatesMaths
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "TrailingLatLonCoordinateException";
@@ -83,12 +79,8 @@ namespace GPlatesMaths
 		virtual
 		void
 		write_message(
-				std::ostream &os) const
-		{
-			// FIXME:  This function should really be defined in a .cc file.
-			os << "trailing coordinate " << d_trailing_coord
-					<< " in sequence of length " << d_sequence_len;
-		}
+				std::ostream &os) const;
+
 	private:
 		const double d_trailing_coord;
 		const size_type d_sequence_len;

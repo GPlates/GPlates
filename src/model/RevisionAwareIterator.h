@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,6 +30,7 @@
 
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
 #include "WeakObserver.h"
+//#include "WeakObserverVisitor.h"
 
 
 namespace GPlatesModel
@@ -62,38 +63,25 @@ namespace GPlatesModel
 	 * @par The template parameters
 	 * The template parameters are:
 	 *  - @em H: the type of the handle of the revisioning collection (for example,
-	 * '@c FeatureCollectionHandle ' or '@c const @c FeatureCollectionHandle ', depending on
-	 * whether the collection should be const or not)
-	 *  - @em ConstH: the const-type of the handle (for example,
-	 * '@c const @c FeatureCollectionHandle ')
+	 * '@c FeatureCollectionHandle ')
 	 *  - @em C: the type of the container over which this iterator will iterate (for example,
 	 * '@c std::vector@<boost::intrusive_ptr@<FeatureHandle@>@> ')
 	 *  - @em D: the type of the container elements, the type to which the iterator will
 	 * dereference (for example,
-	 * '@c boost::intrusive_ptr@<FeatureHandle@> ' or
-	 * '@c boost::intrusive_ptr@<const @c FeatureHandle@> ')
+	 * '@c boost::intrusive_ptr@<FeatureHandle@> ')
 	 */
-	template<typename H, typename ConstH, typename C, typename D>
+	template<typename H, typename C, typename D>
 	class RevisionAwareIterator:
-			public WeakObserver<H, ConstH>,
+			public WeakObserver<H>,
 			public std::iterator<std::bidirectional_iterator_tag, D>
 	{
 	public:
 		/**
 		 * This is the type of the handle of the revisioning collection.
 		 *
-		 * (For example, '@c FeatureCollectionHandle ' or
-		 * '@c const @c FeatureCollectionHandle ', depending on whether the collection
-		 * should be const or not.)
+		 * (For example, '@c FeatureCollectionHandle ')
 		 */
 		typedef H collection_handle_type;
-
-		/**
-		 * This is the const-type of the handle of the revisioning collection.
-		 *
-		 * (For example, '@c const @c FeatureCollectionHandle '.)
-		 */
-		typedef ConstH const_collection_handle_type;
 
 		/**
 		 * This is the type of the container over which this iterator will iterate.
@@ -164,6 +152,10 @@ namespace GPlatesModel
 			d_index(0)
 		{  }
 
+		virtual
+		~RevisionAwareIterator()
+		{  }
+
 		/**
 		 * Return the pointer to the collection handle.
 		 *
@@ -179,7 +171,7 @@ namespace GPlatesModel
 		collection_handle_type *
 		collection_handle_ptr() const
 		{
-			return WeakObserver<H, ConstH>::publisher_ptr();
+			return WeakObserver<H>::publisher_ptr();
 		}
 
 		/**
@@ -213,7 +205,7 @@ namespace GPlatesModel
 		operator=(
 				const RevisionAwareIterator &other)
 		{
-			WeakObserver<H, ConstH>::operator=(other);
+			WeakObserver<H>::operator=(other);
 			d_index = other.d_index;
 
 			return *this;
@@ -330,6 +322,25 @@ namespace GPlatesModel
 			--d_index;
 			return original;
 		}
+
+		/**
+		 * Accept a WeakObserverVisitor instance.
+		 */
+		virtual
+		void
+		accept_weak_observer_visitor(
+				WeakObserverVisitor<H> &visitor)
+		{
+#if 0
+			// FIXME:  What I'm doing right now is very very bad.
+			// Class RevisionAwareIterator is not telling the WeakObserverVisitor to
+			// visit it.  I'm doing this because class RevisionAwareIterator has extra
+			// template parameters, and I can't work out an easy way to handle these in
+			// the function 'visit_revision_aware_iterator' in WeakObserverVisitor.
+			visitor.visit_revision_aware_iterator(*this);
+#endif
+		}
+
 	private:
 		/**
 		 * Return the size of the container in the supplied collection_handle_type.
@@ -353,7 +364,7 @@ namespace GPlatesModel
 		RevisionAwareIterator(
 				collection_handle_type &collection_handle,
 				index_type index_):
-			WeakObserver<H, ConstH>(collection_handle),
+			WeakObserver<H>(collection_handle),
 			d_index(index_)
 		{  }
 

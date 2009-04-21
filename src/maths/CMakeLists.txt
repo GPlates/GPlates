@@ -34,7 +34,9 @@ set(srcs
     IndeterminateResultException.h
     InvalidGreatCircleArcException.h
     InvalidGridException.h
+    InvalidLatLonCoordinateException.cc
     InvalidLatLonCoordinateException.h
+    InvalidLatLonException.cc
     InvalidLatLonException.h
     InvalidOperationException.h
     InvalidPolylineContainsOnlyOnePointException.h
@@ -72,6 +74,7 @@ set(srcs
     SmallCircle.cc
     SmallCircle.h
     SphericalCollection.h
+    TrailingLatLonCoordinateException.cc
     TrailingLatLonCoordinateException.h
     types.h
     UnableToExtendPointlikeArcException.h

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,27 +26,69 @@
  */
 
 #include <iostream>
+#include <sstream>
+
 #include "GPlatesException.h"
+
+
+GPlatesGlobal::Exception::Exception(
+		const GPlatesUtils::CallStack::Trace &exception_source)
+{
+	// Push the location of the thrown exception onto the call stack before
+	// saving the call stack as a string.
+	// The location will then get popped when we exit this constructor.
+	GPlatesUtils::CallStackTracker call_stack_tracker(exception_source);
+
+	generate_call_stack_trace_string();
+}
 
 
 void
 GPlatesGlobal::Exception::write(
 		std::ostream &os) const
 {
-	os << ExceptionName();
+	os << exception_name();
 
-	// output a message (if it exists)
-	// FIXME:  Surely a message should always exist?  (I can't think of any useful exceptions
-	// which shouldn't contain some specific information.)
-	// FIXME:  Rather than creating a string for the message, there should be a 'write_message'
-	// function which accepts this same ostream.
-	std::string msg = Message();
-	if ( ! msg.empty()) {
+	os << ": ";
 
-		os << "(\"" << msg << "\")";
-	} else {
-		os << ": ";
-		write_message(os);
-	}
+	// Get derived class to output a message.
+	write_message(os);
 }
 
+
+void
+GPlatesGlobal::Exception::write_string_message(
+		std::ostream &os,
+		const std::string &message) const
+{
+	os << message;
+}
+
+
+void
+GPlatesGlobal::Exception::generate_call_stack_trace_string()
+{
+	GPlatesUtils::CallStack &call_stack = GPlatesUtils::CallStack::instance();
+
+	std::ostringstream output_string_stream;
+
+	output_string_stream << "Call stack trace:" << std::endl;
+
+	GPlatesUtils::CallStack::trace_const_iterator trace_iter;
+	for (trace_iter = call_stack.call_stack_begin();
+		trace_iter != call_stack.call_stack_end();
+		++trace_iter)
+	{
+		const GPlatesUtils::CallStack::Trace &trace = *trace_iter;
+
+		output_string_stream
+				<< '('
+				<< trace.get_filename()
+				<< ", "
+				<< trace.get_line_num()
+				<< ')'
+				<< std::endl;
+	}
+
+	d_call_stack_trace_string = output_string_stream.str();
+}

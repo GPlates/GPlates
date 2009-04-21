@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,6 +30,7 @@
 
 #include <boost/optional.hpp>
 #include "ReconstructionGeometry.h"
+#include "WeakObserver.h"
 #include "types.h"
 #include "FeatureHandle.h"
 #include "property-values/GeoTimeInstant.h"
@@ -38,7 +39,8 @@
 namespace GPlatesModel
 {
 	class ReconstructedFeatureGeometry:
-			public ReconstructionGeometry
+			public ReconstructionGeometry,
+			public WeakObserver<FeatureHandle>
 	{
 	public:
 		/**
@@ -61,6 +63,11 @@ namespace GPlatesModel
 		 * A convenience typedef for boost::intrusive_ptr<ReconstructedFeatureGeometry>.
 		 */
 		typedef boost::intrusive_ptr<ReconstructedFeatureGeometry> maybe_null_ptr_type;
+
+		/**
+		 * A convenience typedef for the WeakObserver base class of this class.
+		 */
+		typedef WeakObserver<FeatureHandle> WeakObserverType;
 
 		/**
 		 * Create a ReconstructedFeatureGeometry instance with an optional
@@ -123,14 +130,49 @@ namespace GPlatesModel
 		get_non_null_pointer();
 
 		/**
-		 * Access (a reference to) the feature whose reconstructed geometry this RFG
-		 * contains.
+		 * Return whether this RFG references @a that_feature_handle.
+		 *
+		 * This function will not throw.
 		 */
-		const FeatureHandle::weak_ref &
-		feature_ref() const
+		bool
+		references(
+				const FeatureHandle &that_feature_handle) const
 		{
-			return d_feature_ref;
+			return (feature_handle_ptr() == &that_feature_handle);
 		}
+
+		/**
+		 * Return the pointer to the FeatureHandle.
+		 *
+		 * The pointer returned will be NULL if this instance does not reference a
+		 * FeatureHandle; non-NULL otherwise.
+		 *
+		 * This function will not throw.
+		 */
+		FeatureHandle *
+		feature_handle_ptr() const
+		{
+			return WeakObserverType::publisher_ptr();
+		}
+
+		/**
+		 * Return whether this pointer is valid to be dereferenced (to obtain a
+		 * FeatureHandle).
+		 *
+		 * This function will not throw.
+		 */
+		bool
+		is_valid() const
+		{
+			return (feature_handle_ptr() != NULL);
+		}
+
+		/**
+		 * Return a weak-ref to the feature whose reconstructed geometry this RFG contains,
+		 * or an invalid weak-ref, if this pointer is not valid to be dereferenced.
+		 */
+		const FeatureHandle::weak_ref
+		get_feature_ref() const;
 
 		/**
 		 * Access the feature property which contained the reconstructed geometry.
@@ -165,7 +207,6 @@ namespace GPlatesModel
 			return d_reconstruction_feature_time;
 		}
 
-
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
 		 */
@@ -174,13 +215,16 @@ namespace GPlatesModel
 		accept_visitor(
 				ReconstructionGeometryVisitor &visitor);
 
+		/**
+		 * Accept a WeakObserverVisitor instance.
+		 */
+		virtual
+		void
+		accept_weak_observer_visitor(
+				WeakObserverVisitor<FeatureHandle> &visitor);
+
 	private:
 
-		/**
-		 * This is a weak-ref to the feature, of which this RFG is a reconstruction.
-		 */
-		FeatureHandle::weak_ref d_feature_ref;
-		
 		/**
 		 * This is an iterator to the (geometry-valued) property from which this RFG was
 		 * derived.
@@ -221,7 +265,7 @@ namespace GPlatesModel
 				boost::optional<integer_plate_id_type> reconstruction_plate_id_opt_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> reconstruction_feature_time_opt_):
 			ReconstructionGeometry(geometry_ptr),
-			d_feature_ref(feature_handle.reference()),
+			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_),
 			d_reconstruction_plate_id(reconstruction_plate_id_opt_),
 			d_reconstruction_feature_time(reconstruction_feature_time_opt_)
@@ -239,7 +283,7 @@ namespace GPlatesModel
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_):
 			ReconstructionGeometry(geometry_ptr),
-			d_feature_ref(feature_handle.reference()),
+			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_)
 		{  }
 
@@ -256,27 +300,6 @@ namespace GPlatesModel
 		operator=(
 				const ReconstructedFeatureGeometry &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const ReconstructedFeatureGeometry *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const ReconstructedFeatureGeometry *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H

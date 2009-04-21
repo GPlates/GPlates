@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,207 +28,84 @@
 #ifndef GPLATES_MODEL_MODELINTERFACE_H
 #define GPLATES_MODEL_MODELINTERFACE_H
 
-#include <vector>
-#include "FeatureCollectionHandle.h"
-#include "FeatureHandle.h"
-#include "WeakReference.h"
-#include "Reconstruction.h"
-#include "RevisionId.h"
-#include "types.h"
+#include <boost/shared_ptr.hpp>
 #include "FeatureIdRegistry.h"
 
 
 namespace GPlatesModel
 {
+	class Model;
+
+	/**
+	 * This class serves as a very simple "p-impl" interface to class Model.
+	 *
+	 * This will create a "compiler firewall" (in order to speed up build times) as well as an
+	 * architectural separation between the Model tier (embodied by the Model class) and the
+	 * other GPlates tiers which use the Model.
+	 *
+	 * Classes outside the Model tier should pass around ModelInterface instances, never Model
+	 * instances.  A ModelInterface instance can be copy-constructed cheaply (since the
+	 * copy-construction involves only the copy of a pointer member and the increment of a
+	 * ref-count integer) and copy-assigned cheaply.
+	 *
+	 * Header files outside of the Model tier should only #include "model/ModelInterface.h",
+	 * never "model/Model.h".  "model/Model.h" should only be #included in ".cc" files when
+	 * necessary (ie, whenever you want to access the members of the Model instance through the
+	 * ModelInterface, and hence need the class definition of Model).
+	 */
 	class ModelInterface
 	{
 	public:
 		/**
-		 * Create a new, empty feature collection in the feature store.
+		 * Construct a new ModelInterface instance.
 		 *
-		 * A valid weak reference to the new feature collection will be returned.
+		 * This will also create a new Model instance, which will be managed by the
+		 * ModelInterface instance.
 		 */
-		virtual
-		const FeatureCollectionHandle::weak_ref
-		create_feature_collection() = 0;
+		ModelInterface();
 
 		/**
-		 * Create a new feature of feature-type @a feature_type within the feature
-		 * collection referenced by @a target_collection.
+		 * Copy-construct a new ModelInterface instance.
 		 *
-		 * The feature ID of this feature will be auto-generated.
-		 *
-		 * A valid weak reference to the new feature will be returned.  As a result of this
-		 * function, the feature collection referenced by @a target_collection will be
-		 * modified.
-		 *
-		 * If the feature collection referenced by @a target_collection was already
-		 * deactivated, or the reference @a target collection was already not valid, before
-		 * @a target_collection was passed as a parameter, this function will throw an
-		 * exception.
+		 * The new ModelInterface instance will share the Model instance which is managed
+		 * by @other.
 		 */
-		virtual
-		const FeatureHandle::weak_ref
-		create_feature(
-				const FeatureType &feature_type,
-				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
+		ModelInterface(
+				const ModelInterface &other):
+			d_model_ptr(other.d_model_ptr)
+		{  }
 
 		/**
-		 * Create a new feature of feature-type @a feature_type, with feature ID
-		 * @a feature_id, within @a target_collection.
+		 * Destroy this ModelInterface instance.
 		 *
-		 * A valid weak reference to the new feature will be returned.  As a result of this
-		 * function, the feature collection referenced by @a target_collection will be
-		 * modified.
-		 *
-		 * If the feature collection referenced by @a target_collection was already
-		 * deactivated, or the reference @a target collection was already not valid, before
-		 * @a target_collection was passed as a parameter, this function will throw an
-		 * exception.
+		 * This will also deallocate the Model instance which is managed by this
+		 * ModelInterface instance.
 		 */
-		virtual
-		const FeatureHandle::weak_ref
-		create_feature(
-				const FeatureType &feature_type,
-				const FeatureId &feature_id,
-				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
-
-		/**
-		 * Create a new feature of feature-type @a feature_type, with revision ID
-		 * @a revision_id, within @a target_collection.
-		 *
-		 * A valid weak reference to the new feature will be returned.  As a result of this
-		 * function, the feature collection referenced by @a target_collection will be
-		 * modified.
-		 *
-		 * If the feature collection referenced by @a target_collection was already
-		 * deactivated, or the reference @a target collection was already not valid, before
-		 * @a target_collection was passed as a parameter, this function will throw an
-		 * exception.
-		 */
-		virtual
-		const FeatureHandle::weak_ref
-		create_feature(
-				const FeatureType &feature_type,
-				const RevisionId &revision_id,
-				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
-
-		/**
-		 * Create a new feature of feature-type @a feature_type, with feature ID
-		 * @a feature_id and revision ID @ revision_id, within @a target_collection.
-		 *
-		 * A valid weak reference to the new feature will be returned.  As a result of this
-		 * function, the feature collection referenced by @a target_collection will be
-		 * modified.
-		 *
-		 * If the feature collection referenced by @a target_collection was already
-		 * deactivated, or the reference @a target collection was already not valid, before
-		 * @a target_collection was passed as a parameter, this function will throw an
-		 * exception.
-		 */
-		virtual
-		const FeatureHandle::weak_ref
-		create_feature(
-				const FeatureType &feature_type,
-				const FeatureId &feature_id,
-				const RevisionId &revision_id,
-				const FeatureCollectionHandle::weak_ref &target_collection) = 0;
-
-#if 0
-		/**
-		 * Remove @a collection from the feature store.
-		 *
-		 * As a result of this operation, the feature collection referenced by
-		 * @a collection will become deactivated.
-		 *
-		 * If the feature collection referenced by @a collection was already deactivated,
-		 * or the reference @a collection was already not valid, before @a collection was
-		 * passed as a parameter, this function will throw an exception.
-		 */
-		virtual
-		void
-		remove_feature_collection(
-				const FeatureCollectionHandle::weak_ref &collection) = 0;
-
-		/**
-		 * Remove @a feature from @a containing_collection.
-		 *
-		 * If @a feature is not actually an element of @a containing_collection, this
-		 * operation will be a no-op.
-		 *
-		 * If @a feature @em is an element of @a containing_collection, @a feature will
-		 * become deactivated, and @a containing_collection will be modified.
-		 *
-		 * If the feature referenced by @a feature was already deactivated, or the
-		 * reference @a feature was already not valid, before @a feature was passed as a
-		 * parameter, this function will throw an exception.
-		 *
-		 * If the feature collection referenced by @a containing_collection was already
-		 * deactivated, or the reference @a containing collection was already not valid,
-		 * before @a containing_collection was passed as a parameter, this function will
-		 * throw an exception.
-		 */
-		virtual
-		void
-		remove_feature(
-				const FeatureHandle::weak_ref &feature,
-				const FeatureCollectionHandle::weak_ref &containing_collection) = 0;
-#endif
-
-		/**
-		 * FIXME:  Where is the comment for this function?
-		 *
-		 * And while we're at it, do any of those other functions actually throw exceptions
-		 * when they're passed invalid weak_refs?  They should.
-		 */
-		virtual
-		const Reconstruction::non_null_ptr_type
-		create_reconstruction(
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-				const double &time,
-				integer_plate_id_type root) = 0;
-
-
-		/**
-		 * FIXME:  Where is the comment for this function?
-		 *
-		 * And while we're at it, do any of those other functions actually throw exceptions
-		 * when they're passed invalid weak_refs?  They should.
-		 *
-		 * FIXME:  Remove this function once it is possible to create empty reconstructions
-		 * by simply passing empty lists of feature-collections into the prev function.
-		 */
-		virtual
-		const Reconstruction::non_null_ptr_type
-		create_empty_reconstruction(
-				const double &time,
-				integer_plate_id_type root) = 0;
-
-
-		/**
-		 * Return a pointer to the id registry 
-		 */
-		virtual
-		FeatureIdRegistry &
-		get_feature_id_registry() = 0;
-
-
-		/**
-		 * Searches the feature id registry to locate a FeatureHandle
-		 * from the given FeatureId. This will return boost::none if the
-		 * FeatureId does not exist in the registry.
-		 *
-		 * Bear in mind also that the returned weak_ref may be invalid
-		 * for other reasons.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::weak_ref>
-		get_feature_for_id(
-				const GPlatesModel::FeatureId &feature_id);
-
-		virtual
 		~ModelInterface()
 		{  }
+
+		/**
+		 * Access the members of the Model instance.
+		 *
+		 * This is syntactic sugar for the equivalent function @a access_model.
+		 */
+		Model *
+		operator->()
+		{
+			return access_model();
+		}
+
+		/**
+		 * Access the members of the Model instance.
+		 */
+		Model *
+		access_model()
+		{
+			return d_model_ptr.get();
+		}
+
+	private:
+		boost::shared_ptr<Model> d_model_ptr;
 	};
 }
 

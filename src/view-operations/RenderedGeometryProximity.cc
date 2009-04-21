@@ -27,6 +27,7 @@
 #include <algorithm>
 
 #include "RenderedGeometryProximity.h"
+#include "RenderedGeometryUtils.h"
 #include "maths/ProximityCriteria.h"
 
 namespace GPlatesViewOperations
@@ -41,60 +42,150 @@ namespace GPlatesViewOperations
 				const RenderedGeometryProximityHit &lhs,
 				const RenderedGeometryProximityHit &rhs)
 		{
-			return lhs.d_proximity_hit_detail->closeness() <
+			return lhs.d_proximity_hit_detail->closeness() >
 				rhs.d_proximity_hit_detail->closeness();
 		}
+
+		/**
+		 * Sorts proximity hits by closeness.
+		 */
+		void
+		sort_proximity_by_closeness(
+				sorted_rendered_geometry_proximity_hits_type &sorted_proximity_seq)
+		{
+				// Sort results based on proximity closeness.
+				std::sort(
+						sorted_proximity_seq.begin(),
+						sorted_proximity_seq.end(),
+						proximity_hit_closeness_compare);
+		}
+
+		/**
+		 * Tests proximity to @a RenderedGeometry objects in an active @a RenderedGeometryLayer.
+		 */
+		struct RenderedGeometryLayerProximity
+		{
+			RenderedGeometryLayerProximity(
+					sorted_rendered_geometry_proximity_hits_type &sorted_proximity_seq,
+					const GPlatesMaths::ProximityCriteria &proximity_criteria) :
+			d_sorted_proximity_seq(sorted_proximity_seq),
+			d_proximity_criteria(proximity_criteria)
+			{  }
+
+			void
+			operator()(
+					const RenderedGeometryLayer &rendered_geom_layer)
+			{
+				// Only visit layer if it's active.
+				if (rendered_geom_layer.is_active())
+				{
+					// Iterate over the rendered geometries and test proximity to each.
+					RenderedGeometryLayer::RenderedGeometryIndex rendered_geom_index;
+					for (rendered_geom_index = 0;
+						rendered_geom_index < rendered_geom_layer.get_num_rendered_geometries();
+						++rendered_geom_index)
+					{
+						RenderedGeometry rendered_geom = rendered_geom_layer.get_rendered_geometry(
+							rendered_geom_index);
+
+						GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
+							rendered_geom.test_proximity(d_proximity_criteria);
+
+						if (hit)
+						{
+							// Convert maybe_null pointer to non_null pointer.
+							GPlatesMaths::ProximityHitDetail::non_null_ptr_type hit_detail(
+									hit.get(),
+									GPlatesUtils::NullIntrusivePointerHandler());
+
+							// Add to list of hits.
+							d_sorted_proximity_seq.push_back(
+									RenderedGeometryProximityHit(
+											rendered_geom_index, &rendered_geom_layer, hit_detail));
+						}
+					}
+				}
+			}
+
+			sorted_rendered_geometry_proximity_hits_type &d_sorted_proximity_seq;
+			const GPlatesMaths::ProximityCriteria &d_proximity_criteria;
+		};
 	}
 }
 
 bool
 GPlatesViewOperations::test_proximity(
-		sorted_digitisation_proximity_hits_type &sorted_proximity_seq,
-		RenderedGeometryLayer &rendered_geom_layer,
+		sorted_rendered_geometry_proximity_hits_type &sorted_proximity_seq,
+		const RenderedGeometryLayer &rendered_geom_layer,
 		const GPlatesMaths::ProximityCriteria &proximity_criteria)
 {
-	// Only visit layer if it's active.
-	if (rendered_geom_layer.is_active())
-	{
-		// Iterate over the rendered geometries and test proximity to each.
-		RenderedGeometryLayer::RenderedGeometryIndex rendered_geom_index;
-		for (rendered_geom_index = 0;
-			rendered_geom_index < rendered_geom_layer.get_num_rendered_geometries();
-			++rendered_geom_index)
-		{
-			RenderedGeometry rendered_geom = rendered_geom_layer.get_rendered_geometry(
-				rendered_geom_index);
+	// Setup up to do proximity tests.
+	RenderedGeometryLayerProximity proximity_accumulator(
+			sorted_proximity_seq, proximity_criteria);
 
-			GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
-				rendered_geom.test_proximity(proximity_criteria);
+	// Do the actual proximity tests.
+	proximity_accumulator(rendered_geom_layer);
 
-			if (hit)
-			{
-				// Convert maybe_null pointer to non_null pointer.
-				GPlatesMaths::ProximityHitDetail::non_null_ptr_type hit_detail(
-						hit.get(),
-						GPlatesUtils::NullIntrusivePointerHandler());
-
-				// Add to list of hits.
-				sorted_proximity_seq.push_back(
-						RenderedGeometryProximityHit(rendered_geom_index, hit_detail));
-			}
-		}
-
-		// Sort results based on proximity closeness.
-		std::sort(
-				sorted_proximity_seq.begin(),
-				sorted_proximity_seq.end(),
-				proximity_hit_closeness_compare);
-	}
+	// Sort the hit results by closeness.
+	sort_proximity_by_closeness(sorted_proximity_seq);
 
 	return !sorted_proximity_seq.empty();
 }
 
+bool
+GPlatesViewOperations::test_proximity(
+		sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		const RenderedGeometryCollection::main_layers_update_type main_layers_to_test,
+		const GPlatesMaths::ProximityCriteria &proximity_criteria,
+		bool only_if_main_layer_active)
+{
+	// Setup up to do proximity tests.
+	// This object will test proximity within a single RenderedGeometryLayer.
+	RenderedGeometryLayerProximity proximity_accumulator(
+			sorted_proximity_hits, proximity_criteria);
+
+	// Setup to do proximity
+	// This object will traverse all active RenderedGeoemtryLayers in the specified main layer of
+	// RenderedGeometryCollection and call the above object on each RenderedGeometryLayer.
+	RenderedGeometryUtils::ConstVisitFunctionOnRenderedGeometryLayers proximity_tester(
+			boost::ref(proximity_accumulator),
+			main_layers_to_test,
+			only_if_main_layer_active);
+
+	// Do the actual proximity tests.
+	// This will traverse the RenderedGeometryCollection and accumulate proximity hit results
+	// into 'sorted_proximity_hits'.
+	proximity_tester.call_function(rendered_geom_collection);
+
+	// Sort the hit results by closeness.
+	sort_proximity_by_closeness(sorted_proximity_hits);
+
+	return !sorted_proximity_hits.empty();
+}
+
+bool
+GPlatesViewOperations::test_proximity(
+		sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
+		const RenderedGeometryCollection &rendered_geom_collection,
+		RenderedGeometryCollection::MainLayerType main_layer_to_test,
+		const GPlatesMaths::ProximityCriteria &proximity_criteria,
+		bool only_if_main_layer_active)
+{
+	// Only test proximity on the specified main layer.
+	RenderedGeometryCollection::main_layers_update_type main_layers_to_test;
+	main_layers_to_test.set(main_layer_to_test);
+
+	return test_proximity(sorted_proximity_hits, rendered_geom_collection, main_layers_to_test,
+			proximity_criteria, only_if_main_layer_active);
+}
+
 GPlatesViewOperations::RenderedGeometryProximityHit::RenderedGeometryProximityHit(
 		RenderedGeometryLayer::RenderedGeometryIndex rendered_geom_index,
+		const RenderedGeometryLayer *rendered_geom_layer,
 		GPlatesMaths::ProximityHitDetail::non_null_ptr_type proximity_hit_detail) :
 d_rendered_geom_index(rendered_geom_index),
+d_rendered_geom_layer(rendered_geom_layer),
 d_proximity_hit_detail(proximity_hit_detail)
 {
 }

@@ -30,6 +30,7 @@
 
 #include "FeatureStoreRootHandle.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/ReferenceCount.h"
 
 namespace GPlatesModel
 {
@@ -44,7 +45,8 @@ namespace GPlatesModel
 	 * contains all the currently-loaded feature collections (each of which corresponds to a
 	 * single data file); and each feature collection contains zero or more features.
 	 */
-	class FeatureStore
+	class FeatureStore :
+			public GPlatesUtils::ReferenceCount<FeatureStore>
 	{
 	public:
 		/**
@@ -62,11 +64,6 @@ namespace GPlatesModel
 		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStore,
 				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * Create a new FeatureStore instance.
@@ -98,40 +95,7 @@ namespace GPlatesModel
 			return d_root;
 		}
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
 	private:
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
-
 		/**
 		 * The feature store root contained within this feature store.
 		 */
@@ -142,7 +106,6 @@ namespace GPlatesModel
 		 * instantiation of this type on the stack.
 		 */
 		FeatureStore():
-			d_ref_count(0),
 			d_root(FeatureStoreRootHandle::create())
 		{  }
 
@@ -164,27 +127,6 @@ namespace GPlatesModel
 		operator=(
 				const FeatureStore &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const FeatureStore *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const FeatureStore *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_FEATURESTORE_H

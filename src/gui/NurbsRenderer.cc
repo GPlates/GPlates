@@ -63,7 +63,7 @@ GPlatesGui::NurbsRenderer::NurbsRenderer()
 	if (d_nurbs_ptr == 0) {
 
 		// not enough memory to allocate object
-		throw OpenGLBadAllocException(
+		throw OpenGLBadAllocException(GPLATES_EXCEPTION_SOURCE,
 		 "Not enough memory for OpenGL to create new NURBS renderer.");
 	}
 	// Previously, the type-parameter of the cast was 'void (*)()'.

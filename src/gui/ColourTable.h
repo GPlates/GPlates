@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,9 +29,12 @@
 #define GPLATES_GUI_COLOURTABLE_H
 
 #include "Colour.h"
-#include "model/types.h"
-#include "model/Model.h"
-#include "model/ReconstructedFeatureGeometry.h"
+
+
+namespace GPlatesModel
+{
+	class ReconstructedFeatureGeometry;
+}
 
 namespace GPlatesGui
 {
@@ -39,8 +42,12 @@ namespace GPlatesGui
 	{
 	public:
 		typedef const Colour *const_iterator;
+
+		virtual
+		~ColourTable()
+		{  }
    
-   	const_iterator
+		const_iterator
 		end() const
 		{
 			return NULL;
@@ -50,10 +57,6 @@ namespace GPlatesGui
 		const_iterator
 		lookup(
 				const GPlatesModel::ReconstructedFeatureGeometry &feature) const = 0;
-
-		virtual
-		~ColourTable()
-		{  }
 	};
 }
 

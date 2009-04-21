@@ -163,8 +163,9 @@ namespace
 				double depth_range_far)
 		{
 			// Count the number of layers that we're going to draw.
-			const unsigned num_layers_to_draw = get_num_active_non_empty_layers(
-					rendered_geometry_collection);
+			const unsigned num_layers_to_draw =
+					GPlatesViewOperations::RenderedGeometryUtils::get_num_active_non_empty_layers(
+							rendered_geometry_collection);
 
 			// Divide our given depth range equally amongst the layers.
 			// Draw layers back to front as we visit them.
@@ -209,7 +210,6 @@ namespace
 				const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 		{
 			if ( ! d_globe_ptr->d_show_point ) { return; }
-
 			glColor3fv(rendered_point_on_sphere.get_colour());
 			glPointSize(rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
 			glBegin(GL_POINTS);
@@ -223,7 +223,6 @@ namespace
 				const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 		{
 			if ( ! d_globe_ptr->d_show_multipoint ) { return; }
-
 			glColor3fv(rendered_multi_point_on_sphere.get_colour());
 			glPointSize(rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
 
@@ -241,7 +240,6 @@ namespace
 				const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 		{
 			if ( !d_globe_ptr->d_show_line ) { return; }
-
 			glColor3fv(rendered_polyline_on_sphere.get_colour());
 			glLineWidth(rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
 
@@ -379,7 +377,7 @@ GPlatesGui::Globe::paint()
 		d_texture->paint();
 		
 		glDepthRange(0.7, 0.8);
-		d_grid.paint(Colour::SILVER);
+		d_grid.paint(Colour::get_silver());
 
 		paint_rendered_geometries(
 				*d_rendered_geom_collection,
@@ -394,7 +392,7 @@ GPlatesGui::Globe::paint()
 void
 GPlatesGui::Globe::paint_vector_output()
 {
-	d_grid.paint_circumference(GPlatesGui::Colour::GREY);
+	d_grid.paint_circumference(GPlatesGui::Colour::get_grey());
 
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
@@ -410,7 +408,7 @@ GPlatesGui::Globe::paint_vector_output()
 		// The glDepthRange(near_plane, far_plane) call pushes the grid back in the depth
 		// buffer a bit, to avoid Z-fighting.
 		glDepthRange(0.7, 0.8);
-		d_grid.paint(Colour::GREY);
+		d_grid.paint(Colour::get_grey());
 
 		// Get current rendered layer active state so we can restore later.
 		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,11 +27,13 @@
 
 #include "CanvasToolChoice.h"
 
+#include "canvas-tools/CanvasToolType.h"
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
 #include "canvas-tools/ClickGeometry.h"
+#include "canvas-tools/DeleteVertex.h"
 #include "canvas-tools/DigitiseGeometry.h"
-#include "canvas-tools/PlateClosure.h"
+#include "canvas-tools/InsertVertex.h"
 #include "canvas-tools/MoveGeometry.h"
 #include "canvas-tools/MoveVertex.h"
 #include "canvas-tools/ManipulatePole.h"
@@ -48,8 +50,8 @@
 
 GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
-		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 		Globe &globe,

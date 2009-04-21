@@ -39,11 +39,13 @@
 #include "XmlAttributeValue.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
 {
-	class PropertyContainer
+	class PropertyContainer :
+			public GPlatesUtils::ReferenceCount<PropertyContainer>
 	{
 	public:
 		/**
@@ -63,8 +65,6 @@ namespace GPlatesModel
 				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
-		typedef long ref_count_type;
-
 		virtual
 		~PropertyContainer()
 		{  }
@@ -80,7 +80,6 @@ namespace GPlatesModel
 		PropertyContainer(
 				const PropertyName &property_name_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_):
-			d_ref_count(0),
 			d_property_name(property_name_),
 			d_xml_attributes(xml_attributes_)
 		{  }
@@ -105,7 +104,7 @@ namespace GPlatesModel
 		 */
 		PropertyContainer(
 				const PropertyContainer &other) :
-			d_ref_count(0),
+			GPlatesUtils::ReferenceCount<PropertyContainer>(),
 			d_property_name(other.d_property_name),
 			d_xml_attributes(other.d_xml_attributes)
 		{  }
@@ -165,34 +164,7 @@ namespace GPlatesModel
 		accept_visitor(
 				FeatureVisitor &visitor) = 0;
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
 	private:
-
-		mutable ref_count_type d_ref_count;
 		PropertyName d_property_name;
 		std::map<XmlAttributeName, XmlAttributeValue> d_xml_attributes;
 
@@ -205,27 +177,6 @@ namespace GPlatesModel
 				const PropertyContainer &);
 
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const PropertyContainer *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const PropertyContainer *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_PROPERTYCONTAINER_H

@@ -33,11 +33,13 @@
 #include "FeatureHandle.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
 {
 	class DummyTransactionHandle;
+	class FeatureCollectionHandle;
 
 	/**
 	 * A feature collection revision contains the revisioned content of a conceptual feature
@@ -71,7 +73,8 @@ namespace GPlatesModel
 	 * it should always access the "current" instance (whichever FeatureCollectionRevision
 	 * instance it may be) through the feature collection handle.
 	 */
-	class FeatureCollectionRevision
+	class FeatureCollectionRevision :
+			public GPlatesUtils::ReferenceCount<FeatureCollectionRevision>
 	{
 	public:
 		/**
@@ -90,11 +93,6 @@ namespace GPlatesModel
 		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureCollectionRevision,
 				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * The type used for the collection of features.
@@ -251,34 +249,39 @@ namespace GPlatesModel
 				DummyTransactionHandle &transaction);
 
 		/**
-		 * Increment the reference-count of this instance.
+		 * Set the pointer to the FeatureCollectionHandle which contains this revision.
 		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
+		 * Client code should not use this function!
+		 *
+		 * This function should only be invoked by a FeatureCollectionHandle instance when
+		 * it has changed its revision.  This is part of the mechanism which tracks whether
+		 * a feature collection contains unsaved changes, and (later) part of the Bubble-Up
+		 * mechanism.
 		 */
 		void
-		increment_ref_count() const {
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const {
-			return --d_ref_count;
+		set_handle_ptr(
+				FeatureCollectionHandle *new_ptr)
+		{
+			d_handle_ptr = new_ptr;
 		}
 
 	private:
 
 		/**
-		 * The reference-count of this instance by intrusive-pointers.
+		 * The FeatureCollectionHandle which contains this revision.
+		 *
+		 * Note that this should be held via a (regular, raw) pointer rather than a
+		 * ref-counting pointer (or any other type of smart pointer) because:
+		 *  -# The FeatureCollectionHandle instance conceptually manages the instance of
+		 * this class, not the other way around.
+		 *  -# A FeatureCollectionHandle instance will outlive the revisions it contains;
+		 * thus, it doesn't make sense for a FeatureCollectionHandle to have its memory
+		 * managed by its contained revisions.
+		 *  -# Class FeatureCollectionHandle contains a ref-counting pointer to class
+		 * FeatureCollectionRevision, and we don't want to set up a ref-counting loop
+		 * (which would lead to memory leaks).
 		 */
-		mutable ref_count_type d_ref_count;
+		FeatureCollectionHandle *d_handle_ptr;
 
 		/**
 		 * The collection of features contained within this feature collection.
@@ -290,7 +293,7 @@ namespace GPlatesModel
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		FeatureCollectionRevision() :
-			d_ref_count(0)
+			d_handle_ptr(NULL)
 		{  }
 
 		/*
@@ -309,7 +312,8 @@ namespace GPlatesModel
 		 */
 		FeatureCollectionRevision(
 				const FeatureCollectionRevision &other) :
-			d_ref_count(0),
+			GPlatesUtils::ReferenceCount<FeatureCollectionRevision>(),
+			d_handle_ptr(NULL),
 			d_features(other.d_features)
 		{  }
 
@@ -322,25 +326,6 @@ namespace GPlatesModel
 				const FeatureCollectionRevision &);
 
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const FeatureCollectionRevision *p) {
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const FeatureCollectionRevision *p) {
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_FEATURECOLLECTIONREVISION_H

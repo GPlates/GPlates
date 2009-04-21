@@ -206,7 +206,7 @@
      <item>
       <widget class="QLabel" name="label_5" >
        <property name="text" >
-        <string>relative to the root plate ID</string>
+        <string>relative to the anchored plate ID</string>
        </property>
       </widget>
      </item>

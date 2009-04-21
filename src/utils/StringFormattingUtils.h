@@ -40,24 +40,27 @@ namespace GPlatesUtils
 	{
 		public:
 			InvalidFormattingParametersException(
-					const std::string &message):
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const std::string &message) :
+				Exception(exception_source),
 				d_message(message)
-			{ }
+			{  }
 
 		protected:
 
 			virtual
 			const char *
-			ExceptionName() const
+			exception_name() const
 			{ 
 				return "InvalidFormattingParametersException";
 			}
 
-			virtual 
-			std::string
-			Message() const 
+			virtual
+			void
+			write_message(
+					std::ostream &os) const
 			{
-				return d_message; 
+				write_string_message(os, d_message);
 			}
 
 		private:

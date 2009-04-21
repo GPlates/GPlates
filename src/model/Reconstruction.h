@@ -34,6 +34,7 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTree.h"
 #include "FeatureCollectionHandle.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
@@ -42,7 +43,8 @@ namespace GPlatesModel
 	 * This class represents a plate-tectonic reconstruction at a particular geological
 	 * time-instant.
 	 */
-	class Reconstruction
+	class Reconstruction :
+			public GPlatesUtils::ReferenceCount<Reconstruction>
 	{
 	public:
 		/**
@@ -67,6 +69,8 @@ namespace GPlatesModel
 		 */
 		typedef std::vector<ReconstructionGeometry::non_null_ptr_type> geometry_collection_type;
 
+#if 0
+<<<<<<< .working
 		/**
 		 * A map from feature id to RG
 		 */
@@ -80,6 +84,9 @@ namespace GPlatesModel
 		 */
 		typedef long ref_count_type;
 
+=======
+>>>>>>> .merge-right.r5533
+#endif
 		~Reconstruction();
 
 		/**
@@ -128,6 +135,8 @@ namespace GPlatesModel
 			return d_reconstruction_feature_collections;
 		}
 
+#if 0
+<<<<<<< .working
 		/**
 		 * Access the feature collections containing the reconstructable features used to
 		 * create this reconstruction.
@@ -191,12 +200,10 @@ namespace GPlatesModel
 			return --d_ref_count;
 		}
 
+=======
+>>>>>>> .merge-right.r5533
+#endif
 	private:
-
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		/**
 		 * The reconstructed geometries.
@@ -230,7 +237,6 @@ namespace GPlatesModel
 				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_,
 				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_,
 				const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_feature_collections_):
-			d_ref_count(0),
 			d_reconstruction_tree_ptr(reconstruction_tree_ptr_),
 			d_reconstruction_feature_collections(reconstruction_feature_collections_),
 			d_reconstructable_feature_collections(reconstructable_feature_collections_)
@@ -255,27 +261,6 @@ namespace GPlatesModel
 		id_to_rfg_map_type d_id_to_rfg_map;
 
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const Reconstruction *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const Reconstruction *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_RECONSTRUCTION_H

@@ -1,16 +1,16 @@
 <ui version="4.0" >
- <class>SpecifyFixedPlateDialog</class>
- <widget class="QDialog" name="SpecifyFixedPlateDialog" >
+ <class>SpecifyAnchoredPlateIdDialog</class>
+ <widget class="QDialog" name="SpecifyAnchoredPlateIdDialog" >
   <property name="geometry" >
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>223</width>
-    <height>133</height>
+    <width>269</width>
+    <height>130</height>
    </rect>
   </property>
   <property name="windowTitle" >
-   <string>Specify Fixed Plate</string>
+   <string>Specify Anchored Plate ID</string>
   </property>
   <property name="modal" >
    <bool>true</bool>
@@ -115,7 +115,7 @@
   <connection>
    <sender>okButton</sender>
    <signal>clicked()</signal>
-   <receiver>SpecifyFixedPlateDialog</receiver>
+   <receiver>SpecifyAnchoredPlateIdDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel" >
@@ -131,7 +131,7 @@
   <connection>
    <sender>cancelButton</sender>
    <signal>clicked()</signal>
-   <receiver>SpecifyFixedPlateDialog</receiver>
+   <receiver>SpecifyAnchoredPlateIdDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel" >

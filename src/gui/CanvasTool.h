@@ -30,6 +30,7 @@
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 #include "model/FeatureHandle.h"
 
@@ -59,7 +60,7 @@ namespace GPlatesGui
 	 * The currently-activated CanvasTool is referenced by an instance of CanvasToolChoice.
 	 */
 	class CanvasTool :
-		private boost::noncopyable
+			public GPlatesUtils::ReferenceCount<CanvasTool>
 	{
 	public:
 		/**
@@ -68,11 +69,6 @@ namespace GPlatesGui
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<CanvasTool,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * Construct a CanvasTool instance.
@@ -86,7 +82,6 @@ namespace GPlatesGui
 		CanvasTool(
 				Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_):
-			d_ref_count(0),
 			d_globe_ptr(&globe_),
 			d_globe_canvas_ptr(&globe_canvas_),
 			d_is_in_reorientation_op(false)
@@ -455,33 +450,22 @@ namespace GPlatesGui
 		{	}
 
 		/**
-		 * Increment the reference-count of this instance.
+		 * Handle a mouse movement when left mouse-button is NOT down.
 		 *
-		 * Client code should not use this function!
+		 * This function should be invoked in response to intermediate updates of the
+		 * mouse-pointer position (as the mouse-pointer is moved about).
 		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
+		 * This function is a no-op implementation which may be overridden in a derived
+		 * class.
 		 */
+		virtual
 		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
+		handle_move_without_drag(
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+		{  }
 
 	protected:
 		Globe &
@@ -564,11 +548,6 @@ namespace GPlatesGui
 
 	private:
 		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
-
-		/**
 		 * The globe which will be re-oriented by globe re-orientation operations.
 		 */
 		Globe *d_globe_ptr;
@@ -584,26 +563,6 @@ namespace GPlatesGui
 		 */
 		bool d_is_in_reorientation_op;
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const CanvasTool *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const CanvasTool *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
 }
 
 #endif  // GPLATES_GUI_CANVASTOOL_H

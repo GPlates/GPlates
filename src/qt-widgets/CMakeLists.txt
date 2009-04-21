@@ -38,7 +38,6 @@ set(srcs
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
-    DigitisationUndoParadoxException.h
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
@@ -97,6 +96,8 @@ set(srcs
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportReconstructedFeatureGeometryDialog.cc
+    ExportReconstructedFeatureGeometryDialog.h
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui
@@ -125,13 +126,10 @@ set(srcs
     ManageFeatureCollectionsStateWidget.cc
     ManageFeatureCollectionsStateWidget.h
     ManageFeatureCollectionsStateWidgetUi.ui
-    MoveVertexWidget.cc
-    MoveVertexWidget.h
-    MoveVertexWidgetUi.ui
+    ModifyGeometryWidget.cc
+    ModifyGeometryWidget.h
+    ModifyGeometryWidgetUi.ui
     NoActiveEditWidgetException.h
-    PlateClosureWidget.cc
-    PlateClosureWidget.h
-    PlateClosureWidgetUi.ui
     ProjectionControlWidget.cc
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
@@ -168,9 +166,12 @@ set(srcs
     ShapefileAttributeWidgetUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
-    SpecifyFixedPlateDialog.cc
-    SpecifyFixedPlateDialog.h
-    SpecifyFixedPlateDialogUi.ui
+    SpecifyAnchoredPlateIdDialog.cc
+    SpecifyAnchoredPlateIdDialog.h
+    SpecifyAnchoredPlateIdDialogUi.ui
+    SpecifyTimeIncrementDialog.cc
+    SpecifyTimeIncrementDialog.h
+    SpecifyTimeIncrementDialogUi.ui
     SpecifyTimeIncrementDialog.cc
     SpecifyTimeIncrementDialog.h
     SpecifyTimeIncrementDialogUi.ui
