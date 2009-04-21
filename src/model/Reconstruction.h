@@ -69,24 +69,6 @@ namespace GPlatesModel
 		 */
 		typedef std::vector<ReconstructionGeometry::non_null_ptr_type> geometry_collection_type;
 
-#if 0
-<<<<<<< .working
-		/**
-		 * A map from feature id to RG
-		 */
-		typedef std::map<
-			GPlatesModel::FeatureId,
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
-				id_to_rfg_map_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
-
-=======
->>>>>>> .merge-right.r5533
-#endif
 		~Reconstruction();
 
 		/**
@@ -135,74 +117,6 @@ namespace GPlatesModel
 			return d_reconstruction_feature_collections;
 		}
 
-#if 0
-<<<<<<< .working
-		/**
-		 * Access the feature collections containing the reconstructable features used to
-		 * create this reconstruction.
-		 */
-		const std::vector<FeatureCollectionHandle::weak_ref> &
-		reconstructable_feature_collections() const
-		{
-			return d_reconstructable_feature_collections;
-		}
-
-		/**
-		 * Insert a feature_id, RG pair item into the map; 
-		 * called by ReconstructedFeatureGeometryPopulator during visit_GEOMETRY_TYPE calls
-		 */
-		void
-		insert_into_id_to_rfg_map( 
-			std::pair<
-				GPlatesModel::FeatureId, 
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type> item )
-		{
-			d_id_to_rfg_map.insert( item );
-		}
-
-
-		/**
-		 * Get a pointer to the id to rg map
-		*/
-		id_to_rfg_map_type *
-		id_to_rfg_map()
-		{
-			return &d_id_to_rfg_map;
-		}
-		
-
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
-=======
->>>>>>> .merge-right.r5533
-#endif
 	private:
 
 		/**
@@ -253,12 +167,6 @@ namespace GPlatesModel
 		Reconstruction &
 		operator=(
 				const Reconstruction &);
-
-
-		/**
-		 * Map from feature_id to ReconstructionGeometry ptr 
-		 */
-		id_to_rfg_map_type d_id_to_rfg_map;
 
 	};
 }

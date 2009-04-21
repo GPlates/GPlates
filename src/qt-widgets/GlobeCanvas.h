@@ -160,12 +160,6 @@ namespace GPlatesQtWidgets
 		void
 		draw_vector_output();
 
-		GPlatesViewOperations::RenderedGeometryFactory &
-		get_rendered_geometry_factory()
-		{
-			return d_rendered_geom_factory;
-		}
-
 		GPlatesGui::Globe &
 		globe()
 		{

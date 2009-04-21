@@ -105,7 +105,6 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	set_up_digitisation_tab();
 	set_up_modify_geometry_tab();
 	set_up_modify_pole_tab();
-	set_up_plate_closure_tab();
 	set_up_build_topology_tab();
 	set_up_edit_topology_tab();
 	
@@ -196,28 +195,6 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 	// of the Modify Pole tab.
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
-
-void
-GPlatesQtWidgets::TaskPanel::set_up_plate_closure_tab()
-{
-	// Set up the layout to be used by the Modify Pole tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_topology_tool);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
-	
-	// Add the main ReconstructionPoleWidget.
-	// As usual, Qt will take ownership of memory so we don't have to worry.
-	// We cannot set this parent widget in the TaskPanel initialiser list because
-	// setupUi() has not been called yet.
-	lay->addWidget(d_plate_closure_widget_ptr);
-
-	// After the main widget and anything else we might want to cram in there,
-	// a spacer to eat up remaining space and push all the widgets to the top
-	// of the tab.
-	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
-}
-
-
 
 
 void

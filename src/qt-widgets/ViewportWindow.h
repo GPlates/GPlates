@@ -52,7 +52,6 @@
 #include "ManageFeatureCollectionsDialog.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
-#include "SpecifyTimeIncrementDialog.h"
 #include "SetCameraViewpointDialog.h"
 #include "SetRasterSurfaceExtentDialog.h"
 #include "SpecifyAnchoredPlateIdDialog.h"
@@ -81,22 +80,12 @@
 #include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
-#include "view-operations/GeometryBuilder.h"
-#include "view-operations/FocusedFeatureGeometryManipulator.h"
-#include "view-operations/GeometryBuilderToolTarget.h"
-#include "view-operations/RenderedGeometryCollection.h"
-
 
 namespace GPlatesGui
 {
 	class CanvasToolAdapter;
 	class CanvasToolChoice;
 	class ChooseCanvasTool;
-}
-
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryFactory;
 }
 
 namespace GPlatesQtWidgets
@@ -142,32 +131,8 @@ namespace GPlatesQtWidgets
 			return *d_canvas_ptr;
 		}
 
-		GPlatesGui::FeatureTableModel &
-		feature_table_model() 
-		{
-			return *d_feature_table_model_ptr;
-		}
-
-
-		GPlatesGui::FeatureTableModel &
-		sections_feature_table_model() 
-		{
-			return *d_sections_feature_table_model_ptr;
-		}
-
 		void
 		create_svg_file();
-
-
-		void	
-		change_tab(int i) {
-			tabWidget->setCurrentIndex( i );
-		}
-
-		int
-		get_tab() {
-			return tabWidget->currentIndex();
-		}
 
 	public slots:
 		
@@ -184,19 +149,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		highlight_first_clicked_feature_table_row() const;
-
-		/**
-		 * Clears the "Topology Sections" feature table selection
-		 */
-		void
-		highlight_sections_table_clear() const;
-
-		/**
-		 * Highlights a row in the "Topology Sections" feature table.
-		 */
-		void
-		highlight_sections_table_row(int i, bool state) const;
-
 
 		void
 		reconstruct_to_time(
@@ -280,9 +232,6 @@ namespace GPlatesQtWidgets
 		choose_digitise_polygon_tool();
 
 		void
-		choose_plate_closure_platepolygon_tool();
-
-		void
 		choose_move_geometry_tool();
 
 		void
@@ -296,12 +245,6 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_manipulate_pole_tool();
-
-		void
-		choose_build_topology_tool();
-
-		void
-		choose_edit_topology_tool();
 
 		void
 		enable_or_disable_feature_actions(
@@ -367,7 +310,7 @@ namespace GPlatesQtWidgets
 		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
 		typedef std::list<file_info_iterator> active_files_collection_type;
 		typedef active_files_collection_type::iterator active_files_iterator;
-
+		
 		/**
 		 * Returns the current colour table in use.
 		 */
@@ -553,26 +496,6 @@ namespace GPlatesQtWidgets
 
 		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 
-		// Depends on FeatureFocus, because QueryFeature does. 
-		// Also depends on DigitisationWidget.
-		boost::scoped_ptr<GPlatesGui::CanvasToolChoice> d_canvas_tool_choice_ptr;		
-
-		boost::scoped_ptr<GPlatesGui::CanvasToolAdapter> d_canvas_tool_adapter_ptr;
-		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
-		GPlatesViewOperations::GeometryBuilder d_digitise_geometry_builder;
-		GPlatesViewOperations::GeometryBuilder d_focused_feature_geometry_builder;
-		GPlatesViewOperations::GeometryBuilderToolTarget d_geom_builder_tool_target;
-		GPlatesViewOperations::FocusedFeatureGeometryManipulator d_focused_feature_geom_manipulator;
-
-		TaskPanel *d_task_panel_ptr;    // Depends on FeatureFocus and the Model d_model_ptr.
-		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
-
-		// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
-		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	
-
-		// The 'Topology Sections' table. Should be in ViewState. Depends on FeatureFocus.
-		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_sections_feature_table_model_ptr;	
-
 		//  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;
 
@@ -641,21 +564,6 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_raster_display();
-
-		void
-		enable_point_display();
-
-		void
-		enable_line_display();
-
-		void
-		enable_polygon_display();
-
-		void
-		enable_topology_display();
-
-		void
-		enable_multipoint_display();
 
 		void
 		pop_up_set_raster_surface_extent_dialog();

@@ -172,9 +172,6 @@ set(srcs
     SpecifyTimeIncrementDialog.cc
     SpecifyTimeIncrementDialog.h
     SpecifyTimeIncrementDialogUi.ui
-    SpecifyTimeIncrementDialog.cc
-    SpecifyTimeIncrementDialog.h
-    SpecifyTimeIncrementDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
     TaskPanelUi.ui

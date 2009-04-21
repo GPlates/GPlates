@@ -31,7 +31,6 @@
 
 #include "DigitisationWidget.h"
 #include "ReconstructionPoleWidget.h"
-#include "PlateClosureWidget.h"
 #include "BuildTopologyWidget.h"
 #include "EditTopologyWidget.h"
 #include "ActionButtonBox.h"
@@ -117,18 +116,6 @@ namespace GPlatesQtWidgets
 		}
 
 		/**
-		 * Accessor for the Plate Close Widget of the Plate Close Tab.
-		 *
-		 * This lets the plate closure canvas tool
-		 * interact with the PlateClosureWidget.
-		 */
-		PlateClosureWidget &
-		plate_closure_widget() const
-		{
-			return *d_plate_closure_widget_ptr;
-		}
-	
-		/**
 		 * Accessor for the BuildTopology Widget 
 		 *
 		 * This lets the build topology canvas tool interact with the widget.
@@ -175,12 +162,6 @@ namespace GPlatesQtWidgets
 		choose_modify_pole_tab()
 		{
 			tabwidget_task_panel->setCurrentWidget(tab_modify_pole);
-		}		
-		
-		void
-		choose_plate_closure_tab()
-		{
-			tabwidget_task_panel->setCurrentWidget(tab_topology_tool);
 		}		
 		
 		void
@@ -233,13 +214,6 @@ namespace GPlatesQtWidgets
 		set_up_modify_pole_tab();
 
 		/**
-		 * Sets up the "Plate Closure" tab in the Extra Creamy Task Panel.
-		 * This adds the special PlateCloseWidget.
-		 */
-		void
-		set_up_plate_closure_tab();
-
-		/**
 		 * Sets up the "Build Topology" tab in the Extra Creamy Task Panel.
 		 * This adds the special BuildTopologyWidget.
 		 */
@@ -288,12 +262,6 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::ReconstructionPoleWidget *d_reconstruction_pole_widget_ptr;
-
-		/**
-		 * Widget responsible for the controls in the Plate Closure Tab.
-		 * Memory managed by Qt.
-		 */
-		GPlatesQtWidgets::PlateClosureWidget *d_plate_closure_widget_ptr;
 
 		/**
 		 * Widget responsible for the controls in the Build Topology Tab.
