@@ -285,7 +285,11 @@ namespace GPlatesFeatureVisitors
 		explicit \
 		PropertyValueFinder( \
 				const GPlatesModel::PropertyName &property_name_to_allow) : \
-			PropertyValueFinderBase(property_name_to_allow) \
+			PropertyValueFinderBase< \
+					feature_visitor_type, \
+					feature_handle_type, \
+					inline_property_container_type, \
+					gpml_constant_value_type> (property_name_to_allow) \
 		{ \
 		} \
  \
@@ -327,7 +331,7 @@ namespace GPlatesFeatureVisitors
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 				property_value_type, \
 				visit_property_value_method, \
-				GPlatesModel::ConstFeatureVisitor, \
+				GPlatesModel::FeatureVisitor, \
 				GPlatesModel::FeatureHandle, \
 				GPlatesModel::InlinePropertyContainer, \
 				GPlatesPropertyValues::GpmlConstantValue); \
