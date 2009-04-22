@@ -66,9 +66,8 @@
 #include "model/ReconstructedFeatureGeometryFinder.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
-
-#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 #include "feature-visitors/TopologySectionsFinder.h"
+#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlMultiPoint.h"
@@ -396,10 +395,8 @@ GPlatesQtWidgets::BuildTopologyWidget::fill_widgets(
 	static const GPlatesModel::PropertyName plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-// FIXME: REMOVE
-	// GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-
 	const GPlatesPropertyValues::GpmlPlateId *plate_id;
+
 	if ( GPlatesFeatureVisitors::get_property_value( 
 			*feature_ref, plate_id_property_name, &plate_id ) )
 	{
@@ -408,27 +405,27 @@ GPlatesQtWidgets::BuildTopologyWidget::fill_widgets(
 		lineedit_plate_id->setText( QString::number( plate_id->value() ) );
 	}
 	
-	if (feature_ref.is_valid() ) 
+	if ( feature_ref.is_valid() ) 
 	{
-	// create a dummy tree
-	// use it and the populator to get coords
-	QTreeWidget *tree_geometry = new QTreeWidget(this);
-	tree_geometry->hide();
+		// create a dummy tree
+		// use it and the populator to get coords
+		QTreeWidget *tree_geometry = new QTreeWidget(this);
+		tree_geometry->hide();
 
-	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
-		d_view_state_ptr->reconstruction(), *tree_geometry);
+		GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
+			d_view_state_ptr->reconstruction(), *tree_geometry);
 
-	populator.populate(*feature_ref, associated_rfg);
+		populator.populate(*feature_ref, associated_rfg);
 
-	d_first_coord = populator.get_first_coordinate();
-	d_last_coord = populator.get_last_coordinate();
+		d_first_coord = populator.get_first_coordinate();
+		d_last_coord = populator.get_last_coordinate();
 
-	lineedit_first->setText(d_first_coord);
+		lineedit_first->setText(d_first_coord);
 
-	lineedit_last->setText(d_last_coord);
+		lineedit_last->setText(d_last_coord);
 	
-	// clean up
-	delete tree_geometry;
+		// clean up
+		delete tree_geometry;
 	}
 }
 
@@ -606,21 +603,27 @@ qDebug() << "BuildTopologyWidget::display_feature: invalid ref";
 
 	// else, check what kind of feature it is:
 
-qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( d_feature_focus_ptr->focused_feature()->feature_id().get() );
+	qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( d_feature_focus_ptr->focused_feature()->feature_id().get() );
 
-static const GPlatesModel::PropertyName name_property_name = 
-	GPlatesModel::PropertyName::create_gml("name");
+	static const GPlatesModel::PropertyName name_property_name = 
+		GPlatesModel::PropertyName::create_gml("name");
 
-const GPlatesPropertyValues::XsString *name;
+	const GPlatesPropertyValues::XsString *name;
 
-if ( GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, &name) )
-{
-qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
-}
+	if ( GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, &name) )
+	{
+		qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
+	}
 
+	if ( associated_rfg ) 
+	{ 
+		qDebug() << "associated_rfg = okay " ;
+	} 
+	else 
+	{ 
+		qDebug() << "associated_rfg = NULL " ; 
+	}
 
-if ( associated_rfg ) { qDebug() << "associated_rfg = okay " ;
-} else { qDebug() << "associated_rfg = NULL " ; }
 
 	//
 	// Check feature type via qstrings 
@@ -2193,9 +2196,8 @@ const GPlatesPropertyValues::XsString *name;
 if ( GPlatesFeatureVisitors::get_property_value(
 	*(rfg->feature_handle_ptr()), name_property_name, &name) )
 {
-qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
+	qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 }
-
 qDebug() << "d_use_rev = " << d_tmp_index_use_reverse;
 #endif
 
@@ -2816,16 +2818,6 @@ qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring
 
 	GPlatesFeatureVisitors::get_property_value( 
 		*feature_ref, valid_time_property_name, &time_period);
-
-#if 0
-// FIXME: REMOVE
-	GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-	time_period_finder.visit_feature_handle( *feature_ref );
-
-	GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period = 
-		*time_period_finder.found_time_periods_begin();
-
-#endif
 
 	// Casting time details
 	GPlatesPropertyValues::GmlTimePeriod* tp = 

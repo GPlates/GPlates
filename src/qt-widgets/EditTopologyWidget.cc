@@ -60,16 +60,17 @@
 #include "gui/ProximityTests.h"
 
 #include "model/FeatureHandle.h"
-#include "model/ReconstructionGeometry.h"
 #include "model/ModelUtils.h"
+#include "model/ReconstructedFeatureGeometryFinder.h"
+#include "model/ReconstructionGeometry.h"
 #include "model/DummyTransactionHandle.h"
 
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
-#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 #include "feature-visitors/TopologySectionsFinder.h"
+#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlMultiPoint.h"
@@ -93,90 +94,8 @@
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/TemplateTypeParameterType.h"
 
+#include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
-
-namespace
-{
-	/**
-	 * This typedef is used wherever geometry (of some unknown type) is expected.
-	 * It is a boost::optional because creation of geometry may fail for various reasons.
-	 */
-	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
-		geometry_opt_ptr_type;
-	
-	/**
-	 * Creates 'appropriate' geometry given the available points
-	 * Examines QTreeWidgetItems, the number of points available, and the user's
-	 * intentions. 
-	 * to call upon the appropriate anonymous namespace geometry creation function.
-	 *
-	 * @a validity is a return-parameter. It will be set to
-	 * GPlatesUtils::GeometryConstruction::VALID if everything went ok. In the event
-	 * of construction problems occuring, it will indicate why construction
-	 * failed.
-	 *
-	 * Note we are returning a possibly-none boost::optional of
-	 * GeometryOnSphere::non_null_ptr_to_const_type.
-	 */
-	geometry_opt_ptr_type
-	create_geometry_from_vertex_list(
-			std::vector<GPlatesMaths::PointOnSphere> &points,
-			GPlatesQtWidgets::EditTopologyWidget::GeometryType target_geom_type,
-			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity)
-	{
-		// FIXME: Only handles the unbroken line and single-ring cases.
-
-		// There's no guarantee that adjacent points in the table aren't identical.
-		std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
-				GPlatesMaths::count_distinct_adjacent_points(points);
-
-#ifdef DEBUG1
-qDebug() << "create_geometry_from_vertex_list: size =" << num_points;
-std::vector<GPlatesMaths::PointOnSphere>::iterator itr;
-for ( itr = points.begin() ; itr != points.end(); ++itr)
-{
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*itr);
-	qDebug() << "create_geometry_from_vertex_list: llp=" << llp.latitude() << "," << llp.longitude();
-}
-#endif
-		// FIXME: I think... we need some way to add data() to the 'header' QTWIs, so that
-		// we can immediately discover which bits are supposed to be polygon exteriors etc.
-		// Then the function calculate_label_for_item could do all our 'tagging' of
-		// geometry parts, and -this- function wouldn't need to duplicate the logic.
-		// FIXME 2: We should have a 'try {  } catch {  }' block to catch any exceptions
-		// thrown during the instantiation of the geometries.
-		// This will become a proper 'try {  } catch {  } block' when we get around to it.
-		try
-		{
-			switch (target_geom_type)
-			{
-			default:
-				// FIXME: Exception.
-				qDebug() << "Unknown geometry type, not implemented yet!";
-				return boost::none;
-
-			case GPlatesQtWidgets::EditTopologyWidget::PLATEPOLYGON:
-				if (num_points == 0) {
-					validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
-					return boost::none;
-				} else if (num_points == 1) {
-					return GPlatesUtils::create_point_on_sphere(points, validity);
-				} else if (num_points == 2) {
-					return GPlatesUtils::create_polyline_on_sphere(points, validity);
-				} else if (num_points == 3 && points.front() == points.back()) {
-					return GPlatesUtils::create_polyline_on_sphere(points, validity);
-				} else {
-					return GPlatesUtils::create_polygon_on_sphere(points, validity);
-				}
-				break;
-			}
-			// Should never reach here.
-		} catch (...) {
-			throw;
-		}
-		return boost::none;
-	}
-}
 
 
 // 
@@ -184,14 +103,12 @@ for ( itr = points.begin() ; itr != points.end(); ++itr)
 // 
 GPlatesQtWidgets::EditTopologyWidget::EditTopologyWidget(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesModel::ModelInterface &model_interface,
 		ViewportWindow &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_rendered_geom_collection(&rendered_geom_collection),
-	d_rendered_geom_factory(&rendered_geom_factory),
 	d_feature_focus_ptr(&feature_focus),
 	d_model_interface(&model_interface),
 	d_view_state_ptr(&view_state_),
@@ -497,14 +414,13 @@ GPlatesQtWidgets::EditTopologyWidget::fill_widgets(
 	// FIXME: Need to adapt according to user's current codeSpace setting.
 	static const GPlatesModel::PropertyName name_property_name = 
 		GPlatesModel::PropertyName::create_gml("name");
-	GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-	string_finder.visit_feature_handle(*feature_ref);
-	if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+
+	const GPlatesPropertyValues::XsString *name;
+	
+	if ( GPlatesFeatureVisitors::get_property_value(
+			*feature_ref, name_property_name, &name) )
 	{
 		// The feature has one or more name properties. Use the first one for now.
-		GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
-				*string_finder.found_strings_begin();
-		
 		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
 		lineedit_name->setCursorPosition(0);
 	}
@@ -513,33 +429,37 @@ GPlatesQtWidgets::EditTopologyWidget::fill_widgets(
 	static const GPlatesModel::PropertyName plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-
-	// GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-
-
 	const GPlatesPropertyValues::GpmlPlateId *plate_id;
-	if ( GPlatesFeatureVisitors::get_property_value( *feature_ref, property_name, &plate_id ) )
+
+	if ( GPlatesFeatureVisitors::get_property_value( 
+			*feature_ref, plate_id_property_name, &plate_id ) )
 	{
+		// The feature has a plate ID of the desired kind.
 		// The feature has a reconstruction plate ID.
-		lineedit_plate_id->setText( QString::number( plate_id->value() ));
+		lineedit_plate_id->setText( QString::number( plate_id->value() ) );
 	}
 	
-	if (feature_ref.is_valid() ) 
+	if ( feature_ref.is_valid() ) 
 	{
-	// create a dummy tree
-	// use it and the populator to get coords
-	QTreeWidget *tree_geometry = new QTreeWidget(this);
-	tree_geometry->hide();
-	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
-		d_view_state_ptr->reconstruction(), *tree_geometry);
-	populator.visit_feature_handle(*feature_ref);
-	d_first_coord = populator.get_first_coordinate();
-	d_last_coord = populator.get_last_coordinate();
-	lineedit_first->setText(d_first_coord);
-	lineedit_last->setText(d_last_coord);
+		// create a dummy tree
+		// use it and the populator to get coords
+		QTreeWidget *tree_geometry = new QTreeWidget(this);
+		tree_geometry->hide();
+
+		GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
+			d_view_state_ptr->reconstruction(), *tree_geometry);
+
+		populator.populate(*feature_ref, associated_rfg);
+
+		d_first_coord = populator.get_first_coordinate();
+		d_last_coord = populator.get_last_coordinate();
+
+		lineedit_first->setText(d_first_coord);
+
+		lineedit_last->setText(d_last_coord);
 	
-	// clean up
-	delete tree_geometry;
+		// clean up
+		delete tree_geometry;
 	}
 }
 
@@ -663,47 +583,6 @@ qDebug() << "EditTopologyWidget::display_feature:";
 	button_apply->setEnabled(true);
 	button_cancel->setEnabled(true);
 
-
-#if 0
-		// clear the section table, and d_section_ vectors
-		if (! d_in_edit )
-		{
-			// clear the Section table
-			d_view_state_ptr->sections_feature_table_model().clear();
-		
-			// clear the vertex list
-			d_topology_vertices.clear();
-			d_tmp_index_vertex_list.clear();
-
-			// clear the d_section_FOO vectors
-			d_section_ptrs.clear();
-			d_section_ids.clear();
-			d_section_click_points.clear();
-			d_section_reverse_flags.clear();
-
-			// clear the working lists
-			d_head_end_points.clear();
-			d_tail_end_points.clear();
-			d_intersection_points.clear();
-			d_segments.clear();
-			d_insert_segments.clear();
-
-			// Set the topology feature ref to NULL
-			d_topology_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
-			d_topology_feature_rfg = NULL;
-
-			// unset the d_topology_geometry_opt_ptr
-			d_topology_geometry_opt_ptr = boost::none;
-
-			// clear the drawing layers
-			draw_all_layers_clear();
-
-			// draw the focus
-			draw_focused_geometry();
-		}
-#endif
-
-
 	//
 	// Determine what to do with the focused feature
 	//
@@ -718,18 +597,26 @@ qDebug() << "EditTopologyWidget::display_feature: invalid ref";
 
 	// else, check what kind of feature it is:
 
-qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( d_feature_focus_ptr->focused_feature()->feature_id().get() );
-static const GPlatesModel::PropertyName name_property_name = GPlatesModel::PropertyName::create_gml("name");
-GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-string_finder.visit_feature_handle( *feature_ref );
-if (string_finder.found_strings_begin() != string_finder.found_strings_end()) {
-GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = *string_finder.found_strings_begin();
-qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
-}
+	qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( d_feature_focus_ptr->focused_feature()->feature_id().get() );
 
+	static const GPlatesModel::PropertyName name_property_name = 
+		GPlatesModel::PropertyName::create_gml("name");
 
-if ( associated_rfg ) { qDebug() << "associated_rfg = okay " ;
-} else { qDebug() << "associated_rfg = NULL " ; }
+	const GPlatesPropertyValues::XsString *name;
+
+	if ( GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, &name) )
+	{
+		qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
+	}
+
+	if ( associated_rfg ) 
+	{ 
+		qDebug() << "associated_rfg = okay " ;
+	} 
+	else 
+	{ 
+		qDebug() << "associated_rfg = NULL " ; 
+	}
 
 	//
 	// Check feature type via qstrings 
@@ -874,6 +761,7 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 	{
 		GPlatesModel::FeatureId	section_id = *section_itr;
 
+#if 0
 		// try to find this section's feature id in the reconstruction's rg map
 		GPlatesModel::Reconstruction::id_to_rfg_map_type::iterator find_iter, map_end;
 		map_end = d_view_state_ptr->reconstruction().id_to_rfg_map()->end();
@@ -887,6 +775,7 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 			sections_table.end_insert_features();
 			sections_table.sequence_changed();
 		}
+#endif
 	}
 
 	// reconnect listening to focus signals from Topology Sections table
@@ -1133,7 +1022,7 @@ qDebug() << "index = " << index;
 		( clicked_table.geometry_sequence().begin() + click_index )->get();
 	GPlatesModel::ReconstructedFeatureGeometry *rfg_ptr =
 		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg_ptr);
-	const GPlatesModel::FeatureId id = rfg_ptr->feature_ref()->feature_id();
+	const GPlatesModel::FeatureId id = rfg_ptr->feature_handle_ptr()->feature_id();
 
 	// insert the feature id
 	d_section_ids.insert( d_section_ids.begin() + index, id );
@@ -1738,7 +1627,7 @@ qDebug() << "EditTopologyWidget::draw_topology_geometry()";
 
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::create_rendered_geometry_on_sphere(
 				*d_topology_geometry_opt_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1763,10 +1652,10 @@ qDebug() << "EditTopologyWidget::draw_focused_geometry()";
 	if ( d_feature_focus_ptr->associated_rfg() )
 	{
 qDebug() << "EditTopologyWidget::draw_focused_geometry() RFG okay";
-		const GPlatesGui::Colour &colour = GPlatesGui::Colour::WHITE;
+		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::create_rendered_geometry_on_sphere(
 				d_feature_focus_ptr->associated_rfg()->geometry(),
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
@@ -1793,43 +1682,42 @@ qDebug() << "EditTopologyWidget::draw_focused_geometry() RFG okay";
 	{
 qDebug() << "EditTopologyWidget::draw_focused_geometry() d_insert_feature_ref.is_valid()";
 		// access the current RFG for this feature 
-		GPlatesModel::Reconstruction::id_to_rfg_map_type::iterator find_iter, map_end;
-		map_end = d_view_state_ptr->reconstruction().id_to_rfg_map()->end();
-		find_iter = d_view_state_ptr->reconstruction().id_to_rfg_map()->find(
-			d_insert_feature_ref->feature_id() ) ;
-		
-		if ( find_iter != map_end )
+		GPlatesModel::ReconstructedFeatureGeometryFinder finder(
+			&( d_view_state_ptr->reconstruction() ) );
+
+		finder.find_rfgs_of_feature( d_insert_feature_ref );
+
+		GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator find_iter;
+		find_iter = finder.found_rfgs_begin();
+
+		// get the geometry on sphere from the RFG
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type gos_ptr =
+			(*find_iter)->geometry();
+
+		if (gos_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::BLACK;
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_black();
+			GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+					gos_ptr,
+					colour,
+					GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
+					GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
 
-			// get the geometry on sphere
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type gos_ptr = 
-				(find_iter->second)->geometry();	
+			d_focused_feature_layer_ptr->add_rendered_geometry(rendered_geometry);
 
-			if (gos_ptr) 
-			{
-				GPlatesViewOperations::RenderedGeometry rendered_geometry =
-					d_rendered_geom_factory->create_rendered_geometry_on_sphere(
-						gos_ptr,
-						colour,
-						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
-						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
+			// visit to get end_points
+			d_feature_focus_head_points.clear();
+			d_feature_focus_tail_points.clear();
 
-				d_focused_feature_layer_ptr->add_rendered_geometry(rendered_geometry);
+			d_visit_to_get_focus_end_points = true;
+			gos_ptr->accept_visitor(*this);
+			d_visit_to_get_focus_end_points = false;
 
-				// visit to get end_points
-				d_feature_focus_head_points.clear();
-				d_feature_focus_tail_points.clear();
-	
-				d_visit_to_get_focus_end_points = true;
-				gos_ptr->accept_visitor(*this);
-				d_visit_to_get_focus_end_points = false;
+			// draw the focused end_points
+			draw_focused_geometry_end_points();
 
-				// draw the focused end_points
-				draw_focused_geometry_end_points();
-
-				d_view_state_ptr->globe_canvas().update_canvas();
-			}
+			d_view_state_ptr->globe_canvas().update_canvas();
 		}
 	}
 qDebug() << "EditTopologyWidget::draw_focused_geometry() END";
@@ -1854,11 +1742,11 @@ qDebug() << "EditTopologyWidget::draw_focused_geometry_end_points()";
 
 		if (geom_on_sphere_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::WHITE;
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					geom_on_sphere_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
@@ -1880,11 +1768,11 @@ qDebug() << "EditTopologyWidget::draw_focused_geometry_end_points()";
 
 		if (pos_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::WHITE;
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::LARGE_POINT_SIZE_HINT,
@@ -1914,11 +1802,11 @@ qDebug() << "EditTopologyWidget::draw_segments()";
 
 		if (pos_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::GREY;
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_grey();
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1952,11 +1840,11 @@ qDebug() << "EditTopologyWidget::draw_end_points()";
 
 		if (pos_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::BLACK;
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_black();
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
@@ -1978,11 +1866,11 @@ qDebug() << "EditTopologyWidget::draw_end_points()";
 
 		if (pos_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::BLACK;
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_black();
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT,
@@ -2026,11 +1914,11 @@ qDebug() << "draw_intersection_points d_intersection_points: llp=" << llp.latitu
 
 		if (pos_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::GREY;
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_grey();
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -2064,11 +1952,11 @@ qDebug() << "EditTopologyWidget::draw_click_point()";
 
 	if (pos_ptr) 
 	{
-		const GPlatesGui::Colour &colour = GPlatesGui::Colour::OLIVE;
+		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_olive();
 
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::create_rendered_geometry_on_sphere(
 				pos_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -2105,11 +1993,11 @@ qDebug() << "EditTopologyWidget::draw_click_points()";
 
 		if (pos_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::OLIVE;
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_olive();
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -2167,8 +2055,7 @@ qDebug() << "EditTopologyWidget::update_geometry()";
 	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
 
 	// Set the d_topology_geometry_opt_ptr to the newly created geom;
-	d_topology_geometry_opt_ptr = 
-		create_geometry_from_vertex_list( d_topology_vertices, d_geometry_type, validity);
+	create_geometry_from_vertex_list( d_topology_vertices, d_geometry_type, validity);
 
 	draw_all_layers();
 
@@ -2209,6 +2096,7 @@ qDebug() << "first = " << first << "; last = " << last;
 
 		GPlatesModel::FeatureId	section_id = *section_itr;
 
+#if 0
 		// try to find this section's feature id in the reconstruction's rg map
 		GPlatesModel::Reconstruction::id_to_rfg_map_type::iterator find_iter, map_end;
 		map_end = d_view_state_ptr->reconstruction().id_to_rfg_map()->end();
@@ -2224,6 +2112,7 @@ qDebug() << "first = " << first << "; last = " << last;
 			first += 1;
 			last += 1;
 		}
+#endif
 	}
 
 	// reconnect listening to focus signals from Topology Sections table
@@ -2275,23 +2164,23 @@ qDebug() << "EditTopologyWidget::create_sections_from_sections_table()";
 			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
 
 		// Set the fid for the tmp_index section 
-		d_tmp_index_fid = rfg->feature_ref()->feature_id();
+		d_tmp_index_fid = rfg->feature_handle_ptr()->feature_id();
 
 		// set the tmp reverse flag to this feature's flag
 		d_tmp_index_use_reverse = d_section_reverse_flags.at(d_tmp_index);
 
+#ifdef DEBUG1
 qDebug() << "d_tmp_index = " << d_tmp_index;
+
 static const GPlatesModel::PropertyName name_property_name =
 	GPlatesModel::PropertyName::create_gml("name");
-GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-string_finder.visit_feature_handle( *(rfg->feature_ref()) );
-if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+const GPlatesPropertyValues::XsString *name;
+if ( GPlatesFeatureVisitors::get_property_value(
+	*(rfg->feature_handle_ptr()), name_property_name, &name) )
 {
-GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = *string_finder.found_strings_begin();
-qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
+	qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 }
 qDebug() << "d_use_rev = " << d_tmp_index_use_reverse;
-#ifdef DEBUG1
 #endif
 
 		// clear the tmp index list
@@ -2430,7 +2319,7 @@ qDebug() << "EditTopologyWidget::process_intersections: "
 			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(prev_rg);
 
 		// intersection_geometry
-		const GPlatesModel::FeatureId prev_fid = prev_rfg->feature_ref()->feature_id();
+		const GPlatesModel::FeatureId prev_fid = prev_rfg->feature_handle_ptr()->feature_id();
 
 		const GPlatesModel::PropertyName prop_name1 =
 			GPlatesModel::PropertyName::create_gpml("centerLineOf");
@@ -2523,7 +2412,7 @@ qDebug() << "EditTopologyWidget::process_intersections: "
 			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(next_rg);
 
 		// intersection_geometry
-		const GPlatesModel::FeatureId next_fid = next_rfg->feature_ref()->feature_id();
+		const GPlatesModel::FeatureId next_fid = next_rfg->feature_handle_ptr()->feature_id();
 
 		const GPlatesModel::PropertyName prop_name1 =
 			GPlatesModel::PropertyName::create_gpml("centerLineOf");
@@ -2743,7 +2632,7 @@ qDebug() << "EditTopologyWidget::compute_intersection: " << "use HEAD";
 					// save intersection point
 					d_intersection_points.push_back( *(parts.first.front()->vertex_begin()) );
 #ifdef DEBUG1
-qDebug() << "create_geometry_from_vertex_list: llp_pff =" << llp_pff.latitude() << "," << llp_pff.longitude();
+qDebug() << "EditTopologyWidget::compute_intersection: llp_pff =" << llp_pff.latitude() << "," << llp_pff.longitude();
 #endif
 					break;
 	
@@ -2758,7 +2647,7 @@ qDebug() << "create_geometry_from_vertex_list: llp_pff =" << llp_pff.latitude() 
 					);
 					d_intersection_points.push_back( *(parts.first.front()->vertex_begin()) );
 #ifdef DEBUG1
-qDebug() << "create_geometry_from_vertex_list: llp_pff =" << llp_pff.latitude() << "," << llp_pff.longitude();
+qDebug() << "EditTopologyWidget::compute_intersection: llp_pff =" << llp_pff.latitude() << "," << llp_pff.longitude();
 #endif
 					break;
 
@@ -2788,7 +2677,7 @@ qDebug() << "EditTopologyWidget::compute_intersection: " << "use TAIL" ;
 					);
 					d_intersection_points.push_back( *(parts.first.back()->vertex_begin()) );
 #ifdef DEBUG1
-qDebug() << "create_geometry_from_vertex_list: llp=" << llp_pfb.latitude() << "," << llp_pfb.longitude();
+qDebug() << "EditTopologyWidget::compute_intersection: llp=" << llp_pfb.latitude() << "," << llp_pfb.longitude();
 #endif
 
 					break;
@@ -2804,7 +2693,7 @@ qDebug() << "create_geometry_from_vertex_list: llp=" << llp_pfb.latitude() << ",
 					);
 					d_intersection_points.push_back( *(parts.first.back()->vertex_begin()) );
 #ifdef DEBUG1
-qDebug() << "create_geometry_from_vertex_list: llp=" << llp_pfb.latitude() << "," << llp_pfb.longitude();
+qDebug() << "EditTopologyWidget::compute_intersection: llp=" << llp_pfb.latitude() << "," << llp_pfb.longitude();
 #endif
 					break;
 
@@ -2837,14 +2726,13 @@ qDebug() << "EditTopologyWidget::append_boundary_value_to_feature() feature_ref 
 
 static const GPlatesModel::PropertyName name_property_name =
 	GPlatesModel::PropertyName::create_gml("name");
-GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-string_finder.visit_feature_handle( *feature_ref );
-if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+
+const GPlatesPropertyValues::XsString *name;
+
+if ( GPlatesFeatureVisitors::get_property_value(
+	*feature_ref, name_property_name, &name) )
 {
-	GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
-		 *string_finder.found_strings_begin();
-	qDebug() << "EditTopologyWidget::append_boundary_value_to_feature: name=" 
-	<< GPlatesUtils::make_qstring( name->value() );
+qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 }
 
 	// do an update ; create properties this time
@@ -2909,15 +2797,14 @@ qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
-	GPlatesFeatureVisitors::GmlTimePeriodFinder time_period_finder(valid_time_property_name);
-	time_period_finder.visit_feature_handle( *feature_ref );
+	const GPlatesPropertyValues::GmlTimePeriod *time_period;
 
-	GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period = 
-		*time_period_finder.found_time_periods_begin();
+	GPlatesFeatureVisitors::get_property_value(
+		*feature_ref, valid_time_property_name, &time_period);
 
 	// Casting time details
 	GPlatesPropertyValues::GmlTimePeriod* tp = 
-	const_cast<GPlatesPropertyValues::GmlTimePeriod *>( time_period.get() );
+	const_cast<GPlatesPropertyValues::GmlTimePeriod *>( time_period );
 
 	GPlatesUtils::non_null_intrusive_ptr<
 		GPlatesPropertyValues::GmlTimePeriod, 
@@ -2985,92 +2872,181 @@ qDebug() << "EditTopologyWidget::fill_sections_section_vectors_from_feature_ref(
 void
 GPlatesQtWidgets::EditTopologyWidget::show_numbers()
 {
-qDebug() << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"; 
-qDebug() << "show_numbers: "; 
-qDebug() << "d_section_ptrs.size()         = " << d_section_ptrs.size(); 
-qDebug() << "d_section_ids.size()          = " << d_section_ids.size(); 
-qDebug() << "d_section_click_points.size() = " << d_section_click_points.size();
-qDebug() << "d_section_reverse_flags.size()= " << d_section_reverse_flags.size();
-qDebug() << "d_topology_vertices.size()    = " << d_topology_vertices.size(); 
-qDebug() << "d_tmp_index_vertex_list.size()= " << d_tmp_index_vertex_list.size();
-qDebug() << "d_head_end_points.size()      = " << d_head_end_points.size(); 
-qDebug() << "d_tail_end_points.size()      = " << d_tail_end_points.size(); 
-qDebug() << "d_intersection_points.size()  = " << d_intersection_points.size(); 
-qDebug() << "d_segments.size()             = " << d_segments.size(); 
-qDebug() << "d_insert_segments.size()      = " << d_insert_segments.size(); 
-qDebug() << "d_feature_focus_head_points.size()= " << d_feature_focus_head_points.size();
-qDebug() << "d_feature_focus_tail_points.size()= " << d_feature_focus_tail_points.size();
+	qDebug() << "############################################################"; 
+	qDebug() << "show_numbers: "; 
+	qDebug() << "d_section_ptrs.size()         = " << d_section_ptrs.size(); 
+	qDebug() << "d_section_ids.size()          = " << d_section_ids.size(); 
+	qDebug() << "d_section_click_points.size() = " << d_section_click_points.size();
+	qDebug() << "d_section_reverse_flags.size()= " << d_section_reverse_flags.size();
+	qDebug() << "d_topology_vertices.size()    = " << d_topology_vertices.size(); 
+	qDebug() << "d_tmp_index_vertex_list.size()= " << d_tmp_index_vertex_list.size();
+	qDebug() << "d_head_end_points.size()      = " << d_head_end_points.size(); 
+	qDebug() << "d_tail_end_points.size()      = " << d_tail_end_points.size(); 
+	qDebug() << "d_intersection_points.size()  = " << d_intersection_points.size(); 
+	qDebug() << "d_segments.size()             = " << d_segments.size(); 
+	qDebug() << "d_insert_segments.size()      = " << d_insert_segments.size(); 
+	qDebug() << "d_feature_focus_head_points.size()= " << d_feature_focus_head_points.size();
+	qDebug() << "d_feature_focus_tail_points.size()= " << d_feature_focus_tail_points.size();
 
-if ( d_feature_focus_ptr->is_valid() ) {
-qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( d_feature_focus_ptr->focused_feature()->feature_id().get() );
+	//
+	// Show details about d_feature_focus_ptr
+	//
+	if ( d_feature_focus_ptr->is_valid() ) 
+	{
+		qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( 
+			d_feature_focus_ptr->focused_feature()->feature_id().get() );
 
-static const GPlatesModel::PropertyName name_property_name = 
-	GPlatesModel::PropertyName::create_gml("name");
-GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-string_finder.visit_feature_handle( *d_feature_focus_ptr->focused_feature() );
-if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+		static const GPlatesModel::PropertyName name_property_name = 
+			GPlatesModel::PropertyName::create_gml("name");
+
+		const GPlatesPropertyValues::XsString *name;
+		if ( GPlatesFeatureVisitors::get_property_value(
+			*d_feature_focus_ptr->focused_feature(), name_property_name, &name) )
+		{
+			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name->value());
+		}
+		else 
+		{
+			qDebug() << "d_feature_focus_ptr = INVALID";
+		}
+	}
+
+	qDebug() << "d_section_feature_focus_index = " << d_section_feature_focus_index;
+
+	//
+	// show details about d_topology_feature_ref
+	//
+	if ( d_topology_feature_ref.is_valid() ) 
+	{
+		qDebug() << "d_topology_feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( d_topology_feature_ref->feature_id().get() );
+		static const GPlatesModel::PropertyName name_property_name = 
+			GPlatesModel::PropertyName::create_gml("name");
+
+		const GPlatesPropertyValues::XsString *name;
+
+		if ( GPlatesFeatureVisitors::get_property_value(
+			*d_topology_feature_ref, name_property_name, &name) )
+		{
+			qDebug() << "d_topology_feature_ref name = " << GPlatesUtils::make_qstring( name->value() );
+		} 
+		else 
+		{
+			qDebug() << "d_topology_feature_ref = INVALID";
+		}
+	}
+
+
+	//
+	// show sections details
+	//
+	std::vector<GPlatesModel::FeatureId>::iterator section_itr = d_section_ids.begin();
+	std::vector<GPlatesModel::FeatureId>::iterator section_end = d_section_ids.end();
+	int index = 0;
+	for ( ; section_itr != section_end; ++section_itr, ++index)
+	{
+		GPlatesModel::FeatureId	section_id = *section_itr;
+		qDebug() << "index = " << index 
+			<< "; section_id = " 
+			<< GPlatesUtils::make_qstring_from_icu_string( section_id.get() );
+	}
+
+
+	// 
+	// show d_insert_feature_ref
+	//
+	if ( d_insert_feature_ref.is_valid() ) 
+	{
+		qDebug() << "d_insert_feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( d_insert_feature_ref->feature_id().get() );
+
+		static const GPlatesModel::PropertyName name_property_name = 
+		GPlatesModel::PropertyName::create_gml("name");
+
+		const GPlatesPropertyValues::XsString *name;
+
+		if ( GPlatesFeatureVisitors::get_property_value(
+			*d_insert_feature_ref, name_property_name, &name) )
+		{
+			qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
+		} 
+		else 
+		{
+			qDebug() << "d_insert_feature_ref = INVALID";
+		}
+	}
+
+	qDebug() << "############################################################"; 
+
+}
+
+void
+GPlatesQtWidgets::EditTopologyWidget::create_geometry_from_vertex_list(
+	std::vector<GPlatesMaths::PointOnSphere> &points,
+	GPlatesQtWidgets::EditTopologyWidget::GeometryType target_geom_type,
+	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity)
 {
-GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
-	*string_finder.found_strings_begin();
-qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring( name->value() );
-}
+	// FIXME: Only handles the unbroken line and single-ring cases.
 
-} else {
-qDebug() << "d_feature_focus_ptr = INVALID";
-}
+	// There's no guarantee that adjacent points in the table aren't identical.
+	std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
+			GPlatesMaths::count_distinct_adjacent_points(points);
 
-qDebug() << "d_section_feature_focus_index = " << d_section_feature_focus_index;
-
-if ( d_topology_feature_ref.is_valid() ) {
-qDebug() << "d_topology_feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( d_topology_feature_ref->feature_id().get() );
-static const GPlatesModel::PropertyName name_property_name = 
-	GPlatesModel::PropertyName::create_gml("name");
-GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-string_finder.visit_feature_handle( *d_topology_feature_ref );
-if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+#ifdef DEBUG1
+qDebug() << "create_geometry_from_vertex_list: size =" << num_points;
+std::vector<GPlatesMaths::PointOnSphere>::iterator itr;
+for ( itr = points.begin() ; itr != points.end(); ++itr)
 {
-GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
-	*string_finder.found_strings_begin();
-qDebug() << "d_topology_feature_ref name = " << GPlatesUtils::make_qstring( name->value() );
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*itr);
+	qDebug() << "create_geometry_from_vertex_list: llp=" << llp.latitude() << "," << llp.longitude();
+}
+#endif
+	// FIXME: I think... we need some way to add data() to the 'header' QTWIs, so that
+	// we can immediately discover which bits are supposed to be polygon exteriors etc.
+	// Then the function calculate_label_for_item could do all our 'tagging' of
+	// geometry parts, and -this- function wouldn't need to duplicate the logic.
+	// FIXME 2: We should have a 'try {  } catch {  }' block to catch any exceptions
+	// thrown during the instantiation of the geometries.
+	// This will become a proper 'try {  } catch {  } block' when we get around to it.
+	try
+	{
+		switch (target_geom_type)
+		{
+		default:
+			// FIXME: Exception.
+			qDebug() << "Unknown geometry type, not implemented yet!";
+			d_topology_geometry_opt_ptr = boost::none;
+
+		case GPlatesQtWidgets::BuildTopologyWidget::PLATEPOLYGON:
+			if (num_points == 0) 
+			{
+				validity = GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
+				d_topology_geometry_opt_ptr = boost::none;
+			} 
+			else if (num_points == 1) 
+			{
+				d_topology_geometry_opt_ptr = 
+					GPlatesUtils::create_point_on_sphere(points, validity);
+			} 
+			else if (num_points == 2) 
+			{
+				d_topology_geometry_opt_ptr = 
+					GPlatesUtils::create_polyline_on_sphere(points, validity);
+			} 
+			else if (num_points == 3 && points.front() == points.back()) 
+			{
+				d_topology_geometry_opt_ptr = 
+					GPlatesUtils::create_polyline_on_sphere(points, validity);
+			} 
+			else 
+			{
+				d_topology_geometry_opt_ptr = 
+					GPlatesUtils::create_polygon_on_sphere(points, validity);
+			}
+			break;
+		}
+		// Should never reach here.
+	} catch (...) {
+		throw;
+	}
+	d_topology_geometry_opt_ptr = boost::none;
 }
 
-} else {
-qDebug() << "d_topology_feature_ref = INVALID";
-}
-
-
-
-std::vector<GPlatesModel::FeatureId>::iterator section_itr = d_section_ids.begin();
-std::vector<GPlatesModel::FeatureId>::iterator section_end = d_section_ids.end();
-int index = 0;
-for ( ; section_itr != section_end; ++section_itr, ++index)
-{
-GPlatesModel::FeatureId	section_id = *section_itr;
-qDebug() << "index = " << index 
-<< "; section_id = " 
-<< GPlatesUtils::make_qstring_from_icu_string( section_id.get() );
-}
-
-
-if ( d_insert_feature_ref.is_valid() ) {
-qDebug() << "d_insert_feature_ref = " << GPlatesUtils::make_qstring_from_icu_string( d_insert_feature_ref->feature_id().get() );
-static const GPlatesModel::PropertyName name_property_name = 
-	GPlatesModel::PropertyName::create_gml("name");
-GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-string_finder.visit_feature_handle( *d_insert_feature_ref );
-if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
-{
-GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name = 
-	*string_finder.found_strings_begin();
-qDebug() << "d_insert_feature_ref name = " << GPlatesUtils::make_qstring( name->value() );
-}
-
-} else {
-qDebug() << "d_insert_feature_ref = INVALID";
-}
-
-
-
-qDebug() << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"; 
-
-}

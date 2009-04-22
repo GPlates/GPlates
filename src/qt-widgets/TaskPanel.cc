@@ -79,11 +79,11 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	d_modify_geometry_widget_ptr(new ModifyGeometryWidget(
 			geometry_operation_target, active_geometry_operation)),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(
-			rendered_geom_collection, view_state))
+			rendered_geom_collection, view_state)),
 	d_build_topology_widget_ptr( new BuildTopologyWidget(
-			rendered_geom_collection, rendered_geom_factory, feature_focus, model_interface, view_state)),
+			rendered_geom_collection, feature_focus, model_interface, view_state)),
 	d_edit_topology_widget_ptr( new EditTopologyWidget(
-			rendered_geom_collection, rendered_geom_factory, feature_focus, model_interface, view_state)),
+			rendered_geom_collection, feature_focus, model_interface, view_state))
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including

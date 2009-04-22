@@ -745,6 +745,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
+					d_task_panel_ptr->build_topology_widget(),
+					d_task_panel_ptr->edit_topology_widget(),
 					d_canvas_ptr->geometry_focus_highlight()));
 
 	// Set up the Canvas Tool Adapter for handling globe click and drag events.

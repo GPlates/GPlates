@@ -97,11 +97,8 @@ namespace GPlatesGui
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
-				GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
 				GPlatesQtWidgets::BuildTopologyWidget &build_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		~CanvasToolChoice()

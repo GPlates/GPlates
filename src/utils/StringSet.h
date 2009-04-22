@@ -28,13 +28,16 @@
 #ifndef GPLATES_UTILS_STRINGSET_H
 #define GPLATES_UTILS_STRINGSET_H
 
+#ifndef GPLATES_ICU_BOOL
+#define GPLATES_ICU_BOOL(b) ((b) != 0)
+#endif
+
 #include <algorithm>
 #include <set>
 #include <boost/intrusive_ptr.hpp>
 #include <unicode/unistr.h>
 
 #include "utils/ReferenceCount.h"
-
 
 namespace GPlatesUtils {
 

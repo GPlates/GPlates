@@ -941,7 +941,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 	
 	// Actually create the Feature!
 	GPlatesModel::FeatureHandle::weak_ref feature = 
-		d_model_ptr->create_feature(type, collection);
+		(*d_model_ptr)->create_feature(type, collection);
 	
 
 	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.

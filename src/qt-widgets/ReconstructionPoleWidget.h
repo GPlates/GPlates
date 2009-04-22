@@ -38,11 +38,6 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryFactory;
-}
-
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;

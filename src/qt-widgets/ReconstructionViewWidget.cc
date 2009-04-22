@@ -181,15 +181,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	d_zoom_slider_widget = new ZoomSliderWidget(d_globe_canvas_ptr->viewport_zoom(), this);
 
 
-	// Construct the Awesome Bar. This used to go on top, but we want to push this
-	// down so it goes to the left of the splitter, giving the TaskPanel some more
-	// room.
-	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(animation_controller);
-
-	// Construct the "View Bar" for the bottom.
-	std::auto_ptr<QWidget> viewbar = construct_viewbar(d_globe_canvas_ptr->viewport_zoom());
-
-
 	// With all our widgets constructed, on to the main canvas layout:-
 
 	// Construct the Awesome Bar. This used to go on top, but we want to push this
