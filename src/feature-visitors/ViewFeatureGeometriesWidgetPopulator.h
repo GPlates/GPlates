@@ -71,6 +71,18 @@ namespace GPlatesFeatureVisitors
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
 
+		QString
+		get_first_coordinate()
+		{
+			return first_coord;
+		}
+
+		QString
+		get_last_coordinate()
+		{
+			return last_coord;
+		}
+
 	private:
 		virtual
 		void
@@ -119,18 +131,6 @@ namespace GPlatesFeatureVisitors
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 		
-		QString
-		get_first_coordinate()
-		{
-			return first_coord;
-		}
-
-		QString
-		get_last_coordinate()
-		{
-			return last_coord;
-		}
-
 	private:
 		
 		/**

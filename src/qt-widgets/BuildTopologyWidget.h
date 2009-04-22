@@ -37,32 +37,29 @@
 
 #include "feature-visitors/TopologySectionsFinder.h"
 
-#include "maths/GeometryOnSphere.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
-
+#include "maths/GeometryOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
-
-#include "model/ModelInterface.h"
 #include "model/FeatureHandle.h"
+#include "model/ModelInterface.h"
+#include "model/PropertyValue.h"
 #include "model/ReconstructedFeatureGeometry.h"
 
-#include "model/PropertyValue.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalIntersection.h"
 
+#include "utils/GeometryCreationUtils.h"
+#include "utils/UnicodeStringUtils.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryFactory;
-}
 
 // An effort to reduce the dependency spaghetti currently plaguing the GUI.
 namespace GPlatesGui
@@ -100,6 +97,9 @@ namespace GPlatesQtWidgets
 		{
 			NONE, INTERSECT_PREV, INTERSECT_NEXT, OVERLAP_PREV, OVERLAP_NEXT, OTHER
 		};
+
+		typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
+			geometry_opt_ptr_type;
 		
 		// Get a map of FeatureId to ReconstructionGeometry pointers for reconstruction
 		typedef std::map<
@@ -110,11 +110,10 @@ namespace GPlatesQtWidgets
 		explicit
 		BuildTopologyWidget(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesModel::ModelInterface &model_interface,
-				ViewportWindow &view_state_,
-				QWidget *parent_ = NULL);
+				ViewportWindow &view_state,
+				QWidget *parent = NULL);
 		
 		/**
 		 * Set the click point (called from canvas tool)
@@ -407,12 +406,6 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 
 		/**
-		 * Used to create @a RenderedGeometry objects.
-		 */
-		GPlatesViewOperations::RenderedGeometryFactory *d_rendered_geom_factory;
-
-
-		/**
 		 * Rendered geometry layers to draw into 
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
@@ -561,8 +554,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * The d_vertex_list gets processed into this geometry; may be boost::none 
 		 */
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
-			d_topology_geometry_opt_ptr;
+		mutable geometry_opt_ptr_type d_topology_geometry_opt_ptr;
 
 		/*
 		 * 
@@ -586,6 +578,13 @@ namespace GPlatesQtWidgets
 
 		void
 		show_numbers();
+
+		/** sets d_topology_geometry_opt_ptr */
+		void
+		create_geometry_from_vertex_list(
+			std::vector<GPlatesMaths::PointOnSphere> &points,
+			GPlatesQtWidgets::BuildTopologyWidget::GeometryType target_geom_type,
+			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity);
 
 	};
 }

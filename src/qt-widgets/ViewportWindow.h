@@ -134,6 +134,30 @@ namespace GPlatesQtWidgets
 		void
 		create_svg_file();
 
+		void	
+		change_tab(int i) {
+			tabWidget->setCurrentIndex( i );
+		}
+
+		int
+		get_tab() {
+			return tabWidget->currentIndex();
+		}
+
+
+		GPlatesGui::FeatureTableModel &
+		feature_table_model() 
+		{
+			return *d_feature_table_model_ptr;
+		}
+
+
+		GPlatesGui::FeatureTableModel &
+		sections_feature_table_model() 
+		{
+			return *d_sections_feature_table_model_ptr;
+		}
+
 	public slots:
 		
 		void
@@ -149,6 +173,19 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		highlight_first_clicked_feature_table_row() const;
+
+		/**
+		 * Clears the "Topology Sections" feature table selection
+		 */
+		void
+		highlight_sections_table_clear() const;
+
+		/**
+		 * Highlights a row in the "Topology Sections" feature table.
+		 */
+		void
+		highlight_sections_table_row(int i, bool state) const;
+
 
 		void
 		reconstruct_to_time(
@@ -495,6 +532,10 @@ namespace GPlatesQtWidgets
 		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
 
 		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+
+		// The 'Topology Sections' table. Should be in ViewState. Depends on FeatureFocus.
+		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_sections_feature_table_model_ptr;
+
 
 		//  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;

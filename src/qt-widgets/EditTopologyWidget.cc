@@ -67,9 +67,7 @@
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
 
-#include "feature-visitors/PlateIdFinder.h"
-#include "feature-visitors/GmlTimePeriodFinder.h"
-#include "feature-visitors/XsStringFinder.h"
+#include "feature-visitors/PropertyValueFinder.h"
 #include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 #include "feature-visitors/TopologySectionsFinder.h"
 
@@ -514,15 +512,16 @@ GPlatesQtWidgets::EditTopologyWidget::fill_widgets(
 	// Plate ID.
 	static const GPlatesModel::PropertyName plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-	plate_id_finder.visit_feature_handle(*feature_ref);
-	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+
+
+	// GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+
+
+	const GPlatesPropertyValues::GpmlPlateId *plate_id;
+	if ( GPlatesFeatureVisitors::get_property_value( *feature_ref, property_name, &plate_id ) )
 	{
 		// The feature has a reconstruction plate ID.
-		GPlatesModel::integer_plate_id_type recon_plate_id =
-				*plate_id_finder.found_plate_ids_begin();
-		
-		lineedit_plate_id->setText(QString::number(recon_plate_id));
+		lineedit_plate_id->setText( QString::number( plate_id->value() ));
 	}
 	
 	if (feature_ref.is_valid() ) 
@@ -3075,13 +3074,3 @@ qDebug() << "d_insert_feature_ref = INVALID";
 qDebug() << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"; 
 
 }
-//
-// END
-//
-#if 0
-// FIXME: remove this , not needed
-	// update the d_section_* vectors from the sections table
-	d_visit_to_create_properties = true;
-	update_geometry();
-	d_visit_to_create_properties = false;
-#endif
