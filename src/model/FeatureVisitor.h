@@ -284,7 +284,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_gpml_revision_id(
-				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) 
+				GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) 
 		{  }
 
 		virtual
