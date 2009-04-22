@@ -77,26 +77,34 @@ namespace GPlatesFeatureVisitors
 	 * property name @a property_name.
 	 * If true then property value is returned in @a property_value.
 	 * If has more than one property matching criteria then only first is returned.
+	 * @a PropertyValueType and @a FeatureHandleType can be either const or non-const types,
+	 * but you cannot get a non-const property value from a const feature handle.
+	 *
 	 * For example:
+	 *    GPlatesModel::FeatureHandle &feature_handle = ...;
 	 *    const GPlatesPropertyValues::Enumeration *property_value;
 	 *    if (get_property_value(feature_handle, property_name, &property_value))
 	 *    {
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType>
+	template <class PropertyValueType, class FeatureHandleType>
 	bool
 	get_property_value(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			FeatureHandleType &feature_handle,
 			const GPlatesModel::PropertyName &property_name,
-			const PropertyValueType **property_value);
+			PropertyValueType **property_value);
 
 	/**
 	 * Returns true if @a feature_handle has a property value of type @a PropertyValueType and
 	 * property name in the sequence [@a property_names_begin, @a property_names_end).
 	 * If true then property value is returned in @a property_value.
 	 * If has more than one property matching criteria then only first is returned.
+	 * @a PropertyValueType and @a FeatureHandleType can be either const or non-const types,
+	 * but you cannot get a non-const property value from a const feature handle.
+	 *
 	 * For example:
+	 *    GPlatesModel::FeatureHandle &feature_handle = ...;
 	 *    const GPlatesPropertyValues::Enumeration *property_value;
 	 *    std::vector<GPlatesModel::PropertyName> property_names;
 	 *    ...
@@ -105,37 +113,45 @@ namespace GPlatesFeatureVisitors
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType, typename PropertyNamesForwardIter>
+	template <class PropertyValueType, class FeatureHandleType, typename PropertyNamesForwardIter>
 	bool
 	get_property_value(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			FeatureHandleType &feature_handle,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
-			const PropertyValueType **property_value);
+			PropertyValueType **property_value);
 
 	/**
 	 * Returns true if @a feature_handle has any property values of type @a PropertyValueType
 	 * with property name @a property_name.
 	 * If so then the property values are returned in @a property_values.
+	 * @a PropertyValueType and @a FeatureHandleType can be either const or non-const types,
+	 * but you cannot get a non-const property value from a const feature handle.
+	 *
 	 * For example:
+	 *    GPlatesModel::FeatureHandle &feature_handle = ...;
 	 *    std::vector<const GPlatesPropertyValues::Enumeration *> property_values;
 	 *    if (get_property_values(feature_handle, property_name, &property_values))
 	 *    {
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType>
+	template <class PropertyValueType, class FeatureHandleType>
 	bool
 	get_property_values(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			FeatureHandleType &feature_handle,
 			const GPlatesModel::PropertyName &property_name,
-			std::vector<const PropertyValueType *> *property_values);
+			std::vector<PropertyValueType *> *property_values);
 
 	/**
 	 * Returns true if @a feature_handle has any property values of type @a PropertyValueType
 	 * and property name in the sequence [@a property_names_begin, @a property_names_end).
 	 * If so then the property values are returned in @a property_values.
+	 * @a PropertyValueType and @a FeatureHandleType can be either const or non-const types,
+	 * but you cannot get a non-const property value from a const feature handle.
+	 *
 	 * For example:
+	 *    GPlatesModel::FeatureHandle &feature_handle = ...;
 	 *    std::vector<const GPlatesPropertyValues::Enumeration *> property_values;
 	 *    std::vector<GPlatesModel::PropertyName> property_names;
 	 *    ...
@@ -144,21 +160,26 @@ namespace GPlatesFeatureVisitors
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType, typename PropertyNamesForwardIter>
+	template <class PropertyValueType, class FeatureHandleType, typename PropertyNamesForwardIter>
 	bool
 	get_property_values(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			FeatureHandleType &feature_handle,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
-			std::vector<const PropertyValueType *> *property_values);
+			std::vector<PropertyValueType *> *property_values);
+
 
 	/**
 	 * Base implementation class for const feature visitor that finds all PropertyValue's of
 	 * type PropertyValueType and with property name included in a specified list that are
 	 * contained within a feature.
 	 */
+	template <class FeatureVisitorType,
+			class FeatureHandleType,
+			class InlinePropertyContainerType,
+			class GpmlConstantValueType>
 	class PropertyValueFinderBase :
-			public GPlatesModel::ConstFeatureVisitor
+			public FeatureVisitorType
 	{
 	public:
 		virtual
@@ -174,7 +195,7 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle)
+				FeatureHandleType &feature_handle)
 		{
 			// Now visit each of the properties in turn.
 			visit_feature_properties(feature_handle);
@@ -183,7 +204,7 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_inline_property_container(
-				const GPlatesModel::InlinePropertyContainer &inline_property_container)
+				InlinePropertyContainerType &inline_property_container)
 		{
 			const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
 
@@ -204,7 +225,7 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+				GpmlConstantValueType &gpml_constant_value)
 		{
 			gpml_constant_value.value()->accept_visitor(*this);
 		}
@@ -237,13 +258,23 @@ namespace GPlatesFeatureVisitors
 	// of 'visit_gpml_plate_id' for example - in which case a simple template class would suffice.
 	// However having "visit" methods named as they are probably help readability and avoids needing
 	// 'using ConstFeatureVisitor::visit;" declarations in derived visitor classes.
-#define DECLARE_PROPERTY_VALUE_FINDER_CLASS(property_value_type, visit_property_value_method) \
+#define DECLARE_PROPERTY_VALUE_FINDER_CLASS(property_value_type, \
+		visit_property_value_method, \
+		feature_visitor_type, \
+		feature_handle_type, \
+		inline_property_container_type, \
+		gpml_constant_value_type \
+) \
 	template <> \
 	class PropertyValueFinder<property_value_type> : \
-			public PropertyValueFinderBase \
+			public PropertyValueFinderBase< \
+					feature_visitor_type, \
+					feature_handle_type, \
+					inline_property_container_type, \
+					gpml_constant_value_type> \
 	{ \
 	public: \
-		typedef std::vector<const property_value_type *> property_value_container_type; \
+		typedef std::vector<property_value_type *> property_value_container_type; \
 		typedef property_value_container_type::const_iterator property_value_container_const_iterator; \
 		typedef std::pair<property_value_container_const_iterator, property_value_container_const_iterator> \
 				property_value_container_range; \
@@ -261,7 +292,7 @@ namespace GPlatesFeatureVisitors
 		/* Returns begin/end iterator to any found property values. */ \
 		property_value_container_range \
 		find_property_values( \
-				const GPlatesModel::FeatureHandle &feature_handle) \
+				feature_handle_type &feature_handle) \
 		{ \
 			d_found_property_values.clear(); \
  \
@@ -274,7 +305,7 @@ namespace GPlatesFeatureVisitors
 		virtual \
 		void \
 		visit_property_value_method( \
-				const property_value_type &property_value) \
+				property_value_type &property_value) \
 		{ \
 			d_found_property_values.push_back(&property_value); \
 		} \
@@ -282,56 +313,66 @@ namespace GPlatesFeatureVisitors
 		property_value_container_type d_found_property_values; \
 	}
 
+
+#define DECLARE_PROPERTY_VALUE_FINDER(property_value_type, visit_property_value_method) \
+		/* const version */ \
+		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
+				const property_value_type, \
+				visit_property_value_method, \
+				GPlatesModel::ConstFeatureVisitor, \
+				const GPlatesModel::FeatureHandle, \
+				const GPlatesModel::InlinePropertyContainer, \
+				const GPlatesPropertyValues::GpmlConstantValue); \
+		/* non-const version */ \
+		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
+				property_value_type, \
+				visit_property_value_method, \
+				GPlatesModel::ConstFeatureVisitor, \
+				GPlatesModel::FeatureHandle, \
+				GPlatesModel::InlinePropertyContainer, \
+				GPlatesPropertyValues::GpmlConstantValue); \
+
+
 	// Explicitly declare for all property values we're interested in.
 	// If a property value type is added to the feature visitor base class then it'll
-	// need to be added here too using DECLARE_PROPERTY_VALUE_FINDER_CLASS().
+	// need to be added here too using DECLARE_PROPERTY_VALUE_FINDER().
 	// TODO: possibly remove other finders like "XsStringFinder.cc" that have the same
 	// functionality as, for example, PropertyValueFinder<XsString>.
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::Enumeration, visit_enumeration);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GmlLineString, visit_gml_line_string);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GmlMultiPoint, visit_gml_multi_point);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GmlOrientableCurve, visit_gml_orientable_curve);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GmlPoint, visit_gml_point);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GmlPolygon, visit_gml_polygon);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GmlTimeInstant, visit_gml_time_instant);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GmlTimePeriod, visit_gml_time_period);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlFeatureReference, visit_gpml_feature_reference);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlFeatureSnapshotReference, visit_gpml_feature_snapshot_reference);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlFiniteRotation, visit_gpml_finite_rotation);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlFiniteRotationSlerp, visit_gpml_finite_rotation_slerp);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlHotSpotTrailMark, visit_gpml_hot_spot_trail_mark);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlIrregularSampling, visit_gpml_irregular_sampling);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlKeyValueDictionary, visit_gpml_key_value_dictionary);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlMeasure, visit_gpml_measure);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlOldPlatesHeader, visit_gpml_old_plates_header);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlPiecewiseAggregation, visit_gpml_piecewise_aggregation);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlPlateId, visit_gpml_plate_id);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlPolarityChronId, visit_gpml_polarity_chron_id);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlPropertyDelegate, visit_gpml_property_delegate);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::GpmlRevisionId, visit_gpml_revision_id);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::UninterpretedPropertyValue, visit_uninterpreted_property_value);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::XsBoolean, visit_xs_boolean);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::XsDouble, visit_xs_double);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::XsInteger, visit_xs_integer);
-	DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::XsString, visit_xs_string);
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::Enumeration, visit_enumeration)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlLineString, visit_gml_line_string)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlMultiPoint, visit_gml_multi_point)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlOrientableCurve, visit_gml_orientable_curve)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlPoint, visit_gml_point)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlPolygon, visit_gml_polygon)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlTimeInstant, visit_gml_time_instant)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlTimePeriod, visit_gml_time_period)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFeatureReference, visit_gpml_feature_reference)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFeatureSnapshotReference, visit_gpml_feature_snapshot_reference)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFiniteRotation, visit_gpml_finite_rotation)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFiniteRotationSlerp, visit_gpml_finite_rotation_slerp)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlHotSpotTrailMark, visit_gpml_hot_spot_trail_mark)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlIrregularSampling, visit_gpml_irregular_sampling)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlKeyValueDictionary, visit_gpml_key_value_dictionary)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlMeasure, visit_gpml_measure)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlOldPlatesHeader, visit_gpml_old_plates_header)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPiecewiseAggregation, visit_gpml_piecewise_aggregation)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPlateId, visit_gpml_plate_id)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPolarityChronId, visit_gpml_polarity_chron_id)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPropertyDelegate, visit_gpml_property_delegate)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlRevisionId, visit_gpml_revision_id)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::UninterpretedPropertyValue, visit_uninterpreted_property_value)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::XsBoolean, visit_xs_boolean)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::XsDouble, visit_xs_double)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::XsInteger, visit_xs_integer)
+	DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::XsString, visit_xs_string)
 
-	/**
-	 * Returns true if @a feature_handle has any property values of type @a PropertyValueType
-	 * with property name @a property_name.
-	 * If so then the property values are returned in @a property_values.
-	 * For example:
-	 *    std::vector<const GPlatesPropertyValues::Enumeration *> property_values;
-	 *    if (get_property_values(feature_handle, property_name, &property_values))
-	 *    {
-	 *       ...
-	 *    }
-	 */
-	template <class PropertyValueType>
+
+	template <class PropertyValueType, class FeatureHandleType>
 	bool
 	get_property_values(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			FeatureHandleType &feature_handle,
 			const GPlatesModel::PropertyName &property_name,
-			std::vector<const PropertyValueType *> *property_values)
+			std::vector<PropertyValueType *> *property_values)
 	{
 		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType> property_value_finder_type;
 
@@ -347,23 +388,11 @@ namespace GPlatesFeatureVisitors
 		return !property_values->empty();
 	}
 
-	/**
-	 * Returns true if @a feature_handle has any property values of type @a PropertyValueType
-	 * and property name in the sequence [@a property_names_begin, @a property_names_end).
-	 * If so then the property values are returned in @a property_values.
-	 * For example:
-	 *    std::vector<const GPlatesPropertyValues::Enumeration *> property_values;
-	 *    std::vector<GPlatesModel::PropertyName> property_names;
-	 *    ...
-	 *    if (get_property_values(feature_handle, property_names.begin(), property_names.end(), &property_values))
-	 *    {
-	 *       ...
-	 *    }
-	 */
-	template <class PropertyValueType, typename PropertyNamesForwardIter>
+
+	template <class PropertyValueType, class FeatureHandleType, typename PropertyNamesForwardIter>
 	bool
 	get_property_values(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			FeatureHandleType &feature_handle,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
 			std::vector<const PropertyValueType *> *property_values)
@@ -389,24 +418,13 @@ namespace GPlatesFeatureVisitors
 		return !property_values->empty();
 	}
 
-	/**
-	 * Returns true if @a feature_handle has a property value of type @a PropertyValueType and
-	 * property name @a property_name and 
-	 * If true then property value is returned in @a property_value.
-	 * If has more than one property matching criteria then only first is returned.
-	 * For example:
-	 *    const GPlatesPropertyValues::Enumeration *property_value;
-	 *    if (get_property_value(feature_handle, property_name, &property_value))
-	 *    {
-	 *       ...
-	 *    }
-	 */
-	template <class PropertyValueType>
+
+	template <class PropertyValueType, class FeatureHandleType>
 	bool
 	get_property_value(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			FeatureHandleType &feature_handle,
 			const GPlatesModel::PropertyName &property_name,
-			const PropertyValueType **property_value)
+			PropertyValueType **property_value)
 	{
 		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType> property_value_finder_type;
 
@@ -426,24 +444,11 @@ namespace GPlatesFeatureVisitors
 		return true;
 	}
 
-	/**
-	 * Returns true if @a feature_handle has a property value of type @a PropertyValueType and
-	 * property name in the sequence [@a property_names_begin, @a property_names_end).
-	 * If true then property value is returned in @a property_value.
-	 * If has more than one property matching criteria then only first is returned.
-	 * For example:
-	 *    const GPlatesPropertyValues::Enumeration *property_value;
-	 *    std::vector<GPlatesModel::PropertyName> property_names;
-	 *    ...
-	 *    if (get_property_value(feature_handle, property_names.begin(), property_names.end(), &property_value))
-	 *    {
-	 *       ...
-	 *    }
-	 */
-	template <class PropertyValueType, typename PropertyNamesForwardIter>
+
+	template <class PropertyValueType, class FeatureHandleType, typename PropertyNamesForwardIter>
 	bool
 	get_property_value(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			FeatureHandleType &feature_handle,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
 			const PropertyValueType **property_value)
