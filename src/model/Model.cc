@@ -30,8 +30,6 @@
 # include <boost/python.hpp>
 #endif
 
-#include <ctime>
-
 #include "Model.h"
 #include "DummyTransactionHandle.h"
 #include "FeatureHandle.h"
@@ -41,12 +39,10 @@
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructedFeatureGeometryPopulator.h"
 
-#include "feature-visitors/TopologyResolver.h"
-#include "feature-visitors/ComputationalMeshSolver.h"
-
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
+
 
 GPlatesModel::Model::Model():
 	d_feature_store(FeatureStore::create())
@@ -90,7 +86,6 @@ GPlatesModel::Model::create_feature(
 	target_collection->append_feature(feature_handle, transaction);
 	transaction.commit();
 
-	d_feature_id_registry.register_feature(feature_handle->reference());
 	return feature_handle->reference();
 }
 
@@ -108,8 +103,8 @@ GPlatesModel::Model::create_feature(
 	target_collection->append_feature(feature_handle, transaction);
 	transaction.commit();
 
-	d_feature_id_registry.register_feature(feature_handle->reference());
 	return feature_handle->reference();
+
 }
 
 
@@ -127,7 +122,6 @@ GPlatesModel::Model::create_feature(
 	target_collection->append_feature(feature_handle, transaction);
 	transaction.commit();
 
-	d_feature_id_registry.register_feature(feature_handle->reference());
 	return feature_handle->reference();
 }
 
@@ -172,10 +166,6 @@ GPlatesModel::Model::create_reconstruction_tree(
 		const double &time,
 		GPlatesModel::integer_plate_id_type root)
 {
-	PROFILE_FUNC();
-
-	PROFILE_BEGIN(build_recon_tree, "Model::create_reconstruction build reconstruction tree");
-
 	ReconstructionGraph graph(time);
 	ReconstructionTreePopulator rtp(time, graph);
 
@@ -200,10 +190,7 @@ GPlatesModel::Model::create_reconstruction(
 	ReconstructionTree::non_null_ptr_type tree =
 			create_reconstruction_tree(reconstruction_features_collection, time, root);
 	Reconstruction::non_null_ptr_type reconstruction =
-			Reconstruction::create(
-				tree, 
-				reconstruction_features_collection,
-				reconstructable_features_collection);
+			Reconstruction::create(tree, reconstruction_features_collection);
 
 	ReconstructedFeatureGeometryPopulator rfgp(time, root, *reconstruction,
 			reconstruction->reconstruction_tree(),
@@ -213,54 +200,6 @@ GPlatesModel::Model::create_reconstruction(
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		rfgp);
-
-	PROFILE_END(build_recon_tree);
-
-// FIXME: moved to ViewportWindow  render_model()
-#if 0
-
-	PROFILE_BEGIN(build_platepolygons, "Model::create_reconstruction build platepolygons");
-
-	// Visit the feature collections and build topologies 
-	GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
-		time, 
-		root, 
-		*reconstruction,
-		reconstruction->reconstruction_tree(),
-		d_feature_id_registry,
-		reconstruction->geometries(),
-		true); // keep features without recon plate id
-
-	visit_feature_collections(
-		reconstructable_features_collection.begin(),
-		reconstructable_features_collection.end(),
-		topology_resolver);
-
-	topology_resolver.report();
-
-	PROFILE_END(build_platepolygons);
-
-	PROFILE_BEGIN(solve_mesh, "Model::create_reconstruction fill computational meshes with velocity data");
-
-	// Visit the feature collections and fill computational meshes with nice juicy velocity data
-	GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
-		time, 
-		root, 
-		*reconstruction,
-		reconstruction->reconstruction_tree(),
-		d_feature_id_registry,
-		topology_resolver,
-		reconstruction->geometries());
-
-	visit_feature_collections(
-		reconstructable_features_collection.begin(),
-		reconstructable_features_collection.end(),
-		solver);
-
-	// solver.report();
-
-	PROFILE_END(solve_mesh);
-#endif
 
 	return reconstruction;
 }
@@ -278,18 +217,9 @@ GPlatesModel::Model::create_empty_reconstruction(
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
 	std::vector<FeatureCollectionHandle::weak_ref> empty_vector;
-	Reconstruction::non_null_ptr_type reconstruction = 
-		Reconstruction::create(tree, empty_vector, empty_vector);
+	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree, empty_vector);
 
 	return reconstruction;
-}
-
-
-boost::optional<GPlatesModel::FeatureHandle::weak_ref>
-GPlatesModel::Model::get_feature_for_id(
-		const GPlatesModel::FeatureId &feature_id)
-{
-	return d_feature_id_registry.find(feature_id);
 }
 
 

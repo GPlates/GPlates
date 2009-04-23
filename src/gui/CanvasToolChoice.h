@@ -46,7 +46,6 @@ namespace GPlatesQtWidgets
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
 	class ReconstructionPoleWidget;
-	class PlateClosureWidget;
 	class BuildTopologyWidget;
 	class EditTopologyWidget;
 }
@@ -148,12 +147,6 @@ namespace GPlatesGui
 		}
 
 		void
-		choose_plate_closure_platepolygon_tool()
-		{
-			change_tool_if_necessary(d_plate_closure_platepolygon_tool_ptr);
-		}
-
-		void
 		choose_move_geometry_tool()
 		{
 			change_tool_if_necessary(d_move_geometry_tool_ptr);
@@ -252,17 +245,12 @@ namespace GPlatesGui
 		CanvasTool::non_null_ptr_type d_manipulate_pole_tool_ptr;
 
 		/**
-		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
-		 */
-		CanvasTool::non_null_ptr_type d_plate_closure_platepolygon_tool_ptr;
-
-		/**
-		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
+		 * This is the BuildTopology tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_build_topology_tool_ptr;
 
 		/**
-		 * This is the PlateClosure Geometry (Platepolygon) tool which the user may choose.
+		 * This is the EditTopology tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
 

@@ -30,8 +30,6 @@ set(srcs
     MoveGeometry.h
     MoveVertex.cc
     MoveVertex.h
-    PlateClosure.cc
-    PlateClosure.h
     ReorientGlobe.cc
     ReorientGlobe.h
     ZoomGlobe.cc

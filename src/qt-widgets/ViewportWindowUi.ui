@@ -184,6 +184,8 @@
    <addaction name="action_Insert_Vertex" />
    <addaction name="action_Delete_Vertex" />
    <addaction name="action_Manipulate_Pole" />
+   <addaction name="action_Build_Topology" />
+   <addaction name="action_Edit_Topology" />
   </widget>
   <widget class="QDockWidget" name="dock_search_results" >
    <property name="contextMenuPolicy" >
@@ -1036,6 +1038,54 @@
    </property>
    <property name="shortcut" >
     <string>P</string>
+   </property>
+  </action>
+  <action name="action_Build_Topology" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset>
+     <normaloff>:/topology_build_35.png</normaloff>:/topology_build_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Build New Topology</string>
+   </property>
+   <property name="iconText" >
+    <string>Build New Topology</string>
+   </property>
+   <property name="toolTip" >
+    <string>Build New Topology</string>
+   </property>
+   <property name="shortcut" >
+    <string>B</string>
+   </property>
+  </action>
+  <action name="action_Edit_Topology" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset>
+     <normaloff>:/topology_edit_35.png</normaloff>:/topology_edit_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Edit Topology</string>
+   </property>
+   <property name="iconText" >
+    <string>Edit Topology</string>
+   </property>
+   <property name="toolTip" >
+    <string>Edit Topology</string>
+   </property>
+   <property name="shortcut" >
+    <string>E</string>
    </property>
   </action>
   <action name="action_Set_Raster_Surface_Extent" >

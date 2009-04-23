@@ -263,7 +263,6 @@ namespace GPlatesModel
 
 	private:
 		FeatureStore::non_null_ptr_type d_feature_store;
-		FeatureIdRegistry d_feature_id_registry;
 	};
 
 

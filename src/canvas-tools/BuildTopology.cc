@@ -40,8 +40,8 @@
 #include "global/InternalInconsistencyException.h"
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
-#include "feature-visitors/XsStringFinder.h"
 #include "property-values/XsString.h"
+#include "feature-visitors/PropertyValueFinder.h"
 
 GPlatesCanvasTools::BuildTopology::BuildTopology(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
@@ -271,15 +271,11 @@ qDebug() << "GPlatesCanvasTools::BuildTopology::handle_create_new_feature";
 qDebug() << "feature_ref = " 
 << GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
 
-
 static const GPlatesModel::PropertyName name_property_name =
 	GPlatesModel::PropertyName::create_gml("name");
-GPlatesFeatureVisitors::XsStringFinder string_finder(name_property_name);
-string_finder.visit_feature_handle( *feature_ref );
-if (string_finder.found_strings_begin() != string_finder.found_strings_end()) 
+const GPlatesPropertyValues::XsString *name;
+if ( GPlatesFeatureVisitors::get_property_value( *feature_ref, name_property_name, &name) )
 {
-	GPlatesPropertyValues::XsString::non_null_ptr_to_const_type name =
-		 *string_finder.found_strings_begin();
 	qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
 }
 

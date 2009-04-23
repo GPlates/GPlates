@@ -742,6 +742,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					*d_canvas_ptr,
 					*this,
 					*d_feature_table_model_ptr,
+					*d_sections_feature_table_model_ptr,
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),

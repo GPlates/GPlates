@@ -41,9 +41,6 @@
 #include "canvas-tools/EditTopology.h"
 
 #include "qt-widgets/DigitisationWidget.h"
-#include "qt-widgets/PlateClosureWidget.h"
-#include "qt-widgets/BuildTopologyWidget.h"
-#include "qt-widgets/EditTopologyWidget.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -62,7 +59,6 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
-		GPlatesQtWidgets::PlateClosureWidget &plate_closure_widget,
 		GPlatesQtWidgets::BuildTopologyWidget &build_topology_widget,
 		GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight):
@@ -85,28 +81,34 @@ d_click_geometry_tool_ptr(GPlatesCanvasTools::ClickGeometry::create(
 		geometry_focus_highlight)),
 d_digitise_polyline_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(
 		GPlatesViewOperations::GeometryType::POLYLINE,
-		geom_builder_tool_target,
+		geometry_operation_target,
+		active_geometry_operation,
 		rendered_geom_collection,
-		rendered_geom_factory,
 		choose_canvas_tool,
+		GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE,
+		query_proximity_threshold,
 		globe,
 		globe_canvas,
 		view_state)),
 d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(
 		GPlatesViewOperations::GeometryType::MULTIPOINT,
-		geom_builder_tool_target,
+		geometry_operation_target,
+		active_geometry_operation,
 		rendered_geom_collection,
-		rendered_geom_factory,
 		choose_canvas_tool,
+		GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT,
+		query_proximity_threshold,
 		globe,
 		globe_canvas,
 		view_state)),
 d_digitise_polygon_tool_ptr(GPlatesCanvasTools::DigitiseGeometry::create(
 		GPlatesViewOperations::GeometryType::POLYGON,
-		geom_builder_tool_target,
+		geometry_operation_target,
+		active_geometry_operation,
 		rendered_geom_collection,
-		rendered_geom_factory,
 		choose_canvas_tool,
+		GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON,
+		query_proximity_threshold,
 		globe,
 		globe_canvas,
 		view_state)),
@@ -115,9 +117,27 @@ d_move_geometry_tool_ptr(GPlatesCanvasTools::MoveGeometry::create(
 		globe_canvas,
 		view_state)),
 d_move_vertex_tool_ptr(GPlatesCanvasTools::MoveVertex::create(
-		geom_builder_tool_target,
+		geometry_operation_target,
+		active_geometry_operation,
 		rendered_geom_collection,
-		rendered_geom_factory,
+		choose_canvas_tool,
+		query_proximity_threshold,
+		globe,
+		globe_canvas,
+		view_state)),
+d_delete_vertex_tool_ptr(GPlatesCanvasTools::DeleteVertex::create(
+		geometry_operation_target,
+		active_geometry_operation,
+		rendered_geom_collection,
+		choose_canvas_tool,
+		query_proximity_threshold,
+		globe,
+		globe_canvas,
+		view_state)),
+d_insert_vertex_tool_ptr(GPlatesCanvasTools::InsertVertex::create(
+		geometry_operation_target,
+		active_geometry_operation,
+		rendered_geom_collection,
 		choose_canvas_tool,
 		query_proximity_threshold,
 		globe,
@@ -129,16 +149,6 @@ d_manipulate_pole_tool_ptr(GPlatesCanvasTools::ManipulatePole::create(
 		globe_canvas,
 		view_state,
 		pole_widget)),
-d_plate_closure_platepolygon_tool_ptr( GPlatesCanvasTools::PlateClosure::create(
-		rendered_geom_collection,
-		globe, 
-		globe_canvas, 
-		view_state, 
-		clicked_table_model, 
-		feature_table_model_segments, 
-		plate_closure_widget, 
-		GPlatesQtWidgets::PlateClosureWidget::PLATEPOLYGON, 
-		feature_focus)),
 d_build_topology_tool_ptr( GPlatesCanvasTools::BuildTopology::create(
 		rendered_geom_collection,
 		globe, 
