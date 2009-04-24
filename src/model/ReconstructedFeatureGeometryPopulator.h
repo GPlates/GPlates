@@ -87,11 +87,6 @@ namespace GPlatesModel
 			{
 				return (**d_current_property)->property_name();
 			}
-
-			/*
-			 * holds the feature id during a visit series; Used to build a map from id to rg
-			 */ 
-			GPlatesModel::FeatureId d_current_feature_id;
 		};
 
 		typedef std::vector<ReconstructionGeometry::non_null_ptr_type>

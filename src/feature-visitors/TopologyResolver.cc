@@ -24,13 +24,13 @@
  */
 
 
-// #define DEBUG
-//#define DEBUG_VISIT
-//#define DEBUG_RESOLVE_INTERSECTION
-//#define DEBUG_RESOLVE_BOUNDARY
-//#define DEBUG_GET_VERTEX_LIST
-//#define DEBUG_BOUNDS
-//#define DEBUG_POINT_IN_POLYGON
+#define DEBUG
+#define DEBUG_VISIT
+#define DEBUG_RESOLVE_INTERSECTION
+#define DEBUG_RESOLVE_BOUNDARY
+#define DEBUG_GET_VERTEX_LIST
+#define DEBUG_BOUNDS
+#define DEBUG_POINT_IN_POLYGON
 
 
 #ifdef _MSC_VER
@@ -40,7 +40,7 @@
 #include "TopologyResolver.h"
 
 #include "feature-visitors/ValueFinder.h"
-#include "feature-visitors/PlateIdFinder.h"
+#include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
@@ -48,7 +48,6 @@
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/FeatureRevision.h"
-#include "model/FeatureIdRegistry.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
@@ -103,14 +102,12 @@ GPlatesFeatureVisitors::TopologyResolver::TopologyResolver(
 			unsigned long root_plate_id,
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
-			GPlatesModel::FeatureIdRegistry &registry,
 			reconstruction_geometries_type &reconstructed_geometries,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
-	d_feature_id_registry_ptr(&registry),
 	d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  
@@ -556,6 +553,7 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_intersection(
 	GPlatesModel::FeatureId intersection_geometry_feature_id,
 	GPlatesFeatureVisitors::TopologyResolver::NeighborRelation relation)
 {
+#if 0
 	// FIXME: check for boost::none on calls to registry
 	GPlatesModel::FeatureHandle::weak_ref src_geometry_ref = 
 		( d_feature_id_registry_ptr->find(source_geometry_feature_id) ).get();
@@ -573,12 +571,15 @@ std::cout << "TopologyResolver::resolve_intersection: intersection_id= " << inte
 std::cout << "TopologyResolver::resolve_intersection: node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
 #endif
 
+#endif
+
 	if ( d_working_vertex_list.size() < 2 )
 	{
 		// FIXME : freak out!
 		std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
 		<< "WARN: d_working_vertex_list < 2 ; Unable to create polyline." << std::endl
-		<< "WARN: src_geometry_id= " << src_geometry_id << std::endl;
+		// << "WARN: src_geometry_id= " << src_geometry_id 
+		<< std::endl;
 		std::cerr << "d_working_vertex_list.size=" << d_working_vertex_list.size() << std::endl;
 		return;
 	}
@@ -588,8 +589,9 @@ std::cout << "TopologyResolver::resolve_intersection: node2_vertex_list.size=" <
 		// FIXME : freak out!
 		std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
 		<< "WARN: d_node2_vertex_list < 2 ; Unable to create polyline." << std::endl
-		<< "WARN: src_geometry_id= " << src_geometry_id << std::endl
-		<< "WARN: intersection_id= " << intersection_id << std::endl;
+		// << "WARN: src_geometry_id= " << src_geometry_id << std::endl
+		// << "WARN: intersection_id= " << intersection_id 
+		<< std::endl;
 		std::cerr << "node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
 		return;
 	}
@@ -706,6 +708,7 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 		// save the un-rotated click points
 		d_ref_point_list.push_back( *d_ref_point_ptr );
 
+#if 0
 		// get a feature handle for the d_ref_point_plate_id_fid
 		GPlatesModel::FeatureHandle::weak_ref ref_point_feature_ref = 
 			( d_feature_id_registry_ptr->find( d_ref_point_plate_id_fid ) ).get();
@@ -713,22 +716,21 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 		// get the plate id for that feature
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
 
-		plate_id_finder.visit_feature_handle( *ref_point_feature_ref );
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
-		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+		if ( GPlatesFeatureVisitors::get_property_value(
+			*ref_point_feature_ref, plate_id_property_name, &recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
-			GPlatesModel::integer_plate_id_type recon_plate_id =
-				*plate_id_finder.found_plate_ids_begin();
-
 #ifdef DEBUG_RESOLVE_INTERSECTION
 std::cout << "TopologyResolver::resolve_intersection: MOVE the click point with plate id " << recon_plate_id << std::endl;
 #endif
 
 			const GPlatesMaths::FiniteRotation &r = 
-				d_recon_tree_ptr->get_composed_absolute_rotation( recon_plate_id ).first;
+				d_recon_tree_ptr->get_composed_absolute_rotation(
+					recon_plate_id->value() 
+				).first;
 
 			// reconstruct the point 
 			const GPlatesMaths::PointOnSphere recon_point = 
@@ -740,6 +742,7 @@ std::cout << "TopologyResolver::resolve_intersection: MOVE the click point with 
 			// save the rotated click points
 			d_proximity_point_list.push_back( *proximity_test_point_ptr );
 		}
+#endif
 
 		// test PROXIMITY
 		GPlatesMaths::real_t closeness_inclusion_threshold = 0.9;
@@ -774,8 +777,9 @@ std::cout << "TopologyResolver::resolve_intersection: MOVE the click point with 
 			std::cerr << "TopologyResolver::resolve_intersection: " << std::endl
 				<< "WARN: click point not close to anything!" << std::endl
 				<< "WARN: Unable to set boundary feature intersection flags!" 
-				<< "WARN: src_geometry_id= " << src_geometry_id << std::endl
-				<< "WARN: intersection_id= " << intersection_id << std::endl;
+				// << "WARN: src_geometry_id= " << src_geometry_id << std::endl
+				// << "WARN: intersection_id= " << intersection_id << std::endl;
+				<< std::endl;
 			qDebug() << "WARN: source_geometry_feature_id=" 
 			<< GPlatesUtils::make_qstring_from_icu_string(source_geometry_feature_id.get() );
 			qDebug() << "WARN: intersection_geometry_feature_id=" 
@@ -856,8 +860,9 @@ qDebug() << "TopologyResolver::resolve_intersection: use TAIL of: "
 			<< "WARN: num_intersect=" << num_intersect << std::endl 
 			<< "WARN: Unable to set boundary feature intersection relations!" << std::endl
 			<< "WARN: Make sure boundary feature's only intersect once." << std::endl
-			<< "WARN: src geometry id= " << src_geometry_id << std::endl
-			<< "WARN: intersection id= " << intersection_id << std::endl;
+			// << "WARN: src geometry id= " << src_geometry_id << std::endl
+			// << "WARN: intersection id= " << intersection_id << std::endl;
+			<< std::endl;
 		qDebug() << "WARN: source_geometry_feature_id=" 
 		<< GPlatesUtils::make_qstring_from_icu_string( source_geometry_feature_id.get() );
 		qDebug() << "WARN: intersection_geometry_feature_id=" 
@@ -1689,6 +1694,8 @@ GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_feature_id(
 std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 #endif
 
+#if 0
+// FIXME: needs FID -> RFG from JB
 	// access the current RFG for this feature 
 	GPlatesModel::Reconstruction::id_to_rfg_map_type::iterator find_iter, map_end;
 	map_end = d_recon_ptr->id_to_rfg_map()->end();
@@ -1713,12 +1720,14 @@ std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 				back_inserter( vertex_list )
 			);
 
+		}
+	}
+#endif
+
 #ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::get_vertex_list_from_feature_id: vertex_list.size() =" 
 << vertex_list.size() << std::endl;
 #endif
-		}
-	}
 }
 
 
@@ -2095,24 +2104,23 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 	plate_map_iterator end = d_plate_map.end();
 	for ( ; iter != end ; ++iter )
 	{
+#if 0
 		// Get a feature ref from the feature id 
 		// FIXME: check for boost::none on calls to registry
 		GPlatesModel::FeatureHandle::weak_ref feature_ref =
  			d_feature_id_registry_ptr->find( iter->first ).get();
 
-#if 0
 // FIXME: this is the way to get plate id
 		// Plate ID.
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-		plate_id_finder.visit_feature_handle(*feature_ref);
-		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+
+		if ( GPlatesFeatureVisitors::get_property_value(
+			*feature_ref, plate_id_property_name, &recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
-			GPlatesModel::integer_plate_id_type recon_plate_id =
-				*plate_id_finder.found_plate_ids_begin();
-
 			PlatePolygon plate = iter->second;
 
 			std::cout << "Plate ID " << recon_plate_id 
@@ -2151,6 +2159,7 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 	std::cout << "number features visited = " << d_num_features << std::endl;
 	std::cout << "number topologies visited = " << d_num_topologies << std::endl;
 
+#if 0
 	plate_map_iterator iter = d_plate_map.begin();
 	plate_map_iterator end = d_plate_map.end();
 	for ( ; iter != end ; ++iter )
@@ -2162,16 +2171,16 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 		// Plate ID.
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
-		plate_id_finder.visit_feature_handle(*feature_ref);
-		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+
+		if ( GPlatesFeatureVisitors::get_property_value(
+			*feature_ref, plate_id_property_name, &recon_plate_id ) )
 		{
 			qDebug() << "id = " 
 				<< GPlatesUtils::make_qstring_from_icu_string( (iter->first).get() );
 
 			// The feature has a reconstruction plate ID.
-			GPlatesModel::integer_plate_id_type recon_plate_id =
-				*plate_id_finder.found_plate_ids_begin();
 
 			PlatePolygon plate = iter->second;
 
@@ -2186,6 +2195,7 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 				<< " pole = " << plate.d_pole << std::endl;
 		}
 	}
+#endif
 	std::cout << "-------------------------------------------------------------" << std::endl;
 }
 

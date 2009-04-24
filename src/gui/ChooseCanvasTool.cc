@@ -174,6 +174,28 @@ GPlatesGui::ChooseCanvasTool::choose_manipulate_pole_tool()
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
 
+void
+GPlatesGui::ChooseCanvasTool::choose_build_topology_tool()
+{
+	d_viewport_window->choose_build_topology_tool();
+
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY;
+
+	emit chose_canvas_tool(*this, d_most_recent_tool_type);
+}
+
+
+void
+GPlatesGui::ChooseCanvasTool::choose_edit_topology_tool()
+{
+	d_viewport_window->choose_edit_topology_tool();
+
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY;
+
+	emit chose_canvas_tool(*this, d_most_recent_tool_type);
+}
+
+
 
 GPlatesGui::ChooseCanvasToolUndoCommand::ChooseCanvasToolUndoCommand(
 		GPlatesGui::ChooseCanvasTool *choose_canvas_tool,

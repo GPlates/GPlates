@@ -51,7 +51,6 @@
 #include "view-operations/GeometryBuilderToolTarget.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryParameters.h"
-#include "view-operations/GlobeRenderedGeometryFactory.h"
 
 #include "gui/PlatesColourTable.h"
 
@@ -131,11 +130,9 @@ namespace GPlatesFeatureVisitors
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::ReconstructionTree &recon_tree_2,
-			GPlatesModel::FeatureIdRegistry &registry,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			reconstruction_geometries_type &reconstructed_geometries,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type layer,
-			GPlatesViewOperations::RenderedGeometryFactory &factory,
 			bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -198,15 +195,12 @@ namespace GPlatesFeatureVisitors
 		GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_2_ptr;
-		GPlatesModel::FeatureIdRegistry *d_feature_id_registry_ptr;
 		GPlatesFeatureVisitors::TopologyResolver *d_topology_resolver_ptr;
 
 		reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
 
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_rendered_layer;
-
-		GPlatesViewOperations::RenderedGeometryFactory &d_rendered_geom_factory;
 
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
 		bool d_should_keep_features_without_recon_plate_id;

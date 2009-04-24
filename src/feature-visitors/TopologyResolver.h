@@ -54,7 +54,6 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
-#include "model/FeatureIdRegistry.h"
 #include "model/Model.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/PropertyValue.h"
@@ -400,7 +399,6 @@ namespace GPlatesFeatureVisitors
 				unsigned long root_plate_id,
 				GPlatesModel::Reconstruction &recon,
 				GPlatesModel::ReconstructionTree &recon_tree,
-				GPlatesModel::FeatureIdRegistry &registry,
 				reconstruction_geometries_type &reconstructed_geometries,
 				bool should_keep_features_without_recon_plate_id = true);
 
@@ -709,7 +707,6 @@ namespace GPlatesFeatureVisitors
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
 		GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
-		GPlatesModel::FeatureIdRegistry *d_feature_id_registry_ptr;	
 
 		reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;

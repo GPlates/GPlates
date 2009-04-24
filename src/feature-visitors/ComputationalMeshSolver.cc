@@ -34,7 +34,8 @@
 #include "ComputationalMeshSolver.h"
 
 #include "feature-visitors/ValueFinder.h"
-#include "feature-visitors/PlateIdFinder.h"
+#include "feature-visitors/PropertyValueFinder.h"
+
 
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
@@ -77,6 +78,10 @@
 #include "utils/UnicodeStringUtils.h"
 #include "utils/FeatureHandleToOldId.h"
 
+#include "view-operations/RenderedGeometryFactory.h"
+#include "view-operations/RenderedGeometryParameters.h"
+
+
 GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			const double &recon_time,
 			const double &recon_time_2,
@@ -84,22 +89,18 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::ReconstructionTree &recon_tree_2,
-			GPlatesModel::FeatureIdRegistry &registry,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			reconstruction_geometries_type &reconstructed_geometries,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type layer,
-			GPlatesViewOperations::RenderedGeometryFactory &factory,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
 	d_recon_ptr(&recon),
 	d_recon_tree_ptr(&recon_tree),
 	d_recon_tree_2_ptr(&recon_tree_2),
-	d_feature_id_registry_ptr(&registry),
 	d_topology_resolver_ptr(&topo_resolver),
 	d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_rendered_layer(layer),
-	d_rendered_geom_factory(factory),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  
 	d_num_features = 0;
@@ -260,25 +261,24 @@ std::cout << "ComputationalMeshSolver::process_point: " << llp << " found in " <
 	// loop over feature ids 
 	for (iter = feature_ids.begin(); iter != feature_ids.end(); ++iter)
 	{
+#if 0
 		// FIXME: check for boost::none on calls to registry
-		GPlatesModel::FeatureHandle::weak_ref ref =
+		GPlatesModel::FeatureHandle::weak_ref feature_ref =
 			d_feature_id_registry_ptr->find( *iter ).get();
 
 		// Get all the Plate ID for this point 
-		static const GPlatesModel::PropertyName plate_id_property_name =
+		const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
 
-		plate_id_finder.visit_feature_handle(*ref);
+		const GPlatesPropertyValues::GpmlPlateId *plate_id;
 
-		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) 
+		if ( GPlatesFeatureVisitors::get_property_value(
+				*feature_ref, plate_id_property_name, &plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
-			GPlatesModel::integer_plate_id_type recon_plate_id =
-				*plate_id_finder.found_plate_ids_begin();
-
-			plate_ids.push_back( recon_plate_id );
+			plate_ids.push_back( plate_id->value() );
 		}
+#endif
 	}
 
 
@@ -314,15 +314,15 @@ std::cout << ")" << std::endl;
 	GPlatesGui::ColourTable::const_iterator colour = d_colour_table_ptr->end();
 	colour = d_colour_table_ptr->lookup_by_plate_id( plate_id ); 
 	if (colour == d_colour_table_ptr->end()) { 
-		colour = &GPlatesGui::Colour::OLIVE; 
+		colour = &GPlatesGui::Colour::get_olive(); 
 	}
 
 	
 
 	// Create a RenderedGeometry using the reconstructed geometry.
-	GPlatesViewOperations::RenderedGeometry rendered_geom =
-		d_rendered_geom_factory.create_rendered_geometry_on_sphere(
-		point.clone_as_geometry(),
+	const GPlatesViewOperations::RenderedGeometry rendered_geom =
+		GPlatesViewOperations::create_rendered_geometry_on_sphere(
+			point.clone_as_geometry(),
 			*colour,
 			GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT,
 			GPlatesViewOperations::GeometryOperationParameters::LINE_WIDTH_HINT);
@@ -344,9 +344,6 @@ std::cout << ")" << std::endl;
 
 	std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t > velocity_pair = 
 		GPlatesMaths::CalculateVelocityOfPoint( point, fr_t1, fr_t2 );
-
-#if 0
-#endif
 }
 
 

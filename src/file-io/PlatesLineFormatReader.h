@@ -27,8 +27,6 @@
 #ifndef GPLATES_FILEIO_PLATESLINEFORMATREADER_H
 #define GPLATES_FILEIO_PLATESLINEFORMATREADER_H
 
-#include <map>
-
 #include "FileInfo.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "ReadErrorAccumulation.h"
@@ -36,9 +34,6 @@
 #include "model/FeatureCollectionHandle.h"
 
 namespace GPlatesFileIO {
-
-	//typedef std::map<std::string, GPlatesModel::FeatureId> old_id_to_new_id_map_type;
-	//typedef old_id_to_new_id_map_type::const_iterator old_id_to_new_id_map_const_iterator;
 
 	class PlatesLineFormatReader
 	{
@@ -55,12 +50,6 @@ namespace GPlatesFileIO {
 				FileInfo &fileinfo,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
-
-
-	private:
-
-		//old_id_to_new_id_map_type d_id_map;
-
 	};
 	
 }

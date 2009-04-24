@@ -251,6 +251,14 @@ namespace GPlatesQtWidgets
 				bool enable = true);
 
 		void
+		enable_build_topology_tool(
+				bool enable = true);
+
+		void
+		enable_edit_topology_tool(
+				bool enable = true);
+
+		void
 		choose_drag_globe_tool();
 
 		void
@@ -282,6 +290,12 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_manipulate_pole_tool();
+
+		void
+		choose_build_topology_tool();
+
+		void
+		choose_edit_topology_tool();
 
 		void
 		enable_or_disable_feature_actions(
@@ -493,10 +507,14 @@ namespace GPlatesQtWidgets
 		active_files_collection_type d_active_reconstructable_files;
 		active_files_collection_type d_active_reconstruction_files;
 
+
 		//@}
 
 		//! Must be declared before 'd_reconstruction_view_widget'.
 		GPlatesViewOperations::RenderedGeometryCollection d_rendered_geom_collection;
+
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_comp_mesh_layer;
 
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
@@ -533,7 +551,6 @@ namespace GPlatesQtWidgets
 
 		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 
-		// The 'Topology Sections' table. Should be in ViewState. Depends on FeatureFocus.
 		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_sections_feature_table_model_ptr;
 
 

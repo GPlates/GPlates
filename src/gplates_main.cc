@@ -43,7 +43,6 @@
 #include "gui/GPlatesQApplication.h"
 #include "gui/GPlatesQtMsgHandler.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "utils/Profile.h"
 
 
 namespace {
@@ -124,15 +123,13 @@ int internal_main(int argc, char* argv[])
 
 	GPlatesQtWidgets::ViewportWindow viewport_window;
 
-	// Profiles everything except local object constructors and destructors.
-	PROFILE_BLOCK("application running");
-
 	viewport_window.show();
 	viewport_window.load_files(cmdline.first + cmdline.second);
 	viewport_window.reconstruct_to_time_with_root(0.0, 0);
 
 	return application.exec();
 }
+
 
 int main(int argc, char* argv[])
 {

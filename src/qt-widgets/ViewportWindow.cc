@@ -84,7 +84,43 @@
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
+#include "feature-visitors/ComputationalMeshSolver.h"
+#include "feature-visitors/TopologyResolver.h"
 
+
+// FIXME: TEST: grabbed from Model.cc, maybe should be abstracted out someplace?
+namespace 
+{
+	template< typename FeatureCollectionIterator >
+	void
+	visit_feature_collections(
+			FeatureCollectionIterator collections_begin, 
+			FeatureCollectionIterator collections_end,
+			GPlatesModel::FeatureVisitor &visitor) {
+
+		using namespace GPlatesModel;
+
+		// We visit each of the features in each of the feature collections in
+		// the given range.
+		FeatureCollectionIterator collections_iter = collections_begin;
+		for ( ; collections_iter != collections_end; ++collections_iter) {
+
+			FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
+
+			// Before we dereference the weak_ref using 'operator->',
+			// let's be sure that it's valid to dereference.
+			if (feature_collection.is_valid()) {
+				FeatureCollectionHandle::features_iterator iter =
+						feature_collection->features_begin();
+				FeatureCollectionHandle::features_iterator end =
+						feature_collection->features_end();
+				for ( ; iter != end; ++iter) {
+					(*iter)->accept_visitor(visitor);
+				}
+			}
+		}
+	}
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::save_file(
@@ -470,6 +506,7 @@ namespace
 			double recon_time,
 			GPlatesModel::integer_plate_id_type recon_root,
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer,
 			GPlatesGui::ColourTable &colour_table)
 	{
 		// Delay any notification of changes to the rendered geometry collection
@@ -494,6 +531,28 @@ namespace
 		try {
 			reconstruction = create_reconstruction(active_reconstructable_files, 
 					active_reconstruction_files, model, recon_time, recon_root);
+
+#if 0
+//
+// FIXME: test of new location for TopologyResolver
+//
+			// Visit the feature collections and build topologies 
+			GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
+				recon_time, 
+				recon_root, 
+				*reconstruction,
+				reconstruction->reconstruction_tree(),
+				reconstruction->geometries(),
+				true); // keep features without recon plate id
+
+			visit_feature_collections(
+				reconstruction->reconstructable_feature_collections().begin(),
+				reconstruction->reconstructable_feature_collections().end(),
+				topology_resolver);
+
+			topology_resolver.report();
+///
+#endif
 
 			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 					reconstruction->geometries().begin();
@@ -545,6 +604,63 @@ namespace
 				// listens to its rendered layers.
 				reconstruction_layer->add_rendered_geometry(rendered_reconstruction_geom);
 			}
+
+#if 0
+			// FIXME: TEST of new location for ComputationalMeshSolver 
+
+			//
+			// Create a second recon tree 
+			//
+			// FIXME: should this '1' should be user controllable?
+			const double recon_time_2 = recon_time + 1;
+
+			GPlatesModel::ReconstructionGraph graph2(recon_time_2);
+			GPlatesModel::ReconstructionTreePopulator rtp(recon_time_2, graph2);
+
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> 
+				reconstruction_features_collection;
+
+			get_features_collection_from_file_info_collection(
+				active_reconstruction_files,
+				reconstruction_features_collection);
+
+			visit_feature_collections(
+				reconstruction_features_collection.begin(),
+				reconstruction_features_collection.end(),
+				rtp);
+
+			GPlatesModel::ReconstructionTree::non_null_ptr_type tree_2 = 
+				graph2.build_tree(recon_root);
+
+			// Activate the comp_mesh_layer.
+			comp_mesh_layer->set_active();
+		
+			// Clear all RenderedGeometry's before adding new ones.
+			comp_mesh_layer->clear_rendered_geometries();
+
+			// Visit the feature collections and fill computational meshes with 
+			// nice juicy velocity data
+			GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
+				recon_time, 
+				recon_time_2,
+				recon_root, 
+				*reconstruction,
+				reconstruction->reconstruction_tree(),
+				*tree_2,
+				topology_resolver,
+				reconstruction->geometries(),
+				comp_mesh_layer,
+				rendered_geom_factory, 
+				true); // keep features without recon plate id
+			
+			visit_feature_collections(
+				reconstruction->reconstructable_feature_collections().begin(),
+				reconstruction->reconstructable_feature_collections().end(),
+				solver);
+
+			solver.report();
+#endif
+
 
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
 			//for_each(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), render(canvas_ptr, &GlobeCanvas::draw_point, point_colour))
@@ -603,6 +719,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_task_panel_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog(*this,this),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
+	d_sections_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
 	d_open_file_path(""),
 	d_colour_table_ptr(NULL)
 {
@@ -697,7 +814,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Render everything on the screen in present-day positions.
 	render_model(d_model, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, 0.0, d_recon_root,
-			d_rendered_geom_collection, *get_colour_table());
+			d_rendered_geom_collection, d_comp_mesh_layer, *get_colour_table());
 
 	// Set up the Clicked table.
 	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
@@ -713,6 +830,25 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr.get(),
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+
+	// Set up the Topology Sections table.
+	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
+	table_view_topology_sections->setModel(d_sections_feature_table_model_ptr.get());
+	table_view_topology_sections->verticalHeader()->hide();
+	table_view_topology_sections->resizeColumnsToContents();
+	GPlatesGui::FeatureTableModel::set_default_resize_modes(*table_view_topology_sections->horizontalHeader());
+	table_view_topology_sections->horizontalHeader()->setMinimumSectionSize(90);
+	table_view_topology_sections->horizontalHeader()->setMovable(true);
+	table_view_topology_sections->horizontalHeader()->setHighlightSections(false);
+
+	// When the user selects a row of the table, we should focus that feature.
+	QObject::connect(
+		table_view_topology_sections->selectionModel(),
+		SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+		d_sections_feature_table_model_ptr.get(),
+		SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+
+
 
 	// If the focused feature is modified, we may need to reconstruct to update the view.
 	// FIXME:  If the FeatureFocus emits the 'focused_feature_modified' signal, the view will
@@ -856,6 +992,10 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	action_Move_Geometry->setVisible(false);
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
 			&d_choose_canvas_tool, SLOT(choose_manipulate_pole_tool()));
+	QObject::connect(action_Build_Topology, SIGNAL(triggered()),
+			&d_choose_canvas_tool, SLOT(choose_build_topology_tool()));
+	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
+			&d_choose_canvas_tool, SLOT(choose_edit_topology_tool()));
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
@@ -1053,6 +1193,33 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 
 
 void
+GPlatesQtWidgets::ViewportWindow::highlight_sections_table_clear() const
+{
+	table_view_topology_sections->selectionModel()->clear();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::highlight_sections_table_row(int i, bool state) const
+{
+	QModelIndex idx = d_sections_feature_table_model_ptr->index(i, 0);
+	
+	if (idx.isValid()) {
+		table_view_topology_sections->selectionModel()->clear();
+
+		if ( state )
+		{
+			table_view_topology_sections->selectionModel()->select(idx,
+					QItemSelectionModel::Select |
+					QItemSelectionModel::Current |
+					QItemSelectionModel::Rows);
+		//	table_view_topology_sections->scrollTo(idx);
+		}
+	}
+}
+
+
+
+void
 GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
 		double new_recon_time)
 {
@@ -1114,7 +1281,7 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
 	render_model(d_model, d_reconstruction_ptr, d_active_reconstructable_files, 
 			d_active_reconstruction_files, d_recon_time, d_recon_root,
-			d_rendered_geom_collection, *get_colour_table());
+			d_rendered_geom_collection, d_comp_mesh_layer, *get_colour_table());
 
 	if (d_total_reconstruction_poles_dialog.isVisible()) {
 		d_total_reconstruction_poles_dialog.update();
@@ -1342,6 +1509,19 @@ GPlatesQtWidgets::ViewportWindow::enable_manipulate_pole_tool(
 	action_Manipulate_Pole->setEnabled(enable);
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::enable_build_topology_tool(
+		bool enable)
+{
+	action_Build_Topology->setEnabled(enable);
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_edit_topology_tool(
+		bool enable)
+{
+	action_Edit_Topology->setEnabled(enable);
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
@@ -1453,6 +1633,26 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 	d_task_panel_ptr->choose_modify_pole_tab();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
+{
+	uncheck_all_tools();
+	action_Build_Topology->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_build_topology_tool();
+	d_task_panel_ptr->choose_build_topology_tab();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
+{
+	uncheck_all_tools();
+	action_Edit_Topology->setChecked(true);
+	d_canvas_tool_choice_ptr->choose_edit_topology_tool();
+	d_task_panel_ptr->choose_edit_topology_tab();
+}
+
+
 
 void
 GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
@@ -1468,6 +1668,8 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Delete_Vertex->setChecked(false);
 	action_Insert_Vertex->setChecked(false);
 	action_Manipulate_Pole->setChecked(false);
+	action_Build_Topology->setChecked(false);
+	action_Edit_Topology->setChecked(false);
 }
 
 
@@ -1924,6 +2126,10 @@ GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 	// Reconstruction rendered layer is always active.
 	d_rendered_geom_collection.set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
+
+	d_comp_mesh_layer =
+		d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
+			GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
 
 	// Specify which main rendered layers are orthogonal to each other - when
 	// one is activated the others are automatically deactivated.
