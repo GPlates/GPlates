@@ -67,6 +67,10 @@
 #include "model/types.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/DummyTransactionHandle.h"
+#include "model/ReconstructionGraph.h"
+#include "model/ReconstructionTreePopulator.h"
+#include "model/ReconstructionTree.h"
+
 #include "file-io/FeatureWriter.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
@@ -532,7 +536,6 @@ namespace
 			reconstruction = create_reconstruction(active_reconstructable_files, 
 					active_reconstruction_files, model, recon_time, recon_root);
 
-#if 0
 //
 // FIXME: test of new location for TopologyResolver
 //
@@ -545,14 +548,15 @@ namespace
 				reconstruction->geometries(),
 				true); // keep features without recon plate id
 
+#if 0
 			visit_feature_collections(
 				reconstruction->reconstructable_feature_collections().begin(),
 				reconstruction->reconstructable_feature_collections().end(),
 				topology_resolver);
+#endif
 
 			topology_resolver.report();
 ///
-#endif
 
 			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 					reconstruction->geometries().begin();
@@ -605,7 +609,6 @@ namespace
 				reconstruction_layer->add_rendered_geometry(rendered_reconstruction_geom);
 			}
 
-#if 0
 			// FIXME: TEST of new location for ComputationalMeshSolver 
 
 			//
@@ -650,16 +653,16 @@ namespace
 				topology_resolver,
 				reconstruction->geometries(),
 				comp_mesh_layer,
-				rendered_geom_factory, 
 				true); // keep features without recon plate id
 			
+#if 0
 			visit_feature_collections(
 				reconstruction->reconstructable_feature_collections().begin(),
 				reconstruction->reconstructable_feature_collections().end(),
 				solver);
+#endif
 
 			solver.report();
-#endif
 
 
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
