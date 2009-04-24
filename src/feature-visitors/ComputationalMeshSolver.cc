@@ -410,11 +410,13 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_domain_set(
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::report()
 {
+	std::cout << "-------------------------------------------------------------" << std::endl;
 	std::cout << "GPlatesFeatureVisitors::ComputationalMeshSolver::report() " << std::endl;
 	std::cout << "number features visited = " << d_num_features << std::endl;
 	std::cout << "number meshes visited = " << d_num_meshes << std::endl;
 	std::cout << "number points visited = " << d_num_points << std::endl;
 	std::cout << "number points on multiple plates = " << d_num_points_on_multiple_plates << std::endl;
+	std::cout << "-------------------------------------------------------------" << std::endl;
 }
 
 

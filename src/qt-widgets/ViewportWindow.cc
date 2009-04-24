@@ -533,12 +533,37 @@ namespace
 		reconstruction_layer->clear_rendered_geometries();
 
 		try {
+#if 0
 			reconstruction = create_reconstruction(active_reconstructable_files, 
 					active_reconstruction_files, model, recon_time, recon_root);
+#endif
 
-//
-// FIXME: test of new location for TopologyResolver
-//
+			//
+			// FIXME : this was copied down from create_reconstruction()
+			//
+
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+				reconstructable_features_collection,
+				reconstruction_features_collection;
+
+			get_features_collection_from_file_info_collection(
+				active_reconstructable_files,
+				reconstructable_features_collection);
+
+			get_features_collection_from_file_info_collection(
+				active_reconstruction_files,
+				reconstruction_features_collection);
+
+			reconstruction = model->create_reconstruction(
+				reconstructable_features_collection,
+				reconstruction_features_collection, 
+				recon_time, 
+				recon_root);
+
+			//
+			// FIXME: test of new location for TopologyResolver
+			//
+
 			// Visit the feature collections and build topologies 
 			GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
 				recon_time, 
@@ -548,15 +573,12 @@ namespace
 				reconstruction->geometries(),
 				true); // keep features without recon plate id
 
-#if 0
 			visit_feature_collections(
-				reconstruction->reconstructable_feature_collections().begin(),
-				reconstruction->reconstructable_feature_collections().end(),
+				reconstructable_features_collection.begin(),
+				reconstructable_features_collection.end(),
 				topology_resolver);
-#endif
 
 			topology_resolver.report();
-///
 
 			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 					reconstruction->geometries().begin();
@@ -617,23 +639,23 @@ namespace
 			// FIXME: should this '1' should be user controllable?
 			const double recon_time_2 = recon_time + 1;
 
-			GPlatesModel::ReconstructionGraph graph2(recon_time_2);
-			GPlatesModel::ReconstructionTreePopulator rtp(recon_time_2, graph2);
+			GPlatesModel::ReconstructionGraph graph_2(recon_time_2);
+			GPlatesModel::ReconstructionTreePopulator rtp(recon_time_2, graph_2);
 
 			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> 
-				reconstruction_features_collection;
+				reconstruction_features_collection_2;
 
 			get_features_collection_from_file_info_collection(
 				active_reconstruction_files,
-				reconstruction_features_collection);
+				reconstruction_features_collection_2);
 
 			visit_feature_collections(
-				reconstruction_features_collection.begin(),
-				reconstruction_features_collection.end(),
+				reconstruction_features_collection_2.begin(),
+				reconstruction_features_collection_2.end(),
 				rtp);
 
 			GPlatesModel::ReconstructionTree::non_null_ptr_type tree_2 = 
-				graph2.build_tree(recon_root);
+				graph_2.build_tree(recon_root);
 
 			// Activate the comp_mesh_layer.
 			comp_mesh_layer->set_active();
@@ -655,12 +677,10 @@ namespace
 				comp_mesh_layer,
 				true); // keep features without recon plate id
 			
-#if 0
 			visit_feature_collections(
-				reconstruction->reconstructable_feature_collections().begin(),
-				reconstruction->reconstructable_feature_collections().end(),
+				reconstructable_features_collection.begin(),
+				reconstructable_features_collection.end(),
 				solver);
-#endif
 
 			solver.report();
 
@@ -668,6 +688,7 @@ namespace
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);
 			//for_each(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), render(canvas_ptr, &GlobeCanvas::draw_point, point_colour))
 			// for_each(reconstruction->polyline_geometries().begin(), reconstruction->polyline_geometries().end(), polyline_point);
+
 		} catch (GPlatesGlobal::Exception &e) {
 			std::cerr << e << std::endl;
 		}
