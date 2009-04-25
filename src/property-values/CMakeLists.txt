@@ -16,6 +16,7 @@ set(srcs
     EnumerationType.h
     GeoTimeInstant.cc
     GeoTimeInstant.h
+    GmlDataBlock.h
     GmlDomainSet.h
     GmlLineString.cc
     GmlLineString.h
@@ -56,6 +57,7 @@ set(srcs
     TemplateTypeParameterType.h
     TextContent.h
     UninterpretedPropertyValue.h
+    ValueObjectType.h
     XsBoolean.h
     XsDouble.h
     XsInteger.h

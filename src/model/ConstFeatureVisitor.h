@@ -34,6 +34,7 @@ namespace GPlatesPropertyValues
 	// Forward declarations for the member functions.
 	// Please keep these ordered alphabetically.
 	class Enumeration;
+	class GmlDataBlock;
 	class GmlDomainSet;
 	class GmlLineString;
 	class GmlMultiPoint;
@@ -182,6 +183,11 @@ namespace GPlatesModel
 		void
 		visit_enumeration(
 				const GPlatesPropertyValues::Enumeration &enumeration) {  }
+
+		virtual
+		void
+		visit_gml_data_block(
+				const GPlatesPropertyValues::GmlDataBlock &gml_data_block) {  }
 
 		virtual
 		void
