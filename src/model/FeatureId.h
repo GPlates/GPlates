@@ -30,7 +30,6 @@
 
 #include "IdTypeGenerator.h"
 
-#include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 
 namespace GPlatesModel
 {
@@ -64,43 +63,6 @@ namespace GPlatesModel
 
 	class FeatureHandle;
 
-#if 0
-<<<<<<< .working
-	inline
-	bool
-	operator==(
-			const FeatureId &fi1,
-			const FeatureId &fi2) {
-		return fi1.is_equal_to(fi2);
-	}
-
-	inline
-	bool
-	operator<(
-			const FeatureId &fi1,
-			const FeatureId &fi2) {
-		return fi1.get() < fi2.get();
-	}
-		
-	inline
-	bool
-	operator>(
-			const FeatureId &fi1,
-			const FeatureId &fi2) {
-		return fi1.get() > fi2.get();
-	}
-		
-
-	inline
-	bool
-	operator!=(
-			const FeatureId &fi1,
-			const FeatureId &fi2) {
-		return ! fi1.is_equal_to(fi2);
-	}
-
-=======
-#endif
 	typedef IdTypeGenerator<FeatureIdFactory, FeatureHandle> FeatureId;
 }
 
