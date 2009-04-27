@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -87,24 +87,6 @@ GPlatesModel::Model::create_feature(
 	transaction.commit();
 
 	return feature_handle->reference();
-}
-
-
-const GPlatesModel::FeatureHandle::weak_ref
-GPlatesModel::Model::create_feature(
-		const FeatureType &feature_type,
-		const RevisionId &revision_id,
-		const FeatureCollectionHandle::weak_ref &target_collection)
-{	
-	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
-			GPlatesModel::FeatureHandle::create(feature_type, revision_id);
-	
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	target_collection->append_feature(feature_handle, transaction);
-	transaction.commit();
-
-	return feature_handle->reference();
-
 }
 
 

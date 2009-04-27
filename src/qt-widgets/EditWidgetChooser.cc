@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,7 +32,7 @@
 
 #include "qt-widgets/EditWidgetGroupBox.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlTimeInstant.h"
@@ -80,10 +80,10 @@ GPlatesQtWidgets::EditWidgetChooser::visit_feature_handle(
 
 
 void
-GPlatesQtWidgets::EditWidgetChooser::visit_inline_property_container(
-		GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesQtWidgets::EditWidgetChooser::visit_top_level_property_inline(
+		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
@@ -93,7 +93,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_inline_property_container(
 		}
 	}
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

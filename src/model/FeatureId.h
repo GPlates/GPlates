@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,13 +28,12 @@
 #ifndef GPLATES_MODEL_FEATUREID_H
 #define GPLATES_MODEL_FEATUREID_H
 
-#include <unicode/unistr.h>
-#include "utils/UniqueId.h"
+#include "IdTypeGenerator.h"
+
 #include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 
-
-namespace GPlatesModel {
-
+namespace GPlatesModel
+{
 	/**
 	 * A feature ID acts as a persistent unique identifier for a feature.
 	 *
@@ -49,52 +48,24 @@ namespace GPlatesModel {
 	 *  - http://www.w3.org/TR/2004/REC-xmlschema-2-20041028/#ID
 	 *  - http://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName
 	 */
-	class FeatureId {
-
+	class FeatureIdFactory
+	{
 	public:
-
-		FeatureId() :
-			d_id(GPlatesUtils::generate_unique_id()) {  }
-
-		/**
-		 * Construct a feature ID from a UnicodeString instance.
-		 *
-		 * The string should conform to the XML NCName production (see the class comment
-		 * for FeatureId for justification).  (Note however that this constructor won't
-		 * validate the contents of the input string.)
-		 *
-		 * This constructor is intended for use when parsing features from file which
-		 * already possess a feature ID.
-		 */
-		FeatureId(
-				const UnicodeString &id) :
-			d_id(id) {  }
-
-		/**
-		 * Access the Unicode string of the feature ID for this instance.
-		 */
-		const UnicodeString &
-		get() const {
-			return d_id;
-		}
-
-		/**
-		 * Determine whether another FeatureId instance contains the same feature ID
-		 * as this instance.
-		 */
-		bool
-		is_equal_to(
-				const FeatureId &other) const {
-			return GPLATES_ICU_BOOL(d_id == other.d_id);
+		static
+		GPlatesUtils::IdStringSet &
+		instance()
+		{
+			return StringSetSingletons::feature_id_instance();
 		}
 
 	private:
-
-		UnicodeString d_id;
-
+		FeatureIdFactory();
 	};
 
+	class FeatureHandle;
 
+#if 0
+<<<<<<< .working
 	inline
 	bool
 	operator==(
@@ -128,6 +99,9 @@ namespace GPlatesModel {
 		return ! fi1.is_equal_to(fi2);
 	}
 
+=======
+#endif
+	typedef IdTypeGenerator<FeatureIdFactory, FeatureHandle> FeatureId;
 }
 
 #endif  // GPLATES_MODEL_FEATUREID_H

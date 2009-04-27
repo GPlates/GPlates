@@ -34,7 +34,7 @@
 
 #include "ViewFeatureGeometriesWidgetPopulator.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructedFeatureGeometry.h"
@@ -327,14 +327,14 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_feature_prop
 
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_inline_property_container(
-		GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_top_level_property_inline(
+		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	// Create a top-level item for this property and remember it - do not add it just yet.
 	PropertyInfo info;
 	info.is_geometric_property = false;
 	info.item_handle = make_top_level_item_for_property(
-			d_tree_widget_builder, inline_property_container.property_name());
+			d_tree_widget_builder, top_level_property_inline.property_name());
 	d_property_info_vector.push_back(info);
 
 	// If the current property is the focused geometry then scroll to it
@@ -355,7 +355,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_inline_prope
 	// Set up stack for building the children of this item.
 	d_tree_widget_builder.push_current_item(info.item_handle);
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 
 	d_tree_widget_builder.pop_current_item();
 }

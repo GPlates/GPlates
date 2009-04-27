@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,7 +37,7 @@
 #include "PlatesLineFormatHeaderVisitor.h"
 #include "ErrorOpeningFileForWritingException.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -133,10 +133,10 @@ GPlatesFileIO::GMTFormatWriter::visit_feature_handle(
 
 
 void
-GPlatesFileIO::GMTFormatWriter::visit_inline_property_container(
-	const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFileIO::GMTFormatWriter::visit_top_level_property_inline(
+	const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

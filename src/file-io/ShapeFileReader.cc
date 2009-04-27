@@ -180,7 +180,7 @@ namespace
 			if (property_name_list.contains(q_prop_name))
 			{
 				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-				feature_handle->remove_property_container(p_iter, transaction);
+				feature_handle->remove_top_level_property(p_iter, transaction);
 				transaction.commit();
 			}
 

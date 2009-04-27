@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,8 +26,15 @@
  */
 
 #include "StringSetSingletons.h"
-#include "utils/StringSet.h"
 
+
+GPlatesUtils::IdStringSet &
+GPlatesModel::StringSetSingletons::feature_id_instance() {
+	if (s_feature_id_instance == NULL) {
+		s_feature_id_instance = new GPlatesUtils::IdStringSet();
+	}
+	return *s_feature_id_instance;
+}
 
 GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::feature_type_instance() {
@@ -116,6 +123,9 @@ GPlatesModel::StringSetSingletons::enumeration_type_instance() {
 	}
 	return *s_enumeration_type_instance;
 }
+
+
+GPlatesUtils::IdStringSet *GPlatesModel::StringSetSingletons::s_feature_id_instance = NULL;
 
 GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
 GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_property_name_instance = NULL;

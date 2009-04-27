@@ -38,7 +38,7 @@
 #include "PlatesLineFormatGeometryExporter.h"
 #include "ErrorOpeningFileForWritingException.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -236,10 +236,10 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_feature_handle(
 
 
 void
-GPlatesFileIO::PlatesLineFormatWriter::visit_inline_property_container(
-	const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFileIO::PlatesLineFormatWriter::visit_top_level_property_inline(
+	const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

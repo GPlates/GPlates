@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,7 +27,7 @@
 
 #include "FromQvariantConverter.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlTimeInstant.h"
@@ -54,10 +54,10 @@ GPlatesFeatureVisitors::FromQvariantConverter::visit_feature_handle(
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_inline_property_container(
-		GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::FromQvariantConverter::visit_top_level_property_inline(
+		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 
@@ -159,18 +159,18 @@ bool
 GPlatesFeatureVisitors::FromQvariantConverter::assign_single_value(
 		GPlatesModel::PropertyValue::non_null_ptr_type new_value)
 {
-	if (d_last_inline_property_container_visited_ptr == NULL) {
+	if (d_last_top_level_property_inline_visited_ptr == NULL) {
 		return false;
 	}
 
 	// Assign new non_null_ptr_type
 	if ( ! d_dry_run) {
-		*(d_last_inline_property_container_visited_ptr->begin()) = new_value;
+		*(d_last_top_level_property_inline_visited_ptr->begin()) = new_value;
 	}
 	d_property_has_been_set = true;
 	
 	// We have done what we came here to do - reset the pointer back to NULL
-	d_last_inline_property_container_visited_ptr = NULL;
+	d_last_top_level_property_inline_visited_ptr = NULL;
 	return true;
 }
 

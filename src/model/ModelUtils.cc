@@ -42,25 +42,25 @@
 #include "property-values/GpmlTimeSample.h"
 
 
-const GPlatesModel::InlinePropertyContainer::non_null_ptr_type
+const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
 GPlatesModel::ModelUtils::append_property_value_to_feature(
 		PropertyValue::non_null_ptr_type property_value,
 		const PropertyName &property_name,
 		FeatureHandle::weak_ref &feature)
 {
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	InlinePropertyContainer::non_null_ptr_type property_container =
-			InlinePropertyContainer::create(property_name, property_value, xml_attributes);
+	TopLevelPropertyInline::non_null_ptr_type top_level_property =
+			TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
 
 	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->append_property_container(property_container, transaction);
+	feature->append_top_level_property(top_level_property, transaction);
 	transaction.commit();
 
-	return property_container;
+	return top_level_property;
 }
 
 
-const GPlatesModel::InlinePropertyContainer::non_null_ptr_type
+const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
 GPlatesModel::ModelUtils::append_property_value_to_feature(
 		PropertyValue::non_null_ptr_type property_value,
 		const PropertyName &property_name,
@@ -75,14 +75,14 @@ GPlatesModel::ModelUtils::append_property_value_to_feature(
 				GPlatesUtils::make_qstring_from_icu_string(attribute_name_string));
 	XmlAttributeValue xml_attribute_value(attribute_value_string);
 	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	InlinePropertyContainer::non_null_ptr_type property_container =
-			InlinePropertyContainer::create(property_name, property_value, xml_attributes);
+	TopLevelPropertyInline::non_null_ptr_type top_level_property =
+			TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
 
 	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->append_property_container(property_container, transaction);
+	feature->append_top_level_property(top_level_property, transaction);
 	transaction.commit();
 
-	return property_container;
+	return top_level_property;
 }
 
 
@@ -142,7 +142,7 @@ GPlatesModel::ModelUtils::create_gpml_constant_value(
 }
 
 
-const GPlatesModel::PropertyContainer::non_null_ptr_type
+const GPlatesModel::TopLevelProperty::non_null_ptr_type
 GPlatesModel::ModelUtils::create_total_reconstruction_pole(
 		const std::vector<TotalReconstructionPoleData> &five_tuples)
 {
@@ -186,11 +186,11 @@ GPlatesModel::ModelUtils::create_total_reconstruction_pole(
 	PropertyName property_name =
 		PropertyName::create_gpml("totalReconstructionPole");
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes2;
-	PropertyContainer::non_null_ptr_type inline_property_container =
-			InlinePropertyContainer::create(property_name,
+	TopLevelProperty::non_null_ptr_type top_level_property_inline =
+			TopLevelPropertyInline::create(property_name,
 			gpml_irregular_sampling, xml_attributes2);
 
-	return inline_property_container;
+	return top_level_property_inline;
 }
 
 
@@ -206,11 +206,11 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 	FeatureHandle::weak_ref feature_handle =
 			model->create_feature(feature_type, target_collection);
 
-	PropertyContainer::non_null_ptr_type total_reconstruction_pole_container =
+	TopLevelProperty::non_null_ptr_type total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples);
 
 	DummyTransactionHandle pc1(__FILE__, __LINE__);
-	feature_handle->append_property_container(total_reconstruction_pole_container, pc1);
+	feature_handle->append_top_level_property(total_reconstruction_pole_container, pc1);
 	pc1.commit();
 
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_ref_frame(

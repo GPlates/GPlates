@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 #include "TotalReconstructionSequenceRotationInterpolater.h"
 
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/ModelUtils.h"
 
 #include "property-values/GpmlFiniteRotation.h"
@@ -78,11 +78,11 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_f
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_inline_property_container(
-		GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_top_level_property_inline(
+		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	d_most_recent_propname_read = inline_property_container.property_name();
-	visit_property_values(inline_property_container);
+	d_most_recent_propname_read = top_level_property_inline.property_name();
+	visit_property_values(top_level_property_inline);
 }
 
 

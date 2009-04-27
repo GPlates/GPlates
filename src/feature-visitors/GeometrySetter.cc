@@ -30,7 +30,7 @@
 
 #include "GeometrySetter.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -45,16 +45,16 @@
 
 void
 GPlatesFeatureVisitors::GeometrySetter::set_geometry(
-		GPlatesModel::PropertyValue *geometry_property)
+		GPlatesModel::PropertyValue *geometry_property_value)
 {
-	geometry_property->accept_visitor(*this);
+	geometry_property_value->accept_visitor(*this);
 }
 
 void
 GPlatesFeatureVisitors::GeometrySetter::set_geometry(
-		GPlatesModel::PropertyContainer *geometry_property_container)
+		GPlatesModel::TopLevelProperty *geometry_top_level_property)
 {
-	geometry_property_container->accept_visitor(*this);
+	geometry_top_level_property->accept_visitor(*this);
 }
 
 void

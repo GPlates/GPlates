@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,9 +37,34 @@
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
 
+// This macro is used to define the template function 'assign_member' inside a class of type C.
+// To define the function, invoke the macro in the class definition, supplying the class type as
+// the argument to the macro.  The macro invocation will expand to a definition of the function.
+#define DEFINE_FUNCTION_ASSIGN_MEMBER(C)  \
+		template<typename MemberType>  \
+		void  \
+		assign_member(  \
+				MemberType C::*member_ptr_lvalue,  \
+				const MemberType &rvalue)  \
+		{  \
+			if (container() == NULL) {  \
+				/* This property value is not contained, so assign to 'this'. */  \
+				this->*member_ptr_lvalue = rvalue;  \
+			} else {  \
+				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);  \
+				C::non_null_ptr_type dup = clone_as_derived_type();  \
+				dup.get()->*member_ptr_lvalue = rvalue;  \
+				container()->bubble_up_change(this, dup, transaction);  \
+				transaction.commit();  \
+			}  \
+		}
+
 
 namespace GPlatesModel
 {
+	class PropertyValueContainer;
+
+
 	/**
 	 * This class is the abstract base of all property values.
 	 *
@@ -74,7 +99,9 @@ namespace GPlatesModel
 		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
 		 * explicitly, since this class contains members which need to be initialised.
 		 */
-		PropertyValue()
+		PropertyValue() :
+			GPlatesUtils::ReferenceCount<PropertyValue>(),
+			d_container(NULL)
 		{  }
 
 		/**
@@ -97,7 +124,8 @@ namespace GPlatesModel
 		 */
 		PropertyValue(
 				const PropertyValue &other) :
-			GPlatesUtils::ReferenceCount<PropertyValue>()
+			GPlatesUtils::ReferenceCount<PropertyValue>(),
+			d_container(NULL)
 		{  }
 
 		virtual
@@ -133,7 +161,51 @@ namespace GPlatesModel
 		accept_visitor(
 				FeatureVisitor &visitor) = 0;
 
+		/**
+		 * Access the PropertyValueContainer which contains this PropertyValue.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * Note that the return value may be a NULL pointer.
+		 */
+		PropertyValueContainer *
+		container() const
+		{
+			return d_container;
+		}
+
+		/**
+		 * Set the PropertyValueContainer which contains this PropertyValue.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * Note that @a new_container may be a NULL pointer... but only if this
+		 * PropertyValue instance is not contained by any PropertyValueContainer.
+		 */
+		void
+		set_container(
+				PropertyValueContainer *new_container)
+		{
+			d_container = new_container;
+		}
+
 	private:
+		/**
+		 * The property value container which contains this PropertyValue instance.
+		 *
+		 * Note that this should be held via a (regular, raw) pointer rather than a
+		 * ref-counting pointer (or any other type of smart pointer) because:
+		 *  -# The PropertyValueContainer instance conceptually manages the instance of
+		 * this class, not the other way around.
+		 *  -# A PropertyValueContainer instance will outlive the PropertyValue instances
+		 * it contains; thus, it doesn't make sense for a PropertyValueContainer to have
+		 * its memory managed by its contained PropertyValue.
+		 *  -# Each PropertyValueContainer derivation will contain a ref-counting pointer
+		 * to class PropertyValue, and we don't want to set up a ref-counting loop (which
+		 * would lead to memory leaks).
+		 */
+		PropertyValueContainer *d_container;
+
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
@@ -143,6 +215,7 @@ namespace GPlatesModel
 				const PropertyValue &);
 
 	};
+
 }
 
 #endif  // GPLATES_MODEL_PROPERTYVALUE_H

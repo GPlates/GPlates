@@ -8,6 +8,9 @@
  *   $Date$
  * 
  * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ *  (under the name "PropertyContainer.h")
+ * Copyright (C) 2009 The University of Sydney, Australia
+ *  (under the name "TopLevelProperty.h")
  *
  * This file is part of GPlates.
  *
@@ -25,15 +28,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_PROPERTYCONTAINER_H
-#define GPLATES_MODEL_PROPERTYCONTAINER_H
+#ifndef GPLATES_MODEL_TOPLEVELPROPERTY_H
+#define GPLATES_MODEL_TOPLEVELPROPERTY_H
 
 #include <map>
-// Even though we could make do with a forward declaration inside this header, every derived class
-// of 'PropertyContainer' will need to #include "ConstFeatureVisitor.h" and "FeatureVisitor.h"
-// anyway, so we may as well include them here.
-#include "ConstFeatureVisitor.h"
-#include "FeatureVisitor.h"
+
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
@@ -44,40 +43,50 @@
 
 namespace GPlatesModel
 {
-	class PropertyContainer :
-			public GPlatesUtils::ReferenceCount<PropertyContainer>
+	class ConstFeatureVisitor;
+	class FeatureVisitor;
+
+	/**
+	 * This abstract base class (ABC) represents the top-level property of a feature.
+	 *
+	 * Currently, there is one derivation of this ABC: TopLevelPropertyInline, which contains a
+	 * property-value inline.  In the future, there may be a TopLevelPropertyXlink, which uses
+	 * a GML Xlink to reference a remote property.
+	 */
+	class TopLevelProperty:
+			public GPlatesUtils::ReferenceCount<TopLevelProperty>
 	{
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<PropertyContainer,
+		 * GPlatesUtils::non_null_intrusive_ptr<TopLevelProperty,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyContainer,
+		typedef GPlatesUtils::non_null_intrusive_ptr<TopLevelProperty,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyContainer,
+		 * GPlatesUtils::non_null_intrusive_ptr<const TopLevelProperty,
 		 * 		GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyContainer,
+		typedef GPlatesUtils::non_null_intrusive_ptr<const TopLevelProperty,
 				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
-		~PropertyContainer()
+		~TopLevelProperty()
 		{  }
 
 		/**
-		 * Construct a PropertyContainer instance with the given property name.
+		 * Construct a TopLevelProperty instance with the given property name.
 		 *
 		 * Since this class is an abstract class, this constructor can never be invoked
 		 * other than explicitly in the initialiser lists of derived classes. 
 		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
 		 * explicitly, since this class contains members which need to be initialised.
 		 */
-		PropertyContainer(
+		TopLevelProperty(
 				const PropertyName &property_name_,
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_):
 			d_property_name(property_name_),
@@ -85,7 +94,7 @@ namespace GPlatesModel
 		{  }
 
 		/**
-		 * Construct a PropertyContainer instance which is a copy of @a other.
+		 * Construct a TopLevelProperty instance which is a copy of @a other.
 		 *
 		 * Since this class is an abstract class, this constructor can never be invoked
 		 * other than explicitly in the initialiser lists of derived classes. 
@@ -97,26 +106,26 @@ namespace GPlatesModel
 		 * instance and return a new non_null_intrusive_ptr reference to the new duplicate.
 		 * Since initially the only reference to the new duplicate will be the one returned
 		 * by the @a clone function, *before* the new non_null_intrusive_ptr is created,
-		 * the ref-count of the new PropertyContainer instance should be zero.
+		 * the ref-count of the new TopLevelProperty instance should be zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
 		 * copy-ctor, except that it should initialise the ref-count to zero.
 		 */
-		PropertyContainer(
-				const PropertyContainer &other) :
-			GPlatesUtils::ReferenceCount<PropertyContainer>(),
+		TopLevelProperty(
+				const TopLevelProperty &other) :
+			GPlatesUtils::ReferenceCount<TopLevelProperty>(),
 			d_property_name(other.d_property_name),
 			d_xml_attributes(other.d_xml_attributes)
 		{  }
 
 		/**
-		 * Create a duplicate of this PropertyContainer instance.
+		 * Create a duplicate of this TopLevelProperty instance.
 		 */
 		virtual
 		const non_null_ptr_type
 		clone() const = 0;
 
-		// Note that no "setter" is provided:  The property name of a PropertyContainer
+		// Note that no "setter" is provided:  The property name of a TopLevelProperty
 		// instance should never be changed.
 		const PropertyName &
 		property_name() const
@@ -172,11 +181,12 @@ namespace GPlatesModel
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive_ptr to another.
-		PropertyContainer &
+		TopLevelProperty &
 		operator=(
-				const PropertyContainer &);
+				const TopLevelProperty &);
 
 	};
+
 }
 
-#endif  // GPLATES_MODEL_PROPERTYCONTAINER_H
+#endif  // GPLATES_MODEL_TOPLEVELPROPERTY_H

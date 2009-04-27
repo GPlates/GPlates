@@ -1,0 +1,82 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * File specific comments.
+ *
+ * Most recent change:
+ *   $Date$
+ * 
+ * Copyright (C) 2009 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#include "ResolvedTopologicalGeometry.h"
+#include "ReconstructionGeometryVisitor.h"
+#include "WeakObserverVisitor.h"
+#include "global/IntrusivePointerZeroRefCountException.h"
+
+
+const GPlatesModel::ResolvedTopologicalGeometry::non_null_ptr_type
+GPlatesModel::ResolvedTopologicalGeometry::get_non_null_pointer()
+{
+	if (get_reference_count() == 0) {
+		// How did this happen?  This should not have happened.
+		//
+		// Presumably, the programmer obtained the raw ResolvedTopologicalGeometry pointer
+		// from inside a ResolvedTopologicalGeometry::non_null_ptr_type, and is invoking
+		// this member function upon the instance indicated by the raw pointer, after all
+		// ref-counting pointers have expired and the instance has actually been deleted.
+		//
+		// Regardless of how this happened, this is an error.
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
+				this);
+	} else {
+		// This instance is already managed by intrusive-pointers, so we can simply return
+		// another intrusive-pointer to this instance.
+		return non_null_ptr_type(
+				this,
+				GPlatesUtils::NullIntrusivePointerHandler());
+	}
+}
+
+
+const GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::ResolvedTopologicalGeometry::get_feature_ref() const
+{
+	if (is_valid()) {
+		return feature_handle_ptr()->reference();
+	} else {
+		return FeatureHandle::weak_ref();
+	}
+}
+
+
+void
+GPlatesModel::ResolvedTopologicalGeometry::accept_visitor(
+		ReconstructionGeometryVisitor &visitor)
+{
+	visitor.visit_resolved_topological_geometry(this->get_non_null_pointer());
+}
+
+
+void
+GPlatesModel::ResolvedTopologicalGeometry::accept_weak_observer_visitor(
+		WeakObserverVisitor<FeatureHandle> &visitor)
+{
+	visitor.visit_resolved_topological_geometry(*this);
+}

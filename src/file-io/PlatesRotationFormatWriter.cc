@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 #include <vector>
 
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlTimeInstant.h"
@@ -177,12 +177,12 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_feature_handle(
 
 
 void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFileIO::PlatesRotationFormatWriter::visit_top_level_property_inline(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	d_accum.last_property_seen = inline_property_container.property_name();
+	d_accum.last_property_seen = top_level_property_inline.property_name();
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

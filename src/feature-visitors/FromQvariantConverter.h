@@ -45,7 +45,7 @@ namespace GPlatesFeatureVisitors
 	 * PropertyValue to accept_visitor(this). FromQvariantConverter will perform the
 	 * neccessary conversion and provide the new PropertyValue via get_property_value().
 	 *
-	 * If it visits an InlinePropertyContainer with multiple PropertyValues, it will only
+	 * If it visits an TopLevelPropertyInline with multiple PropertyValues, it will only
 	 * consider the first PropertyValue.
 	 *
 	 * As the conversion may not be possible, get_property_value returns a boost::optional
@@ -73,8 +73,8 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_inline_property_container(
-				GPlatesModel::InlinePropertyContainer &inline_property_container);
+		visit_top_level_property_inline(
+				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 
 		virtual

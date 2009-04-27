@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,7 +29,7 @@
 #include "ModelInterface.h"
 #include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
-#include "InlinePropertyContainer.h"
+#include "TopLevelPropertyInline.h"
 #include "DummyTransactionHandle.h"
 #include "PropertyName.h"
 #include "PropertyValue.h"
@@ -56,14 +56,14 @@ namespace GPlatesModel
 		};
 
 
-		const InlinePropertyContainer::non_null_ptr_type
+		const TopLevelPropertyInline::non_null_ptr_type
 		append_property_value_to_feature(
 				PropertyValue::non_null_ptr_type property_value,
 				const PropertyName &property_name,
 				FeatureHandle::weak_ref &feature);
 
 
-		const InlinePropertyContainer::non_null_ptr_type
+		const TopLevelPropertyInline::non_null_ptr_type
 		append_property_value_to_feature(
 				PropertyValue::non_null_ptr_type property_value,
 				const PropertyName &property_name,
@@ -73,7 +73,7 @@ namespace GPlatesModel
 
 
 		template< typename AttributeIterator >
-		const InlinePropertyContainer::non_null_ptr_type
+		const TopLevelPropertyInline::non_null_ptr_type
 		append_property_value_to_feature(
 				PropertyValue::non_null_ptr_type property_value,
 				const PropertyName &property_name,
@@ -110,7 +110,7 @@ namespace GPlatesModel
 		// should quite possibly be refactored).
 		// FIXME:  Review the following functions and refactor if necessary.
 
-		const PropertyContainer::non_null_ptr_type
+		const TopLevelProperty::non_null_ptr_type
 		create_total_reconstruction_pole(
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
 	
@@ -125,7 +125,7 @@ namespace GPlatesModel
 
 
 	template< typename AttributeIterator >
-	const InlinePropertyContainer::non_null_ptr_type
+	const TopLevelPropertyInline::non_null_ptr_type
 	ModelUtils::append_property_value_to_feature(
 			PropertyValue::non_null_ptr_type property_value,
 			const PropertyName &property_name,
@@ -136,14 +136,14 @@ namespace GPlatesModel
 		std::map<XmlAttributeName, XmlAttributeValue> xml_attributes(
 				attributes_begin, attributes_end);
 		
-		InlinePropertyContainer::non_null_ptr_type property_container =
-				InlinePropertyContainer::create(property_name, property_value, xml_attributes);
+		TopLevelPropertyInline::non_null_ptr_type top_level_property =
+				TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
 
 		DummyTransactionHandle transaction(__FILE__, __LINE__);
-		feature->append_property_container(property_container, transaction);
+		feature->append_top_level_property(top_level_property, transaction);
 		transaction.commit();
 
-		return property_container;
+		return top_level_property;
 	}
 }
 

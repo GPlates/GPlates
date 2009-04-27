@@ -21,6 +21,7 @@ set(srcs
     FeatureCollectionRevision.h
     FeatureHandle.cc
     FeatureHandle.h
+    FeatureHandleWeakRefBackInserter.h
     FeatureId.h
     FeatureIdRegistry.cc
     FeatureIdRegistry.h
@@ -34,16 +35,16 @@ set(srcs
     FeatureType.h
     FeatureVisitor.cc
     FeatureVisitor.h
-    InlinePropertyContainer.h
+    IdTypeGenerator.h
     Model.cc
     Model.h
     ModelInterface.cc
     ModelInterface.h
     ModelUtils.cc
     ModelUtils.h
-    PropertyContainer.h
     PropertyName.h
     PropertyValue.h
+    PropertyValueContainer.h
     QualifiedXmlName.h
     ReconstructedFeatureGeometry.cc
     ReconstructedFeatureGeometry.h
@@ -63,6 +64,8 @@ set(srcs
     ReconstructionTreeEdge.h
     ReconstructionTreePopulator.cc
     ReconstructionTreePopulator.h
+    ResolvedTopologicalGeometry.cc
+    ResolvedTopologicalGeometry.h
     RevisionAwareIterator.h
     RevisionId.h
     StringContentTypeGenerator.h
@@ -70,6 +73,9 @@ set(srcs
     StringSetSingletons.h
     TemporaryGeometry.cc
     TemporaryGeometry.h
+    TopLevelProperty.h
+    TopLevelPropertyInline.cc
+    TopLevelPropertyInline.h
     types.h
     WeakObserver.h
     WeakObserverVisitor.cc

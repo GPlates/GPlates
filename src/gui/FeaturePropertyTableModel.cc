@@ -42,19 +42,19 @@
 namespace
 {
 	/**
-	 * Returns a simple representation of the first value of a PropertyContainer.
+	 * Returns a simple representation of the first value of a TopLevelProperty.
 	 * Note that returning a QVariant allows for the model/view architecture to supply
 	 * QSpinboxes etc as appropriate (for an editable model)
 	 */
 	QVariant
-	property_container_to_simple_qvariant(
-			const GPlatesModel::PropertyContainer &property_container,
+	top_level_property_to_simple_qvariant(
+			const GPlatesModel::TopLevelProperty &top_level_property,
 			int role)
 	{
 		// For now, just test the actual feature - no modified cache yet.
 		GPlatesFeatureVisitors::ToQvariantConverter qvariant_converter;
 		qvariant_converter.set_desired_role(role);
-		property_container.accept_visitor(qvariant_converter);
+		top_level_property.accept_visitor(qvariant_converter);
 		
 		if (qvariant_converter.found_values_begin() != qvariant_converter.found_values_end()) {
 			// We were able to make a QVariant out of this property value.
@@ -69,20 +69,20 @@ namespace
 	
 
 	/**
-	 * Returns a more verbose representation of a PropertyContainer.
+	 * Returns a more verbose representation of a TopLevelProperty.
 	 * Useful for debugging.
 	 */
 	QVariant
-	property_container_to_verbose_qstring(
-			const GPlatesModel::PropertyContainer &property_container,
+	top_level_property_to_verbose_qstring(
+			const GPlatesModel::TopLevelProperty &top_level_property,
 			int role)
 	{
 		if (role != Qt::DisplayRole) {
-			return property_container_to_simple_qvariant(property_container, role);
+			return top_level_property_to_simple_qvariant(top_level_property, role);
 		}
 		
 		GPlatesFeatureVisitors::ToQvariantConverter toqv_converter;
-		property_container.accept_visitor(toqv_converter);
+		top_level_property.accept_visitor(toqv_converter);
 		QString str;
 		if (toqv_converter.found_time_dependencies_begin() != toqv_converter.found_time_dependencies_end()) {
 			GPlatesFeatureVisitors::ToQvariantConverter::qvariant_container_const_iterator it =
@@ -109,7 +109,7 @@ namespace
 			str.append(" ]");
 			return str;
 		} else {
-			return QString("[ Empty PropertyContainer or unable to convert ]");
+			return QString("[ Empty TopLevelProperty or unable to convert ]");
 		}
 	}
 
@@ -492,7 +492,7 @@ GPlatesGui::FeaturePropertyTableModel::get_property_value_as_qvariant(
 		return QVariant("< NULL >");
 	}
 
-	return property_container_to_simple_qvariant(**it, role);
+	return top_level_property_to_simple_qvariant(**it, role);
 }
 
 

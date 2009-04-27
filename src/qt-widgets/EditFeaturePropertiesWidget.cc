@@ -236,7 +236,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 	// FIXME: UNDO
 	// Delete the property container for the given iterator.
 	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-	d_feature_ref->remove_property_container(it, transaction);
+	d_feature_ref->remove_top_level_property(it, transaction);
 	transaction.commit();
 
 	// We have just changed the model. Tell anyone who cares to know.
@@ -251,7 +251,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::append_property_value_to_feature(
 		const GPlatesModel::PropertyName &property_name)
 {
 	// FIXME: UNDO
-	const GPlatesModel::InlinePropertyContainer::non_null_ptr_type property_container =
+	const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type top_level_property =
 			GPlatesModel::ModelUtils::append_property_value_to_feature(
 					property_value,
 					property_name,

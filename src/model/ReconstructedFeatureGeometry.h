@@ -70,8 +70,8 @@ namespace GPlatesModel
 		typedef WeakObserver<FeatureHandle> WeakObserverType;
 
 		/**
-		 * Create a ReconstructedFeatureGeometry instance with an optional
-		 * reconstruction plate ID and an optional time of formation.
+		 * Create a ReconstructedFeatureGeometry instance with an optional reconstruction
+		 * plate ID and an optional time of formation.
 		 */
 		static
 		const non_null_ptr_type
@@ -79,13 +79,13 @@ namespace GPlatesModel
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				boost::optional<integer_plate_id_type> reconstruction_plate_id_opt_,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> reconstruction_feature_time_opt_)
+				boost::optional<integer_plate_id_type> reconstruction_plate_id_,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_)
 		{
 			non_null_ptr_type ptr(
 					new ReconstructedFeatureGeometry(geometry_ptr, feature_handle,
-							property_iterator_, reconstruction_plate_id_opt_,
-							reconstruction_feature_time_opt_),
+							property_iterator_, reconstruction_plate_id_,
+							time_of_formation_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -199,12 +199,12 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the cached feature time.
+		 * Return the cached time of formation of the feature.
 		 */
 		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
-		reconstruction_feature_time() const
+		time_of_formation() const
 		{
-			return d_reconstruction_feature_time;
+			return d_time_of_formation;
 		}
 
 		/**
@@ -240,20 +240,23 @@ namespace GPlatesModel
 		 * still wants to "reconstruct" the geometries of the feature using the identity
 		 * rotation.
 		 *
-		 * We cache the plate ID here so that it can be extracted by drawing code for use
-		 * with on-screen colouring, and accessed quickly when RFGs are being queried.
+		 * The reconstruction plate ID is used when colouring feature geometries by plate
+		 * ID.  It's also of interest to a user who has clicked on the feature geometry.
 		 */
 		boost::optional<integer_plate_id_type> d_reconstruction_plate_id;
 
 		/**
-		 * We cache the feature time so that it can be extracted by drawing code
-		 * for use with on-screen colouring.
+		 * The cached time of formation of the feature, if it exists.
+		 *
+		 * This is cached so that it can be used to calculate the age of the feature at any
+		 * particular reconstruction time.  The age of the feature is used when colouring
+		 * feature geometries by age.
 		 */
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_reconstruction_feature_time;
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
 
 		/**
-		 * Instantiate a reconstructed feature geometry with an optional
-		 * reconstruction plate ID and an optional time of formation.
+		 * Instantiate a reconstructed feature geometry with an optional reconstruction
+		 * plate ID and an optional time of formation.
 		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
@@ -262,13 +265,13 @@ namespace GPlatesModel
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				boost::optional<integer_plate_id_type> reconstruction_plate_id_opt_,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> reconstruction_feature_time_opt_):
+				boost::optional<integer_plate_id_type> reconstruction_plate_id_,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_):
 			ReconstructionGeometry(geometry_ptr),
 			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_),
-			d_reconstruction_plate_id(reconstruction_plate_id_opt_),
-			d_reconstruction_feature_time(reconstruction_feature_time_opt_)
+			d_reconstruction_plate_id(reconstruction_plate_id_),
+			d_time_of_formation(time_of_formation_)
 		{  }
 
 		/**

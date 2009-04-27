@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructionGraph.h"
 #include "FeatureHandle.h"
-#include "InlinePropertyContainer.h"
+#include "TopLevelPropertyInline.h"
 
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
@@ -101,11 +101,11 @@ GPlatesModel::ReconstructionTreePopulator::visit_feature_handle(
 
 
 void
-GPlatesModel::ReconstructionTreePopulator::visit_inline_property_container(
-		InlinePropertyContainer &inline_property_container) {
-	d_accumulator->d_most_recent_propname_read = inline_property_container.property_name();
+GPlatesModel::ReconstructionTreePopulator::visit_top_level_property_inline(
+		TopLevelPropertyInline &top_level_property_inline) {
+	d_accumulator->d_most_recent_propname_read = top_level_property_inline.property_name();
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

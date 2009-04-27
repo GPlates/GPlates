@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -112,20 +112,20 @@ namespace GPlatesModel
 		typedef FeatureRevision revision_component_type;
 
 		/**
-		 * The type used for const-iterating over the collection of property containers.
+		 * The type used for const-iterating over the collection of top-level properties.
 		 */
 		typedef RevisionAwareIterator<const FeatureHandle,
-				const revision_component_type::property_container_collection_type,
-				boost::intrusive_ptr<const PropertyContainer> >
+				const revision_component_type::top_level_property_collection_type,
+				boost::intrusive_ptr<const TopLevelProperty> >
 				properties_const_iterator;
 
 		/**
-		 * The type used for (non-const) iterating over the collection of property
-		 * containers.
+		 * The type used for (non-const) iterating over the collection of top-level
+		 * properties.
 		 */
 		typedef RevisionAwareIterator<FeatureHandle,
-				revision_component_type::property_container_collection_type,
-				boost::intrusive_ptr<PropertyContainer> >
+				revision_component_type::top_level_property_collection_type,
+				boost::intrusive_ptr<TopLevelProperty> >
 				properties_iterator;
 
 		/**
@@ -200,24 +200,8 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Create a new FeatureHandle instance with feature type @a feature_type_ and
-		 * feature ID @a feature_id_.
-		 */
-		static
-		const non_null_ptr_type
-		create(
-				const FeatureType &feature_type_,
-				const RevisionId &revision_id_)
-		{
-			non_null_ptr_type ptr(new FeatureHandle(feature_type_, revision_id_),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
-
-
-		/**
-		 * Create a new FeatureHandle instance with feature type @a feature_type_ and
-		 * feature ID @a feature_id_.
+		 * Create a new FeatureHandle instance with feature type @a feature_type_, feature
+		 * ID @a feature_id_ and revision ID @a revision_id_.
 		 */
 		static
 		const non_null_ptr_type
@@ -302,8 +286,8 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the "begin" const-iterator to iterate over the collection of property
-		 * containers.
+		 * Return the "begin" const-iterator to iterate over the collection of top-level
+		 * properties.
 		 */
 		const properties_const_iterator
 		properties_begin() const
@@ -312,8 +296,8 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the "begin" iterator to iterate over the collection of property
-		 * containers.
+		 * Return the "begin" iterator to iterate over the collection of top-level
+		 * properties.
 		 */
 		const properties_iterator
 		properties_begin()
@@ -323,7 +307,7 @@ namespace GPlatesModel
 
 		/**
 		 * Return the "end" const-iterator used during iteration over the collection of
-		 * property containers.
+		 * top-level properties.
 		 */
 		const properties_const_iterator
 		properties_end() const
@@ -332,8 +316,8 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the "end" iterator used during iteration over the collection of property
-		 * containers.
+		 * Return the "end" iterator used during iteration over the collection of top-level
+		 * properties.
 		 */
 		const properties_iterator
 		properties_end()
@@ -342,59 +326,57 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Append @a new_property_container to the property container collection.
+		 * Append @a new_top_level_property to the collection.
 		 *
 		 * An iterator is returned which points to the new element in the collection.
 		 *
-		 * After the PropertyContainer has been appended, the "end" iterator will have
+		 * After the TopLevelProperty has been appended, the "end" iterator will have
 		 * advanced -- the length of the sequence will have increased by 1, so what was the
 		 * iterator to the last element of the sequence (the "back" of the container), will
 		 * now be the iterator to the second-last element of the sequence; what was the
 		 * "end" iterator will now be the iterator to the last element of the sequence.
 		 */
 		const properties_iterator
-		append_property_container(
-				PropertyContainer::non_null_ptr_type new_property_container,
+		append_top_level_property(
+				TopLevelProperty::non_null_ptr_type new_top_level_property,
 				DummyTransactionHandle &transaction)
 		{
-			FeatureRevision::property_container_collection_type::size_type new_index =
-					current_revision()->append_property_container(
-							new_property_container, transaction);
+			FeatureRevision::top_level_property_collection_type::size_type new_index =
+					current_revision()->append_top_level_property(
+							new_top_level_property, transaction);
 			return properties_iterator::create_index(*this, new_index);
 		}
 
 		/**
-		 * Remove the property container indicated by @a iter in the property container
-		 * collection.
+		 * Remove the top-level property indicated by @a iter in the collection.
 		 *
 		 * The results of this operation are only defined if @a iter is before @a end.
 		 *
 		 * The "end" iterator will not be changed by this operation -- the length of the
-		 * sequence will not change, only a property container-slot will become NULL.
+		 * sequence will not change, only a top-level-property-slot will become NULL.
 		 */
 		void
-		remove_property_container(
+		remove_top_level_property(
 				properties_const_iterator iter,
 				DummyTransactionHandle &transaction)
 		{
-			current_revision()->remove_property_container(iter.index(), transaction);
+			current_revision()->remove_top_level_property(iter.index(), transaction);
 		}
 
 		/**
-		 * Remove the property container indicated by @a iter in the property container
-		 * collection.
+		 * Remove the top-level property indicated by @a iter in the collection.
 		 *
 		 * The results of this operation are only defined if @a iter is before @a end.
 		 *
 		 * The "end" iterator will not be changed by this operation -- the length of the
-		 * sequence will not change, only a property container-slot will become NULL.
+		 * sequence will not change, only a top-level-property-slot will become NULL.
 		 */
 		void
-		remove_property_container(
+		remove_top_level_property(
 				properties_iterator iter,
 				DummyTransactionHandle &transaction)
 		{
-			current_revision()->remove_property_container(iter.index(), transaction);
+			current_revision()->remove_top_level_property(iter.index(), transaction);
 		}
 
 		/**
@@ -608,34 +590,7 @@ namespace GPlatesModel
 		 */
 		FeatureHandle(
 				const FeatureType &feature_type_,
-				const FeatureId &feature_id_) :
-			d_current_revision(FeatureRevision::create()),
-			d_feature_type(feature_type_),
-			d_feature_id(feature_id_),
-			d_first_const_weak_observer(NULL),
-			d_first_weak_observer(NULL),
-			d_last_const_weak_observer(NULL),
-			d_last_weak_observer(NULL),
-			d_feature_collection_handle_ptr(NULL)
-		{  }
-
-
-		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 */
-		FeatureHandle(
-				const FeatureType &feature_type_,
-				const RevisionId &revision_id_) :
-			d_current_revision(FeatureRevision::create(revision_id_)),
-			d_feature_type(feature_type_),
-			d_first_const_weak_observer(NULL),
-			d_first_weak_observer(NULL),
-			d_last_const_weak_observer(NULL),
-			d_last_weak_observer(NULL),
-			d_feature_collection_handle_ptr(NULL)
-		{  }
-
+				const FeatureId &feature_id_);
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
@@ -644,17 +599,7 @@ namespace GPlatesModel
 		FeatureHandle(
 				const FeatureType &feature_type_,
 				const FeatureId &feature_id_,
-				const RevisionId &revision_id_) :
-			d_current_revision(FeatureRevision::create(revision_id_)),
-			d_feature_type(feature_type_),
-			d_feature_id(feature_id_),
-			d_first_const_weak_observer(NULL),
-			d_first_weak_observer(NULL),
-			d_last_const_weak_observer(NULL),
-			d_last_weak_observer(NULL),
-			d_feature_collection_handle_ptr(NULL)
-		{  }
-
+				const RevisionId &revision_id_);
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
@@ -667,20 +612,11 @@ namespace GPlatesModel
 		 * is created, the ref-count of the new FeatureHandle instance should be zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero.
+		 * copy-ctor, except that it should initialise the ref-count to zero, and it will
+		 * generate a new unique feature ID.
 		 */
 		FeatureHandle(
-				const FeatureHandle &other) :
-			GPlatesUtils::ReferenceCount<FeatureHandle>(),
-			d_current_revision(other.d_current_revision),
-			d_feature_type(other.d_feature_type),
-			d_feature_id(other.d_feature_id),
-			d_first_const_weak_observer(NULL),
-			d_first_weak_observer(NULL),
-			d_last_const_weak_observer(NULL),
-			d_last_weak_observer(NULL),
-			d_feature_collection_handle_ptr(NULL)
-		{  }
+				const FeatureHandle &other);
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

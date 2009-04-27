@@ -29,9 +29,16 @@
 #define GPLATES_PROPERTYVALUES_GMLPOINT_H
 
 #include <utility>  /* std::pair */
+
+#include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "maths/PointOnSphere.h"
 
+
+// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlPoint, visit_gml_point)
 
 namespace GPlatesPropertyValues
 {

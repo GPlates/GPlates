@@ -99,9 +99,9 @@ namespace GPlatesGlobal
 			exception_name() const = 0;
 
 			/**
-			 * Derived classes are can override this method and write their
+			 * Derived classes can override this method and write their
 			 * special message to the stream @a os.
-			 * Default is to do write nothing.
+			 * Default is to write nothing.
 			 * This is ok for those exceptions where the exception class name
 			 * provides enough description because @a write will output the
 			 * exception class name.

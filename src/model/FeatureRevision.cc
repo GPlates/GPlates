@@ -29,20 +29,20 @@
 #include "DummyTransactionHandle.h"
 
 
-GPlatesModel::FeatureRevision::property_container_collection_type::size_type
-GPlatesModel::FeatureRevision::append_property_container(
-		PropertyContainer::non_null_ptr_type new_property_container,
+GPlatesModel::FeatureRevision::top_level_property_collection_type::size_type
+GPlatesModel::FeatureRevision::append_top_level_property(
+		TopLevelProperty::non_null_ptr_type new_top_level_property,
 		DummyTransactionHandle &transaction)
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	d_properties.push_back(get_intrusive_ptr(new_property_container));
+	d_properties.push_back(get_intrusive_ptr(new_top_level_property));
 	return (size() - 1);
 }
 
 
 void
-GPlatesModel::FeatureRevision::remove_property_container(
-		property_container_collection_type::size_type index,
+GPlatesModel::FeatureRevision::remove_top_level_property(
+		top_level_property_collection_type::size_type index,
 		DummyTransactionHandle &transaction)
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.

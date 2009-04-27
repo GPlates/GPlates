@@ -38,7 +38,7 @@
 namespace GPlatesModel
 {
 	class PropertyValue;
-	class PropertyContainer;
+	class TopLevelProperty;
 }
 
 namespace GPlatesFeatureVisitors
@@ -84,7 +84,7 @@ namespace GPlatesFeatureVisitors
 		 */
 		void
 		set_geometry(
-				GPlatesModel::PropertyValue *geometry_property);
+				GPlatesModel::PropertyValue *geometry_property_value);
 
 		/**
 		 * Sets the geometry contained in @a geometry_property_container to the geometry
@@ -92,7 +92,7 @@ namespace GPlatesFeatureVisitors
 		 */
 		void
 		set_geometry(
-				GPlatesModel::PropertyContainer *geometry_property_container);
+				GPlatesModel::TopLevelProperty *geometry_top_level_property);
 		
 	private:
 		virtual

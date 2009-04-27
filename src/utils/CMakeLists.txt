@@ -15,15 +15,24 @@ set(srcs
     CallStackTracker.h
     FeatureHandleToOldId.cc
     FeatureHandleToOldId.h
+    ExportTemplateFilenameSequence.cc
+    ExportTemplateFilenameSequence.h
+    ExportTemplateFilenameSequenceFormats.cc
+    ExportTemplateFilenameSequenceFormats.h
+    ExportTemplateFilenameSequenceImpl.cc
+    ExportTemplateFilenameSequenceImpl.h
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
     GeometryCreationUtils.h
+    IdStringSet.cc
+    IdStringSet.h
     MathUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
     ReferenceCount.h
+    SmartNodeLinkedList.h
     StringFormattingUtils.cc
     StringFormattingUtils.h
     StringSet.cc

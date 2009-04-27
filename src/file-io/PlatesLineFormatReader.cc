@@ -45,7 +45,7 @@
 
 #include "model/Model.h"
 #include "model/FeatureRevision.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/DummyTransactionHandle.h"
 #include "model/ModelUtils.h"
 

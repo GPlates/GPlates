@@ -28,7 +28,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "utils/StringFormattingUtils.h"
 
 
@@ -139,8 +139,8 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_feature_handle(
 }
 
 void
-GPlatesFileIO::GMTFormatVerboseHeader::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFileIO::GMTFormatVerboseHeader::visit_top_level_property_inline(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	d_property_accumulator.clear();
 
@@ -149,16 +149,16 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_inline_property_container(
 	d_line_stream
 		<< ' '
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			inline_property_container.property_name().get_name());
+			top_level_property_inline.property_name().get_name());
 
-	format_attributes(inline_property_container.xml_attributes());
+	format_attributes(top_level_property_inline.xml_attributes());
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 
 	// If the current property is the reconstruction plate id then simplify the printing
 	// of it so it's not too hard to parse with awk/sed.
 	if (d_property_accumulator.is_reconstruction_plate_id_property(
-			inline_property_container.property_name()))
+			top_level_property_inline.property_name()))
 	{
 		// Clear what we've written so far for the current property.
 		clear_header_line();
