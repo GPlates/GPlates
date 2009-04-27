@@ -114,9 +114,11 @@ namespace
 			GPlatesModel::PropertyName::create_gpml("isActive");
 
 		// See if active or not.
-		const GPlatesPropertyValues::XsBoolean *is_active_property_value;
+		// Note: set to NULL due to "may be used uninitialized in this function"
+		// error on g++ 4.3.3-3.
+		const GPlatesPropertyValues::XsBoolean *is_active_property_value = NULL;
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature_handle, is_active_property_name, &is_active_property_value))
+				feature_handle, is_active_property_name, is_active_property_value))
 		{
 			return is_active_property_value->value() ? active_data_type_code : inactive_data_type_code;
 		}
@@ -195,7 +197,7 @@ namespace
 
 		const GPlatesPropertyValues::Enumeration *dipslip_property_value;
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature_handle, dipslip_property_name, &dipslip_property_value))
+				feature_handle, dipslip_property_name, dipslip_property_value))
 		{
 			static GPlatesPropertyValues::EnumerationType dipslip_enumeration_type(
 				"gpml:DipSlipEnumeration");
@@ -217,7 +219,7 @@ namespace
 
 					const GPlatesPropertyValues::XsString *subcategory_property_value;
 					if (GPlatesFeatureVisitors::get_property_value(
-							feature_handle, subcategory_property_name, &subcategory_property_value))
+							feature_handle, subcategory_property_name, subcategory_property_value))
 					{
 						static const GPlatesPropertyValues::TextContent thrust_string("Thrust");
 
@@ -237,7 +239,7 @@ namespace
 
 		const GPlatesPropertyValues::Enumeration *strike_slip_property_value;
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature_handle, strike_slip_property_name, &strike_slip_property_value))
+				feature_handle, strike_slip_property_name, strike_slip_property_value))
 		{
 			static GPlatesPropertyValues::EnumerationType strike_slip_enumeration_type(
 				"gpml:StrikeSlipEnumeration");

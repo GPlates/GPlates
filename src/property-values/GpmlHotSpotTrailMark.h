@@ -28,15 +28,22 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLHOTSPOTTRAILMARK_H
 #define GPLATES_PROPERTYVALUES_GPMLHOTSPOTTRAILMARK_H
 
+#include <boost/optional.hpp>
+
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
 #include "GmlPoint.h"
 #include "GpmlMeasure.h"
+#include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/FeatureVisitor.h"
 #include "model/ConstFeatureVisitor.h"
-#include <boost/optional.hpp>
 
+
+// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlHotSpotTrailMark, visit_gpml_hot_spot_trail_mark)
 
 namespace GPlatesPropertyValues {
 

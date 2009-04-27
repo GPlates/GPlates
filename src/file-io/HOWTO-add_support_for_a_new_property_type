@@ -397,6 +397,23 @@ The following tasks are required to add a new property type:
     	GET_PROP_VAL_NAME(create_significant_other);
 
    to the  StructurePropertyCreatorMap  constructor implementation.
+   
+ 5. Add a DECLARE_PROPERTY_VALUE_FINDER() macro at top of header file containing the
+    new property value class.
+
+   This should look something like:
+   
+      // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+      // First parameter is the namespace qualified property value class.
+      // Second parameter is the name of the feature visitor method that visits the property value.
+      DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlLineString, visit_gml_line_string)
+
+   ...where the above example is for the GmlLineString property value class.
+   This is typically placed in the global namespace after the '#include' lines
+   and before the "namespace GPlatesPropertyValue" declaration.
+   You'll also need to include the following header file:
+   
+      #include "feature-visitors/PropertyValueFinder.h"
 
 
 And that should be it!

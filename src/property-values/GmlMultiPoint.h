@@ -29,10 +29,17 @@
 #define GPLATES_PROPERTYVALUES_GMLMULTIPOINT_H
 
 #include <vector>
+
+#include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "maths/PointOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 
+
+// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlMultiPoint, visit_gml_multi_point)
 
 namespace GPlatesPropertyValues
 {

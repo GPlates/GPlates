@@ -71,7 +71,7 @@ namespace
 	{
 		const GPlatesPropertyValues::GpmlPlateId *plate_id;
 		if (GPlatesFeatureVisitors::get_property_value(
-				*feature_ref, property_name, &plate_id))
+				*feature_ref, property_name, plate_id))
 		{
 			// The feature has a plate ID of the desired kind.
 			
@@ -152,7 +152,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		GPlatesModel::PropertyName::create_gml("name");
 
 	const GPlatesPropertyValues::XsString *name;
-	if (GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, &name))
+	if (GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, name))
 	{
 		// The feature has one or more name properties. Use the first one for now.
 		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
@@ -189,7 +189,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 
 	const GPlatesPropertyValues::GmlTimePeriod *time_period;
 	if (GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, valid_time_property_name, &time_period))
+			*feature_ref, valid_time_property_name, time_period))
 	{
 		// The feature has a gml:validTime property.
 		

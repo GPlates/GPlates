@@ -130,7 +130,7 @@ namespace
 
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature, plate_id_property_name, &recon_plate_id))
+				feature, plate_id_property_name, recon_plate_id))
 		{
 			// The feature has a reconstruction plate ID.
 			if (should_print_debugging_message) {
@@ -217,7 +217,7 @@ namespace
 		if (weak_ref) {
 			const GPlatesPropertyValues::GmlTimePeriod *time_period;
 			if (GPlatesFeatureVisitors::get_property_value(
-					**weak_ref, valid_time_property_name, &time_period))
+					**weak_ref, valid_time_property_name, time_period))
 			{
 				// The feature has a gml:validTime property.
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
@@ -242,7 +242,7 @@ namespace
 		if (weak_ref) {
 			const GPlatesPropertyValues::GmlTimePeriod *time_period;
 			if (GPlatesFeatureVisitors::get_property_value(
-					**weak_ref, valid_time_property_name, &time_period))
+					**weak_ref, valid_time_property_name, time_period))
 			{
 				// The feature has a gml:validTime property.
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
@@ -268,7 +268,7 @@ namespace
 		if (weak_ref) {
 			const GPlatesPropertyValues::XsString *name;
 			if (GPlatesFeatureVisitors::get_property_value(
-					**weak_ref, name_property_name, &name))
+					**weak_ref, name_property_name, name))
 			{
 				// The feature has one or more name properties.  Use the first one
 				// for now.
@@ -291,7 +291,7 @@ namespace
 		if (weak_ref) {
 			const GPlatesPropertyValues::XsString *description;
 			if (GPlatesFeatureVisitors::get_property_value(
-					**weak_ref, description_property_name, &description))
+					**weak_ref, description_property_name, description))
 			{
 				// The feature has one or more description properties.  Use the
 				// first one for now.

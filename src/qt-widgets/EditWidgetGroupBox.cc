@@ -66,7 +66,7 @@ namespace
 		// Find it.
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 		if (GPlatesFeatureVisitors::get_property_value(
-				*feature_ref, plate_id_property_name, &recon_plate_id))
+				*feature_ref, plate_id_property_name, recon_plate_id))
 		{
 			// Set it.
 			edit_geometry_widget_ptr->set_reconstruction_plate_id(

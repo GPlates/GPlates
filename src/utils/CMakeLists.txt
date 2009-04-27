@@ -13,6 +13,12 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     CallStackTracker.cc
     CallStackTracker.h
+    ExportTemplateFilenameSequence.cc
+    ExportTemplateFilenameSequence.h
+    ExportTemplateFilenameSequenceFormats.cc
+    ExportTemplateFilenameSequenceFormats.h
+    ExportTemplateFilenameSequenceImpl.cc
+    ExportTemplateFilenameSequenceImpl.h
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
     GeometryCreationUtils.h

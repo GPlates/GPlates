@@ -160,7 +160,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 	if (GPlatesFeatureVisitors::get_property_value(
-			*d_feature_ref, plate_id_property_name, &recon_plate_id))
+			*d_feature_ref, plate_id_property_name, recon_plate_id))
 	{
 		// The feature has a reconstruction plate ID.
 		set_plate_id(recon_plate_id->value());
