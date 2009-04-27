@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,12 +27,13 @@
 #include "model/ReconstructedFeatureGeometry.h"
 #include "ColourSpectrum.h"
 
+
 GPlatesGui::AgeColourTable *
 GPlatesGui::AgeColourTable::Instance()
 {
 	if (d_instance == NULL) {
 
-		// create a new instance
+		// Create a new instance.
 		d_instance = new AgeColourTable();
 	}
 	return d_instance;
@@ -50,25 +51,25 @@ GPlatesGui::AgeColourTable::lookup(
 {
 	GPlatesGui::ColourTable::const_iterator colour = NULL;
 
-	if( ! feature_geometry.reconstruction_feature_time()) {
+	if ( ! feature_geometry.time_of_formation()) {
 		// The feature does not have a gml:validTime property.
 		return &GPlatesGui::Colour::get_maroon();
 	}
 
-	GPlatesPropertyValues::GeoTimeInstant geo_time = *(feature_geometry.reconstruction_feature_time());
-	if(geo_time.is_distant_past()) {
+	const GPlatesPropertyValues::GeoTimeInstant &geo_time = *(feature_geometry.time_of_formation());
+	if (geo_time.is_distant_past()) {
 		// The feature's time of appearance is the distant past.
 		// We cannot calculate the 'age' from the point of view of the current recon time.
 		colour = &GPlatesGui::Colour::get_olive();
 		
-	} else if(geo_time.is_distant_future()) {
+	} else if (geo_time.is_distant_future()) {
 		// The feature's time of appearance is the distant future.
 		// What the hell.
 		colour = &GPlatesGui::Colour::get_red();
 		
 	} else if (geo_time.is_real()) {
 		double age = geo_time.value() - d_viewport_window->reconstruction_time();
-		if( age < 0 ) {
+		if (age < 0) {
 			// The feature shouldn't exist yet.
 			// If (for some reason) we are drawing things without regard to their
 			// valid time, we will display this with the same colour as the

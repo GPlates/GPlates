@@ -22,12 +22,15 @@ set(srcs
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
     GeometryCreationUtils.h
+    IdStringSet.cc
+    IdStringSet.h
     MathUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
     ReferenceCount.h
+    SmartNodeLinkedList.h
     StringFormattingUtils.cc
     StringFormattingUtils.h
     StringSet.cc

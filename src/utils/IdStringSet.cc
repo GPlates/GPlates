@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,12 +25,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "StringSet.h"
+#include "IdStringSet.h"
 #include <boost/none.hpp>
 
 
+GPlatesUtils::IdStringSet::AbstractBackRef::~AbstractBackRef()
+{  }
+
+
 bool
-GPlatesUtils::StringSet::SharedIterator::operator==(
+GPlatesUtils::IdStringSet::SharedIterator::operator==(
 		const SharedIterator &other) const
 {
 	if (d_impl_ptr != other.d_impl_ptr)
@@ -54,7 +58,7 @@ GPlatesUtils::StringSet::SharedIterator::operator==(
 
 
 void
-GPlatesUtils::StringSet::SharedIterator::increment_ref_count()
+GPlatesUtils::IdStringSet::SharedIterator::increment_ref_count()
 {
 	if (d_impl_ptr.get() == NULL)
 	{
@@ -66,7 +70,7 @@ GPlatesUtils::StringSet::SharedIterator::increment_ref_count()
 
 
 void
-GPlatesUtils::StringSet::SharedIterator::decrement_ref_count()
+GPlatesUtils::IdStringSet::SharedIterator::decrement_ref_count()
 {
 	if (d_impl_ptr.get() == NULL)
 	{
@@ -81,11 +85,11 @@ GPlatesUtils::StringSet::SharedIterator::decrement_ref_count()
 }
 
 
-const boost::optional<GPlatesUtils::StringSet::SharedIterator>
-GPlatesUtils::StringSet::contains(
+const boost::optional<GPlatesUtils::IdStringSet::SharedIterator>
+GPlatesUtils::IdStringSet::contains(
 		const UnicodeString &s) const
 {
-	UnicodeStringAndRefCount elem(s);
+	UnicodeStringAndRefCountWithBackRef elem(s);
 	collection_type::iterator iter = d_impl->collection().find(elem);
 	if (iter != d_impl->collection().end())
 	{
@@ -100,11 +104,11 @@ GPlatesUtils::StringSet::contains(
 }
 
 
-GPlatesUtils::StringSet::SharedIterator
-GPlatesUtils::StringSet::insert(
+GPlatesUtils::IdStringSet::SharedIterator
+GPlatesUtils::IdStringSet::insert(
 		const UnicodeString &s)
 {
-	UnicodeStringAndRefCount elem(s);
+	UnicodeStringAndRefCountWithBackRef elem(s);
 	collection_type::iterator iter = d_impl->collection().find(elem);
 	if (iter != d_impl->collection().end())
 	{

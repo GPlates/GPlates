@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,7 +27,7 @@
 
 #include "FeatureVisitor.h"
 #include "FeatureHandle.h"
-#include "InlinePropertyContainer.h"
+#include "TopLevelPropertyInline.h"
 
 
 GPlatesModel::FeatureVisitor::~FeatureVisitor()
@@ -54,10 +54,10 @@ GPlatesModel::FeatureVisitor::visit_feature_properties(
 
 void
 GPlatesModel::FeatureVisitor::visit_property_values(
-		InlinePropertyContainer &inline_property_container)
+		TopLevelPropertyInline &top_level_property_inline)
 {
-	InlinePropertyContainer::const_iterator iter = inline_property_container.begin();
-	InlinePropertyContainer::const_iterator end = inline_property_container.end();
+	TopLevelPropertyInline::const_iterator iter = top_level_property_inline.begin();
+	TopLevelPropertyInline::const_iterator end = top_level_property_inline.end();
 	for ( ; iter != end; ++iter) {
 		(*iter)->accept_visitor(*this);
 	}

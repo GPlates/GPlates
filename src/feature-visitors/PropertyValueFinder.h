@@ -33,7 +33,7 @@
 #include <boost/bind.hpp>
 
 #include "model/ConstFeatureVisitor.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/PropertyName.h"
 #include "model/types.h"
 #include "property-values/GpmlConstantValue.h"
@@ -145,7 +145,7 @@ namespace GPlatesFeatureVisitors
 	 */
 	template <class FeatureVisitorType,
 			class FeatureHandleType,
-			class InlinePropertyContainerType,
+			class TopLevelPropertyInlineType,
 			class GpmlConstantValueType>
 	class PropertyValueFinderBase :
 			public FeatureVisitorType
@@ -172,10 +172,10 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_inline_property_container(
-				InlinePropertyContainerType &inline_property_container)
+		visit_top_level_property_inline(
+				TopLevelPropertyInlineType &top_level_property_inline)
 		{
-			const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
+			const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 
 			if ( ! d_property_names_to_allow.empty())
 			{
@@ -188,7 +188,7 @@ namespace GPlatesFeatureVisitors
 				}
 			}
 
-			visit_property_values(inline_property_container);
+			visit_property_values(top_level_property_inline);
 		}
 
 		virtual
@@ -307,7 +307,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor, \
 				const GPlatesModel::FeatureHandle, \
-				const GPlatesModel::InlinePropertyContainer, \
+				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
 		/* non-const version */ \
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
@@ -315,7 +315,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::FeatureVisitor, \
 				GPlatesModel::FeatureHandle, \
-				GPlatesModel::InlinePropertyContainer, \
+				GPlatesModel::TopLevelPropertyInline, \
 				GPlatesPropertyValues::GpmlConstantValue) \
 
 

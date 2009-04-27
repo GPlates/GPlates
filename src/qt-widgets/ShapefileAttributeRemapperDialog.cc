@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 Geological Survey of Norway
+ * Copyright (C) 2007, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -29,7 +29,7 @@
 #include <QString>
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/PropertyContainer.h"
+#include "model/TopLevelProperty.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 #include "utils/UnicodeStringUtils.h"

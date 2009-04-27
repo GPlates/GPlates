@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,7 +28,7 @@
 #include "GpmlOnePointFiveOutputVisitor.h"
 
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlLineString.h"
@@ -69,14 +69,14 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_feature_handle(
 
 
 void
-GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container) {
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_top_level_property_inline(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline) {
 	XmlOutputInterface::ElementPairStackFrame f1(d_output,
-			inline_property_container.property_name().get_name(),
-			inline_property_container.xml_attributes().begin(),
-			inline_property_container.xml_attributes().end());
+			top_level_property_inline.property_name().get_name(),
+			top_level_property_inline.xml_attributes().begin(),
+			top_level_property_inline.xml_attributes().end());
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

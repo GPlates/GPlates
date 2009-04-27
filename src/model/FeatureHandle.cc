@@ -46,3 +46,52 @@ GPlatesModel::FeatureHandle::apply_weak_observer_visitor(
 		curr = curr->next_link_ptr();
 	}
 }
+
+
+GPlatesModel::FeatureHandle::FeatureHandle(
+		const FeatureType &feature_type_,
+		const FeatureId &feature_id_):
+	d_current_revision(FeatureRevision::create()),
+	d_feature_type(feature_type_),
+	d_feature_id(feature_id_),
+	d_first_const_weak_observer(NULL),
+	d_first_weak_observer(NULL),
+	d_last_const_weak_observer(NULL),
+	d_last_weak_observer(NULL),
+	d_feature_collection_handle_ptr(NULL)
+{
+	d_feature_id.set_back_ref_target(*this);
+}
+
+
+GPlatesModel::FeatureHandle::FeatureHandle(
+		const FeatureType &feature_type_,
+		const FeatureId &feature_id_,
+		const RevisionId &revision_id_):
+	d_current_revision(FeatureRevision::create(revision_id_)),
+	d_feature_type(feature_type_),
+	d_feature_id(feature_id_),
+	d_first_const_weak_observer(NULL),
+	d_first_weak_observer(NULL),
+	d_last_const_weak_observer(NULL),
+	d_last_weak_observer(NULL),
+	d_feature_collection_handle_ptr(NULL)
+{
+	d_feature_id.set_back_ref_target(*this);
+}
+
+
+GPlatesModel::FeatureHandle::FeatureHandle(
+		const FeatureHandle &other):
+	GPlatesUtils::ReferenceCount<FeatureHandle>(),
+	d_current_revision(other.d_current_revision),
+	d_feature_type(other.d_feature_type),
+	d_feature_id(FeatureId()),
+	d_first_const_weak_observer(NULL),
+	d_first_weak_observer(NULL),
+	d_last_const_weak_observer(NULL),
+	d_last_weak_observer(NULL),
+	d_feature_collection_handle_ptr(NULL)
+{
+	d_feature_id.set_back_ref_target(*this);
+}

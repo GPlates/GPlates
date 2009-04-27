@@ -86,8 +86,8 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_inline_property_container(
-				InlinePropertyContainer &inline_property_container);
+		visit_top_level_property_inline(
+				TopLevelPropertyInline &top_level_property_inline);
 
 		virtual
 		void

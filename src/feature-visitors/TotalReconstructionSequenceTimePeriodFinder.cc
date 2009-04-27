@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,7 +31,7 @@
 
 #include "TotalReconstructionSequenceTimePeriodFinder.h"
 
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "property-values/GpmlIrregularSampling.h"
 
 
@@ -65,10 +65,10 @@ namespace
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_top_level_property_inline(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
@@ -78,7 +78,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_inlin
 	}
 	d_most_recent_propname_read = curr_prop_name;
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

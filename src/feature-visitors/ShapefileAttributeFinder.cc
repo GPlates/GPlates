@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -32,7 +32,7 @@
 
 #include "ShapefileAttributeFinder.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlTimeInstant.h"
@@ -75,18 +75,18 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_feature_handle(
 
 
 void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_top_level_property_inline(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	
-	QString property_name = GPlatesUtils::make_qstring_from_icu_string(inline_property_container.property_name().get_name());
+	QString property_name = GPlatesUtils::make_qstring_from_icu_string(top_level_property_inline.property_name().get_name());
 
 	if (property_name != "shapefileAttributes") 
 	{
 		return;
 	}
 	
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

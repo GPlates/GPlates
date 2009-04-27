@@ -88,8 +88,8 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
-		visit_inline_property_container(
-				GPlatesModel::InlinePropertyContainer &inline_property_container);
+		visit_top_level_property_inline(
+				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 
 		virtual

@@ -73,8 +73,8 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_inline_property_container(
-				const GPlatesModel::InlinePropertyContainer &inline_property_container);
+		visit_top_level_property_inline(
+				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 #if 0
 		virtual

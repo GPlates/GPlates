@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,6 +32,8 @@
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/types.h"
+#include "model/DummyTransactionHandle.h"
+#include "model/PropertyValueContainer.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -97,13 +99,19 @@ namespace GPlatesPropertyValues
 			return ptr;
 		}
 
+		const GpmlOldPlatesHeader::non_null_ptr_type
+		clone_as_derived_type() const 
+		{
+			GpmlOldPlatesHeader::non_null_ptr_type dup(new GpmlOldPlatesHeader(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
+			return dup;
+		}
+
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const 
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GpmlOldPlatesHeader(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return clone_as_derived_type();
 		}
 
 		unsigned int
@@ -114,16 +122,12 @@ namespace GPlatesPropertyValues
 		
 		/**
 		 * Set the region number to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_region_number(
 				const unsigned int &i)
 		{
-			d_region_number = i;
+			assign_member(&GpmlOldPlatesHeader::d_region_number, i);
 		}
 
 
@@ -460,6 +464,8 @@ namespace GPlatesPropertyValues
 			d_colour_code(other.d_colour_code),
 			d_number_of_points(other.d_number_of_points)
 		{ }
+
+		DEFINE_FUNCTION_ASSIGN_MEMBER(GpmlOldPlatesHeader)
 
 	private:
 		unsigned int d_region_number;

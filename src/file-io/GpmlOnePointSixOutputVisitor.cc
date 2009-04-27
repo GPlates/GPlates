@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date $
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,7 +39,7 @@
 #include "ErrorOpeningFileForWritingException.h"
 #include "ErrorOpeningPipeToGzipException.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 #include "utils/UnicodeStringUtils.h"
 #include "utils/XmlNamespaces.h"
@@ -460,17 +460,17 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_feature_handle(
 
 
 void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_top_level_property_inline(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	d_last_property_seen = inline_property_container.property_name();
+	d_last_property_seen = top_level_property_inline.property_name();
 
-	bool pop = d_output.writeStartElement(inline_property_container.property_name());
+	bool pop = d_output.writeStartElement(top_level_property_inline.property_name());
 		d_output.writeAttributes(
-			inline_property_container.xml_attributes().begin(),
-			inline_property_container.xml_attributes().end());
+			top_level_property_inline.xml_attributes().begin(),
+			top_level_property_inline.xml_attributes().end());
 
-		visit_property_values(inline_property_container);
+		visit_property_values(top_level_property_inline);
 	d_output.writeEndElement(pop);
 }
 

@@ -67,7 +67,7 @@ namespace GPlatesModel
 {
 	// Forward declarations for the member functions.
 	class FeatureHandle;
-	class InlinePropertyContainer;
+	class TopLevelPropertyInline;
 
 	/**
 	 * This class defines an abstract interface for a Visitor to visit non-const features.
@@ -131,21 +131,21 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
-		visit_inline_property_container(
-				InlinePropertyContainer &inline_property_container)
+		visit_top_level_property_inline(
+				TopLevelPropertyInline &top_level_property_inline)
 		{
-			visit_property_values(inline_property_container);
+			visit_property_values(top_level_property_inline);
 		}
 
 		/**
-		 * Invoke this function in @a visit_inline_property_container to visit each of the
+		 * Invoke this function in @a visit_top_level_property_inline to visit each of the
 		 * property-values in turn.
 		 *
 		 * Note that this function is not virtual.  This function should not be overridden.
 		 */
 		void
 		visit_property_values(
-				InlinePropertyContainer &inline_property_container);
+				TopLevelPropertyInline &top_level_property_inline);
 
 		// Please keep these property-value types ordered alphabetically.
 

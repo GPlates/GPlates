@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,7 +31,7 @@
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 #include "RevisionId.h"
-#include "PropertyContainer.h"
+#include "TopLevelProperty.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -97,10 +97,10 @@ namespace GPlatesModel
 				non_null_ptr_to_const_type;
 
 		/**
-		 * The type used to contain the properties of this feature revision.
+		 * The type used to represent the top-level properties of this feature revision.
 		 */
-		typedef std::vector<boost::intrusive_ptr<PropertyContainer> >
-				property_container_collection_type;
+		typedef std::vector<boost::intrusive_ptr<TopLevelProperty> >
+				top_level_property_collection_type;
 
 		~FeatureRevision()
 		{  }
@@ -154,81 +154,81 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the number of property-container-slots currently contained within this
+		 * Return the number of top-level-property-slots currently contained within this
 		 * feature.
 		 *
-		 * Note that property-container-slots may be empty (ie, the pointer at that
-		 * position may be NULL).  Thus, the number of property containers actually
+		 * Note that top-level-property-slots may be empty (ie, the pointer at that
+		 * position may be NULL).  Thus, the number of top-level properties actually
 		 * contained within this feature may be less than the number of
-		 * property-container-slots.
+		 * top-level-property-slots.
 		 * 
 		 * This value is intended to be used as an upper (open range) limit on the values
-		 * of the index used to access the property containers within this feature. 
-		 * Attempting to access a property container at an index which is greater-than or
-		 * equal-to the number of property-container-slots will always result in a NULL
+		 * of the index used to access the top-level properties within this feature. 
+		 * Attempting to access a top-level property at an index which is greater-than or
+		 * equal-to the number of top-level-property-slots will always result in a NULL
 		 * pointer.
 		 */
-		property_container_collection_type::size_type
+		top_level_property_collection_type::size_type
 		size() const
 		{
 			return d_properties.size();
 		}
 
 		/**
-		 * Access the property container at @a index in the feature.
+		 * Access the top-level property at @a index in the collection.
 		 *
 		 * The value of @a index is expected to be non-negative.  If the value of @a index
 		 * is greater-than or equal-to the return value of the @a size function, a NULL
 		 * pointer will be returned.  If the value of @a index is less-than the return
 		 * value of the @a size function, a NULL pointer @em may be returned (depending
-		 * upon whether that property-container-slot is still being used or not).
+		 * upon whether that top-level-property-slot is still being used or not).
 		 *
 		 * This is the overloading of this function for const FeatureRevision instances; it
-		 * returns a pointer to a const PropertyContainer instance.
+		 * returns a pointer to a const TopLevelProperty instance.
 		 */
-		const boost::intrusive_ptr<const PropertyContainer>
+		const boost::intrusive_ptr<const TopLevelProperty>
 		operator[](
-				property_container_collection_type::size_type index) const
+				top_level_property_collection_type::size_type index) const
 		{
-			return access_property_container(index);
+			return access_top_level_property(index);
 		}
 
 		/**
-		 * Access the property container at @a index in the property container collection.
+		 * Access the top-level property at @a index in the collection.
 		 *
 		 * The value of @a index is expected to be non-negative.  If the value of @a index
 		 * is greater-than or equal-to the return value of the @a size function, a NULL
 		 * pointer will be returned.  If the value of @a index is less-than the return
 		 * value of the @a size function, a NULL pointer @em may be returned (depending
-		 * upon whether that property-container-slot is still being used or not).
+		 * upon whether that top-level-property-slot is still being used or not).
 		 *
 		 * This is the overloading of this function for non-const FeatureRevision
-		 * instances; it returns a pointer to a non-const PropertyContainer instance.
+		 * instances; it returns a pointer to a non-const TopLevelProperty instance.
 		 */
-		const boost::intrusive_ptr<PropertyContainer>
+		const boost::intrusive_ptr<TopLevelProperty>
 		operator[](
-				property_container_collection_type::size_type index)
+				top_level_property_collection_type::size_type index)
 		{
-			return access_property_container(index);
+			return access_top_level_property(index);
 		}
 
 		/**
-		 * Access the property container at @a index in the property container collection.
+		 * Access the top-level property at @a index in the collection.
 		 *
 		 * The value of @a index is expected to be non-negative.  If the value of @a index
 		 * is greater-than or equal-to the return value of the @a size function, a NULL
 		 * pointer will be returned.  If the value of @a index is less-than the return
 		 * value of the @a size function, a NULL pointer @em may be returned (depending
-		 * upon whether that property-container-slot is still being used or not).
+		 * upon whether that top-level-property-slot is still being used or not).
 		 *
 		 * This is the overloading of this function for const FeatureRevision instances; it
-		 * returns a pointer to a const PropertyContainer instance.
+		 * returns a pointer to a const TopLevelProperty instance.
 		 */
-		const boost::intrusive_ptr<const PropertyContainer>
-		access_property_container(
-				property_container_collection_type::size_type index) const
+		const boost::intrusive_ptr<const TopLevelProperty>
+		access_top_level_property(
+				top_level_property_collection_type::size_type index) const
 		{
-			boost::intrusive_ptr<const PropertyContainer> ptr;
+			boost::intrusive_ptr<const TopLevelProperty> ptr;
 			if (index < size()) {
 				ptr = d_properties[index];
 			}
@@ -236,22 +236,22 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Access the property container at @a index in the property container collection.
+		 * Access the top-level property at @a index in the collection.
 		 *
 		 * The value of @a index is expected to be non-negative.  If the value of @a index
 		 * is greater-than or equal-to the return value of the @a size function, a NULL
 		 * pointer will be returned.  If the value of @a index is less-than the return
 		 * value of the @a size function, a NULL pointer @em may be returned (depending
-		 * upon whether that property-container-slot is still being used or not).
+		 * upon whether that top-level-property-slot is still being used or not).
 		 *
 		 * This is the overloading of this function for non-const FeatureRevision
-		 * instances; it returns a pointer to a non-const PropertyContainer instance.
+		 * instances; it returns a pointer to a non-const TopLevelProperty instance.
 		 */
-		const boost::intrusive_ptr<PropertyContainer>
-		access_property_container(
-				property_container_collection_type::size_type index)
+		const boost::intrusive_ptr<TopLevelProperty>
+		access_top_level_property(
+				top_level_property_collection_type::size_type index)
 		{
-			boost::intrusive_ptr<PropertyContainer> ptr;
+			boost::intrusive_ptr<TopLevelProperty> ptr;
 			if (index < size()) {
 				ptr = d_properties[index];
 			}
@@ -259,23 +259,23 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Append @a new_property_container to the property container collection.
+		 * Append @a new_top_level_property to the collection.
 		 */
-		property_container_collection_type::size_type
-		append_property_container(
-				PropertyContainer::non_null_ptr_type new_property_container,
+		top_level_property_collection_type::size_type
+		append_top_level_property(
+				TopLevelProperty::non_null_ptr_type new_top_level_property,
 				DummyTransactionHandle &transaction);
 
 		/**
-		 * Remove the property_container at @a index in the property container collection.
+		 * Remove the top_level_property at @a index in the collection.
 		 *
 		 * The value of @a index is expected to be non-negative.  If the value of @a index
 		 * is greater-than or equal-to the return value of the @a size function, this
 		 * function will be a no-op.
 		 */
 		void
-		remove_property_container(
-				property_container_collection_type::size_type index,
+		remove_top_level_property(
+				top_level_property_collection_type::size_type index,
 				DummyTransactionHandle &transaction);
 
 	private:
@@ -286,7 +286,7 @@ namespace GPlatesModel
 		RevisionId d_revision_id;
 
 		/*
-		 * The collection of properties possessed by this feature.
+		 * The collection of top-level properties possessed by this feature.
 		 *
 		 * Note that any of the pointers contained as elements in this vector can be NULL. 
 		 *
@@ -295,7 +295,7 @@ namespace GPlatesModel
 		 * pointer rather than removed, so that the indices, which are used to reference
 		 * the other elements in the vector, remain valid.
 		 */
-		property_container_collection_type d_properties;
+		top_level_property_collection_type d_properties;
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

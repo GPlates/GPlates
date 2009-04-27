@@ -52,7 +52,7 @@
 
 #include "model/Model.h"
 #include "model/FeatureRevision.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/DummyTransactionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
@@ -292,9 +292,9 @@ namespace
 			feature = model->create_feature(feature_type, *feature_id, *revision_id, collection);
 		} else if (feature_id) {
 			feature = model->create_feature(feature_type, *feature_id, collection);
-		} else if (revision_id) {
-			feature = model->create_feature(feature_type, *revision_id, collection);
 		} else {
+			// Without a feature ID, a revision ID is meaningless.  So, even if we have
+			// a revision ID, if we don't have a feature ID, regenerate both.
 			feature = model->create_feature(feature_type, collection);
 		}
 

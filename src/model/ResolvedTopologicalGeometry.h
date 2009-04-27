@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
-#define GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
+#ifndef GPLATES_MODEL_RESOLVEDTOPOLOGICALGEOMETRY_H
+#define GPLATES_MODEL_RESOLVEDTOPOLOGICALGEOMETRY_H
 
 #include <boost/optional.hpp>
 #include "ReconstructionGeometry.h"
@@ -38,31 +38,31 @@
 
 namespace GPlatesModel
 {
-	class ReconstructedFeatureGeometry:
+	class ResolvedTopologicalGeometry:
 			public ReconstructionGeometry,
 			public WeakObserver<FeatureHandle>
 	{
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<ReconstructedFeatureGeometry,
+		 * GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalGeometry,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructedFeatureGeometry,
+		typedef GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalGeometry,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const ReconstructedFeatureGeometry,
+		 * GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalGeometry,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructedFeatureGeometry,
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalGeometry,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_to_const_type;
 
 		/**
-		 * A convenience typedef for boost::intrusive_ptr<ReconstructedFeatureGeometry>.
+		 * A convenience typedef for boost::intrusive_ptr<ResolvedTopologicalGeometry>.
 		 */
-		typedef boost::intrusive_ptr<ReconstructedFeatureGeometry> maybe_null_ptr_type;
+		typedef boost::intrusive_ptr<ResolvedTopologicalGeometry> maybe_null_ptr_type;
 
 		/**
 		 * A convenience typedef for the WeakObserver base class of this class.
@@ -70,8 +70,8 @@ namespace GPlatesModel
 		typedef WeakObserver<FeatureHandle> WeakObserverType;
 
 		/**
-		 * Create a ReconstructedFeatureGeometry instance with an optional reconstruction
-		 * plate ID and an optional time of formation.
+		 * Create a ResolvedTopologicalGeometry instance with an optional plate ID and an
+		 * optional time of formation.
 		 */
 		static
 		const non_null_ptr_type
@@ -79,25 +79,23 @@ namespace GPlatesModel
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				boost::optional<integer_plate_id_type> reconstruction_plate_id_,
+				boost::optional<integer_plate_id_type> plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_)
 		{
 			non_null_ptr_type ptr(
-					new ReconstructedFeatureGeometry(geometry_ptr, feature_handle,
-							property_iterator_, reconstruction_plate_id_,
-							time_of_formation_),
+					new ResolvedTopologicalGeometry(geometry_ptr, feature_handle,
+							property_iterator_, plate_id_, time_of_formation_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		/**
-		 * Create a ReconstructedFeatureGeometry instance @em without a reconstruction
-		 * plate ID or a feature formation time.
+		 * Create a ResolvedTopologicalGeometry instance @em without a plate ID or a
+		 * feature formation time.
 		 *
-		 * For instance, a ReconstructedFeatureGeometry might be created without a
-		 * reconstruction plate ID if no reconstruction plate ID is found amongst the
-		 * properties of the feature being reconstructed, but the client code still wants
-		 * to "reconstruct" the geometries of the feature using the identity rotation.
+		 * For instance, a ResolvedTopologicalGeometry might be created without a plate ID
+		 * if no plate ID is found amongst the properties of the feature whose topological
+		 * geometry was resolved.
 		 *
 		 */
 		static
@@ -108,29 +106,29 @@ namespace GPlatesModel
 				FeatureHandle::properties_iterator property_iterator_)
 		{
 			non_null_ptr_type ptr(
-					new ReconstructedFeatureGeometry(geometry_ptr, feature_handle,
+					new ResolvedTopologicalGeometry(geometry_ptr, feature_handle,
 							property_iterator_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
-		~ReconstructedFeatureGeometry()
+		~ResolvedTopologicalGeometry()
 		{  }
 
 		/**
-		 * Get a non-null pointer to a ReconstructedFeatureGeometry which points to this
+		 * Get a non-null pointer to a ResolvedTopologicalGeometry which points to this
 		 * instance.
 		 *
-		 * Since the ReconstructedFeatureGeometry constructors are private, it should never
-		 * be the case that a ReconstructedFeatureGeometry instance has been constructed on
+		 * Since the ResolvedTopologicalGeometry constructors are private, it should never
+		 * be the case that a ResolvedTopologicalGeometry instance has been constructed on
 		 * the stack.
 		 */
 		const non_null_ptr_type
 		get_non_null_pointer();
 
 		/**
-		 * Return whether this RFG references @a that_feature_handle.
+		 * Return whether this RTG references @a that_feature_handle.
 		 *
 		 * This function will not throw.
 		 */
@@ -168,14 +166,15 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return a weak-ref to the feature whose reconstructed geometry this RFG contains,
-		 * or an invalid weak-ref, if this pointer is not valid to be dereferenced.
+		 * Return a weak-ref to the feature whose resolved topological geometry this RTG
+		 * contains, or an invalid weak-ref, if this pointer is not valid to be
+		 * dereferenced.
 		 */
 		const FeatureHandle::weak_ref
 		get_feature_ref() const;
 
 		/**
-		 * Access the feature property which contained the reconstructed geometry.
+		 * Access the feature property which contained the topological geometry.
 		 */
 		const FeatureHandle::properties_iterator
 		property() const
@@ -184,18 +183,16 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Access the cached reconstruction plate ID, if it exists.
+		 * Access the cached plate ID, if it exists.
 		 *
-		 * Note that it's possible for a ReconstructedFeatureGeometry to be created without
-		 * a reconstruction plate ID -- for example, if no reconstruction plate ID is found
-		 * amongst the properties of the feature being reconstructed, but the client code
-		 * still wants to "reconstruct" the geometries of the feature using the identity
-		 * rotation.
+		 * Note that it's possible for a ResolvedTopologicalGeometry to be created without
+		 * a plate ID -- for example, if no plate ID is found amongst the properties of the
+		 * feature whose topological geometry was resolved.
 		 */
 		const boost::optional<integer_plate_id_type> &
-		reconstruction_plate_id() const
+		plate_id() const
 		{
-			return d_reconstruction_plate_id;
+			return d_plate_id;
 		}
 
 		/**
@@ -226,24 +223,22 @@ namespace GPlatesModel
 	private:
 
 		/**
-		 * This is an iterator to the (geometry-valued) property from which this RFG was
-		 * derived.
+		 * This is an iterator to the (topological-geometry-valued) property from which
+		 * this RTG was derived.
 		 */
 		FeatureHandle::properties_iterator d_property_iterator;
 
 		/**
-		 * The cached reconstruction plate ID, if it exists.
+		 * The cached plate ID, if it exists.
 		 *
-		 * Note that it's possible for a ReconstructedFeatureGeometry to be created without
-		 * a reconstruction plate ID -- for example, if no reconstruction plate ID is found
-		 * amongst the properties of the feature being reconstructed, but the client code
-		 * still wants to "reconstruct" the geometries of the feature using the identity
-		 * rotation.
+		 * Note that it's possible for a ResolvedTopologicalGeometry to be created without
+		 * a plate ID -- for example, if no plate ID is found amongst the properties of the
+		 * feature whose topological geometry was resolved.
 		 *
-		 * The reconstruction plate ID is used when colouring feature geometries by plate
-		 * ID.  It's also of interest to a user who has clicked on the feature geometry.
+		 * The plate ID is used when colouring feature geometries by plate ID.  It's also
+		 * of interest to a user who has clicked on the feature geometry.
 		 */
-		boost::optional<integer_plate_id_type> d_reconstruction_plate_id;
+		boost::optional<integer_plate_id_type> d_plate_id;
 
 		/**
 		 * The cached time of formation of the feature, if it exists.
@@ -255,33 +250,33 @@ namespace GPlatesModel
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
 
 		/**
-		 * Instantiate a reconstructed feature geometry with an optional reconstruction
+		 * Instantiate a resolved topological geometry with an optional reconstruction
 		 * plate ID and an optional time of formation.
 		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		ReconstructedFeatureGeometry(
+		ResolvedTopologicalGeometry(
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				boost::optional<integer_plate_id_type> reconstruction_plate_id_,
+				boost::optional<integer_plate_id_type> plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_):
 			ReconstructionGeometry(geometry_ptr),
 			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_),
-			d_reconstruction_plate_id(reconstruction_plate_id_),
+			d_plate_id(plate_id_),
 			d_time_of_formation(time_of_formation_)
 		{  }
 
 		/**
-		 * Instantiate a reconstructed feature geometry @em without a reconstruction plate
+		 * Instantiate a resolved topological geometry @em without a reconstruction plate
 		 * ID or a cached feature formation time.
 		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		ReconstructedFeatureGeometry(
+		ResolvedTopologicalGeometry(
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_):
@@ -292,17 +287,38 @@ namespace GPlatesModel
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.
-		ReconstructedFeatureGeometry(
-				const ReconstructedFeatureGeometry &other);
+		ResolvedTopologicalGeometry(
+				const ResolvedTopologicalGeometry &other);
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive-pointer to another.
-		ReconstructedFeatureGeometry &
+		ResolvedTopologicalGeometry &
 		operator=(
-				const ReconstructedFeatureGeometry &);
+				const ResolvedTopologicalGeometry &);
 	};
+
+
+	inline
+	void
+	intrusive_ptr_add_ref(
+			const ResolvedTopologicalGeometry *p)
+	{
+		p->increment_ref_count();
+	}
+
+
+	inline
+	void
+	intrusive_ptr_release(
+			const ResolvedTopologicalGeometry *p)
+	{
+		if (p->decrement_ref_count() == 0) {
+			delete p;
+		}
+	}
+
 }
 
-#endif  // GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
+#endif  // GPLATES_MODEL_RESOLVEDTOPOLOGICALGEOMETRY_H

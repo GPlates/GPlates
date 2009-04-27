@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,14 +35,50 @@
 #include <algorithm>
 #include <set>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/optional.hpp>
 #include <unicode/unistr.h>
 
-#include "utils/ReferenceCount.h"
+#include "ReferenceCount.h"
 
-namespace GPlatesUtils {
 
+namespace GPlatesUtils
+{
 	/**
-	 * A set of UnicodeString instances.
+	 * Instances of this class are used to contain Unicode strings uniquely.
+	 *
+	 * This saves on memory usage when there are many occurrences of a particular string (for
+	 * example, feature types or property names):  Instead of many duplicate instances of the
+	 * string in memory, there will be only one instance of the string, contained in a
+	 * StringSet instance; everywhere else in the code, the string will be replaced with an
+	 * iterator which references the element in the StringSet instance.
+	 *
+	 * Since each string in a StringSet instance is unique, StringSet iterators can be used to
+	 * represent string identity:  If two iterators for a given StringSet indicate the same
+	 * string, they must reference the same element of the StringSet (due to the uniqueness of
+	 * strings within a StringSet), and thus will compare equal.  Conversely, if two iterators
+	 * indicate different strings, they must reference different elements of the StringSet
+	 * (since each iterator can reference only one element, and each element can contain only
+	 * one string), and thus will compare unequal.  This speeds up equality comparisons between
+	 * strings contained in a StringSet instance:  Instead of comparing the Unicode strings
+	 * code-point by code-point, it is sufficient to compare iterators.
+	 *
+	 * (However, it is still necessary to use less-than comparisons of the Unicode strings for
+	 * the internal strict weak ordering of the set; these less-than comparisons of the Unicode
+	 * strings compare code-point by code-point.  Thus, while the cost to compare iterators is
+	 * O(1), the cost to insert a string is O(L log N), where L is the length of the strings
+	 * and N is the number of elements in the StringSet instance.  Though in many cases, the
+	 * insertion of a string into a StringSet occurs within a function which is invoked many
+	 * times (for example, a function which reads a particular type of feature from file); the
+	 * iterator returned by the insertion may be stored in a function-scope static variable,
+	 * meaning that the O(L log N) insertion only needs to happen once for that string (for
+	 * example, the feature type).)
+	 *
+	 * The main benefits of class StringSet are:
+	 *  -# the significant reduction in memory usage when there would be many occurrences of a
+	 * particular string (for example, feature types or property names)
+	 *  -# the ability to use human-readable strings as O(1)-comparable unique symbols (rather
+	 * than, for example, allocating integers for the symbols, which would need to be mapped
+	 * back to human-readable strings for GUI presentation or file-writing anyway).
 	 *
 	 * @par Abstraction (black box) description:
 	 *  -# The StringSet class represents a set (an unordered collection of unique, immutable
@@ -51,9 +87,10 @@ namespace GPlatesUtils {
 	 * within a StringSet instance.
 	 *  -# It is possible to determine whether a StringSet instance contains a particular
 	 * UnicodeString instance, without modifying the contents of the StringSet instance, using
-	 * the @a contains member function.  This member function will return @c true if the
-	 * supplied UnicodeString instance is contained within the StringSet instance; @c false
-	 * otherwise.
+	 * the @a contains member function.  This member function will return a @c boost::optional
+	 * instance which contains a SharedIterator instance which points to the element of the
+	 * StringSet instance which matches the supplied UnicodeString instance; or @c boost::none
+	 * if the supplied UnicodeString instance is not contained.
 	 *  -# The elements contained within a StringSet instance are accessed through
 	 * SharedIterator instances.  To obtain a SharedIterator instance which points to a
 	 * particular UnicodeString instance within a StringSet instance, use the @a insert member
@@ -61,10 +98,11 @@ namespace GPlatesUtils {
 	 * StringSet instance, it will be inserted (or an exception will be thrown in the case of
 	 * memory exhaustion).  The SharedIterator instance which is returned will point to an
 	 * element of the StringSet instance matching the supplied UnicodeString instance.
-	 *  -# A UnicodeString instance is only contained within a StringSet instance as long as
-	 * there is one or more SharedIterator instances which reference it.  When there are no
-	 * more SharedIterator instances referencing an element of the StringSet instance, the
-	 * element will be automatically removed.
+	 *  -# A UnicodeString instance is only contained as an element within a StringSet instance
+	 * as long as there is one or more SharedIterator instances which reference it.  (The
+	 * SharedIterator instances share the management of the lifetime of the element within the
+	 * StringSet instance.)  When there are no more SharedIterator instances referencing an
+	 * element of the StringSet instance, the element will be automatically removed.
 	 *  -# A StringSet instance is neither copy-constructable nor copy-assignable, as the
 	 * copy-constructed/copy-assigned instance might then contain UnicodeString instances with
 	 * non-zero reference-counts, without SharedIterators associated with that StringSet
@@ -180,7 +218,7 @@ namespace GPlatesUtils {
 		 *
 		 * See the class comment for StringSet for more information.
 		 */
-		class StringSetImpl :
+		class StringSetImpl:
 				public GPlatesUtils::ReferenceCount<StringSetImpl>
 		{
 		public:
@@ -237,10 +275,11 @@ namespace GPlatesUtils {
 		 * equality or inequality with another instance.  An instance which is initialised
 		 * may be dereferenced to access the (const) UnicodeString instance contained as
 		 * the StringSet element.
-		 *  -# All the instances which reference a given element of StringSet are
+		 *  -# All the instances which reference a particular element of StringSet are
 		 * collectively responsible for managing that element:  When there are no more
 		 * instances referencing a given element, the element is removed from the
-		 * StringSet.
+		 * StringSet.  (Hence the name of the class:  The SharedIterator instances share
+		 * the management of the lifetime of the element within the StringSet instance.)
 		 *  -# A SharedIterator which is initialised will remain valid (able to be
 		 * dereferenced) even if the StringSet instance itself no longer exists.
 		 *
@@ -512,9 +551,29 @@ namespace GPlatesUtils {
 				return &(access_target());
 			}
 		private:
-			// The collection-type iterator is only meaningful if the impl-pointer is
-			// non-NULL (which means that the shared iterator instance is initialised).
+			/**
+			 * An iterator to an element in the std::set contained in StringSetImpl.
+			 *
+			 * The collection-type iterator is only meaningful if the impl-pointer is
+			 * non-NULL (which means that the shared iterator instance is initialised).
+			 */
 			collection_type::iterator d_iter;
+
+			/**
+			 * An intrusive-pointer which manages the StringSetImpl instance.
+			 *
+			 * We need a pointer to the StringSetImpl instance (or the std::set which
+			 * it contains) in order to be able to invoke the 'erase' member function
+			 * of std::set.
+			 *
+			 * Since we have a pointer to the StringSetImpl instance, we're also using
+			 * it to indicate (based upon whether it is NULL or non-NULL) whether this
+			 * SharedIterator instance has been initialised yet.
+			 *
+			 * And since we have a pointer to the StringSetImpl instance, we might as
+			 * well make it an intrusive-pointer, which manages the StringSetImpl
+			 * instance, to ensure the pointer never becomes a dangling pointer.
+			 */
 			boost::intrusive_ptr<StringSetImpl> d_impl_ptr;
 
 			const UnicodeString &
@@ -560,25 +619,25 @@ namespace GPlatesUtils {
 		 * Determine whether the StringSet instance contains the UnicodeString instance
 		 * @a s, without modifying the contents of the StringSet instance.
 		 * 
-		 * @return @c true if @a s is contained within the StringSet instance; @c false
-		 * otherwise.
+		 * @return a @c boost::optional instance which contains a SharedIterator instance
+		 * which points to the element of the StringSet instance which matches the
+		 * UnicodeString instance @a s; or @c boost::none if @a s is not contained within
+		 * the StringSet instance.
 		 *
 		 * @pre True.
 		 *
-		 * @post Return-value is @c true if the StringSet instance contains an element for
-		 * the UnicodeString instance @a s; @c false otherwise.
+		 * @post Return-value is a @c boost::optional instance which contains a
+		 * SharedIterator instance which points to the element of the StringSet instance
+		 * which matches the UnicodeString instance @a s, or is @c boost::none if @a s is
+		 * not contained within the StringSet instance.
 		 *
 		 * This function might throw whatever the copy-constructor and less-than-comparison
 		 * operator of UnicodeString might throw.  This function is strongly exception-safe
 		 * and exception-neutral.
 		 */
-		bool
+		const boost::optional<SharedIterator>
 		contains(
-				const UnicodeString &s) const
-		{
-			UnicodeStringAndRefCount tmp(s);
-			return (d_impl->collection().find(tmp) != d_impl->collection().end());
-		}
+				const UnicodeString &s) const;
 
 		/**
 		 * Obtain a SharedIterator instance which points to the UnicodeString instance

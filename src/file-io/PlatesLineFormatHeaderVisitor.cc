@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,7 +33,7 @@
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 
 #include "property-values/XsBoolean.h"
 #include "property-values/Enumeration.h"
@@ -562,12 +562,12 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_feature_handle(
 
 
 void
-GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_inline_property_container(
-	const GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_top_level_property_inline(
+	const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	d_accum.current_propname = inline_property_container.property_name();
+	d_accum.current_propname = top_level_property_inline.property_name();
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

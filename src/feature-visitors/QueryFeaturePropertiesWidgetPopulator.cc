@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,7 +31,7 @@
 #include "QueryFeaturePropertiesWidgetPopulator.h"
 
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlLineString.h"
@@ -118,20 +118,20 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_feature_pro
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_inline_property_container(
-		GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_top_level_property_inline(
+		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const QString name = GPlatesUtils::make_qstring_from_icu_string(
-			inline_property_container.property_name().build_aliased_name());
+			top_level_property_inline.property_name().build_aliased_name());
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
 			add_child_to_current_item(d_tree_widget_builder, name);
 
 #if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output,
-			inline_property_container.property_name().get(),
-			inline_property_container.xml_attributes().begin(),
-			inline_property_container.xml_attributes().end());
+			top_level_property_inline.property_name().get(),
+			top_level_property_inline.xml_attributes().begin(),
+			top_level_property_inline.xml_attributes().end());
 #endif
 
 	// If the current property is the focused geometry then scroll to it
@@ -151,7 +151,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_inline_prop
 
 	d_tree_widget_builder.push_current_item(item_handle);
 
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 
 	d_tree_widget_builder.pop_current_item();
 }

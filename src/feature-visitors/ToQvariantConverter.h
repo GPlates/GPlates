@@ -58,7 +58,7 @@ namespace GPlatesFeatureVisitors
 		/**
 		 * Creates a ToQvariantConverter. The typical usage pattern for this feature visitor
 		 * is to create on, set it up with a 'role' if necessary, then call accept_visitor
-		 * directly on a PropertyContainer you are interested in. For instance, if you
+		 * directly on a TopLevelProperty you are interested in. For instance, if you
 		 * had a FeatureHandle::properties_iterator @a it, and a ToQvariantConverter @a toqv,
 		 * you might write:-
 		 * 	(*it)->accept_visitor(toqv);
@@ -106,8 +106,8 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_inline_property_container(
-				const GPlatesModel::InlinePropertyContainer &inline_property_container);
+		visit_top_level_property_inline(
+				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 
 
