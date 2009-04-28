@@ -39,14 +39,13 @@
 
 #include "TopologyResolver.h"
 
-#include "feature-visitors/ValueFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/Enumeration.h"
@@ -201,7 +200,7 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_handle(
 	resolve_boundary( plate );
 
 	// insert the plate into the map
-	d_plate_map.insert( std::make_pair( feature_handle.feature_id(), plate ) );
+	d_plate_map.insert( std::make_pair( feature_handle.feature_id().get(), plate ) );
 
 	d_accumulator = boost::none;
 }
@@ -227,10 +226,10 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_properties(
 
 
 void
-GPlatesFeatureVisitors::TopologyResolver::visit_inline_property_container(
-		GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::TopologyResolver::visit_top_level_property_inline(
+		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	visit_property_values(inline_property_container);
+	visit_property_values( top_level_property_inline );
 }
 
 
@@ -2118,7 +2117,7 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, plate_id_property_name, &recon_plate_id ) )
+			*feature_ref, plate_id_property_name, recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
 			PlatePolygon plate = iter->second;
@@ -2128,8 +2127,6 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 				<< std::endl;
 		}
 #endif
-
-
 		/*
  		* 0: test_point is outside the plate
  		* 1: test_point is inside the plate
@@ -2143,9 +2140,7 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 			found_ids.push_back( iter->first );
 		}
 	}
-
 	return found_ids;
-
 }
 
 

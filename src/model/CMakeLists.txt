@@ -23,8 +23,6 @@ set(srcs
     FeatureHandle.h
     FeatureHandleWeakRefBackInserter.h
     FeatureId.h
-    FeatureIdRegistry.cc
-    FeatureIdRegistry.h
     FeatureRevision.cc
     FeatureRevision.h
     FeatureStore.h

@@ -198,7 +198,7 @@ qDebug() << "feature_ref = "
 static const GPlatesModel::PropertyName name_property_name =
 	GPlatesModel::PropertyName::create_gml("name");
 const GPlatesPropertyValues::XsString *name;
-if ( GPlatesFeatureVisitors::get_property_value( *feature_ref, name_property_name, &name) )
+if ( GPlatesFeatureVisitors::get_property_value( *feature_ref, name_property_name, name) )
 {
 	qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
 }

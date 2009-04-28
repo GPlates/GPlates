@@ -37,9 +37,8 @@
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
-#include "model/FeatureIdRegistry.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
@@ -140,14 +139,11 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_feature_properties(
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_inline_property_container(
-		GPlatesModel::InlinePropertyContainer &inline_property_container)
+GPlatesFeatureVisitors::TopologySectionsFinder::visit_top_level_property_inline(
+		GPlatesModel::TopLevelPropertyInline top_level_property_inline&)
 {
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
-
-
-
 
 
 void

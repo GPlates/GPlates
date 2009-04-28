@@ -29,7 +29,6 @@
 #define GPLATES_MODEL_MODELINTERFACE_H
 
 #include <boost/shared_ptr.hpp>
-#include "FeatureIdRegistry.h"
 
 
 namespace GPlatesModel

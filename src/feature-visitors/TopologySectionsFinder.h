@@ -49,7 +49,6 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
-#include "model/FeatureIdRegistry.h"
 #include "model/Model.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/PropertyValue.h"
@@ -95,10 +94,9 @@ namespace GPlatesFeatureVisitors
 		visit_feature_properties(
 			GPlatesModel::FeatureHandle &feature_handle);
 
-		virtual
 		void
-		visit_inline_property_container(
-			GPlatesModel::InlinePropertyContainer &inline_property_container);
+		visit_top_level_property_inline(
+			GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 		virtual
 		void

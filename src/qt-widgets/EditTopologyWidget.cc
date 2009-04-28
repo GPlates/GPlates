@@ -418,7 +418,7 @@ GPlatesQtWidgets::EditTopologyWidget::fill_widgets(
 	const GPlatesPropertyValues::XsString *name;
 	
 	if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, name_property_name, &name) )
+			*feature_ref, name_property_name, name) )
 	{
 		// The feature has one or more name properties. Use the first one for now.
 		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
@@ -432,7 +432,7 @@ GPlatesQtWidgets::EditTopologyWidget::fill_widgets(
 	const GPlatesPropertyValues::GpmlPlateId *plate_id;
 
 	if ( GPlatesFeatureVisitors::get_property_value( 
-			*feature_ref, plate_id_property_name, &plate_id ) )
+			*feature_ref, plate_id_property_name, plate_id ) )
 	{
 		// The feature has a plate ID of the desired kind.
 		// The feature has a reconstruction plate ID.
@@ -604,7 +604,7 @@ qDebug() << "EditTopologyWidget::display_feature: invalid ref";
 
 	const GPlatesPropertyValues::XsString *name;
 
-	if ( GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, &name) )
+	if ( GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, name) )
 	{
 		qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 	}
@@ -2176,7 +2176,7 @@ static const GPlatesModel::PropertyName name_property_name =
 	GPlatesModel::PropertyName::create_gml("name");
 const GPlatesPropertyValues::XsString *name;
 if ( GPlatesFeatureVisitors::get_property_value(
-	*(rfg->feature_handle_ptr()), name_property_name, &name) )
+	*(rfg->feature_handle_ptr()), name_property_name, name) )
 {
 	qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 }
@@ -2730,7 +2730,7 @@ static const GPlatesModel::PropertyName name_property_name =
 const GPlatesPropertyValues::XsString *name;
 
 if ( GPlatesFeatureVisitors::get_property_value(
-	*feature_ref, name_property_name, &name) )
+	*feature_ref, name_property_name, name) )
 {
 qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 }
@@ -2767,7 +2767,7 @@ qDebug() << "name = " << GPlatesUtils::make_qstring_from_icu_string(test_name.ge
 qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
 			// Delete the old boundary 
 			GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
-			feature_ref->remove_property_container(iter, transaction);
+			feature_ref->remove_top_level_property(iter, transaction);
 			transaction.commit();
 			// FIXME: this seems to create NULL pointers in the properties collection
 			// see FIXME note above to check for NULL? 
@@ -2800,7 +2800,7 @@ qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring
 	const GPlatesPropertyValues::GmlTimePeriod *time_period;
 
 	GPlatesFeatureVisitors::get_property_value(
-		*feature_ref, valid_time_property_name, &time_period);
+		*feature_ref, valid_time_property_name, time_period);
 
 	// Casting time details
 	GPlatesPropertyValues::GmlTimePeriod* tp = 
@@ -2901,7 +2901,7 @@ GPlatesQtWidgets::EditTopologyWidget::show_numbers()
 
 		const GPlatesPropertyValues::XsString *name;
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*d_feature_focus_ptr->focused_feature(), name_property_name, &name) )
+			*d_feature_focus_ptr->focused_feature(), name_property_name, name) )
 		{
 			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name->value());
 		}
@@ -2925,7 +2925,7 @@ GPlatesQtWidgets::EditTopologyWidget::show_numbers()
 		const GPlatesPropertyValues::XsString *name;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*d_topology_feature_ref, name_property_name, &name) )
+			*d_topology_feature_ref, name_property_name, name) )
 		{
 			qDebug() << "d_topology_feature_ref name = " << GPlatesUtils::make_qstring( name->value() );
 		} 
@@ -2964,7 +2964,7 @@ GPlatesQtWidgets::EditTopologyWidget::show_numbers()
 		const GPlatesPropertyValues::XsString *name;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*d_insert_feature_ref, name_property_name, &name) )
+			*d_insert_feature_ref, name_property_name, name) )
 		{
 			qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 		} 
