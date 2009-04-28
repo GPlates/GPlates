@@ -384,7 +384,7 @@ namespace GPlatesFeatureVisitors
 			double d_min_lon;
 		};
 
-		typedef std::map<GPlatesModel::FeatureId, PlatePolygon> plate_map_type;
+		typedef std::list<std::pair<GPlatesModel::FeatureId, PlatePolygon> > plate_map_type;
 		typedef plate_map_type::iterator plate_map_iterator;
 
 		//

@@ -94,8 +94,6 @@
 
 #include "utils/UnicodeStringUtils.h"
 
-#include "utils/FeatureHandleToOldId.h"
-
 GPlatesFeatureVisitors::TopologyResolver::TopologyResolver(
 			const double &recon_time,
 			unsigned long root_plate_id,
@@ -200,7 +198,7 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_handle(
 	resolve_boundary( plate );
 
 	// insert the plate into the map
-	d_plate_map.insert( std::make_pair( feature_handle.feature_id().get(), plate ) );
+	d_plate_map.push_back( std::make_pair( feature_handle.feature_id().get(), plate ) );
 
 	d_accumulator = boost::none;
 }

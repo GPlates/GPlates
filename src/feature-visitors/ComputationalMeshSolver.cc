@@ -75,7 +75,6 @@
 #include "gui/PlatesColourTable.h"
 
 #include "utils/UnicodeStringUtils.h"
-#include "utils/FeatureHandleToOldId.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"

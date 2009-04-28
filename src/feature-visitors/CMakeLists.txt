@@ -42,8 +42,6 @@ set(srcs
     TotalReconstructionSequenceRotationInterpolater.h
     TotalReconstructionSequenceTimePeriodFinder.cc
     TotalReconstructionSequenceTimePeriodFinder.h
-    ValueFinder.cc
-    ValueFinder.h
     ViewFeatureGeometriesWidgetPopulator.cc
     ViewFeatureGeometriesWidgetPopulator.h
 )

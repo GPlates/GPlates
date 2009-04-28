@@ -31,7 +31,6 @@
 
 #include "TopologySectionsFinder.h"
 
-#include "feature-visitors/ValueFinder.h"
 
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
@@ -140,7 +139,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_feature_properties(
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_top_level_property_inline(
-		GPlatesModel::TopLevelPropertyInline top_level_property_inline&)
+		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	visit_property_values(top_level_property_inline);
 }

@@ -13,8 +13,6 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     CallStackTracker.cc
     CallStackTracker.h
-    FeatureHandleToOldId.cc
-    FeatureHandleToOldId.h
     ExportTemplateFilenameSequence.cc
     ExportTemplateFilenameSequence.h
     ExportTemplateFilenameSequenceFormats.cc
