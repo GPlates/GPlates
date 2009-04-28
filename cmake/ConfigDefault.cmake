@@ -18,9 +18,10 @@ set(GPLATES_PACKAGE_VERSION "0.9.4")
 # The current GPlates version.
 set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}")
 
-# Set to 'true' if this is a source code release (to non-developers).
+# Set to 'true' if this is a public release (to non-developers).
 # Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
-set(GPLATES_SOURCE_RELEASE false)
+# And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
+set(GPLATES_PUBLIC_RELEASE false)
 
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.

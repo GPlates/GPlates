@@ -105,8 +105,14 @@ namespace {
 
 int internal_main(int argc, char* argv[])
 {
+	// Only replace default Qt message handler if we're releasing to the public
+	// because this message handler outputs to a log file instead of console
+	// and the public user can send us this log file but developers prefer
+	// console output.
+#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system.
 	// Log qWarning, qCritical, qFatal messages to a log file.
 	GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler();
+#endif
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions
 	// in the Qt event thread.

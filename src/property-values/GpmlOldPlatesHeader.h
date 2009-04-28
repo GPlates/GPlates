@@ -44,6 +44,7 @@
 #include <unicode/unistr.h>
 
 
+
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
