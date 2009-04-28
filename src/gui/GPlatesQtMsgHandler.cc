@@ -94,11 +94,11 @@ GPlatesGui::GPlatesQtMsgHandler::qt_message_handler(
 {
 	instance().handle_qt_message(msg_type, msg);
 
-	 // Call the next message handler in the chain if there is one.
-	 if (s_prev_msg_handler)
-	 {
-		 s_prev_msg_handler(msg_type, msg);
-	 }
+	// Call the next message handler in the chain if there is one.
+	if (s_prev_msg_handler)
+	{
+		s_prev_msg_handler(msg_type, msg);
+	}
 }
 
 
@@ -107,28 +107,28 @@ GPlatesGui::GPlatesQtMsgHandler::handle_qt_message(
 		QtMsgType msg_type,
 		const char * msg)
 {
-     switch (msg_type)
-	 {
+    switch (msg_type)
+	{
 #if 0 // Don't print debug messages - there's too many - and they are not useful to the user.
-     case QtDebugMsg:
-		 d_log_stream << "Debug: " << msg << endl;
-         break;
+    case QtDebugMsg:
+		d_log_stream << "Debug: " << msg << endl;
+        break;
 #endif
 
-     case QtWarningMsg:
-		 *d_log_stream << "Warning: " << msg << endl;
-         break;
+    case QtWarningMsg:
+		*d_log_stream << "Warning: " << msg << endl;
+        break;
 
-     case QtCriticalMsg:
-		 // Note: system and critical messages have the same enumeration value.
-		 *d_log_stream << "Critical: " << msg << endl;
-         break;
+    case QtCriticalMsg:
+		// Note: system and critical messages have the same enumeration value.
+		*d_log_stream << "Critical: " << msg << endl;
+        break;
 
-     case QtFatalMsg:
-		 *d_log_stream << "Fatal: " << msg << endl;
-         break;
+    case QtFatalMsg:
+		*d_log_stream << "Fatal: " << msg << endl;
+        break;
 
-	 default:
-		 break;
-     }
+	default:
+		break;
+    }
 }

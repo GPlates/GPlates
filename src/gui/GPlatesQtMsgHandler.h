@@ -48,8 +48,10 @@ namespace GPlatesGui
 
 		/**
 		 * Uses @a qInstallMsgHandler to install_qt_message_handler this class as a Qt message handler.
-		 * The previous message handler, if any, gets called after this handler
-		 * has processed the message.
+		 * WARNING: installing this handler removes the default Qt handler and since this
+		 * handler only outputs to a log file the qDebug(), etc messages will not get output
+		 * to their default locations (eg, the console window). As a result only install this
+		 * handler when releasing GPlates to the public (ie, non-developers).
 		 * This handler is uninstalled when its singleton instance is destroyed
 		 * at application exit (and the previous handler is reinstalled).
 		 */

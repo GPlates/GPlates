@@ -44,14 +44,15 @@ if(MSVC)
     # Flags common to all build types.
     #       The default warning level /W3 seems sufficient (/W4 generates informational warnings which are not necessary to write good code).
     #       /WX - treat all warnings as errors.
-    if (GPLATES_SOURCE_RELEASE)
+    if (GPLATES_PUBLIC_RELEASE)
         # Disable all warnings when releasing source code to non-developers.
         # Remove any warning flags that are on by default.
         string(REGEX REPLACE "/[Ww][a-zA-Z0-9]*" "" CMAKE_CXX_FLAGS_NO_WARNINGS "${CMAKE_CXX_FLAGS}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_NO_WARNINGS} /w")
-    else (GPLATES_SOURCE_RELEASE)
+		add_definitions(/DGPLATES_PUBLIC_RELEASE)
+    else (GPLATES_PUBLIC_RELEASE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
-    endif (GPLATES_SOURCE_RELEASE)
+    endif (GPLATES_PUBLIC_RELEASE)
     
     # If we've been asked to output a list of header files included by source files.
     if (GPLATES_SHOW_INCLUDES)
@@ -101,12 +102,13 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endforeach(warning ${warnings_flags_list})
 
     # Flags common to all build types.
-    if (GPLATES_SOURCE_RELEASE)
+    if (GPLATES_PUBLIC_RELEASE)
         # Disable all warnings when releasing source code to non-developers.
         set(CMAKE_CXX_FLAGS "-w")
-    else (GPLATES_SOURCE_RELEASE)
+		add_definitions(-DGPLATES_PUBLIC_RELEASE)
+    else (GPLATES_PUBLIC_RELEASE)
         set(CMAKE_CXX_FLAGS "${warnings_flags}")
-    endif (GPLATES_SOURCE_RELEASE)
+    endif (GPLATES_PUBLIC_RELEASE)
     #set(CMAKE_EXE_LINKER_FLAGS )
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )
