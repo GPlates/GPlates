@@ -2151,10 +2151,14 @@ GPlatesQtWidgets::ViewportWindow::initialise_rendered_geom_collection()
 	d_rendered_geom_collection.set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
+	d_rendered_geom_collection.set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
+
 	d_comp_mesh_layer =
 		d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
 			GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
 
+	// Activate the main rendered layer.
 	// Specify which main rendered layers are orthogonal to each other - when
 	// one is activated the others are automatically deactivated.
 	GPlatesViewOperations::RenderedGeometryCollection::orthogonal_main_layers_type orthogonal_main_layers;

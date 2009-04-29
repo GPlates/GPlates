@@ -1687,7 +1687,7 @@ GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_feature_id(
 std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 #endif
 
-	// Get a vector of FeatureHandle weak_refs for this Feature ID
+	// Get a vector of FeatureHandle weak_refs for this FeatureId
 	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
 	feature_id.find_back_ref_targets( append_as_weak_refs( back_refs ) );
 
