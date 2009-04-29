@@ -22,6 +22,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#define DEBUG
+
 #include <sstream>
 #include <iostream>
 
@@ -36,12 +38,12 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 
+#include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
-#include "model/FeatureRevision.h"
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlLineString.h"
@@ -123,8 +125,8 @@ qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_han
 
 	// super short-cut 
 	// QString type("ComputationalMesh");
-	// QString type("UnclassifiedFeature");
-	QString type("Coverage");
+	QString type("UnclassifiedFeature");
+	//QString type("Coverage");
 	if ( type != 
 		GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() ) )
 	{ 
@@ -240,12 +242,16 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 	const GPlatesMaths::PointOnSphere &point )
 {
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+
+#ifdef DEBUG
+GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
+#endif
 
 	std::vector<GPlatesModel::FeatureId> feature_ids;
 	std::vector<GPlatesModel::FeatureId>::iterator iter;
 
-	std::list<GPlatesModel::integer_plate_id_type> plate_ids;
+	std::list<GPlatesModel::integer_plate_id_type> recon_plate_ids;
 	std::list<GPlatesModel::integer_plate_id_type>::iterator p_iter;
 
 	// Locate the point
@@ -253,51 +259,59 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 
 #ifdef DEBUG
 // FIXME
-std::cout << "ComputationalMeshSolver::process_point: " << llp << " found in " << feature_ids.size() << " plates." << std::endl;
+std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.size() << " plates." << std::endl;
 #endif
 
 	// loop over feature ids 
 	for (iter = feature_ids.begin(); iter != feature_ids.end(); ++iter)
 	{
-#if 0
-		// FIXME: check for boost::none on calls to registry
-		GPlatesModel::FeatureHandle::weak_ref feature_ref =
-			d_feature_id_registry_ptr->find( *iter ).get();
+		GPlatesModel::FeatureId feature_id = *iter;
+
+		// Get a vector of FeatureHandle weak_refs for this Feature ID
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;	
+		feature_id.find_back_ref_targets( append_as_weak_refs( back_refs ) );
+
+		// Double check vector
+		if ( back_refs.size() == 0 )
+		{
+			continue; // to next feature id 
+		}
+
+	 	// else , get the first ref on the list		
+	 	GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
 
 		// Get all the Plate ID for this point 
-		const GPlatesModel::PropertyName plate_id_property_name =
+		const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *plate_id;
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-				*feature_ref, plate_id_property_name, &plate_id ) )
+				*feature_ref, property_name, recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
-			plate_ids.push_back( plate_id->value() );
+			recon_plate_ids.push_back( recon_plate_id->value() );
 		}
-#endif
 	}
 
-
-	if ( plate_ids.empty() ) {
-		// do not paint the point any color ; leave it 
+	if ( recon_plate_ids.empty() ) {
+		// FIXME: do not paint the point any color ; leave it ?
 		return; 
 	}
 
 	// update the stats
-	if ( plate_ids.size() > 1) { 
+	if ( recon_plate_ids.size() > 1) { 
 		d_num_points_on_multiple_plates += 1;
 	}
 
 	// sort the plate ids
-	plate_ids.sort();
-	plate_ids.reverse();
+	recon_plate_ids.sort();
+	recon_plate_ids.reverse();
 
 #ifdef DEBUG
 // FIXME: remove this diagnostic 
 std::cout << "plate ids: (";
-for ( p_iter = plate_ids.begin(); p_iter != plate_ids.end(); ++p_iter)
+for ( p_iter = recon_plate_ids.begin(); p_iter != recon_plate_ids.end(); ++p_iter)
 {
 	std::cout << *p_iter << ", ";
 }
@@ -305,7 +319,7 @@ std::cout << ")" << std::endl;
 #endif
 
 	// get the highest numeric id 
-	GPlatesModel::integer_plate_id_type plate_id = plate_ids.front();
+	GPlatesModel::integer_plate_id_type plate_id = recon_plate_ids.front();
 		
 
 	// get the color for the highest numeric id 
@@ -315,7 +329,6 @@ std::cout << ")" << std::endl;
 		colour = &GPlatesGui::Colour::get_olive(); 
 	}
 
-	
 
 	// Create a RenderedGeometry using the reconstructed geometry.
 	const GPlatesViewOperations::RenderedGeometry rendered_geom =
@@ -328,7 +341,6 @@ std::cout << ")" << std::endl;
 	// Add to the rendered layer.
 	d_rendered_layer->add_rendered_geometry(rendered_geom);
 
-
 	// get the finite rotation for this palte id
 	GPlatesMaths::FiniteRotation fr_t1 = 
 		d_recon_tree_ptr->get_composed_absolute_rotation( plate_id ).first;
@@ -336,12 +348,16 @@ std::cout << ")" << std::endl;
 	GPlatesMaths::FiniteRotation fr_t2 = 
 		d_recon_tree_2_ptr->get_composed_absolute_rotation( plate_id ).first;
 
-	// compute the velocity for this point
-	GPlatesMaths::real_t colat_v;	
-	GPlatesMaths::real_t lon_v;
 
 	std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t > velocity_pair = 
 		GPlatesMaths::CalculateVelocityOfPoint( point, fr_t1, fr_t2 );
+
+	// compute the velocity for this point
+	GPlatesMaths::real_t colat_v = velocity_pair.first;	
+	GPlatesMaths::real_t lon_v   = velocity_pair.second;
+#ifdef DEBUG
+	std::cout << "colat_v = " << colat_v << " ; " << "lon_v = " << lon_v << " ; " << std::endl;
+#endif
 }
 
 

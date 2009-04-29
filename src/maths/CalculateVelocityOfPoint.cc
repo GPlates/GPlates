@@ -89,6 +89,8 @@ std::cout << "CALC: rotation_axis= " << rotation_axis << std::endl;
 std::cout << "CALC: point_vector = " << point << std::endl;
 std::cout << "CALC: velocity_xyz = " << velocity_xyz << std::endl;
 std::cout << "CALC: velocity_ned = " << velocity_ned << std::endl;
+std::cout << "CALC: colat_v      = " << colat_v << std::endl;
+std::cout << "CALC: lon_v        = " << lon_v << std::endl;
 std::cout << std::endl;
 #endif
 

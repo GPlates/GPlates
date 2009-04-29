@@ -24,13 +24,13 @@
  */
 
 
-#define DEBUG
-#define DEBUG_VISIT
-#define DEBUG_RESOLVE_INTERSECTION
-#define DEBUG_RESOLVE_BOUNDARY
-#define DEBUG_GET_VERTEX_LIST
-#define DEBUG_BOUNDS
-#define DEBUG_POINT_IN_POLYGON
+//#define DEBUG
+//#define DEBUG_VISIT
+//#define DEBUG_RESOLVE_INTERSECTION
+//#define DEBUG_RESOLVE_BOUNDARY
+//#define DEBUG_GET_VERTEX_LIST
+//#define DEBUG_BOUNDS
+//#define DEBUG_POINT_IN_POLYGON
 
 
 #ifdef _MSC_VER
@@ -2132,21 +2132,20 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 		// else, get the first ref on the vector
 		GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
 
-#ifdef DEBUG
+#ifdef DEBUG_POINT_IN_POLYGON
 		// Get reconstructionPlateId property value
-		static const GPlatesModel::PropertyName plate_id_property_name =
+		static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, plate_id_property_name, recon_plate_id ) )
+			*feature_ref, property_name, recon_plate_id ) )
 		{
-			// The feature has a reconstruction plate ID.
-			PlatePolygon plate = iter->second;
-
-			std::cout << "Plate ID " << recon_plate_id 
-				<< " has " << plate.d_vertex_list.size() << " vertices." 
+			std::cout 
+				<< " TopologyResolver::locate_point(): " 
+				<< " reconstructionPlateId = " << recon_plate_id->value() 
+				<< " has " << plate_polygon.d_vertex_list.size() << " vertices." 
 				<< std::endl;
 		}
 #endif
@@ -2197,13 +2196,13 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 		GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
 
 		// Get the reconstructionPlateId property value
-		static const GPlatesModel::PropertyName plate_id_property_name =
+		static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, plate_id_property_name, recon_plate_id ) )
+			*feature_ref, property_name, recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
 			qDebug() << "id = " 
@@ -2211,7 +2210,7 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 
 			// FIXME : probably want to add in feature name ?
 			std::cout 
-				<< "  rotation id = " << recon_plate_id->value() << std::endl
+				<< "  reconstructionPlateId = " << recon_plate_id->value() << std::endl
 				<< "  " << plate_polygon.d_vertex_list.size() << " vertices" << std::endl
 				<< "  max_lat = " << plate_polygon.d_max_lat
 				<< " max_lat = " << plate_polygon.d_max_lat
