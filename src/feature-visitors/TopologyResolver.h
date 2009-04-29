@@ -52,6 +52,7 @@
 #include "model/types.h"
 #include "model/FeatureId.h"
 #include "model/FeatureHandle.h"
+#include "model/FeatureRevision.h"
 #include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/Model.h"
@@ -384,8 +385,8 @@ namespace GPlatesFeatureVisitors
 			double d_min_lon;
 		};
 
-		typedef std::list<std::pair<GPlatesModel::FeatureId, PlatePolygon> > plate_map_type;
-		typedef plate_map_type::iterator plate_map_iterator;
+		typedef std::list<std::pair<GPlatesModel::FeatureId, PlatePolygon> > fid_polygon_pair_list_type;
+		typedef fid_polygon_pair_list_type::iterator fid_polygon_pair_list_iterator;
 
 		//
 		// the TopologyResolver class
@@ -773,7 +774,7 @@ namespace GPlatesFeatureVisitors
 		int d_num_features;
 		int d_num_topologies;
 
-		plate_map_type d_plate_map;
+		fid_polygon_pair_list_type d_fid_polygon_pair_list;
 	};
 
 }

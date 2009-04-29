@@ -41,12 +41,12 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ReconstructedFeatureGeometry.h"
+#include "model/ReconstructedFeatureGeometryFinder.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
-#include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
-#include "model/FeatureRevision.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
@@ -198,7 +198,8 @@ GPlatesFeatureVisitors::TopologyResolver::visit_feature_handle(
 	resolve_boundary( plate );
 
 	// insert the plate into the map
-	d_plate_map.push_back( std::make_pair( feature_handle.feature_id().get(), plate ) );
+	d_fid_polygon_pair_list.push_back( 
+						std::make_pair( feature_handle.feature_id().get(), plate ) );
 
 	d_accumulator = boost::none;
 }
@@ -550,26 +551,15 @@ GPlatesFeatureVisitors::TopologyResolver::resolve_intersection(
 	GPlatesModel::FeatureId intersection_geometry_feature_id,
 	GPlatesFeatureVisitors::TopologyResolver::NeighborRelation relation)
 {
-#if 0
-	// FIXME: check for boost::none on calls to registry
-	GPlatesModel::FeatureHandle::weak_ref src_geometry_ref = 
-		( d_feature_id_registry_ptr->find(source_geometry_feature_id) ).get();
-
-	GPlatesModel::FeatureHandle::weak_ref intersection_ref = 
-		( d_feature_id_registry_ptr->find(intersection_geometry_feature_id) ).get();
-
-	std::string src_geometry_id = GPlatesUtils::get_old_id( src_geometry_ref );
-	std::string intersection_id = GPlatesUtils::get_old_id( intersection_ref );
-
-#ifdef DEBUG_RESOLVE_INTERSECTION
+#ifdef DEBUG
 std::cout << "TopologyResolver::resolve_intersection: " << std::endl;
-std::cout << "TopologyResolver::resolve_intersection: src_geometry_id= " << src_geometry_id << std::endl;
-std::cout << "TopologyResolver::resolve_intersection: intersection_id= " << intersection_id << std::endl;
+//std::cout << "TopologyResolver::resolve_intersection: src_geometry_id= " << src_geometry_id << std::endl;
+//std::cout << "TopologyResolver::resolve_intersection: intersection_id= " << intersection_id << std::endl;
+std::cout << "TopologyResolver::resolve_intersection: d_working_vertex_list.size=" << d_working_vertex_list.size() << std::endl;
 std::cout << "TopologyResolver::resolve_intersection: node2_vertex_list.size=" << d_node2_vertex_list.size() << std::endl;
 #endif
 
-#endif
-
+	// Double check working lists: 
 	if ( d_working_vertex_list.size() < 2 )
 	{
 		// FIXME : freak out!
@@ -705,10 +695,18 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 		// save the un-rotated click points
 		d_ref_point_list.push_back( *d_ref_point_ptr );
 
-#if 0
+		// Get a vector of FeatureHandle weak_refs for this FeatureId
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
+		d_ref_point_plate_id_fid.find_back_ref_targets( append_as_weak_refs( back_refs ) );
+
+		// Double check refs
+		if ( back_refs.size() == 0 )
+		{
+			// ?
+		}
+
 		// get a feature handle for the d_ref_point_plate_id_fid
-		GPlatesModel::FeatureHandle::weak_ref ref_point_feature_ref = 
-			( d_feature_id_registry_ptr->find( d_ref_point_plate_id_fid ) ).get();
+		GPlatesModel::FeatureHandle::weak_ref ref_point_feature_ref = back_refs.front();
 
 		// get the plate id for that feature
 		static const GPlatesModel::PropertyName plate_id_property_name =
@@ -717,13 +715,12 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*ref_point_feature_ref, plate_id_property_name, &recon_plate_id ) )
+			*ref_point_feature_ref, plate_id_property_name, recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
 #ifdef DEBUG_RESOLVE_INTERSECTION
 std::cout << "TopologyResolver::resolve_intersection: MOVE the click point with plate id " << recon_plate_id << std::endl;
 #endif
-
 			const GPlatesMaths::FiniteRotation &r = 
 				d_recon_tree_ptr->get_composed_absolute_rotation(
 					recon_plate_id->value() 
@@ -739,7 +736,6 @@ std::cout << "TopologyResolver::resolve_intersection: MOVE the click point with 
 			// save the rotated click points
 			d_proximity_point_list.push_back( *proximity_test_point_ptr );
 		}
-#endif
 
 		// test PROXIMITY
 		GPlatesMaths::real_t closeness_inclusion_threshold = 0.9;
@@ -974,7 +970,7 @@ std::cout << "TopologyResolver::resolve_boundary() plate.d_vertex_list.size() "
 		return;
 	}
 
-	// RFG for the polygon 
+	// Create an RFG for the polygon 
 
 	// create a polygon on sphere
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type reconstructed_geom = 
@@ -1685,25 +1681,42 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 void
 GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_feature_id(
 	std::list<GPlatesMaths::PointOnSphere> &vertex_list,
-	GPlatesModel::FeatureId id)
+	GPlatesModel::FeatureId feature_id)
 {
 #ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 #endif
 
-#if 0
-// FIXME: needs FID -> RFG from JB
-	// access the current RFG for this feature 
-	GPlatesModel::Reconstruction::id_to_rfg_map_type::iterator find_iter, map_end;
-	map_end = d_recon_ptr->id_to_rfg_map()->end();
-	find_iter = d_recon_ptr->id_to_rfg_map()->find( id );
-	
-	if ( find_iter != map_end )
-	{
-		// get the geometry on sphere
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type gos_ptr = 
-			(find_iter->second)->geometry();	
+	// Get a vector of FeatureHandle weak_refs for this Feature ID
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
+	feature_id.find_back_ref_targets( append_as_weak_refs( back_refs ) );
 
+	// Double check vector
+	if ( back_refs.size() == 0 )
+	{
+		// FIXME: feak out? 
+		// no change to vertex_list
+		return;
+	}
+
+	// else , get the first ref on the list
+	GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
+
+	// find the RFGs for this feature ref
+	GPlatesModel::ReconstructedFeatureGeometryFinder finder( d_recon_ptr ); 
+	finder.find_rfgs_of_feature( feature_ref );
+
+	// Get a list of RFGs 
+	GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator 
+		find_iter = finder.found_rfgs_begin();
+
+	// Double check RFGs
+	if ( find_iter != finder.found_rfgs_end() )
+	{
+		// Get the geometry on sphere from the RFG
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type gos_ptr = 
+			(*find_iter)->geometry();	
+	
 		if (gos_ptr) 
 		{
 			// visit the geom on sphere ( calls functions defined in TopologyResolver.h )
@@ -1716,10 +1729,10 @@ std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 				d_rfg_vertex_list.end(),
 				back_inserter( vertex_list )
 			);
-
-		}
+		} 
+		// else FIXME: do we need to report this ?
 	}
-#endif
+	// else FIXME: do we need to report this?
 
 #ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::get_vertex_list_from_feature_id: vertex_list.size() =" 
@@ -2096,19 +2109,31 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 {
 	std::vector<GPlatesModel::FeatureId> found_ids;
 	
-	// loop over the map of plates, as represented by their vertex lists
-	plate_map_iterator iter = d_plate_map.begin();
-	plate_map_iterator end = d_plate_map.end();
+	// loop over the map of plates, as represented by pair<FeatureId,PlatePolygon>
+	fid_polygon_pair_list_iterator iter = d_fid_polygon_pair_list.begin();
+	fid_polygon_pair_list_iterator end = d_fid_polygon_pair_list.end();
 	for ( ; iter != end ; ++iter )
 	{
-#if 0
-		// Get a feature ref from the feature id 
-		// FIXME: check for boost::none on calls to registry
-		GPlatesModel::FeatureHandle::weak_ref feature_ref =
- 			d_feature_id_registry_ptr->find( iter->first ).get();
+		GPlatesModel::FeatureId fid = iter->first;
+		PlatePolygon plate_polygon = iter->second;
 
-// FIXME: this is the way to get plate id
-		// Plate ID.
+		// Get a vector of FeatureHandle weak_refs for this FeatureId
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
+		( iter->first ).find_back_ref_targets( append_as_weak_refs( back_refs ) );
+
+		// Double check refs
+		if ( back_refs.size() == 0 )
+		{
+			// FIXME: does this need to be reported?
+			// return empty vector
+			return found_ids;
+		}
+
+		// else, get the first ref on the vector
+		GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
+
+#ifdef DEBUG
+		// Get reconstructionPlateId property value
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -2125,22 +2150,21 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 				<< std::endl;
 		}
 #endif
+
+		// Apply the point in polygon test to the point: 
 		/*
  		* 0: test_point is outside the plate
  		* 1: test_point is inside the plate
  		* 2: test_point is on boundary of the plate
  		*/
-
-		// apply the point in polygon test to the point
-		int state = is_point_in_on_out ( point, iter->second );
-
-		if (state > 0) {
-			found_ids.push_back( iter->first );
+		int state = is_point_in_on_out( point, plate_polygon );
+		if (state > 0) 
+		{
+			found_ids.push_back( fid );
 		}
 	}
 	return found_ids;
 }
-
 
 
 
@@ -2152,43 +2176,51 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 	std::cout << "number features visited = " << d_num_features << std::endl;
 	std::cout << "number topologies visited = " << d_num_topologies << std::endl;
 
-#if 0
-	plate_map_iterator iter = d_plate_map.begin();
-	plate_map_iterator end = d_plate_map.end();
+	fid_polygon_pair_list_iterator iter = d_fid_polygon_pair_list.begin();
+	fid_polygon_pair_list_iterator end = d_fid_polygon_pair_list.end();
 	for ( ; iter != end ; ++iter )
 	{
-		// FIXME: check for boost::none on calls to registry
-		GPlatesModel::FeatureHandle::weak_ref feature_ref =
- 			d_feature_id_registry_ptr->find( iter->first ).get();
+		GPlatesModel::FeatureId fid = iter->first;
+		PlatePolygon plate_polygon = iter->second;
 
-		// Plate ID.
+		// Get a vector of FeatureHandle weak_refs for this FeatureId
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
+		fid.find_back_ref_targets( append_as_weak_refs( back_refs ) );
+
+		// Double check refs
+		if ( back_refs.size() == 0 )
+		{
+			continue; // to next pair<FeatureId, PlatePolygon> on the list
+		}
+
+		// else, get the first ref on the vector
+		GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
+
+		// Get the reconstructionPlateId property value
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, plate_id_property_name, &recon_plate_id ) )
+			*feature_ref, plate_id_property_name, recon_plate_id ) )
 		{
-			qDebug() << "id = " 
-				<< GPlatesUtils::make_qstring_from_icu_string( (iter->first).get() );
-
 			// The feature has a reconstruction plate ID.
-
-			PlatePolygon plate = iter->second;
+			qDebug() << "id = " 
+				<< GPlatesUtils::make_qstring_from_icu_string( fid.get() );
 
 			// FIXME : probably want to add in feature name ?
 			std::cout 
-				<< "  rotation id = " << recon_plate_id << std::endl
-				<< "  " << plate.d_vertex_list.size() << " vertices" << std::endl
-				<< "  max_lat = " << plate.d_max_lat
-				<< " max_lat = " << plate.d_max_lat
-				<< " max_lon = " << plate.d_max_lon
-				<< " max_lon = " << plate.d_max_lon
-				<< " pole = " << plate.d_pole << std::endl;
+				<< "  rotation id = " << recon_plate_id->value() << std::endl
+				<< "  " << plate_polygon.d_vertex_list.size() << " vertices" << std::endl
+				<< "  max_lat = " << plate_polygon.d_max_lat
+				<< " max_lat = " << plate_polygon.d_max_lat
+				<< " max_lon = " << plate_polygon.d_max_lon
+				<< " max_lon = " << plate_polygon.d_max_lon
+				<< "; encloses a pole? = " << ( plate_polygon.d_pole ? "yes":"no" ) 
+				<< std::endl;
 		}
 	}
-#endif
 	std::cout << "-------------------------------------------------------------" << std::endl;
 }
 

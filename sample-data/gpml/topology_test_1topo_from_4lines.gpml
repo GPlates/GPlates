@@ -6,7 +6,7 @@
             <gpml:revision>GPlates-3e9268f8-3854-4709-95bb-e9b014f1ff84</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>106</gpml:value>
+                    <gpml:value>101</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>

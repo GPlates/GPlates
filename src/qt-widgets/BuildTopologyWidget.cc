@@ -1703,8 +1703,8 @@ qDebug() << "BuildTopologyWidget::draw_focused_geometry() d_insert_feature_ref.i
 
 		finder.find_rfgs_of_feature( d_insert_feature_ref );
 
-		GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator find_iter;
-		find_iter = finder.found_rfgs_begin();
+		GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator 
+			find_iter = finder.found_rfgs_begin();
 
 		// get the geometry on sphere from the RFG
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type gos_ptr = 
