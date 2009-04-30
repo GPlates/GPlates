@@ -119,17 +119,22 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 {
 	d_num_features += 1;
 
+qDebug() << "qDebug: visit_feature_handle: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
 #if 0
-qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
 #endif
 
-	// super short-cut 
-	// QString type("ComputationalMesh");
-	QString type("UnclassifiedFeature");
-	//QString type("Coverage");
-	if ( type != 
-		GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() ) )
-	{ 
+	QString type_name( GPlatesUtils::make_qstring_from_icu_string(
+		feature_handle.feature_type().get_name() ) );
+
+	// super short-cut for non-mesh features
+	QString type_unclass("UnclassifiedFeature");
+	QString type_coverage("Coverage");
+
+	if ( (type_name == type_unclass) || (type_name == type_coverage) )
+	{
+		// ?
+	} 
+	else {
 		// Quick-out: No need to continue.
 		return; 
 	}
@@ -151,6 +156,7 @@ qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_han
 	// The first time through, we're not reconstructing, just gathering information.
 	d_accumulator->d_perform_reconstructions = false;
 
+qDebug() << "qDebug: visit_feature_handle 1: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
 	visit_feature_properties(feature_handle);
 
 	// So now we've visited the properties of this feature.  Let's find out if we were able
@@ -187,6 +193,7 @@ qDebug() << "qDebug: " << GPlatesUtils::make_qstring_from_icu_string(feature_han
 	// This time we reconstruct any geometries we find.
 	d_accumulator->d_perform_reconstructions = true;
 
+qDebug() << "qDebug: visit_feature_handle 2: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
 	visit_feature_properties(feature_handle);
 
 	d_accumulator = boost::none;
@@ -197,6 +204,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
+std::cout << "ComputationalMeshSolver::visit_feature_props: " << std::endl;
 	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
 	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
 	for ( ; iter != end; ++iter) {
@@ -210,17 +218,36 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_properties(
 	}
 }
 
+
+
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_top_level_property_inline(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
+std::cout << "ComputationalMeshSolver::visit_top_level_property_inline: " << std::endl;
 	visit_property_values( top_level_property_inline );
 }
+
+
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::visit_property_values(
+		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
+{
+std::cout << "ComputationalMeshSolver::visit_property_values: " << std::endl;
+	GPlatesModel::TopLevelPropertyInline::const_iterator iter = top_level_property_inline.begin();
+	GPlatesModel::TopLevelPropertyInline::const_iterator end = top_level_property_inline.end();
+	for ( ; iter != end; ++iter) {
+		(*iter)->accept_visitor(*this);
+	}
+}
+
+
 
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 	GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
+std::cout << "ComputationalMeshSolver::visit_gml_multi_point: " << std::endl;
 	if ( ! d_accumulator->d_perform_reconstructions) {
 		return;
 	}
@@ -280,7 +307,7 @@ std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.
 	 	// else , get the first ref on the list		
 	 	GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
 
-		// Get all the Plate ID for this point 
+		// Get all the reconstructionPlateId for this point 
 		const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -367,6 +394,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
+std::cout << "ComputationalMeshSolver::visit_gml_time_period: " << std::endl;
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
@@ -389,6 +417,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
+std::cout << "ComputationalMeshSolver::visit_gpml_constant_value: " << std::endl;
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
@@ -397,6 +426,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
+std::cout << "ComputationalMeshSolver::visit_gpml_plate_id: " << std::endl;
 	static GPlatesModel::PropertyName reconstruction_plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -412,13 +442,23 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 }
 
 
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_data_block(
+		GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+{
+std::cout << "ComputationalMeshSolver::visit_gml_data_block: " << std::endl;
+}
 
+
+#if 0
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_domain_set(
 		GPlatesPropertyValues::GmlDomainSet &gml_domain_set)
 {
+std::cout << "ComputationalMeshSolver::visit_gml_domain_set: " << std::endl;
 	( gml_domain_set.get_gml_multi_point() )->accept_visitor(*this);
 }
+#endif
 
 
 void

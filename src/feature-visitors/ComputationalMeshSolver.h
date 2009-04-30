@@ -154,6 +154,11 @@ namespace GPlatesFeatureVisitors
 		visit_top_level_property_inline(
 				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
+		
+		void
+		visit_property_values(
+				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+
 		virtual
 		void
 		visit_gml_multi_point(
@@ -176,8 +181,15 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_gml_data_block(
+				GPlatesPropertyValues::GmlDataBlock &gml_data_block);
+
+#if 0
+		virtual
+		void
 		visit_gml_domain_set(
 				GPlatesPropertyValues::GmlDomainSet &gml_domain_set);
+#endif
 
 		void
 		report();

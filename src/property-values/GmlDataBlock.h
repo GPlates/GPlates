@@ -52,10 +52,15 @@ namespace GPlatesPropertyValues {
 		const boost::shared_ptr< DataBlockCoordinateList >
 		create( 
 			const ValueObjectType &value_object_type,
+			const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+					value_object_xml_attributes, 
 			std::vector<double>::size_type list_len )
 		{
 			boost::shared_ptr< DataBlockCoordinateList > prt = 
-				new DataBlockCoordinateList( value_object_type, list_len );
+				new DataBlockCoordinateList( 
+						value_object_type, 
+						value_object_xml_attributes,
+						list_len );
 
 			return ptr;
 		}
@@ -73,16 +78,16 @@ namespace GPlatesPropertyValues {
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		data_block_coord_list_xml_attributes() const {
-			return d_data_block_coord_list_xml_attributes;
+		value_object_xml_attributes() const {
+			return d_value_object_xml_attributes;
 		}
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
 		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		data_block_coord_list_xml_attributes() {
-			return d_data_block_coord_list_xml_attributes;
+		value_object_xml_attributes() {
+			return d_value_object_xml_attributes;
 		}
 
 		//
@@ -98,24 +103,33 @@ namespace GPlatesPropertyValues {
 		// constructor 
 		DataBlockCoordinateList(
 				const ValueObjectType &value_object_type,
+				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &value_object_xml_attributes,
 				std::vector<double>::size_type list_len ) :
+			d_value_object_type(value_object_type);
+			d_value_object_xml_attributes( value_object_xml_attributes )
 		{
-			d_value_object_type = value_object_type;
-
+			// reserve the list
 			d_tuple_list_values.reserve( list_len );
+		}
 
-			// FIXME: what else goes here?
+		DataBlockCoordinateList(
+				const DataBlockCoordinateList &other) :
+			d_value_object_type( other.d_value_object_type ),
+			d_value_object_xml_attributes( other.d_value_object_xml_attributes )
+		{
+			d_tuple_list_values.reserve( other.d_tuple_list_values.size() );
 		}
 		
 	private:
 
 		// value object type
 		ValueObjectType d_value_object_type;
-		
-		// xml attibutes
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-				d_data_block_coord_list_xml_attributes;
 
+		// value object xml attibutes
+		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> 
+			d_value_object_xml_attributes;
+		
+		// the tuple list data : <gml:tupleList>1,10 2,20 3,30 ... 9,90</gml:tupleList>
 		std::vector<double> d_tuple_list_values;
 
 		// This operator should never be defined, because we don't want/need to allow
@@ -126,8 +140,6 @@ namespace GPlatesPropertyValues {
 		operator=(const DataBlockCoordinateList &);
 
 	};
-
-
 
 	class GmlDataBlock :
 			public GPlatesModel::PropertyValue {
@@ -236,6 +248,7 @@ namespace GPlatesPropertyValues {
 		operator=(const GmlDataBlock &);
 
 	};
+
 
 }
 
