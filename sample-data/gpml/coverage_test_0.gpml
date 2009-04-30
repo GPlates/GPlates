@@ -33,6 +33,20 @@
                             </gml:pointMember>
                         </gml:MultiPoint>
             </gml:domainSet>
+            <gml:rangeSet>
+                <gml:DataBlock>
+                    <gml:rangeParameters>
+                        <gml:CompositeValue>
+                            <gml:valueComponent>
+                                <gpml:VelocityColatComponent uom="cm/yr">template</gpml:VelocityColatComponent>
+                            </gml:valueComponent>
+                            <gml:valueComponent>
+                                <gpml:VelocityLonComponent uom="cm/yr">template</gpml:VelocityLonComponent>
+                            </gml:valueComponent>
+                        </gml:CompositeValue>
+                    </gml:rangeParameters>
+                </gml:DataBlock>
+            </gml:rangeSet>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
                     <gpml:value>0</gpml:value>
