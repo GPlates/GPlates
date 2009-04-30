@@ -4,7 +4,7 @@
         <gml:Coverage>
             <gpml:identity>GPlates-00d31182-fd2b-44d8-9a65-7883c76c5790</gpml:identity>
             <gpml:revision>GPlates-e36e5e64-5f72-489b-a12d-9ed46e1c5beb</gpml:revision>
-            <gpml:domainSet>
+            <gml:domainSet>
                         <gml:MultiPoint>
                             <gml:pointMember>
                                 <gml:Point>
@@ -32,7 +32,7 @@
                                 </gml:Point>
                             </gml:pointMember>
                         </gml:MultiPoint>
-            </gpml:domainSet>
+            </gml:domainSet>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
                     <gpml:value>0</gpml:value>
