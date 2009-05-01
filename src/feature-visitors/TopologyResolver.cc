@@ -354,13 +354,12 @@ void
 GPlatesFeatureVisitors::TopologyResolver::visit_gpml_topological_line_section(
 	GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
 {  
-
-#ifdef DEBUG_VISIT
-std::cout << "TopologyResolver::visit_gpml_topological_line_section" << std::endl;
-#endif
 	if ( ! d_accumulator->d_perform_reconstructions ) {
 		return;
 	}
+#ifdef DEBUG_VISIT
+std::cout << "TopologyResolver::visit_gpml_topological_line_section" << std::endl;
+#endif
 
 	// This is a line type feature
 	d_type = GPlatesGlobal::LINE_FEATURE;
@@ -382,11 +381,11 @@ qDebug() << "TopologyResolver::visit_gpml_topological_line_section: src_geom_fid
 	// set the member data for create_boundary() call
 	d_src_geom_fid = ( gpml_toplogical_line_section.get_source_geometry() )->feature_id();
 
-	// fill the working vertex list
+	// clear the working vertex list
 	d_working_vertex_list.clear();
-	get_vertex_list_from_feature_id(
-		d_working_vertex_list,
-		d_src_geom_fid);
+
+	// fill the working vertex list
+	get_vertex_list_from_feature_id( d_working_vertex_list, d_src_geom_fid);
 	
 	// Set reverse flag 
 	d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
@@ -951,17 +950,20 @@ GPlatesFeatureVisitors::TopologyResolver::create_boundary_node()
 void
 GPlatesFeatureVisitors::TopologyResolver::resolve_boundary( PlatePolygon &plate )
 {
-	BoundaryFeatureList_type::iterator iter = d_boundary_list.begin();
+#ifdef DEBUG_RESOLVE_BOUNDARY
+std::cout << "TopologyResolver::resolve_boundary() " << std::endl;
+#endif
+
 
 	// clear the working list
 	plate.d_vertex_list.clear();
 
-	// iterate over the list of boundary features to get the list of vertices 
+	// Iterate over the list of boundary features to get the list of vertices 
 	plate.d_vertex_list = get_vertex_list( d_boundary_list.begin(), d_boundary_list.end() );
 
 // FIXME: diagnostic output
 #ifdef DEBUG_RESOLVE_BOUNDARY
-std::cout << "TopologyResolver::resolve_boundary() " << std::endl;
+BoundaryFeatureList_type::iterator iter = d_boundary_list.begin();
 for ( ; iter != d_boundary_list.end() ; ++iter) 
 {
 qDebug() << "node id = " 
@@ -1697,15 +1699,28 @@ std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
 	feature_id.find_back_ref_targets( append_as_weak_refs( back_refs ) );
 
-	// Double check vector
+	// Double check back_refs
 	if ( back_refs.size() == 0 )
 	{
 		// FIXME: feak out? 
 		qDebug() << "ERROR: get_vertex_list_from_feature_id():";
 		qDebug() << "ERROR: No feature found for feature_id =";
-			GPlatesUtils::make_qstring_from_icu_string(d_ref_point_plate_id_fid.get() );
-		qDebug() << "ERROR: Unable to obtain feature, or geometry, or vertices.";
+		qDebug() <<
+			GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
+		qDebug() << "ERROR: Unable to obtain feature (and its geometry, or vertices)";
 		qDebug() << " ";
+		// FIXME: what else to do?
+		// no change to vertex_list
+		return;
+	}
+
+	if ( back_refs.size() > 1)
+	{
+		qDebug() << "ERROR: TopologyResolver::get_vertex_list_from_feature_id():";
+		qDebug() << "ERROR: More than one feature found for feature_id =";
+		qDebug() <<
+			GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
+		qDebug() << "ERROR: Unable to determine feature";
 		// FIXME: what else to do?
 		// no change to vertex_list
 		return;
@@ -2136,7 +2151,19 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 		// Double check refs
 		if ( back_refs.size() == 0 )
 		{
-			// FIXME: does this need to be reported?
+			// FIXME: Error reporting?
+			qDebug() << "ERROR: locate_point():";
+			qDebug() << "ERROR: No feature found for feature_id =";
+			qDebug() << "ERROR:" << GPlatesUtils::make_qstring_from_icu_string( fid.get() );
+			qDebug() << "ERROR: Unable test this feature for point location";
+			qDebug() << " ";
+			// return empty vector
+			return found_ids;
+		}
+
+		if ( back_refs.size() != 1 )
+		{
+			// FIXME: Error reporting?
 			qDebug() << "ERROR: locate_point():";
 			qDebug() << "ERROR: No feature found for feature_id =";
 			qDebug() << "ERROR:" << GPlatesUtils::make_qstring_from_icu_string( fid.get() );
@@ -2199,6 +2226,12 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 		GPlatesModel::FeatureId fid = iter->first;
 		PlatePolygon plate_polygon = iter->second;
 
+		// report on this topology
+		std::cout << std::endl;
+		std::cout << "feature_id = " 
+			<< (GPlatesUtils::make_qstring_from_icu_string(fid.get()) ).toStdString() 
+			<< std::endl;
+
 		// Get a vector of FeatureHandle weak_refs for this FeatureId
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
 		fid.find_back_ref_targets( append_as_weak_refs( back_refs ) );
@@ -2215,33 +2248,53 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 			continue; // to next pair<FeatureId, PlatePolygon> on the list
 		}
 
+		if ( back_refs.size() != 1 )
+		{
+			// FIXME: Error reporting?
+			qDebug() << "ERROR: report():";
+			qDebug() << "ERROR: More than one feature found for feature_id =";
+			qDebug() << "ERROR:" << GPlatesUtils::make_qstring_from_icu_string( fid.get() );
+			qDebug() << "ERROR: Unable to report on feature.";
+			qDebug() << " ";
+			// FIXME: what else to do?
+			continue; // to next pair<FeatureId, PlatePolygon> on the list
+		}
+
 		// else, get the first ref on the vector
 		GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
+
+		// Get the name property value
+		static const GPlatesModel::PropertyName name_property_name =
+			GPlatesModel::PropertyName::create_gml("name");
+		const GPlatesPropertyValues::XsString *name;
+		if ( GPlatesFeatureVisitors::get_property_value(
+			*feature_ref, name_property_name, name ) ) 
+		{
+			std::cout << " name = \"" 
+				<< GPlatesUtils::make_qstring(name->value()).toStdString() 
+				<< "\"" 
+				<< std::endl;
+		}
 
 		// Get the reconstructionPlateId property value
 		static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, property_name, recon_plate_id ) )
+			*feature_ref, property_name, recon_plate_id ) ) 
 		{
-			// The feature has a reconstruction plate ID.
-			qDebug() << "id = " 
-				<< GPlatesUtils::make_qstring_from_icu_string( fid.get() );
-
-			// FIXME : probably want to add in feature name ?
-			std::cout 
-				<< "  reconstructionPlateId = " << recon_plate_id->value() << std::endl
-				<< "  " << plate_polygon.d_vertex_list.size() << " vertices" << std::endl
-				<< "  max_lat = " << plate_polygon.d_max_lat
-				<< " max_lat = " << plate_polygon.d_max_lat
-				<< " max_lon = " << plate_polygon.d_max_lon
-				<< " max_lon = " << plate_polygon.d_max_lon
-				<< "; encloses a pole? = " << ( plate_polygon.d_pole ? "yes":"no" ) 
-				<< std::endl;
+			std::cout << " reconstructionPlateId = " << recon_plate_id->value() << std::endl;
 		}
+
+		// report on polygon stats
+		std::cout 
+			<< " # of vertices = " << plate_polygon.d_vertex_list.size() << std::endl
+			<< " max_lat = " << plate_polygon.d_max_lat
+			<< " max_lat = " << plate_polygon.d_max_lat
+			<< " max_lon = " << plate_polygon.d_max_lon
+			<< " max_lon = " << plate_polygon.d_max_lon
+			<< "; encloses a pole? = " << ( plate_polygon.d_pole ? "yes":"no" ) 
+			<< std::endl;
 	}
 	std::cout << "-------------------------------------------------------------" << std::endl;
 }

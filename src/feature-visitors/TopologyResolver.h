@@ -383,6 +383,9 @@ namespace GPlatesFeatureVisitors
 			double d_max_lon;
 			double d_min_lat;
 			double d_min_lon;
+
+			/** boundary resolution errors */
+			std::string d_errors;
 		};
 
 		typedef std::list<std::pair<GPlatesModel::FeatureId, PlatePolygon> > fid_polygon_pair_list_type;
