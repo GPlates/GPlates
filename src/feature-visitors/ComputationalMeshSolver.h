@@ -234,6 +234,9 @@ namespace GPlatesFeatureVisitors
 		int d_num_points;
 		int d_num_points_on_multiple_plates;
 
+		// 
+		std::string d_output_string;
+
 		GPlatesGui::PlatesColourTable *d_colour_table_ptr;
 	};
 

@@ -22,8 +22,10 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#define DEBUG
+// #define DEBUG
 
+
+#include <fstream>
 #include <sstream>
 #include <iostream>
 
@@ -119,8 +121,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 {
 	d_num_features += 1;
 
+#ifdef DEBUG
 qDebug() << "qDebug: visit_feature_handle: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
-#if 0
 #endif
 
 	QString type_name( GPlatesUtils::make_qstring_from_icu_string(
@@ -197,6 +199,42 @@ qDebug() << "qDebug: visit_feature_handle 2: " << GPlatesUtils::make_qstring_fro
 	visit_feature_properties(feature_handle);
 
 	d_accumulator = boost::none;
+
+	//
+	// output the data
+	//
+	std::ostringstream oss;
+
+	oss << "velocity_colat+lon_at_";
+	oss << d_recon_time.value();
+	oss << "Ma_on_mesh-";
+
+	
+	// Get the name property value
+	static const GPlatesModel::PropertyName name_property_name =
+		GPlatesModel::PropertyName::create_gml("name");
+	const GPlatesPropertyValues::XsString *name;
+	if ( GPlatesFeatureVisitors::get_property_value(
+		feature_handle, name_property_name, name ) ) 
+	{
+		oss << GPlatesUtils::make_qstring(name->value()).toStdString();
+	}
+	else
+	{
+		oss << "unknown_mesh_name";
+	}
+
+	oss << "-for_1Ma_inc";
+	oss << ".dat";
+
+	// build an output file stream
+	std::ofstream outfile( oss.str().c_str() );
+	if ( !outfile ) {
+		std::cout << "WARNING: cannot open file for writing" << std::endl;
+		return;
+	}
+	// write out data
+	outfile << d_output_string;
 }
 
 
@@ -204,7 +242,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-std::cout << "ComputationalMeshSolver::visit_feature_props: " << std::endl;
+//std::cout << "ComputationalMeshSolver::visit_feature_props: " << std::endl;
 	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
 	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
 	for ( ; iter != end; ++iter) {
@@ -224,7 +262,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_top_level_property_inline(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-std::cout << "ComputationalMeshSolver::visit_top_level_property_inline: " << std::endl;
+//std::cout << "ComputationalMeshSolver::visit_top_level_property_inline: " << std::endl;
 	visit_property_values( top_level_property_inline );
 }
 
@@ -233,7 +271,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_property_values(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-std::cout << "ComputationalMeshSolver::visit_property_values: " << std::endl;
+//std::cout << "ComputationalMeshSolver::visit_property_values: " << std::endl;
 	GPlatesModel::TopLevelPropertyInline::const_iterator iter = top_level_property_inline.begin();
 	GPlatesModel::TopLevelPropertyInline::const_iterator end = top_level_property_inline.end();
 	for ( ; iter != end; ++iter) {
@@ -247,7 +285,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 	GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-std::cout << "ComputationalMeshSolver::visit_gml_multi_point: " << std::endl;
+//std::cout << "ComputationalMeshSolver::visit_gml_multi_point: " << std::endl;
 	if ( ! d_accumulator->d_perform_reconstructions) {
 		return;
 	}
@@ -272,7 +310,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 
 #ifdef DEBUG
 GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
-std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
+//std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 #endif
 
 	std::vector<GPlatesModel::FeatureId> feature_ids;
@@ -286,7 +324,7 @@ std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 
 #ifdef DEBUG
 // FIXME
-std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.size() << " plates." << std::endl;
+//std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.size() << " plates." << std::endl;
 #endif
 
 	// loop over feature ids 
@@ -385,6 +423,11 @@ std::cout << ")" << std::endl;
 #ifdef DEBUG
 	std::cout << "colat_v = " << colat_v << " ; " << "lon_v = " << lon_v << " ; " << std::endl;
 #endif
+
+	// OUTPUT
+	std::ostringstream oss;
+	oss << colat_v << '\t' << lon_v << '\n';
+	d_output_string.append( oss.str() );
 }
 
 
@@ -394,7 +437,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-std::cout << "ComputationalMeshSolver::visit_gml_time_period: " << std::endl;
+//std::cout << "ComputationalMeshSolver::visit_gml_time_period: " << std::endl;
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
@@ -417,7 +460,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-std::cout << "ComputationalMeshSolver::visit_gpml_constant_value: " << std::endl;
+//std::cout << "ComputationalMeshSolver::visit_gpml_constant_value: " << std::endl;
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
@@ -426,7 +469,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-std::cout << "ComputationalMeshSolver::visit_gpml_plate_id: " << std::endl;
+//std::cout << "ComputationalMeshSolver::visit_gpml_plate_id: " << std::endl;
 	static GPlatesModel::PropertyName reconstruction_plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -446,19 +489,9 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_data_block(
 		GPlatesPropertyValues::GmlDataBlock &gml_data_block)
 {
-std::cout << "ComputationalMeshSolver::visit_gml_data_block: " << std::endl;
+//std::cout << "ComputationalMeshSolver::visit_gml_data_block: " << std::endl;
 }
 
-
-#if 0
-void
-GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_domain_set(
-		GPlatesPropertyValues::GmlDomainSet &gml_domain_set)
-{
-std::cout << "ComputationalMeshSolver::visit_gml_domain_set: " << std::endl;
-	( gml_domain_set.get_gml_multi_point() )->accept_visitor(*this);
-}
-#endif
 
 
 void

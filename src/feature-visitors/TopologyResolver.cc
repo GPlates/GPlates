@@ -24,6 +24,7 @@
  */
 
 
+#if 0
 #define DEBUG
 #define DEBUG_VISIT
 #define DEBUG_RESOLVE_INTERSECTION
@@ -31,6 +32,7 @@
 #define DEBUG_GET_VERTEX_LIST
 #define DEBUG_BOUNDS
 #define DEBUG_POINT_IN_POLYGON
+#endif
 
 
 #ifdef _MSC_VER
