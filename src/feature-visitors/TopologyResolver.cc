@@ -24,13 +24,13 @@
  */
 
 
-//#define DEBUG
-//#define DEBUG_VISIT
-//#define DEBUG_RESOLVE_INTERSECTION
-//#define DEBUG_RESOLVE_BOUNDARY
-//#define DEBUG_GET_VERTEX_LIST
-//#define DEBUG_BOUNDS
-//#define DEBUG_POINT_IN_POLYGON
+#define DEBUG
+#define DEBUG_VISIT
+#define DEBUG_RESOLVE_INTERSECTION
+#define DEBUG_RESOLVE_BOUNDARY
+#define DEBUG_GET_VERTEX_LIST
+#define DEBUG_BOUNDS
+#define DEBUG_POINT_IN_POLYGON
 
 
 #ifdef _MSC_VER
@@ -702,7 +702,13 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 		// Double check refs
 		if ( back_refs.size() == 0 )
 		{
-			// ?
+			qDebug() << "ERROR: resolve_intersection()";
+			qDebug() << "ERROR: No Feature found for feature id =";
+			qDebug() << 
+				GPlatesUtils::make_qstring_from_icu_string( d_ref_point_plate_id_fid.get() );
+			qDebug() << "ERROR: Unable to rotate proximity test point for intersection test.";
+			qDebug() << " ";
+			// FIXME: what else to do?
 		}
 
 		// get a feature handle for the d_ref_point_plate_id_fid
@@ -938,7 +944,7 @@ GPlatesFeatureVisitors::TopologyResolver::create_boundary_node()
 				d_use_tail_from_intersect_next
 			);
 
-	// append this node to the list
+	// add this node to the list
 	d_boundary_list.push_back( bf );
 }
 
@@ -1695,6 +1701,12 @@ std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 	if ( back_refs.size() == 0 )
 	{
 		// FIXME: feak out? 
+		qDebug() << "ERROR: get_vertex_list_from_feature_id():";
+		qDebug() << "ERROR: No feature found for feature_id =";
+			GPlatesUtils::make_qstring_from_icu_string(d_ref_point_plate_id_fid.get() );
+		qDebug() << "ERROR: Unable to obtain feature, or geometry, or vertices.";
+		qDebug() << " ";
+		// FIXME: what else to do?
 		// no change to vertex_list
 		return;
 	}
@@ -2125,6 +2137,11 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 		if ( back_refs.size() == 0 )
 		{
 			// FIXME: does this need to be reported?
+			qDebug() << "ERROR: locate_point():";
+			qDebug() << "ERROR: No feature found for feature_id =";
+			qDebug() << "ERROR:" << GPlatesUtils::make_qstring_from_icu_string( fid.get() );
+			qDebug() << "ERROR: Unable test this feature for point location";
+			qDebug() << " ";
 			// return empty vector
 			return found_ids;
 		}
@@ -2189,6 +2206,12 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 		// Double check refs
 		if ( back_refs.size() == 0 )
 		{
+			qDebug() << "ERROR: report():";
+			qDebug() << "ERROR: No feature found for feature_id =";
+			qDebug() << "ERROR:" << GPlatesUtils::make_qstring_from_icu_string( fid.get() );
+			qDebug() << "ERROR: Unable to report on feature.";
+			qDebug() << " ";
+			// FIXME: what else to do?
 			continue; // to next pair<FeatureId, PlatePolygon> on the list
 		}
 
