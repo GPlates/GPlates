@@ -22,6 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 // #define DEBUG
 
 
@@ -121,9 +122,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 {
 	d_num_features += 1;
 
-#ifdef DEBUG
-qDebug() << "qDebug: visit_feature_handle: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
-#endif
 
 	QString type_name( GPlatesUtils::make_qstring_from_icu_string(
 		feature_handle.feature_type().get_name() ) );
@@ -158,7 +156,6 @@ qDebug() << "qDebug: visit_feature_handle: " << GPlatesUtils::make_qstring_from_
 	// The first time through, we're not reconstructing, just gathering information.
 	d_accumulator->d_perform_reconstructions = false;
 
-qDebug() << "qDebug: visit_feature_handle 1: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
 	visit_feature_properties(feature_handle);
 
 	// So now we've visited the properties of this feature.  Let's find out if we were able
@@ -191,15 +188,6 @@ qDebug() << "qDebug: visit_feature_handle 1: " << GPlatesUtils::make_qstring_fro
 	}
 
 
-	// Now for the second pass through the properties of the feature:  
-	// This time we reconstruct any geometries we find.
-	d_accumulator->d_perform_reconstructions = true;
-
-qDebug() << "qDebug: visit_feature_handle 2: " << GPlatesUtils::make_qstring_from_icu_string(feature_handle.feature_type().get_name() );
-	visit_feature_properties(feature_handle);
-
-	d_accumulator = boost::none;
-
 	//
 	// output the data
 	//
@@ -226,6 +214,20 @@ qDebug() << "qDebug: visit_feature_handle 2: " << GPlatesUtils::make_qstring_fro
 
 	oss << "-for_1Ma_inc";
 	oss << ".dat";
+
+	// report progress
+	qDebug() << " processing mesh: " << GPlatesUtils::make_qstring(name->value());
+
+	// Now for the second pass through the properties of the feature:  
+	// This time we reconstruct any geometries we find.
+	d_accumulator->d_perform_reconstructions = true;
+
+	// clear the output string for this feature
+	d_output_string.clear();
+
+	visit_feature_properties(feature_handle);
+
+	d_accumulator = boost::none;
 
 	// build an output file stream
 	std::ofstream outfile( oss.str().c_str() );
@@ -504,6 +506,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::report()
 	std::cout << "number points visited = " << d_num_points << std::endl;
 	std::cout << "number points on multiple plates = " << d_num_points_on_multiple_plates << std::endl;
 	std::cout << "-------------------------------------------------------------" << std::endl;
+
 }
 
 
