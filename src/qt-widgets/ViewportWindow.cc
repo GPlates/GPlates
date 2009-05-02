@@ -55,6 +55,8 @@
 #include "gui/ChooseCanvasTool.h"
 #include "gui/FeatureWeakRefSequence.h"
 #include "gui/SvgExport.h"
+#include "gui/TopologySectionsContainer.h"
+#include "gui/TopologySectionsTable.h"
 #include "gui/PlatesColourTable.h"
 #include "gui/SingleColourTable.h"
 #include "gui/FeatureColourTable.h"
@@ -603,6 +605,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_task_panel_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog(*this,this),
 	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
+	d_topology_sections_container_ptr(new GPlatesGui::TopologySectionsContainer),
 	d_open_file_path(""),
 	d_colour_table_ptr(NULL)
 {
@@ -713,6 +716,10 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			d_feature_table_model_ptr.get(),
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+
+	// Set up the Topology Sections Table, now that the table widget has been created.
+	d_topology_sections_table_ptr = new GPlatesGui::TopologySectionsTable(
+			*table_widget_topology_sections, *d_topology_sections_container_ptr);
 
 	// If the focused feature is modified, we may need to reconstruct to update the view.
 	// FIXME:  If the FeatureFocus emits the 'focused_feature_modified' signal, the view will

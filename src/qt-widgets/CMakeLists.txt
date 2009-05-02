@@ -106,6 +106,8 @@ set(srcs
     InformationDialog.cc
     InformationDialog.h
     InformationDialogUi.ui
+    InsertionPointWidget.h
+    InsertionPointWidgetUi.ui
     InvalidPropertyValueException.h
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h

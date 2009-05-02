@@ -317,6 +317,50 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="tab_topology" >
+        <attribute name="title" >
+         <string>Topology Sections</string>
+        </attribute>
+        <layout class="QHBoxLayout" >
+         <property name="spacing" >
+          <number>2</number>
+         </property>
+         <property name="leftMargin" >
+          <number>2</number>
+         </property>
+         <property name="topMargin" >
+          <number>2</number>
+         </property>
+         <property name="rightMargin" >
+          <number>2</number>
+         </property>
+         <property name="bottomMargin" >
+          <number>2</number>
+         </property>
+         <item>
+          <widget class="QTableWidget" name="table_widget_topology_sections" >
+           <property name="sizePolicy" >
+            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="selectionMode" >
+            <enum>QAbstractItemView::SingleSelection</enum>
+           </property>
+           <property name="selectionBehavior" >
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <property name="verticalScrollMode" >
+            <enum>QAbstractItemView::ScrollPerItem</enum>
+           </property>
+           <property name="horizontalScrollMode" >
+            <enum>QAbstractItemView::ScrollPerPixel</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </item>
     </layout>

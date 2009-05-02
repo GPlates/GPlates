@@ -86,6 +86,8 @@ namespace GPlatesGui
 	class CanvasToolAdapter;
 	class CanvasToolChoice;
 	class ChooseCanvasTool;
+	class TopologySectionsTable;
+	class TopologySectionsContainer;
 }
 
 namespace GPlatesQtWidgets
@@ -261,6 +263,24 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_colour_by_age();
+
+		void
+		choose_clicked_geometry_table()
+		{
+			tabWidget->setCurrentWidget(tab_clicked);
+		}
+
+		void
+		choose_selected_feature_table()
+		{
+			tabWidget->setCurrentWidget(tab_selected);
+		}
+
+		void
+		choose_topology_sections_table()
+		{
+			tabWidget->setCurrentWidget(tab_topology);
+		}
 
 		void
 		pop_up_read_errors_dialog();
@@ -494,7 +514,10 @@ namespace GPlatesQtWidgets
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
 		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
 
-		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.		
+
+		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_sections_container_ptr;	// The data behind the Topology Sections table.
+		GPlatesGui::TopologySectionsTable *d_topology_sections_table_ptr;	// Manages the 'Topology Sections' table, and is parented to it - Qt will clean up when the table disappears!
 
 		//  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;
