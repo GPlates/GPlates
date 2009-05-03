@@ -81,6 +81,10 @@ set(srcs
     TemporaryGeometryFocus.h
     Texture.cc
     Texture.h
+    TopologySectionsContainer.cc
+    TopologySectionsContainer.h
+    TopologySectionsTable.cc
+    TopologySectionsTable.h
     TreeWidgetBuilder.cc
     TreeWidgetBuilder.h
     Viewport.h
