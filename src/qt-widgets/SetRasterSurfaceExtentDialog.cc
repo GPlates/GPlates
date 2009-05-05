@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -30,10 +30,10 @@
 #include "SetRasterSurfaceExtentDialog.h"
 #include "ViewportWindow.h"
 
-const float DEFAULT_UPPER_LEFT_LAT = 90.;
-const float DEFAULT_UPPER_LEFT_LON = -180.;
-const float DEFAULT_LOWER_RIGHT_LAT = -90.;
-const float DEFAULT_LOWER_RIGHT_LON = 180.;
+const float DEFAULT_LOWER_LEFT_LAT = -90.;
+const float DEFAULT_LOWER_LEFT_LON = -180.;
+const float DEFAULT_UPPER_RIGHT_LAT = 90.;
+const float DEFAULT_UPPER_RIGHT_LON = 180.;
 
 namespace{
 
@@ -82,10 +82,10 @@ GPlatesQtWidgets::SetRasterSurfaceExtentDialog::SetRasterSurfaceExtentDialog(
 		QWidget *parent_):
 	QDialog(parent_),
 	d_viewport_window_ptr(&viewport_window),
-	d_extent(DEFAULT_UPPER_LEFT_LON,
-				DEFAULT_UPPER_LEFT_LAT,
-				DEFAULT_LOWER_RIGHT_LON-DEFAULT_UPPER_LEFT_LON,
-				DEFAULT_LOWER_RIGHT_LAT-DEFAULT_UPPER_LEFT_LAT),
+	d_extent(DEFAULT_LOWER_LEFT_LON,
+				DEFAULT_LOWER_LEFT_LAT,
+				DEFAULT_UPPER_RIGHT_LON-DEFAULT_LOWER_LEFT_LON,
+				DEFAULT_UPPER_RIGHT_LAT-DEFAULT_LOWER_LEFT_LAT),
 	d_help_dialog(new InformationDialog(s_help_dialog_text, s_help_dialog_title, this))
 {
 	setupUi(this);
@@ -99,10 +99,10 @@ GPlatesQtWidgets::SetRasterSurfaceExtentDialog::SetRasterSurfaceExtentDialog(
 void
 GPlatesQtWidgets::SetRasterSurfaceExtentDialog::accept()
 {
-	d_extent.setLeft(spinbox_upper_left_longitude->value());
-	d_extent.setTop(spinbox_upper_left_latitude->value());
-	d_extent.setRight(spinbox_lower_right_longitude->value());
-	d_extent.setBottom(spinbox_lower_right_latitude->value());
+	d_extent.setLeft(spinbox_lower_left_longitude->value());
+	d_extent.setTop(spinbox_upper_right_latitude->value());
+	d_extent.setRight(spinbox_upper_right_longitude->value());
+	d_extent.setBottom(spinbox_lower_left_latitude->value());
 
 	if (extent_is_valid(d_extent))
 	{	
@@ -125,10 +125,10 @@ void
 GPlatesQtWidgets::SetRasterSurfaceExtentDialog::handle_cancel()
 {
 	// Set the spin boxes back to their original values before we exit.
-	spinbox_upper_left_longitude->setValue(d_extent.left());
-	spinbox_upper_left_latitude->setValue(d_extent.top());
-	spinbox_lower_right_longitude->setValue(d_extent.right());
-	spinbox_lower_right_latitude->setValue(d_extent.bottom());
+	spinbox_lower_left_longitude->setValue(d_extent.left());
+	spinbox_lower_left_latitude->setValue(d_extent.bottom());
+	spinbox_upper_right_longitude->setValue(d_extent.right());
+	spinbox_upper_right_latitude->setValue(d_extent.top());
 
 	reject();
 }
@@ -136,15 +136,15 @@ GPlatesQtWidgets::SetRasterSurfaceExtentDialog::handle_cancel()
 void
 GPlatesQtWidgets::SetRasterSurfaceExtentDialog::handle_reset_to_default_fields()
 {
-	// Reset the extent and the spin-boxes to (90,-180),(-90,180).
-	d_extent.setLeft(DEFAULT_UPPER_LEFT_LON);
-	d_extent.setTop(DEFAULT_UPPER_LEFT_LAT);
-	d_extent.setRight(DEFAULT_LOWER_RIGHT_LON);
-	d_extent.setBottom(DEFAULT_LOWER_RIGHT_LAT);
+	// Reset the extent and the spin-boxes to (-90,-180),(90,180).
+	d_extent.setLeft(DEFAULT_LOWER_LEFT_LON);
+	d_extent.setTop(DEFAULT_UPPER_RIGHT_LAT);
+	d_extent.setRight(DEFAULT_UPPER_RIGHT_LON);
+	d_extent.setBottom(DEFAULT_LOWER_LEFT_LAT);
 
-	spinbox_upper_left_longitude->setValue(d_extent.left());
-	spinbox_upper_left_latitude->setValue(d_extent.top());
-	spinbox_lower_right_longitude->setValue(d_extent.right());
-	spinbox_lower_right_latitude->setValue(d_extent.bottom());
+	spinbox_lower_left_longitude->setValue(d_extent.left());
+	spinbox_lower_left_latitude->setValue(d_extent.bottom());
+	spinbox_upper_right_longitude->setValue(d_extent.right());
+	spinbox_upper_right_latitude->setValue(d_extent.top());
 
 }

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -348,6 +348,12 @@ GPlatesGui::Texture::paint()
 		
 		glBindTexture(GL_TEXTURE_2D, d_texture_name);
 
+		if (d_should_be_remapped)
+		{
+			remap_texture();
+			d_should_be_remapped = false;
+		}
+
 		int i,j;
 		for (j = 0; j < NUM_STRIPS_T ; j++)
 		{
@@ -625,12 +631,7 @@ GPlatesGui::Texture::set_extent(
 	const QRectF &rect)
 {
 	d_extent = rect;
-
-	// Seeing as we've changed the extent, check if a texture is loaded. If there is, re-map it.
-	if (texture_is_loaded())
-	{
-		remap_texture();
-	}
+	d_should_be_remapped = true;
 }
 
 bool

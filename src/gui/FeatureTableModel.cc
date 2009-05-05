@@ -128,7 +128,7 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
 		if (GPlatesFeatureVisitors::get_property_value(
 				feature, plate_id_property_name, recon_plate_id))
 		{
@@ -266,7 +266,7 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref) {
-			const GPlatesPropertyValues::XsString *name;
+			const GPlatesPropertyValues::XsString *name = NULL;
 			if (GPlatesFeatureVisitors::get_property_value(
 					**weak_ref, name_property_name, name))
 			{
