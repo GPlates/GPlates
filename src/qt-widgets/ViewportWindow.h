@@ -153,14 +153,20 @@ namespace GPlatesQtWidgets
 			return *d_feature_table_model_ptr;
 		}
 
-// FIXME: REMOVE!!!
-
+// FIXME: REMOVE
         GPlatesGui::FeatureTableModel &
         sections_feature_table_model()
         {
 			return *d_feature_table_model_ptr;
         }
+// FIXME: REMOVE
 
+
+		GPlatesGui::TopologySectionsContainer &
+		topology_sections_container()
+		{
+			return *d_topology_sections_container_ptr;	
+		}
 
 
 	public slots:

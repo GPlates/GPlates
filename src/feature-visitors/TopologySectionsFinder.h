@@ -39,6 +39,7 @@
 #include <QString>
 
 #include "global/types.h"
+#include "gui/TopologySectionsContainer.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -153,6 +154,12 @@ namespace GPlatesFeatureVisitors
 		operator=(
 			const TopologySectionsFinder &);
 
+		// working row ; populated by visit_* calls
+		GPlatesGui::TopologySectionsContainer::TableRow d_working_table_row;
+		//FIXME: why does this ^^^^ line not compile?!?
+
+		// Collection of TableRows built from this features Topology data
+		std::vector<GPlatesGui::TopologySectionsContainer::TableRow> d_table_rows;
 	};
 }
 

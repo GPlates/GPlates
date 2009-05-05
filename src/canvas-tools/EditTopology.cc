@@ -51,7 +51,7 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				// GPlatesGui::FeatureTableModel &segments_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::EditTopologyWidget &plate_closure_widget,
+				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type,
 				GPlatesGui::FeatureFocus &feature_focus):
 	CanvasTool(globe_, globe_canvas_),
@@ -60,7 +60,7 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	//d_segments_table_model_ptr(&segments_table_model_),
 	d_topology_sections_container_ptr(&topology_sections_container),
-	d_plate_closure_widget_ptr(&plate_closure_widget),
+	d_edit_topology_widget_ptr(&edit_topology_widget),
 	d_default_geom_type(geom_type),
 	d_feature_focus_ptr(&feature_focus)
 {
@@ -73,7 +73,7 @@ void
 GPlatesCanvasTools::EditTopology::handle_activation()
 {
 	// FIXME:  We may have to adjust the message if we are using a Map View.
-	if (d_plate_closure_widget_ptr->geometry_type() ==
+	if (d_edit_topology_widget_ptr->geometry_type() ==
 			GPlatesQtWidgets::EditTopologyWidget::PLATEPOLYGON) {
 		d_view_state_ptr->status_message(QObject::tr(
 				"Click on features to choose segments for the boundary."
@@ -88,14 +88,14 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	d_rendered_geom_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
-	d_plate_closure_widget_ptr->activate();
+	d_edit_topology_widget_ptr->activate();
 }
 
 
 void
 GPlatesCanvasTools::EditTopology::handle_deactivation()
 {
-	d_plate_closure_widget_ptr->deactivate();
+	d_edit_topology_widget_ptr->deactivate();
 }
 
 
@@ -111,7 +111,7 @@ std::cout << "GPlatesCanvasTools::EditTopology::handle_left_click" << std::endl;
 		oriented_click_pos_on_globe);
 
 	// send the click point to the widget
-	d_plate_closure_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
+	d_edit_topology_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
 
 	//
 	// From ClickGeometry
@@ -207,7 +207,7 @@ if ( GPlatesFeatureVisitors::get_property_value( *feature_ref, name_property_nam
 
 
 	// finalize the new feature with the boundary prop value
-	d_plate_closure_widget_ptr->append_boundary_to_feature( feature_ref );
+	d_edit_topology_widget_ptr->append_boundary_to_feature( feature_ref );
 }
 
 

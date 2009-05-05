@@ -29,7 +29,8 @@
 // Some things won't compile on my branch until it gets merged to platepolygon!
 // kill this #define after the merge.
 // kill all the #ifndef NEEDS_PLATEPOLYGON_BRANCH checks after the merge -works-.
-#define NEEDS_PLATEPOLYGON_BRANCH
+
+// #define NEEDS_PLATEPOLYGON_BRANCH
 
 
 #include <QObject>

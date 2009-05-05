@@ -80,7 +80,7 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::EditTopologyWidget &plate_closure_widget,
+				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type,
 				GPlatesGui::FeatureFocus &feature_focus)
 		{
@@ -92,7 +92,7 @@ namespace GPlatesCanvasTools
 							view_state, 
 							clicked_table_model,
 							topology_sections_container,
-							plate_closure_widget, 
+							edit_topology_widget, 
 							geom_type, 
 							feature_focus),
 					GPlatesUtils::NullIntrusivePointerHandler());
@@ -145,7 +145,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				//GPlatesGui::FeatureTableModel &segments_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::EditTopologyWidget &plate_closure_widget_,
+				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type_,
 				GPlatesGui::FeatureFocus &feature_focus);
 
@@ -193,7 +193,7 @@ namespace GPlatesCanvasTools
 		 * This is the EditTopologyWidget in the Task Panel.
 		 * It accumulates points for us and handles the actual feature creation step.
 		 */
-		GPlatesQtWidgets::EditTopologyWidget *d_plate_closure_widget_ptr;
+		GPlatesQtWidgets::EditTopologyWidget *d_edit_topology_widget_ptr;
 		
 		/**
 		 * This is the type of geometry this particular EditTopology tool

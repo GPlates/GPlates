@@ -99,6 +99,9 @@ GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder(
 	d_section_ids->clear();
 	d_click_points->clear();
 	d_reverse_flags->clear();
+
+	// clear the working vector
+	d_table_rows.clear();
 }
 
 
@@ -114,6 +117,10 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_feature_handle(
 		// Quick-out: No need to continue.
 		return; 
 	}
+
+	// clear the working vector
+	d_table_rows.clear();
+
 	// else process this feature's properties:
 	visit_feature_properties(feature_handle);
 }
@@ -197,6 +204,10 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_polygon" << std::en
 	// loop over all the sections
 	for ( ; iter != end; ++iter) 
 	{
+
+		// FIXME:	
+		// GPlatesGui::TopologySectionsContainer::TableRow d_working_table_row;
+
 		d_section_ptrs->push_back( *iter );
 		(*iter)->accept_visitor(*this);
 	}

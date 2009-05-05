@@ -119,6 +119,17 @@ GPlatesQtWidgets::BuildTopologyWidget::BuildTopologyWidget(
 {
 	setupUi(this);
 
+	// 
+	//connect_to_topology_sections_container_signals( true );
+
+	// Set pointer to TopologySectionsContainer
+	d_topology_sections_container_ptr = &d_view_state_ptr->topology_sections_container();
+
+	// NOTE: another way to access 
+	//	GPlatesGui::TopologySectionsContainer &topology_sections_container =
+	//		d_view_state_ptr->topology_sections_container();
+
+	// Prepare drawing 
 	create_child_rendered_layers();
 
 	// set the internal state flags
@@ -214,6 +225,8 @@ GPlatesQtWidgets::BuildTopologyWidget::activate()
 {
 	d_is_active = true;
 
+	connect_to_topology_sections_container_signals( true );
+
 #if 0
 // FIXME: some users want the creation process to start here, upon tool activation
 
@@ -283,6 +296,34 @@ GPlatesQtWidgets::BuildTopologyWidget::connect_to_focus_signals(bool state)
 	}
 }
 
+void
+GPlatesQtWidgets::BuildTopologyWidget::connect_to_topology_sections_container_signals(bool state)
+{
+	//d_topology_sections_container_ptr = &d_view_state_ptr->topology_sections_container();
+
+	if (state) 
+	{
+		QObject::connect(
+			d_topology_sections_container_ptr,
+			SIGNAL( cleared() ),
+			this,
+			SLOT( cleared() )
+		);
+
+		QObject::connect(
+			d_topology_sections_container_ptr,
+			SIGNAL( entry_removed(
+				GPlatesGui::TopologySectionsContainer::size_type deleted_index) ),
+			this,
+			SLOT( entry_removed(
+				GPlatesGui::TopologySectionsContainer::size_type deleted_index) )
+		);
+	
+	} 
+	else 
+	{
+	}
+}
 
 void
 GPlatesQtWidgets::BuildTopologyWidget::create_child_rendered_layers()
@@ -356,12 +397,15 @@ GPlatesQtWidgets::BuildTopologyWidget::initialise_geometry(
 void
 GPlatesQtWidgets::BuildTopologyWidget::clear_widgets()
 {
+qDebug() << "BuildTopologyWidget::clear_widgets()";
 	lineedit_type->clear();
 	lineedit_name->clear();
 	lineedit_plate_id->clear();
 	lineedit_first->clear();
 	lineedit_last->clear();
 	lineedit_num_sections->clear();
+
+	d_topology_sections_container_ptr->clear();
 }
 
 // Fill some of the widgets 
@@ -435,6 +479,34 @@ GPlatesQtWidgets::BuildTopologyWidget::fill_widgets(
 // Functions called from Canvas Tool or Vieportwindow code 
 //
 
+//
+void
+GPlatesQtWidgets::BuildTopologyWidget::cleared()
+{
+	qDebug() << "BuildTopologyWidget::cleared():";
+}
+
+//
+// TopologySectionsContainer::entry_remove signals get sent here 
+//
+void
+GPlatesQtWidgets::BuildTopologyWidget::entry_removed(
+		GPlatesGui::TopologySectionsContainer::size_type deleted_index)
+{
+	if (! d_is_active) { return; }
+
+	qDebug() << "BuildTopologyWidget::entry_remove(): deleted_index = " << deleted_index;
+
+	d_visit_to_check_type = false;
+	d_visit_to_create_properties = true;
+	update_geometry();
+	d_visit_to_create_properties = false;
+
+	display_feature( 
+		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+}
+
+//
 void
 GPlatesQtWidgets::BuildTopologyWidget::set_click_point(double lat, double lon)
 {

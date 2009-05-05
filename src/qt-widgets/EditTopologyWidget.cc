@@ -740,6 +740,7 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 	GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder( 
 		d_section_ptrs, d_section_ids, d_section_click_points, d_section_reverse_flags);
 
+
 	// Visit the feature_ref, filling d_section_ vectors with data
 	feature_ref->accept_visitor( topo_sections_finder );
 
@@ -747,21 +748,29 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 	GPlatesGui::FeatureTableModel &sections_table = 
 		d_view_state_ptr->sections_feature_table_model();
 
+	GPlatesGui::TopologySectionsContainer &topology_sections_container = 
+		d_view_state_ptr->topology_sections_container();
+
 	// just to be safe, disconnect listening to feature focus while changing Section Table
 	connect_to_focus_signals( false );
 
 	// Clear the sections_table
 	sections_table.clear();
 
+	topology_sections_container.clear();
+
+// ZZZ
+
+#if 0
 	// Find this topology's ReconstructionGeometry data and insert into sections table
 	std::vector<GPlatesModel::FeatureId>::iterator section_itr = d_section_ids.begin();
 	std::vector<GPlatesModel::FeatureId>::iterator section_end = d_section_ids.end();
 	//int index = 0;
 	for ( ; section_itr != section_end; ++section_itr)
 	{
+
 		GPlatesModel::FeatureId	section_id = *section_itr;
 
-#if 0
 		// try to find this section's feature id in the reconstruction's rg map
 		GPlatesModel::Reconstruction::id_to_rfg_map_type::iterator find_iter, map_end;
 		map_end = d_view_state_ptr->reconstruction().id_to_rfg_map()->end();
@@ -775,8 +784,8 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 			sections_table.end_insert_features();
 			sections_table.sequence_changed();
 		}
-#endif
 	}
+#endif
 
 	// reconnect listening to focus signals from Topology Sections table
 	connect_to_focus_signals( true );
@@ -1225,6 +1234,7 @@ qDebug() << "EditTopologyWidget::handle_apply()";
 	// clear the tables
 	d_view_state_ptr->sections_feature_table_model().clear();
 	d_view_state_ptr->feature_table_model().clear();
+	
 
 	// clear the vertex list
 	d_topology_vertices.clear();

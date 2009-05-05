@@ -35,6 +35,8 @@
 
 #include "global/types.h"
 
+#include "gui/TopologySectionsContainer.h"
+
 #include "feature-visitors/TopologySectionsFinder.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
@@ -301,6 +303,16 @@ namespace GPlatesQtWidgets
 			const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 			bool is_on_globe);
 
+		//
+		// slots for signals from TopologySectionsContainer
+		//
+		void
+		cleared();
+
+		void
+		entry_removed(
+			GPlatesGui::TopologySectionsContainer::size_type deleted_index);
+
 
 		/**
 		 * Configures widgets to accept new geometry of a specific type.
@@ -350,6 +362,10 @@ namespace GPlatesQtWidgets
 
 		void
 		connect_to_focus_signals( bool state );
+
+		void
+		connect_to_topology_sections_container_signals( bool state );
+
 
 	private slots:
 
@@ -446,6 +462,12 @@ namespace GPlatesQtWidgets
 		 * different (A LineString with only one point?! That's unpossible.)
 		 */
 		GeometryType d_geometry_type;
+
+
+		/**
+		 * pointer to the TopologySectionsContainer in ViewportWindow.
+		*/
+		GPlatesGui::TopologySectionsContainer *d_topology_sections_container_ptr;
 
 
 		/**

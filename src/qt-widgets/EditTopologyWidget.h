@@ -35,6 +35,8 @@
 
 #include "global/types.h"
 
+#include "gui/TopologySectionsContainer.h"
+
 #include "feature-visitors/TopologySectionsFinder.h"
 
 #include "maths/GeometryOnSphere.h"
