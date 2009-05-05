@@ -49,7 +49,8 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
-				GPlatesGui::FeatureTableModel &segments_table_model_,	
+				// GPlatesGui::FeatureTableModel &segments_table_model_,	
+				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::EditTopologyWidget &plate_closure_widget,
 				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type,
 				GPlatesGui::FeatureFocus &feature_focus):
@@ -57,7 +58,8 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_view_state_ptr(&view_state_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
-	d_segments_table_model_ptr(&segments_table_model_),
+	//d_segments_table_model_ptr(&segments_table_model_),
+	d_topology_sections_container_ptr(&topology_sections_container),
 	d_plate_closure_widget_ptr(&plate_closure_widget),
 	d_default_geom_type(geom_type),
 	d_feature_focus_ptr(&feature_focus)

@@ -889,7 +889,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					*d_canvas_ptr,
 					*this,
 					*d_feature_table_model_ptr,
-					*d_sections_feature_table_model_ptr,
+					*d_topology_sections_container_ptr,
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
@@ -1206,12 +1206,13 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 void
 GPlatesQtWidgets::ViewportWindow::highlight_sections_table_clear() const
 {
-	table_view_topology_sections->selectionModel()->clear();
+//	table_view_topology_sections->selectionModel()->clear();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::highlight_sections_table_row(int i, bool state) const
 {
+#if 0
 	QModelIndex idx = d_sections_feature_table_model_ptr->index(i, 0);
 	
 	if (idx.isValid()) {
@@ -1226,6 +1227,7 @@ GPlatesQtWidgets::ViewportWindow::highlight_sections_table_row(int i, bool state
 		//	table_view_topology_sections->scrollTo(idx);
 		}
 	}
+#endif
 }
 
 

@@ -37,6 +37,7 @@
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class TopologySectionsContainer;
 }
 
 namespace GPlatesQtWidgets
@@ -92,7 +93,7 @@ namespace GPlatesGui
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				FeatureTableModel &clicked_table_model,
-				FeatureTableModel &feature_table_model_segments,
+				TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,

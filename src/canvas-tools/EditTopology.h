@@ -29,6 +29,7 @@
 #include "gui/FeatureFocus.h"
 #include "gui/CanvasTool.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/TopologySectionsContainer.h"
 #include "qt-widgets/EditTopologyWidget.h"
 
 
@@ -77,11 +78,11 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
-				GPlatesGui::FeatureTableModel &clicked_table_model_,	
-				GPlatesGui::FeatureTableModel &segments_table_model_,	
-				GPlatesQtWidgets::EditTopologyWidget &plate_closure_widget_,
-				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type_,
-				GPlatesGui::FeatureFocus &feature_focus_)
+				GPlatesGui::FeatureTableModel &clicked_table_model,	
+				GPlatesGui::TopologySectionsContainer &topology_sections_container,
+				GPlatesQtWidgets::EditTopologyWidget &plate_closure_widget,
+				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type,
+				GPlatesGui::FeatureFocus &feature_focus)
 		{
 			EditTopology::non_null_ptr_type ptr(
 					new EditTopology(
@@ -89,11 +90,11 @@ namespace GPlatesCanvasTools
 							globe, 
 							globe_canvas, 
 							view_state, 
-							clicked_table_model_,
-							segments_table_model_,
-							plate_closure_widget_, 
-							geom_type_, 
-							feature_focus_),
+							clicked_table_model,
+							topology_sections_container,
+							plate_closure_widget, 
+							geom_type, 
+							feature_focus),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -142,7 +143,8 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
-				GPlatesGui::FeatureTableModel &segments_table_model_,	
+				//GPlatesGui::FeatureTableModel &segments_table_model_,	
+				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::EditTopologyWidget &plate_closure_widget_,
 				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type_,
 				GPlatesGui::FeatureFocus &feature_focus);
@@ -160,13 +162,6 @@ namespace GPlatesCanvasTools
 			return *d_clicked_table_model_ptr;
 		}
 		
-		GPlatesGui::FeatureTableModel &
-		segments_table_model() const
-		{
-			return *d_segments_table_model_ptr;
-		}
-		
-
 	private:
 
 		/**
@@ -192,7 +187,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is the external table of selected features for the closed boundary
 		 */
-		GPlatesGui::FeatureTableModel *d_segments_table_model_ptr;
+		GPlatesGui::TopologySectionsContainer *d_topology_sections_container_ptr;
 
 		/**
 		 * This is the EditTopologyWidget in the Task Panel.
