@@ -423,6 +423,8 @@ namespace GPlatesPropertyValues
 		* for example: 
 		# "gplates_00_00_0000_Front_Polygon_Rotates_About_X_BOUNDARY_LINE_101_ 999.0_-999.0_RI_0000_000_"
 		*/
+		// FIXME:  This function is WAY too huge to be in the header.  Move it to the .cc.
+		// FIXME:  Also, make it return 'const UnicodeString' rather than 'std::string'.
 		std::string
 		old_feature_id() const
 		{
