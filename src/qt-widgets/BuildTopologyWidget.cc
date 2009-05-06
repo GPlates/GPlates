@@ -313,10 +313,10 @@ GPlatesQtWidgets::BuildTopologyWidget::connect_to_topology_sections_container_si
 		QObject::connect(
 			d_topology_sections_container_ptr,
 			SIGNAL( entry_removed(
-				TopologySectionsContainer::size_type deleted_index) ),
+				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
 			SLOT( entry_removed(
-				TopologySectionsContainer::size_type deleted_index) )
+				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
 	
 	} 

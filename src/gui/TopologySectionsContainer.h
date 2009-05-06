@@ -296,7 +296,7 @@ namespace GPlatesGui
 		 */
 		void
 		entry_removed(
-				TopologySectionsContainer::size_type deleted_index);
+				GPlatesGui::TopologySectionsContainer::size_type deleted_index);
 
 		/**
 		 * Emitted whenever a entry has been inserted into the container.
