@@ -30,7 +30,7 @@
 // kill this #define after the merge.
 // kill all the #ifndef NEEDS_PLATEPOLYGON_BRANCH checks after the merge -works-.
 
-// #define NEEDS_PLATEPOLYGON_BRANCH
+#define NEEDS_PLATEPOLYGON_BRANCH
 
 
 #include <QObject>
@@ -111,7 +111,7 @@ namespace GPlatesGui
 			 * Used as a reference point to aid the intersection algorithm.
 			 * Coords are present-day.
 			 */
-			GPlatesMaths::LatLonPoint d_click_point;
+			boost::optional<GPlatesMaths::LatLonPoint> d_click_point;
 
 			/**
 			 * Whether this topology section should be used in reverse.
