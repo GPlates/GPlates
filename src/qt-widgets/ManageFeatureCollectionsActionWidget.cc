@@ -62,10 +62,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state()
 	// Disable specific buttons for specific formats.
 	switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
 	{
-	case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-			// Disable save in-place button for formats we can't write yet.
-			button_save->setDisabled(true);
-			break;
 			
 	case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
 			// Disable reload button for formats we can't read yet.
@@ -74,7 +70,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state()
 			// So the reload button makes no sense.)
 			button_reload->setDisabled(true);
 			break;
-			
+
 	default:
 			break;
 	}

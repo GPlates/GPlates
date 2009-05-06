@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 Geological Survey of Norway
+ * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -27,16 +27,19 @@
 
 #include <fstream>
 #include <boost/optional.hpp>
+#include <QDebug>
 #include <QMessageBox>
 #include <QString>
 #include <QStringList>
 #include <QVariant>
 
+#include "ErrorOpeningFileForReadingException.h"
 #include "PropertyMapper.h"
-#include "ShapeFileReader.h"
+#include "ShapefileReader.h"
+#include "ShapefileUtils.h"
 #include "ShapefileXmlReader.h"
-#include "ShapefileXmlWriter.h"
 
+#include "feature-visitors/PropertyValueFinder.h" 
 #include "feature-visitors/ShapefileAttributeFinder.h"
 
 #include "model/Model.h"
@@ -64,16 +67,97 @@
 
 #include "qt-widgets/ShapefilePropertyMapper.h"
 
-#include "ErrorOpeningFileForReadingException.h"
 
-boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapeFileReader::s_property_mapper;
 
-QMap<QString,QString> GPlatesFileIO::ShapeFileReader::s_model_to_attribute_map;
+boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapefileReader::s_property_mapper;
 
-QStringList GPlatesFileIO::ShapeFileReader::s_field_names;
+QMap<QString,QString> GPlatesFileIO::ShapefileReader::s_model_to_attribute_map;
+
+QStringList GPlatesFileIO::ShapefileReader::s_field_names;
 	
 namespace
 {
+	/**
+	 * Creates a gml line string from @a list_of_points and adds this to @a feature_handle.                                                                 
+	 */
+	void
+	add_polyline_geometry_to_feature(
+		GPlatesModel::FeatureHandle::weak_ref feature_handle,
+		std::list<GPlatesMaths::PointOnSphere> &list_of_points)
+	{
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
+			GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
+
+		GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
+			GPlatesPropertyValues::GmlLineString::create(polyline);
+
+		GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
+			GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
+
+		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
+			GPlatesModel::ModelUtils::create_gpml_constant_value(
+			gml_orientable_curve, 
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
+
+		GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
+			//					GPlatesModel::PropertyName::create_gpml("centerLineOf"), feature_handle);
+			GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"), feature_handle);
+
+	}
+
+	/**
+	* Creates a gml polygon from @a list_of_points and adds this to @a feature_handle.                                                                 
+	*/
+	void
+	add_polygon_geometry_to_feature(
+		GPlatesModel::FeatureHandle::weak_ref feature_handle,
+		std::list<GPlatesMaths::PointOnSphere> &list_of_points)
+	{
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon =
+			GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
+
+		GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon =
+			GPlatesPropertyValues::GmlPolygon::create(polygon);
+
+
+		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
+			GPlatesModel::ModelUtils::create_gpml_constant_value(
+			gml_polygon, 
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon"));
+
+		// Anything that's got a polygon geometry is going to get an "unclassifiedGeometry" property name. 
+		GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
+			GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"), feature_handle);
+
+	}
+
+	/**
+	 * Creates a feature of type specified in @a feature_creation_pair, and adds it to @a collection. 
+	 *
+	 * @return a feature handle to the created feature. 
+	 */
+	GPlatesModel::FeatureHandle::weak_ref
+		create_feature(
+		GPlatesModel::ModelInterface &model,
+		GPlatesModel::FeatureCollectionHandle::weak_ref collection,
+		QString &feature_type_qstring)
+	{
+
+
+		GPlatesModel::FeatureType feature_type = 
+			GPlatesModel::FeatureType::create_gpml(feature_type_qstring);
+
+		GPlatesModel::FeatureHandle::weak_ref feature_handle =
+			model->create_feature(feature_type,collection);
+
+		return feature_handle;
+	}
+
+	/**
+	 * Returns a QVariant representing the @a shapefile_property_name from the 
+	 * @a feature_handle's shapefile-attribute key-value-dictionary.
+	 * 
+	 */
 	QVariant
 	get_qvariant_from_finder(
 		QString shapefile_property_name,
@@ -152,6 +236,14 @@ namespace
 			feature_handle);
 	}
 
+	/**
+	 * Removes properties with the property names:
+	 *		reconstructionPlateId,
+	 *		validTime,
+	 *		description  and
+	 *		name
+	 *	from the feature given by @a feature_handle.
+	 */
 	void
 	remove_old_properties(
 		GPlatesModel::FeatureHandle::weak_ref feature_handle)
@@ -189,8 +281,10 @@ namespace
 	}
 
 		
-
-
+	/** 
+	 * Uses the @a model_to_attribute_map to create model properties from the 
+	 * @a feature_handle's shapefile-attributes key-value-dictionary.
+	 */ 
 	void
 	map_attributes_to_properties(
 		GPlatesModel::FeatureHandle::weak_ref feature_handle,
@@ -287,11 +381,13 @@ namespace
 		if (age_of_appearance && age_of_disappearance){
 			append_geo_time_to_feature(feature_handle,*age_of_appearance,*age_of_disappearance);
 		}
-
-
-
 	}
 
+	/**
+	 * Uses the @a model_to_attribute_map to create model properties from the 
+	 * shapefile-attributes key-value-dictionary, for each feature in @a file_info's 
+	 * feature collection. 
+	 */
 	void
 	remap_feature_collection(
 		GPlatesFileIO::FileInfo file_info,
@@ -320,23 +416,9 @@ namespace
 		} 
 	}
 
-
 	/**
-	 * Given a shapefile name in the form <name>.shp , this will produce a filename of the form
-	 * <name>.gplates.xml
-	 */
-	QString
-	make_shapefile_xml_filename(
-		QFileInfo file_info)
-	{
-
-		QString shapefile_xml_filename = file_info.absoluteFilePath() + ".gplates.xml";
-
-		return shapefile_xml_filename;
-	}
-
-	/**
-	 * Fills the QMap<QString,QString> from the given xml file. 
+	 * Fills the QMap<QString,QString> @a model_to_attribute_map from the given xml file
+	 * @a filename.
 	 */
 	bool
 	fill_attribute_map_from_xml_file(
@@ -381,23 +463,6 @@ namespace
 		return (mapper->map_properties(filename,field_names,model_to_attribute_map,remapping));
 	}
 
-	/**
-	 * Writes the data in the QMap<QString,QString> to an xml file.
-	 */
-	void
-	save_attribute_map_as_xml_file(
-		QString filename,
-		QMap<QString,QString> &model_to_attribute_map)
-	{
-		GPlatesFileIO::ShapefileXmlWriter writer;
-		if (!writer.write_file(filename,&model_to_attribute_map))
-		{
-			QMessageBox::warning(0,QObject::tr("ShapefileXmlWriter"),
-				QObject::tr("Cannot write to file %1.")
-					.arg(filename));
-		};
-	}
-
 
 	/**
 	 * This function is intended to replace the OGR macro 'wkbFlatten'.
@@ -423,78 +488,10 @@ namespace
 		// unintended expression evaluation and all.
 		return static_cast<OGRwkbGeometryType>(type & (~wkb25DBit));
 	}
-
-
-	typedef std::map<QString, std::pair<QString,QString> > feature_map_type;
-	typedef feature_map_type::const_iterator feature_map_const_iterator;
-
-	const feature_map_type &
-	build_feature_map()
-	{
-
-		// The data for the following map has been taken from 
-		// 1. (feature-type-to-two-letter-code) The "build_feature_map_type" map in PlatesLineFormatReader.cc 
-		// 2. (geometry-type-to-feature-type) The various "create_*" functions in PlatesLinesFormatReader.cc
-		//
-		// FIXME: we should get this information from a common source, rather than having two independent sources.  
-		static feature_map_type map;
-		map["AR"] = std::make_pair("AseismicRidge","centerLineOf");
-		map["BA"] = std::make_pair("Bathymetry","centerLineOf");
-		map["BS"] = std::make_pair("Basin","outlineOf");
-		map["CB"] = std::make_pair("PassiveContinentalBoundary","centerLineOf");
-		map["CF"] = std::make_pair("ContinentalFragment","outlineOf");
-		map["CM"] = std::make_pair("PassiveConinentalBoundary","centerLineOf");
-		map["CO"] = std::make_pair("PassiveContinentalBoundary","centerLineOf");
-		map["CR"] = std::make_pair("Craton","outlineOf");
-		map["CS"] = std::make_pair("Coastline","centerLineOf");
-		map["EC"] = std::make_pair("ExtendedContinentalCrust","centerLineOf");
-		map["FT"] = std::make_pair("Fault","centerLineOf");
-		map["FZ"] = std::make_pair("FractureZone","centerLineOf");
-		map["GR"] = std::make_pair("OldPlatesGridMark","centerLineOf");
-		map["GV"] = std::make_pair("Gravimetry","outlineOf");
-		map["HF"] = std::make_pair("HeatFlow","outlineOf");
-		map["HS"] = std::make_pair("HotSpot","position");
-		map["HT"] = std::make_pair("HotSpotTrail","unclassifiedGeometry");
-		map["IA"] = std::make_pair("IslandArc","outlineOf");
-		map["IC"] = std::make_pair("Isochron","centerLineOf");
-		map["IM"] = std::make_pair("Isochron","centerLineOf");
-		map["IP"] = std::make_pair("SedimentThickness","outlineOf");
-		map["IR"] = std::make_pair("IslandArc","centerLineOf");
-		map["IS"] = std::make_pair("UnclassifiedFeature","centerLineOf");
-		map["LI"] = std::make_pair("GeologicalLineation","centerLineOf");
-		map["MA"] = std::make_pair("Magnetics","outlineOf");
-		map["NF"] = std::make_pair("gpmlFault","centerLineOf");
-		map["OB"] = std::make_pair("OrogenicBelt","centerLineOf");
-		map["OP"] = std::make_pair("BasicRockUnit","outlineOf");
-		map["OR"] = std::make_pair("OrogenicBelt","centerLineOf");
-		map["PB"] = std::make_pair("InferredPaleoBoundary","centerLineOf");
-		map["PC"] = std::make_pair("MagneticAnomalyIdentification","position");
-		map["PM"] = std::make_pair("MagneticAnomalyIdentification","position");
-		map["RA"] = std::make_pair("IslandArc","centerLineOf");
-		map["RF"] = std::make_pair("Fault","centerLineOf");
-		map["RI"] = std::make_pair("MidOceanRidge","centerLineOf");
-		map["SM"] = std::make_pair("Seamount","unclassifiedGeometry");
-		map["SS"] = std::make_pair("Fault","centerLineOf");
-		map["SU"] = std::make_pair("Suture","centerLineOf");
-		map["TB"] = std::make_pair("TerraneBoundary","centerLineOf");
-		map["TC"] = std::make_pair("TransitionalCrust","outlineOf");
-		map["TF"] = std::make_pair("Transform","centerLineOf");
-		map["TH"] = std::make_pair("Fault","centerLineOf");
-		map["TO"] = std::make_pair("Topography","outlineOf");
-		map["TR"] = std::make_pair("SubductionZone","centerLineOf");
-		map["UN"] = std::make_pair("UnclassifiedFeature","unclassifiedGeometry");
-		map["VO"] = std::make_pair("Volcano","unclassifiedGeometry");
-		map["VP"] = std::make_pair("LargeIgneousProvince","outlineOf");
-		map["XR"] = std::make_pair("MidOceanRidge","centerLineOf");
-		map["XT"] = std::make_pair("SubductionZone","centerLineOf");
-
-		return map;
-	}
-
 }
 
 
-GPlatesFileIO::ShapeFileReader::ShapeFileReader():
+GPlatesFileIO::ShapefileReader::ShapefileReader():
 	d_num_layers(0),
 	d_data_source_ptr(NULL),
 	d_geometry_ptr(NULL),
@@ -507,11 +504,10 @@ GPlatesFileIO::ShapeFileReader::ShapeFileReader():
 	OGRRegisterAll();
 }
 
-GPlatesFileIO::ShapeFileReader::~ShapeFileReader()
+GPlatesFileIO::ShapefileReader::~ShapefileReader()
 {
 	try {
-		if(d_data_source_ptr){
-			OGRDataSource::DestroyDataSource(d_data_source_ptr);
+		if(d_data_source_ptr){OGRDataSource::DestroyDataSource(d_data_source_ptr);
 		}
 	}
 	catch (...) {
@@ -520,7 +516,7 @@ GPlatesFileIO::ShapeFileReader::~ShapeFileReader()
 
 
 bool
-GPlatesFileIO::ShapeFileReader::check_file_format(
+GPlatesFileIO::ShapefileReader::check_file_format(
 	ReadErrorAccumulation &read_error)
 {
 	if (!d_data_source_ptr){
@@ -545,6 +541,7 @@ GPlatesFileIO::ShapeFileReader::check_file_format(
 
 		return false;
 	}
+
 	if (d_num_layers > 1){
 		read_error.d_warnings.push_back(
 			GPlatesFileIO::ReadErrorOccurrence(
@@ -579,6 +576,9 @@ GPlatesFileIO::ShapeFileReader::check_file_format(
 
 	d_geometry_ptr = d_feature_ptr->GetGeometryRef();
 	if (d_geometry_ptr == NULL){
+
+		qDebug() << "Null Geometry Ref";
+
 		read_error.d_failures_to_begin.push_back(
 			GPlatesFileIO::ReadErrorOccurrence(
 				e_source,
@@ -606,7 +606,7 @@ GPlatesFileIO::ShapeFileReader::check_file_format(
 }
 
 bool
-GPlatesFileIO::ShapeFileReader::open_file(
+GPlatesFileIO::ShapefileReader::open_file(
 		const QString &filename)
 {
 
@@ -623,7 +623,7 @@ GPlatesFileIO::ShapeFileReader::open_file(
 
 
 void
-GPlatesFileIO::ShapeFileReader::read_features(
+GPlatesFileIO::ShapefileReader::read_features(
 	GPlatesModel::ModelInterface &model,
 	GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	ReadErrorAccumulation &read_errors)
@@ -636,15 +636,18 @@ GPlatesFileIO::ShapeFileReader::read_features(
 
 	d_total_features = d_layer_ptr->GetFeatureCount();
 
-	int feature_number = 0; // for error reporting.
+	int feature_number = 0; // For error reporting.
 
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
 		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
 
-	static const feature_map_type &feature_map = build_feature_map();
+	static const ShapefileUtils::feature_map_type &feature_map = ShapefileUtils::build_feature_map();
+
+	d_feature_type = "UnclassifiedFeature";
+#if 0
 	d_feature_creation_pair = std::make_pair("UnclassifiedFeature",
 			"unclassifiedGeometry");
-
+#endif
 	while ((d_feature_ptr = d_layer_ptr->GetNextFeature()) != NULL){
 	
 		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
@@ -679,9 +682,10 @@ GPlatesFileIO::ShapeFileReader::read_features(
 
 				QString feature_string = d_attributes[index].toString();
 
-				feature_map_const_iterator result = feature_map.find(feature_string);
+				ShapefileUtils::feature_map_const_iterator result = feature_map.find(feature_string);
 				if (result != feature_map.end()) {
-					d_feature_creation_pair = result->second;
+				//	d_feature_creation_pair = result->second;
+					d_feature_type = *result;
 				} else {
 					read_errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(e_source, e_location, 
 					GPlatesFileIO::ReadErrors::UnrecognisedShapefileFeatureType,
@@ -742,14 +746,14 @@ GPlatesFileIO::ShapeFileReader::read_features(
 }
 
 GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapeFileReader::create_polygon_feature_from_list(
+GPlatesFileIO::ShapefileReader::create_polygon_feature_from_list(
 	GPlatesModel::ModelInterface &model,
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
 
 	GPlatesModel::FeatureType feature_type = 
-		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
+		GPlatesModel::FeatureType::create_gpml(d_feature_type);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model->create_feature(feature_type,collection);
@@ -765,10 +769,8 @@ GPlatesFileIO::ShapeFileReader::create_polygon_feature_from_list(
 							gml_polygon, 
 							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon"));
 
-	// Anything that's got a polygon geometry is going to get an "outlineOf" property name. 
-	// What happens if the feature type expects a different geometry type?
+	// Anything that's got a polygon geometry is going to get an "unclassifiedGeometry" property name. 
 	GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-//		GPlatesModel::PropertyName::create_gpml("outlineOf"), feature_handle);
 		GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"), feature_handle);
 
 	return feature_handle;
@@ -776,14 +778,15 @@ GPlatesFileIO::ShapeFileReader::create_polygon_feature_from_list(
 }
 
 GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapeFileReader::create_line_feature_from_list(
+GPlatesFileIO::ShapefileReader::create_line_feature_from_list(
 	GPlatesModel::ModelInterface &model,
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
-
+	//	GPlatesModel::FeatureType feature_type = 
+	//		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
 	GPlatesModel::FeatureType feature_type = 
-		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
+		GPlatesModel::FeatureType::create_gpml(d_feature_type);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model->create_feature(feature_type,collection);
@@ -802,7 +805,6 @@ GPlatesFileIO::ShapeFileReader::create_line_feature_from_list(
 							gml_orientable_curve, 
 							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
 
-	// Anything with a polyline geometry is going to get a "centerLineOf" property name. 
 	GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
 //					GPlatesModel::PropertyName::create_gpml("centerLineOf"), feature_handle);
 					GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"), feature_handle);
@@ -812,13 +814,15 @@ GPlatesFileIO::ShapeFileReader::create_line_feature_from_list(
 
 
 GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapeFileReader::create_point_feature_from_pair(
+GPlatesFileIO::ShapefileReader::create_point_feature_from_pair(
 	GPlatesModel::ModelInterface &model, 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection, 
 	std::pair<double,double> &point)
 {
+	//	GPlatesModel::FeatureType feature_type = 
+	//		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
 	GPlatesModel::FeatureType feature_type = 
-		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
+		GPlatesModel::FeatureType::create_gpml(d_feature_type);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model->create_feature(feature_type,collection);
@@ -841,14 +845,16 @@ GPlatesFileIO::ShapeFileReader::create_point_feature_from_pair(
 
 
 GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapeFileReader::create_point_feature_from_point_on_sphere(
+GPlatesFileIO::ShapefileReader::create_point_feature_from_point_on_sphere(
 	GPlatesModel::ModelInterface &model, 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection, 
 	GPlatesMaths::PointOnSphere &point)
 {
 
-	GPlatesModel::FeatureType feature_type =
-		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
+	//	GPlatesModel::FeatureType feature_type = 
+	//		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
+	GPlatesModel::FeatureType feature_type = 
+		GPlatesModel::FeatureType::create_gpml(d_feature_type);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model->create_feature(feature_type,collection);
@@ -871,14 +877,16 @@ GPlatesFileIO::ShapeFileReader::create_point_feature_from_point_on_sphere(
 }
 
 GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapeFileReader::create_multi_point_feature_from_list(
+GPlatesFileIO::ShapefileReader::create_multi_point_feature_from_list(
 	GPlatesModel::ModelInterface &model,
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
 
-	GPlatesModel::FeatureType feature_type =
-		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
+	//	GPlatesModel::FeatureType feature_type = 
+	//		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
+	GPlatesModel::FeatureType feature_type = 
+		GPlatesModel::FeatureType::create_gpml(d_feature_type);
 
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
 			model->create_feature(feature_type,collection);
@@ -902,7 +910,7 @@ GPlatesFileIO::ShapeFileReader::create_multi_point_feature_from_list(
 }
 
 void 
-GPlatesFileIO::ShapeFileReader::get_field_names(
+GPlatesFileIO::ShapefileReader::get_field_names(
 	ReadErrorAccumulation &read_errors)
 {
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
@@ -927,7 +935,7 @@ GPlatesFileIO::ShapeFileReader::get_field_names(
 }
 
 void 
-GPlatesFileIO::ShapeFileReader::get_attributes()
+GPlatesFileIO::ShapefileReader::get_attributes()
 {
 	d_attributes.clear();
 	if (!d_feature_ptr){
@@ -967,7 +975,7 @@ GPlatesFileIO::ShapeFileReader::get_attributes()
 }
 
 void
-GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
+GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 	GPlatesModel::FeatureHandle::weak_ref feature_handle,
 	GPlatesFileIO::ReadErrorAccumulation &read_errors,
 	const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -981,6 +989,13 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 	// Create a key-value dictionary. This is empty and needs to have elements pushed back onto its d_elements vector. 
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
 		GPlatesPropertyValues::GpmlKeyValueDictionary::create();
+
+	// If for any reason we've found more attributes than we have field names, only 
+	// go as far as the number of field names. 
+	if (n > s_field_names.size())
+	{
+		n = s_field_names.size();
+	}
 
 	for (int count = 0; count < n ; count++){
 		QString fieldname = s_field_names[count];
@@ -1050,7 +1065,7 @@ GPlatesFileIO::ShapeFileReader::add_attributes_to_feature(
 
 
 bool
-GPlatesFileIO::ShapeFileReader::is_valid_shape_data(
+GPlatesFileIO::ShapefileReader::is_valid_shape_data(
 		double lat,
 		double lon,
 		ReadErrorAccumulation &read_errors,
@@ -1101,7 +1116,7 @@ GPlatesFileIO::ShapeFileReader::is_valid_shape_data(
 }
 
 void
-GPlatesFileIO::ShapeFileReader::read_file(
+GPlatesFileIO::ShapefileReader::read_file(
 		FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
@@ -1109,7 +1124,7 @@ GPlatesFileIO::ShapeFileReader::read_file(
 	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
-	ShapeFileReader reader;
+	ShapefileReader reader;
 	if (!reader.open_file(absolute_path_filename)){
 		throw ErrorOpeningFileForReadingException(filename);
 	}
@@ -1119,7 +1134,7 @@ GPlatesFileIO::ShapeFileReader::read_file(
 	}
 	reader.get_field_names(read_errors);
 
-	QString shapefile_xml_filename = make_shapefile_xml_filename(fileinfo.get_qfileinfo());
+	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(fileinfo.get_qfileinfo());
 
 	s_model_to_attribute_map.clear();
 
@@ -1131,8 +1146,11 @@ GPlatesFileIO::ShapeFileReader::read_file(
 			// The user has cancelled the mapper-dialog routine, so cancel the whole shapefile loading procedure.
 			return;
 		}
-		save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
+		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
 	}
+
+	// Store the map in the feature collection's file-info
+	fileinfo.set_model_to_shapefile_map(s_model_to_attribute_map);
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
 		= model->create_feature_collection();
@@ -1147,7 +1165,7 @@ GPlatesFileIO::ShapeFileReader::read_file(
 }
 
 void
-GPlatesFileIO::ShapeFileReader::set_property_mapper(
+GPlatesFileIO::ShapefileReader::set_property_mapper(
 	boost::shared_ptr< PropertyMapper > property_mapper)
 {
 	s_property_mapper = property_mapper;
@@ -1155,7 +1173,7 @@ GPlatesFileIO::ShapeFileReader::set_property_mapper(
 
 
 void
-GPlatesFileIO::ShapeFileReader::handle_point(
+GPlatesFileIO::ShapefileReader::handle_point(
 		GPlatesModel::ModelInterface &model,
 		GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 		ReadErrorAccumulation &read_errors,
@@ -1190,7 +1208,7 @@ GPlatesFileIO::ShapeFileReader::handle_point(
 }
 
 void
-GPlatesFileIO::ShapeFileReader::handle_multi_point(
+GPlatesFileIO::ShapefileReader::handle_multi_point(
 			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 			ReadErrorAccumulation &read_errors,
@@ -1238,7 +1256,7 @@ GPlatesFileIO::ShapeFileReader::handle_multi_point(
 }
 
 void
-GPlatesFileIO::ShapeFileReader::handle_linestring(
+GPlatesFileIO::ShapefileReader::handle_linestring(
 			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 			ReadErrorAccumulation &read_errors,
@@ -1292,69 +1310,80 @@ GPlatesFileIO::ShapeFileReader::handle_linestring(
 }
 
 void
-GPlatesFileIO::ShapeFileReader::handle_multi_linestring(
+GPlatesFileIO::ShapefileReader::handle_multi_linestring(
 			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
 {
-		OGRMultiLineString *multi = static_cast<OGRMultiLineString*>(d_geometry_ptr);
-		int num_geometries = multi->getNumGeometries();
-		d_total_geometries += num_geometries;
-		for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
 
-			std::list<GPlatesMaths::PointOnSphere> feature_points;
-			OGRLineString *linestring = static_cast<OGRLineString*>(multi->getGeometryRef(multiCount));
+	OGRMultiLineString *multi = static_cast<OGRMultiLineString*>(d_geometry_ptr);
+	int num_geometries = multi->getNumGeometries();
+	d_total_geometries += num_geometries;
+
+#if 0
+	qDebug() << "handle_multi_linestring";
+	qDebug() << "num geometries: " << num_geometries;
+#endif
 		
-			int num_points = linestring->getNumPoints();
-			if (num_points < 2){	
+	GPlatesModel::FeatureHandle::weak_ref feature_handle = create_feature(model,collection,d_feature_type);				
+	add_attributes_to_feature(feature_handle,read_errors,source,location);	
+
+	for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
+
+		std::list<GPlatesMaths::PointOnSphere> feature_points;
+		OGRLineString *linestring = static_cast<OGRLineString*>(multi->getGeometryRef(multiCount));
+
+		int num_points = linestring->getNumPoints();
+		if (num_points < 2){	
+			// FIXME: May want to treat this as a warning, and accept the single-point line. 
+			read_errors.d_recoverable_errors.push_back(
+				GPlatesFileIO::ReadErrorOccurrence(
+				source,
+				location,
+				GPlatesFileIO::ReadErrors::LessThanTwoPointsInLineString,
+				GPlatesFileIO::ReadErrors::GeometryIgnored));
+			continue;
+		}
+		int count;
+		double lon,lat;
+
+		for (count = 0; count < num_points; count++){
+			lon = linestring->getX(count);
+			lat = linestring->getY(count);
+			if (is_valid_shape_data(lat,lon,read_errors,source,location)){
+				GPlatesMaths::LatLonPoint llp(lat,lon);
+				feature_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
+			}
+			else{
+				feature_points.clear();
+				break;
+			}
+		}
+
+		if (!feature_points.empty())
+		{
+			try {
+				add_polyline_geometry_to_feature(feature_handle,feature_points);
+				d_loaded_geometries++;
+			}
+			catch (...)
+			{
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
-							source,
-							location,
-							GPlatesFileIO::ReadErrors::LessThanTwoPointsInLineString,
-							GPlatesFileIO::ReadErrors::GeometryIgnored));
-				continue;
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
+					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
-			int count;
-			double lon,lat;
-	
-			for (count = 0; count < num_points; count++){
-				lon = linestring->getX(count);
-				lat = linestring->getY(count);
-				if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-					GPlatesMaths::LatLonPoint llp(lat,lon);
-					feature_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
-				}
-				else{
-					feature_points.clear();
-					break;
-				}
-			}
-
-			if (!feature_points.empty())
-			{
-				try {
-					GPlatesModel::FeatureHandle::weak_ref feature_handle = create_line_feature_from_list(model,collection,feature_points);				
-					add_attributes_to_feature(feature_handle,read_errors,source,location);
-					d_loaded_geometries++;
-				}
-				catch (...)
-				{
-					read_errors.d_recoverable_errors.push_back(
-						GPlatesFileIO::ReadErrorOccurrence(
-							source,
-							location,
-							GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
-							GPlatesFileIO::ReadErrors::GeometryIgnored));
-				}
-			}
-		} // for loop over multilines
+		}
+	} // for loop over multilines
 }
 
+
 void
-GPlatesFileIO::ShapeFileReader::handle_polygon(
+GPlatesFileIO::ShapefileReader::handle_polygon(
 			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref collection,
 			ReadErrorAccumulation &read_errors,
@@ -1368,12 +1397,25 @@ GPlatesFileIO::ShapeFileReader::handle_polygon(
 	OGRLinearRing *ring = polygon->getExteriorRing();
 	add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
-	// polygon geometries are stored in the model as linestrings
-	// Not any more! Now we have polygons... For now, all the rings will be stored as separate polygons. 
+	GPlatesModel::FeatureHandle::weak_ref feature_handle = create_feature(model,collection,d_feature_type);				
+	add_attributes_to_feature(feature_handle,read_errors,source,location);	
 
 	if (!feature_points.empty()){
-		GPlatesModel::FeatureHandle::weak_ref feature_handle = create_polygon_feature_from_list(model,collection,feature_points);				
-		add_attributes_to_feature(feature_handle,read_errors,source,location);
+		try {
+			add_polygon_geometry_to_feature(feature_handle,feature_points);
+			d_loaded_geometries++;
+			d_loaded_geometries++;
+		}
+		catch (...)
+		{
+			read_errors.d_recoverable_errors.push_back(
+				GPlatesFileIO::ReadErrorOccurrence(
+				source,
+				location,
+				GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+				GPlatesFileIO::ReadErrors::GeometryIgnored));
+		}
+
 		d_loaded_geometries++;
 	}
 
@@ -1391,10 +1433,54 @@ GPlatesFileIO::ShapeFileReader::handle_polygon(
 		add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
 		if (!feature_points.empty()){
-
 			try {
-				GPlatesModel::FeatureHandle::weak_ref feature_handle = create_polygon_feature_from_list(model,collection,feature_points);				
-				add_attributes_to_feature(feature_handle,read_errors,source,location);
+				add_polygon_geometry_to_feature(feature_handle,feature_points);
+				d_loaded_geometries++;
+			}
+			catch (...)
+			{
+				read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+					GPlatesFileIO::ReadErrors::GeometryIgnored));
+			}
+		}
+
+	} // loop over interior rings
+
+}
+
+void
+GPlatesFileIO::ShapefileReader::handle_multi_polygon(
+			GPlatesModel::ModelInterface &model,
+			GPlatesModel::FeatureCollectionHandle::weak_ref collection,
+			ReadErrorAccumulation &read_errors,
+			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
+			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
+{
+	//std::cerr << "Multi-polygon" << std::endl;
+	OGRMultiPolygon *multi = static_cast<OGRMultiPolygon*>(d_geometry_ptr);
+	int num_geometries = multi->getNumGeometries();
+
+	GPlatesModel::FeatureHandle::weak_ref feature_handle = create_feature(model,collection,d_feature_type);				
+	add_attributes_to_feature(feature_handle,read_errors,source,location);	
+
+	d_total_geometries += num_geometries;
+
+	for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
+		//std::cerr << "Polygon number: " << multiCount << std::endl;
+		std::list<GPlatesMaths::PointOnSphere> feature_points;
+		OGRPolygon *polygon = static_cast<OGRPolygon*>(multi->getGeometryRef(multiCount));
+
+		OGRLinearRing *ring = polygon->getExteriorRing();
+
+		add_ring_to_points_list(ring,feature_points,read_errors,source,location);
+
+		if (!feature_points.empty()){
+			try {	
+				add_polygon_geometry_to_feature(feature_handle,feature_points);
 				d_loaded_geometries++;
 			}
 			catch (...)
@@ -1406,38 +1492,6 @@ GPlatesFileIO::ShapeFileReader::handle_polygon(
 							GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
 							GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
-		}
-
-	} // loop over interior rings
-
-}
-
-void
-GPlatesFileIO::ShapeFileReader::handle_multi_polygon(
-			GPlatesModel::ModelInterface &model,
-			GPlatesModel::FeatureCollectionHandle::weak_ref collection,
-			ReadErrorAccumulation &read_errors,
-			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
-			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
-{
-	//std::cerr << "Multi-polygon" << std::endl;
-	OGRMultiPolygon *multi = static_cast<OGRMultiPolygon*>(d_geometry_ptr);
-	int num_geometries = multi->getNumGeometries();
-
-	d_total_geometries += num_geometries;
-	for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
-		//std::cerr << "Polygon number: " << multiCount << std::endl;
-		std::list<GPlatesMaths::PointOnSphere> feature_points;
-		OGRPolygon *polygon = static_cast<OGRPolygon*>(multi->getGeometryRef(multiCount));
-
-		OGRLinearRing *ring = polygon->getExteriorRing();
-
-		add_ring_to_points_list(ring,feature_points,read_errors,source,location);
-
-		if (!feature_points.empty()){
-			GPlatesModel::FeatureHandle::weak_ref feature_handle = create_polygon_feature_from_list(model,collection,feature_points);				
-			add_attributes_to_feature(feature_handle,read_errors,source,location);
-			d_loaded_geometries++;
 		}
 
 		int num_interior_rings = polygon->getNumInteriorRings();
@@ -1452,9 +1506,19 @@ GPlatesFileIO::ShapeFileReader::handle_multi_polygon(
 			add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
 			if (!feature_points.empty()){
-				GPlatesModel::FeatureHandle::weak_ref feature_handle = create_polygon_feature_from_list(model,collection,feature_points);				
-				add_attributes_to_feature(feature_handle,read_errors,source,location);
-				d_loaded_geometries++;
+				try {
+					add_polygon_geometry_to_feature(feature_handle,feature_points);
+					d_loaded_geometries++;
+				}
+				catch (...)
+				{
+					read_errors.d_recoverable_errors.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+				}
 			}
 
 		} // loop over interior rings
@@ -1463,7 +1527,7 @@ GPlatesFileIO::ShapeFileReader::handle_multi_polygon(
 }
 
 void
-GPlatesFileIO::ShapeFileReader::display_feature_counts()
+GPlatesFileIO::ShapefileReader::display_feature_counts()
 {
 
 	std::cerr << "feature/geometry count: " <<
@@ -1475,13 +1539,19 @@ GPlatesFileIO::ShapeFileReader::display_feature_counts()
 
 
 void
-GPlatesFileIO::ShapeFileReader::add_ring_to_points_list(
+GPlatesFileIO::ShapefileReader::add_ring_to_points_list(
 	OGRLinearRing *ring, 
 	std::list<GPlatesMaths::PointOnSphere> &feature_points,
 	ReadErrorAccumulation &read_errors,
 	const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 	const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
 {
+	// Make sure we have a valid ring.
+	if (ring == NULL)
+	{
+		return;
+	}
+
 	int num_points;
 	int count;
 	double lat,lon; 
@@ -1521,7 +1591,7 @@ GPlatesFileIO::ShapeFileReader::add_ring_to_points_list(
 }
 
 void
-GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(
+GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
 	GPlatesFileIO::FileInfo &fileinfo,
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)
@@ -1529,7 +1599,7 @@ GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(
 	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
-	ShapeFileReader reader;
+	ShapefileReader reader;
 	if (!reader.open_file(absolute_path_filename)){
 		throw ErrorOpeningFileForReadingException(filename);
 	}
@@ -1540,7 +1610,7 @@ GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(
 
 	reader.get_field_names(read_errors);
 
-	QString shapefile_xml_filename = make_shapefile_xml_filename(fileinfo.get_qfileinfo());
+	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(fileinfo.get_qfileinfo());
 
 	s_model_to_attribute_map.clear();
 
@@ -1552,7 +1622,9 @@ GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(
 		// The user has cancelled the mapper-dialog, so cancel the whole shapefile re-mapping procedure.
 		return;
 	}
-	save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
+	ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
+
+	fileinfo.set_model_to_shapefile_map(s_model_to_attribute_map);
 
 	if (fileinfo.get_feature_collection())
 	{

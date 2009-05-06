@@ -47,6 +47,9 @@ set(srcs
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
     LineReader.h
+    OgrException.h
+    OgrWriter.cc
+    OgrWriter.h
     PlatesLineFormatGeometryExporter.cc
     PlatesLineFormatGeometryExporter.h
     PlatesLineFormatHeaderVisitor.cc
@@ -70,8 +73,16 @@ set(srcs
     ReadErrors.h
     ReconstructedFeatureGeometryExport.cc
     ReconstructedFeatureGeometryExport.h
-    ShapeFileReader.cc
-    ShapeFileReader.h
+    ShapefileFormatReconstructedFeatureGeometryExport.cc
+    ShapefileFormatReconstructedFeatureGeometryExport.h
+    ShapefileGeometryExporter.cc
+    ShapefileGeometryExporter.h
+    ShapefileReader.cc
+    ShapefileReader.h
+    ShapefileUtils.cc
+    ShapefileUtils.h
+    ShapefileWriter.cc
+    ShapefileWriter.h
     ShapefileXmlReader.cc
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc

@@ -109,7 +109,7 @@ namespace GPlatesQtWidgets
 		*/
 		enum OutputFormat
 		{
-			PLATES4, GMT, WKT, CSV
+			PLATES4, GMT, SHAPEFILE, WKT, CSV
 		};
 
 		/**
@@ -152,14 +152,30 @@ namespace GPlatesQtWidgets
 		 * The text of the terminating point information dialog.
 		 */
 		static const QString s_terminating_point_information_text;
-		
+	
 		/**
 		 * Export geometry in specified format.
 		 *
 		 * @param format format of geometry export.
 		 * @param text_stream output stream.
 		 */
-		void export_geometry( OutputFormat format, QTextStream& text_stream);
+		void export_geometry( OutputFormat format, QTextStream &text_stream);
+
+		/**
+		 * Export geometry in specified format.
+		 *
+		 * @param format format of geometry export.
+		 * @param text_stream output stream.
+		 */
+		void export_geometry_to_file( OutputFormat format, QString &filename);
+
+		/**
+		 * Export geometry in specified format.
+		 *
+		 * @param format format of geometry export.
+		 * @param text_stream output stream.
+		 */
+		void export_geometry_to_text_stream( OutputFormat format, QTextStream &text_stream);
 
 	};
 }

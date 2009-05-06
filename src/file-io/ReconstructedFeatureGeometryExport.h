@@ -48,7 +48,10 @@ namespace GPlatesFileIO
 		{
 			UNKNOWN,           //!< Format, or file extension, is unknown.
 
-			GMT                //!< '.xy' extension.
+			GMT,               //!< '.xy' extension.
+
+			SHAPEFILE		   //!< '.shp' extension.
+
 		};
 
 

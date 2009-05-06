@@ -379,7 +379,8 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	d_remove_action(new QAction(&table)),
 	d_insert_above_action(new QAction(&table)),
 	d_insert_below_action(new QAction(&table)),
-	d_cancel_insertion_point_action(new QAction(&table))
+	d_cancel_insertion_point_action(new QAction(&table)),
+	d_suppress_update_notification_guard(false)
 {
 	// Set up the actions we can use.
 	set_up_actions();

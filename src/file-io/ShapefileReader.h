@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 Geological Survey of Norway
+ * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -50,16 +50,15 @@
 
 #include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
+#include "model/ModelUtils.h"
 #include "model/DummyTransactionHandle.h"
-
-#include "maths/PointOnSphere.h"
 
 
 namespace GPlatesFileIO
 {
 	const double SHAPE_NO_DATA = -1e38; 
 
-	class ShapeFileReader
+	class ShapefileReader
 	{
 
 	public:
@@ -85,21 +84,28 @@ namespace GPlatesFileIO
 
 	private:
 
-		ShapeFileReader();
+		ShapefileReader();
 
-		~ShapeFileReader();
+		~ShapefileReader();
 
 // Make copy constructor private
-		ShapeFileReader(
-			const ShapeFileReader &other);
+		ShapefileReader(
+			const ShapefileReader &other);
 
 
 // Make assignment private
-		ShapeFileReader &
+		ShapefileReader &
 		operator=(
-				const ShapeFileReader &other);
+				const ShapefileReader &other);
 
 
+		/**
+		 * Checks that the shapefile represented by ShapefileReader::d_filename can
+		 * be opened, contains at least one layer, and that this layer contains
+		 * at least one feature with a valid geometry.
+		 *
+		 * @return true if the above conditions are met, otherwise false.
+		 */
 		bool
 		check_file_format(
 				ReadErrorAccumulation &read_errors);
@@ -245,29 +251,32 @@ namespace GPlatesFileIO
 
 		OGRLayer *d_layer_ptr;
 
-		// The type of the current geometry (e.g. LineString, Polygon, MultiPolygon...)
+		/// The type of the current geometry (e.g. LineString, Polygon, MultiPolygon...)
 		OGRwkbGeometryType d_type;
 
-		// The shapefile attribute field names. 
+		/// The shapefile attribute field names. 
 		static QStringList s_field_names;
 
-		// The shapefile attributes for the current geometry.
+		/// The shapefile attributes for the current geometry.
 		std::vector<QVariant> d_attributes;
 
-		// Map for associating a model property with a shapefile attribute.
+		/// Map for associating a model property with a shapefile attribute.
 //		std::map<int, int> d_model_to_attribute_map;
 		static QMap<QString,QString> s_model_to_attribute_map;
 
-		// The feature type and the geometry type
+#if 0
+		/// The feature type and the geometry type
 		std::pair<QString,QString> d_feature_creation_pair;
+#endif
+		QString d_feature_type;
 
-		// The total number of geometries, including those from multi-geometries, in the file.
+		/// The total number of geometries, including those from multi-geometries, in the file.
 		unsigned d_total_geometries;
 
-		// The total number of geometries successfully loaded.
+		/// The total number of geometries successfully loaded.
 		unsigned d_loaded_geometries;
 
-		// The total number of features in the file.
+		/// The total number of features in the file.
 		unsigned d_total_features;
 
 		static boost::shared_ptr< PropertyMapper > s_property_mapper;

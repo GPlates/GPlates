@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -37,8 +37,8 @@ GPlatesFileIO::ShapefileXmlWriter::ShapefileXmlWriter()
 
 bool
 GPlatesFileIO::ShapefileXmlWriter::write_file(
-	QString &filename,
-	QMap< QString,QString> *map)
+	const QString &filename,
+	const QMap< QString,QString> &map)
 {
 	QFile file(filename);
 	if (!file.open(QFile::WriteOnly | QFile::Text)){
@@ -96,8 +96,8 @@ GPlatesFileIO::ShapefileXmlWriter::write_file(
 	writeStartElement("GPlatesShapefileMap");
 	writeAttribute("version","1");
 
-	QMap< QString,QString>::const_iterator it = map->constBegin();
-	QMap< QString,QString>::const_iterator it_end = map->constEnd();
+	QMap< QString,QString>::const_iterator it = map.constBegin();
+	QMap< QString,QString>::const_iterator it_end = map.constEnd();
 
 	for(; it != it_end; ++it)
 	{
