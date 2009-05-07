@@ -21,8 +21,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#define DEBUG
-#define DEBUG1
+//#define DEBUG
+//#define DEBUG1
 
 #include <map>
 
@@ -334,12 +334,27 @@ GPlatesQtWidgets::EditTopologyWidget::connect_to_topology_sections_container_sig
 			SLOT( cleared() )
 		);
 
+// FIXME: the way the TopologySectionsContainer is set up, 
+// entry_removed gets called to many times, once for each adjusment
 		QObject::connect(
 			d_topology_sections_container_ptr,
 			SIGNAL( entry_removed(
 				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
 			SLOT( entry_removed(
+				GPlatesGui::TopologySectionsContainer::size_type) )
+		);
+#if 0
+#endif
+
+		QObject::connect(
+			d_topology_sections_container_ptr,
+			SIGNAL( entries_modified(
+				GPlatesGui::TopologySectionsContainer::size_type,
+				GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			SLOT( entries_modified(
+				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
 
@@ -351,6 +366,16 @@ GPlatesQtWidgets::EditTopologyWidget::connect_to_topology_sections_container_sig
 			SIGNAL( cleared() ),
 			this,
 			0);
+
+		QObject::disconnect(
+			d_topology_sections_container_ptr,
+			SIGNAL( entries_modified(
+				GPlatesGui::TopologySectionsContainer::size_type,
+				GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			0
+		);
+
 	}
 }
 
@@ -531,7 +556,6 @@ GPlatesQtWidgets::EditTopologyWidget::handle_reconstruction_time_change(
 
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-
 }
 
 //
@@ -982,7 +1006,31 @@ void
 GPlatesQtWidgets::EditTopologyWidget::entry_removed(
 	GPlatesGui::TopologySectionsContainer::size_type deleted_index)
 {
-	qDebug() << "BuildTopologyWidget::entry_remove(): deleted_index = " << deleted_index;
+	qDebug() << "EditTopologyWidget::entry_remove(): deleted_index = " << deleted_index;
+
+#if 0
+	if (! d_is_active) { return; }
+
+	// update the d_topology_sections vector
+	d_topology_sections.erase( deleted_index );
+
+	d_visit_to_check_type = false;
+	d_visit_to_create_properties = true;
+	update_geometry();
+	d_visit_to_create_properties = false;
+
+	display_feature(
+		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+#endif
+}
+
+void
+GPlatesQtWidgets::EditTopologyWidget::entries_modified(
+	GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
+	GPlatesGui::TopologySectionsContainer::size_type modified_index_end)
+{
+	qDebug() << "EditTopologyWidget::entries_modified(): modified_index_begin = " << modified_index_begin;
+	qDebug() << "EditTopologyWidget::entries_modified(): modified_index_end = " << modified_index_end;
 
 #if 0
 	if (! d_is_active) { return; }
@@ -994,10 +1042,11 @@ GPlatesQtWidgets::EditTopologyWidget::entry_removed(
 
 	display_feature(
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-	}
 #endif
 
 }
+
+
 
 
 // 

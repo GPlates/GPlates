@@ -834,6 +834,20 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(handle_reconstruction_time_change(
 					double)));
 
+	// The BuildTopologyWidget needs to know when the reconstruction time changes.
+	QObject::connect(
+		this, 
+		SIGNAL(reconstruction_time_changed(double)),
+		&(d_task_panel_ptr->build_topology_widget()), 
+		SLOT(handle_reconstruction_time_change(double)));
+
+	// The EditTopologyWidget needs to know when the reconstruction time changes.
+	QObject::connect(
+		this, 
+		SIGNAL(reconstruction_time_changed(double)),
+		&(d_task_panel_ptr->edit_topology_widget()), 
+		SLOT(handle_reconstruction_time_change(double)));
+
 	// Setup RenderedGeometryCollection.
 	initialise_rendered_geom_collection();
 

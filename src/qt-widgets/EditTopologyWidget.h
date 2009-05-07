@@ -313,6 +313,10 @@ namespace GPlatesQtWidgets
 		entry_removed(
 			GPlatesGui::TopologySectionsContainer::size_type deleted_index);
 	
+		void
+		entries_modified(
+			GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
+			GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
 
 		/**
 		 * Configures widgets to accept new geometry of a specific type.
