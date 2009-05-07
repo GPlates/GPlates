@@ -76,6 +76,7 @@ namespace GPlatesFeatureVisitors
 	public:
 		explicit
 		TopologySectionsFinder(
+		
 			std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &sections_ptrs,
 			std::vector<GPlatesModel::FeatureId> &section_ids,
 			std::vector< std::pair<double, double> > &click_points,
@@ -136,6 +137,24 @@ namespace GPlatesFeatureVisitors
 		void
 		report();
 
+		std::vector<GPlatesGui::TopologySectionsContainer::TableRow>::iterator
+		found_rows_begin()
+		{
+			return d_table_rows.begin();
+		}
+			
+		std::vector<GPlatesGui::TopologySectionsContainer::TableRow>::iterator
+		found_rows_end()
+		{
+			return d_table_rows.end();
+		}
+
+		int 
+		number_of_rows()
+		{
+			return d_table_rows.size();
+		}
+
 	private:
 
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
@@ -155,8 +174,7 @@ namespace GPlatesFeatureVisitors
 			const TopologySectionsFinder &);
 
 		// working row ; populated by visit_* calls
-		GPlatesGui::TopologySectionsContainer::TableRow d_working_table_row;
-		//FIXME: why does this ^^^^ line not compile?!?
+		GPlatesGui::TopologySectionsContainer::TableRow d_table_row;
 
 		// Collection of TableRows built from this features Topology data
 		std::vector<GPlatesGui::TopologySectionsContainer::TableRow> d_table_rows;

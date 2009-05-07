@@ -296,6 +296,7 @@ GPlatesQtWidgets::BuildTopologyWidget::connect_to_focus_signals(bool state)
 	}
 }
 
+
 void
 GPlatesQtWidgets::BuildTopologyWidget::connect_to_topology_sections_container_signals(bool state)
 {
@@ -318,7 +319,7 @@ GPlatesQtWidgets::BuildTopologyWidget::connect_to_topology_sections_container_si
 			SLOT( entry_removed(
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
-	
+
 	} 
 	else 
 	{

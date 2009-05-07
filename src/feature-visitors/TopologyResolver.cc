@@ -383,11 +383,16 @@ qDebug() << "TopologyResolver::visit_gpml_topological_line_section: src_geom_fid
 	// set the member data for create_boundary() call
 	d_src_geom_fid = ( gpml_toplogical_line_section.get_source_geometry() )->feature_id();
 
+	d_src_geom_target_property = 
+	GPlatesUtils::make_qstring_from_icu_string( 
+	( ( gpml_toplogical_line_section.get_source_geometry() )->target_property() ).get_name() );
+
 	// clear the working vertex list
 	d_working_vertex_list.clear();
 
 	// fill the working vertex list
-	get_vertex_list_from_feature_id( d_working_vertex_list, d_src_geom_fid);
+	get_vertex_list_from_feature_id( 
+		d_working_vertex_list, d_src_geom_fid, d_src_geom_target_property );
 	
 	// Set reverse flag 
 	d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
@@ -421,13 +426,18 @@ qDebug() << "TopologyResolver::visit_gpml_topological_line_section: intersection
 << GPlatesUtils::make_qstring_from_icu_string(intersection_geom_fid.get());
 #endif
 
+		QString intersection_geom_target_property = 
+			GPlatesUtils::make_qstring_from_icu_string( 
+				( ( start.intersection_geometry() )->target_property() ).get_name() );
+
 		// next, get the vertices for this intersection_geometry
 
 		// Fill the working vertex list
 		d_node2_vertex_list.clear();
 		get_vertex_list_from_feature_id(
 			d_node2_vertex_list,
-			intersection_geom_fid);
+			intersection_geom_fid,
+			intersection_geom_target_property);
 
 		// reference_point property value is a gml_point: 
 		GPlatesMaths::PointOnSphere pos = 
@@ -456,7 +466,7 @@ qDebug() << "TopologyResolver::visit_gpml_topological_line_section: ref_point_pl
 #ifdef DEBUG_VISIT
 		// next, get the target_property name
 		const GPlatesModel::PropertyName &prop_name =
-			( start.reference_point_plate_id() )->target_property();
+			( start.refer.ence_point_plate_id() )->target_property();
 qDebug() << "TopologyResolver::visit_gpml_topological_line_section: ref_point_plate_id_prop_name =" 
 << GPlatesUtils::make_qstring_from_icu_string( prop_name.get_name() );
 #endif
@@ -488,6 +498,10 @@ qDebug() << "TopologyResolver::visit_gpml_topological_line_section: FOUND: end_i
 		GPlatesModel::FeatureId intersection_geom_fid = 
 			( end.intersection_geometry() )->feature_id();
 
+		QString intersection_geom_target_property = 
+			GPlatesUtils::make_qstring_from_icu_string( 
+				( ( end.intersection_geometry() )->target_property() ).get_name() );
+
 #ifdef DEBUG_VISIT
 qDebug() << "TopologyResolver::visit_gpml_topological_line_section: intersection_geom_fid=" 
 << GPlatesUtils::make_qstring_from_icu_string(intersection_geom_fid.get());
@@ -499,7 +513,8 @@ qDebug() << "TopologyResolver::visit_gpml_topological_line_section: intersection
 		d_node2_vertex_list.clear();
 		get_vertex_list_from_feature_id(
 			d_node2_vertex_list,
-			intersection_geom_fid);
+			intersection_geom_fid,
+			intersection_geom_target_property);
 
 		// reference_point property value is a gml_point: 
 		GPlatesMaths::PointOnSphere pos = 
@@ -891,8 +906,12 @@ std::cout << "TopologyResolver::visit_gpml_topological_point" << std::endl;
 	// This is a line type feature
 	d_type = GPlatesGlobal::POINT_FEATURE;
 
-	// Access  directly the data
+	// Access the data directly 
 	d_src_geom_fid = ( gpml_toplogical_point.get_source_geometry() )->feature_id();
+
+	d_src_geom_target_property = GPlatesUtils::make_qstring_from_icu_string( 
+		( ( gpml_toplogical_point.get_source_geometry() )->target_property() ).get_name()
+	);
 
 #ifdef DEBUG_VISIT
 qDebug() << "fid=" << GPlatesUtils::make_qstring_from_icu_string( d_src_geom_fid.get() );
@@ -932,6 +951,7 @@ GPlatesFeatureVisitors::TopologyResolver::create_boundary_node()
 	// create a boundary feature struct
 	BoundaryFeature bf(
 				d_src_geom_fid,
+				d_src_geom_target_property,
 				feature_type,
 				empty_vert_list,
 				click_point,
@@ -1068,11 +1088,12 @@ std::cout << "TopologyResolver::g_v_l: d_boundary_list.size()="
 		BoundaryFeature node = d_boundary_list.front();
 
 		GPlatesModel::FeatureId fid = node.m_feature_id;
+		QString target_property = node.m_target_property;
 		
-#ifdef DEBUG_GET_VERTEX_LIST
 qDebug() << "TopologyResolver::g_v_l: " << "d_boundary_list.size()==1; ";
-qDebug() << "TopologyResolver::g_v_l: " << "fid=" 
-	<< GPlatesUtils::make_qstring_from_icu_string(fid.get());
+qDebug() << "TopologyResolver::g_v_l: " << "fid = " << GPlatesUtils::make_qstring_from_icu_string(fid.get());
+qDebug() << "TopologyResolver::g_v_l: " << "target_property = " << target_property;
+#ifdef DEBUG_GET_VERTEX_LIST
 #endif
 
 		if (node.m_feature_type == GPlatesGlobal::POINT_FEATURE)
@@ -1082,7 +1103,8 @@ qDebug() << "TopologyResolver::g_v_l: " << "fid="
 			// put direcly into work list
 			get_vertex_list_from_feature_id( 
 				work_vertex_list, 
-				fid );
+				fid,
+				target_property);
 
 			// no boundary feature list neighbor processing needed
 		}
@@ -1093,7 +1115,8 @@ qDebug() << "TopologyResolver::g_v_l: " << "fid="
 			// put direcly into work list
 			get_vertex_list_from_feature_id( 
 				work_vertex_list, 
-				fid );
+				fid,
+				target_property);
 
 			// no boundary feature list neighbor processing needed
 		}
@@ -1155,6 +1178,8 @@ std::cout << "TopologyResolver::g_v_l() step 1: iterator math" << std::endl;
 		GPlatesModel::FeatureId iter_fid = iter->m_feature_id;
 		GPlatesModel::FeatureId next_fid = next->m_feature_id;
 
+		QString iter_target_property = iter->m_target_property;
+
 #ifdef DEBUG_GET_VERTEX_LIST
 qDebug() << "TopologyResolver::g_v_l step 2: PREV_fid=" 
 	<< GPlatesUtils::make_qstring_from_icu_string( prev_fid.get());
@@ -1171,7 +1196,8 @@ qDebug() << "TopologyResolver::g_v_l step 2: NEXT_fid="
 			// put directly into work_vertex_list
 			get_vertex_list_from_feature_id( 
 				work_vertex_list, 
-				iter_fid );
+				iter_fid,
+				iter_target_property);
 
 			continue; // to next iter to boundary feature in list
 		}
@@ -1192,7 +1218,8 @@ qDebug() << "TopologyResolver::g_v_l step 2: NEXT_fid="
 
 		get_vertex_list_from_feature_id(
 			iter_vertex_list,
-			iter_fid );
+			iter_fid,
+			iter_target_property);
 
 #ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::g_v_l step 3 gvl_fid: ";
@@ -1450,6 +1477,8 @@ GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_node_relation(
 	GPlatesModel::FeatureId node1_fid = node1.m_feature_id;
 	GPlatesModel::FeatureId node2_fid = node2.m_feature_id;
 
+	QString node2_target_property = node2.m_target_property;
+
 // FIX : remove this diagnostic output
 #ifdef DEBUG_GET_VERTEX_LIST
 std::cout << std::endl;
@@ -1485,7 +1514,8 @@ std::cout << std::endl;
 	// get verts for node2 from Layout 
 	get_vertex_list_from_feature_id(
 		node2_vertex_list,
-		node2_fid );
+		node2_fid,
+		node2_target_property);
 
 	//
 	// skip features not found, or missing from Layout
@@ -1691,7 +1721,8 @@ std::cout << "TopologyResolver::g_v_l_f_n_r: "
 void
 GPlatesFeatureVisitors::TopologyResolver::get_vertex_list_from_feature_id(
 	std::list<GPlatesMaths::PointOnSphere> &vertex_list,
-	GPlatesModel::FeatureId feature_id)
+	GPlatesModel::FeatureId feature_id,
+	QString target_property)
 {
 #ifdef DEBUG_GET_VERTEX_LIST
 std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
@@ -1731,8 +1762,14 @@ std::cout << "TopologyResolver::get_vertex_list_from_feature_id:"  << std::endl;
 	// else , get the first ref on the list
 	GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
 
-	// find the RFGs for this feature ref
-	GPlatesModel::ReconstructedFeatureGeometryFinder finder( d_recon_ptr ); 
+	// Create a property name from the target_propery
+	GPlatesModel::PropertyName property_name =
+		GPlatesModel::PropertyName::create_gpml( target_property );
+
+	// find the RFGs for this feature ref for the target_property in the reconstruction
+	GPlatesModel::ReconstructedFeatureGeometryFinder finder( property_name, d_recon_ptr); 
+
+	// go and find things
 	finder.find_rfgs_of_feature( feature_ref );
 
 	// Get a list of RFGs 

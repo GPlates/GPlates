@@ -354,6 +354,9 @@ namespace GPlatesQtWidgets
 		void
 		connect_to_focus_signals( bool state );
 
+		void
+		connect_to_topology_sections_container_signals( bool state );
+
 	private slots:
 
 		/**
@@ -451,6 +454,12 @@ namespace GPlatesQtWidgets
 		GeometryType d_geometry_type;
 
 
+		/*
+		* pointer to the TopologySectionsContainer in ViewportWindow.
+		*/
+		GPlatesGui::TopologySectionsContainer *d_topology_sections_container_ptr;
+
+
 		/**
 		* place holders for the widget data 
 		*/
@@ -534,6 +543,12 @@ namespace GPlatesQtWidgets
 		std::vector<std::pair<double, double> > d_section_click_points;
 		std::vector<bool> d_section_reverse_flags;
 
+		/**
+		 * a collection of TopologySectionsContainer::TableRow structs
+		 */
+		GPlatesGui::TopologySectionsContainer::container_type d_topology_sections;
+
+
 		// collection of end points for all boundary features
 		std::vector<GPlatesMaths::PointOnSphere> d_head_end_points;
 		std::vector<GPlatesMaths::PointOnSphere> d_tail_end_points; 
@@ -550,7 +565,7 @@ namespace GPlatesQtWidgets
 			d_insert_segments;
 
 		/**
-		 * An odered collection of all the 
+		 * An odered collection of all the vertices
 		 */
 		std::vector<GPlatesMaths::PointOnSphere> d_topology_vertices;
 

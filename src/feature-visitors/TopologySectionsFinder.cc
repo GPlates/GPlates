@@ -204,12 +204,17 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_polygon" << std::en
 	// loop over all the sections
 	for ( ; iter != end; ++iter) 
 	{
-
-		// FIXME:	
-		// GPlatesGui::TopologySectionsContainer::TableRow d_working_table_row;
-
+		// save raw data
 		d_section_ptrs->push_back( *iter );
+
+		// set the GpmlTopologicalSection::non_null_ptr of the working row
+		d_table_row.d_section_ptr = *iter;
+
+		// visit the rest of the gpml 
 		(*iter)->accept_visitor(*this);
+
+		// append the working row to the vector
+		d_table_rows.push_back( d_table_row );
 	}
 }
 
@@ -231,6 +236,8 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 	// feature id
 	d_section_ids->push_back( src_geom_id );
 
+	d_table_row.d_feature_id = src_geom_id;
+
 	// check for intersection and click points
 	if ( gpml_toplogical_line_section.get_start_intersection() )
 	{
@@ -245,12 +252,15 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 		// FIXME: what to put here?
 		// fill in an 'empty' point 	
 		d_click_points->push_back( std::make_pair( 0, 0 ) );
+		d_table_row.d_click_point = boost::none;
 	}
 
 	
 	// use reverse 
 	bool use_reverse = gpml_toplogical_line_section.get_reverse_order();
 	d_reverse_flags->push_back( use_reverse );
+
+	d_table_row.d_reverse = use_reverse;
 
 #ifdef DEBUG
 qDebug() << "  src_geom_id = " << GPlatesUtils::make_qstring_from_icu_string(src_geom_id.get());
@@ -276,6 +286,8 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_intersection" << st
 	double click_point_lon = (GPlatesMaths::make_lat_lon_point( pos )).longitude();
 	
 	d_click_points->push_back( std::make_pair( click_point_lat, click_point_lon ) );
+
+	d_table_row.d_click_point = GPlatesMaths::make_lat_lon_point( pos );
 }
 
 void
@@ -294,13 +306,19 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 
 	// fill the vectors
 	d_section_ids->push_back( src_geom_id );
+
+	d_table_row.d_feature_id = src_geom_id;
 	
 	// fill in an 'empty' flag 	
 	d_reverse_flags->push_back( false );
 
+	d_table_row.d_reverse = false;
+
 	// FIXME: what to put here?
 	// fill in an 'empty' point 	
 	d_click_points->push_back( std::make_pair( 0, 0 ) );
+
+	d_table_row.d_click_point = boost::none;
 
 #ifdef DEBUG
 qDebug() << "  src_geom_id = " << GPlatesUtils::make_qstring_from_icu_string(src_geom_id.get());
@@ -326,6 +344,18 @@ GPlatesFeatureVisitors::TopologySectionsFinder::report()
 		qDebug() << "id =" << GPlatesUtils::make_qstring_from_icu_string( f_itr->get() );
 		qDebug() << "reverse? = " << *r_itr;
 		qDebug() << "click_point_lat = " << c_itr->first << "; lon = " << c_itr->second;
+	}
+	std::cout << "--                              --                         --" << std::endl;
+
+	std::vector<GPlatesGui::TopologySectionsContainer::TableRow>::iterator tr_itr;
+	tr_itr = d_table_rows.begin();
+	
+	// loop over rows
+	for ( ; tr_itr != d_table_rows.end() ; ++tr_itr)
+	{
+		qDebug() << "id =" 
+			<< GPlatesUtils::make_qstring_from_icu_string( (*tr_itr).d_feature_id.get() );
+		qDebug() << "reverse? = " << (*tr_itr).d_reverse;
 	}
 	std::cout << "-------------------------------------------------------------" << std::endl;
 

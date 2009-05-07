@@ -123,6 +123,9 @@ GPlatesQtWidgets::EditTopologyWidget::EditTopologyWidget(
 
 	create_child_rendered_layers();
 
+	// Set pointer to TopologySectionsContainer
+	d_topology_sections_container_ptr = &d_view_state_ptr->topology_sections_container();
+
 	// set the internal state flags
 	d_is_active = false;
 	d_in_edit = false;
@@ -239,6 +242,7 @@ qDebug() << "EditTopologyWidget::activate() 2";
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
 
 qDebug() << "EditTopologyWidget::activate() 3";
+	return; // FIXME:
 
 	// process the table
 	d_visit_to_check_type = false;
@@ -294,7 +298,6 @@ GPlatesQtWidgets::EditTopologyWidget::connect_to_focus_signals(bool state)
 			SLOT( set_focus(
 				GPlatesModel::FeatureHandle::weak_ref,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
-	
 	} 
 	else 
 	{
@@ -317,6 +320,45 @@ GPlatesQtWidgets::EditTopologyWidget::connect_to_focus_signals(bool state)
 	}
 }
 
+
+void
+GPlatesQtWidgets::EditTopologyWidget::connect_to_topology_sections_container_signals(
+	bool state)
+{
+	if (state) 
+	{
+		QObject::connect(
+			d_topology_sections_container_ptr,
+			SIGNAL( cleared() ),
+			this,
+			SLOT( cleared() )
+		);
+
+		QObject::connect(
+			d_topology_sections_container_ptr,
+			SIGNAL( entry_removed(
+				GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			SLOT( entry_removed(
+				GPlatesGui::TopologySectionsContainer::size_type) )
+		);
+
+	} 
+	else 
+	{
+		QObject::disconnect(
+			d_topology_sections_container_ptr,
+			SIGNAL( cleared() ),
+			this,
+			0);
+		QObject::disconnect(
+			d_topology_sections_container_ptr,
+			SIGNAL( entry_removed(
+				GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			0);
+	}
+}
 
 void
 GPlatesQtWidgets::EditTopologyWidget::create_child_rendered_layers()
@@ -740,61 +782,50 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 	GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder( 
 		d_section_ptrs, d_section_ids, d_section_click_points, d_section_reverse_flags);
 
-
 	// Visit the feature_ref, filling d_section_ vectors with data
 	feature_ref->accept_visitor( topo_sections_finder );
 
-	// Get a pointer to the Topology Section Table
-	GPlatesGui::FeatureTableModel &sections_table = 
-		d_view_state_ptr->sections_feature_table_model();
-
-	GPlatesGui::TopologySectionsContainer &topology_sections_container = 
-		d_view_state_ptr->topology_sections_container();
+	// FIXME: REMOVE: topo_sections_finder.report();
 
 	// just to be safe, disconnect listening to feature focus while changing Section Table
 	connect_to_focus_signals( false );
+	connect_to_topology_sections_container_signals( false );
+
+	// Get a pointer to the Topology Section Table
+	GPlatesGui::TopologySectionsContainer &topology_sections_container = 
+		d_view_state_ptr->topology_sections_container();
 
 	// Clear the sections_table
-	sections_table.clear();
-
 	topology_sections_container.clear();
 
 // ZZZ
 
-#if 0
-	// Find this topology's ReconstructionGeometry data and insert into sections table
-	std::vector<GPlatesModel::FeatureId>::iterator section_itr = d_section_ids.begin();
-	std::vector<GPlatesModel::FeatureId>::iterator section_end = d_section_ids.end();
-	//int index = 0;
-	for ( ; section_itr != section_end; ++section_itr)
-	{
+	// iterate over the table rows from the Finder
+	GPlatesGui::TopologySectionsContainer::iterator table_row_itr;
+	table_row_itr = topo_sections_finder.found_rows_begin();
 
-		GPlatesModel::FeatureId	section_id = *section_itr;
+    // loop over rows
+    for ( ; table_row_itr != topo_sections_finder.found_rows_end() ; ++table_row_itr)
+    {
+		qDebug() << "EditTopologyWidget::display_feature_topology(): insert_row()";
+        qDebug() << "id ="
+		<< GPlatesUtils::make_qstring_from_icu_string( (*table_row_itr).d_feature_id.get() );
+		qDebug() << "reverse? = " << (*table_row_itr).d_reverse;
 
-		// try to find this section's feature id in the reconstruction's rg map
-		GPlatesModel::Reconstruction::id_to_rfg_map_type::iterator find_iter, map_end;
-		map_end = d_view_state_ptr->reconstruction().id_to_rfg_map()->end();
-		find_iter = d_view_state_ptr->reconstruction().id_to_rfg_map()->find( section_id) ;
-
-		if ( find_iter != map_end )
-		{
-			sections_table.sequence_about_to_be_changed();
-			sections_table.begin_insert_features(0, 0);
-			sections_table.geometry_sequence().push_back( find_iter->second );
-			sections_table.end_insert_features();
-			sections_table.sequence_changed();
-		}
-	}
-#endif
-
+		topology_sections_container.insert( *table_row_itr );
+    }
+ 
 	// reconnect listening to focus signals from Topology Sections table
 	connect_to_focus_signals( true );
+	connect_to_topology_sections_container_signals( true );
 
 	// fill the widgets with feature data
 	fill_widgets( feature_ref, associated_rfg );
 
 	// Set the num_sections
 	lineedit_num_sections->setText(QString::number( d_section_ids.size() ));
+
+	lineedit_num_sections->setText(QString::number( topo_sections_finder.number_of_rows() ) );
 
 qDebug() << "EditTopologyWidget::display_feature_topology() END";
 }
@@ -2081,17 +2112,23 @@ GPlatesQtWidgets::EditTopologyWidget::fill_section_table_from_section_ids()
 {
 qDebug() << "EditTopologyWidget::fill_section_table_from_section_ids()";
 
+#if 0
 	// Pointer to the Topology Section Table
 	GPlatesGui::FeatureTableModel &sections_table = 
 		d_view_state_ptr->sections_feature_table_model();
+#endif
 
 	// just to be safe, turn off connection to feature focus while changing Section Table
 	connect_to_focus_signals( false );
+	connect_to_topology_sections_container_signals( false );
 
 	// Clear the old data
 qDebug() << "EditTopologyWidget::fill_section_table_from_section_ids() sections_table.clear";
-	sections_table.clear();
+	//sections_table.clear();
+	d_topology_sections_container_ptr->clear();
 
+// FIXME: REMOVE all this 
+#if 0
 	//
 	// Find this feature's section's ReconstructionGeometry data to insert into sections table
 	//
@@ -2099,6 +2136,7 @@ qDebug() << "EditTopologyWidget::fill_section_table_from_section_ids() sections_
 	int last = 0;
 	std::vector<GPlatesModel::FeatureId>::iterator section_itr = d_section_ids.begin();
 	std::vector<GPlatesModel::FeatureId>::iterator section_end = d_section_ids.end();
+
 
 	for ( ; section_itr != section_end; ++section_itr)
 	{
@@ -2124,9 +2162,19 @@ qDebug() << "first = " << first << "; last = " << last;
 		}
 #endif
 	}
+#endif
+
+	GPlatesGui::TopologySectionsContainer::iterator iter = d_topology_sections.begin();
+	for ( ; iter != d_topology_sections.end() ; ++iter)
+	{
+		d_topology_sections_container_ptr->insert( *iter );
+	}
+
 
 	// reconnect listening to focus signals from Topology Sections table
+	connect_to_topology_sections_container_signals( true );
 	connect_to_focus_signals( true );
+	
 
 	return;
 }
@@ -2143,19 +2191,32 @@ qDebug() << "EditTopologyWidget::create_sections_from_sections_table()";
 	d_section_ptrs.clear();
 	d_topology_vertices.clear();
 
-	// access the sections table
-	GPlatesGui::FeatureTableModel &sections_table = 
-		d_view_state_ptr->sections_feature_table_model();
-	//
+
+	// get the size of the table
+	d_tmp_sections_size = d_topology_sections_container_ptr->size();
+
 	// super short cut for empty table
-	//
-	if ( sections_table.geometry_sequence().empty() ) { 
+	if ( d_tmp_sections_size == 0 ) { 
 		return; 
 	}
 
-	// get the size of the table
-	d_tmp_sections_size = sections_table.geometry_sequence().size();
 
+	// loop over each geom in the Sections Table
+	d_tmp_index = 0;
+	for ( ; d_tmp_index != d_tmp_sections_size ; ++d_tmp_index )
+	{
+		// Set the fid for the tmp_index section 
+		d_tmp_index_fid = 
+			( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_feature_id;
+
+		// set the tmp reverse flag to this feature's flag
+		d_tmp_index_use_reverse =
+			 (d_topology_sections_container_ptr->at( d_tmp_index ) ).d_reverse;
+
+	}
+
+
+#if 0
 	// loop over each geom in the Sections Table
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator iter;
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator end;
@@ -2180,7 +2241,6 @@ qDebug() << "EditTopologyWidget::create_sections_from_sections_table()";
 		d_tmp_index_use_reverse = d_section_reverse_flags.at(d_tmp_index);
 
 #ifdef DEBUG1
-qDebug() << "d_tmp_index = " << d_tmp_index;
 
 static const GPlatesModel::PropertyName name_property_name =
 	GPlatesModel::PropertyName::create_gml("name");
@@ -2192,6 +2252,7 @@ if ( GPlatesFeatureVisitors::get_property_value(
 }
 qDebug() << "d_use_rev = " << d_tmp_index_use_reverse;
 #endif
+
 
 		// clear the tmp index list
 		d_tmp_index_vertex_list.clear();
@@ -2235,6 +2296,9 @@ qDebug() << "d_use_rev = " << d_tmp_index_use_reverse;
 		// update counter d_tmp_index
 		++d_tmp_index;
 	}
+#endif
+
+
 }
 
 void

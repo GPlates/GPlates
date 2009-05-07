@@ -30,7 +30,7 @@
 // kill this #define after the merge.
 // kill all the #ifndef NEEDS_PLATEPOLYGON_BRANCH checks after the merge -works-.
 
-#define NEEDS_PLATEPOLYGON_BRANCH
+// #define NEEDS_PLATEPOLYGON_BRANCH
 
 
 #include <QObject>
@@ -85,7 +85,7 @@ namespace GPlatesGui
 			 * The pointer to the gpml:TopologicalSection property-value that
 			 * this table row represents.
 			 */
-			GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type d_section_ptr;
+			boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_section_ptr;
 #endif
 			/**
 			 * The gpml:FeatureId of the topological section.

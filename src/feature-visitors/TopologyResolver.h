@@ -140,11 +140,14 @@ namespace GPlatesFeatureVisitors
 
 		// typedef std::vector<GPlatesModel::ReconstructedFeatureGeometry> reconstructed_geometries_type;
 
+		//
 		// these are used to create boundary nodes
+		//
 		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 
 		GPlatesModel::FeatureId d_src_geom_fid;
 
+		QString d_src_geom_target_property;
 
 		GPlatesGlobal::FeatureTypes d_type;
 
@@ -208,6 +211,11 @@ namespace GPlatesFeatureVisitors
 
 			/** The feature id */
 			GPlatesModel::FeatureId m_feature_id;
+
+			/** The target property name */
+			//const GPlatesModel::PropertyName &m_target_property;
+			//GPlatesModel::PropertyName m_target_property;
+			QString m_target_property;
 			
 			/** The feature type */
 			GPlatesGlobal::FeatureTypes m_feature_type;
@@ -290,6 +298,7 @@ namespace GPlatesFeatureVisitors
 			BoundaryFeature( 
 				// GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureId feature_id,
+				QString target_property,
 				GPlatesGlobal::FeatureTypes feature_type,
 				std::list<GPlatesMaths::PointOnSphere> vertex_list,
 				GPlatesMaths::PointOnSphere click_point,
@@ -304,6 +313,7 @@ namespace GPlatesFeatureVisitors
 				:
 				// m_feature( feature_handle ),
 				m_feature_id( feature_id ),
+				m_target_property( target_property ),
 				m_feature_type ( feature_type ),
 				m_vertex_list ( vertex_list ),
 				m_click_point ( click_point ),
@@ -652,7 +662,8 @@ namespace GPlatesFeatureVisitors
 			void
 			get_vertex_list_from_feature_id(
 				std::list<GPlatesMaths::PointOnSphere> &vertex_list,
-				GPlatesModel::FeatureId id);
+				GPlatesModel::FeatureId id,
+				QString target_property);
 
 		
 			/**
