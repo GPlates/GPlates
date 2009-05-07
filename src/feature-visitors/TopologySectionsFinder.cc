@@ -32,12 +32,13 @@
 #include "TopologySectionsFinder.h"
 
 
+#include "model/FeatureHandle.h"
+#include "model/FeatureHandleWeakRefBackInserter.h"
+#include "model/FeatureRevision.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
-#include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
-#include "model/FeatureRevision.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
@@ -238,6 +239,19 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 
 	d_table_row.d_feature_id = src_geom_id;
 
+	// Set d_feature_ref: Resolves a FeatureId reference in a TableRow; 
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
+	d_table_row.d_feature_id.find_back_ref_targets(
+		GPlatesModel::append_as_weak_refs(back_ref_targets));
+	if (back_ref_targets.size() == 1) {
+		GPlatesModel::FeatureHandle::weak_ref weakref = *back_ref_targets.begin();
+		d_table_row.d_feature_ref = weakref;
+	} else {
+		static const GPlatesModel::FeatureHandle::weak_ref null_ref;
+		d_table_row.d_feature_ref = null_ref;
+	}
+
+
 	// check for intersection and click points
 	if ( gpml_toplogical_line_section.get_start_intersection() )
 	{
@@ -309,15 +323,24 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 
 	d_table_row.d_feature_id = src_geom_id;
 	
+	// Set d_feature_ref: Resolves a FeatureId reference in a TableRow; 
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
+	d_table_row.d_feature_id.find_back_ref_targets(
+		GPlatesModel::append_as_weak_refs(back_ref_targets));
+	if (back_ref_targets.size() == 1) {
+		GPlatesModel::FeatureHandle::weak_ref weakref = *back_ref_targets.begin();
+		d_table_row.d_feature_ref = weakref;
+	} else {
+		static const GPlatesModel::FeatureHandle::weak_ref null_ref;
+		d_table_row.d_feature_ref = null_ref;
+	}
+
 	// fill in an 'empty' flag 	
 	d_reverse_flags->push_back( false );
-
 	d_table_row.d_reverse = false;
 
-	// FIXME: what to put here?
 	// fill in an 'empty' point 	
 	d_click_points->push_back( std::make_pair( 0, 0 ) );
-
 	d_table_row.d_click_point = boost::none;
 
 #ifdef DEBUG

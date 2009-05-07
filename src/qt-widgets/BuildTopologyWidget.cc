@@ -3139,7 +3139,6 @@ for ( itr = points.begin() ; itr != points.end(); ++itr)
 	} catch (...) {
 		throw;
 	}
-	d_topology_geometry_opt_ptr = boost::none;
 }
 
 //

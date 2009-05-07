@@ -40,6 +40,7 @@
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
+#include "maths/GeometryOnSphere.h"
 
 #ifndef NEEDS_PLATEPOLYGON_BRANCH
 #include "property-values/GpmlTopologicalSection.h"
@@ -105,6 +106,8 @@ namespace GPlatesGui
 			 * later. -JC
 			 */
 			GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
+
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
 			
 			/**
 			 * The point the user clicked on to select the section.

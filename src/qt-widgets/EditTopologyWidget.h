@@ -249,7 +249,7 @@ namespace GPlatesQtWidgets
 
 
 		void
-		fill_section_table_from_section_ids();
+		fill_section_table_from_topology_sections();
 
 
 	public slots:
@@ -304,6 +304,15 @@ namespace GPlatesQtWidgets
 			const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 			bool is_on_globe);
 
+
+		/** Slots for signals from TopologySectionsContainer */
+		void
+		cleared();
+	
+		void
+		entry_removed(
+			GPlatesGui::TopologySectionsContainer::size_type deleted_index);
+	
 
 		/**
 		 * Configures widgets to accept new geometry of a specific type.
