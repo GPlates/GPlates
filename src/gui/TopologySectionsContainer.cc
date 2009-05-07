@@ -56,7 +56,7 @@ GPlatesGui::TopologySectionsContainer::insert(
 	// Which will naturally bump the insertion point down one row.
 	move_insertion_point(insertion_point() + 1);
 	// Emit signals
-	emit entry_inserted(index);
+	emit entries_inserted(index, 1);
 }
 
 

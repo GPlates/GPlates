@@ -33,6 +33,7 @@
 
 
 #include <QObject>
+#include <iterator>
 #include <vector>
 
 #include "maths/LatLonPointConversions.h"
@@ -139,6 +140,36 @@ namespace GPlatesGui
 		size() const;
 		
 		/**
+		 * Const 'begin' iterator of the underlying vector.
+		 * No mutable iterator is supplied, because this class must emit signals
+		 * to interested parties when data is modified and maintain a special
+		 * insertion point.
+		 * 
+		 * To insert data, use @a move_insertion_point() or @a reset_insertion_point(),
+		 * followed by a call to one of the @a insert() methods.
+		 */
+		const_iterator
+		begin() const
+		{
+			return d_container.begin();
+		}
+
+		/**
+		 * Const 'end' iterator of the underlying vector.
+		 * No mutable iterator is supplied, because this class must emit signals
+		 * to interested parties when data is modified and maintain a special
+		 * insertion point.
+		 * 
+		 * To insert data, use @a move_insertion_point() or @a reset_insertion_point(),
+		 * followed by a call to one of the @a insert() methods.
+		 */
+		const_iterator
+		end() const
+		{
+			return d_container.end();
+		}
+		
+		/**
 		 * Accesses an entry of the table by index.
 		 *
 		 * Note there is no non-const @a at(); use @a update_at()
@@ -161,11 +192,51 @@ namespace GPlatesGui
 		 *
 		 * The supplied TableRow struct is copied.
 		 *
-		 * The @a entry_inserted() signal is emitted.
+		 * The @a entries_inserted() signal is emitted.
 		 */
 		void
 		insert(
 				const TableRow &entry);
+
+
+		/**
+		 * Inserts a bunch of new entries into the container. Note that
+		 * there is no 'append' or 'push_back'; new elements are always
+		 * inserted wherever the Insertion Point is. This is usually at
+		 * the end of the table, but the user is free to move the 
+		 * Insertion Point themselves prior to adding a new topological
+		 * section.
+		 *
+		 * Once the entries have been inserted, the insertion point itself
+		 * is moved down that number of rows.
+		 *
+		 * This version of @a insert() takes two STL-style iterators,
+		 * allowing you to copy a whole range of structs into the container
+		 * in one go.
+		 * The supplied iterators should be iterators of any STL container
+		 * type (or any custom class that can make similar iterators), and
+		 * should be dereferencable to a TopologySectionsContainer::TableRow.
+		 *
+		 * The @a entries_inserted() signal is emitted.
+		 */
+		template<typename I>
+		void
+		insert(
+				I begin_it,
+				I end_it)
+		{
+			// All new entries get inserted at the insertion point.
+			size_type index = insertion_point();
+			// Use STL vector::insert with two input iterators for probably-fast
+			// insert (depending on iterator capability)
+			d_container.insert(d_container.begin() + index, begin_it, end_it);
+			// We need to know how many just got added.
+			size_type quantity = std::distance(begin_it, end_it);
+			// ... because inserting will naturally bump the insertion point down n rows.
+			move_insertion_point(insertion_point() + quantity);
+			// ... and we need to emit appropriate signals.
+			emit entries_inserted(index, quantity);
+		}
 		
 		
 		/**
@@ -298,14 +369,15 @@ namespace GPlatesGui
 				TopologySectionsContainer::size_type deleted_index);
 
 		/**
-		 * Emitted whenever a entry has been inserted into the container.
+		 * Emitted whenever a number of entries have been inserted into the container.
 		 * All subsequent entries will be moved down, as will the Insertion Point
 		 * (though this will also cause the @a insertion_point_moved signal to be
 		 * emitted).
 		 */
 		void
-		entry_inserted(
-				TopologySectionsContainer::size_type inserted_index);
+		entries_inserted(
+				TopologySectionsContainer::size_type inserted_index,
+				TopologySectionsContainer::size_type quantity);
 
 		/**
 		 * Emitted whenever the data from a range of entries has been modified.

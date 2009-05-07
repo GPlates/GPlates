@@ -401,7 +401,7 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 			this, SLOT(update_table()));
 	QObject::connect(d_container_ptr, SIGNAL(entry_removed(TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entry_inserted(TopologySectionsContainer::size_type)),
+	QObject::connect(d_container_ptr, SIGNAL(entries_inserted(TopologySectionsContainer::size_type,TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
 	QObject::connect(d_container_ptr, SIGNAL(entries_modified(TopologySectionsContainer::size_type,TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
