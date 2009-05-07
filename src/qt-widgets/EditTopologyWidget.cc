@@ -2312,9 +2312,11 @@ qDebug() << "EditTopologyWidget::create_sections_from_sections_table() END ";
 void
 GPlatesQtWidgets::EditTopologyWidget::process_intersections()
 {
+#if 0
 	// access the sections table
 	GPlatesGui::FeatureTableModel &sections_table = 
 		d_view_state_ptr->sections_feature_table_model();
+#endif
 
 	// set the tmp click point to d_tmp_index feture's click point
 	d_click_point_lat = d_section_click_points.at(d_tmp_index).first;
@@ -2533,15 +2535,18 @@ qDebug() << "EditTopologyWidget::process_intersections() 9 ";
 
 	//
 	// Since d_tmp_index_vertex_list may have been changed by PREV, create another polyline 
+	//
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type tmp_for_next_polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap( d_tmp_index_vertex_list );
 
 	//
 	// access the Sections Table for the NEXT item
 	//
+#if 0
 	std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>::iterator next;
 	next = sections_table.geometry_sequence().begin() + d_tmp_next_index;
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type next_gos = (*next)->geometry();
+
 
 	// Set the d_tmp_feature_type by visiting the NEXT geom
 	d_visit_to_check_type = true;
@@ -2562,10 +2567,77 @@ qDebug() << "EditTopologyWidget::process_intersections() 9 ";
 		tmp_for_next_polyline.get(),
 		next_polyline,
 		GPlatesQtWidgets::EditTopologyWidget::INTERSECT_NEXT);
+#endif
+
+
+	// 
+	// Access the topology sections table
+	//
+	GPlatesModel::FeatureHandle::weak_ref next_feature_ref;
+	next_feature_ref = ( d_topology_sections_container_ptr->at( d_tmp_next_index ) ).d_feature_ref;
+
+qDebug() << "EditTopologyWidget::process_intersections() 9 next_fid="
+<< GPlatesUtils::make_qstring_from_icu_string( next_feature_ref->feature_id().get() );
+
+		// Get the RFG for this feature 
+		GPlatesModel::ReconstructedFeatureGeometryFinder next_finder( 
+			&(d_view_state_ptr->reconstruction()) );
+
+		next_finder.find_rfgs_of_feature( next_feature_ref );
+
+		GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator next_find_iter;
+		next_find_iter = next_finder.found_rfgs_begin();
+
+		// Double check RFGs
+		if ( next_find_iter != next_finder.found_rfgs_end() )
+		{
+qDebug() << "EditTopologyWidget::process_intersections() 4 ";
+			// Get the geometry on sphere from the RFG
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type next_gos_ptr =
+				(*next_find_iter)->geometry();
+
+			if (next_gos_ptr) 
+			{
+				qDebug() << "EditTopologyWidget::process_intersections() 5 ";
+				d_visit_to_check_type = true;
+				next_gos_ptr->accept_visitor(*this);
+				d_visit_to_check_type = false;
+
+
+	// No need to process intersections with POINT features 
+	if (d_tmp_feature_type == GPlatesGlobal::POINT_FEATURE ) {
+		return;
+	}
+
+	// FIXME: FLAW : algo misses case were bndry goes: pnt + line + line 
+
+	// else process the geom as a LINE
+	const GPlatesMaths::PolylineOnSphere *next_polyline = 
+		dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( next_gos_ptr.get() );
+
+	// check if INDEX and PREV polylines intersect
+	compute_intersection(
+		tmp_for_next_polyline.get(),
+		next_polyline,
+		GPlatesQtWidgets::EditTopologyWidget::INTERSECT_PREV);
+
+			}
+		}
+		else
+		{
+			qDebug() << "EditTopologyWidget::process_intersections() 6 END ";
+			return;
+		}
+		// FIXME  LINE UP
+		// FIXME  LINE UP
+		// FIXME  LINE UP
+		// FIXME  LINE UP
+
 
 	// if they do, then create the endIntersection property value
 	if ( d_visit_to_create_properties && (d_num_intersections_with_next != 0) )
 	{
+#if 0
 		// if there was an intersection, create a endIntersection property value
 		GPlatesModel::ReconstructionGeometry *next_rg = next->get();
 
@@ -2574,6 +2646,8 @@ qDebug() << "EditTopologyWidget::process_intersections() 9 ";
 
 		// intersection_geometry
 		const GPlatesModel::FeatureId next_fid = next_rfg->feature_handle_ptr()->feature_id();
+#endif
+		const GPlatesModel::FeatureId next_fid = next_feature_ref->feature_id();
 
 		const GPlatesModel::PropertyName prop_name1 =
 			GPlatesModel::PropertyName::create_gpml("centerLineOf");
