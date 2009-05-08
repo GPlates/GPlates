@@ -1101,6 +1101,7 @@ GPlatesQtWidgets::EditTopologyWidget::handle_add_feature()
 	// adjust the mode
 	d_in_edit = true;
 
+#if 0
 	// if this is the first feature on an empty boundary, 
 	// then 'click' handle_new_topology button automatically to set other widgets
 	if ( d_section_ids.size() == 0 ) {
@@ -1117,6 +1118,11 @@ GPlatesQtWidgets::EditTopologyWidget::handle_add_feature()
 		index = d_insert_index; 
 	}
 
+#endif
+
+	// Get the current insertion point 
+	int index = d_topology_sections_container_ptr->insertion_point();
+
 	// insert the feature into the boundary
 	handle_insert_feature( index );
 
@@ -1129,9 +1135,6 @@ GPlatesQtWidgets::EditTopologyWidget::handle_insert_feature(int index)
 qDebug() << "EditTopologyWidget::handle_insert_feature()";
 qDebug() << "index = " << index;
 
-	// Flip to Topology Sections Table
-	d_view_state_ptr->change_tab( 2 );
-
 	// pointers to the Clicked Features table
 	GPlatesGui::FeatureTableModel &clicked_table = 
 		d_view_state_ptr->feature_table_model();
@@ -1139,13 +1142,16 @@ qDebug() << "index = " << index;
 	// table index of clicked feature
 	int click_index = clicked_table.current_index().row();
 
-	// get the feature id 
+	// get the feature id from the RG
 	GPlatesModel::ReconstructionGeometry *rg_ptr = 
 		( clicked_table.geometry_sequence().begin() + click_index )->get();
+
 	GPlatesModel::ReconstructedFeatureGeometry *rfg_ptr =
 		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg_ptr);
+
 	const GPlatesModel::FeatureId id = rfg_ptr->feature_handle_ptr()->feature_id();
 
+#if 0
 	// insert the feature id
 	d_section_ids.insert( d_section_ids.begin() + index, id );
 
@@ -1160,9 +1166,28 @@ qDebug() << "index = " << index;
 	d_insert_index = -1;
 	d_insert_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
 	d_insert_feature_rfg = NULL;
+#endif
+
+	// Flip to Topology Sections Table
+	d_view_state_ptr->change_tab( 2 );
+
+	// just to be safe, turn off connection to feature focus while changing Section Table
+	connect_to_topology_sections_container_signals( false );
+	connect_to_focus_signals( false );
+
+
+	// convert raw data to TableRow struct
+	GPlatesGui::TopologySectionsContainer::TableRow table_row;
+	table_row.d_feature_id = id;
+	// table_row.d_feature_ref = rfg_ptr->feature_handle_ptr();
+	table_row.d_click_point = GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
+	table_row.d_reverse = false; // FIXME : AUTO REVERSE
+
+qDebug() << "EditTopologyWidget::handle_insert_feature() call d_topology_sections_container_ptr->insert( Table Row );";
+	// Insert the row
+	d_topology_sections_container_ptr->insert( table_row );
 
 qDebug() << "EditTopologyWidget::handle_insert_feature() call d_feature_focus_ptr->unset_focus();";
-
 	// NOTE: this will trigger a set_focus signal with NULL ref
 	d_feature_focus_ptr->unset_focus();
 	d_feature_focus_head_points.clear();
@@ -1170,6 +1195,10 @@ qDebug() << "EditTopologyWidget::handle_insert_feature() call d_feature_focus_pt
 qDebug() << "EditTopologyWidget::handle_insert_feature() call d_view_state_ptr->feature_table_model().clear()";
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
 	d_view_state_ptr->feature_table_model().clear();
+
+
+	// fill the local vector from the new table
+	fill_topology_sections_from_section_table();
 
 
 qDebug() << "EditTopologyWidget::handle_insert_feature() call update_geom";
@@ -1186,6 +1215,10 @@ qDebug() << "EditTopologyWidget::handle_insert_feature() END";
 
 	// reset the add button
 	button_add_feature->setEnabled(false);
+
+	// reconnect listening to focus signals from Topology Sections table
+	connect_to_topology_sections_container_signals( false );
+	connect_to_focus_signals( false );
 }
 
 
@@ -2231,7 +2264,7 @@ qDebug() << "EditTopologyWidget::fill_topology_sections_from_section_table()";
 	connect_to_focus_signals( false );
 
 	// Clear the old data
-	d_topology_sections.clear();\
+	d_topology_sections.clear();
 
 	// read the table
 	GPlatesGui::TopologySectionsContainer::const_iterator iter = 
