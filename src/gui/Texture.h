@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -70,15 +70,6 @@ namespace GPlatesGui {
 		float z;
 	};
 
-
-	struct raster_data
-	{
-		std::vector<GLubyte> &data;
-		int width;
-		int height;
-		GLuint format;
-	} ;
-
 	class Texture:
 			public GPlatesPropertyValues::InMemoryRaster
 	{
@@ -92,7 +83,8 @@ namespace GPlatesGui {
 			d_min(0),
 			d_max(0),
 			d_corresponds_to_data(false),
-			d_extent(INITIAL_EXTENT)
+			d_extent(INITIAL_EXTENT),
+			d_should_be_remapped(false)
 			{}
 
 		~Texture();
@@ -345,6 +337,12 @@ namespace GPlatesGui {
 		 * The lat-lon extent over which the texture should be mapped.
 		 */
 		QRectF d_extent;
+		
+		
+		/**
+		 * Whether or not the texture needs to be remapped.                                                                     
+		 */
+		 bool d_should_be_remapped;
 
 
 	};

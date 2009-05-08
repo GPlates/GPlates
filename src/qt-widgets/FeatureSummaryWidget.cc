@@ -69,7 +69,7 @@ namespace
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			const GPlatesModel::PropertyName &property_name)
 	{
-		const GPlatesPropertyValues::GpmlPlateId *plate_id;
+		const GPlatesPropertyValues::GpmlPlateId *plate_id = NULL;
 		if (GPlatesFeatureVisitors::get_property_value(
 				*feature_ref, property_name, plate_id))
 		{
@@ -151,7 +151,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	static const GPlatesModel::PropertyName name_property_name = 
 		GPlatesModel::PropertyName::create_gml("name");
 
-	const GPlatesPropertyValues::XsString *name;
+	const GPlatesPropertyValues::XsString *name = NULL;
 	if (GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, name))
 	{
 		// The feature has one or more name properties. Use the first one for now.
@@ -187,7 +187,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
-	const GPlatesPropertyValues::GmlTimePeriod *time_period;
+	const GPlatesPropertyValues::GmlTimePeriod *time_period = NULL;
 	if (GPlatesFeatureVisitors::get_property_value(
 			*feature_ref, valid_time_property_name, time_period))
 	{

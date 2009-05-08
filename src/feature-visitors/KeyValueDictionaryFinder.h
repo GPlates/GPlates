@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -94,7 +94,7 @@ namespace GPlatesFeatureVisitors
 		found_key_value_dictionaries_end() const
 		{
 			return d_found_key_value_dictionaries.end();
-		}
+		}	
 
 		unsigned int
 		number_of_found_dictionaries()

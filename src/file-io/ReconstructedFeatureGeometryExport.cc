@@ -26,6 +26,7 @@
 #include "ReconstructedFeatureGeometryExport.h"
 
 #include "GMTFormatReconstructedFeatureGeometryExport.h"
+#include "ShapefileFormatReconstructedFeatureGeometryExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FileFormatNotSupportedException.h"
 
@@ -47,7 +48,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
 	{
 	case FeatureCollectionFileFormat::GMT:
 		return GMT;
-
+	case FeatureCollectionFileFormat::SHAPEFILE:
+		return SHAPEFILE;
 	default:
 		break;
 	}
@@ -76,12 +78,16 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
 				reconstruction_time);
 		break;
 
-#if 0
+
 	case SHAPEFILE:
-		// Shapefile format might have to group RFGs according to features and then
-		// write each feature and its grouped RFGs together.
+		ShapefileFormatReconstructedFeatureGeometryExport::export_geometries(
+			feature_geometry_group_seq,
+			file_info,
+			referenced_files,
+			reconstruction_anchor_plate_id,
+			reconstruction_time);
 		break;
-#endif
+
 
 	default:
 		throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,

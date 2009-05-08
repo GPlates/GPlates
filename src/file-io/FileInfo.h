@@ -27,8 +27,9 @@
 #ifndef GPLATES_FILEIO_FILEINFO_H
 #define GPLATES_FILEIO_FILEINFO_H
 
-#include <QString>
 #include <QFileInfo>
+#include <QMap>
+#include <QString>
 #include <boost/optional.hpp>
 #include "model/FeatureCollectionHandle.h"
 
@@ -126,6 +127,19 @@ namespace GPlatesFileIO {
 			d_feature_collection = feature_collection;
 		}
 
+		const QMap< QString,QString >& 
+		get_model_to_shapefile_map() const
+		{
+			return d_model_to_shapefile_map;
+		}
+
+		void
+		set_model_to_shapefile_map(
+			QMap< QString, QString > model_to_shapefile_map) const
+		{
+			d_model_to_shapefile_map = model_to_shapefile_map;
+		}
+
 	private:
 #if 0
 		FileInfo(
@@ -141,6 +155,11 @@ namespace GPlatesFileIO {
 		//FileFormat d_file_format;
 		//LineEndingStyle d_line_ending;
 		boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> d_feature_collection;
+
+		/**
+		 * A map of model property names to shapefile attributes names.                                                                     
+		 */
+		mutable QMap< QString,QString > d_model_to_shapefile_map;
 	};
 
 	//@{

@@ -143,6 +143,18 @@ namespace GPlatesPropertyValues {
 			visitor.visit_gpml_key_value_dictionary(*this);
 		}
 
+		bool
+		is_empty() const
+		{
+			return d_elements.empty();
+		}
+
+		int
+		num_elements() const
+		{
+			return d_elements.size();
+		}
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow

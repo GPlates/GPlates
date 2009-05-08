@@ -21,6 +21,8 @@ set(srcs
     GeometryFinder.h
     GeometrySetter.cc
     GeometrySetter.h
+    GeometryTypeFinder.cc
+    GeometryTypeFinder.h
     KeyValueDictionaryFinder.cc
     KeyValueDictionaryFinder.h
     PropertyValueFinder.h

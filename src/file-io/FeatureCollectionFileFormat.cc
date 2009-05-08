@@ -33,11 +33,12 @@
 #include "PlatesLineFormatWriter.h"
 #include "PlatesRotationFormatWriter.h"
 #include "GMTFormatWriter.h"
+#include "ShapefileWriter.h"
 
 #include "GpmlOnePointSixReader.h"
 #include "PlatesLineFormatReader.h"
 #include "PlatesRotationFormatReader.h"
-#include "ShapeFileReader.h"
+#include "ShapefileReader.h"
 
 #include "FileFormatNotSupportedException.h"
 #include "ErrorOpeningFileForWritingException.h"
@@ -45,6 +46,7 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "qt-widgets/ShapefilePropertyMapper.h"
 
 
 namespace
@@ -82,6 +84,9 @@ namespace
 		is_shapefile_format_file(const QFileInfo &file)
 	{
 		return file_name_ends_with(file, "shp");
+
+	// RJW: Testing ESRI Geodatabases.
+	//	return file_name_ends_with(file, "mdb");
 	}
 
 	bool
@@ -158,6 +163,8 @@ namespace
 				new GPlatesFileIO::GMTFormatWriter(file_info));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
+			return boost::shared_ptr<GPlatesFileIO::FeatureWriter>(
+				new GPlatesFileIO::ShapefileWriter(file_info));
 		default:
 			throw GPlatesFileIO::FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
 				"Chosen file format is not currently supported.");
@@ -346,7 +353,7 @@ GPlatesFileIO::read_feature_collection_file(
 		break;
 
 	case FeatureCollectionFileFormat::SHAPEFILE:
-		ShapeFileReader::read_file(file_info, model, read_errors);
+		ShapefileReader::read_file(file_info, model, read_errors);
 		break;
 
 	case FeatureCollectionFileFormat::GMT:

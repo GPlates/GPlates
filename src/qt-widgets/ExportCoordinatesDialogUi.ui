@@ -60,6 +60,11 @@
           </item>
           <item>
            <property name="text" >
+            <string>ESRI Shapefile</string>
+           </property>
+          </item>
+          <item>
+           <property name="text" >
             <string>Well-Known Text (WKT)</string>
            </property>
           </item>
@@ -75,7 +80,7 @@
       <item>
        <widget class="QStackedWidget" name="stack_format_options" >
         <property name="currentIndex" >
-         <number>0</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="page_format_plates4" >
          <layout class="QVBoxLayout" >
@@ -97,6 +102,20 @@
            <widget class="QLabel" name="label_info_gmt" >
             <property name="text" >
              <string>The geometry will be exported in a format suitable for use in GMT scripts.</string>
+            </property>
+            <property name="wordWrap" >
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="page_format_shapefile" >
+         <layout class="QGridLayout" >
+          <item row="0" column="0" >
+           <widget class="QLabel" name="label_info_shapefile" >
+            <property name="text" >
+             <string>The geometry will be exported in ESRI Shapefile format. Only default attributes will be created.</string>
             </property>
             <property name="wordWrap" >
              <bool>true</bool>

@@ -83,7 +83,7 @@
 #include "file-io/FileInfo.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/RasterReader.h"
-#include "file-io/ShapeFileReader.h"
+#include "file-io/ShapefileReader.h"
 #include "file-io/GpmlOnePointSixReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "view-operations/RenderedGeometryFactory.h"
@@ -150,6 +150,7 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 
 	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
 		*file_info.get_feature_collection();
+
 
 	if (feature_collection.is_valid())
 	{
@@ -218,6 +219,18 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 
 		try
 		{
+
+			switch ( GPlatesFileIO::get_feature_collection_file_format(*iter) )
+			{
+			case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
+				GPlatesFileIO::ShapefileReader::set_property_mapper(
+					boost::shared_ptr< ShapefilePropertyMapper >(
+						new ShapefilePropertyMapper(this)));
+				break;
+
+			default:
+				break;
+			}
 			// Read the feature collection from file.
 			GPlatesFileIO::read_feature_collection_file(file, d_model, read_errors);
 
@@ -286,10 +299,6 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 				break;
 
 			case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-				GPlatesFileIO::ShapeFileReader::set_property_mapper(
-					boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
-				GPlatesFileIO::ShapeFileReader::read_file(file, d_model, read_errors);
-
 				if (file.get_feature_collection())
 				{
 					GPlatesAppState::ApplicationState::file_info_iterator new_file =
@@ -377,8 +386,8 @@ GPlatesQtWidgets::ViewportWindow::reload_file(
 		switch ( GPlatesFileIO::get_feature_collection_file_format(*file_it) )
 		{
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-			GPlatesFileIO::ShapeFileReader::set_property_mapper(
-				boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
+			GPlatesFileIO::ShapefileReader::set_property_mapper(
+				boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper(this)));
 			break;
 
 		default:
@@ -606,6 +615,7 @@ namespace
 						colour = colour_table.lookup(*rfg);
 					}
 				}
+
 
 				if (colour == colour_table.end()) {
 					// Anything not in the table uses the 'Olive' colour.
@@ -1977,7 +1987,7 @@ GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
 
-	GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(file_info, d_model, read_errors);
+	GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(file_info,d_model,read_errors);
 
 	d_read_errors_dialog.update();
 

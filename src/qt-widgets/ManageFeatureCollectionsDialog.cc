@@ -38,6 +38,7 @@
 #include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
+#include "file-io/OgrException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
 #include "ManageFeatureCollectionsActionWidget.h"
@@ -144,6 +145,7 @@ namespace
 				}
 				filters << filter_gpml;
 				filters << filter_line;
+				filters << filter_shapefile;
 				filters << filter_all;
 				return filters.join(";;");
 
@@ -159,6 +161,7 @@ namespace
 				}
 				filters << filter_gpml;
 				filters << filter_gmt;
+				filters << filter_shapefile;
 				filters << filter_all;
 				return filters.join(";;");
 
@@ -183,6 +186,7 @@ namespace
 			{
 				// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
 				QStringList filters;
+				filters << filter_shapefile;
 				filters << filter_line;
 				if (has_gzip) {
 					filters << filter_gpml_gz;
@@ -208,6 +212,7 @@ namespace
 					// actually has reconstructable features in it!
 					filters << filter_gmt;
 					filters << filter_line;
+					filters << filter_shapefile;
 				}
 				if (has_reconstruction_features) {
 					// Only offer to save as PLATES4 .rot if feature collection
@@ -230,6 +235,7 @@ namespace
 					// actually has reconstructable features in it!
 					filters << filter_gmt;
 					filters << filter_line;
+					filters << filter_shapefile;
 				}
 				if (has_reconstruction_features) {
 					// Only offer to save as PLATES4 .rot if feature collection
@@ -396,6 +402,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
+	catch (GPlatesFileIO::OgrException &)
+	{
+		QString message = tr("An OGR error occurred.");
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
 }
 
 
@@ -462,6 +474,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Writing files in this format is currently not supported.");
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+	catch (GPlatesFileIO::OgrException &)
+	{
+		QString message = tr("An OGR error occurred.");
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
@@ -534,6 +552,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Writing files in this format is currently not supported.");
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+	catch (GPlatesFileIO::OgrException &)
+	{
+		QString message = tr("An OGR error occurred.");
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -44,8 +44,8 @@ namespace GPlatesFileIO{
 		 */ 
 		bool 
 		write_file(
-			QString &filename,
-			QMap<QString,QString> *map);
+			const QString &filename,
+			const QMap<QString,QString> &map);
 
 	private:
 
