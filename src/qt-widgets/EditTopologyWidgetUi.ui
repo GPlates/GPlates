@@ -148,22 +148,6 @@
     </layout>
    </item>
    <item>
-    <widget class="QCheckBox" name="checkbox_reverse" >
-     <property name="toolTip" >
-      <string>Check this box to Reverse the coodinates of this section</string>
-     </property>
-     <property name="statusTip" >
-      <string>Check this box to Reverse the coodinates of this section</string>
-     </property>
-     <property name="whatsThis" >
-      <string>Check this box to Reverse the coodinates of this section</string>
-     </property>
-     <property name="text" >
-      <string>Reverse Coordinates</string>
-     </property>
-    </widget>
-   </item>
-   <item>
     <widget class="QPushButton" name="button_add_feature" >
      <property name="toolTip" >
       <string>Add the focused feature to the Topology Sections table.</string>
@@ -194,42 +178,6 @@
       <string>Remove Feature</string>
      </property>
     </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="layout_insert" >
-     <item>
-      <widget class="QPushButton" name="button_insert_before" >
-       <property name="toolTip" >
-        <string>Set the focused feature as the insert spot;  Then click on a different feature to be inserted before this spot.</string>
-       </property>
-       <property name="statusTip" >
-        <string>Set the focused feature as the insert spot;  Then click on a different feature to be inserted before this spot.</string>
-       </property>
-       <property name="whatsThis" >
-        <string>Set the focused feature as the insert spot;  Then click on a different feature to be inserted before this spot.</string>
-       </property>
-       <property name="text" >
-        <string>Insert Before</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_insert_after" >
-       <property name="toolTip" >
-        <string comment="ttc" >Set the focused feature as the insert spot;  Then click on a different feature to be inserted after this spot.</string>
-       </property>
-       <property name="statusTip" >
-        <string comment="stc" >Set the focused feature as the insert spot;  Then click on a different feature to be inserted after this spot.</string>
-       </property>
-       <property name="whatsThis" >
-        <string comment="wtc" >Set the focused feature as the insert spot;  Then click on a different feature to be inserted after this spot.</string>
-       </property>
-       <property name="text" >
-        <string>Insert After</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
    </item>
    <item>
     <widget class="QPushButton" name="button_clear_feature" >

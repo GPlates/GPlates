@@ -152,12 +152,8 @@ GPlatesQtWidgets::EditTopologyWidget::EditTopologyWidget(
 	label_last->setEnabled(false);
 	lineedit_first->setEnabled(false);
 	lineedit_last->setEnabled(false);
-	checkbox_reverse->setEnabled(false);
-	checkbox_reverse->setChecked(false);
 	button_add_feature->setEnabled(false);
 	button_remove_feature->setEnabled(false);
-	button_insert_before->setEnabled(false);
-	button_insert_after->setEnabled(false);
 	button_clear_feature->setEnabled(false);
 	label_num_sections->setEnabled(false);
 	lineedit_num_sections->setEnabled(false);
@@ -165,12 +161,6 @@ GPlatesQtWidgets::EditTopologyWidget::EditTopologyWidget(
 	button_cancel->setEnabled(true);
 
 
-	// Use Coordinates in Reverse
-	QObject::connect(checkbox_reverse, 
-		SIGNAL(clicked()),
-		this, 
-		SLOT(handle_reverse()));
-	
 	// Choose Feature button 
 	QObject::connect(button_add_feature, 
 		SIGNAL(clicked()),
@@ -182,16 +172,6 @@ GPlatesQtWidgets::EditTopologyWidget::EditTopologyWidget(
 		SIGNAL(clicked()),
 		this, 
 		SLOT(handle_remove_feature()));
-	
-	QObject::connect(button_insert_after, 
-		SIGNAL(clicked()),
-		this, 
-		SLOT(handle_insert_after()));
-	
-	QObject::connect(button_insert_before, 
-		SIGNAL(clicked()),
-		this, 
-		SLOT(handle_insert_before()));
 	
 	// Clear button to clear points from table and start over.
 	QObject::connect(button_clear_feature, 
@@ -359,6 +339,17 @@ GPlatesQtWidgets::EditTopologyWidget::connect_to_topology_sections_container_sig
 				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
 			SLOT( entries_inserted(
+				GPlatesGui::TopologySectionsContainer::size_type,
+				GPlatesGui::TopologySectionsContainer::size_type) )
+		);
+
+		QObject::connect(
+			d_topology_sections_container_ptr,
+			SIGNAL( entries_modified(
+				GPlatesGui::TopologySectionsContainer::size_type,
+				GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			SLOT( entries_modified(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
@@ -628,12 +619,8 @@ qDebug() << "EditTopologyWidget::display_feature:";
 	label_last->setEnabled(false);
 	lineedit_first->setEnabled(false);
 	lineedit_last->setEnabled(false);
-	checkbox_reverse->setEnabled(false);
-	checkbox_reverse->setChecked(false);
 	button_add_feature->setEnabled(false);
 	button_remove_feature->setEnabled(false);
-	button_insert_before->setEnabled(false);
-	button_insert_after->setEnabled(false);
 	button_clear_feature->setEnabled(false);
 	label_num_sections->setEnabled(false);
 	lineedit_num_sections->setEnabled(false);
@@ -689,8 +676,8 @@ qDebug() << "EditTopologyWidget::display_feature: invalid ref";
 			return; 
 		}
 
-		// d_section_ids is not empty ; don't display this topology feature
-		if ( d_section_ids.size() != 0 ) {
+		// d_topology_sections is not empty ; don't display this topology feature
+		if ( d_topology_sections.size() != 0 ) {
 			return;
 		}
 
@@ -736,17 +723,18 @@ qDebug() << "EditTopologyWidget::find_feature_in_topology()";
 	GPlatesModel::FeatureId test_id = feature_ref->feature_id();
 qDebug() << "test_id = " << GPlatesUtils::make_qstring_from_icu_string( test_id.get() );
 
-	std::vector<GPlatesModel::FeatureId>::iterator section_itr = d_section_ids.begin();
-	std::vector<GPlatesModel::FeatureId>::iterator section_end = d_section_ids.end();
-	int index = 0;
-	for ( ; section_itr != section_end; ++section_itr, ++index)
+	GPlatesGui::TopologySectionsContainer::const_iterator iter = 
+		d_topology_sections_container_ptr->begin();
+
+	int i = 0;
+	for ( ; iter != d_topology_sections_container_ptr->end(); ++iter)
 	{
-		GPlatesModel::FeatureId	section_id = *section_itr;
-qDebug() << "index = " << index << "; section_id = " << GPlatesUtils::make_qstring_from_icu_string( section_id.get() );
-		if ( test_id == section_id)
+		if ( test_id == iter->d_feature_id )
 		{
-			return index;
+qDebug() << "index = " << i << "; d_feature_id = " << GPlatesUtils::make_qstring_from_icu_string( iter->d_feature_id.get() );
+			return i;
 		}
+		++i;
 	}
 
 	// feature id not found
@@ -775,12 +763,8 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 	label_last->setEnabled(false);
 	lineedit_first->setEnabled(false);
 	lineedit_last->setEnabled(false);
-	checkbox_reverse->setEnabled(false);
-	checkbox_reverse->setChecked(false);
 	button_add_feature->setEnabled(false);
 	button_remove_feature->setEnabled(false);
-	button_insert_before->setEnabled(false);
-	button_insert_after->setEnabled(false);
 	button_clear_feature->setEnabled(false);
 	label_num_sections->setEnabled(true);
 	lineedit_num_sections->setEnabled(true);
@@ -800,9 +784,6 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 	// Visit the feature_ref, filling d_section_ vectors with data
 	feature_ref->accept_visitor( topo_sections_finder );
 
-	// FIXME: REMOVE: 
-	//topo_sections_finder.report();
-
 	// just to be safe, disconnect listening to feature focus while changing Section Table
 	connect_to_focus_signals( false );
 	connect_to_topology_sections_container_signals( false );
@@ -818,17 +799,9 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 	GPlatesGui::TopologySectionsContainer::iterator table_row_itr;
 	table_row_itr = topo_sections_finder.found_rows_begin();
 
-    // loop over rows
+    // loop over found rows
     for ( ; table_row_itr != topo_sections_finder.found_rows_end() ; ++table_row_itr)
     {
-// FIXME: REMOVE TEST
-#if 0
-		qDebug() << "EditTopologyWidget::display_feature_topology(): insert_row()";
-        qDebug() << "id ="
-		<< GPlatesUtils::make_qstring_from_icu_string( (*table_row_itr).d_feature_id.get() );
-		qDebug() << "reverse? = " << (*table_row_itr).d_reverse;
-
-#endif
 		// insert a row into the table
 		d_topology_sections_container_ptr->insert( *table_row_itr );
 
@@ -844,8 +817,6 @@ qDebug() << "EditTopologyWidget::display_feature_topology():";
 	fill_widgets( feature_ref, associated_rfg );
 
 	// Set the num_sections
-	lineedit_num_sections->setText(QString::number( d_section_ids.size() ));
-
 	lineedit_num_sections->setText(QString::number( topo_sections_finder.number_of_rows() ) );
 
 qDebug() << "EditTopologyWidget::display_feature_topology() END";
@@ -877,9 +848,6 @@ qDebug() << "EditTopologyWidget::display_feature_on_boundary() invalid ref";
 	// fill the widgets with feature data
 	fill_widgets( feature_ref, associated_rfg );
 
-	// set the the checkbox_reverse
-	bool r = d_section_reverse_flags.at( d_section_feature_focus_index );
-
 	// Set the widget states
 	label_type->setEnabled(true);
 	lineedit_type->setEnabled(true);
@@ -892,12 +860,8 @@ qDebug() << "EditTopologyWidget::display_feature_on_boundary() invalid ref";
 	label_last->setEnabled(true);
 	lineedit_first->setEnabled(true);
 	lineedit_last->setEnabled(true);
-	checkbox_reverse->setEnabled(true);
-	checkbox_reverse->setChecked( r );
 	button_add_feature->setEnabled(false);
 	button_remove_feature->setEnabled(true);
-	button_insert_before->setEnabled(true);
-	button_insert_after->setEnabled(true);
 	button_clear_feature->setEnabled(true);
 	label_num_sections->setEnabled(true);
 	lineedit_num_sections->setEnabled(true);
@@ -944,12 +908,8 @@ qDebug() << "-----------------------------------------------------";
 	label_last->setEnabled(true);
 	lineedit_first->setEnabled(true);
 	lineedit_last->setEnabled(true);
-	checkbox_reverse->setEnabled(false);
-	checkbox_reverse->setChecked(false);
 	button_add_feature->setEnabled(true);
 	button_remove_feature->setEnabled(false);
-	button_insert_before->setEnabled(false);
-	button_insert_after->setEnabled(false);
 	button_clear_feature->setEnabled(true);
 	label_num_sections->setEnabled(false);
 	lineedit_num_sections->setEnabled(false);
@@ -1035,7 +995,26 @@ GPlatesQtWidgets::EditTopologyWidget::entries_inserted(
 	GPlatesGui::TopologySectionsContainer::size_type quantity)
 {
 	qDebug() << "EditTopologyWidget::entries_inserted(): inserted_index = " << inserted_index;
-	qDebug() << "EditTopologyWidget::entries_modified(): quantity = " << quantity;
+	qDebug() << "EditTopologyWidget::entries_inserted(): quantity = " << quantity;
+
+	if (! d_is_active) { return; }
+
+	// fill the local vector from the new table
+	fill_topology_sections_from_section_table();
+
+	d_visit_to_check_type = false;
+	d_visit_to_create_properties = true;
+	update_geometry();
+	d_visit_to_create_properties = false;
+}
+
+void
+GPlatesQtWidgets::EditTopologyWidget::entries_modified(
+	GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
+	GPlatesGui::TopologySectionsContainer::size_type modified_index_end)
+{
+	qDebug() << "EditTopologyWidget::entries_modified(): modified_index_begin = " << modified_index_begin;
+	qDebug() << "EditTopologyWidget::entries_modified(): modified_index_end   = " << modified_index_end;
 
 	if (! d_is_active) { return; }
 
@@ -1051,74 +1030,16 @@ GPlatesQtWidgets::EditTopologyWidget::entries_inserted(
 
 
 
+
 // 
 // Button Handlers  and support functions 
 // 
-
-void
-GPlatesQtWidgets::EditTopologyWidget::handle_reverse()
-{
-qDebug() << "EditTopologyWidget::handle_reverse";
-
-	// find the item
-	int index = find_feature_in_topology( d_feature_focus_ptr->focused_feature() );
-
-	// if item not found, just return
-	if (index == -1) { return; }
-
-	// else, flip the flag
-	d_section_reverse_flags.at(index) = ! d_section_reverse_flags.at(index);
-
-	// adjust the widget 
-	checkbox_reverse->setChecked( d_section_reverse_flags.at(index) ); 
-
-	// NOTE: this will trigger a set_focus signal with NULL ref
-	d_feature_focus_ptr->unset_focus();
-	d_feature_focus_head_points.clear();
-	d_feature_focus_tail_points.clear();
-	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_view_state_ptr->feature_table_model().clear();
-
-	// Flip to Topology Sections Table
-	d_view_state_ptr->change_tab( 2 );
-
-	// process the sections vectors
-	d_visit_to_check_type = false;
-	d_visit_to_create_properties = true;
-	update_geometry();
-	d_visit_to_create_properties = false;
-
-	// d_topology_feature_ref exists, simple append the boundary
-	append_boundary_to_feature( d_topology_feature_ref );
-
-	// reset widget to default state
-	checkbox_reverse->setChecked( false );
-}
 
 void
 GPlatesQtWidgets::EditTopologyWidget::handle_add_feature()
 {
 	// adjust the mode
 	d_in_edit = true;
-
-#if 0
-	// if this is the first feature on an empty boundary, 
-	// then 'click' handle_new_topology button automatically to set other widgets
-	if ( d_section_ids.size() == 0 ) {
-		// handle_new_topology();
-	}
-
-	// set the insert index to add the feature to the end of the boundary
-	int index = d_section_ids.size();
-
-	// if this is an 'insert before' or 'insert after' operation, 
-	// then reset the index to the correct spot 
-	if ( d_insert_index != -1 )
-	{
-		index = d_insert_index; 
-	}
-
-#endif
 
 	// Get the current insertion point 
 	int index = d_topology_sections_container_ptr->insertion_point();
@@ -1150,23 +1071,6 @@ qDebug() << "index = " << index;
 		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg_ptr);
 
 	const GPlatesModel::FeatureId id = rfg_ptr->feature_handle_ptr()->feature_id();
-
-#if 0
-	// insert the feature id
-	d_section_ids.insert( d_section_ids.begin() + index, id );
-
-	// insert the default reverse flag
-	d_section_reverse_flags.insert( d_section_reverse_flags.begin() + index, false );
-
-	// insert the current click_point
-	d_section_click_points.insert( d_section_click_points.begin() + index,  
-			std::make_pair( d_click_point_lat, d_click_point_lon ) );
-
-	// reset the d_insert_ variables before the update call 
-	d_insert_index = -1;
-	d_insert_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
-	d_insert_feature_rfg = NULL;
-#endif
 
 	// Flip to Topology Sections Table
 	d_view_state_ptr->change_tab( 2 );
@@ -1227,16 +1131,6 @@ GPlatesQtWidgets::EditTopologyWidget::handle_remove_feature()
 {
 qDebug() << "EditTopologyWidget::handle_remove_feature()";
 
-	int index = d_section_feature_focus_index;
-
-qDebug() << "index = " << index;
-
-	// remove elements from the d_section_ vectors 
-	d_section_ids.erase( d_section_ids.begin() + index );
-	d_section_ptrs.erase( d_section_ptrs.begin() + index );
-	d_section_click_points.erase( d_section_click_points.begin() + index );
-	d_section_reverse_flags.erase( d_section_reverse_flags.begin() + index );
-
 	// clear out the widgets
 	clear_widgets();
 
@@ -1263,46 +1157,6 @@ qDebug() << "EditTopologyWidget::handle_remove_feature() END";
 }
 
 void
-GPlatesQtWidgets::EditTopologyWidget::handle_insert_after()
-{
-qDebug() << "EditTopologyWidget::handle_insert_after()";
-
-	// set the d_insert_feature_ref 
-	d_insert_feature_ref = d_feature_focus_ptr->focused_feature();
-
-	// find the index 
-	d_insert_index = find_feature_in_topology( d_feature_focus_ptr->focused_feature() );
-	d_insert_index += 1;
-
-qDebug() << "d_insert_index = " << d_insert_index;
-
-	// unset the focus 
-	d_feature_focus_ptr->unset_focus(); // will call display_feature() with NULL ref
-	d_feature_focus_head_points.clear(); 
-	d_feature_focus_tail_points.clear();
-}
-
-void
-GPlatesQtWidgets::EditTopologyWidget::handle_insert_before()
-{
-qDebug() << "EditTopologyWidget::handle_insert_before()";
-
-	// set the d_insert_feature_ref 
-	d_insert_feature_ref = d_feature_focus_ptr->focused_feature();
-
-	// set the insert index
-	d_insert_index = find_feature_in_topology( d_feature_focus_ptr->focused_feature() );
-
-qDebug() << "d_insert_index = " << d_insert_index;
-
-	// unset the focus 
-	d_feature_focus_ptr->unset_focus(); // will call display_feature() with NULL ref
-	d_feature_focus_head_points.clear(); 
-	d_feature_focus_tail_points.clear(); 
-}
-
-
-void
 GPlatesQtWidgets::EditTopologyWidget::handle_clear()
 {
 qDebug() << "EditTopologyWidget::handle_clear()";
@@ -1326,8 +1180,8 @@ GPlatesQtWidgets::EditTopologyWidget::handle_apply()
 {
 qDebug() << "EditTopologyWidget::handle_apply()";
 
-	// check for an empty section vectors
-	if ( d_section_ids.empty() ) 
+	// check for an empty table
+	if ( d_topology_sections_container_ptr->size() == 0 )
 	{
 		QMessageBox::warning(this, 
 			tr("No boundary sections are defined for this feature"),
@@ -1386,12 +1240,6 @@ qDebug() << "EditTopologyWidget::handle_apply()";
 	d_topology_vertices.clear();
 	d_tmp_index_vertex_list.clear();
 
-	// clear the d_section_FOO vectors
-	d_section_ptrs.clear();
-	d_section_ids.clear();
-	d_section_click_points.clear();
-	d_section_reverse_flags.clear();
-
 	// clear the working lists
 	d_head_end_points.clear();
 	d_tail_end_points.clear();
@@ -1438,12 +1286,8 @@ qDebug() << "EditTopologyWidget::handle_cancel()";
 	label_last->setEnabled(false);
 	lineedit_first->setEnabled(false);
 	lineedit_last->setEnabled(false);
-	checkbox_reverse->setEnabled(false);
-	checkbox_reverse->setChecked(false);
 	button_add_feature->setEnabled(false);
 	button_remove_feature->setEnabled(false);
-	button_insert_before->setEnabled(false);
-	button_insert_after->setEnabled(false);
 	button_clear_feature->setEnabled(false);
 	label_num_sections->setEnabled(false);
 	lineedit_num_sections->setEnabled(false);
@@ -1466,12 +1310,6 @@ qDebug() << "EditTopologyWidget::handle_cancel()";
 	// clear the vertex list
 	d_topology_vertices.clear();
 	d_tmp_index_vertex_list.clear();
-
-	// clear the d_section_FOO vectors
-	d_section_ptrs.clear();
-	d_section_ids.clear();
-	d_section_click_points.clear();
-	d_section_reverse_flags.clear();
 
 	// clear the working lists
 	d_head_end_points.clear();
@@ -3191,43 +3029,15 @@ qDebug() << "EditTopologyWidget::append_boundary_value_to_feature() END";
 }
 
 
-void
-GPlatesQtWidgets::EditTopologyWidget::fill_section_vectors_from_feature_ref(
-	GPlatesModel::FeatureHandle::weak_ref feature_ref)
-{
-qDebug() << "EditTopologyWidget::fill_sections_section_vectors_from_feature_ref()";
-	if ( ! feature_ref.is_valid() ) 
-	{
-		return;
-	}
-
-	// Clear the working lists
-	d_section_ptrs.clear();
-	d_section_ids.clear();
-	d_section_click_points.clear();
-	d_section_reverse_flags.clear();
-
-	// NOTE: call to update_geometry(); updates the other working lists
-
-	// Create a new TopologySectionsFinder to fill d_section_ vectors
-	GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder( 
-		d_section_ptrs, d_section_ids, d_section_click_points, d_section_reverse_flags);
-
-	// Visit the topology_feature ref, filling d_section_ vectors with data
-	feature_ref->accept_visitor( topo_sections_finder );
-}
-
-
 
 void
 GPlatesQtWidgets::EditTopologyWidget::show_numbers()
 {
 	qDebug() << "############################################################"; 
 	qDebug() << "show_numbers: "; 
-	qDebug() << "d_section_ptrs.size()         = " << d_section_ptrs.size(); 
-	qDebug() << "d_section_ids.size()          = " << d_section_ids.size(); 
-	qDebug() << "d_section_click_points.size() = " << d_section_click_points.size();
-	qDebug() << "d_section_reverse_flags.size()= " << d_section_reverse_flags.size();
+	qDebug() << "d_topology_sections_container_ptr->size() = " << d_topology_sections_container_ptr->size(); 
+	qDebug() << "d_topology_sections.size()                = " << d_topology_sections.size(); 
+
 	qDebug() << "d_topology_vertices.size()    = " << d_topology_vertices.size(); 
 	qDebug() << "d_tmp_index_vertex_list.size()= " << d_tmp_index_vertex_list.size();
 	qDebug() << "d_head_end_points.size()      = " << d_head_end_points.size(); 
@@ -3283,21 +3093,6 @@ GPlatesQtWidgets::EditTopologyWidget::show_numbers()
 		{
 			qDebug() << "d_topology_feature_ref = INVALID";
 		}
-	}
-
-
-	//
-	// show sections details
-	//
-	std::vector<GPlatesModel::FeatureId>::iterator section_itr = d_section_ids.begin();
-	std::vector<GPlatesModel::FeatureId>::iterator section_end = d_section_ids.end();
-	int index = 0;
-	for ( ; section_itr != section_end; ++section_itr, ++index)
-	{
-		GPlatesModel::FeatureId	section_id = *section_itr;
-		qDebug() << "index = " << index 
-			<< "; section_id = " 
-			<< GPlatesUtils::make_qstring_from_icu_string( section_id.get() );
 	}
 
 

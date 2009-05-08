@@ -325,12 +325,11 @@ namespace GPlatesQtWidgets
 		entries_inserted(
 			GPlatesGui::TopologySectionsContainer::size_type inserted_index,
 			GPlatesGui::TopologySectionsContainer::size_type quantity);
-#if 0
+
 		void
 		entries_modified(
 			GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
 			GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
-#endif
 
 		/**
 		 * Configures widgets to accept new geometry of a specific type.
@@ -387,12 +386,6 @@ namespace GPlatesQtWidgets
 	private slots:
 
 		/**
-		 * The slot that gets called when the user clicks "Use Coordinates in Reverse".
-		 */
-		void
-		handle_reverse();
-
-		/**
 		 * The slot that gets called when the user clicks "Choose Feature".
 		 */
 		void
@@ -403,12 +396,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		handle_remove_feature();
-
-		void
-		handle_insert_after();
-
-		void
-		handle_insert_before();
 
 		void
 		handle_insert_feature(int index);
