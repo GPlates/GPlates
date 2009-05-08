@@ -251,6 +251,9 @@ namespace GPlatesQtWidgets
 		void
 		fill_section_table_from_topology_sections();
 
+		void
+		fill_topology_sections_from_section_table();
+
 
 	public slots:
 		
@@ -308,15 +311,26 @@ namespace GPlatesQtWidgets
 		/** Slots for signals from TopologySectionsContainer */
 		void
 		cleared();
+
+		void
+		insertion_point_moved(
+			GPlatesGui::TopologySectionsContainer::size_type new_index);
+		
 	
 		void
 		entry_removed(
 			GPlatesGui::TopologySectionsContainer::size_type deleted_index);
 	
 		void
+		entries_inserted(
+			GPlatesGui::TopologySectionsContainer::size_type inserted_index,
+			GPlatesGui::TopologySectionsContainer::size_type quantity);
+#if 0
+		void
 		entries_modified(
 			GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
 			GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
+#endif
 
 		/**
 		 * Configures widgets to accept new geometry of a specific type.
@@ -598,6 +612,7 @@ namespace GPlatesQtWidgets
 		/*
 		 * These variables keep track during insert operations
 		 */
+		int d_insertion_point;
 		int d_insert_index;
 		GPlatesModel::FeatureHandle::weak_ref d_insert_feature_ref;
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_insert_feature_rfg;

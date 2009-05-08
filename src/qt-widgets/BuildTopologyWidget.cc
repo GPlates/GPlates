@@ -398,7 +398,6 @@ GPlatesQtWidgets::BuildTopologyWidget::initialise_geometry(
 void
 GPlatesQtWidgets::BuildTopologyWidget::clear_widgets()
 {
-qDebug() << "BuildTopologyWidget::clear_widgets()";
 	lineedit_type->clear();
 	lineedit_name->clear();
 	lineedit_plate_id->clear();

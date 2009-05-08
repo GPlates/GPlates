@@ -334,8 +334,15 @@ GPlatesQtWidgets::EditTopologyWidget::connect_to_topology_sections_container_sig
 			SLOT( cleared() )
 		);
 
-// FIXME: the way the TopologySectionsContainer is set up, 
-// entry_removed gets called to many times, once for each adjusment
+		QObject::connect(
+			d_topology_sections_container_ptr,
+			SIGNAL( insertion_point_moved(
+				GPlatesGui::TopologySectionsContainer::size_type) ),
+			this,
+			SLOT( insertion_point_moved(
+				GPlatesGui::TopologySectionsContainer::size_type) )
+		);
+
 		QObject::connect(
 			d_topology_sections_container_ptr,
 			SIGNAL( entry_removed(
@@ -344,16 +351,14 @@ GPlatesQtWidgets::EditTopologyWidget::connect_to_topology_sections_container_sig
 			SLOT( entry_removed(
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
-#if 0
-#endif
 
 		QObject::connect(
 			d_topology_sections_container_ptr,
-			SIGNAL( entries_modified(
+			SIGNAL( entries_inserted(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
-			SLOT( entries_modified(
+			SLOT( entries_inserted(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
@@ -361,21 +366,13 @@ GPlatesQtWidgets::EditTopologyWidget::connect_to_topology_sections_container_sig
 	} 
 	else 
 	{
+		// Disconnect this receiver from all signals from TopologySectionsContainer:
 		QObject::disconnect(
 			d_topology_sections_container_ptr,
-			SIGNAL( cleared() ),
-			this,
-			0);
-
-		QObject::disconnect(
-			d_topology_sections_container_ptr,
-			SIGNAL( entries_modified(
-				GPlatesGui::TopologySectionsContainer::size_type,
-				GPlatesGui::TopologySectionsContainer::size_type) ),
+			0,
 			this,
 			0
 		);
-
 	}
 }
 
@@ -1001,6 +998,17 @@ GPlatesQtWidgets::EditTopologyWidget::cleared()
 {
 	
 }
+
+
+void
+GPlatesQtWidgets::EditTopologyWidget::insertion_point_moved(
+	GPlatesGui::TopologySectionsContainer::size_type new_index)
+{
+	qDebug() << "EditTopologyWidget::insertion_point_moved(): new_index = " << new_index;
+
+	d_insertion_point = new_index;
+}
+
     
 void
 GPlatesQtWidgets::EditTopologyWidget::entry_removed(
@@ -1008,42 +1016,36 @@ GPlatesQtWidgets::EditTopologyWidget::entry_removed(
 {
 	qDebug() << "EditTopologyWidget::entry_remove(): deleted_index = " << deleted_index;
 
-#if 0
 	if (! d_is_active) { return; }
 
-	// update the d_topology_sections vector
-	d_topology_sections.erase( deleted_index );
+	// fill the local vector from the new table
+	fill_topology_sections_from_section_table();
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
 	d_visit_to_create_properties = false;
 
-	display_feature(
-		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-#endif
 }
 
-void
-GPlatesQtWidgets::EditTopologyWidget::entries_modified(
-	GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
-	GPlatesGui::TopologySectionsContainer::size_type modified_index_end)
-{
-	qDebug() << "EditTopologyWidget::entries_modified(): modified_index_begin = " << modified_index_begin;
-	qDebug() << "EditTopologyWidget::entries_modified(): modified_index_end = " << modified_index_end;
 
-#if 0
+void
+GPlatesQtWidgets::EditTopologyWidget::entries_inserted(
+	GPlatesGui::TopologySectionsContainer::size_type inserted_index,
+	GPlatesGui::TopologySectionsContainer::size_type quantity)
+{
+	qDebug() << "EditTopologyWidget::entries_inserted(): inserted_index = " << inserted_index;
+	qDebug() << "EditTopologyWidget::entries_modified(): quantity = " << quantity;
+
 	if (! d_is_active) { return; }
+
+	// fill the local vector from the new table
+	fill_topology_sections_from_section_table();
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
 	d_visit_to_create_properties = false;
-
-	display_feature(
-		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-#endif
-
 }
 
 
@@ -2196,8 +2198,8 @@ GPlatesQtWidgets::EditTopologyWidget::fill_section_table_from_topology_sections(
 qDebug() << "EditTopologyWidget::fill_section_table_from_topology_sections()";
 
 	// just to be safe, turn off connection to feature focus while changing Section Table
-	connect_to_focus_signals( false );
 	connect_to_topology_sections_container_signals( false );
+	connect_to_focus_signals( false );
 
 	// Clear the old data
 	d_topology_sections_container_ptr->clear();
@@ -2215,6 +2217,39 @@ qDebug() << "EditTopologyWidget::fill_section_table_from_topology_sections()";
 
 	return;
 }
+
+///
+///
+///
+void
+GPlatesQtWidgets::EditTopologyWidget::fill_topology_sections_from_section_table()
+{
+qDebug() << "EditTopologyWidget::fill_topology_sections_from_section_table()";
+
+	// just to be safe, turn off connection to feature focus while changing Section Table
+	connect_to_topology_sections_container_signals( false );
+	connect_to_focus_signals( false );
+
+	// Clear the old data
+	d_topology_sections.clear();\
+
+	// read the table
+	GPlatesGui::TopologySectionsContainer::const_iterator iter = 
+		d_topology_sections_container_ptr->begin();
+
+	for ( ; iter != d_topology_sections_container_ptr->end(); ++iter)
+	{
+		d_topology_sections.push_back( *iter );
+	}
+	
+	// reconnect listening to focus signals from Topology Sections table
+	connect_to_topology_sections_container_signals( true );
+	connect_to_focus_signals( true );
+
+	return;
+}
+
+
 
 ///
 /// Loop over the Topology Section entries and fill the working lists

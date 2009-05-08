@@ -397,13 +397,13 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	// Listen to events from our container.
 	QObject::connect(d_container_ptr, SIGNAL(cleared()),
 			this, SLOT(clear_table()));
-	QObject::connect(d_container_ptr, SIGNAL(insertion_point_moved(TopologySectionsContainer::size_type)),
+	QObject::connect(d_container_ptr, SIGNAL(insertion_point_moved(GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
 	QObject::connect(d_container_ptr, SIGNAL(entry_removed(GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entries_inserted(TopologySectionsContainer::size_type,TopologySectionsContainer::size_type)),
+	QObject::connect(d_container_ptr, SIGNAL(entries_inserted(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entries_modified(TopologySectionsContainer::size_type,TopologySectionsContainer::size_type)),
+	QObject::connect(d_container_ptr, SIGNAL(entries_modified(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
 
 	// Enable the table to receive mouse move events, so we can show/hide buttons

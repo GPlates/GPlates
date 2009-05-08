@@ -33,6 +33,7 @@
 // #define NEEDS_PLATEPOLYGON_BRANCH
 
 
+#include <QDebug>
 #include <QObject>
 #include <iterator>
 #include <vector>
@@ -361,7 +362,7 @@ namespace GPlatesGui
 		 */
 		void
 		insertion_point_moved(
-				TopologySectionsContainer::size_type new_index);
+				GPlatesGui::TopologySectionsContainer::size_type new_index);
 
 		/**
 		 * Emitted whenever a entry has been deleted from the container.
@@ -380,8 +381,8 @@ namespace GPlatesGui
 		 */
 		void
 		entries_inserted(
-				TopologySectionsContainer::size_type inserted_index,
-				TopologySectionsContainer::size_type quantity);
+				GPlatesGui::TopologySectionsContainer::size_type inserted_index,
+				GPlatesGui::TopologySectionsContainer::size_type quantity);
 
 		/**
 		 * Emitted whenever the data from a range of entries has been modified.
@@ -393,8 +394,8 @@ namespace GPlatesGui
 		 */
 		void
 		entries_modified(
-				TopologySectionsContainer::size_type modified_index_begin,
-				TopologySectionsContainer::size_type modified_index_end);
+				GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
+				GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
 		
 	private:
 		/**
