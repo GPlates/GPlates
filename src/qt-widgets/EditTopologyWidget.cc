@@ -2148,8 +2148,7 @@ GPlatesQtWidgets::EditTopologyWidget::create_sections_from_sections_table()
 			( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_feature_id;
 
 //qDebug() << "EditTopologyWidget::create_sections_from_sections_table() i = " << d_tmp_index;
-//qDebug() << "EditTopologyWidget::create_sections_from_sections_table() fid = " 
-	<< GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
+//qDebug() << "EditTopologyWidget::create_sections_from_sections_table() fid = " << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
 
 		// set the tmp reverse flag to this feature's flag
 		d_tmp_index_use_reverse =
@@ -2209,7 +2208,6 @@ GPlatesQtWidgets::EditTopologyWidget::create_sections_from_sections_table()
 
 			if (gos_ptr) 
 			{
-				qDebug() << "EditTopologyWidget::create_sections_from_sections_table() gos ";
 				// visit the geoms.  :
 				// fill additional d_tmp_index_ vars 
 				// fill d_head_end_points d_tail_end_points 
@@ -2246,11 +2244,19 @@ GPlatesQtWidgets::EditTopologyWidget::create_sections_from_sections_table()
 						d_tmp_index_vertex_list.begin(), d_tmp_index_vertex_list.end() );
 				}
 			}
+			else
+			{
+				qDebug() << "EditTopologyWidget::create_sections_from_sections_table() ERROR: no geometry on sphere ptr!";
+			}
 			// else no GOS for RFG 
 			// FIXME: what to do here??!
 		} 
 		// else no RFG found for feature 
 		// FIXME: ?
+		else
+		{
+			qDebug() << "EditTopologyWidget::create_sections_from_sections_table() ERROR: no RFG!";
+		}
 	}
 //qDebug() << "EditTopologyWidget::create_sections_from_sections_table() END ";
 }
@@ -2950,7 +2956,7 @@ void
 GPlatesQtWidgets::EditTopologyWidget::show_numbers()
 {
 	qDebug() << "############################################################"; 
-	qDebug() << "show_numbers: "; 
+	qDebug() << "EditTopologyWidget::show_numbers: "; 
 	qDebug() << "d_topology_sections_container_ptr->size() = " << d_topology_sections_container_ptr->size(); 
 	qDebug() << "d_topology_sections.size()                = " << d_topology_sections.size(); 
 
