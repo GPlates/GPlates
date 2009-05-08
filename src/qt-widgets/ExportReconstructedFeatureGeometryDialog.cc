@@ -156,3 +156,4 @@ GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::handle_filter_change
 
 	d_export_file_dialog->setDefaultSuffix(suffix_string);
 }
+
