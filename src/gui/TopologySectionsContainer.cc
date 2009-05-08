@@ -79,8 +79,6 @@ void
 GPlatesGui::TopologySectionsContainer::remove_at(
 		const size_type index)
 {
-qDebug() << "GPlatesGui::TopologySectionsContainer::remove_at() i=" << index;
-
 	if (index >= d_container.size()) {
 		return;
 	}
@@ -115,7 +113,6 @@ GPlatesGui::TopologySectionsContainer::move_insertion_point(
 		// Do the move.
 		d_insertion_point = new_index;
 		// Emit signals.
-qDebug() << "GPlatesGui::TopologySectionsContainer::move_insertion_point() i=" << new_index;
 		emit insertion_point_moved(new_index);
 	}// else, no need to move, and no need to emit signals.
 }
