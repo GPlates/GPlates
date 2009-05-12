@@ -537,6 +537,8 @@ GPlatesQtWidgets::EditTopologyWidget::handle_reconstruction_time_change(
 
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+
+	show_numbers();
 }
 
 //
@@ -1592,7 +1594,7 @@ GPlatesQtWidgets::EditTopologyWidget::draw_all_layers()
 	draw_segments();
 	draw_end_points();
 	draw_intersection_points();
-	draw_click_points();
+	//draw_click_points();
 
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
@@ -1957,6 +1959,7 @@ GPlatesQtWidgets::EditTopologyWidget::draw_click_point()
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
 
+#if 0
 void
 GPlatesQtWidgets::EditTopologyWidget::draw_click_points()
 {
@@ -1998,6 +2001,7 @@ GPlatesQtWidgets::EditTopologyWidget::draw_click_points()
 	// update the canvas 
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
+#endif
 
 
 
@@ -2264,25 +2268,12 @@ GPlatesQtWidgets::EditTopologyWidget::create_sections_from_sections_table()
 void
 GPlatesQtWidgets::EditTopologyWidget::process_intersections()
 {
-#if 0
-	// access the sections table
-	GPlatesGui::FeatureTableModel &sections_table = 
-		d_view_state_ptr->sections_feature_table_model();
-#endif
-
 	// set the tmp click point to d_tmp_index feture's click point
 	d_click_point_lat = d_section_click_points.at(d_tmp_index).first;
 	d_click_point_lon = d_section_click_points.at(d_tmp_index).second;
 
 	GPlatesMaths::PointOnSphere click_pos = GPlatesMaths::make_point_on_sphere(
 		GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon) );
-
-#if 0
-	// access the topology sections table
-	GPlatesMaths::PointOnSphere click_pos = GPlatesMaths::make_point_on_sphere(
-		( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_click_point.get()
-	);
-#endif
 
 	d_click_point_ptr = &click_pos;
 
@@ -2499,12 +2490,11 @@ qDebug() << "EditTopologyWidget::process_intersections() d_tmp_index_vertex_list
 				const GPlatesMaths::PolylineOnSphere *next_polyline = 
 					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>( next_gos_ptr.get() );
 
-				// check if INDEX and PREV polylines intersect
+				// check if INDEX and NEXT polylines intersect
 				compute_intersection(
 					tmp_for_next_polyline.get(),
 					next_polyline,
-					GPlatesQtWidgets::EditTopologyWidget::INTERSECT_PREV);
-
+					GPlatesQtWidgets::EditTopologyWidget::INTERSECT_NEXT);
 			}
 		}
 		else
@@ -2967,6 +2957,7 @@ GPlatesQtWidgets::EditTopologyWidget::show_numbers()
 	qDebug() << "d_intersection_points.size()  = " << d_intersection_points.size(); 
 	qDebug() << "d_segments.size()             = " << d_segments.size(); 
 	qDebug() << "d_insert_segments.size()      = " << d_insert_segments.size(); 
+	qDebug() << "d_section_click_points.size() = " << d_section_click_points.size(); 
 	qDebug() << "d_feature_focus_head_points.size()= " << d_feature_focus_head_points.size();
 	qDebug() << "d_feature_focus_tail_points.size()= " << d_feature_focus_tail_points.size();
 

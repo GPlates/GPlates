@@ -589,7 +589,7 @@ namespace
 				reconstructable_features_collection.end(),
 				topology_resolver);
 
-			topology_resolver.report();
+			// topology_resolver.report();
 
 			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 					reconstruction->geometries().begin();
@@ -694,7 +694,7 @@ namespace
 				reconstructable_features_collection.end(),
 				solver);
 
-			solver.report();
+			// solver.report();
 
 
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, canvas_ptr);

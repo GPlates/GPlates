@@ -365,8 +365,10 @@ namespace GPlatesQtWidgets
 		void
 		draw_intersection_points();
 
+#if 0
 		void
 		draw_click_points();
+#endif
 
 		void
 		draw_click_point();
