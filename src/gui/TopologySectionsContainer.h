@@ -44,6 +44,8 @@
 #include "model/FeatureId.h"
 #include "maths/GeometryOnSphere.h"
 
+#include "gui/FeatureFocus.h"
+
 #ifndef NEEDS_PLATEPOLYGON_BRANCH
 #include "property-values/GpmlTopologicalSection.h"
 #endif
@@ -131,7 +133,8 @@ namespace GPlatesGui
 		
 
 		explicit
-		TopologySectionsContainer();
+		TopologySectionsContainer(
+			FeatureFocus &feature_focus);
 
 		virtual
 		~TopologySectionsContainer()
@@ -293,6 +296,12 @@ namespace GPlatesGui
 		move_insertion_point(
 				size_type new_index);
 
+		/** 
+		 * Focus the feature at row 
+		 */
+		void
+		focus_at(
+				size_type index);
 
 	public slots:
 
@@ -398,6 +407,10 @@ namespace GPlatesGui
 				GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
 		
 	private:
+
+		/** Feature focus ptr */
+		FeatureFocus *d_feature_focus_ptr;
+
 		/**
 		 * The vector of TableRow holding the data to be displayed.
 		 */
@@ -409,6 +422,7 @@ namespace GPlatesGui
 		 * that the special Insertion Point row is in.
 		 */
 		TopologySectionsContainer::size_type d_insertion_point;
+
 		
 	};
 }

@@ -65,7 +65,7 @@
                         <gml:OrientableCurve gml:orientation="+">
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">35 10 15 10 10 10 5 10 -5 10</gml:posList>
+                                    <gml:posList gml:dimension="2">35 10 15 10 10 10 5 10 -5 10 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -328,7 +328,7 @@
                         <gml:OrientableCurve gml:orientation="+">
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">35 20 15 20 10 20 5 20 -5 20</gml:posList>
+                                    <gml:posList gml:dimension="2">35 20 15 20 10 20 5 20 -5 20 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>

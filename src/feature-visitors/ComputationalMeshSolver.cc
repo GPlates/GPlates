@@ -426,6 +426,9 @@ std::cout << ")" << std::endl;
 	std::cout << "colat_v = " << colat_v << " ; " << "lon_v = " << lon_v << " ; " << std::endl;
 #endif
 
+	///
+	///
+
 	// OUTPUT
 	std::ostringstream oss;
 	oss << colat_v << '\t' << lon_v << '\n';

@@ -21,7 +21,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-//#define DEBUG
+#define DEBUG
 //#define DEBUG1
 
 #include <map>
@@ -551,8 +551,13 @@ GPlatesQtWidgets::EditTopologyWidget::set_focus(
 {
 	if (! d_is_active ) { return; }
 
-	if ( ! associated_rfg) {
+	if ( ! associated_rfg ) 
+	{
+
 	}
+
+	// get the rfg from the recon
+	d_feature_focus_ptr->find_new_associated_rfg( d_view_state_ptr->reconstruction() );
 
 	// reset the index 
 	if ( ! feature_ref.is_valid() )
@@ -1634,14 +1639,14 @@ qDebug() << "EditTopologyWidget::draw_topology_geometry()";
 void
 GPlatesQtWidgets::EditTopologyWidget::draw_focused_geometry()
 {
-//qDebug() << "EditTopologyWidget::draw_focused_geometry()";
+qDebug() << "EditTopologyWidget::draw_focused_geometry()";
 
 	d_focused_feature_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	if ( d_feature_focus_ptr->associated_rfg() )
 	{
-//qDebug() << "EditTopologyWidget::draw_focused_geometry() RFG okay";
+qDebug() << "EditTopologyWidget::draw_focused_geometry() RFG okay";
 		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =

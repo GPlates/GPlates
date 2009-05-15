@@ -754,8 +754,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			*this),
 	d_task_panel_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog(*this,this),
-	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel(d_feature_focus)),
-	d_topology_sections_container_ptr(new GPlatesGui::TopologySectionsContainer),
+	d_feature_table_model_ptr( new GPlatesGui::FeatureTableModel(d_feature_focus)),
+	d_topology_sections_container_ptr( new GPlatesGui::TopologySectionsContainer(d_feature_focus)),
 	d_open_file_path(""),
 	d_colour_table_ptr(NULL)
 {

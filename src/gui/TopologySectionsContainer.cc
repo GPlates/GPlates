@@ -26,7 +26,9 @@
 #include "TopologySectionsContainer.h"
 
 
-GPlatesGui::TopologySectionsContainer::TopologySectionsContainer():
+GPlatesGui::TopologySectionsContainer::TopologySectionsContainer(
+		FeatureFocus &feature_focus):
+	d_feature_focus_ptr(&feature_focus),
 	d_insertion_point(0)
 {  }
 
@@ -136,5 +138,12 @@ GPlatesGui::TopologySectionsContainer::clear()
 	emit cleared();
 	emit insertion_point_moved(0);
 }
+
+void
+GPlatesGui::TopologySectionsContainer::focus_at( size_type index )
+{
+	d_feature_focus_ptr->set_focus( d_container.at(index).d_feature_ref );
+}
+
 
 

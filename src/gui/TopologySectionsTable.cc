@@ -26,6 +26,7 @@
 #include <Qt>		// for Qt::Alignment, Qt::AlignmentFlag, Qt::ItemFlag
 #include <QHeaderView>
 #include <QVariant>
+#include <QDebug>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include "TopologySectionsTable.h"
@@ -258,25 +259,25 @@ namespace
 		{ QT_TR_NOOP("Reverse"), QT_TR_NOOP("Controls whether the coordinates of the section will be applied in natural or reverse order."),
 				60, QHeaderView::Fixed,
 				Qt::AlignCenter,
-				Qt::ItemIsEnabled | Qt::ItemIsUserCheckable,
+				Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable,
 				get_data_reversed_flag, set_data_reversed_flag },
 
 		{ QT_TR_NOOP("Feature type"), QT_TR_NOOP("The type of this feature"),
 				140, QHeaderView::ResizeToContents,
 				Qt::AlignLeft | Qt::AlignVCenter,
-				Qt::ItemIsEnabled,
+				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
 				get_data_feature_type, null_data_mutator },
 
 		{ QT_TR_NOOP("Plate ID"), QT_TR_NOOP("The plate ID used to reconstruct this feature"),
 				60,  QHeaderView::ResizeToContents,
 				Qt::AlignCenter,
-				Qt::ItemIsEnabled,
+				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
 				get_data_reconstruction_plate_id, null_data_mutator },
 
 		{ QT_TR_NOOP("Name"), QT_TR_NOOP("A convenient label for this feature"),
 				140, QHeaderView::ResizeToContents,
 				Qt::AlignLeft | Qt::AlignVCenter,
-				Qt::ItemIsEnabled,
+				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
 				get_data_feature_name, null_data_mutator },
 	};
 	
@@ -415,6 +416,10 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	// Some cells may be user-editable: listen for changes.
 	QObject::connect(d_table, SIGNAL(cellChanged(int, int)),
 			this, SLOT(react_cell_changed(int, int)));
+
+	// 
+	QObject::connect(d_table, SIGNAL(cellClicked(int, int)),
+			this, SLOT(react_cell_clicked(int, int)));
 }
 
 
@@ -458,6 +463,11 @@ GPlatesGui::TopologySectionsTable::react_cell_clicked(
 	// as a Qt::ItemIsCheckable or whatever, but instead implement our own toggle button
 	// and put it in there. Or maybe just make it an icon for reversed/not reversed,
 	// and toggle it by reacting to this click event.
+
+	d_container_ptr->focus_at( convert_table_row_to_data_index( row ) );
+
+	// does not work
+	d_table->selectRow( row );
 }
 
 
