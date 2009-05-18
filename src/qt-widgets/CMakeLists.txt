@@ -180,9 +180,6 @@ set(srcs
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui
-	TopologyToolsWidget.cc
-	TopologyToolsWidget.h
-	TopologyToolsWidgetUi.ui
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui

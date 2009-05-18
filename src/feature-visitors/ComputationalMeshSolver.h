@@ -47,8 +47,6 @@
 #include "model/PropertyName.h"
 #include "model/Reconstruction.h"
 
-#include "view-operations/GeometryBuilder.h"
-#include "view-operations/GeometryBuilderToolTarget.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryParameters.h"
 

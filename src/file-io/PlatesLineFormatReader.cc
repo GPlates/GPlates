@@ -1939,8 +1939,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			warning_unknown_data_type_code(old_plates_header, in, source, errors);
 		}
 
-<<<<<<< .working
-
 
 		// Short-cut for Platepolygons (geometry to be resolved each reconstruction)
 		if (old_plates_header->data_type_code() == "PP") 

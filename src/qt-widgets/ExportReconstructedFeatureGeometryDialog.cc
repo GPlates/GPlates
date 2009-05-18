@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDebug>
 #include <QMessageBox>
 #include <QObject>
 #include <QString>
@@ -37,13 +38,43 @@
 
 namespace
 {
+	/**
+	 * Return the first suffix found in the filter string.
+	 * 
+	 * Looks for a string contained between "(*." and ")", and interprets this as
+	 * the suffix. 
+	 * 
+	 * This is a bit naff but I can't find a way to automatically set the suffix if the 
+	 * user hasn't explicitly provided one.  
+	 */
+	QString
+	get_suffix_from_filter(
+		const QString &filter)
+	{
+		QStringList string_list = filter.split("(*.");
+		if (string_list.size() > 1)
+		{
+			QString second_string = string_list.at(1);
+			QStringList suffix_list = second_string.split(")");
+			if (!suffix_list.empty())
+			{
+				QString suffix_string = suffix_list.at(0);
+				return suffix_string;
+			}
+			
+		} 
+		return QString();
+	}
+
 	QString
 	get_output_filters()
 	{
 		static const QString filter_gmt(QObject::tr("GMT xy (*.xy)"));
+		static const QString filter_shp(QObject::tr("ESRI Shapefile (*.shp)"));
 
 		QStringList file_filters;
 		file_filters << filter_gmt;
+		file_filters << filter_shp;
 		
 		return file_filters.join(";;");
 	}
@@ -58,6 +89,12 @@ d_export_file_dialog(new QFileDialog(
 		get_output_filters()))
 {
 	d_export_file_dialog->setAcceptMode(QFileDialog::AcceptSave);
+
+	// Set the default suffix to that contained in the initial filter string. 
+	handle_filter_changed();
+
+	QObject::connect(d_export_file_dialog, SIGNAL(filterSelected(const QString&)), 
+		this, SLOT(handle_filter_changed()));
 }
 
 

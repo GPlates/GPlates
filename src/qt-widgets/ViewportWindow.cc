@@ -299,10 +299,6 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 				break;
 
 			case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-				GPlatesFileIO::ShapeFileReader::set_property_mapper(
-					boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper));
-				GPlatesFileIO::ShapeFileReader::read_file(file, d_model, read_errors);
-
 				if (file.get_feature_collection())
 				{
 					GPlatesAppState::ApplicationState::file_info_iterator new_file =
@@ -1989,7 +1985,7 @@ GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
 
-	GPlatesFileIO::ShapeFileReader::remap_shapefile_attributes(file_info, d_model, read_errors);
+	GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(file_info, d_model, read_errors);
 
 	d_read_errors_dialog.update();
 

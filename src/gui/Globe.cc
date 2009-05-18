@@ -256,7 +256,6 @@ namespace
 				GPlatesGui::NurbsRenderer &nurbs_renderer,
 				const double &viewport_zoom_factor):
 			d_nurbs_renderer(&nurbs_renderer),
-			d_globe_ptr(globe),
 			d_current_layer_far_depth(0),
 			d_depth_range_per_layer(0),
 			d_inverse_zoom_factor(1.0 / viewport_zoom_factor)
@@ -324,7 +323,7 @@ namespace
 		visit_rendered_point_on_sphere(
 				const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 		{
-			if ( ! d_globe_ptr->d_show_point ) { return; }
+			//if ( ! d_globe_ptr->d_show_point ) { return; }
 			glColor3fv(rendered_point_on_sphere.get_colour());
 			glPointSize(rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
 			glBegin(GL_POINTS);
@@ -337,7 +336,7 @@ namespace
 		visit_rendered_multi_point_on_sphere(
 				const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 		{
-			if ( ! d_globe_ptr->d_show_multipoint ) { return; }
+			//if ( ! d_globe_ptr->d_show_multipoint ) { return; }
 			glColor3fv(rendered_multi_point_on_sphere.get_colour());
 			glPointSize(rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT);
 
@@ -354,7 +353,7 @@ namespace
 		visit_rendered_polyline_on_sphere(
 				const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 		{
-			if ( !d_globe_ptr->d_show_line ) { return; }
+			//if ( !d_globe_ptr->d_show_line ) { return; }
 			glColor3fv(rendered_polyline_on_sphere.get_colour());
 			glLineWidth(rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
 
@@ -372,7 +371,7 @@ namespace
 		visit_rendered_polygon_on_sphere(
 				const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 		{
-			if ( ! d_globe_ptr->d_show_polygon ) { return; }
+			//if ( ! d_globe_ptr->d_show_polygon ) { return; }
 
 			glColor3fv(rendered_polygon_on_sphere.get_colour());
 			glLineWidth(rendered_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
@@ -421,7 +420,6 @@ namespace
 
 	private:
 		GPlatesGui::NurbsRenderer *const d_nurbs_renderer;
-		GPlatesGui::Globe *const d_globe_ptr;
 		double d_current_layer_far_depth;
 		double d_depth_range_per_layer;
 		double d_inverse_zoom_factor;
