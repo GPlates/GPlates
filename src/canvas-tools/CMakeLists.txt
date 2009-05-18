@@ -14,6 +14,7 @@ set(srcs
     BuildTopology.cc
     BuildTopology.h
     CanvasToolType.h
+    CanvasToolType.h
     ClickGeometry.cc
     ClickGeometry.h
     DeleteVertex.cc

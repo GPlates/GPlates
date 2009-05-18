@@ -39,6 +39,11 @@
 #include "model/ReconstructionGeometry.h"
 
 
+namespace GPlatesMaths
+{
+	class Vector3D;
+}
+
 namespace GPlatesViewOperations
 {
 	/*
@@ -72,6 +77,11 @@ namespace GPlatesViewOperations
 		 * Default colour (white).
 		 */
 		const GPlatesGui::Colour DEFAULT_COLOUR = GPlatesGui::Colour::get_white();
+
+		/**
+		 * Determines the default size of an arrowhead relative to the arrow line.
+		 */
+		const float DEFAULT_RATIO_SIZE_ARROWHEAD_TO_ARROWLINE = 1 / 3.0f;
 	}
 
 	/**
@@ -138,10 +148,59 @@ namespace GPlatesViewOperations
 			float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
 	/**
+	 * Creates a single direction arrow consisting of an arc line segment on the globe's surface
+	 * with an arrowhead at the end.
+	 *
+	 * The length of the arc line will automatically scale with viewport zoom such that
+	 * the projected length (onto the viewport window) remains constant.
+	 *
+	 * Note: because the projected length remains constant with zoom, arrows near each other,
+	 * and pointing in the same direction, may overlap when zoomed out.
+	 *
+	 * The @a ratio_unit_vector_direction_to_globe_radius parameter is the length ratio of a
+	 * unit-length direction arrow to the globe's radius when the zoom is such that the globe
+	 * exactly (or pretty closely) fills the viewport window (either top-to-bottom if wide-screen
+	 * otherwise left-to-right).
+	 * Additional scaling occurs when @a arrow_direction is not a unit vector.
+	 *
+	 * For example, a value of 0.1 for @a ratio_unit_vector_direction_to_globe_radius
+	 * will result in a velocity of magnitude 0.5 being drawn as an arc line of
+	 * distance 0.1 * 0.5 = 0.05 multiplied by the globe's radius when the globe is zoomed
+	 * such that it fits the viewport window.
+	 *
+	 * The ratio of arrowhead size to arrow line length remains constant such that longer arrows
+	 * have proportionately larger arrowheads.
+	 * And tiny arrows have tiny arrowheads that may not even be visible (if smaller than a pixel).
+	 *
+	 * @param start the start position of the arrow.
+	 * @param arrow_direction the direction of the arrow (does not have to be unit-length).
+	 * @param ratio_unit_vector_direction_to_globe_radius determines projected length
+	 *        of a unit-vector arrow. There is no default value for this because it is not
+	 *        known how the user has already scaled @a arrow_direction which is dependent
+	 *        on the user's calculations (something this interface should not know about).
+	 * @param colour is the colour of the arrow (body and head).
+	 * @param arrowline_width_hint width of line (or body) of arrow.
+	 * @param ratio_size_arrowhead_to_arrowline the size of the arrowhead relative to the arrow line.
+	 */
+	RenderedGeometry
+	create_rendered_direction_arrow(
+			const GPlatesMaths::PointOnSphere &start,
+			const GPlatesMaths::Vector3D &arrow_direction,
+			const float ratio_unit_vector_direction_to_globe_radius,
+			const GPlatesGui::Colour &colour =
+					RenderedGeometryFactory::DEFAULT_COLOUR,
+			const float arrowline_width_hint =
+					RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT,
+ 			/*const*/ float ratio_size_arrowhead_to_arrowline =
+					RenderedGeometryFactory::DEFAULT_RATIO_SIZE_ARROWHEAD_TO_ARROWLINE);
+
+	/**
 	 * Creates a dashed polyline from the specified @a PolylineOnSphere.
 	 *
 	 * The individual polyline segments are dashed in such a way that they
 	 * look continuous across the entire polyline.
+	 *
+	 * Note: currently implemented as a solid line.
 	 */
 	RenderedGeometry
 	create_rendered_dashed_polyline(
@@ -155,6 +214,8 @@ namespace GPlatesViewOperations
 	 * The individual polyline segments are dashed in such a way that they
 	 * look continuous across the entire polyline.
 	 * The difference with the above method is each segment can be queried individually.
+	 *
+	 * Note: currently implemented as a solid line segments.
 	 */
 	RenderedGeometryFactory::rendered_geometry_seq_type
 	create_rendered_dashed_polyline_segments_on_sphere(

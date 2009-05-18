@@ -70,7 +70,6 @@ GPlatesGui::EnableCanvasTool::initialise()
 	d_viewport_window->enable_digitise_polyline_tool(true);
 	d_viewport_window->enable_digitise_multipoint_tool(true);
 	d_viewport_window->enable_digitise_polygon_tool(true);
-	d_viewport_window->enable_build_topology_tool(true);
 }
 
 void
@@ -158,8 +157,6 @@ GPlatesGui::EnableCanvasTool::update()
 	update_insert_vertex_tool();
 	update_delete_vertex_tool();
 	update_manipulate_pole_tool();
-	//update_build_topology_tool();
-	update_edit_topology_tool();
 }
 
 void
@@ -279,20 +276,6 @@ void
 GPlatesGui::EnableCanvasTool::update_manipulate_pole_tool()
 {
 	d_viewport_window->enable_manipulate_pole_tool(d_feature_geom_is_in_focus);
-}
-
-#if 0
-void
-GPlatesGui::EnableCanvasTool::update_build_topology_tool()
-{
-	d_viewport_window->enable_build_topology_tool(d_feature_geom_is_in_focus);
-}
-#endif
-
-void
-GPlatesGui::EnableCanvasTool::update_edit_topology_tool()
-{
-	d_viewport_window->enable_edit_topology_tool(d_feature_geom_is_in_focus);
 }
 
 boost::tuple<unsigned int, GPlatesViewOperations::GeometryType::Value>

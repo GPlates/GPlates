@@ -26,7 +26,6 @@
 #ifndef GPLATES_QTWIDGETS_EXPORTRECONSTRUCTIONDIALOG_H
 #define GPLATES_QTWIDGETS_EXPORTRECONSTRUCTIONDIALOG_H
 
-#include <QObject>
 #include <QWidget>
 #include <QFileDialog>
 
@@ -52,9 +51,8 @@ namespace GPlatesQtWidgets
 	 * It is here because it uses Qt widgets (file save dialog) and can be
 	 * turned into a dialog if more input from user is needed.
 	 */
-	class ExportReconstructedFeatureGeometryDialog: public QObject
+	class ExportReconstructedFeatureGeometryDialog
 	{
-		Q_OBJECT
 	public:
 		ExportReconstructedFeatureGeometryDialog(
 				QWidget *parent_ = NULL);
@@ -74,13 +72,7 @@ namespace GPlatesQtWidgets
 				const double &reconstruction_time);
 
 
-	private slots:
-
-		void
-		handle_filter_changed();
-
 	private:
-
 		/**
 		 * A QFileDialog instance that we use for specifying the destination file.
 		 * We keep it as a member so that it will remember where the user last

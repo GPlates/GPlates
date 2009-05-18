@@ -54,7 +54,7 @@ namespace GPlatesQtWidgets
 		~AnimateDialog()
 		{  }
 
-		const double
+		const double &
 		view_time() const;
 
 	public slots:

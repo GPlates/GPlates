@@ -104,7 +104,7 @@ GPlatesQtWidgets::AnimateDialog::AnimateDialog(
 }
 
 
-const double
+const double &
 GPlatesQtWidgets::AnimateDialog::view_time() const
 {
 	return d_animation_controller_ptr->view_time();

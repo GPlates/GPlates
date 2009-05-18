@@ -1,8 +1,7 @@
 /* $Id$ */
-
+ 
 /**
  * \file 
- * 
  * $Revision$
  * $Date$
  * 
@@ -24,33 +23,4 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_CANVASTOOLTYPE_H
-#define GPLATES_CANVASTOOLS_CANVASTOOLTYPE_H
-
-namespace GPlatesCanvasTools
-{
-	namespace CanvasToolType
-	{
-		/**
-		 * Type of canvas tool.
-		 */
-		enum Value
-		{
-			NONE,
-
-			DRAG_GLOBE,
-			ZOOM_GLOBE,
-			CLICK_GEOMETRY,
-			DIGITISE_POLYLINE,
-			DIGITISE_MULTIPOINT,
-			DIGITISE_POLYGON,
-			MOVE_GEOMETRY,
-			MOVE_VERTEX,
-			DELETE_VERTEX,
-			INSERT_VERTEX,
-			MANIPULATE_POLE
-		};
-	}
-}
-
-#endif // GPLATES_CANVASTOOLS_CANVASTOOLTYPE_H
+#include "RenderedDirectionArrow.h"

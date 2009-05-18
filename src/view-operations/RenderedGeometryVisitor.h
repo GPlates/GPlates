@@ -33,6 +33,7 @@ namespace GPlatesViewOperations
 	class RenderedMultiPointOnSphere;
 	class RenderedPolylineOnSphere;
 	class RenderedPolygonOnSphere;
+	class RenderedDirectionArrow;
 	class RenderedReconstructionGeometry;
 
 	/**
@@ -71,6 +72,12 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_polygon_on_sphere(
 				const RenderedPolygonOnSphere &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_direction_arrow(
+				const RenderedDirectionArrow &)
 		{  }
 
 		virtual

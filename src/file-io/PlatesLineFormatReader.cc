@@ -99,6 +99,7 @@ namespace
 	typedef std::vector<GPlatesMaths::PointOnSphere> point_seq_type;
 
 	/**
+<<<<<<< .working
 	 * Typedef for a sequence of geometries (each containing a sequence of points).
 	 */
 	typedef std::list<point_seq_type> geometry_seq_type;
@@ -1938,6 +1939,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			warning_unknown_data_type_code(old_plates_header, in, source, errors);
 		}
 
+<<<<<<< .working
 
 
 		// Short-cut for Platepolygons (geometry to be resolved each reconstruction)

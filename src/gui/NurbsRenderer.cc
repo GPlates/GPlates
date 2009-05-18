@@ -95,10 +95,11 @@ namespace
 	 */
 	GPlatesMaths::UnitVector3D
 	mid_point_of(
-			const GPlatesMaths::GreatCircleArc &arc)
+			const GPlatesMaths::UnitVector3D &start,
+			const GPlatesMaths::UnitVector3D &end)
 	{
-		GPlatesMaths::Vector3D start_pt = GPlatesMaths::Vector3D(arc.start_point().position_vector());
-		GPlatesMaths::Vector3D end_pt = GPlatesMaths::Vector3D(arc.end_point().position_vector());
+		const GPlatesMaths::Vector3D start_pt(start);
+		const GPlatesMaths::Vector3D end_pt(end);
 
 		return GPlatesMaths::Vector3D(start_pt + 0.5*(end_pt - start_pt)).get_normalisation();
 	}
@@ -140,14 +141,40 @@ namespace
 
 void
 GPlatesGui::NurbsRenderer::draw_great_circle_arc(
+		const GPlatesMaths::PointOnSphere &start,
+		const GPlatesMaths::PointOnSphere &end)
+{
+	const GPlatesMaths::UnitVector3D &start_pt = start.position_vector();
+	const GPlatesMaths::UnitVector3D &end_pt = end.position_vector();
+
+	const GPlatesMaths::real_t dot_of_endpoints = dot(start_pt, end_pt);
+
+	draw_great_circle_arc(start_pt, end_pt, dot_of_endpoints);
+}
+
+
+void
+GPlatesGui::NurbsRenderer::draw_great_circle_arc(
 		const GPlatesMaths::GreatCircleArc &arc)
 {
 	const GPlatesMaths::UnitVector3D &start_pt = arc.start_point().position_vector();
 	const GPlatesMaths::UnitVector3D &end_pt = arc.end_point().position_vector();
 
-	if (arc.dot_of_endpoints() < 0.0) {
+	const GPlatesMaths::real_t dot_of_endpoints = dot(start_pt, end_pt);
+
+	draw_great_circle_arc(start_pt, end_pt, dot_of_endpoints);
+}
+
+
+void
+GPlatesGui::NurbsRenderer::draw_great_circle_arc(
+		const GPlatesMaths::UnitVector3D &start_pt,
+		const GPlatesMaths::UnitVector3D &end_pt,
+		const GPlatesMaths::real_t &dot_of_endpoints)
+{
+	if (dot_of_endpoints < 0.0) {
 		// arc is bigger than 90 degrees.
-		GPlatesMaths::UnitVector3D mid_pt = mid_point_of(arc);
+		GPlatesMaths::UnitVector3D mid_pt = mid_point_of(start_pt, end_pt);
 
 		// A great circle arc is always less than 180 degress, so if we split it
 		// into two pieces, we definitely get two arcs of less than 90 degress.
