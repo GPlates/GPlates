@@ -429,10 +429,19 @@ std::cout << ")" << std::endl;
 	std::cout << "colat_v = " << colat_v << " ; " << "lon_v = " << lon_v << " ; " << std::endl;
 #endif
 
-	///
-	///
+	// Create a RenderedGeometry using the vector
+	const GPlatesViewOperations::RenderedGeometry rendered_vector =
+		GPlatesViewOperations::create_rendered_direction_arrow(
+			point,
+			vector_xyz,
+			0.1,
+			*colour);
+
+	// Add to the rendered layer.
+	d_rendered_layer->add_rendered_geometry( rendered_vector );
 
 	// OUTPUT
+	// FIXME: 
 	std::ostringstream oss;
 	oss << colat_v << '\t' << lon_v << '\n';
 	d_output_string.append( oss.str() );
