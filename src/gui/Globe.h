@@ -82,13 +82,26 @@ namespace GPlatesGui
 		void
 		initialise_texture();
 
-		void paint();
+		/**
+		 * Paint the globe and all the visible features and rasters on it.
+		 *
+		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
+		 *        Value should be one when earth fills viewport and proportionately greater
+		 *        than one when viewport shows only part of the globe.
+		 */
+		void paint(
+				const double &viewport_zoom_factor);
 		
 		/*
 		 * A special version of the globe's paint() method more suitable
 		 * for vector output
+		 *
+		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
+		 *        Value should be one when earth fills viewport and proportionately greater
+		 *        than one when viewport shows only part of the globe.
 		 */
-		void paint_vector_output();
+		void paint_vector_output(
+				const double &viewport_zoom_factor);
 
 		void
 		toggle_raster_image();

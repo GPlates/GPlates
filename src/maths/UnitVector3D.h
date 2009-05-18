@@ -146,11 +146,30 @@ namespace GPlatesMaths
 
 	};
 
+	inline
+	const real_t
+	dot(
+			const UnitVector3D &u1,
+			const UnitVector3D &u2)
+	{
+		return GenericVectorOps3D::dot(u1, u2);
+	}
+
 
 	inline
 	const real_t
 	dot(
 			const UnitVector3D &u1,
+			const Vector3D &u2)
+	{
+		return GenericVectorOps3D::dot(u1, u2);
+	}
+
+
+	inline
+	const real_t
+	dot(
+			const Vector3D &u1,
 			const UnitVector3D &u2)
 	{
 		return GenericVectorOps3D::dot(u1, u2);

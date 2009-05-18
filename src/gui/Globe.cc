@@ -39,6 +39,7 @@
 #include "maths/UnitVector3D.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
+#include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
@@ -49,6 +50,13 @@
 
 namespace 
 {
+	/**
+	 * We will draw a NURBS if the two endpoints of a great circle arc are
+	 * more than PI/36 radians (= 5 degrees) apart.
+	 */
+	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI/36.0);
+
+
 	inline
 	void
 	draw_vertex(
@@ -75,26 +83,62 @@ namespace
 
 
 	void
+	draw_great_circle_arc(
+			const GPlatesMaths::PointOnSphere &start,
+			const GPlatesMaths::PointOnSphere &end,
+			const GPlatesMaths::real_t &dot_of_endpoints,
+			GPlatesGui::NurbsRenderer &nurbs_renderer)
+	{
+		// Draw a NURBS if the two endpoints of the arc are far enough apart.
+		if (dot_of_endpoints < GCA_DISTANCE_THRESHOLD_DOT)
+		{
+			nurbs_renderer.draw_great_circle_arc(start, end);
+		}
+		else
+		{
+			glBegin(GL_LINES);
+				draw_vertex(start);
+				draw_vertex(end);
+			glEnd();
+		}
+	}
+
+
+	inline
+	void
+	draw_great_circle_arc(
+			const GPlatesMaths::PointOnSphere &start,
+			const GPlatesMaths::PointOnSphere &end,
+			GPlatesGui::NurbsRenderer &nurbs_renderer)
+	{
+		draw_great_circle_arc(start, end,
+				dot(start.position_vector(), end.position_vector()),
+				nurbs_renderer);
+	}
+
+
+	inline
+	void
+	draw_great_circle_arc(
+			const GPlatesMaths::GreatCircleArc &gca,
+			GPlatesGui::NurbsRenderer &nurbs_renderer)
+	{
+		draw_great_circle_arc(gca.start_point(), gca.end_point(),
+				gca.dot_of_endpoints(), nurbs_renderer);
+	}
+
+
+	void
 	draw_arcs_for_polygon(
 			const GPlatesMaths::PolygonOnSphere::const_iterator &begin, 
 			const GPlatesMaths::PolygonOnSphere::const_iterator &end,
 			GPlatesGui::NurbsRenderer &nurbs_renderer)
 	{
-		// We will draw a NURBS if the two endpoints of the arc are
-		// more than PI/36 radians (= 5 degrees) apart.
-		static const double DISTANCE_THRESHOLD = std::cos(GPlatesMaths::PI/36.0);
-
 		GPlatesMaths::PolygonOnSphere::const_iterator iter = begin;
 
-		for ( ; iter != end; ++iter) {
-			if (iter->dot_of_endpoints().dval() < DISTANCE_THRESHOLD) {
-				nurbs_renderer.draw_great_circle_arc(*iter);
-			} else {
-				glBegin(GL_LINES);
-					draw_vertex(iter->start_point());
-					draw_vertex(iter->end_point());
-				glEnd();
-			}
+		for ( ; iter != end; ++iter)
+		{
+			draw_great_circle_arc(*iter, nurbs_renderer);
 		}
 	}
 
@@ -105,23 +149,89 @@ namespace
 			const GPlatesMaths::PolylineOnSphere::const_iterator &end,
 			GPlatesGui::NurbsRenderer &nurbs_renderer)
 	{
-		// We will draw a NURBS if the two endpoints of the arc are
-		// more than PI/36 radians (= 5 degrees) apart.
-		static const double DISTANCE_THRESHOLD = std::cos(GPlatesMaths::PI/36.0);
-
 		GPlatesMaths::PolylineOnSphere::const_iterator iter = begin;
 
-		for ( ; iter != end; ++iter) {
-			if (iter->dot_of_endpoints().dval() < DISTANCE_THRESHOLD) {
-				nurbs_renderer.draw_great_circle_arc(*iter);
-			} else {
-				glBegin(GL_LINES);
-					draw_vertex(iter->start_point());
-					draw_vertex(iter->end_point());
-				glEnd();
-			}
+		for ( ; iter != end; ++iter)
+		{
+			draw_great_circle_arc(*iter, nurbs_renderer);
 		}
 	}
+
+
+	void
+	draw_cone(
+			const GPlatesMaths::Vector3D &centre_base_circle,
+			const GPlatesMaths::Vector3D &apex)
+	{
+		const GPlatesMaths::Vector3D cone_axis = apex - centre_base_circle;
+
+		const GPlatesMaths::real_t cone_axis_mag = cone_axis.magnitude();
+
+		const GPlatesMaths::UnitVector3D cone_zaxis( (1 / cone_axis_mag) * cone_axis );
+
+		// Find an orthonormal basis using 'cone_axis'.
+		const GPlatesMaths::UnitVector3D cone_yaxis = generate_perpendicular(cone_zaxis);
+		const GPlatesMaths::UnitVector3D cone_xaxis( cross(cone_yaxis, cone_zaxis) );
+
+		static const int NUM_VERTICES_IN_BASE_UNIT_CIRCLE = 6;
+		static const double s_vertex_angle =
+				2 * GPlatesMaths::PI / NUM_VERTICES_IN_BASE_UNIT_CIRCLE;
+		static const GPlatesMaths::real_t s_base_unit_circle[NUM_VERTICES_IN_BASE_UNIT_CIRCLE][2] =
+				{
+					{ GPlatesMaths::cos(0 * s_vertex_angle), GPlatesMaths::sin(0 * s_vertex_angle) },
+					{ GPlatesMaths::cos(1 * s_vertex_angle), GPlatesMaths::sin(1 * s_vertex_angle) },
+					{ GPlatesMaths::cos(2 * s_vertex_angle), GPlatesMaths::sin(2 * s_vertex_angle) },
+					{ GPlatesMaths::cos(3 * s_vertex_angle), GPlatesMaths::sin(3 * s_vertex_angle) },
+					{ GPlatesMaths::cos(4 * s_vertex_angle), GPlatesMaths::sin(4 * s_vertex_angle) },
+					{ GPlatesMaths::cos(5 * s_vertex_angle), GPlatesMaths::sin(5 * s_vertex_angle) }
+				};
+
+		// Radius of cone base circle is proportional to the distance from the apex to
+		// the centre of the base circle.
+		const float ratio_cone_radius_to_axis = 0.5f;
+		const GPlatesMaths::real_t radius_cone_circle = ratio_cone_radius_to_axis * cone_axis_mag;
+
+		// Generate the cone vertices in the frame of reference of the cone axis.
+		// We could use an OpenGL transformation matrix to do this for us but that's
+		// overkill since cone only needs to be transformed once.
+		const GPlatesMaths::Vector3D cone_base_circle[NUM_VERTICES_IN_BASE_UNIT_CIRCLE] =
+				{
+					centre_base_circle + radius_cone_circle * (
+							s_base_unit_circle[0][0] * cone_xaxis +
+							s_base_unit_circle[0][1] * cone_yaxis),
+					centre_base_circle + radius_cone_circle * (
+							s_base_unit_circle[1][0] * cone_xaxis +
+							s_base_unit_circle[1][1] * cone_yaxis),
+					centre_base_circle + radius_cone_circle * (
+							s_base_unit_circle[2][0] * cone_xaxis +
+							s_base_unit_circle[2][1] * cone_yaxis),
+					centre_base_circle + radius_cone_circle * (
+							s_base_unit_circle[3][0] * cone_xaxis +
+							s_base_unit_circle[3][1] * cone_yaxis),
+					centre_base_circle + radius_cone_circle * (
+							s_base_unit_circle[4][0] * cone_xaxis +
+							s_base_unit_circle[4][1] * cone_yaxis),
+					centre_base_circle + radius_cone_circle * (
+							s_base_unit_circle[5][0] * cone_xaxis +
+							s_base_unit_circle[5][1] * cone_yaxis)
+				};
+
+		glBegin(GL_TRIANGLE_FAN);
+			glVertex3d(apex.x().dval(), apex.y().dval(), apex.z().dval());
+
+			for (int vertex_index = 0;
+				vertex_index < NUM_VERTICES_IN_BASE_UNIT_CIRCLE;
+				++vertex_index)
+			{
+				const GPlatesMaths::Vector3D &vertex = cone_base_circle[vertex_index];
+				glVertex3d(vertex.x().dval(), vertex.y().dval(), vertex.z().dval());
+			}
+			const GPlatesMaths::Vector3D &last_circle_vertex = cone_base_circle[0];
+			glVertex3d(last_circle_vertex.x().dval(), last_circle_vertex.y().dval(),
+					last_circle_vertex.z().dval());
+		glEnd();
+	}
+
 
 	/**
 	 * This is a visitor to draw rendered geometries on-screen using OpenGL.
@@ -132,10 +242,12 @@ namespace
 	public:
 		explicit
 		PaintGeometry(
-				GPlatesGui::NurbsRenderer &nurbs_renderer):
+				GPlatesGui::NurbsRenderer &nurbs_renderer,
+				const double &viewport_zoom_factor):
 			d_nurbs_renderer(&nurbs_renderer),
 			d_current_layer_far_depth(0),
-			d_depth_range_per_layer(0)
+			d_depth_range_per_layer(0),
+			d_inverse_zoom_factor(1.0 / viewport_zoom_factor)
 		{  }
 
 		virtual
@@ -175,17 +287,21 @@ namespace
 				return false;
 			}
 
-			// If layer is not empty then we have allocated a depth range for it.
-			if (!rendered_geometry_layer.is_empty())
+			if (rendered_geometry_layer.is_empty())
 			{
-				const double far_depth = d_current_layer_far_depth;
-				double near_depth = far_depth - d_depth_range_per_layer;
-				if (near_depth < 0) near_depth = 0;
-
-				glDepthRange(near_depth, far_depth);
-
-				d_current_layer_far_depth -= d_depth_range_per_layer;
+				return false;
 			}
+
+			// First pass over rendered geometry layer gathers 
+
+			// If layer is not empty then we have allocated a depth range for it.
+			const double far_depth = d_current_layer_far_depth;
+			double near_depth = far_depth - d_depth_range_per_layer;
+			if (near_depth < 0) near_depth = 0;
+
+			glDepthRange(near_depth, far_depth);
+
+			d_current_layer_far_depth -= d_depth_range_per_layer;
 
 			// We want to visit the RenderedGeometry objects in this layer to draw them.
 			return true;
@@ -251,12 +367,46 @@ namespace
 					polygon_on_sphere->begin(),
 					polygon_on_sphere->end(),
 					*d_nurbs_renderer);
+
+		}
+
+		virtual
+		void
+		visit_rendered_direction_arrow(
+				const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow)
+		{
+			const GPlatesMaths::Vector3D start(
+					rendered_direction_arrow.get_start_position().position_vector());
+
+			// Calculate position from start point along tangent direction to
+			// end point off the globe. The length of the arrow in world space
+			// is inversely proportional to the zoom or magnification.
+			const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
+					d_inverse_zoom_factor * rendered_direction_arrow.get_arrow_direction();
+
+			glColor3fv(rendered_direction_arrow.get_colour());
+			glLineWidth(rendered_direction_arrow.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT);
+
+			const float ratio_arrowhead_to_body =
+					rendered_direction_arrow.get_ratio_size_arrowhead_to_arrowline();
+
+			// Specify start and end of arrowhead - the apex is at the end.
+			draw_cone(
+					ratio_arrowhead_to_body * start + (1 - ratio_arrowhead_to_body) * end,
+					end);
+
+			// Render a single line segment for the arrow body.
+			glBegin(GL_LINES);
+				glVertex3d(start.x().dval(), start.y().dval(), start.z().dval());
+				glVertex3d(end.x().dval(), end.y().dval(), end.z().dval());
+			glEnd();
 		}
 
 	private:
 		GPlatesGui::NurbsRenderer *const d_nurbs_renderer;
 		double d_current_layer_far_depth;
 		double d_depth_range_per_layer;
+		double d_inverse_zoom_factor;
 
 		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.
 		static const float POINT_SIZE_ADJUSTMENT;
@@ -273,9 +423,10 @@ namespace
 			const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 			GPlatesGui::NurbsRenderer &nurbs_renderer,
 			double depth_range_near,
-			double depth_range_far)
+			double depth_range_far,
+			const double &viewport_zoom_factor)
 	{
-		PaintGeometry paint_geometry(nurbs_renderer);
+		PaintGeometry paint_geometry(nurbs_renderer, viewport_zoom_factor);
 
 		paint_geometry.paint(
 				rendered_geom_collection, depth_range_near, depth_range_far);
@@ -316,7 +467,8 @@ GPlatesGui::Globe::Orient(
 
 
 void
-GPlatesGui::Globe::paint()
+GPlatesGui::Globe::paint(
+		const double &viewport_zoom_factor)
 {
 	// Enable smoothing.
 	glShadeModel(GL_SMOOTH);
@@ -357,13 +509,15 @@ GPlatesGui::Globe::paint()
 				*d_rendered_geom_collection,
 				*d_nurbs_renderer,
 				0.0,
-				0.7);
+				0.7,
+				viewport_zoom_factor);
 
 	glPopMatrix();
 }
 
 void
-GPlatesGui::Globe::paint_vector_output()
+GPlatesGui::Globe::paint_vector_output(
+		const double &viewport_zoom_factor)
 {
 	d_grid.paint_circumference(GPlatesGui::Colour::get_grey());
 
@@ -402,7 +556,8 @@ GPlatesGui::Globe::paint_vector_output()
 				*d_rendered_geom_collection,
 				*d_nurbs_renderer,
 				0.0,
-				0.7);
+				0.7,
+				viewport_zoom_factor);
 
 		// Restore previous rendered layer active state.
 		d_rendered_geom_collection->restore_main_layer_active_state(

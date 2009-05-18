@@ -33,6 +33,7 @@
 #include <vector>
 #include <utility>
 #include <cmath>
+#include <iostream>
 #include <boost/none.hpp>
 
 #include <QLinearGradient>
@@ -331,13 +332,11 @@ GPlatesQtWidgets::GlobeCanvas::draw_vector_output()
 		glRotatef(-90.0, 1.0, 0.0, 0.0);
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-		// FIXME: Globe uses wrong naming convention for methods.
-		d_globe.paint_vector_output();
+		const double viewport_zoom_factor = viewport_zoom().zoom_factor();
+		d_globe.paint_vector_output(viewport_zoom_factor);
 	}
-	catch (const GPlatesGlobal::Exception &){
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-
+	catch (const GPlatesGlobal::Exception &e){
+			std::cerr << e << std::endl;
 	}
 }
 
@@ -393,6 +392,12 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 {
 	glEnable(GL_DEPTH_TEST);
 
+	// Right now the only filled polygons we draw are rendered arrow heads and
+	// we draw both sides of polygons for now to avoid having to close the 3d mesh
+	// used to render the arrow head.
+	// This is the default - just making it explicit.
+	glDisable(GL_CULL_FACE);
+
 	// FIXME: Enable polygon offset here or in Globe?
 	
 	clear_canvas();
@@ -408,11 +413,8 @@ GPlatesQtWidgets::GlobeCanvas::resizeGL(
 {
 	try {
 		set_view();
-	} catch (const GPlatesGlobal::Exception &){
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-
-		// FIXME: Use new exception system which doesn't involve strings.
+	} catch (const GPlatesGlobal::Exception &e){
+			std::cerr << e << std::endl;
 	}
 }
 
@@ -437,14 +439,11 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		glRotatef(-90.0, 1.0, 0.0, 0.0);
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-		// FIXME: Globe uses wrong naming convention for methods.
-		d_globe.paint();
+		const double viewport_zoom_factor = viewport_zoom().zoom_factor();
+		d_globe.paint(viewport_zoom_factor);
 
-	} catch (const GPlatesGlobal::Exception &){
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-
-		// FIXME: Use new exception system which doesn't involve strings.
+	} catch (const GPlatesGlobal::Exception &e){
+			std::cerr << e << std::endl;
 	}
 
 }
@@ -790,11 +789,8 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 
 		painter.end();
 
-	} catch (const GPlatesGlobal::Exception &){
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-
-		// FIXME: Use new exception system which doesn't involve strings.
+	} catch (const GPlatesGlobal::Exception &e){
+			std::cerr << e << std::endl;
 	}
 
 }

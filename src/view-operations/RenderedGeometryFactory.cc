@@ -25,6 +25,7 @@
  */
 
 #include "RenderedGeometryFactory.h"
+#include "RenderedDirectionArrow.h"
 #include "RenderedMultiPointOnSphere.h"
 #include "RenderedPointOnSphere.h"
 #include "RenderedPolygonOnSphere.h"
@@ -179,6 +180,41 @@ GPlatesViewOperations::create_rendered_polygon_on_sphere(
 
 	return RenderedGeometry(rendered_geom_impl);
 }
+
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_direction_arrow(
+		const GPlatesMaths::PointOnSphere &start,
+		const GPlatesMaths::Vector3D &arrow_direction,
+		const float ratio_unit_vector_direction_to_globe_radius,
+		const GPlatesGui::Colour &colour,
+		const float arrowline_width_hint,
+		/*const*/ float ratio_size_arrowhead_to_arrowline)
+{
+	const GPlatesMaths::Vector3D scaled_direction =
+			ratio_unit_vector_direction_to_globe_radius * arrow_direction;
+
+	// The arrowhead size should scale with length of arrow only up to a certain
+	// length otherwise long arrows will have arrowheads that are too big.
+	// When arrow length reaches a limit make the arrowhead size remain constant.
+	const GPlatesMaths::real_t scaled_direction_mag = scaled_direction.magnitude();
+	const double SCALED_DIRECTION_MAG_THRESHOLD = 0.1;
+	if (scaled_direction_mag > SCALED_DIRECTION_MAG_THRESHOLD)
+	{
+		ratio_size_arrowhead_to_arrowline *=
+				float(SCALED_DIRECTION_MAG_THRESHOLD / scaled_direction_mag.dval());
+	}
+
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedDirectionArrow(
+			start,
+			scaled_direction,
+			ratio_size_arrowhead_to_arrowline,
+			colour,
+			arrowline_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::create_rendered_dashed_polyline(

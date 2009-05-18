@@ -71,20 +71,26 @@ namespace
 
 	/**
 	 * Adds @a ReconstructionGeometry objects in the sorted proximity hits to the feature table model.
+	 *
+	 * Returns false if no hits to begin with or if none of the hits are @a ReconstructionGeometry objects
+	 * - the latter shouldn't really happen but could if other rendered geometry types are put
+	 * in the RECONSTRUCTION layer.
 	 */
-	void
+	bool
 	add_clicked_reconstruction_geoms_to_feature_table_model(
 			GPlatesGui::FeatureTableModel *clicked_table_model,
 			const GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type &sorted_hits)
 	{
-		clicked_table_model->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
+		if (sorted_hits.empty())
+		{
+			return false;
+		}
 
 		// The sequence of ReconstructionGeometry's were going to add to.
-		GPlatesGui::FeatureTableModel::geometry_sequence_type &recon_geom_seq =
-				clicked_table_model->geometry_sequence();
+		GPlatesGui::FeatureTableModel::geometry_sequence_type new_recon_geom_seq;
 
 		// Used to add reconstruction geometries to clicked table model.
-		AddReconstructionGeometriesToFeatureTable add_recon_geoms(recon_geom_seq);
+		AddReconstructionGeometriesToFeatureTable add_recon_geoms(new_recon_geom_seq);
 
 		GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type::const_iterator sorted_iter;
 		for (sorted_iter = sorted_hits.begin(); sorted_iter != sorted_hits.end(); ++sorted_iter)
@@ -98,7 +104,24 @@ namespace
 			rendered_geom.accept_visitor(add_recon_geoms);
 		}
 
+		if (new_recon_geom_seq.empty())
+		{
+			// None of the hits were ReconstructionGeometry objects.
+			return false;
+		}
+
+		clicked_table_model->begin_insert_features(0, static_cast<int>(new_recon_geom_seq.size()) - 1);
+
+		// The sequence of ReconstructionGeometry's were going to add to.
+		GPlatesGui::FeatureTableModel::geometry_sequence_type &recon_geom_seq =
+				clicked_table_model->geometry_sequence();
+
+		// Add to the beginning of the current sequence.
+		recon_geom_seq.insert(recon_geom_seq.begin(), new_recon_geom_seq.begin(), new_recon_geom_seq.end()); 
+
 		clicked_table_model->end_insert_features();
+
+		return true;
 	}
 }
 
@@ -201,15 +224,15 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
 	d_clicked_table_model_ptr->clear();
 
-	if (sorted_hits.size() == 0) {
-		// User clicked on empty space! Clear the currently focused feature.
+	// Populate the 'Clicked' FeatureTableModel.
+	if (!add_clicked_reconstruction_geoms_to_feature_table_model(d_clicked_table_model_ptr, sorted_hits))
+	{
+		// User clicked on empty space (or a rendered geometry that isn't a feature in the reconstruction layer)!
+		// Clear the currently focused feature.
 		d_feature_focus_ptr->unset_focus();
 		emit no_hits_found();
 		return;
 	}
-
-	// Populate the 'Clicked' FeatureTableModel.
-	add_clicked_reconstruction_geoms_to_feature_table_model(d_clicked_table_model_ptr, sorted_hits);
 
 	d_view_state_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
