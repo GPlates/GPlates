@@ -167,6 +167,12 @@ namespace
 
 		const GPlatesMaths::real_t cone_axis_mag = cone_axis.magnitude();
 
+		// We want to avoid division by zero.
+		if (cone_axis_mag <= 0)
+		{
+			return;
+		}
+
 		const GPlatesMaths::UnitVector3D cone_zaxis( (1 / cone_axis_mag) * cone_axis );
 
 		// Find an orthonormal basis using 'cone_axis'.
