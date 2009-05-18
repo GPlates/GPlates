@@ -74,7 +74,7 @@
 #include "maths/LatLonPointConversions.h"
 #include "maths/ProximityCriteria.h"
 #include "maths/PolylineIntersections.h"
-#include "maths/CalculateVelocityOfPoint.h"
+#include "maths/CalculateVelocity.h"
 
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
@@ -416,8 +416,11 @@ std::cout << ")" << std::endl;
 		d_recon_tree_2_ptr->get_composed_absolute_rotation( plate_id ).first;
 
 
+	GPlatesMaths::Vector3D vector_xyz = 
+		GPlatesMaths::calculate_velocity_vector( point, fr_t1, fr_t2 );
+
 	std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t > velocity_pair = 
-		GPlatesMaths::CalculateVelocityOfPoint( point, fr_t1, fr_t2 );
+		GPlatesMaths::calculate_vector_components_colat_lon( point, vector_xyz);
 
 	// compute the velocity for this point
 	GPlatesMaths::real_t colat_v = velocity_pair.first;	

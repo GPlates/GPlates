@@ -1,4 +1,3 @@
-/* $Id: CalculateVelocityOfPoint.h,v 1.1.4.5 2006/03/14 00:29:01 mturner Exp $ */
 
 /**
  * @file 
@@ -30,8 +29,8 @@
  */
 
 
-#ifndef _GPLATES_MATHS_CVOP_H_
-#define _GPLATES_MATHS_CVOP_H_
+#ifndef _GPLATES_MATHS_CV_H_
+#define _GPLATES_MATHS_CV_H_
 
 #include <map>
 #include <utility>  /* std::pair */
@@ -45,24 +44,33 @@
 namespace GPlatesMaths
 {
 	/**
-	 * Calculate the colatitudinal and longitudinal components of the
-	 * velocity of a PointOnSphere @a point undergoing rotation.
+	 * Calculate the velocity of a PointOnSphere @a point undergoing rotation.
 	 * Dimensions are centimetres per year.  
-	 * The velocity will be returned
-	 * in the std::pair<,> (colat_comp, lon_comp).  If, for whatever
-	 * reason, the velocity cannot be calculated, return (0, 0).
+	 * The velocity will be returned as an X Y Z vector
+	 * If, for whatever reason, the velocity cannot be calculated, 
+	 * return Vector3D(0, 0, 0).
 	 *
 	 * In general, time 1 should be more recent than time 2.
-	 *
 	 * That is, t1 should be less than t2 in GPlates age based system.
 	 * For example: t1 = 10 Ma, t2 = 11 Ma.
+	 *
+	 */
+	Vector3D
+	calculate_velocity_vector(
+		const PointOnSphere &point, 
+		FiniteRotation &fr_t1,
+	    FiniteRotation &fr_t2);
+
+	/**
+	 * Convert a vector from X Y Z space to North East Down space and 
+	 * return Colatitudinal and Longitudinal components of the vector
+	 * ( Colat is -North , and Lon is East )
 	 */
 	std::pair< real_t, real_t >
-	CalculateVelocityOfPoint(
+	calculate_vector_components_colat_lon(
 		const PointOnSphere &point, 
-		FiniteRotation fr_t1,
-	    FiniteRotation fr_t2);
+		Vector3D &vector_xyz);
 
 }
 
-#endif  // _GPLATES_MATHS_CVOP_H_
+#endif  // _GPLATES_MATHS_CV_H_

@@ -1,4 +1,3 @@
-/* $Id: CalculateVelocityOfPoint.cc,v 1.1.4.6 2006/03/14 00:29:01 mturner Exp $ */
 
 /**
  * @file 
@@ -34,7 +33,8 @@
 #include <algorithm>  /* std::find */
 #include <sstream>
 
-#include "CalculateVelocityOfPoint.h"
+#include "CalculateVelocity.h"
+
 #include "global/IllegalParametersException.h"
 #include "maths/CartesianConvMatrix3D.h"
 #include "maths/UnitQuaternion3D.h"
@@ -42,11 +42,11 @@
 
 using namespace GPlatesGlobal;
 
-std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t >
-GPlatesMaths::CalculateVelocityOfPoint(
+GPlatesMaths::Vector3D
+GPlatesMaths::calculate_velocity_vector(
 	const PointOnSphere &point, 
-	FiniteRotation fr_t1,
-	FiniteRotation fr_t2)
+	FiniteRotation &fr_t1,
+	FiniteRotation &fr_t2)
 {
 
 	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
@@ -57,7 +57,7 @@ GPlatesMaths::CalculateVelocityOfPoint(
 	if ( represents_identity_rotation( q ) ) 
 	{
 		// The finite rotations must be identical.
-		return std::make_pair(0, 0);
+		return Vector3D(0, 0, 0);
 	}
 
 	const UnitQuaternion3D::RotationParams params = q.get_rotation_params( fr_t1.axis_hint() );
@@ -72,30 +72,25 @@ GPlatesMaths::CalculateVelocityOfPoint(
 	Vector3D velocity_xyz = omega * (radius_of_earth * 1.0e-6) *
 		cross(rotation_axis, point.position_vector() );
 
+	return velocity_xyz;
+}
+
+
+std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t >
+GPlatesMaths::calculate_vector_components_colat_lon(
+	const GPlatesMaths::PointOnSphere &point, 
+	Vector3D &vector_xyz)
+{
 	// Matrix to convert between different Cartesian representations.
 	CartesianConvMatrix3D ccm(point);
 
-	// Cartesian (n, e, d) velocity (cm/yr).
-	Vector3D velocity_ned = ccm * velocity_xyz;
+	// Cartesian (n, e, d) 
+	Vector3D vector_ned = ccm * vector_xyz;
 
-	real_t colat_v = -velocity_ned.x();
-	real_t lon_v =    velocity_ned.y();
+	real_t colat = -vector_ned.x();
+	real_t lon =    vector_ned.y();
 
-#if 0
-// FIX : remove this diagnostic output
-std::cout << std::endl;
-std::cout << "CALC: omega        = " << omega << std::endl;
-std::cout << "CALC: rotation_axis= " << rotation_axis << std::endl;
-std::cout << "CALC: point_vector = " << point << std::endl;
-std::cout << "CALC: velocity_xyz = " << velocity_xyz << std::endl;
-std::cout << "CALC: velocity_ned = " << velocity_ned << std::endl;
-std::cout << "CALC: colat_v      = " << colat_v << std::endl;
-std::cout << "CALC: lon_v        = " << lon_v << std::endl;
-std::cout << std::endl;
-#endif
-
-	return std::make_pair(colat_v, lon_v);
+	return std::make_pair(colat, lon);
 }
-
 
 
