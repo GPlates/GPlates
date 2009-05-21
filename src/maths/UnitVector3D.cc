@@ -126,9 +126,9 @@ GPlatesMaths::generate_perpendicular(
 	 * basis, their dot-products with 'u' will simply extract individual
 	 * components of 'u'.
 	 */
-	real_t xdot = u.x();
-	real_t ydot = u.y();
-	real_t zdot = u.z();
+	real_t xdot = abs( u.x() );
+	real_t ydot = abs( u.y() );
+	real_t zdot = abs( u.z() );
 
 	if (xdot == 0.0) {
 		// Instant winner!  x is perpendicular to 'u'.
