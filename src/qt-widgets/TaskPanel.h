@@ -34,6 +34,8 @@
 #include "BuildTopologyWidget.h"
 #include "EditTopologyWidget.h"
 #include "ActionButtonBox.h"
+#include "TopologyToolsWidget.h"
+
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
 
@@ -227,6 +229,13 @@ namespace GPlatesQtWidgets
 		void
 		set_up_edit_topology_tab();
 
+		/**
+		 * Sets up the "Topology Tools" tab in the Extra Creamy Task Panel.
+		 * This adds the special TopologyToolsWidget.
+		 */
+		void
+		set_up_topology_tools_tab();
+
 
 		/**
 		 * Widget responsible for the buttons in the Feature Tab.
@@ -274,6 +283,12 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::EditTopologyWidget *d_edit_topology_widget_ptr;
+
+		/**
+		 * Widget responsible for the controls in the Topology Tools Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
 
 	};
 }

@@ -71,9 +71,9 @@
        <string>Reconstruction Pole</string>
       </attribute>
      </widget>
-     <widget class="QWidget" name="tab_topology_tool" >
+     <widget class="QWidget" name="tab_topology_tools" >
       <attribute name="title" >
-       <string>Topology Tool</string>
+       <string>Topology Tools</string>
       </attribute>
      </widget>
      <widget class="QWidget" name="tab_build_topology" >

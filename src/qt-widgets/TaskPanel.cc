@@ -83,7 +83,8 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	d_build_topology_widget_ptr( new BuildTopologyWidget(
 			rendered_geom_collection, feature_focus, model_interface, view_state)),
 	d_edit_topology_widget_ptr( new EditTopologyWidget(
-			rendered_geom_collection, feature_focus, model_interface, view_state))
+			rendered_geom_collection, feature_focus, model_interface, view_state)),
+	d_topology_tools_widget_ptr( new TopologyToolsWidget() )
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including
@@ -107,6 +108,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	set_up_modify_pole_tab();
 	set_up_build_topology_tab();
 	set_up_edit_topology_tab();
+	set_up_topology_tools_tab();
 	
 	choose_feature_tab();
 }
@@ -236,4 +238,30 @@ GPlatesQtWidgets::TaskPanel::set_up_edit_topology_tab()
 	// of the tab.
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
+
+
+
+void
+GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
+{
+	// Set up the layout to be used by the Modify Pole tab.
+	QVBoxLayout *lay = new QVBoxLayout(tab_topology_tools);
+	lay->setSpacing(2);
+	lay->setContentsMargins(2, 2, 2, 2);
+	
+	// Add the main ReconstructionPoleWidget.
+	// As usual, Qt will take ownership of memory so we don't have to worry.
+	// We cannot set this parent widget in the TaskPanel initialiser list because
+	// setupUi() has not been called yet.
+	lay->addWidget(d_topology_tools_widget_ptr);
+
+	lay->addWidget( new QPushButton() );
+
+	// After the main widget and anything else we might want to cram in there,
+	// a spacer to eat up remaining space and push all the widgets to the top
+	// of the tab.
+	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+}
+
+
 
