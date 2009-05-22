@@ -74,6 +74,12 @@ namespace GPlatesPropertyValues
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
+		 * The type which contains XML attribute names and values.
+		 */
+		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+				xml_attributes_type;
+
+		/**
 		 * The type of the sequence of coordinates.
 		 */
 		typedef std::vector<double> coordinate_list_type;
@@ -85,8 +91,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const ValueObjectType &value_object_type_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-						&value_object_xml_attributes_,
+				const xml_attributes_type &value_object_xml_attributes_,
 				coordinate_list_type::size_type list_len)
 		{
 			non_null_ptr_type ptr(
@@ -114,7 +119,7 @@ namespace GPlatesPropertyValues
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+		const xml_attributes_type &
 		value_object_xml_attributes() const
 		{
 			return d_value_object_xml_attributes;
@@ -123,7 +128,7 @@ namespace GPlatesPropertyValues
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+		xml_attributes_type &
 		value_object_xml_attributes()
 		{
 			return d_value_object_xml_attributes;
@@ -166,8 +171,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GmlDataBlockCoordinateList(
 				const ValueObjectType &value_object_type_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-						&value_object_xml_attributes_,
+				const xml_attributes_type &value_object_xml_attributes_,
 				coordinate_list_type::size_type list_len):
 			d_value_object_type(value_object_type_),
 			d_value_object_xml_attributes(value_object_xml_attributes_),
@@ -193,8 +197,7 @@ namespace GPlatesPropertyValues
 
 		ValueObjectType d_value_object_type;
 
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> 
-				d_value_object_xml_attributes;
+		xml_attributes_type d_value_object_xml_attributes;
 
 		coordinate_list_type d_coordinates;
 
