@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,123 +27,20 @@
 #ifndef GPLATES_PROPERTYVALUES_GMLDATABLOCK_H
 #define GPLATES_PROPERTYVALUES_GMLDATABLOCK_H
 
-#include <map>
 #include <vector>
-#include <boost/shared_ptr.hpp>
 
+#include "GmlDataBlockCoordinateList.h"
 #include "model/PropertyValue.h"
-#include "model/XmlAttributeName.h"
-#include "model/XmlAttributeValue.h"
-
-#include "ValueObjectType.h"
 
 
-namespace GPlatesPropertyValues {
-
-	//
-	// This class is used by GmlDataBlock below
-	//
-	class DataBlockCoordinateList 
+namespace GPlatesPropertyValues
+{
+	/**
+	 * This class implements the PropertyValue which corresponds to "gml:DataBlock".
+	 */
+	class GmlDataBlock:
+			public GPlatesModel::PropertyValue
 	{
-
-	public:
-
-		static
-		const boost::shared_ptr< DataBlockCoordinateList >
-		create( 
-			const ValueObjectType &value_object_type,
-			const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-					value_object_xml_attributes, 
-			std::vector<double>::size_type list_len )
-		{
-			boost::shared_ptr< DataBlockCoordinateList > prt = 
-				new DataBlockCoordinateList( 
-						value_object_type, 
-						value_object_xml_attributes,
-						list_len );
-
-			return ptr;
-		}
-
-		//
-		// access the Value Object
-		//
-		// FIXME ???
-
-		//
-		// access the xml attibutes
-		//
- 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the XML attribute map?  (For consistency with the non-const
-		// overload...)
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		value_object_xml_attributes() const {
-			return d_value_object_xml_attributes;
-		}
-
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the XML attribute map, as well as per-index assignment (setter) and
-		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		value_object_xml_attributes() {
-			return d_value_object_xml_attributes;
-		}
-
-		//
-		// access the tuple list
-		//
-		// FIXME ???
-
-		virtual
-		~DataBlockCoordinateList() {  }
-
-	protected:
-
-		// constructor 
-		DataBlockCoordinateList(
-				const ValueObjectType &value_object_type,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &value_object_xml_attributes,
-				std::vector<double>::size_type list_len ) :
-			d_value_object_type(value_object_type);
-			d_value_object_xml_attributes( value_object_xml_attributes )
-		{
-			// reserve the list
-			d_tuple_list_values.reserve( list_len );
-		}
-
-		DataBlockCoordinateList(
-				const DataBlockCoordinateList &other) :
-			d_value_object_type( other.d_value_object_type ),
-			d_value_object_xml_attributes( other.d_value_object_xml_attributes )
-		{
-			d_tuple_list_values.reserve( other.d_tuple_list_values.size() );
-		}
-		
-	private:
-
-		// value object type
-		ValueObjectType d_value_object_type;
-
-		// value object xml attibutes
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> 
-			d_value_object_xml_attributes;
-		
-		// the tuple list data : <gml:tupleList>1,10 2,20 3,30 ... 9,90</gml:tupleList>
-		std::vector<double> d_tuple_list_values;
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		DataBlockCoordinateList &
-		operator=(const DataBlockCoordinateList &);
-
-	};
-
-	class GmlDataBlock :
-			public GPlatesModel::PropertyValue {
-
 	public:
 
 		/**
@@ -162,28 +59,37 @@ namespace GPlatesPropertyValues {
 				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
-		virtual
-		~GmlDataBlock() {  }
+		/**
+		 * The type of the sequence of coordinates.
+		 */
+		typedef GmlDataBlockCoordinateList::coordinate_list_type coordinate_list_type;
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
+		/**
+		 * The type of the sequence of GmlDataBlockCoordinateList instances.
+		 */
+		typedef std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> tuple_list_type;
+
+		virtual
+		~GmlDataBlock()
+		{  }
+
 		static
 		const non_null_ptr_type
 		create(
-				std::list< boost::shared_ptr< DataBlockCoordinateList > > &data_block_list) 
+				std::list< std::pair< ValueObjectType,
+						GmlDataBlockCoordinateList::xml_attributes_type > >
+								&range_parameters,
+				coordinate_list_type::size_type tuple_list_len)
 		{
-			non_null_ptr_type ptr(
-					new GmlDataBlock( data_blokc_list ),
+			non_null_ptr_type ptr(new GmlDataBlock(range_parameters, tuple_list_len),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone() const {
+		clone() const
+		{
 			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlDataBlock(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
@@ -221,9 +127,14 @@ namespace GPlatesPropertyValues {
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GmlDataBlock(
-				std::list< boost::shared_ptr< DataBlockCoordinateList > > data_block_list):
-			d_data_block_list( data_block_list )
-		{  }
+				std::list< std::pair< ValueObjectType,
+						GmlDataBlockCoordinateList::xml_attributes_type > >
+								&range_parameters,
+				coordinate_list_type::size_type tuple_list_len):
+		{
+			// FIXME:  Set up the tuple-list in here from the range-parameters and the
+			// tuple-list len.  The function body should probably move into a .cc file.
+		}
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -231,14 +142,18 @@ namespace GPlatesPropertyValues {
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
 		GmlDataBlock(
-				const GmlDataBlock &other) :
-			d_data_block_list(other.d_data_block_list),
+				const GmlDataBlock &other):
+			// FIXME:  Since the vector of doubles in GmlDataBlockCoordinateList is
+			// currently non-const, its contents can be modified, which means we don't
+			// want these GmlDataBlock instances to be sharing tuple-lists, which means
+			// we need to perform a deep copy.  I need to resolve this situation
+			// somehow.
+			d_tuple_list(other.d_tuple_list)
 		{  }
 
 	private:
 
-		// FIXME: what is this ?
-		std::list< boost::shared_ptr< DataBlockCoordinateList > > d_data_block_list;
+		tuple_list_type d_tuple_list;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
