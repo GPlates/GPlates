@@ -60,14 +60,10 @@ namespace GPlatesPropertyValues
 				non_null_ptr_to_const_type;
 
 		/**
-		 * The type of the sequence of coordinates.
-		 */
-		typedef GmlDataBlockCoordinateList::coordinate_list_type coordinate_list_type;
-
-		/**
 		 * The type of the sequence of GmlDataBlockCoordinateList instances.
 		 */
-		typedef std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> tuple_list_type;
+		typedef std::vector<GmlDataBlockCoordinateList::non_null_ptr_to_const_type>
+				tuple_list_type;
 
 		virtual
 		~GmlDataBlock()
@@ -75,13 +71,9 @@ namespace GPlatesPropertyValues
 
 		static
 		const non_null_ptr_type
-		create(
-				std::list< std::pair< ValueObjectType,
-						GmlDataBlockCoordinateList::xml_attributes_type > >
-								&range_parameters,
-				coordinate_list_type::size_type tuple_list_len)
+		create()
 		{
-			non_null_ptr_type ptr(new GmlDataBlock(range_parameters, tuple_list_len),
+			non_null_ptr_type ptr(new GmlDataBlock,
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -95,6 +87,24 @@ namespace GPlatesPropertyValues
 			return dup;
 		}
 
+		tuple_list_type::const_iterator
+		tuple_list_begin() const
+		{
+			return d_tuple_list.begin();
+		}
+
+		tuple_list_type::const_iterator
+		tuple_list_end() const
+		{
+			return d_tuple_list.end();
+		}
+
+		void
+		tuple_list_push_back(
+				const GmlDataBlockCoordinateList::non_null_ptr_to_const_type &elem)
+		{
+			d_tuple_list.push_back(elem);
+		}
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -126,15 +136,9 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		GmlDataBlock(
-				std::list< std::pair< ValueObjectType,
-						GmlDataBlockCoordinateList::xml_attributes_type > >
-								&range_parameters,
-				coordinate_list_type::size_type tuple_list_len):
-		{
-			// FIXME:  Set up the tuple-list in here from the range-parameters and the
-			// tuple-list len.  The function body should probably move into a .cc file.
-		}
+		GmlDataBlock():
+			PropertyValue()
+		{  }
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -143,11 +147,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlDataBlock(
 				const GmlDataBlock &other):
-			// FIXME:  Since the vector of doubles in GmlDataBlockCoordinateList is
-			// currently non-const, its contents can be modified, which means we don't
-			// want these GmlDataBlock instances to be sharing tuple-lists, which means
-			// we need to perform a deep copy.  I need to resolve this situation
-			// somehow.
+			PropertyValue(),
 			d_tuple_list(other.d_tuple_list)
 		{  }
 

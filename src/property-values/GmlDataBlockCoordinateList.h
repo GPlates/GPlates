@@ -53,13 +53,13 @@ namespace GPlatesPropertyValues
 	 * Each coordinate xn in the tuple xn,yn is described by a ValueObject X in a
 	 * @a <gml:valueComponent> property in a @a <gml:CompositeValue> element.
 	 *
-	 * Class GmlDataBlockCoordinateList effectively "de-interleaves" the records, storing the
-	 * ValueObject X along with the coordinates it describes x1 x2 x3 x4 ...; a GmlDataBlock
-	 * instance contains a sequence of GmlDataBlockCoordinateList instances (one instance for
-	 * each coordinate in the coordinate tuple).
+	 * Class GmlDataBlockCoordinateList effectively "de-interleaves" the coordinate tuples,
+	 * storing the ValueObject X along with the coordinates it describes x1 x2 x3 x4 ...; a
+	 * GmlDataBlock instance contains a sequence of GmlDataBlockCoordinateList instances (one
+	 * instance for each coordinate in the coordinate tuple).
 	 *
 	 * When the GmlDataBlock is output in GPML, it will be necessary to "re-interleave" the
-	 * records.
+	 * coordinate tuples.
 	 */
 	class GmlDataBlockCoordinateList:
 			public GPlatesUtils::ReferenceCount<GmlDataBlockCoordinateList>
@@ -72,6 +72,15 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList,
+				GPlatesUtils::NullIntrusivePointerHandler>
+						non_null_ptr_to_const_type;
 
 		/**
 		 * The type which contains XML attribute names and values.
@@ -87,9 +96,13 @@ namespace GPlatesPropertyValues
 		~GmlDataBlockCoordinateList()
 		{  }
 
+		/**
+		 * Create a new GmlDataBlockCoordinateList instance, leaving its coordinates empty
+		 * (but pre-allocated to the capacity @a list_len).
+		 */
 		static
 		const non_null_ptr_type
-		create(
+		create_empty(
 				const ValueObjectType &value_object_type_,
 				const xml_attributes_type &value_object_xml_attributes_,
 				coordinate_list_type::size_type list_len)
@@ -98,14 +111,56 @@ namespace GPlatesPropertyValues
 					new GmlDataBlockCoordinateList(
 							value_object_type_,
 							value_object_xml_attributes_,
-							list_len));
+							list_len),
+					GPlatesUtils::NullIntrusivePointerHandler());
+			return ptr;
+		}
+
+		/**
+		 * Create a new GmlDataBlockCoordinateList instance, then copy the contents of the
+		 * supplied container @a coordinates_ into the GmlDataBlockCoordinateList.
+		 */
+		static
+		const non_null_ptr_type
+		create_copy(
+				const ValueObjectType &value_object_type_,
+				const xml_attributes_type &value_object_xml_attributes_,
+				const coordinate_list_type &coordinates_)
+		{
+			non_null_ptr_type ptr(
+					new GmlDataBlockCoordinateList(
+							value_object_type_,
+							value_object_xml_attributes_,
+							coordinates_),
+					GPlatesUtils::NullIntrusivePointerHandler());
+			return ptr;
+		}
+
+		/**
+		 * Create a new GmlDataBlockCoordinateList instance, then swap the contents of the
+		 * supplied container @a coordinates_ into the GmlDataBlockCoordinateList, leaving
+		 * @a coordinates_ empty.
+		 */
+		static
+		const non_null_ptr_type
+		create_swap(
+				const ValueObjectType &value_object_type_,
+				const xml_attributes_type &value_object_xml_attributes_,
+				coordinate_list_type &coordinates_)
+		{
+			non_null_ptr_type ptr(
+					new GmlDataBlockCoordinateList(
+							value_object_type_,
+							value_object_xml_attributes_),
+					GPlatesUtils::NullIntrusivePointerHandler());
+			ptr->d_coordinates.swap(coordinates_);
 			return ptr;
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GmlDataBlockCoordinateList(this),
+			non_null_ptr_type dup(new GmlDataBlockCoordinateList(*this),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
@@ -134,6 +189,12 @@ namespace GPlatesPropertyValues
 			return d_value_object_xml_attributes;
 		}
 
+		coordinate_list_type::size_type
+		coordinates_len() const
+		{
+			return d_coordinates.size();
+		}
+
 		coordinate_list_type::const_iterator
 		coordinates_begin() const
 		{
@@ -146,17 +207,10 @@ namespace GPlatesPropertyValues
 			return d_coordinates.end();
 		}
 
-		coordinate_list_type::iterator
-		coordinates_begin()
-		{
-			return d_coordinates.begin();
-		}
-
-		coordinate_list_type::iterator
-		coordinates_end()
-		{
-			return d_coordinates.end();
-		}
+		// NOTE:  No non-const iterators provided yet -- When we need them, we should
+		// define an iterator wrapper which creates new revisions of this class when
+		// appropriate.  (And also ensures that client code never tries to assign through
+		// an iterator when it should push_back.)  For now, though, this isn't necessary.
 
 		void
 		coordinates_push_back(
@@ -169,16 +223,47 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
+		/**
+		 * Reserve the capacity of the data member @a d_coordinates to @a list_len, but
+		 * leave @a d_coordinates empty.
+		 */
 		GmlDataBlockCoordinateList(
 				const ValueObjectType &value_object_type_,
 				const xml_attributes_type &value_object_xml_attributes_,
 				coordinate_list_type::size_type list_len):
 			d_value_object_type(value_object_type_),
-			d_value_object_xml_attributes(value_object_xml_attributes_),
+			d_value_object_xml_attributes(value_object_xml_attributes_)
 		{
 			// Avoid re-allocating the vector buffer as we append coordinates.
 			d_coordinates.reserve(list_len);
 		}
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		/**
+		 * Initialise the data member @a d_coordinates by copying the values from the
+		 * parameter @a coordinates_.
+		 */
+		GmlDataBlockCoordinateList(
+				const ValueObjectType &value_object_type_,
+				const xml_attributes_type &value_object_xml_attributes_,
+				const coordinate_list_type &coordinates_):
+			d_value_object_type(value_object_type_),
+			d_value_object_xml_attributes(value_object_xml_attributes_),
+			d_coordinates(coordinates_)
+		{  }
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		/**
+		 * Leave the data member @a d_coordinates as an empty vector of default capacity.
+		 */
+		GmlDataBlockCoordinateList(
+				const ValueObjectType &value_object_type_,
+				const xml_attributes_type &value_object_xml_attributes_):
+			d_value_object_type(value_object_type_),
+			d_value_object_xml_attributes(value_object_xml_attributes_)
+		{  }
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

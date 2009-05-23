@@ -46,6 +46,7 @@
 #include "utils/XmlNamespaces.h"
 
 #include "property-values/Enumeration.h"
+#include "property-values/GmlDataBlock.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
