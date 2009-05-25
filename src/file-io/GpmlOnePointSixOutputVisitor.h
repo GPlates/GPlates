@@ -68,6 +68,7 @@ namespace GPlatesFileIO
 				const FileInfo &file_info,
 				bool use_gzip);
 
+
 		/**
 		 * Creates a GPML writer for the given QIODevice.
 		 *
@@ -79,6 +80,7 @@ namespace GPlatesFileIO
 		GpmlOnePointSixOutputVisitor(
 				QIODevice *target);
 
+
 		virtual
 		~GpmlOnePointSixOutputVisitor();
 
@@ -89,8 +91,9 @@ namespace GPlatesFileIO
 		* @param feature_handle feature to write
 		*/
 		virtual
-			void
-			write_feature(const GPlatesModel::FeatureHandle& feature_handle);
+		void
+		write_feature(
+				const GPlatesModel::FeatureHandle& feature_handle);
 
 
 		/**
