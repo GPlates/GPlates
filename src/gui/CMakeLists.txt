@@ -16,12 +16,6 @@ set(srcs
     AgeColourTable.h
     AnimationController.cc
     AnimationController.h
-    CanvasTool.cc
-    CanvasTool.h
-    CanvasToolAdapter.cc
-    CanvasToolAdapter.h
-    CanvasToolChoice.cc
-    CanvasToolChoice.h
     ChooseCanvasTool.cc
     ChooseCanvasTool.h
     Colour.cc
@@ -48,6 +42,12 @@ set(srcs
     GeometryFocusHighlight.h
     Globe.cc
     Globe.h
+    GlobeCanvasTool.cc
+    GlobeCanvasTool.h
+    GlobeCanvasToolAdapter.cc
+    GlobeCanvasToolAdapter.h
+    GlobeCanvasToolChoice.cc
+    GlobeCanvasToolChoice.h
     GlobeOrientation.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
@@ -55,6 +55,16 @@ set(srcs
     GPlatesQtMsgHandler.h
     GuiException.h
     Interface.h
+    MapCanvasPainter.cc
+    MapCanvasPainter.h
+    MapCanvasTool.cc
+    MapCanvasTool.h
+    MapCanvasToolAdapter.cc
+    MapCanvasToolAdapter.h
+    MapCanvasToolChoice.cc
+    MapCanvasToolChoice.h
+    MapProjection.cc
+    MapProjection.h
     NurbsRenderer.cc
     NurbsRenderer.h
     OpaqueSphere.cc
@@ -64,6 +74,7 @@ set(srcs
     OpenGLException.h
     PlatesColourTable.cc
     PlatesColourTable.h
+    ProjectionException.h
     ProximityTests.cc
     ProximityTests.h
     Quadrics.cc

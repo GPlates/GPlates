@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, Geological Survey of Norway
+ * Copyright (C) 2007, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -26,17 +26,23 @@
  */
 
 #include <vector>
+#include <iostream>
+
+#include <QDebug>
+
 #include <QPainter>
 #include <QString>
 #include <QSvgGenerator>
+#include <QtOpenGL/qgl.h>
 
-#include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/SceneView.h"
 #include "OpenGLException.h"
 #include "SvgExport.h"
 
 
 namespace
 {
+	const int VERTEX_SIZE = 7;
 
 	struct SvgExportException { };
 
@@ -54,7 +60,7 @@ namespace
 		GLenum error = glGetError();
 		if (error != GL_NO_ERROR)
 		{
-			std::cout << message << ": openGL error: " << gluErrorString(error) << std::endl;
+			std::cerr << message << ": openGL error: " << gluErrorString(error) << std::endl;
 			throw GPlatesGui::OpenGLException(GPLATES_EXCEPTION_SOURCE,
 					"OpenGL error in SvgExport");
 		}
@@ -101,12 +107,13 @@ namespace
 	GLint
 	draw_to_feedback_buffer(
 			std::vector<GLfloat> &feedback_buffer,
-			GPlatesQtWidgets::GlobeCanvas *canvas)
+			//GPlatesQtWidgets::GlobeCanvas *canvas)
+			GPlatesQtWidgets::SceneView *scene_view)
 	{
 
 		clear_gl_errors();
 
-		// using the GL_3D_COLOR flag in the glFeedbackBuffer flag will
+		// Using the GL_3D_COLOR flag in the glFeedbackBuffer flag will
 		// tell openGL to return data in the form (x,y,z,k) where
 		// k is the number of items required to describe the colour.
 		// In RGBA mode, k will be 4.
@@ -115,6 +122,12 @@ namespace
 		// http://www.glprogramming.com/red/chapter13.html
 
 		// FIXME:  Assert that the size is > 0, or else feedback_buffer[0] will not exist.
+		if (feedback_buffer.size() == 0)
+		{
+			throw SvgExportException();
+		}
+
+
 		glFeedbackBuffer(static_cast<GLint>(feedback_buffer.size()), GL_3D_COLOR,
 				&feedback_buffer[0]);
 
@@ -132,7 +145,11 @@ namespace
 
 		clear_gl_errors();
 
-		canvas->draw_vector_output();
+		scene_view->draw_svg_output();
+
+		check_gl_errors("After scene_view->draw_svg_output");
+
+		clear_gl_errors();
 
 		GLint num_items = glRenderMode(GL_RENDER);
 
@@ -237,25 +254,25 @@ namespace
 				case GL_POINT_TOKEN:
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					points.push_back(QPointF(vertex.x, -(vertex.y)));
-					buffer_position += 7;
+					buffer_position += VERTEX_SIZE;
 					break;
 
 				case GL_LINE_TOKEN:
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					lines.moveTo(vertex.x, -(vertex.y));
-					buffer_position += 7;
+					buffer_position += VERTEX_SIZE;
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					lines.lineTo(vertex.x, -(vertex.y));
-					buffer_position += 7;
+					buffer_position += VERTEX_SIZE;
 					break;
 
 				case GL_LINE_RESET_TOKEN:
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					lines.moveTo(vertex.x, -(vertex.y));
-					buffer_position+=7;
+					buffer_position += VERTEX_SIZE;
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					lines.lineTo(vertex.x, -(vertex.y));
-					buffer_position += 7;
+					buffer_position += VERTEX_SIZE;
 					break;
 				case GL_POLYGON_TOKEN:
 					num_vertices = static_cast<int>(*buffer_position);
@@ -263,25 +280,25 @@ namespace
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					lines.moveTo(vertex.x, -(vertex.y));
 					for(int i = 1; i < num_vertices; i++){
-						buffer_position +=7;
+						buffer_position +=VERTEX_SIZE;
 						fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 						lines.lineTo(vertex.x, -(vertex.y));
 					}
 					break;
 				case GL_BITMAP_TOKEN:
-					buffer_position+=7;
+					buffer_position += VERTEX_SIZE;
 					break;
 				case GL_DRAW_PIXEL_TOKEN:
-					buffer_position+=7;
+					buffer_position += VERTEX_SIZE;
 					break;
 				case GL_COPY_PIXEL_TOKEN:
-					buffer_position+=7;
+					buffer_position += VERTEX_SIZE;
 					break;
 				case GL_PASS_THROUGH_TOKEN:
 					buffer_position++;
 					break;
 				default:
-					//std::cerr << "unrecongised token" << std::endl;
+					//std::cerr << "unrecognised token" << std::endl;
 					break;
 			} // switch
 		
@@ -306,26 +323,17 @@ namespace
 			QString filename,
 			const std::vector<GLfloat> &feedback_buffer)
 	{
-		// There are several different ways in which we can use Qt to paint the lines and points that
-		// we encounter. The simplest would be to put all the points in a QPolygonF and draw them 
-		// at the end in one step using painter.drawPoints(QPolygonF ..), but this would draw them all 
-		// as the same colour. So I've drawn them one by one.
+		// Each point encountered in the feedback buffer is converted to a QPointF and 
+		// draw using QPainter::drawPoint.
 
-		// Similarly we could put all the lines in one giant QPainterPath, but again that would
-		// draw them all as the same colour. Going to the other extreme we could interpret each pair
-		// of points as a separate line, store them in a QVector<QPointF> or QVector<QLine>, and paint them using
-		// painter.drawLines(...), but this results in a lot of duplication of vertex points in the SVG 
-		// file, resulting in enormous files. (The world0.shp file, for example, when exported this way
-		// as an SVG, is around 4 MB and takes about 30 seconds to load into Adobe Illustrator).
-		// So I've chosen to store each line as a sequences of points in a QPolygonF. 
+		// Each polyline encountered is converted to a QPolygonF and drawn using QPainter::drawPolyline
 
 		// One circumstance in which we may run into problems with the following treatment, is if we
 		// start a new feature at the same coordinate as the previous feature. In this case they will
 		// be exported as the same QPolygonF. 
 
 		// One way around this problem would be to render each feature separately to its own GL_FEEDBACK
-		// buffer. This would also minimise the risk of ending up with the number of items being 
-		// too big for the buffer.
+		// buffer. 
 
 		int token;
 		int num_vertices;
@@ -350,12 +358,10 @@ namespace
 		// centre the image nicely in the SVG file. The offset is applied to each
 		// point as we come across them.
 		QRectF bounding_box = find_bounding_box(feedback_buffer);
+		QRect rbox = bounding_box.toRect();
 		QPointF offset = -bounding_box.topLeft();
 
-		// svg->setSize() only accepts a QRect, not a QRectF.
 		QSvgGenerator* svg_generator = new QSvgGenerator;
-		QRect rbox(static_cast<int>(bounding_box.left()), static_cast<int>(bounding_box.top()),
-				static_cast<int>(bounding_box.width()), static_cast<int>(bounding_box.height()));
 
 		if (svg_generator == NULL) {
 			throw (SvgExportException() );
@@ -363,12 +369,17 @@ namespace
 
 		svg_generator->setSize(rbox.size());
 		svg_generator->setFileName(filename);
+
 		QPainter painter(svg_generator);
 
+		// We don't have any white features any more, so I'm removing this
+		// light-blue background. The background will be white.
+#if 0
 		// Add a non-white background rectangle so that white-coloured features show up. 
 		QRectF background_rectangle = bounding_box;
 		background_rectangle.translate(offset);
 		painter.fillRect(background_rectangle,QColor(230,230,255));
+#endif
 
 		painter.setPen(colour);
 
@@ -394,7 +405,7 @@ namespace
 							vertex.alpha);
 					painter.setPen(colour);
 					painter.drawPoint(point);
-					buffer_position += 7;
+					buffer_position += VERTEX_SIZE;
 					break;
 
 				// Although GL_LINE_RESET_TOKEN tells us when a new line was begun,
@@ -418,7 +429,7 @@ namespace
 					first_point_on_line.setY(-(vertex.y));
 					first_point_on_line += offset;			
 
-					buffer_position += 7;
+					buffer_position += VERTEX_SIZE;
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					second_point_on_line.setX(vertex.x);
 					second_point_on_line.setY(-(vertex.y));
@@ -444,7 +455,7 @@ namespace
 					last_point = second_point_on_line;
 					
 					// move along now please.
-					buffer_position += 7;
+					buffer_position += VERTEX_SIZE;
 					break;
 
 				// Currently we do not draw anything to opengl as a polygon - any imported polygons 
@@ -455,16 +466,16 @@ namespace
 				case GL_POLYGON_TOKEN:
 					num_vertices = static_cast<int>(*buffer_position);
 					buffer_position++;
-					buffer_position+=(7*num_vertices);
+					buffer_position += (VERTEX_SIZE*num_vertices);
 					break;
 				case GL_BITMAP_TOKEN:
-					buffer_position+=7;
+					buffer_position += VERTEX_SIZE;
 					break;
 				case GL_DRAW_PIXEL_TOKEN:
-					buffer_position+=7;
+					buffer_position += VERTEX_SIZE;
 					break;
 				case GL_COPY_PIXEL_TOKEN:
-					buffer_position+=7;
+					buffer_position += VERTEX_SIZE;
 					break;
 				case GL_PASS_THROUGH_TOKEN:
 					buffer_position++;
@@ -490,11 +501,10 @@ namespace
 	}
 }
 
-
 bool
 GPlatesGui::SvgExport::create_svg_output(
-			 QString filename,
-			 GPlatesQtWidgets::GlobeCanvas *canvas)
+	QString filename,
+	GPlatesQtWidgets::SceneView *scene_view)
 {
 	const unsigned long MAX_BUFFER_SIZE = static_cast<unsigned long>(1e7);
 
@@ -516,24 +526,24 @@ GPlatesGui::SvgExport::create_svg_output(
 
 	try{
 
-		filled_size = draw_to_feedback_buffer(feedback_buffer,canvas);
+		filled_size = draw_to_feedback_buffer(feedback_buffer,scene_view);
 
 		// To minimise the size of the allocated buffer, we begin with a buffer size of 10000,
 		// and check if it's big enough for our view. If not, we try a bigger value, up to a
 		// limit of MAX_BUFFER_SIZE. 
 		while ( ( filled_size < 0) &&
-			    (( buffer_size*=10) <= MAX_BUFFER_SIZE)) {
-	
-			feedback_buffer.resize(buffer_size);
-			filled_size = draw_to_feedback_buffer(feedback_buffer,canvas);
+			(( buffer_size*=10) <= MAX_BUFFER_SIZE)) {
+
+				feedback_buffer.resize(buffer_size);
+				filled_size = draw_to_feedback_buffer(feedback_buffer,scene_view);
 
 		} 
-	
+
 		if (filled_size < 0) {
 			//std::cerr << "Feedback buffer not filled." << std::endl;
 			return false;
 		}
-		
+
 		// If we have a size we are happy with, resize the vector, and send it
 		// to the svg function. 
 		feedback_buffer.resize(filled_size);	

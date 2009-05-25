@@ -15,6 +15,9 @@
   <property name="windowTitle" >
    <string>Export Coordinates</string>
   </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+  </property>
   <property name="sizeGripEnabled" >
    <bool>true</bool>
   </property>

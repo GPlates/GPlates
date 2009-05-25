@@ -5,17 +5,11 @@ Table of Contents
  1. Introduction
  2. Program and library dependencies
  3. Corresponding package dependencies
-     1. For Ubuntu 6.06, 7.04, 7.10
-         1. Ubuntu 6.06 packages
-         2. Ubuntu 7.04 packages
-         3. Ubuntu 7.10 packages
-         4. How to install via a GUI (recommended)
-         5. How to install using the command-line (advanced)
-         6. A note about the packages for GL and GLU
-     2. Fedora Core 5
-         1. Fedora packages
-     3. Debian
-         1. Debian testing/lenny packages
+     1. For Ubuntu 7.10
+         1. Ubuntu 7.10 packages
+         2. How to install via a GUI (recommended)
+         3. How to install using the command-line (advanced)
+         4. A note about the packages for GL and GLU
 
 Introduction
 
@@ -35,15 +29,15 @@ installed:
   • Expat library
   • ICU library
   • Boost library headers
-  • Qt library (version 4.3 or newer)
+  • Qt library (version 4.3.2 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
 
 Corresponding package dependencies
 
-For Ubuntu 6.06, 7.04, 7.10
+For Ubuntu 7.10
 
 This subsection provides more specific information on resolving the program and
-library dependencies on an Ubuntu 6.06 or 7.04 system.
+library dependencies on an Ubuntu 7.10 system.
 
 (Note that GPlates development at the USyd node occurs on Ubuntu systems, so
 the Ubuntu package dependencies will always be the most tested and up-to-date.)
@@ -51,38 +45,6 @@ the Ubuntu package dependencies will always be the most tested and up-to-date.)
 Note that Ubuntu is based upon Debian, so (subject to the availability of the
 appropriate versions of packages) these instructions should also work on a
 Debian system.
-
-Ubuntu 6.06 packages
-
-Program/library Corresponding Ubuntu packages
-cmake           cmake
-g++ 4.0         g++-4.0
-make            make
-GL              See note below. (On JB's 7.04 system: libgl1-mesa-dev)
-GLU             See note below. (On JB's 7.04 system: libglu1-mesa-dev)
-Expat           libexpat1 libexpat1-dev
-ICU             libicu34 libicu34-dev
-Boost           libboost-dev
-Qt              libqt4-gui libqt4-dev (You may need to install Qt4.3 from
-                source or backports)
-GDAL            libgdal1-dev libgdal1c2a libgeos2c2a libgeos-dev
-                libjasper-1.701-dev libtiff4-dev libtiffxx0c2 libxerces27-dev
-                libhdf4g-dev libungif4-dev libnetcdf++3 netcdfg-dev
-                libcfitsio-dev libssl-dev libpq-dev
-
-Ubuntu 7.04 packages
-
-Program/library Corresponding Ubuntu packages
-cmake           cmake
-g++ 4.0         g++-4.1
-make            make
-GL              See note below. (On JB's 7.04 system: libgl1-mesa-dev)
-GLU             See note below. (On JB's 7.04 system: libglu1-mesa-dev)
-Expat           libexpat1 libexpat1-dev
-ICU             libicu36 libicu36-dev
-Boost           libboost-dev
-Qt              libqt4-gui libqt4-dev
-GDAL            libgdal1-1.3.2 libgdal1-1.3.2-dev
 
 Ubuntu 7.10 packages
 
@@ -170,56 +132,5 @@ Note for nvidia card owners: You may find you need to install the
 "nvidia-glx-dev" package to fufil the libGL dependency - but installing this
 package may remove some mesa related packages. Only attempt this if configure
 complains about a missing GL dependency and you are certain you are using the
-nvidia binary driver (If you don't know what this means, don't install
+nvidia binary driver.  (If you don't know what this means, don't install
 nvidia-glx-dev!)
-
-Fedora Core 5
-
-This subsection provides more specific information on resolving the program and
-library dependencies on a Fedora Core 5 system.
-
-This information was provided by Robin Watson on the 12th of March, 2007.
-
-Note: This information specifies a Qt 4.2 package (suitable for GPlates 0.9),
-while GPlates 0.9.1 and above require Qt 4.3 and above.
-
-Fedora packages
-
-Program/library Corresponding Fedora packages
-cmake           cmake
-g++ 4.1         g++ 4.1.0.3
-make            make 3.80-10.2
-GL              MesaLib? 6.5.2
-GLU
-Expat
-ICU             ICU 3.4.1
-Boost           Boost 1.33.1-5
-Qt              Qt 4.2.2
-
-Debian
-
-This subsection provides more specific information on resolving the program and
-library dependencies on a Debian system. The current Debian testing release at
-time of writing is codenamed Lenny - the versions of packages used are for this
-release. If you are running a different release of Debian, check synaptic for
-the appropriate package versions.
-
-For Debian stable/etch, consult the Ubuntu 7.04 instructions - there should be
-few differences.
-
-Debian testing/lenny packages
-
-Program/library Corresponding Debian packages
-cmake           cmake
-g++ 4.0         g++
-make            make
-GL              Varies according to your setup. On JC's nvidia based system:
-                nvidia-glx-dev. May also be libgl1-mesa-dev.
-GLU             Varies according to your setup. On JC's nvidia based system:
-                libglu1-mesa-dev
-Expat           libexpat1 libexpat1-dev
-ICU             libicu36 libicu36-dev
-Boost           libboost-dev
-Qt              libqt4-gui libqt4-dev
-GDAL            libgdal1-dev libgdal1-1.4.0
-

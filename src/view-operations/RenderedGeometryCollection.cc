@@ -28,6 +28,8 @@
 #include <boost/noncopyable.hpp>
 #include <list>
 
+#include <QDebug>
+
 #include "RenderedGeometryCollection.h"
 #include "RenderedGeometryCollectionVisitor.h"
 #include "global/GPlatesAssert.h"

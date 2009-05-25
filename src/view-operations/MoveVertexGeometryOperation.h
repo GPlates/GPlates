@@ -89,13 +89,20 @@ namespace GPlatesViewOperations
 		virtual
 		void
 		deactivate();
-
+#if 0
 		//! User has just clicked on the sphere.
 		void
 		start_drag(
 				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
 				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
-
+#else
+		//! User has just clicked on the sphere.
+		// RJW: Mods to allow us to use this from both map and globe tools. 
+		void
+		start_drag(
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
+#endif
 		//! User is currently in the middle of dragging the mouse.
 		void
 		update_drag(
@@ -109,8 +116,8 @@ namespace GPlatesViewOperations
 		//! The mouse has moved but it is not a drag because mouse button is not pressed.
 		void
 		mouse_move(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -202,8 +209,8 @@ namespace GPlatesViewOperations
 		 */
 		boost::optional<RenderedGeometryProximityHit>
 		test_proximity_to_points(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 		void
 		connect_to_geometry_builder_signals();

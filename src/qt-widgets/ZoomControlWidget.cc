@@ -35,7 +35,7 @@ GPlatesQtWidgets::ZoomControlWidget::ZoomControlWidget(
 {
 	setupUi(this);
 	show_buttons(false);
-	show_label(true);
+	show_label(false);
 
 	// Zoom buttons.
 	QObject::connect(button_zoom_in, SIGNAL(clicked()),

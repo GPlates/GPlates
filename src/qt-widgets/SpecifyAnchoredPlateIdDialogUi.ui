@@ -12,6 +12,9 @@
   <property name="windowTitle" >
    <string>Specify Anchored Plate ID</string>
   </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+  </property>
   <property name="modal" >
    <bool>true</bool>
   </property>
@@ -110,7 +113,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections>
   <connection>
    <sender>okButton</sender>

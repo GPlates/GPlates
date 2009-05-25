@@ -122,6 +122,10 @@ set(srcs
     ManageFeatureCollectionsStateWidget.cc
     ManageFeatureCollectionsStateWidget.h
     ManageFeatureCollectionsStateWidgetUi.ui
+    MapCanvas.cc
+    MapCanvas.h
+    MapView.cc
+    MapView.h
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
@@ -142,9 +146,13 @@ set(srcs
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    SceneView.h
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
+    SetProjectionDialog.cc
+    SetProjectionDialog.h
+    SetProjectionDialogUi.ui
     SetRasterSurfaceExtentDialog.cc
     SetRasterSurfaceExtentDialog.h
     SetRasterSurfaceExtentDialogUi.ui

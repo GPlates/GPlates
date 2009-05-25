@@ -30,6 +30,8 @@
 #include <cmath>
 #include <algorithm>
 
+#include <QDebug>
+
 #include "Globe.h"
 #include "PlatesColourTable.h"
 #include "NurbsRenderer.h"
@@ -287,6 +289,7 @@ namespace
 		visit_rendered_geometry_layer(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer)
 		{
+
 			// If layer is not active then we don't want to visit it.
 			if (!rendered_geometry_layer.is_active())
 			{
@@ -572,11 +575,6 @@ GPlatesGui::Globe::paint_vector_output(
 	glPopMatrix();
 }
 
-void
-GPlatesGui::Globe::initialise_texture()
-{
-//	d_texture->generate_test_texture2();
-}
 
 void
 GPlatesGui::Globe::toggle_raster_image()

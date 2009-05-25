@@ -34,9 +34,12 @@ void
 GPlatesCanvasTools::ReorientGlobe::handle_activation()
 {
 	// FIXME:  We may have to adjust the message if we are using a Map View.
-	d_view_state_ptr->status_message(QObject::tr(
+	if (globe_canvas().isVisible())
+	{
+		d_view_state_ptr->status_message(QObject::tr(
 			"Drag to re-orient the globe."
 			" Shift+drag to rotate the globe."));
+	}
 }
 
 

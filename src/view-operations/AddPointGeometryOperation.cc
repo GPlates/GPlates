@@ -120,7 +120,11 @@ GPlatesViewOperations::AddPointGeometryOperation::deactivate()
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
 
-	disconnect_from_geometry_builder_signals();
+	if (d_geometry_builder != NULL)
+	{
+		disconnect_from_geometry_builder_signals();
+	}
+
 
 	// NOTE: we don't deactivate our rendered layers because they still need
 	// to be visible even after we've deactivated.  They will remain in existance
@@ -132,8 +136,8 @@ GPlatesViewOperations::AddPointGeometryOperation::deactivate()
 
 void
 GPlatesViewOperations::AddPointGeometryOperation::add_point(
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
 	// Do nothing if NULL geometry builder.
 	if (d_geometry_builder == NULL)
@@ -143,7 +147,7 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 
 	// First see if the point to be added is too close to an existing point.
 	// If it is then don't add it.
-	if (too_close_to_existing_points(clicked_pos_on_sphere, oriented_pos_on_sphere))
+	if (too_close_to_existing_points(oriented_pos_on_sphere,closeness_inclusion_threshold))
 	{
 		return;
 	}
@@ -183,8 +187,8 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 
 bool
 GPlatesViewOperations::AddPointGeometryOperation::too_close_to_existing_points(
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
 	// We currently only support one internal geometry so set geom index to zero.
 	const GeometryBuilder::GeometryIndex geom_index = 0;
@@ -197,10 +201,6 @@ GPlatesViewOperations::AddPointGeometryOperation::too_close_to_existing_points(
 	{
 		return false;
 	}
-
-	const double closeness_inclusion_threshold =
-		d_query_proximity_threshold->current_proximity_inclusion_threshold(
-				clicked_pos_on_sphere);
 
 	GPlatesMaths::ProximityCriteria proximity_criteria(
 			oriented_pos_on_sphere,

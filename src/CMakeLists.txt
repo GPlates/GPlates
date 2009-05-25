@@ -1,5 +1,5 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "ICU" "GDAL" "Boost" "GZIP")
+set(required_libs "Qt4" "OpenGL" "ICU" "GDAL" "Boost" "GZIP" "PROJ4")
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -67,7 +67,8 @@ set(external_INCLUDE_DIRS
 	${OPENGL_INCLUDE_DIR} 
 	${GDAL_INCLUDE_DIR}
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
-	${Boost_INCLUDE_DIR})
+	${Boost_INCLUDE_DIR}
+	${PROJ4_INCLUDE_DIR})
 # Internal include directories:
 set(internal_INCLUDE_DIRS
 	${GPlates_SOURCE_DIR}/src				# A lot of "#include" statements reference from this directory.
@@ -115,6 +116,7 @@ set(all_LIBS
 	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
 	${OPENGL_LIBRARIES}
+	${PROJ4_LIBRARY}
 	)
 
 # Avoid all GPlates library link dependencies on the linker command-line by

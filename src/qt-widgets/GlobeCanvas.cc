@@ -45,6 +45,7 @@
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
+#include "gui/SvgExport.h"
 #include "gui/Texture.h"
 
 #include "maths/types.h"
@@ -220,11 +221,10 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		this,
 		SLOT(update_canvas()));
 
-	QObject::connect(&d_viewport_zoom, SIGNAL(zoom_changed()),
-			this, SLOT(handle_zoom_change()));
 	handle_zoom_change();
 
 	setAttribute(Qt::WA_NoSystemBackground);
+
 }
 
 
@@ -318,7 +318,7 @@ GPlatesQtWidgets::GlobeCanvas::update_canvas()
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::draw_vector_output()
+GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 {
 
 	try {
@@ -402,7 +402,6 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 	
 	clear_canvas();
 
-	d_globe.initialise_texture();
 }
 
 
@@ -469,7 +468,6 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 					press_event->modifiers());
 
 }
-
 
 void
 GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
@@ -581,7 +579,6 @@ void GPlatesQtWidgets::GlobeCanvas::wheelEvent(
 void
 GPlatesQtWidgets::GlobeCanvas::handle_zoom_change() 
 {
-	emit zoom_changed(d_viewport_zoom.zoom_percent());
 
 	set_view();
 
@@ -726,6 +723,7 @@ GPlatesQtWidgets::GlobeCanvas::toggle_raster_image()
 	update_canvas();
 }
 
+
 void
 GPlatesQtWidgets::GlobeCanvas::enable_raster_display()
 {
@@ -744,7 +742,7 @@ GPlatesQtWidgets::GlobeCanvas::disable_raster_display()
 void
 GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 {
-// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Q overpainting
+// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
 //  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
 
 	try {
@@ -868,4 +866,88 @@ GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
 			med_string);
 	painter->drawText(bar_rect.right()+5, bar_rect.top()+2, max_string);
 
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::create_svg_output(
+	QString filename)
+{
+
+	GPlatesGui::SvgExport::create_svg_output(filename,this);
+
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
+	const GPlatesMaths::LatLonPoint &desired_centre)
+{
+
+	static const GPlatesMaths::PointOnSphere centre_of_canvas =
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
+
+	GPlatesMaths::PointOnSphere oriented_desired_centre = 
+	d_globe.orientation().orient_point(
+		GPlatesMaths::make_point_on_sphere(desired_centre));
+	d_globe.SetNewHandlePos(oriented_desired_centre);
+	d_globe.UpdateHandlePos(centre_of_canvas);
+			
+	d_globe.orientation().orient_poles_vertically();
+	
+	update_canvas();
+
+}
+
+boost::optional<GPlatesMaths::LatLonPoint>
+GPlatesQtWidgets::GlobeCanvas::camera_llp()
+{
+// This returns a boost::optional for consistency with the virtual function. The globe
+// should always return a valid camera llp. 
+	static const GPlatesMaths::PointOnSphere centre_of_canvas =
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
+
+	GPlatesMaths::PointOnSphere oriented_centre = globe().Orient(centre_of_canvas);
+	return GPlatesMaths::make_lat_lon_point(oriented_centre);
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_up()
+{
+	globe().orientation().move_camera_up();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_down()
+{
+	globe().orientation().move_camera_down();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_left()
+{
+	globe().orientation().move_camera_left();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_right()
+{
+	globe().orientation().move_camera_right();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::rotate_camera_clockwise()
+{
+	globe().orientation().rotate_camera_clockwise();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::rotate_camera_anticlockwise()
+{
+	globe().orientation().rotate_camera_anticlockwise();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
+{
+	globe().orientation().orient_poles_vertically();
 }

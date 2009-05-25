@@ -133,6 +133,9 @@ int internal_main(int argc, char* argv[])
 	viewport_window.load_files(cmdline.first + cmdline.second);
 	viewport_window.reconstruct_to_time_with_root(0.0, 0);
 
+	// Make sure the appropriate tool status message is displayed at start up. 
+	viewport_window.update_tools_and_status_message();
+
 	return application.exec();
 }
 

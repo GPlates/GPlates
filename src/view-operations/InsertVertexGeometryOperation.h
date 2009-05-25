@@ -96,14 +96,14 @@ namespace GPlatesViewOperations
 		//! User has just clicked on the sphere.
 		void
 		left_click(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const double &closeness_inclusion_threshold);
 
 		//! The mouse has moved but it is not a drag because mouse button is not pressed.
 		void
 		mouse_move(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -167,13 +167,13 @@ namespace GPlatesViewOperations
 		const QueryProximityThreshold *d_query_proximity_threshold;
 
 		/**
-		 * Insert a vertex on the specified line segment.
-		 */
+		* Insert a vertex on the specified line segment.
+		*/
 		void
-		insert_vertex_on_line_segment(
-				const unsigned int line_segment_index,
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+			insert_vertex_on_line_segment(
+			const unsigned int line_segment_index,
+			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const double &closeness_inclusion_threshold);
 
 		/**
 		 * Insert a vertex off the specified line segment.
@@ -205,15 +205,15 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
 
 		/**
-		 * Tests proximity of specified point to the rendered geometries
-		 * in the specified rendered geometry layer.
-		 * Returns the closest rendered geometry if any otherwise returns false.
-		 */
+		* Tests proximity of specified point to the rendered geometries
+		* in the specified rendered geometry layer.
+		* Returns the closest rendered geometry if any otherwise returns false.
+		*/
 		boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
-		test_proximity_to_rendered_geom_layer(
-				const RenderedGeometryLayer &rendered_geom_layer,
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+			test_proximity_to_rendered_geom_layer(
+			const RenderedGeometryLayer &rendered_geom_layer,
+			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const double &closeness_inclusion_threshold);
 
 		/**
 		 * Returns point index of closest point (in geometry contained in our
@@ -262,14 +262,14 @@ namespace GPlatesViewOperations
 
 		void
 		update_highlight_rendered_layer(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const double &closeness_inclusion_threshold);
 
 		void
-		add_rendered_highlight_on_line_segment(
-				const unsigned int line_segment_index,
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+			add_rendered_highlight_on_line_segment(
+			const unsigned int line_segment_index,
+			const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+			const double &closeness_inclusion_threshold);
 
 		void
 		add_rendered_highlight_off_line_segment(

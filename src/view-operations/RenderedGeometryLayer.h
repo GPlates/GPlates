@@ -145,6 +145,8 @@ namespace GPlatesViewOperations
 				GPlatesViewOperations::RenderedGeometryLayer &,
 				GPlatesViewOperations::RenderedGeometryLayer::user_data_type user_data);
 
+
+
 	private:
 		user_data_type d_user_data;
 		rendered_geom_seq_type d_rendered_geom_seq;

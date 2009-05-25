@@ -95,8 +95,8 @@ namespace GPlatesViewOperations
 		 */
 		void
 		add_point(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -163,8 +163,8 @@ namespace GPlatesViewOperations
 		 */
 		bool
 		too_close_to_existing_points(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 		void
 		connect_to_geometry_builder_signals();
