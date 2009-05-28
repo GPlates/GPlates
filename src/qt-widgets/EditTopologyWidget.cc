@@ -556,9 +556,6 @@ GPlatesQtWidgets::EditTopologyWidget::set_focus(
 
 	}
 
-	// get the rfg from the recon
-	d_feature_focus_ptr->find_new_associated_rfg( d_view_state_ptr->reconstruction() );
-
 	// reset the index 
 	if ( ! feature_ref.is_valid() )
 	{
