@@ -97,19 +97,6 @@ namespace GPlatesGui
 	public slots:
 
 		/**
-		 * Change which feature is currently focused.
-		 *
-		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
-		 * is actually different to the previous feature.
-		 *
-		 * After this slot is invoked, the associated Reconstructed Feature Geometry (RFG)
-		 * pointer will be null.
-		 */
-		void
-		set_focus(
-				GPlatesModel::FeatureHandle::weak_ref new_feature_ref);
-
-		/**
 		 * Change which feature is currently focused, also specifying an associated
 		 * Reconstructed Feature Geometry (RFG).
 		 *

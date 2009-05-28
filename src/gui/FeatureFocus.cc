@@ -32,14 +32,6 @@
 
 void
 GPlatesGui::FeatureFocus::set_focus(
-		GPlatesModel::FeatureHandle::weak_ref new_feature_ref)
-{
-	set_focus(new_feature_ref, NULL);
-}
-
-
-void
-GPlatesGui::FeatureFocus::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type new_associated_rfg)
 {
