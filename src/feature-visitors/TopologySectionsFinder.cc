@@ -86,6 +86,35 @@
 
 #include "utils/UnicodeStringUtils.h"
 
+
+namespace
+{
+	/**
+	 * Resolves a FeatureId reference in a TableRow (or doesn't,
+	 * if it can't be resolved.)
+	 *
+	 * Copied from TopologySectionsTable.cc.
+	 */
+	void
+	resolve_feature_id(
+			GPlatesGui::TopologySectionsContainer::TableRow &entry)
+	{
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
+		entry.d_feature_id.find_back_ref_targets(
+				GPlatesModel::append_as_weak_refs(back_ref_targets));
+		
+		if (back_ref_targets.size() == 1) {
+			GPlatesModel::FeatureHandle::weak_ref weakref = *back_ref_targets.begin();
+			entry.d_feature_ref = weakref;
+		} else {
+			static const GPlatesModel::FeatureHandle::weak_ref null_ref;
+			entry.d_feature_ref = null_ref;
+		}
+	}
+}
+
+
+
 GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder( 
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &section_ptrs,
 		std::vector<GPlatesModel::FeatureId> &section_ids,
@@ -239,17 +268,8 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 
 	d_table_row.d_feature_id = src_geom_id;
 
-	// Set d_feature_ref: Resolves a FeatureId reference in a TableRow; 
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
-	d_table_row.d_feature_id.find_back_ref_targets(
-		GPlatesModel::append_as_weak_refs(back_ref_targets));
-	if (back_ref_targets.size() == 1) {
-		GPlatesModel::FeatureHandle::weak_ref weakref = *back_ref_targets.begin();
-		d_table_row.d_feature_ref = weakref;
-	} else {
-		static const GPlatesModel::FeatureHandle::weak_ref null_ref;
-		d_table_row.d_feature_ref = null_ref;
-	}
+	// Set d_table_row.d_feature_ref from d_table_row.d_feature_id if we can.
+	resolve_feature_id(d_table_row);
 
 
 	// check for intersection and click points
@@ -323,17 +343,8 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 
 	d_table_row.d_feature_id = src_geom_id;
 	
-	// Set d_feature_ref: Resolves a FeatureId reference in a TableRow; 
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
-	d_table_row.d_feature_id.find_back_ref_targets(
-		GPlatesModel::append_as_weak_refs(back_ref_targets));
-	if (back_ref_targets.size() == 1) {
-		GPlatesModel::FeatureHandle::weak_ref weakref = *back_ref_targets.begin();
-		d_table_row.d_feature_ref = weakref;
-	} else {
-		static const GPlatesModel::FeatureHandle::weak_ref null_ref;
-		d_table_row.d_feature_ref = null_ref;
-	}
+	// Set d_table_row.d_feature_ref from d_table_row.d_feature_id if we can.
+	resolve_feature_id(d_table_row);
 
 	// fill in an 'empty' flag 	
 	d_reverse_flags->push_back( false );
