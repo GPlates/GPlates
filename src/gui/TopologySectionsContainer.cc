@@ -142,6 +142,10 @@ GPlatesGui::TopologySectionsContainer::clear()
 void
 GPlatesGui::TopologySectionsContainer::focus_at( size_type index )
 {
+	if (index >= d_container.size()) {
+		return;
+	}
+
 	d_feature_focus_ptr->set_focus( d_container.at(index).d_feature_ref );
 }
 
