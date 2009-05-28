@@ -753,7 +753,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_task_panel_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog(*this,this),
 	d_feature_table_model_ptr( new GPlatesGui::FeatureTableModel(d_feature_focus)),
-	d_topology_sections_container_ptr( new GPlatesGui::TopologySectionsContainer(d_feature_focus)),
+	d_topology_sections_container_ptr( new GPlatesGui::TopologySectionsContainer()),
 	d_open_file_path(""),
 	d_colour_table_ptr(NULL)
 {
@@ -881,7 +881,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	// Set up the Topology Sections Table, now that the table widget has been created.
 	d_topology_sections_table_ptr = new GPlatesGui::TopologySectionsTable(
-			*table_widget_topology_sections, *d_topology_sections_container_ptr);
+			*table_widget_topology_sections, *d_topology_sections_container_ptr, d_feature_focus);
 
 	// If the focused feature is modified, we may need to reconstruct to update the view.
 	// FIXME:  If the FeatureFocus emits the 'focused_feature_modified' signal, the view will

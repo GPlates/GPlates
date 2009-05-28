@@ -373,7 +373,8 @@ namespace
 
 GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 		QTableWidget &table,
-		TopologySectionsContainer &container):
+		TopologySectionsContainer &container,
+		GPlatesGui::FeatureFocus &feature_focus):
 	d_table(&table),
 	d_container_ptr(&container),
 	d_action_box_row(-1),
@@ -381,7 +382,8 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	d_insert_above_action(new QAction(&table)),
 	d_insert_below_action(new QAction(&table)),
 	d_cancel_insertion_point_action(new QAction(&table)),
-	d_suppress_update_notification_guard(false)
+	d_suppress_update_notification_guard(false),
+	d_feature_focus_ptr(&feature_focus)
 {
 	// Set up the actions we can use.
 	set_up_actions();
@@ -417,7 +419,7 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	QObject::connect(d_table, SIGNAL(cellChanged(int, int)),
 			this, SLOT(react_cell_changed(int, int)));
 
-	// 
+	// Adjust focus via clicking on table rows.
 	QObject::connect(d_table, SIGNAL(cellClicked(int, int)),
 			this, SLOT(react_cell_clicked(int, int)));
 }
@@ -464,10 +466,7 @@ GPlatesGui::TopologySectionsTable::react_cell_clicked(
 	// and put it in there. Or maybe just make it an icon for reversed/not reversed,
 	// and toggle it by reacting to this click event.
 
-	d_container_ptr->focus_at( convert_table_row_to_data_index( row ) );
-
-	// does not work
-	d_table->selectRow( row );
+	focus_feature_at_row(row);
 }
 
 
@@ -939,4 +938,26 @@ GPlatesGui::TopologySectionsTable::update_data_from_table(
 	d_container_ptr->update_at(index, temp_entry);
 }
 
+
+void
+GPlatesGui::TopologySectionsTable::focus_feature_at_row(
+		int row)
+{
+	if (row < 0 || row >= d_table->rowCount()) {
+		return;
+	}
+
+	// Get the appropriate details about the feature from the container,
+	TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
+	const TopologySectionsContainer::TableRow &trow = d_container_ptr->at(index);
+	
+	// Do we have enough information?
+	if (trow.d_feature_ref.is_valid() && trow.d_geometry_property_opt) {
+		// Then adjust the focus.
+		d_feature_focus_ptr->set_focus(trow.d_feature_ref, *trow.d_geometry_property_opt);
+	
+		// And provide visual feedback for user.
+		d_table->selectRow(row);
+	}
+}
 

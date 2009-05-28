@@ -44,7 +44,6 @@
 #include "model/FeatureId.h"
 #include "maths/GeometryOnSphere.h"
 
-#include "gui/FeatureFocus.h"
 
 #ifndef NEEDS_PLATEPOLYGON_BRANCH
 #include "property-values/GpmlTopologicalSection.h"
@@ -111,7 +110,13 @@ namespace GPlatesGui
 			 */
 			GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 
-			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
+			/**
+			 * As well as the feature reference, another thing to keep track of in the
+			 * table is the geometric property which is to be used for intersections, etc.
+			 * This is particularly important to track if we want to let the user click
+			 * on the table and highlight bits of geometry while building a topology.
+			 */
+			boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_geometry_property_opt;
 			
 			/**
 			 * The point the user clicked on to select the section.
@@ -133,8 +138,7 @@ namespace GPlatesGui
 		
 
 		explicit
-		TopologySectionsContainer(
-			FeatureFocus &feature_focus);
+		TopologySectionsContainer();
 
 		virtual
 		~TopologySectionsContainer()
@@ -296,13 +300,6 @@ namespace GPlatesGui
 		move_insertion_point(
 				size_type new_index);
 
-		/** 
-		 * Focus the feature at row 
-		 */
-		void
-		focus_at(
-				size_type index);
-
 	public slots:
 
 		/**
@@ -407,9 +404,6 @@ namespace GPlatesGui
 				GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
 		
 	private:
-
-		/** Feature focus ptr */
-		FeatureFocus *d_feature_focus_ptr;
 
 		/**
 		 * The vector of TableRow holding the data to be displayed.

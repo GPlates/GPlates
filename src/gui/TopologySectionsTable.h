@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "gui/TopologySectionsContainer.h"
+#include "gui/FeatureFocus.h"
 
 
 namespace GPlatesQtWidgets
@@ -58,7 +59,8 @@ namespace GPlatesGui
 		explicit
 		TopologySectionsTable(
 				QTableWidget &table,
-				TopologySectionsContainer &container);
+				TopologySectionsContainer &container,
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		virtual
 		~TopologySectionsTable()
@@ -106,6 +108,10 @@ namespace GPlatesGui
 		 */
 		void
 		clear_table();
+		
+		void
+		focus_feature_at_row(
+				int row);
 
 	private:
 
@@ -276,6 +282,15 @@ namespace GPlatesGui
 		 * between user cell modifications and our own table updates.
 		 */
 		bool d_suppress_update_notification_guard;
+
+		/**
+		 * Feature focus, so that the user can click on entries in the table
+		 * and adjust the focus from there.
+		 * FeatureFocus even gets a special version of @a set_focus() called
+		 * just for this class! How special.
+		 */
+		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
+		
 	};
 }
 #endif // GPLATES_GUI_TOPOLOGYSECTIONSTABLE_H
