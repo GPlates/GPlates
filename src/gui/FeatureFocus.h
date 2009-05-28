@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -134,9 +134,8 @@ namespace GPlatesGui
 		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
 		 * is actually different to the previous feature.
 		 *
-		 * As a stopgap, this also causes a call to @a find_new_associated_rfg #### AAAAAAG
-		 * #### I CAN'T DO THAT IF I DON'T HAVE ACCESS TO THE RECONSTRUCTION!!!!!
-		 * #### see also: side-quest hell.
+		 * As a stopgap, this also causes a call to @a find_new_associated_rfg to attempt
+		 * to find a suitable RFG given the properties_iterator.
 		 */
 		void
 		set_focus(
