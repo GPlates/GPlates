@@ -946,6 +946,10 @@ GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 	if (row < 0 || row >= d_table->rowCount()) {
 		return;
 	}
+	// Clicking the special Insertion Point row should have no effect.
+	if (row == get_current_insertion_point_row()) {
+		return;
+	}
 
 	// Get the appropriate details about the feature from the container,
 	TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
