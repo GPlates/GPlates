@@ -33,6 +33,13 @@
 #include "model/ReconstructedFeatureGeometry.h"
 
 
+namespace GPlatesQtWidgets
+{
+	// Forward reference to ViewState - you know why.
+	class ViewportWindow;
+}
+
+
 namespace GPlatesGui
 {
 	/**
@@ -47,7 +54,9 @@ namespace GPlatesGui
 		Q_OBJECT
 	public:
 		
-		FeatureFocus()
+		FeatureFocus(
+				GPlatesQtWidgets::ViewportWindow &view_state_):
+			d_view_state_ptr(&view_state_)
 		{  }
 
 		virtual
@@ -299,6 +308,13 @@ namespace GPlatesGui
 		 * Note that when focused feature changes the associated.
 		 */
 		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_associated_geometry_property_opt;
+
+		/**
+		 * ViewState pointer! Yes!
+		 * ONLY needed so that FeatureFocus can have a stab at finding an RFG automatically
+		 * when given a properties_iterator during @a set_focus().
+		 */
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 
 		/**

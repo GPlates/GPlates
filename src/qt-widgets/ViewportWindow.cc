@@ -724,7 +724,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_reconstruction_ptr(d_model->create_empty_reconstruction(0.0, 0)),
 	d_recon_time(0.0),
 	d_recon_root(0),
-	d_feature_focus(),
+	d_feature_focus(*this),
 	d_animation_controller(*this),
 	d_reconstruction_view_widget(d_rendered_geom_collection, d_animation_controller, *this, this),
 	d_about_dialog(*this, this),

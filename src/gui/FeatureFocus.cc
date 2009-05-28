@@ -27,6 +27,7 @@
 #include "FeatureFocus.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructedFeatureGeometryFinder.h"
+#include "qt-widgets/ViewportWindow.h"		//ViewState.
 
 
 void
@@ -97,9 +98,18 @@ GPlatesGui::FeatureFocus::set_focus(
 	d_focused_feature = new_feature_ref;
 	d_associated_rfg = NULL;
 	d_associated_geometry_property_opt = new_associated_property;
-	// ####andthen
-
-	emit focus_changed(d_focused_feature, d_associated_rfg);
+	// As this set_focus() is being called without an RFG, but with a properties_iterator,
+	// we can assume that it is the TopologySectionsTable doing the calling. It doesn't
+	// know about RFGs, and shouldn't.
+	// However, the topology tools will want an RFG to be highlighted after the table gets
+	// clicked. The best place to do this lookup is here, rather than force the topology
+	// tools to do the lookup (which forces an additional focus event, which is unnecessary.)
+	find_new_associated_rfg(d_view_state_ptr->reconstruction());
+	// In this specific case, find_new_associated_rfg() should always handle the emitting of
+	// the focus_changed signal for us; we don't need to emit a second one.
+	// Note that changing the semantics of find_new_associated_rfg() just for this method
+	// wouldn't be a great idea, since it is also called in ViewportWindow after a new
+	// reconstruction is made.
 }
 
 
