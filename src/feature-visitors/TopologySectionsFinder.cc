@@ -260,8 +260,10 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
 
 	// Rather, access directly
-	GPlatesModel::FeatureId src_geom_id = 
-		( gpml_toplogical_line_section.get_source_geometry() )->feature_id();
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type property_delegate_ptr =
+			gpml_toplogical_line_section.get_source_geometry();
+	GPlatesModel::FeatureId src_geom_id = property_delegate_ptr->feature_id();
+	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->target_property();
 
 	// feature id
 	d_section_ids->push_back( src_geom_id );
@@ -335,8 +337,10 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
 
 	// Access directly the data
-	GPlatesModel::FeatureId	src_geom_id = 
-		( gpml_toplogical_point.get_source_geometry() )->feature_id();
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type property_delegate_ptr =
+			gpml_toplogical_point.get_source_geometry();
+	GPlatesModel::FeatureId	src_geom_id = property_delegate_ptr->feature_id();
+	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->target_property();
 
 	// fill the vectors
 	d_section_ids->push_back( src_geom_id );
