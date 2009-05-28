@@ -67,12 +67,37 @@ GPlatesGui::FeatureFocus::set_focus(
 
 	if (new_associated_rfg)
 	{
-		d_associated_geometry_property = new_associated_rfg->property();
+		d_associated_geometry_property_opt = new_associated_rfg->property();
 	}
 	else
 	{
-		d_associated_geometry_property = boost::none;
+		d_associated_geometry_property_opt = boost::none;
 	}
+
+	emit focus_changed(d_focused_feature, d_associated_rfg);
+}
+
+
+void
+GPlatesGui::FeatureFocus::set_focus(
+		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
+		GPlatesModel::FeatureHandle::properties_iterator new_associated_property)
+{
+	if ( ! new_feature_ref.is_valid()) {
+		unset_focus();
+		return;
+	}
+	if (d_focused_feature == new_feature_ref &&
+		*d_associated_geometry_property_opt == new_associated_property)
+	{
+		// Avoid infinite signal/slot loops like the plague!
+		return;
+	}
+
+	d_focused_feature = new_feature_ref;
+	d_associated_rfg = NULL;
+	d_associated_geometry_property_opt = new_associated_property;
+	// ####andthen
 
 	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
@@ -83,7 +108,7 @@ GPlatesGui::FeatureFocus::unset_focus()
 {
 	d_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
 	d_associated_rfg = NULL;
-	d_associated_geometry_property = boost::none;
+	d_associated_geometry_property_opt = boost::none;
 
 	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
@@ -118,7 +143,7 @@ GPlatesGui::FeatureFocus::find_new_associated_rfg(
 
 		// Look at the new rfg's geometry property.
 		FeatureHandle::properties_iterator new_geometry_property = new_rfg->property();
-		if (new_geometry_property == *d_associated_geometry_property)
+		if (new_geometry_property == *d_associated_geometry_property_opt)
 		{
 			// We have a match!
 			d_associated_rfg = new_rfg;
