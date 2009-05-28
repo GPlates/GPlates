@@ -29,6 +29,9 @@
 #define copysign _copysign
 #endif
 
+#include <boost/optional.hpp>
+#include <boost/none.hpp>
+
 #include "TopologySectionsFinder.h"
 
 
@@ -110,6 +113,44 @@ namespace
 			static const GPlatesModel::FeatureHandle::weak_ref null_ref;
 			entry.d_feature_ref = null_ref;
 		}
+	}
+
+	/**
+	 * "Resolves" the target of a PropertyDelegate to a FeatureHandle::properties_iterator.
+	 * Ideally, a PropertyDelegate would be able to uniquely identify a particular property,
+	 * regardless of how many times that property appears inside a Feature or how many
+	 * in-line properties (an idea which is now deprecated) that property might have.
+	 *
+	 * In reality, we need a way to go from FeatureId+PropertyName to a properties_iterator,
+	 * and we need one now. This function exists to grab the first properties_iterator belonging
+	 * to the FeatureHandle (which in turn can be resolved with the @a resolve_feature_id
+	 * function above) which matches the supplied PropertyName.
+	 *
+	 * It returns a boost::optional because there is naturally no guarantee that we will
+	 * find a match.
+	 */
+	boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
+	find_properties_iterator(
+			const GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			const GPlatesModel::PropertyName property_name)
+	{
+		if ( ! feature_ref.is_valid()) {
+			return boost::none;
+		}
+		
+		// Iterate through the top level properties; look for the first name that matches.
+		GPlatesModel::FeatureHandle::properties_iterator it = feature_ref->properties_begin();
+		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
+		for ( ; it != end; ++it) {
+			// Elements of this properties vector can be NULL pointers.  (See the comment in
+			// "model/FeatureRevision.h" for more details.)
+			if (*it != NULL && (*it)->property_name() == property_name) {
+				return it;
+			}
+		}
+		
+		// No match.
+		return boost::none;
 	}
 }
 
@@ -272,7 +313,11 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 
 	// Set d_table_row.d_feature_ref from d_table_row.d_feature_id if we can.
 	resolve_feature_id(d_table_row);
-
+	// Also set d_table_row.d_geometry_property_opt from a suitable-looking property
+	// that looks like it matches the PropertyDelegate. Assuming everything else
+	// resolved ok.
+	d_table_row.d_geometry_property_opt = find_properties_iterator(
+			d_table_row.d_feature_ref, src_prop_name);
 
 	// check for intersection and click points
 	if ( gpml_toplogical_line_section.get_start_intersection() )
@@ -349,6 +394,11 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 	
 	// Set d_table_row.d_feature_ref from d_table_row.d_feature_id if we can.
 	resolve_feature_id(d_table_row);
+	// Also set d_table_row.d_geometry_property_opt from a suitable-looking property
+	// that looks like it matches the PropertyDelegate. Assuming everything else
+	// resolved ok.
+	d_table_row.d_geometry_property_opt = find_properties_iterator(
+			d_table_row.d_feature_ref, src_prop_name);
 
 	// fill in an 'empty' flag 	
 	d_reverse_flags->push_back( false );
