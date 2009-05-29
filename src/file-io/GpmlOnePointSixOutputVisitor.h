@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -119,6 +119,11 @@ namespace GPlatesFileIO
 		void
 		visit_enumeration(
 				const GPlatesPropertyValues::Enumeration &enumeration);
+
+		virtual
+		void
+		visit_gml_data_block(
+				const GPlatesPropertyValues::GmlDataBlock &gml_data_block);
 
 		virtual
 		void

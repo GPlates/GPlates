@@ -269,6 +269,46 @@ namespace
 	}
 
 
+	/**
+	 * Convenience function to help write the value-object templates in the value-component
+	 * properties in the composite-value in GmlDataBlock.
+	 */
+	void
+	write_gml_data_block_value_component_value_object_template(
+			GPlatesFileIO::XmlWriter &xml_output,
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type
+					coordinate_list)
+	{
+		xml_output.writeStartGmlElement("valueComponent");
+
+		// Write a template of the value-object.
+
+		// To understand what's happening in the next line, observe that
+		// 'XmlWriter::writeStartElement' is a template function which has a template
+		// parameter type 'SingletonType', which is the 'SingletonType' template type
+		// parameter of QualifiedXmlName.  Thus, the template function overloads for
+		// different template instantiations of QualifiedXmlName.
+		xml_output.writeStartElement(coordinate_list->value_object_type());
+
+		// Now follow up with the attributes for the element.  Note that to write XML
+		// element attributes using QXmlStreamWriter, you follow an invocation of
+		// 'QXmlStreamWriter::writeStartElement' immediately by an invocation of
+		// 'QXmlStreamWriter::writeAttribute' before any content is written.
+		// ( http://doc.trolltech.com/4.3/qxmlstreamwriter.html#writeAttribute )
+		xml_output.writeAttributes(
+				coordinate_list->value_object_xml_attributes().begin(),
+				coordinate_list->value_object_xml_attributes().end());
+
+		static const QString t("template");
+		xml_output.writeText(t);
+
+		// Now close the XML element tag of the value-object.
+		xml_output.writeEndElement();
+
+		xml_output.writeEndElement(); // </gml:valueComponent>
+	}
+
+
 }
 
 
@@ -481,12 +521,40 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_top_level_property_inline(
 }
 
 
-
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_enumeration(
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {
 	d_output.writeText(enumeration.value().get());
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_data_block(
+		const GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+{
+	using namespace GPlatesPropertyValues;
+
+	d_output.writeStartGmlElement("DataBlock");
+
+	// First, output the <gml:CompositeValue> in the <gml:rangeParameters> (to mimic the
+	// example on p.251 of the GML book).
+	d_output.writeStartGmlElement("rangeParameters");
+	d_output.writeStartGmlElement("CompositeValue");
+
+	// Output each value-component in the composite-value.
+	GmlDataBlock::tuple_list_type::const_iterator iter = gml_data_block.tuple_list_begin();
+	GmlDataBlock::tuple_list_type::const_iterator end = gml_data_block.tuple_list_end();
+	for ( ; iter != end; ++iter) {
+		write_gml_data_block_value_component_value_object_template(d_output, *iter);
+	}
+
+	d_output.writeEndElement(); // </gml:CompositeValue>
+	d_output.writeEndElement(); // </gml:rangeParameters>
+
+
+
+	d_output.writeEndElement(); // </gml:DataBlock>
 }
 
 
