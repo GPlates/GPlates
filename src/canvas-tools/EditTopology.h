@@ -30,6 +30,8 @@
 #include "gui/CanvasTool.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/TopologySectionsContainer.h"
+#include "gui/TopologyTools.h"
+
 #include "qt-widgets/EditTopologyWidget.h"
 
 
@@ -37,6 +39,7 @@ namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
 	class ViewportWindow;
+	class TopologyToolsWidget;
 }
 
 namespace GPlatesViewOperations
@@ -80,6 +83,7 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type,
 				GPlatesGui::FeatureFocus &feature_focus)
@@ -92,6 +96,7 @@ namespace GPlatesCanvasTools
 							view_state, 
 							clicked_table_model,
 							topology_sections_container,
+							topology_tools_widget,
 							edit_topology_widget, 
 							geom_type, 
 							feature_focus),
@@ -143,8 +148,8 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
-				//GPlatesGui::FeatureTableModel &segments_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type_,
 				GPlatesGui::FeatureFocus &feature_focus);
@@ -190,6 +195,12 @@ namespace GPlatesCanvasTools
 		GPlatesGui::TopologySectionsContainer *d_topology_sections_container_ptr;
 
 		/**
+		 * This is the TopologyToolsWidget in the Task Panel.
+		 */
+		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
+
+
+		/**
 		 * This is the EditTopologyWidget in the Task Panel.
 		 * It accumulates points for us and handles the actual feature creation step.
 		 */
@@ -218,6 +229,9 @@ namespace GPlatesCanvasTools
 		operator=(
 				const EditTopology &);
 		
+		/** This is the pointer to a ToplogyTools object */
+		GPlatesGui::TopologyTools *d_topology_tools_ptr;
+
 	};
 }
 

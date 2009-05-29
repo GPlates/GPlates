@@ -85,6 +85,8 @@ set(srcs
     TopologySectionsContainer.h
     TopologySectionsTable.cc
     TopologySectionsTable.h
+	TopologyTools.cc
+	TopologyTools.h
     TreeWidgetBuilder.cc
     TreeWidgetBuilder.h
     Viewport.h

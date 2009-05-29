@@ -25,11 +25,18 @@
 #include <QDebug>
 
 #include "TopologyToolsWidget.h"
+#include "CreateFeatureDialog.h"
+#include "FeatureSummaryWidget.h"
 
 #include "gui/FeatureFocus.h"
+#include "gui/TopologyTools.h"
+
 #include "model/FeatureHandle.h"
+
 #include "utils/UnicodeStringUtils.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
@@ -80,13 +87,70 @@ namespace
 
 
 GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesGui::FeatureFocus &feature_focus,
+		GPlatesModel::ModelInterface &model_interface,
+		ViewportWindow &view_state_,
 		QWidget *parent_):
-	QWidget(parent_)
+	QWidget(parent_),
+	d_rendered_geom_collection(&rendered_geom_collection),
+	d_feature_focus_ptr(&feature_focus),
+	d_model_interface(&model_interface),
+	d_view_state_ptr(&view_state_),
+	d_create_feature_dialog(
+		new CreateFeatureDialog(
+			model_interface, 
+			view_state_, 
+			GPlatesQtWidgets::CreateFeatureDialog::TOPOLOGICAL, this) 
+	),
+	d_topology_tools_ptr(
+		new GPlatesGui::TopologyTools(
+			rendered_geom_collection, 
+			feature_focus, 
+			view_state_) 
+	)
 {
 	setupUi(this);
 	clear();
 	// setDisabled(true);
+
+	// Attach buttons to functions
+	 QObject::connect( button_remove_all_sections, SIGNAL(clicked()),
+ 		this, SLOT(handle_remove_all_sections()));
+
+	 QObject::connect( button_create, SIGNAL(clicked()),
+ 		this, SLOT(handle_create()));
+
+	 QObject::connect( button_add_feature, SIGNAL(clicked()),
+ 		this, SLOT(handle_add_feature()));
+
+	// add the Feature Summary Widget after a little space 
+	layout_section->addItem( 
+		new QSpacerItem(2, 2, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
+	layout_section->addWidget( 
+		new FeatureSummaryWidget(feature_focus, tab_section) );
+
+	// more space at the bottom to size things up a bit
+	layout_section->addItem( 
+		new QSpacerItem(3, 3, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::activate( GPlatesGui::TopologyTools::CanvasToolMode mode)
+{
+	if ( d_feature_focus_ptr->is_valid() ) 
+	{
+		qDebug() << "TopologyToolsWidget::activate():: d_feature_focus_ptr->is_valid() TRUE ";
+	}
+	else
+	{
+		qDebug() << "TopologyToolsWidget::activate():: d_feature_focus_ptr->is_valid() FALSE";
+	}
+	
+	d_topology_tools_ptr->activate( mode );
+}
+
 
 
 void
@@ -106,6 +170,14 @@ GPlatesQtWidgets::TopologyToolsWidget::display_feature(
 {
 
 qDebug() << "display_feature()";
+qDebug() << "display_feature()";
+qDebug() << "display_feature()";
+qDebug() << "display_feature()";
+qDebug() << "display_feature()";
+qDebug() << "display_feature()";
+
+	// Flip tab to topoology
+	tabwidget_main->setCurrentWidget( tab_section );
 
 	// Clear the fields first, then fill in those that we have data for.
 	clear();
@@ -150,7 +222,29 @@ qDebug() << "display_feature()";
 		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
 		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
 	}
-
 }
 
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_remove_all_sections()
+{
+	// call the tools fuction
+	d_topology_tools_ptr->handle_remove_all_sections();
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_create()
+{
+	// call the tools fuction
+	d_topology_tools_ptr->handle_apply();
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature()
+{
+	// call the tools fuction
+	d_topology_tools_ptr->handle_add_feature();
+
+	// Flip tab to topoology
+	tabwidget_main->setCurrentWidget( tab_topology );
+}
 

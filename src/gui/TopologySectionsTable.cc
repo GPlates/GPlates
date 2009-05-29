@@ -422,6 +422,16 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	// Adjust focus via clicking on table rows.
 	QObject::connect(d_table, SIGNAL(cellClicked(int, int)),
 			this, SLOT(react_cell_clicked(int, int)));
+
+	// Listen to focus change signlas
+	QObject::connect( d_feature_focus_ptr, 
+			SIGNAL( focus_changed(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+			this, 
+			SLOT( react_focus_changed(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
 }
 
 
@@ -962,6 +972,20 @@ GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 	
 		// And provide visual feedback for user.
 		d_table->selectRow(row);
+	}
+}
+
+void
+GPlatesGui::TopologySectionsTable::react_focus_changed(
+	GPlatesModel::FeatureHandle::weak_ref feature_ref,
+	GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type rfg)
+{
+	// If the feature focus goes unset ...
+	if ( ! feature_ref.is_valid() )
+	{
+		// ... unselect all rows of the table 
+		// d_table->unselectAll();
+		// FIXME: is there a way to do this?
 	}
 }
 

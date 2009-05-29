@@ -49,6 +49,7 @@ namespace GPlatesQtWidgets
 	class ReconstructionPoleWidget;
 	class BuildTopologyWidget;
 	class EditTopologyWidget;
+	class TopologyToolsWidget;
 }
 
 namespace GPlatesViewOperations
@@ -99,6 +100,7 @@ namespace GPlatesGui
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesQtWidgets::BuildTopologyWidget &build_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		~CanvasToolChoice()

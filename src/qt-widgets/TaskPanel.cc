@@ -84,7 +84,8 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			rendered_geom_collection, feature_focus, model_interface, view_state)),
 	d_edit_topology_widget_ptr( new EditTopologyWidget(
 			rendered_geom_collection, feature_focus, model_interface, view_state)),
-	d_topology_tools_widget_ptr( new TopologyToolsWidget() )
+	d_topology_tools_widget_ptr( new TopologyToolsWidget(
+			rendered_geom_collection, feature_focus, model_interface, view_state))
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including
@@ -254,8 +255,6 @@ GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 	// We cannot set this parent widget in the TaskPanel initialiser list because
 	// setupUi() has not been called yet.
 	lay->addWidget(d_topology_tools_widget_ptr);
-
-	lay->addWidget( new QPushButton() );
 
 	// After the main widget and anything else we might want to cram in there,
 	// a spacer to eat up remaining space and push all the widgets to the top

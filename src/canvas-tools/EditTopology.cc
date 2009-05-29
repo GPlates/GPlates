@@ -31,15 +31,22 @@
 #include "EditTopology.h"
 
 #include "gui/ProximityTests.h"
+#include "gui/TopologyTools.h"
+
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/EditTopologyWidget.h"
+
 #include "maths/LatLonPointConversions.h"
+
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
+
 #include "global/InternalInconsistencyException.h"
+
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
+
 #include "property-values/XsString.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -49,8 +56,8 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
-				// GPlatesGui::FeatureTableModel &segments_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type,
 				GPlatesGui::FeatureFocus &feature_focus):
@@ -58,12 +65,13 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_view_state_ptr(&view_state_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
-	//d_segments_table_model_ptr(&segments_table_model_),
 	d_topology_sections_container_ptr(&topology_sections_container),
+	d_topology_tools_widget_ptr(&topology_tools_widget),
 	d_edit_topology_widget_ptr(&edit_topology_widget),
 	d_default_geom_type(geom_type),
 	d_feature_focus_ptr(&feature_focus)
 {
+
 }
 
 
@@ -80,7 +88,7 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 				" Ctrl+drag to re-orient the globe."));
 	} else {
 		d_view_state_ptr->status_message(QObject::tr(
-				"Click to draw a new vertex."
+				"Click on features to choose segments for the boundary."
 				" Ctrl+drag to reorient the globe."));
 	}
 
@@ -88,7 +96,11 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	d_rendered_geom_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
-	d_edit_topology_widget_ptr->activate();
+	d_topology_tools_widget_ptr->activate( GPlatesGui::TopologyTools::EDIT );
+
+// FIXME: REMOVE THIS 
+	// d_edit_topology_widget_ptr->activate();
+
 }
 
 
@@ -112,6 +124,9 @@ std::cout << "GPlatesCanvasTools::EditTopology::handle_left_click" << std::endl;
 
 	// send the click point to the widget
 	d_edit_topology_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
+
+	// Show the 'Clicked' Feature Table
+	d_view_state_ptr->choose_clicked_geometry_table();
 
 	//
 	// From ClickGeometry
@@ -157,32 +172,6 @@ std::cout << "GPlatesCanvasTools::EditTopology::handle_left_click" << std::endl;
 	d_view_state_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
 
-#if 0  
-// FIXME: remove this 
-	// It seems it's not necessary to set the feature focus here, 
-	// as it's already being set elsewhere.
-	// Update the focused feature.
-
-	GPlatesModel::ReconstructionGeometry *rg = sorted_hits.top().d_recon_geometry.get();
-	// We use a dynamic cast here (despite the fact that dynamic casts are generally considered
-	// bad form) because we only care about one specific derivation.  There's no "if ... else
-	// if ..." chain, so I think it's not super-bad form.  (The "if ... else if ..." chain
-	// would imply that we should be using polymorphism -- specifically, the double-dispatch of
-	// the Visitor pattern -- rather than updating the "if ... else if ..." chain each time a
-	// new derivation is added.)
-	GPlatesModel::ReconstructedFeatureGeometry *rfg =
-			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
-	if (rfg) {
-		GPlatesModel::FeatureHandle::weak_ref feature_ref = rfg->feature_ref();
-		if ( ! feature_ref.is_valid()) {
-			// FIXME:  Replace this exception with a problem-specific exception which
-			// doesn't contain a string.
-			throw GPlatesGlobal::InternalInconsistencyException(__FILE__, __LINE__,
-					"Invalid FeatureHandle::weak_ref returned from proximity tests.");
-		}
-		d_feature_focus_ptr->set_focus(feature_ref, rfg);
-	}
-#endif
 }
 
 

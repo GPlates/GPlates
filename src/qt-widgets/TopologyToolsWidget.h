@@ -30,8 +30,29 @@
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 
+#include "gui/TopologyTools.h"
+
+namespace GPlatesGui
+{
+	class FeatureFocus;
+//	class TopologyTools;
+}
+
+namespace GPlatesModel
+{
+	class ModelInterface;
+}
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
+}
+
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+	class CreateFeatureDialog;
+
 	class TopologyToolsWidget:
 			public QWidget, 
 			protected Ui_TopologyToolsWidget
@@ -39,12 +60,20 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		TopologyToolsWidget(
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesModel::ModelInterface &model_interface,
+				GPlatesQtWidgets::ViewportWindow &view_state,
 				QWidget *parent_ = NULL);
 					
 	public slots:
 		
+		void 
+		activate( GPlatesGui::TopologyTools::CanvasToolMode mode);
+
 		void
 		clear();
 
@@ -52,9 +81,48 @@ namespace GPlatesQtWidgets
 		display_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
-	
-	private:
 
+		void
+		handle_remove_all_sections();
+
+		void
+		handle_create();
+	
+		void
+		handle_add_feature();
+
+	private:
+	
+		/**
+		 * Used to draw rendered geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+
+		/**
+		 * This is our reference to the Feature Focus, which we use to let the rest of the
+		 * application know what the user just clicked on.
+		 */
+		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
+
+		/**
+		 * The model
+		 */ 
+		GPlatesModel::ModelInterface *d_model_interface;
+
+		/**
+		 * The View State is used to access the digitisation layer in the globe in the
+		 * globe canvas.
+		 */
+		ViewportWindow *d_view_state_ptr;
+
+		/**
+		 * The dialog the user sees when they hit the Create button.
+		 * Memory managed by Qt.
+		 */
+		CreateFeatureDialog *d_create_feature_dialog;
+
+		/** The tools to create and edit the topology feature */
+		GPlatesGui::TopologyTools *d_topology_tools_ptr;
 	};
 }
 

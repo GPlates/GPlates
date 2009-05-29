@@ -18,7 +18,7 @@
      <property name="currentIndex" >
       <number>0</number>
      </property>
-     <widget class="QWidget" name="tab_topology_tool" >
+     <widget class="QWidget" name="tab_topology" >
       <attribute name="title" >
        <string>Topolgy</string>
       </attribute>
@@ -106,7 +106,7 @@
         <widget class="QLineEdit" name="lineedit_number_of_sections" />
        </item>
        <item>
-        <widget class="QPushButton" name="button_remove_all" >
+        <widget class="QPushButton" name="button_remove_all_sections" >
          <property name="text" >
           <string>Remove All Sections</string>
          </property>
@@ -115,7 +115,7 @@
        <item>
         <widget class="QPushButton" name="button_create" >
          <property name="text" >
-          <string>Create...</string>
+          <string>Apply/Create...</string>
          </property>
         </widget>
        </item>
@@ -129,7 +129,7 @@
        <item>
         <layout class="QVBoxLayout" name="layout_section" >
          <item>
-          <widget class="QPushButton" name="button_add" >
+          <widget class="QPushButton" name="button_add_feature" >
            <property name="text" >
             <string>Add Focused Feature</string>
            </property>

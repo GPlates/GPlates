@@ -1090,10 +1090,10 @@ std::cout << "TopologyResolver::g_v_l: d_boundary_list.size()="
 		GPlatesModel::FeatureId fid = node.m_feature_id;
 		QString target_property = node.m_target_property;
 		
+#ifdef DEBUG_GET_VERTEX_LIST
 qDebug() << "TopologyResolver::g_v_l: " << "d_boundary_list.size()==1; ";
 qDebug() << "TopologyResolver::g_v_l: " << "fid = " << GPlatesUtils::make_qstring_from_icu_string(fid.get());
 qDebug() << "TopologyResolver::g_v_l: " << "target_property = " << target_property;
-#ifdef DEBUG_GET_VERTEX_LIST
 #endif
 
 		if (node.m_feature_type == GPlatesGlobal::POINT_FEATURE)

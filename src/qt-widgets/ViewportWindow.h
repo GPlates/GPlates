@@ -162,10 +162,25 @@ namespace GPlatesQtWidgets
 // FIXME: REMOVE
 
 
+		/** Get a pointer to the TopologySectionsContainer */
 		GPlatesGui::TopologySectionsContainer &
 		topology_sections_container()
 		{
 			return *d_topology_sections_container_ptr;	
+		}
+
+		/** Get a pointer to the TaskPanel */
+		GPlatesQtWidgets::TaskPanel *
+		task_panel_ptr()
+		{
+			return d_task_panel_ptr;
+		}
+
+		/** Get a pointer to the GPlatesModel::ModelInterface */
+		GPlatesModel::ModelInterface &
+		model_interface()
+		{
+			return d_model;
 		}
 
 
@@ -325,7 +340,7 @@ namespace GPlatesQtWidgets
 		choose_colour_by_age();
 
 		void
-		choose_clicked_geometry_table()
+		choose_clicked_geometry_table() const
 		{
 			tabWidget->setCurrentWidget(tab_clicked);
 		}

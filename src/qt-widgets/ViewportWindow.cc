@@ -40,6 +40,7 @@
 #include <QInputDialog>
 #include <QProgressBar>
 #include <QDockWidget>
+#include <QDebug>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -917,6 +918,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					d_task_panel_ptr->build_topology_widget(),
 					d_task_panel_ptr->edit_topology_widget(),
+					d_task_panel_ptr->topology_tools_widget(),
 					d_canvas_ptr->geometry_focus_highlight()));
 
 	// Set up the Canvas Tool Adapter for handling globe click and drag events.
@@ -1674,7 +1676,7 @@ GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 	uncheck_all_tools();
 	action_Build_Topology->setChecked(true);
 	d_canvas_tool_choice_ptr->choose_build_topology_tool();
-	d_task_panel_ptr->choose_build_topology_tab();
+	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
 
@@ -1684,7 +1686,7 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 	uncheck_all_tools();
 	action_Edit_Topology->setChecked(true);
 	d_canvas_tool_choice_ptr->choose_edit_topology_tool();
-	d_task_panel_ptr->choose_edit_topology_tab();
+	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
 

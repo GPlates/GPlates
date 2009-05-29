@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_TASKPANEL_H
 
 #include <QWidget>
+#include <QDebug>
 #include "TaskPanelUi.h"
 
 #include "DigitisationWidget.h"
@@ -139,6 +140,16 @@ namespace GPlatesQtWidgets
 			return *d_edit_topology_widget_ptr;
 		}
 	
+		/**
+		 * Accessor for the TopologyToolsWidget 
+		 *
+		 * This lets the topology canvas tools interact with the widget in the task panel
+		 */
+		TopologyToolsWidget &
+		topology_tools_widget() const
+		{
+			return *d_topology_tools_widget_ptr;
+		}
 
 	public slots:
 		
@@ -176,6 +187,12 @@ namespace GPlatesQtWidgets
 		choose_edit_topology_tab()
 		{
 			tabwidget_task_panel->setCurrentWidget(tab_edit_topology);
+		}
+		
+		void
+		choose_topology_tools_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_topology_tools);
 		}
 		
 	private:

@@ -113,6 +113,15 @@ namespace GPlatesGui
 		focus_feature_at_row(
 				int row);
 
+	
+		/** 
+		 * React to focus changed signals; primarily used to setRow(false) 
+		*/
+		void
+		react_focus_changed(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);
+
 	private:
 
 		/**
