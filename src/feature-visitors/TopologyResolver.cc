@@ -1252,6 +1252,7 @@ std::cout << std::endl;
 				<< "ITER_fid=" << GPlatesUtils::make_qstring_from_icu_string( iter_fid.get());
 			qDebug() << "TopologyResolver::g_v_l step 4: " 
 				<< "NEXT_fid=" << GPlatesUtils::make_qstring_from_icu_string( next_fid.get());
+			qDebug() << "WARNING:";
 		}
 
 #ifdef DEBUG_GET_VERTEX_LIST

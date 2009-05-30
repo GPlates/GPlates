@@ -165,8 +165,7 @@ qDebug() << "TopologyTools::activate() feature_type_name != topology_type_name";
 	d_topology_tools_widget_ptr = 
 		&( d_view_state_ptr->task_panel_ptr()->topology_tools_widget() );
 
-
-	// load the topology into the Topology Sections Table 
+	// Load the topology into the Topology Sections Table 
  	display_feature_topology(
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
 
@@ -176,6 +175,13 @@ qDebug() << "TopologyTools::activate() feature_type_name != topology_type_name";
 
 	// set the topology feature ref
 	d_topology_feature_ref = d_feature_focus_ptr->focused_feature();
+
+	// NOTE: this will trigger a set_focus signal with NULL ref
+	d_feature_focus_ptr->unset_focus();
+	d_feature_focus_head_points.clear();
+	d_feature_focus_tail_points.clear();
+	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
+	d_view_state_ptr->feature_table_model().clear();
 
 	// Flip to Topology Sections Table
 	d_view_state_ptr->change_tab( 2 );
@@ -404,11 +410,8 @@ GPlatesGui::TopologyTools::fill_widgets(
 	GPlatesModel::FeatureHandle::weak_ref feature_ref,
 	GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
 {
-	// 
+
 }
-
-
-
 
 
 
@@ -436,11 +439,14 @@ GPlatesGui::TopologyTools::handle_reconstruction_time_change(
 {
 	if (! d_is_active) { return; }
 
+qDebug() << "TopologyTools::handle_reconstruction_time_change()";
+
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
 	d_visit_to_create_properties = false;
 
+	// 
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
 
@@ -543,21 +549,6 @@ GPlatesGui::TopologyTools::display_feature(
 
 	if ( feature_type_name == topology_type_name )
 	{
-		// a topology ref has been set ; don't display this topology feature 
-		if ( d_topology_feature_ref.is_valid() ) 
-		{
-			d_feature_focus_ptr->unset_focus();
-			return; 
-		}
-
-		// d_topology_sections is not empty ; don't display this topology feature
-		if ( d_topology_sections.size() != 0 ) {
-			return;
-		}
-
-		// else the widget is ready to show an existing topology
-		// FIXME: NEED: display_feature_topology( feature_ref, associated_rfg );
-
 		return;
 	} 
 	else // non-topology feature type selected 
@@ -624,7 +615,6 @@ GPlatesGui::TopologyTools::display_feature_topology(
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
 {
 qDebug() << "TopologyTools::display_feature_topology():";
-
 
 	// Set the widget states
 
@@ -765,7 +755,7 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 		d_section_feature_focus_index = index;
 
 		// remove the focused feature
-		handle_remove_feature();
+		// handle_remove_feature();
 		return;
 	}
 
@@ -798,18 +788,28 @@ void
 GPlatesGui::TopologyTools::entry_removed(
 	GPlatesGui::TopologySectionsContainer::size_type deleted_index)
 {
-qDebug() << "TopologyTools::entry_remove(): deleted_index = " << deleted_index;
+qDebug() << "TopologyTools::entry_removed(): deleted_index = " << deleted_index;
 
 	if (! d_is_active) { return; }
 
+	// NOTE: this will trigger a set_focus signal with NULL ref
+	d_feature_focus_ptr->unset_focus();
+	d_feature_focus_head_points.clear();
+	d_feature_focus_tail_points.clear();
+	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
+	d_view_state_ptr->feature_table_model().clear();
+
+//FIXME: VECT->TABLE
 	// fill the local vector from the new table
-	fill_topology_sections_from_section_table();
+	// fill_topology_sections_from_section_table();
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
 	d_visit_to_create_properties = false;
 
+	// append the new boundary
+	append_boundary_to_feature( d_topology_feature_ref );
 }
 
 
@@ -823,32 +823,57 @@ qDebug() << "TopologyTools::entries_inserted(): quantity = " << quantity;
 
 	if (! d_is_active) { return; }
 
+	// NOTE: this will trigger a set_focus signal with NULL ref
+	d_feature_focus_ptr->unset_focus();
+	d_feature_focus_head_points.clear();
+	d_feature_focus_tail_points.clear();
+	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
+	d_view_state_ptr->feature_table_model().clear();
+
+//FIXME: VECT->TABLE
 	// fill the local vector from the new table
-	fill_topology_sections_from_section_table();
+	// fill_topology_sections_from_section_table();
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
 	d_visit_to_create_properties = false;
+
+	// append the new boundary
+	append_boundary_to_feature( d_topology_feature_ref );
 }
 
+//
+//
+//
 void
 GPlatesGui::TopologyTools::entries_modified(
 	GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
 	GPlatesGui::TopologySectionsContainer::size_type modified_index_end)
 {
-	//////qDebug() << "TopologyTools::entries_modified(): modified_index_begin = " << modified_index_begin;
-	//qDebug() << "TopologyTools::entries_modified(): modified_index_end   = " << modified_index_end;
+qDebug() << "TopologyTools::entries_modified(): modified_index_begin = " << modified_index_begin;
+qDebug() << "TopologyTools::entries_modified(): modified_index_end   = " << modified_index_end;
 
 	if (! d_is_active) { return; }
 
+	// NOTE: this will trigger a set_focus signal with NULL ref
+	d_feature_focus_ptr->unset_focus();
+	d_feature_focus_head_points.clear();
+	d_feature_focus_tail_points.clear();
+	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
+	d_view_state_ptr->feature_table_model().clear();
+
+//FIXME: VECT->TABLE
 	// fill the local vector from the new table
-	fill_topology_sections_from_section_table();
+	//fill_topology_sections_from_section_table();
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
 	d_visit_to_create_properties = false;
+
+	// append the new boundary
+	append_boundary_to_feature( d_topology_feature_ref );
 }
 
 
@@ -877,8 +902,8 @@ GPlatesGui::TopologyTools::handle_add_feature()
 void
 GPlatesGui::TopologyTools::handle_insert_feature(int index)
 {
-//qDebug() << "TopologyTools::handle_insert_feature()";
-//qDebug() << "index = " << index;
+qDebug() << "TopologyTools::handle_insert_feature()";
+qDebug() << "index = " << index;
 
 	// pointers to the Clicked Features table
 	GPlatesGui::FeatureTableModel &clicked_table = 
@@ -911,25 +936,26 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	table_row.d_click_point = GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
 	table_row.d_reverse = false; // FIXME : AUTO REVERSE
 
-//qDebug() << "TopologyTools::handle_insert_feature() call d_topology_sections_container_ptr->insert( Table Row );";
+qDebug() << "TopologyTools::handle_insert_feature() call d_topology_sections_container_ptr->insert( Table Row );";
 	// Insert the row
 	d_topology_sections_container_ptr->insert( table_row );
 
-//qDebug() << "TopologyTools::handle_insert_feature() call d_feature_focus_ptr->unset_focus();";
+qDebug() << "TopologyTools::handle_insert_feature() call d_feature_focus_ptr->unset_focus();";
 	// NOTE: this will trigger a set_focus signal with NULL ref
 	d_feature_focus_ptr->unset_focus();
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
-////qDebug() << "TopologyTools::handle_insert_feature() call d_view_state_ptr->feature_table_model().clear()";
+qDebug() << "TopologyTools::handle_insert_feature() call d_view_state_ptr->feature_table_model().clear()";
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
 	d_view_state_ptr->feature_table_model().clear();
 
 
+//FIXME: VECT->TABLE
 	// fill the local vector from the new table
-	fill_topology_sections_from_section_table();
+	//fill_topology_sections_from_section_table();
 
 
-//qDebug() << "TopologyTools::handle_insert_feature() call update_geom";
+qDebug() << "TopologyTools::handle_insert_feature() call update_geom";
 	// set flags for visit from update_geom()
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
@@ -939,7 +965,7 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	// d_topology_feature_ref exists, simple append the boundary
 	append_boundary_to_feature( d_topology_feature_ref );
 
-//qDebug() << "TopologyTools::handle_insert_feature() END";
+qDebug() << "TopologyTools::handle_insert_feature() END";
 
 	// reconnect listening to focus signals from Topology Sections table
 	connect_to_topology_sections_container_signals( false );
@@ -950,7 +976,7 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 void
 GPlatesGui::TopologyTools::handle_remove_feature()
 {
-//qDebug() << "TopologyTools::handle_remove_feature()";
+qDebug() << "TopologyTools::handle_remove_feature()";
 
 	// clear out the widgets
 	clear_widgets();
@@ -974,7 +1000,7 @@ GPlatesGui::TopologyTools::handle_remove_feature()
 	// d_topology_feature_ref exists, simple append the boundary
 	append_boundary_to_feature( d_topology_feature_ref );
 
-//qDebug() << "TopologyTools::handle_remove_feature() END";
+qDebug() << "TopologyTools::handle_remove_feature() END";
 }
 
 void
@@ -999,6 +1025,14 @@ void
 GPlatesGui::TopologyTools::handle_remove_all_sections()
 {
 qDebug() << "TopologyTools::handle_remove_all_sections()";
+
+	// NOTE: this will trigger a set_focus signal with NULL ref
+	d_feature_focus_ptr->unset_focus();
+	d_feature_focus_head_points.clear();
+	d_feature_focus_tail_points.clear();
+	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
+	d_view_state_ptr->feature_table_model().clear();
+
 	// disconnect from signals 
 	connect_to_topology_sections_container_signals(false);
 	
@@ -1010,8 +1044,14 @@ qDebug() << "TopologyTools::handle_remove_all_sections()";
 		d_topology_sections_container_ptr->remove_at( i );
 	}
 
+// FIXME: VECT->TABLE
 	// fill the local vector from the new table
-	fill_topology_sections_from_section_table();
+	//fill_topology_sections_from_section_table();
+
+	d_visit_to_check_type = false;
+	d_visit_to_create_properties = true;
+	update_geometry();
+	d_visit_to_create_properties = false;
 
 	// set the new boundary
 	append_boundary_to_feature( d_topology_feature_ref );
@@ -1019,6 +1059,7 @@ qDebug() << "TopologyTools::handle_remove_all_sections()";
 	// reconnect listening to focus signals from Topology Sections table
 	connect_to_topology_sections_container_signals(true);
 
+qDebug() << "TopologyTools::handle_remove_all_sections() end";
 	return;
 }
 
@@ -1849,7 +1890,7 @@ GPlatesGui::TopologyTools::draw_click_points()
 void
 GPlatesGui::TopologyTools::update_geometry()
 {
-//qDebug() << "TopologyTools::update_geometry()";
+qDebug() << "TopologyTools::update_geometry()";
 
 	// clear layers
 	draw_all_layers_clear();
@@ -1869,9 +1910,6 @@ GPlatesGui::TopologyTools::update_geometry()
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
 
-	// loop over Section Vectors to fill section table
-	fill_section_table_from_topology_sections();
-
 	// loop over Sections Table to fill d_topology_vertices
 	create_sections_from_sections_table();
 
@@ -1889,6 +1927,7 @@ GPlatesGui::TopologyTools::update_geometry()
 }
 
 
+#if 0
 ///
 /// 
 ///
@@ -1917,6 +1956,7 @@ qDebug() << "TopologyTools::fill_section_table_from_topology_sections()";
 
 	return;
 }
+#endif
 
 ///
 ///
@@ -1957,7 +1997,7 @@ qDebug() << "TopologyTools::fill_topology_sections_from_section_table()";
 void
 GPlatesGui::TopologyTools::create_sections_from_sections_table()
 {
-//qDebug() << "TopologyTools::create_sections_from_sections_table()";
+qDebug() << "TopologyTools::create_sections_from_sections_table()";
 
 	// clear out the old vectors, since the calls to accept_visitor will re-populate them
 	d_section_ptrs.clear();
@@ -1972,7 +2012,7 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		return; 
 	}
 
-//qDebug() << "TopologyTools::create_sections_from_sections_table() size = " << d_tmp_sections_size;
+qDebug() << "TopologyTools::create_sections_from_sections_table() size = " << d_tmp_sections_size;
 
 	// loop over each geom in the Sections Table
 	d_tmp_index = 0;
@@ -1985,8 +2025,8 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		d_tmp_index_fid = 
 			( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_feature_id;
 
-//qDebug() << "TopologyTools::create_sections_from_sections_table() i = " << d_tmp_index;
-//qDebug() << "TopologyTools::create_sections_from_sections_table() fid = " << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
+qDebug() << "TopologyTools::create_sections_from_sections_table() i = " << d_tmp_index;
+qDebug() << "TopologyTools::create_sections_from_sections_table() fid = " << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
 
 		// set the tmp reverse flag to this feature's flag
 		d_tmp_index_use_reverse =
@@ -2652,6 +2692,13 @@ void
 GPlatesGui::TopologyTools::append_boundary_to_feature(
 	GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
+qDebug() << "TopologyTools::append_boundary_value_to_feature()";
+
+	// double check for non existant features
+	if ( ! feature_ref.is_valid() ) 
+	{
+		return;
+	}
 
 #ifdef DEBUG
 qDebug() << "TopologyTools::append_boundary_value_to_feature() feature_ref = " 
@@ -2673,7 +2720,6 @@ qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 
-	// process the d_section_ vectors into the sections table 
 	// process the Sections Table into d_section_ptrs
 	update_geometry(); 
 
@@ -2771,7 +2817,7 @@ qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 	// Set the ball rolling again ...
 	d_view_state_ptr->reconstruct(); 
 
-//qDebug() << "TopologyTools::append_boundary_value_to_feature() END";
+qDebug() << "TopologyTools::append_boundary_value_to_feature() END";
 }
 
 

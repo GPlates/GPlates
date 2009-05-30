@@ -857,6 +857,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 		&(d_task_panel_ptr->edit_topology_widget()), 
 		SLOT(handle_reconstruction_time_change(double)));
 
+	
+
 	// Setup RenderedGeometryCollection.
 	initialise_rendered_geom_collection();
 

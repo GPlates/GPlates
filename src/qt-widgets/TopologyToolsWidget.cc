@@ -168,19 +168,9 @@ GPlatesQtWidgets::TopologyToolsWidget::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
 {
-
-qDebug() << "display_feature()";
-qDebug() << "display_feature()";
-qDebug() << "display_feature()";
-qDebug() << "display_feature()";
-qDebug() << "display_feature()";
-qDebug() << "display_feature()";
-
-	// Flip tab to topoology
-	tabwidget_main->setCurrentWidget( tab_section );
-
 	// Clear the fields first, then fill in those that we have data for.
 	clear();
+
 	// Always check your weak_refs!
 	if ( ! feature_ref.is_valid()) {
 		setDisabled(true);
@@ -218,11 +208,12 @@ qDebug() << "display_feature()";
 			*feature_ref, valid_time_property_name, time_period))
 	{
 		// The feature has a gml:validTime property.
-		
 		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
 		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
 	}
+
 }
+
 
 void
 GPlatesQtWidgets::TopologyToolsWidget::handle_remove_all_sections()

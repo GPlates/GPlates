@@ -242,8 +242,10 @@ namespace GPlatesGui
 			GPlatesModel::FeatureHandle::weak_ref feature);
 
 
+#if 0
 		void
 		fill_section_table_from_topology_sections();
+#endif
 
 		void
 		fill_topology_sections_from_section_table();
