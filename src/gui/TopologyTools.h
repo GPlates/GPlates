@@ -254,14 +254,6 @@ namespace GPlatesGui
 	public slots:
 		
 		void
-		clear_widgets();
-
-		void
-		fill_widgets(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
-
-		void
 		handle_reconstruction_time_change( double t );
 
 		void
@@ -372,14 +364,14 @@ namespace GPlatesGui
 		connect_to_topology_sections_container_signals( bool state );
 
 
-// // // 
-// // // 
-// // // 
 		/**
 		 * The slot that gets called when the user clicks "Add Focused Feature".
 		 */
 		void
 		handle_add_feature();
+
+		void
+		handle_insert_feature(int index);
 
 		void
 		handle_remove_all_sections();
@@ -390,27 +382,11 @@ namespace GPlatesGui
 		void
 		handle_remove_feature();
 
-		void
-		handle_insert_feature(int index);
-
-		/**
-		 * The slot that gets called when the user clicks "Clear".
-		 */
-		void
-		handle_clear();
-
-
 		/**
 		 * The slot that gets called when the user clicks "Apply".
 		 */
 		void
 		handle_apply();
-
-		/**
-		 * The slot that gets called when the user clicks "Cancel".
-		 */
-		void
-		handle_cancel();
 
 	private:
 

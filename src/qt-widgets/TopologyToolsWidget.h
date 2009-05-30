@@ -83,6 +83,12 @@ namespace GPlatesQtWidgets
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		void
+		display_number_of_sections( int i )
+		{
+			lineedit_number_of_sections->setText( QString::number( i ) );
+		}
+
+		void
 		handle_remove_all_sections();
 
 		void
