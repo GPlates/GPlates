@@ -74,6 +74,13 @@ namespace GPlatesGui
 		void
 		update_table();
 
+		void
+		focus_feature_at_row(
+				int row);
+
+		void
+		react_focus_feature_from_outside(
+				int index);
 
 	private slots:
 		void
@@ -108,20 +115,8 @@ namespace GPlatesGui
 		 */
 		void
 		clear_table();
+
 		
-		void
-		focus_feature_at_row(
-				int row);
-
-	
-		/** 
-		 * React to focus changed signals; primarily used to setRow(false) 
-		*/
-		void
-		react_focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);
-
 	private:
 
 		/**

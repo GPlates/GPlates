@@ -460,20 +460,45 @@ GPlatesGui::TopologyTools::set_focus(
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
 {
 	if (! d_is_active ) { return; }
+qDebug() << "TopologyTools::set_focus()";
+
+	// clear or panit the focused geom 
+	draw_focused_geometry();
 
 	// reset the index 
 	if ( ! feature_ref.is_valid() )
 	{
+// FIXME: CHECK THIS is it needed? 
 		d_section_feature_focus_index = -1;
+
+		// do nothing with a null ref
+		return;
 	}
 
-	// draw the focused geometry 
-	draw_focused_geometry(); 
 
-	// adjust widgets
+	// Check feature type via qstrings 
+ 	QString topology_type_name ("TopologicalClosedPlateBoundary");
+	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+		feature_ref->feature_type().get_name() );
+
+	if ( feature_type_name == topology_type_name )
+	{
+		// Only focus TopologicalClosedPlateBoundary types upon activate() calls
+
+		// NOTE: this will trigger a set_focus signal with NULL ref
+		d_feature_focus_ptr->unset_focus(); 
+		// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
+		d_view_state_ptr->feature_table_model().clear();
+		return;
+	} 
+	
+
+	// display this feature ; or unset focus if it is a topology
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
 
+
+// FIXME: remove this diag
 	show_numbers();
 
 	return;
@@ -507,6 +532,7 @@ GPlatesGui::TopologyTools::display_feature(
 	}
 
 #ifdef DEBUG
+qDebug() << "TopologyTools::display_feature() = ";
 qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_string( d_feature_focus_ptr->focused_feature()->feature_id().get() );
 
 	static const GPlatesModel::PropertyName name_property_name = 
@@ -538,6 +564,7 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 
 	if ( feature_type_name == topology_type_name )
 	{
+		// Only focus TopologicalClosedPlateBoundary types upon activate() calls
 		return;
 	} 
 	else // non-topology feature type selected 
@@ -549,12 +576,18 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 		{
 			d_section_feature_focus_index = index;
 
-			display_feature_on_boundary( feature_ref, associated_rfg );
+			// Flip to the Topology Sections Table
+			d_view_state_ptr->change_tab( 2 );
+
+			// pretend we clicked in that row
+qDebug() << "												fuck this index " << index;
+			d_topology_sections_container_ptr->set_focus_feature_at_index( index );
 			return;
 		}
 
 		// else, not found on boundary 
-		display_feature_off_boundary( feature_ref, associated_rfg );
+		// Flip to the Clicked Features tab
+		d_view_state_ptr->change_tab( 0 );
 		return;
 	}
 	return;
@@ -586,7 +619,9 @@ qDebug() << "index = " << i << "; d_feature_id = " << GPlatesUtils::make_qstring
 	return -1;
 }
 
+//
 // display the topology in the sections table and on the widget 
+//
 void
 GPlatesGui::TopologyTools::display_feature_topology(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
@@ -639,54 +674,6 @@ qDebug() << "TopologyTools::display_feature_topology():";
 qDebug() << "TopologyTools::display_feature_topology() END";
 }
 
-
-
-//
-// 
-//
-void
-GPlatesGui::TopologyTools::display_feature_on_boundary(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
-{
-#ifdef DEBUG
-qDebug() << "-------------------------------------------------";
-qDebug() << "TopologyTools::display_feature_on_boundary()";
-qDebug() << "-------------------------------------------------";
-#endif
-
-	// always double check your weak_refs!
-	if ( ! feature_ref.is_valid() ) {
-#ifdef DEBUG
-qDebug() << "TopologyTools::display_feature_on_boundary() invalid ref";
-#endif
-		return;
-	} 
-
-	// Flip to the Topology Sections Table
-	d_view_state_ptr->change_tab( 2 );
-}
-
-
-void
-GPlatesGui::TopologyTools::display_feature_off_boundary(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
-{
-#ifdef DEBUG
-qDebug() << "-----------------------------------------------------";
-qDebug() << "TopologyTools::display_feature_off_boundary()";
-qDebug() << "-----------------------------------------------------";
-#endif
-	// always double check your weak_refs!
-	if ( ! feature_ref.is_valid() ) {
-		return;
-	} 
-
-	// Flip to the Clicked Feature Table
-	d_view_state_ptr->change_tab( 0 );
-
-}
 
 
 void
@@ -991,13 +978,7 @@ GPlatesGui::TopologyTools::handle_apply()
 {
 qDebug() << "TopologyTools::handle_apply()";
 
-	// check for an empty table
-	if ( d_topology_sections_container_ptr->size() == 0 )
-	{
-qDebug() << "TopologyTools::handle_apply() CONTAINER size == 0 ";
-	}
-
-	// do one final update ; make sure to create properties
+	// do update ; make sure to create properties
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
@@ -1006,6 +987,7 @@ qDebug() << "TopologyTools::handle_apply() CONTAINER size == 0 ";
 	// no topology feature ref exisits, so fire up the feature creation dialog
 	if ( ! d_topology_feature_ref.is_valid() )
 	{
+qDebug() << "TopologyTools::handle_apply()  ! d_topology_feature_ref.is_valid() "; 
 		// show the dialog
 #if 0
 		bool success = d_create_feature_dialog->display();
@@ -1016,16 +998,12 @@ qDebug() << "TopologyTools::handle_apply() CONTAINER size == 0 ";
 			return;
 		}
 #endif
-
 		// else, the feature was created by the dialog
 		// and, append_boundary should have been called
 		// from a signal/slot set up in ViewportWindow.cc
-
-		d_feature_focus_ptr->unset_focus();
-
-qDebug() << "TopologyTools::handle_apply() END";
 		return;
 	}
+
 
 	// else, a d_topology_feature_ref exists, simple append the boundary
 	append_boundary_to_feature( d_topology_feature_ref );
@@ -1034,10 +1012,21 @@ qDebug() << "TopologyTools::handle_apply() END";
 	// Clear the widgets, tables, d_section_ vectors, derrived vectors, topology references
 	//
 
+	// Disconnect from signals
+	connect_to_topology_sections_container_signals( false );
+	connect_to_focus_signals( false );
+
 	// clear the tables
 	d_view_state_ptr->sections_feature_table_model().clear();
 	d_view_state_ptr->feature_table_model().clear();
-	
+
+	// loop over TopologySectionsTable 
+	int i = d_topology_sections_container_ptr->size(); 
+	--i; // decrement to last index
+	for ( ; i > -1 ; --i )
+	{
+		d_topology_sections_container_ptr->remove_at( i );
+	}
 	
 	// clear the vertex list
 	d_topology_vertices.clear();
@@ -1062,6 +1051,12 @@ qDebug() << "TopologyTools::handle_apply() END";
 
 	// unset the focus 
 	d_feature_focus_ptr->unset_focus(); 
+	
+	// deacticate the TopologyToolsWidget
+	d_topology_tools_widget_ptr->deactivate();
+
+	// deactivate Tool
+	deactivate();
 
 qDebug() << "TopologyTools::handle_apply() END";
 }
@@ -1307,8 +1302,6 @@ qDebug() << "TopologyTools::visit_polyline_on_sphere(): PROPS";
 void
 GPlatesGui::TopologyTools::draw_all_layers_clear()
 {
-////qDebug() << "TopologyTools::draw_all_layers_clear()";
-
 	// clear all layers
 	d_topology_geometry_layer_ptr->clear_rendered_geometries();
 	d_focused_feature_layer_ptr->clear_rendered_geometries();
@@ -1323,7 +1316,6 @@ GPlatesGui::TopologyTools::draw_all_layers_clear()
 void
 GPlatesGui::TopologyTools::draw_all_layers()
 {
-//qDebug() << "TopologyTools::draw_all_layers()";
 	// draw all the layers
 	draw_topology_geometry();
 	draw_focused_geometry();
@@ -1371,13 +1363,14 @@ void
 GPlatesGui::TopologyTools::draw_focused_geometry()
 {
 qDebug() << "TopologyTools::draw_focused_geometry()";
-
 	d_focused_feature_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
+	// always check weak refs
+	if ( ! d_feature_focus_ptr->is_valid() ) { return; }
+
 	if ( d_feature_focus_ptr->associated_rfg() )
 	{
-qDebug() << "TopologyTools::draw_focused_geometry() RFG okay";
 		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
@@ -1399,62 +1392,13 @@ qDebug() << "TopologyTools::draw_focused_geometry() RFG okay";
 		// draw the focused end_points
 		draw_focused_geometry_end_points();
 	}
-
-
-	//
-	// if an insert spot has been selected, draw that feature in black
-	//
-	if ( d_insert_feature_ref.is_valid() )
-	{
-//qDebug() << "TopologyTools::draw_focused_geometry() d_insert_feature_ref.is_valid()";
-		// access the current RFG for this feature 
-		GPlatesModel::ReconstructedFeatureGeometryFinder finder(
-			&( d_view_state_ptr->reconstruction() ) );
-
-		finder.find_rfgs_of_feature( d_insert_feature_ref );
-
-		GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator find_iter;
-		find_iter = finder.found_rfgs_begin();
-
-		// get the geometry on sphere from the RFG
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type gos_ptr =
-			(*find_iter)->geometry();
-
-		if (gos_ptr) 
-		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_black();
-			GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
-					gos_ptr,
-					colour,
-					GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
-
-			d_focused_feature_layer_ptr->add_rendered_geometry(rendered_geometry);
-
-			// visit to get end_points
-			d_feature_focus_head_points.clear();
-			d_feature_focus_tail_points.clear();
-
-			d_visit_to_get_focus_end_points = true;
-			gos_ptr->accept_visitor(*this);
-			d_visit_to_get_focus_end_points = false;
-
-			// draw the focused end_points
-			draw_focused_geometry_end_points();
-
-			d_view_state_ptr->globe_canvas().update_canvas();
-		}
-	}
-//qDebug() << "TopologyTools::draw_focused_geometry() END";
 }
 
 
 void
 GPlatesGui::TopologyTools::draw_focused_geometry_end_points()
 {
-//qDebug() << "TopologyTools::draw_focused_geometry_end_points()";
-
+qDebug() << "TopologyTools::draw_focused_geometry_end_points()";
 	std::vector<GPlatesMaths::PointOnSphere>::iterator itr, end;
 
 	// draw head points

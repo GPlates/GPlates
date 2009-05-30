@@ -52,6 +52,7 @@ namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
 	class CreateFeatureDialog;
+	class FeatureSummaryWidget;
 
 	class TopologyToolsWidget:
 			public QWidget, 
@@ -72,7 +73,10 @@ namespace GPlatesQtWidgets
 	public slots:
 		
 		void 
-		activate( GPlatesGui::TopologyTools::CanvasToolMode mode);
+		activate( GPlatesGui::TopologyTools::CanvasToolMode mode );
+
+		void 
+		deactivate();
 
 		void
 		clear();
@@ -129,6 +133,10 @@ namespace GPlatesQtWidgets
 
 		/** The tools to create and edit the topology feature */
 		GPlatesGui::TopologyTools *d_topology_tools_ptr;
+
+		/** the FeatureSummaryWidget pointer */
+		FeatureSummaryWidget *d_feature_summary_widget_ptr;
+		
 	};
 }
 

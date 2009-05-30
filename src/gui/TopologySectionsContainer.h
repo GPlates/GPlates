@@ -300,6 +300,9 @@ namespace GPlatesGui
 		move_insertion_point(
 				size_type new_index);
 
+		void
+		set_focus_feature_at_index( int index );
+
 	public slots:
 
 		/**
@@ -318,6 +321,7 @@ namespace GPlatesGui
 		 */
 		void
 		clear();
+
 
 
 #if 0	// The following slots were only used to support easier testing before the platepolygon branch merge.
@@ -402,6 +406,13 @@ namespace GPlatesGui
 		entries_modified(
 				GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
 				GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
+
+		/**
+		 * Emitted whenever a feature is focused from outside the Container or Table 
+		 */
+		void
+		focus_feature_from_outside(
+				int index);
 		
 	private:
 

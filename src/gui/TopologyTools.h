@@ -277,16 +277,6 @@ namespace GPlatesGui
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		void
-		display_feature_on_boundary(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
-
-		void
-		display_feature_off_boundary(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
-
-		void
 		handle_shift_left_click(
 			const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 			const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,

@@ -108,11 +108,13 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 			rendered_geom_collection, 
 			feature_focus, 
 			view_state_) 
+	),
+	d_feature_summary_widget_ptr(
+		new FeatureSummaryWidget(feature_focus, tab_section)
 	)
 {
 	setupUi(this);
-	clear();
-	// setDisabled(true);
+
 
 	// Attach buttons to functions
 	 QObject::connect( button_remove_all_sections, SIGNAL(clicked()),
@@ -124,12 +126,12 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	 QObject::connect( button_add_feature, SIGNAL(clicked()),
  		this, SLOT(handle_add_feature()));
 
-	// add the Feature Summary Widget after a little space 
+	// add a little space 
 	layout_section->addItem( 
 		new QSpacerItem(2, 2, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
-	layout_section->addWidget( 
-		new FeatureSummaryWidget(feature_focus, tab_section) );
+	// add the Feature Summary Widget 
+	layout_section->addWidget( d_feature_summary_widget_ptr );
 
 	// more space at the bottom to size things up a bit
 	layout_section->addItem( 
@@ -139,6 +141,11 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 void
 GPlatesQtWidgets::TopologyToolsWidget::activate( GPlatesGui::TopologyTools::CanvasToolMode mode)
 {
+	setDisabled( false );
+
+	clear();
+
+#if 0
 	if ( d_feature_focus_ptr->is_valid() ) 
 	{
 		qDebug() << "TopologyToolsWidget::activate():: d_feature_focus_ptr->is_valid() TRUE ";
@@ -147,19 +154,31 @@ GPlatesQtWidgets::TopologyToolsWidget::activate( GPlatesGui::TopologyTools::Canv
 	{
 		qDebug() << "TopologyToolsWidget::activate():: d_feature_focus_ptr->is_valid() FALSE";
 	}
+#endif
 	
+	// activate the TopologyTools object
 	d_topology_tools_ptr->activate( mode );
 }
 
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::deactivate()
+{
+	setDisabled( true );
+	clear();
+}
 
 
 void
 GPlatesQtWidgets::TopologyToolsWidget::clear()
 {
 	lineedit_name->clear();
+	lineedit_plate_id->clear();
 	lineedit_time_of_appearance->clear();
 	lineedit_time_of_disappearance->clear();
 	lineedit_number_of_sections->clear();
+
+	d_feature_summary_widget_ptr->clear();
 }
 
 
