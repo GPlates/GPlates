@@ -101,6 +101,18 @@ namespace GPlatesQtWidgets
 		void
 		handle_add_feature();
 
+		void
+		choose_topology_tab()
+		{
+			tabwidget_main->setCurrentWidget( tab_topology );
+		}
+
+		void
+		choose_section_tab()
+		{
+			tabwidget_main->setCurrentWidget( tab_section );
+		}
+
 	private:
 	
 		/**

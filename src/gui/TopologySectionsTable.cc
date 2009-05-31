@@ -948,10 +948,6 @@ void
 GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 		int row)
 {
-qDebug() << "ROW ROW ROW = " << row;
-qDebug() << "ROW ROW ROW = " << row;
-qDebug() << "ROW ROW ROW = " << row;
-qDebug() << "ROW ROW ROW = " << row;
 	if (row < 0 || row >= d_table->rowCount()) {
 		return;
 	}
@@ -963,7 +959,10 @@ qDebug() << "ROW ROW ROW = " << row;
 	// Get the appropriate details about the feature from the container,
 	TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
 	const TopologySectionsContainer::TableRow &trow = d_container_ptr->at(index);
-	
+
+	// Tell the continer about the focs
+	d_container_ptr->set_focus_feature_at_index( index );
+
 	// Do we have enough information?
 	if (trow.d_feature_ref.is_valid() && trow.d_geometry_property_opt) {
 		// Then adjust the focus.
@@ -971,6 +970,7 @@ qDebug() << "ROW ROW ROW = " << row;
 	
 		// And provide visual feedback for user.
 		d_table->selectRow(row);
+
 	}
 }
 

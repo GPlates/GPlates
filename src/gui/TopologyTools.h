@@ -333,6 +333,9 @@ namespace GPlatesGui
 		void
 		draw_intersection_points();
 
+		void
+		draw_insertion_neighbors();
+
 #if 0
 		void
 		draw_click_points();
@@ -391,11 +394,11 @@ namespace GPlatesGui
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_topology_geometry_layer_ptr,
 			d_focused_feature_layer_ptr,
+			d_insertion_neighbors_layer_ptr,
 			d_segments_layer_ptr,
 			d_end_points_layer_ptr,
 			d_intersection_points_layer_ptr,
 			d_click_points_layer_ptr;
-
 
 		/**
 		 * This is our reference to the Feature Focus, which we use to let the rest of the
@@ -527,10 +530,6 @@ namespace GPlatesGui
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
 			d_segments;
 
-		// collection of sub-segments for insert operation
-		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
-			d_insert_segments;
-
 		/**
 		 * An odered collection of all the vertices
 		 */
@@ -542,6 +541,17 @@ namespace GPlatesGui
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
 			d_topology_geometry_opt_ptr;
 
+
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
+			d_feature_before_insert_opt_ptr;
+
+
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
+			d_feature_after_insert_opt_ptr;
+
+		GPlatesGui::TopologySectionsContainer::size_type d_feature_before_insert_index;
+		GPlatesGui::TopologySectionsContainer::size_type d_feature_after_insert_index;
+
 		/*
 		 * 
 		 */ 
@@ -549,14 +559,6 @@ namespace GPlatesGui
 
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_topology_feature_rfg;
 
-
-		/*
-		 * These variables keep track during insert operations
-		 */
-		int d_insertion_point;
-		int d_insert_index;
-		GPlatesModel::FeatureHandle::weak_ref d_insert_feature_ref;
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_insert_feature_rfg;
 
 		//
 		// private functions 
