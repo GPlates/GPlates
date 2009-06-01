@@ -315,7 +315,8 @@ namespace
 	 * It's assumed that this function won't be called with an empty tuple list (ie, it's
 	 * assumed that @a tuple_list_begin will never equal @a tuple_list_end).  It's also assumed
 	 * that the vector passed into the function as @a coordinates_iterator_ranges is empty when
-	 * it's passed into the function.
+	 * it's passed into the function.  It's also assumed that the template parameter type
+	 * @a TupleListIter is a forward iterator.
 	 */
 	template<typename CoordinatesIter, typename TupleListIter>
 	void
@@ -341,26 +342,26 @@ namespace
 	 *
 	 * It's assumed that this function won't be called with an empty tuple list (ie, it's
 	 * assumed that @a ranges_begin will never equal @a ranges_end).  It's also assumed that
-	 * the template parameter type @a ForwardIter is a forward iterator which dereferences to a
+	 * the template parameter type @a RangesIter is a forward iterator which dereferences to a
 	 * std::pair of iterators representing a half-open iterator range (i.e., [begin, end)).
 	 */
 	template<typename ForwardIter>
 	void
 	write_tuple_list_from_coordinates_iterator_ranges(
 			GPlatesFileIO::XmlWriter &xml_output,
-			ForwardIter ranges_begin,
-			ForwardIter ranges_end)
+			RangesIter ranges_begin,
+			RangesIter ranges_end)
 	{
 		static const QString comma(",");
 		static const QString space(" ");
 
 		// Assume that when you dereference the iterator, you get a std::pair of iterators
 		// representing a half-open iterator range (i.e., [begin, end)).
-		typedef typename std::iterator_traits<ForwardIter>::value_type CoordinatesIteratorRange;
+		typedef typename std::iterator_traits<RangesIter>::value_type CoordinatesIteratorRange;
 
 		// Loop until we reach the end of any of the coordinate iterator ranges.
 		for ( ; ; ) {
-			ForwardIter ranges_iter = ranges_begin;
+			RangesIter ranges_iter = ranges_begin;
 
 			// We need to put a comma between adjacent coordinates in the tuple but a
 			// space after the last coordinate in the tuple.  Hence, let's output the
