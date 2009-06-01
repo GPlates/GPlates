@@ -60,6 +60,12 @@ namespace GPlatesPropertyValues
 	 *
 	 * When the GmlDataBlock is output in GPML, it will be necessary to "re-interleave" the
 	 * coordinate tuples.
+	 *
+	 * There are three 'create' functions which may be used to instantiate a
+	 * GmlDataBlockCoordinateList:
+	 *  -# @a create_empty
+	 *  -# @a create_copy
+	 *  -# @a create_swap
 	 */
 	class GmlDataBlockCoordinateList:
 			public GPlatesUtils::ReferenceCount<GmlDataBlockCoordinateList>
@@ -98,7 +104,8 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Create a new GmlDataBlockCoordinateList instance, leaving its coordinates empty
-		 * (but pre-allocated to the capacity @a list_len).
+		 * (but pre-allocated to the capacity @a list_len).  You can append coordinates
+		 * using the member functions @a coordinates_push_back or @a coordinates_assign.
 		 */
 		static
 		const non_null_ptr_type
@@ -117,43 +124,47 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Create a new GmlDataBlockCoordinateList instance, then copy the contents of the
-		 * supplied container @a coordinates_ into the GmlDataBlockCoordinateList.
+		 * Create a new GmlDataBlockCoordinateList instance, then copy the values from the
+		 * iterator range from @a coordinates_begin_ to @a coordinates_end_ into the
+		 * GmlDataBlockCoordinateList.
 		 */
+		template<typename CoordinateIter>
 		static
 		const non_null_ptr_type
 		create_copy(
 				const ValueObjectType &value_object_type_,
 				const xml_attributes_type &value_object_xml_attributes_,
-				const coordinate_list_type &coordinates_)
+				CoordinateIter coordinates_begin_,
+				CoordinateIter coordinates_end_)
 		{
 			non_null_ptr_type ptr(
 					new GmlDataBlockCoordinateList(
 							value_object_type_,
 							value_object_xml_attributes_,
-							coordinates_),
+							coordinates_begin_,
+							coordinates_end_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		/**
 		 * Create a new GmlDataBlockCoordinateList instance, then swap the contents of the
-		 * supplied container @a coordinates_ into the GmlDataBlockCoordinateList, leaving
-		 * @a coordinates_ empty.
+		 * supplied container @a coordinates_to_swap into the GmlDataBlockCoordinateList,
+		 * leaving @a coordinates_to_swap empty.
 		 */
 		static
 		const non_null_ptr_type
 		create_swap(
 				const ValueObjectType &value_object_type_,
 				const xml_attributes_type &value_object_xml_attributes_,
-				coordinate_list_type &coordinates_)
+				coordinate_list_type &coordinates_to_swap)
 		{
 			non_null_ptr_type ptr(
 					new GmlDataBlockCoordinateList(
 							value_object_type_,
 							value_object_xml_attributes_),
 					GPlatesUtils::NullIntrusivePointerHandler());
-			ptr->d_coordinates.swap(coordinates_);
+			ptr->d_coordinates.swap(coordinates_to_swap);
 			return ptr;
 		}
 
@@ -219,6 +230,15 @@ namespace GPlatesPropertyValues
 			d_coordinates.push_back(coord);
 		}
 
+		template<typename CoordinateIter>
+		void
+		coordinates_assign(
+				CoordinateIter begin,
+				CoordinateIter end)
+		{
+			d_coordinates.assign(begin, end);
+		}
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
@@ -242,15 +262,17 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		/**
 		 * Initialise the data member @a d_coordinates by copying the values from the
-		 * parameter @a coordinates_.
+		 * iterator range from @a coordinates_begin_ to @a coordinates_end_.
 		 */
+		template<typename CoordinateIter>
 		GmlDataBlockCoordinateList(
 				const ValueObjectType &value_object_type_,
 				const xml_attributes_type &value_object_xml_attributes_,
-				const coordinate_list_type &coordinates_):
+				CoordinateIter coordinates_begin_,
+				CoordinateIter coordinates_end_):
 			d_value_object_type(value_object_type_),
 			d_value_object_xml_attributes(value_object_xml_attributes_),
-			d_coordinates(coordinates_)
+			d_coordinates(coordinates_begin_, coordinates_end_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
