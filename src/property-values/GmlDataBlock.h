@@ -87,6 +87,12 @@ namespace GPlatesPropertyValues
 			return dup;
 		}
 
+		bool
+		is_empty() const
+		{
+			return d_tuple_list.empty();
+		}
+
 		tuple_list_type::const_iterator
 		tuple_list_begin() const
 		{
