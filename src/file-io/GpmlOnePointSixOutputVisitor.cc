@@ -532,6 +532,8 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_enumeration(
 namespace
 {
 	/**
+	 * Convenience function to help write the tuple-list in GmlDataBlock.
+	 *
 	 * It's assumed that this function won't be called with an empty tuple list (ie, it's
 	 * assumed that @a tuple_list_begin will never equal @a tuple_list_end).  It's also assumed
 	 * that the vector passed into the function as @a coordinates_iterator_ranges is empty when
@@ -557,24 +559,30 @@ namespace
 
 
 	/**
+	 * Convenience function to help write the tuple-list in GmlDataBlock.
+	 *
 	 * It's assumed that this function won't be called with an empty tuple list (ie, it's
-	 * assumed that @a tuple_list_begin will never equal @a tuple_list_end).  It's also assumed
-	 * that the vector passed into the function as @a coordinates_iterator_ranges is empty when
-	 * it's passed into the function.
+	 * assumed that @a ranges_begin will never equal @a ranges_end).  It's also assumed that
+	 * the template parameter type @a ForwardIter is a forward iterator which dereferences to a
+	 * std::pair of iterators representing a half-open iterator range (i.e., [begin, end)).
 	 */
-	template<typename CoordinatesIteratorRange>
+	template<typename ForwardIter>
 	void
 	write_tuple_list_from_coordinates_iterator_ranges(
 			GPlatesFileIO::XmlWriter &xml_output,
-			typename std::vector<CoordinatesIteratorRange>::iterator ranges_begin,
-			typename std::vector<CoordinatesIteratorRange>::iterator ranges_end)
+			ForwardIter ranges_begin,
+			ForwardIter ranges_end)
 	{
 		static const QString comma(",");
 		static const QString space(" ");
 
+		// Assume that when you dereference the iterator, you get a std::pair of iterators
+		// representing a half-open iterator range (i.e., [begin, end)).
+		typedef typename std::iterator_traits<ForwardIter>::value_type CoordinatesIteratorRange;
+
 		// Loop until we reach the end of any of the coordinate iterator ranges.
 		for ( ; ; ) {
-			typename std::vector<CoordinatesIteratorRange>::iterator ranges_iter = ranges_begin;
+			ForwardIter ranges_iter = ranges_begin;
 
 			// We need to put a comma between adjacent coordinates in the tuple but a
 			// space after the last coordinate in the tuple.  Hence, let's output the
@@ -583,7 +591,8 @@ namespace
 			{
 				if (ranges_iter == ranges_end) {
 					// Something strange has happened: The tuple-list is empty!
-					// But we should already have handled this situation above.
+					// But we should already have handled this situation in the
+					// invoking function.
 					// FIXME:  Complain.
 					return;
 				}
@@ -617,6 +626,8 @@ namespace
 
 
 	/**
+	 * Convenience function to help write the tuple-list in GmlDataBlock.
+	 *
 	 * It's OK if this function is called with an empty tuple list (ie, if @a tuple_list_begin
 	 * equals @a tuple_list_end).  That situation will be handled gracefully within this
 	 * function (by returning immediately).
@@ -640,8 +651,7 @@ namespace
 		std::vector<coordinates_iterator_range> coordinates_iterator_ranges;
 		populate_coordinates_iterator_ranges(coordinates_iterator_ranges,
 				tuple_list_begin, tuple_list_end);
-		write_tuple_list_from_coordinates_iterator_ranges<coordinates_iterator_range>(
-				xml_output,
+		write_tuple_list_from_coordinates_iterator_ranges(xml_output,
 				coordinates_iterator_ranges.begin(),
 				coordinates_iterator_ranges.end());
 	}
