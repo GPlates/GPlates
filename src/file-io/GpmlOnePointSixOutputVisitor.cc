@@ -345,7 +345,7 @@ namespace
 	 * the template parameter type @a RangesIter is a forward iterator which dereferences to a
 	 * std::pair of iterators representing a half-open iterator range (i.e., [begin, end)).
 	 */
-	template<typename ForwardIter>
+	template<typename RangesIter>
 	void
 	write_tuple_list_from_coordinates_iterator_ranges(
 			GPlatesFileIO::XmlWriter &xml_output,
