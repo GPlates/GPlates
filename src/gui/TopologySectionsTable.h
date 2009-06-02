@@ -79,7 +79,7 @@ namespace GPlatesGui
 				int row);
 
 		void
-		react_focus_feature_from_outside(
+		react_focus_feature_at_index(
 				int index);
 
 	private slots:

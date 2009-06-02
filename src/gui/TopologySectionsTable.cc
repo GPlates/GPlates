@@ -62,6 +62,7 @@ namespace
 	resolve_feature_id(
 			GPlatesGui::TopologySectionsContainer::TableRow &entry)
 	{
+
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
 		entry.d_feature_id.find_back_ref_targets(
 				GPlatesModel::append_as_weak_refs(back_ref_targets));
@@ -409,8 +410,8 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	QObject::connect(d_container_ptr, SIGNAL(entries_modified(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
 
-	QObject::connect(d_container_ptr, SIGNAL(focus_feature_from_outside( int )),
-			this, SLOT(react_focus_feature_from_outside(int)));
+	QObject::connect(d_container_ptr, SIGNAL(focus_feature_at_index( int )),
+			this, SLOT(react_focus_feature_at_index(int)));
 
 	// Enable the table to receive mouse move events, so we can show/hide buttons
 	// based on the row being hovered over.
@@ -679,127 +680,127 @@ GPlatesGui::TopologySectionsTable::convert_data_index_to_table_row(
 
 
 GPlatesGui::TopologySectionsContainer::size_type
-		GPlatesGui::TopologySectionsTable::convert_table_row_to_data_index(
-				int row)
-		{
-			TopologySectionsContainer::size_type index = static_cast<TopologySectionsContainer::size_type>(row);
-			if (index == d_container_ptr->insertion_point()) {
-				// While the visual row requested corresponds to the special insertion point,
-				// and does not match any entry in the data vector, we can at least return
-				// the index of data that new entries would be inserted at.
-				return index;
-			} else if (index > d_container_ptr->insertion_point()) {
-				--index;
-			}
-			// else: index must be < the insertion point, so no adjustment necessary.
-			
-			return index;
-		}
+GPlatesGui::TopologySectionsTable::convert_table_row_to_data_index(
+		int row)
+{
+	TopologySectionsContainer::size_type index = static_cast<TopologySectionsContainer::size_type>(row);
+	if (index == d_container_ptr->insertion_point()) {
+		// While the visual row requested corresponds to the special insertion point,
+		// and does not match any entry in the data vector, we can at least return
+		// the index of data that new entries would be inserted at.
+		return index;
+	} else if (index > d_container_ptr->insertion_point()) {
+		--index;
+	}
+	// else: index must be < the insertion point, so no adjustment necessary.
+	
+	return index;
+}
 
 
-		void
-		GPlatesGui::TopologySectionsTable::set_up_actions()
-		{
-			static const QIcon remove_icon(":/tango_emblem_unreadable_22.png");
-			static const QIcon insert_above_icon(":/gnome_go_top_22.png");
-			static const QIcon insert_below_icon(":/gnome_go_bottom_22.png");
-			static const QIcon cancel_insertion_point_icon(":/insertion_point_cancel_22.png");
+void
+GPlatesGui::TopologySectionsTable::set_up_actions()
+{
+	static const QIcon remove_icon(":/tango_emblem_unreadable_22.png");
+	static const QIcon insert_above_icon(":/gnome_go_top_22.png");
+	static const QIcon insert_below_icon(":/gnome_go_bottom_22.png");
+	static const QIcon cancel_insertion_point_icon(":/insertion_point_cancel_22.png");
 
-			// Set up icons and text for actions.
-			d_remove_action->setIcon(remove_icon);
-			d_remove_action->setToolTip(tr("Click to remove this section from the topology."));
-			d_insert_above_action->setIcon(insert_above_icon);
-			d_insert_above_action->setToolTip(tr("Move the insertion point to the row above this section. New features will be added to the topology before this one."));
-			d_insert_below_action->setIcon(insert_below_icon);
-			d_insert_below_action->setToolTip(tr("Move the insertion point to the row below this section. New features will be added to the topology after this one."));
-			d_cancel_insertion_point_action->setIcon(cancel_insertion_point_icon);
-			d_cancel_insertion_point_action->setToolTip(tr("Cancel this insertion point. New features will be added to the end of the table."));
+	// Set up icons and text for actions.
+	d_remove_action->setIcon(remove_icon);
+	d_remove_action->setToolTip(tr("Click to remove this section from the topology."));
+	d_insert_above_action->setIcon(insert_above_icon);
+	d_insert_above_action->setToolTip(tr("Move the insertion point to the row above this section. New features will be added to the topology before this one."));
+	d_insert_below_action->setIcon(insert_below_icon);
+	d_insert_below_action->setToolTip(tr("Move the insertion point to the row below this section. New features will be added to the topology after this one."));
+	d_cancel_insertion_point_action->setIcon(cancel_insertion_point_icon);
+	d_cancel_insertion_point_action->setToolTip(tr("Cancel this insertion point. New features will be added to the end of the table."));
 
-			// Connect actions to our handlers.
-			QObject::connect(d_remove_action, SIGNAL(triggered()),
-					this, SLOT(react_remove_clicked()));
-			QObject::connect(d_insert_above_action, SIGNAL(triggered()),
-					this, SLOT(react_insert_above_clicked()));
-			QObject::connect(d_insert_below_action, SIGNAL(triggered()),
-					this, SLOT(react_insert_below_clicked()));
-			QObject::connect(d_cancel_insertion_point_action, SIGNAL(triggered()),
-					this, SLOT(react_cancel_insertion_point_clicked()));
-		}
-
-
-		GPlatesQtWidgets::ActionButtonBox *
-		GPlatesGui::TopologySectionsTable::create_new_action_box()
-		{
-			GPlatesQtWidgets::ActionButtonBox *box = new GPlatesQtWidgets::ActionButtonBox(3, 22, d_table);
-			// Add our actions (as tool buttons) to this action box.
-			box->add_action(d_remove_action);
-			box->add_action(d_insert_above_action);
-			box->add_action(d_insert_below_action);
-			return box;
-		}
+	// Connect actions to our handlers.
+	QObject::connect(d_remove_action, SIGNAL(triggered()),
+			this, SLOT(react_remove_clicked()));
+	QObject::connect(d_insert_above_action, SIGNAL(triggered()),
+			this, SLOT(react_insert_above_clicked()));
+	QObject::connect(d_insert_below_action, SIGNAL(triggered()),
+			this, SLOT(react_insert_below_clicked()));
+	QObject::connect(d_cancel_insertion_point_action, SIGNAL(triggered()),
+			this, SLOT(react_cancel_insertion_point_clicked()));
+}
 
 
-		void
-		GPlatesGui::TopologySectionsTable::set_up_table()
-		{
-			d_table->setColumnCount(NUM_ELEMS_INT(column_heading_info_table));
-			// Set names and tooltips.
-			for (int column = 0; column < NUM_ELEMS_INT(column_heading_info_table); ++column) {
-				// Construct a QTableWidgetItem to be used as a 'header' item.
-				QTableWidgetItem *item = new QTableWidgetItem(tr(column_heading_info_table[column].label));
-				item->setToolTip(tr(column_heading_info_table[column].tooltip));
-				// Add that item to the table.
-				d_table->setHorizontalHeaderItem(column, item);
-			}
-			// Set widths and stretching.
-			for (int column = 0; column < NUM_ELEMS_INT(column_heading_info_table); ++column) {
-				d_table->horizontalHeader()->setResizeMode(column, column_heading_info_table[column].resize_mode);
-				d_table->horizontalHeader()->resizeSection(column, column_heading_info_table[column].width);
-			}
-			
-			// Height of each column should be enough for the action buttons.
-			// Hardcoded numbers suck, but asking the buttons for their height wasn't working.
-			d_table->verticalHeader()->setDefaultSectionSize(34);
-			// But don't show the vertical header.
-			d_table->verticalHeader()->hide();
-			// Depending on how it looks when we have real data in there, we may wish to use this:
-			d_table->horizontalHeader()->setStretchLastSection(true);
-			// Don't make column labels bold just because we clicked on a row.
-			d_table->horizontalHeader()->setHighlightSections(false);
-		}
+GPlatesQtWidgets::ActionButtonBox *
+GPlatesGui::TopologySectionsTable::create_new_action_box()
+{
+	GPlatesQtWidgets::ActionButtonBox *box = new GPlatesQtWidgets::ActionButtonBox(3, 22, d_table);
+	// Add our actions (as tool buttons) to this action box.
+	box->add_action(d_remove_action);
+	box->add_action(d_insert_above_action);
+	box->add_action(d_insert_below_action);
+	return box;
+}
 
 
-		void
-		GPlatesGui::TopologySectionsTable::update_table_row_count()
-		{
-			// One row for each data entry.
-			int rows = static_cast<int>(d_container_ptr->size());
-			// Plus one for the insertion point.
-			++rows;
-			
-			d_table->setRowCount(rows);
-		}
+void
+GPlatesGui::TopologySectionsTable::set_up_table()
+{
+	d_table->setColumnCount(NUM_ELEMS_INT(column_heading_info_table));
+	// Set names and tooltips.
+	for (int column = 0; column < NUM_ELEMS_INT(column_heading_info_table); ++column) {
+		// Construct a QTableWidgetItem to be used as a 'header' item.
+		QTableWidgetItem *item = new QTableWidgetItem(tr(column_heading_info_table[column].label));
+		item->setToolTip(tr(column_heading_info_table[column].tooltip));
+		// Add that item to the table.
+		d_table->setHorizontalHeaderItem(column, item);
+	}
+	// Set widths and stretching.
+	for (int column = 0; column < NUM_ELEMS_INT(column_heading_info_table); ++column) {
+		d_table->horizontalHeader()->setResizeMode(column, column_heading_info_table[column].resize_mode);
+		d_table->horizontalHeader()->resizeSection(column, column_heading_info_table[column].width);
+	}
+	
+	// Height of each column should be enough for the action buttons.
+	// Hardcoded numbers suck, but asking the buttons for their height wasn't working.
+	d_table->verticalHeader()->setDefaultSectionSize(34);
+	// But don't show the vertical header.
+	d_table->verticalHeader()->hide();
+	// Depending on how it looks when we have real data in there, we may wish to use this:
+	d_table->horizontalHeader()->setStretchLastSection(true);
+	// Don't make column labels bold just because we clicked on a row.
+	d_table->horizontalHeader()->setHighlightSections(false);
+}
 
 
-		void
-		GPlatesGui::TopologySectionsTable::update_table_row(
-				int row)
-		{
-			if (row < 0 || row >= d_table->rowCount()) {
-				return;
-			}
-			
-			// Render different row types according to context.
-			if (row == get_current_insertion_point_row()) {
-				// Draw our magic insertion point row here.
-				render_insertion_point(row);
-			} else {
-				// Map this table row to an entry in the data vector.
-				TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
+void
+GPlatesGui::TopologySectionsTable::update_table_row_count()
+{
+	// One row for each data entry.
+	int rows = static_cast<int>(d_container_ptr->size());
+	// Plus one for the insertion point.
+	++rows;
+
+	d_table->setRowCount(rows);
+}
+
+
+void
+GPlatesGui::TopologySectionsTable::update_table_row(
+		int row)
+{
+	if (row < 0 || row >= d_table->rowCount()) {
+		return;
+	}
+	
+	// Render different row types according to context.
+	if (row == get_current_insertion_point_row()) {
+		// Draw our magic insertion point row here.
+		render_insertion_point(row);
+	} else {
+		// Map this table row to an entry in the data vector.
+		TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
 //		const TopologySectionsContainer::TableRow &entry = d_container_ptr->at(index);
-		//FIXME: CHEATING. I need a non-const so I can resolve the damn thing, but maybe I shouldn't
-		// be doing that here. I would prefer to pass in a const reference to the original
-		// for the render_ functions, but perhaps a copy will suffice for now.
+//FIXME: CHEATING. I need a non-const so I can resolve the damn thing, but maybe I shouldn't
+// be doing that here. I would prefer to pass in a const reference to the original
+// for the render_ functions, but perhaps a copy will suffice for now.
 		TopologySectionsContainer::TableRow entry = d_container_ptr->at(index);
 		resolve_feature_id(entry);
 		if (check_row_validity(entry)) {
@@ -958,10 +959,8 @@ GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 
 	// Get the appropriate details about the feature from the container,
 	TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
-	const TopologySectionsContainer::TableRow &trow = d_container_ptr->at(index);
 
-	// Tell the continer about the focs
-	d_container_ptr->set_focus_feature_at_index( index );
+	const TopologySectionsContainer::TableRow &trow = d_container_ptr->at(index);
 
 	// Do we have enough information?
 	if (trow.d_feature_ref.is_valid() && trow.d_geometry_property_opt) {
@@ -970,16 +969,20 @@ GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 	
 		// And provide visual feedback for user.
 		d_table->selectRow(row);
-
 	}
+
+	// Do we have enough information?
+	if (trow.d_feature_ref.is_valid() && trow.d_geometry_property_opt) {
+		// Then adjust the focus.
+		d_feature_focus_ptr->set_focus(trow.d_feature_ref, *trow.d_geometry_property_opt);
+	}
+	
 }
 
 void
-GPlatesGui::TopologySectionsTable::react_focus_feature_from_outside(
+GPlatesGui::TopologySectionsTable::react_focus_feature_at_index(
 		int index)
 {
-qDebug() << "index                                       = " << index;
-qDebug() << "row                                       = " << convert_data_index_to_table_row(index);
 	d_table->selectRow( convert_data_index_to_table_row(index) );
 }
 

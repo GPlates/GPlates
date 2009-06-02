@@ -141,5 +141,5 @@ void
 GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index( int index )
 {
 	// Emit signals.
-	emit focus_feature_from_outside( index );
+	emit focus_feature_at_index( index );
 }

@@ -300,6 +300,9 @@ namespace GPlatesGui
 		move_insertion_point(
 				size_type new_index);
 
+		/**
+		 * The @a focus_feature_at_index(int) signal is emitted.
+		 */
 		void
 		set_focus_feature_at_index( int index );
 
@@ -408,10 +411,10 @@ namespace GPlatesGui
 				GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
 
 		/**
-		 * Emitted whenever a feature is focused from outside the Container or Table 
+		 * Emitted whenever a feature is focused 
 		 */
 		void
-		focus_feature_from_outside(
+		focus_feature_at_index(
 				int index);
 		
 	private:
