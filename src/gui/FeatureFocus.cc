@@ -102,6 +102,9 @@ GPlatesGui::FeatureFocus::set_focus(
 	// Note that changing the semantics of find_new_associated_rfg() just for this method
 	// wouldn't be a great idea, since it is also called in ViewportWindow after a new
 	// reconstruction is made.
+
+	// tell the rest of the application about the new focus
+	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
 
 

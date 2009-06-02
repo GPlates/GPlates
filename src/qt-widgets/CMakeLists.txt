@@ -32,9 +32,6 @@ set(srcs
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui
-    BuildTopologyWidget.cc
-    BuildTopologyWidget.h
-    BuildTopologyWidgetUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
@@ -86,9 +83,6 @@ set(srcs
     EditTimePeriodWidget.cc
     EditTimePeriodWidget.h
     EditTimePeriodWidgetUi.ui
-	EditTopologyWidget.cc
-	EditTopologyWidget.h
-	EditTopologyWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
     EditWidgetGroupBox.cc

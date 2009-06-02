@@ -110,12 +110,17 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 			view_state_) 
 	),
 	d_feature_summary_widget_ptr(
-		new FeatureSummaryWidget(feature_focus, tab_section)
+		new FeatureSummaryWidget(feature_focus)
 	)
 {
 	setupUi(this);
 
+	setup_widgets();
+}
 
+void
+GPlatesQtWidgets::TopologyToolsWidget::setup_widgets()
+{
 	// Attach buttons to functions
 	 QObject::connect( button_remove_all_sections, SIGNAL(clicked()),
  		this, SLOT(handle_remove_all_sections()));
@@ -136,28 +141,21 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	// more space at the bottom to size things up a bit
 	layout_section->addItem( 
 		new QSpacerItem(3, 3, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
 }
 
 void
 GPlatesQtWidgets::TopologyToolsWidget::activate( GPlatesGui::TopologyTools::CanvasToolMode mode)
 {
 	setDisabled( false );
-
-	clear();
-
-#if 0
-	if ( d_feature_focus_ptr->is_valid() ) 
-	{
-		qDebug() << "TopologyToolsWidget::activate():: d_feature_focus_ptr->is_valid() TRUE ";
-	}
-	else
-	{
-		qDebug() << "TopologyToolsWidget::activate():: d_feature_focus_ptr->is_valid() FALSE";
-	}
-#endif
-	
-	// activate the TopologyTools object
 	d_topology_tools_ptr->activate( mode );
+
+	// connect to Feature Creation Dialog signals
+	QObject::connect(
+		d_create_feature_dialog,
+ 		SIGNAL( feature_created( GPlatesModel::FeatureHandle::weak_ref) ),
+		d_topology_tools_ptr,
+   		SLOT( handle_create_new_feature( GPlatesModel::FeatureHandle::weak_ref ) ) );
 }
 
 
@@ -165,6 +163,7 @@ void
 GPlatesQtWidgets::TopologyToolsWidget::deactivate()
 {
 	setDisabled( true );
+	d_topology_tools_ptr->deactivate();
 	clear();
 }
 
@@ -181,15 +180,18 @@ GPlatesQtWidgets::TopologyToolsWidget::clear()
 	d_feature_summary_widget_ptr->clear();
 }
 
+void
+GPlatesQtWidgets::TopologyToolsWidget::set_click_point(  double lat, double lon )
+{
+	d_topology_tools_ptr->set_click_point(lat, lon);
+}
+	
 
 void
-GPlatesQtWidgets::TopologyToolsWidget::display_feature(
+GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
 {
-	// Clear the fields first, then fill in those that we have data for.
-	clear();
-
 	// Always check your weak_refs!
 	if ( ! feature_ref.is_valid()) {
 		setDisabled(true);
@@ -198,6 +200,9 @@ GPlatesQtWidgets::TopologyToolsWidget::display_feature(
 		setDisabled(false);
 	}
 	
+	// Clear the fields first, then fill in those that we have data for.
+	clear();
+
 	// Populate the widget from the FeatureHandle:
 	
 	// Feature Name.
@@ -230,8 +235,19 @@ GPlatesQtWidgets::TopologyToolsWidget::display_feature(
 		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
 		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
 	}
-
 }
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_shift_left_click(
+		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+		bool is_on_globe)
+{
+	// call the tools fuction
+	d_topology_tools_ptr->handle_shift_left_click( 
+		click_pos_on_globe, oriented_click_pos_on_globe, is_on_globe);
+}
+	
 
 
 void
@@ -244,8 +260,25 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_remove_all_sections()
 void
 GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 {
-	// call the tools fuction
-	d_topology_tools_ptr->handle_apply();
+	// check for existing topology
+	if ( ! d_topology_tools_ptr->get_topology_feature_ref().is_valid() )
+	{
+		bool success = d_create_feature_dialog->display();
+
+		if ( ! success ) 
+		{
+			// The user cancelled the creation process. 
+ 			// Return early and do not reset the widget.
+			return;
+		}
+
+		// else, the feature was created by the dialog
+		// and d_topology_tools_ptr method handle_create_new_feature() was called
+		// to set the new topology feature ref
+	}
+
+	// apply the latest boundary to the new topology
+	d_topology_tools_ptr->handle_apply(); 
 }
 
 void
@@ -257,4 +290,3 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature()
 	// Flip tab to topoology
 	tabwidget_main->setCurrentWidget( tab_topology );
 }
-

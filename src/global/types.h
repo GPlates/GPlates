@@ -69,6 +69,13 @@ namespace GPlatesGlobal
 		GRID_FEATURE,
 		UNKNOWN_FEATURE
 	};
+
+	enum TopologyTypes
+	{
+		PLATEPOLYGON,
+		DEFORMING_ZONE,
+		UNKNOWN_TOPOLOGY
+	};
 }
 
 #endif  // _GPLATES_GLOBAL_TYPES_H_

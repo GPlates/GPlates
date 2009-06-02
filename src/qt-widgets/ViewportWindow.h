@@ -153,15 +153,6 @@ namespace GPlatesQtWidgets
 			return *d_feature_table_model_ptr;
 		}
 
-// FIXME: REMOVE
-        GPlatesGui::FeatureTableModel &
-        sections_feature_table_model()
-        {
-			return *d_feature_table_model_ptr;
-        }
-// FIXME: REMOVE
-
-
 		/** Get a pointer to the TopologySectionsContainer */
 		GPlatesGui::TopologySectionsContainer &
 		topology_sections_container()
@@ -199,19 +190,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		highlight_first_clicked_feature_table_row() const;
-
-		/**
-		 * Clears the "Topology Sections" feature table selection
-		 */
-		void
-		highlight_sections_table_clear() const;
-
-		/**
-		 * Highlights a row in the "Topology Sections" feature table.
-		 */
-		void
-		highlight_sections_table_row(int i, bool state) const;
-
 
 		void
 		reconstruct_to_time(

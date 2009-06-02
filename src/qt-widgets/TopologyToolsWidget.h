@@ -69,7 +69,7 @@ namespace GPlatesQtWidgets
 				GPlatesModel::ModelInterface &model_interface,
 				GPlatesQtWidgets::ViewportWindow &view_state,
 				QWidget *parent_ = NULL);
-					
+
 	public slots:
 		
 		void 
@@ -82,15 +82,23 @@ namespace GPlatesQtWidgets
 		clear();
 
 		void
-		display_feature(
+		set_click_point( double lat, double lon );
+
+		void
+		display_topology(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		void
-		display_number_of_sections( int i )
-		{
+		display_number_of_sections( int i ) {
 			lineedit_number_of_sections->setText( QString::number( i ) );
 		}
+
+		void
+		handle_shift_left_click(
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+				bool is_on_globe);
 
 		void
 		handle_remove_all_sections();
@@ -114,6 +122,9 @@ namespace GPlatesQtWidgets
 		}
 
 	private:
+
+		void
+		setup_widgets();
 	
 		/**
 		 * Used to draw rendered geometries.

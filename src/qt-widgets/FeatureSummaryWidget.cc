@@ -86,9 +86,13 @@ GPlatesQtWidgets::FeatureSummaryWidget::FeatureSummaryWidget(
 		QWidget *parent_):
 	QWidget(parent_)
 {
+
+//qDebug() << "FSW 0";
 	setupUi(this);
 	clear();
 	setDisabled(true);
+
+//qDebug() << "FSW 1";
 	
 	// Subscribe to focus events. We can discard the FeatureFocus reference afterwards.
 	QObject::connect(&feature_focus,
@@ -103,6 +107,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::FeatureSummaryWidget(
 			this,
 			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+//qDebug() << "FSW 2";
 }
 
 

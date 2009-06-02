@@ -43,7 +43,7 @@
       <enum>QTabWidget::North</enum>
      </property>
      <property name="currentIndex" >
-      <number>6</number>
+      <number>4</number>
      </property>
      <property name="elideMode" >
       <enum>Qt::ElideNone</enum>
@@ -74,16 +74,6 @@
      <widget class="QWidget" name="tab_topology_tools" >
       <attribute name="title" >
        <string>Topology Tools</string>
-      </attribute>
-     </widget>
-     <widget class="QWidget" name="tab_build_topology" >
-      <attribute name="title" >
-       <string>Build New Topology</string>
-      </attribute>
-     </widget>
-     <widget class="QWidget" name="tab_edit_topology" >
-      <attribute name="title" >
-       <string>Edit Topology</string>
       </attribute>
      </widget>
     </widget>

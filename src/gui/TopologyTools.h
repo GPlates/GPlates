@@ -87,15 +87,6 @@ namespace GPlatesGui
 			BUILD, EDIT
 		};
 
-		/**
-		 * What kinds of topology to work with 
-		 */
-//FIXME
-		enum GeometryType
-		{
-			PLATEPOLYGON, DEFORMING_REGION
-		};
-
 		/** simple enum to identify neighbor relation of topology sections */
 		enum NeighborRelation
 		{
@@ -115,41 +106,6 @@ namespace GPlatesGui
 		void
 		set_click_point( double lat, double lon );
 
-		/**
-		 * Sets the desired geometry type, d_geometry_type.
-		 *
-		 * This public method is used by the QUndoCommands that manipulate this widget.
-		 *
-		 * FIXME: If we move d_geometry_type into the QTreeWidgetItems themselves, we
-		 * wouldn't need this ugly setter.
-		 */
-		void
-		set_geometry_type(
-				GeometryType geom_type)
-		{
-			d_geometry_type = geom_type;
-		}
-
-		/**
-		 * Access the desired geometry type, d_geometry_type.
-		 */
-		GeometryType
-		geometry_type() const
-		{
-			return d_geometry_type;
-		}
-
-#if 0
-		/**
-		 * Accessor for the Create Feature Dialog, for signal/slot connections etc.
-		 */
-		GPlatesQtWidgets::CreateFeatureDialog &
-		create_feature_dialog()
-		{
-			return *d_create_feature_dialog;
-		}
-#endif
-		
 
 		// Please keep these geometries ordered alphabetically.
 
@@ -225,14 +181,21 @@ namespace GPlatesGui
 			GPlatesModel::FeatureHandle::weak_ref feature)
 		{
 			d_topology_feature_ref = feature;
-// FIXME: 
 			qDebug() << "set_topology_feature_ref()";
 			show_numbers();
 		}
 
 		/**
-		 * Once the feature is created from the dialog, append a boundary prop. value.
+		 * Get a weak_ref on the topology feature 
 		 */
+		GPlatesModel::FeatureHandle::weak_ref
+		get_topology_feature_ref()
+		{
+			qDebug() << "get_topology_feature_ref()";
+			show_numbers();
+			return d_topology_feature_ref;
+		}
+
 		void
 		append_boundary_to_feature(
 			GPlatesModel::FeatureHandle::weak_ref feature);
@@ -272,7 +235,7 @@ namespace GPlatesGui
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
 		void
-		display_feature_topology(
+		display_topology(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
 
@@ -282,6 +245,11 @@ namespace GPlatesGui
 			const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 			bool is_on_globe);
 
+
+		/** Slots for signals from TopologyToolsWidget or its FeatureCreationDialog */
+		void
+		handle_create_new_feature(
+			GPlatesModel::FeatureHandle::weak_ref);
 
 		/** Slots for signals from TopologySectionsContainer */
 		void
@@ -412,14 +380,6 @@ namespace GPlatesGui
 		 */
 		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
-		/**
-		 * What kind of geometry are we -supposed- to be digitising?
-		 * Note that what we actually get when the user hits Create may be
-		 * different (A LineString with only one point?! That's unpossible.)
-		 */
-		GeometryType d_geometry_type;
-
-
 		/*
 		* pointer to the TopologySectionsContainer in ViewportWindow.
 		*/
@@ -496,16 +456,9 @@ namespace GPlatesGui
 		std::vector<GPlatesMaths::PointOnSphere> d_feature_focus_head_points; 
 		std::vector<GPlatesMaths::PointOnSphere> d_feature_focus_tail_points; 
 
-		/*
-		 * This index is set when the feature focus references a feature on the boundary.
-		 * Used to access the d_section_FOO vectors during Add/Remove/Insert etc. operations
-		 */
-		int d_section_feature_focus_index;
-
 
 		/**
-		 * These vectors are sychronized to the 'Topology Sections' table 
-		 * via the d_section_feature_focus_index.
+		 * These vectors hold results from a TopologySectionsFinder
 		 */
 		std::vector<GPlatesModel::FeatureId> d_section_ids;
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
@@ -573,7 +526,6 @@ namespace GPlatesGui
 		void
 		create_geometry_from_vertex_list(
 			std::vector<GPlatesMaths::PointOnSphere> &points,
-			GPlatesGui::TopologyTools::GeometryType target_geom_type,
 			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity);
 	};
 }

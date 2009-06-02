@@ -545,9 +545,6 @@ namespace
 		reconstruction_layer->clear_rendered_geometries();
 
 		try {
-			reconstruction = create_reconstruction(active_reconstructable_files, 
-					active_reconstruction_files, model, recon_time, recon_root);
-
 			//
 			// FIXME : this was copied down from create_reconstruction()
 			//
@@ -564,11 +561,8 @@ namespace
 				active_reconstruction_files,
 				reconstruction_features_collection);
 
-			reconstruction = model->create_reconstruction(
-				reconstructable_features_collection,
-				reconstruction_features_collection, 
-				recon_time, 
-				recon_root);
+			reconstruction = create_reconstruction(active_reconstructable_files, 
+					active_reconstruction_files, model, recon_time, recon_root);
 
 			//
 			// FIXME: test of new location for TopologyResolver
@@ -843,22 +837,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(handle_reconstruction_time_change(
 					double)));
 
-	// The BuildTopologyWidget needs to know when the reconstruction time changes.
-	QObject::connect(
-		this, 
-		SIGNAL(reconstruction_time_changed(double)),
-		&(d_task_panel_ptr->build_topology_widget()), 
-		SLOT(handle_reconstruction_time_change(double)));
-
-	// The EditTopologyWidget needs to know when the reconstruction time changes.
-	QObject::connect(
-		this, 
-		SIGNAL(reconstruction_time_changed(double)),
-		&(d_task_panel_ptr->edit_topology_widget()), 
-		SLOT(handle_reconstruction_time_change(double)));
-
-	
-
 	// Setup RenderedGeometryCollection.
 	initialise_rendered_geom_collection();
 
@@ -918,8 +896,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
-					d_task_panel_ptr->build_topology_widget(),
-					d_task_panel_ptr->edit_topology_widget(),
 					d_task_panel_ptr->topology_tools_widget(),
 					d_canvas_ptr->geometry_focus_highlight()));
 
@@ -1226,34 +1202,6 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 				QItemSelectionModel::Rows);
 	}
 	table_view_clicked_geometries->scrollToTop();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::highlight_sections_table_clear() const
-{
-//	table_view_topology_sections->selectionModel()->clear();
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::highlight_sections_table_row(int i, bool state) const
-{
-#if 0
-	QModelIndex idx = d_sections_feature_table_model_ptr->index(i, 0);
-	
-	if (idx.isValid()) {
-		table_view_topology_sections->selectionModel()->clear();
-
-		if ( state )
-		{
-			table_view_topology_sections->selectionModel()->select(idx,
-					QItemSelectionModel::Select |
-					QItemSelectionModel::Current |
-					QItemSelectionModel::Rows);
-		//	table_view_topology_sections->scrollTo(idx);
-		}
-	}
-#endif
 }
 
 

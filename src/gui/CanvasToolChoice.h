@@ -47,8 +47,6 @@ namespace GPlatesQtWidgets
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
 	class ReconstructionPoleWidget;
-	class BuildTopologyWidget;
-	class EditTopologyWidget;
 	class TopologyToolsWidget;
 }
 
@@ -98,8 +96,6 @@ namespace GPlatesGui
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
-				GPlatesQtWidgets::BuildTopologyWidget &build_topology_widget,
-				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
@@ -248,12 +244,12 @@ namespace GPlatesGui
 		CanvasTool::non_null_ptr_type d_manipulate_pole_tool_ptr;
 
 		/**
-		 * This is the BuildTopology tool which the user may choose.
+		 * This is the BuildTopology Canvas tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_build_topology_tool_ptr;
 
 		/**
-		 * This is the EditTopology tool which the user may choose.
+		 * This is the EditTopology Canvas tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
 
