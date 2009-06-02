@@ -23,6 +23,7 @@
 
 #include <QLocale>
 #include <QDebug>
+#include <QMessageBox>
 
 #include "TopologyToolsWidget.h"
 #include "CreateFeatureDialog.h"
@@ -260,6 +261,16 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_remove_all_sections()
 void
 GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 {
+	if ( d_topology_tools_ptr->get_number_of_sections() < 1 )
+	{
+		// post warning 
+		QMessageBox::warning(this,
+			tr("No boundary sections are defined for this feature"),
+			tr("There are no valid boundray sections to use for creating this feature."),
+			QMessageBox::Ok);
+		return;
+	}
+
 	// check for existing topology
 	if ( ! d_topology_tools_ptr->get_topology_feature_ref().is_valid() )
 	{

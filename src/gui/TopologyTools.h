@@ -200,18 +200,16 @@ namespace GPlatesGui
 		append_boundary_to_feature(
 			GPlatesModel::FeatureHandle::weak_ref feature);
 
-		void
-		fill_section_vectors_from_feature_ref(
-			GPlatesModel::FeatureHandle::weak_ref feature);
-
-
-#if 0
-		void
-		fill_section_table_from_topology_sections();
-#endif
 
 		void
 		fill_topology_sections_from_section_table();
+
+
+		int
+		get_number_of_sections()
+		{
+			return d_topology_sections_container_ptr->size();
+		}
 
 
 	public slots:
@@ -317,6 +315,9 @@ namespace GPlatesGui
 
 		void
 		deactivate();
+
+		void
+		clear_data();
 
 		void
 		connect_to_focus_signals( bool state );

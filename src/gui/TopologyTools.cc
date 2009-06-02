@@ -253,6 +253,9 @@ GPlatesGui::TopologyTools::deactivate()
 		d_feature_focus_ptr->unset_focus();
 	}
 
+	// clear all the drawing layers
+	draw_all_layers_clear();
+
 	// Flip the ViewportWindow to the Clicked Geometry Table
 	d_view_state_ptr->choose_clicked_geometry_table();
 
@@ -268,7 +271,53 @@ GPlatesGui::TopologyTools::deactivate()
 		SIGNAL(reconstruction_time_changed(double)),
 		this,
 		SLOT(handle_reconstruction_time_change(double)));
+
+	// Clear out all old data
+	clear_data();
 }
+
+void
+GPlatesGui::TopologyTools::clear_data()
+{
+	//
+	// Clear the widgets, tables, d_section_ vectors, derrived vectors, topology references
+	//
+
+	// clear the tables
+	d_view_state_ptr->feature_table_model().clear();
+
+	// loop over TopologySectionsTable 
+	int i = d_topology_sections_container_ptr->size(); 
+	--i; // decrement to last index
+	for ( ; i > -1 ; --i )
+	{
+		d_topology_sections_container_ptr->remove_at( i );
+	}
+	
+	// clear the vertex list
+	d_topology_vertices.clear();
+	d_tmp_index_vertex_list.clear();
+
+	// clear the working lists
+	d_head_end_points.clear();
+	d_tail_end_points.clear();
+	d_intersection_points.clear();
+	d_segments.clear();
+
+	// Set the topology feature ref to NULL
+	d_topology_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
+	d_topology_feature_rfg = NULL;
+
+	// unset the d_topology_geometry_opt_ptr
+	d_topology_geometry_opt_ptr = boost::none;
+
+	// clear the drawing layers
+	draw_all_layers_clear();
+
+	// unset the focus 
+	d_feature_focus_ptr->unset_focus(); 
+}
+	
 
 void
 GPlatesGui::TopologyTools::connect_to_focus_signals(bool state)
@@ -988,48 +1037,6 @@ GPlatesGui::TopologyTools::handle_apply()
 	// else, a d_topology_feature_ref exists, simple append the boundary
 	append_boundary_to_feature( d_topology_feature_ref );
 
-	//
-	// Clear the widgets, tables, d_section_ vectors, derrived vectors, topology references
-	//
-
-	// Disconnect from signals
-	connect_to_topology_sections_container_signals( false );
-	connect_to_focus_signals( false );
-
-	// clear the tables
-	d_view_state_ptr->feature_table_model().clear();
-
-	// loop over TopologySectionsTable 
-	int i = d_topology_sections_container_ptr->size(); 
-	--i; // decrement to last index
-	for ( ; i > -1 ; --i )
-	{
-		d_topology_sections_container_ptr->remove_at( i );
-	}
-	
-	// clear the vertex list
-	d_topology_vertices.clear();
-	d_tmp_index_vertex_list.clear();
-
-	// clear the working lists
-	d_head_end_points.clear();
-	d_tail_end_points.clear();
-	d_intersection_points.clear();
-	d_segments.clear();
-
-	// Set the topology feature ref to NULL
-	d_topology_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
-	d_topology_feature_rfg = NULL;
-
-	// unset the d_topology_geometry_opt_ptr
-	d_topology_geometry_opt_ptr = boost::none;
-
-	// clear the drawing layers
-	draw_all_layers_clear();
-
-	// unset the focus 
-	d_feature_focus_ptr->unset_focus(); 
-	
 	// deacticate the TopologyToolsWidget; NOTE: will call our deactivate();
 	d_topology_tools_widget_ptr->deactivate();
 
