@@ -30,13 +30,15 @@
 #include "gui/CanvasTool.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/TopologySectionsContainer.h"
-#include "qt-widgets/BuildTopologyWidget.h"
+#include "gui/TopologyTools.h"
+
 
 
 namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
 	class ViewportWindow;
+	class TopologyToolsWidget;
 }
 
 namespace GPlatesViewOperations
@@ -80,8 +82,7 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::BuildTopologyWidget &plate_closure_widget,
-				GPlatesQtWidgets::BuildTopologyWidget::GeometryType geom_type,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesGui::FeatureFocus &feature_focus)
 		{
 			BuildTopology::non_null_ptr_type ptr(
@@ -92,8 +93,7 @@ namespace GPlatesCanvasTools
 							view_state, 
 							clicked_table_model,
 							topology_sections_container,
-							plate_closure_widget, 
-							geom_type, 
+							topology_tools_widget,
 							feature_focus),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
@@ -117,21 +117,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe);
 
-		
-		virtual
-		void
-		handle_shift_left_click(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-				bool is_on_globe);
-
-
-		virtual
-		void
-		handle_create_new_feature(GPlatesModel::FeatureHandle::weak_ref feature);
-
 	public slots:
-
 
 	signals:
 
@@ -151,8 +137,7 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::BuildTopologyWidget &plate_closure_widget_,
-				GPlatesQtWidgets::BuildTopologyWidget::GeometryType geom_type_,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesGui::FeatureFocus &feature_focus);
 
 
@@ -196,17 +181,10 @@ namespace GPlatesCanvasTools
 		GPlatesGui::TopologySectionsContainer *d_topology_sections_container_ptr;
 
 		/**
-		 * This is the BuildTopologyWidget in the Task Panel.
-		 * It accumulates points for us and handles the actual feature creation step.
+		 * This is the TopologyToolsWidget in the Task Panel.
 		 */
-		GPlatesQtWidgets::BuildTopologyWidget *d_build_topology_widget_ptr;
-		
-		/**
-		 * This is the type of geometry this particular BuildTopology tool
-		 * should default to.
-		 */
-		GPlatesQtWidgets::BuildTopologyWidget::GeometryType d_default_geom_type;
-	
+		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
+
 		/**
 		 * This is our reference to the Feature Focus, which we use to let the rest of the
 		 * application know what the user just clicked on.

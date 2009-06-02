@@ -31,22 +31,14 @@
 #include "EditTopology.h"
 
 #include "gui/ProximityTests.h"
-#include "gui/TopologyTools.h"
-
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "qt-widgets/EditTopologyWidget.h"
-
 #include "maths/LatLonPointConversions.h"
-
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
-
 #include "global/InternalInconsistencyException.h"
-
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
-
 #include "property-values/XsString.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -58,8 +50,6 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
-				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type,
 				GPlatesGui::FeatureFocus &feature_focus):
 	CanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&rendered_geom_collection),
@@ -67,8 +57,6 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	d_topology_sections_container_ptr(&topology_sections_container),
 	d_topology_tools_widget_ptr(&topology_tools_widget),
-	d_edit_topology_widget_ptr(&edit_topology_widget),
-	d_default_geom_type(geom_type),
 	d_feature_focus_ptr(&feature_focus)
 {
 
@@ -80,34 +68,24 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 void
 GPlatesCanvasTools::EditTopology::handle_activation()
 {
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	if (d_edit_topology_widget_ptr->geometry_type() ==
-			GPlatesQtWidgets::EditTopologyWidget::PLATEPOLYGON) {
-		d_view_state_ptr->status_message(QObject::tr(
-				"Click on features to choose segments for the boundary."
-				" Ctrl+drag to re-orient the globe."));
-	} else {
+// FIXME: add status message
+#if 0
 		d_view_state_ptr->status_message(QObject::tr(
 				"Click on features to choose segments for the boundary."
 				" Ctrl+drag to reorient the globe."));
-	}
+#endif
 
 	// Activate rendered layer.
 	d_rendered_geom_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
 	d_topology_tools_widget_ptr->activate( GPlatesGui::TopologyTools::EDIT );
-
-// FIXME: REMOVE THIS 
-	// d_edit_topology_widget_ptr->activate();
-
 }
-
 
 void
 GPlatesCanvasTools::EditTopology::handle_deactivation()
 {
-	d_edit_topology_widget_ptr->deactivate();
+	d_topology_tools_widget_ptr->deactivate();
 }
 
 
@@ -123,7 +101,7 @@ std::cout << "GPlatesCanvasTools::EditTopology::handle_left_click" << std::endl;
 		oriented_click_pos_on_globe);
 
 	// send the click point to the widget
-	d_edit_topology_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
+	d_topology_tools_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
 
 	// Show the 'Clicked' Feature Table
 	d_view_state_ptr->choose_clicked_geometry_table();
@@ -171,35 +149,4 @@ std::cout << "GPlatesCanvasTools::EditTopology::handle_left_click" << std::endl;
 	d_clicked_table_model_ptr->end_insert_features();
 	d_view_state_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
-
 }
-
-
-void
-GPlatesCanvasTools::EditTopology::handle_create_new_feature(
-	GPlatesModel::FeatureHandle::weak_ref feature_ref)
-{
-
-// FIXME: remove this diagnostic 
-
-qDebug() << "GPlatesCanvasTools::EditTopology::handle_create_new_feature";
-qDebug() << "feature_ref = " 
-<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
-
-static const GPlatesModel::PropertyName name_property_name =
-	GPlatesModel::PropertyName::create_gml("name");
-const GPlatesPropertyValues::XsString *name;
-if ( GPlatesFeatureVisitors::get_property_value( *feature_ref, name_property_name, name) )
-{
-	qDebug() << "name=" << GPlatesUtils::make_qstring( name->value() );
-}
-
-
-	// finalize the new feature with the boundary prop value
-	d_edit_topology_widget_ptr->append_boundary_to_feature( feature_ref );
-}
-
-
-
-
-

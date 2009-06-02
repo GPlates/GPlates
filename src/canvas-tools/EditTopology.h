@@ -32,8 +32,6 @@
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologyTools.h"
 
-#include "qt-widgets/EditTopologyWidget.h"
-
 
 namespace GPlatesQtWidgets
 {
@@ -84,8 +82,6 @@ namespace GPlatesCanvasTools
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
-				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type,
 				GPlatesGui::FeatureFocus &feature_focus)
 		{
 			EditTopology::non_null_ptr_type ptr(
@@ -97,8 +93,6 @@ namespace GPlatesCanvasTools
 							clicked_table_model,
 							topology_sections_container,
 							topology_tools_widget,
-							edit_topology_widget, 
-							geom_type, 
 							feature_focus),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
@@ -122,14 +116,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe);
 
-		// FIXME do we need handle_left_shift_click ?
-
-		virtual
-		void
-		handle_create_new_feature(GPlatesModel::FeatureHandle::weak_ref feature);
-
 	public slots:
-
 
 	signals:
 
@@ -150,8 +137,6 @@ namespace GPlatesCanvasTools
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesQtWidgets::EditTopologyWidget &edit_topology_widget,
-				GPlatesQtWidgets::EditTopologyWidget::GeometryType geom_type_,
 				GPlatesGui::FeatureFocus &feature_focus);
 
 
@@ -199,19 +184,7 @@ namespace GPlatesCanvasTools
 		 */
 		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
 
-
-		/**
-		 * This is the EditTopologyWidget in the Task Panel.
-		 * It accumulates points for us and handles the actual feature creation step.
-		 */
-		GPlatesQtWidgets::EditTopologyWidget *d_edit_topology_widget_ptr;
 		
-		/**
-		 * This is the type of geometry this particular EditTopology tool
-		 * should default to.
-		 */
-		GPlatesQtWidgets::EditTopologyWidget::GeometryType d_default_geom_type;
-	
 		/**
 		 * This is our reference to the Feature Focus, which we use to let the rest of the
 		 * application know what the user just clicked on.
@@ -228,9 +201,6 @@ namespace GPlatesCanvasTools
 		EditTopology &
 		operator=(
 				const EditTopology &);
-		
-		/** This is the pointer to a ToplogyTools object */
-		GPlatesGui::TopologyTools *d_topology_tools_ptr;
 
 	};
 }
