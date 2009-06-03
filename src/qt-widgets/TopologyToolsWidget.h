@@ -125,6 +125,9 @@ namespace GPlatesQtWidgets
 
 		void
 		setup_widgets();
+
+		void
+		setup_connections();
 	
 		/**
 		 * Used to draw rendered geometries.

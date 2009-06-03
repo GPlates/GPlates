@@ -24,6 +24,7 @@
 #include <QLocale>
 #include <QDebug>
 #include <QMessageBox>
+#include <QVBoxLayout>
 
 #include "TopologyToolsWidget.h"
 #include "CreateFeatureDialog.h"
@@ -117,10 +118,27 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	setupUi(this);
 
 	setup_widgets();
+	setup_connections();
 }
 
 void
 GPlatesQtWidgets::TopologyToolsWidget::setup_widgets()
+{
+	// The .ui file has defined the majority of things we want to use,
+	// but to mix in a FeatureSummaryWidget programmatically, we need
+	// to put it into a blank 'placeholder' QWidget that has been set
+	// up in the Designer.
+	QVBoxLayout *layout_section = new QVBoxLayout(widget_feature_summary_placeholder);
+	layout_section->setSpacing(2);
+	layout_section->setContentsMargins(0, 0, 0, 0);
+
+	// add the Feature Summary Widget 
+	layout_section->addWidget( d_feature_summary_widget_ptr );
+
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::setup_connections()
 {
 	// Attach buttons to functions
 	 QObject::connect( button_remove_all_sections, SIGNAL(clicked()),
@@ -131,19 +149,8 @@ GPlatesQtWidgets::TopologyToolsWidget::setup_widgets()
 
 	 QObject::connect( button_add_feature, SIGNAL(clicked()),
  		this, SLOT(handle_add_feature()));
-
-	// add a little space 
-	layout_section->addItem( 
-		new QSpacerItem(2, 2, QSizePolicy::Minimum, QSizePolicy::Expanding));
-
-	// add the Feature Summary Widget 
-	layout_section->addWidget( d_feature_summary_widget_ptr );
-
-	// more space at the bottom to size things up a bit
-	layout_section->addItem( 
-		new QSpacerItem(3, 3, QSizePolicy::Minimum, QSizePolicy::Expanding));
-
 }
+
 
 void
 GPlatesQtWidgets::TopologyToolsWidget::activate( GPlatesGui::TopologyTools::CanvasToolMode mode)

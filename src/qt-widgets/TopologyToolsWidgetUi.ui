@@ -12,17 +12,32 @@
   <property name="windowTitle" >
    <string>TopologyToolsWidget</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" >
+  <layout class="QVBoxLayout" >
+   <property name="spacing" >
+    <number>2</number>
+   </property>
+   <property name="leftMargin" >
+    <number>2</number>
+   </property>
+   <property name="topMargin" >
+    <number>2</number>
+   </property>
+   <property name="rightMargin" >
+    <number>2</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>2</number>
+   </property>
    <item>
     <widget class="QTabWidget" name="tabwidget_main" >
      <property name="currentIndex" >
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab_topology" >
       <attribute name="title" >
        <string>Topolgy</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_2" >
+      <layout class="QVBoxLayout" >
        <item>
         <widget class="QLabel" name="label_name" >
          <property name="text" >
@@ -51,7 +66,7 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="layout_valid_time" >
+        <layout class="QHBoxLayout" >
          <property name="spacing" >
           <number>4</number>
          </property>
@@ -125,17 +140,48 @@
       <attribute name="title" >
        <string>Section</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_3" >
+      <layout class="QVBoxLayout" >
+       <property name="leftMargin" >
+        <number>4</number>
+       </property>
+       <property name="topMargin" >
+        <number>4</number>
+       </property>
+       <property name="rightMargin" >
+        <number>4</number>
+       </property>
+       <property name="bottomMargin" >
+        <number>4</number>
+       </property>
        <item>
-        <layout class="QVBoxLayout" name="layout_section" >
-         <item>
-          <widget class="QPushButton" name="button_add_feature" >
-           <property name="text" >
-            <string>Add Focused Feature</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QWidget" native="1" name="widget_feature_summary_placeholder" >
+         <property name="minimumSize" >
+          <size>
+           <width>10</width>
+           <height>10</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_add_feature" >
+         <property name="text" >
+          <string>Add Focused Feature</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer>
+         <property name="orientation" >
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" >
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>
