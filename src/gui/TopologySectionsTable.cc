@@ -970,13 +970,6 @@ GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 		// And provide visual feedback for user.
 		d_table->selectRow(row);
 	}
-
-	// Do we have enough information?
-	if (trow.d_feature_ref.is_valid() && trow.d_geometry_property_opt) {
-		// Then adjust the focus.
-		d_feature_focus_ptr->set_focus(trow.d_feature_ref, *trow.d_geometry_property_opt);
-	}
-	
 }
 
 void
