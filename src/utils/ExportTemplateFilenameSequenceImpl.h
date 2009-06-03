@@ -34,6 +34,7 @@
 #include <QString>
 
 #include "model/types.h"
+#include "utils/AnimationSequenceUtils.h"
 
 
 namespace GPlatesUtils
@@ -61,14 +62,14 @@ namespace GPlatesUtils
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &begin_reconstruction_time,
 				const double &reconstruction_time_increment,
-				const std::size_t sequence_size);
+				const GPlatesUtils::AnimationSequence::SequenceInfo sequence_info);
 
 		
 		//! Returns number of filenames in the sequence.
 		std::size_t
 		size() const
 		{
-			return d_sequence_size;
+			return d_sequence_info.duration_in_frames;
 		}
 
 
@@ -95,7 +96,7 @@ namespace GPlatesUtils
 
 		const double d_begin_reconstruction_time;
 		const double d_reconstruction_time_increment;
-		std::size_t d_sequence_size;
+		GPlatesUtils::AnimationSequence::SequenceInfo d_sequence_info;
 
 		format_seq_type d_format_seq;
 
@@ -113,10 +114,10 @@ namespace GPlatesUtils
 					QString &filename_template,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					format_seq_type &format_seq,
-					const std::size_t sequence_size) :
+					const GPlatesUtils::AnimationSequence::SequenceInfo sequence_info) :
 				d_filename_template(filename_template),
 				d_format_seq(format_seq),
-				d_sequence_size(sequence_size),
+				d_sequence_info(sequence_info),
 				d_reconstruction_anchor_plate_id(reconstruction_anchor_plate_id),
 				d_format_index(0),
 				d_filename_current_pos(0)
@@ -136,7 +137,7 @@ namespace GPlatesUtils
 			QString &d_filename_template;
 			format_seq_type &d_format_seq;
 
-			const std::size_t d_sequence_size;
+			const GPlatesUtils::AnimationSequence::SequenceInfo d_sequence_info;
 			GPlatesModel::integer_plate_id_type d_reconstruction_anchor_plate_id;
 
 			int d_format_index;

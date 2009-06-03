@@ -32,6 +32,9 @@ set(srcs
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui
+    ConfigureExportParametersDialog.cc
+    ConfigureExportParametersDialog.h
+    ConfigureExportParametersDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
@@ -87,6 +90,9 @@ set(srcs
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
     EditWidgetGroupBox.h
+    ExportAnimationDialog.cc
+    ExportAnimationDialog.h
+    ExportAnimationDialogUi.ui
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui

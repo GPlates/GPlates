@@ -1,26 +1,23 @@
 <ui version="4.0" >
- <class>AnimateDialog</class>
- <widget class="QDialog" name="AnimateDialog" >
+ <class>ExportAnimationDialog</class>
+ <widget class="QDialog" name="ExportAnimationDialog" >
   <property name="geometry" >
    <rect>
     <x>0</x>
     <y>0</y>
     <width>486</width>
-    <height>484</height>
+    <height>564</height>
    </rect>
   </property>
   <property name="windowTitle" >
-   <string>Animate</string>
-  </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+   <string>Export Animation</string>
   </property>
   <property name="sizeGripEnabled" >
    <bool>true</bool>
   </property>
   <layout class="QVBoxLayout" >
    <item>
-    <widget class="QGroupBox" name="groupBox" >
+    <widget class="QGroupBox" name="groupbox_range" >
      <property name="title" >
       <string>Range</string>
      </property>
@@ -232,302 +229,257 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupbox_Playback_Options" >
+    <widget class="QGroupBox" name="groupbox_parameters" >
      <property name="title" >
       <string>Options</string>
      </property>
      <layout class="QVBoxLayout" >
       <item>
-       <layout class="QHBoxLayout" >
-        <property name="spacing" >
-         <number>6</number>
-        </property>
-        <property name="leftMargin" >
-         <number>0</number>
-        </property>
-        <property name="topMargin" >
-         <number>0</number>
-        </property>
-        <property name="rightMargin" >
-         <number>0</number>
-        </property>
-        <property name="bottomMargin" >
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QLabel" name="label_Frames_per_second" >
-          <property name="text" >
-           <string>Frames per &amp;second:</string>
-          </property>
-          <property name="buddy" >
-           <cstring>widget_Frames_per_second</cstring>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QDoubleSpinBox" name="widget_Frames_per_second" >
-          <property name="minimum" >
-           <double>0.100000000000000</double>
-          </property>
-          <property name="maximum" >
-           <double>100.000000000000000</double>
-          </property>
-          <property name="value" >
-           <double>5.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer>
-          <property name="orientation" >
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" >
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkbox_Finish_animation_on_end_time" >
+       <widget class="QLabel" name="label_parameters_description" >
         <property name="text" >
-         <string>Finish animation &amp;exactly on end time.</string>
+         <string>At each time step, GPlates will create the following files:</string>
         </property>
-        <property name="checked" >
+        <property name="wordWrap" >
          <bool>true</bool>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkbox_Loop" >
-        <property name="text" >
-         <string>&amp;Loop.</string>
+       <widget class="QListWidget" name="list_parameters_output_files" >
+        <property name="selectionMode" >
+         <enum>QAbstractItemView::NoSelection</enum>
+        </property>
+        <property name="selectionBehavior" >
+         <enum>QAbstractItemView::SelectColumns</enum>
+        </property>
+        <property name="textElideMode" >
+         <enum>Qt::ElideNone</enum>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkbox_Close_dialog_when_animation_starts" >
+       <widget class="QLabel" name="label_parameters_target_directory" >
         <property name="text" >
-         <string>Cl&amp;ose this dialog when animation starts.</string>
+         <string>in the directory "".</string>
+        </property>
+        <property name="wordWrap" >
+         <bool>true</bool>
+        </property>
+        <property name="textInteractionFlags" >
+         <set>Qt::LinksAccessibleByMouse|Qt::NoTextInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
         </property>
        </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QCheckBox" name="checkbox_finish_exactly_on_end_time" >
+          <property name="text" >
+           <string>Finish &amp;exactly on end time.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_configure_export_parameters" >
+          <property name="text" >
+           <string>&amp;Options...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupbox_Playback_controls" >
+    <widget class="QGroupBox" name="groupbox_controls" >
      <property name="title" >
-      <string>Playback</string>
+      <string>Export</string>
      </property>
      <layout class="QVBoxLayout" >
       <item>
        <layout class="QHBoxLayout" >
-        <property name="spacing" >
-         <number>6</number>
-        </property>
-        <property name="leftMargin" >
-         <number>0</number>
-        </property>
-        <property name="topMargin" >
-         <number>0</number>
-        </property>
-        <property name="rightMargin" >
-         <number>0</number>
-        </property>
-        <property name="bottomMargin" >
-         <number>0</number>
-        </property>
         <item>
-         <spacer>
-          <property name="orientation" >
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" >
+         <widget class="QLabel" name="label_starting_frame_time" >
+          <property name="minimumSize" >
            <size>
-            <width>40</width>
-            <height>20</height>
+            <width>66</width>
+            <height>0</height>
            </size>
           </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_current_time" >
           <property name="text" >
-           <string>&amp;Current time:</string>
+           <string>999.99 Ma</string>
           </property>
-          <property name="buddy" >
-           <cstring>widget_current_time</cstring>
+          <property name="alignment" >
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QDoubleSpinBox" name="widget_current_time" >
-          <property name="maximum" >
-           <double>1000000.000000000000000</double>
+         <widget class="QProgressBar" name="progress_bar" >
+          <property name="value" >
+           <number>24</number>
+          </property>
+          <property name="format" >
+           <string>%v/%m (%p%)</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_current_time_units" >
-          <property name="text" >
-           <string>Ma</string>
-          </property>
-          <property name="buddy" >
-           <cstring>widget_current_time</cstring>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer>
-          <property name="orientation" >
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" >
+         <widget class="QLabel" name="label_ending_frame_time" >
+          <property name="minimumSize" >
            <size>
-            <width>40</width>
-            <height>20</height>
+            <width>66</width>
+            <height>0</height>
            </size>
           </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_Rewind" >
-          <property name="enabled" >
-           <bool>true</bool>
-          </property>
           <property name="text" >
-           <string>&amp;Reset</string>
-          </property>
-          <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/seek_beginning_22.png</iconset>
-          </property>
-          <property name="iconSize" >
-           <size>
-            <width>22</width>
-            <height>22</height>
-           </size>
-          </property>
-          <property name="autoDefault" >
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_Start" >
-          <property name="text" >
-           <string>&amp;Play</string>
-          </property>
-          <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_media_playback_start_22.png</iconset>
-          </property>
-          <property name="iconSize" >
-           <size>
-            <width>22</width>
-            <height>22</height>
-           </size>
-          </property>
-          <property name="autoDefault" >
-           <bool>true</bool>
-          </property>
-          <property name="default" >
-           <bool>true</bool>
+           <string>999.99 Ma</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
       <item>
-       <widget class="QSlider" name="slider_current_time" >
-        <property name="orientation" >
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label_export_status" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="MinimumExpanding" hsizetype="MinimumExpanding" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text" >
+           <string>Ready for export</string>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+          </property>
+          <property name="wordWrap" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" >
+          <item>
+           <widget class="QPushButton" name="button_export" >
+            <property name="text" >
+             <string>&amp;Begin</string>
+            </property>
+            <property name="icon" >
+             <iconset resource="../qt-resources/qt_widgets.qrc" >:/tango_document_save_22.png</iconset>
+            </property>
+            <property name="iconSize" >
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
+            <property name="default" >
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="button_abort" >
+            <property name="text" >
+             <string>&amp;Abort</string>
+            </property>
+            <property name="icon" >
+             <iconset resource="../qt-resources/qt_widgets.qrc" >:/tango_process_stop_22.png</iconset>
+            </property>
+            <property name="iconSize" >
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
+            <property name="default" >
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
-     <property name="spacing" >
-      <number>6</number>
+    <widget class="QDialogButtonBox" name="buttonBox" >
+     <property name="orientation" >
+      <enum>Qt::Horizontal</enum>
      </property>
-     <property name="leftMargin" >
-      <number>0</number>
+     <property name="standardButtons" >
+      <set>QDialogButtonBox::Close</set>
      </property>
-     <property name="topMargin" >
-      <number>0</number>
-     </property>
-     <property name="rightMargin" >
-      <number>0</number>
-     </property>
-     <property name="bottomMargin" >
-      <number>0</number>
-     </property>
-     <item>
-      <spacer>
-       <property name="orientation" >
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" >
-        <size>
-         <width>131</width>
-         <height>31</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_Close" >
-       <property name="text" >
-        <string>Close</string>
-       </property>
-       <property name="autoDefault" >
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    </widget>
    </item>
   </layout>
  </widget>
  <tabstops>
+  <tabstop>button_export</tabstop>
+  <tabstop>button_abort</tabstop>
+  <tabstop>buttonBox</tabstop>
   <tabstop>widget_start_time</tabstop>
   <tabstop>button_Use_View_Time_start_time</tabstop>
   <tabstop>widget_end_time</tabstop>
   <tabstop>button_Use_View_Time_end_time</tabstop>
   <tabstop>widget_time_increment</tabstop>
   <tabstop>button_Reverse_the_Animation</tabstop>
-  <tabstop>button_Start</tabstop>
-  <tabstop>button_Rewind</tabstop>
-  <tabstop>widget_current_time</tabstop>
-  <tabstop>slider_current_time</tabstop>
-  <tabstop>widget_Frames_per_second</tabstop>
-  <tabstop>checkbox_Finish_animation_on_end_time</tabstop>
-  <tabstop>checkbox_Loop</tabstop>
-  <tabstop>button_Close</tabstop>
+  <tabstop>list_parameters_output_files</tabstop>
+  <tabstop>checkbox_finish_exactly_on_end_time</tabstop>
+  <tabstop>button_configure_export_parameters</tabstop>
  </tabstops>
  <resources>
   <include location="../qt-resources/qt_widgets.qrc" />
  </resources>
  <connections>
   <connection>
-   <sender>button_Close</sender>
-   <signal>clicked()</signal>
-   <receiver>AnimateDialog</receiver>
-   <slot>close()</slot>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>ExportAnimationDialog</receiver>
+   <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel" >
-     <x>409</x>
-     <y>512</y>
+     <x>237</x>
+     <y>437</y>
     </hint>
     <hint type="destinationlabel" >
-     <x>179</x>
-     <y>282</y>
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>ExportAnimationDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>305</x>
+     <y>437</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>286</x>
+     <y>274</y>
     </hint>
    </hints>
   </connection>

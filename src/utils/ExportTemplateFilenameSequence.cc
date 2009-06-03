@@ -31,6 +31,7 @@
 
 #include "ExportTemplateFilenameSequenceImpl.h"
 #include "global/UninitialisedIteratorException.h"
+#include "utils/AnimationSequenceUtils.h"
 
 
 GPlatesUtils::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
@@ -39,14 +40,8 @@ GPlatesUtils::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 		const GPlatesMaths::real_t &begin_reconstruction_time,
 		const GPlatesMaths::real_t &end_reconstruction_time,
 		const GPlatesMaths::real_t &reconstruction_time_increment,
-		const bool include_end_time_in_sequence)
+		const bool include_trailing_frame_in_sequence)
 {
-	// Begin/end reconstruction should not be the same.
-	if (begin_reconstruction_time == end_reconstruction_time)
-	{
-		throw ExportTemplateFilename::BeginEndTimesEqual(GPLATES_EXCEPTION_SOURCE);
-	}
-
 	// Reconstruction time increment should not be zero.
 	if (reconstruction_time_increment == 0)
 	{
@@ -66,11 +61,12 @@ GPlatesUtils::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 	// except 'filename_template' so create the sequence implementation.
 	//
 
-	const std::size_t sequence_size = calc_sequence_size(
-			begin_reconstruction_time.dval(),
-			end_reconstruction_time.dval(),
-			reconstruction_time_increment.dval(),
-			include_end_time_in_sequence);
+	GPlatesUtils::AnimationSequence::SequenceInfo sequence_info =
+			GPlatesUtils::AnimationSequence::calculate_sequence(
+					begin_reconstruction_time.dval(),
+					end_reconstruction_time.dval(),
+					std::fabs(reconstruction_time_increment.dval()),
+					include_trailing_frame_in_sequence);
 
 	// Constructor of ExportTemplateFilenameSequenceImpl can throw exceptions.
 	// If it does then delete will get called by compiler and we're exception safe.
@@ -79,56 +75,10 @@ GPlatesUtils::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 			reconstruction_anchor_plate_id,
 			begin_reconstruction_time.dval(),
 			reconstruction_time_increment.dval(),
-			sequence_size));
+			sequence_info));
 }
 
 
-std::size_t
-GPlatesUtils::ExportTemplateFilenameSequence::calc_sequence_size(
-		const double &begin_reconstruction_time,
-		const double &end_reconstruction_time,
-		const double &reconstruction_time_increment,
-		const bool include_end_time_in_sequence)
-{
-	// Determine ratio of reconstruction time range over the time increment.
-	const double delta_begin_end_time = (end_reconstruction_time - begin_reconstruction_time);
-	const double floating_point_ratio_delta_over_time_increment =
-			delta_begin_end_time / reconstruction_time_increment;
-
-	// Truncate to integer (cast truncates towards zero).
-	const std::size_t integer_ratio_delta_over_time_increment =
-			static_cast<std::size_t>(floating_point_ratio_delta_over_time_increment);
-
-	// The end reconstruction time is bound by two multiplies of the time increment.
-	const double previous_multiple = integer_ratio_delta_over_time_increment *
-			reconstruction_time_increment;
-	const double next_multiple = (integer_ratio_delta_over_time_increment + 1) *
-			reconstruction_time_increment;
-
-	// If reconstruction time range is close enough to a multiple of the time increment then
-	// we need to consider the 'include_end_time_in_sequence' flag.
-	// 1 percent is considered close enough - it's not too small to interact with the
-	// floating-point precision of a double and not too large.
-	const double epsilon = 1e-2;
-
-	if (std::abs(delta_begin_end_time - previous_multiple) < epsilon * std::abs(reconstruction_time_increment))
-	{
-		// Time range is close to a multiple of 'previous_multiple'.
-		return integer_ratio_delta_over_time_increment +
-				(include_end_time_in_sequence ? 1 : 0);
-	}
-	else if (std::abs(delta_begin_end_time - next_multiple) < epsilon * std::abs(reconstruction_time_increment))
-	{
-		// Time range is close to a multiple of 'next_multiple'.
-		return integer_ratio_delta_over_time_increment + 1 +
-				(include_end_time_in_sequence ? 1 : 0);
-	}
-
-	// Time range is somewhere between a multiple of 'previous_multiple' and 'next_multiple'.
-	// Hence the end time is not really close enough to a multiple of the time increment to be
-	// included so don't include it.
-	return integer_ratio_delta_over_time_increment + 1;
-}
 
 
 std::size_t

@@ -78,10 +78,12 @@
     <file>seek_end_22.png</file>
     <file>select_plate_35.png</file>
     <file>spin_globe_35.png</file>
+    <file>tango_document_save_22.png</file>
     <file>tango_emblem_unreadable_22.png</file>
     <file>tango_go_bottom_22.png</file>
     <file>tango_go_top_22.png</file>
     <file>tango_list_add_22.png</file>
+    <file>tango_process_stop_22.png</file>
     <file>zoom_globe_35.png</file>
 </qresource>
 </RCC>

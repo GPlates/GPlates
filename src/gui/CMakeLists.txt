@@ -27,6 +27,16 @@ set(srcs
     CsvExport.h
     EnableCanvasTool.cc
     EnableCanvasTool.h
+    ExportAnimationContext.cc
+    ExportAnimationContext.h
+    ExportAnimationStrategy.cc
+    ExportAnimationStrategy.h
+    ExportReconstructedGeometryAnimationStrategy.cc
+    ExportReconstructedGeometryAnimationStrategy.h
+    ExportSvgAnimationStrategy.cc
+    ExportSvgAnimationStrategy.h
+    ExportVelocityAnimationStrategy.cc
+    ExportVelocityAnimationStrategy.h
     FeatureColourTable.cc
     FeatureColourTable.h
     FeatureFocus.cc

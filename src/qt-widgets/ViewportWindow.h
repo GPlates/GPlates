@@ -45,6 +45,7 @@
 #include "AboutDialog.h"
 #include "AnimateDialog.h"
 #include "ApplicationState.h"
+#include "ExportAnimationDialog.h"
 #include "ExportReconstructedFeatureGeometryDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
@@ -138,6 +139,10 @@ namespace GPlatesQtWidgets
 
 		void
 		create_svg_file();
+
+		void
+		create_svg_file(
+				const QString &filename);
 
 	public slots:
 		
@@ -296,6 +301,9 @@ namespace GPlatesQtWidgets
 		{
 			create_svg_file();
 		}
+
+		void
+		pop_up_export_animation_dialog();
 
 		void
 		pop_up_export_reconstruction_dialog();
@@ -483,6 +491,39 @@ namespace GPlatesQtWidgets
 		remap_shapefile_attributes(
 			GPlatesFileIO::FileInfo &file_info);
 
+		/**
+		 * ViewState accessor for getting at the active reconstructable files list.
+		 * Used by the ExportReconstructionDialog and
+		 * ExportReconstructedGeometryAnimationStrategy.
+		 */
+		const active_files_collection_type &
+		active_reconstructable_files() const
+		{
+			return d_active_reconstructable_files;
+		}
+
+		/**
+		 * ViewState accessor for getting at the active reconstruction files list.
+		 * Included for completeness.
+		 */
+		const active_files_collection_type &
+		active_reconstruction_files() const
+		{
+			return d_active_reconstruction_files;
+		}
+
+		/**
+		 * ViewState accessor for getting at the RenderedGeometryCollection.
+		 * Used by the ExportReconstructionDialog and
+		 * ExportReconstructedGeometryAnimationStrategy.
+		 */
+		const GPlatesViewOperations::RenderedGeometryCollection &
+		rendered_geometry_collection() const
+		{
+			return d_rendered_geom_collection;
+		}
+
+
 	private:
 		GPlatesModel::ModelInterface d_model;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
@@ -506,6 +547,7 @@ namespace GPlatesQtWidgets
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		AboutDialog d_about_dialog;
 		AnimateDialog d_animate_dialog;
+		ExportAnimationDialog d_export_animation_dialog;
 		TotalReconstructionPolesDialog d_total_reconstruction_poles_dialog;
 		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
 		LicenseDialog d_license_dialog;

@@ -602,6 +602,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_reconstruction_view_widget(d_rendered_geom_collection, d_animation_controller, *this, this),
 	d_about_dialog(*this, this),
 	d_animate_dialog(d_animation_controller, this),
+	d_export_animation_dialog(d_animation_controller, *this, this),
 	d_total_reconstruction_poles_dialog(*this, this),
 	d_feature_properties_dialog(*this, d_feature_focus, this),
 	d_license_dialog(&d_about_dialog),
@@ -948,6 +949,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
 			this, SLOT(pop_up_total_reconstruction_poles_dialog()));
 	// ----
+	QObject::connect(action_Export_Animation, SIGNAL(triggered()),
+			this, SLOT(pop_up_export_animation_dialog()));
 	QObject::connect(action_Export_Reconstruction, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_reconstruction_dialog()));
 	
@@ -1331,17 +1334,32 @@ GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
 
 
 void
+GPlatesQtWidgets::ViewportWindow::pop_up_export_animation_dialog()
+{
+	// FIXME: Should Export Animation be modal?
+	d_export_animation_dialog.show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_export_animation_dialog.activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_export_animation_dialog.raise();
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
 {
 	GPlatesViewOperations::ExportReconstructedFeatureGeometries::active_files_collection_type
-			active_reconstructable_files(
-					d_active_reconstructable_files.begin(),
-					d_active_reconstructable_files.end());
+			active_reconstructable_geometry_files(
+					active_reconstructable_files().begin(),
+					active_reconstructable_files().end());
 
 	d_export_rfg_dialog.export_visible_reconstructed_feature_geometries(
 			*d_reconstruction_ptr,
-			d_rendered_geom_collection,
-			active_reconstructable_files,
+			rendered_geometry_collection(),
+			active_reconstructable_geometry_files,
 			d_recon_root,
 			d_recon_time);
 }
@@ -1818,6 +1836,13 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file()
 	if (filename.isEmpty()){
 		return;
 	}
+	create_svg_file(filename);
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::create_svg_file(
+		const QString &filename)
+{
 #if 0
 	bool result = GPlatesGui::SvgExport::create_svg_output(filename,d_globe_canvas_ptr);
 	if (!result){
@@ -1849,6 +1874,7 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	d_set_raster_surface_extent_dialog.reject();
 	d_specify_anchored_plate_id_dialog.reject();
 	d_shapefile_attribute_viewer_dialog.reject();
+	d_export_animation_dialog.reject();
 }
 
 void

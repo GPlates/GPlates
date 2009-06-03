@@ -28,7 +28,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>21</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -56,7 +56,6 @@
      <string>&amp;Reconstruction</string>
     </property>
     <addaction name="action_Reconstruct_to_Time" />
-    <addaction name="separator" />
     <addaction name="action_Increment_Animation_Time_Backwards" />
     <addaction name="action_Increment_Animation_Time_Forwards" />
     <addaction name="action_Reset_Animation" />
@@ -66,6 +65,7 @@
     <addaction name="action_Specify_Anchored_Plate_ID" />
     <addaction name="action_View_Reconstruction_Poles" />
     <addaction name="separator" />
+    <addaction name="action_Export_Animation" />
     <addaction name="action_Export_Reconstruction" />
    </widget>
    <widget class="QMenu" name="menu_Edit" >
@@ -472,6 +472,9 @@
   <action name="action_Animate" >
    <property name="text" >
     <string>&amp;Configure Animation...</string>
+   </property>
+   <property name="menuRole" >
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
   <action name="action_Drag_Globe" >
@@ -1147,6 +1150,11 @@
   <action name="action_Export_Reconstruction" >
    <property name="text" >
     <string>E&amp;xport Reconstruction Geometries...</string>
+   </property>
+  </action>
+  <action name="action_Export_Animation" >
+   <property name="text" >
+    <string>&amp;Export Animation...</string>
    </property>
   </action>
   <action name="action_Set_Projection" >
