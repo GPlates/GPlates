@@ -302,6 +302,7 @@ namespace GPlatesGui
 		draw_insertion_neighbors();
 
 #if 0
+// FIXME: this can produce too much visual clutter ; but keep it in for debugging
 		void
 		draw_click_points();
 #endif
@@ -316,7 +317,7 @@ namespace GPlatesGui
 		deactivate();
 
 		void
-		clear_data();
+		clear_widgets_and_data();
 
 		void
 		connect_to_focus_signals( bool state );
@@ -431,6 +432,7 @@ namespace GPlatesGui
 
 		QString d_tmp_property_name;
 		QString d_tmp_value_type;
+		
 
 		int d_num_intersections_with_prev;
 		int d_num_intersections_with_next;

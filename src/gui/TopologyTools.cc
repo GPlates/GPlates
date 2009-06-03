@@ -310,16 +310,15 @@ GPlatesGui::TopologyTools::deactivate()
 		SLOT(handle_reconstruction_time_change(double)));
 
 	// Clear out all old data
-	clear_data();
+	clear_widgets_and_data();
 }
 
+//
+// Clear the widgets, tables, d_section_ vectors, derrived vectors, topology references
+//
 void
-GPlatesGui::TopologyTools::clear_data()
+GPlatesGui::TopologyTools::clear_widgets_and_data()
 {
-	//
-	// Clear the widgets, tables, d_section_ vectors, derrived vectors, topology references
-	//
-
 	// clear the tables
 	d_view_state_ptr->feature_table_model().clear();
 
@@ -814,13 +813,12 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 //
 // slots for signals from TopologySectionsContainer
 //
-
 void
 GPlatesGui::TopologyTools::cleared()
 {
-	
+	if (! d_is_active) { return; }
+	// not used  ; left in for potential expansion or refactoring
 }
-
 
 void
 GPlatesGui::TopologyTools::insertion_point_moved(
@@ -973,6 +971,28 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	table_row.d_click_point = GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
 
 	table_row.d_reverse = false;
+
+	// visit the RFG's geom to check type and set d_tmp_property_name
+	d_visit_to_check_type = true;
+	rfg_ptr->geometry()->accept_visitor(*this);
+
+	const GPlatesModel::PropertyName property_name =
+		GPlatesModel::PropertyName::create_gpml( d_tmp_property_name );
+
+	// NOTE: This loop was copied from 
+	// NOTE: GPlatesFeatureVisitors::TopologySectionsFinder::find_properties_iterator
+	// NOTE: See the comments there.
+
+	// Iterate through the top level properties; look for the first name that matches
+	GPlatesModel::FeatureHandle::properties_iterator it = table_row.d_feature_ref->properties_begin();
+	GPlatesModel::FeatureHandle::properties_iterator end = table_row.d_feature_ref->properties_end();
+	for ( ; it != end; ++it) {
+		// Elements of this properties vector can be NULL pointers.  (See the comment in
+		// "model/FeatureRevision.h" for more details.)
+		if (*it != NULL && (*it)->property_name() == property_name) {
+			table_row.d_geometry_property_opt = it;
+		}
+	}
 
 	// Insert the row
 	d_topology_sections_container_ptr->insert( table_row );
@@ -1148,6 +1168,8 @@ GPlatesGui::TopologyTools::visit_point_on_sphere(
 	// set type only
 	if (d_visit_to_check_type) {
 		d_tmp_feature_type = GPlatesGlobal::POINT_FEATURE;
+		d_tmp_property_name = "position";
+		d_tmp_value_type = "Point";
 		return;
 	}
 
@@ -1230,6 +1252,8 @@ GPlatesGui::TopologyTools::visit_polyline_on_sphere(
 	// set type only
 	if (d_visit_to_check_type) {
 		d_tmp_feature_type = GPlatesGlobal::LINE_FEATURE;
+		d_tmp_property_name = "centerLineOf";
+		d_tmp_value_type = "LineString";
 		return;
 	}
 
@@ -2787,6 +2811,13 @@ bool
 GPlatesGui::TopologyTools::should_reverse_section(
 		int curr_section_index)
 {
+// NOTE: 
+// Mark commented this out due to a compiler warning on LINUX under 
+// cmake -DCMAKE_BUILD_TYPE:STRING=Debug .
+// TopologyTools.cc:2834: warning: comparison between signed and unsigned integer expressions
+// I'm just commenting out for now and returning false
+return false;
+#if 0
 	GPlatesGlobal::Assert(
 			curr_section_index < boost::numeric_cast<int>(d_section_ranges_into_topology_vertices.size()),
 			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
@@ -2877,4 +2908,5 @@ GPlatesGui::TopologyTools::should_reverse_section(
 	// NOTE: if both are zero then GPlatesMath::real_t::operator<() will return false
 	// which is what we want.
 	return reversed_arc_distance < arc_distance;
+#endif
 }
