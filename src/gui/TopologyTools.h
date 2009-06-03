@@ -30,6 +30,9 @@
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 
+#include <cstddef>
+#include <utility>
+
 #include "global/types.h"
 
 #include "TopologySectionsContainer.h"
@@ -485,6 +488,14 @@ namespace GPlatesGui
 		 */
 		std::vector<GPlatesMaths::PointOnSphere> d_topology_vertices;
 
+		typedef std::pair<std::size_t,std::size_t> clipped_section_vertex_range_type;
+		/**
+		 * A collection of offsets into 'd_topology_vertices' of the
+		 * potentially intersection clipped topology sections.
+		 * Each section has a @a std::pair which contains the begin and end offsets.
+		 */
+		std::vector<clipped_section_vertex_range_type> d_section_ranges_into_topology_vertices;
+
 		/**
 		 * The d_vertex_list gets processed into this geometry; may be boost::none 
 		 */
@@ -524,6 +535,14 @@ namespace GPlatesGui
 		create_geometry_from_vertex_list(
 			std::vector<GPlatesMaths::PointOnSphere> &points,
 			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity);
+
+		/**
+		 * Returns true if the topological section at index @a section_index should
+		 * be reversed.
+		 */
+		bool
+		should_reverse_section(
+				int section_index);
 	};
 }
 

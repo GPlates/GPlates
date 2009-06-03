@@ -38,8 +38,12 @@
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 #include "TopologyTools.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/AssertionFailureException.h"
 
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/ExportCoordinatesDialog.h"
@@ -329,6 +333,7 @@ GPlatesGui::TopologyTools::clear_data()
 	
 	// clear the vertex list
 	d_topology_vertices.clear();
+	d_section_ranges_into_topology_vertices.clear();
 	d_tmp_index_vertex_list.clear();
 
 	// clear the working lists
@@ -967,7 +972,7 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	// click point from canvas
 	table_row.d_click_point = GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
 
-	table_row.d_reverse = false; // FIXME : AUTO REVERSE
+	table_row.d_reverse = false;
 
 	// Insert the row
 	d_topology_sections_container_ptr->insert( table_row );
@@ -984,6 +989,32 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	d_visit_to_create_properties = true;
 	update_geometry();
 	d_visit_to_create_properties = false;
+
+	// See if the inserted section should be reversed.
+	// This is done after 'update_geometry()' because we need the intersection
+	// clipped topology sections that neighbour the inserted section.
+	if (should_reverse_section(index))
+	{
+		// Flip the reverse flag for the inserted section.
+		table_row.d_reverse = !table_row.d_reverse;
+
+		// Update the topology sections container.
+		d_topology_sections_container_ptr->update_at(index, table_row);
+
+		//
+		// Since we are not connected to the topology sections container signals
+		// we need to manually regenerate the topology sections.
+		//
+
+		d_feature_focus_head_points.clear();
+		d_feature_focus_tail_points.clear();
+
+		// set flags for visit from update_geom()
+		d_visit_to_check_type = false;
+		d_visit_to_create_properties = true;
+		update_geometry();
+		d_visit_to_create_properties = false;
+	}
 
 	// d_topology_feature_ref exists, simple append the boundary
 	append_boundary_to_feature( d_topology_feature_ref );
@@ -1711,6 +1742,7 @@ GPlatesGui::TopologyTools::update_geometry()
 
 	// these will be filled by create_sections_from_sections_table()
 	d_topology_vertices.clear();
+	d_section_ranges_into_topology_vertices.clear();
 	d_head_end_points.clear();
 	d_tail_end_points.clear();
 	d_intersection_points.clear();
@@ -1781,6 +1813,7 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 	// clear out the old vectors, since the calls to accept_visitor will re-populate them
 	d_section_ptrs.clear();
 	d_topology_vertices.clear();
+	d_section_ranges_into_topology_vertices.clear();
 
 	// clear out old ptrs 
 	d_feature_before_insert_opt_ptr = boost::none;
@@ -1870,6 +1903,12 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator find_iter;
 		find_iter = finder.found_rfgs_begin();
 
+		// Keep track of the vertices belonging to the current potentially clipped section.
+		// We'll use this later to determine if a newly inserted/added section should
+		// automatically have its reverse flag changed.
+		clipped_section_vertex_range_type clipped_section_vertex_range(
+				d_topology_vertices.size(), d_topology_vertices.size());
+
 		// Double check RFGs
 		if ( find_iter != finder.found_rfgs_end() )
 		{
@@ -1905,6 +1944,10 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 					d_tmp_process_intersections = false;
 				}
 
+				// Mark the beginning of the current potentially clipped section
+				// in the topology vertices.
+				clipped_section_vertex_range.second = d_topology_vertices.size();
+
 				//
 				// Check for intersection
 				//
@@ -1927,6 +1970,10 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 					d_topology_vertices.insert( d_topology_vertices.end(), 
 						d_tmp_index_vertex_list.begin(), d_tmp_index_vertex_list.end() );
 				}
+
+				// Mark the end of the current potentially clipped section
+				// in the topology vertices.
+				clipped_section_vertex_range.second = d_topology_vertices.size();
 			}
 			else
 			{
@@ -1945,6 +1992,12 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 			qDebug() << "ERROR: no RFG!";
 			// FIXME: ?
 		}
+
+		// Store the range of topology vertices belonging to the current
+		// potentially clipped section.
+		// We do this even if no vertices were added because we need to have an entry for
+		// each section.
+		d_section_ranges_into_topology_vertices.push_back(clipped_section_vertex_range);
 	}
 }
 
@@ -2730,4 +2783,98 @@ GPlatesGui::TopologyTools::create_geometry_from_vertex_list(
 }
 
 
+bool
+GPlatesGui::TopologyTools::should_reverse_section(
+		int curr_section_index)
+{
+	GPlatesGlobal::Assert(
+			curr_section_index < boost::numeric_cast<int>(d_section_ranges_into_topology_vertices.size()),
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
+	// If there's less than two sections in topology then we have no
+	// way to determine if the section should be reversed.
+	if (d_section_ranges_into_topology_vertices.size() < 2)
+	{
+		return false;
+	}
+
+	// Get index of previous section.
+	int prev_section_index = curr_section_index - 1;
+	if (prev_section_index < 0)
+	{
+		prev_section_index = d_section_ranges_into_topology_vertices.size() - 1;
+	}
+
+	// Get index of next section.
+	int next_section_index = curr_section_index + 1;
+	if (next_section_index == d_section_ranges_into_topology_vertices.size())
+	{
+		next_section_index = 0;
+	}
+
+	// Range of previous section.
+	const clipped_section_vertex_range_type &prev_section_vertex_range =
+			d_section_ranges_into_topology_vertices[prev_section_index];
+
+	// Range of current section.
+	const clipped_section_vertex_range_type &curr_section_vertex_range =
+			d_section_ranges_into_topology_vertices[curr_section_index];
+
+	// Range of next section.
+	const clipped_section_vertex_range_type &next_section_vertex_range =
+			d_section_ranges_into_topology_vertices[next_section_index];
+
+	GPlatesMaths::real_t arc_distance = 0;
+	GPlatesMaths::real_t reversed_arc_distance = 0;
+
+	if (curr_section_vertex_range.first == curr_section_vertex_range.second)
+	{
+		// There are no vertices in the current section so nothing to do.
+		return false;
+	}
+
+	const GPlatesMaths::PointOnSphere &curr_section_head =
+			d_topology_vertices[curr_section_vertex_range.first];
+	const GPlatesMaths::PointOnSphere &curr_section_tail =
+			d_topology_vertices[curr_section_vertex_range.second - 1];
+
+	// If there are vertices in the previous section.
+	if (prev_section_vertex_range.first != prev_section_vertex_range.second)
+	{
+		const GPlatesMaths::PointOnSphere &prev_section_tail =
+				d_topology_vertices[prev_section_vertex_range.second - 1];
+
+		// Calculate angle between tail of previous section and head of current section.
+		arc_distance += acos(dot(
+				prev_section_tail.position_vector(),
+				curr_section_head.position_vector()));
+
+		// Same but we're reversing the current section's head and tail.
+		reversed_arc_distance += acos(dot(
+				prev_section_tail.position_vector(),
+				curr_section_tail.position_vector()));
+	}
+
+	// If there are vertices in the next section.
+	if (next_section_vertex_range.first != next_section_vertex_range.second)
+	{
+		const GPlatesMaths::PointOnSphere &next_section_head =
+				d_topology_vertices[next_section_vertex_range.first];
+
+		// Calculate angle between tail of current section and head of next section.
+		arc_distance += acos(dot(
+				curr_section_tail.position_vector(),
+				next_section_head.position_vector()));
+
+		// Same but we're reversing the current section's head and tail.
+		reversed_arc_distance += acos(dot(
+				curr_section_head.position_vector(),
+				next_section_head.position_vector()));
+	}
+
+	// If the distance is smaller when the current section is reversed then we should
+	// reverse it.
+	// NOTE: if both are zero then GPlatesMath::real_t::operator<() will return false
+	// which is what we want.
+	return reversed_arc_distance < arc_distance;
+}
