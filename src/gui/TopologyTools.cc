@@ -2838,7 +2838,8 @@ return false;
 
 	// Get index of next section.
 	int next_section_index = curr_section_index + 1;
-	if (next_section_index == d_section_ranges_into_topology_vertices.size())
+	if (next_section_index ==
+			boost::numeric_cast<int>(d_section_ranges_into_topology_vertices.size()))
 	{
 		next_section_index = 0;
 	}
