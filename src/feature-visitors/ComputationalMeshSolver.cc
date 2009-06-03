@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#define DEBUG
+// #define DEBUG
 
 
 #include <fstream>
@@ -171,8 +171,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	}
 	oss << "-for_1Ma_inc.gpml";
 
-// report progress
-qDebug() << " processing mesh: " << GPlatesUtils::make_qstring( feature_name->value() );
+	// report progress
+	qDebug() << " processing mesh: " << GPlatesUtils::make_qstring( feature_name->value() );
 
 
 	// create an accumulator struct 
@@ -291,11 +291,8 @@ qDebug() << " processing mesh: " << GPlatesUtils::make_qstring( feature_name->va
 		// passed all checks, make the name and test
 		GPlatesModel::PropertyName test_name = (*iter)->property_name();
 
-qDebug() << "name = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
-
 		if ( test_name == range_set_prop_name )
 		{
-qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
 			// Delete the old boundary 
 			GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 			feature_handle.remove_top_level_property(iter, transaction);
@@ -335,7 +332,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-//std::cout << "ComputationalMeshSolver::visit_feature_props: " << std::endl;
 	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
 	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
 	for ( ; iter != end; ++iter) {
@@ -355,7 +351,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_top_level_property_inline(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-//std::cout << "ComputationalMeshSolver::visit_top_level_property_inline: " << std::endl;
 	visit_property_values( top_level_property_inline );
 }
 
@@ -364,7 +359,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_property_values(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-//std::cout << "ComputationalMeshSolver::visit_property_values: " << std::endl;
 	GPlatesModel::TopLevelPropertyInline::const_iterator iter = top_level_property_inline.begin();
 	GPlatesModel::TopLevelPropertyInline::const_iterator end = top_level_property_inline.end();
 	for ( ; iter != end; ++iter) {
@@ -378,7 +372,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 	GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-std::cout << "ComputationalMeshSolver::visit_gml_multi_point: " << std::endl;
 	if ( ! d_accumulator->d_perform_reconstructions) {
 		return;
 	}
@@ -546,7 +539,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-//std::cout << "ComputationalMeshSolver::visit_gml_time_period: " << std::endl;
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
@@ -569,7 +561,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-//std::cout << "ComputationalMeshSolver::visit_gpml_constant_value: " << std::endl;
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
@@ -578,7 +569,6 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-//std::cout << "ComputationalMeshSolver::visit_gpml_plate_id: " << std::endl;
 	static GPlatesModel::PropertyName reconstruction_plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -594,12 +584,14 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 }
 
 
+#if 0
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_data_block(
 		GPlatesPropertyValues::GmlDataBlock &gml_data_block)
 {
-//std::cout << "ComputationalMeshSolver::visit_gml_data_block: " << std::endl;
+
 }
+#endif
 
 
 

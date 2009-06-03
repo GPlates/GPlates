@@ -177,12 +177,12 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
+#if 0
 		virtual
 		void
 		visit_gml_data_block(
 				GPlatesPropertyValues::GmlDataBlock &gml_data_block);
 
-#if 0
 		virtual
 		void
 		visit_gml_domain_set(

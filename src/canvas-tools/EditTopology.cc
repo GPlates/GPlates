@@ -68,13 +68,6 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 void
 GPlatesCanvasTools::EditTopology::handle_activation()
 {
-// FIXME: add status message
-#if 0
-		d_view_state_ptr->status_message(QObject::tr(
-				"Click on features to choose segments for the boundary."
-				" Ctrl+drag to reorient the globe."));
-#endif
-
 	// Activate rendered layer.
 	d_rendered_geom_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
@@ -95,8 +88,6 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
-std::cout << "GPlatesCanvasTools::EditTopology::handle_left_click" << std::endl;
-
 	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
 		oriented_click_pos_on_globe);
 

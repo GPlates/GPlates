@@ -21,8 +21,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#define DEBUG
-#define DEBUG1
+//#define DEBUG
+//#define DEBUG1
 
 #include <map>
 
@@ -140,9 +140,12 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 	// Only activate these tools with a valid feature focus.
 	if ( ! d_feature_focus_ptr->is_valid() ) 
 	{
-qDebug() << "TopologyTools::activate() ! d_feature_focus_ptr->is_valid() ";
+		// USAGE:
 		// choose another tool; NOTE: changing tools will call this object's deactivate();
 		d_view_state_ptr->choose_click_geometry_tool();
+
+		d_view_state_ptr->status_message(QObject::tr(
+ 			"Click on a feature to activate the Topology Tools."));
 
 		// Flip the ViewportWindow to the Clicked Geometry Table
 		d_view_state_ptr->choose_clicked_geometry_table();
@@ -151,28 +154,54 @@ qDebug() << "TopologyTools::activate() ! d_feature_focus_ptr->is_valid() ";
 		return;
 	}
 
-	// set state
-	d_is_active = true;
+	// Check type vs Activate mode 
+	// allow only :
+	// EDIT with TopologicalClosedPlateBoundary features
+	// BUILD with non-topology features
+
+	// Check feature type via qstrings 
+ 	QString topology_type_name ("TopologicalClosedPlateBoundary");
+	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+	 	 d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
+
+	if ( feature_type_name == topology_type_name ) 
+	{
+		if ( d_mode == EDIT ) 
+		{
+			d_is_active = true;
+		}
+		else // BUILD
+		{
+			d_is_active = false;
+			// choose another tool; NOTE: changing tools will call this object's deactivate();
+			d_view_state_ptr->choose_click_geometry_tool();
+			d_view_state_ptr->status_message(QObject::tr(
+ 				"Click on a regular feature to activate the Build Topology Tool."));
+			return;
+		}
+	}
+	else // non topology feature 
+	{
+		if ( d_mode == EDIT )
+		{
+			d_is_active = false;
+			// choose another tool; NOTE: changing tools will call this object's deactivate();
+			d_view_state_ptr->choose_click_geometry_tool();
+			d_view_state_ptr->status_message(QObject::tr(
+ 				"Click on a Topology feature to activate the Edit Topology Tool."));
+			return;
+		}
+		else // BUILD
+		{
+			d_is_active = true;
+		}
+	}
 
 	//
-	// Check activate mode and how to handle feature focus
+	// handle feature focus
 	//
 	if ( d_mode == EDIT ) 
 	{
-		// Only activate in EDIT mode for topologies;  
-		// Check feature type via qstrings 
- 		QString topology_type_name ("TopologicalClosedPlateBoundary");
-		QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-		 	 d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
-		if ( feature_type_name != topology_type_name )
-		{
-qDebug() << "TopologyTools::activate() feature_type_name != topology_type_name";
-			// choose another tool; NOTE: changing tools will call this object's deactivate();
-			d_view_state_ptr->choose_click_geometry_tool();
-			d_is_active = false;
-			return;
-		}
-
 		// set the topology feature ref
 		d_topology_feature_ref = d_feature_focus_ptr->focused_feature();
 
@@ -237,6 +266,10 @@ qDebug() << "TopologyTools::activate() feature_type_name != topology_type_name";
 
 	// set the widget state
 	d_is_active = true;
+
+	d_view_state_ptr->status_message(QObject::tr(
+ 		"Click on a features to Add or Remove them from the Topology."
+ 		" Ctrl+drag to reorient the globe."));
 
 	return;
 }
@@ -531,7 +564,9 @@ GPlatesGui::TopologyTools::handle_reconstruction_time_change(
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
 
 // FIXME : remove diagnostic
-	show_numbers();
+#ifdef DEBUG
+show_numbers();
+#endif
 }
 
 //
@@ -576,8 +611,10 @@ GPlatesGui::TopologyTools::set_focus(
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
 
 
+#ifdef DEBUG
 // FIXME: remove this diag
-	show_numbers();
+show_numbers();
+#endif
 
 	return;
 }
@@ -672,7 +709,6 @@ GPlatesGui::TopologyTools::find_feature_in_topology(
 {
 	// test if feature is in the section ids vector
 	GPlatesModel::FeatureId test_id = feature_ref->feature_id();
-//qDebug() << "test_id = " << GPlatesUtils::make_qstring_from_icu_string( test_id.get() );
 
 	GPlatesGui::TopologySectionsContainer::const_iterator iter = 
 		d_topology_sections_container_ptr->begin();
@@ -682,7 +718,6 @@ GPlatesGui::TopologyTools::find_feature_in_topology(
 	{
 		if ( test_id == iter->d_feature_id )
 		{
-//qDebug() << "index = " << i << "; d_feature_id = " << GPlatesUtils::make_qstring_from_icu_string( iter->d_feature_id.get() );
 			return i;
 		}
 		++i;
@@ -1039,8 +1074,6 @@ GPlatesGui::TopologyTools::handle_apply()
 
 	// deacticate the TopologyToolsWidget; NOTE: will call our deactivate();
 	d_topology_tools_widget_ptr->deactivate();
-
-qDebug() << "TopologyTools::handle_apply() END";
 }
 
 
@@ -1083,9 +1116,6 @@ GPlatesGui::TopologyTools::visit_point_on_sphere(
 { 
 	// set type only
 	if (d_visit_to_check_type) {
-#ifdef DEBUG1
-qDebug() << "TopologyTools::visit_point_on_sphere(): TYPE";
-#endif
 		d_tmp_feature_type = GPlatesGlobal::POINT_FEATURE;
 		return;
 	}
@@ -1093,17 +1123,11 @@ qDebug() << "TopologyTools::visit_point_on_sphere(): TYPE";
 	// get end points only
 	if (d_visit_to_get_focus_end_points) 
 	{
-#ifdef DEBUG1
-qDebug() << "TopologyTools::visit_point_on_sphere(): END_POINTS";
-#endif
 		// single points just go in head list
 		d_feature_focus_head_points.push_back( *point_on_sphere );
 		return;
 	}
 
-#ifdef DEBUG1
-qDebug() << "TopologyTools::visit_point_on_sphere(): VERTS";
-#endif
 	// set the global flag for intersection processing 
 	d_tmp_process_intersections = false;
 
@@ -1114,9 +1138,6 @@ qDebug() << "TopologyTools::visit_point_on_sphere(): VERTS";
 	// return early if properties are not needed
 	if (! d_visit_to_create_properties) { return; }
 
-#ifdef DEBUG1
-qDebug() << "TopologyTools::visit_point_on_sphere(): PROPS";
-#endif
 
 	// set the d_tmp vars to create a sourceGeometry property delegate 
 	d_tmp_property_name = "position";
@@ -1177,9 +1198,6 @@ GPlatesGui::TopologyTools::visit_polyline_on_sphere(
 
 	// set type only
 	if (d_visit_to_check_type) {
-#ifdef DEBUG1
-qDebug() << "TopologyTools::visit_polyline_on_sphere(): TYPE";
-#endif
 		d_tmp_feature_type = GPlatesGlobal::LINE_FEATURE;
 		return;
 	}
@@ -1187,17 +1205,10 @@ qDebug() << "TopologyTools::visit_polyline_on_sphere(): TYPE";
 	// get end points only
 	if (d_visit_to_get_focus_end_points) 
 	{
-#ifdef DEBUG1
-qDebug() << "TopologyTools::visit_polyline_on_sphere(): END_POINTS";
-#endif
 		d_feature_focus_head_points.push_back( *(polyline_on_sphere->vertex_begin()) );
 		d_feature_focus_tail_points.push_back( *(--polyline_on_sphere->vertex_end()) );
 		return;
 	}
-
-#ifdef DEBUG1
-qDebug() << "TopologyTools::visit_polyline_on_sphere(): VERTS";
-#endif
 
 	// set the global flag for intersection processing 
 	d_tmp_process_intersections = true;
@@ -1241,9 +1252,6 @@ qDebug() << "TopologyTools::visit_polyline_on_sphere(): VERTS";
 	// return early if properties are not needed
 	if (! d_visit_to_create_properties) { return; }
 
-#ifdef DEBUG1
-qDebug() << "TopologyTools::visit_polyline_on_sphere(): PROPS";
-#endif
 
 	// Set the d_tmp vars to create a sourceGeometry property delegate 
 	d_tmp_property_name = "centerLineOf";
@@ -1316,15 +1324,11 @@ GPlatesGui::TopologyTools::draw_all_layers()
 void
 GPlatesGui::TopologyTools::draw_topology_geometry()
 {
-#ifdef DEBUG1
-qDebug() << "TopologyTools::draw_topology_geometry()";
-#endif
 	d_topology_geometry_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	if (d_topology_geometry_opt_ptr) 
 	{
-//qDebug() << "TopologyTools::draw_topology_geometry() ptr";
 		// light grey
 		const GPlatesGui::Colour &colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0);
 
@@ -1346,7 +1350,6 @@ qDebug() << "TopologyTools::draw_topology_geometry()";
 void
 GPlatesGui::TopologyTools::draw_insertion_neighbors()
 {
-qDebug() << "TopologyTools::draw_insertion_neighbors()";
 	d_insertion_neighbors_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1388,7 +1391,6 @@ qDebug() << "TopologyTools::draw_insertion_neighbors()";
 void
 GPlatesGui::TopologyTools::draw_focused_geometry()
 {
-qDebug() << "TopologyTools::draw_focused_geometry()";
 	d_focused_feature_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1424,7 +1426,6 @@ qDebug() << "TopologyTools::draw_focused_geometry()";
 void
 GPlatesGui::TopologyTools::draw_focused_geometry_end_points()
 {
-qDebug() << "TopologyTools::draw_focused_geometry_end_points()";
 	std::vector<GPlatesMaths::PointOnSphere>::iterator itr, end;
 
 	// draw head points
@@ -1483,8 +1484,6 @@ qDebug() << "TopologyTools::draw_focused_geometry_end_points()";
 void
 GPlatesGui::TopologyTools::draw_segments()
 {
-//qDebug() << "TopologyTools::draw_segments()";
-
 	d_segments_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1518,8 +1517,6 @@ GPlatesGui::TopologyTools::draw_segments()
 void
 GPlatesGui::TopologyTools::draw_end_points()
 {
-//qDebug() << "TopologyTools::draw_end_points()";
-
 	d_end_points_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1584,8 +1581,6 @@ GPlatesGui::TopologyTools::draw_end_points()
 void
 GPlatesGui::TopologyTools::draw_intersection_points()
 {
-//qDebug() << "TopologyTools::draw_intersection_points()";
-
 	d_intersection_points_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1595,15 +1590,6 @@ GPlatesGui::TopologyTools::draw_intersection_points()
 	end = d_intersection_points.end();
 	for ( ; itr != end ; ++itr)
 	{
-		// make a point from the coordinates
-		//GPlatesMaths::PointOnSphere click_pos = GPlatesMaths::make_point_on_sphere(
-		// GPlatesMaths::LatLonPoint( itr->first, itr->second ) );
-
-#ifdef DEBUG1
-GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*itr);
-qDebug() << "draw_intersection_points d_intersection_points: llp=" << llp.latitude() << "," << llp.longitude();
-#endif
-
 		// get a geom
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type pos_ptr = 
 			itr->clone_as_geometry();
@@ -1623,7 +1609,6 @@ qDebug() << "draw_intersection_points d_intersection_points: llp=" << llp.latitu
 			d_intersection_points_layer_ptr->add_rendered_geometry(rendered_geometry);
 		}
 	}
-
 	// update the canvas 
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
@@ -1633,8 +1618,6 @@ qDebug() << "draw_intersection_points d_intersection_points: llp=" << llp.latitu
 void
 GPlatesGui::TopologyTools::draw_click_point()
 {
-//qDebug() << "TopologyTools::draw_click_point()";
-
 	d_click_points_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1666,11 +1649,11 @@ GPlatesGui::TopologyTools::draw_click_point()
 }
 
 #if 0
+// FIXME: This tends to produce too much visual clutter 
+// but keep it in here for debugging - just in case ...
 void
 GPlatesGui::TopologyTools::draw_click_points()
 {
-//qDebug() << "TopologyTools::draw_click_points()";
-
 	d_click_points_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
@@ -1720,8 +1703,6 @@ GPlatesGui::TopologyTools::draw_click_points()
 void
 GPlatesGui::TopologyTools::update_geometry()
 {
-qDebug() << "TopologyTools::update_geometry()";
-
 	// clear layers
 	draw_all_layers_clear();
 
@@ -1766,8 +1747,6 @@ qDebug() << "TopologyTools::update_geometry()";
 void
 GPlatesGui::TopologyTools::fill_topology_sections_from_section_table()
 {
-qDebug() << "TopologyTools::fill_topology_sections_from_section_table()";
-
 	// just to be safe, turn off connection to feature focus while changing Section Table
 	connect_to_topology_sections_container_signals( false );
 	connect_to_focus_signals( false );
@@ -1799,8 +1778,6 @@ qDebug() << "TopologyTools::fill_topology_sections_from_section_table()";
 void
 GPlatesGui::TopologyTools::create_sections_from_sections_table()
 {
-qDebug() << "TopologyTools::create_sections_from_sections_table()";
-
 	// clear out the old vectors, since the calls to accept_visitor will re-populate them
 	d_section_ptrs.clear();
 	d_topology_vertices.clear();
@@ -1816,8 +1793,6 @@ qDebug() << "TopologyTools::create_sections_from_sections_table()";
 	if ( d_tmp_sections_size == 0 ) { 
 		return; 
 	}
-
-qDebug() << "TopologyTools::create_sections_from_sections_table() size = " << d_tmp_sections_size;
 
 	// Compute indices for insertion neighbors
 	GPlatesGui::TopologySectionsContainer::size_type insertion_point = 
@@ -1835,13 +1810,6 @@ qDebug() << "TopologyTools::create_sections_from_sections_table() size = " << d_
 		d_feature_after_insert_index = 0;
 	}
 
-#ifdef DEBUG1
-qDebug() << "TopologyTools::create_sections_from_sections_table() b = " << d_feature_before_insert_index;
-qDebug() << "TopologyTools::create_sections_from_sections_table() is= " <<  d_topology_sections_container_ptr->insertion_point();
-qDebug() << "TopologyTools::create_sections_from_sections_table() a = " << d_feature_after_insert_index;
-#endif
-
-
 	// Loop over each geom in the Sections Table
 	d_tmp_index = 0;
 	for ( ; d_tmp_index != d_tmp_sections_size ; ++d_tmp_index )
@@ -1852,11 +1820,6 @@ qDebug() << "TopologyTools::create_sections_from_sections_table() a = " << d_fea
 		// Set the fid for the tmp_index section 
 		d_tmp_index_fid = 
 			( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_feature_id;
-
-#ifdef DEBUG1
-qDebug() << "TopologyTools::create_sections_from_sections_table() i = " << d_tmp_index;
-qDebug() << "TopologyTools::create_sections_from_sections_table() fid = " << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
-#endif
 
 		// set the tmp reverse flag to this feature's flag
 		d_tmp_index_use_reverse =
@@ -1870,6 +1833,7 @@ qDebug() << "TopologyTools::create_sections_from_sections_table() fid = " << GPl
 		if ( back_refs.size() == 0 )
 		{
 			// FIXME: feak out? 
+			qDebug() << "ERROR: ======================================";
 			qDebug() << "ERROR: create_sections_from_sections_table():";
 			qDebug() << "ERROR: No feature found for feature_id =";
 			qDebug() <<
@@ -1883,6 +1847,7 @@ qDebug() << "TopologyTools::create_sections_from_sections_table() fid = " << GPl
 
 		if ( back_refs.size() > 1)
 		{
+			qDebug() << "ERROR: ======================================";
 			qDebug() << "ERROR: create_sections_from_sections_table():";
 			qDebug() << "ERROR: More than one feature found for feature_id =";
 			qDebug() <<
@@ -1965,41 +1930,36 @@ qDebug() << "TopologyTools::create_sections_from_sections_table() fid = " << GPl
 			}
 			else
 			{
-				qDebug() << "TopologyTools::create_sections_from_sections_table() ERROR: no geometry on sphere ptr!";
+				// else no GOS for RFG 
+				qDebug() << "ERROR: ======================================";
+				qDebug() << "ERROR: create_sections_from_sections_table():";
+				qDebug() << "ERROR: no geometry on sphere ptr!";
+				// FIXME: what to do here??!
 			}
-			// else no GOS for RFG 
-			// FIXME: what to do here??!
 		} 
-		// else no RFG found for feature 
-		// FIXME: ?
 		else
 		{
-			qDebug() << "TopologyTools::create_sections_from_sections_table() ERROR: no RFG!";
+			// else no RFG found for feature 
+			qDebug() << "ERROR: ======================================";
+			qDebug() << "ERROR: create_sections_from_sections_table():";
+			qDebug() << "ERROR: no RFG!";
+			// FIXME: ?
 		}
 	}
-qDebug() << "TopologyTools::create_sections_from_sections_table() END ";
 }
 
 void
 GPlatesGui::TopologyTools::process_intersections()
 {
-
-qDebug() << "TopologyTools::process_intersections() start d_tmp_index =" << d_tmp_index;
-
-#if 0
-// set the tmp click point to d_tmp_index feture's click point
-d_click_point_lat = d_section_click_points.at(d_tmp_index).first;
-d_click_point_lon = d_section_click_points.at(d_tmp_index).second;
-
-GPlatesMaths::PointOnSphere click_pos = GPlatesMaths::make_point_on_sphere(
-	GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon) );
-#endif
-
-	// double check for empty click_point 
+	//
+	// Double check for empty click_point for this feature 
+	//
 	if ( ! d_topology_sections_container_ptr->at( d_tmp_index ).d_click_point )
 	{	
-qDebug() << "TopologyTools::process_intersections(): ! d_click_point" << d_tmp_index;
-		// unable to process intersections without a click point
+		qDebug() << "WARNING: ======================================";
+		qDebug() << "WARNING: no click point for feature at Topology Section Table index:" << d_tmp_index;
+		qDebug() << "WARNING: Unable to process intersections of this feature with neighbors without a click point.";
+		qDebug() << "WARNING: Remove the feature, and re-insert it from a click on the globe.";
 		return;
 	}
 
@@ -2011,9 +1971,13 @@ qDebug() << "TopologyTools::process_intersections(): ! d_click_point" << d_tmp_i
 	// Set above in create_sections_from_sections_table 
 	d_click_point_ptr = &click_pos;
 
+	// This is used below to create the reference property GPlatesPropertyValues::GmlPoint
 	const GPlatesMaths::PointOnSphere const_pos(click_pos); 
 
-	// index math to close the loop of sections
+	//
+	// Index math to close the loop of boundary sections
+	// The current feature, INDEX, will be tested against both PREV and NEXT below
+	//
 	if ( d_tmp_index == (d_tmp_sections_size - 1) ) 
 	{
 		d_tmp_next_index = 0;
@@ -2030,42 +1994,27 @@ qDebug() << "TopologyTools::process_intersections(): ! d_click_point" << d_tmp_i
 		d_tmp_prev_index = d_tmp_index - 1;
 	}
 
-#ifdef DEBUG1
-qDebug() << "TopologyTools::process_intersections: "
-<< "d_click_point_lat = " << d_click_point_lat << "; " 
-<< "d_click_point_lon = " << d_click_point_lon << "; ";
-qDebug() << "TopologyTools::process_intersections: "
-<< "d_prev_index = " << d_tmp_prev_index << "; " 
-<< "d_tmp_index = " << d_tmp_index << "; " 
-<< "d_next_index = " << d_tmp_next_index << "; ";
-qDebug() << "TopologyTools::process_intersections() d_tmp_index_vertex_list.size= " << d_tmp_index_vertex_list.size();
-#endif
-
 	// reset intersection variables
 	d_num_intersections_with_prev = 0;
 	d_num_intersections_with_next = 0;
 
-	//
-	// check for startIntersection
-	//
+	// Get a polyline for this INDEX feature
+
 	// NOTE: the d_tmp_index segment may have had its d_tmp_index_vertex_list reversed, 
 	// so use that list of points_on_sphere, rather than the geom from Sections Table.
+
+	// tmp_for_prev_polyline is intersected with the PREV feature 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type tmp_for_prev_polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap( d_tmp_index_vertex_list );
 
-
-	// FIXME: if the gom is in the TableRow
-	// access the topology sections table
-	// GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type prev_goes_ptr = 
-	//	( d_topology_sections_container_ptr->at( d_tmp_prev_index ) ).d_geometry.get();
-
 	// 
+	// Access the Topology Sections Container for PREV boundary section
+	//
 	GPlatesModel::FeatureHandle::weak_ref prev_feature_ref;
 
 	// access the topology sections table
 	prev_feature_ref = 
 		( d_topology_sections_container_ptr->at( d_tmp_prev_index ) ).d_feature_ref;
-
 
 	if ( prev_feature_ref.is_valid() )
 	{
@@ -2105,19 +2054,37 @@ qDebug() << "TopologyTools::process_intersections() d_tmp_index_vertex_list.size
 						GPlatesGui::TopologyTools::INTERSECT_PREV);
 				}
 			}
-		}
+			else
+			{
+				// else no GOS for RFG 
+				qDebug() << "ERROR: ===================================================";
+				qDebug() << "ERROR: GPlatesGui::TopologyTools::process_intersections():";
+				qDebug() << "ERROR: no geometry on sphere ptr for PREV";
+				// FIXME: what to do here??!
+			}
+		} 
 		else
 		{
-			qDebug() << "TopologyTools::process_intersections() WARN: no RFG!";
-			return;
+			// else no RFG found for feature 
+			qDebug() << "ERROR: ===================================================";
+			qDebug() << "ERROR: GPlatesGui::TopologyTools::process_intersections():";
+			qDebug() << "ERROR: no RFG for PREV";
+			// FIXME: what to do here??!
 		}
 	}
 	else
 	{
-		qDebug() << "TopologyTools::process_intersections() WARN: prev_feature_ref not valid!";
+		// else prev_feature_ref not valid
+		qDebug() << "ERROR: ===================================================";
+		qDebug() << "EDDOR: GPlatesGui::TopologyTools::process_intersections():";
+		qDebug() << "ERROR: prev_feature_ref not valid!";
+		// FIXME: what to do here??!
 	}
 
-	// if lines intersect, then create the startIntersection property value
+
+	//
+	// if INDEX and PREV intersect, then create the startIntersection property value
+	//
 	if ( d_visit_to_create_properties && (d_num_intersections_with_prev != 0) )
 	{
 		const GPlatesModel::FeatureId prev_fid = prev_feature_ref->feature_id();
@@ -2171,13 +2138,15 @@ qDebug() << "TopologyTools::process_intersections() d_tmp_index_vertex_list.size
 	}
 
 	//
-	// Since d_tmp_index_vertex_list may have been changed by PREV, create another polyline 
+	// NOTE: d_tmp_index_vertex_list may have been changed by PREV, create another polyline 
 	//
+
+	// tmp_for_next_polyline is intersected with the NEXT feature 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type tmp_for_next_polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap( d_tmp_index_vertex_list );
 
 	//
-	// Access the topology sections table for the NEXT item
+	// Access the Topology Sections Container for NEXT boundary section
 	//
 	GPlatesModel::FeatureHandle::weak_ref next_feature_ref;
 	next_feature_ref = ( d_topology_sections_container_ptr->at( d_tmp_next_index ) ).d_feature_ref;
@@ -2220,20 +2189,36 @@ qDebug() << "TopologyTools::process_intersections() d_tmp_index_vertex_list.size
 						GPlatesGui::TopologyTools::INTERSECT_NEXT);
 				}
 			}
-		}
+			else
+			{
+				// else no GOS for RFG 
+				qDebug() << "ERROR: ===================================================";
+				qDebug() << "ERROR: GPlatesGui::TopologyTools::process_intersections():";
+				qDebug() << "ERROR: no geometry on sphere ptr for NEXT";
+				// FIXME: what to do here??!
+			}
+		} 
 		else
 		{
-			qDebug() << "TopologyTools::process_intersections() NEXT RFG missing!";
-			return;
+			// else no RFG found for feature 
+			qDebug() << "ERROR: ===================================================";
+			qDebug() << "ERROR: GPlatesGui::TopologyTools::process_intersections():";
+			qDebug() << "ERROR: no RFG for NEXT";
+			// FIXME: what to do here??!
 		}
 	}
 	else
 	{
-		qDebug() << "TopologyTools::process_intersections() WARN: next_feature_ref not valid!";
-		return;
+		// else prev_feature_ref not valid
+		qDebug() << "ERROR: ===================================================";
+		qDebug() << "EDDOR: GPlatesGui::TopologyTools::process_intersections():";
+		qDebug() << "ERROR: NEXT next_feature_ref not valid!";
+		// FIXME: what to do here??!
 	}
 
-	// if they do, then create the endIntersection property value
+	//
+	// if INDEX and NEXT intersect, then create the endIntersection property value
+	//
 	if ( d_visit_to_create_properties && (d_num_intersections_with_next != 0) )
 	{
 		const GPlatesModel::FeatureId next_fid = next_feature_ref->feature_id();
@@ -2311,25 +2296,17 @@ GPlatesGui::TopologyTools::compute_intersection(
 	switch ( relation )
 	{
 		case GPlatesGui::TopologyTools::INTERSECT_PREV :
-#ifdef DEBUG1
-qDebug() << "TopologyTools::compute_intersection: INTERSECT_PREV: ";
-qDebug() << "TopologyTools::compute_intersection: " << "num_intersect = " << num_intersect;
-#endif
 			d_num_intersections_with_prev = num_intersect;
 			break;
 
 		case GPlatesGui::TopologyTools::INTERSECT_NEXT:
-#ifdef DEBUG1
-qDebug() << "TopologyTools::compute_intersection: INTERSECT_NEXT: ";
-qDebug() << "TopologyTools::compute_intersection: " << "num_intersect = " << num_intersect;
-#endif
 			d_num_intersections_with_next = num_intersect;
 			break;
 
 		case GPlatesGui::TopologyTools::NONE :
 		case GPlatesGui::TopologyTools::OTHER :
 		default :
-			// somthing bad happened freak out
+			// something bad happened freak out
 			break;
 	}
 
@@ -2416,7 +2393,7 @@ qDebug() << "llp=" << llp.latitude() << "," << llp.longitude();
 		if ( !click_close_to_head && !click_close_to_tail ) 
 		{
 			// FIXME : freak out!
-			qDebug() << "TopologyTools::compute_intersection: "
+			qDebug() << "GPlatesGui::TopologyTools::compute_intersection(): "
 			<< "WARN: click point not close to anything!"
 			<< "WARN: Unable to set boundary feature intersection flags!";
 			return;
@@ -2532,7 +2509,6 @@ void
 GPlatesGui::TopologyTools::handle_create_new_feature(
 	GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
-qDebug() << "TopologyTools::handle_create_new_feature()";
 	// Set the d_topology_feature_ref to the newly created feature 
 	d_topology_feature_ref = feature_ref;
 }
@@ -2542,36 +2518,8 @@ void
 GPlatesGui::TopologyTools::append_boundary_to_feature(
 	GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
-qDebug() << "TopologyTools::append_boundary_value_to_feature()";
-
 	// double check for non existant features
-	if ( ! feature_ref.is_valid() ) 
-	{
-		return;
-	}
-
-#ifdef DEBUG
-qDebug() << "TopologyTools::append_boundary_value_to_feature() feature_ref = " 
-<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
-
-static const GPlatesModel::PropertyName name_property_name =
-	GPlatesModel::PropertyName::create_gml("name");
-
-const GPlatesPropertyValues::XsString *name;
-
-if ( GPlatesFeatureVisitors::get_property_value(
-	*feature_ref, name_property_name, name) )
-{
-qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
-}
-#endif
-
-#if 0
-	// do an update ; create properties this time
-	d_visit_to_check_type = false;
-	d_visit_to_create_properties = true;
-	update_geometry(); 
-#endif
+	if ( ! feature_ref.is_valid() ) { return; }
 
 	// find the old prop to remove
 	GPlatesModel::PropertyName boundary_prop_name = 
@@ -2590,11 +2538,8 @@ qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 		// passed all checks, make the name and test
 		GPlatesModel::PropertyName test_name = (*iter)->property_name();
 
-qDebug() << "name = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
-
 		if ( test_name == boundary_prop_name )
 		{
-qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
 			// Delete the old boundary 
 			GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 			feature_ref->remove_top_level_property(iter, transaction);
@@ -2602,11 +2547,6 @@ qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring
 			// FIXME: this seems to create NULL pointers in the properties collection
 			// see FIXME note above to check for NULL? 
 			// Or is this to be expected?
-
-			// FIXME: do this?
-			// d_feature_focus_ptr->announce_modification_of_focused_feature();
-			// only if the focus is the topo feature 
-
 			break;
 		}
 	} // loop over properties
@@ -2666,8 +2606,6 @@ qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring
 
 	// Set the ball rolling again ...
 	d_view_state_ptr->reconstruct(); 
-
-qDebug() << "TopologyTools::append_boundary_value_to_feature() END";
 }
 
 
@@ -2734,7 +2672,6 @@ GPlatesGui::TopologyTools::show_numbers()
 			qDebug() << "d_topology_feature_ref = INVALID";
 		}
 	}
-
 	qDebug() << "############################################################"; 
 
 }
@@ -2747,17 +2684,8 @@ GPlatesGui::TopologyTools::create_geometry_from_vertex_list(
 	// FIXME: Only handles the unbroken line and single-ring cases.
 
 	// There's no guarantee that adjacent points in the table aren't identical.
-			std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
-					GPlatesMaths::count_distinct_adjacent_points(points);
-#ifdef DEBUG1
-qDebug() << "create_geometry_from_vertex_list: size =" << num_points;
-std::vector<GPlatesMaths::PointOnSphere>::iterator itr;
-for ( itr = points.begin() ; itr != points.end(); ++itr)
-{
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*itr);
-	qDebug() << "create_geometry_from_vertex_list: llp=" << llp.latitude() << "," << llp.longitude();
-}
-#endif
+	std::vector<GPlatesMaths::PointOnSphere>::size_type num_points =
+			GPlatesMaths::count_distinct_adjacent_points(points);
 
 	// FIXME: I think... we need some way to add data() to the 'header' QTWIs, so that
 	// we can immediately discover which bits are supposed to be polygon exteriors etc.
@@ -2800,4 +2728,6 @@ for ( itr = points.begin() ; itr != points.end(); ++itr)
 		throw;
 	}
 }
+
+
 

@@ -181,8 +181,6 @@ namespace GPlatesGui
 			GPlatesModel::FeatureHandle::weak_ref feature)
 		{
 			d_topology_feature_ref = feature;
-			qDebug() << "set_topology_feature_ref()";
-			show_numbers();
 		}
 
 		/**
@@ -191,8 +189,6 @@ namespace GPlatesGui
 		GPlatesModel::FeatureHandle::weak_ref
 		get_topology_feature_ref()
 		{
-			qDebug() << "get_topology_feature_ref()";
-			show_numbers();
 			return d_topology_feature_ref;
 		}
 

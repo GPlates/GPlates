@@ -272,8 +272,9 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 	{
 		// post warning 
 		QMessageBox::warning(this,
-			tr("No boundary sections are defined for this feature"),
-			tr("There are no valid boundray sections to use for creating this feature."),
+			tr("No boundary sections are defined for this topology feature."),
+			tr("No boundary sections are defined for this topology feature.\n"
+		"Click on Features on the Globe, then use the Topology Tools to Add boundary sections."),
 			QMessageBox::Ok);
 		return;
 	}
