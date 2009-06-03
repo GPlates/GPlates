@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// #define DEBUG
+#define DEBUG
 
 
 #include <fstream>
@@ -47,6 +47,7 @@
 #include "model/ReconstructionTree.h"
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
+#include "model/ModelUtils.h"
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlLineString.h"
@@ -68,6 +69,8 @@
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GmlDomainSet.h"
+#include "property-values/GmlDataBlock.h"
+#include "property-values/GmlDataBlockCoordinateList.h"
 
 #include "maths/PolylineOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
@@ -75,6 +78,9 @@
 #include "maths/ProximityCriteria.h"
 #include "maths/PolylineIntersections.h"
 #include "maths/CalculateVelocity.h"
+
+#include "file-io/GpmlOnePointSixOutputVisitor.h"
+#include "file-io/FileInfo.h"
 
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
@@ -126,21 +132,49 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	QString type_name( GPlatesUtils::make_qstring_from_icu_string(
 		feature_handle.feature_type().get_name() ) );
 
+	//
 	// super short-cut for non-mesh features
+	//
 	QString type_unclass("UnclassifiedFeature");
 	QString type_coverage("Coverage");
 
-	if ( (type_name == type_unclass) || (type_name == type_coverage) )
+	if ( ! (type_name == type_unclass) || (type_name == type_coverage) )
 	{
-		// ?
-	} 
-	else {
 		// Quick-out: No need to continue.
 		return; 
 	}
 	d_num_meshes += 1;
 
 	// else process this feature:
+
+	// this holds the name of the output file 
+	std::ostringstream oss;
+
+	oss << "velocity_colat+lon_at_";
+	oss << d_recon_time.value();
+	oss << "Ma_on_mesh-";
+
+	// Get the name property value for this feature 
+	static const GPlatesModel::PropertyName name_property_name =
+		GPlatesModel::PropertyName::create_gml("name");
+
+	const GPlatesPropertyValues::XsString *feature_name;
+
+	if ( GPlatesFeatureVisitors::get_property_value(
+		feature_handle, name_property_name, feature_name ) ) 
+	{
+		oss << GPlatesUtils::make_qstring(feature_name->value()).toStdString();
+	}
+	else
+	{
+		oss << "unknown_mesh_name";
+	}
+	oss << "-for_1Ma_inc.gpml";
+
+// report progress
+qDebug() << " processing mesh: " << GPlatesUtils::make_qstring( feature_name->value() );
+
+
 	// create an accumulator struct 
 	// visit the properties once to check times and rot ids
 	// visit the properties once to reconstruct ?
@@ -156,7 +190,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	// The first time through, we're not reconstructing, just gathering information.
 	d_accumulator->d_perform_reconstructions = false;
 
-	visit_feature_properties(feature_handle);
+	visit_feature_properties( feature_handle );
 
 	// So now we've visited the properties of this feature.  Let's find out if we were able
 	// to obtain all the information we need.
@@ -188,55 +222,112 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	}
 
 
-	//
+	// Clear out old data
+	d_velocity_colat_values.clear();
+	d_velocity_lon_values.clear();
+
 	// output the data
 	//
-	std::ostringstream oss;
-
-	oss << "velocity_colat+lon_at_";
-	oss << d_recon_time.value();
-	oss << "Ma_on_mesh-";
-
-	
-	// Get the name property value
-	static const GPlatesModel::PropertyName name_property_name =
-		GPlatesModel::PropertyName::create_gml("name");
-	const GPlatesPropertyValues::XsString *name;
-	if ( GPlatesFeatureVisitors::get_property_value(
-		feature_handle, name_property_name, name ) ) 
-	{
-		oss << GPlatesUtils::make_qstring(name->value()).toStdString();
-	}
-	else
-	{
-		oss << "unknown_mesh_name";
-	}
-
-	oss << "-for_1Ma_inc";
-	oss << ".dat";
-
-	// report progress
-	qDebug() << " processing mesh: " << GPlatesUtils::make_qstring(name->value());
 
 	// Now for the second pass through the properties of the feature:  
 	// This time we reconstruct any geometries we find.
 	d_accumulator->d_perform_reconstructions = true;
 
-	// clear the output string for this feature
-	d_output_string.clear();
+	//
+	// visit the props
+	//
+	visit_feature_properties( feature_handle );
 
-	visit_feature_properties(feature_handle);
 
+	//
+	// Set up GmlDataBlock 
+	//
+	GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
+			GPlatesPropertyValues::GmlDataBlock::create();
+
+	GPlatesPropertyValues::ValueObjectType velocity_colat_type =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityColat");
+	GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type xml_attrs_velocity_colat;
+	GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
+	GPlatesModel::XmlAttributeValue cm_per_year("urn:x-si:v1999:uom:cm_per_year");
+	xml_attrs_velocity_colat.insert(std::make_pair(uom, cm_per_year));
+
+	GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type velocity_colat =
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					velocity_colat_type, xml_attrs_velocity_colat,
+					d_velocity_colat_values.begin(), d_velocity_colat_values.end() );
+
+	GPlatesPropertyValues::ValueObjectType velocity_lon_type =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityLon");
+	GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type xml_attrs_velocity_lon;
+	xml_attrs_velocity_lon.insert(std::make_pair(uom, cm_per_year));
+
+	GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type velocity_lon =
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					velocity_lon_type, xml_attrs_velocity_lon,
+					d_velocity_lon_values.begin(), d_velocity_lon_values.end() );
+
+	gml_data_block->tuple_list_push_back( velocity_colat );
+	gml_data_block->tuple_list_push_back( velocity_lon );
+
+	//
+	// append the GmlDataBlock property 
+	//
+
+	// find the old prop to remove
+	GPlatesModel::PropertyName range_set_prop_name =
+		GPlatesModel::PropertyName::create_gml("rangeSet");
+
+	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
+	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
+
+	// loop over properties
+	for ( ; iter != end; ++iter)
+	{
+		// double check for validity and nullness
+		if(! iter.is_valid() ){ continue; }
+		if( *iter == NULL )   { continue; }
+
+		// passed all checks, make the name and test
+		GPlatesModel::PropertyName test_name = (*iter)->property_name();
+
+qDebug() << "name = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
+
+		if ( test_name == range_set_prop_name )
+		{
+qDebug() << "call remove_property_container on = " << GPlatesUtils::make_qstring_from_icu_string(test_name.get_name());
+			// Delete the old boundary 
+			GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+			feature_handle.remove_top_level_property(iter, transaction);
+			transaction.commit();
+			// FIXME: this seems to create NULL pointers in the properties collection
+			// see FIXME note above to check for NULL? 
+			// Or is this to be expected?
+			break;
+		}
+	} // loop over properties
+
+	// create a weak ref to make next funciton happy:
+	GPlatesModel::FeatureHandle::weak_ref feature_ref( feature_handle );
+
+	// add the new gml::rangeSet property
+	GPlatesModel::ModelUtils::append_property_value_to_feature(
+		gml_data_block,
+		range_set_prop_name,
+		feature_ref);
+
+
+	//
+	// Output the feature
+	//
+	QString filename( oss.str().c_str() );
+	
+	GPlatesFileIO::FileInfo fileinfo(filename);
+	GPlatesFileIO::GpmlOnePointSixOutputVisitor gpml_writer(fileinfo, false);
+	gpml_writer.visit_feature_handle( feature_handle );
+
+	// disable the accumulator
 	d_accumulator = boost::none;
-
-	// build an output file stream
-	std::ofstream outfile( oss.str().c_str() );
-	if ( !outfile ) {
-		std::cout << "WARNING: cannot open file for writing" << std::endl;
-		return;
-	}
-	// write out data
-	outfile << d_output_string;
 }
 
 
@@ -287,7 +378,7 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 	GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-//std::cout << "ComputationalMeshSolver::visit_gml_multi_point: " << std::endl;
+std::cout << "ComputationalMeshSolver::visit_gml_multi_point: " << std::endl;
 	if ( ! d_accumulator->d_perform_reconstructions) {
 		return;
 	}
@@ -312,7 +403,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 
 #ifdef DEBUG
 GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
-//std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
+std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 #endif
 
 	std::vector<GPlatesModel::FeatureId> feature_ids;
@@ -326,7 +417,7 @@ GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 
 #ifdef DEBUG
 // FIXME
-//std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.size() << " plates." << std::endl;
+std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.size() << " plates." << std::endl;
 #endif
 
 	// loop over feature ids 
@@ -363,6 +454,9 @@ GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 
 	if ( recon_plate_ids.empty() ) {
 		// FIXME: do not paint the point any color ; leave it ?
+		// save the data 
+		d_velocity_colat_values.push_back( 0 );
+		d_velocity_lon_values.push_back( 0 );
 		return; 
 	}
 
@@ -429,6 +523,10 @@ std::cout << ")" << std::endl;
 	std::cout << "colat_v = " << colat_v << " ; " << "lon_v = " << lon_v << " ; " << std::endl;
 #endif
 
+	// save the data 
+	d_velocity_colat_values.push_back( colat_v.dval() );
+	d_velocity_lon_values.push_back( lon_v.dval() );
+
 	// Create a RenderedGeometry using the vector
 	const GPlatesViewOperations::RenderedGeometry rendered_vector =
 		GPlatesViewOperations::create_rendered_direction_arrow(
@@ -439,12 +537,6 @@ std::cout << ")" << std::endl;
 
 	// Add to the rendered layer.
 	d_rendered_layer->add_rendered_geometry( rendered_vector );
-
-	// OUTPUT
-	// FIXME: 
-	std::ostringstream oss;
-	oss << colat_v << '\t' << lon_v << '\n';
-	d_output_string.append( oss.str() );
 }
 
 

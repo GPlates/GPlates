@@ -232,10 +232,12 @@ namespace GPlatesFeatureVisitors
 		int d_num_points;
 		int d_num_points_on_multiple_plates;
 
-		// 
-		std::string d_output_string;
-
+		/** used to set the color of the points found on a plate */
 		GPlatesGui::PlatesColourTable *d_colour_table_ptr;
+
+		/** vectors to hold computed values */
+		std::vector<double> d_velocity_colat_values;
+		std::vector<double> d_velocity_lon_values;
 	};
 
 }
