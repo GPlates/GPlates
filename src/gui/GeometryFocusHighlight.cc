@@ -127,7 +127,7 @@ void
 GPlatesGui::GeometryFocusHighlight::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
 {
-		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::SILVER;
+		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::get_silver();
 
 		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
 		std::vector<GPlatesMaths::PointOnSphere> points;

@@ -215,7 +215,7 @@ GPlatesQtWidgets::CreateTopologyWidget::draw_initial_geometries()
 	d_initial_geom_layer_ptr->clear_rendered_geometries();
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
-	const GPlatesGui::Colour &white_colour = GPlatesGui::Colour::WHITE;
+	const GPlatesGui::Colour &white_colour = GPlatesGui::Colour::get_white();
 
 	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
 	geometry_collection_type::const_iterator end = d_initial_geometries.end();
@@ -256,7 +256,7 @@ GPlatesQtWidgets::CreateTopologyWidget::draw_dragged_geometries()
 	// Clear all dragged geometry RenderedGeometry's before adding new ones.
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
-	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::SILVER;
+	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::get_silver();
 
 	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
 	geometry_collection_type::const_iterator end = d_initial_geometries.end();
