@@ -30,6 +30,10 @@
 #include "canvas-tools/CanvasToolType.h"
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
+
+#include "canvas-tools/BuildTopology.h"   // Not Globe/Mapified yet!
+#include "canvas-tools/EditTopology.h"    // Not Globe/Mapified yet!
+
 #include "canvas-tools/GlobeClickGeometry.h"
 #include "canvas-tools/GlobeDeleteVertex.h"
 #include "canvas-tools/GlobeDigitiseGeometry.h"
@@ -140,6 +144,24 @@ d_manipulate_pole_tool_ptr(GPlatesCanvasTools::GlobeManipulatePole::create(
 		globe_canvas,
 		view_state,
 		pole_widget)),
+d_build_topology_tool_ptr( GPlatesCanvasTools::BuildTopology::create(
+		rendered_geom_collection,
+		globe, 
+		globe_canvas, 
+		view_state, 
+		clicked_table_model, 
+		topology_sections_container,
+		topology_tools_widget,
+		feature_focus)),
+d_edit_topology_tool_ptr( GPlatesCanvasTools::EditTopology::create(
+		rendered_geom_collection,
+		globe, 
+		globe_canvas, 
+		view_state, 
+		clicked_table_model, 
+		topology_sections_container,
+		topology_tools_widget,
+		feature_focus)),
 d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	// Delay any notification of changes to the rendered geometry collection
