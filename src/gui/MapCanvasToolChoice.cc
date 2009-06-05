@@ -53,6 +53,7 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+		GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight):
 	d_pan_map_tool_ptr(GPlatesCanvasTools::PanMap::create(
