@@ -27,7 +27,7 @@
 #include <QObject>
 
 #include "gui/FeatureFocus.h"
-#include "gui/CanvasTool.h"
+#include "gui/GlobeCanvasTool.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologyTools.h"
@@ -52,7 +52,7 @@ namespace GPlatesCanvasTools
 	 */
 	class EditTopology:
 			public QObject,
-			public GPlatesGui::CanvasTool
+			public GPlatesGui::GlobeCanvasTool
 	{
 		Q_OBJECT
 

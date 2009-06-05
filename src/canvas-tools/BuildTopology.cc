@@ -51,7 +51,7 @@ GPlatesCanvasTools::BuildTopology::BuildTopology(
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesGui::FeatureFocus &feature_focus):
-	CanvasTool(globe_, globe_canvas_),
+	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_view_state_ptr(&view_state_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
