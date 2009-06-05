@@ -34,12 +34,10 @@
 
 GPlatesQtWidgets::CreateTopologyWidget::CreateTopologyWidget(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 		ViewportWindow &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_rendered_geom_collection(&rendered_geom_collection),
-	d_rendered_geom_factory(&rendered_geom_factory),
 	d_view_state_ptr(&view_state)
 	// d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&view_state)),
 	// d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr))
@@ -223,7 +221,7 @@ GPlatesQtWidgets::CreateTopologyWidget::draw_initial_geometries()
 	{
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					*iter, 
 					white_colour,
 					GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_POINT_SIZE_HINT,
@@ -264,7 +262,7 @@ GPlatesQtWidgets::CreateTopologyWidget::draw_dragged_geometries()
 	{
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					d_accum_orientation->orient_geometry(*iter),
 					silver_colour);
 
