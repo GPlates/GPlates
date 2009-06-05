@@ -31,8 +31,6 @@ set(srcs
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
-    Profile.cc
-    Profile.h
     ReferenceCount.h
     SmartNodeLinkedList.h
     SmartNodeLinkedList_test.cc
