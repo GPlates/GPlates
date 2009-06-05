@@ -244,12 +244,12 @@ namespace GPlatesGui
 		/**
 		 * This is the BuildTopology Canvas tool which the user may choose.
 		 */
-		CanvasTool::non_null_ptr_type d_build_topology_tool_ptr;
+		GlobeCanvasTool::non_null_ptr_type d_build_topology_tool_ptr;
 
 		/**
 		 * This is the EditTopology Canvas tool which the user may choose.
 		 */
-		CanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
+		GlobeCanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
 
 		/**
 		 * The current choice of GlobeCanvasTool.
