@@ -255,6 +255,9 @@ namespace GPlatesQtWidgets
 
 
 		void
+		toggle_point_display();
+
+		void
 		enable_point_display();
 
 		void
