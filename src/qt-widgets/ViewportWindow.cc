@@ -913,6 +913,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
+					d_task_panel_ptr->topology_tools_widget(),
 					d_globe_canvas_ptr->geometry_focus_highlight()));
 
 
@@ -933,7 +934,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
-					// #### JC MID-MERGE FIXME: Added this arg.
 					d_task_panel_ptr->topology_tools_widget(),
 					d_globe_canvas_ptr->geometry_focus_highlight()));
 

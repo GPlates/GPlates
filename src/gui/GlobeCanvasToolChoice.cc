@@ -55,6 +55,7 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight):
 d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(
 		globe,

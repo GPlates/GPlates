@@ -46,6 +46,7 @@ namespace GPlatesQtWidgets
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
 	class ReconstructionPoleWidget;
+	class TopologyToolsWidget;
 }
 
 namespace GPlatesViewOperations
@@ -93,6 +94,7 @@ namespace GPlatesGui
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		~GlobeCanvasToolChoice()
