@@ -1743,7 +1743,9 @@ GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 {
 	uncheck_all_tools();
 	action_Build_Topology->setChecked(true);
-	d_canvas_tool_choice_ptr->choose_build_topology_tool();
+	d_globe_canvas_tool_choice_ptr->choose_build_topology_tool();
+	// FIXME: There is no MapCanvasToolChoice equivalent yet.
+	
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
@@ -1753,7 +1755,9 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 {
 	uncheck_all_tools();
 	action_Edit_Topology->setChecked(true);
-	d_canvas_tool_choice_ptr->choose_edit_topology_tool();
+	d_globe_canvas_tool_choice_ptr->choose_edit_topology_tool();
+	// FIXME: There is no MapCanvasToolChoice equivalent yet.
+
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
