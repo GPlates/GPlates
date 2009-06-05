@@ -253,14 +253,6 @@ namespace GPlatesQtWidgets
 		force_mouse_pointer_pos_change();
 
 
-		void
-		enable_raster_display();
-
-		void
-		disable_raster_display();
-
-		void
-		toggle_point_display();
 
 		void
 		enable_point_display();
@@ -305,10 +297,6 @@ namespace GPlatesQtWidgets
 		disable_multipoint_display();
 
 
-		void
-		draw_colour_legend(
-			QPainter *painter,
-			GPlatesGui::Texture &texture);
 
 	protected:
 		/**
