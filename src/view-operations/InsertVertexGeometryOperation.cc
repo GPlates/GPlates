@@ -144,8 +144,8 @@ GPlatesViewOperations::InsertVertexGeometryOperation::deactivate()
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::left_click(
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
 	// Do nothing if NULL geometry builder.
 	if (d_geometry_builder == NULL)
@@ -159,13 +159,14 @@ GPlatesViewOperations::InsertVertexGeometryOperation::left_click(
 
 	// See if mouse position is on, or very near, an existing line segment.
 	boost::optional<RenderedGeometryProximityHit> closest_line_hit = test_proximity_to_rendered_geom_layer(
-			*d_line_segments_layer_ptr, clicked_pos_on_sphere, oriented_pos_on_sphere);
+			*d_line_segments_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold);
+
 	if (closest_line_hit)
 	{
 		const unsigned int line_segment_index = closest_line_hit->d_rendered_geom_index;
 
 		insert_vertex_on_line_segment(
-				line_segment_index, clicked_pos_on_sphere, oriented_pos_on_sphere);
+				line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
 	}
 	else
 	{
@@ -177,14 +178,14 @@ GPlatesViewOperations::InsertVertexGeometryOperation::left_click(
 	// insert the next vertex.
 	// We do this now in case the mouse doesn't move again for a while (ie, if we get no
 	// 'mouse_move' event).
-	update_highlight_rendered_layer(clicked_pos_on_sphere, oriented_pos_on_sphere);
+	update_highlight_rendered_layer(oriented_pos_on_sphere, closeness_inclusion_threshold);
 }
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segment(
 		const unsigned int line_segment_index,
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
 	// First make sure we are not too close to an existing point.
 	// If we are then the user will need to zoom in the view in order to
@@ -192,7 +193,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segm
 
 	// Test closeness to the points in the points rendered geometry layer.
 	if (!test_proximity_to_rendered_geom_layer(
-			*d_points_layer_ptr, clicked_pos_on_sphere, oriented_pos_on_sphere))
+			*d_points_layer_ptr,  oriented_pos_on_sphere, closeness_inclusion_threshold))
 	{
 		// This can be one past the last point when inserting at end of geometry.
 		const GeometryBuilder::PointIndex index_of_point_to_insert_before = line_segment_index + 1;
@@ -302,8 +303,8 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_off_line_seg
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::mouse_move(
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
 	// Do nothing if NULL geometry builder.
 	if (d_geometry_builder == NULL)
@@ -316,13 +317,13 @@ GPlatesViewOperations::InsertVertexGeometryOperation::mouse_move(
 	RenderedGeometryCollection::UpdateGuard update_guard;
 
 	// Render the highlight line segments to show user where the vertex will get inserted.
-	update_highlight_rendered_layer(clicked_pos_on_sphere, oriented_pos_on_sphere);
+	update_highlight_rendered_layer(oriented_pos_on_sphere, closeness_inclusion_threshold);
 }
 
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::update_highlight_rendered_layer(
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
 	// First clear any highlight rendered geometries.
 	d_highlight_layer_ptr->clear_rendered_geometries();
@@ -341,14 +342,14 @@ GPlatesViewOperations::InsertVertexGeometryOperation::update_highlight_rendered_
 
 	// See if mouse position is on, or very near, an existing line segment.
 	boost::optional<RenderedGeometryProximityHit> closest_line_hit = test_proximity_to_rendered_geom_layer(
-			*d_line_segments_layer_ptr, clicked_pos_on_sphere, oriented_pos_on_sphere);
+			*d_line_segments_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold);
 	if (closest_line_hit)
 	{
 		const unsigned int line_segment_index =
 				closest_line_hit->d_rendered_geom_index;
 
 		add_rendered_highlight_on_line_segment(
-				line_segment_index, clicked_pos_on_sphere, oriented_pos_on_sphere);
+				line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
 	}
 	else
 	{
@@ -360,8 +361,8 @@ GPlatesViewOperations::InsertVertexGeometryOperation::update_highlight_rendered_
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_on_line_segment(
 		const unsigned int line_segment_index,
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
 	// First make sure we are not too close to an existing point.
 	// If we are then the user will need to zoom in the view in order to
@@ -369,7 +370,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_on_
 
 	// Test closeness to the points in the points rendered geometry layer.
 	if (!test_proximity_to_rendered_geom_layer(
-			*d_points_layer_ptr, clicked_pos_on_sphere, oriented_pos_on_sphere))
+			*d_points_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold))
 	{
 		add_rendered_highlight_line_segment(line_segment_index);
 	}
@@ -533,6 +534,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_lin
 	}
 }
 
+#if 0
 boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
 GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered_geom_layer(
 		const RenderedGeometryLayer &rendered_geom_layer,
@@ -546,6 +548,29 @@ GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered
 	GPlatesMaths::ProximityCriteria proximity_criteria(
 			oriented_pos_on_sphere,
 			closeness_inclusion_threshold);
+
+	sorted_rendered_geometry_proximity_hits_type sorted_hits;
+	if (!test_proximity(sorted_hits, rendered_geom_layer, proximity_criteria))
+	{
+		return boost::none;
+	}
+
+	// Only interested in the closest line segment in the layer.
+	const RenderedGeometryProximityHit &closest_hit = sorted_hits.front();
+
+	return closest_hit;
+}
+#endif
+
+boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
+GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered_geom_layer(
+	const RenderedGeometryLayer &rendered_geom_layer,
+	const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+	const double &closeness_inclusion_threshold)
+{
+	GPlatesMaths::ProximityCriteria proximity_criteria(
+		oriented_pos_on_sphere,
+		closeness_inclusion_threshold);
 
 	sorted_rendered_geometry_proximity_hits_type sorted_hits;
 	if (!test_proximity(sorted_hits, rendered_geom_layer, proximity_criteria))

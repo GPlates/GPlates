@@ -31,6 +31,7 @@
 #include <boost/cast.hpp>
 #include <QColor>
 
+
 #include "LatLonCoordinatesTable.h"
 
 #include "global/GPlatesAssert.h"

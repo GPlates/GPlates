@@ -126,9 +126,9 @@ GPlatesMaths::generate_perpendicular(
 	 * basis, their dot-products with 'u' will simply extract individual
 	 * components of 'u'.
 	 */
-	real_t xdot = abs( u.x() );
-	real_t ydot = abs( u.y() );
-	real_t zdot = abs( u.z() );
+	const real_t xdot = u.x();
+	const real_t ydot = u.y();
+	const real_t zdot = u.z();
 
 	if (xdot == 0.0) {
 		// Instant winner!  x is perpendicular to 'u'.
@@ -168,9 +168,16 @@ GPlatesMaths::generate_perpendicular(
 	 * unit-vectors, the result will always have non-zero length, and
 	 * hence, we can safely normalise it.
 	 */
-	if (xdot < ydot) {
+
+	// Need to use absolute values since dot product is in range [-1,1]
+	// and we want to test for closeness to zero.
+	const real_t xdot_abs = abs(xdot);
+	const real_t ydot_abs = abs(ydot);
+	const real_t zdot_abs = abs(zdot);
+
+	if (xdot_abs < ydot_abs) {
 		// prefer x over y
-		if (xdot < zdot) {
+		if (xdot_abs < zdot_abs) {
 			// prefer x over both y and z
 			return cross(u, UnitVector3D::xBasis()).get_normalisation();
 
@@ -180,7 +187,7 @@ GPlatesMaths::generate_perpendicular(
 		}
 	} else {
 		// prefer y over x
-		if (ydot < zdot) {
+		if (ydot_abs < zdot_abs) {
 			// prefer y over both x and z
 			return cross(u, UnitVector3D::yBasis()).get_normalisation();
 		} else {

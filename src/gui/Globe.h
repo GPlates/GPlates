@@ -79,9 +79,6 @@ namespace GPlatesGui
 		Orient(
 				const GPlatesMaths::PointOnSphere &pos);
 
-		void
-		initialise_texture();
-
 		/**
 		 * Paint the globe and all the visible features and rasters on it.
 		 *

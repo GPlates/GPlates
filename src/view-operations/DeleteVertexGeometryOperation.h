@@ -93,14 +93,14 @@ namespace GPlatesViewOperations
 		//! User has just clicked on the sphere.
 		void
 		left_click(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 		//! The mouse has moved but it is not a drag because mouse button is not pressed.
 		void
 		mouse_move(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -182,8 +182,8 @@ namespace GPlatesViewOperations
 		 */
 		boost::optional<RenderedGeometryProximityHit>
 		test_proximity_to_points(
-				const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 		void
 		connect_to_geometry_builder_signals();

@@ -34,9 +34,15 @@
 #endif
 
 #include <memory>
+#include <QGraphicsScene>
 #include <QWidget>
 #include <QSplitter>
 #include <QLabel>
+
+#include <boost/optional.hpp>
+
+#include "gui/ViewportZoom.h"
+#include "maths/LatLonPointConversions.h"
 #include "ReconstructionViewWidgetUi.h"
 
 #include "ZoomSliderWidget.h"
@@ -59,13 +65,16 @@ namespace GPlatesGui
 
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
 	class GlobeCanvas;
 	class AnimateControlWidget;
 	class ZoomControlWidget;
 	class TimeControlWidget;
+	class MapCanvas;
+	class MapView;
+	class ProjectionControlWidget;
+	class SceneView;
 	class TaskPanel;
-
+	class ViewportWindow;
 
 	class ReconstructionViewWidget:
 			public QWidget, 
@@ -98,6 +107,44 @@ namespace GPlatesQtWidgets
 				std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel);
 				
 
+		MapView &
+		map_view() const
+		{
+			return *d_map_view_ptr;
+		}
+
+		SceneView &
+		active_view() const
+		{
+			return *d_active_view_ptr;
+		}
+
+		MapCanvas &
+		map_canvas() const
+		{
+			return *d_map_canvas_ptr;
+		}
+
+		bool
+		globe_is_active();
+
+		bool
+		map_is_active();
+
+		GPlatesMaths::LatLonPoint &
+		camera_llp()
+		{
+			return *d_camera_llp;
+		}
+#if 0
+		GPlatesGui::ViewportZoom &
+		viewport_zoom() 
+		{
+			return d_viewport_zoom;
+		}
+#endif
+
+
 	public slots:
 		void
 		activate_time_spinbox();
@@ -109,9 +156,26 @@ namespace GPlatesQtWidgets
 		update_mouse_pointer_position(
 				const GPlatesMaths::PointOnSphere &new_virtual_pos,
 				bool is_on_globe);
+
+		void
+		update_mouse_pointer_position(
+				const boost::optional<GPlatesMaths::LatLonPoint> &new_lat_lon_pos,
+				bool is_on_map);
 		
 		void
 		activate_zoom_spinbox();
+
+		void
+		handle_zoom_change();
+
+		void
+		change_projection(
+			int projection_type);
+
+	signals:
+
+		void
+		update_tools_and_status_message();
 
 	private:
 		
@@ -121,11 +185,18 @@ namespace GPlatesQtWidgets
 
 		std::auto_ptr<QWidget>
 		construct_awesomebar_two(
-				GPlatesGui::ViewportZoom &vzoom);
+				GPlatesGui::ViewportZoom &vzoom,
+				GPlatesQtWidgets::MapCanvas *map_canvas_ptr);
 
 		std::auto_ptr<QWidget>
 		construct_viewbar(
 				GPlatesGui::ViewportZoom &vzoom);
+
+		// Experiment with adding the proj combo-box to the lower toolbar. 
+		std::auto_ptr<QWidget>
+		construct_viewbar_with_projections(
+				GPlatesGui::ViewportZoom &vzoom,
+				GPlatesQtWidgets::MapCanvas *map_canvas_ptr);
 
 		/**
 		 * The QSplitter responsible for dividing the interface between canvas
@@ -148,6 +219,19 @@ namespace GPlatesQtWidgets
 		ZoomControlWidget *d_zoom_control_widget_ptr;
 		TimeControlWidget *d_time_control_widget_ptr;
 		ZoomSliderWidget *d_zoom_slider_widget;
+		ProjectionControlWidget *d_projection_control_widget_ptr;
+
+		// The QGraphicsScene representing the map canvas.
+		MapCanvas *d_map_canvas_ptr;
+
+		// The QGraphicsView associated with the map canvas.
+		MapView *d_map_view_ptr;
+
+		// The active scene view.
+		SceneView *d_active_view_ptr;
+
+		boost::optional<GPlatesMaths::LatLonPoint> d_camera_llp;
+
 	};
 }
 

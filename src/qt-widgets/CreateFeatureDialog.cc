@@ -438,7 +438,18 @@ namespace
 		for ( ; list_it != list_end; ++list_it) {
 			list_widget.addItem(new FeatureTypeItem(*list_it));
 		}
-		list_widget.setCurrentRow(0);
+
+		// Set the default field to UnclassifiedFeature. 
+		QList<QListWidgetItem*> unclassified_items = list_widget.findItems(
+			QString("gpml:UnclassifiedFeature"),Qt::MatchFixedString);
+		if (unclassified_items.isEmpty())
+		{
+			list_widget.setCurrentRow(0);
+		}
+		else
+		{
+			list_widget.setCurrentItem(unclassified_items.first());
+		}
 	}
 
 	/**

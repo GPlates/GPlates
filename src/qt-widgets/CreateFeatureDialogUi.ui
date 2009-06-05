@@ -12,6 +12,9 @@
   <property name="windowTitle" >
    <string>Create Feature</string>
   </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+  </property>
   <property name="sizeGripEnabled" >
    <bool>true</bool>
   </property>
@@ -197,6 +200,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
  <connections/>
 </ui>

@@ -25,26 +25,30 @@
 
 #include "ProjectionControlWidget.h"
 
+#include "MapCanvas.h"
+#include "gui/MapProjection.h"
+
 #include <QVariant>
 
-
 GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
+		MapCanvas *map_canvas_ptr,
 		QWidget *parent_ = NULL):
-	QWidget(parent_)
+	QWidget(parent_),
+	d_map_canvas_ptr(map_canvas_ptr)
 {
 	setupUi(this);
-
+	show_label(false);
+	
 	// TODO: pass a second param to addItem to ID each projection type.
 	// As the text on the combobox is translated, we probably shouldn't react
 	// to the text changing directly; instead, we can embed some data for
 	// each combobox choice (perhaps an enumeration) via this form of
 	// addItem() : http://doc.trolltech.com/4.3/qcombobox.html#addItem
-	combo_projections->addItem(tr("Orthographic"));
-	combo_projections->addItem(tr("Rectangular"));
-	combo_projections->addItem(tr("Mercator"));
-	combo_projections->addItem(tr("Mollweide"));
-	combo_projections->addItem(tr("Robinson"));
-	combo_projections->addItem(tr("Lambert Conformal Conic"));
+	combo_projections->addItem(tr("3D Globe"),GPlatesGui::ORTHOGRAPHIC);
+	combo_projections->addItem(tr("Rectangular"),GPlatesGui::RECTANGULAR);
+	combo_projections->addItem(tr("Mercator"),GPlatesGui::MERCATOR);
+	combo_projections->addItem(tr("Mollweide"),GPlatesGui::MOLLWEIDE);
+	combo_projections->addItem(tr("Robinson"),GPlatesGui::ROBINSON);
 	
 	// Handle events from the user changing the combobox.
 	QObject::connect(combo_projections, SIGNAL(activated(int)),
@@ -65,16 +69,20 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_combobox_changed(
 	
 	// TODO: Extract selected projection from the QVariant and do something
 	// to the canvas with it.
+	d_map_canvas_ptr->set_projection_type(idx);
+
+	// The reconstruction widget listens for this, and switches from map<-->globe if necessary.
+	emit projection_changed(idx);
 }
 
 
 void
 GPlatesQtWidgets::ProjectionControlWidget::handle_projection_changed(
-		// FIXME: Pass in whatever we use to ID different projections.
+		int projection_type
 		)
 {
 	// TODO: Wrap the projection ID in a QVariant.
-	QVariant selected_projection_qv;
+	QVariant selected_projection_qv(projection_type);
 	
 	// Now we can quickly select the appropriate line of the combobox
 	// by finding our projection ID (and not worrying about the text
@@ -85,3 +93,9 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_projection_changed(
 	}
 }
 
+void
+GPlatesQtWidgets::ProjectionControlWidget::show_label(
+	bool show_)
+{
+	label_projections->setVisible(show_);
+}

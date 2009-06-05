@@ -113,20 +113,39 @@ namespace GPlatesUtils
 		 * @param begin_reconstruction_time the time at which the sequence begins.
 		 * @param end_reconstruction_time the time at which the sequence ends.
 		 * @param reconstruction_time_increment the step size in time when incrementing to the next
-		 *        filename in the sequence.
-		 * @param include_end_time_in_sequence should the end reconstruction time be included in the sequence.
-		 *        This flag is ignored unless the end time minus the begin time is a multiple of the
-		 *        time increment, or +/- 1% of a multiple of the time increment. For example,
-		 *        if begin/end/increment is 10, 10, 29.91 then the sequence includes 30 if
-		 *        @a include_end_time_in_sequence is 'true'. If the end time had been 29.89 then it
-		 *        would not have been included regardless of the @a include_end_time_in_sequence flag.
+		 *        filename in the sequence. For example, the increment to go from 140.0 Ma to 0 Ma
+		 *        in steps of 1M should be supplied as -1.0.
+		 * @param include_trailing_frame_in_sequence If the supplied time range is not an exact
+		 *        integer multiple of the increment, should the shorter trailing frame still be included
+		 *        in the sequence?
+		 *        This flag only applies if the desired time range does not divide cleanly by the
+		 *        increment. In such a case, setting this flag to 'false' will result in a shorter
+		 *        total sequence, finishing slightly earlier than the desired end time, but will ensure
+		 *        that each frame is exactly @a reconstruction_time_increment apart from the others.
+		 *        Setting this flag to 'true' will permit the animation to add one additional ending frame,
+		 *        even though that frame is closer to the others.
+		 *        For example, consider the range [20, 4.5] with an increment of 2.0 M. Setting
+		 *        @a include_trailing_frame_in_sequence to false will end the animation on 6.0 Ma;
+		 *        setting it to true will end the animation at exactly 4.5 Ma.
 		 *
-		 * @throws BeginEndTimesEqual if begin/end reconstruction times are equal.
 		 * @throws TimeIncrementZero if reconstruction time increment is zero.
 		 * @throws IncorrectTimeIncrementSign if sign of time increment does not match sign of
 		 *         end minus begin reconstruction time.
 		 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
 		 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
+		 *
+		 * Note that this class originally threw @a BeginEndTimesEqual if begin/end reconstruction times
+		 * were equal - JC has removed this behaviour after incorporating the AnimationSequenceUtils code.
+		 * Having a begin time equal to the end time may seem a little silly, but it should still work
+		 * as a legal time range - only one frame will be written.
+		 *
+		 * @a TimeIncrementZero could still be thrown in principle, although the UI restricts the increment
+		 * to a minimum of 0.01 M. @a IncorrectTimeIncrementSign is similarly possible, though restricted
+		 * through the UI and AnimationSequenceUtils.
+		 *
+		 * @a UnrecognisedFormatString and @a NoFilenameVariation are not yet needed as the user currently
+		 * has no way of modifying the output filename template - this will change in the future, and will
+		 * need to be caught for user feedback.
 		 */
 		ExportTemplateFilenameSequence(
 				const QString &filename_template,
@@ -134,7 +153,7 @@ namespace GPlatesUtils
 				const GPlatesMaths::real_t &begin_reconstruction_time,
 				const GPlatesMaths::real_t &end_reconstruction_time,
 				const GPlatesMaths::real_t &reconstruction_time_increment,
-				const bool include_end_time_in_sequence);
+				const bool include_trailing_frame_in_sequence);
 
 		/**
 		 * Returns the length of the sequence.
@@ -160,20 +179,12 @@ namespace GPlatesUtils
 		const_iterator
 		end() const;
 
+
 	private:
 		//! Typedef for pointer to implementation.
 		typedef boost::shared_ptr<ExportTemplateFilenameSequenceImpl> impl_ptr_type;
 
 		impl_ptr_type d_impl;
-
-
-		//! Calculate the number of filenames in the sequence.
-		std::size_t
-		calc_sequence_size(
-				const double &begin_reconstruction_time,
-				const double &end_reconstruction_time,
-				const double &reconstruction_time_increment,
-				const bool include_end_time_in_sequence);
 	};
 
 

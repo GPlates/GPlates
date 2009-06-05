@@ -49,6 +49,10 @@ namespace GPlatesGui
 		Q_OBJECT
 		
 	public:
+		/**
+		 * Typedef for frame index numbers used by @a set_view_frame() etc.
+		 */
+		typedef long frame_index_type;
 	
 		explicit
 		AnimationController(
@@ -68,17 +72,25 @@ namespace GPlatesGui
 		view_time() const;
 
 		/**
-		 * The time that the animation will begin at. This may be before
+		 * The time that the animation should begin at. This may be before
 		 * or after the @a end_time() - the increment will be adjusted
 		 * automatically.
+		 *
+		 * The desired start time may be set with @a set_set_time().
 		 */
 		const double &
 		start_time() const;
 
 		/**
-		 * The time that the animation will begin at. This may be before
+		 * The time that the animation should end at. This may be before
 		 * or after the @a end_time() - the increment will be adjusted
 		 * automatically.
+		 *
+		 * The desired end time may be set with @a set_end_time().
+		 *
+		 * Note that if @a should_finish_exactly_on_end_time() is false,
+		 * then the actual ending frame may be earlier than the desired
+		 * ending frame - see the @a ending_frame_time() accessor.
 		 */
 		const double &
 		end_time() const;
@@ -86,16 +98,77 @@ namespace GPlatesGui
 		/**
 		 * Returns the user-friendly 'increment' value,
 		 * which will always be a positive number.
+		 *
+		 * See also @a set_time_increment().
 		 */
 		double
 		time_increment() const;
+
+		/**
+		 * Returns the actual 'increment' value which needs to be applied
+		 * to move from @a start_time() to @a end_time(). This may be
+		 * a positive or negative number - don't show the users this one,
+		 * it would blow their minds.
+		 */
+		double
+		raw_time_increment() const;
 		
 		bool
 		is_playing() const;
 
 		const double &
 		frames_per_second() const;
+
+		/**
+		 * Returns the number of frames between @a start_time() and @a end_time().
+		 * This assumes we start at the beginning, and end at the end, taking into
+		 * account if we @a should_finish_exactly_on_end_time().
+		 */
+		frame_index_type
+		duration_in_frames() const;
+
+		/**
+		 * Returns the distance between @a start_time() and whatever time we would
+		 * finish on if we counted @a duration_in_frame from the start.
+		 * Always a non-negative number.
+		 */
+		double
+		duration_in_ma() const;
+
+		/**
+		 * Returns the time that the first frame of animation will use.
+		 * This should always be identical to @a start_time().
+		 */
+		double
+		starting_frame_time() const;
+
+		/**
+		 * Returns the time that the last frame of animation will use.
+		 * This @em may be different to @a end_time().
+		 *
+		 * Specifically, if the desired range supplied by the user is not
+		 * an integer multiple of the increment, there will be a short
+		 * frame left over - whether this frame gets played or not is up
+		 * to the @a should_finish_exactly_on_end_time() setting.
+		 */
+		double
+		ending_frame_time() const;
 		
+		/**
+		 * Given the currently-configured range and increment, plus a target
+		 * frame number, calculates what reconstruction time will correspond
+		 * to the given @a frame.
+		 *
+		 * if we @a should_finish_exactly_on_end_time() and the animation duration
+		 * does not divide cleanly by the increment, the last frame will be the
+		 * @a end_time(); otherwise, the last frame will be whatever multiple of
+		 * the increment would be closest to the end time but still fit inside the
+		 * animation range.
+		 */
+		double
+		calculate_time_for_frame(
+				GPlatesGui::AnimationController::frame_index_type frame) const;
+
 		bool
 		should_finish_exactly_on_end_time() const;
 		
@@ -192,6 +265,21 @@ namespace GPlatesGui
 		void
 		set_view_time(
 				const double new_time);
+
+		/**
+		 * Modifies the view time to correspond to the given frame of animation;
+		 * frame 0 is the same as @a start_time(), and subsequent frame numbers
+		 * are incremented to approach @a end_time().
+		 *
+		 * if we @a should_finish_exactly_on_end_time() and the animation duration
+		 * does not divide cleanly by the increment, the last frame will set the
+		 * view time to @a end_time(); otherwise, the last frame will set the view
+		 * time to whatever multiple of the increment would be closest to the end
+		 * time but still fit inside the animation range.
+		 */
+		void
+		set_view_frame(
+				GPlatesGui::AnimationController::frame_index_type frame);
 
 		void
 		set_start_time(

@@ -2,6 +2,7 @@ The GPlates source code contains code written by the following employees
 of the University of Sydney, Australia:
  James Boyden
  James Clark
+ John Cannon
  Mike Dowman
  James Farrow
  Glen Fernandes
@@ -20,5 +21,3 @@ following individuals:
 
 The GPlates source tree additionally contains icons which were part of the
 artwork for the GNOME desktop environment.
-
-(The presence of this file is required to placate Automake.)

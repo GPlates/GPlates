@@ -37,8 +37,11 @@
 #include "ProjectionControlWidgetUi.h"
 
 
+
 namespace GPlatesQtWidgets
 {
+	class MapCanvas;
+
 	/**
 	 * Small widget with combobox, to let the user switch projections.
 	 */
@@ -51,7 +54,13 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		ProjectionControlWidget(
+				MapCanvas *map_canvas_ptr,
 				QWidget *parent_);
+
+	signals:
+		void
+		projection_changed(
+			int projection_type);
 
 	private slots:
 		
@@ -59,8 +68,18 @@ namespace GPlatesQtWidgets
 		handle_combobox_changed(
 				int idx);
 		
+	public slots:
 		void
-		handle_projection_changed();
+		handle_projection_changed(
+				int projection_type);
+				
+		void
+		show_label(
+			bool show_);				
+
+	private:
+
+		MapCanvas *d_map_canvas_ptr;
 		
 	};
 }

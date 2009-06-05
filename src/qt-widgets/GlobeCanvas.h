@@ -53,7 +53,9 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
+#include "qt-widgets/SceneView.h"
 #include "view-operations/QueryProximityThreshold.h"
+#include "view-operations/RenderedGeometryFactory.h"
 
 namespace GPlatesViewOperations
 {
@@ -68,7 +70,8 @@ namespace GPlatesQtWidgets
 
 	class GlobeCanvas:
 			public QGLWidget,
-			public GPlatesViewOperations::QueryProximityThreshold
+			public GPlatesViewOperations::QueryProximityThreshold,
+			public SceneView
 	{
 		Q_OBJECT
 
@@ -149,16 +152,6 @@ namespace GPlatesQtWidgets
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point) const;
 
-		/**
-		 * Draw the relevant objects for vector output. This is essentially like the 
-		 *	PaintGL method, except that:
-		 *	we will omit drawing the sphere (otherwise we end up with loads of little
-		 *	polygons);
-		 *	we will use the Nurbs renderer routines to draw a circle around the circumference
-		 *	of the sphere (prior to the sphere orientation).
-		 */
-		void
-		draw_vector_output();
 
 		GPlatesGui::Globe &
 		globe()
@@ -200,11 +193,53 @@ namespace GPlatesQtWidgets
 			return d_mouse_pointer_is_on_globe;
 		}
 
+		void
+		toggle_raster_image();
+
+		void
+		enable_raster_display();
+
+		void
+		disable_raster_display();
+
+		void
+		draw_colour_legend(
+			QPainter *painter,
+			GPlatesGui::Texture &texture);
+
+		virtual
+		void
+		create_svg_output(
+			QString filename);
+
+		/**
+		*   Draw the relevant objects for svg output. This is slightly different from 
+		*	the usual paintGL method, because we don't want to draw the sphere 
+		*   (otherwise we end up with loads of little polygons);
+		*	Instead we'll use the nurbs routines to draw a circle around the circumference
+		*	of the sphere (prior to the sphere orientation).
+		*/
+		virtual
+		void
+		draw_svg_output();
+
+		virtual
+		boost::optional<GPlatesMaths::LatLonPoint>
+		camera_llp();
+
+
+		virtual
+		void
+		set_camera_viewpoint(
+			const GPlatesMaths::LatLonPoint &llp);
+
+
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
 
+		virtual
 		void
 		update_canvas();
 
@@ -217,8 +252,6 @@ namespace GPlatesQtWidgets
 		void
 		force_mouse_pointer_pos_change();
 
-		void
-		toggle_raster_image();
 
 		void
 		enable_raster_display();
@@ -402,6 +435,37 @@ namespace GPlatesQtWidgets
 		wheelEvent(
 				QWheelEvent *event);
 
+
+
+
+		virtual
+		void
+		move_camera_up();
+
+		virtual
+		void
+		move_camera_down();
+
+		virtual
+		void
+		move_camera_left();
+
+		virtual
+		void
+		move_camera_right();
+
+		virtual
+		void
+		rotate_camera_clockwise();
+
+		virtual
+		void
+		rotate_camera_anticlockwise();
+
+		virtual
+		void
+		reset_camera_orientation();
+
 #if 0
 		virtual
 		void
@@ -527,8 +591,12 @@ namespace GPlatesQtWidgets
 		//
 
 		GPlatesGui::Globe d_globe;
+
+		// FIXME: As this is now shared between the GlobeCanvas and the MapView, it should
+		// probably reside somewhere else. 
 		GPlatesGui::ViewportZoom d_viewport_zoom;
 		GPlatesGui::GeometryFocusHighlight d_geometry_focus_highlight;  // Depends upon Globe.
+
 
 		void
 		set_view();

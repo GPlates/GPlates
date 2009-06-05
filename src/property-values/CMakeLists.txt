@@ -16,8 +16,8 @@ set(srcs
     EnumerationType.h
     GeoTimeInstant.cc
     GeoTimeInstant.h
-    GmlDataBlockCoordinateList.h
     GmlDataBlock.h
+    GmlDataBlockCoordinateList.h
     GmlDomainSet.h
     GmlLineString.cc
     GmlLineString.h

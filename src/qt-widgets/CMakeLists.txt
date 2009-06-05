@@ -32,9 +32,16 @@ set(srcs
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui
+    BuildTopologyWidgetUi.ui
+    ConfigureExportParametersDialog.cc
+    ConfigureExportParametersDialog.h
+    ConfigureExportParametersDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
+    CreateTopologyWidget.cc
+    CreateTopologyWidget.h
+    CreateTopologyWidgetUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
@@ -83,10 +90,14 @@ set(srcs
     EditTimePeriodWidget.cc
     EditTimePeriodWidget.h
     EditTimePeriodWidgetUi.ui
+    EditTopologyWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
     EditWidgetGroupBox.h
+    ExportAnimationDialog.cc
+    ExportAnimationDialog.h
+    ExportAnimationDialogUi.ui
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
@@ -122,6 +133,10 @@ set(srcs
     ManageFeatureCollectionsStateWidget.cc
     ManageFeatureCollectionsStateWidget.h
     ManageFeatureCollectionsStateWidgetUi.ui
+    MapCanvas.cc
+    MapCanvas.h
+    MapView.cc
+    MapView.h
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
@@ -142,9 +157,13 @@ set(srcs
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    SceneView.h
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
+    SetProjectionDialog.cc
+    SetProjectionDialog.h
+    SetProjectionDialogUi.ui
     SetRasterSurfaceExtentDialog.cc
     SetRasterSurfaceExtentDialog.h
     SetRasterSurfaceExtentDialogUi.ui
@@ -174,9 +193,9 @@ set(srcs
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui
-	TopologyToolsWidget.cc
-	TopologyToolsWidget.h
-	TopologyToolsWidgetUi.ui
+    TopologyToolsWidget.cc
+    TopologyToolsWidget.h
+    TopologyToolsWidgetUi.ui
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui

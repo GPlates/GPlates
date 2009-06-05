@@ -22,7 +22,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox" >
      <property name="title" >
-      <string>Playback range</string>
+      <string>Range</string>
      </property>
      <layout class="QVBoxLayout" >
       <item>
@@ -232,9 +232,97 @@
     </widget>
    </item>
    <item>
+    <widget class="QGroupBox" name="groupbox_Playback_Options" >
+     <property name="title" >
+      <string>Options</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <item>
+       <layout class="QHBoxLayout" >
+        <property name="spacing" >
+         <number>6</number>
+        </property>
+        <property name="leftMargin" >
+         <number>0</number>
+        </property>
+        <property name="topMargin" >
+         <number>0</number>
+        </property>
+        <property name="rightMargin" >
+         <number>0</number>
+        </property>
+        <property name="bottomMargin" >
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_Frames_per_second" >
+          <property name="text" >
+           <string>Frames per &amp;second:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>widget_Frames_per_second</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="widget_Frames_per_second" >
+          <property name="minimum" >
+           <double>0.100000000000000</double>
+          </property>
+          <property name="maximum" >
+           <double>100.000000000000000</double>
+          </property>
+          <property name="value" >
+           <double>5.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkbox_Finish_animation_on_end_time" >
+        <property name="text" >
+         <string>Finish animation &amp;exactly on end time.</string>
+        </property>
+        <property name="checked" >
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkbox_Loop" >
+        <property name="text" >
+         <string>&amp;Loop.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkbox_Close_dialog_when_animation_starts" >
+        <property name="text" >
+         <string>Cl&amp;ose this dialog when animation starts.</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <widget class="QGroupBox" name="groupbox_Playback_controls" >
      <property name="title" >
-      <string>Playback controls</string>
+      <string>Playback</string>
      </property>
      <layout class="QVBoxLayout" >
       <item>
@@ -357,94 +445,6 @@
        <widget class="QSlider" name="slider_current_time" >
         <property name="orientation" >
          <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="groupbox_Playback_Options" >
-     <property name="title" >
-      <string>Playback options</string>
-     </property>
-     <layout class="QVBoxLayout" >
-      <item>
-       <layout class="QHBoxLayout" >
-        <property name="spacing" >
-         <number>6</number>
-        </property>
-        <property name="leftMargin" >
-         <number>0</number>
-        </property>
-        <property name="topMargin" >
-         <number>0</number>
-        </property>
-        <property name="rightMargin" >
-         <number>0</number>
-        </property>
-        <property name="bottomMargin" >
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QLabel" name="label_Frames_per_second" >
-          <property name="text" >
-           <string>Frames per &amp;second:</string>
-          </property>
-          <property name="buddy" >
-           <cstring>widget_Frames_per_second</cstring>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QDoubleSpinBox" name="widget_Frames_per_second" >
-          <property name="minimum" >
-           <double>0.100000000000000</double>
-          </property>
-          <property name="maximum" >
-           <double>100.000000000000000</double>
-          </property>
-          <property name="value" >
-           <double>5.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer>
-          <property name="orientation" >
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" >
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkbox_Finish_animation_on_end_time" >
-        <property name="text" >
-         <string>Finish animation &amp;exactly on end time.</string>
-        </property>
-        <property name="checked" >
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkbox_Loop" >
-        <property name="text" >
-         <string>&amp;Loop.</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkbox_Close_dialog_when_animation_starts" >
-        <property name="text" >
-         <string>Cl&amp;ose this dialog when animation starts.</string>
         </property>
        </widget>
       </item>

@@ -25,6 +25,7 @@
  */
 
 #include <memory>
+#include <QDebug>
 #include <QUndoCommand>
 
 #include "MoveVertexGeometryOperation.h"
@@ -124,7 +125,10 @@ GPlatesViewOperations::MoveVertexGeometryOperation::deactivate()
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
 
-	disconnect_from_geometry_builder_signals();
+	if (d_geometry_builder != NULL)
+	{
+		disconnect_from_geometry_builder_signals();
+	}
 
 	// NOTE: we don't deactivate our rendered layers because they still need
 	// to be visible even after we've deactivated.  They will remain in existance
@@ -137,6 +141,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::deactivate()
 	d_geometry_builder = NULL;
 }
 
+#if 0
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
 		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
@@ -177,6 +182,52 @@ GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
 		update_highlight_rendered_point(d_selected_vertex_index);
 	}
 }
+#else
+
+
+void
+GPlatesViewOperations::MoveVertexGeometryOperation::start_drag(
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
+{
+	// Do nothing if NULL geometry builder.
+	if (d_geometry_builder == NULL)
+	{
+		return;
+	}
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block.
+	RenderedGeometryCollection::UpdateGuard update_guard;
+
+	//
+	// See if the user selected a vertex with their mouse click.
+	//
+
+
+	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
+		oriented_pos_on_sphere, closeness_inclusion_threshold);
+
+	if (closest_hit)
+	{
+		// The index of the vertex selected corresponds to index of vertex in
+		// the geometry.
+		// NOTE: this will have to be changed when multiple internal geometries are
+		// possible in the GeometryBuilder.
+		d_selected_vertex_index = closest_hit->d_rendered_geom_index;
+
+		// Get a unique command id so that all move vertex commands in the
+		// current mouse drag will be merged together.
+		// This id will be released for reuse when the last copy of it is destroyed.
+		d_move_vertex_command_id = UndoRedo::instance().get_unique_command_id();
+
+		d_is_vertex_selected = true;
+
+		// Highlight the vertex the mouse is currently hovering over.
+		update_highlight_rendered_point(d_selected_vertex_index);
+	}
+
+}
+#endif
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::update_drag(
@@ -231,8 +282,8 @@ GPlatesViewOperations::MoveVertexGeometryOperation::end_drag(
 
 void
 GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
 	// Do nothing if NULL geometry builder.
 	if (d_geometry_builder == NULL)
@@ -248,7 +299,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
 	d_highlight_point_layer_ptr->clear_rendered_geometries();
 
 	boost::optional<RenderedGeometryProximityHit> closest_hit = test_proximity_to_points(
-			clicked_pos_on_sphere, oriented_pos_on_sphere);
+			oriented_pos_on_sphere, closeness_inclusion_threshold);
 	if (closest_hit)
 	{
 		const GeometryBuilder::PointIndex highlight_vertex_index = closest_hit->d_rendered_geom_index;
@@ -271,12 +322,9 @@ GPlatesViewOperations::MoveVertexGeometryOperation::mouse_move(
 
 boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit>
 GPlatesViewOperations::MoveVertexGeometryOperation::test_proximity_to_points(
-		const GPlatesMaths::PointOnSphere &clicked_pos_on_sphere,
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
+		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+		const double &closeness_inclusion_threshold)
 {
-	const double closeness_inclusion_threshold =
-		d_query_proximity_threshold->current_proximity_inclusion_threshold(
-				clicked_pos_on_sphere);
 
 	GPlatesMaths::ProximityCriteria proximity_criteria(
 			oriented_pos_on_sphere,

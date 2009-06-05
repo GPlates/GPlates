@@ -14,27 +14,48 @@ set(srcs
     BuildTopology.cc
     BuildTopology.h
     CanvasToolType.h
-    CanvasToolType.h
-    ClickGeometry.cc
-    ClickGeometry.h
-    DeleteVertex.cc
-    DeleteVertex.h
-    DigitiseGeometry.cc
-    DigitiseGeometry.h
+    CommonClickGeometry.cc
+    CommonClickGeometry.h
+    CommonDigitiseGeometry.cc
+    CommonDigitiseGeometry.h
+    CommonMoveVertex.cc
+    CommonMoveVertex.h
     EditTopology.cc
     EditTopology.h
-    InsertVertex.cc
-    InsertVertex.h
-    ManipulatePole.cc
-    ManipulatePole.h
+    GlobeClickGeometry.cc
+    GlobeClickGeometry.h
+    GlobeDeleteVertex.cc
+    GlobeDeleteVertex.h
+    GlobeDigitiseGeometry.cc
+    GlobeDigitiseGeometry.h
+    GlobeInsertVertex.cc
+    GlobeInsertVertex.h
+    GlobeManipulatePole.cc
+    GlobeManipulatePole.h
+    GlobeMoveVertex.cc
+    GlobeMoveVertex.h
+    MapClickGeometry.cc
+    MapClickGeometry.h
+    MapDeleteVertex.cc
+    MapDeleteVertex.h
+    MapDigitiseGeometry.cc
+    MapDigitiseGeometry.h
+    MapInsertVertex.cc
+    MapInsertVertex.h
+    MapManipulatePole.cc
+    MapManipulatePole.h
+    MapMoveVertex.cc
+    MapMoveVertex.h
     MoveGeometry.cc
     MoveGeometry.h
-    MoveVertex.cc
-    MoveVertex.h
+    PanMap.cc
+    PanMap.h
     ReorientGlobe.cc
     ReorientGlobe.h
     ZoomGlobe.cc
     ZoomGlobe.h
+    ZoomMap.cc
+    ZoomMap.h
 )
 
 

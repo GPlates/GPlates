@@ -30,6 +30,7 @@
 #include "qt-widgets/ViewportWindow.h"		// for ViewState.
 #include "maths/Real.h"
 #include "utils/FloatingPointComparisons.h"
+#include "utils/AnimationSequenceUtils.h"
 
 
 GPlatesGui::AnimationController::AnimationController(
@@ -78,6 +79,13 @@ GPlatesGui::AnimationController::time_increment() const
 }
 
 
+double
+GPlatesGui::AnimationController::raw_time_increment() const
+{
+	return d_time_increment;
+}
+
+
 bool
 GPlatesGui::AnimationController::is_playing() const
 {
@@ -90,6 +98,129 @@ GPlatesGui::AnimationController::frames_per_second() const
 {
 	return d_frames_per_second;
 }
+
+
+GPlatesGui::AnimationController::frame_index_type
+GPlatesGui::AnimationController::duration_in_frames() const
+{
+	using namespace GPlatesUtils::AnimationSequence;
+	SequenceInfo seq = calculate_sequence(start_time(), end_time(), time_increment(),
+			should_finish_exactly_on_end_time());
+	
+	return seq.duration_in_frames;
+#if 0
+	using namespace GPlatesUtils::FloatingPointComparisons;
+
+	// We always play the very first frame (@a start_time);
+	static const frame_index_type first_frame = 1;
+	double abs_time_increment = time_increment();
+	
+	// Find out how many steps we could go through the given time range.
+	double available_range = std::fabs(end_time() - start_time());
+	double available_steps = std::floor(available_range / abs_time_increment);
+
+	// Okay, so if we were to step through that, how much non-animated 'slack space'
+	// would be left at the end?
+	double steppable_range = abs_time_increment * available_steps;
+	double time_remainder = available_range - steppable_range;
+
+	// Here's the tricky part, thanks to our friend the double.
+	// If @a time_remainder is close to 0, that means that our @a available_range
+	// (supplied by the user) probably neatly divides by the desired increment.
+	//
+	// On the other hand, if @a time_remainder is nowhere near 0, the user
+	// is requesting a range which does not actually have an integer multiple of the
+	// increment in there, and we may have to add an artificial extra frame on
+	// the end (according to @a should_finish_exactly_on_end_time()).
+	//
+	// The real mindfuck actually comes from the first case though:-
+	// When @a time_remainder is close to 0 but >0, it means we had a little bit of
+	// leftover space at the end (but nothing serious), and @a available_steps
+	// was calculated with std::floor(some number like 19.99998). We need to add
+	// 1 to our @a available_steps.
+	// When @a time_remainder is close to 0 but <=0, which might just possibly happen,
+	// it means our calculation of the @a steppable_range actually went over the 
+	// original @a available_range by a tiny amount, thanks once again to doubles.
+	// In this case, we have calculated @a available_steps with something like
+	// std::floor(some number like 20.00002), and blindly adding an additional
+	// @a end_time() step would be a fencepost error. Leave @a available_steps as-is.
+	if (geo_times_are_approx_equal(time_remainder, 0.0)) {
+		// Okay, requested range divides approximately by an integer multiple,
+		// but we need to correct the @a available_steps calculation depending on
+		// whether we were slightly over or slightly under.
+		frame_index_type available_frame_steps = static_cast<frame_index_type>(available_steps);
+		if (time_remainder > 0) {
+			// Tiny extra leftover space at end, add one extra frame to @available_steps.
+			available_frame_steps++;
+		} else {
+			// @a available_steps calculation overshot by a tiny amount, no need
+			// for adjustment.
+		}
+		// Note that in this case, the value of @a should_finish_exactly_on_end_time()
+		// is irrelevant.
+		frame_index_type frames = first_frame + available_frame_steps;
+		return frames;
+	} else {
+		// @a time_remainder is nowhere near 0, requested range does not divide
+		// neatly by increment.
+		// We don't need to worry about floating point error being accumulated,
+		// but we do need to account for that last frame - if the user wants it
+		// to be played.
+		frame_index_type available_frame_steps = static_cast<frame_index_type>(available_steps);
+		frame_index_type remainder_frame = 0;
+		if (should_finish_exactly_on_end_time()) {
+			remainder_frame = 1;
+		}
+		
+		frame_index_type frames = first_frame + available_frame_steps + remainder_frame;
+		return frames;
+	}
+#endif
+}
+
+
+double
+GPlatesGui::AnimationController::duration_in_ma() const
+{
+	using namespace GPlatesUtils::AnimationSequence;
+	SequenceInfo seq = calculate_sequence(start_time(), end_time(), time_increment(),
+			should_finish_exactly_on_end_time());
+	
+	return seq.duration_in_ma;
+}
+
+
+double
+GPlatesGui::AnimationController::starting_frame_time() const
+{
+	return start_time();
+}
+
+
+double
+GPlatesGui::AnimationController::ending_frame_time() const
+{
+	using namespace GPlatesUtils::AnimationSequence;
+	SequenceInfo seq = calculate_sequence(start_time(), end_time(), time_increment(),
+			should_finish_exactly_on_end_time());
+	
+	return seq.actual_end_time;
+}
+
+
+double
+GPlatesGui::AnimationController::calculate_time_for_frame(
+		GPlatesGui::AnimationController::frame_index_type frame) const
+{
+	GPlatesUtils::AnimationSequence::SequenceInfo seq =
+			GPlatesUtils::AnimationSequence::calculate_sequence(
+					start_time(), end_time(), time_increment(),
+					should_finish_exactly_on_end_time());
+	
+	return GPlatesUtils::AnimationSequence::calculate_time_for_frame(
+			seq, frame);
+}
+
 
 bool
 GPlatesGui::AnimationController::should_finish_exactly_on_end_time() const
@@ -283,6 +414,20 @@ GPlatesGui::AnimationController::set_view_time(
 		
 		emit view_time_changed(new_time);
 	}
+}
+
+
+void
+GPlatesGui::AnimationController::set_view_frame(
+		GPlatesGui::AnimationController::frame_index_type frame)
+{
+	// Cap @a frame to bounds.
+	frame_index_type duration = duration_in_frames();
+	if (frame >= duration) {
+		frame = duration - 1;
+	}
+
+	set_view_time(calculate_time_for_frame(frame));
 }
 
 

@@ -16,12 +16,6 @@ set(srcs
     AgeColourTable.h
     AnimationController.cc
     AnimationController.h
-    CanvasTool.cc
-    CanvasTool.h
-    CanvasToolAdapter.cc
-    CanvasToolAdapter.h
-    CanvasToolChoice.cc
-    CanvasToolChoice.h
     ChooseCanvasTool.cc
     ChooseCanvasTool.h
     Colour.cc
@@ -33,6 +27,16 @@ set(srcs
     CsvExport.h
     EnableCanvasTool.cc
     EnableCanvasTool.h
+    ExportAnimationContext.cc
+    ExportAnimationContext.h
+    ExportAnimationStrategy.cc
+    ExportAnimationStrategy.h
+    ExportReconstructedGeometryAnimationStrategy.cc
+    ExportReconstructedGeometryAnimationStrategy.h
+    ExportSvgAnimationStrategy.cc
+    ExportSvgAnimationStrategy.h
+    ExportVelocityAnimationStrategy.cc
+    ExportVelocityAnimationStrategy.h
     FeatureColourTable.cc
     FeatureColourTable.h
     FeatureFocus.cc
@@ -48,6 +52,12 @@ set(srcs
     GeometryFocusHighlight.h
     Globe.cc
     Globe.h
+    GlobeCanvasTool.cc
+    GlobeCanvasTool.h
+    GlobeCanvasToolAdapter.cc
+    GlobeCanvasToolAdapter.h
+    GlobeCanvasToolChoice.cc
+    GlobeCanvasToolChoice.h
     GlobeOrientation.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
@@ -55,6 +65,16 @@ set(srcs
     GPlatesQtMsgHandler.h
     GuiException.h
     Interface.h
+    MapCanvasPainter.cc
+    MapCanvasPainter.h
+    MapCanvasTool.cc
+    MapCanvasTool.h
+    MapCanvasToolAdapter.cc
+    MapCanvasToolAdapter.h
+    MapCanvasToolChoice.cc
+    MapCanvasToolChoice.h
+    MapProjection.cc
+    MapProjection.h
     NurbsRenderer.cc
     NurbsRenderer.h
     OpaqueSphere.cc
@@ -64,6 +84,7 @@ set(srcs
     OpenGLException.h
     PlatesColourTable.cc
     PlatesColourTable.h
+    ProjectionException.h
     ProximityTests.cc
     ProximityTests.h
     Quadrics.cc
@@ -85,8 +106,8 @@ set(srcs
     TopologySectionsContainer.h
     TopologySectionsTable.cc
     TopologySectionsTable.h
-	TopologyTools.cc
-	TopologyTools.h
+    TopologyTools.cc
+    TopologyTools.h
     TreeWidgetBuilder.cc
     TreeWidgetBuilder.h
     Viewport.h

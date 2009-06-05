@@ -41,17 +41,17 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::ExportTemplateFilenameSequence
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &begin_reconstruction_time,
 		const double &reconstruction_time_increment,
-		const std::size_t sequence_size) :
+		const GPlatesUtils::AnimationSequence::SequenceInfo sequence_info) :
 	d_filename_template(filename_template),
 	d_begin_reconstruction_time(begin_reconstruction_time),
 	d_reconstruction_time_increment(reconstruction_time_increment),
-	d_sequence_size(sequence_size)
+	d_sequence_info(sequence_info)
 {
 	FormatExtractor format_extractor(
 			d_filename_template,
 			reconstruction_anchor_plate_id,
 			d_format_seq,
-			sequence_size);
+			sequence_info);
 
 	format_extractor.extract_formats_from_filename_template();
 }
@@ -62,12 +62,12 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::get_filename(
 		const std::size_t sequence_index,
 		const QDateTime &date_time) const
 {
-	GPlatesGlobal::Assert(sequence_index < d_sequence_size,
+	GPlatesGlobal::Assert(sequence_index < d_sequence_info.duration_in_frames,
 		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Get the reconstruction time for the current sequence index.
-	const double reconstruction_time = d_begin_reconstruction_time +
-			sequence_index * d_reconstruction_time_increment;
+	const double reconstruction_time = GPlatesUtils::AnimationSequence::calculate_time_for_frame(
+			d_sequence_info, sequence_index);
 
 	// Make a copy of the filename template as we are going to modify it.
 	QString filename(d_filename_template);
@@ -254,7 +254,7 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::FormatExtractor::create_format
 			rest_of_filename_template, format_string))
 	{
 		return format_ptr_type(new ExportTemplateFilename::FrameNumberFormat(
-				format_string, d_sequence_size));
+				format_string, d_sequence_info.duration_in_frames));
 	}
 
 	if (match_format<ExportTemplateFilename::DateTimeFormat>(
