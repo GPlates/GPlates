@@ -21,8 +21,6 @@ set(srcs
     ExportTemplateFilenameSequenceFormats.h
     ExportTemplateFilenameSequenceImpl.cc
     ExportTemplateFilenameSequenceImpl.h
-    FeatureHandleToOldId.cc
-    FeatureHandleToOldId.h
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
     GeometryCreationUtils.h
