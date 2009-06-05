@@ -39,9 +39,6 @@ set(srcs
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
-    CreateTopologyWidget.cc
-    CreateTopologyWidget.h
-    CreateTopologyWidgetUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
