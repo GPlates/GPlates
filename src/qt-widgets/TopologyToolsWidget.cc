@@ -309,3 +309,4 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature()
 	// Flip tab to topoology
 	tabwidget_main->setCurrentWidget( tab_topology );
 }
+

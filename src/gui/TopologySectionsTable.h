@@ -80,7 +80,7 @@ namespace GPlatesGui
 
 		void
 		react_focus_feature_at_index(
-				int index);
+				GPlatesGui::TopologySectionsContainer::size_type index);
 
 	private slots:
 		void

@@ -138,7 +138,8 @@ GPlatesGui::TopologySectionsContainer::clear()
 }
 
 void
-GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index( int index )
+GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index( 
+		size_type index )
 {
 	// Emit signals.
 	emit focus_feature_at_index( index );

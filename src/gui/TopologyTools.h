@@ -250,24 +250,23 @@ namespace GPlatesGui
 
 		/** Slots for signals from TopologySectionsContainer */
 		void
-		cleared();
+		react_cleared();
 
 		void
-		insertion_point_moved(
+		react_insertion_point_moved(
 			GPlatesGui::TopologySectionsContainer::size_type new_index);
 		
-	
 		void
-		entry_removed(
+		react_entry_removed(
 			GPlatesGui::TopologySectionsContainer::size_type deleted_index);
 	
 		void
-		entries_inserted(
+		react_entries_inserted(
 			GPlatesGui::TopologySectionsContainer::size_type inserted_index,
 			GPlatesGui::TopologySectionsContainer::size_type quantity);
 
 		void
-		entries_modified(
+		react_entries_modified(
 			GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
 			GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
 

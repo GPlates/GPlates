@@ -410,8 +410,8 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	QObject::connect(d_container_ptr, SIGNAL(entries_modified(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
 
-	QObject::connect(d_container_ptr, SIGNAL(focus_feature_at_index( int )),
-			this, SLOT(react_focus_feature_at_index(int)));
+	QObject::connect(d_container_ptr, SIGNAL(focus_feature_at_index( GPlatesGui::TopologySectionsContainer::size_type)),
+			this, SLOT(react_focus_feature_at_index(GPlatesGui::TopologySectionsContainer::size_type)));
 
 	// Enable the table to receive mouse move events, so we can show/hide buttons
 	// based on the row being hovered over.
@@ -974,7 +974,7 @@ GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 
 void
 GPlatesGui::TopologySectionsTable::react_focus_feature_at_index(
-		int index)
+		GPlatesGui::TopologySectionsContainer::size_type index)
 {
 	d_table->selectRow( convert_data_index_to_table_row(index) );
 }

@@ -304,7 +304,8 @@ namespace GPlatesGui
 		 * The @a focus_feature_at_index(int) signal is emitted.
 		 */
 		void
-		set_focus_feature_at_index( int index );
+		set_focus_feature_at_index( 
+				size_type index );
 
 	public slots:
 
@@ -415,7 +416,7 @@ namespace GPlatesGui
 		 */
 		void
 		focus_feature_at_index(
-				int index);
+				GPlatesGui::TopologySectionsContainer::size_type index);
 		
 	private:
 

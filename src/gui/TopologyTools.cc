@@ -414,7 +414,7 @@ GPlatesGui::TopologyTools::connect_to_topology_sections_container_signals(
 			d_topology_sections_container_ptr,
 			SIGNAL( cleared() ),
 			this,
-			SLOT( cleared() )
+			SLOT( react_cleared() )
 		);
 
 		QObject::connect(
@@ -422,7 +422,7 @@ GPlatesGui::TopologyTools::connect_to_topology_sections_container_signals(
 			SIGNAL( insertion_point_moved(
 				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
-			SLOT( insertion_point_moved(
+			SLOT( react_insertion_point_moved(
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
 
@@ -431,7 +431,7 @@ GPlatesGui::TopologyTools::connect_to_topology_sections_container_signals(
 			SIGNAL( entry_removed(
 				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
-			SLOT( entry_removed(
+			SLOT( react_entry_removed(
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
 
@@ -441,7 +441,7 @@ GPlatesGui::TopologyTools::connect_to_topology_sections_container_signals(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
-			SLOT( entries_inserted(
+			SLOT( react_entries_inserted(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
@@ -452,11 +452,10 @@ GPlatesGui::TopologyTools::connect_to_topology_sections_container_signals(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type) ),
 			this,
-			SLOT( entries_modified(
+			SLOT( react_entries_modified(
 				GPlatesGui::TopologySectionsContainer::size_type,
 				GPlatesGui::TopologySectionsContainer::size_type) )
 		);
-
 	} 
 	else 
 	{
@@ -688,14 +687,17 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 		d_topology_tools_widget_ptr->choose_section_tab();
 
 		// check if the feature is in the topology 
-		int index = find_feature_in_topology( feature_ref );
+		int i = find_feature_in_topology( feature_ref );
 
-		if ( index != -1 )
+		if ( i != -1 )
 		{
 			// Flip to the Topology Sections Table
 			d_view_state_ptr->choose_topology_sections_table();
 
 			// Pretend we clicked in that row
+		 	TopologySectionsContainer::size_type index = 
+				static_cast<TopologySectionsContainer::size_type>( i );
+
 			d_topology_sections_container_ptr->set_focus_feature_at_index( index );
 			return;
 		}
@@ -799,8 +801,10 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 	int index = find_feature_in_topology( d_feature_focus_ptr->focused_feature() );
 	if ( index != -1 )
 	{
-		// remove the focused feature
-		handle_remove_feature();
+		// remove the focused feature from the container 
+		// will trigger entry_removed() signal and then call this react_entry_removed()
+		d_topology_sections_container_ptr->remove_at( index );
+		// handle_remove_feature();
 
 		return;
 	}
@@ -814,14 +818,14 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 // slots for signals from TopologySectionsContainer
 //
 void
-GPlatesGui::TopologyTools::cleared()
+GPlatesGui::TopologyTools::react_cleared()
 {
 	if (! d_is_active) { return; }
-	// not used  ; left in for potential expansion or refactoring
+	// not used  ; keep in for potential expansion or refactoring
 }
 
 void
-GPlatesGui::TopologyTools::insertion_point_moved(
+GPlatesGui::TopologyTools::react_insertion_point_moved(
 	GPlatesGui::TopologySectionsContainer::size_type new_index)
 {
 	if (! d_is_active) { return; }
@@ -834,7 +838,7 @@ GPlatesGui::TopologyTools::insertion_point_moved(
 
     
 void
-GPlatesGui::TopologyTools::entry_removed(
+GPlatesGui::TopologyTools::react_entry_removed(
 	GPlatesGui::TopologySectionsContainer::size_type deleted_index)
 {
 	if (! d_is_active) { return; }
@@ -857,7 +861,7 @@ GPlatesGui::TopologyTools::entry_removed(
 
 
 void
-GPlatesGui::TopologyTools::entries_inserted(
+GPlatesGui::TopologyTools::react_entries_inserted(
 	GPlatesGui::TopologySectionsContainer::size_type inserted_index,
 	GPlatesGui::TopologySectionsContainer::size_type quantity)
 {
@@ -883,7 +887,7 @@ GPlatesGui::TopologyTools::entries_inserted(
 //
 //
 void
-GPlatesGui::TopologyTools::entries_modified(
+GPlatesGui::TopologyTools::react_entries_modified(
 	GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
 	GPlatesGui::TopologySectionsContainer::size_type modified_index_end)
 {
@@ -904,9 +908,6 @@ GPlatesGui::TopologyTools::entries_modified(
 	// append the new boundary
 	append_boundary_to_feature( d_topology_feature_ref );
 }
-
-
-
 
 
 // 
