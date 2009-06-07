@@ -104,6 +104,12 @@
     <addaction name="action_Show_Instantaneous_Features" />
     <addaction name="action_Show_Topologies" />
     <addaction name="separator" />
+    <addaction name="action_Show_Point_Features" />
+    <addaction name="action_Show_Line_Features" />
+    <addaction name="action_Show_Polygon_Features" />
+    <addaction name="action_Show_Multipoint_Features" />
+    <addaction name="separator" />
+    <addaction name="action_Show_Arrow_Decorations" />
    </widget>
    <widget class="QMenu" name="menu_View" >
     <property name="title" >
@@ -742,6 +748,76 @@
   <action name="action_Open_Raster" >
    <property name="text" >
     <string>Open &amp;Raster...</string>
+   </property>
+  </action>
+  <action name="action_Show_Point_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Point Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether point features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Line_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Line Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether line features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Polygon_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Polygon Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether polygon features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Multipoint_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Multipoint Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether multipoint features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Arrow_Decorations" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Arrow Decorations</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether arrow decorations are shown.</string>
    </property>
   </action>
   <action name="action_Show_Raster" >

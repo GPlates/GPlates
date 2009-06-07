@@ -194,6 +194,51 @@ namespace GPlatesQtWidgets
 		}
 
 		void
+		toggle_point_display();
+
+		void
+		enable_point_display();
+
+		void
+		disable_point_display();
+
+		void
+		toggle_line_display();
+
+		void
+		enable_line_display();
+
+		void
+		disable_line_display();
+
+		void
+		toggle_polygon_display();
+
+		void
+		enable_polygon_display();
+
+		void
+		disable_polygon_display();
+
+		void
+		toggle_multipoint_display();
+
+		void
+		enable_multipoint_display();
+
+		void
+		disable_multipoint_display();
+
+		void
+		toggle_arrows_display();
+
+		void
+		enable_arrows_display();
+
+		void
+		disable_arrows_display();
+
+		void
 		toggle_raster_image();
 
 		void
@@ -251,54 +296,6 @@ namespace GPlatesQtWidgets
 
 		void
 		force_mouse_pointer_pos_change();
-
-
-
-		void
-		toggle_point_display();
-
-		void
-		enable_point_display();
-
-		void
-		disable_point_display();
-
-		void
-		toggle_line_display();
-
-		void
-		enable_line_display();
-
-		void
-		disable_line_display();
-
-		void
-		toggle_polygon_display();
-
-		void
-		enable_polygon_display();
-
-		void
-		disable_polygon_display();
-
-		void
-		toggle_topology_display();
-
-		void
-		enable_topology_display();
-
-		void
-		disable_topology_display();
-
-		void
-		toggle_multipoint_display();
-
-		void
-		enable_multipoint_display();
-
-		void
-		disable_multipoint_display();
-
 
 
 	protected:

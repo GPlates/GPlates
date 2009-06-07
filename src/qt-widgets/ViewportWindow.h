@@ -712,6 +712,21 @@ namespace GPlatesQtWidgets
 		dock_search_results_at_bottom();
 
 		void
+		enable_point_display();
+
+		void
+		enable_line_display();
+
+		void
+		enable_polygon_display();
+
+		void
+		enable_multipoint_display();
+
+		void
+		enable_arrows_display();
+
+		void
 		enable_raster_display();
 
 		void

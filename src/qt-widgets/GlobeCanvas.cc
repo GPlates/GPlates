@@ -806,28 +806,6 @@ GPlatesQtWidgets::GlobeCanvas::disable_polygon_display()
 	update_canvas();
 }
 
-// topology display
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_topology_display()
-{
-	d_globe.toggle_topology_display();
-	update_canvas();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::enable_topology_display()
-{
-	d_globe.enable_topology_display();
-	update_canvas();
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::disable_topology_display()
-{
-	d_globe.disable_topology_display();
-	update_canvas();
-}
-
 // multipoint display
 void
 GPlatesQtWidgets::GlobeCanvas::toggle_multipoint_display()
@@ -850,6 +828,27 @@ GPlatesQtWidgets::GlobeCanvas::disable_multipoint_display()
 	update_canvas();
 }
 
+// arrow display
+void
+GPlatesQtWidgets::GlobeCanvas::toggle_arrows_display()
+{
+	d_globe.toggle_arrows_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::enable_arrows_display()
+{
+	d_globe.enable_arrows_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::disable_arrows_display()
+{
+	d_globe.disable_arrows_display();
+	update_canvas();
+}
 
 
 

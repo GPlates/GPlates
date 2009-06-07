@@ -1102,6 +1102,17 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(enable_raster_display()));
 	QObject::connect(action_Set_Raster_Surface_Extent, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_raster_surface_extent_dialog()));
+
+	QObject::connect(action_Show_Point_Features, SIGNAL(triggered()),
+			this, SLOT(enable_point_display()));
+	QObject::connect(action_Show_Line_Features, SIGNAL(triggered()),
+			this, SLOT(enable_line_display()));
+	QObject::connect(action_Show_Polygon_Features, SIGNAL(triggered()),
+			this, SLOT(enable_polygon_display()));
+	QObject::connect(action_Show_Multipoint_Features, SIGNAL(triggered()),
+			this, SLOT(enable_multipoint_display()));
+	QObject::connect(action_Show_Arrow_Decorations, SIGNAL(triggered()),
+			this, SLOT(enable_arrows_display()));
 	// ----
 	QObject::connect(action_Colour_By_Plate_ID, SIGNAL(triggered()), 
 			this, SLOT(choose_colour_by_plate_id()));
@@ -2091,6 +2102,76 @@ GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
 
 	// Plate-ids may have changed, so update the reconstruction. 
 	reconstruct();
+}
+
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_point_display()
+{
+	if (action_Show_Point_Features->isChecked())
+	{
+		d_globe_canvas_ptr->enable_point_display();
+	}
+	else
+	{
+		d_globe_canvas_ptr->disable_point_display();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_line_display()
+{
+	if (action_Show_Line_Features->isChecked())
+	{
+		d_globe_canvas_ptr->enable_line_display();
+	}
+	else
+	{
+		d_globe_canvas_ptr->disable_line_display();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_polygon_display()
+{
+	if (action_Show_Polygon_Features->isChecked())
+	{
+		d_globe_canvas_ptr->enable_polygon_display();
+	}
+	else
+	{
+		d_globe_canvas_ptr->disable_polygon_display();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_multipoint_display()
+{
+	if (action_Show_Multipoint_Features->isChecked())
+	{
+		d_globe_canvas_ptr->enable_multipoint_display();
+	}
+	else
+	{
+		d_globe_canvas_ptr->disable_multipoint_display();
+	}
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::enable_arrows_display()
+{
+	if (action_Show_Arrow_Decorations->isChecked())
+	{
+		d_globe_canvas_ptr->enable_arrows_display();
+	}
+	else
+	{
+		d_globe_canvas_ptr->disable_arrows_display();
+	}
 }
 
 void

@@ -123,18 +123,21 @@ namespace GPlatesGui
 		void enable_polygon_display() 		{ d_show_polygon 	= true; }
 		void enable_topology_display() 		{ d_show_topology	= true; }
 		void enable_multipoint_display()	{ d_show_multipoint	= true; }
+		void enable_arrows_display()		{ d_show_arrows		= true; }
 
 		void disable_point_display() 		{ d_show_point 		= false; }
 		void disable_line_display() 		{ d_show_line 		= false; }
 		void disable_polygon_display() 		{ d_show_polygon 	= false; }
 		void disable_topology_display() 	{ d_show_topology 	= false; }
 		void disable_multipoint_display()	{ d_show_multipoint	= false; }
+		void disable_arrows_display()		{ d_show_arrows		= false; }
 
 		void toggle_point_display()			{ d_show_point 		= !d_show_point; }
 		void toggle_line_display() 			{ d_show_line 		= !d_show_line; }
 		void toggle_polygon_display() 		{ d_show_polygon 	= !d_show_polygon; }
 		void toggle_topology_display() 		{ d_show_topology 	= !d_show_topology; }
 		void toggle_multipoint_display()	{ d_show_multipoint	= !d_show_multipoint; }
+		void toggle_arrows_display()		{ d_show_arrows		= !d_show_arrows; }
 
 		/**
 	 	 * Flags to determine what data to show
@@ -144,6 +147,7 @@ namespace GPlatesGui
 		bool d_show_polygon;
 		bool d_show_topology;
 		bool d_show_multipoint;
+		bool d_show_arrows;
 
 
 	private:
