@@ -96,6 +96,7 @@
 #include "feature-visitors/FeatureCollectionClassifier.h"
 #include "feature-visitors/ComputationalMeshSolver.h"
 #include "feature-visitors/TopologyResolver.h"
+#include "gui/ReconstructionHook.h"
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/MapView.h"
 
@@ -696,7 +697,10 @@ namespace
 
 			// solver.report();
 
-
+			// #### JC: The kind of thing I'm looking at, but more gooder. Maybe a container of these.
+			GPlatesGui::ReconstructionHook::non_null_ptr_type
+					export_velocity_hook_ptr = GPlatesGui::ExportVelocityFileReconstructionHook::create();
+			export_velocity_hook_ptr->post_velocity_computation_hook();
 	
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, _ptr);
 

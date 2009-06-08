@@ -90,6 +90,7 @@ set(srcs
     Quadrics.cc
     Quadrics.h
     ReconstructionGeometrySequence.h
+    ReconstructionHook.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
     SingleColourTable.cc
