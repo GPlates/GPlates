@@ -524,7 +524,7 @@ std::cout << ")" << std::endl;
 		GPlatesViewOperations::create_rendered_direction_arrow(
 			point,
 			vector_xyz,
-			0.1f,
+			0.05,
 			*colour);
 
 	// Add to the rendered layer.
