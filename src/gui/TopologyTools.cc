@@ -2812,13 +2812,6 @@ bool
 GPlatesGui::TopologyTools::should_reverse_section(
 		int curr_section_index)
 {
-// NOTE: 
-// Mark commented this out due to a compiler warning on LINUX under 
-// cmake -DCMAKE_BUILD_TYPE:STRING=Debug .
-// TopologyTools.cc:2834: warning: comparison between signed and unsigned integer expressions
-// I'm just commenting out for now and returning false
-return false;
-#if 0
 	GPlatesGlobal::Assert(
 			curr_section_index < boost::numeric_cast<int>(d_section_ranges_into_topology_vertices.size()),
 			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
@@ -2910,5 +2903,4 @@ return false;
 	// NOTE: if both are zero then GPlatesMath::real_t::operator<() will return false
 	// which is what we want.
 	return reversed_arc_distance < arc_distance;
-#endif
 }
