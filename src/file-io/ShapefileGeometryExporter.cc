@@ -57,7 +57,7 @@ GPlatesFileIO::ShapefileGeometryExporter::ShapefileGeometryExporter(
 	}
 	catch(...)
 	{
-
+		qDebug() << "Exception caught creating OgrWriter.";
 	}
 }
 
@@ -73,6 +73,10 @@ void
 GPlatesFileIO::ShapefileGeometryExporter::visit_multi_point_on_sphere(
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 {
+	if (!d_ogr_writer)
+	{
+		return;
+	}
 	try
 	{
 		d_ogr_writer->write_multi_point_feature(multi_point_on_sphere,d_key_value_dictionary);
@@ -88,6 +92,10 @@ void
 GPlatesFileIO::ShapefileGeometryExporter::visit_point_on_sphere(
 	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
+	if (!d_ogr_writer)
+	{
+		return;
+	}
 	try
 	{
 		d_ogr_writer->write_point_feature(point_on_sphere,d_key_value_dictionary);
@@ -103,6 +111,10 @@ void
 GPlatesFileIO::ShapefileGeometryExporter::visit_polygon_on_sphere(
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
+	if (!d_ogr_writer)
+	{
+		return;
+	}
 	try
 	{
 		d_ogr_writer->write_polygon_feature(polygon_on_sphere,d_key_value_dictionary);
@@ -119,6 +131,10 @@ void
 GPlatesFileIO::ShapefileGeometryExporter::visit_polyline_on_sphere(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {
+	if (!d_ogr_writer)
+	{
+		return;
+	}
 	try
 	{
 		d_ogr_writer->write_polyline_feature(polyline_on_sphere,d_key_value_dictionary);

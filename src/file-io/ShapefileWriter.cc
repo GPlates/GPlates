@@ -766,11 +766,6 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 			(*iter)->accept_visitor(finder);
 		}
 
-		if (finder.has_found_multiple_geometries())
-		{
-			qDebug() << "Found multiple geometries in feature collection.";
-		}
-
 		// Set up an appropriate OgrWriter.
 		d_ogr_writer.reset(new OgrWriter(file_info.get_qfileinfo().filePath(),finder.has_found_multiple_geometries()));
 
