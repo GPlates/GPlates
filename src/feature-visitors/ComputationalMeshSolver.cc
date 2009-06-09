@@ -169,7 +169,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	{
 		oss << "unknown_mesh_name";
 	}
-	oss << "-for_1Ma_inc.gpml";
 
 	// report progress
 	qDebug() << " processing mesh: " << GPlatesUtils::make_qstring( feature_name->value() );
