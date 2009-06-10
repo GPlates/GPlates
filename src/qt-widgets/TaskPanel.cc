@@ -198,3 +198,4 @@ GPlatesQtWidgets::TaskPanel::enable_modify_pole_tab(
 	tab_modify_pole->setEnabled(enable);
 	
 }
+
