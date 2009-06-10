@@ -54,7 +54,7 @@ namespace GPlatesAppLogic
 		bool
 		get_reconstructed_feature_geometry(
 				GPlatesModel::ReconstructionGeometry *reconstruction_geom,
-				GPlatesModel::ReconstructedFeatureGeometry **reconstructed_feature_geom);
+				GPlatesModel::ReconstructedFeatureGeometry *&reconstructed_feature_geom);
 
 		/**
 		 * Returns @a ReconstructedFeatureGeometry if @a reconstruction_geom is an
@@ -64,7 +64,7 @@ namespace GPlatesAppLogic
 		bool
 		get_reconstructed_feature_geometry(
 				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
-				GPlatesModel::ReconstructedFeatureGeometry **reconstructed_feature_geom)
+				GPlatesModel::ReconstructedFeatureGeometry *&reconstructed_feature_geom)
 		{
 			return get_reconstructed_feature_geometry(
 					reconstruction_geom.get(), reconstructed_feature_geom);

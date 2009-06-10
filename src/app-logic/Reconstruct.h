@@ -40,50 +40,53 @@
 
 namespace GPlatesAppLogic
 {
-	/**
-	 * Create and return a reconstruction tree for the reconstruction time @a time,
-	 * with root @a root.
-	 *
-	 * The feature collections in @a reconstruction_features_collection are expected to
-	 * contain reconstruction features (ie, total reconstruction sequences and absolute
-	 * reference frames).
-	 *
-	 * Question:  Do any of those other functions actually throw exceptions when
-	 * they're passed invalid weak_refs?  They should.
-	 */
-	const GPlatesModel::ReconstructionTree::non_null_ptr_type
-	create_reconstruction_tree(
-			const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-					reconstruction_features_collection,
-			const double &time,
-			GPlatesModel::integer_plate_id_type root);
+	namespace Reconstruct
+	{
+		/**
+		 * Create and return a reconstruction tree for the reconstruction time @a time,
+		 * with root @a root.
+		 *
+		 * The feature collections in @a reconstruction_features_collection are expected to
+		 * contain reconstruction features (ie, total reconstruction sequences and absolute
+		 * reference frames).
+		 *
+		 * Question:  Do any of those other functions actually throw exceptions when
+		 * they're passed invalid weak_refs?  They should.
+		 */
+		const GPlatesModel::ReconstructionTree::non_null_ptr_type
+		create_reconstruction_tree(
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						reconstruction_features_collection,
+				const double &time,
+				GPlatesModel::integer_plate_id_type root);
 
 
-	/**
-	 * Create and return a reconstruction for the reconstruction time @a time, with
-	 * root @a root.
-	 *
-	 * The feature collections in @a reconstruction_features_collection are expected to
-	 * contain reconstruction features (ie, total reconstruction sequences and absolute
-	 * reference frames).
-	 *
-	 * Question:  Do any of those other functions actually throw exceptions when
-	 * they're passed invalid weak_refs?  They should.
-	 *
-	 * TopologyResolver is currently referenced by ComputationalMeshSolver
-	 * so we return it to the caller. Later it may be divided into two parts
-	 * and not need to be returned here.
-	 */
-	std::pair<
-			const GPlatesModel::Reconstruction::non_null_ptr_type,
-			boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
-	create_reconstruction(
-			const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-					reconstructable_features_collection,
-			const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-					reconstruction_features_collection,
-			const double &time,
-			GPlatesModel::integer_plate_id_type root);
+		/**
+		 * Create and return a reconstruction for the reconstruction time @a time, with
+		 * root @a root.
+		 *
+		 * The feature collections in @a reconstruction_features_collection are expected to
+		 * contain reconstruction features (ie, total reconstruction sequences and absolute
+		 * reference frames).
+		 *
+		 * Question:  Do any of those other functions actually throw exceptions when
+		 * they're passed invalid weak_refs?  They should.
+		 *
+		 * TopologyResolver is currently referenced by ComputationalMeshSolver
+		 * so we return it to the caller. Later it may be divided into two parts
+		 * and not need to be returned here.
+		 */
+		std::pair<
+				const GPlatesModel::Reconstruction::non_null_ptr_type,
+				boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
+		create_reconstruction(
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						reconstructable_features_collection,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						reconstruction_features_collection,
+				const double &time,
+				GPlatesModel::integer_plate_id_type root);
+	}
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCT_H

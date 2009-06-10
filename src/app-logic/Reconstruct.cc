@@ -67,7 +67,7 @@ namespace
 
 
 const GPlatesModel::ReconstructionTree::non_null_ptr_type
-GPlatesAppLogic::create_reconstruction_tree(
+GPlatesAppLogic::Reconstruct::create_reconstruction_tree(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstruction_features_collection,
 		const double &time,
@@ -90,7 +90,7 @@ GPlatesAppLogic::create_reconstruction_tree(
 std::pair<
 		const GPlatesModel::Reconstruction::non_null_ptr_type,
 		boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
-GPlatesAppLogic::create_reconstruction(
+GPlatesAppLogic::Reconstruct::create_reconstruction(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstructable_features_collection,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &

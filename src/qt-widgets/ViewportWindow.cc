@@ -50,6 +50,7 @@
 #include "CreateFeatureDialog.h"
 
 #include "app-logic/Reconstruct.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "global/GPlatesException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
@@ -528,23 +529,20 @@ namespace
 		GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
 				reconstruction->geometries().end();
 
-		for ( ; iter != end; ++iter) {
+		for ( ; iter != end; ++iter)
+		{
 			GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
 
-			// We use a dynamic cast here (despite the fact that dynamic casts
-			// are generally considered bad form) because we only care about
-			// one specific derivation.  There's no "if ... else if ..." chain,
-			// so I think it's not super-bad form.  (The "if ... else if ..."
-			// chain would imply that we should be using polymorphism --
-			// specifically, the double-dispatch of the Visitor pattern --
-			// rather than updating the "if ... else if ..." chain each time a
-			// new derivation is added.)
-			GPlatesModel::ReconstructedFeatureGeometry *rfg =
-					dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(iter->get());
-			if (rfg) {
+			GPlatesModel::ReconstructionGeometry *reconstruction_geom = iter->get();
+
+			GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
+			if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstructed_feature_geometry(
+					iter->get(), rfg))
+			{
 				// It's an RFG, so let's look at the feature it's
 				// referencing.
-				if (rfg->reconstruction_plate_id()) {
+				if (rfg->reconstruction_plate_id())
+				{
 					colour = colour_table.lookup(*rfg);
 				}
 			}
@@ -558,7 +556,7 @@ namespace
 			// Create a RenderedGeometry for drawing the reconstructed geometry.
 			GPlatesViewOperations::RenderedGeometry rendered_geom =
 				GPlatesViewOperations::create_rendered_geometry_on_sphere(
-						(*iter)->geometry(),
+						reconstruction_geom->geometry(),
 						*colour,
 						GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
 						GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
@@ -607,7 +605,7 @@ namespace
 				const GPlatesModel::Reconstruction::non_null_ptr_type,
 				boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
 						reconstruct_result =
-								GPlatesAppLogic::create_reconstruction(
+								GPlatesAppLogic::Reconstruct::create_reconstruction(
 										reconstructable_features_collection,
 										reconstruction_features_collection,
 										recon_time,
