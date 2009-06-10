@@ -2339,6 +2339,7 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	d_map_canvas_tool_choice_ptr->tool_choice().handle_activation();
 	d_globe_canvas_tool_choice_ptr->tool_choice().handle_activation();
 
+	d_task_panel_ptr->enable_topology_tab(d_reconstruction_view_widget.globe_is_active());
 }
 
 void

@@ -160,6 +160,10 @@ namespace GPlatesQtWidgets
 			tabwidget_task_panel->setCurrentWidget(tab_topology_tools);
 		}
 		
+		void
+		enable_topology_tab(
+			bool enable);
+			
 	private:
 		
 		/**

@@ -213,5 +213,10 @@ GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
-
+void
+GPlatesQtWidgets::TaskPanel::enable_topology_tab(
+	bool enable)
+{
+	tab_topology_tools->setEnabled(enable);
+}
 
