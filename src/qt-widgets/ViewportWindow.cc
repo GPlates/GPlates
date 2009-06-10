@@ -1739,6 +1739,12 @@ GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 	d_globe_canvas_tool_choice_ptr->choose_build_topology_tool();
 	// FIXME: There is no MapCanvasToolChoice equivalent yet.
 	
+	if (d_reconstruction_view_widget.map_is_active())
+	{
+		status_message(QObject::tr(
+			"Build topology tool is not yet available on the map. Use the globe projection to build a topology."
+			" Ctrl+drag to pan the map."));		
+	}
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
@@ -1750,7 +1756,12 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 	action_Edit_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_edit_topology_tool();
 	// FIXME: There is no MapCanvasToolChoice equivalent yet.
-
+	if(d_reconstruction_view_widget.map_is_active())
+	{
+		status_message(QObject::tr(
+			"Edit topology tool is not yet available on the map. Use the globe projection to edit a topology."
+			" Ctrl+drag to pan the map."));			
+	}
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
@@ -2318,6 +2329,20 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	d_globe_canvas_tool_choice_ptr->tool_choice().handle_activation();
 
 	d_task_panel_ptr->enable_topology_tab(d_reconstruction_view_widget.globe_is_active());
+	
+	// Display appropriate status bar message for tools which are not available on the map.
+	if (action_Build_Topology->isChecked() && d_reconstruction_view_widget.map_is_active())
+	{
+		status_message(QObject::tr(
+			"Build topology tool is not yet available on the map. Use the globe projection to build a topology."
+			" Ctrl+drag to pan the map."));		
+	}
+	else if(action_Edit_Topology->isChecked() && d_reconstruction_view_widget.map_is_active())
+	{
+		status_message(QObject::tr(
+			"Edit topology tool is not yet available on the map. Use the globe projection to edit a topology."
+			" Ctrl+drag to pan the map."));			
+	}
 }
 
 void
