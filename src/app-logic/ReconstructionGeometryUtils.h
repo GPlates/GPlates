@@ -90,7 +90,7 @@ namespace GPlatesAppLogic
 				++recon_geom_iter)
 			{
 				GPlatesModel::ReconstructedFeatureGeometry *rfg;
-				if (get_reconstructed_feature_geometry(recon_geom_iter->get(), &rfg))
+				if (get_reconstructed_feature_geometry(recon_geom_iter->get(), rfg))
 				{
 					reconstructed_feature_geom_seq.push_back(rfg);
 					found = true;
