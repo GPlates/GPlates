@@ -49,6 +49,8 @@
 #include "ActionButtonBox.h"
 #include "CreateFeatureDialog.h"
 
+#include "app-logic/Reconstruct.h"
+
 #include "global/GPlatesException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "gui/AgeColourTable.h"
@@ -495,30 +497,6 @@ namespace
 		}
 	}
 
-	GPlatesModel::Reconstruction::non_null_ptr_type 
-	create_reconstruction(
-			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
-			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
-			GPlatesModel::ModelInterface &model,
-			double recon_time,
-			GPlatesModel::integer_plate_id_type recon_root) {
-
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-			reconstructable_features_collection,
-			reconstruction_features_collection;
-
-		get_features_collection_from_file_info_collection(
-				active_reconstructable_files,
-				reconstructable_features_collection);
-
-		get_features_collection_from_file_info_collection(
-				active_reconstruction_files,
-				reconstruction_features_collection);
-
-		return model->create_reconstruction(reconstructable_features_collection,
-				reconstruction_features_collection, recon_time, recon_root);
-	}
-
 
 	void
 	render_model(
@@ -552,44 +530,31 @@ namespace
 		reconstruction_layer->clear_rendered_geometries();
 
 		try {
-			//
-			// FIXME : this was copied down from create_reconstruction()
-			//
-
 			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
 				reconstructable_features_collection,
 				reconstruction_features_collection;
 
 			get_features_collection_from_file_info_collection(
-				active_reconstructable_files,
-				reconstructable_features_collection);
+					active_reconstructable_files,
+					reconstructable_features_collection);
 
 			get_features_collection_from_file_info_collection(
-				active_reconstruction_files,
-				reconstruction_features_collection);
+					active_reconstruction_files,
+					reconstruction_features_collection);
 
-			reconstruction = create_reconstruction(active_reconstructable_files, 
-					active_reconstruction_files, model, recon_time, recon_root);
+			std::pair<
+				const GPlatesModel::Reconstruction::non_null_ptr_type,
+				boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
+						reconstruct_result =
+								GPlatesAppLogic::create_reconstruction(
+										reconstructable_features_collection,
+										reconstruction_features_collection,
+										recon_time,
+										recon_root);
 
-			//
-			// FIXME: test of new location for TopologyResolver
-			//
-
-			// Visit the feature collections and build topologies 
-			GPlatesFeatureVisitors::TopologyResolver topology_resolver( 
-				recon_time, 
-				recon_root, 
-				*reconstruction,
-				reconstruction->reconstruction_tree(),
-				reconstruction->geometries(),
-				true); // keep features without recon plate id
-
-			visit_feature_collections(
-				reconstructable_features_collection.begin(),
-				reconstructable_features_collection.end(),
-				topology_resolver);
-
-			// topology_resolver.report();
+			reconstruction = reconstruct_result.first;
+			GPlatesFeatureVisitors::TopologyResolver &topology_resolver =
+					*reconstruct_result.second;
 
 			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 					reconstruction->geometries().begin();
