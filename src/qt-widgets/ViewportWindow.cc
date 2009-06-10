@@ -499,15 +499,9 @@ namespace
 
 
 	void
-	render_model(
-			GPlatesModel::ModelInterface &model, 
+	render_reconstruction_geometries(
 			GPlatesModel::Reconstruction::non_null_ptr_type &reconstruction,
-			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
-			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
-			double recon_time,
-			GPlatesModel::integer_plate_id_type recon_root,
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer,
 			GPlatesGui::ColourTable &colour_table)
 	{
 		// Delay any notification of changes to the rendered geometry collection
@@ -529,6 +523,72 @@ namespace
 		// Clear all RenderedGeometry's before adding new ones.
 		reconstruction_layer->clear_rendered_geometries();
 
+		GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
+				reconstruction->geometries().begin();
+		GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
+				reconstruction->geometries().end();
+
+		for ( ; iter != end; ++iter) {
+			GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
+
+			// We use a dynamic cast here (despite the fact that dynamic casts
+			// are generally considered bad form) because we only care about
+			// one specific derivation.  There's no "if ... else if ..." chain,
+			// so I think it's not super-bad form.  (The "if ... else if ..."
+			// chain would imply that we should be using polymorphism --
+			// specifically, the double-dispatch of the Visitor pattern --
+			// rather than updating the "if ... else if ..." chain each time a
+			// new derivation is added.)
+			GPlatesModel::ReconstructedFeatureGeometry *rfg =
+					dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(iter->get());
+			if (rfg) {
+				// It's an RFG, so let's look at the feature it's
+				// referencing.
+				if (rfg->reconstruction_plate_id()) {
+					colour = colour_table.lookup(*rfg);
+				}
+			}
+
+
+			if (colour == colour_table.end()) {
+				// Anything not in the table uses the 'Olive' colour.
+				colour = &GPlatesGui::Colour::get_olive();
+			}
+
+			// Create a RenderedGeometry for drawing the reconstructed geometry.
+			GPlatesViewOperations::RenderedGeometry rendered_geom =
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+						(*iter)->geometry(),
+						*colour,
+						GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
+						GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
+
+			// Create a RenderedGeometry for storing the reconstructed geometry
+			// and the RenderedGeometry used for drawing it.
+			GPlatesViewOperations::RenderedGeometry rendered_reconstruction_geom =
+				GPlatesViewOperations::create_rendered_reconstruction_geometry(
+						*iter, rendered_geom);
+
+			// Add to the reconstruction rendered layer.
+			// Updates to the canvas will be taken care of since canvas listens
+			// to the update signal of RenderedGeometryCollection which in turn
+			// listens to its rendered layers.
+			reconstruction_layer->add_rendered_geometry(rendered_reconstruction_geom);
+		}
+	}
+
+	void
+	render_model(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::Reconstruction::non_null_ptr_type &reconstruction,
+			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
+			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
+			double recon_time,
+			GPlatesModel::integer_plate_id_type recon_root,
+			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer,
+			GPlatesGui::ColourTable &colour_table)
+	{
 		try {
 			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
 				reconstructable_features_collection,
@@ -542,6 +602,7 @@ namespace
 					active_reconstruction_files,
 					reconstruction_features_collection);
 
+			// Get app logic to perform a reconstruction.
 			std::pair<
 				const GPlatesModel::Reconstruction::non_null_ptr_type,
 				boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
@@ -552,62 +613,16 @@ namespace
 										recon_time,
 										recon_root);
 
+			// Unpack the results of the reconstruction.
 			reconstruction = reconstruct_result.first;
 			GPlatesFeatureVisitors::TopologyResolver &topology_resolver =
 					*reconstruct_result.second;
 
-			GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
-					reconstruction->geometries().begin();
-			GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
-					reconstruction->geometries().end();
-
-			for ( ; iter != end; ++iter) {
-				GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
-
-				// We use a dynamic cast here (despite the fact that dynamic casts
-				// are generally considered bad form) because we only care about
-				// one specific derivation.  There's no "if ... else if ..." chain,
-				// so I think it's not super-bad form.  (The "if ... else if ..."
-				// chain would imply that we should be using polymorphism --
-				// specifically, the double-dispatch of the Visitor pattern --
-				// rather than updating the "if ... else if ..." chain each time a
-				// new derivation is added.)
-				GPlatesModel::ReconstructedFeatureGeometry *rfg =
-						dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(iter->get());
-				if (rfg) {
-					// It's an RFG, so let's look at the feature it's
-					// referencing.
-					if (rfg->reconstruction_plate_id()) {
-						colour = colour_table.lookup(*rfg);
-					}
-				}
-
-
-				if (colour == colour_table.end()) {
-					// Anything not in the table uses the 'Olive' colour.
-					colour = &GPlatesGui::Colour::get_olive();
-				}
-
-				// Create a RenderedGeometry for drawing the reconstructed geometry.
-				GPlatesViewOperations::RenderedGeometry rendered_geom =
-					GPlatesViewOperations::create_rendered_geometry_on_sphere(
-							(*iter)->geometry(),
-							*colour,
-							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
-							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
-
-				// Create a RenderedGeometry for storing the reconstructed geometry
-				// and the RenderedGeometry used for drawing it.
-				GPlatesViewOperations::RenderedGeometry rendered_reconstruction_geom =
-					GPlatesViewOperations::create_rendered_reconstruction_geometry(
-							*iter, rendered_geom);
-
-				// Add to the reconstruction rendered layer.
-				// Updates to the canvas will be taken care of since canvas listens
-				// to the update signal of RenderedGeometryCollection which in turn
-				// listens to its rendered layers.
-				reconstruction_layer->add_rendered_geometry(rendered_reconstruction_geom);
-			}
+			// Render the reconstruction geometries generated.
+			render_reconstruction_geometries(
+					reconstruction,
+					rendered_geom_collection,
+					colour_table);
 
 			// FIXME: TEST of new location for ComputationalMeshSolver 
 
