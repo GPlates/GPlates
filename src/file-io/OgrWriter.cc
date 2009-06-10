@@ -282,8 +282,6 @@ namespace{
 			qDebug() << "Creation of data source failed.";
 			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Ogr data source creation failed.");
 		}
-
-		ogr_data_source_ptr->SetDriver(ogr_driver);
 		
 		int number_of_layers = ogr_data_source_ptr->GetLayerCount();
 
