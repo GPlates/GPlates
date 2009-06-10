@@ -2115,11 +2115,11 @@ GPlatesQtWidgets::ViewportWindow::enable_point_display()
 {
 	if (action_Show_Point_Features->isChecked())
 	{
-		d_globe_canvas_ptr->enable_point_display();
+		d_reconstruction_view_widget.enable_point_display();
 	}
 	else
 	{
-		d_globe_canvas_ptr->disable_point_display();
+		d_reconstruction_view_widget.disable_point_display();
 	}
 }
 
@@ -2129,11 +2129,11 @@ GPlatesQtWidgets::ViewportWindow::enable_line_display()
 {
 	if (action_Show_Line_Features->isChecked())
 	{
-		d_globe_canvas_ptr->enable_line_display();
+		d_reconstruction_view_widget.enable_line_display();
 	}
 	else
 	{
-		d_globe_canvas_ptr->disable_line_display();
+		d_reconstruction_view_widget.disable_line_display();
 	}
 }
 
@@ -2143,11 +2143,11 @@ GPlatesQtWidgets::ViewportWindow::enable_polygon_display()
 {
 	if (action_Show_Polygon_Features->isChecked())
 	{
-		d_globe_canvas_ptr->enable_polygon_display();
+		d_reconstruction_view_widget.enable_polygon_display();
 	}
 	else
 	{
-		d_globe_canvas_ptr->disable_polygon_display();
+		d_reconstruction_view_widget.disable_polygon_display();
 	}
 }
 
@@ -2157,11 +2157,11 @@ GPlatesQtWidgets::ViewportWindow::enable_multipoint_display()
 {
 	if (action_Show_Multipoint_Features->isChecked())
 	{
-		d_globe_canvas_ptr->enable_multipoint_display();
+		d_reconstruction_view_widget.enable_multipoint_display();
 	}
 	else
 	{
-		d_globe_canvas_ptr->disable_multipoint_display();
+		d_reconstruction_view_widget.disable_multipoint_display();
 	}
 }
 
@@ -2170,11 +2170,11 @@ GPlatesQtWidgets::ViewportWindow::enable_arrows_display()
 {
 	if (action_Show_Arrow_Decorations->isChecked())
 	{
-		d_globe_canvas_ptr->enable_arrows_display();
+		d_reconstruction_view_widget.enable_arrows_display();
 	}
 	else
 	{
-		d_globe_canvas_ptr->disable_arrows_display();
+		d_reconstruction_view_widget.disable_arrows_display();
 	}
 }
 

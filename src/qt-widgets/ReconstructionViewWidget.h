@@ -144,6 +144,35 @@ namespace GPlatesQtWidgets
 		}
 #endif
 
+		void
+		enable_point_display();
+		
+		void
+		disable_point_display();
+		
+		void
+		enable_line_display();
+
+		void
+		disable_line_display();		
+
+		void
+		enable_polygon_display();
+
+		void
+		disable_polygon_display();
+
+		void
+		enable_multipoint_display();
+
+		void
+		disable_multipoint_display();
+
+		void
+		enable_arrows_display();
+
+		void
+		disable_arrows_display();
 
 	public slots:
 		void
