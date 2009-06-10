@@ -189,3 +189,12 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 	// of the Modify Pole tab.
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
+
+void
+GPlatesQtWidgets::TaskPanel::enable_modify_pole_tab(
+	bool enable)
+{
+	
+	tab_modify_pole->setEnabled(enable);
+	
+}

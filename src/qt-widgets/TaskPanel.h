@@ -113,6 +113,10 @@ namespace GPlatesQtWidgets
 			return *d_reconstruction_pole_widget_ptr;
 		}
 	
+		void
+		enable_modify_pole_tab(
+			bool enable);
+	
 	public slots:
 		
 		void
