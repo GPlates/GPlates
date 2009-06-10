@@ -135,10 +135,9 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	//
 	// super short-cut for non-mesh features
 	//
-	QString type_unclass("UnclassifiedFeature");
-	QString type_coverage("Coverage");
+	QString type_mesh_node("MeshNode");
 
-	if ( ! (type_name == type_unclass) || (type_name == type_coverage) )
+	if ( ! (type_name == type_mesh_node) )
 	{
 		// Quick-out: No need to continue.
 		return; 

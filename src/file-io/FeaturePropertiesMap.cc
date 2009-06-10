@@ -552,6 +552,18 @@ namespace
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
+	get_mesh_node_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();
+
+		map[ PropertyName::create_gpml("meshPoints") ] = 
+			GET_PROP_VAL_NAME(create_gml_multi_point);
+
+		return map;
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
 	get_abstract_field_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
@@ -851,6 +863,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_old_plates_grid_mark_properties();
 	d_map[ FeatureType::create_gpml("Coverage") ] =
 		get_coverage_properties();
+	d_map[ FeatureType::create_gpml("MeshNode") ] =
+		get_mesh_node_properties();
 
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =
