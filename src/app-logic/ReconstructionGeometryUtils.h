@@ -50,6 +50,12 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns @a ReconstructedFeatureGeometry if @a reconstruction_geom is an
 		 * object of derived type @a ReconstructedFeatureGeometry.
+		 *
+		 * FIXME:
+		 * This is a temporary solution to hide the dynamic_cast until the
+		 * ReconstructionTimeEntity hierarchy and associated visitors are implemented.
+		 * Ultimately this could be replaced by a template function with RTE derived class
+		 * being the template parameter and implemented using the visitors.
 		 */
 		bool
 		get_reconstructed_feature_geometry(
@@ -59,6 +65,12 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns @a ReconstructedFeatureGeometry if @a reconstruction_geom is an
 		 * object of derived type @a ReconstructedFeatureGeometry.
+		 *
+		 * FIXME:
+		 * This is a temporary solution to hide the dynamic_cast until the
+		 * ReconstructionTimeEntity hierarchy and associated visitors are implemented.
+		 * Ultimately this could be replaced by a template function with RTE derived class
+		 * being the template parameter and implemented using the visitors.
 		 */
 		inline
 		bool
@@ -75,6 +87,12 @@ namespace GPlatesAppLogic
 		 * Searches a sequence of @a ReconstructionGeometry objects for
 		 * derived @a ReconstructedFeatureGeometry types and returns any found.
 		 * Returns true if any found.
+		 *
+		 * FIXME:
+		 * This is a temporary solution to hide the dynamic_cast until the
+		 * ReconstructionTimeEntity hierarchy and associated visitors are implemented.
+		 * Ultimately this could be replaced by a template function with RTE derived class
+		 * being the template parameter and implemented using the visitors.
 		 */
 		template <typename ReconstructionGeometryForwardIter>
 		bool

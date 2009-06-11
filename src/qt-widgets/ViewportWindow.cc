@@ -625,28 +625,18 @@ namespace
 			// FIXME: TEST of new location for ComputationalMeshSolver 
 
 			//
-			// Create a second recon tree 
+			// Create a second reconstruction tree for velocity calculations.
 			//
+
 			// FIXME: should this '1' should be user controllable?
-			const double recon_time_2 = recon_time + 1;
+			// What happens if recon_time is present-day ?
+			const double recon_time_plus_delta = recon_time + 1;
 
-			GPlatesModel::ReconstructionGraph graph_2(recon_time_2);
-			GPlatesModel::ReconstructionTreePopulator rtp(recon_time_2, graph_2);
-
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> 
-				reconstruction_features_collection_2;
-
-			get_features_collection_from_file_info_collection(
-				active_reconstruction_files,
-				reconstruction_features_collection_2);
-
-			visit_feature_collections(
-				reconstruction_features_collection_2.begin(),
-				reconstruction_features_collection_2.end(),
-				rtp);
-
-			GPlatesModel::ReconstructionTree::non_null_ptr_type tree_2 = 
-				graph_2.build_tree(recon_root);
+			GPlatesModel::ReconstructionTree::non_null_ptr_type reconstruction_tree_at_time_plus_delta = 
+					GPlatesAppLogic::Reconstruct::create_reconstruction_tree(
+							reconstruction_features_collection,
+							recon_time_plus_delta,
+							recon_root);
 
 			// Activate the comp_mesh_layer.
 			comp_mesh_layer->set_active();
@@ -658,11 +648,11 @@ namespace
 			// nice juicy velocity data
 			GPlatesFeatureVisitors::ComputationalMeshSolver solver( 
 				recon_time, 
-				recon_time_2,
+				recon_time_plus_delta,
 				recon_root, 
 				*reconstruction,
 				reconstruction->reconstruction_tree(),
-				*tree_2,
+				*reconstruction_tree_at_time_plus_delta,
 				topology_resolver,
 				reconstruction->geometries(),
 				comp_mesh_layer,
