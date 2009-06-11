@@ -182,11 +182,6 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gml_data_block(
 				GPlatesPropertyValues::GmlDataBlock &gml_data_block);
-
-		virtual
-		void
-		visit_gml_domain_set(
-				GPlatesPropertyValues::GmlDomainSet &gml_domain_set);
 #endif
 
 		void

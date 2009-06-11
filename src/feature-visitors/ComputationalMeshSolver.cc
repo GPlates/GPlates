@@ -68,7 +68,6 @@
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlOldPlatesHeader.h"
-#include "property-values/GmlDomainSet.h"
 #include "property-values/GmlDataBlock.h"
 #include "property-values/GmlDataBlockCoordinateList.h"
 

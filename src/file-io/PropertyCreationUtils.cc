@@ -41,7 +41,6 @@
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPolygon.h"
-#include "property-values/GmlDomainSet.h"
 #include "property-values/TemplateTypeParameterType.h"
 #include <boost/optional.hpp>
 #include <boost/bind.hpp>
@@ -1765,21 +1764,5 @@ GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary(
 //	find_and_create_one(elem, &create_key_value_dictionary_element, ELEMENTS, elements);
 	return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements);
 }
-
-#if 0
-GPlatesPropertyValues::GmlDomainSet::non_null_ptr_type
-GPlatesFileIO::PropertyCreationUtils::create_domain_set(
-	const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
-{
-	static const GPlatesModel::PropertyName
-		DS = GPlatesModel::PropertyName::create_gpml("domainSet");
-
-	GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
-		multi_point = find_and_create_one(elem, &create_gml_multipoint, DS);
-
-std::cout << "ASDASDAS]\n";
-}
-#endif
-
 
 

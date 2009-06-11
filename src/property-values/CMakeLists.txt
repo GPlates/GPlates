@@ -18,7 +18,6 @@ set(srcs
     GeoTimeInstant.h
     GmlDataBlock.h
     GmlDataBlockCoordinateList.h
-    GmlDomainSet.h
     GmlLineString.cc
     GmlLineString.h
     GmlMultiPoint.cc
