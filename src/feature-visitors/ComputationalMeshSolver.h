@@ -125,11 +125,11 @@ namespace GPlatesFeatureVisitors
 			const double &recon_time,
 			const double &recon_time_2,
 			unsigned long root_plate_id,
-			GPlatesModel::Reconstruction &recon,
+			//GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::ReconstructionTree &recon_tree_2,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
-			reconstruction_geometries_type &reconstructed_geometries,
+			//reconstruction_geometries_type &reconstructed_geometries,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type layer,
 			bool should_keep_features_without_recon_plate_id = true);
 
@@ -197,12 +197,12 @@ namespace GPlatesFeatureVisitors
 		//
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
-		GPlatesModel::Reconstruction *d_recon_ptr;
+		//GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_2_ptr;
 		GPlatesFeatureVisitors::TopologyResolver *d_topology_resolver_ptr;
 
-		reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
+		//reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
 
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_rendered_layer;

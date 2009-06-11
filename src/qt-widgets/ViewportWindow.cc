@@ -540,11 +540,11 @@ namespace
 				recon_time, 
 				recon_time_plus_delta,
 				recon_root, 
-				*reconstruction,
+				//*reconstruction,
 				reconstruction->reconstruction_tree(),
 				*reconstruction_tree_at_time_plus_delta,
 				topology_resolver,
-				reconstruction->geometries(),
+				//reconstruction->geometries(),
 				comp_mesh_layer,
 				true); // keep features without recon plate id
 			
