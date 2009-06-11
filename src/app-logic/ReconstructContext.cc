@@ -25,12 +25,12 @@
 
 #include "ReconstructContext.h"
 
-#include "app-logic/Reconstruct.h"
+#include "Reconstruct.h"
 
 #include "model/Model.h"
 
 
-GPlatesViewOperations::ReconstructContext::ReconstructContext(
+GPlatesAppLogic::ReconstructContext::ReconstructContext(
 		GPlatesModel::ModelInterface &model) :
 	d_model(model),
 	d_current_reconstruction(model->create_empty_reconstruction(0.0, 0))
@@ -38,7 +38,7 @@ GPlatesViewOperations::ReconstructContext::ReconstructContext(
 }
 
 
-GPlatesViewOperations::ReconstructContext::ReconstructContext(
+GPlatesAppLogic::ReconstructContext::ReconstructContext(
 		GPlatesModel::ModelInterface &model,
 		ReconstructHook::non_null_ptr_type reconstruct_hook) :
 	d_model(model),
@@ -51,7 +51,7 @@ GPlatesViewOperations::ReconstructContext::ReconstructContext(
 
 
 void
-GPlatesViewOperations::ReconstructContext::set_reconstruct_hook(
+GPlatesAppLogic::ReconstructContext::set_reconstruct_hook(
 		ReconstructHook::non_null_ptr_type reconstruct_hook)
 {
 	// We can do this because reconstruct_hook is non_null_ptr_type and hence
@@ -61,7 +61,7 @@ GPlatesViewOperations::ReconstructContext::set_reconstruct_hook(
 
 
 void
-GPlatesViewOperations::ReconstructContext::reconstruct(
+GPlatesAppLogic::ReconstructContext::reconstruct(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstructable_features_collection,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
@@ -85,7 +85,7 @@ GPlatesViewOperations::ReconstructContext::reconstruct(
 		const GPlatesModel::Reconstruction::non_null_ptr_type,
 		boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
 				reconstruct_result =
-						GPlatesAppLogic::Reconstruct::create_reconstruction(
+						Reconstruct::create_reconstruction(
 								reconstructable_features_collection,
 								reconstruction_features_collection,
 								reconstruction_time,

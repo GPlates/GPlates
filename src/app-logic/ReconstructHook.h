@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_VIEW_OPERATIONS_RECONSTRUCTHOOK_H
-#define GPLATES_VIEW_OPERATIONS_RECONSTRUCTHOOK_H
+#ifndef GPLATES_APP_LOGIC_RECONSTRUCTHOOK_H
+#define GPLATES_APP_LOGIC_RECONSTRUCTHOOK_H
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
@@ -44,7 +44,7 @@ namespace GPlatesFeatureVisitors
 	class TopologyResolver;
 }
 
-namespace GPlatesViewOperations
+namespace GPlatesAppLogic
 {
 	/**
 	 * Base class for reconstruction hooks or callbacks.
@@ -85,7 +85,7 @@ namespace GPlatesViewOperations
 		 * set on.
 		 *
 		 * FIXME: When TopologyResolver is divided into two parts (see comment inside
-		 * GPlatesAppLogic::Reconstruct::create_reconstruction) remove it from argument list.
+		 * Reconstruct::create_reconstruction) remove it from argument list.
 		 */
 		virtual
 		void
@@ -99,4 +99,4 @@ namespace GPlatesViewOperations
 	};
 }
 
-#endif // GPLATES_VIEW_OPERATIONS_RECONSTRUCTHOOK_H
+#endif // GPLATES_APP_LOGIC_RECONSTRUCTHOOK_H

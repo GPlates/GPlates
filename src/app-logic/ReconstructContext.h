@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_VIEW_OPERATIONS_RECONSTRUCTCONTEXT_H
-#define GPLATES_VIEW_OPERATIONS_RECONSTRUCTCONTEXT_H
+#ifndef GPLATES_APP_LOGIC_RECONSTRUCTCONTEXT_H
+#define GPLATES_APP_LOGIC_RECONSTRUCTCONTEXT_H
 
 #include <vector>
 
@@ -36,7 +36,7 @@
 #include "model/types.h"
 
 
-namespace GPlatesViewOperations
+namespace GPlatesAppLogic
 {
 	class ReconstructContext
 	{
@@ -106,4 +106,4 @@ namespace GPlatesViewOperations
 	};
 }
 
-#endif // GPLATES_VIEW_OPERATIONS_RECONSTRUCTCONTEXT_H
+#endif // GPLATES_APP_LOGIC_RECONSTRUCTCONTEXT_H
