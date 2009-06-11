@@ -25,45 +25,13 @@
 
 #include "Reconstruct.h"
 
+#include "AppLogicUtils.h"
+
 #include "model/ReconstructionGraph.h"
 #include "model/ReconstructionTreePopulator.h"
 #include "model/ReconstructedFeatureGeometryPopulator.h"
 
 #include "feature-visitors/TopologyResolver.h"
-
-
-namespace 
-{
-	template< typename FeatureCollectionIterator >
-	void
-	visit_feature_collections(
-			FeatureCollectionIterator collections_begin, 
-			FeatureCollectionIterator collections_end,
-			GPlatesModel::FeatureVisitor &visitor)
-	{
-		using namespace GPlatesModel;
-
-		// We visit each of the features in each of the feature collections in
-		// the given range.
-		FeatureCollectionIterator collections_iter = collections_begin;
-		for ( ; collections_iter != collections_end; ++collections_iter) {
-
-			FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
-
-			// Before we dereference the weak_ref using 'operator->',
-			// let's be sure that it's valid to dereference.
-			if (feature_collection.is_valid()) {
-				FeatureCollectionHandle::features_iterator iter =
-						feature_collection->features_begin();
-				FeatureCollectionHandle::features_iterator end =
-						feature_collection->features_end();
-				for ( ; iter != end; ++iter) {
-					(*iter)->accept_visitor(visitor);
-				}
-			}
-		}
-	}
-}
 
 
 const GPlatesModel::ReconstructionTree::non_null_ptr_type
@@ -76,7 +44,7 @@ GPlatesAppLogic::Reconstruct::create_reconstruction_tree(
 	GPlatesModel::ReconstructionGraph graph(time);
 	GPlatesModel::ReconstructionTreePopulator rtp(time, graph);
 
-	visit_feature_collections(
+	GPlatesAppLogic::AppLogicUtils::visit_feature_collections(
 			reconstruction_features_collection.begin(),
 			reconstruction_features_collection.end(),
 			rtp);
@@ -107,7 +75,7 @@ GPlatesAppLogic::Reconstruct::create_reconstruction(
 			reconstruction->reconstruction_tree(),
 			reconstruction->geometries());
 
-	visit_feature_collections(
+	GPlatesAppLogic::AppLogicUtils::visit_feature_collections(
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		rfgp);
@@ -131,7 +99,7 @@ GPlatesAppLogic::Reconstruct::create_reconstruction(
 					reconstruction->geometries(),
 					true)); // keep features without recon plate id
 
-	visit_feature_collections(
+	GPlatesAppLogic::AppLogicUtils::visit_feature_collections(
 		reconstructable_features_collection.begin(),
 		reconstructable_features_collection.end(),
 		*topology_resolver);

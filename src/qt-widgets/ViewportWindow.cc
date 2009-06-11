@@ -49,6 +49,7 @@
 #include "ActionButtonBox.h"
 #include "CreateFeatureDialog.h"
 
+#include "app-logic/AppLogicUtils.h"
 #include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
@@ -103,40 +104,6 @@
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/MapView.h"
 
-
-// FIXME: TEST: grabbed from Model.cc, maybe should be abstracted out someplace?
-namespace 
-{
-	template< typename FeatureCollectionIterator >
-	void
-	visit_feature_collections(
-			FeatureCollectionIterator collections_begin, 
-			FeatureCollectionIterator collections_end,
-			GPlatesModel::FeatureVisitor &visitor) {
-
-		using namespace GPlatesModel;
-
-		// We visit each of the features in each of the feature collections in
-		// the given range.
-		FeatureCollectionIterator collections_iter = collections_begin;
-		for ( ; collections_iter != collections_end; ++collections_iter) {
-
-			FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
-
-			// Before we dereference the weak_ref using 'operator->',
-			// let's be sure that it's valid to dereference.
-			if (feature_collection.is_valid()) {
-				FeatureCollectionHandle::features_iterator iter =
-						feature_collection->features_begin();
-				FeatureCollectionHandle::features_iterator end =
-						feature_collection->features_end();
-				for ( ; iter != end; ++iter) {
-					(*iter)->accept_visitor(visitor);
-				}
-			}
-		}
-	}
-}
 
 void
 GPlatesQtWidgets::ViewportWindow::save_file(
@@ -581,7 +548,7 @@ namespace
 				comp_mesh_layer,
 				true); // keep features without recon plate id
 			
-			visit_feature_collections(
+			GPlatesAppLogic::AppLogicUtils::visit_feature_collections(
 				reconstructable_features_collection.begin(),
 				reconstructable_features_collection.end(),
 				solver);
