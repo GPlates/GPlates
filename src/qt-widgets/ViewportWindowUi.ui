@@ -28,7 +28,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>29</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -99,10 +99,6 @@
     <addaction name="separator" />
     <addaction name="action_Show_Raster" />
     <addaction name="action_Set_Raster_Surface_Extent" />
-    <addaction name="separator" />
-    <addaction name="action_Show_Reconstructable_Features" />
-    <addaction name="action_Show_Instantaneous_Features" />
-    <addaction name="action_Show_Topologies" />
     <addaction name="separator" />
    </widget>
    <widget class="QMenu" name="menu_View" >
