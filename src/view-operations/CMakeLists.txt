@@ -37,6 +37,9 @@ set(srcs
     MoveVertexGeometryOperation.cc
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
+    ReconstructContext.cc
+    ReconstructContext.h
+    ReconstructHook.h
     RenderedDirectionArrow.cc
     RenderedDirectionArrow.h
     RenderedGeometry.cc
