@@ -64,6 +64,8 @@ set(srcs
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
     RenderedReconstructionGeometry.h
+    RenderReconstructionGeometries.cc
+    RenderReconstructionGeometries.h
     UndoRedo.cc
     UndoRedo.h
 )

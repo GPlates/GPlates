@@ -66,7 +66,9 @@ namespace GPlatesViewOperations
 		
 
 		/**
-		 * 
+		 * Callback hook before a reconstruction is created.
+		 * Called by the @a ReconstructionContext that this object is directly or indirectly
+		 * set on.
 		 */
 		virtual
 		void
@@ -78,6 +80,10 @@ namespace GPlatesViewOperations
 
 
 		/**
+		 * Callback hook after a reconstruction is created.
+		 * Called by the @a ReconstructionContext that this object is directly or indirectly
+		 * set on.
+		 *
 		 * FIXME: When TopologyResolver is divided into two parts (see comment inside
 		 * GPlatesAppLogic::Reconstruct::create_reconstruction) remove it from argument list.
 		 */

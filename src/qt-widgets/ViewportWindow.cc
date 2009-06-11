@@ -95,11 +95,11 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
+#include "view-operations/RenderReconstructionGeometries.h"
 #include "view-operations/UndoRedo.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
 #include "feature-visitors/ComputationalMeshSolver.h"
 #include "feature-visitors/TopologyResolver.h"
-#include "gui/ReconstructionHook.h"
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/MapView.h"
 
@@ -498,83 +498,6 @@ namespace
 		}
 	}
 
-
-	void
-	render_reconstruction_geometries(
-			GPlatesModel::Reconstruction::non_null_ptr_type &reconstruction,
-			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-			GPlatesGui::ColourTable &colour_table)
-	{
-		// Delay any notification of changes to the rendered geometry collection
-		// until end of current scope block. This is so we can do multiple changes
-		// without redrawing canvas after each change.
-		// This should ideally be located at the highest level to capture one
-		// user GUI interaction - the user performs an action and we update canvas once.
-		// But since these guards can be nested it's probably a good idea to have it here too.
-		GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
-		// Get the reconstruction rendered layer.
-		GPlatesViewOperations::RenderedGeometryLayer *reconstruction_layer =
-			rendered_geom_collection.get_main_rendered_layer(
-					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
-
-		// Activate the layer.
-		reconstruction_layer->set_active();
-
-		// Clear all RenderedGeometry's before adding new ones.
-		reconstruction_layer->clear_rendered_geometries();
-
-		GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
-				reconstruction->geometries().begin();
-		GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
-				reconstruction->geometries().end();
-
-		for ( ; iter != end; ++iter)
-		{
-			GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
-
-			GPlatesModel::ReconstructionGeometry *reconstruction_geom = iter->get();
-
-			GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
-			if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstructed_feature_geometry(
-					iter->get(), rfg))
-			{
-				// It's an RFG, so let's look at the feature it's
-				// referencing.
-				if (rfg->reconstruction_plate_id())
-				{
-					colour = colour_table.lookup(*rfg);
-				}
-			}
-
-
-			if (colour == colour_table.end()) {
-				// Anything not in the table uses the 'Olive' colour.
-				colour = &GPlatesGui::Colour::get_olive();
-			}
-
-			// Create a RenderedGeometry for drawing the reconstructed geometry.
-			GPlatesViewOperations::RenderedGeometry rendered_geom =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
-						reconstruction_geom->geometry(),
-						*colour,
-						GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
-						GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
-
-			// Create a RenderedGeometry for storing the reconstructed geometry
-			// and the RenderedGeometry used for drawing it.
-			GPlatesViewOperations::RenderedGeometry rendered_reconstruction_geom =
-				GPlatesViewOperations::create_rendered_reconstruction_geometry(
-						*iter, rendered_geom);
-
-			// Add to the reconstruction rendered layer.
-			// Updates to the canvas will be taken care of since canvas listens
-			// to the update signal of RenderedGeometryCollection which in turn
-			// listens to its rendered layers.
-			reconstruction_layer->add_rendered_geometry(rendered_reconstruction_geom);
-		}
-	}
-
 	void
 	render_model(
 			GPlatesModel::ModelInterface &model, 
@@ -617,8 +540,8 @@ namespace
 					*reconstruct_result.second;
 
 			// Render the reconstruction geometries generated.
-			render_reconstruction_geometries(
-					reconstruction,
+			GPlatesViewOperations::render_reconstruction_geometries(
+					*reconstruction,
 					rendered_geom_collection,
 					colour_table);
 
@@ -664,11 +587,6 @@ namespace
 				solver);
 
 			// solver.report();
-
-			// #### JC: The kind of thing I'm looking at, but more gooder. Maybe a container of these.
-			GPlatesGui::ReconstructionHook::non_null_ptr_type
-					export_velocity_hook_ptr = GPlatesGui::ExportVelocityFileReconstructionHook::create();
-			export_velocity_hook_ptr->post_velocity_computation_hook();
 	
 			//render(reconstruction->point_geometries().begin(), reconstruction->point_geometries().end(), &GPlatesQtWidgets::GlobeCanvas::draw_point, _ptr);
 
