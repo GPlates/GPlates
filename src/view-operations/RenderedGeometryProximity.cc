@@ -80,7 +80,7 @@ namespace GPlatesViewOperations
 				if (rendered_geom_layer.is_active())
 				{
 					// Iterate over the rendered geometries and test proximity to each.
-					RenderedGeometryLayer::RenderedGeometryIndex rendered_geom_index;
+					RenderedGeometryLayer::rendered_geometry_index_type rendered_geom_index;
 					for (rendered_geom_index = 0;
 						rendered_geom_index < rendered_geom_layer.get_num_rendered_geometries();
 						++rendered_geom_index)
@@ -181,7 +181,7 @@ GPlatesViewOperations::test_proximity(
 }
 
 GPlatesViewOperations::RenderedGeometryProximityHit::RenderedGeometryProximityHit(
-		RenderedGeometryLayer::RenderedGeometryIndex rendered_geom_index,
+		RenderedGeometryLayer::rendered_geometry_index_type rendered_geom_index,
 		const RenderedGeometryLayer *rendered_geom_layer,
 		GPlatesMaths::ProximityHitDetail::non_null_ptr_type proximity_hit_detail) :
 d_rendered_geom_index(rendered_geom_index),

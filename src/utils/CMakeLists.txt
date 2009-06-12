@@ -26,6 +26,7 @@ set(srcs
     GeometryCreationUtils.h
     IdStringSet.cc
     IdStringSet.h
+    LatLonAreaSampling.h
     MathUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
