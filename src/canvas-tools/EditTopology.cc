@@ -90,6 +90,10 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 		// switch to the choose feature tool
 		// FIXME:  Since ViewportWindow is passed as a const ref cannot call this :
 		// d_view_state_ptr->choose_click_geometry_tool();
+
+		// unset the focus
+ 		d_feature_focus_ptr->unset_focus();
+		
 		return;
 	}
 
