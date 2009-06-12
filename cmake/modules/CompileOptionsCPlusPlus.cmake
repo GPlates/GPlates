@@ -27,8 +27,28 @@ endif (NOT APPLE)
 
 # Mac OSX specific configuration options:
 if(APPLE)
+    # Detect Mac OSX version.
+    execute_process(COMMAND "sw_vers" "-productVersion"
+        OUTPUT_VARIABLE OSX_VERSION
+        RESULT_VARIABLE OSX_VERSION_RESULT)
+    if (NOT OSX_VERSION_RESULT)
+        # Convert 10.4.11 to 10.4 for example.
+        string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" OSX_MAJOR_MINOR_VERSION ${OSX_VERSION})
+        string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" OSX_MAJOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
+        string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" OSX_MINOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
+        add_definitions(-DMAC_OSX_MAJOR_VERSION=${OSX_MAJOR_VERSION})
+        add_definitions(-DMAC_OSX_MINOR_VERSION=${OSX_MINOR_VERSION})
+        if (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
+            message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Tiger)")
+            add_definitions(-DMAC_OSX_TIGER)
+        elseif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.5")
+            message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Leopard)")
+            add_definitions(-DMAC_OSX_LEOPARD)
+        endif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
+    endif (NOT OSX_VERSION_RESULT)
+
     # Automatically adds compiler definitions to all subdirectories too.
-    add_definitions(/D__APPLE__)
+    add_definitions(-D__APPLE__)
 
     # Mac OSX uses CMAKE_COMPILER_IS_GNUCXX compiler (always?) which is set later below.
     # 'bind_at_load' causes undefined symbols to be referenced at load/launch.

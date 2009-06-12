@@ -1,0 +1,23 @@
+#!/bin/sh
+
+if [ -e "@STAGING_AREA_FOR_CPACK@" ]
+then
+# Remove the previous package staging area so we start with a clean bundle
+	echo "Removing Previous @BUILT_BUNLDE@ bundle at @STAGING_AREA_FOR_CPACK@"
+	rm -rf "@STAGING_AREA_FOR_CPACK@"
+fi
+
+mkdir -p "@STAGING_AREA_FOR_CPACK@"
+
+# Copy the @BUILT_BUNDLE@ bundle to the installation location
+echo "Copying @BUILT_BUNDLE@ from the build tree to @STAGING_AREA_FOR_CPACK@/"
+cp -Rp "@BUILT_BUNDLE@" "@STAGING_AREA_FOR_CPACK@/"
+
+# Copy extra files/directories that are to be included along with the GPlates app bundle.
+for extra in @GPLATES_BINARY_INSTALL_EXTRAS@
+do
+	if [ -e $extra ]
+	then
+		cp -Rp $extra "@STAGING_AREA_FOR_CPACK@/"
+	fi
+done
