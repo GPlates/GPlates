@@ -12,7 +12,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -418,7 +418,7 @@ output_as_gpml(
 	GPlatesFileIO::GpmlOnePointSixOutputVisitor v(&standard_output);
 
 	for ( ; begin != end; ++begin) {
-		(*begin)->accept_visitor(v);
+		v.visit_feature(begin);
 	}
 }
 
@@ -453,7 +453,7 @@ output_reconstructions(
 		GPlatesModel::FeatureCollectionHandle::features_iterator iter1 =
 				total_recon_seqs_begin;
 		for ( ; iter1 != total_recon_seqs_end; ++iter1) {
-			(*iter1)->accept_visitor(rtp);
+			rtp.visit_feature(iter1);
 		}
 
 		std::cout << "\n--> Building tree, root node: 501\n";
@@ -471,7 +471,7 @@ output_reconstructions(
 
 		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
-			(*iter2)->accept_visitor(rfgp);
+			rfgp.visit_feature(iter2);
 		}
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "

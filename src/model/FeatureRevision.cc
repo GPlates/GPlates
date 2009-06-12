@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,7 +29,7 @@
 #include "DummyTransactionHandle.h"
 
 
-GPlatesModel::FeatureRevision::top_level_property_collection_type::size_type
+GPlatesModel::container_size_type
 GPlatesModel::FeatureRevision::append_top_level_property(
 		TopLevelProperty::non_null_ptr_type new_top_level_property,
 		DummyTransactionHandle &transaction)
@@ -42,7 +42,7 @@ GPlatesModel::FeatureRevision::append_top_level_property(
 
 void
 GPlatesModel::FeatureRevision::remove_top_level_property(
-		top_level_property_collection_type::size_type index,
+		container_size_type index,
 		DummyTransactionHandle &transaction)
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.

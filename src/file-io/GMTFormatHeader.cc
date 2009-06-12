@@ -34,13 +34,13 @@
 
 bool
 GPlatesFileIO::GMTFormatPlates4StyleHeader::get_feature_header_lines(
-		const GPlatesModel::FeatureHandle& feature_handle,
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		std::vector<QString>& header_lines)
 {
 	GPlatesFileIO::OldPlatesHeader old_plates_header;
 
 	if ( d_plates_header_visitor.get_old_plates_header(
-		feature_handle,
+		feature,
 		old_plates_header) )
 	{
 		format_header_lines(old_plates_header, header_lines);
@@ -100,18 +100,18 @@ GPlatesFileIO::GMTFormatVerboseHeader::GMTFormatVerboseHeader() :
 
 bool
 GPlatesFileIO::GMTFormatVerboseHeader::get_feature_header_lines(
-		const GPlatesModel::FeatureHandle& feature_handle,
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		std::vector<QString>& header_lines)
 {
 	d_header_lines = &header_lines;
-	feature_handle.accept_visitor(*this);
+	visit_feature(feature);
 	d_header_lines = NULL;
 
 	return true;
 }
 
-void
-GPlatesFileIO::GMTFormatVerboseHeader::visit_feature_handle(
+bool
+GPlatesFileIO::GMTFormatVerboseHeader::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	start_header_line();
@@ -134,12 +134,11 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_feature_handle(
 
 	end_header_line();
 
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
+	return true;
 }
 
-void
-GPlatesFileIO::GMTFormatVerboseHeader::visit_top_level_property_inline(
+bool
+GPlatesFileIO::GMTFormatVerboseHeader::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	d_property_accumulator.clear();
@@ -153,8 +152,13 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_top_level_property_inline(
 
 	format_attributes(top_level_property_inline.xml_attributes());
 
-	visit_property_values(top_level_property_inline);
+	return true;
+}
 
+void
+GPlatesFileIO::GMTFormatVerboseHeader::finalise_post_property_values(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
+{
 	// If the current property is the reconstruction plate id then simplify the printing
 	// of it so it's not too hard to parse with awk/sed.
 	if (d_property_accumulator.is_reconstruction_plate_id_property(
@@ -748,15 +752,16 @@ GPlatesFileIO::GMTFormatVerboseHeader::clear_header_line()
 
 bool
 GPlatesFileIO::GMTFormatPreferPlates4StyleHeader::get_feature_header_lines(
-		const GPlatesModel::FeatureHandle& feature_handle, std::vector<QString>& header_lines)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+		std::vector<QString>& header_lines)
 {
 	// See if has old plates header.
 	d_has_old_plates_header = false;
-	feature_handle.accept_visitor(*this);
+	visit_feature(feature);
 
 	return d_has_old_plates_header
-		? d_plates4_style_header.get_feature_header_lines(feature_handle, header_lines)
-		: d_verbose_header.get_feature_header_lines(feature_handle, header_lines);
+		? d_plates4_style_header.get_feature_header_lines(feature, header_lines)
+		: d_verbose_header.get_feature_header_lines(feature, header_lines);
 }
 
 

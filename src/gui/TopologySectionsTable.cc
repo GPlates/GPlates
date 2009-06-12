@@ -137,7 +137,7 @@ namespace
 			
 			// Attempt to find the property name and value we are interested in.
 			if (GPlatesFeatureVisitors::get_property_value(
-					*row_data.d_feature_ref,
+					row_data.d_feature_ref,
 					plate_id_property_name,
 					property_return_value)) {
 				// Convert it to something Qt can display.
@@ -170,7 +170,7 @@ namespace
 			
 			// Attempt to find the property name and value we are interested in.
 			if (GPlatesFeatureVisitors::get_property_value(
-					*row_data.d_feature_ref,
+					row_data.d_feature_ref,
 					gml_name_property_name,
 					property_return_value)) {
 				// Convert it to something Qt can display.

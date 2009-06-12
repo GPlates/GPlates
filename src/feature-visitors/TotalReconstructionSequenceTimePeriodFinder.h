@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -53,21 +53,6 @@ namespace GPlatesFeatureVisitors
 		~TotalReconstructionSequenceTimePeriodFinder()
 		{  }
 
-		virtual
-		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
-
-		virtual
-		void
-		visit_gpml_irregular_sampling(
-				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
-
 		/**
 		 * Reset a TotalReconstructionSequenceTimePeriodFinder instance, as if it were
 		 * freshly instantiated.
@@ -112,6 +97,18 @@ namespace GPlatesFeatureVisitors
 		{
 			return d_end_time;
 		}
+
+	protected:
+
+		virtual
+		bool
+		initialise_pre_property_values(
+				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+
+		virtual
+		void
+		visit_gpml_irregular_sampling(
+				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
 	private:
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;

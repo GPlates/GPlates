@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -46,7 +46,7 @@ const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
 GPlatesModel::ModelUtils::append_property_value_to_feature(
 		PropertyValue::non_null_ptr_type property_value,
 		const PropertyName &property_name,
-		FeatureHandle::weak_ref &feature)
+		const FeatureHandle::weak_ref &feature)
 {
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
 	TopLevelPropertyInline::non_null_ptr_type top_level_property =
@@ -66,7 +66,7 @@ GPlatesModel::ModelUtils::append_property_value_to_feature(
 		const PropertyName &property_name,
 		const UnicodeString &attribute_name_string,
 		const UnicodeString &attribute_value_string,
-		FeatureHandle::weak_ref &feature)
+		const FeatureHandle::weak_ref &feature)
 {
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
 	// FIXME: xml_attribute_name is not always GPML!
@@ -197,20 +197,20 @@ GPlatesModel::ModelUtils::create_total_reconstruction_pole(
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::ModelUtils::create_total_recon_seq(
 		ModelInterface &model,
-		FeatureCollectionHandle::weak_ref &target_collection,
+		const FeatureCollectionHandle::weak_ref &target_collection,
 		unsigned long fixed_plate_id,
 		unsigned long moving_plate_id,
 		const std::vector<TotalReconstructionPoleData> &five_tuples)
 {
 	FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
-	FeatureHandle::weak_ref feature_handle =
+	FeatureHandle::weak_ref feature =
 			model->create_feature(feature_type, target_collection);
 
 	TopLevelProperty::non_null_ptr_type total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples);
 
 	DummyTransactionHandle pc1(__FILE__, __LINE__);
-	feature_handle->append_top_level_property(total_reconstruction_pole_container, pc1);
+	feature->append_top_level_property(total_reconstruction_pole_container, pc1);
 	pc1.commit();
 
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_ref_frame(
@@ -218,14 +218,14 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 	ModelUtils::append_property_value_to_feature(
 			fixed_ref_frame,
 			PropertyName::create_gpml("fixedReferenceFrame"), 
-			feature_handle);
+			feature);
 
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type moving_ref_frame(
 			GPlatesPropertyValues::GpmlPlateId::create(moving_plate_id));
 	ModelUtils::append_property_value_to_feature(
 			moving_ref_frame,
 			PropertyName::create_gpml("movingReferenceFrame"), 
-			feature_handle);
+			feature);
 
-	return feature_handle;
+	return feature;
 }

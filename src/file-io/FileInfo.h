@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,66 +31,86 @@
 #include <QMap>
 #include <QString>
 #include <boost/optional.hpp>
+
 #include "model/FeatureCollectionHandle.h"
 
-namespace GPlatesFileIO {
-	
+
+namespace GPlatesFileIO
+{
 	/**
 	 * Holds information associated with a loaded file.
 	 *
-	 * FileInfo is used to keep track of information relating to a file that
-	 * has been loaded into GPlates.  It keeps track of basic file information
-	 * with a QFileInfo object, but it also keeps track of the file's data format, 
-	 * it's line-ending style, and the FeatureCollectionHandle containing the
-	 * features that were loaded from the file.
+	 * FileInfo is used to keep track of information relating to a file that has been loaded
+	 * into GPlates.  It keeps track of basic file information using a QFileInfo object, but it
+	 * also keeps track of the file's data format, its line-ending style, and the
+	 * feature-collection which contains the features that were loaded from the file.
+	 *
+	 * JC says that FileInfo was not ever intended to act as a handle to a feature-collection,
+	 * instead being more like "a filename string but with some extra methods".  As a result,
+	 * it's copied and modified "all over the place".  Hence, when a FileInfo instance is
+	 * destroyed, it will @strong not unload its associated feature-collection from the
+	 * feature-store automatically.  If the feature-collection should be unloaded, this must be
+	 * performed manually.
 	 */
 	class FileInfo 
 	{
 	public:
-		// XXX: these belongs elsewhere
+		// XXX: these belong elsewhere
 		enum LineEndingStyle
 		{
 			NL, CRNL, CR 
 		};
 
+
 		/**
-		 * Construct a FileInfo for the given file_name.
-		 * The file_name does not have to exist.
+		 * Construct a FileInfo for the given @a file_name.
+		 * The @a file_name does not have to exist.
 		 *
-		 * No FeatureCollection is assigned to the FileInfo yet,
+		 * No FeatureCollection is assigned to the FileInfo yet;
 		 * use set_feature_collection() to do so.
 		 */
 		explicit
 		FileInfo(
-				QString file_name):
+				const QString &file_name):
 			d_file_info(file_name)
-		{ }
+		{  }
+
 
 		/**
-		 * Construct a FileInfo without any file associated with
-		 * it. This may seem a little weird, but is necessary
-		 * to handle the concept of the user creating a new "empty"
-		 * FeatureCollection within GPlates, and enabling it to
-		 * show up in the list of active reconstructable files
-		 * (so that it can be displayed on the globe, and saved via
-		 * the ManageFeatureCollections dialog).
+		 * Construct a FileInfo without any associated file.
 		 *
-		 * No FeatureCollection is assigned to the FileInfo yet,
+		 * This may seem a little weird, but is necessary to enable the user to create a
+		 * new empty FeatureCollection within GPlates and have it show up in the list of
+		 * active reconstructable files (so that it can be displayed on the globe, and
+		 * saved via the ManageFeatureCollections dialog).
+		 *
+		 * No FeatureCollection is assigned to the FileInfo yet;
 		 * use set_feature_collection() to do so.
 		 */
 		FileInfo():
 			d_file_info()
-		{ }
+		{  }
 
 
 		/**
-		 * Returns a string that can be used by the GUI to identify
-		 * this file. Usually, this will simply be the file name -
-		 * however, if a FileInfo has been created without any file
-		 * association (e.g. a blank FeatureCollection created during
-		 * digitisation), it will simply return "New Feature Collection".
+		 * Destructor.
+		 *
+		 * Note that when a FileInfo instance is destroyed, it will @strong not unload its
+		 * associated feature-collection from the feature-store automatically (read the
+		 * class comment for the reasons).  If the feature-collection should be unloaded,
+		 * this must be performed manually.
 		 */
-		QString
+		~FileInfo();
+
+
+		/**
+		 * Return a string that can be used by the GUI to identify this file.
+		 *
+		 * Usually, this will simply be the file name -- however, if a FileInfo has been
+		 * created without any file association (e.g. a blank FeatureCollection created
+		 * during digitisation), it will simply return "New Feature Collection".
+		 */
+		const QString
 		get_display_name(
 				bool use_absolute_path_name) const;
 
@@ -102,14 +122,18 @@ namespace GPlatesFileIO {
 		}
 
 
-		boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
+		/**
+		 * FIXME:  Is it intended to be possible to modify the feature-collection weak-ref
+		 * through this function?
+		 */
+		const boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
 		get_feature_collection() 
 		{ 
 			return d_feature_collection; 
 		}
 
 
-		boost::optional<GPlatesModel::FeatureCollectionHandle::const_weak_ref>
+		const boost::optional<GPlatesModel::FeatureCollectionHandle::const_weak_ref>
 		get_feature_collection() const
 		{
 			boost::optional<GPlatesModel::FeatureCollectionHandle::const_weak_ref> res;
@@ -122,10 +146,25 @@ namespace GPlatesFileIO {
 
 		void
 		set_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection)
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 		{
 			d_feature_collection = feature_collection;
 		}
+
+
+		/**
+		 * Unload the feature-collection which is associated with this FileInfo instance
+		 * (if there is one).
+		 *
+		 * If there is no associated feature-collection, or if the feature-collection
+		 * weak-ref is invalid (perhaps the feature-collection was already unloaded?), this
+		 * will be a no-op.
+		 *
+		 * Return true if a feature-collection was unloaded, false otherwise.
+		 */
+		bool
+		unload_feature_collection();
+
 
 		const QMap< QString,QString >& 
 		get_model_to_shapefile_map() const
@@ -143,12 +182,15 @@ namespace GPlatesFileIO {
 	private:
 #if 0
 		FileInfo(
-				QFileInfo file_info,
-				FileFormat file_format,
-				LineEndingStyle line_ending,
-				GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection) :
-			d_file_info(file_info), d_file_format(file_format),
-			d_line_ending(line_ending), d_feature_collection(feature_collection) { }
+				const QFileInfo &file_info,
+				const FileFormat &file_format,
+				const LineEndingStyle &line_ending,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection):
+			d_file_info(file_info),
+			d_file_format(file_format),
+			d_line_ending(line_ending),
+			d_feature_collection(feature_collection)
+		{  }
 #endif
 
 		QFileInfo d_file_info;
@@ -169,13 +211,14 @@ namespace GPlatesFileIO {
 	 * @param file_info file to test for writability.
 	 */
 	bool
-		is_writable(
-		const QFileInfo& file_info);
+	is_writable(
+			const QFileInfo &file_info);
+
 
 	inline
-		bool
-		is_writable(
-		const GPlatesFileIO::FileInfo& file_info)
+	bool
+	is_writable(
+			const FileInfo &file_info)
 	{
 		return is_writable(file_info.get_qfileinfo());
 	}

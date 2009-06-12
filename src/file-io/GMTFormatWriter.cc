@@ -88,19 +88,41 @@ GPlatesFileIO::GMTFormatWriter::~GMTFormatWriter()
 
 void
 GPlatesFileIO::GMTFormatWriter::write_feature(
-	const GPlatesModel::FeatureHandle& feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+{
+	visit_feature(feature);
+}
+
+
+void
+GPlatesFileIO::GMTFormatWriter::write_feature(
+		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
+{
+	visit_feature(feature);
+}
+
+
+bool
+GPlatesFileIO::GMTFormatWriter::initialise_pre_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Clear accumulator before visiting feature.
 	d_feature_accumulator.clear();
 
-	// Collect any geometries in the current feature.
-	feature_handle.accept_visitor(*this);
+	// Next, visit the feature properties to collect any geometries in the feature.
+	return true;
+}
 
+
+void
+GPlatesFileIO::GMTFormatWriter::finalise_post_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
+{
 	std::vector<QString> header_lines;
 
 	// Delegate formating of feature header.
 	const bool valid_header = d_feature_header->get_feature_header_lines(
-		feature_handle, header_lines);
+		feature_handle.reference(), header_lines);
 	
 	// If we have a valid header and at least one geometry then we can output for the current feature.
 	if (valid_header && d_feature_accumulator.have_geometry())
@@ -120,23 +142,6 @@ GPlatesFileIO::GMTFormatWriter::write_feature(
 			geometry_exporter.export_geometry(*geometry_iter);
 		}
 	}
-}
-
-
-void
-GPlatesFileIO::GMTFormatWriter::visit_feature_handle(
-	const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesFileIO::GMTFormatWriter::visit_top_level_property_inline(
-	const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	visit_property_values(top_level_property_inline);
 }
 
 

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,9 +30,11 @@
 
 #include "FeatureStoreRootRevision.h"
 #include "RevisionAwareIterator.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
+
 
 namespace GPlatesModel
 {
@@ -179,13 +181,7 @@ namespace GPlatesModel
 		const collections_iterator
 		append_feature_collection(
 				FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
-				DummyTransactionHandle &transaction)
-		{
-			FeatureStoreRootRevision::feature_collection_container_type::size_type new_index =
-					current_revision()->append_feature_collection(new_feature_collection,
-							transaction);
-			return collections_iterator::create_index(*this, new_index);
-		}
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Remove the feature collection indicated by @a iter in the feature-collection
@@ -199,10 +195,7 @@ namespace GPlatesModel
 		void
 		remove_feature_collection(
 				collections_iterator iter,
-				DummyTransactionHandle &transaction)
-		{
-			current_revision()->remove_feature_collection(iter.index(), transaction);
-		}
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Access the current revision of this feature store root.

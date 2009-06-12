@@ -114,20 +114,10 @@ namespace GPlatesFileIO
 		virtual
 			bool
 			get_old_plates_header(
-			const GPlatesModel::FeatureHandle& feature_handle,
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 			OldPlatesHeader& old_plates_header);
 
 	private:
-		virtual
-			void
-			visit_feature_handle(
-			const GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-			void
-			visit_top_level_property_inline(
-			const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
-
 		virtual
 			void
 			visit_gml_time_instant(
@@ -164,7 +154,7 @@ namespace GPlatesFileIO
 		 */
 		UnicodeString
 		get_plates_data_type_code(
-				const GPlatesModel::FeatureHandle &feature_handle) const;
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature) const;
 
 		/**
 		 * Creates map of feature types to valid Plates data types.
@@ -181,12 +171,10 @@ namespace GPlatesFileIO
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_appearance;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_disappearance;
 			boost::optional<UnicodeString> geographic_description;
-
-			boost::optional<GPlatesModel::PropertyName> current_propname;
 		};
 
 		typedef UnicodeString (*get_data_type_code_function_type)(
-				const GPlatesModel::FeatureHandle &feature_handle);
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 
 		/**
 		 * Maps feature type to plates header data type code.

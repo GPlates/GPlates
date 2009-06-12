@@ -57,15 +57,7 @@ namespace GPlatesFeatureVisitors
 		virtual
 		~GeometryTypeFinder() {  }
 
-		virtual
-		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+	protected:
 
 		virtual
 		void
@@ -117,6 +109,8 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
+
+	public:
 
 		bool
 		found_point_geometries() const

@@ -30,8 +30,11 @@
 
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
+
 #include "RevisionId.h"
 #include "TopLevelProperty.h"
+#include "types.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -168,7 +171,7 @@ namespace GPlatesModel
 		 * equal-to the number of top-level-property-slots will always result in a NULL
 		 * pointer.
 		 */
-		top_level_property_collection_type::size_type
+		container_size_type
 		size() const
 		{
 			return d_properties.size();
@@ -188,7 +191,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<const TopLevelProperty>
 		operator[](
-				top_level_property_collection_type::size_type index) const
+				container_size_type index) const
 		{
 			return access_top_level_property(index);
 		}
@@ -207,7 +210,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<TopLevelProperty>
 		operator[](
-				top_level_property_collection_type::size_type index)
+				container_size_type index)
 		{
 			return access_top_level_property(index);
 		}
@@ -226,7 +229,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<const TopLevelProperty>
 		access_top_level_property(
-				top_level_property_collection_type::size_type index) const
+				container_size_type index) const
 		{
 			boost::intrusive_ptr<const TopLevelProperty> ptr;
 			if (index < size()) {
@@ -249,7 +252,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<TopLevelProperty>
 		access_top_level_property(
-				top_level_property_collection_type::size_type index)
+				container_size_type index)
 		{
 			boost::intrusive_ptr<TopLevelProperty> ptr;
 			if (index < size()) {
@@ -261,7 +264,7 @@ namespace GPlatesModel
 		/**
 		 * Append @a new_top_level_property to the collection.
 		 */
-		top_level_property_collection_type::size_type
+		container_size_type
 		append_top_level_property(
 				TopLevelProperty::non_null_ptr_type new_top_level_property,
 				DummyTransactionHandle &transaction);
@@ -275,7 +278,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_top_level_property(
-				top_level_property_collection_type::size_type index,
+				container_size_type index,
 				DummyTransactionHandle &transaction);
 
 	private:

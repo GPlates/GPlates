@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -68,7 +68,7 @@ namespace GPlatesFeatureVisitors
 		 */
 		void
 		populate(
-				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::weak_ref &feature,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
 
 	private:
@@ -76,7 +76,7 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_feature_handle(
 				GPlatesModel::FeatureHandle &feature_handle);
-		
+
 		virtual
 		void
 		visit_feature_properties(

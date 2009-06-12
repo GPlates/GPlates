@@ -86,9 +86,17 @@ namespace
 
 void
 GPlatesFileIO::PlatesRotationFormatWriter::write_feature(
-	const GPlatesModel::FeatureHandle& feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 {
-	feature_handle.accept_visitor(*this);
+	visit_feature(feature);
+}
+
+
+void
+GPlatesFileIO::PlatesRotationFormatWriter::write_feature(
+		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
+{
+	visit_feature(feature);
 }
 
 
@@ -147,8 +155,9 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::have
 	return moving_plate_id && fixed_plate_id && ! reconstruction_poles.empty();
 }
 
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_feature_handle(
+
+bool
+GPlatesFileIO::PlatesRotationFormatWriter::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	static const GPlatesModel::FeatureType
@@ -160,29 +169,24 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_feature_handle(
 	if ((feature_handle.feature_type() != gpmlTotalReconstructionSequence)
 			&& (feature_handle.feature_type() != gpmlAbsoluteReferenceFrame)) {
 		// These are not the features you're looking for.
-		return;
+		return false;
 	}
 
 	// Reset the accumulator.
 	d_accum = PlatesRotationFormatAccumulator();
 
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-
-	// Print reconstruction poles when we can.
-	if (d_accum.have_sufficient_info_for_output()) {
-		d_accum.print_rotation_lines(d_output);
-	}
+	return true;
 }
 
 
 void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_top_level_property_inline(
-		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
+GPlatesFileIO::PlatesRotationFormatWriter::finalise_post_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	d_accum.last_property_seen = top_level_property_inline.property_name();
-
-	visit_property_values(top_level_property_inline);
+	// Print reconstruction poles when we can.
+	if (d_accum.have_sufficient_info_for_output()) {
+		d_accum.print_rotation_lines(d_output);
+	}
 }
 
 
@@ -267,9 +271,9 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS,
 				QString("movingReferenceFrame"));
 
-	if (*d_accum.last_property_seen == fixedReferenceFrame) {
+	if (*current_top_level_propname() == fixedReferenceFrame) {
 		d_accum.fixed_plate_id = gpml_plate_id.value();
-	} else if (*d_accum.last_property_seen == movingReferenceFrame) {
+	} else if (*current_top_level_propname() == movingReferenceFrame) {
 		d_accum.moving_plate_id = gpml_plate_id.value();
 	} else {
 		// Do nothing: the plate id must not be associated to a finite rotation.

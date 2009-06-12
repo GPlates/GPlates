@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -60,15 +60,12 @@ namespace GPlatesFeatureVisitors
 		~TotalReconstructionSequenceRotationInserter()
 		{  }
 
-		virtual
-		void
-		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle);
+	protected:
 
 		virtual
-		void
-		visit_top_level_property_inline(
-				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+		bool
+		initialise_pre_feature_properties(
+				GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
@@ -92,7 +89,6 @@ namespace GPlatesFeatureVisitors
 		bool d_is_expecting_a_finite_rotation;
 		bool d_trp_time_matches_exactly;
 		boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
-		boost::optional<GPlatesModel::PropertyName> d_most_recent_propname_read;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.

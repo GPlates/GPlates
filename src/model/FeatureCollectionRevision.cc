@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -43,7 +43,7 @@ GPlatesModel::FeatureCollectionRevision::append_feature(
 
 void
 GPlatesModel::FeatureCollectionRevision::remove_feature(
-		feature_collection_type::size_type index,
+		container_size_type index,
 		DummyTransactionHandle &transaction)
 {
 	if (d_features[index] == NULL) {

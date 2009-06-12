@@ -70,17 +70,8 @@ namespace
 }
 
 
-void
-GPlatesQtWidgets::EditWidgetChooser::visit_feature_handle(
-		GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesQtWidgets::EditWidgetChooser::visit_top_level_property_inline(
+bool
+GPlatesQtWidgets::EditWidgetChooser::initialise_pre_property_values(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
@@ -89,11 +80,10 @@ GPlatesQtWidgets::EditWidgetChooser::visit_top_level_property_inline(
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
 			// The current property name is not allowed.
-			return;
+			return false;
 		}
 	}
-
-	visit_property_values(top_level_property_inline);
+	return true;
 }
 
 

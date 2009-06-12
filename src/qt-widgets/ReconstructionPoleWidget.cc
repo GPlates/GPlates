@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -194,17 +194,17 @@ namespace
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const double &reconstruction_time,
-			boost::intrusive_ptr<GPlatesModel::FeatureHandle> current_feature)
+			GPlatesModel::FeatureCollectionHandle::features_iterator &current_feature)
 	{
 		using namespace GPlatesQtWidgets;
 
-		if ( ! current_feature) {
+		if ( ! current_feature.is_valid()) {
 			// There was a feature here, but it's been deleted.
 			return;
 		}
 
 		trs_plate_id_finder.reset();
-		trs_plate_id_finder.visit_feature_handle(*current_feature);
+		trs_plate_id_finder.visit_feature(current_feature);
 
 		// A valid TRS should have a fixed reference frame and a moving reference frame. 
 		// Let's verify that this is a valid TRS.
@@ -228,7 +228,7 @@ namespace
 #if 0
 		if (*trs_plate_id_finder.fixed_ref_frame_plate_id() == plate_id_of_interest) {
 			trs_time_period_finder.reset();
-			trs_time_period_finder.visit_feature_handle(*current_feature);
+			trs_time_period_finder.visit_feature(current_feature);
 			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time())) {
 				// No time samples were found.  Skip this feature.
 				return;
@@ -254,7 +254,7 @@ namespace
 #endif
 		if (*trs_plate_id_finder.moving_ref_frame_plate_id() == plate_id_of_interest) {
 			trs_time_period_finder.reset();
-			trs_time_period_finder.visit_feature_handle(*current_feature);
+			trs_time_period_finder.visit_feature(current_feature);
 			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time())) {
 				// No time samples were found.  Skip this feature.
 				return;
@@ -270,7 +270,7 @@ namespace
 
 			sequence_choices.push_back(
 					ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo(
-							current_feature->reference(),
+							(*current_feature)->reference(),
 							*trs_plate_id_finder.fixed_ref_frame_plate_id(),
 							*trs_plate_id_finder.moving_ref_frame_plate_id(),
 							trs_time_period_finder.begin_time()->value(),
@@ -318,10 +318,9 @@ namespace
 			FeatureCollectionHandle::features_iterator features_end =
 					current_collection->features_end();
 			for ( ; features_iter != features_end; ++features_iter) {
-				boost::intrusive_ptr<FeatureHandle> current_feature = *features_iter;
 				examine_trs(sequence_choices, trs_plate_id_finder,
 						trs_time_period_finder, plate_id_of_interest,
-						reconstruction_time, current_feature);
+						reconstruction_time, features_iter);
 			}
 		}
 	}

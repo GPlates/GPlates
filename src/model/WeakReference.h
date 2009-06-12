@@ -35,9 +35,9 @@
 namespace GPlatesModel
 {
 	/**
-	 * This class is a weak reference to a handle.
+	 * This class is a weak-reference to a handle.
 	 *
-	 * To quote the article on weak references in Wikipedia, the free encyclopedia:
+	 * To quote the article on weak-references in Wikipedia, the free encyclopedia:
 	 *
 	 * @par
 	 * In computer programming, a weak reference is a reference that does not protect the
@@ -53,9 +53,36 @@ namespace GPlatesModel
 	 * Weak references are called weak because they don't keep the object alive by incrementing
 	 * the reference count on the referenced object.
 	 *
-	 * GPlates uses "weak references" as "smart pointers" which enable objects to be referenced
-	 * without keeping the objects alive. Specifically, weak references are used to implement
-	 * references in the Presenter to objects inside the Model. 
+	 * GPlates uses "weak-references" as "smart pointers" which enable objects to be referenced
+	 * without keeping the objects alive. Specifically, weak-references are used to implement
+	 * references in the Application-Logic tier to objects inside the Model.
+	 *
+	 * Why don't we want to keep certain objects alive?  Because certain objects (such as
+	 * features and feature collections) should be deallocated at certain times:
+	 *  -# for logical reasons (i.e., when the object should no longer be available -- recall
+	 * that the feature ID in a feature is automatically registered when the feature is created
+	 * (so that it's possible to access the feature which defines that feature ID) for the
+	 * entire duration of the feature's lifetime; if a feature is not deallocated, its feature
+	 * ID will remain registered for that feature, which may lead to multiple registrations of
+	 * the same feature ID, but pointing to different feature instances)
+	 *  -# for memory-releasing reasons
+	 *
+	 * Hence, we don't want the references in the Application-Logic tier to override the
+	 * careful and specific lifetime-control of objects in the Model.  For this reason, we
+	 * don't want the references in the Application-Logic tier to increment the ref-counts of
+	 * the referenced objects.
+	 *
+	 * But OTOH, we also don't want to end up with dangling pointers (yuck!) when features and
+	 * feature collections are deallocated but there are still references which point to them.
+	 * Hence, we use "weak-references", which don't keep the referenced objects alive, but *do*
+	 * know when the referenced objects are deallocated.
+	 *
+	 * @par Validity for dereference
+	 * The member function @a is_valid is used to determine whether a weak-reference is valid
+	 * to be dereferenced.
+	 *
+	 * @par Important
+	 * @strong Always check that the weak-ref @a is_valid before every dereference operation!
 	 */
 	template<typename H>
 	class WeakReference:
@@ -121,6 +148,9 @@ namespace GPlatesModel
 
 		/**
 		 * Return whether this pointer is valid to be dereferenced.
+		 *
+		 * You should @strong always check this before @em ever dereferencing a weak-ref.
+		 * Do not dereference the weak-ref if this function returns false.
 		 *
 		 * This function will not throw.
 		 */

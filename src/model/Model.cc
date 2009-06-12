@@ -119,22 +119,21 @@ namespace
 	{
 		using namespace GPlatesModel;
 
-		// We visit each of the features in each of the feature collections in
-		// the given range.
-		FeatureCollectionIterator collections_iter = collections_begin;
-		for ( ; collections_iter != collections_end; ++collections_iter) {
+		// Visit each of the features in each of the feature collections in the given
+		// iterator range.
+		for ( ; collections_begin != collections_end; ++collections_begin) {
 
-			FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
+			FeatureCollectionHandle::weak_ref feature_collection = *collections_begin;
 
-			// Before we dereference the weak_ref using 'operator->',
-			// let's be sure that it's valid to dereference.
+			// Before we dereference the weak_ref using 'operator->', let's be sure
+			// that it's valid to dereference.
 			if (feature_collection.is_valid()) {
 				FeatureCollectionHandle::features_iterator iter =
 						feature_collection->features_begin();
 				FeatureCollectionHandle::features_iterator end =
 						feature_collection->features_end();
 				for ( ; iter != end; ++iter) {
-					(*iter)->accept_visitor(visitor);
+					visitor.visit_feature(iter);
 				}
 			}
 		}

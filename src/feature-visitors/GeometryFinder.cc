@@ -44,15 +44,6 @@
 #include "maths/PolylineOnSphere.h"
 
 
-void
-GPlatesFeatureVisitors::GeometryFinder::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
 namespace
 {
 	template<typename C, typename E>
@@ -66,8 +57,8 @@ namespace
 }
 
 
-void
-GPlatesFeatureVisitors::GeometryFinder::visit_top_level_property_inline(
+bool
+GPlatesFeatureVisitors::GeometryFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
@@ -76,11 +67,10 @@ GPlatesFeatureVisitors::GeometryFinder::visit_top_level_property_inline(
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
 			// The current property name is not allowed.
-			return;
+			return false;
 		}
 	}
-
-	visit_property_values(top_level_property_inline);
+	return true;
 }
 
 

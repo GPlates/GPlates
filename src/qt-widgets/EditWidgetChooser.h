@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -81,14 +81,11 @@ namespace GPlatesQtWidgets
 			d_property_names_to_allow.push_back(property_name_to_allow);
 		}
 		
-		virtual
-		void
-		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle);
+	protected:
 
 		virtual
-		void
-		visit_top_level_property_inline(
+		bool
+		initialise_pre_property_values(
 				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 

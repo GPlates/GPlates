@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -288,7 +288,7 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 		return;
 	}
 
-	interpolater.visit_feature_handle(*chosen_pole_seq);
+	interpolater.visit_feature(chosen_pole_seq);
 	if ( ! interpolater.result()) {
 		// Again, nothing we can do.
 		// FIXME:  Should we complain?
@@ -360,7 +360,7 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
 			*d_adjustment_rel_fixed);
-	inserter.visit_feature_handle(*chosen_pole_seq);
+	inserter.visit_feature(chosen_pole_seq);
 
 	d_view_state_ptr->reconstruct();
 	emit have_reconstructed();

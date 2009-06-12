@@ -42,97 +42,101 @@
 namespace GPlatesFeatureVisitors
 {
 	/**
-	 * Returns true if @a feature_handle has a property value of type @a PropertyValueType and
-	 * property name @a property_name.
+	 * Returns true if @a feature_weak_ref has a property value of type @a PropertyValueType
+	 * and property name @a property_name.
+	 *
 	 * If true then property value is returned in @a property_value.
 	 * If has more than one property matching criteria then only first is returned.
-	 * @a PropertyValueType and @a FeatureHandleType can be either const or non-const types,
+	 * @a PropertyValueType and @a FeatureWeakRefType can be either const or non-const types,
 	 * but you cannot get a non-const property value from a const feature handle.
 	 *
 	 * For example:
-	 *    GPlatesModel::FeatureHandle &feature_handle = ...;
+	 *    GPlatesModel::FeatureHandle::weak_ref feature_weak_ref = ...;
 	 *    const GPlatesPropertyValues::Enumeration *property_value;
-	 *    if (get_property_value(feature_handle, property_name, property_value))
+	 *    if (get_property_value(feature_weak_ref, property_name, property_value))
 	 *    {
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType, class FeatureHandleType>
+	template <class PropertyValueType, class FeatureWeakRefType>
 	bool
 	get_property_value(
-			FeatureHandleType &feature_handle,
+			const FeatureWeakRefType &feature_weak_ref,
 			const GPlatesModel::PropertyName &property_name,
 			PropertyValueType *&property_value);
 
 	/**
-	 * Returns true if @a feature_handle has a property value of type @a PropertyValueType and
-	 * property name in the sequence [@a property_names_begin, @a property_names_end).
+	 * Returns true if @a feature_weak_ref has a property value of type @a PropertyValueType
+	 * and property name in the sequence [@a property_names_begin, @a property_names_end).
+	 *
 	 * If true then property value is returned in @a property_value.
 	 * If has more than one property matching criteria then only first is returned.
-	 * @a PropertyValueType and @a FeatureHandleType can be either const or non-const types,
+	 * @a PropertyValueType and @a FeatureWeakRefType can be either const or non-const types,
 	 * but you cannot get a non-const property value from a const feature handle.
 	 *
 	 * For example:
-	 *    GPlatesModel::FeatureHandle &feature_handle = ...;
+	 *    GPlatesModel::FeatureHandle::weak_ref feature_weak_ref = ...;
 	 *    const GPlatesPropertyValues::Enumeration *property_value;
 	 *    std::vector<GPlatesModel::PropertyName> property_names;
 	 *    ...
-	 *    if (get_property_value(feature_handle, property_names.begin(), property_names.end(), property_value))
+	 *    if (get_property_value(feature_weak_ref, property_names.begin(), property_names.end(), property_value))
 	 *    {
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType, class FeatureHandleType, typename PropertyNamesForwardIter>
+	template <class PropertyValueType, class FeatureWeakRefType, typename PropertyNamesForwardIter>
 	bool
 	get_property_value(
-			FeatureHandleType &feature_handle,
+			const FeatureWeakRefType &feature_weak_ref,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
 			PropertyValueType *&property_value);
 
 	/**
-	 * Returns true if @a feature_handle has any property values of type @a PropertyValueType
+	 * Returns true if @a feature_weak_ref has any property values of type @a PropertyValueType
 	 * with property name @a property_name.
+	 *
 	 * If so then the property values are returned in @a property_values.
-	 * @a PropertyValueType and @a FeatureHandleType can be either const or non-const types,
+	 * @a PropertyValueType and @a FeatureWeakRefType can be either const or non-const types,
 	 * but you cannot get a non-const property value from a const feature handle.
 	 *
 	 * For example:
-	 *    GPlatesModel::FeatureHandle &feature_handle = ...;
+	 *    GPlatesModel::FeatureHandle::weak_ref feature_weak_ref = ...;
 	 *    std::vector<const GPlatesPropertyValues::Enumeration *> property_values;
-	 *    if (get_property_values(feature_handle, property_name, property_values))
+	 *    if (get_property_values(feature_weak_ref, property_name, property_values))
 	 *    {
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType, class FeatureHandleType>
+	template <class PropertyValueType, class FeatureWeakRefType>
 	bool
 	get_property_values(
-			FeatureHandleType &feature_handle,
+			const FeatureWeakRefType &feature_weak_ref,
 			const GPlatesModel::PropertyName &property_name,
 			std::vector<PropertyValueType *> &property_values);
 
 	/**
-	 * Returns true if @a feature_handle has any property values of type @a PropertyValueType
+	 * Returns true if @a feature_weak_ref has any property values of type @a PropertyValueType
 	 * and property name in the sequence [@a property_names_begin, @a property_names_end).
+	 *
 	 * If so then the property values are returned in @a property_values.
-	 * @a PropertyValueType and @a FeatureHandleType can be either const or non-const types,
+	 * @a PropertyValueType and @a FeatureWeakRefType can be either const or non-const types,
 	 * but you cannot get a non-const property value from a const feature handle.
 	 *
 	 * For example:
-	 *    GPlatesModel::FeatureHandle &feature_handle = ...;
+	 *    GPlatesModel::FeatureHandle::weak_ref feature_weak_ref = ...;
 	 *    std::vector<const GPlatesPropertyValues::Enumeration *> property_values;
 	 *    std::vector<GPlatesModel::PropertyName> property_names;
 	 *    ...
-	 *    if (get_property_values(feature_handle, property_names.begin(), property_names.end(), property_values))
+	 *    if (get_property_values(feature_weak_ref, property_names.begin(), property_names.end(), property_values))
 	 *    {
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType, class FeatureHandleType, typename PropertyNamesForwardIter>
+	template <class PropertyValueType, class FeatureWeakRefType, typename PropertyNamesForwardIter>
 	bool
 	get_property_values(
-			FeatureHandleType &feature_handle,
+			const FeatureWeakRefType &feature_weak_ref,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
 			std::vector<PropertyValueType *> &property_values);
@@ -144,7 +148,7 @@ namespace GPlatesFeatureVisitors
 	 * contained within a feature.
 	 */
 	template <class FeatureVisitorType,
-			class FeatureHandleType,
+			class FeatureWeakRefType,
 			class TopLevelPropertyInlineType,
 			class GpmlConstantValueType>
 	class PropertyValueFinderBase :
@@ -161,18 +165,11 @@ namespace GPlatesFeatureVisitors
 			d_property_names_to_allow.push_back(property_name_to_allow);
 		}
 
-		virtual
-		void
-		visit_feature_handle(
-				FeatureHandleType &feature_handle)
-		{
-			// Now visit each of the properties in turn.
-			visit_feature_properties(feature_handle);
-		}
+	protected:
 
 		virtual
-		void
-		visit_top_level_property_inline(
+		bool
+		initialise_pre_property_values(
 				TopLevelPropertyInlineType &top_level_property_inline)
 		{
 			const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
@@ -184,11 +181,10 @@ namespace GPlatesFeatureVisitors
 						curr_prop_name) == d_property_names_to_allow.end())
 				{
 					// The current property name is not allowed.
-					return;
+					return false;
 				}
 			}
-
-			visit_property_values(top_level_property_inline);
+			return true;
 		}
 
 		virtual
@@ -199,7 +195,6 @@ namespace GPlatesFeatureVisitors
 			gpml_constant_value.value()->accept_visitor(*this);
 		}
 
-	protected:
 		// Only derived class can instantiate.
 		PropertyValueFinderBase()
 		{  }
@@ -217,8 +212,9 @@ namespace GPlatesFeatureVisitors
 
 
 	// Declare template class PropertyValueFinder but never define it.
-	// We will rely on specialisations of this class for each property value type.
-	template <class PropertyValueType>
+	// We will rely on specialisations of this class for each property value type and
+	// feature visitor type.
+	template <class PropertyValueType, class FeatureWeakRefType>
 	class PropertyValueFinder;
 
 
@@ -231,17 +227,18 @@ namespace GPlatesFeatureVisitors
 #define DECLARE_PROPERTY_VALUE_FINDER_CLASS(property_value_type, \
 		visit_property_value_method, \
 		feature_visitor_type, \
-		feature_handle_type, \
+		feature_weak_ref_type, \
+		features_iterator_type, \
 		inline_property_container_type, \
 		gpml_constant_value_type \
 ) \
 	namespace GPlatesFeatureVisitors \
 	{ \
 		template <> \
-		class PropertyValueFinder<property_value_type> : \
+		class PropertyValueFinder<property_value_type, feature_weak_ref_type> : \
 				public PropertyValueFinderBase< \
 						feature_visitor_type, \
-						feature_handle_type, \
+						feature_weak_ref_type, \
 						inline_property_container_type, \
 						gpml_constant_value_type> \
 		{ \
@@ -259,7 +256,7 @@ namespace GPlatesFeatureVisitors
 					const GPlatesModel::PropertyName &property_name_to_allow) : \
 				PropertyValueFinderBase< \
 						feature_visitor_type, \
-						feature_handle_type, \
+						feature_weak_ref_type, \
 						inline_property_container_type, \
 						gpml_constant_value_type> (property_name_to_allow) \
 			{ \
@@ -268,11 +265,23 @@ namespace GPlatesFeatureVisitors
 			/* Returns begin/end iterator to any found property values. */ \
 			property_value_container_range \
 			find_property_values( \
-					feature_handle_type &feature_handle) \
+					const feature_weak_ref_type &feature_weak_ref) \
 			{ \
 				d_found_property_values.clear(); \
 	 \
-				visit_feature_handle(feature_handle); \
+				visit_feature(feature_weak_ref); \
+	 \
+				return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
+			} \
+	 \
+			/* Returns begin/end iterator to any found property values. */ \
+			property_value_container_range \
+			find_property_values( \
+					features_iterator_type &features_iterator) \
+			{ \
+				d_found_property_values.clear(); \
+	 \
+				visit_feature(features_iterator); \
 	 \
 				return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
 			} \
@@ -296,42 +305,56 @@ namespace GPlatesFeatureVisitors
 	// work with that type of property value.
 	//
 	// First parameter should be the namespace qualified property value class.
-	// Second parameter should be the name of the feature visitor method that visits the property value.
+	// Second parameter should be the name of the feature visitor method that visits the
+	//
+	// property value.
 	// For example:
-	//    DECLARE_PROPERTY_VALUE_FINDER_CLASS(GPlatesPropertyValues::Enumeration, visit_enumeration)
+	//    DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::Enumeration, visit_enumeration)
 	//
 #define DECLARE_PROPERTY_VALUE_FINDER(property_value_type, visit_property_value_method) \
-		/* const version */ \
+		/* const weak_ref/features_iterator for const property-value */ \
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 				const property_value_type, \
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor, \
-				const GPlatesModel::FeatureHandle, \
+				GPlatesModel::FeatureHandle::const_weak_ref, \
+				GPlatesModel::FeatureCollectionHandle::features_const_iterator, \
 				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
-		/* non-const version */ \
+		/* non-const weak_ref/features_iterator for const property-value */ \
+		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
+				const property_value_type, \
+				visit_property_value_method, \
+				GPlatesModel::ConstFeatureVisitor, \
+				GPlatesModel::FeatureHandle::weak_ref, \
+				GPlatesModel::FeatureCollectionHandle::features_iterator, \
+				const GPlatesModel::TopLevelPropertyInline, \
+				const GPlatesPropertyValues::GpmlConstantValue) \
+		/* non-const weak_ref/features_iterator for non-const property-value */ \
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 				property_value_type, \
 				visit_property_value_method, \
 				GPlatesModel::FeatureVisitor, \
-				GPlatesModel::FeatureHandle, \
+				GPlatesModel::FeatureHandle::weak_ref, \
+				GPlatesModel::FeatureCollectionHandle::features_iterator, \
 				GPlatesModel::TopLevelPropertyInline, \
 				GPlatesPropertyValues::GpmlConstantValue) \
 
 
-	template <class PropertyValueType, class FeatureHandleType>
+	template <class PropertyValueType, class FeatureWeakRefType>
 	bool
 	get_property_values(
-			FeatureHandleType &feature_handle,
+			const FeatureWeakRefType &feature_weak_ref,
 			const GPlatesModel::PropertyName &property_name,
 			std::vector<PropertyValueType *> &property_values)
 	{
-		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType, FeatureWeakRefType>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(property_name);
 
 		typename property_value_finder_type::property_value_container_range property_value_range =
-				property_value_finder.find_property_values(feature_handle);
+				property_value_finder.find_property_values(feature_weak_ref);
 
 		property_values.insert(property_values.end(),
 				property_value_range.first,
@@ -341,15 +364,16 @@ namespace GPlatesFeatureVisitors
 	}
 
 
-	template <class PropertyValueType, class FeatureHandleType, typename PropertyNamesForwardIter>
+	template <class PropertyValueType, class FeatureWeakRefType, typename PropertyNamesForwardIter>
 	bool
 	get_property_values(
-			FeatureHandleType &feature_handle,
+			const FeatureWeakRefType &feature_weak_ref,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
 			std::vector<PropertyValueType *> &property_values)
 	{
-		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType, FeatureWeakRefType>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder;
 
@@ -361,7 +385,7 @@ namespace GPlatesFeatureVisitors
 						_1));
 
 		typename property_value_finder_type::property_value_container_range property_value_range =
-				property_value_finder.find_property_values(feature_handle);
+				property_value_finder.find_property_values(feature_weak_ref);
 
 		property_values.insert(property_values.end(),
 				property_value_range.first,
@@ -371,19 +395,20 @@ namespace GPlatesFeatureVisitors
 	}
 
 
-	template <class PropertyValueType, class FeatureHandleType>
+	template <class PropertyValueType, class FeatureWeakRefType>
 	bool
 	get_property_value(
-			FeatureHandleType &feature_handle,
+			const FeatureWeakRefType &feature_weak_ref,
 			const GPlatesModel::PropertyName &property_name,
 			PropertyValueType *&property_value)
 	{
-		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType, FeatureWeakRefType>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(property_name);
 
 		typename property_value_finder_type::property_value_container_range property_value_range =
-				property_value_finder.find_property_values(feature_handle);
+				property_value_finder.find_property_values(feature_weak_ref);
 
 		if (property_value_range.first == property_value_range.second)
 		{
@@ -398,15 +423,16 @@ namespace GPlatesFeatureVisitors
 	}
 
 
-	template <class PropertyValueType, class FeatureHandleType, typename PropertyNamesForwardIter>
+	template <class PropertyValueType, class FeatureWeakRefType, typename PropertyNamesForwardIter>
 	bool
 	get_property_value(
-			FeatureHandleType &feature_handle,
+			const FeatureWeakRefType &feature_weak_ref,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
 			PropertyValueType *&property_value)
 	{
-		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef GPlatesFeatureVisitors::PropertyValueFinder<PropertyValueType, FeatureWeakRefType>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder;
 
@@ -418,7 +444,7 @@ namespace GPlatesFeatureVisitors
 						_1));
 
 		typename property_value_finder_type::property_value_container_range property_value_range =
-				property_value_finder.find_property_values(feature_handle);
+				property_value_finder.find_property_values(feature_weak_ref);
 
 		if (property_value_range.first == property_value_range.second)
 		{

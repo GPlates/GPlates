@@ -144,19 +144,41 @@ GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::write_feature(
-	const GPlatesModel::FeatureHandle& feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+{
+	visit_feature(feature);
+}
+
+
+void
+GPlatesFileIO::PlatesLineFormatWriter::write_feature(
+		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
+{
+	visit_feature(feature);
+}
+
+
+bool
+GPlatesFileIO::PlatesLineFormatWriter::initialise_pre_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Clear accumulator before visiting feature.
 	d_feature_accumulator.clear();
 
-	// Collect any geometries in the current feature.
-	feature_handle.accept_visitor(*this);
+	// Next, visit the feature properties to collect any geometries in the feature.
+	return true;
+}
 
+
+void
+GPlatesFileIO::PlatesLineFormatWriter::finalise_post_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
+{
 	OldPlatesHeader old_plates_header;
 
 	// Delegate formating of feature header.
 	const bool valid_header = d_feature_header.get_old_plates_header(
-		feature_handle, old_plates_header);
+		feature_handle.reference(), old_plates_header);
 
 	// If we have a valid header and at least one geometry then we can output for the current feature.
 	if (valid_header && d_feature_accumulator.have_geometry())
@@ -185,6 +207,7 @@ GPlatesFileIO::PlatesLineFormatWriter::write_feature(
 				d_feature_accumulator.geometries_end());
 	}
 }
+
 
 void
 GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
@@ -223,23 +246,6 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 		<< " "
 		<< formatted_int_to_string(old_plates_header.number_of_points, 5).c_str()
 		<< endl;
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_feature_handle(
-	const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::visit_top_level_property_inline(
-	const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	visit_property_values(top_level_property_inline);
 }
 
 

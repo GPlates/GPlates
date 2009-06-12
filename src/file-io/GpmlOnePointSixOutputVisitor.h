@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,7 +37,6 @@
 #include "XmlWriter.h"
 #include "FileInfo.h"
 #include "FeatureWriter.h"
-#include "ExternalProgram.h"
 
 
 namespace GPlatesPropertyValues
@@ -49,11 +48,18 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesFileIO
 {
+	class ExternalProgram;
+
+
 	class GpmlOnePointSixOutputVisitor:
 			public GPlatesModel::ConstFeatureVisitor,
 			public FeatureWriter
 	{
 	public:
+		static
+		const ExternalProgram &
+		gzip_program();
+
 
 		/**
 		 * Creates a GPML writer for the given file.
@@ -82,6 +88,15 @@ namespace GPlatesFileIO
 		virtual
 		~GpmlOnePointSixOutputVisitor();
 
+		/**
+		* Writes a feature in GPML 1.6 format.
+		*
+		* @param feature_handle feature to write
+		*/
+		virtual
+		void
+		write_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 
 		/**
 		* Writes a feature in GPML 1.6 format.
@@ -89,9 +104,9 @@ namespace GPlatesFileIO
 		* @param feature_handle feature to write
 		*/
 		virtual
-			void
-			write_feature(const GPlatesModel::FeatureHandle& feature_handle);
-
+		void
+		write_feature(
+				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 		/**
 		 * Start writing the document (via the XML writer) to the output file or device.
@@ -101,6 +116,7 @@ namespace GPlatesFileIO
 		start_writing_document(
 				XmlWriter &writer);
 
+	protected:
 
 		virtual
 		void
@@ -260,10 +276,9 @@ namespace GPlatesFileIO
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
 
-		static const ExternalProgram s_gzip_program;
-
 	private:
-		 
+		static const ExternalProgram *s_gzip_program;
+
 		void
 		write_gpml_key_value_dictionary_element(
 				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
@@ -327,11 +342,6 @@ namespace GPlatesFileIO
 		 */
 		XmlWriter d_output;
 		
-		/**
-		 * Keeps track of the last property that was read.
-		 */
-		boost::optional<GPlatesModel::PropertyName> d_last_property_seen;
-
 		/**
 		 * Whether or not we need to perform a gzip after producing uncompressed gpml output.
 		 * This should be true when compressed output is requested on a Windows system. 

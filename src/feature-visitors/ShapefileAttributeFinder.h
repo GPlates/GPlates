@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -65,15 +65,30 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		~ShapefileAttributeFinder() {  }
-		
-		virtual
+
+		qvariant_container_const_iterator
+		found_qvariants_begin() const
+		{
+			return d_found_qvariants.begin();
+		}
+
+		qvariant_container_const_iterator
+		found_qvariants_end() const
+		{
+			return d_found_qvariants.end();
+		}
+
 		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
+		clear_found_qvariants()
+		{
+			d_found_qvariants.clear();
+		}
+
+	protected:
 
 		virtual
-		void
-		visit_top_level_property_inline(
+		bool
+		initialise_pre_property_values(
 				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 #if 0
@@ -131,25 +146,6 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
-
-
-		qvariant_container_const_iterator
-		found_qvariants_begin() const
-		{
-			return d_found_qvariants.begin();
-		}
-
-		qvariant_container_const_iterator
-		found_qvariants_end() const
-		{
-			return d_found_qvariants.end();
-		}
-
-		void
-		clear_found_qvariants()
-		{
-			d_found_qvariants.clear();
-		}
 
 	private:
 

@@ -33,6 +33,7 @@
 #include "ApplicationState.h"
 #include "ViewportWindow.h"
 #include "file-io/FileInfo.h"
+#include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
@@ -285,7 +286,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	// The user will still be able to type in a .gpml.gz file name and activate the
 	// gzipped saving code, however this will produce an exception which pops up
 	// a suitable message box (See ViewportWindow.cc)
-	d_gzip_available = GPlatesFileIO::GpmlOnePointSixOutputVisitor::s_gzip_program.test();
+	d_gzip_available = GPlatesFileIO::GpmlOnePointSixOutputVisitor::gzip_program().test();
 }
 
 

@@ -38,6 +38,7 @@
 #include "FileInfo.h"
 #include "ReadErrors.h"
 #include "ReadErrorOccurrence.h"
+#include "ExternalProgram.h"
 #include "global/GPlatesAssert.h"
 #include "PropertyCreationUtils.h"
 #include "FeaturePropertiesMap.h"
@@ -74,8 +75,17 @@
 #include "property-values/XsBoolean.h"
 
 
-const GPlatesFileIO::ExternalProgram
-		GPlatesFileIO::GpmlOnePointSixReader::s_gunzip_program("gzip -d", "gzip --version");
+const GPlatesFileIO::ExternalProgram &
+GPlatesFileIO::GpmlOnePointSixReader::gunzip_program()
+{
+	if (s_gunzip_program == NULL) {
+		s_gunzip_program = new ExternalProgram("gzip -d", "gzip --version");
+	}
+	return *s_gunzip_program;
+}
+
+
+const GPlatesFileIO::ExternalProgram *GPlatesFileIO::GpmlOnePointSixReader::s_gunzip_program = NULL;
 
 
 namespace
@@ -455,9 +465,9 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		input_process.setStandardInputFile(filename);
 		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
 		// In fact, it may need to be a user preference.
-		input_process.start(s_gunzip_program.command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
+		input_process.start(gunzip_program().command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
 		if ( ! input_process.waitForStarted()) {
-			throw ErrorOpeningPipeFromGzipException(s_gunzip_program.command(), filename);
+			throw ErrorOpeningPipeFromGzipException(gunzip_program().command(), filename);
 		}
 		input_process.waitForReadyRead(20000);
 		reader.setDevice(&input_process);

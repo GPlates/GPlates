@@ -125,8 +125,7 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 
 		for ( ; iter != end; ++iter)
 		{
-			const GPlatesModel::FeatureHandle& feature_handle = **iter;
-			writer->write_feature(feature_handle);
+			writer->write_feature(iter);
 		}
 		feature_collection->set_contains_unsaved_changes(false);
 	}

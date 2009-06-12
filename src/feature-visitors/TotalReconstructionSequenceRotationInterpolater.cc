@@ -64,25 +64,16 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::TotalRe
 {  }
 
 
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_feature_handle(
+bool
+GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-	// Now visit each of the properties in turn.
 	d_is_expecting_a_finite_rotation = false;
 	d_trp_time_matches_exactly = false;
 	d_finite_rotation_result = boost::none;
 	d_finite_rotation_for_interp = boost::none;
-	visit_feature_properties(feature_handle);
-}
 
-
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_top_level_property_inline(
-		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	d_most_recent_propname_read = top_level_property_inline.property_name();
-	visit_property_values(top_level_property_inline);
+	return true;
 }
 
 

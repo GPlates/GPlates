@@ -31,10 +31,9 @@
 #include "FeatureRevision.h"
 #include "FeatureId.h"
 #include "FeatureType.h"
-#include "ConstFeatureVisitor.h"
-#include "FeatureVisitor.h"
 #include "RevisionAwareIterator.h"
 #include "WeakReference.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -46,6 +45,9 @@ namespace GPlatesModel
 	template<class T> class WeakObserverVisitor;
 	class DummyTransactionHandle;
 	class FeatureCollectionHandle;
+	class FeatureVisitor;
+	class ConstFeatureVisitor;
+
 
 	/**
 	 * A feature handle acts as a persistent handle to the revisioned content of a conceptual
@@ -159,7 +161,7 @@ namespace GPlatesModel
 			if (iter.collection_handle_ptr() == NULL) {
 				return properties_const_iterator();
 			}
-			return properties_const_iterator::create_index(
+			return properties_const_iterator::create_for_index(
 					*(iter.collection_handle_ptr()), iter.index());
 		}
 
@@ -280,10 +282,7 @@ namespace GPlatesModel
 		 * be changed.
 		 */
 		const RevisionId &
-		revision_id() const
-		{
-			return current_revision()->revision_id();
-		}
+		revision_id() const;
 
 		/**
 		 * Return the "begin" const-iterator to iterate over the collection of top-level
@@ -339,13 +338,7 @@ namespace GPlatesModel
 		const properties_iterator
 		append_top_level_property(
 				TopLevelProperty::non_null_ptr_type new_top_level_property,
-				DummyTransactionHandle &transaction)
-		{
-			FeatureRevision::top_level_property_collection_type::size_type new_index =
-					current_revision()->append_top_level_property(
-							new_top_level_property, transaction);
-			return properties_iterator::create_index(*this, new_index);
-		}
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Remove the top-level property indicated by @a iter in the collection.
@@ -358,10 +351,7 @@ namespace GPlatesModel
 		void
 		remove_top_level_property(
 				properties_const_iterator iter,
-				DummyTransactionHandle &transaction)
-		{
-			current_revision()->remove_top_level_property(iter.index(), transaction);
-		}
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Remove the top-level property indicated by @a iter in the collection.
@@ -374,10 +364,7 @@ namespace GPlatesModel
 		void
 		remove_top_level_property(
 				properties_iterator iter,
-				DummyTransactionHandle &transaction)
-		{
-			current_revision()->remove_top_level_property(iter.index(), transaction);
-		}
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Access the current revision of this feature.
@@ -443,32 +430,6 @@ namespace GPlatesModel
 				FeatureCollectionHandle *new_ptr)
 		{
 			d_feature_collection_handle_ptr = new_ptr;
-		}
-
-		/**
-		 * Accept a ConstFeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		void
-		accept_visitor(
-				ConstFeatureVisitor &visitor) const
-		{
-			visitor.visit_feature_handle(*this);
-		}
-
-		/**
-		 * Accept a FeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		void
-		accept_visitor(
-				FeatureVisitor &visitor)
-		{
-			visitor.visit_feature_handle(*this);
 		}
 
 		/**

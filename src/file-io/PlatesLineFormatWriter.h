@@ -73,20 +73,31 @@ namespace GPlatesFileIO
 		* @param feature_handle feature to write
 		*/
 		virtual
-			void
-			write_feature(const GPlatesModel::FeatureHandle& feature_handle);
+		void
+		write_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
+
+		/**
+		* Writes a feature in PLATES4 line format.
+		*
+		* @param feature_handle feature to write
+		*/
+		virtual
+		void
+		write_feature(
+				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 	private:
 
 		virtual
-		void
-		visit_feature_handle(
+		bool
+		initialise_pre_feature_properties(
 				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
