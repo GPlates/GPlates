@@ -72,6 +72,13 @@ GPlatesCanvasTools::BuildTopology::handle_activation()
 	d_rendered_geom_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
+	// ONLY allow this tool to active with no foucs
+	if ( d_feature_focus_ptr->is_valid() )
+	{
+		// unset the focus
+		d_feature_focus_ptr->unset_focus();
+	}
+
 	d_topology_tools_widget_ptr->activate( GPlatesGui::TopologyTools::BUILD );
 }
 

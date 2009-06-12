@@ -313,6 +313,12 @@ namespace GPlatesGui
 		activate( CanvasToolMode );
 
 		void
+		activate_build_mode();
+
+		void
+		activate_edit_mode();
+
+		void
 		deactivate();
 
 		void

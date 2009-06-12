@@ -141,109 +141,14 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 	d_topology_tools_widget_ptr = 
 		&( d_view_state_ptr->task_panel_ptr()->topology_tools_widget() );
 
-	// Only activate these tools with a valid feature focus.
-	if ( ! d_feature_focus_ptr->is_valid() ) 
+
+	if ( d_mode == BUILD )
 	{
-		// USAGE:
-		// choose another tool; NOTE: changing tools will call this object's deactivate();
-		d_view_state_ptr->choose_click_geometry_tool();
-
-		d_view_state_ptr->status_message(QObject::tr(
- 			"Click on a feature to activate the Topology Tools."));
-
-		// Flip the ViewportWindow to the Clicked Geometry Table
-		d_view_state_ptr->choose_clicked_geometry_table();
-
-		d_is_active = false;
-		return;
-	}
-
-	// Check type vs Activate mode 
-	// allow only :
-	// EDIT with TopologicalClosedPlateBoundary features
-	// BUILD with non-topology features
-
-	// Check feature type via qstrings 
- 	QString topology_type_name ("TopologicalClosedPlateBoundary");
-	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-	 	 d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
-
-	if ( feature_type_name == topology_type_name ) 
-	{
-		if ( d_mode == EDIT ) 
-		{
-			d_is_active = true;
-		}
-		else // BUILD
-		{
-			d_is_active = false;
-			// choose another tool; NOTE: changing tools will call this object's deactivate();
-			d_view_state_ptr->choose_click_geometry_tool();
-			d_view_state_ptr->status_message(QObject::tr(
- 				"Click on a regular feature to activate the Build Topology Tool."));
-			return;
-		}
-	}
-	else // non topology feature 
-	{
-		if ( d_mode == EDIT )
-		{
-			d_is_active = false;
-			// choose another tool; NOTE: changing tools will call this object's deactivate();
-			d_view_state_ptr->choose_click_geometry_tool();
-			d_view_state_ptr->status_message(QObject::tr(
- 				"Click on a Topology feature to activate the Edit Topology Tool."));
-			return;
-		}
-		else // BUILD
-		{
-			d_is_active = true;
-		}
-	}
-
-	//
-	// handle feature focus
-	//
-	if ( d_mode == EDIT ) 
-	{
-		// set the topology feature ref
-		d_topology_feature_ref = d_feature_focus_ptr->focused_feature();
-
-		// Load the topology into the Topology Sections Table 
- 		display_topology(
-			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-
-		// Load the topology into the Topology Widget
-		d_topology_tools_widget_ptr->display_topology(
-			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-
-		// NOTE: this will NOT trigger a set_focus signal with NULL ref ; 
-		// NOTE: the focus connection is below 
-		d_feature_focus_ptr->unset_focus();
-		d_feature_focus_head_points.clear();
-		d_feature_focus_tail_points.clear();
-		// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-		d_view_state_ptr->feature_table_model().clear();
-
-		// Flip the ViewportWindow to the Topology Sections Table
-		d_view_state_ptr->choose_topology_sections_table();
-
-		// Flip the TopologyToolsWidget to the Toplogy Tab
-		d_topology_tools_widget_ptr->choose_topology_tab();
+		activate_build_mode();
 	}
 	else 
 	{
-		// BUILD mode 
-
-		// Load the feature into the Topology Sections Table 
- 		display_feature( 
-			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-
-		// Flip the ViewportWindow to the Clicked Geometry Table
-		d_view_state_ptr->choose_clicked_geometry_table();
-
-		// Flip the TopologyToolsWidget to the Section Tab
-		d_topology_tools_widget_ptr->choose_section_tab();
+		activate_edit_mode();
 	}
 
 	// process the table
@@ -276,6 +181,41 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
  		" Ctrl+drag to reorient the globe."));
 
 	return;
+}
+
+void
+GPlatesGui::TopologyTools::activate_build_mode()
+{
+	// place holder if we need it in the future ...
+}
+
+void
+GPlatesGui::TopologyTools::activate_edit_mode()
+{
+		// set the topology feature ref
+		d_topology_feature_ref = d_feature_focus_ptr->focused_feature();
+
+		// Load the topology into the Topology Sections Table 
+ 		display_topology(
+			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+
+		// Load the topology into the Topology Widget
+		d_topology_tools_widget_ptr->display_topology(
+			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+
+		// NOTE: this will NOT trigger a set_focus signal with NULL ref ; 
+		// NOTE: the focus connection is below 
+		d_feature_focus_ptr->unset_focus();
+		d_feature_focus_head_points.clear();
+		d_feature_focus_tail_points.clear();
+		// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
+		d_view_state_ptr->feature_table_model().clear();
+
+		// Flip the ViewportWindow to the Topology Sections Table
+		d_view_state_ptr->choose_topology_sections_table();
+
+		// Flip the TopologyToolsWidget to the Toplogy Tab
+		d_topology_tools_widget_ptr->choose_topology_tab();
 }
 
 void
@@ -921,8 +861,10 @@ GPlatesGui::TopologyTools::handle_add_feature()
 	d_in_edit = true;
 
 	// only allow adding of focused features
-	if ( ! d_feature_focus_ptr->is_valid() ) { 
-		return; }
+	if ( ! d_feature_focus_ptr->is_valid() ) 
+	{ 
+		return; 
+	}
 
 	// Get the current insertion point 
 	int index = d_topology_sections_container_ptr->insertion_point();
@@ -2037,7 +1979,8 @@ GPlatesGui::TopologyTools::process_intersections()
 		qDebug() << "WARNING: ======================================";
 		qDebug() << "WARNING: no click point for feature at Topology Section Table index:" << d_tmp_index;
 		qDebug() << "WARNING: Unable to process intersections of this feature with neighbors without a click point.";
-		qDebug() << "WARNING: Remove the feature, and re-insert it from a click on the globe.";
+		qDebug() << "WARNING: If this line intersects others, then";
+		qDebug() << "WARNING: remove the feature, and re-insert it from a click on the globe.";
 		return;
 	}
 

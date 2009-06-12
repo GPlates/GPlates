@@ -68,6 +68,33 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 void
 GPlatesCanvasTools::EditTopology::handle_activation()
 {
+	// This tool must have a focused feature to activate 
+	if ( ! d_feature_focus_ptr->is_valid() )
+	{
+		// switch to the choose feature tool
+		// FIXME:  Since ViewportWindow is passed as a const ref cannot call this :
+		// d_view_state_ptr->choose_click_geometry_tool();
+		return;
+	}
+
+	// else check type 
+
+	// Check feature type via qstrings 
+	QString topology_type_name ("TopologicalClosedPlateBoundary");
+	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+		d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
+
+	// Only activate for topologies
+	if ( feature_type_name != topology_type_name )
+	{
+		// switch to the choose feature tool
+		// FIXME:  Since ViewportWindow is passed as a const ref cannot call this :
+		// d_view_state_ptr->choose_click_geometry_tool();
+		return;
+	}
+
+	// else, all checks passed , continue to activate the low level tools 
+
 	// Activate rendered layer.
 	d_rendered_geom_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);

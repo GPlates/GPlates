@@ -303,6 +303,12 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 void
 GPlatesQtWidgets::TopologyToolsWidget::handle_add_feature()
 {
+	// simple short cut for no op
+	if ( ! d_feature_focus_ptr->is_valid() )
+	{
+		return;
+	}
+
 	// call the tools fuction
 	d_topology_tools_ptr->handle_add_feature();
 

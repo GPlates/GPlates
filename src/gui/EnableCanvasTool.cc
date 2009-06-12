@@ -70,6 +70,7 @@ GPlatesGui::EnableCanvasTool::initialise()
 	d_viewport_window->enable_digitise_polyline_tool(true);
 	d_viewport_window->enable_digitise_multipoint_tool(true);
 	d_viewport_window->enable_digitise_polygon_tool(true);
+	d_viewport_window->enable_build_topology_tool(true);
 }
 
 void
@@ -283,8 +284,8 @@ GPlatesGui::EnableCanvasTool::update_manipulate_pole_tool()
 void
 GPlatesGui::EnableCanvasTool::update_build_topology_tool()
 {
-	// only enable tool if a feature is focused
-	d_viewport_window->enable_build_topology_tool(d_feature_geom_is_in_focus);
+	// only enable tool if a feature is NOT focused
+	d_viewport_window->enable_build_topology_tool( !d_feature_geom_is_in_focus );
 }
 
 void
