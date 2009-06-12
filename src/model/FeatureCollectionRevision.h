@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,9 @@
 
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
+
 #include "FeatureHandle.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -138,7 +140,7 @@ namespace GPlatesModel
 		 * access a feature at an index which is greater-than or equal-to the number of
 		 * feature-slots will always result in a NULL pointer.
 		 */
-		feature_collection_type::size_type
+		container_size_type
 		size() const
 		{
 			return d_features.size();
@@ -158,7 +160,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<const FeatureHandle>
 		operator[](
-				feature_collection_type::size_type index) const
+				container_size_type index) const
 		{
 			return access_feature(index);
 		}
@@ -177,7 +179,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<FeatureHandle>
 		operator[](
-				feature_collection_type::size_type index)
+				container_size_type index)
 		{
 			return access_feature(index);
 		}
@@ -196,7 +198,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<const FeatureHandle>
 		access_feature(
-				feature_collection_type::size_type index) const
+				container_size_type index) const
 		{
 			boost::intrusive_ptr<const FeatureHandle> ptr;
 			if (index < size()) {
@@ -219,7 +221,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<FeatureHandle>
 		access_feature(
-				feature_collection_type::size_type index)
+				container_size_type index)
 		{
 			boost::intrusive_ptr<FeatureHandle> ptr;
 			if (index < size()) {
@@ -231,7 +233,7 @@ namespace GPlatesModel
 		/**
 		 * Append @a new_feature to the feature collection.
 		 */
-		feature_collection_type::size_type
+		container_size_type
 		append_feature(
 				FeatureHandle::non_null_ptr_type new_feature,
 				DummyTransactionHandle &transaction);
@@ -245,7 +247,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_feature(
-				feature_collection_type::size_type index,
+				container_size_type index,
 				DummyTransactionHandle &transaction);
 
 		/**

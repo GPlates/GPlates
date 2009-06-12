@@ -25,14 +25,56 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+
 #include "FeatureHandle.h"
+#include "ConstFeatureVisitor.h"
+#include "FeatureVisitor.h"
 #include "WeakObserverVisitor.h"
+#include "FeatureHandleWeakRefBackInserter.h"
 
 
 GPlatesModel::FeatureHandle::~FeatureHandle()
 {
 	weak_observer_unsubscribe_forward(d_first_const_weak_observer);
 	weak_observer_unsubscribe_forward(d_first_weak_observer);
+	std::cout << "Destroying FeatureHandle" << std::endl;
+}
+
+
+const GPlatesModel::RevisionId &
+GPlatesModel::FeatureHandle::revision_id() const
+{
+	return current_revision()->revision_id();
+}
+
+
+const GPlatesModel::FeatureHandle::properties_iterator
+GPlatesModel::FeatureHandle::append_top_level_property(
+		TopLevelProperty::non_null_ptr_type new_top_level_property,
+		DummyTransactionHandle &transaction)
+{
+	container_size_type new_index =
+			current_revision()->append_top_level_property(new_top_level_property, transaction);
+	return properties_iterator::create_for_index(*this, new_index);
+}
+
+
+void
+GPlatesModel::FeatureHandle::remove_top_level_property(
+		properties_const_iterator iter,
+		DummyTransactionHandle &transaction)
+{
+	current_revision()->remove_top_level_property(iter.index(), transaction);
+}
+
+
+void
+GPlatesModel::FeatureHandle::remove_top_level_property(
+		properties_iterator iter,
+		DummyTransactionHandle &transaction)
+{
+	current_revision()->remove_top_level_property(iter.index(), transaction);
 }
 
 
@@ -78,6 +120,13 @@ GPlatesModel::FeatureHandle::FeatureHandle(
 	d_feature_collection_handle_ptr(NULL)
 {
 	d_feature_id.set_back_ref_target(*this);
+
+#if 0
+	// Verify that the back-ref logic is working properly.
+	std::vector<FeatureHandle::weak_ref> back_ref_targets;
+	d_feature_id.find_back_ref_targets(append_as_weak_refs(back_ref_targets));
+	std::cout << "Num back-ref targets found: " << back_ref_targets.size() << std::endl;
+#endif
 }
 
 

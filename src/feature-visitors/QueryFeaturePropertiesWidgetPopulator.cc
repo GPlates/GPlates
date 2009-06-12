@@ -66,7 +66,7 @@
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
-		GPlatesModel::FeatureHandle &feature_handle,
+		GPlatesModel::FeatureHandle::weak_ref &feature,
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
 {
 	d_tree_widget_ptr->clear();
@@ -82,21 +82,12 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
 		//   2) serves a dramatic optimisation for large number of geometries in feature.
 		d_focused_geometry = focused_rfg->property();
 	}
-	visit_feature_handle(feature_handle);
+	visit_feature(feature);
 
 	// Now that we've accumulated the tree widget item hierarchy we can
 	// add the hierarchy to Qt efficiently by adding all children of each
 	// tree widget item in one call using a QList.
 	d_tree_widget_builder.update_qtree_widget_with_added_or_inserted_items();
-}
-
-
-void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_feature_handle(
-		GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
 }
 
 

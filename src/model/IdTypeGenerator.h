@@ -30,22 +30,23 @@
 
 #include <vector>
 #include <unicode/unistr.h>
-#include <boost/intrusive_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include "StringSetSingletons.h"
 #include "utils/UniqueId.h"
-#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
 {
-	// These using-declarations are necessary for successful lookup of 'intrusive_ptr_add_ref'
-	// and 'intrusive_ptr_release' in G++ 4.1.2.  See the commit message for changeset 5634 for
-	// details.  (The code compiles fine in MSVC 8 with and without the using-declarations.)
-	using GPlatesUtils::intrusive_ptr_add_ref;
-	using GPlatesUtils::intrusive_ptr_release;
-
 	/**
 	 * This class provides an efficient means of containing an ID, which is a Unicode string.
+	 *
+	 * An ID may also be associated with an object which defines the ID (such as a feature
+	 * which defines a feature ID).  This is enabled by an optional "back-reference" to the
+	 * object which defines the ID -- for example, a FeatureId would contain an optional
+	 * back-reference to a FeatureHandle.  In this example, the FeatureHandle would be the
+	 * "target" of the back-reference.  The back-reference is optional, as -- again, for
+	 * example -- not all FeatureId instances are contained within a feature; a FeatureId
+	 * instance might also be contained within a GpmlPropertyDelegate instance.
 	 *
 	 * Since the strings are unique in the IdStringSet, comparison for equality of ID instances
 	 * is as simple as comparing a pair of iterators for equality.
@@ -64,22 +65,43 @@ namespace GPlatesModel
 	{
 	public:
 		typedef BackRefTargetType back_ref_target_type;
-
 		typedef GPlatesUtils::IdStringSet::back_ref_list_type back_ref_list_type;
-
 		typedef GPlatesUtils::IdStringSet::SharedIterator shared_iterator_type;
 
+		/**
+		 * An RAII class which encapsulates the idea of being a back-reference in a list of
+		 * registered back-references for a given ID.
+		 *
+		 * When this class is destroyed, it automatically unsubscribes itself from the list
+		 * of back-references.  The list of back-references is contained in an element of
+		 * IdStringSet; the automatic-unsubscription behaviour is provided by a smart node
+		 * from SmartNodeLinkedList.
+		 *
+		 * This class is non-copyable.  It is intended that instances of this class be
+		 * allocated on the heap.
+		 */
 		class BackRef:
-				public GPlatesUtils::IdStringSet::AbstractBackRef,
-				public GPlatesUtils::ReferenceCount<BackRef>
+				public GPlatesUtils::IdStringSet::AbstractBackRef
 		{
 		public:
+			/**
+			 * Constructor.
+			 *
+			 * @a target is the target of the back-reference.  @a sh_iter indicates the
+			 * element in IdStringSet.
+			 *
+			 * When this constructor is complete, it will be a registered back-ref for
+			 * the ID indicated by @a sh_iter.
+			 *
+			 * This constructor won't throw.
+			 */
 			BackRef(
 					back_ref_target_type &target,
 					shared_iterator_type &sh_iter):
 				d_target_ptr(&target),
 				d_node_for_back_ref_registration(this)
 			{
+				// Register this BackRef as a back-reference for this ID.
 				sh_iter.back_refs().append(d_node_for_back_ref_registration);
 			}
 
@@ -87,12 +109,19 @@ namespace GPlatesModel
 			~BackRef()
 			{  }
 
+			/**
+			 * Access the target of this back-reference, an object which defines this
+			 * ID.
+			 */
 			back_ref_target_type *
 			target_ptr() const
 			{
 				return d_target_ptr;
 			}
 
+			/**
+			 * Access the smart node which is linked into the list of back-references.
+			 */
 			back_ref_list_type::Node &
 			node() const
 			{
@@ -113,6 +142,12 @@ namespace GPlatesModel
 			 *
 			 * This data member is mutable because the node must be modified when it's
 			 * spliced into or out of the list.
+			 *
+			 * When this BackRef instance is destroyed, the contained Node will also be
+			 * destroyed.  When the Node is destroyed, its destructor will splice it
+			 * out of the list, which will de-register this BackRef instance from the
+			 * list of back-references for the ID.  Thus, the lifetime of the Node must
+			 * be the same as the lifetime of this BackRef instance.
 			 */
 			mutable back_ref_list_type::Node d_node_for_back_ref_registration;
 
@@ -137,7 +172,7 @@ namespace GPlatesModel
 				const UnicodeString &s);
 
 		IdTypeGenerator() :
-			sh_iter(SingletonType::instance().insert(GPlatesUtils::generate_unique_id()))
+			d_sh_iter(SingletonType::instance().insert(GPlatesUtils::generate_unique_id()))
 		{  }
 
 		/**
@@ -152,16 +187,50 @@ namespace GPlatesModel
 		 */
 		explicit
 		IdTypeGenerator(
-				const UnicodeString &s) :
-			sh_iter(SingletonType::instance().insert(s))
+				const UnicodeString &s):
+			d_sh_iter(SingletonType::instance().insert(s))
 		{  }
+
+		/**
+		 * Copy constructor.
+		 *
+		 * Note that we don't copy the back-reference, since the back-reference in @a other
+		 * (if there is one) points to the object which defined (and contains) @a other,
+		 * which may not necessarily be the back-reference which defines or contains this.
+		 */
+		IdTypeGenerator(
+				const IdTypeGenerator &other):
+			d_sh_iter(other.d_sh_iter),
+			d_back_ref_ptr()
+		{  }
+
+		/**
+		 * Copy-assignment operator.
+		 *
+		 * Note that we don't copy the back-reference, since the back-reference in @a other
+		 * (if there is one) points to the object which defined (and contains) @a other,
+		 * which may not necessarily be the back-reference which defines or contains this.
+		 */
+		IdTypeGenerator &
+		operator=(
+				const IdTypeGenerator &other)
+		{
+			// Note that since the back-reference is reset inside this block, this
+			// if-test is quite necessary...
+			if (this != &other) {
+				d_sh_iter = other.d_sh_iter;
+				// Don't copy-assign the back-reference; instead, reset it.
+				d_back_ref_ptr.reset();
+			}
+			return *this;
+		}
 
 		/**
 		 * Access the Unicode string of the text content for this instance.
 		 */
 		const UnicodeString &
 		get() const {
-			return *sh_iter;
+			return *d_sh_iter;
 		}
 
 		/**
@@ -175,7 +244,7 @@ namespace GPlatesModel
 		set_back_ref_target(
 				back_ref_target_type &target)
 		{
-			d_back_ref_ptr = new BackRef(target, sh_iter);
+			d_back_ref_ptr.reset(new BackRef(target, d_sh_iter));
 		}
 
 
@@ -206,8 +275,8 @@ namespace GPlatesModel
 		find_back_ref_targets(
 				Inserter inserter) const
 		{
-			back_ref_list_type::iterator iter = sh_iter.back_refs().begin();
-			back_ref_list_type::iterator end = sh_iter.back_refs().end();
+			back_ref_list_type::iterator iter = d_sh_iter.back_refs().begin();
+			back_ref_list_type::iterator end = d_sh_iter.back_refs().end();
 			for ( ; iter != end; ++iter) {
 				BackRef *back_ref = dynamic_cast<BackRef *>(*iter);
 				if (back_ref != NULL) {
@@ -223,16 +292,16 @@ namespace GPlatesModel
 		bool
 		is_equal_to(
 				const IdTypeGenerator &other) const {
-			return sh_iter == other.sh_iter;
+			return d_sh_iter == other.d_sh_iter;
 		}
 
 	private:
 
-		shared_iterator_type sh_iter;
+		shared_iterator_type d_sh_iter;
 
-		// FIXME:  Should this instead be a scoped_ptr, with IdTypeGenerator's copy-ctor
-		// and copy-assignment not copying it, or should it be left as intrusive_ptr?
-		boost::intrusive_ptr<const BackRef> d_back_ref_ptr;
+		// This is a scoped_ptr, so that it cannot be shared between IdTypeGenerator
+		// instances which are copied or copy-assigned.
+		boost::scoped_ptr<const BackRef> d_back_ref_ptr;
 	};
 
 

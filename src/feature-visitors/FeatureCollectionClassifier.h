@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -118,16 +118,22 @@ namespace GPlatesFeatureVisitors
 		 */
 		void
 		reset();
-		
+
+	protected:
 
 		virtual
-		void
-		visit_feature_handle(
+		bool
+		initialise_pre_feature_properties(
 				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
-		visit_top_level_property_inline(
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
+
+		virtual
+		bool
+		initialise_pre_property_values(
 				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 		virtual
@@ -147,12 +153,11 @@ namespace GPlatesFeatureVisitors
 
 	private:
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;
-		boost::optional<GPlatesModel::PropertyName> d_most_recent_propname_read;
-		
+
 		bool d_looks_like_reconstruction_feature;
 		bool d_looks_like_reconstructable_feature;
 		bool d_looks_like_instantaneous_feature;
-		
+
 		int d_reconstruction_feature_count;
 		int d_reconstructable_feature_count;
 		int d_instantaneous_feature_count;

@@ -1264,9 +1264,14 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
 				GPlatesPropertyValues::XsBoolean::create(is_active);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				is_active_property_value, 
-				GPlatesModel::PropertyName::create_gpml("isActive"), 
+
+		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type constant_value_property_value =
+				GPlatesModel::ModelUtils::create_gpml_constant_value(
+						is_active_property_value, 
+						GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("boolean"));
+
+		GPlatesModel::ModelUtils::append_property_value_to_feature(constant_value_property_value,
+				GPlatesModel::PropertyName::create_gpml("isActive"),
 				feature_handle);
 
 		return feature_handle;

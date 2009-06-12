@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -70,7 +70,7 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 
 	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
 			d_view_state_ptr->reconstruction(), *tree_geometry);
-	populator.populate(*d_feature_ref, d_focused_rfg);
+	populator.populate(d_feature_ref, d_focused_rfg);
 	
 	double time = d_view_state_ptr->reconstruction_time();
 	unsigned long root = d_view_state_ptr->reconstruction_root();

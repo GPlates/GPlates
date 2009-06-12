@@ -277,11 +277,18 @@ namespace{
 
 		OGRDataSource *ogr_data_source_ptr = ogr_driver->Open(filename.toStdString().c_str(),true /* true to allow updates */);
 
+		if (ogr_data_source_ptr == NULL)
+		{
+			qDebug() << "Creation of data source failed.";
+			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Ogr data source creation failed.");
+		}
+		
 		int number_of_layers = ogr_data_source_ptr->GetLayerCount();
 
 		for (int count = 0; count < number_of_layers; ++count)
 		{
-			ogr_data_source_ptr->DeleteLayer(count);
+		// After removing a layer, the layers are renumbered, so using index 0 in this loop removes all the layers.
+			ogr_data_source_ptr->DeleteLayer(0);
 		}
 
 	}
@@ -309,7 +316,9 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 
 	if (!multiple_layers)
 	{
-		// If there's no .shp extension, add one. 
+		// For single geometry types, we export to a single shapefile; the ogr driver requires 
+		// the "shp" extension on the file name.
+		// So if there's no .shp extension, add one. 
 		if (q_file_info_original.suffix().isEmpty())
 		{
 			d_filename.append(".shp");
@@ -317,11 +326,13 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	}
 	else
 	{
-		// If there is a .shp extension (or any other extension(s)), strip it/them.
-		if (!q_file_info_original.completeSuffix().isEmpty())
+		// For multiple geometry types, we export to multiple files within a folder; for this, the ogr driver
+		// requires no "shp" extension on the filename. 
+		// So if there is a .shp extension, strip it.
+		if (q_file_info_original.suffix() == "shp")
 		{
 			d_filename = q_file_info_original.absolutePath() + QDir::separator() + 
-				q_file_info_original.baseName();
+				q_file_info_original.completeBaseName();
 		}
 	}
 
@@ -335,7 +346,7 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 
 	d_ogr_data_source_ptr = ogr_driver->CreateDataSource(d_filename.toStdString().c_str(), NULL );
 
-	d_root_filename = q_file_info_original.baseName();
+	d_root_filename = q_file_info_original.completeBaseName();
 
 #if 0
 	if (!q_file_info.exists())

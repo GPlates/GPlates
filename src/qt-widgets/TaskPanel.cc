@@ -193,6 +193,7 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
+
 void
 GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 {
@@ -218,5 +219,15 @@ GPlatesQtWidgets::TaskPanel::enable_topology_tab(
 	bool enable)
 {
 	tab_topology_tools->setEnabled(enable);
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::enable_modify_pole_tab(
+	bool enable)
+{
+	
+	tab_modify_pole->setEnabled(enable);
+	
 }
 

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -56,15 +56,18 @@ namespace GPlatesFeatureVisitors
 		~TotalReconstructionSequenceRotationInterpolater()
 		{  }
 
-		virtual
-		void
-		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle);
+		const boost::optional<GPlatesMaths::FiniteRotation> &
+		result() const
+		{
+			return d_finite_rotation_result;
+		}
+
+	protected:
 
 		virtual
-		void
-		visit_top_level_property_inline(
-				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+		bool
+		initialise_pre_feature_properties(
+				GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
@@ -81,12 +84,6 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
-		const boost::optional<GPlatesMaths::FiniteRotation> &
-		result() const
-		{
-			return d_finite_rotation_result;
-		}
-
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
@@ -95,8 +92,6 @@ namespace GPlatesFeatureVisitors
 
 		boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation_result;
 		boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation_for_interp;
-
-		boost::optional<GPlatesModel::PropertyName> d_most_recent_propname_read;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.

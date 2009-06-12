@@ -72,7 +72,6 @@
 
 namespace
 {
-	
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 	create_multi_point_from_points(
 		const std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> &points)
@@ -230,14 +229,14 @@ namespace
 	fill_kvd_with_plate_id(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 		const QMap< QString,QString > &model_to_shapefile_map,
-		const GPlatesModel::FeatureHandle &feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
-		if (GPlatesFeatureVisitors::get_property_value(feature_handle,plate_id_property_name,recon_plate_id))
+		if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
 		{
 			// The feature has a reconstruction plate ID.
 			//qDebug() << "fill_kvd: found plate-id " << recon_plate_id->value();	
@@ -280,13 +279,17 @@ namespace
 	fill_kvd_with_feature_type(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 		const QMap< QString,QString > &model_to_shapefile_map,
-		const GPlatesModel::FeatureHandle &feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
 		static const GPlatesFileIO::ShapefileUtils::feature_map_type &feature_map = 
 			GPlatesFileIO::ShapefileUtils::build_feature_map();
 
+		if ( ! feature.is_valid()) {
+			return;
+		}
+
 		QString feature_type_model_qstring = GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.feature_type().get_name());
+			feature->feature_type().get_name());
 
 		QString feature_type_key = feature_map.key(feature_type_model_qstring);
 
@@ -329,7 +332,7 @@ namespace
 	fill_kvd_with_begin_and_end_time(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 		const QMap< QString,QString > &model_to_shapefile_map,
-		const GPlatesModel::FeatureHandle &feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
 		static const GPlatesModel::PropertyName valid_time_property_name =
 			GPlatesModel::PropertyName::create_gml("validTime");
@@ -337,7 +340,7 @@ namespace
 		const GPlatesPropertyValues::GmlTimePeriod *time_period;
 
 		if (GPlatesFeatureVisitors::get_property_value(
-			feature_handle,valid_time_property_name,time_period))
+			feature,valid_time_property_name,time_period))
 		{
 
 			double begin_time = get_time_from_time_period(*(time_period->begin()));
@@ -414,7 +417,7 @@ namespace
 	fill_kvd_with_name(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 		const QMap< QString,QString > &model_to_shapefile_map,
-		const GPlatesModel::FeatureHandle &feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
 
 		static const GPlatesModel::PropertyName name_property_name = 
@@ -423,7 +426,7 @@ namespace
 		const GPlatesPropertyValues::XsString *name;
 
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature_handle,name_property_name,name)) {
+				feature,name_property_name,name)) {
 
 			GPlatesModel::PropertyValue::non_null_ptr_type name_value =
 						name->clone();
@@ -464,7 +467,7 @@ namespace
 	fill_kvd_with_description(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 		const QMap< QString,QString > &model_to_shapefile_map,
-		const GPlatesModel::FeatureHandle &feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
 
 		static const GPlatesModel::PropertyName description_property_name = 
@@ -473,7 +476,7 @@ namespace
 		const GPlatesPropertyValues::XsString *description;
 
 		if (GPlatesFeatureVisitors::get_property_value(
-			feature_handle,description_property_name,description)) {
+			feature,description_property_name,description)) {
 
 				GPlatesModel::PropertyValue::non_null_ptr_type description_value =
 					description->clone();
@@ -609,12 +612,13 @@ namespace
 		const QMap< QString,QString > &model_to_shapefile_map,
 		const GPlatesModel::FeatureHandle &feature_handle)
 	{
+		GPlatesModel::FeatureHandle::const_weak_ref feature = feature_handle.reference();
 
-		fill_kvd_with_plate_id(dictionary,model_to_shapefile_map,feature_handle);
-		fill_kvd_with_feature_type(dictionary,model_to_shapefile_map,feature_handle);
-		fill_kvd_with_begin_and_end_time(dictionary,model_to_shapefile_map,feature_handle);
-		fill_kvd_with_name(dictionary,model_to_shapefile_map,feature_handle);
-		fill_kvd_with_description(dictionary,model_to_shapefile_map,feature_handle);
+		fill_kvd_with_plate_id(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_feature_type(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_begin_and_end_time(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_name(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_description(dictionary,model_to_shapefile_map,feature);
 
 	}
 	
@@ -664,9 +668,7 @@ namespace
 			{
 				// FIXME: Replace this kvd-finder with the new PropertyValueFinder.
 				GPlatesFeatureVisitors::KeyValueDictionaryFinder finder;
-				const GPlatesModel::FeatureHandle& feature_handle = **iter;
-				feature_handle.accept_visitor(finder);
-				
+				finder.visit_feature(iter);
 				if (finder.number_of_found_dictionaries() != 0)
 				{
 					GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type found_kvd =
@@ -763,12 +765,7 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 
 		for ( ; iter != end ; ++iter)
 		{
-			(*iter)->accept_visitor(finder);
-		}
-
-		if (finder.has_found_multiple_geometries())
-		{
-			qDebug() << "Found multiple geometries in feature collection.";
+			finder.visit_feature(iter);
 		}
 
 		// Set up an appropriate OgrWriter.
@@ -811,20 +808,44 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 
 }
 
+
 void
 GPlatesFileIO::ShapefileWriter::write_feature(
-	const GPlatesModel::FeatureHandle &feature_handle)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 {
+	visit_feature(feature);
+}
 
+
+void
+GPlatesFileIO::ShapefileWriter::write_feature(
+		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
+{
+	visit_feature(feature);
+}
+
+
+bool
+GPlatesFileIO::ShapefileWriter::initialise_pre_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
+{
 	if (!d_ogr_writer)
 	{
-		return;
+		return false;
 	}
 
-	// Check which geometry types exist in the feature and fill the relevant geometry containers.
 	clear_accumulators();
-	feature_handle.accept_visitor(*this);
-	
+
+	// Next, visit the feature properties to check which geometry types exist in the feature
+	// and fill the relevant geometry containers.
+	return true;
+}
+
+
+void
+GPlatesFileIO::ShapefileWriter::finalise_post_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
+{
 	if (!d_key_value_dictionary)
 	{
 		// We haven't found shapefile attributes in this feature, so we'll create a set of attributes

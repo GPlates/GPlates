@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -60,21 +60,16 @@ namespace GPlatesFeatureVisitors
 
 		/**
 		 * Populates the tree widget passed into constructor with the properties of
-		 * @a feature_handle.
+		 * @a feature.
 		 * @a focused_rfg is the clicked geometry, if any, and is the only geometry
 		 * property that is expanded in the widget.
 		 */
 		void
 		populate(
-				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::weak_ref &feature,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
 
 	private:
-		virtual
-		void
-		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle);
-
 		virtual
 		void
 		visit_feature_properties(

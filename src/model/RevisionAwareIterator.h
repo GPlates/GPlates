@@ -30,6 +30,7 @@
 
 #include <iterator>  /* iterator, bidirectional_iterator_tag */
 #include "WeakObserver.h"
+#include "types.h"
 //#include "WeakObserverVisitor.h"
 
 
@@ -39,26 +40,43 @@ namespace GPlatesModel
 	 * A revision-aware iterator to iterate over the container within a revisioning collection.
 	 *
 	 * This class was originally designed to iterate over the container of feature-handles in a
-	 * feature-collection-handle.  It was later generalised to also iterate over the container
-	 * of feature-collection-handles in the feature-store-root, and later still to iterate over
-	 * the container of property-containers in a feature-handle.
+	 * feature-collection-handle.  It was later generalised to iterate over the container of
+	 * feature-collection-handles in the feature-store-root also, and later still, to iterate
+	 * over the container of property-containers in a feature-handle.
 	 *
 	 * @par Revision awareness
 	 * By "revision-aware" is meant that instances of this class will not be fooled, by a
-	 * revisioning operation, to point to an old revision of the container.  Each and every
-	 * iterator operation first gets the current revision of the container, before accessing
-	 * the elements of the container.
+	 * revisioning operation, to point to an old revision of the container.  Every dereference
+	 * operation first obtains the current revision of the container, before accessing the
+	 * elements within that container.
 	 *
 	 * @par The WeakObserver base
 	 * The base class WeakObserver contains the pointer to the handle (which contains the
 	 * container over which this iterator is iterating).  The benefit of using WeakObserver to
 	 * contain the pointer-to-handle is that an instance of RevisionAwareIterator, which is
-	 * pointing to a particular handle, will be informed if that handle is deactivated (ie,
-	 * logically deleted) or deallocated (ie, deleted in the C++ memory-allocation sense).
+	 * pointing to a particular collection-handle, will be informed if that collection-handle
+	 * is deactivated (ie, logically deleted) or deallocated (ie, deleted in the C++
+	 * memory-allocation sense).
 	 *
-	 * @par
+	 * @par Validity for dereference
 	 * The member function @a is_valid is used to determine whether an iterator instance is
-	 * valid to be dereferenced.
+	 * valid to be dereferenced @em and @em used.  Note that, in contrast to
+	 * @a WeakReference::is_valid, which merely checks whether the WeakReference instance is
+	 * valid to be dereferenced, RevisionAwareIterator::is_valid in this class additionally
+	 * checks whether the target value is non-NULL.
+	 *
+	 * @par Deleted features
+	 * When a feature is deleted from a feature-collection, the pointer to that feature-handle
+	 * in the container will be set to NULL.  There is nothing useful which can be done with
+	 * this NULL pointer -- nor should there be, since the feature has been logically deleted
+	 * in this revision, and thus should not be accessible for any reason (especially not by a
+	 * revision-aware iterator!)  Setting the deleted feature's pointer-to-feature-handle to
+	 * NULL is a central aspect of the revisioning mechanism, so it makes sense that it should
+	 * be handled in the revision-aware iterator.  This is why @a is_valid additionally checks
+	 * whether the target value is non-NULL.
+	 *
+	 * @par Important
+	 * @strong Always check that the iterator @a is_valid before every dereference operation!
 	 *
 	 * @par The template parameters
 	 * The template parameters are:
@@ -102,11 +120,11 @@ namespace GPlatesModel
 		/**
 		 * This is the type used to index the elements of the container.
 		 */
-		typedef typename container_type::size_type index_type;
+		typedef container_size_type index_type;
 
 		static
 		const RevisionAwareIterator
-		create_index(
+		create_for_index(
 				collection_handle_type &collection_handle,
 				index_type index_)
 		{
@@ -149,7 +167,7 @@ namespace GPlatesModel
 		 * valid to be dereferenced.
 		 */
 		RevisionAwareIterator():
-			d_index(0)
+			d_index(INVALID_INDEX)
 		{  }
 
 		virtual
@@ -186,12 +204,26 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return whether this iterator is valid to be dereferenced.
+		 * Return whether this iterator is valid to be dereferenced @em and @em used.
+		 *
+		 * You should @strong always check this before @em ever dereferencing an iterator.
+		 * Do not dereference the iterator if this function returns false.
 		 *
 		 * This function will not throw.
 		 */
 		bool
 		is_valid() const
+		{
+			return (is_valid_for_deref() && deref_target_is_not_null());
+		}
+
+		/**
+		 * Return whether this iterator is valid to be dereferenced.
+		 *
+		 * This function will not throw.
+		 */
+		bool
+		is_valid_for_deref() const
 		{
 			return (collection_handle_is_valid() && index_is_within_bounds());
 		}
@@ -410,18 +442,28 @@ namespace GPlatesModel
 		 * Return whether the index indicates an element which is within the bounds of the
 		 * container.
 		 *
-		 * This function should only be invoked whin the collection handle is valid (i.e.,
-		 * when @a collection_handle_is_valid would return true).
+		 * This function should only be invoked when the collection handle is valid (i.e.,
+		 * when @a collection_handle_is_valid() would return true).
 		 *
 		 * This function will not throw.
 		 */
 		bool
 		index_is_within_bounds() const
 		{
-			// The index indicates an element which is before the end of the container
-			// when the index is less than the size of the container.
-			return ((static_cast<long>(d_index) >= 0) &&
-					(d_index < container_size(*collection_handle_ptr())));
+			return (d_index < container_size(*collection_handle_ptr()));
+		}
+
+		/**
+		 * Return whether the collection handle is valid (i.e., whether it is indicated by
+		 * a non-NULL pointer).
+		 *
+		 * This function should only be invoked when the iterator is valid to be
+		 * dereferenced (ie, when @a is_valid_for_deref() would retrun true).
+		 */
+		bool
+		deref_target_is_not_null() const
+		{
+			return (current_element() != NULL);
 		}
 
 		/**

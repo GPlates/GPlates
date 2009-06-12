@@ -88,7 +88,7 @@ namespace GPlatesFileIO
 		virtual
 		bool
 		get_feature_header_lines(
-				const GPlatesModel::FeatureHandle& feature_handle,
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 				std::vector<QString>& header_lines) = 0;
 	};
 
@@ -134,7 +134,7 @@ namespace GPlatesFileIO
 		virtual
 		bool
 		get_feature_header_lines(
-				const GPlatesModel::FeatureHandle& feature_handle,
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 				std::vector<QString>& header_lines);
 
 	private:
@@ -160,19 +160,23 @@ namespace GPlatesFileIO
 		virtual
 		bool
 		get_feature_header_lines(
-				const GPlatesModel::FeatureHandle& feature_handle,
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 				std::vector<QString>& header_lines);
 
 	private:
 		typedef std::map<GPlatesModel::XmlAttributeName,
 				GPlatesModel::XmlAttributeValue> AttributeMap;
 
-		void
-		visit_feature_handle(
+		bool
+		initialise_pre_feature_properties(
 				const GPlatesModel::FeatureHandle &feature_handle);
 
+		bool
+		initialise_pre_property_values(
+				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+
 		void
-		visit_top_level_property_inline(
+		finalise_post_property_values(
 				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 		void
@@ -391,26 +395,10 @@ namespace GPlatesFileIO
 		virtual
 		bool
 		get_feature_header_lines(
-				const GPlatesModel::FeatureHandle& feature_handle,
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 				std::vector<QString>& header_lines);
 
 	private:
-		virtual
-		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle)
-		{
-			visit_feature_properties(feature_handle);
-		}
-
-		virtual
-		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-		{
-			visit_property_values(top_level_property_inline);
-		}
-
 		virtual
 		void
 		visit_gpml_old_plates_header(

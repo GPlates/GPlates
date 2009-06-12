@@ -120,18 +120,19 @@ namespace
 	 */
 	int
 	calculate_number_of_properties(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref)
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 	{
 		int count = 0;
+		// Need to test weak-ref *before* we dereference it to get properties iterators.
+		if ( ! feature_ref.is_valid()) {
+			// Nothing can be done.
+			return 0;
+		}
 		GPlatesModel::FeatureHandle::properties_iterator it = feature_ref->properties_begin();
 		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
 		for (; it != end; ++it)
 		{
-			if ( ! feature_ref.is_valid()) {
-				// Feature handles might become invalid at any time!
-				return 0;
-			}
-			if (*it != NULL) {
+			if (it.is_valid()) {
 				++count;
 			}
 		}
@@ -252,7 +253,7 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 	}
 	
 	GPlatesModel::FeatureHandle::properties_iterator it = get_property_iterator_for_row(idx.row());
-	if (*it == NULL) {
+	if ( ! it.is_valid()) {
 		// Always check your property iterators.
 		return false;
 	}
@@ -354,6 +355,9 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 			endRemoveRows();
 			element_was_erased = true;
 		} else if (*remove_it->property_iterator == NULL) {
+			// FIXME:  The above if-test NULL-check is not necessary.
+			// The properties_iterator 'is_valid' test already checks for NULL.
+
 			int row = get_row_for_property_iterator(remove_it->property_iterator);
 
 			// Found a NULL intrusive_ptr.  Remove it from the table.
@@ -387,7 +391,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 	for (; add_it != add_end; ++add_it)
 	{
 		// Check the properties_iterator and the intrusive_ptr it refers to.
-		if (add_it.is_valid() && *add_it != NULL) {
+		if (add_it.is_valid()) {
 			int test_row = get_row_for_property_iterator(add_it);
 			if (test_row == -1) {
 				// We've found something not in the cache.
@@ -487,7 +491,7 @@ GPlatesGui::FeaturePropertyTableModel::get_property_value_as_qvariant(
 		int role) const
 {
 	GPlatesModel::FeatureHandle::properties_iterator it = get_property_iterator_for_row(row);
-	if (*it == NULL) {
+	if ( ! it.is_valid()) {
 		// Always check your property iterators.
 		return QVariant("< NULL >");
 	}

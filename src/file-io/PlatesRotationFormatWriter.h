@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -73,18 +73,31 @@ namespace GPlatesFileIO
 		* @param feature_handle feature to write
 		*/
 		virtual
-			void
-			write_feature(const GPlatesModel::FeatureHandle& feature_handle);
+		void
+		write_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 
+		/**
+		* Writes a feature in PLATES4 rotation format.
+		*
+		* @param feature_handle feature to write
+		*/
 		virtual
 		void
-		visit_feature_handle(
+		write_feature(
+				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
+
+	protected:
+
+		virtual
+		bool
+		initialise_pre_feature_properties(
 				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
@@ -175,8 +188,6 @@ namespace GPlatesFileIO
 			std::list< ReconstructionPoleData > reconstruction_poles;
 			boost::optional<GPlatesModel::integer_plate_id_type> moving_plate_id;
 			boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id;
-
-			boost::optional<GPlatesModel::PropertyName> last_property_seen;
 
 			/**
 			 * Return a reference to the reconstruction pole that is currently

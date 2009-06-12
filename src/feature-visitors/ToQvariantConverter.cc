@@ -91,23 +91,6 @@ namespace
 
 
 void
-GPlatesFeatureVisitors::ToQvariantConverter::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesFeatureVisitors::ToQvariantConverter::visit_top_level_property_inline(
-		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	visit_property_values(top_level_property_inline);
-}
-
-
-void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_enumeration(
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {

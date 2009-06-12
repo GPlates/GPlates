@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -62,25 +62,28 @@ namespace GPlatesFeatureVisitors
 			d_qvariant(new_property_value)
 		{  }
 
+
 		virtual
 		~FromQvariantConverter() {  }
-		
 
-		virtual
-		void
-		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle);
 
-		virtual
-		void
-		visit_top_level_property_inline(
-				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+		/**
+		 * Returns the PropertyValue that has been created from the given QVariant.
+		 * This is wrapped in a boost::optional - you must test it before dereferencing it!
+		 */
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		get_property_value()
+		{
+			return d_property_value;
+		}
 
+	protected:
 
 		virtual
 		void
 		visit_enumeration(
 				GPlatesPropertyValues::Enumeration &enumeration);
+
 
 		void
 		visit_gml_time_instant(
@@ -123,16 +126,6 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_xs_string(
 				GPlatesPropertyValues::XsString &xs_string);
-
-		/**
-		 * Returns the PropertyValue that has been created from the given QVariant.
-		 * This is wrapped in a boost::optional - you must test it before dereferencing it!
-		 */
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
-		get_property_value()
-		{
-			return d_property_value;
-		}
 
 	private:
 	

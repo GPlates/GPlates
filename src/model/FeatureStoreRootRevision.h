@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,9 @@
 
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
+
 #include "FeatureCollectionHandle.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -140,7 +142,7 @@ namespace GPlatesModel
 		 * equal-to the number of feature-collection slots will always result in a NULL
 		 * pointer.
 		 */
-		feature_collection_container_type::size_type
+		container_size_type
 		size() const
 		{
 			return d_feature_collections.size();
@@ -160,7 +162,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<const FeatureCollectionHandle>
 		operator[](
-				feature_collection_container_type::size_type index) const
+				container_size_type index) const
 		{
 			return access_feature(index);
 		}
@@ -179,7 +181,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<FeatureCollectionHandle>
 		operator[](
-				feature_collection_container_type::size_type index)
+				container_size_type index)
 		{
 			return access_feature(index);
 		}
@@ -198,7 +200,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<const FeatureCollectionHandle>
 		access_feature(
-				feature_collection_container_type::size_type index) const
+				container_size_type index) const
 		{
 			boost::intrusive_ptr<const FeatureCollectionHandle> ptr = NULL;
 			if (index < size()) {
@@ -221,7 +223,7 @@ namespace GPlatesModel
 		 */
 		const boost::intrusive_ptr<FeatureCollectionHandle>
 		access_feature(
-				feature_collection_container_type::size_type index)
+				container_size_type index)
 		{
 			boost::intrusive_ptr<FeatureCollectionHandle> ptr = NULL;
 			if (index < size()) {
@@ -235,7 +237,7 @@ namespace GPlatesModel
 		 *
 		 * The return-value is the index of the new element in the container.
 		 */
-		feature_collection_container_type::size_type
+		container_size_type
 		append_feature_collection(
 				FeatureCollectionHandle::non_null_ptr_type new_feature_collection,
 				DummyTransactionHandle &transaction);
@@ -249,7 +251,7 @@ namespace GPlatesModel
 		 */
 		void
 		remove_feature_collection(
-				feature_collection_container_type::size_type index,
+				container_size_type index,
 				DummyTransactionHandle &transaction);
 
 	private:

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -160,7 +160,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 	if (GPlatesFeatureVisitors::get_property_value(
-			*d_feature_ref, plate_id_property_name, recon_plate_id))
+			d_feature_ref, plate_id_property_name, recon_plate_id))
 	{
 		// The feature has a reconstruction plate ID.
 		set_plate_id(recon_plate_id->value());
@@ -217,6 +217,6 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
 			property_tree());
-	populator.populate(*d_feature_ref, d_focused_rfg);
+	populator.populate(d_feature_ref, d_focused_rfg);
 }
 

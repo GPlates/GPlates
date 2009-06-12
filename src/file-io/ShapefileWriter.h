@@ -35,7 +35,6 @@
 #include <QFile>
 #include <QString>
 
-
 #include "FileInfo.h"
 #include "FeatureWriter.h"
 #include "OgrWriter.h"
@@ -45,7 +44,6 @@
 #include "maths/PointOnSphere.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
-
 
 
 namespace GPlatesFileIO
@@ -75,13 +73,31 @@ namespace GPlatesFileIO
 		* @param feature_handle feature to write
 		*/
 		virtual
-			void
-			write_feature(
-				const GPlatesModel::FeatureHandle& feature_handle);
+		void
+		write_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 
-
+		/**
+		* Writes a feature in ESRI Shapefile format.
+		*
+		* @param feature_handle feature to write
+		*/
+		virtual
+		void
+		write_feature(
+				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 	private:
+
+		virtual
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
+
+		virtual
+		void
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 			void

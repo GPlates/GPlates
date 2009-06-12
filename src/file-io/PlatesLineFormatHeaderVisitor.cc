@@ -106,7 +106,7 @@ namespace
 	 */
 	UnicodeString
 	get_data_type_code_for_active_inactive_feature(
-			const GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 			const UnicodeString &active_data_type_code,
 			const UnicodeString &inactive_data_type_code)
 	{
@@ -118,7 +118,7 @@ namespace
 		// error on g++ 4.3.3-3.
 		const GPlatesPropertyValues::XsBoolean *is_active_property_value = NULL;
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature_handle, is_active_property_name, is_active_property_value))
+				feature, is_active_property_name, is_active_property_value))
 		{
 			return is_active_property_value->value() ? active_data_type_code : inactive_data_type_code;
 		}
@@ -129,28 +129,28 @@ namespace
 
 	UnicodeString
 	get_data_type_code_for_aseismic_ridge(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "AR";
 	}
 
 	UnicodeString
 	get_data_type_code_for_bathymetry(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "BA";
 	}
 
 	UnicodeString
 	get_data_type_code_for_basin(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "BS";
 	}
 
 	UnicodeString
 	get_data_type_code_for_continental_boundary(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		// Could also be "CM" or "CO" according to "PlatesLineFormatHeaderVisitor.h".
 		return "CB";
@@ -158,35 +158,35 @@ namespace
 
 	UnicodeString
 	get_data_type_code_for_continental_fragment(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "CF";
 	}
 
 	UnicodeString
 	get_data_type_code_for_craton(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "CR";
 	}
 
 	UnicodeString
 	get_data_type_code_for_coastline(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "CS";
 	}
 
 	UnicodeString
 	get_data_type_code_for_extended_continental_crust(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "EC";
 	}
 
 	UnicodeString
 	get_data_type_code_for_fault(
-			const GPlatesModel::FeatureHandle &feature_handle)
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
 		//
 		// This function is effectively the reverse of what's in "PlatesLineFormatReader.cc".
@@ -197,7 +197,7 @@ namespace
 
 		const GPlatesPropertyValues::Enumeration *dipslip_property_value;
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature_handle, dipslip_property_name, dipslip_property_value))
+				feature, dipslip_property_name, dipslip_property_value))
 		{
 			static GPlatesPropertyValues::EnumerationType dipslip_enumeration_type(
 				"gpml:DipSlipEnumeration");
@@ -219,7 +219,7 @@ namespace
 
 					const GPlatesPropertyValues::XsString *subcategory_property_value;
 					if (GPlatesFeatureVisitors::get_property_value(
-							feature_handle, subcategory_property_name, subcategory_property_value))
+							feature, subcategory_property_name, subcategory_property_value))
 					{
 						static const GPlatesPropertyValues::TextContent thrust_string("Thrust");
 
@@ -239,7 +239,7 @@ namespace
 
 		const GPlatesPropertyValues::Enumeration *strike_slip_property_value;
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature_handle, strike_slip_property_name, strike_slip_property_value))
+				feature, strike_slip_property_name, strike_slip_property_value))
 		{
 			static GPlatesPropertyValues::EnumerationType strike_slip_enumeration_type(
 				"gpml:StrikeSlipEnumeration");
@@ -260,56 +260,56 @@ namespace
 
 	UnicodeString
 	get_data_type_code_for_fracture_zone(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "FZ";
 	}
 
 	UnicodeString
 	get_data_type_code_for_grid_mark(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "GR";
 	}
 
 	UnicodeString
 	get_data_type_code_for_gravimetry(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "GV";
 	}
 
 	UnicodeString
 	get_data_type_code_for_heat_flow(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "HF";
 	}
 
 	UnicodeString
 	get_data_type_code_for_hot_spot(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "HS";
 	}
 
 	UnicodeString
 	get_data_type_code_for_hot_spot_trail(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "HT";
 	}
 
 	UnicodeString
 	get_data_type_code_for_island_arc(
-			const GPlatesModel::FeatureHandle &feature_handle)
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
-		return get_data_type_code_for_active_inactive_feature(feature_handle, "IA", "IR");
+		return get_data_type_code_for_active_inactive_feature(feature, "IA", "IR");
 	}
 
 	UnicodeString
 	get_data_type_code_for_isochron(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		// Could also be "IM" according to "PlatesLineFormatHeaderVisitor.h".
 		return "IC";
@@ -317,7 +317,7 @@ namespace
 
 	UnicodeString
 	get_data_type_code_for_isopach(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "IP";
 	}
@@ -325,7 +325,7 @@ namespace
 	// -might- be Ice Shelf, might be Isochron. We don't know.
 	UnicodeString
 	get_data_type_code_for_unclassified_feature(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		// Could also be "IS" according to "PlatesLineFormatHeaderVisitor.h".
 		return "UN";
@@ -333,21 +333,21 @@ namespace
 
 	UnicodeString
 	get_data_type_code_for_geological_lineation(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "LI";
 	}
 
 	UnicodeString
 	get_data_type_code_for_magnetics(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "MA";
 	}
 
 	UnicodeString
 	get_data_type_code_for_orogenic_belt(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		// Could also be "OR" according to "PlatesLineFormatHeaderVisitor.h".
 		return "OB";
@@ -355,21 +355,21 @@ namespace
 
 	UnicodeString
 	get_data_type_code_for_ophiolite_belt(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "OP";
 	}
 
 	UnicodeString
 	get_data_type_code_for_inferred_paleo_boundary(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "PB";
 	}
 
 	UnicodeString
 	get_data_type_code_for_magnetic_pick(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		// Could also be "PC" according to "PlatesLineFormatHeaderVisitor.h".
 		return "PM";
@@ -377,70 +377,70 @@ namespace
 
 	UnicodeString
 	get_data_type_code_for_ridge_segment(
-			const GPlatesModel::FeatureHandle &feature_handle)
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
-		return get_data_type_code_for_active_inactive_feature(feature_handle, "RI", "XR");
+		return get_data_type_code_for_active_inactive_feature(feature, "RI", "XR");
 	}
 
 	UnicodeString
 	get_data_type_code_for_seamount(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "SM";
 	}
 
 	UnicodeString
 	get_data_type_code_for_suture(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "SU";
 	}
 
 	UnicodeString
 	get_data_type_code_for_terrane_boundary(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "TB";
 	}
 
 	UnicodeString
 	get_data_type_code_for_transitional_crust(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "TC";
 	}
 
 	UnicodeString
 	get_data_type_code_for_transform(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "TF";
 	}
 
 	UnicodeString
 	get_data_type_code_for_topography(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "TO";
 	}
 
 	UnicodeString
 	get_data_type_code_for_subduction_zone_active(
-			const GPlatesModel::FeatureHandle &feature_handle)
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
-		return get_data_type_code_for_active_inactive_feature(feature_handle, "TR", "XT");
+		return get_data_type_code_for_active_inactive_feature(feature, "TR", "XT");
 	}
 
 	UnicodeString
 	get_data_type_code_for_volcano(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "VO";
 	}
 
 	UnicodeString
 	get_data_type_code_for_large_igneous_province(
-			const GPlatesModel::FeatureHandle &)
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "VP";
 	}
@@ -484,12 +484,13 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::PlatesLineFormatHeaderVisitor()
 
 bool
 GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
-	const GPlatesModel::FeatureHandle& feature_handle, OldPlatesHeader& old_plates_header)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+		OldPlatesHeader& old_plates_header)
 {
 	d_accum = PlatesHeaderAccumulator();
 
 	// Visit feature to collect property values.
-	feature_handle.accept_visitor(*this);
+	visit_feature(feature);
 
 	// Build an old plates header from the information we've gathered.
 	if (d_accum.old_plates_header) {
@@ -520,13 +521,13 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 		old_plates_header.string_number = 9999;
 
 		// Determine the two-letter PLATES data type code string based on the feature type.
-		old_plates_header.data_type_code = get_plates_data_type_code(feature_handle);
+		old_plates_header.data_type_code = get_plates_data_type_code(feature);
 	}
 
 	// Regardless of whether there's a gpml:oldPlatesHeader property we need to
 	// add the feature id somewhere. The end of the geographic description seems
 	// like a good place.
-	append_feature_id_to_geog_description(feature_handle.feature_id(),
+	append_feature_id_to_geog_description(feature->feature_id(),
 			old_plates_header.geographic_description);
 
 	/*
@@ -553,32 +554,13 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 
 
 void
-GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_feature_handle(
-	const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_top_level_property_inline(
-	const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	d_accum.current_propname = top_level_property_inline.property_name();
-
-	visit_property_values(top_level_property_inline);
-}
-
-
-void
 GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gml_time_instant(
 	const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	// Only the "gml:validTime" is meaningful for the ages of appearance and disappearance.
 	static const GPlatesModel::PropertyName validTime =
 		GPlatesModel::PropertyName::create_gml("validTime");
-	if (*d_accum.current_propname != validTime) {
+	if (*current_top_level_propname() != validTime) {
 		return;
 	}
 
@@ -600,7 +582,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gml_time_period(
 	// Only the "gml:validTime" is meaningful for the ages of appearance and disappearance.
 	static const GPlatesModel::PropertyName validTime =
 		GPlatesModel::PropertyName::create_gml("validTime");
-	if (*d_accum.current_propname != validTime) {
+	if (*current_top_level_propname() != validTime) {
 		return;
 	}
 
@@ -639,7 +621,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gpml_plate_id(
 	static const GPlatesModel::PropertyName reconstructedPlateId =
 		GPlatesModel::PropertyName::create_gpml("reconstructedPlateId");
 
-	if (*d_accum.current_propname == reconstructionPlateId) {
+	if (*current_top_level_propname() == reconstructionPlateId) {
 		if ( ! d_accum.plate_id) {
 			d_accum.plate_id = gpml_plate_id.value();
 		} else {
@@ -647,7 +629,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gpml_plate_id(
 			// "gpml:reconstructionPlateId" property which contains a "gpml:PlateId".
 			// FIXME: Should we warn about this?
 		}
-	} else if (*d_accum.current_propname == conjugatePlateId) {
+	} else if (*current_top_level_propname() == conjugatePlateId) {
 		if ( ! d_accum.conj_plate_id) {
 			d_accum.conj_plate_id = gpml_plate_id.value();
 		} else {
@@ -656,7 +638,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gpml_plate_id(
 			// "gpml:PlateId".
 			// FIXME: Should we warn about this?
 		}
-	} else if (*d_accum.current_propname == reconstructedPlateId) {
+	} else if (*current_top_level_propname() == reconstructedPlateId) {
 		// Nothing to do here.
 	} else {
 		// We've encountered a plate ID inside an unrecognised property-name.
@@ -691,7 +673,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_xs_string(
 {
 	static const GPlatesModel::PropertyName name_property_name =
 		GPlatesModel::PropertyName::create_gml("name");
-	if (*d_accum.current_propname != name_property_name) {
+	if (*current_top_level_propname() != name_property_name) {
 		return;
 	}
 
@@ -712,9 +694,9 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_xs_string(
 
 UnicodeString
 GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_plates_data_type_code(
-		const GPlatesModel::FeatureHandle &feature_handle) const
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature) const
 {
-	const GPlatesModel::FeatureType &feature_type = feature_handle.feature_type();
+	const GPlatesModel::FeatureType &feature_type = feature->feature_type();
 
 	// Use the feature type to lookup up the function used to determine the data code type.
 	plates_data_type_code_map_type::const_iterator data_type_code_iter =
@@ -729,7 +711,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_plates_data_type_code(
 	get_data_type_code_function_type get_data_type_code_function = data_type_code_iter->second;
 
 	// Call function to determine data type code.
-	return get_data_type_code_function(feature_handle);
+	return get_data_type_code_function(feature);
 }
 
 void

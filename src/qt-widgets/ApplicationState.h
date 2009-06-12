@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,11 +27,12 @@
 #ifndef GPLATES_APPSTATE_APPLICATIONSTATE_H
 #define GPLATES_APPSTATE_APPLICATIONSTATE_H
 
-#include "file-io/FileInfo.h"
 #include <list>
+#include "file-io/FileInfo.h"
 
-namespace GPlatesAppState {
 
+namespace GPlatesAppState
+{
 	/**
 	 * Holds information associated with the currently loaded data files.
 	 *
@@ -74,9 +75,9 @@ namespace GPlatesAppState {
 		remove_loaded_file(
 				file_info_iterator loaded_file)
 		{
+			// Unload the feature-collection *before* the iterator becomes invalid.
+			loaded_file->unload_feature_collection();
 			return d_loaded_files.erase(loaded_file);
-			// FIXME:  This should remove the appropriate feature collection from the
-			// feature store in the Model.
 		}
 
 		~ApplicationState() 

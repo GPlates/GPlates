@@ -116,7 +116,6 @@ namespace GPlatesQtWidgets
 			return *d_reconstruction_pole_widget_ptr;
 		}
 
-	
 		/**
 		 * Accessor for the TopologyToolsWidget 
 		 *
@@ -128,6 +127,10 @@ namespace GPlatesQtWidgets
 			return *d_topology_tools_widget_ptr;
 		}
 
+		void
+		enable_modify_pole_tab(
+			bool enable);
+	
 	public slots:
 		
 		void

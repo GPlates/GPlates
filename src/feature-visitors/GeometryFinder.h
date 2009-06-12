@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -78,47 +78,6 @@ namespace GPlatesFeatureVisitors
 			d_property_names_to_allow.push_back(property_name_to_allow);
 		}
 
-		virtual
-		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
-
-		virtual
-		void
-		visit_gml_line_string(
-				const GPlatesPropertyValues::GmlLineString &gml_line_string);
-
-		virtual
-		void
-		visit_gml_multi_point(
-				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
-
-		virtual
-		void
-		visit_gml_orientable_curve(
-				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
-
-		virtual
-		void
-		visit_gml_point(
-				const GPlatesPropertyValues::GmlPoint &gml_point);
-
-		virtual
-		void
-		visit_gml_polygon(
-				const GPlatesPropertyValues::GmlPolygon &gml_polygon);
-
-		virtual
-		void
-		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
-
-
 		geometry_container_const_iterator
 		found_geometries_begin() const
 		{
@@ -152,6 +111,43 @@ namespace GPlatesFeatureVisitors
 		{
 			d_found_geometries.clear();
 		}
+
+	protected:
+
+		virtual
+		bool
+		initialise_pre_property_values(
+				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+
+		virtual
+		void
+		visit_gml_line_string(
+				const GPlatesPropertyValues::GmlLineString &gml_line_string);
+
+		virtual
+		void
+		visit_gml_multi_point(
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+
+		virtual
+		void
+		visit_gml_orientable_curve(
+				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
+
+		virtual
+		void
+		visit_gml_point(
+				const GPlatesPropertyValues::GmlPoint &gml_point);
+
+		virtual
+		void
+		visit_gml_polygon(
+				const GPlatesPropertyValues::GmlPolygon &gml_polygon);
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 	private:
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;

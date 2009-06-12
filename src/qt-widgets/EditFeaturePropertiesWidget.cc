@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -233,6 +233,11 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 	d_edit_widget_group_box_ptr->deactivate_edit_widgets();
 	property_table->selectionModel()->clear();
 
+	if ( ! d_feature_ref.is_valid()) {
+		// Nothing can be done.
+		return;
+	}
+
 	// FIXME: UNDO
 	// Delete the property container for the given iterator.
 	GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
@@ -250,6 +255,11 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::append_property_value_to_feature(
 		GPlatesModel::PropertyValue::non_null_ptr_type property_value,
 		const GPlatesModel::PropertyName &property_name)
 {
+	if ( ! d_feature_ref.is_valid()) {
+		// Nothing can be done.
+		return;
+	}
+
 	// FIXME: UNDO
 	const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type top_level_property =
 			GPlatesModel::ModelUtils::append_property_value_to_feature(

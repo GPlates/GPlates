@@ -74,13 +74,20 @@ void
 GPlatesFeatureVisitors::FeatureCollectionClassifier::scan_feature_collection(
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref)
 {
+	if ( ! feature_collection_ref.is_valid()) {
+		// Nothing we can do with this feature collection.
+		// FIXME:  Track down where this is being invoked; check that no other code will be
+		// tripped-up by this invalid weak-ref.
+		return;
+	}
 	GPlatesModel::FeatureCollectionHandle::features_const_iterator
 			it = feature_collection_ref->features_begin(), 
 			end = feature_collection_ref->features_end();
 	for ( ; it != end; ++it) {
-		visit_feature_handle(**it);
+		visit_feature(it);
 	}
 }
+
 
 void
 GPlatesFeatureVisitors::FeatureCollectionClassifier::reset()
@@ -92,8 +99,8 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::reset()
 }
 
 
-void
-GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_feature_handle(
+bool
+GPlatesFeatureVisitors::FeatureCollectionClassifier::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Reset the boolean flags so we can have a quick peek at the tell-tale
@@ -101,9 +108,15 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_feature_handle(
 	d_looks_like_reconstruction_feature = false;
 	d_looks_like_reconstructable_feature = false;
 	d_looks_like_instantaneous_feature = false;
-	
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
+
+	return true;
+}
+
+
+void
+GPlatesFeatureVisitors::FeatureCollectionClassifier::finalise_post_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
+{
 	d_total_feature_count++;
 	
 	// Then, given what we've seen, identify the kind of feature we saw.
@@ -125,8 +138,8 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_feature_handle(
 }
 
 
-void
-GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_top_level_property_inline(
+bool
+GPlatesFeatureVisitors::FeatureCollectionClassifier::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
@@ -134,12 +147,10 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_top_level_property_in
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
 			// The current property name is not allowed.
-			return;
+			return false;
 		}
 	}
-	d_most_recent_propname_read = curr_prop_name;
-
-	visit_property_values(top_level_property_inline);
+	return true;
 }
 
 
@@ -153,7 +164,7 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_gml_time_instant(
 
 	// Note that we're going to assume that we've read a property name in order
 	// to have reached this point.
-	if (*d_most_recent_propname_read == reconstructed_time_prop) {
+	if (*current_top_level_propname() == reconstructed_time_prop) {
 		// We're dealing with an Instantaneous Feature.
 		d_looks_like_instantaneous_feature = true;
 	}
@@ -186,14 +197,14 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_gpml_plate_id(
 
 	// Note that we're going to assume that we've read a property name in order
 	// to have reached this point.
-	if (*d_most_recent_propname_read == fixed_ref_frame_prop ||
-			*d_most_recent_propname_read == moving_ref_frame_prop) {
+	if (*current_top_level_propname() == fixed_ref_frame_prop ||
+			*current_top_level_propname() == moving_ref_frame_prop) {
 		// We're dealing with a Total Reconstruction Sequence.
 		d_looks_like_reconstruction_feature = true;
-	} else if (*d_most_recent_propname_read == reconstruction_plate_id_prop) {
+	} else if (*current_top_level_propname() == reconstruction_plate_id_prop) {
 		// We're dealing with a Reconstructable Feature.
 		d_looks_like_reconstructable_feature = true;
-	} else if (*d_most_recent_propname_read == reconstructed_plate_id_prop) {
+	} else if (*current_top_level_propname() == reconstructed_plate_id_prop) {
 		// We're dealing with an Instantaneous Feature.
 		d_looks_like_instantaneous_feature = true;
 	}

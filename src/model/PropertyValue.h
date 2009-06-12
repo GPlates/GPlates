@@ -166,7 +166,8 @@ namespace GPlatesModel
 		 *
 		 * Client code should not use this function!
 		 *
-		 * Note that the return value may be a NULL pointer.
+		 * Note that the return value may be a NULL pointer, which signifies that this
+		 * PropertyValue is not contained within a PropertyValueContainer.
 		 */
 		PropertyValueContainer *
 		container() const
@@ -180,7 +181,7 @@ namespace GPlatesModel
 		 * Client code should not use this function!
 		 *
 		 * Note that @a new_container may be a NULL pointer... but only if this
-		 * PropertyValue instance is not contained by any PropertyValueContainer.
+		 * PropertyValue instance will not be contained within a PropertyValueContainer.
 		 */
 		void
 		set_container(
@@ -203,6 +204,9 @@ namespace GPlatesModel
 		 *  -# Each PropertyValueContainer derivation will contain a ref-counting pointer
 		 * to class PropertyValue, and we don't want to set up a ref-counting loop (which
 		 * would lead to memory leaks).
+		 *
+		 * This pointer may be NULL.  It will be NULL when this PropertyValue instance is
+		 * not contained.
 		 */
 		PropertyValueContainer *d_container;
 

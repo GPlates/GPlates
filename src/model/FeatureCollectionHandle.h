@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,6 +31,7 @@
 #include "FeatureCollectionRevision.h"
 #include "RevisionAwareIterator.h"
 #include "WeakReference.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -39,6 +40,8 @@
 namespace GPlatesModel
 {
 	class DummyTransactionHandle;
+	class FeatureStoreRootHandle;
+
 
 	/**
 	 * A feature collection handle acts as a persistent handle to the revisioned content of a
@@ -153,7 +156,7 @@ namespace GPlatesModel
 			if (iter.collection_handle_ptr() == NULL) {
 				return features_const_iterator();
 			}
-			return features_const_iterator::create_index(
+			return features_const_iterator::create_for_index(
 					*(iter.collection_handle_ptr()), iter.index());
 		}
 
@@ -212,6 +215,16 @@ namespace GPlatesModel
 			const_weak_ref ref(*this);
 			return ref;
 		}
+
+		/**
+		 * Unload this feature collection.
+		 *
+		 * Neither this feature collection, nor the features it contains, will be
+		 * accessible after this.  All weak-refs and iterators which reference either this
+		 * feature collection, or the features it contains, will be invalid.
+		 */
+		void
+		unload();
 
 		/**
 		 * Return a (non-const) weak-ref to this FeatureCollectionHandle instance.
@@ -274,12 +287,7 @@ namespace GPlatesModel
 		const features_iterator
 		append_feature(
 				FeatureHandle::non_null_ptr_type new_feature,
-				DummyTransactionHandle &transaction)
-		{
-			FeatureCollectionRevision::feature_collection_type::size_type new_index =
-					current_revision()->append_feature(new_feature, transaction);
-			return features_iterator::create_index(*this, new_index);
-		}
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Remove the feature indicated by @a iter in the feature collection.
@@ -292,10 +300,7 @@ namespace GPlatesModel
 		void
 		remove_feature(
 				features_const_iterator iter,
-				DummyTransactionHandle &transaction)
-		{
-			current_revision()->remove_feature(iter.index(), transaction);
-		}
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Remove the feature indicated by @a iter in the feature collection.
@@ -308,10 +313,7 @@ namespace GPlatesModel
 		void
 		remove_feature(
 				features_iterator iter,
-				DummyTransactionHandle &transaction)
-		{
-			current_revision()->remove_feature(iter.index(), transaction);
-		}
+				DummyTransactionHandle &transaction);
 
 		/**
 		 * Return whether this feature collection contains unsaved changes.
@@ -395,6 +397,49 @@ namespace GPlatesModel
 			d_current_revision = rev;
 		}
 
+		/**
+		 * Access the handle of the container which contains this FeatureCollectionHandle.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * Note that the return value may be a NULL pointer, which signifies that this
+		 * feature collection is not contained within a container.
+		 */
+		FeatureStoreRootHandle *
+		container_handle() const
+		{
+			return d_container_handle;
+		}
+
+		/**
+		 * Access the index of this feature collection within its container.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * Note that the return value may be the invalid index INVALID_INDEX, which
+		 * signifies that this feature collection is not contained within a container.
+		 */
+		container_size_type
+		index_in_container() const
+		{
+			return d_index_in_container;
+		}
+
+		/**
+		 * Set the handle of the container which contains this FeatureCollectionHandle, and
+		 * the index of this feature collection within its container.
+		 *
+		 * Client code should not use this function!
+		 *
+		 * Note that @a new_handle may be a NULL pointer, and @a new_index may have the
+		 * value @a INVALID_INDEX ... but only if this FeatureCollectionHandle instance
+		 * will not be contained within a FeatureStoreRootHandle.
+		 */
+		void
+		set_container(
+				FeatureStoreRootHandle *new_handle,
+				container_size_type new_index);
+
  		/**
 		 * Access the first const weak observer of this instance.
 		 *
@@ -453,6 +498,36 @@ namespace GPlatesModel
 		 */
 		FeatureCollectionRevision::non_null_ptr_type d_current_revision;
 
+		/**
+		 * The FeatureStoreRootHandle whose FeatureStoreRootRevision contains this
+		 * FeatureCollectionHandle instance.
+		 *
+		 * Note that this should be held via a (regular, raw) pointer rather than a
+		 * ref-counting pointer (or any other type of smart pointer) because:
+		 *  -# The FeatureStoreRootHandle instance conceptually manages the instance of
+		 * this class, not the other way around.
+		 *  -# A FeatureStoreRootHandle instance will outlive the FeatureCollectionHandle
+		 * instances it contains; thus, it doesn't make sense for a FeatureStoreRootHandle
+		 * to have its memory managed by its contained FeatureCollectionHandle.
+		 *  -# Each FeatureStoreRootHandle will contain a ref-counting pointer to class
+		 * FeatureStoreRootRevision, which will contain a ref-counting pointer to class
+		 * FeatureCollectionHandle, and we don't want to set up a ref-counting loop (which
+		 * would lead to memory leaks).
+		 *
+		 * This pointer may be NULL.  It will be NULL when this FeatureCollectionHandle is
+		 * not contained.
+		 */
+		FeatureStoreRootHandle *d_container_handle;
+
+		/**
+		 * The index of this feature collection within its container.
+		 *
+		 * When this feature collection is not contained within a container (indicated by
+		 * @a d_container_handle being a NULL pointer), this index will be reset to the
+		 * value INVALID_INDEX.
+		 */
+		container_size_type d_index_in_container;
+
  		/**
 		 * The first const weak observer of this instance.
 		 */
@@ -486,6 +561,8 @@ namespace GPlatesModel
 		 */
 		FeatureCollectionHandle():
 			d_current_revision(FeatureCollectionRevision::create()),
+			d_container_handle(NULL),
+			d_index_in_container(INVALID_INDEX),
 			d_first_const_weak_observer(NULL),
 			d_first_weak_observer(NULL),
 			d_last_const_weak_observer(NULL),
@@ -511,6 +588,8 @@ namespace GPlatesModel
 				const FeatureCollectionHandle &other) :
 			GPlatesUtils::ReferenceCount<FeatureCollectionHandle>(),
 			d_current_revision(other.d_current_revision),
+			d_container_handle(NULL),
+			d_index_in_container(INVALID_INDEX),
 			d_first_const_weak_observer(NULL),
 			d_first_weak_observer(NULL),
 			d_last_const_weak_observer(NULL),

@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -91,20 +91,31 @@ namespace GPlatesFileIO
 		* @param feature_handle feature to write
 		*/
 		virtual
-			void
-			write_feature(
-			const GPlatesModel::FeatureHandle& feature_handle);
+		void
+		write_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
+
+		/**
+		* Writes a feature in GMT 'xy' format.
+		*
+		* @param feature_handle feature to write
+		*/
+		virtual
+		void
+		write_feature(
+				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 	private:
-		virtual
-			void
-			visit_feature_handle(
-			const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
-			void
-			visit_top_level_property_inline(
-			const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
+
+		virtual
+		void
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 			void

@@ -138,7 +138,7 @@ GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
 
 		// Get the header lines.
 		std::vector<QString> header_lines;
-		gmt_header.get_feature_header_lines(*feature_ref, header_lines);
+		gmt_header.get_feature_header_lines(feature_ref, header_lines);
 
 		// Iterate through the reconstructed geometries of the current feature and write to output.
 		reconstructed_feature_geometry_seq_type::const_iterator rfg_iter;

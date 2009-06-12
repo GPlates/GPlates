@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -67,23 +67,6 @@ namespace GPlatesFeatureVisitors
 			d_property_names_to_allow.push_back(property_name_to_allow);
 		}
 
-		virtual
-		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
-
-		virtual
-		void
-		visit_gpml_key_value_dictionary(
-				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
-
-
-
 		key_value_dictionary_container_const_iterator
 		found_key_value_dictionaries_begin() const
 		{
@@ -101,6 +84,18 @@ namespace GPlatesFeatureVisitors
 		{
 			return static_cast<unsigned int>(d_found_key_value_dictionaries.size());
 		}
+
+	protected:
+
+		virtual
+		bool
+		initialise_pre_property_values(
+				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+
+		virtual
+		void
+		visit_gpml_key_value_dictionary(
+				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 
 	private:
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;

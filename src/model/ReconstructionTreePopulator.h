@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -79,15 +79,17 @@ namespace GPlatesModel
 		~ReconstructionTreePopulator()
 		{  }
 
+	protected:
+
 		virtual
-		void
-		visit_feature_handle(
+		bool
+		initialise_pre_feature_properties(
 				FeatureHandle &feature_handle);
 
 		virtual
 		void
-		visit_top_level_property_inline(
-				TopLevelPropertyInline &top_level_property_inline);
+		finalise_post_feature_properties(
+				FeatureHandle &feature_handle);
 
 		virtual
 		void

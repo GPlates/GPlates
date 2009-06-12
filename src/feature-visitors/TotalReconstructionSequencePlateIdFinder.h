@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -55,26 +55,6 @@ namespace GPlatesFeatureVisitors
 		~TotalReconstructionSequencePlateIdFinder()
 		{  }
 
-		virtual
-		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
-
-		virtual
-		void
-		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
-
-		virtual
-		void
-		visit_gpml_plate_id(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
 		/**
 		 * Reset a TotalReconstructionSequencePlateIdFinder instance, as if it were freshly
 		 * instantiated.
@@ -96,9 +76,25 @@ namespace GPlatesFeatureVisitors
 			return d_moving_ref_frame_plate_id;
 		}
 
+	protected:
+
+		virtual
+		bool
+		initialise_pre_property_values(
+				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+
+		virtual
+		void
+		visit_gpml_plate_id(
+				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+
 	private:
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;
-		boost::optional<GPlatesModel::PropertyName> d_most_recent_propname_read;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_fixed_ref_frame_plate_id;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_moving_ref_frame_plate_id;
 	};

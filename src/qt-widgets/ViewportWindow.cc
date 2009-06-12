@@ -137,8 +137,7 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 
 		for ( ; iter != end; ++iter)
 		{
-			const GPlatesModel::FeatureHandle& feature_handle = **iter;
-			writer->write_feature(feature_handle);
+			writer->write_feature(iter);
 		}
 		feature_collection->set_contains_unsaved_changes(false);
 	}
@@ -2202,7 +2201,16 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	// These calls ensure that the correct status message is displayed. 
 	d_map_canvas_tool_choice_ptr->tool_choice().handle_activation();
 	d_globe_canvas_tool_choice_ptr->tool_choice().handle_activation();
-
+	
+	// Only enable raster-related menu items when the globe is active. 
+	bool globe_is_active = d_reconstruction_view_widget.globe_is_active();
+	action_Open_Raster->setEnabled(globe_is_active);
+	action_Open_Time_Dependent_Raster_Sequence->setEnabled(globe_is_active);
+	action_Show_Raster->setEnabled(globe_is_active);	
+	action_Set_Raster_Surface_Extent->setEnabled(globe_is_active);
+	
+	// Grey-out the modify pole tab when in map mode. 
+	d_task_panel_ptr->enable_modify_pole_tab(globe_is_active);
 	d_task_panel_ptr->enable_topology_tab(d_reconstruction_view_widget.globe_is_active());
 	
 	// Display appropriate status bar message for tools which are not available on the map.

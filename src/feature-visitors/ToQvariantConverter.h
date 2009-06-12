@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -99,17 +99,44 @@ namespace GPlatesFeatureVisitors
 			d_role = role;
 		}
 
-		virtual
+
+		qvariant_container_const_iterator
+		found_values_begin() const
+		{
+			return d_found_values.begin();
+		}
+
+		qvariant_container_const_iterator
+		found_values_end() const
+		{
+			return d_found_values.end();
+		}
+
 		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle);
+		clear_found_values()
+		{
+			d_found_values.clear();
+		}
 
-		virtual
+		qvariant_container_const_iterator
+		found_time_dependencies_begin() const
+		{
+			return d_found_time_dependencies.begin();
+		}
+
+		qvariant_container_const_iterator
+		found_time_dependencies_end() const
+		{
+			return d_found_time_dependencies.end();
+		}
+
 		void
-		visit_top_level_property_inline(
-				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+		clear_found_time_dependencies()
+		{
+			d_found_time_dependencies.clear();
+		}
 
-
+	protected:
 
 		virtual
 		void
@@ -175,43 +202,6 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
-
-
-		qvariant_container_const_iterator
-		found_values_begin() const
-		{
-			return d_found_values.begin();
-		}
-
-		qvariant_container_const_iterator
-		found_values_end() const
-		{
-			return d_found_values.end();
-		}
-
-		void
-		clear_found_values()
-		{
-			d_found_values.clear();
-		}
-
-		qvariant_container_const_iterator
-		found_time_dependencies_begin() const
-		{
-			return d_found_time_dependencies.begin();
-		}
-
-		qvariant_container_const_iterator
-		found_time_dependencies_end() const
-		{
-			return d_found_time_dependencies.end();
-		}
-
-		void
-		clear_found_time_dependencies()
-		{
-			d_found_time_dependencies.clear();
-		}
 
 	private:
 		/**

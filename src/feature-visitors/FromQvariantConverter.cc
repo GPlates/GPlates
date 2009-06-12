@@ -45,23 +45,6 @@
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_feature_handle(
-		GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_top_level_property_inline(
-		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	visit_property_values(top_level_property_inline);
-}
-
-
-void
 GPlatesFeatureVisitors::FromQvariantConverter::visit_enumeration(
 		GPlatesPropertyValues::Enumeration &enumeration)
 {

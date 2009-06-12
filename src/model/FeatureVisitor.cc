@@ -25,8 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+#include <boost/none.hpp>
+
 #include "FeatureVisitor.h"
-#include "FeatureHandle.h"
 #include "TopLevelPropertyInline.h"
 
 
@@ -39,14 +41,16 @@ GPlatesModel::FeatureVisitor::visit_feature_properties(
 		FeatureHandle &feature_handle)
 {
 	// FIXME: Store the properties_iterator that was most recently visited,
-	// as used in ReconstructedFeatureGeometryPopulator.
+	// as used in ReconstructedFeatureGeometryPopulator and
+	// QueryFeaturePropertiesWidgetPopulator and
+	// ViewFeatureGeometriesWidgetPopulator.
 	FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
 	FeatureHandle::properties_iterator end = feature_handle.properties_end();
 	for ( ; iter != end; ++iter) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) {
+		if (iter.is_valid()) {
+			d_current_top_level_propname = (*iter)->property_name();
 			(*iter)->accept_visitor(*this);
+			d_current_top_level_propname = boost::none;
 		}
 	}
 }
@@ -61,4 +65,20 @@ GPlatesModel::FeatureVisitor::visit_property_values(
 	for ( ; iter != end; ++iter) {
 		(*iter)->accept_visitor(*this);
 	}
+}
+
+
+void
+GPlatesModel::FeatureVisitor::log_invalid_weak_ref(
+		const FeatureHandle::weak_ref &feature_weak_ref)
+{
+	std::cerr << "invalid weak-ref not dereferenced." << std::endl;
+}
+
+
+void
+GPlatesModel::FeatureVisitor::log_invalid_iterator(
+		const FeatureCollectionHandle::features_iterator &iterator)
+{
+	std::cerr << "invalid iterator not dereferenced." << std::endl;
 }

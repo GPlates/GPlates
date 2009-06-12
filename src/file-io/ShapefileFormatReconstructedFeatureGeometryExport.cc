@@ -55,7 +55,7 @@ namespace
 
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type
 	create_kvd_from_feature(
-		const GPlatesModel::FeatureHandle &feature_handle,
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time	)
@@ -74,7 +74,7 @@ namespace
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		// If we found a plate id, add it. 
-		if (GPlatesFeatureVisitors::get_property_value(feature_handle,plate_id_property_name,recon_plate_id))
+		if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
 		{
 			// Shapefile attribute field names are limited to 10 characters in length 
 			// and should not contain spaces.
@@ -218,7 +218,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		}
 
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd =
-			create_kvd_from_feature(*feature_ref,
+			create_kvd_from_feature(feature_ref,
 									referenced_files,
 									reconstruction_anchor_plate_id,
 									reconstruction_time);

@@ -37,8 +37,10 @@
 #include <QProcess>
 #include <boost/bind.hpp>
 
+#include "ExternalProgram.h"
 #include "ErrorOpeningFileForWritingException.h"
 #include "ErrorOpeningPipeToGzipException.h"
+
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
@@ -87,8 +89,17 @@
 #include "maths/LatLonPointConversions.h"
 
 
-const GPlatesFileIO::ExternalProgram
-		GPlatesFileIO::GpmlOnePointSixOutputVisitor::s_gzip_program("gzip", "gzip --version");
+const GPlatesFileIO::ExternalProgram &
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::gzip_program()
+{
+	if (s_gzip_program == NULL) {
+		s_gzip_program = new ExternalProgram("gzip", "gzip --version");
+	}
+	return *s_gzip_program;
+}
+
+
+const GPlatesFileIO::ExternalProgram *GPlatesFileIO::GpmlOnePointSixOutputVisitor::s_gzip_program = NULL;
 
 
 namespace
@@ -492,9 +503,9 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 		d_qprocess_ptr->setStandardOutputFile(file_info.get_qfileinfo().filePath());
 		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
 		// In fact, it may need to be a user preference.
-		d_qprocess_ptr->start(s_gzip_program.command());
+		d_qprocess_ptr->start(gzip_program().command());
 		if ( ! d_qprocess_ptr->waitForStarted()) {
-			throw ErrorOpeningPipeToGzipException(s_gzip_program.command(), file_info.get_qfileinfo().filePath());
+			throw ErrorOpeningPipeToGzipException(gzip_program().command(), file_info.get_qfileinfo().filePath());
 		}
 		// Use the newly-launched process as the device the XML writer writes to.
 		d_output.setDevice(d_qprocess_ptr.get());
@@ -521,11 +532,20 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 
 
 void
-	GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
-	const GPlatesModel::FeatureHandle& feature_handle)
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 {
-	feature_handle.accept_visitor(*this);
+	visit_feature(feature);
 }
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
+		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
+{
+	visit_feature(feature);
+}
+
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::start_writing_document(
@@ -575,7 +595,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::~GpmlOnePointSixOutputVisitor()
 
 			// The temporary gpml filename, and hence the corresponding .gpml.gz name, should be unique, 
 			// so we can just go ahead and compress the file. 
-			QProcess::execute(s_gzip_program.command(),args);
+			QProcess::execute(gzip_program().command(), args);
 			
 			// The requested output file may exist. If that is the case, at this stage the user has already
 			// confirmed that the file be overwritten. We can't rename a file if a file with the new name
@@ -636,8 +656,6 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_top_level_property_inline(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	d_last_property_seen = top_level_property_inline.property_name();
-
 	bool pop = d_output.writeStartElement(top_level_property_inline.property_name());
 		d_output.writeAttributes(
 			top_level_property_inline.xml_attributes().begin(),

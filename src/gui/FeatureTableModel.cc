@@ -122,7 +122,7 @@ namespace
 	
 	const QVariant
 	get_reconstruction_plate_id_from_properties(
-			const GPlatesModel::FeatureHandle &feature,
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
 			bool should_print_debugging_message = false)
 	{
 		static const GPlatesModel::PropertyName plate_id_property_name =
@@ -170,7 +170,7 @@ namespace
 					// Otherwise, there wasn't a reconstruction plate ID.  Let's find
 					// the reconstruction plate ID the hard way -- by iterating through
 					// all the properties of the referenced feature.
-					return get_reconstruction_plate_id_from_properties(**weak_ref, true);
+					return get_reconstruction_plate_id_from_properties(*weak_ref, true);
 				}
 			}
 		}
@@ -217,7 +217,7 @@ namespace
 		if (weak_ref) {
 			const GPlatesPropertyValues::GmlTimePeriod *time_period;
 			if (GPlatesFeatureVisitors::get_property_value(
-					**weak_ref, valid_time_property_name, time_period))
+					*weak_ref, valid_time_property_name, time_period))
 			{
 				// The feature has a gml:validTime property.
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
@@ -242,7 +242,7 @@ namespace
 		if (weak_ref) {
 			const GPlatesPropertyValues::GmlTimePeriod *time_period;
 			if (GPlatesFeatureVisitors::get_property_value(
-					**weak_ref, valid_time_property_name, time_period))
+					*weak_ref, valid_time_property_name, time_period))
 			{
 				// The feature has a gml:validTime property.
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
@@ -268,7 +268,7 @@ namespace
 		if (weak_ref) {
 			const GPlatesPropertyValues::XsString *name;
 			if (GPlatesFeatureVisitors::get_property_value(
-					**weak_ref, name_property_name, name))
+					*weak_ref, name_property_name, name))
 			{
 				// The feature has one or more name properties.  Use the first one
 				// for now.
@@ -291,7 +291,7 @@ namespace
 		if (weak_ref) {
 			const GPlatesPropertyValues::XsString *description;
 			if (GPlatesFeatureVisitors::get_property_value(
-					**weak_ref, description_property_name, description))
+					*weak_ref, description_property_name, description))
 			{
 				// The feature has one or more description properties.  Use the
 				// first one for now.

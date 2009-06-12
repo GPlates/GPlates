@@ -60,7 +60,7 @@ namespace GPlatesModel
 		append_property_value_to_feature(
 				PropertyValue::non_null_ptr_type property_value,
 				const PropertyName &property_name,
-				FeatureHandle::weak_ref &feature);
+				const FeatureHandle::weak_ref &feature);
 
 
 		const TopLevelPropertyInline::non_null_ptr_type
@@ -69,7 +69,7 @@ namespace GPlatesModel
 				const PropertyName &property_name,
 				const UnicodeString &attribute_name_string,
 				const UnicodeString &attribute_value_string,
-				FeatureHandle::weak_ref &feature);
+				const FeatureHandle::weak_ref &feature);
 
 
 		template< typename AttributeIterator >
@@ -79,7 +79,7 @@ namespace GPlatesModel
 				const PropertyName &property_name,
 				const AttributeIterator &attributes_begin,
 				const AttributeIterator &attributes_end,
-				FeatureHandle::weak_ref &feature);
+				const FeatureHandle::weak_ref &feature);
 
 
 		const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
@@ -117,7 +117,7 @@ namespace GPlatesModel
 		const FeatureHandle::weak_ref
 		create_total_recon_seq(
 				ModelInterface &model,
-				FeatureCollectionHandle::weak_ref &target_collection,
+				const FeatureCollectionHandle::weak_ref &target_collection,
 				unsigned long fixed_plate_id,
 				unsigned long moving_plate_id,
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
@@ -131,7 +131,7 @@ namespace GPlatesModel
 			const PropertyName &property_name,
 			const AttributeIterator &attributes_begin,
 			const AttributeIterator &attributes_end,
-			FeatureHandle::weak_ref &feature)
+			const FeatureHandle::weak_ref &feature)
 	{
 		std::map<XmlAttributeName, XmlAttributeValue> xml_attributes(
 				attributes_begin, attributes_end);
