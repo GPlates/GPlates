@@ -57,18 +57,18 @@ namespace GPlatesAppLogic
 		 * @a GPlatesModel::FeatureCollectionHandle::weak_ref objects and visiting
 		 * them with @a visitor.
 		 */
-		template< typename FeatureCollectionIterator >
+		template< typename FeatureCollectionWeakRefIterator >
 		void
 		visit_feature_collections(
-				FeatureCollectionIterator collections_begin, 
-				FeatureCollectionIterator collections_end,
+				FeatureCollectionWeakRefIterator collections_begin, 
+				FeatureCollectionWeakRefIterator collections_end,
 				GPlatesModel::FeatureVisitor &visitor)
 		{
 			using namespace GPlatesModel;
 
 			// We visit each of the features in each of the feature collections in
 			// the given range.
-			FeatureCollectionIterator collections_iter = collections_begin;
+			FeatureCollectionWeakRefIterator collections_iter = collections_begin;
 			for ( ; collections_iter != collections_end; ++collections_iter)
 			{
 				FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;

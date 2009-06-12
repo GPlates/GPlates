@@ -26,8 +26,11 @@
 #ifndef GPLATES_APP_LOGIC_PLATEVELOCITIES_H
 #define GPLATES_APP_LOGIC_PLATEVELOCITIES_H
 
-#include "model/FeatureCollectionHandle.h"
+#include <vector>
 
+#include "ReconstructHook.h"
+
+#include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
 
@@ -44,6 +47,7 @@ namespace GPlatesFeatureVisitors
 
 namespace GPlatesModel
 {
+	class ModelInterface;
 	class ReconstructionTree;
 }
 
@@ -84,7 +88,7 @@ namespace GPlatesAppLogic
 		 * Solves velocities for features in @a velocity_field_feature_collection.
 		 *
 		 * The velocities are calculated at the domain points specified in each feature
-		 * (currently by the GmlMultiPoint in the gpml:MeshNode feature).
+		 * (currently by the GmlMultiPoint in the gpml:VelocityField feature).
 		 *
 		 * The generated velocities are stored in a new property named "velocities" of
 		 * type GmlDataBlock.
@@ -102,10 +106,10 @@ namespace GPlatesAppLogic
 		 * GPlatesAppLogic::Reconstruct::create_reconstruction) remove it from argument list
 		 * replacing it with a @a GPlatesModel::Reconstruction so that the plate boundaries
 		 * can be queried from the reconstruction geometries associated with features of type
-		 * TopologicalClosedPlateBoundary instead of the TopologyResolver.
+		 * TopologicalClosedPlateBoundary instead of using the TopologyResolver.
 		 *
-		 * FIXME: View operation code should not be in here (this is app logic code).
-		 * Remove any rendered geometry code to a higher source code tier.
+		 * FIXME: Presentation code should not be in here (this is app logic code).
+		 * Remove any rendered geometry code to the presentation tier.
 		 */
 		void
 		solve_velocities(
@@ -118,6 +122,87 @@ namespace GPlatesAppLogic
 				GPlatesFeatureVisitors::TopologyResolver &topology_resolver,
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer);
 	}
+
+
+	/**
+	 * Hook to render reconstruction geometries after a reconstruction.
+	 */
+	class PlateVelocitiesHook :
+			public GPlatesAppLogic::ReconstructHook
+	{
+	public:
+		/**
+		 * FIXME: Presentation code should not be in here (this is app logic code).
+		 * Remove any rendered geometry code to the presentation tier.
+		 */
+		PlateVelocitiesHook(
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer) :
+			d_comp_mesh_layer(comp_mesh_layer)
+		{  }
+
+
+		/**
+		 * Call this when a new feature collection of reconstructable features
+		 * has been loaded by the user.
+		 *
+		 * If the feature collection contains features that can be used for
+		 * velocity calculations then a new feature collection is created internally
+		 * that is used directly by the velocity solver.
+		 */
+		void
+		load_reconstructable_feature_collection(
+				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				GPlatesModel::ModelInterface &model);
+
+
+		/**
+		 * Call this when a new feature collection of reconstruction features
+		 * has been loaded by the user.
+		 *
+		 * This is used to determine finite rotations for the velocity calculations.
+		 */
+		void
+		load_reconstruction_feature_collection(
+				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+
+		/**
+		 * Call this when any type of feature collection has been unloaded by the user.
+		 *
+		 * If the feature collection is stored internally then it will be removed.
+		 * Applies to calls to either @a load_reconstructable_feature_collection
+		 * or @a load_reconstruction_feature_collection.
+		 */
+		void
+		unload_feature_collection(
+				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+
+		/**
+		 * Callback hook after a reconstruction is created.
+		 */
+		virtual
+		void
+		post_reconstruction_hook(
+				GPlatesModel::ModelInterface &model,
+				GPlatesModel::Reconstruction &reconstruction,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+				GPlatesFeatureVisitors::TopologyResolver &topology_resolver);
+
+	private:
+		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+				feature_collection_weak_ref_seq_type;
+
+		feature_collection_weak_ref_seq_type d_velocity_field_feature_collections;
+		feature_collection_weak_ref_seq_type d_reconstruction_feature_collections;
+
+		/**
+		 * FIXME: Presentation code should not be in here (this is app logic code).
+		 * Remove any rendered geometry code to the presentation tier.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_comp_mesh_layer;
+	};
 }
 
 #endif // GPLATES_APP_LOGIC_PLATEVELOCITIES_H

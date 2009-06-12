@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <boost/optional.hpp>
 
 #include "PlateVelocities.h"
@@ -33,8 +34,11 @@
 #include "feature-visitors/ComputationalMeshSolver.h"
 
 #include "model/FeatureType.h"
+#include "model/Model.h"
+#include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
+#include "model/ReconstructionTree.h"
 
 #include "property-values/GmlMultiPoint.h"
 
@@ -283,6 +287,110 @@ GPlatesAppLogic::PlateVelocities::solve_velocities(
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 			velocity_field_feature_collection,
 			velocity_solver);
+}
 
-	// velocity_solver.report();
+
+void
+GPlatesAppLogic::PlateVelocitiesHook::load_reconstructable_feature_collection(
+		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		GPlatesModel::ModelInterface &model)
+{
+	// Only interested in feature collections with velocity mesh nodes.
+	if (!PlateVelocities::detect_velocity_mesh_nodes(feature_collection))
+	{
+		return;
+	}
+
+	// Create a new feature collection with velocity field features that the
+	// velocity solver can use for its calculations.
+	const GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
+			PlateVelocities::create_velocity_field_feature_collection(
+					feature_collection, model);
+
+	// Add to our list of velocity field feature collections.
+	d_velocity_field_feature_collections.push_back(velocity_field_feature_collection);
+}
+
+
+void
+GPlatesAppLogic::PlateVelocitiesHook::load_reconstruction_feature_collection(
+		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	d_reconstruction_feature_collections.push_back(feature_collection);
+}
+
+
+void
+GPlatesAppLogic::PlateVelocitiesHook::unload_feature_collection(
+		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	std::remove(
+			d_reconstruction_feature_collections.begin(),
+			d_reconstruction_feature_collections.end(),
+			feature_collection);
+	std::remove(
+			d_velocity_field_feature_collections.begin(),
+			d_velocity_field_feature_collections.end(),
+			feature_collection);
+}
+
+
+void
+GPlatesAppLogic::PlateVelocitiesHook::post_reconstruction_hook(
+		GPlatesModel::ModelInterface &/*model*/,
+		GPlatesModel::Reconstruction &reconstruction,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+		GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
+{
+	// FIXME: should this '1' should be user controllable?
+	// What happens if recon_time is present-day ?
+	const double &reconstruction_time_1 = reconstruction_time;
+	const double reconstruction_time_2 = reconstruction_time_1 + 1;
+
+	//
+	// Create a second reconstruction tree for velocity calculations.
+	//
+	GPlatesModel::ReconstructionTree::non_null_ptr_type reconstruction_tree_2_ptr = 
+			GPlatesAppLogic::Reconstruct::create_reconstruction_tree(
+					d_reconstruction_feature_collections,
+					reconstruction_time_2,
+					reconstruction_anchored_plate_id);
+
+	// Our two reconstruction trees.
+	GPlatesModel::ReconstructionTree &reconstruction_tree_1 =
+			reconstruction.reconstruction_tree();
+	GPlatesModel::ReconstructionTree &reconstruction_tree_2 =
+			*reconstruction_tree_2_ptr;
+
+
+	/*
+	 * FIXME: Presentation code should not be in here (this is app logic code).
+	 * Remove any rendered geometry code to the presentation tier.
+	 */
+	// Activate the comp_mesh_layer.
+	d_comp_mesh_layer->set_active();
+	// Clear all RenderedGeometry's before adding new ones.
+	d_comp_mesh_layer->clear_rendered_geometries();
+
+
+	// Iterate over all our velocity field feature collections and solve velocities.
+	feature_collection_weak_ref_seq_type::iterator velocity_field_feature_collection_iter;
+	for (velocity_field_feature_collection_iter = d_velocity_field_feature_collections.begin();
+		velocity_field_feature_collection_iter != d_velocity_field_feature_collections.end();
+		++velocity_field_feature_collection_iter)
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
+				*velocity_field_feature_collection_iter;
+
+		PlateVelocities::solve_velocities(
+			velocity_field_feature_collection,
+			reconstruction_tree_1,
+			reconstruction_tree_2,
+			reconstruction_time_1,
+			reconstruction_time_2,
+			reconstruction_anchored_plate_id,
+			topology_resolver,
+			d_comp_mesh_layer);
+	}
 }

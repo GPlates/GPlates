@@ -94,7 +94,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::Reconstruction &reconstruction,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
-				const GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
+				GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
 		{  }
 	};
 }
