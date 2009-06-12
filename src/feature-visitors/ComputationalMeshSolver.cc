@@ -134,7 +134,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	//
 	// super short-cut for non-mesh features
 	//
-	QString type_mesh_node("MeshNode");
+	QString type_mesh_node("VelocityField");
 
 	if ( ! (type_name == type_mesh_node) )
 	{
@@ -162,14 +162,15 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 		feature_handle.reference(), name_property_name, feature_name ) ) 
 	{
 		oss << GPlatesUtils::make_qstring(feature_name->value()).toStdString();
+		// report progress
+		qDebug() << " processing mesh: " << GPlatesUtils::make_qstring( feature_name->value() );
 	}
 	else
 	{
 		oss << "unknown_mesh_name";
+		// report progress
+		qDebug() << " processing mesh: " << oss.str().c_str();
 	}
-
-	// report progress
-	qDebug() << " processing mesh: " << GPlatesUtils::make_qstring( feature_name->value() );
 
 
 	// create an accumulator struct 

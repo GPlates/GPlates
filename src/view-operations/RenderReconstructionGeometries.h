@@ -65,6 +65,9 @@ namespace GPlatesViewOperations
 			public GPlatesAppLogic::ReconstructHook
 	{
 	public:
+		typedef GPlatesUtils::non_null_intrusive_ptr<RenderReconstructionGeometriesHook,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+
 		RenderReconstructionGeometriesHook(
 				RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::ColourTable &colour_table) :

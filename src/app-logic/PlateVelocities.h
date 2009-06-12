@@ -131,6 +131,9 @@ namespace GPlatesAppLogic
 			public GPlatesAppLogic::ReconstructHook
 	{
 	public:
+		typedef GPlatesUtils::non_null_intrusive_ptr<PlateVelocitiesHook,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+
 		/**
 		 * FIXME: Presentation code should not be in here (this is app logic code).
 		 * Remove any rendered geometry code to the presentation tier.
@@ -191,11 +194,31 @@ namespace GPlatesAppLogic
 				GPlatesFeatureVisitors::TopologyResolver &topology_resolver);
 
 	private:
+		/**
+		 * Used to associate a mesh node feature collection with a
+		 * velocity field feature collection so that when the former is deleted
+		 * we can stop calculating velocities for the latter.
+		 */
+		struct VelocityFieldFeatureCollectionInfo
+		{
+			VelocityFieldFeatureCollectionInfo(
+					GPlatesModel::FeatureCollectionHandle::weak_ref &mesh_node_feature_collection,
+					GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection) :
+				d_mesh_node_feature_collection(mesh_node_feature_collection),
+				d_velocity_field_feature_collection(velocity_field_feature_collection)
+			{  }
+
+			GPlatesModel::FeatureCollectionHandle::weak_ref d_mesh_node_feature_collection;
+			GPlatesModel::FeatureCollectionHandle::weak_ref d_velocity_field_feature_collection;
+		};
+
 		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
 				feature_collection_weak_ref_seq_type;
+		typedef std::vector<VelocityFieldFeatureCollectionInfo>
+				velocity_field_feature_collection_info_seq_type;
 
-		feature_collection_weak_ref_seq_type d_velocity_field_feature_collections;
 		feature_collection_weak_ref_seq_type d_reconstruction_feature_collections;
+		velocity_field_feature_collection_info_seq_type d_velocity_field_feature_collection_infos;
 
 		/**
 		 * FIXME: Presentation code should not be in here (this is app logic code).

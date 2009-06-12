@@ -24,6 +24,8 @@
  */
 
 #include <algorithm>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 #include <boost/optional.hpp>
 
 #include "PlateVelocities.h"
@@ -153,7 +155,7 @@ namespace
 				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 		{
 			static const GPlatesModel::PropertyName mesh_points_prop_name =
-					GPlatesModel::PropertyName::create_gml("meshPoints");
+					GPlatesModel::PropertyName::create_gpml("meshPoints");
 
 			// Note: we can't get here without a valid property name but check
 			// anyway in case visiting a property value directly (ie, not via a feature).
@@ -303,12 +305,15 @@ GPlatesAppLogic::PlateVelocitiesHook::load_reconstructable_feature_collection(
 
 	// Create a new feature collection with velocity field features that the
 	// velocity solver can use for its calculations.
-	const GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
+	GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
 			PlateVelocities::create_velocity_field_feature_collection(
 					feature_collection, model);
 
 	// Add to our list of velocity field feature collections.
-	d_velocity_field_feature_collections.push_back(velocity_field_feature_collection);
+	d_velocity_field_feature_collection_infos.push_back(
+			VelocityFieldFeatureCollectionInfo(
+					feature_collection,
+					velocity_field_feature_collection));
 }
 
 
@@ -324,14 +329,25 @@ void
 GPlatesAppLogic::PlateVelocitiesHook::unload_feature_collection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	std::remove(
-			d_reconstruction_feature_collections.begin(),
-			d_reconstruction_feature_collections.end(),
-			feature_collection);
-	std::remove(
-			d_velocity_field_feature_collections.begin(),
-			d_velocity_field_feature_collections.end(),
-			feature_collection);
+	// Try removing it from the reconstruction feature collections.
+	d_reconstruction_feature_collections.erase(
+			std::remove(
+					d_reconstruction_feature_collections.begin(),
+					d_reconstruction_feature_collections.end(),
+					feature_collection),
+			d_reconstruction_feature_collections.end());
+
+	using boost::lambda::_1;
+	using boost::lambda::bind;
+
+	// Try removing it from the velocity feature collections.
+	d_velocity_field_feature_collection_infos.erase(
+			std::remove_if(
+					d_velocity_field_feature_collection_infos.begin(),
+					d_velocity_field_feature_collection_infos.end(),
+					bind(&VelocityFieldFeatureCollectionInfo::d_mesh_node_feature_collection, _1)
+							== feature_collection),
+			d_velocity_field_feature_collection_infos.end());
 }
 
 
@@ -375,13 +391,13 @@ GPlatesAppLogic::PlateVelocitiesHook::post_reconstruction_hook(
 
 
 	// Iterate over all our velocity field feature collections and solve velocities.
-	feature_collection_weak_ref_seq_type::iterator velocity_field_feature_collection_iter;
-	for (velocity_field_feature_collection_iter = d_velocity_field_feature_collections.begin();
-		velocity_field_feature_collection_iter != d_velocity_field_feature_collections.end();
+	velocity_field_feature_collection_info_seq_type::iterator velocity_field_feature_collection_iter;
+	for (velocity_field_feature_collection_iter = d_velocity_field_feature_collection_infos.begin();
+		velocity_field_feature_collection_iter != d_velocity_field_feature_collection_infos.end();
 		++velocity_field_feature_collection_iter)
 	{
-		GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
-				*velocity_field_feature_collection_iter;
+		GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection =
+				velocity_field_feature_collection_iter->d_velocity_field_feature_collection;
 
 		PlateVelocities::solve_velocities(
 			velocity_field_feature_collection,

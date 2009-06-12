@@ -94,7 +94,7 @@ namespace GPlatesAppLogic
 		 * never been called.
 		 */
 		GPlatesModel::Reconstruction::non_null_ptr_type
-		get_reconstruction()
+		get_reconstruction() const
 		{
 			return d_current_reconstruction;
 		}

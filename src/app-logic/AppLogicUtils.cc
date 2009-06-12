@@ -52,3 +52,27 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 		}
 	}
 }
+
+
+void
+GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
+		GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+		GPlatesModel::ConstFeatureVisitor &visitor)
+{
+	// Before we dereference the weak_ref be sure that it's valid to dereference.
+	if (feature_collection.is_valid())
+	{
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator iter =
+				feature_collection->features_begin();
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator end =
+				feature_collection->features_end();
+		for ( ; iter != end; ++iter)
+		{
+			// Check that it's ok to dereference the iterator.
+			if (iter.is_valid())
+			{
+				visitor.visit_feature(iter);
+			}
+		}
+	}
+}

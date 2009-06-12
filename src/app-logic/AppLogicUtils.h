@@ -42,14 +42,22 @@ namespace GPlatesAppLogic
 		 * A convenience function for iterating over a the features in a
 		 * @a GPlatesModel::FeatureCollectionHandle::weak_ref and visiting
 		 * them with @a visitor.
-		 *
-		 * FIXME: Remove this when this functionality is taken care of by
-		 * the feature visitor base classes.
 		 */
 		void
 		visit_feature_collection(
 				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 				GPlatesModel::FeatureVisitor &visitor);
+
+
+		/**
+		 * A convenience function for iterating over a the features in a
+		 * @a GPlatesModel::FeatureCollectionHandle::const_weak_ref and visiting
+		 * them with @a visitor.
+		 */
+		void
+		visit_feature_collection(
+				GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				GPlatesModel::ConstFeatureVisitor &visitor);
 
 
 		/**
@@ -73,8 +81,32 @@ namespace GPlatesAppLogic
 			{
 				FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
 
-				// FIXME: change this to visitor.visit(feature_collection) when
-				// new functionality added to feature visitor base classes.
+				visit_feature_collection(feature_collection, visitor);
+			}
+		}
+
+
+		/**
+		 * A convenience function for iterating over a sequence of
+		 * @a GPlatesModel::FeatureCollectionHandle::weak_ref objects and visiting
+		 * them with @a visitor.
+		 */
+		template< typename FeatureCollectionConstWeakRefIterator >
+		void
+		visit_feature_collections(
+				FeatureCollectionConstWeakRefIterator collections_begin, 
+				FeatureCollectionConstWeakRefIterator collections_end,
+				GPlatesModel::ConstFeatureVisitor &visitor)
+		{
+			using namespace GPlatesModel;
+
+			// We visit each of the features in each of the feature collections in
+			// the given range.
+			FeatureCollectionConstWeakRefIterator collections_iter = collections_begin;
+			for ( ; collections_iter != collections_end; ++collections_iter)
+			{
+				FeatureCollectionHandle::const_weak_ref feature_collection = *collections_iter;
+
 				visit_feature_collection(feature_collection, visitor);
 			}
 		}
