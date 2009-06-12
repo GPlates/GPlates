@@ -403,6 +403,10 @@ GPlatesQtWidgets::ReconstructionPoleWidget::set_focus(
 		reset_adjustment();
 		d_initial_geometries.clear();
 		field_moving_plate->clear();
+		// This is to clear the rendered geometries if the feature geometry
+		// disappears when this tool is still active (eg, when a
+		// feature collection is unloaded and its features should disappear).
+		draw_initial_geometries();
 		return;
 	}
 	if (d_plate_id == focused_geometry->reconstruction_plate_id()) {
