@@ -278,9 +278,9 @@ GPlatesFileIO::get_feature_collection_writer(
 	case FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER:
 	case FeatureCollectionWriteFormat::GMT_VERBOSE_HEADER:
 	case FeatureCollectionWriteFormat::GMT_PREFER_PLATES4_STYLE_HEADER:
-		GPlatesGlobal::Assert(
-			get_feature_collection_file_format(file_info) == FeatureCollectionFileFormat::GMT,
-			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				get_feature_collection_file_format(file_info) == FeatureCollectionFileFormat::GMT,
+				GPLATES_ASSERTION_SOURCE);
 		break;
 	default:
 		break;

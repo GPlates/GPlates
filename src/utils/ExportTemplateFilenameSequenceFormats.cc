@@ -134,8 +134,9 @@ GPlatesUtils::ExportTemplateFilename::FrameNumberFormat::calc_max_digits(
 		}
 	}
 
-	GPlatesGlobal::Assert(d_max_digits < MAX_MAX_DIGITS,
-			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_max_digits < MAX_MAX_DIGITS,
+			GPLATES_ASSERTION_SOURCE);
 }
 
 

@@ -62,8 +62,9 @@ GPlatesUtils::ExportTemplateFilenameSequenceImpl::get_filename(
 		const std::size_t sequence_index,
 		const QDateTime &date_time) const
 {
-	GPlatesGlobal::Assert(sequence_index < d_sequence_info.duration_in_frames,
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			sequence_index < d_sequence_info.duration_in_frames,
+			GPLATES_ASSERTION_SOURCE);
 
 	// Get the reconstruction time for the current sequence index.
 	const double reconstruction_time = GPlatesUtils::AnimationSequence::calculate_time_for_frame(

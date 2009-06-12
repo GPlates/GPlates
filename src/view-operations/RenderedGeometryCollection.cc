@@ -562,8 +562,9 @@ GPlatesViewOperations::RenderedGeometryCollection::begin_update_collection()
 void
 GPlatesViewOperations::RenderedGeometryCollection::end_update_collection()
 {
-	GPlatesGlobal::Assert(d_update_collection_depth > 0,
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_update_collection_depth > 0,
+			GPLATES_ASSERTION_SOURCE);
 
 	--d_update_collection_depth;
 
@@ -715,9 +716,9 @@ const GPlatesViewOperations::RenderedGeometryLayer *
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::get_rendered_geometry_layer(
 		RenderedGeometryLayerIndex layer_index) const
 {
-	GPlatesGlobal::Assert(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			layer_index < d_layer_storage.size(),
-			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+			GPLATES_ASSERTION_SOURCE);
 
 	return d_layer_storage[layer_index];
 }
@@ -747,9 +748,9 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 	RenderedGeometryLayer::user_data_type user_data(main_layer);
 
 	// Make sure slot isn't already being used.
-	GPlatesGlobal::Assert(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_layer_storage[layer_index] == NULL,
-			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+			GPLATES_ASSERTION_SOURCE);
 
 	// Create a new rendered geometry layer.
 	d_layer_storage[layer_index] = new RenderedGeometryLayer(user_data);
@@ -774,9 +775,9 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 	RenderedGeometryLayer::user_data_type user_data(main_layer);
 
 	// Make sure slot isn't already being used.
-	GPlatesGlobal::Assert(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_layer_storage[layer_index] == NULL,
-			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+			GPLATES_ASSERTION_SOURCE);
 
 	// Create a new rendered geometry layer.
 	d_layer_storage[layer_index] = new RenderedGeometryLayer(
@@ -841,15 +842,15 @@ void
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::deallocate_layer_index(
 		RenderedGeometryLayerIndex layer_index)
 {
-	GPlatesGlobal::Assert(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			layer_index < d_layer_storage.size(),
-			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+			GPLATES_ASSERTION_SOURCE);
 
 	// Make sure layer index is actually being used.
-	GPlatesGlobal::Assert(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			std::find(d_layers.begin(), d_layers.end(), layer_index) !=
 					d_layers.end(),
-			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+			GPLATES_ASSERTION_SOURCE);
 
 	// Remove from list of layers in use.
 	d_layers.remove(layer_index);
