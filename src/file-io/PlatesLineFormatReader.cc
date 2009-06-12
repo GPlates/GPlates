@@ -520,7 +520,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		const GPlatesPropertyValues::GmlTimePeriod *time_period;
 
 		GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, valid_time_property_name, time_period);
+			feature_ref, valid_time_property_name, time_period);
 	
 		// Casting time details
 		GPlatesPropertyValues::GmlTimePeriod* tp = 

@@ -78,7 +78,7 @@ namespace
 	{
 		const GPlatesPropertyValues::GpmlPlateId *plate_id = NULL;
 		if (GPlatesFeatureVisitors::get_property_value(
-				*feature_ref, property_name, plate_id))
+				feature_ref, property_name, plate_id))
 		{
 			// The feature has a plate ID of the desired kind.
 			
@@ -219,7 +219,7 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		GPlatesModel::PropertyName::create_gml("name");
 
 	const GPlatesPropertyValues::XsString *name = NULL;
-	if (GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, name))
+	if (GPlatesFeatureVisitors::get_property_value(feature_ref, name_property_name, name))
 	{
 		// The feature has one or more name properties. Use the first one for now.
 		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
@@ -237,7 +237,7 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 
 	const GPlatesPropertyValues::GmlTimePeriod *time_period = NULL;
 	if (GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, valid_time_property_name, time_period))
+			feature_ref, valid_time_property_name, time_period))
 	{
 		// The feature has a gml:validTime property.
 		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));

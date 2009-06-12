@@ -737,7 +737,7 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*ref_point_feature_ref, plate_id_property_name, recon_plate_id ) )
+			ref_point_feature_ref, plate_id_property_name, recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
 #ifdef DEBUG_RESOLVE_INTERSECTION
@@ -2224,7 +2224,7 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, property_name, recon_plate_id ) )
+			feature_ref, property_name, recon_plate_id ) )
 		{
 			std::cout 
 				<< " TopologyResolver::locate_point(): " 
@@ -2308,7 +2308,7 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 			GPlatesModel::PropertyName::create_gml("name");
 		const GPlatesPropertyValues::XsString *name;
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, name_property_name, name ) ) 
+			feature_ref, name_property_name, name ) ) 
 		{
 			std::cout << " name = \"" 
 				<< GPlatesUtils::make_qstring(name->value()).toStdString() 
@@ -2321,7 +2321,7 @@ GPlatesFeatureVisitors::TopologyResolver::report()
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*feature_ref, property_name, recon_plate_id ) ) 
+			feature_ref, property_name, recon_plate_id ) ) 
 		{
 			std::cout << " reconstructionPlateId = " << recon_plate_id->value() << std::endl;
 		}

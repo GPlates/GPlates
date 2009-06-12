@@ -593,7 +593,7 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 		GPlatesModel::PropertyName::create_gml("name");
 
 	const GPlatesPropertyValues::XsString *name;
-	if ( GPlatesFeatureVisitors::get_property_value(*feature_ref, name_property_name, name) )
+	if ( GPlatesFeatureVisitors::get_property_value(feature_ref, name_property_name, name) )
 	{
 		qDebug() << "name = " << GPlatesUtils::make_qstring( name->value() );
 	}
@@ -692,7 +692,7 @@ GPlatesGui::TopologyTools::display_topology(
 		d_section_ptrs, d_section_ids, d_section_click_points, d_section_reverse_flags);
 
 	// Visit the feature_ref, filling d_section_ vectors with data
-	feature_ref->accept_visitor( topo_sections_finder );
+	topo_sections_finder.visit_feature(feature_ref);
 
 	// just to be safe, disconnect listening to feature focus while changing Section Table
 	connect_to_focus_signals( false );
@@ -2591,7 +2591,7 @@ GPlatesGui::TopologyTools::append_boundary_to_feature(
 	const GPlatesPropertyValues::GmlTimePeriod *time_period;
 
 	GPlatesFeatureVisitors::get_property_value(
-		*feature_ref, valid_time_property_name, time_period);
+		feature_ref, valid_time_property_name, time_period);
 
 	// Casting time details
 	GPlatesPropertyValues::GmlTimePeriod* tp = 
@@ -2662,7 +2662,7 @@ GPlatesGui::TopologyTools::show_numbers()
 
 		const GPlatesPropertyValues::XsString *name;
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*d_feature_focus_ptr->focused_feature(), name_property_name, name) )
+			d_feature_focus_ptr->focused_feature(), name_property_name, name) )
 		{
 			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name->value());
 		}
@@ -2684,7 +2684,7 @@ GPlatesGui::TopologyTools::show_numbers()
 		const GPlatesPropertyValues::XsString *name;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-			*d_topology_feature_ref, name_property_name, name) )
+			d_topology_feature_ref, name_property_name, name) )
 		{
 			qDebug() << "d_topology_feature_ref name = " << GPlatesUtils::make_qstring( name->value() );
 		} 

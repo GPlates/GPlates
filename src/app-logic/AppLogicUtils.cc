@@ -26,6 +26,8 @@
 #include "AppLogicUtils.h"
 
 #include "model/FeatureHandle.h"
+#include "model/FeatureVisitor.h"
+#include "model/ConstFeatureVisitor.h"
 
 
 void
@@ -45,15 +47,7 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 			// Check that it's ok to dereference the iterator.
 			if (iter.is_valid())
 			{
-				GPlatesModel::FeatureCollectionHandle::features_iterator::dereference_type
-						feature_handle_ptr = *iter;
-
-				// Check that it's ok to dereference the pointer that
-				// results from dereferencing the iterator.
-				if (feature_handle_ptr)
-				{
-					feature_handle_ptr->accept_visitor(visitor);
-				}
+				visitor.visit_feature(iter);
 			}
 		}
 	}

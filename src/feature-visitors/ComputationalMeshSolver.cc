@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -159,7 +159,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	const GPlatesPropertyValues::XsString *feature_name;
 
 	if ( GPlatesFeatureVisitors::get_property_value(
-		feature_handle, name_property_name, feature_name ) ) 
+		feature_handle.reference(), name_property_name, feature_name ) ) 
 	{
 		oss << GPlatesUtils::make_qstring(feature_name->value()).toStdString();
 	}
@@ -302,7 +302,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	} // loop over properties
 
 	// create a weak ref to make next funciton happy:
-	GPlatesModel::FeatureHandle::weak_ref feature_ref( feature_handle );
+	GPlatesModel::FeatureHandle::weak_ref feature_ref = feature_handle.reference();
 
 	// add the new gml::rangeSet property
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
@@ -318,7 +318,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 	
 	GPlatesFileIO::FileInfo fileinfo(filename);
 	GPlatesFileIO::GpmlOnePointSixOutputVisitor gpml_writer(fileinfo, false);
-	gpml_writer.visit_feature_handle( feature_handle );
+	gpml_writer.visit_feature( feature_ref );
 
 	// disable the accumulator
 	d_accumulator = boost::none;
@@ -435,7 +435,7 @@ std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
 		if ( GPlatesFeatureVisitors::get_property_value(
-				*feature_ref, property_name, recon_plate_id ) )
+				feature_ref, property_name, recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
 			recon_plate_ids.push_back( recon_plate_id->value() );
