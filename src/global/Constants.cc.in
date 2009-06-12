@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,8 +37,8 @@ const char GPlatesGlobal::VersionString[] =
 
 
 const char GPlatesGlobal::CopyrightString[] =
-		"Copyright (C) 2003-2008 The University of Sydney, Australia\n"
-		"Copyright (C) 2007-2008 The Geological Survey of Norway\n"
+		"Copyright (C) 2003-2009 The University of Sydney, Australia\n"
+		"Copyright (C) 2007-2009 The Geological Survey of Norway\n"
 		"\n"
 		"The GPlates source code also contains code which was originally written by\n"
 		"the following individuals:\n"
@@ -51,8 +51,8 @@ const char GPlatesGlobal::CopyrightString[] =
 
 const char GPlatesGlobal::HtmlCopyrightString[] =
 		"<html><body>\n"
-		"Copyright &copy; 2003-2008 The University of Sydney, Australia<br />\n"
-		"Copyright &copy; 2007-2008 The Geological Survey of Norway<br />\n"
+		"Copyright &copy; 2003-2009 The University of Sydney, Australia<br />\n"
+		"Copyright &copy; 2007-2009 The Geological Survey of Norway<br />\n"
 		"<br />\n"
 		"\n"
 		"The GPlates source code also contains code which was originally written by\n"
