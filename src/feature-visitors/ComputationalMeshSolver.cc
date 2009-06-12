@@ -145,6 +145,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 
 	// else process this feature:
 
+#if 0
 	// this holds the name of the output file 
 	std::ostringstream oss;
 
@@ -171,6 +172,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 		// report progress
 		qDebug() << " processing mesh: " << oss.str().c_str();
 	}
+#endif
 
 
 	// create an accumulator struct 
@@ -310,16 +312,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 		gml_data_block,
 		range_set_prop_name,
 		feature_ref);
-
-
-	//
-	// Output the feature
-	//
-	QString filename( oss.str().c_str() );
-	
-	GPlatesFileIO::FileInfo fileinfo(filename);
-	GPlatesFileIO::GpmlOnePointSixOutputVisitor gpml_writer(fileinfo, false);
-	gpml_writer.visit_feature( feature_ref );
 
 	// disable the accumulator
 	d_accumulator = boost::none;

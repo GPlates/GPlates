@@ -27,6 +27,7 @@
 #define GPLATES_APP_LOGIC_PLATEVELOCITIES_H
 
 #include <vector>
+#include <QString>
 
 #include "ReconstructHook.h"
 
@@ -155,6 +156,7 @@ namespace GPlatesAppLogic
 		void
 		load_reconstructable_feature_collection(
 				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				const QString &feature_collection_filename,
 				GPlatesModel::ModelInterface &model);
 
 
@@ -182,6 +184,40 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the number of velocity feature collections currently being calculated.
+		 */
+		unsigned int
+		get_num_velocity_feature_collections() const
+		{
+			return d_velocity_field_feature_collection_infos.size();
+		}
+
+
+		/**
+		 * Returns the feature collection at index @a index.
+		 */
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &
+		get_velocity_feature_collection(
+				unsigned int index) const
+		{
+			return d_velocity_field_feature_collection_infos[index]
+					.d_velocity_field_feature_collection;
+		}
+
+
+		/**
+		 * Returns the filename of feature collection at index @a index.
+		 */
+		const QString &
+		get_velocity_filename(
+				unsigned int index) const
+		{
+			return d_velocity_field_feature_collection_infos[index]
+					.d_mesh_node_feature_collection_filename;
+		}
+
+
+		/**
 		 * Callback hook after a reconstruction is created.
 		 */
 		virtual
@@ -203,12 +239,15 @@ namespace GPlatesAppLogic
 		{
 			VelocityFieldFeatureCollectionInfo(
 					GPlatesModel::FeatureCollectionHandle::weak_ref &mesh_node_feature_collection,
+					const QString &mesh_node_feature_collection_filename,
 					GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection) :
 				d_mesh_node_feature_collection(mesh_node_feature_collection),
+				d_mesh_node_feature_collection_filename(mesh_node_feature_collection_filename),
 				d_velocity_field_feature_collection(velocity_field_feature_collection)
 			{  }
 
 			GPlatesModel::FeatureCollectionHandle::weak_ref d_mesh_node_feature_collection;
+			QString d_mesh_node_feature_collection_filename;
 			GPlatesModel::FeatureCollectionHandle::weak_ref d_velocity_field_feature_collection;
 		};
 

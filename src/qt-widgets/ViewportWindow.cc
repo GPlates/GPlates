@@ -236,7 +236,9 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 							GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 									*file.get_feature_collection();
 							d_plate_velocities_hook->load_reconstructable_feature_collection(
-									feature_collection, d_model);
+									feature_collection,
+									file.get_qfileinfo().absoluteFilePath(),
+									d_model);
 						}
 						// Check if the file contains reconstruction features.
 						if (classifier.reconstruction_feature_count() > 0) {

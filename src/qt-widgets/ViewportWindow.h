@@ -581,6 +581,12 @@ namespace GPlatesQtWidgets
 			return d_rendered_geom_collection;
 		}
 
+		GPlatesAppLogic::PlateVelocitiesHook &
+		plate_velocities_hook() const
+		{
+			return *d_plate_velocities_hook;
+		}
+
 
 	private:
 		GPlatesModel::ModelInterface d_model;
