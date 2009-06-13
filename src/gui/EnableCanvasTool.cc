@@ -291,7 +291,21 @@ GPlatesGui::EnableCanvasTool::update_build_topology_tool()
 void
 GPlatesGui::EnableCanvasTool::update_edit_topology_tool()
 {
-	// only enable tool if a feature is focused
+	// check for focus
+	if ( d_feature_focus->is_valid() )
+	{
+		// Check feature type via qstrings
+		QString topology_type_name ("TopologicalClosedPlateBoundary");
+		QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+			d_feature_focus->focused_feature()->feature_type().get_name() );
+		// Only activate for topologies
+		if ( feature_type_name != topology_type_name )
+		{
+			d_viewport_window->enable_edit_topology_tool(false);
+			return;
+		}
+	}
+	// else enable tool if d_feature_geom_is_in_focus
 	d_viewport_window->enable_edit_topology_tool(d_feature_geom_is_in_focus);
 }
 
