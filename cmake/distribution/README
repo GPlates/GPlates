@@ -1,0 +1,24 @@
+Creating Qt icons
+-----------------
+The executable application icon that is displayed on the desktop (prior to application execution) needs to be created differently for each platform.
+
+Mac OSX:
+ * Open up "/Developer/Applications/Utilities/Icon Composer".
+ * Select 'File->Import Image".
+ * Select the icon to convert (currently we use "src/qt-resources/GPlates-icon-160x160-opaque.png").
+ * Under "Import To:" select "Thumbnail 32bit data" (this is the largest size at 128x128).
+ * You'll get a message "Alert: Image does not have a representation with the same dimensions" -  select "Use scaled version".
+ * Check "Go into application bundles".
+ * Select 'File->Import Image" again and select same input image file.
+ * Under "Import To:" select "Huge 32bit data".
+ * You'll get a message "Alert: Image does not have a representation with the same dimensions" -  select "Use scaled version".
+ * You'll get a message "Alert: Extract Huge 1bit mask from data also?" -  select "Extract Mask".
+ * Select 'File->Import Image" again and select same input image file.
+ * Under "Import To:" select "Large 32bit data".
+ * You'll get a message "Alert: Image does not have a representation with the same dimensions" -  select "Use scaled version".
+ * You'll get a message "Alert: Extract Huge 1bit mask from data also?" -  select "Extract Mask".
+ * Select 'File->Import Image" again and select same input image file.
+ * Under "Import To:" select "Small 32bit data".
+ * You'll get a message "Alert: Image does not have a representation with the same dimensions" -  select "Use scaled version".
+ * You'll get a message "Alert: Extract Huge 1bit mask from data also?" -  select "Extract Mask".
+ * Select "File-Save" and select the filename to save to (eg "gplates_desktop_icon") - the file extension ".icns" will be added for you.

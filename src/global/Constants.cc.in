@@ -37,30 +37,8 @@ const char GPlatesGlobal::VersionString[] =
 
 
 const char GPlatesGlobal::CopyrightString[] =
-		"Copyright (C) 2003-2009 The University of Sydney, Australia\n"
-		"Copyright (C) 2007-2009 The Geological Survey of Norway\n"
-		"\n"
-		"The GPlates source code also contains code which was originally written by\n"
-		"the following individuals:\n"
-		" * James Boyden (from the ReconTreeViewer software)\n"
-		" * Peter Dimov (from the Boost intrusive_ptr class template)\n"
-		"\n"
-		"The GPlates source tree additionally contains icons which were part of the\n"
-		"artwork for the GNOME desktop environment.";
+		"@GPLATES_COPYRIGHT_STRING@";
 
 
 const char GPlatesGlobal::HtmlCopyrightString[] =
-		"<html><body>\n"
-		"Copyright &copy; 2003-2009 The University of Sydney, Australia<br />\n"
-		"Copyright &copy; 2007-2009 The Geological Survey of Norway<br />\n"
-		"<br />\n"
-		"\n"
-		"The GPlates source code also contains code which was originally written by\n"
-		"the following individuals: <ul>\n"
-		" <li> James Boyden (from the ReconTreeViewer software) </li>\n"
-		" <li> Peter Dimov (from the Boost intrusive_ptr class template) </li>\n"
-		"</ul>\n"
-		"\n"
-		"The GPlates source tree additionally contains icons which were part of the\n"
-		"artwork for the GNOME desktop environment.\n"
-		"</body></html>\n";
+		"@GPLATES_HTML_COPYRIGHT_STRING@";
