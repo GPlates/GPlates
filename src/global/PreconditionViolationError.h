@@ -42,6 +42,7 @@ namespace GPlatesGlobal
 			public Exception
 	{
 		public:
+			explicit
 			PreconditionViolationError(
 					const GPlatesUtils::CallStack::Trace &exception_source) :
 				Exception(exception_source)

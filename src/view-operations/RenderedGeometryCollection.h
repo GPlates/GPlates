@@ -46,6 +46,81 @@ namespace GPlatesViewOperations
 	class RenderedGeometryCollectionVisitor;
 	class RenderedGeometryLayer;
 
+	/**
+	 * Manages the rendered geometry system for a particular view.
+	 *
+     * * All rendering goes through RenderedGeometryCollection. It has main layers
+	 *   (eg, digitisation, reconstruction – same as before) and can have child layers if needed.
+	 *   This will be used by the move vertex digitise tool to draw the underlying geometry in
+	 *   one child layer and the vertices to be grabbed/moved in another layer on top.
+	 *   The layers should guarantee the draw order (eg, no z-buffer-fighting artifacts).
+     * * RenderedGeometryCollection has a visitor than can visit the main layers, their child
+	 *   layers and the RenderedGeometry objects in those layers.
+     * * RenderedGeometryCollection notifies any observers whenever any changes have been made
+	 *   to it or its layers (that way we don’t have to make manual calls to update the canvas
+	 *   whenever we think it needs updating).
+     * * RenderedGeometryCollection::UpdateGuard is just an optimisation that blocks this update
+	 *   signal until the end of the current scope (that way can make multiple changes to
+	 *   RenderedGeometryCollection and have only one update signal and hence only one redraw
+	 *   of canvas). Forgetting to put the guard in doesn’t cause program error. It just means
+	 *   the canvas is redrawn more times than needed. The update guards can be nested so putting
+	 *   too many in is not a problem. For nested guards, only when the highest-level guard exits
+	 *   its scope does the update signal get emitted.
+     * * Currently GlobeCanvas listens to signals from RenderedGeomeryCollection and redraws when
+	 *   a change is made.
+     * * Globe in GlobeCanvas draws the RenderedGeometryCollection by visiting it with a single visitor.
+     * * The map canvas or view could listen to RenderedGeometryCollection and clear all the
+	 *   objects added to QGraphicsScene and re-add them by traversing the collection with a visitor.
+     * * RenderedGeometryFactory is used to create RenderedGeometry objects which are added to
+	 *   RenderedGeometryCollection.
+     * * RenderedGeometryFactory contains global functions for creating different types of
+	 *   RenderedGeometry objects.
+     * * RenderedGeometry is a pimpl pattern (it’s basically just a boost shared_ptr so it can
+	 *   be copied around and it hides the implementation type).
+     * * Only way to get RenderedGeometry implementation type is to visit it.
+     * * RenderedPointOnSphere is an implementation type of RenderedGeometry that is used to
+	 *   draw a point. The factory creation function takes a point size hint and a colour.
+	 *   There are also implementations for multipoint, polyline and polygon.
+     * * RenderedReconstructionGeometry is an implementation type of RenderedGeometry that is
+	 *   used to wrap a reconstruction geometry. This is useful for performing intersection tests
+	 *   only on those geometries that are rendered.
+     * * A RenderedGeometryLayer is just a simple container of RenderedGeometry objects.
+     * * Each RenderedGeometryLayer gets drawn to a separate OpenGL depth layer to ensure that
+	 *   RenderedGeometry objects from one container don't overlap or interleave visually with
+	 *   RenderedGeometry objects from another container.
+     * * Another concept of layer at a higher scope is a main layer like RECONSTRUCTION_LAYER,
+	 *   DIGITISATION_LAYER, etc. These are enumerations in the RenderedGeometryCollection.
+     * * Within each main layer there's a single default main RenderedGeometryLayer object that
+	 *   doesn't need to be created (it's embedded inside the RenderedGeometryCollection).
+     * * Also optionally there can be one or more child RenderedGeometryLayer objects
+	 *   (these need to be explicitly created though).
+     * * Most uses will just need one RenderedGeometryLayer container per main layer.
+	 *   For example, RECONSTRUCTION_LAYER has only one container so it uses the single
+	 *   default main RenderedGeometryLayer belonging to RECONSTRUCTION_LAYER and draws
+	 *   all its rendered geometries into that.
+     * * Some uses require multiple containers per layer. For example, the move vertex tool
+	 *   has one container for the base geometry and another container for the yellow highlights
+	 *   drawn on top of base geometry - in which case it needs to explicitly create the
+	 *   child containers. It doesn't actually use the single default main RenderedGeometryLayer
+	 *   belonging to DIGITISATION_LAYER - it could but it just creates child layers of
+	 *   DIGITISATION_LAYER instead. And the reason for multiple containers here is so the
+	 *   yellow highlights in one container get drawn on top of the base geometry
+	 *   in the other container.
+     * * Regarding activation you can activate an entire layer (such as RECONSTRUCTION_LAYER)
+	 *   and you can also activate each RenderedGeometryLayer container.
+     * * If you activate an individual container it still won't get rendered unless you also
+	 *   activate the entire layer that it belongs to. So in the move vertex tool
+	 *   example above, we can activate the child RenderedGeometryLayer objects but if
+	 *   the DIGITISATION_LAYER is not active then none of the child RenderedGeometryLayer
+	 *   objects will get rendered.
+     * * The main reason for having activation/deactivation of an entire layer (such as
+	 *   DIGITISATION_LAYER) is to avoid having to deactivate each RenderedGeometryLayer container
+	 *   within it when switching to a different canvas tool.
+     * * AddPointDigitiseOperation is used to add a point when digitising and is used by both
+	 *   globe and map tools. There are other similar operations for
+	 *   deleting, moving, inserting vertices.
+     * * Proximity queries can be performed on RenderedGeometry objects.
+	*/
 	class RenderedGeometryCollection :
 		public QObject,
 		private boost::noncopyable
