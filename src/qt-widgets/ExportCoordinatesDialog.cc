@@ -368,7 +368,7 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_file(
 	}
 
 	// Make sure we created a geometry exporter.
-	GPlatesGlobal::Assert<AssertionFailureException>(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			geometry_exporter.get() != NULL,
 			GPLATES_EXCEPTION_SOURCE);
 
@@ -421,7 +421,7 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_text_stream(
 	}
 
 	// Make sure we created a geometry exporter.
-	GPlatesGlobal::Assert<AssertionFailureException>(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			geometry_exporter.get() != NULL,
 			GPLATES_EXCEPTION_SOURCE);
 
