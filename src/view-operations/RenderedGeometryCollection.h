@@ -100,6 +100,16 @@ namespace GPlatesViewOperations
 		~RenderedGeometryCollection();
 
 		/**
+		 * Sets the viewport zoom factor.
+		 * It is assumed that a value of 1.0 means the globe almost exactly fills
+		 * one of the viewport dimensions and values greater than 1.0 zoom in on the globe
+		 * (this is how @a ViewportZoom behaves).
+		 */
+		void
+		set_viewport_zoom_factor(
+				const double &viewport_zoom_factor);
+
+		/**
 		 * Get the @a RenderedGeometryLayer corresponding to specified main layer.
 		 *
 		 * This is a convenient place to add @a RenderedGeometry objects when you don't
@@ -122,6 +132,32 @@ namespace GPlatesViewOperations
 		child_layer_index_type
 		create_child_rendered_layer(
 				MainLayerType parent_layer);
+
+		/**
+		 * Same as the other overload of @a create_child_rendered_layer except
+		 * the density of some types of rendered geometries is uniformly spaced.
+		 *
+		 * The types of rendered geometries that are affected currently includes
+		 * anything that has a point representation such as a rendered point on sphere
+		 * and rendered direction arrow (starting point). Other rendered geometry types
+		 * are treated the same as if we'd created a normal rendered geometry layer.
+		 *
+		 * The uniform spacing is such that only one geometry of potentially
+		 * multiple geometries in a sample bin is rendered (this being the closest
+		 * to the sample bin centre). The sample bins are all designed to cover the
+		 * globe and have roughly equal area. The dimension of each sample bin extends
+		 * roughly @a ratio_zoom_dependent_bin_dimension_to_globe_radius radians
+		 * across the globe when the globe is fully visible in the viewport window.
+		 * As the zoom changes the apparent projected size of the sample bins onto
+		 * the viewport remains constant.
+		 *
+		 * If using any of this type of child rendered layer then you must call
+		 * @a set_viewport_zoom_factor whenever the zoom changes.
+		 */
+		child_layer_index_type
+		create_child_rendered_layer(
+				MainLayerType parent_layer,
+				float ratio_zoom_dependent_bin_dimension_to_globe_radius);
 
 		/**
 		 * Destroy a rendered layer created with @a create_child_rendered_layer().
@@ -158,6 +194,17 @@ namespace GPlatesViewOperations
 		child_layer_owner_ptr_type
 		create_child_rendered_layer_and_transfer_ownership(
 				MainLayerType parent_layer);
+
+		/**
+		 * Same as the other overload of @a create_child_rendered_layer_and_transfer_ownership
+		 * except the density of some types of rendered geometries is uniformly spaced.
+		 *
+		 * See @a create_child_rendered_layer for more details.
+		 */
+		child_layer_owner_ptr_type
+		create_child_rendered_layer_and_transfer_ownership(
+				MainLayerType parent_layer,
+				float ratio_zoom_dependent_bin_dimension_to_globe_radius);
 
 		/**
 		 * Get the @a RenderedGeometryLayer corresponding to specified child layer.
@@ -372,6 +419,8 @@ namespace GPlatesViewOperations
 		class RenderedGeometryLayerManager
 		{
 		public:
+			~RenderedGeometryLayerManager();
+
 			RenderedGeometryLayer *
 			get_rendered_geometry_layer(
 					RenderedGeometryLayerIndex);
@@ -389,6 +438,16 @@ namespace GPlatesViewOperations
 					MainLayerType main_layer);
 
 			/**
+			 * Same as other overloaded @a create_rendered_geometry_layer except
+			 * creates a zoom-dependent rendered geometry layer instead of a normal one.
+			 */
+			RenderedGeometryLayerIndex
+			create_rendered_geometry_layer(
+					MainLayerType main_layer,
+					float ratio_zoom_dependent_bin_dimension_to_globe_radius,
+					const double &current_viewport_zoom_factor);
+
+			/**
 			 * Destroys the rendered geometry layered specified.
 			 */
 			void
@@ -404,6 +463,16 @@ namespace GPlatesViewOperations
 			rendered_geometry_layer_seq_type d_layer_storage;
 			child_layer_index_seq_type d_layers;
 			available_child_layer_indices_type d_layers_available_for_reuse;
+
+
+			//! Allocate a handle for a rendered geometry layer about to be created.
+			RenderedGeometryLayerIndex
+			allocate_layer_index();
+
+			//! Deallocate a handle used by a rendered geometry layer that was just destroyed.
+			void
+			deallocate_layer_index(
+					RenderedGeometryLayerIndex);
 		};
 
 		struct MainLayer
@@ -422,6 +491,11 @@ namespace GPlatesViewOperations
 		 * Typedef for sequence of main rendered geometry layers.
 		 */
 		typedef std::vector<MainLayer> main_layer_seq_type;
+
+		/**
+		 * Current viewport zoom factor.
+		 */
+		double d_current_viewport_zoom_factor;
 
 		/**
 		 * Manages creation and destruction of @a RenderedGeometryLayer objects.
@@ -521,6 +595,15 @@ namespace GPlatesViewOperations
 		visit_rendered_geometry_layer(
 				RenderedGeometryCollectionVisitorType &visitor,
 				RenderedGeometryLayerType &rendered_geom_layer);
+
+		/**
+		 * Does everything required to connect a newly created child rendered layer
+		 * to its parent layer.
+		 */
+		void
+		connect_child_rendered_layer_to_parent(
+				const RenderedGeometryLayerIndex child_layer_index,
+				MainLayerType parent_layer);
 
 		/**
 		 * Observe specified @a RenderedGeometryLayer for updates.

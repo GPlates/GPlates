@@ -188,27 +188,22 @@ GPlatesViewOperations::create_rendered_direction_arrow(
 		const GPlatesMaths::Vector3D &arrow_direction,
 		const float ratio_unit_vector_direction_to_globe_radius,
 		const GPlatesGui::Colour &colour,
-		const float arrowline_width_hint,
-		/*const*/ float ratio_size_arrowhead_to_arrowline)
+		const float ratio_arrowhead_size_to_globe_radius,
+		const float arrowline_width_hint)
 {
 	const GPlatesMaths::Vector3D scaled_direction =
 			ratio_unit_vector_direction_to_globe_radius * arrow_direction;
 
 	// The arrowhead size should scale with length of arrow only up to a certain
 	// length otherwise long arrows will have arrowheads that are too big.
-	// When arrow length reaches a limit make the arrowhead size remain constant.
-	const GPlatesMaths::real_t scaled_direction_mag = scaled_direction.magnitude();
-	const double SCALED_DIRECTION_MAG_THRESHOLD = 0.1;
-	if (scaled_direction_mag > SCALED_DIRECTION_MAG_THRESHOLD)
-	{
-		ratio_size_arrowhead_to_arrowline *=
-				float(SCALED_DIRECTION_MAG_THRESHOLD / scaled_direction_mag.dval());
-	}
+	// When arrow length reaches a limit make the arrowhead projected size remain constant.
+	const float MIN_RATIO_ARROWHEAD_TO_ARROWLINE = 0.5f;
 
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedDirectionArrow(
 			start,
 			scaled_direction,
-			ratio_size_arrowhead_to_arrowline,
+			ratio_arrowhead_size_to_globe_radius,
+			MIN_RATIO_ARROWHEAD_TO_ARROWLINE,
 			colour,
 			arrowline_width_hint));
 

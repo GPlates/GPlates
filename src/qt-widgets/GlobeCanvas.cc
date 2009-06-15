@@ -190,6 +190,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
+	d_rendered_geom_collection(&rendered_geom_collection),
 	d_globe(rendered_geom_collection),
 	d_geometry_focus_highlight(rendered_geom_collection)
 {
@@ -581,6 +582,8 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 {
 
 	set_view();
+
+	d_rendered_geom_collection->set_viewport_zoom_factor(d_viewport_zoom.zoom_factor());
 
 	// QWidget::update:
 	//   Updates the widget unless updates are disabled or the widget is hidden.

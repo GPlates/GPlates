@@ -29,15 +29,17 @@
 #define GPLATES_GUI_GLOBE_H
 
 #include "Colour.h"
+#include "GlobeRenderedGeometryCollectionPainter.h"
+#include "NurbsRenderer.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
 #include "Texture.h"
-#include "NurbsRenderer.h"
 #include "SimpleGlobeOrientation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
 #include "utils/VirtualProxy.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -156,6 +158,11 @@ namespace GPlatesGui
 		 * The accumulated orientation of the globe.
 		 */
 		SimpleGlobeOrientation d_globe_orientation;
+
+		/**
+		 * Painter used to draw @a RenderedGeometry objects on the globe.
+		 */
+		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
 
 		/**
 		 * One circle of latitude every 30 degrees.
