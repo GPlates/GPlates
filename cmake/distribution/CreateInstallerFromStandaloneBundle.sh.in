@@ -1,3 +1,0 @@
-#!/bin/sh
-
-"@CMAKE_CPACK_COMMAND@" -B @CMAKE_BINARY_DIR@ --config "@PACKAGE_CPACK_CONFIG@"

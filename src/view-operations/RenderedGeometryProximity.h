@@ -48,11 +48,11 @@ namespace GPlatesViewOperations
 	struct RenderedGeometryProximityHit
 	{
 		RenderedGeometryProximityHit(
-				RenderedGeometryLayer::rendered_geometry_index_type,
+				RenderedGeometryLayer::RenderedGeometryIndex,
 				const RenderedGeometryLayer *rendered_geom_layer,
 				GPlatesMaths::ProximityHitDetail::non_null_ptr_type);
 
-		RenderedGeometryLayer::rendered_geometry_index_type d_rendered_geom_index;
+		RenderedGeometryLayer::RenderedGeometryIndex d_rendered_geom_index;
 		const RenderedGeometryLayer *d_rendered_geom_layer;
 		GPlatesMaths::ProximityHitDetail::non_null_ptr_type d_proximity_hit_detail;
 	};

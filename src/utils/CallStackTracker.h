@@ -29,7 +29,6 @@
 #define GPLATES_UTILS_CALLSTACKTRACKER_H
 
 #include <vector>
-#include <iosfwd>
 #include <boost/noncopyable.hpp>
 
 
@@ -160,13 +159,6 @@ namespace GPlatesUtils
 		{
 			return d_call_stack.end();
 		}
-
-		/**
-		 * Writes the call stack trace to @a output.
-		 */
-		void
-		write_call_stack_trace(
-				std::ostream &output);
 
 	private:
 		//! Constructor is private for singleton.

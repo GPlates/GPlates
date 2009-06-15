@@ -731,9 +731,8 @@ void
 GPlatesFileIO::GMTFormatVerboseHeader::end_header_line(
 		bool output)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_nested_depth > 0,
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(d_nested_depth > 0,
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 	if (--d_nested_depth == 0)
 	{
 		if (output)
@@ -771,9 +770,8 @@ GPlatesFileIO::GMTHeaderPrinter::print_global_header_lines(
 		QTextStream& output_stream,
 		std::vector<QString>& header_lines)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_is_first_feature_header_in_file,
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(d_is_first_feature_header_in_file,
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Print each line of the GMT header preceded by the '>' character.
 	std::vector<QString>::const_iterator header_line_iter;

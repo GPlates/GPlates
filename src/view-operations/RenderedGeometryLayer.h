@@ -27,11 +27,8 @@
 #ifndef GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYLAYER_H
 #define GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYLAYER_H
 
-#include <iterator>
-#include <memory>
 #include <boost/any.hpp>
-#include <boost/intrusive_ptr.hpp>
-#include <boost/operators.hpp>
+#include <vector>
 #include <QObject>
 
 #include "RenderedGeometry.h"
@@ -40,8 +37,6 @@
 namespace GPlatesViewOperations
 {
 	class ConstRenderedGeometryLayerVisitor;
-	class RenderedGeometryIteratorImpl;
-	class RenderedGeometryLayerImpl;
 	class RenderedGeometryLayerVisitor;
 
 	class RenderedGeometryLayer :
@@ -50,6 +45,9 @@ namespace GPlatesViewOperations
 		Q_OBJECT
 
 	public:
+		//! Typedef for sequence of @a RenderedGeometry objects.
+		typedef std::vector<RenderedGeometry> rendered_geom_seq_type;
+
 		/**
 		 * Typedef for arbitrary user-supplied data that will be returned when
 		 * @a layer_was_updated signal is emitted.
@@ -59,108 +57,16 @@ namespace GPlatesViewOperations
 		/**
 		 * Typedef for a @a RenderedGeometry index.
 		 */
-		typedef unsigned int rendered_geometry_index_type;
-
-		//! Typedef for pointer to rendered geometry layer implementation.
-		typedef boost::intrusive_ptr<RenderedGeometryLayerImpl> rendered_geometry_layer_impl_ptr_type;
-
+		typedef unsigned int RenderedGeometryIndex;
 
 		/**
-		 * Iterator over rendered geometries.
-		 */
-		class RenderedGeometryIterator :
-				public std::iterator<std::forward_iterator_tag, RenderedGeometry>,
-				public boost::forward_iteratable<RenderedGeometryIterator, RenderedGeometry *>
-		{
-		public:
-			RenderedGeometryIterator(
-					rendered_geometry_layer_impl_ptr_type layer_impl,
-					rendered_geometry_index_type rendered_geom_index);
-
-			RenderedGeometryIterator(
-					const RenderedGeometryIterator &rhs);
-
-			~RenderedGeometryIterator();
-
-			/**
-			 * Dereference operator.
-			 * 'operator->()' provided by base class boost::forward_iteratable.
-			 */
-			const RenderedGeometry &
-			operator*() const;
-
-			/**
-			 * Pre-increment operator.
-			 * Post-increment operator provided by base class boost::forward_iteratable.
-			 */
-			RenderedGeometryIterator &
-			operator++();
-
-			/**
-			 * Equality comparison operator.
-			 * Inequality operator provided by base class boost::forward_iteratable.
-			 */
-			friend
-			bool
-			operator==(
-					const RenderedGeometryIterator &lhs,
-					const RenderedGeometryIterator &rhs);
-
-		private:
-			rendered_geometry_layer_impl_ptr_type d_layer_impl;
-			rendered_geometry_index_type d_rendered_geom_index;
-		};
-
-		//! Typedef for iterator over rendered geometries.
-		typedef RenderedGeometryIterator iterator;
-
-
-		/**
-		 * Construct a regular rendered geometry layer where each rendered geometry
-		 * added gets pushed onto end of a list of rendered geometries.
+		 * Sets this layer as inactive.
 		 *
 		 * @param user_data arbitrary user-supplied data that will be returned
-		 *        when @a layer_was_updated signal is emitted - currently this should
-		 *        only be used by @a RenderedGeometryCollection.
+		 * when @a layer_was_updated signal is emitted.
 		 */
 		RenderedGeometryLayer(
-				user_data_type user_data);
-
-		/**
-		 * Construct a zoom-dependent rendered geometry layer where the globe is divided
-		 * into roughly equal area latitude/longitude bins that the rendered geometries
-		 * are added to.
-		 * When querying the rendered geometries, only one rendered geometry
-		 * per bin is returned (the closest to the centre of the bin) and the
-		 * order returned by query is not the same as the order of addition.
-		 * Although this only applies to certain types of rendered geometry such as
-		 * rendered point on sphere and rendered direction arrow which have single
-		 * point geometry - the other geometries are treated in a zoom-independent
-		 * manner.
-		 *
-		 * @param ratio_zoom_dependent_bin_dimension_to_globe_radius the size of the
-		 *        zoom-dependent bin size relative to the globe radius when the globe fills
-		 *        the viewport window (this is a view-dependent scalar).
-		 * @param viewport_zoom_factor the current viewport zoom factor.
-		 * @param user_data arbitrary user-supplied data that will be returned
-		 *        when @a layer_was_updated signal is emitted - currently this should
-		 *        only be used by @a RenderedGeometryCollection.
-		 */
-		RenderedGeometryLayer(
-				float ratio_zoom_dependent_bin_dimension_to_globe_radius,
-				const double &viewport_zoom_factor,
-				user_data_type user_data);
-
-		~RenderedGeometryLayer();
-
-		/**
-		 * Sets the viewport zoom factor.
-		 * Note: this does nothing unless 'this' @a RenderedGeometryLayer
-		 * was created using the zoom-dependent version of constructor.
-		 */
-		void
-		set_viewport_zoom_factor(
-				const double &viewport_zoom_factor);
+				user_data_type user_data = user_data_type());
 
 		void
 		set_active(
@@ -173,22 +79,37 @@ namespace GPlatesViewOperations
 		}
 
 		bool
-		is_empty() const;
+		is_empty() const
+		{
+			return d_rendered_geom_seq.empty();
+		}
 
 		unsigned int
-		get_num_rendered_geometries() const;
+		get_num_rendered_geometries() const
+		{
+			return d_rendered_geom_seq.size();
+		}
 
 		RenderedGeometry
 		get_rendered_geometry(
-				rendered_geometry_index_type rendered_geom_index) const;
+				RenderedGeometryIndex rendered_geom_index) const
+		{
+			return d_rendered_geom_seq[rendered_geom_index];
+		}
 
 		//! Begin iterator over sequence of @a RenderedGeometry objects.
-		iterator
-		rendered_geometry_begin() const;
+		rendered_geom_seq_type::const_iterator
+		rendered_geometry_begin() const
+		{
+			return d_rendered_geom_seq.begin();
+		}
 
 		//! End iterator over sequence of @a RenderedGeometry objects.
-		iterator
-		rendered_geometry_end() const;
+		rendered_geom_seq_type::const_iterator
+		rendered_geometry_end() const
+		{
+			return d_rendered_geom_seq.end();
+		}
 
 		void
 		add_rendered_geometry(
@@ -228,7 +149,7 @@ namespace GPlatesViewOperations
 
 	private:
 		user_data_type d_user_data;
-		rendered_geometry_layer_impl_ptr_type d_impl;
+		rendered_geom_seq_type d_rendered_geom_seq;
 		bool d_is_active;
 	};
 }

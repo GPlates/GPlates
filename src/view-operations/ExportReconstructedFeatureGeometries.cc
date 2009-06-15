@@ -25,16 +25,8 @@
 
 #include <algorithm>
 #include <map>
-// Disable Visual Studio warning "qualifier applied to reference type; ignored" in boost 1.36.0
-#if defined(_MSC_VER)
-#	pragma warning( push )
-#	pragma warning( disable : 4181 )
-#endif
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
-#if defined(_MSC_VER)
-#	pragma warning( pop )
-#endif
 #include <QFileInfo>
 
 #include "ExportReconstructedFeatureGeometries.h"

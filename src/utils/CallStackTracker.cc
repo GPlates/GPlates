@@ -42,27 +42,3 @@ GPlatesUtils::CallStack::pop()
 {
 	d_call_stack.pop_back();
 }
-
-
-void
-GPlatesUtils::CallStack::write_call_stack_trace(
-		std::ostream &output)
-{
-	output << "Call stack trace:" << std::endl;
-
-	GPlatesUtils::CallStack::trace_const_iterator trace_iter;
-	for (trace_iter = call_stack_begin();
-		trace_iter != call_stack_end();
-		++trace_iter)
-	{
-		const GPlatesUtils::CallStack::Trace &trace = *trace_iter;
-
-		output
-			<< '('
-			<< trace.get_filename()
-			<< ", "
-			<< trace.get_line_num()
-			<< ')'
-			<< std::endl;
-	}
-}

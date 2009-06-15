@@ -27,7 +27,7 @@ if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
         "# To also enable parallel project builds set\n"
         "# “Tools->Options->Programs and Solutions->Build and Run->maximum number of parallel project builds” to\n"
         "# the number of cores on your CPU.\n"
-        "set(GPLATES_MSVC80_PARALLEL_BUILD true)\n\n")
+        "set(GPLATES_MSVC80_PARALLEL_BUILD false)\n\n")
 endif (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 include ("${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 
@@ -36,20 +36,3 @@ include ("${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 if (EXISTS "${CMAKE_BINARY_DIR}/cmake/ConfigUser.cmake")
     include ("${CMAKE_BINARY_DIR}/cmake/ConfigUser.cmake")
 endif (EXISTS "${CMAKE_BINARY_DIR}/cmake/ConfigUser.cmake")
-
-###########################################################
-# Do any needed processing of the configuration variables #
-###########################################################
-
-# Convert GPLATES_BINARY_INSTALL_EXTRAS to absolute paths.
-# Should already be full paths (eg, this can convert
-# "~/sample-data" to "/Users/gplates/sample-data").
-# At same time as converting to absolute path also convert from a
-# list variable (a string with semicolon-separated entries)
-# to a string with spaced-separated entries.
-set(GPLATES_BINARY_INSTALL_EXTRAS_TMP ${GPLATES_BINARY_INSTALL_EXTRAS})
-set(GPLATES_BINARY_INSTALL_EXTRAS "")
-foreach(extra ${GPLATES_BINARY_INSTALL_EXTRAS_TMP})
-	get_filename_component(extra "${extra}" ABSOLUTE)
-	set(GPLATES_BINARY_INSTALL_EXTRAS "${GPLATES_BINARY_INSTALL_EXTRAS} ${extra}")
-endforeach(extra ${GPLATES_BINARY_INSTALL_EXTRAS_TMP})

@@ -107,57 +107,8 @@ endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" ST
 GPLATES_GENERATE_TARGET_SOURCES(gplates target_GPlates_SRCS ${GPlates_SRCS})
 GPLATES_GENERATE_TARGET_SOURCES(gplates-no-gui target_GPlates_no_gui_SRCS ${GPlates_no_gui_SRCS})
 
-#
-# Set the platform-dependent icon file.
-#
-if (APPLE)
-	set(GPlates_ICON "${CMAKE_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.icns")
-elseif (MSVC)
-	set(GPlates_ICON "${CMAKE_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.rc")
-else (APPLE)
-endif (APPLE)
-
-#
-# Add executable target(s).
-#
-add_executable(gplates
-	${target_GPlates_SRCS}
-	${GPlates_ICON})
-
-# The "EXCLUDE_FROM_ALL" flag means you have to type 'make gplates-no-gui' to build this target -
-# it is not built by default.
-add_executable(gplates-no-gui EXCLUDE_FROM_ALL ${target_GPlates_no_gui_SRCS})
-
-# Referenced in "Package.cmake" so it knows which executable to package up.
-set(GPLATES_MAIN_TARGET gplates)
-
-if (APPLE)
-	# Copy icon file to 'Resources' directory inside application bundle.
-	set_source_files_properties(${GPlates_ICON} PROPERTIES
-		MACOSX_PACKAGE_LOCATION Resources)
-
-	#
-	# Tell cmake to build the main target as an application bundle.
-	#
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE TRUE)
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_INFO_STRING "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_ICON_FILE gplates_desktop_icon.icns)
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "${GPLATES_VERSION_STRING}-${CMAKE_SYSTEM}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${GPLATES_VERSION_STRING}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "${GPLATES_PACKAGE_NAME}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${GPLATES_PACKAGE_VERSION}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_BUNDLE_VERSION "${GPLATES_PACKAGE_VERSION}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_COPYRIGHT "${GPLATES_COPYRIGHT_STRING}")
-endif (APPLE)
+add_executable(gplates ${target_GPlates_SRCS})
+add_executable(gplates-no-gui ${target_GPlates_no_gui_SRCS})
 
 set(all_LIBS
 	${GPlates_LIBS}
@@ -192,28 +143,4 @@ include_directories(${internal_INCLUDE_DIRS})
 GPLATES_POST_ADD_TARGET(gplates target_GPlates_SRCS)
 GPLATES_POST_ADD_TARGET(gplates-no-gui target_GPlates_no_gui_SRCS)
 
-if (APPLE)
-    install(TARGETS gplates
-    	RUNTIME DESTINATION bin
-    	BUNDLE DESTINATION bin
-    	CONFIGURATIONS release)
-else (APPLE)
-    # CMake 2.4 doesn't know about "BUNDLE DESTINATION" so don't force Windows/Linux users
-    # to require CMake 2.6.
-    install(TARGETS gplates
-    	RUNTIME DESTINATION bin
-    	CONFIGURATIONS release)
-endif (APPLE)
-
-# Include the package module which adds a 'package' target that packages up
-# a standalone version of GPlates (with dependent libraries included) for distribution
-# to another computer.
-#
-# NOTE: we don't include if CMake version is less than 2.6 because the
-# "package" module uses some commands, such as 'function', that were
-# introduced in CMake 2.6. This means you must have CMake 2.6 or better
-# to create binary install packages for distribution.
-#
-if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
-    include(Package)
-endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
+install(TARGETS gplates RUNTIME DESTINATION bin CONFIGURATIONS release)

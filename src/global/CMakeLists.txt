@@ -19,7 +19,6 @@ set(srcs
     Constants.h
     ControlFlowException.h
     ExternalResourceFailureException.h
-    GPlatesAssert.cc
     GPlatesAssert.h
     GPlatesException.cc
     GPlatesException.h

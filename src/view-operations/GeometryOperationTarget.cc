@@ -224,9 +224,8 @@ GPlatesViewOperations::GeometryOperationTarget::set_internal_state(
 	// Convert from opaque type to TargetChooser type.
 	TargetChooser* target_chooser = boost::any_cast<TargetChooser>(&internal_state);
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			target_chooser != NULL,
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(target_chooser != NULL,
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	d_target_chooser = *target_chooser;
 

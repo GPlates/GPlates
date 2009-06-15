@@ -38,7 +38,6 @@ namespace GPlatesMaths
 	class MathematicalException : public GPlatesGlobal::Exception
 	{
 		public:
-			explicit
 			MathematicalException(
 					const GPlatesUtils::CallStack::Trace &exception_source) :
 				Exception(exception_source)

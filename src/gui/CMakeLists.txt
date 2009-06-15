@@ -59,10 +59,6 @@ set(srcs
     GlobeCanvasToolChoice.cc
     GlobeCanvasToolChoice.h
     GlobeOrientation.h
-    GlobeRenderedGeometryCollectionPainter.cc
-    GlobeRenderedGeometryCollectionPainter.h
-    GlobeRenderedGeometryLayerPainter.cc
-    GlobeRenderedGeometryLayerPainter.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc

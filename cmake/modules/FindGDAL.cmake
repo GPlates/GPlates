@@ -103,13 +103,8 @@ FIND_PATH(GDAL_INCLUDE_DIR gdal.h
   /opt/include/gdal
   /opt/include/GDAL
   /opt/include
-  DOC "Include directory for the GDAL library"
+  DOC "GDAL library"
 )
-
-#
-# The various possible library names for the GDAL library are listed here.
-# 
-set(GDAL_LIBRARY_NAMES gdal gdal_i gdal1.5.2 gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL)
 
 #
 # Try only searching directories of CMake variable 'GDAL_DIR' and environment
@@ -126,7 +121,7 @@ IF(GDAL_DIR_SEARCH)
     # gdal1.5.0 on Debian testing in 2008 (GPlates changeset 2773).
     # gdal1.5.2 on OpenSUSE 11 in 2008 (GPlates changeset 3954).
     FIND_LIBRARY(GDAL_LIBRARY
-      NAMES ${GDAL_LIBRARY_NAMES}
+      NAMES gdal gdal_i gdal1.5.2 gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
       PATHS ${GDAL_DIR_SEARCH}
       NO_DEFAULT_PATH
       PATH_SUFFIXES lib64 lib
@@ -140,7 +135,7 @@ IF(GDAL_DIR_SEARCH)
     SET(GDAL_DIR_SEARCH ${GDAL_DIR_SEARCH})
     
     FIND_LIBRARY(GDAL_LIBRARY
-      NAMES ${GDAL_LIBRARY_NAMES}
+      NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
       PATHS ${GDAL_DIR_SEARCH}
       NO_DEFAULT_PATH
       PATH_SUFFIXES lib64 lib
@@ -149,7 +144,7 @@ IF(GDAL_DIR_SEARCH)
 ENDIF(GDAL_DIR_SEARCH)
 
 FIND_LIBRARY(GDAL_LIBRARY 
-  NAMES ${GDAL_LIBRARY_NAMES}
+  NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
   PATHS ${CMAKE_PREFIX_PATH} # Unofficial: We are proposing this.
     NO_DEFAULT_PATH
     PATH_SUFFIXES lib64 lib
@@ -162,7 +157,7 @@ FIND_LIBRARY(GDAL_LIBRARY
 #
 
 FIND_LIBRARY(GDAL_LIBRARY 
-  NAMES ${GDAL_LIBRARY_NAMES}
+  NAMES gdal gdal_i gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL
   PATHS
     "${GDAL_INCLUDE_DIR}/.." # this only really needed on windows platforms
     ~/Library/Frameworks

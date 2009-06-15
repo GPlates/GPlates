@@ -38,7 +38,6 @@ namespace GPlatesGui
 	class GuiException : public GPlatesGlobal::Exception
 	{
 		public:
-			explicit
 			GuiException(
 					const GPlatesUtils::CallStack::Trace &exception_source) :
 				Exception(exception_source)

@@ -43,7 +43,6 @@ MACRO (GPLATES_GROUP_SOURCE_FILES )
         source_group(qrc REGULAR_EXPRESSION "\\.qrc")
 		
 		source_group(pch REGULAR_EXPRESSION "_pch")
-		source_group(rc REGULAR_EXPRESSION "\\.rc")
     endif(MSVC)
 ENDMACRO (GPLATES_GROUP_SOURCE_FILES)
 
@@ -53,10 +52,6 @@ MACRO (GPLATES_GENERATE_TARGET_SOURCES _target_name _target_srcs )
     string(REGEX MATCHALL "[^ ;]+\\.h" HDRS "${ARGN}")
     string(REGEX MATCHALL "[^ ;]+\\.ui" UIS "${ARGN}")
     string(REGEX MATCHALL "[^ ;]+\\.qrc" QRCS "${ARGN}")
-    if(MSVC)
-		# '.rc' file used to embedd icon into GPlates executable.
-		string(REGEX MATCHALL "[^ ;]+\\.rc" RCS "${ARGN}")
-    endif(MSVC)
 
     # Add commands to generate 'Ui.h' files from '.ui' files.
     qt4_wrap_ui(UIS_H ${UIS})
@@ -87,11 +82,6 @@ MACRO (GPLATES_GENERATE_TARGET_SOURCES _target_name _target_srcs )
     # This is only possible in CMake 2.4 and greater .
     # See http://www.cmake.org/Wiki/CMake_FAQ#How_can_I_generate_a_source_file_during_the_build.3F
     set(${_target_srcs} ${${_target_srcs}} ${UIS_H})
-
-	# Resource files for Visual Studio.
-    if(MSVC)
-		set(${_target_srcs} ${${_target_srcs}} ${RCS})
-	endif(MSVC)
 	
 	# If user has chosen pre-compiled headers then add pch functionality.
 if (GPLATES_USE_PCH)

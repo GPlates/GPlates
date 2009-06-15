@@ -529,10 +529,9 @@ namespace GPlatesQtWidgets
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
-		/**
-		 * The collection of @a RenderedGeometry objects we need to paint.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+		//
+		// Some of these must go after 'd_rendered_geom_factory' as they use it.
+		//
 
 		GPlatesGui::Globe d_globe;
 

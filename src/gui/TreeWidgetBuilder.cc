@@ -82,10 +82,9 @@ GPlatesGui::TreeWidgetBuilder::get_qtree_widget_item(
 {
 	// If we get an assertion failure here then there is an error in the caller's program logic.
 	// The root handle is not something the client should know about - its a fictitious item.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			item_handle != d_root_handle &&
-					d_item_handle_manager.is_valid_item_handle(item_handle),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(item_handle != d_root_handle &&
+			d_item_handle_manager.is_valid_item_handle(item_handle),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_items[item_handle]->d_item;
 }
@@ -96,9 +95,8 @@ GPlatesGui::TreeWidgetBuilder::push_current_item(
 		item_handle_type item_handle)
 {
 	// If we get an assertion failure here then there is an error in the caller's program logic.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_item_handle_manager.is_valid_item_handle(item_handle),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(d_item_handle_manager.is_valid_item_handle(item_handle),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	d_current_item_handle = item_handle;
 	d_current_item_handle_stack.push(item_handle);
@@ -109,9 +107,8 @@ GPlatesGui::TreeWidgetBuilder::item_handle_type
 GPlatesGui::TreeWidgetBuilder::pop_current_item()
 {
 	// If we get an assertion failure here then there is an error in the caller's program logic.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!d_current_item_handle_stack.empty(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(!d_current_item_handle_stack.empty(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	d_current_item_handle_stack.pop();
 	d_current_item_handle = d_current_item_handle_stack.top();
@@ -145,9 +142,8 @@ GPlatesGui::TreeWidgetBuilder::destroy_item(
 		item_handle_type item_handle)
 {
 	// If we get an assertion failure here then there is an error in the caller's program logic.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			item_handle != d_root_handle,
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(item_handle != d_root_handle,
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	Item *item = get_item(item_handle);
 
@@ -198,9 +194,8 @@ GPlatesGui::TreeWidgetBuilder::get_child_item_handle(
 	const Item *parent_item = get_item(parent_item_handle);
 
 	// If we get an assertion failure here then there is an error in the caller's program logic.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			child_index < parent_item->d_child_nodes.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(child_index < parent_item->d_child_nodes.size(),
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return parent_item->d_child_nodes[child_index];
 }
@@ -226,9 +221,8 @@ GPlatesGui::TreeWidgetBuilder::insert_child(
 	Item *parent_item = get_item(parent_item_handle);
 
 	// If we get an assertion failure here then there is an error in the caller's program logic.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			child_index <= parent_item->d_child_nodes.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(child_index <= parent_item->d_child_nodes.size(),
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	item_handle_seq_type::iterator child_item_handle_iter = parent_item->d_child_nodes.begin();
 	std::advance(child_item_handle_iter, child_index);
@@ -254,9 +248,8 @@ GPlatesGui::TreeWidgetBuilder::remove_child(
 			parent_item->d_child_nodes.begin(), parent_item->d_child_nodes.end(), child_item_handle);
 
 	// If we get an assertion failure here then there is an error in the caller's program logic.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			child_item_handle_iter != parent_item->d_child_nodes.end(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(child_item_handle_iter != parent_item->d_child_nodes.end(),
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const unsigned int child_index = std::distance(
 			parent_item->d_child_nodes.begin(), child_item_handle_iter);
@@ -273,9 +266,8 @@ GPlatesGui::TreeWidgetBuilder::remove_child_at_index(
 	Item *parent_item = get_item(parent_item_handle);
 
 	// If we get an assertion failure here then there is an error in the caller's program logic.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			child_index < parent_item->d_child_nodes.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(child_index < parent_item->d_child_nodes.size(),
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const item_handle_type child_item_handle = parent_item->d_child_nodes[child_index];
 
@@ -289,10 +281,9 @@ GPlatesGui::TreeWidgetBuilder::add_function(
 		const qtree_widget_item_function_type &function)
 {
 	// If we get an assertion failure here then there is an error in the caller's program logic.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			item_handle != d_root_handle &&
-					d_item_handle_manager.is_valid_item_handle(item_handle),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(item_handle != d_root_handle &&
+			d_item_handle_manager.is_valid_item_handle(item_handle),
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Add 'function' to list of functions to be called on the item when it's
 	// attached to the QTreeWidget later on.
@@ -303,9 +294,8 @@ GPlatesGui::TreeWidgetBuilder::add_function(
 GPlatesGui::TreeWidgetBuilder::Item *
 GPlatesGui::TreeWidgetBuilder::get_current_item()
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			have_current_item(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(have_current_item(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_items[d_current_item_handle].get();
 }
@@ -324,9 +314,8 @@ const GPlatesGui::TreeWidgetBuilder::Item *
 GPlatesGui::TreeWidgetBuilder::get_item(
 		item_handle_type item_handle) const
 {
- 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_item_handle_manager.is_valid_item_handle(item_handle),
- 			GPLATES_ASSERTION_SOURCE);
+ 	GPlatesGlobal::Assert(d_item_handle_manager.is_valid_item_handle(item_handle),
+ 		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_items[item_handle].get();
 }
@@ -347,9 +336,8 @@ GPlatesGui::TreeWidgetBuilder::allocate_item(
 	else
 	{
 		// If it was previously released then it should now be NULL.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				d_items[new_item_handle].get() == NULL,
-				GPLATES_ASSERTION_SOURCE);
+		GPlatesGlobal::Assert(d_items[new_item_handle].get() == NULL,
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 		// We're reusing a previously released slot.
 		d_items[new_item_handle] = new_item;
@@ -592,9 +580,8 @@ GPlatesGui::TreeWidgetBuilder::ItemHandleManager::deallocate_item_handle(
 		item_handle_type item_handle)
 {
 	// Make sure item handle was is currently being used.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			is_valid_item_handle(item_handle),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(is_valid_item_handle(item_handle),
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Make item handle available for re-use.
 	d_handles_available_for_reuse.push_back(item_handle);

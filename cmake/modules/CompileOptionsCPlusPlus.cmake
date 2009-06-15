@@ -27,28 +27,8 @@ endif (NOT APPLE)
 
 # Mac OSX specific configuration options:
 if(APPLE)
-    # Detect Mac OSX version.
-    execute_process(COMMAND "sw_vers" "-productVersion"
-        OUTPUT_VARIABLE OSX_VERSION
-        RESULT_VARIABLE OSX_VERSION_RESULT)
-    if (NOT OSX_VERSION_RESULT)
-        # Convert 10.4.11 to 10.4 for example.
-        string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.[0-9]+[ \t\r\n]*" "\\1.\\2" OSX_MAJOR_MINOR_VERSION ${OSX_VERSION})
-        string(REGEX REPLACE "([0-9]+)\\.[0-9]+" "\\1" OSX_MAJOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
-        string(REGEX REPLACE "[0-9]+\\.([0-9]+)" "\\1" OSX_MINOR_VERSION ${OSX_MAJOR_MINOR_VERSION})
-        add_definitions(-DMAC_OSX_MAJOR_VERSION=${OSX_MAJOR_VERSION})
-        add_definitions(-DMAC_OSX_MINOR_VERSION=${OSX_MINOR_VERSION})
-        if (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
-            message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Tiger)")
-            add_definitions(-DMAC_OSX_TIGER)
-        elseif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.5")
-            message("Mac OSX version=${OSX_MAJOR_VERSION}.${OSX_MINOR_VERSION} (Leopard)")
-            add_definitions(-DMAC_OSX_LEOPARD)
-        endif (OSX_MAJOR_MINOR_VERSION STREQUAL "10.4")
-    endif (NOT OSX_VERSION_RESULT)
-
     # Automatically adds compiler definitions to all subdirectories too.
-    add_definitions(-D__APPLE__)
+    add_definitions(/D__APPLE__)
 
     # Mac OSX uses CMAKE_COMPILER_IS_GNUCXX compiler (always?) which is set later below.
     # 'bind_at_load' causes undefined symbols to be referenced at load/launch.
@@ -90,10 +70,10 @@ if(MSVC)
 
     # Build configuration-specific flags.
     # The defaults look reasonable...
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /DGPLATES_DEBUG")
-	# set(CMAKE_CXX_FLAGS_RELEASE )
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /DGPLATES_DEBUG")
-	# set(CMAKE_CXX_FLAGS_MINSIZEREL )
+	#set(CMAKE_CXX_FLAGS_DEBUG )
+	#set(CMAKE_CXX_FLAGS_RELEASE )
+	#set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  )
+	#set(CMAKE_CXX_FLAGS_MINSIZEREL )
     
     # There are _DEBUG, _RELEASE, _RELWITHDEBINFO and _MINSIZEREL suffixes for CMAKE_*_LINKER_FLAGS
     # where '*' is EXE, SHARED and MODULE.
@@ -134,9 +114,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     #set(CMAKE_MODULE_LINKER_FLAGS )
 
     # Build configuration-specific flags.
-	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb3 -DGPLATES_DEBUG")
+	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb3")
 	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-O3 -ggdb3 -DGPLATES_DEBUG")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-O3 -ggdb3")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os")
 
     # Create our own build type for profiling since there are no defaults that suit it.

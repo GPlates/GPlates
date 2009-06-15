@@ -1,36 +1,19 @@
-Build On Mac OS X
+Build On Mac OSX
 
 Table of Contents
 
  1. Introduction
  2. Build process
-     1. Development environment
-     2. Package dependencies
-     3. Commands to build GPlates
-     4. The GPlates executable
-     5. Installing GPlates
+     1. Package dependencies
+     2. Commands to execute
+     3. The GPlates executable
+     4. Installing GPlates
 
 Introduction
 
 This page details how to build GPlates from a source release.
 
 Build process
-
-Development environment
-
-The first step is to ensure that g++ is installed.
-Although it appears to be installed by default we recommend installing the XCode development
-tools if you haven't already done so. This is because in our experience the linker error message
-"load command <x> unknown cmd field" has always been fixed by installing the XCode developement tools.
-Although this linker error does not occur on all systems it occurs often enough to note.
-To install the XCode development tools you'll need to obtain a copy of the install disc used to
-install Mac OS X on your computer. If you don't have this then you can download the
-XCode development tools free of charge from http://developer.apple.com/technology/tools.html
-(a login is required). Once you have the XCode disc image locate the XcodeTools.pkg and install it.
-Note that a Mac OS X 10.5 install disc will not work on a computer with a 10.4 version of Mac OS X.
-You can test the version of g++ by typing "g++ --version" at the terminal (you can open the terminal
-by running Applications->Utilities->Terminal in Finder).
-We've successfully tested g++ 4.0.0 on OS X 10.4 and g++ 4.0.1 on OS X 10.5.
 
 Package dependencies
 
@@ -39,12 +22,11 @@ dependencies for compilation.
 
 See "DEPS.OSX" for more information on installing dependencies.
 
-Commands to build GPlates
+Commands to execute
 
- 1. Open a terminal window by running Applications->Utilities->Terminal in Finder.
- 2. Change your working directory (if not already) into the base directory of
+ 1. Change your working directory (if not already) into the base directory of
     the GPlates source code.
- 3. Configure and compile the program:
+ 2. Configure and compile the program:
 
 	cmake .
     make
@@ -55,8 +37,8 @@ Commands to build GPlates
 
 The GPlates executable
 
-The GPlates executable will be called "gplates", located in the "bin"
-directory. If you want to do more than test GPlates from this local directory,
+The GPlates executable will be called "gplates", located in the "src"
+directory. If you want to do more than test GPlates from the source directory,
 you will need to install it on your system.
 
 Installing GPlates

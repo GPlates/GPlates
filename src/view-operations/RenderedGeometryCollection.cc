@@ -96,14 +96,11 @@ namespace GPlatesViewOperations
 
 }
 
-
 const GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type
 	GPlatesViewOperations::RenderedGeometryCollection::ALL_MAIN_LAYERS =
 			~GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type();
 
-
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryCollection() :
-d_current_viewport_zoom_factor(1.0),
 d_update_collection_depth(0),
 d_update_notify_queued(false)
 {
@@ -137,50 +134,10 @@ d_update_notify_queued(false)
 	RenderedGeometryCollectionManager::instance().register_collection(this);
 }
 
-
 GPlatesViewOperations::RenderedGeometryCollection::~RenderedGeometryCollection()
 {
 	RenderedGeometryCollectionManager::instance().unregister_collection(this);
 }
-
-
-void
-GPlatesViewOperations::RenderedGeometryCollection::set_viewport_zoom_factor(
-		const double &viewport_zoom_factor)
-{
-	d_current_viewport_zoom_factor = viewport_zoom_factor;
-
-	//
-	// Notify all zoom-dependent rendered geometry layers of the new zoom factor.
-	//
-	main_layer_seq_type::size_type main_layer_index;
-	for (main_layer_index = 0;
-		main_layer_index < NUM_LAYERS;
-		++main_layer_index)
-	{
-		// Notify main layer - currently isn't necessary since only child layers can
-		// be zoom-dependent (but this might change).
-		RenderedGeometryLayer *main_layer =
-				d_main_layer_seq[main_layer_index].d_rendered_geom_layer.get();
-		main_layer->set_viewport_zoom_factor(d_current_viewport_zoom_factor);
-
-		// Notify the child layers.
-		MainLayer::child_layer_index_seq_type::iterator child_layer_iter;
-		for (child_layer_iter = d_main_layer_seq[main_layer_index].d_child_layer_index_seq.begin();
-			child_layer_iter != d_main_layer_seq[main_layer_index].d_child_layer_index_seq.end();
-			++child_layer_iter)
-		{
-			const RenderedGeometryLayerIndex child_layer_index = *child_layer_iter;
-
-			RenderedGeometryLayer *child_layer =
-					d_rendered_geometry_layer_manager.get_rendered_geometry_layer(
-							child_layer_index);
-
-			child_layer->set_viewport_zoom_factor(d_current_viewport_zoom_factor);
-		}
-	}
-}
-
 
 GPlatesViewOperations::RenderedGeometryLayer *
 GPlatesViewOperations::RenderedGeometryCollection::get_main_rendered_layer(
@@ -188,7 +145,6 @@ GPlatesViewOperations::RenderedGeometryCollection::get_main_rendered_layer(
 {
 	return d_main_layer_seq[main_rendered_layer_type].d_rendered_geom_layer.get();
 }
-
 
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
 GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer(
@@ -198,37 +154,6 @@ GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer(
 	const RenderedGeometryLayerIndex child_layer_index =
 		d_rendered_geometry_layer_manager.create_rendered_geometry_layer(parent_layer);
 
-	connect_child_rendered_layer_to_parent(child_layer_index, parent_layer);
-
-	// Ownership of rendered geometry layer is passed to caller.
-	return child_layer_index;
-}
-
-
-GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
-GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer(
-		MainLayerType parent_layer,
-		float ratio_zoom_dependent_bin_dimension_to_globe_radius)
-{
-	// Create rendered geometry layer.
-	const RenderedGeometryLayerIndex child_layer_index =
-			d_rendered_geometry_layer_manager.create_rendered_geometry_layer(
-					parent_layer,
-					ratio_zoom_dependent_bin_dimension_to_globe_radius,
-					d_current_viewport_zoom_factor);
-
-	connect_child_rendered_layer_to_parent(child_layer_index, parent_layer);
-
-	// Ownership of rendered geometry layer is passed to caller.
-	return child_layer_index;
-}
-
-
-void
-GPlatesViewOperations::RenderedGeometryCollection::connect_child_rendered_layer_to_parent(
-		const RenderedGeometryLayerIndex child_layer_index,
-		MainLayerType parent_layer)
-{
 	RenderedGeometryLayer *rendered_geom_layer = d_rendered_geometry_layer_manager
 		.get_rendered_geometry_layer(child_layer_index);
 
@@ -240,8 +165,10 @@ GPlatesViewOperations::RenderedGeometryCollection::connect_child_rendered_layer_
 
 	// Let observers know that our state has been modified.
 	signal_update(parent_layer);
-}
 
+	// Ownership of rendered geometry layer is passed to caller.
+	return child_layer_index;
+}
 
 void
 GPlatesViewOperations::RenderedGeometryCollection::destroy_child_rendered_layer(
@@ -257,7 +184,6 @@ GPlatesViewOperations::RenderedGeometryCollection::destroy_child_rendered_layer(
 	// Let observers know that our state has been modified.
 	signal_update(parent_layer);
 }
-
 
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 GPlatesViewOperations::RenderedGeometryCollection::transfer_ownership_of_child_rendered_layer(
@@ -279,39 +205,19 @@ GPlatesViewOperations::RenderedGeometryCollection::transfer_ownership_of_child_r
 				parent_layer));
 }
 
-
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer_and_transfer_ownership(
 		MainLayerType parent_layer)
 {
 	// Create a child rendered layer of the main layer.
 	const RenderedGeometryCollection::child_layer_index_type child_rendered_geom_layer_index =
-			create_child_rendered_layer(parent_layer);
+		create_child_rendered_layer(parent_layer);
 
 	// Make it so we don't have to destroy the child layer explicitly.
 	return transfer_ownership_of_child_rendered_layer(
 				child_rendered_geom_layer_index,
 				parent_layer);
 }
-
-
-GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer_and_transfer_ownership(
-		MainLayerType parent_layer,
-		float ratio_zoom_dependent_bin_dimension_to_globe_radius)
-{
-	// Create a child rendered layer of the main layer.
-	const RenderedGeometryCollection::child_layer_index_type child_rendered_geom_layer_index =
-			create_child_rendered_layer(
-					parent_layer,
-					ratio_zoom_dependent_bin_dimension_to_globe_radius);
-
-	// Make it so we don't have to destroy the child layer explicitly.
-	return transfer_ownership_of_child_rendered_layer(
-				child_rendered_geom_layer_index,
-				parent_layer);
-}
-
 
 GPlatesViewOperations::RenderedGeometryLayer *
 GPlatesViewOperations::RenderedGeometryCollection::get_child_rendered_layer(
@@ -320,14 +226,12 @@ GPlatesViewOperations::RenderedGeometryCollection::get_child_rendered_layer(
 	return d_rendered_geometry_layer_manager.get_rendered_geometry_layer(child_layer_index);
 }
 
-
 bool
 GPlatesViewOperations::RenderedGeometryCollection::is_main_layer_active(
 		MainLayerType main_layer_type) const
 {
 	return d_main_layer_active_state.test(main_layer_type);
 }
-
 
 void
 GPlatesViewOperations::RenderedGeometryCollection::set_main_layer_active(
@@ -374,7 +278,6 @@ GPlatesViewOperations::RenderedGeometryCollection::set_main_layer_active(
 	}
 }
 
-
 void
 GPlatesViewOperations::RenderedGeometryCollection::set_orthogonal_main_layers(
 		orthogonal_main_layers_type orthogonal_main_layers)
@@ -382,13 +285,11 @@ GPlatesViewOperations::RenderedGeometryCollection::set_orthogonal_main_layers(
 	d_main_layers_orthogonal = orthogonal_main_layers;
 }
 
-
 GPlatesViewOperations::RenderedGeometryCollection::orthogonal_main_layers_type
 GPlatesViewOperations::RenderedGeometryCollection::get_orthogonal_main_layers() const
 {
 	return d_main_layers_orthogonal;
 }
-
 
 GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState
 GPlatesViewOperations::RenderedGeometryCollection::capture_main_layer_active_state() const
@@ -398,7 +299,6 @@ GPlatesViewOperations::RenderedGeometryCollection::capture_main_layer_active_sta
 	// active state in a way that conflicts with the orthogonal layers.
 	return MainLayerActiveState(boost::any(d_main_layer_active_state));
 }
-
 
 void
 GPlatesViewOperations::RenderedGeometryCollection::restore_main_layer_active_state(
@@ -425,7 +325,6 @@ GPlatesViewOperations::RenderedGeometryCollection::restore_main_layer_active_sta
 	}
 }
 
-
 template <class RenderedGeometryLayerType,
 		class RenderedGeometryCollectionVisitorType>
 void
@@ -440,7 +339,6 @@ GPlatesViewOperations::RenderedGeometryCollection::visit_rendered_geometry_layer
 		rendered_geom_layer.accept_visitor(visitor);
 	}
 }
-
 
 template <class RenderedGeometryLayerType,
 		class RenderedGeometryCollectionType,
@@ -490,7 +388,6 @@ GPlatesViewOperations::RenderedGeometryCollection::visit_main_rendered_layer(
 	}
 }
 
-
 template <class RenderedGeometryLayerType,
 		class RenderedGeometryCollectionType,
 		class RenderedGeometryCollectionVisitorType>
@@ -518,7 +415,6 @@ GPlatesViewOperations::RenderedGeometryCollection::accept_visitor_internal(
 	}
 }
 
-
 void
 GPlatesViewOperations::RenderedGeometryCollection::accept_visitor(
 		ConstRenderedGeometryCollectionVisitor &visitor) const
@@ -526,14 +422,12 @@ GPlatesViewOperations::RenderedGeometryCollection::accept_visitor(
 	accept_visitor_internal<const RenderedGeometryLayer>(visitor, *this);
 }
 
-
 void
 GPlatesViewOperations::RenderedGeometryCollection::accept_visitor(
 		RenderedGeometryCollectionVisitor &visitor)
 {
 	accept_visitor_internal<RenderedGeometryLayer>(visitor, *this);
 }
-
 
 void
 GPlatesViewOperations::RenderedGeometryCollection::connect_to_rendered_geometry_layer_signal(
@@ -551,20 +445,17 @@ GPlatesViewOperations::RenderedGeometryCollection::connect_to_rendered_geometry_
 				GPlatesViewOperations::RenderedGeometryLayer::user_data_type)));
 }
 
-
 void
 GPlatesViewOperations::RenderedGeometryCollection::begin_update_collection()
 {
 	++d_update_collection_depth;
 }
 
-
 void
 GPlatesViewOperations::RenderedGeometryCollection::end_update_collection()
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_update_collection_depth > 0,
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(d_update_collection_depth > 0,
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	--d_update_collection_depth;
 
@@ -576,7 +467,6 @@ GPlatesViewOperations::RenderedGeometryCollection::end_update_collection()
 	}
 }
 
-
 void
 GPlatesViewOperations::RenderedGeometryCollection::signal_update(
 		MainLayerType main_layer_type)
@@ -587,7 +477,6 @@ GPlatesViewOperations::RenderedGeometryCollection::signal_update(
 
 	signal_update(main_layers_updated);
 }
-
 
 void
 GPlatesViewOperations::RenderedGeometryCollection::signal_update(
@@ -606,7 +495,6 @@ GPlatesViewOperations::RenderedGeometryCollection::signal_update(
 	}
 }
 
-
 void
 GPlatesViewOperations::RenderedGeometryCollection::send_update_signal()
 {
@@ -615,7 +503,6 @@ GPlatesViewOperations::RenderedGeometryCollection::send_update_signal()
 
 	d_update_notify_queued = false;
 }
-
 
 void
 GPlatesViewOperations::RenderedGeometryCollection::rendered_geometry_layer_was_updated(
@@ -640,13 +527,11 @@ d_impl(impl)
 {
 }
 
-
 GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState::impl_type
 GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState::get_impl() const
 {
 	return d_impl;
 }
-
 
 bool
 GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState::is_active(
@@ -675,7 +560,6 @@ GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard::UpdateGuard()
 			boost::bind(&RenderedGeometryCollection::begin_update_collection, _1));
 }
 
-
 GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard::~UpdateGuard()
 {
 	// Since this is a destructor we cannot let any exceptions escape.
@@ -697,32 +581,16 @@ GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard::~UpdateGuard()
 	}
 }
 
-
-GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::~RenderedGeometryLayerManager()
-{
-	// Delete any layers that have not been released yet.
-	rendered_geometry_layer_seq_type::iterator iter;
-	for (iter = d_layer_storage.begin();
-		iter != d_layer_storage.end();
-		++iter)
-	{
-		// 'delete' tests for NULL for us.
-		delete *iter;
-	}
-}
-
-
 const GPlatesViewOperations::RenderedGeometryLayer *
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::get_rendered_geometry_layer(
 		RenderedGeometryLayerIndex layer_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	GPlatesGlobal::Assert(
 			layer_index < d_layer_storage.size(),
-			GPLATES_ASSERTION_SOURCE);
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_layer_storage[layer_index];
 }
-
 
 GPlatesViewOperations::RenderedGeometryLayer *
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::get_rendered_geometry_layer(
@@ -733,80 +601,13 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 					get_rendered_geometry_layer(layer_index));
 }
 
-
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerIndex
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::create_rendered_geometry_layer(
 		MainLayerType main_layer)
 {
 	// TODO: make this method exception-safe
 
-	const child_layer_index_type layer_index = allocate_layer_index();
-
-	// Pass main layer to RenderedGeometryLayer so it can return it to us
-	// when it emits its layer_was_updated signal.
-	// This way we can know which main layer was updated.
-	RenderedGeometryLayer::user_data_type user_data(main_layer);
-
-	// Make sure slot isn't already being used.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_layer_storage[layer_index] == NULL,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Create a new rendered geometry layer.
-	d_layer_storage[layer_index] = new RenderedGeometryLayer(user_data);
-
-	return layer_index;
-}
-
-
-GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerIndex
-GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::create_rendered_geometry_layer(
-		MainLayerType main_layer,
-		float ratio_zoom_dependent_bin_dimension_to_globe_radius,
-		const double &current_viewport_zoom_factor)
-{
-	// TODO: make this method exception-safe
-
-	const child_layer_index_type layer_index = allocate_layer_index();
-
-	// Pass main layer to RenderedGeometryLayer so it can return it to us
-	// when it emits its layer_was_updated signal.
-	// This way we can know which main layer was updated.
-	RenderedGeometryLayer::user_data_type user_data(main_layer);
-
-	// Make sure slot isn't already being used.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_layer_storage[layer_index] == NULL,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Create a new rendered geometry layer.
-	d_layer_storage[layer_index] = new RenderedGeometryLayer(
-			ratio_zoom_dependent_bin_dimension_to_globe_radius,
-			current_viewport_zoom_factor,
-			user_data);
-
-	return layer_index;
-}
-
-
-void
-GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::destroy_rendered_geometry_layer(
-		RenderedGeometryLayerIndex layer_index)
-{
-	// TODO: make this method exception-safe
-
-	deallocate_layer_index(layer_index);
-
-	// Reset the layer rendered geometry layer for re-use.
-	delete d_layer_storage[layer_index];
-	d_layer_storage[layer_index] = NULL;
-}
-
-
-GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerIndex
-GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::allocate_layer_index()
-{
-	RenderedGeometryLayerIndex layer_index;
+	child_layer_index_type layer_index;
 
 	if (!d_layers_available_for_reuse.empty())
 	{
@@ -834,31 +635,48 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 	// Add to list of layers in use.
 	d_layers.push_back(layer_index);
 
+	// Make sure slot isn't already being used.
+	GPlatesGlobal::Assert(
+			d_layer_storage[layer_index] == NULL,
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+
+	// Pass main layer to RenderedGeometryLayer so it can return it to us
+	// when it emits its layer_was_updated signal.
+	// This way we can know which main layer was updated.
+	RenderedGeometryLayer::user_data_type user_data(main_layer);
+
+	// Create a new rendered geometry layer.
+	d_layer_storage[layer_index] = new RenderedGeometryLayer(user_data);
+
 	return layer_index;
 }
 
-
 void
-GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::deallocate_layer_index(
+GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::destroy_rendered_geometry_layer(
 		RenderedGeometryLayerIndex layer_index)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	// TODO: make this method exception-safe
+
+	GPlatesGlobal::Assert(
 			layer_index < d_layer_storage.size(),
-			GPLATES_ASSERTION_SOURCE);
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Make sure layer index is actually being used.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	GPlatesGlobal::Assert(
 			std::find(d_layers.begin(), d_layers.end(), layer_index) !=
 					d_layers.end(),
-			GPLATES_ASSERTION_SOURCE);
+			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Remove from list of layers in use.
 	d_layers.remove(layer_index);
 
 	// Make layer index available for re-use.
 	d_layers_available_for_reuse.push(layer_index);
-}
 
+	// Reset the layer rendered geometry layer for re-use.
+	delete d_layer_storage[layer_index];
+	d_layer_storage[layer_index] = NULL;
+}
 
 GPlatesViewOperations::RenderedGeometryCollection::MainLayer::MainLayer(
 		MainLayerType main_layer_type)

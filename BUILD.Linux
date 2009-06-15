@@ -37,8 +37,8 @@ Commands to execute
 
 The GPlates executable
 
-The GPlates executable will be called "gplates", located in the "bin"
-directory. If you want to do more than test GPlates from this local directory,
+The GPlates executable will be called "gplates", located in the "src"
+directory. If you want to do more than test GPlates from the source directory,
 you will need to install it on your system.
 
 Installing GPlates

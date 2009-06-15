@@ -87,26 +87,23 @@ GPlatesUtils::formatted_double_to_string(
 		int prec,
 		bool elide_trailing_zeroes)
 {
-	GPlatesGlobal::Assert<InvalidFormattingParametersException>(
-			width > 0,
-			GPLATES_ASSERTION_SOURCE,
-			"Attempt to format a real number using a negative width.");
+	GPlatesGlobal::Assert(width > 0,
+		InvalidFormattingParametersException(GPLATES_EXCEPTION_SOURCE,
+			"Attempt to format a real number using a negative width."));
 
 	if (prec != IGNORE_PRECISION)
 	{
-		GPlatesGlobal::Assert<InvalidFormattingParametersException>(
-				prec > 0,
-				GPLATES_ASSERTION_SOURCE,
-				"Attempt to format a real number using a negative precision.");
+		GPlatesGlobal::Assert(prec > 0,
+			InvalidFormattingParametersException(GPLATES_EXCEPTION_SOURCE,
+			"Attempt to format a real number using a negative precision."));
 
 		// The number 3 below is the number of characters required to
 		// represent (1) the decimal point, (2) the minus sign, and (3)
 		// at least one digit to the left of the decimal point.
-		GPlatesGlobal::Assert<InvalidFormattingParametersException>(
-				width >= (static_cast<unsigned>(prec) + 3), 
-				GPLATES_ASSERTION_SOURCE,
-				"Attempted to format a real number with parameters that don't "\
-				"leave enough space for the decimal point, sign, and integral part.");
+		GPlatesGlobal::Assert(width >= (static_cast<unsigned>(prec) + 3), 
+			InvalidFormattingParametersException(GPLATES_EXCEPTION_SOURCE,
+			"Attempted to format a real number with parameters that don't "\
+			"leave enough space for the decimal point, sign, and integral part."));
 	}
 
 	std::ostringstream oss;
@@ -137,10 +134,9 @@ GPlatesUtils::formatted_int_to_string(
 		unsigned width,
 		char fill_char)
 {
-	GPlatesGlobal::Assert<InvalidFormattingParametersException>(
-			width > 0,
-			GPLATES_ASSERTION_SOURCE,
-			"Attempt to format an integer using a negative width.");
+	GPlatesGlobal::Assert(width > 0,
+		InvalidFormattingParametersException(GPLATES_EXCEPTION_SOURCE,
+			"Attempt to format an integer using a negative width."));
 
 	std::ostringstream oss;
 	oss << std::setw(width) 

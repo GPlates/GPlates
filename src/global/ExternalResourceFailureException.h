@@ -45,7 +45,6 @@ namespace GPlatesGlobal
 			 * An alternative constructor that adds the location at which exception is thrown
 			 * to the call stack trace.
 			 */
-			explicit
 			ExternalResourceFailureException(
 					const GPlatesUtils::CallStack::Trace &exception_source) :
 				Exception(exception_source)

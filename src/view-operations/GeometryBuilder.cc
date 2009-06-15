@@ -318,9 +318,8 @@ GPlatesViewOperations::GeometryBuilder::insert_point_into_current_geometry(
 
 	InternalGeometryBuilder &geometry = get_current_geometry_builder();
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			point_index <= geometry.get_point_seq_const().size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(point_index <= geometry.get_point_seq_const().size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Insert point into current geometry builder.
 	InternalGeometryBuilder::point_seq_type::iterator insert_iter =
@@ -344,9 +343,8 @@ GPlatesViewOperations::GeometryBuilder::remove_point_from_current_geometry(
 
 	InternalGeometryBuilder &geometry = get_current_geometry_builder();
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			point_index < geometry.get_point_seq_const().size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(point_index < geometry.get_point_seq_const().size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	InternalGeometryBuilder::point_seq_type::iterator erase_iter =
 		geometry.get_point_seq().begin();
@@ -383,9 +381,8 @@ GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 
 	InternalGeometryBuilder &geometry = get_current_geometry_builder();
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			point_index <= geometry.get_point_seq_const().size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(point_index <= geometry.get_point_seq_const().size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Move point in the current geometry builder.
 	InternalGeometryBuilder::point_seq_type::iterator move_iter =
@@ -406,9 +403,8 @@ GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 const GPlatesViewOperations::InternalGeometryBuilder&
 GPlatesViewOperations::GeometryBuilder::get_current_geometry_builder() const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_current_geometry_index < d_geometry_builder_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(d_current_geometry_index < d_geometry_builder_seq.size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return *d_geometry_builder_seq[d_current_geometry_index];
 }
@@ -429,9 +425,8 @@ GPlatesViewOperations::GeometryBuilder::insert_geometry(
 		geometry_builder_ptr_type geometry_ptr,
 		GeometryIndex geom_index)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geom_index <= d_geometry_builder_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(geom_index <= d_geometry_builder_seq.size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Determine where to insert new geometry into geometry sequence.
 	geometry_builder_seq_type::iterator insert_iter = d_geometry_builder_seq.begin();
@@ -458,9 +453,8 @@ void
 GPlatesViewOperations::GeometryBuilder::remove_geometry(
 		GeometryIndex geom_index)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geom_index < d_geometry_builder_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(geom_index < d_geometry_builder_seq.size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	geometry_builder_seq_type::iterator erase_iter = d_geometry_builder_seq.begin();
 	std::advance(erase_iter, geom_index);
@@ -496,9 +490,8 @@ GPlatesViewOperations::GeometryBuilder::undo(
 	GeometryBuilderInternal::UndoImpl* undo_impl =
 			boost::any_cast<GeometryBuilderInternal::UndoImpl>(&undo_memento);
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			undo_impl != NULL,
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(undo_impl != NULL,
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Perform the undo operation.
 	(*undo_impl)->accept_undo_visitor(this);
@@ -556,9 +549,8 @@ GPlatesViewOperations::GeometryBuilder::visit_undo_operation(
 	d_current_geometry_index = clear_all_geoms_undo.d_prev_current_geom_index;
 
 	// If we're undoing a clear all geometries then there should be none initially.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_geometry_builder_seq.empty(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(d_geometry_builder_seq.empty(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// Iterate through all the geometries to be restored.
 	geometry_builder_seq_type::size_type geom_index;
@@ -579,9 +571,8 @@ GPlatesViewOperations::GeometryBuilder::visit_undo_operation(
 		GeometryBuilderInternal::InsertGeometryUndoImpl &insert_geom_undo)
 {
 	// If we're undoing a geometry insertion then there should be some geometry(s) initially.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!d_geometry_builder_seq.empty(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(!d_geometry_builder_seq.empty(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const GeometryIndex geom_index_to_remove = insert_geom_undo.d_geom_index;
 
@@ -601,9 +592,8 @@ GPlatesViewOperations::GeometryType::Value
 GPlatesViewOperations::GeometryBuilder::get_actual_type_of_geometry(
 		GeometryIndex geom_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geom_index < d_geometry_builder_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(geom_index < d_geometry_builder_seq.size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	if (d_geometry_builder_seq.empty())
 	{
@@ -620,9 +610,8 @@ GPlatesViewOperations::GeometryBuilder::get_geometry_on_sphere()
 {
 	// Until multiple geometries are supported (ie can be returned in a
 	// single GeometryOnSphere type) then make sure have only zero or one geometry.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_geometry_builder_seq.size() <= 1,
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(d_geometry_builder_seq.size() <= 1,
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	// If we don't have any geometries then return none.
 	if (d_geometry_builder_seq.empty())
@@ -646,13 +635,13 @@ GPlatesViewOperations::GeometryBuilder::get_geometry_point(
 		GeometryIndex geom_index,
 		PointIndex point_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geom_index < d_geometry_builder_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(
+		geom_index < d_geometry_builder_seq.size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			point_index < d_geometry_builder_seq[geom_index]->get_point_seq_const().size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(
+		point_index < d_geometry_builder_seq[geom_index]->get_point_seq_const().size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_geometry_builder_seq[geom_index]->get_point_seq_const()[point_index];
 }
@@ -661,9 +650,9 @@ GPlatesViewOperations::GeometryBuilder::point_const_iterator_type
 GPlatesViewOperations::GeometryBuilder::get_geometry_point_begin(
 		GeometryIndex geom_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geom_index < d_geometry_builder_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(
+		geom_index < d_geometry_builder_seq.size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_geometry_builder_seq[geom_index]->get_point_seq_const().begin();
 }
@@ -672,9 +661,9 @@ GPlatesViewOperations::GeometryBuilder::point_const_iterator_type
 GPlatesViewOperations::GeometryBuilder::get_geometry_point_end(
 		GeometryIndex geom_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geom_index < d_geometry_builder_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(
+		geom_index < d_geometry_builder_seq.size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	return d_geometry_builder_seq[geom_index]->get_point_seq_const().end();
 }
@@ -696,9 +685,9 @@ unsigned int
 GPlatesViewOperations::GeometryBuilder::get_num_points_in_geometry(
 		GeometryIndex geom_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geom_index < d_geometry_builder_seq.size(),
-			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert(
+		geom_index < d_geometry_builder_seq.size(),
+		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 
 	const InternalGeometryBuilder &geometry = *d_geometry_builder_seq[geom_index];
 
