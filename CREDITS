@@ -400,3 +400,129 @@ The following GPlates users took part in the beta trial of GPlates on OS X:
  * Jo Whittaker
  * Florian Wobbe
 
+
+GPlates 0.9.5
+=============
+
+Released 2009-06-16, GPlates 0.9.5 contained several significant developments
+of the GPlates 0.9.4 functionality and GUI.
+
+The GPlates 0.9.5 release actually consisted of two simultaneous releases:
+ * a "stable" mainline release (like all previous 0.9.x releases), named
+   "GPlates 0.9.5"
+ * a "testing" release of the widely-anticipated continuously-closing plates
+   and lithosphere-velocity-field functionality developed primarily at Caltech,
+   named "GPlates 0.9.5+platepolygon-testing"
+
+GPlates 0.9.5 was created (Jan 2009 - Jun 2009) by:
+ * James Boyden [technical lead]
+ * John Cannon
+ * James Clark
+ * Mark Turner
+ * Robin Watson
+under the direction of:
+ * Dietmar Müller
+ * Trond Torsvik
+ * Mike Gurnis
+funded by grants from:
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+ * The Norwegian Research Council
+ * Statoil-Hydro
+ * The Gordon and Betty Moore Foundation
+
+The GPlates User-Manual was created (Mar 2008 - Jun 2009) by:
+ * Rhi McKeon (University of Sydney) [documentation developer]
+with planning and review by:
+ * James Boyden
+ * James Clark
+and contributions from:
+ * Robin Watson
+
+GPlates 0.9.5 compiled and ran on Linux, Windows XP, Windows Vista and MacOS X.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+
+ * Robin Watson:
+   + Shapefile export (in addition to existing Shapefile import)
+   + Shapefile export of reconstructed geometries at reconstruction time
+   + map projections:
+     - overall design and implementation
+     - extending 3-D globe tools to work on a 2-D map canvas
+     - projections implemented: Rectangular, Mercator, Mollweide, Robinson
+   + SVG export of map projections
+   + contributions to user-documentation
+
+ * Mark Turner:
+   + continuously-closing plates and lithosphere-velocity-field functionality
+     (construction of time-varying topological plate-boundary polygons and
+     calculation of lithosphere velocities at CitComS mesh-node locations):
+     - overall design and implementation of user-interface, workflow and
+       algorithms in the "GPlates 0.8.x" prototype series, including:
+       ^ extension of the PLATES4 file-format to represent geometric
+         intersection topologies
+       ^ development of the GPlates GUI for the topology-construction workflow
+       ^ determination and implementation of the application logic of the
+         topology-construction workflow
+       ^ implementation of Citcoms-mesh-node loading and mesh-node velocity
+         calculation
+     - porting of "GPlates 0.8.x" user-interface, workflow and algorithms into
+       GPlates 0.9 user-interface and data-structures, including:
+       ^ re-structuring GPlates 0.8 user-interface into GPlates 0.9 Canvas Tool
+         and Task Panel user-interface patterns
+       ^ menu controls to show/hide geometries by geometry type
+
+ * Rhi McKeon:
+   + user-documentation
+
+ * James Clark:
+   + Animation Export infrastructure and user-interface design
+   + contributions to continuously-closing plates / lithosphere-velocity-field
+     functionality:
+     - GPGIM design of topology components for continuously-closing plates
+     - design input into topology-construction user-interface and workflow (for
+       compatibility with 0.9)
+     - Topology Sections table for tabular editing of topologies
+   + user-interface improvements:
+     - improvements to layout of main window
+     - menu-layout improvements
+     - integrated animation slider
+     - icon design of new Canvas Tools
+     - display conjugate/left/right plate IDs as appropriate
+   + user-documentation planning and review
+
+ * John Cannon:
+   + CMake build system to build MacOS X binary bundles in .dmg files
+   + infrastructure for export of reconstructed geometries
+   + GMT export of reconstructed geometries
+   + new Canvas Tools (with accompanying Task Panel widgets):
+     - delete vertex
+     - insert vertex
+   + template filename generator for Animation Export
+   + velocity-field arrow decorations (which automatically scale with zoom)
+   + thresholding of the visual density of velocity-field arrow decorations
+   + better handling of multi-geometries (multiple-geometries per feature):
+     - reading and writing pen-up/pen-down commands in the PLATES4 line format
+       as multi-geometries in GPlates
+     - improved feature focus and Canvas Tool handling of multi-geometries
+   + responsive, interactive highlight of geometries during Canvas Tool use
+     (red highlight of vertices for deletion, yellow highlight of vertices for
+     moving, yellow highlight of line-segments for vertex-insertion, etc.)
+   + contributions to continuously-closing plates / lithosphere-velocity-field
+     functionality:
+     - automated generation and export of GML DataBlock velocity fields
+   + general user-interface processing optimisations for improved response time
+
+ * James Boyden:
+   + further development in the Model:
+     - internal feature-referencing data-structures for O(1) look-up
+     - unloading feature collections and updating feature-referencing
+   + contributions to continuously-closing plates / lithosphere-velocity-field
+     functionality:
+     - GPGIM design of topology components for continuously-closing plates
+     - design input into topology-construction user-interface and workflow (for
+       compatibility with 0.9)
+     - calculation of point-velocity from plate motion
+     - C++ implementation and GPML output of GML DataBlock for velocity field
+   + user-documentation planning and review
+
