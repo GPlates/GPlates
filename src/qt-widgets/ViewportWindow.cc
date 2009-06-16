@@ -286,6 +286,14 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 					{
 						d_active_reconstruction_files.clear();
 						d_active_reconstruction_files.push_back(new_file);
+
+						// I am very bad for putting this here - I'll clean it up when
+						// ApplicationState notifies of load/unload events - John.
+						GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+								*file.get_feature_collection();
+						d_plate_velocities_hook->load_reconstruction_feature_collection(
+								feature_collection);
+
 						have_loaded_new_rotation_file = true;
 					}
 				}
