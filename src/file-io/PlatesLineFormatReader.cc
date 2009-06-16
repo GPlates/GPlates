@@ -7,6 +7,7 @@
  *   $Date$
  * 
  * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
  *

@@ -3,7 +3,7 @@
  * $Revision: 5796 $
  * $Date: 2009-05-07 17:04:21 -0700 (Thu, 07 May 2009) $ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 California Institute of Technology
  *
  * This file is part of GPlates.
  *

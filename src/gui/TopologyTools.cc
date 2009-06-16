@@ -4,6 +4,7 @@
  * $Date: 2009-02-13 18:54:19 -0800 (Fri, 13 Feb 2009) $ 
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008 , 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
  *

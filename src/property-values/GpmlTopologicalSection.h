@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2008-07-11 19:36:59 -0700 (Fri, 11 Jul 2008) $
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
  *
