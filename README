@@ -19,7 +19,7 @@ installed:
  * GL library (the OpenGL shared library)
  * GLU library (the OpenGL Utility shared library)
  * Expat library
- * Qt library (version 4.3 or newer)
+ * Qt library (version 4.3.2 or newer)
  * ICU library
  * Boost library headers
  * Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
@@ -44,7 +44,7 @@ installed:
  * make
  * GL library (the OpenGL shared library)
  * GLU library (the OpenGL Utility shared library)
- * Qt library (version 4.3 or newer)
+ * Qt library (version 4.3.2 or newer)
  * ICU library
  * Boost library headers
  * Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
@@ -66,7 +66,7 @@ To compile GPlates on Microsoft Windows, you will need the following programs
 and libraries installed:
  * CMake (2.4 or newer)
  * Microsoft Visual Studio 8
- * Qt (version 4.3 or newer)
+ * Qt (version 4.3.4 or newer)
  * ICU
  * Boost
  * Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
