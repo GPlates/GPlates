@@ -229,16 +229,21 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 								);
 						// Check if the file contains reconstructable features.
 						if (classifier.reconstructable_feature_count() > 0) {
-							d_active_reconstructable_files.push_back(new_file);
-
 							// I am very bad for putting this here - I'll clean it up when
 							// ApplicationState notifies of load/unload events - John.
 							GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 									*file.get_feature_collection();
-							d_plate_velocities_hook->load_reconstructable_feature_collection(
+							if (!d_plate_velocities_hook->load_reconstructable_feature_collection(
 									feature_collection,
 									file.get_qfileinfo().absoluteFilePath(),
-									d_model);
+									d_model))
+							{
+								// Only add the file if it's not a velocity cap file because
+								// would like to render things its own way.
+								// In the future this will be taken care of by Visual Layers.
+								d_active_reconstructable_files.push_back(new_file);
+							}
+
 						}
 						// Check if the file contains reconstruction features.
 						if (classifier.reconstruction_feature_count() > 0) {

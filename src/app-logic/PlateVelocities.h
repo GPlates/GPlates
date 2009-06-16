@@ -153,10 +153,11 @@ namespace GPlatesAppLogic
 		 * has been loaded by the user.
 		 *
 		 * If the feature collection contains features that can be used for
-		 * velocity calculations then a new feature collection is created internally
-		 * that is used directly by the velocity solver.
+		 * velocity calculations then this method returns true and a new
+		 * feature collection is created internally that is used directly
+		 * by the velocity solver.
 		 */
-		void
+		bool
 		load_reconstructable_feature_collection(
 				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 				const QString &feature_collection_filename,
