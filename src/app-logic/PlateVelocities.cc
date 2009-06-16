@@ -272,7 +272,8 @@ GPlatesAppLogic::PlateVelocities::solve_velocities(
 		const double &reconstruction_time_2,
 		GPlatesModel::integer_plate_id_type reconstruction_root,
 		GPlatesFeatureVisitors::TopologyResolver &topology_resolver,
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer)
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer)
 {
 	// Visit the feature collections and fill computational meshes with 
 	// nice juicy velocity data
@@ -283,7 +284,8 @@ GPlatesAppLogic::PlateVelocities::solve_velocities(
 			reconstruction_tree_1,
 			reconstruction_tree_2,
 			topology_resolver,
-			comp_mesh_layer,
+			comp_mesh_point_layer,
+			comp_mesh_arrow_layer,
 			true); // keep features without recon plate id
 
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
@@ -386,10 +388,14 @@ GPlatesAppLogic::PlateVelocitiesHook::post_reconstruction_hook(
 	 * FIXME: Presentation code should not be in here (this is app logic code).
 	 * Remove any rendered geometry code to the presentation tier.
 	 */
-	// Activate the comp_mesh_layer.
-	d_comp_mesh_layer->set_active();
+	// Activate the comp_mesh_point_layer.
+	d_comp_mesh_point_layer->set_active();
 	// Clear all RenderedGeometry's before adding new ones.
-	d_comp_mesh_layer->clear_rendered_geometries();
+	d_comp_mesh_point_layer->clear_rendered_geometries();
+	// Activate the comp_mesh_arrow_layer.
+	d_comp_mesh_arrow_layer->set_active();
+	// Clear all RenderedGeometry's before adding new ones.
+	d_comp_mesh_arrow_layer->clear_rendered_geometries();
 
 
 	// Iterate over all our velocity field feature collections and solve velocities.
@@ -409,6 +415,7 @@ GPlatesAppLogic::PlateVelocitiesHook::post_reconstruction_hook(
 			reconstruction_time_2,
 			reconstruction_anchored_plate_id,
 			topology_resolver,
-			d_comp_mesh_layer);
+			d_comp_mesh_point_layer,
+			d_comp_mesh_arrow_layer);
 	}
 }

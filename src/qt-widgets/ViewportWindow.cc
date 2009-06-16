@@ -488,10 +488,7 @@ namespace
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
 			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
 			double recon_time,
-			GPlatesModel::integer_plate_id_type recon_root,
-			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer,
-			GPlatesGui::ColourTable &colour_table)
+			GPlatesModel::integer_plate_id_type recon_root)
 	{
 		try
 		{
@@ -540,11 +537,16 @@ GPlatesQtWidgets::ViewportWindow::get_colour_table()
 GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_model(),
 	d_reconstruct_context(d_model),
-	d_comp_mesh_layer(
+	d_comp_mesh_point_layer(
 			d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER)),
+					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
+					0.175f)),
+	d_comp_mesh_arrow_layer(
+			d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
+					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
+					0.175f)),
 	d_plate_velocities_hook(
-			new GPlatesAppLogic::PlateVelocitiesHook(d_comp_mesh_layer),
+			new GPlatesAppLogic::PlateVelocitiesHook(d_comp_mesh_point_layer, d_comp_mesh_arrow_layer),
 			GPlatesUtils::NullIntrusivePointerHandler()),
 	d_recon_time(0.0),
 	d_recon_root(0),
@@ -678,8 +680,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	// Render everything on the screen in present-day positions.
 	render_model(d_model, d_reconstruct_context, d_active_reconstructable_files, 
-			d_active_reconstruction_files, 0.0, d_recon_root,
-			d_rendered_geom_collection, d_comp_mesh_layer, *get_colour_table());
+			d_active_reconstruction_files, 0.0, d_recon_root);
 
 
 	// Set up the Clicked table.
@@ -1192,8 +1193,7 @@ void
 GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
 	render_model(d_model, d_reconstruct_context, d_active_reconstructable_files, 
-			d_active_reconstruction_files, d_recon_time, d_recon_root,
-			d_rendered_geom_collection, d_comp_mesh_layer, *get_colour_table());
+			d_active_reconstruction_files, d_recon_time, d_recon_root);
 
 	if (d_total_reconstruction_poles_dialog.isVisible()) {
 		d_total_reconstruction_poles_dialog.update();

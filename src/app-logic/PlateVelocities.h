@@ -121,7 +121,8 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time_2,
 				GPlatesModel::integer_plate_id_type reconstruction_root,
 				GPlatesFeatureVisitors::TopologyResolver &topology_resolver,
-				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer);
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer);
 	}
 
 
@@ -140,8 +141,10 @@ namespace GPlatesAppLogic
 		 * Remove any rendered geometry code to the presentation tier.
 		 */
 		PlateVelocitiesHook(
-				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_layer) :
-			d_comp_mesh_layer(comp_mesh_layer)
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer) :
+			d_comp_mesh_point_layer(comp_mesh_point_layer),
+			d_comp_mesh_arrow_layer(comp_mesh_arrow_layer)
 		{  }
 
 
@@ -259,11 +262,12 @@ namespace GPlatesAppLogic
 		feature_collection_weak_ref_seq_type d_reconstruction_feature_collections;
 		velocity_field_feature_collection_info_seq_type d_velocity_field_feature_collection_infos;
 
-		/**
+		/*
 		 * FIXME: Presentation code should not be in here (this is app logic code).
 		 * Remove any rendered geometry code to the presentation tier.
 		 */
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_comp_mesh_layer;
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_comp_mesh_point_layer;
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_comp_mesh_arrow_layer;
 	};
 }
 

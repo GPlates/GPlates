@@ -100,7 +100,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			GPlatesModel::ReconstructionTree &recon_tree_2,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			//reconstruction_geometries_type &reconstructed_geometries,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type layer,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
@@ -109,7 +110,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_recon_tree_2_ptr(&recon_tree_2),
 	d_topology_resolver_ptr(&topo_resolver),
 	//d_reconstruction_geometries_to_populate(&reconstructed_geometries),
-	d_rendered_layer(layer),
+	d_rendered_point_layer(point_layer),
+	d_rendered_arrow_layer(arrow_layer),
 	d_should_keep_features_without_recon_plate_id(should_keep_features_without_recon_plate_id)
 {  
 	d_num_features = 0;
@@ -484,7 +486,7 @@ std::cout << ")" << std::endl;
 			GPlatesViewOperations::GeometryOperationParameters::LINE_WIDTH_HINT);
 
 	// Add to the rendered layer.
-	d_rendered_layer->add_rendered_geometry(rendered_geom);
+	d_rendered_point_layer->add_rendered_geometry(rendered_geom);
 
 	// get the finite rotation for this palte id
 	GPlatesMaths::FiniteRotation fr_t1 = 
@@ -520,7 +522,7 @@ std::cout << ")" << std::endl;
 			*colour);
 
 	// Add to the rendered layer.
-	d_rendered_layer->add_rendered_geometry( rendered_vector );
+	d_rendered_arrow_layer->add_rendered_geometry( rendered_vector );
 }
 
 

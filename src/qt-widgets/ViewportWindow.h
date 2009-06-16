@@ -611,7 +611,9 @@ namespace GPlatesQtWidgets
 		//@}
 
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_comp_mesh_layer;
+			d_comp_mesh_point_layer;
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_comp_mesh_arrow_layer;
 		GPlatesAppLogic::PlateVelocitiesHook::non_null_ptr_type d_plate_velocities_hook;
 
 		double d_recon_time;

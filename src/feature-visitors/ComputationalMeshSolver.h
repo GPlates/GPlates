@@ -131,7 +131,8 @@ namespace GPlatesFeatureVisitors
 			GPlatesModel::ReconstructionTree &recon_tree_2,
 			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
 			//reconstruction_geometries_type &reconstructed_geometries,
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type layer,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
 			bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -206,7 +207,9 @@ namespace GPlatesFeatureVisitors
 		//reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
 
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_rendered_layer;
+			d_rendered_point_layer;
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_rendered_arrow_layer;
 
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
 		bool d_should_keep_features_without_recon_plate_id;
