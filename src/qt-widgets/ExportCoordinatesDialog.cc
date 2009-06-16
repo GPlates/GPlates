@@ -297,8 +297,9 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry(
 	}
 
 	// Make sure we created a geometry exporter.
-	GPlatesGlobal::Assert(geometry_exporter.get() != NULL,
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			geometry_exporter.get() != NULL,
+			GPLATES_ASSERTION_SOURCE);
 
 	// Export the geometry.
 	geometry_exporter->export_geometry(*d_geometry_opt_ptr);
@@ -367,8 +368,9 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_file(
 	}
 
 	// Make sure we created a geometry exporter.
-	GPlatesGlobal::Assert(geometry_exporter.get() != NULL,
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			geometry_exporter.get() != NULL,
+			GPLATES_EXCEPTION_SOURCE);
 
 	// Export the geometry.
 	try{
@@ -419,8 +421,9 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_text_stream(
 	}
 
 	// Make sure we created a geometry exporter.
-	GPlatesGlobal::Assert(geometry_exporter.get() != NULL,
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			geometry_exporter.get() != NULL,
+			GPLATES_EXCEPTION_SOURCE);
 
 	// Export the geometry.
 	geometry_exporter->export_geometry(*d_geometry_opt_ptr);

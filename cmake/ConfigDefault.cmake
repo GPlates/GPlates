@@ -12,13 +12,82 @@
 # The GPlates package name.
 set(GPLATES_PACKAGE_NAME "GPlates")
 
+# The GPlates package vendor.
+set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
+
+# A short description of the GPlates project (only a few words).
+set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate-tectonics.")
+
 # The GPlates package version.
-set(GPLATES_PACKAGE_VERSION "0.9.4")
+set(GPLATES_PACKAGE_VERSION_MAJOR "0")
+set(GPLATES_PACKAGE_VERSION_MINOR "9")
+set(GPLATES_PACKAGE_VERSION_PATCH "5")
+
+# The GPlates package version.
+set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION_MAJOR}.${GPLATES_PACKAGE_VERSION_MINOR}.${GPLATES_PACKAGE_VERSION_PATCH}")
 
 # The current GPlates version.
 set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}")
 
-# Set to 'true' if this is a public release (to non-developers).
+# The GPlates copyright - string version to be used in a source file.
+set(GPLATES_COPYRIGHT_STRING "")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2009 The University of Sydney, Australia\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2009 The Geological Survey of Norway\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source code also contains code which was originally written by\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}the following individuals:\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * James Boyden (from the ReconTreeViewer software)\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * Peter Dimov (from the Boost intrusive_ptr class template)\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source tree additionally contains icons which were part of the\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}artwork for the GNOME desktop environment.")
+
+# The GPlates copyright for html.
+set(GPLATES_HTML_COPYRIGHT_STRING "")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<html><body>\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2009 The University of Sydney, Australia<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2009 The Geological Survey of Norway<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source code also contains code which was originally written by\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}the following individuals: <ul>\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING} <li> James Boyden (from the ReconTreeViewer software) </li>\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING} <li> Peter Dimov (from the Boost intrusive_ptr class template) </li>\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</ul>\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source tree additionally contains icons which were part of the\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}artwork for the GNOME desktop environment.\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html>\\n")
+
+# List the Qt plugins used by GPlates.
+# This is needed for packaging standalone versions of GPlates for a binary installer.
+# NOTE: each plugin listed should have its own double quotes as these are list variables.
+# The paths listed should be relative to the Qt 'plugins' directory which can be found
+# by typing 'qmake -query QT_INSTALL_PLUGINS' at the command/shell prompt.
+# Each platform has a different name for the library(s).
+# The binary packagers for Mac OS X and Windows will copy these plugins
+# into a standalone location to be included in the installer and, in the case of Mac OS X,
+# will fixup the references to point to libraries inside the app bundle.
+# Note: not really required for Linux since the binary installer will use the
+# Debian/RPM package manager to install Qt (and its plugins) on the target machine.
+set(GPLATES_QT_PLUGINS_MACOSX 
+	"imageformats/libqjpeg.dylib"
+	)
+set(GPLATES_QT_PLUGINS_WIN32 
+	"imageformats/qjpeg4.dll"
+	)
+set(GPLATES_QT_PLUGINS_LINUX 
+	"imageformats/libqjpeg.so"
+	)
+
+# Extra files/directories that should be included with the binary installer.
+# Paths must be full paths (eg, '~/sample-data' is ok but '../sample-data' is not).
+# NOTE: each file/directory listed should have its own double quotes as this is a list variable.
+# NOTE: it's better to override this in 'cmake/ConfigUser.cmake' instead of changing it here
+# to make sure this change does not inadvertently get checked into source code control.
+set(GPLATES_BINARY_INSTALL_EXTRAS "")
+
+# Set to 'true' if this is a public code release (to non-developers).
 # Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
 set(GPLATES_PUBLIC_RELEASE false)
@@ -62,6 +131,14 @@ IF(NOT CMAKE_CONFIGURATION_TYPES)
           FORCE)
     ENDIF(NOT CMAKE_BUILD_TYPE)
 ENDIF(NOT CMAKE_CONFIGURATION_TYPES)
+
+# The location of the GPlates executable is placed here when it is built (but not installed).
+# Note that this is different from the "RUNTIME DESTINATION" in the "install" command which specifies
+# the suffix path of where the installed executable goes (versus the built executable).
+# This variable is not advised for cmake 2.6 and above since it doesn't provide as fine grained control
+# as the new RUNTIME_OUTPUT_DIRECTORY, ARCHIVE_OUTPUT_DIRECTORY and LIBRARY_OUTPUT_DIRECTORY but it's
+# fine for our use (a single executable and no libraries).
+SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 
 # Turn this on if you want to...
 #	Unix: see compiler commands echoed to console and messages about make entering and leaving directories.

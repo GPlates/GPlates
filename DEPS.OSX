@@ -1,24 +1,26 @@
-Dependencies For Mac OSX
+Dependencies For Mac OS X
 
 Table of Contents
 
  1. Introduction
  2. Program and library dependencies
  3. Corresponding package dependencies
- 4. Installing dependencies using Macports
+ 4. Installing OpenGL
+ 5. Overview of different ways to install non-system dependencies
+ 6. Installing non-system dependencies using Macports
 
 Introduction
 
 This page lists the package dependencies which need to be satisfied to be able
-to build GPlates from source on Mac OSX.
+to build GPlates from source on Mac OS X.
 
 Program and library dependencies
 
 To compile GPlates, you will need the following programs and libraries
 installed:
 
-  • cmake
-  • g++ 4.x
+  • cmake (2.4.8 or newer)
+  • g++ 4.x (see "BUILD.OSX" for instructions on how to install g++)
   • make
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
@@ -30,7 +32,7 @@ installed:
 Corresponding package dependencies
 
 This subsection provides more specific information on resolving the program and
-library dependencies on Mac OSX 10.4 and 10.5 system.
+library dependencies on Mac OS X 10.4 and 10.5 systems.
 
 Program/library Corresponding Macports packages
 cmake           cmake
@@ -39,17 +41,50 @@ Boost           boost
 Qt              qt4-mac
 GDAL            gdal
 
-There are multiple ways to install dependencies.
+Installing OpenGL
+
+The OpenGL libraries (GL and GLU) should already exist on your machine.
+However in some cases this is not so. If they don't exist you'll get error messages
+about missing "gl.h" or "glu.h" header files when compiling GPlates.
+To ensure that they do exist you'll need to obtain a copy of the install disc used to
+install Mac OS X on your computer. If you don't have this then you can download the
+XCode development tools free of charge from http://developer.apple.com/technology/tools.html
+(a login is required). Once you have the XCode disc image locate the OpenGLDSK.pkg (it should
+be located in the "Packages" directory) and install it.
+Note that a Mac OS X 10.5 install disc will not work on a computer with a 10.4 version of Mac OS X.
+You should only need to install "OpenGLSDK.pkg" if you get compile errors abouting missing
+"gl.h" or "glu.h" headers when compiling GPlates.
+
+Overview of different ways to install non-system dependencies
+
+There are multiple ways to install the remaining dependencies.
 You can use Fink (http://www.finkproject.org/) or Macports (http://www.macports.org).
-Or you can compile dependencies directly from source code.
+Or you can compile the dependent packages directly from source code.
+Or you can install the dependent packages using precompiled installer packages where available.
+
+In fact Christian Heine has written a great document titled
+"Building GPlates from source on Mac OS X without package managers" dated 26th February 2009.
+A link to that document should be available soon at http://www.gplates.org. In that document he
+lists several websites where you can download GPlates dependencies as precompiled binaries in
+the form of installer packages. These are certainly a better alternative to Macports or Fink
+because the installation requires no compilation of source code and hence is much quicker to install.
+Some of the slower Mac laptops can take hours to build GPlates and all its dependencies.
+I'll list the install package locations mentioned in that document here also:
+  • GDAL (and its dependencies): "http://www.kyngchaos.com/software:frameworks".
+  • Qt: "http://www.qtsoftware.com/downloads/opensource/appdev/mac-os-cpp".
+    Look for "qt-mac-opensource-4.4.3.dmg".
+  • CMake: "http://www.cmake.org/cmake/resources/software.html".
+    Look for "cmake-2.6.3-Darwin-universal.dmg".
+	It is only for Tiger (10.4) but apparently also works on Leopard (10.5).
+It is recommended that you use the installer packages over Macports or Fink where possible.
+
+Installing non-system dependencies using Macports
 
 Here we briefly describe how to install dependencies using Macports (http://www.macports.org).
-
-Installing dependencies using Macports
-  • Ensure g++ is installed (we've tested g++ 4.0.0 on OSX 10.4 and g++ 4.0.1 on OSX 10.5).
-    It appears to be installed by default.
+For each dependency mentioned below it is recommended to use an installer package listed above
+instead if one exists (ie, for GDAL, Qt and CMake).
   • Install Macports (http://www.macports.org).
-  • Start a new terminal window.
+  • Start a new terminal window (by running Applications->Utilities->Terminal in Finder).
   • You may need to set the path to Macports with "export PATH=/opt/local/bin:/opt/local/sbin:$PATH".
   • If you are behind a proxy server you may need to set the "http_proxy" and "FTP_PROXY" shell variables.
     For example, "export http_proxy=http://www-cache.usyd.edu.au:8080".
@@ -57,13 +92,16 @@ Installing dependencies using Macports
     If this doesn't work then you'll need to download the 'ports.tar.gz' tarball by following the
     instructions in http://trac.macports.org/wiki/howto/PortTreeTarball.
     Thanks to Jo Whittaker for pointing this out.
-  • Install CMake with 'sudo port install cmake' if you don't have CMake.
-  • Install Qt4 with 'sudo port install qt4-mac' if you don't have Qt4. There is also an installer
-    at ftp://ftp.trolltech.com/qt/source/qt-mac-opensource-4.4.3.dmg that is easier than using
+  • Install CMake with 'sudo port install cmake' if you don't have CMake. Note that the installer
+    at "http://www.cmake.org/files/v2.6/cmake-2.6.3-Darwin-universal.dmg" is easier than using Macports.
+  • Install Qt4 with 'sudo port install qt4-mac' if you don't have Qt4. Note that the installer
+    at "ftp://ftp.trolltech.com/qt/source/qt-mac-opensource-4.4.3.dmg" is easier than using
     Macports due to the large number of software dependencies required by Qt4.
   • Install Boost with 'sudo port install boost' if you don't have Boost.
   • Install ICU with 'sudo port install icu' if you don't have ICU.
-  • Install GDAL with 'sudo port install gdal' if you don't have GDAL.
+  • Install GDAL with 'sudo port install gdal' if you don't have GDAL. Note that the installers
+    at "http://www.kyngchaos.com/software:frameworks" are easier than using
+    Macports due to the large number of software dependencies required by GDAL.
   • If 'port install' appears to hang when fetching the port tarball try manually downloading the
     tarball from http://distfiles.macports.org/<portname>/ and copy it to
     ${prefix}/var/macports/distfiles/<portname>/ where 'prefix' is most likely '/opt/local'.

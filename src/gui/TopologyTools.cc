@@ -2755,9 +2755,9 @@ bool
 GPlatesGui::TopologyTools::should_reverse_section(
 		int curr_section_index)
 {
-	GPlatesGlobal::Assert(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			curr_section_index < boost::numeric_cast<int>(d_section_ranges_into_topology_vertices.size()),
-			GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+			GPLATES_ASSERTION_SOURCE);
 
 	// If there's less than two sections in topology then we have no
 	// way to determine if the section should be reversed.

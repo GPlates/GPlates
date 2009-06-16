@@ -68,27 +68,9 @@ GPlatesGlobal::Exception::write_string_message(
 void
 GPlatesGlobal::Exception::generate_call_stack_trace_string()
 {
-	GPlatesUtils::CallStack &call_stack = GPlatesUtils::CallStack::instance();
-
 	std::ostringstream output_string_stream;
 
-	output_string_stream << "Call stack trace:" << std::endl;
-
-	GPlatesUtils::CallStack::trace_const_iterator trace_iter;
-	for (trace_iter = call_stack.call_stack_begin();
-		trace_iter != call_stack.call_stack_end();
-		++trace_iter)
-	{
-		const GPlatesUtils::CallStack::Trace &trace = *trace_iter;
-
-		output_string_stream
-				<< '('
-				<< trace.get_filename()
-				<< ", "
-				<< trace.get_line_num()
-				<< ')'
-				<< std::endl;
-	}
+	GPlatesUtils::CallStack::instance().write_call_stack_trace(output_string_stream);
 
 	d_call_stack_trace_string = output_string_stream.str();
 }

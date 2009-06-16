@@ -79,9 +79,11 @@ namespace GPlatesViewOperations
 		const GPlatesGui::Colour DEFAULT_COLOUR = GPlatesGui::Colour::get_white();
 
 		/**
-		 * Determines the default size of an arrowhead relative to the arrow line.
+		 * Determines the default size of an arrowhead relative to the globe radius
+		 * when the globe fills the viewport window.
+		 * This is a view-dependent scalar.
 		 */
-		const float DEFAULT_RATIO_SIZE_ARROWHEAD_TO_ARROWLINE = 1 / 3.0f;
+		const float DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS = 0.03f;
 	}
 
 	/**
@@ -168,8 +170,10 @@ namespace GPlatesViewOperations
 	 * distance 0.1 * 0.5 = 0.05 multiplied by the globe's radius when the globe is zoomed
 	 * such that it fits the viewport window.
 	 *
-	 * The ratio of arrowhead size to arrow line length remains constant such that longer arrows
-	 * have proportionately larger arrowheads.
+	 * In a similar manner the projected size of the arrowhead remains constant with zoom
+	 * except when the arrowhead size becomes greater than half the arrow length in which
+	 * scaling changes such that the arrow head is always half the arrow length - this
+	 * makes the arrowhead size scale to zero with the arrow length.
 	 * And tiny arrows have tiny arrowheads that may not even be visible (if smaller than a pixel).
 	 *
 	 * @param start the start position of the arrow.
@@ -179,8 +183,9 @@ namespace GPlatesViewOperations
 	 *        known how the user has already scaled @a arrow_direction which is dependent
 	 *        on the user's calculations (something this interface should not know about).
 	 * @param colour is the colour of the arrow (body and head).
+	 * @param ratio_arrowhead_size_to_globe_radius the size of the arrowhead relative to the
+	          globe radius when the globe fills the viewport window (this is a view-dependent scalar).
 	 * @param arrowline_width_hint width of line (or body) of arrow.
-	 * @param ratio_size_arrowhead_to_arrowline the size of the arrowhead relative to the arrow line.
 	 */
 	RenderedGeometry
 	create_rendered_direction_arrow(
@@ -189,10 +194,10 @@ namespace GPlatesViewOperations
 			const float ratio_unit_vector_direction_to_globe_radius,
 			const GPlatesGui::Colour &colour =
 					RenderedGeometryFactory::DEFAULT_COLOUR,
+			const float ratio_arrowhead_size_to_globe_radius =
+					RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
 			const float arrowline_width_hint =
-					RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT,
- 			/*const*/ float ratio_size_arrowhead_to_arrowline =
-					RenderedGeometryFactory::DEFAULT_RATIO_SIZE_ARROWHEAD_TO_ARROWLINE);
+					RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
 	/**
 	 * Creates a dashed polyline from the specified @a PolylineOnSphere.

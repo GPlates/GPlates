@@ -38,7 +38,6 @@ GPlatesModel::FeatureHandle::~FeatureHandle()
 {
 	weak_observer_unsubscribe_forward(d_first_const_weak_observer);
 	weak_observer_unsubscribe_forward(d_first_weak_observer);
-	std::cout << "Destroying FeatureHandle" << std::endl;
 }
 
 

@@ -23,6 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>	// std::transform
+#include <cstdlib>	// getenv()
+#include <locale>
+#include <string>
+#include <boost/bind.hpp>
 #include <QDebug>
 
 #include "GPlatesQtMsgHandler.h"
@@ -61,6 +66,12 @@ void
 GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler(
 		const QString &log_filename)
 {
+	// Determine if we should even install the message handler.
+	if (!should_install_message_handler())
+	{
+		return;
+	}
+
 	s_log_filename = log_filename;
 
 	// Create the singleton instance now so that the log file gets cleared.
@@ -87,6 +98,47 @@ GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler(
 }
 
 
+bool
+GPlatesGui::GPlatesQtMsgHandler::should_install_message_handler()
+{
+	/*
+	 * Overrides default Qt message handler if this source code is being released
+	 * to the public or if the GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment
+	 * variable is set (useful for developers who want to switch to log file output).
+	 * The message handler determines what happens when qDebug(), qWarning(),
+	 * qCritical() and qFatal() are called.
+	 */
+
+#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system.
+
+	return true;
+
+#else
+
+	const char *override_qt_message_handler = std::getenv(
+			"GPLATES_OVERRIDE_QT_MESSAGE_HANDLER");
+	if (override_qt_message_handler != NULL)
+	{
+		std::string override_value(override_qt_message_handler);
+
+		// Convert to lower case.
+		const std::locale loc("C");
+		std::transform(override_value.begin(), override_value.end(), override_value.begin(),
+				bind(&std::tolower<std::string::value_type>, _1, boost::cref(loc)));
+
+		if (override_value == "1" || override_value == "true" ||
+				override_value == "yes" || override_value == "on")
+		{
+			return true;
+		}
+	}
+
+	return false;
+
+#endif
+}
+
+
 void
 GPlatesGui::GPlatesQtMsgHandler::qt_message_handler(
 		QtMsgType msg_type,
@@ -109,9 +161,11 @@ GPlatesGui::GPlatesQtMsgHandler::handle_qt_message(
 {
     switch (msg_type)
 	{
-#if 0 // Don't print debug messages - there's too many - and they are not useful to the user.
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system.
+	// Only print debug messages if we're not releasing to the public.
+	// Otherwise they are not useful to the user.
     case QtDebugMsg:
-		d_log_stream << "Debug: " << msg << endl;
+		*d_log_stream << "Debug: " << msg << endl;
         break;
 #endif
 

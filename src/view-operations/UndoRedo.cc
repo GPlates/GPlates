@@ -312,8 +312,9 @@ d_command_id_factory(new UndoRedoInternal::CommandIdFactory())
 	// Create default undo stack and make it active.
 	const UndoStackHandle default_stack_handle = create_undo_stack();
 
-	GPlatesGlobal::Assert(default_stack_handle == DEFAULT_UNDO_STACK_HANDLE,
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			default_stack_handle == DEFAULT_UNDO_STACK_HANDLE,
+			GPLATES_ASSERTION_SOURCE);
 
 	set_active_undo_stack(default_stack_handle);
 
@@ -350,9 +351,10 @@ void
 GPlatesViewOperations::UndoRedo::set_active_undo_stack(
 		UndoStackHandle undo_stack_handle )
 {
-	GPlatesGlobal::Assert(
-		boost::numeric_cast<undo_stack_ptr_seq_type::size_type>(undo_stack_handle) < d_undo_stack_seq.size(),
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			boost::numeric_cast<undo_stack_ptr_seq_type::size_type>(undo_stack_handle) <
+					d_undo_stack_seq.size(),
+			GPLATES_ASSERTION_SOURCE);
 
 	d_active_stack_handle = undo_stack_handle;
 	d_undo_stack_seq[d_active_stack_handle]->setActive(true);
@@ -374,8 +376,9 @@ GPlatesViewOperations::UndoRedo::begin_unique_command_id_scope()
 void
 GPlatesViewOperations::UndoRedo::end_unique_command_id_scope()
 {
-	GPlatesGlobal::Assert(!d_unique_command_id_scope_stack.empty(),
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+		!d_unique_command_id_scope_stack.empty(),
+		GPLATES_ASSERTION_SOURCE);
 
 	d_unique_command_id_scope_stack.pop();
 }
@@ -383,8 +386,9 @@ GPlatesViewOperations::UndoRedo::end_unique_command_id_scope()
 GPlatesViewOperations::UndoRedo::CommandId
 GPlatesViewOperations::UndoRedo::get_unique_command_id_scope() const
 {
-	GPlatesGlobal::Assert(!d_unique_command_id_scope_stack.empty(),
-		GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_unique_command_id_scope_stack.empty(),
+			GPLATES_ASSERTION_SOURCE);
 
 	return d_unique_command_id_scope_stack.top();
 }

@@ -47,11 +47,12 @@ namespace GPlatesGui
 		static const QString DEFAULT_LOG_FILENAME;
 
 		/**
-		 * Uses @a qInstallMsgHandler to install_qt_message_handler this class as a Qt message handler.
-		 * WARNING: installing this handler removes the default Qt handler and since this
-		 * handler only outputs to a log file the qDebug(), etc messages will not get output
-		 * to their default locations (eg, the console window). As a result only install this
-		 * handler when releasing GPlates to the public (ie, non-developers).
+		 * Uses @a qInstallMsgHandler to @a install_qt_message_handler as the sole Qt message handler.
+		 * NOTE: only installs handler if any of the following conditions are satisfied:
+		 *   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
+		 *   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
+		 *      "true", "1", "yes" or "on".
+		 * If handler is not installed then default Qt handler applies.
 		 * This handler is uninstalled when its singleton instance is destroyed
 		 * at application exit (and the previous handler is reinstalled).
 		 */
@@ -118,6 +119,13 @@ namespace GPlatesGui
 		handle_qt_message(
 				QtMsgType msg_type,
 				const char * msg);
+
+		/**
+		 * Returns true if should install message handler.
+		 */
+		static
+		bool
+		should_install_message_handler();
 	};
 }
 

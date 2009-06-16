@@ -1751,6 +1751,29 @@ GPlatesQtWidgets::ViewportWindow::deactivate_loaded_file(
 		d_plate_velocities_hook->unload_feature_collection(feature_collection);
 	}
 
+	// FIXME: This is a temporary hack to stop highlighting the focused feature if
+	// it's in the feature collection we're about to unload.
+	if (d_feature_focus.is_valid() && loaded_file->get_feature_collection())
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+				*loaded_file->get_feature_collection();
+
+		GPlatesModel::FeatureHandle::weak_ref focused_feature = d_feature_focus.focused_feature();
+
+		GPlatesModel::FeatureCollectionHandle::features_iterator feature_iter;
+		for (feature_iter = feature_collection->features_begin();
+			feature_iter != feature_collection->features_end();
+			++feature_iter)
+		{
+			if (feature_iter.is_valid() &&
+				(*feature_iter).get() == focused_feature.handle_ptr())
+			{
+				d_feature_focus.unset_focus();
+				break;
+			}
+		}
+	}
+
 	// FIXME:  This should not happen here -- in fact, it should be removal of the loaded file
 	// (using 'remove_loaded_file' in ApplicationState) which triggers *this*! -- but until we
 	// have multiple view windows, it doesn't matter.
@@ -1758,6 +1781,10 @@ GPlatesQtWidgets::ViewportWindow::deactivate_loaded_file(
 
 	// Update the shapefile-attribute viewer dialog, which needs to know which files are loaded.
 	d_shapefile_attribute_viewer_dialog.update();
+
+	// FIXME: Force a reconstruction so that any unloaded features will be refreshed
+	// and will disappear if they've been unloaded.
+	reconstruct();
 }
 
 
