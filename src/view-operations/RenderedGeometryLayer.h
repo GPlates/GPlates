@@ -231,6 +231,12 @@ namespace GPlatesViewOperations
 		rendered_geometry_layer_impl_ptr_type d_impl;
 		bool d_is_active;
 	};
+
+
+	bool
+	operator==(
+			const RenderedGeometryLayer::RenderedGeometryIterator &lhs,
+			const RenderedGeometryLayer::RenderedGeometryIterator &rhs);
 }
 
 #endif // GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYLAYER_H
