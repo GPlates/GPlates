@@ -488,8 +488,9 @@ namespace
 
 				// The previous call should've added a ProfileLink to our parent profiles.
 				p = d_parent_profiles.find(parent_node);
-				GPlatesGlobal::Assert(p != d_parent_profiles.end(),
-						GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						p != d_parent_profiles.end(),
+						GPLATES_ASSERTION_SOURCE);
 			}
 
 			d_most_recent_parent_link = p->second.get();
@@ -611,8 +612,9 @@ namespace
 			// Create a ProfileNode for 'profile_name'.
 			std::pair<profile_node_map_type::iterator,bool> p = d_profile_node_map.insert(
 				profile_node_map_type::value_type(profile_name, ProfileNode(profile_name)) );
-			GPlatesGlobal::Assert(p.second,
-				GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					p.second,
+					GPLATES_ASSERTION_SOURCE);
 			profile_node = p.first;
 		}
 		return profile_node->second;
@@ -777,8 +779,9 @@ namespace
 	{
 		// Pop the current profile run off the stack - it should correspond
 		// to 'profile_node'.
-		GPlatesGlobal::Assert(!d_profile_run_stack.empty(),
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!d_profile_run_stack.empty(),
+				GPLATES_ASSERTION_SOURCE);
 		ProfileRun current_run = d_profile_run_stack.top();
 		d_profile_run_stack.pop();
 
@@ -789,7 +792,7 @@ namespace
 		{
 			std::cerr << "Profiler encountered too many PROFILE_END calls - "
 					"number of PROFILE_BEGIN and PROFILE_END calls must match." << std::endl;
-			throw GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__);
+			throw GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE);
 		}
 
 		// Stop the current profile run.
@@ -1318,7 +1321,7 @@ namespace
 				const ticks_t ticks_per_get_ticks_call = convert_seconds_to_ticks(
 						seconds_per_get_ticks_call);
 
-				std::cout << "accuracy = " << seconds_per_get_ticks_call << std::endl;
+				//std::cout << "accuracy = " << seconds_per_get_ticks_call << std::endl;
 				// Timing seems about right so return result.
 				return ticks_per_get_ticks_call;
 			}
@@ -1392,7 +1395,7 @@ namespace GPlatesUtils
 			std::cerr << "Profiler encountered too many PROFILE_BEGIN calls - "
 					"number of PROFILE_BEGIN and PROFILE_END calls must match." << std::endl;
 			std::cerr << "...Or PROFILE_REPORT called when profiles are still running." << std::endl;
-			throw GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__);
+			throw GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE);
 		}
 
 		const ProfileGraph &profile_graph = ProfileManager::instance().get_profile_graph();

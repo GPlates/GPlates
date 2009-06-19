@@ -32,6 +32,8 @@ set(srcs
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
+    Profile.cc
+    Profile.h
     ReferenceCount.h
     SmartNodeLinkedList.h
     SmartNodeLinkedList_test.cc
@@ -56,10 +58,9 @@ set(srcs
 # use the nasty hack of turning off shadow warnings just for this source file.
 # 'COMPILE_FLAGS' just adds to the default compiler flags.
 # TODO: find a better way of doing this sort of thing.
-# JC: I am commenting this block below out so things will compile; see changeset 6066.
-##if (CMAKE_COMPILER_IS_GNUCXX)
-##	set_source_files_properties(Profile.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
-##endif (CMAKE_COMPILER_IS_GNUCXX)
+if (CMAKE_COMPILER_IS_GNUCXX)
+	set_source_files_properties(Profile.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
+endif (CMAKE_COMPILER_IS_GNUCXX)
 
 
 set(target_name utils)
