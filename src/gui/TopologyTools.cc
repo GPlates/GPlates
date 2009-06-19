@@ -1337,7 +1337,7 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 				*d_topology_geometry_opt_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 		d_topology_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
@@ -1362,7 +1362,7 @@ GPlatesGui::TopologyTools::draw_insertion_neighbors()
 				*d_feature_before_insert_opt_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 		d_insertion_neighbors_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
@@ -1378,7 +1378,7 @@ GPlatesGui::TopologyTools::draw_insertion_neighbors()
 				*d_feature_after_insert_opt_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 		d_insertion_neighbors_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
@@ -1446,7 +1446,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry_end_points()
 					geom_on_sphere_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 			// Add to layer.
 			d_focused_feature_layer_ptr->add_rendered_geometry(rendered_geometry);
@@ -1472,7 +1472,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry_end_points()
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::LARGE_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 			// Add to layer.
 			d_focused_feature_layer_ptr->add_rendered_geometry(rendered_geometry);
@@ -1504,7 +1504,7 @@ GPlatesGui::TopologyTools::draw_segments()
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 			d_segments_layer_ptr->add_rendered_geometry(rendered_geometry);
 		}
@@ -1540,7 +1540,7 @@ GPlatesGui::TopologyTools::draw_end_points()
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 			// Add to layer.
 			d_end_points_layer_ptr->add_rendered_geometry(rendered_geometry);
@@ -1566,7 +1566,7 @@ GPlatesGui::TopologyTools::draw_end_points()
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 			// Add to layer.
 			d_end_points_layer_ptr->add_rendered_geometry(rendered_geometry);
@@ -1603,7 +1603,7 @@ GPlatesGui::TopologyTools::draw_intersection_points()
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 			d_intersection_points_layer_ptr->add_rendered_geometry(rendered_geometry);
 		}
@@ -1638,7 +1638,7 @@ GPlatesGui::TopologyTools::draw_click_point()
 				pos_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
 		d_click_points_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
