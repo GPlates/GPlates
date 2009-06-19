@@ -30,6 +30,7 @@
 #include <vector>
 #include <utility>
 #include <QDir>
+#include <QDebug>
 #include <QFile>
 #include <QtCore/QUuid>
 #include <QtGlobal> 
@@ -47,6 +48,7 @@
 #include "utils/XmlNamespaces.h"
 
 #include "property-values/Enumeration.h"
+#include "property-values/GmlDataBlock.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -70,6 +72,10 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTopologicalPolygon.h"
+#include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/TemplateTypeParameterType.h"
@@ -271,6 +277,173 @@ namespace
 
 			xml_output.writeEndElement();  // </gml:pos>
 		xml_output.writeEndElement();  // </gml:Point>
+	}
+
+
+	/**
+	 * Convenience function to help write the value-object templates in the value-component
+	 * properties in the composite-value in GmlDataBlock.
+	 */
+	void
+	write_gml_data_block_value_component_value_object_template(
+			GPlatesFileIO::XmlWriter &xml_output,
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type
+					coordinate_list)
+	{
+		xml_output.writeStartGmlElement("valueComponent");
+
+		// Write a template of the value-object.
+
+		// To understand what's happening in the next line, observe that
+		// 'XmlWriter::writeStartElement' is a template function which has a template
+		// parameter type 'SingletonType', which is the 'SingletonType' template type
+		// parameter of QualifiedXmlName.  Thus, the template function overloads for
+		// different template instantiations of QualifiedXmlName.
+		xml_output.writeStartElement(coordinate_list->value_object_type());
+
+		// Now follow up with the attributes for the element.  Note that to write XML
+		// element attributes using QXmlStreamWriter, you follow an invocation of
+		// 'QXmlStreamWriter::writeStartElement' immediately by an invocation of
+		// 'QXmlStreamWriter::writeAttribute' before any content is written.
+		// ( http://doc.trolltech.com/4.3/qxmlstreamwriter.html#writeAttribute )
+		xml_output.writeAttributes(
+				coordinate_list->value_object_xml_attributes().begin(),
+				coordinate_list->value_object_xml_attributes().end());
+
+		static const QString t("template");
+		xml_output.writeText(t);
+
+		// Now close the XML element tag of the value-object.
+		xml_output.writeEndElement();
+
+		xml_output.writeEndElement(); // </gml:valueComponent>
+	}
+
+
+	/**
+	 * Convenience function to help write the tuple-list in GmlDataBlock.
+	 *
+	 * It's assumed that this function won't be called with an empty tuple list (ie, it's
+	 * assumed that @a tuple_list_begin will never equal @a tuple_list_end).  It's also assumed
+	 * that the vector passed into the function as @a coordinates_iterator_ranges is empty when
+	 * it's passed into the function.  It's also assumed that the template parameter type
+	 * @a TupleListIter is a forward iterator.
+	 */
+	template<typename CoordinatesIter, typename TupleListIter>
+	void
+	populate_coordinates_iterator_ranges(
+			std::vector< std::pair<CoordinatesIter, CoordinatesIter> >
+					&coordinates_iterator_ranges,
+			TupleListIter tuple_list_begin,
+			TupleListIter tuple_list_end)
+	{
+		coordinates_iterator_ranges.reserve(std::distance(tuple_list_begin, tuple_list_end));
+
+		TupleListIter tuple_list_iter = tuple_list_begin;
+		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter) {
+			coordinates_iterator_ranges.push_back(std::make_pair(
+						(*tuple_list_iter)->coordinates_begin(),
+						(*tuple_list_iter)->coordinates_end()));
+		}
+	}
+
+
+	/**
+	 * Convenience function to help write the tuple-list in GmlDataBlock.
+	 *
+	 * It's assumed that this function won't be called with an empty tuple list (ie, it's
+	 * assumed that @a ranges_begin will never equal @a ranges_end).  It's also assumed that
+	 * the template parameter type @a RangesIter is a forward iterator which dereferences to a
+	 * std::pair of iterators representing a half-open iterator range (i.e., [begin, end)).
+	 */
+	template<typename RangesIter>
+	void
+	write_tuple_list_from_coordinates_iterator_ranges(
+			GPlatesFileIO::XmlWriter &xml_output,
+			RangesIter ranges_begin,
+			RangesIter ranges_end)
+	{
+		static const QString comma(",");
+		static const QString space(" ");
+
+		// Assume that when you dereference the iterator, you get a std::pair of iterators
+		// representing a half-open iterator range (i.e., [begin, end)).
+		typedef typename std::iterator_traits<RangesIter>::value_type CoordinatesIteratorRange;
+
+		// Loop until we reach the end of any of the coordinate iterator ranges.
+		for ( ; ; ) {
+			RangesIter ranges_iter = ranges_begin;
+
+			// We need to put a comma between adjacent coordinates in the tuple but a
+			// space after the last coordinate in the tuple.  Hence, let's output the
+			// first coordinate outside the loop, then within the loop each iteration
+			// will be "write comma; write coordinate".
+			{
+				if (ranges_iter == ranges_end) {
+					// Something strange has happened: The tuple-list is empty!
+					// But we should already have handled this situation in the
+					// invoking function.
+					// FIXME:  Complain.
+					return;
+				}
+				CoordinatesIteratorRange &range = *ranges_iter;
+				if (range.first == range.second) {
+					// We've reached the end of this range.
+					return;
+				}
+				xml_output.writeDecimal(*(range.first++));
+			}
+
+			// Write the remaining coordinates in the tuple, preceded by commas.
+			for (++ranges_iter; ranges_iter != ranges_end; ++ranges_iter) {
+				CoordinatesIteratorRange &range = *ranges_iter;
+				if (range.first == range.second) {
+					// We've reached the end of this range.
+					// But why didn't we reach the end of the range for the
+					// first coordinate in the tuple?  This range must be
+					// shorter than the range for the first coordinate...?
+					// FIXME:  Complain.
+					return;
+				}
+				xml_output.writeText(comma);
+				xml_output.writeDecimal(*(range.first++));
+			}
+
+			// Now follow the coordinate tuple with a space.
+			xml_output.writeText(space);
+		}
+	}
+
+
+	/**
+	 * Convenience function to help write the tuple-list in GmlDataBlock.
+	 *
+	 * It's OK if this function is called with an empty tuple list (ie, if @a tuple_list_begin
+	 * equals @a tuple_list_end).  That situation will be handled gracefully within this
+	 * function (by returning immediately).
+	 */
+	void
+	write_gml_data_block_tuple_list(
+			GPlatesFileIO::XmlWriter &xml_output,
+			GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator tuple_list_begin,
+			GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator tuple_list_end)
+	{
+		typedef GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinate_list_type::const_iterator
+				coordinates_iterator;
+		typedef std::pair<coordinates_iterator, coordinates_iterator> coordinates_iterator_range;
+
+		// Handle the situation when the tuple-list is empty.
+		if (tuple_list_begin == tuple_list_end) {
+			// Nothing to output.
+			return;
+		}
+
+		std::vector<coordinates_iterator_range> coordinates_iterator_ranges;
+		populate_coordinates_iterator_ranges(coordinates_iterator_ranges,
+				tuple_list_begin, tuple_list_end);
+		write_tuple_list_from_coordinates_iterator_ranges(xml_output,
+				coordinates_iterator_ranges.begin(),
+				coordinates_iterator_ranges.end());
 	}
 
 
@@ -493,12 +666,46 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_top_level_property_inline(
 }
 
 
-
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_enumeration(
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {
 	d_output.writeText(enumeration.value().get());
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_data_block(
+		const GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+{
+	using namespace GPlatesPropertyValues;
+
+	d_output.writeStartGmlElement("DataBlock");
+
+	// First, output the <gml:CompositeValue> in the <gml:rangeParameters> (to mimic the
+	// example on p.251 of the GML book).
+	d_output.writeStartGmlElement("rangeParameters");
+	d_output.writeStartGmlElement("CompositeValue");
+
+	// Output each value-component in the composite-value.
+	// If the tuple-list is empty, the body of the for-loop will never be entered, so the
+	// <gml:CompositeValue> will be empty.
+	GmlDataBlock::tuple_list_type::const_iterator iter = gml_data_block.tuple_list_begin();
+	GmlDataBlock::tuple_list_type::const_iterator end = gml_data_block.tuple_list_end();
+	for ( ; iter != end; ++iter) {
+		write_gml_data_block_value_component_value_object_template(d_output, *iter);
+	}
+
+	d_output.writeEndElement(); // </gml:CompositeValue>
+	d_output.writeEndElement(); // </gml:rangeParameters>
+
+	// Now output the <gml:tupleList>.
+	d_output.writeStartGmlElement("tupleList");
+	write_gml_data_block_tuple_list(d_output, gml_data_block.tuple_list_begin(),
+			gml_data_block.tuple_list_end());
+	d_output.writeEndElement(); // </gml:tupleList>
+
+	d_output.writeEndElement(); // </gml:DataBlock>
 }
 
 
@@ -847,6 +1054,97 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_piecewise_aggregation(
 	d_output.writeEndElement();  // </gpml:IrregularSampling>
 }
 
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_polygon(
+	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+{
+	d_output.writeStartGpmlElement("TopologicalPolygon");
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator iter;
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator end;
+	iter = gpml_toplogical_polygon.sections().begin();
+	end = gpml_toplogical_polygon.sections().end();
+
+	for ( ; iter != end; ++iter) 
+	{
+		d_output.writeStartGpmlElement("section");
+		(*iter)->accept_visitor(*this);
+		d_output.writeEndElement();
+	}
+	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
+}
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_line_section(
+	const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+{  
+	d_output.writeStartGpmlElement("TopologicalLineSection");
+
+		d_output.writeStartGpmlElement("sourceGeometry");
+			// visit the delgate 
+			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+		d_output.writeEndElement();
+
+		// boost::optional<GpmlTopologicalIntersection>
+		if ( gpml_toplogical_line_section.get_start_intersection() )
+		{
+			d_output.writeStartGpmlElement("startIntersection");
+				gpml_toplogical_line_section.get_start_intersection()->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+
+		if ( gpml_toplogical_line_section.get_end_intersection() )
+		{
+			d_output.writeStartGpmlElement("endIntersection");
+				gpml_toplogical_line_section.get_end_intersection()->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+		
+		d_output.writeStartGpmlElement("reverseOrder");
+			d_output.writeBoolean( gpml_toplogical_line_section.get_reverse_order() );
+		d_output.writeEndElement();
+
+	d_output.writeEndElement();
+}
+
+
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_intersection(
+	const GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
+{
+	d_output.writeStartGpmlElement("TopologicalIntersection");
+
+		d_output.writeStartGpmlElement("intersectionGeometry");
+			// visit the delegate
+			gpml_toplogical_intersection.intersection_geometry()->accept_visitor(*this); 
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("referencePoint");
+			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
+					gpml_toplogical_intersection.reference_point();
+			visit_gml_point(*gml_point);
+		d_output.writeEndElement();
+
+		d_output.writeStartGpmlElement("referencePointPlateId");
+			// visit the delegate
+			gpml_toplogical_intersection.reference_point_plate_id()->accept_visitor(*this);
+		d_output.writeEndElement();
+
+	d_output.writeEndElement();
+}
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_point(
+	const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+{  
+	d_output.writeStartGpmlElement("TopologicalPoint");
+		d_output.writeStartGpmlElement("sourceGeometry");
+			// visit the delegate
+			( gpml_toplogical_point.get_source_geometry() )->accept_visitor(*this); 
+		d_output.writeEndElement();
+	d_output.writeEndElement();  
+}
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_hot_spot_trail_mark(

@@ -37,6 +37,7 @@
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class TopologySectionsContainer;
 }
 
 namespace GPlatesQtWidgets
@@ -46,6 +47,7 @@ namespace GPlatesQtWidgets
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
 	class ReconstructionPoleWidget;
+	class TopologyToolsWidget;
 }
 
 namespace GPlatesViewOperations
@@ -93,6 +95,8 @@ namespace GPlatesGui
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+				GPlatesGui::TopologySectionsContainer &topology_sections_container,
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		~GlobeCanvasToolChoice()
@@ -171,6 +175,18 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
 		}
 
+		void
+		choose_build_topology_tool()
+		{
+			change_tool_if_necessary(d_build_topology_tool_ptr);
+		}
+
+		void
+		choose_edit_topology_tool()
+		{
+			change_tool_if_necessary(d_edit_topology_tool_ptr);
+		}
+
 	private:
 		/**
 		 * This is the ReorientGlobe tool which the user may choose.
@@ -226,6 +242,16 @@ namespace GPlatesGui
 		 * This is the ManipulatePole tool which the user may choose.
 		 */
 		GlobeCanvasTool::non_null_ptr_type d_manipulate_pole_tool_ptr;
+
+		/**
+		 * This is the BuildTopology Canvas tool which the user may choose.
+		 */
+		GlobeCanvasTool::non_null_ptr_type d_build_topology_tool_ptr;
+
+		/**
+		 * This is the EditTopology Canvas tool which the user may choose.
+		 */
+		GlobeCanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
 
 		/**
 		 * The current choice of GlobeCanvasTool.

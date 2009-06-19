@@ -1,0 +1,194 @@
+<ui version="4.0" >
+ <class>TopologyToolsWidget</class>
+ <widget class="QWidget" name="TopologyToolsWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>362</width>
+    <height>573</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>TopologyToolsWidget</string>
+  </property>
+  <layout class="QVBoxLayout" >
+   <property name="spacing" >
+    <number>2</number>
+   </property>
+   <property name="leftMargin" >
+    <number>2</number>
+   </property>
+   <property name="topMargin" >
+    <number>2</number>
+   </property>
+   <property name="rightMargin" >
+    <number>2</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>2</number>
+   </property>
+   <item>
+    <widget class="QTabWidget" name="tabwidget_main" >
+     <property name="currentIndex" >
+      <number>1</number>
+     </property>
+     <widget class="QWidget" name="tab_topology" >
+      <attribute name="title" >
+       <string>Topolgy</string>
+      </attribute>
+      <layout class="QVBoxLayout" >
+       <item>
+        <widget class="QLabel" name="label_name" >
+         <property name="text" >
+          <string>Name</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="lineedit_name" />
+       </item>
+       <item>
+        <widget class="QLabel" name="label_plate_id" >
+         <property name="text" >
+          <string>Plate Id</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="lineedit_plate_id" />
+       </item>
+       <item>
+        <widget class="QLabel" name="label_valid_time" >
+         <property name="text" >
+          <string>Valid time:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" >
+         <property name="spacing" >
+          <number>4</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_from" >
+           <property name="font" >
+            <font>
+             <italic>true</italic>
+            </font>
+           </property>
+           <property name="text" >
+            <string> from</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineedit_time_of_appearance" >
+           <property name="readOnly" >
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_to" >
+           <property name="font" >
+            <font>
+             <italic>true</italic>
+            </font>
+           </property>
+           <property name="text" >
+            <string>to</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineedit_time_of_disappearance" >
+           <property name="readOnly" >
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_number_of_sections" >
+         <property name="text" >
+          <string>Number of Sections</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="lineedit_number_of_sections" />
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_remove_all_sections" >
+         <property name="text" >
+          <string>Remove All Sections</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_create" >
+         <property name="text" >
+          <string>Apply/Create...</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_section" >
+      <attribute name="title" >
+       <string>Section</string>
+      </attribute>
+      <layout class="QVBoxLayout" >
+       <property name="leftMargin" >
+        <number>4</number>
+       </property>
+       <property name="topMargin" >
+        <number>4</number>
+       </property>
+       <property name="rightMargin" >
+        <number>4</number>
+       </property>
+       <property name="bottomMargin" >
+        <number>4</number>
+       </property>
+       <item>
+        <widget class="QWidget" native="1" name="widget_feature_summary_placeholder" >
+         <property name="minimumSize" >
+          <size>
+           <width>10</width>
+           <height>10</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_add_feature" >
+         <property name="text" >
+          <string>Add Focused Feature</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer>
+         <property name="orientation" >
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" >
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

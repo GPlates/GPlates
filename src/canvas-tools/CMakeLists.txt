@@ -11,6 +11,8 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    BuildTopology.cc
+    BuildTopology.h
     CanvasToolType.h
     CommonClickGeometry.cc
     CommonClickGeometry.h
@@ -18,6 +20,8 @@ set(srcs
     CommonDigitiseGeometry.h
     CommonMoveVertex.cc
     CommonMoveVertex.h
+    EditTopology.cc
+    EditTopology.h
     GlobeClickGeometry.cc
     GlobeClickGeometry.h
     GlobeDeleteVertex.cc

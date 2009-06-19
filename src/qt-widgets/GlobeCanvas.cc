@@ -719,6 +719,7 @@ GPlatesQtWidgets::GlobeCanvas::clear_canvas(
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+// raster display
 void
 GPlatesQtWidgets::GlobeCanvas::toggle_raster_image()
 {
@@ -740,6 +741,119 @@ GPlatesQtWidgets::GlobeCanvas::disable_raster_display()
 	d_globe.disable_raster_display();
 	update_canvas();
 }
+
+
+// points display
+void
+GPlatesQtWidgets::GlobeCanvas::toggle_point_display()
+{
+	d_globe.toggle_point_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::enable_point_display()
+{
+	d_globe.enable_point_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::disable_point_display()
+{
+	d_globe.disable_point_display();
+	update_canvas();
+}
+
+// lines display 
+void
+GPlatesQtWidgets::GlobeCanvas::toggle_line_display()
+{
+	d_globe.toggle_line_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::enable_line_display()
+{
+	d_globe.enable_line_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::disable_line_display()
+{
+	d_globe.disable_line_display();
+	update_canvas();
+}
+
+// polygons display
+void
+GPlatesQtWidgets::GlobeCanvas::toggle_polygon_display()
+{
+	d_globe.toggle_polygon_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::enable_polygon_display()
+{
+	d_globe.enable_polygon_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::disable_polygon_display()
+{
+	d_globe.disable_polygon_display();
+	update_canvas();
+}
+
+// multipoint display
+void
+GPlatesQtWidgets::GlobeCanvas::toggle_multipoint_display()
+{
+	d_globe.toggle_multipoint_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::enable_multipoint_display()
+{
+	d_globe.enable_multipoint_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::disable_multipoint_display()
+{
+	d_globe.disable_multipoint_display();
+	update_canvas();
+}
+
+// arrow display
+void
+GPlatesQtWidgets::GlobeCanvas::toggle_arrows_display()
+{
+	d_globe.toggle_arrows_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::enable_arrows_display()
+{
+	d_globe.enable_arrows_display();
+	update_canvas();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::disable_arrows_display()
+{
+	d_globe.disable_arrows_display();
+	update_canvas();
+}
+
+
 
 #if 0
 void

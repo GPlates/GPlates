@@ -27,14 +27,7 @@
 #include "FeatureFocus.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructedFeatureGeometryFinder.h"
-
-
-void
-GPlatesGui::FeatureFocus::set_focus(
-		GPlatesModel::FeatureHandle::weak_ref new_feature_ref)
-{
-	set_focus(new_feature_ref, NULL);
-}
+#include "qt-widgets/ViewportWindow.h"		//ViewState.
 
 
 void
@@ -67,13 +60,50 @@ GPlatesGui::FeatureFocus::set_focus(
 
 	if (new_associated_rfg)
 	{
-		d_associated_geometry_property = new_associated_rfg->property();
+		d_associated_geometry_property_opt = new_associated_rfg->property();
 	}
 	else
 	{
-		d_associated_geometry_property = boost::none;
+		d_associated_geometry_property_opt = boost::none;
 	}
 
+	emit focus_changed(d_focused_feature, d_associated_rfg);
+}
+
+
+void
+GPlatesGui::FeatureFocus::set_focus(
+		GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
+		GPlatesModel::FeatureHandle::properties_iterator new_associated_property)
+{
+	if ( ! new_feature_ref.is_valid()) {
+		unset_focus();
+		return;
+	}
+	if (d_focused_feature == new_feature_ref &&
+		*d_associated_geometry_property_opt == new_associated_property)
+	{
+		// Avoid infinite signal/slot loops like the plague!
+		return;
+	}
+
+	d_focused_feature = new_feature_ref;
+	d_associated_rfg = NULL;
+	d_associated_geometry_property_opt = new_associated_property;
+	// As this set_focus() is being called without an RFG, but with a properties_iterator,
+	// we can assume that it is the TopologySectionsTable doing the calling. It doesn't
+	// know about RFGs, and shouldn't.
+	// However, the topology tools will want an RFG to be highlighted after the table gets
+	// clicked. The best place to do this lookup is here, rather than force the topology
+	// tools to do the lookup (which forces an additional focus event, which is unnecessary.)
+	find_new_associated_rfg(d_view_state_ptr->reconstruction());
+	// In this specific case, find_new_associated_rfg() should always handle the emitting of
+	// the focus_changed signal for us; we don't need to emit a second one.
+	// Note that changing the semantics of find_new_associated_rfg() just for this method
+	// wouldn't be a great idea, since it is also called in ViewportWindow after a new
+	// reconstruction is made.
+
+	// tell the rest of the application about the new focus
 	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
 
@@ -83,7 +113,7 @@ GPlatesGui::FeatureFocus::unset_focus()
 {
 	d_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
 	d_associated_rfg = NULL;
-	d_associated_geometry_property = boost::none;
+	d_associated_geometry_property_opt = boost::none;
 
 	emit focus_changed(d_focused_feature, d_associated_rfg);
 }
@@ -118,7 +148,7 @@ GPlatesGui::FeatureFocus::find_new_associated_rfg(
 
 		// Look at the new rfg's geometry property.
 		FeatureHandle::properties_iterator new_geometry_property = new_rfg->property();
-		if (new_geometry_property == *d_associated_geometry_property)
+		if (new_geometry_property == *d_associated_geometry_property_opt)
 		{
 			// We have a match!
 			d_associated_rfg = new_rfg;

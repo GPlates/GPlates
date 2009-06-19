@@ -28,6 +28,8 @@
 
 #include "GlobeRenderedGeometryLayerPainter.h"
 
+// FIXME: Remove all reference to Globe.
+#include "Globe.h"
 #include "NurbsRenderer.h"
 #include "OpenGL.h"
 
@@ -281,6 +283,9 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 {
+	// FIXME: remove globe hack.
+	if ( ! d_globe->d_show_point ) { return; }
+
 	if (d_draw_opaque_primitives)
 	{
 		return;
@@ -298,6 +303,9 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sphere(
 		const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 {
+	// FIXME: remove globe hack.
+	if ( ! d_globe->d_show_multipoint ) { return; }
+
 	if (d_draw_opaque_primitives)
 	{
 		return;
@@ -319,6 +327,9 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 		const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
+	// FIXME: remove globe hack.
+	if ( !d_globe->d_show_line ) { return; }
+
 	if (d_draw_opaque_primitives)
 	{
 		return;
@@ -341,6 +352,9 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
+	// FIXME: remove globe hack.
+	if ( ! d_globe->d_show_polygon ) { return; }
+
 	if (d_draw_opaque_primitives)
 	{
 		return;
@@ -364,6 +378,9 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 		const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow)
 {
+	// FIXME: remove globe hack.
+	if ( ! d_globe->d_show_arrows ) { return; }
+
 	const GPlatesMaths::Vector3D start(
 			rendered_direction_arrow.get_start_position().position_vector());
 

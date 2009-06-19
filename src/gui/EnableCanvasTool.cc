@@ -70,6 +70,7 @@ GPlatesGui::EnableCanvasTool::initialise()
 	d_viewport_window->enable_digitise_polyline_tool(true);
 	d_viewport_window->enable_digitise_multipoint_tool(true);
 	d_viewport_window->enable_digitise_polygon_tool(true);
+	d_viewport_window->enable_build_topology_tool(true);
 }
 
 void
@@ -157,6 +158,8 @@ GPlatesGui::EnableCanvasTool::update()
 	update_insert_vertex_tool();
 	update_delete_vertex_tool();
 	update_manipulate_pole_tool();
+	update_build_topology_tool();
+	update_edit_topology_tool();
 }
 
 void
@@ -278,6 +281,35 @@ GPlatesGui::EnableCanvasTool::update_manipulate_pole_tool()
 	d_viewport_window->enable_manipulate_pole_tool(d_feature_geom_is_in_focus);
 }
 
+void
+GPlatesGui::EnableCanvasTool::update_build_topology_tool()
+{
+	// only enable tool if a feature is NOT focused
+	d_viewport_window->enable_build_topology_tool( !d_feature_geom_is_in_focus );
+}
+
+void
+GPlatesGui::EnableCanvasTool::update_edit_topology_tool()
+{
+	// check for focus
+	if ( d_feature_focus->is_valid() )
+	{
+		// Check feature type via qstrings
+		QString topology_type_name ("TopologicalClosedPlateBoundary");
+		QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+			d_feature_focus->focused_feature()->feature_type().get_name() );
+		// Only activate for topologies
+		if ( feature_type_name != topology_type_name )
+		{
+			d_viewport_window->enable_edit_topology_tool(false);
+			return;
+		}
+	}
+	// else enable tool if d_feature_geom_is_in_focus
+	d_viewport_window->enable_edit_topology_tool(d_feature_geom_is_in_focus);
+}
+
+
 boost::tuple<unsigned int, GPlatesViewOperations::GeometryType::Value>
 GPlatesGui::EnableCanvasTool::get_target_geometry_parameters_if_tool_chosen_next(
 		GPlatesCanvasTools::CanvasToolType::Value next_canvas_tool) const
@@ -309,3 +341,5 @@ GPlatesGui::EnableCanvasTool::get_target_geometry_parameters_if_tool_chosen_next
 
 	return boost::make_tuple(0, GPlatesViewOperations::GeometryType::NONE);
 }
+
+

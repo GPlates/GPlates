@@ -50,10 +50,19 @@ namespace GPlatesQtWidgets
 		
 	public:
 
+		/**
+		* What kinds of features to create 
+		*/ 
+		enum FeatureType
+		{
+			NORMAL, TOPOLOGICAL
+		};
+
 		explicit
 		CreateFeatureDialog(
 				GPlatesModel::ModelInterface &model_interface,
 				GPlatesQtWidgets::ViewportWindow &view_state_,
+				FeatureType creation_type,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -64,7 +73,15 @@ namespace GPlatesQtWidgets
 		bool
 		set_geometry_and_display(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_);
-	
+
+		bool
+		display();
+
+		GPlatesModel::FeatureHandle::weak_ref
+		get_feature_ref() {
+			return d_feature_ref;
+		}
+
 	signals:
 		
 		void
@@ -85,6 +102,12 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_create();
+
+		void
+		handle_create_and_save();
+
+		void
+		handle_create_topological();
 		
 	private:
 	
@@ -118,6 +141,11 @@ namespace GPlatesQtWidgets
 		ViewportWindow *d_view_state_ptr;
 
 		/**
+		* Type of feature to create 
+		*/
+		FeatureType d_creation_type;
+
+		/**
 		 * The geometry that is to be included with the feature.
 		 * Note that the coordinates may have to be moved to present-day, once we know
 		 * what plate ID the user wishes to assign to the feature.
@@ -148,6 +176,11 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt. This is a member so that we can enable and disable it as appropriate.
 		 */
 		QPushButton *d_button_create;
+
+		/**
+		* the newly created feature
+		*/
+		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 		
 	};
 }

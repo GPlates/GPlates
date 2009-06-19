@@ -37,6 +37,7 @@ namespace GPlatesPropertyValues
 	// Forward declarations for the member functions.
 	// Please keep these ordered alphabetically.
 	class Enumeration;
+	class GmlDataBlock;
 	class GmlLineString;
 	class GmlMultiPoint;
 	class GmlOrientableCurve;
@@ -59,6 +60,10 @@ namespace GPlatesPropertyValues
 	class GpmlPolarityChronId;
 	class GpmlPropertyDelegate;
 	class GpmlRevisionId;
+	class GpmlTopologicalPolygon;
+	class GpmlTopologicalLineSection;
+	class GpmlTopologicalIntersection;
+	class GpmlTopologicalPoint;
 	class UninterpretedPropertyValue;
 	class XsBoolean;
 	class XsDouble;
@@ -362,6 +367,11 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gml_data_block(
+				const GPlatesPropertyValues::GmlDataBlock &gml_data_block) {  }
+
+		virtual
+		void
 		visit_gml_line_string(
 				const GPlatesPropertyValues::GmlLineString &gml_line_string) {  }
 
@@ -471,6 +481,30 @@ namespace GPlatesModel
 		void
 		visit_gpml_revision_id(
 				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) {  }
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+				const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+		{  }
+
+		virtual
+		void
+		visit_gpml_topological_line_section(
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+		{  }
+
+		virtual
+		void
+		visit_gpml_topological_intersection(
+				const GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
+		{  }
+
+		virtual
+		void
+		visit_gpml_topological_point(
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+		{  }
 
 		virtual
 		void

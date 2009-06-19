@@ -28,12 +28,10 @@
 #ifndef GPLATES_MODEL_REVISIONID_H
 #define GPLATES_MODEL_REVISIONID_H
 
-#ifndef GPLATES_ICU_BOOL
-#define GPLATES_ICU_BOOL(b) ((b) != 0)
-#endif
-
 #include <unicode/unistr.h>
 #include "utils/UniqueId.h"
+
+#include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 
 
 namespace GPlatesModel {

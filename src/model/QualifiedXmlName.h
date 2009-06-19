@@ -31,13 +31,10 @@
 #include <QString>
 #include <boost/optional.hpp>
 #include "StringSetSingletons.h"
-#include "utils/UnicodeStringUtils.h"
+#include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 #include "utils/XmlNamespaces.h"
 
 
-#ifndef GPLATES_ICU_BOOL
-#define GPLATES_ICU_BOOL(b) ((b) != 0)
-#endif
 
 
 namespace GPlatesModel

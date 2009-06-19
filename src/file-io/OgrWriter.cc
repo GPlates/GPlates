@@ -779,4 +779,3 @@ GPlatesFileIO::OgrWriter::write_polygon_feature(
 	OGRFeature::DestroyFeature(ogr_feature);
 }
 
-

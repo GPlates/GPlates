@@ -51,6 +51,31 @@ namespace GPlatesGlobal
 	 * index_t has integral semantics, but is always non-negative.
 	 */
 	typedef unsigned int index_t;
+
+	/**
+	* Basic feature types.
+	* Almost all sub-sections of GPlates use the basic type info
+	* for control flow and optimization
+	*/
+	enum FeatureTypes
+	{
+		NONE_FEATURE,
+		POINT_FEATURE,
+		LINE_FEATURE,
+		POLYGON_FEATURE,
+		MULTIPOINT_FEATURE,
+		TOPOLOGY_FEATURE,
+		MESH_FEATURE,
+		GRID_FEATURE,
+		UNKNOWN_FEATURE
+	};
+
+	enum TopologyTypes
+	{
+		PLATEPOLYGON,
+		DEFORMING_ZONE,
+		UNKNOWN_TOPOLOGY
+	};
 }
 
 #endif  // _GPLATES_GLOBAL_TYPES_H_

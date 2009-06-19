@@ -32,6 +32,7 @@ set(srcs
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui
+    BuildTopologyWidgetUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
@@ -86,6 +87,7 @@ set(srcs
     EditTimePeriodWidget.cc
     EditTimePeriodWidget.h
     EditTimePeriodWidgetUi.ui
+    EditTopologyWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
@@ -188,6 +190,9 @@ set(srcs
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui
+    TopologyToolsWidget.cc
+    TopologyToolsWidget.h
+    TopologyToolsWidgetUi.ui
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui

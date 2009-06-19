@@ -11,6 +11,15 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    AppLogicUtils.cc
+    AppLogicUtils.h
+    PlateVelocities.cc
+    PlateVelocities.h
+    Reconstruct.cc
+    Reconstruct.h
+    ReconstructContext.cc
+    ReconstructContext.h
+    ReconstructHook.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
 )

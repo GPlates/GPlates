@@ -137,4 +137,10 @@ GPlatesGui::TopologySectionsContainer::clear()
 	emit insertion_point_moved(0);
 }
 
-
+void
+GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index( 
+		size_type index )
+{
+	// Emit signals.
+	emit focus_feature_at_index( index );
+}

@@ -40,6 +40,7 @@ namespace GPlatesViewOperations
 	class RenderedGeometryCollection;
 }
 
+
 namespace GPlatesGui
 {
 	/**

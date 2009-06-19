@@ -49,7 +49,17 @@ set(srcs
 )
 
 
-
+# We have a nasty case of a variable shadow warning in a boost
+# header "boost/pool/object_pool.hpp". Since it's a system header it should
+# not emit a warning but it does on g++ 4.1.2 and g++ 4.1.3 (only ones tested
+# so far). Luckily this header is only used by Profile.cc and so we can
+# use the nasty hack of turning off shadow warnings just for this source file.
+# 'COMPILE_FLAGS' just adds to the default compiler flags.
+# TODO: find a better way of doing this sort of thing.
+# JC: I am commenting this block below out so things will compile; see changeset 6066.
+##if (CMAKE_COMPILER_IS_GNUCXX)
+##	set_source_files_properties(Profile.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
+##endif (CMAKE_COMPILER_IS_GNUCXX)
 
 
 set(target_name utils)

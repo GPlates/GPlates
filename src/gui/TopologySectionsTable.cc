@@ -26,6 +26,7 @@
 #include <Qt>		// for Qt::Alignment, Qt::AlignmentFlag, Qt::ItemFlag
 #include <QHeaderView>
 #include <QVariant>
+#include <QDebug>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include "TopologySectionsTable.h"
@@ -61,6 +62,7 @@ namespace
 	resolve_feature_id(
 			GPlatesGui::TopologySectionsContainer::TableRow &entry)
 	{
+
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
 		entry.d_feature_id.find_back_ref_targets(
 				GPlatesModel::append_as_weak_refs(back_ref_targets));
@@ -258,25 +260,25 @@ namespace
 		{ QT_TR_NOOP("Reverse"), QT_TR_NOOP("Controls whether the coordinates of the section will be applied in natural or reverse order."),
 				60, QHeaderView::Fixed,
 				Qt::AlignCenter,
-				Qt::ItemIsEnabled | Qt::ItemIsUserCheckable,
+				Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable,
 				get_data_reversed_flag, set_data_reversed_flag },
 
 		{ QT_TR_NOOP("Feature type"), QT_TR_NOOP("The type of this feature"),
 				140, QHeaderView::ResizeToContents,
 				Qt::AlignLeft | Qt::AlignVCenter,
-				Qt::ItemIsEnabled,
+				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
 				get_data_feature_type, null_data_mutator },
 
 		{ QT_TR_NOOP("Plate ID"), QT_TR_NOOP("The plate ID used to reconstruct this feature"),
 				60,  QHeaderView::ResizeToContents,
 				Qt::AlignCenter,
-				Qt::ItemIsEnabled,
+				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
 				get_data_reconstruction_plate_id, null_data_mutator },
 
 		{ QT_TR_NOOP("Name"), QT_TR_NOOP("A convenient label for this feature"),
 				140, QHeaderView::ResizeToContents,
 				Qt::AlignLeft | Qt::AlignVCenter,
-				Qt::ItemIsEnabled,
+				Qt::ItemIsEnabled | Qt::ItemIsSelectable,
 				get_data_feature_name, null_data_mutator },
 	};
 	
@@ -372,7 +374,8 @@ namespace
 
 GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 		QTableWidget &table,
-		TopologySectionsContainer &container):
+		TopologySectionsContainer &container,
+		GPlatesGui::FeatureFocus &feature_focus):
 	d_table(&table),
 	d_container_ptr(&container),
 	d_action_box_row(-1),
@@ -380,7 +383,8 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	d_insert_above_action(new QAction(&table)),
 	d_insert_below_action(new QAction(&table)),
 	d_cancel_insertion_point_action(new QAction(&table)),
-	d_suppress_update_notification_guard(false)
+	d_suppress_update_notification_guard(false),
+	d_feature_focus_ptr(&feature_focus)
 {
 	// Set up the actions we can use.
 	set_up_actions();
@@ -397,14 +401,17 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	// Listen to events from our container.
 	QObject::connect(d_container_ptr, SIGNAL(cleared()),
 			this, SLOT(clear_table()));
-	QObject::connect(d_container_ptr, SIGNAL(insertion_point_moved(TopologySectionsContainer::size_type)),
+	QObject::connect(d_container_ptr, SIGNAL(insertion_point_moved(GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entry_removed(TopologySectionsContainer::size_type)),
+	QObject::connect(d_container_ptr, SIGNAL(entry_removed(GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entries_inserted(TopologySectionsContainer::size_type,TopologySectionsContainer::size_type)),
+	QObject::connect(d_container_ptr, SIGNAL(entries_inserted(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entries_modified(TopologySectionsContainer::size_type,TopologySectionsContainer::size_type)),
+	QObject::connect(d_container_ptr, SIGNAL(entries_modified(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
+
+	QObject::connect(d_container_ptr, SIGNAL(focus_feature_at_index( GPlatesGui::TopologySectionsContainer::size_type)),
+			this, SLOT(react_focus_feature_at_index(GPlatesGui::TopologySectionsContainer::size_type)));
 
 	// Enable the table to receive mouse move events, so we can show/hide buttons
 	// based on the row being hovered over.
@@ -415,6 +422,10 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	// Some cells may be user-editable: listen for changes.
 	QObject::connect(d_table, SIGNAL(cellChanged(int, int)),
 			this, SLOT(react_cell_changed(int, int)));
+
+	// Adjust focus via clicking on table rows.
+	QObject::connect(d_table, SIGNAL(cellClicked(int, int)),
+			this, SLOT(react_cell_clicked(int, int)));
 }
 
 
@@ -458,6 +469,8 @@ GPlatesGui::TopologySectionsTable::react_cell_clicked(
 	// as a Qt::ItemIsCheckable or whatever, but instead implement our own toggle button
 	// and put it in there. Or maybe just make it an icon for reversed/not reversed,
 	// and toggle it by reacting to this click event.
+
+	focus_feature_at_row(row);
 }
 
 
@@ -470,6 +483,7 @@ GPlatesGui::TopologySectionsTable::react_cell_changed(
 		return;
 	}
 	
+
 	update_data_from_table(row);
 }
 
@@ -763,7 +777,7 @@ GPlatesGui::TopologySectionsTable::update_table_row_count()
 	int rows = static_cast<int>(d_container_ptr->size());
 	// Plus one for the insertion point.
 	++rows;
-	
+
 	d_table->setRowCount(rows);
 }
 
@@ -784,9 +798,9 @@ GPlatesGui::TopologySectionsTable::update_table_row(
 		// Map this table row to an entry in the data vector.
 		TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
 //		const TopologySectionsContainer::TableRow &entry = d_container_ptr->at(index);
-		//FIXME: CHEATING. I need a non-const so I can resolve the damn thing, but maybe I shouldn't
-		// be doing that here. I would prefer to pass in a const reference to the original
-		// for the render_ functions, but perhaps a copy will suffice for now.
+//FIXME: CHEATING. I need a non-const so I can resolve the damn thing, but maybe I shouldn't
+// be doing that here. I would prefer to pass in a const reference to the original
+// for the render_ functions, but perhaps a copy will suffice for now.
 		TopologySectionsContainer::TableRow entry = d_container_ptr->at(index);
 		resolve_feature_id(entry);
 		if (check_row_validity(entry)) {
@@ -929,4 +943,39 @@ GPlatesGui::TopologySectionsTable::update_data_from_table(
 	d_container_ptr->update_at(index, temp_entry);
 }
 
+
+
+void
+GPlatesGui::TopologySectionsTable::focus_feature_at_row(
+		int row)
+{
+	if (row < 0 || row >= d_table->rowCount()) {
+		return;
+	}
+	// Clicking the special Insertion Point row should have no effect.
+	if (row == get_current_insertion_point_row()) {
+		return;
+	}
+
+	// Get the appropriate details about the feature from the container,
+	TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
+
+	const TopologySectionsContainer::TableRow &trow = d_container_ptr->at(index);
+
+	// Do we have enough information?
+	if (trow.d_feature_ref.is_valid() && trow.d_geometry_property_opt) {
+		// Then adjust the focus.
+		d_feature_focus_ptr->set_focus(trow.d_feature_ref, *trow.d_geometry_property_opt);
+	
+		// And provide visual feedback for user.
+		d_table->selectRow(row);
+	}
+}
+
+void
+GPlatesGui::TopologySectionsTable::react_focus_feature_at_index(
+		GPlatesGui::TopologySectionsContainer::size_type index)
+{
+	d_table->selectRow( convert_data_index_to_table_row(index) );
+}
 

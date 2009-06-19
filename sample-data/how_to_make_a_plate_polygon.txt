@@ -1,0 +1,188 @@
+
+This is a short HOW TO document describing the basic process of creating 
+a Plate Polygon feature from existing feature data with GPlates.
+
+NOTE: this document only applies to GPlates branch platepolygon-2008-08-15,
+where the date in the branch name refers to the date the branch was started.
+
+Step 0: Configure and make gplates
+
+Execute the following commands in the base directory of platepolygon-2008-08-15:
+
+$ cmake .
+
+$ make 
+
+
+Step 1: Start GPlates with some sample data:
+
+Execute the following command in the base directory of platepolygon-2008-08-15:
+
+$ ./src/gplates -r sample-data/gpml/rotations_about_axes.gpml sample-data/gpml/topology_test_none.gpml
+
+
+This section introduces the GPlates main window and sub-components:
+
+- Along the top of the GPlates main window is the Menu Bar.
+
+You can use the menu items under the File Menu, especially Manage Feature Collections, 
+to control your data files, and how they are used in GPlates.
+
+- In the center of the main window is the Globe, with current view point position, 
+and mouse position just below.
+
+Above and beside the globe are a series of controls set the Reconstruction, and Zoom level.
+
+
+- Along the left edge of the main window are the Tool buttons.  
+
+The default tool is the Re-Orient Tool.  The first mouse button is used to drag the globe, 
+and the mouse wheel is used to zoom in and out.
+
+NOTE: when you are using any other tool, hold down the Control key and use the first 
+mouse button to drag the globe.
+
+
+- Along the bottom edge of the main window are the Feature Tables.
+
+Different feature tables become active depending on what Tool you are using.
+
+The Clicked Feature Table shows all features found when you make a mouse click.
+This table is active when using the Choose Feature, Modify Recon. Pole, 
+or Close Plate tools.
+
+The Segments Feature Table is active when using the Close Plate tool.
+This table shows those features you have selected to become part of the topological boundary 
+for the plate polygon.  As you 'mouse around the plate' the Segments table will become 
+populated with your choices.
+
+NOTE: the Selected Table is not yet used.
+
+
+- Along the right edge of the main window are the Task Panels.
+
+These panels have specialized widgets synchronized to each Tool.
+They show data from the feature collections, and lead to additional dialogs for feature 
+creations and feature edits.
+
+
+NOTE: Between the Globe and Feature Tables, and the Globe and Task Panel,
+are slider widgets to control the relative sizes of each section of
+the main window.  You may adjust sizes as needed.
+
+
+Step 2: Reconstruct the data to the desired age.
+
+Use the Reconstruction Menu or the widgets above the globe to control the reconstruction age.
+
+
+Step 3: Orient and Zoom in on your data.
+
+Use the View Menu or the widgets next to the globe, or mouse wheel to zoom in on your data.  
+
+
+Step 4: Activate the Close Plate Tool
+
+Click on the last button of the Tool button column.
+The Close Plate tool is now active, and the Close Plate Task Panel will appear.
+Most of the widgets will be in-active until you highlight a feature.
+
+Use the first mouse button to click on a desired feature.
+
+The highlighted feature will be drawn in light-gray.  Its first vertex will be drawn with a 
+large dot, the last vertex with a small dot.
+
+All the features found under the mouse click will appear in Clicked Feature Table.
+The first of these found features will appear in the now active Close Plate Task Panel.
+
+If more than one feature was found, and you want another feature, different from the first, 
+simply click on the desired feature in the Segments table, or zoom in for a more precise 
+view and click again on the desired feature.
+
+When you have the proper feature highlighted in the Clicked Table, and in the Close Plate 
+Task Panel, you may then select Choose Feature in the panel.  
+
+The feature details will appear in the Segments Table.
+The Close Plate panel will be cleared of data and made mostly in-active.
+
+The work-in-progress plate polygon will be drawn in black with its vertices shown as dots.
+
+NOTE: Most of the drawing, decorations, and coloring will become more clear in future versions.
+For now we are using bold, explicit decorations to help debug, and refine the close plate tool.
+
+If the feature's coordinates are to be used in reverse, then simply click on it on the globe, 
+or highlight it in the Segments table and hit the Use Coordinates in Reverse button.
+
+NOTE: For now, choose features first, then reverse them once they are on the Segments Table.
+
+NOTE: There is an GUI improvement to be made here, such that the Close Plate panel will 
+show both the end-points of the full original feature, and the possibly the end-points of the 
+segment, possibly truncated due to intersections with previous and next features in the list, 
+and / or possibly reversed due to user selection.  This will be synchronized with specialized 
+drawing on the globe.
+
+
+Step 5: Add features to the boundary
+
+Continue the process by: clicking on features on the globe; selecting features from the 
+Clicked Table; selecting Choose Feature; Use Coordinates in Reverse; selecting features from
+the Segments Table; etc; as needed to 'mouse your way around the plate'.
+
+
+Step 6: Select Create Plate from the Close Plate Panel to continue making the plate polygon.
+
+The Create Feature dialog will take you through a series of steps to finalize the new feature.
+
+
+Step 7: Select the feature type.  
+
+In GPML, the GPlates Markup Language, we encode plate polygons as 
+gpml:TopologicalClosedPlateBoundary features.  Scroll down to that entry, click on it.
+
+NOTE: there is a GUI improvement to be made, where this entry is auto selected for you.
+
+Click Next.
+
+
+Step 8: Set the Basic Properties of the feature.
+
+NOTE: The geometry property is automatically assigned as the Boundary.
+
+Select the Plate Id for this plate polygon.  
+
+NOTE: The Plate Id is NOT used to reconstruct the boundary of the plate polygon, since its 
+instantaneous boundary is formed from the results of processing the topological relations 
+selected in the Segments Table.  Rather, the plate id is an effective plate id to control 
+additional aspects of the plate polygon (like what color it is drawn in; what rotations to 
+use to compute velocities for the plate, etc.).
+
+Select the Begin and End ages for the feature.
+
+Select a Name for your new feature.
+
+Click Next.
+
+
+Step 9: Add the feature to a collection
+
+In this step you will add the new plate polygon to a feature collection.
+You may use an existing, loaded collection, or create a new collection.
+
+NOTE: the Create new feature collection does not yet work.
+
+Click Create to finish the process.
+
+You have now made a continuously closing Plate Polygon.
+
+NOTE: it is the combination of features, click points, and intersections that define the 
+continuously closing plate boundary.  If for some reason a feature is not found, it will be 
+skipped when the boundary is processed (at each reconstruction).  If for some reason the 
+intersection point 'slides' past the click point, you may get strange plate polygon shapes.  
+
+It is these potential inconsistencies or breakages that we need to continue working on as 
+we refine the creation and use of topological feature types.
+
+
+Please send any comments, questions or suggestions to:
+mturner@gps.caltech.edu
+

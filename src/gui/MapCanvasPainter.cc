@@ -700,7 +700,8 @@ void
 GPlatesGui::MapCanvasPainter::visit_rendered_multi_point_on_sphere(
 			const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)	
 {
-
+	if (!d_canvas_ptr->d_show_multipoint ) { return; }
+	
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
 		rendered_multi_point_on_sphere.get_multi_point_on_sphere();
 
@@ -728,6 +729,7 @@ void
 GPlatesGui::MapCanvasPainter::visit_rendered_point_on_sphere(
 			const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 {
+	if (!d_canvas_ptr->d_show_point ) { return; }
 
 	const GPlatesGui::Colour colour = rendered_point_on_sphere.get_colour();
 
@@ -746,7 +748,8 @@ void
 GPlatesGui::MapCanvasPainter::visit_rendered_polygon_on_sphere(
 			const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
-
+	if (!d_canvas_ptr->d_show_polygon ) { return; }
+	
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 			rendered_polygon_on_sphere.get_polygon_on_sphere();
 
@@ -766,6 +769,7 @@ void
 GPlatesGui::MapCanvasPainter::visit_rendered_polyline_on_sphere(
 			const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
+	if (!d_canvas_ptr->d_show_line ) { return; }
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 			rendered_polyline_on_sphere.get_polyline_on_sphere();
