@@ -104,9 +104,8 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	// velocities. The View is already set to the appropriate reconstruction time for
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
 	//
-	// But for now, we're just going to do nothing.
-	GPlatesAppLogic::PlateVelocitiesHook &plate_velocities =
-			d_export_animation_context_ptr->view_state().plate_velocities_hook();
+	const GPlatesAppLogic::PlateVelocities &plate_velocities =
+			d_export_animation_context_ptr->view_state().plate_velocities();
 	
 	// Iterate over the velocity feature collections currently being solved.
 	const unsigned int num_velocity_feature_collections =

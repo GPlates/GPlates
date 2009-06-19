@@ -218,7 +218,7 @@ namespace
 
 
 bool
-GPlatesAppLogic::PlateVelocities::detect_velocity_mesh_nodes(
+GPlatesAppLogic::PlateVelocityUtils::detect_velocity_mesh_nodes(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	if (!feature_collection.is_valid())
@@ -237,7 +237,7 @@ GPlatesAppLogic::PlateVelocities::detect_velocity_mesh_nodes(
 
 
 GPlatesModel::FeatureCollectionHandle::weak_ref
-GPlatesAppLogic::PlateVelocities::create_velocity_field_feature_collection(
+GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes,
 		GPlatesModel::ModelInterface &model)
 {
@@ -264,7 +264,7 @@ GPlatesAppLogic::PlateVelocities::create_velocity_field_feature_collection(
 
 
 void
-GPlatesAppLogic::PlateVelocities::solve_velocities(
+GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
 		GPlatesModel::ReconstructionTree &reconstruction_tree_1,
 		GPlatesModel::ReconstructionTree &reconstruction_tree_2,
@@ -295,13 +295,13 @@ GPlatesAppLogic::PlateVelocities::solve_velocities(
 
 
 bool
-GPlatesAppLogic::PlateVelocitiesHook::load_reconstructable_feature_collection(
+GPlatesAppLogic::PlateVelocities::load_reconstructable_feature_collection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 		const QString &feature_collection_filename,
 		GPlatesModel::ModelInterface &model)
 {
 	// Only interested in feature collections with velocity mesh nodes.
-	if (!PlateVelocities::detect_velocity_mesh_nodes(feature_collection))
+	if (!PlateVelocityUtils::detect_velocity_mesh_nodes(feature_collection))
 	{
 		return false;
 	}
@@ -309,7 +309,7 @@ GPlatesAppLogic::PlateVelocitiesHook::load_reconstructable_feature_collection(
 	// Create a new feature collection with velocity field features that the
 	// velocity solver can use for its calculations.
 	GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
-			PlateVelocities::create_velocity_field_feature_collection(
+			PlateVelocityUtils::create_velocity_field_feature_collection(
 					feature_collection, model);
 
 	// Add to our list of velocity field feature collections.
@@ -324,7 +324,7 @@ GPlatesAppLogic::PlateVelocitiesHook::load_reconstructable_feature_collection(
 
 
 void
-GPlatesAppLogic::PlateVelocitiesHook::load_reconstruction_feature_collection(
+GPlatesAppLogic::PlateVelocities::load_reconstruction_feature_collection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	d_reconstruction_feature_collections.push_back(feature_collection);
@@ -332,7 +332,7 @@ GPlatesAppLogic::PlateVelocitiesHook::load_reconstruction_feature_collection(
 
 
 void
-GPlatesAppLogic::PlateVelocitiesHook::unload_feature_collection(
+GPlatesAppLogic::PlateVelocities::unload_feature_collection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Try removing it from the reconstruction feature collections.
@@ -358,15 +358,19 @@ GPlatesAppLogic::PlateVelocitiesHook::unload_feature_collection(
 
 
 void
-GPlatesAppLogic::PlateVelocitiesHook::post_reconstruction_hook(
-		GPlatesModel::ModelInterface &/*model*/,
+GPlatesAppLogic::PlateVelocities::solve_velocities(
 		GPlatesModel::Reconstruction &reconstruction,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
 		GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
 {
+	// Return if there's no velocity feature collections to solve.
+	if (d_velocity_field_feature_collection_infos.empty())
+	{
+		return;
+	}
+
 	// FIXME: should this '1' should be user controllable?
-	// What happens if recon_time is present-day ?
 	const double &reconstruction_time_1 = reconstruction_time;
 	const double reconstruction_time_2 = reconstruction_time_1 + 1;
 
@@ -409,7 +413,7 @@ GPlatesAppLogic::PlateVelocitiesHook::post_reconstruction_hook(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection =
 				velocity_field_feature_collection_iter->d_velocity_field_feature_collection;
 
-		PlateVelocities::solve_velocities(
+		PlateVelocityUtils::solve_velocities(
 			velocity_field_feature_collection,
 			reconstruction_tree_1,
 			reconstruction_tree_2,

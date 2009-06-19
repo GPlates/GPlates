@@ -17,11 +17,10 @@ set(srcs
     PlateVelocities.h
     Reconstruct.cc
     Reconstruct.h
-    ReconstructContext.cc
-    ReconstructContext.h
-    ReconstructHook.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
+    ReconstructTemplate.cc
+    ReconstructTemplate.h
 )
 
 

@@ -26,8 +26,6 @@
 #ifndef GPLATES_VIEW_OPERATIONS_RENDERRECONSTRUCTIONGEOMETRIES_H
 #define GPLATES_VIEW_OPERATIONS_RENDERRECONSTRUCTIONGEOMETRIES_H
 
-#include "app-logic/ReconstructHook.h"
-
 
 namespace GPlatesGui
 {
@@ -55,49 +53,7 @@ namespace GPlatesViewOperations
 	render_reconstruction_geometries(
 			GPlatesModel::Reconstruction &reconstruction,
 			RenderedGeometryCollection &rendered_geom_collection,
-			GPlatesGui::ColourTable &colour_table);
-
-
-	/**
-	 * Hook to render reconstruction geometries after a reconstruction.
-	 */
-	class RenderReconstructionGeometriesHook :
-			public GPlatesAppLogic::ReconstructHook
-	{
-	public:
-		typedef GPlatesUtils::non_null_intrusive_ptr<RenderReconstructionGeometriesHook,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		RenderReconstructionGeometriesHook(
-				RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesGui::ColourTable &colour_table) :
-			d_rendered_geometry_collection(rendered_geom_collection),
-			d_colour_table(colour_table)
-		{  }
-
-
-		/**
-		 * Callback hook after a reconstruction is created.
-		 */
-		virtual
-		void
-		post_reconstruction_hook(
-				GPlatesModel::ModelInterface &/*model*/,
-				GPlatesModel::Reconstruction &reconstruction,
-				const double &/*reconstruction_time*/,
-				GPlatesModel::integer_plate_id_type /*reconstruction_anchored_plate_id*/,
-				GPlatesFeatureVisitors::TopologyResolver &/*topology_resolver*/)
-		{
-			render_reconstruction_geometries(
-					reconstruction,
-					d_rendered_geometry_collection,
-					d_colour_table);
-		}
-
-	private:
-		RenderedGeometryCollection &d_rendered_geometry_collection;
-		GPlatesGui::ColourTable &d_colour_table;
-	};
+			const GPlatesGui::ColourTable &colour_table);
 }
 
 #endif // GPLATES_VIEW_OPERATIONS_RENDERRECONSTRUCTIONGEOMETRIES_H

@@ -29,8 +29,6 @@
 #include <vector>
 #include <QString>
 
-#include "ReconstructHook.h"
-
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
@@ -49,12 +47,13 @@ namespace GPlatesFeatureVisitors
 namespace GPlatesModel
 {
 	class ModelInterface;
+	class Reconstruction;
 	class ReconstructionTree;
 }
 
 namespace GPlatesAppLogic
 {
-	namespace PlateVelocities
+	namespace PlateVelocityUtils
 	{
 		/**
 		 * Returns true if any features in @a feature_collection can be used
@@ -127,20 +126,16 @@ namespace GPlatesAppLogic
 
 
 	/**
-	 * Hook to render reconstruction geometries after a reconstruction.
+	 * Class to handle velocity feature collection loading/unloading and calculations.
 	 */
-	class PlateVelocitiesHook :
-			public GPlatesAppLogic::ReconstructHook
+	class PlateVelocities
 	{
 	public:
-		typedef GPlatesUtils::non_null_intrusive_ptr<PlateVelocitiesHook,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
 		/**
 		 * FIXME: Presentation code should not be in here (this is app logic code).
 		 * Remove any rendered geometry code to the presentation tier.
 		 */
-		PlateVelocitiesHook(
+		PlateVelocities(
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer) :
 			d_comp_mesh_point_layer(comp_mesh_point_layer),
@@ -222,12 +217,13 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Callback hook after a reconstruction is created.
+		 * Solves velocities for all loaded velocity feature collections.
+		 *
+		 * See @a PlateVelocityUtils::solve_velocities for details on
+		 * how the results are generated and where they are stored.
 		 */
-		virtual
 		void
-		post_reconstruction_hook(
-				GPlatesModel::ModelInterface &model,
+		solve_velocities(
 				GPlatesModel::Reconstruction &reconstruction,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,

@@ -52,6 +52,7 @@
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructTemplate.h"
 
 #include "global/GPlatesException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
@@ -233,7 +234,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 							// ApplicationState notifies of load/unload events - John.
 							GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 									*file.get_feature_collection();
-							if (!d_plate_velocities_hook->load_reconstructable_feature_collection(
+							if (!d_plate_velocities.load_reconstructable_feature_collection(
 									feature_collection,
 									file.get_qfileinfo().absoluteFilePath(),
 									d_model))
@@ -257,7 +258,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 								// ApplicationState notifies of load/unload events - John.
 								GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 										*file.get_feature_collection();
-								d_plate_velocities_hook->load_reconstruction_feature_collection(
+								d_plate_velocities.load_reconstruction_feature_collection(
 										feature_collection);
 
 								have_loaded_new_rotation_file = true;
@@ -296,7 +297,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 						// ApplicationState notifies of load/unload events - John.
 						GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 								*file.get_feature_collection();
-						d_plate_velocities_hook->load_reconstruction_feature_collection(
+						d_plate_velocities.load_reconstruction_feature_collection(
 								feature_collection);
 
 						have_loaded_new_rotation_file = true;
@@ -494,45 +495,92 @@ namespace
 		}
 	}
 
-	void
-	render_model(
-			GPlatesModel::ModelInterface &model, 
-			GPlatesAppLogic::ReconstructContext &reconstruct_context,
-			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstructable_files,
-			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_reconstruction_files,
-			double recon_time,
-			GPlatesModel::integer_plate_id_type recon_root)
+
+	/**
+	 * Handles reconstruction, solving plate velocities and rendering RFGs.
+	 */
+	class ReconstructView :
+			public GPlatesAppLogic::ReconstructTemplate
 	{
-		try
+	public:
+		ReconstructView(
+				GPlatesModel::ModelInterface &model,
+				GPlatesAppLogic::PlateVelocities &plate_velocities,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesGui::ColourTable &colour_table) :
+			GPlatesAppLogic::ReconstructTemplate(model),
+			d_plate_velocities(plate_velocities),
+			d_rendered_geom_collection(rendered_geom_collection),
+			d_colour_table(colour_table)
+		{  }
+
+
+	private:
+		GPlatesAppLogic::PlateVelocities &d_plate_velocities;
+		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
+		const GPlatesGui::ColourTable &d_colour_table;
+
+
+		/**
+		 * Called after a reconstruction is created.
+		 */
+		virtual
+		void
+		end_reconstruction(
+				GPlatesModel::ModelInterface &model,
+				GPlatesModel::Reconstruction &reconstruction,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+				GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
 		{
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-				reconstructable_features_collection,
-				reconstruction_features_collection;
+			// Solve plate velocities.
+			d_plate_velocities.solve_velocities(
+					reconstruction,
+					reconstruction_time,
+					reconstruction_anchored_plate_id,
+					topology_resolver);
 
-			get_features_collection_from_file_info_collection(
-					active_reconstructable_files,
-					reconstructable_features_collection);
-
-			get_features_collection_from_file_info_collection(
-					active_reconstruction_files,
-					reconstruction_features_collection);
-
-			reconstruct_context.reconstruct(
-					reconstructable_features_collection,
-					reconstruction_features_collection,
-					recon_time,
-					recon_root);
-
-		} catch (GPlatesGlobal::Exception &e) {
-			std::cerr << e << std::endl;
+			// Render all RFGs as rendered geometries.
+			GPlatesViewOperations::render_reconstruction_geometries(
+					reconstruction,
+					d_rendered_geom_collection,
+					d_colour_table);
 		}
-		catch (...)
-		{
-			std::cerr << "Caught exception in render_model." << std::endl;
-		}
-	}
+	};
 
 } // namespace
+
+
+void
+GPlatesQtWidgets::ViewportWindow::reconstruct_view(
+		double recon_time,
+		GPlatesModel::integer_plate_id_type recon_root)
+{
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+		reconstructable_features_collection,
+		reconstruction_features_collection;
+
+	get_features_collection_from_file_info_collection(
+			d_active_reconstructable_files,
+			reconstructable_features_collection);
+
+	get_features_collection_from_file_info_collection(
+			d_active_reconstruction_files,
+			reconstruction_features_collection);
+
+	// Create a reconstruction and carry out any extra operations
+	// in the inherited ReconstructView class.
+	ReconstructView reconstruct_view_obj(
+			d_model,
+			d_plate_velocities,
+			d_rendered_geom_collection,
+			*get_colour_table());
+	d_reconstruction = reconstruct_view_obj.reconstruct(
+			reconstructable_features_collection,
+			reconstruction_features_collection,
+			recon_time,
+			recon_root);
+}
 
 
 GPlatesGui::ColourTable *
@@ -549,7 +597,7 @@ GPlatesQtWidgets::ViewportWindow::get_colour_table()
 
 GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_model(),
-	d_reconstruct_context(d_model),
+	d_reconstruction(d_model->create_empty_reconstruction(0.0, 0)),
 	d_comp_mesh_point_layer(
 			d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
@@ -558,9 +606,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
 					0.175f)),
-	d_plate_velocities_hook(
-			new GPlatesAppLogic::PlateVelocitiesHook(d_comp_mesh_point_layer, d_comp_mesh_arrow_layer),
-			GPlatesUtils::NullIntrusivePointerHandler()),
+	d_plate_velocities(d_comp_mesh_point_layer, d_comp_mesh_arrow_layer),
 	d_recon_time(0.0),
 	d_recon_root(0),
 	d_feature_focus(*this),
@@ -688,12 +734,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Setup RenderedGeometryCollection.
 	setup_rendered_geom_collection();
 
-	// Setup the reconstruction context before we try to do any reconstructions.
-	setup_reconstruct_context();
-
 	// Render everything on the screen in present-day positions.
-	render_model(d_model, d_reconstruct_context, d_active_reconstructable_files, 
-			d_active_reconstruction_files, 0.0, d_recon_root);
+	reconstruct_view(0.0/*reconstruction time*/, d_recon_root);
 
 
 	// Set up the Clicked table.
@@ -1205,8 +1247,7 @@ GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
 void
 GPlatesQtWidgets::ViewportWindow::reconstruct()
 {
-	render_model(d_model, d_reconstruct_context, d_active_reconstructable_files, 
-			d_active_reconstruction_files, d_recon_time, d_recon_root);
+	reconstruct_view(d_recon_time, d_recon_root);
 
 	if (d_total_reconstruction_poles_dialog.isVisible()) {
 		d_total_reconstruction_poles_dialog.update();
@@ -1217,7 +1258,7 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	if (d_feature_focus.is_valid()) {
 		// There's a focused feature.
 		// We need to update the associated RFG for the new reconstruction.
-		d_feature_focus.find_new_associated_rfg(*d_reconstruct_context.get_reconstruction());
+		d_feature_focus.find_new_associated_rfg(reconstruction());
 	}
 }
 
@@ -1344,7 +1385,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
 					active_reconstructable_files().end());
 
 	d_export_rfg_dialog.export_visible_reconstructed_feature_geometries(
-			*d_reconstruct_context.get_reconstruction(),
+			reconstruction(),
 			rendered_geometry_collection(),
 			active_reconstructable_geometry_files,
 			d_recon_root,
@@ -1761,7 +1802,7 @@ GPlatesQtWidgets::ViewportWindow::deactivate_loaded_file(
 	{
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 				*loaded_file->get_feature_collection();
-		d_plate_velocities_hook->unload_feature_collection(feature_collection);
+		d_plate_velocities.unload_feature_collection(feature_collection);
 	}
 
 	// FIXME: This is a temporary hack to stop highlighting the focused feature if
@@ -2332,28 +2373,6 @@ GPlatesQtWidgets::ViewportWindow::setup_rendered_geom_collection()
 			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
 
 	d_rendered_geom_collection.set_orthogonal_main_layers(orthogonal_main_layers);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::setup_reconstruct_context()
-{
-	// Create a reconstruct hook for rendering reconstruction geometries.
-	GPlatesAppLogic::ReconstructHook::non_null_ptr_type render_reconstruction_geometries_hook(
-			new GPlatesViewOperations::RenderReconstructionGeometriesHook(
-					d_rendered_geom_collection,
-					*get_colour_table()),
-			GPlatesUtils::NullIntrusivePointerHandler());
-
-	// Connect some hooks together sequentially.
-	GPlatesAppLogic::CompositeReconstructHook::non_null_ptr_type composite_hook(
-			new GPlatesAppLogic::CompositeReconstructHook(),
-			GPlatesUtils::NullIntrusivePointerHandler());
-	composite_hook->add_child_hook(d_plate_velocities_hook);
-	composite_hook->add_child_hook(render_reconstruction_geometries_hook);
-
-	// Set our reconstruct context to use the composite hook.
-	d_reconstruct_context.set_reconstruct_hook(composite_hook);
 }
 
 

@@ -42,7 +42,7 @@ void
 GPlatesViewOperations::render_reconstruction_geometries(
 		GPlatesModel::Reconstruction &reconstruction,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesGui::ColourTable &colour_table)
+		const GPlatesGui::ColourTable &colour_table)
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
