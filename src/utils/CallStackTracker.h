@@ -39,7 +39,8 @@
  * This macro is used by the TRACK_CALL_STACK macro.
  */
 #define CALL_STACK_MAGIC2(x) \
-		GPlatesUtils::CallStackTracker call_stack_tracker##x(__FILE__, __LINE__);
+		GPlatesUtils::CallStackTracker call_stack_tracker##x(\
+				GPlatesUtils::CallStack::Trace(__FILE__, __LINE__));
 
 /**
  * Do not invoke this macro directly.
