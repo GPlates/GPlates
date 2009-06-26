@@ -58,6 +58,10 @@ namespace GPlatesAppLogic
 		ReconstructTemplate(
 				GPlatesModel::ModelInterface &model);
 
+		virtual
+		~ReconstructTemplate()
+		{	}
+
 
 		/**
 		 * Create a reconstruction for the reconstruction time @a reconstruction_time,

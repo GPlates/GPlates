@@ -514,6 +514,10 @@ namespace
 			d_colour_table(colour_table)
 		{  }
 
+		virtual
+		~ReconstructView()
+		{	}
+
 
 	private:
 		GPlatesAppLogic::PlateVelocities &d_plate_velocities;
