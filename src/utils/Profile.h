@@ -131,6 +131,13 @@
     }
 */
 
+/**
+ * Define PROFILE_EXCLUDE_NEW_DELETE if you want to exclude the time spent in
+ * operator new, new [], delete, and delete [].
+ * NOTE: On windows you will need to set the '/FORCE:MULTIPLE' linker option
+ * to avoid linker errors due to multiple operator new and delete symbols.
+ */
+
 #if defined(PROFILE_GPLATES)
 
 /**

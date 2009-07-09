@@ -25,7 +25,6 @@
 */
 
 #include <boost/cstdint.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
 #include <boost/pool/object_pool.hpp>
@@ -653,8 +652,13 @@ namespace
 		//! Return the sole instance of this class.
 		static ProfileManager &instance()
 		{
-			static boost::scoped_ptr<ProfileManager> s_instance(new ProfileManager());
-			return *s_instance;
+			static ProfileManager s_instance;
+			return s_instance;
+		}
+
+		~ProfileManager()
+		{
+			s_does_profile_manager_exist = false;
 		}
 
 		/**
@@ -692,8 +696,30 @@ namespace
 		stop_profile(
 				const ticks_t &suspend_profile_time);
 
+
+		/**
+		 * Called when restarting the current profile run after a call to
+		 * @a stop_current_profile.
+		 * The caller is required to assign to the returned reference the value
+		 * of @a get_ticks() when it returns to the code being profiled.
+		*/
+		ticks_t &
+		start_current_profile();
+
+		/**
+		 * Called when stopping the current profile run.
+		 * The difference with @a stop_profile is no new profile is started.
+		 * @a suspend_profile_time is the time just
+		 * when profile is stopped. This value is used to update
+		 * the ticks count of the current profile run.
+		*/
+		void
+		stop_current_profile(
+				const ticks_t &suspend_time);
+
 		/**
 		 * Returns true if all profile runs have finished.
+		 * Doesn't necessarily mean that more runs won't start later though.
 		 */
 		bool
 		have_all_profile_runs_finished() const
@@ -712,6 +738,16 @@ namespace
 			return d_profile_graph;
 		}
 
+		/**
+		 * Is true if @a ProfileManager singleton object is constructed and not yet destructed.
+		 */
+		static
+		bool
+		does_profile_manager_exist()
+		{
+			return s_does_profile_manager_exist;
+		}
+
 	private:
 		ProfileManager() :
 			d_root_profile_node("<root>")
@@ -719,6 +755,8 @@ namespace
 			// The root profile run will always exist on the stack.
 			// It is used only to test for mismatching profile begin/end calls.
 			d_profile_run_stack.push( ProfileRun(d_root_profile_node) );
+
+			s_does_profile_manager_exist = true;
 		}
 
 		/**
@@ -733,7 +771,12 @@ namespace
 
 		//! Stack of profile runs that are currently following the call stack.
 		std::stack<ProfileRun> d_profile_run_stack;
+
+		//! Is true if @a ProfileManager singleton object is constructed and not yet destructed.
+		static bool s_does_profile_manager_exist;
 	};
+
+	bool ProfileManager::s_does_profile_manager_exist = false;
 
 	void *
 	ProfileManager::get_profile_cache(
@@ -756,10 +799,10 @@ namespace
 		// stack below.
 		if ( ! d_profile_run_stack.empty() )
 		{
-			ProfileRun &parentRun = d_profile_run_stack.top();
+			ProfileRun &parent_run = d_profile_run_stack.top();
 
 			// Stop current profile run so we can start a new one.
-			parentRun.stop_profile(suspend_parent_time);
+			parent_run.stop_profile(suspend_parent_time);
 		}
 
 		// The currently profiled object is now 'profile_node'. Push a
@@ -808,6 +851,38 @@ namespace
 		// Caller will need to set the returned time when profiling of
 		// the get_parent profile actually resumes again.
 		return parent_run.start_profile();
+	}
+
+	ticks_t &
+	ProfileManager::start_current_profile()
+	{
+		// Get the current profile run at top of the stack.
+		// This could be the root profile is nothing is currently being profiled.
+		// If it is then it doesn't matter as the root profile node doesn't profile anything.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!d_profile_run_stack.empty(),
+				GPLATES_ASSERTION_SOURCE);
+		ProfileRun &current_run = d_profile_run_stack.top();
+
+		// Caller will need to set the returned time when profiling of
+		// the current profile actually resumes again.
+		return current_run.start_profile();
+	}
+
+	void
+	ProfileManager::stop_current_profile(
+			const ticks_t &suspend_time)
+	{
+		// Get the current profile run at top of the stack.
+		// This could be the root profile is nothing is currently being profiled.
+		// If it is then it doesn't matter as the root profile node doesn't profile anything.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!d_profile_run_stack.empty(),
+				GPLATES_ASSERTION_SOURCE);
+		ProfileRun &current_run = d_profile_run_stack.top();
+
+		// Stop current profile run.
+		current_run.stop_profile(suspend_time);
 	}
 
 	//
@@ -1321,7 +1396,9 @@ namespace
 				const ticks_t ticks_per_get_ticks_call = convert_seconds_to_ticks(
 						seconds_per_get_ticks_call);
 
-				//std::cout << "accuracy = " << seconds_per_get_ticks_call << std::endl;
+#if 0
+				std::cout << "accuracy = " << seconds_per_get_ticks_call << std::endl;
+#endif
 				// Timing seems about right so return result.
 				return ticks_per_get_ticks_call;
 			}
@@ -1337,7 +1414,156 @@ namespace
 	 * Actual time taken in 'get_ticks()' call in ticks.
 	 */
 	const ticks_t g_ticks_taken_in_get_ticks_call = calc_ticks_taken_in_get_ticks_call();
+
+
+	/**
+	 * Used to set global variable when inside a PROFILE API function.
+	 * Used to determine when to profile memory allocation - memory allocations
+	 * outside PROFILE API functions can be profiled - those inside cannot.
+	 */
+	class ProfileApiGuard
+	{
+	public:
+		ProfileApiGuard()
+		{
+			if (s_profile_api_nested_depth++ == 0)
+			{
+				s_inside_profile_api = true;
+			}
+		}
+
+		~ProfileApiGuard()
+		{
+			if (--s_profile_api_nested_depth == 0)
+			{
+				s_inside_profile_api = false;
+			}
+		}
+
+		//! Returns true if we're currently inside a PROFILE API function.
+		static
+		bool
+		is_inside_profile_api()
+		{
+			return s_inside_profile_api;
+		}
+
+	private:
+		//! Is true if we're currently inside a PROFILE API function.
+		static bool s_inside_profile_api;
+
+		//! Nested call depth inside a PROFILE API function.
+		static int s_profile_api_nested_depth;
+	};
+
+	bool ProfileApiGuard::s_inside_profile_api = false;
+	int ProfileApiGuard::s_profile_api_nested_depth = 0;
 }
+
+
+#if defined(PROFILE_EXCLUDE_NEW_DELETE)
+	#include <new>
+
+	namespace
+	{
+		int g_inside_new_count = 0;
+		int g_inside_delete_count = 0;
+	}
+
+	// FIXME: The other overloaded versions of operator new and delete should also
+	// be placed here. This is fine for now for the basic purpose of excluding the majority
+	// of time spent in operator new and delete from the profile.
+
+	// FIXME: This is not really thread-safe. Since operator new/delete are global they
+	// are accessed by multiple threads. And Qt does spawn threads (eg, file information
+	// gathering threads for file open dialogs). But this is used for debugging purposes
+	// only so it should work for the most part with possible infrequent errors or crashes.
+	// Could stick a mutex in there but they are slow and outweigh the benefit or excluding
+	// operator new/delete from the profiling.
+
+	void *
+	operator new (
+			size_t bytes)
+	{
+		// If recursively called or if the ProfileManager singleton has been destroyed or
+		// we're not actually profiling anything at the moment then don't profile.
+		if (g_inside_new_count != 0 ||
+				!ProfileManager::does_profile_manager_exist() ||
+				ProfileManager::instance().have_all_profile_runs_finished())
+		{
+			return ::malloc(bytes);
+		}
+
+		++g_inside_new_count;
+
+		// If we're not being called from within a PROFILE API function.
+		if (!ProfileApiGuard::is_inside_profile_api())
+		{
+			ProfileManager::instance().stop_current_profile(get_ticks());
+		}
+
+		void * const ptr = ::malloc(bytes);
+
+		// If we're not being called from within a PROFILE API function.
+		if (!ProfileApiGuard::is_inside_profile_api())
+		{
+			// We don't really care whether 'get_ticks()' is called first or last.
+			ProfileManager::instance().start_current_profile() = get_ticks();
+		}
+
+		--g_inside_new_count;
+
+		return ptr;
+	}
+
+	void
+	operator delete(
+			void *ptr)
+	{
+		// If recursively called or if the ProfileManager singleton has been destroyed or
+		// we're not actually profiling anything at the moment then don't profile.
+		if (g_inside_delete_count != 0 ||
+				!ProfileManager::does_profile_manager_exist() ||
+				ProfileManager::instance().have_all_profile_runs_finished())
+		{
+			::free(ptr);
+			return;
+		}
+
+		++g_inside_delete_count;
+
+		// If we're not being called from within a PROFILE API function.
+		if (!ProfileApiGuard::is_inside_profile_api())
+		{
+			ProfileManager::instance().stop_current_profile(get_ticks());
+		}
+
+		::free(ptr);
+
+		// If we're not being called from within a PROFILE API function.
+		if (!ProfileApiGuard::is_inside_profile_api())
+		{
+			// We don't really care whether 'get_ticks()' is called first or last.
+			ProfileManager::instance().start_current_profile() = get_ticks();
+		}
+
+		--g_inside_delete_count;
+	}
+
+	void *
+	operator new [] (
+			size_t bytes)
+	{
+		return operator new(bytes);
+	}
+
+	void
+	operator delete [] (
+			void *ptr)
+	{
+		operator delete(ptr);
+	}
+#endif // if defined(PROFILE_DONT_PROFILE_NEW_DELETE)
 
 namespace GPlatesUtils
 {
@@ -1345,6 +1571,8 @@ namespace GPlatesUtils
 	profile_get_cache(
 			const char *profile_name)
 	{
+		ProfileApiGuard profile_api_guard;
+
 		return ProfileManager::instance().get_profile_cache(profile_name);
 	}
 
@@ -1352,6 +1580,8 @@ namespace GPlatesUtils
 	profile_begin(
 			void *profile_cache)
 	{
+		ProfileApiGuard profile_api_guard;
+
 		ticks_t suspend_parent_ticks = get_ticks();
 
 		ticks_t &start_ticks = ProfileManager::instance().start_profile(
@@ -1371,6 +1601,8 @@ namespace GPlatesUtils
 	void
 	profile_end()
 	{
+		ProfileApiGuard profile_api_guard;
+
 		ticks_t stop_ticks = get_ticks();
 
 		ticks_t &resume_parent_ticks = ProfileManager::instance().stop_profile(
@@ -1390,6 +1622,8 @@ namespace GPlatesUtils
 	profile_report_to_ostream(
 			std::ostream &output_stream)
 	{
+		ProfileApiGuard profile_api_guard;
+
 		if (!ProfileManager::instance().have_all_profile_runs_finished())
 		{
 			std::cerr << "Profiler encountered too many PROFILE_BEGIN calls - "
@@ -1407,6 +1641,8 @@ namespace GPlatesUtils
 	profile_report_to_file(
 			const std::string &filename)
 	{
+		ProfileApiGuard profile_api_guard;
+
 		std::ofstream output_file(filename.c_str());
 		if (!output_file)
 		{
