@@ -2342,7 +2342,7 @@ GPlatesQtWidgets::ViewportWindow::setup_reconstruct_context()
 	GPlatesAppLogic::ReconstructHook::non_null_ptr_type render_reconstruction_geometries_hook(
 			new GPlatesViewOperations::RenderReconstructionGeometriesHook(
 					d_rendered_geom_collection,
-					*get_colour_table()),
+					*this),
 			GPlatesUtils::NullIntrusivePointerHandler());
 
 	// Connect some hooks together sequentially.

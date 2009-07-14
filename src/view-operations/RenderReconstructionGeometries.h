@@ -28,6 +28,8 @@
 
 #include "app-logic/ReconstructHook.h"
 
+#include "qt-widgets/ViewportWindow.h"
+
 
 namespace GPlatesGui
 {
@@ -70,9 +72,9 @@ namespace GPlatesViewOperations
 
 		RenderReconstructionGeometriesHook(
 				RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesGui::ColourTable &colour_table) :
+				GPlatesQtWidgets::ViewportWindow &view_state) :
 			d_rendered_geometry_collection(rendered_geom_collection),
-			d_colour_table(colour_table)
+			d_view_state(view_state)
 		{  }
 
 
@@ -91,12 +93,12 @@ namespace GPlatesViewOperations
 			render_reconstruction_geometries(
 					reconstruction,
 					d_rendered_geometry_collection,
-					d_colour_table);
+					*d_view_state.get_colour_table());
 		}
 
 	private:
 		RenderedGeometryCollection &d_rendered_geometry_collection;
-		GPlatesGui::ColourTable &d_colour_table;
+		GPlatesQtWidgets::ViewportWindow &d_view_state;
 	};
 }
 
