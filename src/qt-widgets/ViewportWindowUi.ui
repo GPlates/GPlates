@@ -1168,7 +1168,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset>../../../../../../../:/topology_build_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/topology_build_35.png</iconset>
    </property>
    <property name="text" >
     <string>Build New Topology</string>
@@ -1191,7 +1191,7 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset>../../../../../../../:/topology_edit_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/topology_edit_35.png</iconset>
    </property>
    <property name="text" >
     <string>Edit Topology</string>
