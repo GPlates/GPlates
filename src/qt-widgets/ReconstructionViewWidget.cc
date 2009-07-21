@@ -612,6 +612,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::enable_point_display()
 {
 	d_globe_canvas_ptr->enable_point_display();
 	d_map_canvas_ptr->enable_point_display();
+	d_active_view_ptr->update_canvas();
 }
 
 void
@@ -619,6 +620,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_point_display()
 {
 	d_globe_canvas_ptr->disable_point_display();
 	d_map_canvas_ptr->disable_point_display();
+	d_active_view_ptr->update_canvas();	
 }
 
 void
@@ -626,6 +628,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::enable_line_display()
 {
 	d_globe_canvas_ptr->enable_line_display();
 	d_map_canvas_ptr->enable_line_display();
+	d_active_view_ptr->update_canvas();	
 }
 
 void
@@ -633,6 +636,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_line_display()
 {
 	d_globe_canvas_ptr->disable_line_display();
 	d_map_canvas_ptr->disable_line_display();
+	d_active_view_ptr->update_canvas();	
 }
 
 void
@@ -640,6 +644,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::enable_polygon_display()
 {
 	d_globe_canvas_ptr->enable_polygon_display();
 	d_map_canvas_ptr->enable_polygon_display();
+	d_active_view_ptr->update_canvas();	
 }
 
 void
@@ -647,6 +652,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_polygon_display()
 {
 	d_globe_canvas_ptr->disable_polygon_display();
 	d_map_canvas_ptr->disable_polygon_display();
+	d_active_view_ptr->update_canvas();	
 }
 
 void
@@ -654,6 +660,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::enable_multipoint_display()
 {
 	d_globe_canvas_ptr->enable_multipoint_display();
 	d_map_canvas_ptr->enable_multipoint_display();
+	d_active_view_ptr->update_canvas();	
 }
 
 void
@@ -661,6 +668,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_multipoint_display()
 {
 	d_globe_canvas_ptr->disable_multipoint_display();
 	d_map_canvas_ptr->disable_multipoint_display();
+	d_active_view_ptr->update_canvas();	
 }
 
 void
@@ -668,6 +676,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::enable_arrows_display()
 {
 	d_globe_canvas_ptr->enable_arrows_display();
 	d_map_canvas_ptr->enable_arrows_display();
+	d_active_view_ptr->update_canvas();	
 }
 
 void
@@ -675,5 +684,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_arrows_display()
 {
 	d_globe_canvas_ptr->disable_arrows_display();
 	d_map_canvas_ptr->disable_arrows_display();
+	d_active_view_ptr->update_canvas();	
 }
 

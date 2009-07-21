@@ -40,15 +40,16 @@ GPlatesGui::Globe::Globe(
 d_rendered_geom_collection(&rendered_geom_collection),
 d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
 d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
-d_rendered_geom_collection_painter(rendered_geom_collection, this/*FIXME: remove 'this'*/)
+d_rendered_geom_collection_painter(rendered_geom_collection, this/*FIXME: remove 'this'*/),
+d_show_point(true),
+d_show_line(true),
+d_show_polygon(true),
+d_show_topology(true),
+d_show_multipoint(true),
+d_show_arrows(true)
 {
-	//FIXME: be sure to sychonize with ViewportWidgetUi.ui
-	d_show_point = true;
-	d_show_line = true;
-	d_show_polygon = true;
-	d_show_topology = true;
-	d_show_multipoint = true;
-	d_show_arrows = true;
+	//FIXME: be sure to sychronize the above booleans with ViewportWidgetUi.ui
+
 }
 
 void
