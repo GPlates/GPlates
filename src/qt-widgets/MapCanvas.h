@@ -67,7 +67,7 @@ namespace GPlatesQtWidgets
 		draw_svg_output();
 
 		/** 
-		* Functions to change display state variables
+		* Functions to change and examine display state variables
 		*/ 
 		void enable_point_display()			{ d_show_point		= true; }
 		void enable_line_display()			{ d_show_line 		= true; }
@@ -89,16 +89,17 @@ namespace GPlatesQtWidgets
 		void toggle_topology_display() 		{ d_show_topology 	= !d_show_topology; }
 		void toggle_multipoint_display()	{ d_show_multipoint	= !d_show_multipoint; }
 		void toggle_arrows_display()		{ d_show_arrows		= !d_show_arrows; }
+		
+		bool point_display_is_enabled()		{ return d_show_point; }
+		bool line_display_is_enabled()		{ return d_show_line; }		
+		bool polygon_display_is_enabled()		{ return d_show_polygon; }	
+		bool topology_display_is_enabled()		{ return d_show_topology; }
+		bool multipoint_display_is_enabled()		{ return d_show_multipoint; }
+		bool arrows_display_is_enabled()		{ return d_show_arrows; }		
+		
+		
 
-		/**
-		* Flags to determine what data to show
-		*/
-		bool d_show_point;
-		bool d_show_line;
-		bool d_show_polygon;
-		bool d_show_topology;
-		bool d_show_multipoint;
-		bool d_show_arrows;
+
 
 	public slots:
 
@@ -155,6 +156,16 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_update_type;
+		
+		/**
+		* Flags to determine what data to show
+		*/
+		bool d_show_point;
+		bool d_show_line;
+		bool d_show_polygon;
+		bool d_show_topology;
+		bool d_show_multipoint;
+		bool d_show_arrows;		
 
 	};
 

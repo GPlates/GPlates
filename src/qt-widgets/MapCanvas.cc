@@ -54,7 +54,12 @@ namespace
 
 GPlatesQtWidgets::MapCanvas::MapCanvas(
 	GPlatesViewOperations::RenderedGeometryCollection &collection):
-	d_rendered_geometry_collection(&collection)
+	d_rendered_geometry_collection(&collection),
+	d_show_point(true),
+	d_show_line(true),
+	d_show_polygon(true),
+	d_show_topology(true),
+	d_show_arrows(true)
 {
 
 	// Give the scene a nice big rectangle.

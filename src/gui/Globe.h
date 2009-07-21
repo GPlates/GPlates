@@ -141,15 +141,12 @@ namespace GPlatesGui
 		void toggle_multipoint_display()	{ d_show_multipoint	= !d_show_multipoint; }
 		void toggle_arrows_display()		{ d_show_arrows		= !d_show_arrows; }
 
-		/**
-	 	 * Flags to determine what data to show
-		*/
-		bool d_show_point;
-		bool d_show_line;
-		bool d_show_polygon;
-		bool d_show_topology;
-		bool d_show_multipoint;
-		bool d_show_arrows;
+		bool point_display_is_enabled()		{ return d_show_point; }
+		bool line_display_is_enabled()		{ return d_show_line; }		
+		bool polygon_display_is_enabled()		{ return d_show_polygon; }	
+		bool topology_display_is_enabled()		{ return d_show_topology; }
+		bool multipoint_display_is_enabled()		{ return d_show_multipoint; }
+		bool arrows_display_is_enabled()		{ return d_show_arrows; }	
 
 
 	private:
@@ -208,6 +205,17 @@ namespace GPlatesGui
 		 * One circle of longitude every 30 degrees.
 		 */
 		static const unsigned NUM_CIRCLES_LON = 6;
+		
+		/**
+		* Flags to determine what data to show
+		*/
+		bool d_show_point;
+		bool d_show_line;
+		bool d_show_polygon;
+		bool d_show_topology;
+		bool d_show_multipoint;
+		bool d_show_arrows;		
+		
 	};
 }
 
