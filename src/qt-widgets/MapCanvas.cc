@@ -59,6 +59,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_show_line(true),
 	d_show_polygon(true),
 	d_show_topology(true),
+	d_show_multipoint(true),
 	d_show_arrows(true)
 {
 
