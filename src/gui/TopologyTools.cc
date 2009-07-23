@@ -100,8 +100,8 @@
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/TemplateTypeParameterType.h"
 
-#include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
+#include "view-operations/RenderedGeometryFactory.h"
 
 
 // 
@@ -506,11 +506,6 @@ GPlatesGui::TopologyTools::handle_reconstruction_time_change(
 	// re-display feature focus
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-
-// FIXME : remove diagnostic
-#ifdef DEBUG
-show_numbers();
-#endif
 }
 
 //
@@ -553,12 +548,6 @@ GPlatesGui::TopologyTools::set_focus(
 	// display this feature ; or unset focus if it is a topology
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
-
-
-#ifdef DEBUG
-// FIXME: remove this diag
-show_numbers();
-#endif
 
 	return;
 }
@@ -1160,8 +1149,19 @@ GPlatesGui::TopologyTools::visit_point_on_sphere(
 		GPlatesPropertyValues::GpmlTopologicalPoint::create(
 			pd_ptr);
 
-	// Fill the vector of GpmlTopologicalSection::non_null_ptr_type 
-	d_section_ptrs.push_back( gtp_ptr );
+	// Update the Topology Sections Container 
+
+	// get the current row
+	GPlatesGui::TopologySectionsContainer::TableRow row = 
+		d_topology_sections_container_ptr->at( d_tmp_index );
+
+	// update the section pointer
+	row.d_section_ptr = gtp_ptr;
+
+	// update the row
+	connect_to_topology_sections_container_signals( false );
+	d_topology_sections_container_ptr->update_at( d_tmp_index, row );
+	connect_to_topology_sections_container_signals( true );
 }
 
 void
@@ -1279,8 +1279,19 @@ GPlatesGui::TopologyTools::visit_polyline_on_sphere(
 			boost::none,
 			d_tmp_index_use_reverse);
 
-	// Fill the vector of GpmlTopologicalSection::non_null_ptr_type 
-	d_section_ptrs.push_back( gtls_ptr );
+	// Update the Topology Sections Container 
+
+	// get the current row
+	GPlatesGui::TopologySectionsContainer::TableRow row = 
+		d_topology_sections_container_ptr->at( d_tmp_index );
+
+	// update the section pointer
+	row.d_section_ptr = gtls_ptr;
+
+	// update the row
+	connect_to_topology_sections_container_signals( false );
+	d_topology_sections_container_ptr->update_at( d_tmp_index, row );
+	connect_to_topology_sections_container_signals( true );
 }
 
 
@@ -1314,7 +1325,8 @@ GPlatesGui::TopologyTools::draw_all_layers()
 	draw_intersection_points();
 	draw_insertion_neighbors();
 	
-	//draw_click_points();
+	// FIXME: this might produce too much visual clutter ... ?
+	// draw_click_points();
 
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
@@ -1338,6 +1350,7 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
 				GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+
 
 		d_topology_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
@@ -1647,9 +1660,6 @@ GPlatesGui::TopologyTools::draw_click_point()
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
 
-#if 0
-// FIXME: This tends to produce too much visual clutter 
-// but keep it in here for debugging - just in case ...
 void
 GPlatesGui::TopologyTools::draw_click_points()
 {
@@ -1674,6 +1684,7 @@ GPlatesGui::TopologyTools::draw_click_points()
 		{
 			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_olive();
 
+
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				GPlatesViewOperations::create_rendered_geometry_on_sphere(
@@ -1689,7 +1700,6 @@ GPlatesGui::TopologyTools::draw_click_points()
 	// update the canvas 
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
-#endif
 
 
 
@@ -1705,10 +1715,8 @@ GPlatesGui::TopologyTools::update_geometry()
 	// clear layers
 	draw_all_layers_clear();
 
-	// new d_section_ptrs will be created by create_sections_from_sections_table
-	d_section_ptrs.clear();
-
 	// these will be filled by create_sections_from_sections_table()
+	d_section_ptrs.clear();
 	d_topology_vertices.clear();
 	d_section_ranges_into_topology_vertices.clear();
 	d_head_end_points.clear();
@@ -1778,8 +1786,11 @@ GPlatesGui::TopologyTools::fill_topology_sections_from_section_table()
 void
 GPlatesGui::TopologyTools::create_sections_from_sections_table()
 {
+	#ifdef DEBUG
+	qDebug() << "TopologyTools::create_sections_from_sections_table():";
+	#endif
+
 	// clear out the old vectors, since the calls to accept_visitor will re-populate them
-	d_section_ptrs.clear();
 	d_topology_vertices.clear();
 	d_section_ranges_into_topology_vertices.clear();
 
@@ -1830,33 +1841,40 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
 		d_tmp_index_fid.find_back_ref_targets( append_as_weak_refs( back_refs ) );
 
+		#ifdef DEBUG
+		qDebug() << "d_tmp_index =" << d_tmp_index
+			<< "; d_tmp_index_fid ="
+			<< GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
+		#endif
+
 		// Double check back_refs
 		if ( back_refs.size() == 0 )
 		{
 			// FIXME: feak out? 
+			// FIXME: what else to do?
 			qDebug() << "ERROR: ======================================";
 			qDebug() << "ERROR: create_sections_from_sections_table():";
 			qDebug() << "ERROR: No feature found for feature_id =";
-			qDebug() <<
-				GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
+			qDebug() << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
 			qDebug() << "ERROR: Unable to obtain feature (and its geometry, or vertices)";
-			qDebug() << " ";
-			// FIXME: what else to do?
+			qDebug() << "ERROR: continue to next element in Sections Table";
+			qDebug() << "ERROR: ======================================";
 			// no change to vertex_list
-			return;
+			continue; // to next element in the Sections Table
 		}
 
 		if ( back_refs.size() > 1)
 		{
+			// FIXME: what else to do?
 			qDebug() << "ERROR: ======================================";
 			qDebug() << "ERROR: create_sections_from_sections_table():";
 			qDebug() << "ERROR: More than one feature found for feature_id =";
-			qDebug() <<
-				GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
+			qDebug() << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
 			qDebug() << "ERROR: Unable to determine feature";
-			// FIXME: what else to do?
+			qDebug() << "ERROR: continue to next element in Sections Table";
+			qDebug() << "ERROR: ======================================";
 			// no change to vertex_list
-			return;
+			continue; // to next element in the Sections Table
 		}
 
 		// else , get the first ref on the list
@@ -1886,13 +1904,38 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 
 			if (gos_ptr) 
 			{
-				// visit the geoms.  :
+				// visit the geoms. :
 				// fill additional d_tmp_index_ vars 
 				// fill d_head_end_points d_tail_end_points 
 				// set d_tmp_process_intersections
+
+				// visit will call :
+				// d_topology_sections_container_ptr->update_at( d_tmp_index, row )
+				// to set GpmlTopologicalSection for that row
+
 				d_visit_to_check_type = false;
 				d_visit_to_create_properties = true;
 				gos_ptr->accept_visitor(*this);
+
+				//
+				// Get the GpmlTopologicalSection ptr and add it to the working vector
+				//
+				if ( d_topology_sections_container_ptr->at( d_tmp_index ).d_section_ptr )
+				{
+					GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type gts_ptr =
+					(d_topology_sections_container_ptr->at( d_tmp_index ).d_section_ptr).get();
+
+					d_section_ptrs.push_back( gts_ptr );
+				}
+				else
+				{
+					qDebug() << "ERROR: ======================================";
+					qDebug() << "ERROR: create_sections_from_sections_table():";
+					qDebug() << "ERROR: no GpmlTopologicalSection found in Table!";
+					qDebug() << "ERROR: continue to next element in Sections Table";
+					qDebug() << "ERROR: ======================================";
+					continue;
+				}
 
 
 				// Check this index for before/after_insert_index 
@@ -1945,20 +1988,26 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 			}
 			else
 			{
+				// FIXME: what to do here??!
 				// else no GOS for RFG 
 				qDebug() << "ERROR: ======================================";
 				qDebug() << "ERROR: create_sections_from_sections_table():";
 				qDebug() << "ERROR: no geometry on sphere ptr!";
-				// FIXME: what to do here??!
+				qDebug() << "ERROR: continue to next element in Sections Table";
+				qDebug() << "ERROR: ======================================";
+				continue; // to next element in the Sections Table
 			}
 		} 
 		else
 		{
+			// FIXME: what to do here??!
 			// else no RFG found for feature 
 			qDebug() << "ERROR: ======================================";
 			qDebug() << "ERROR: create_sections_from_sections_table():";
 			qDebug() << "ERROR: no RFG!";
-			// FIXME: ?
+			qDebug() << "ERROR: continue to next element in Sections Table";
+			qDebug() << "ERROR: ======================================";
+			continue; // to next element in the Sections Table
 		}
 
 		// Store the range of topology vertices belonging to the current
@@ -2082,7 +2131,11 @@ GPlatesGui::TopologyTools::process_intersections()
 				qDebug() << "ERROR: ===================================================";
 				qDebug() << "ERROR: GPlatesGui::TopologyTools::process_intersections():";
 				qDebug() << "ERROR: no geometry on sphere ptr for PREV";
+				qDebug() << "ERROR: PREV feature id = " 
+					<< GPlatesUtils::make_qstring_from_icu_string( 
+						prev_feature_ref->feature_id().get() );
 				// FIXME: what to do here??!
+				d_num_intersections_with_prev = 0;
 			}
 		} 
 		else
@@ -2091,7 +2144,11 @@ GPlatesGui::TopologyTools::process_intersections()
 			qDebug() << "ERROR: ===================================================";
 			qDebug() << "ERROR: GPlatesGui::TopologyTools::process_intersections():";
 			qDebug() << "ERROR: no RFG for PREV";
+			qDebug() << "ERROR: PREV feature id = " 
+				<< GPlatesUtils::make_qstring_from_icu_string( 
+					prev_feature_ref->feature_id().get() );
 			// FIXME: what to do here??!
+			d_num_intersections_with_prev = 0;
 		}
 	}
 	else
@@ -2100,14 +2157,18 @@ GPlatesGui::TopologyTools::process_intersections()
 		qDebug() << "ERROR: ===================================================";
 		qDebug() << "EDDOR: GPlatesGui::TopologyTools::process_intersections():";
 		qDebug() << "ERROR: prev_feature_ref not valid!";
+		qDebug() << "ERROR: PREV feature id = " 
+			<< GPlatesUtils::make_qstring_from_icu_string( 
+					prev_feature_ref->feature_id().get() );
 		// FIXME: what to do here??!
+		d_num_intersections_with_prev = 0;
 	}
 
 
 	//
 	// if INDEX and PREV intersect, then create the startIntersection property value
 	//
-	if ( d_visit_to_create_properties && (d_num_intersections_with_prev != 0) )
+	if ( (d_num_intersections_with_prev != 0) && d_visit_to_create_properties )
 	{
 		const GPlatesModel::FeatureId prev_fid = prev_feature_ref->feature_id();
 
@@ -2151,12 +2212,28 @@ GPlatesGui::TopologyTools::process_intersections()
 			ref_point,
 			plate_id_delegate);
 			
+		//
 		// Set the start instersection
-		GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
-			dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
-				d_section_ptrs.at( d_tmp_index ).get() );
+		//
 
-		gtls_ptr->set_start_intersection( start_ti );
+		// get the section from the table
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type gts_nnpt = 
+				d_topology_sections_container_ptr->at( d_tmp_index ).d_section_ptr.get();
+
+		if ( gts_nnpt )
+		{
+			// cast to the right sub-type
+			GPlatesPropertyValues::GpmlTopologicalSection* gts_ptr = gts_nnpt.get();
+
+			GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
+				dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>( gts_ptr );
+
+			if ( gtls_ptr )
+			{
+				// set the start intersection
+				gtls_ptr->set_start_intersection( start_ti );
+			}
+		}
 	}
 
 	//
@@ -2217,7 +2294,11 @@ GPlatesGui::TopologyTools::process_intersections()
 				qDebug() << "ERROR: ===================================================";
 				qDebug() << "ERROR: GPlatesGui::TopologyTools::process_intersections():";
 				qDebug() << "ERROR: no geometry on sphere ptr for NEXT";
+				qDebug() << "ERROR: NEXT feature id = " 
+					<< GPlatesUtils::make_qstring_from_icu_string( 
+						next_feature_ref->feature_id().get() );
 				// FIXME: what to do here??!
+				d_num_intersections_with_next = 0;
 			}
 		} 
 		else
@@ -2226,7 +2307,11 @@ GPlatesGui::TopologyTools::process_intersections()
 			qDebug() << "ERROR: ===================================================";
 			qDebug() << "ERROR: GPlatesGui::TopologyTools::process_intersections():";
 			qDebug() << "ERROR: no RFG for NEXT";
+			qDebug() << "ERROR: NEXT feature id = " 
+					<< GPlatesUtils::make_qstring_from_icu_string( 
+						next_feature_ref->feature_id().get() );
 			// FIXME: what to do here??!
+			d_num_intersections_with_next = 0;
 		}
 	}
 	else
@@ -2235,13 +2320,17 @@ GPlatesGui::TopologyTools::process_intersections()
 		qDebug() << "ERROR: ===================================================";
 		qDebug() << "EDDOR: GPlatesGui::TopologyTools::process_intersections():";
 		qDebug() << "ERROR: NEXT next_feature_ref not valid!";
+		qDebug() << "ERROR: NEXT feature id = " 
+					<< GPlatesUtils::make_qstring_from_icu_string( 
+						next_feature_ref->feature_id().get() );
 		// FIXME: what to do here??!
+		d_num_intersections_with_next = 0;
 	}
 
 	//
 	// if INDEX and NEXT intersect, then create the endIntersection property value
 	//
-	if ( d_visit_to_create_properties && (d_num_intersections_with_next != 0) )
+	if ( (d_num_intersections_with_next != 0) && d_visit_to_create_properties )
 	{
 		const GPlatesModel::FeatureId next_fid = next_feature_ref->feature_id();
 
@@ -2285,12 +2374,22 @@ GPlatesGui::TopologyTools::process_intersections()
 			ref_point,
 			plate_id_delegate);
 			
+		//
 		// Set the end instersection
-		GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
-			dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
-				d_section_ptrs.at( d_tmp_index ).get() );
+		//
 
-		gtls_ptr->set_end_intersection( end_ti );
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type gts_nnpt = 
+				d_topology_sections_container_ptr->at( d_tmp_index ).d_section_ptr.get();
+
+		GPlatesPropertyValues::GpmlTopologicalSection* gts_ptr = gts_nnpt.get();
+
+		GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
+			dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>( gts_ptr );
+
+		if (gtls_ptr)
+		{
+			gtls_ptr->set_end_intersection( end_ti );
+		}
 	}
 
 }
@@ -2449,9 +2548,6 @@ qDebug() << "TopologyTools::compute_intersection: " << "use HEAD";
 					);
 					// save intersection point
 					d_intersection_points.push_back( *(parts.first.front()->vertex_begin()) );
-#ifdef DEBUG1
-qDebug() << "TopologyTools::compute_intersection: llp_pff =" << llp_pff.latitude() << "," << llp_pff.longitude();
-#endif
 					break;
 	
 				case GPlatesGui::TopologyTools::INTERSECT_NEXT:
@@ -2462,9 +2558,6 @@ qDebug() << "TopologyTools::compute_intersection: llp_pff =" << llp_pff.latitude
 						back_inserter( d_tmp_index_vertex_list )
 					);
 					d_intersection_points.push_back( *(parts.first.front()->vertex_begin()) );
-#ifdef DEBUG1
-qDebug() << "TopologyTools::compute_intersection: llp_pff =" << llp_pff.latitude() << "," << llp_pff.longitude();
-#endif
 					break;
 
 				default:
@@ -2490,10 +2583,6 @@ qDebug() << "TopologyTools::compute_intersection: " << "use TAIL" ;
 						back_inserter( d_tmp_index_vertex_list )
 					);
 					d_intersection_points.push_back( *(parts.first.back()->vertex_begin()) );
-#ifdef DEBUG1
-qDebug() << "TopologyTools::compute_intersection: llp=" << llp_pfb.latitude() << "," << llp_pfb.longitude();
-#endif
-
 					break;
 	
 				case GPlatesGui::TopologyTools::INTERSECT_NEXT:
@@ -2504,9 +2593,6 @@ qDebug() << "TopologyTools::compute_intersection: llp=" << llp_pfb.latitude() <<
 						back_inserter( d_tmp_index_vertex_list )
 					);
 					d_intersection_points.push_back( *(parts.first.back()->vertex_begin()) );
-#ifdef DEBUG1
-qDebug() << "TopologyTools::compute_intersection: llp=" << llp_pfb.latitude() << "," << llp_pfb.longitude();
-#endif
 					break;
 
 				default:
@@ -2572,6 +2658,11 @@ GPlatesGui::TopologyTools::append_boundary_to_feature(
 			break;
 		}
 	} // loop over properties
+
+
+	// 
+	// d_section_ptrs has been filled by a call to create_sections_from_sections_table()
+	//
 
 	// create the TopologicalPolygon
 	GPlatesModel::PropertyValue::non_null_ptr_type topo_poly_value =
@@ -2695,7 +2786,8 @@ GPlatesGui::TopologyTools::show_numbers()
 		}
 	}
 	qDebug() << "############################################################"; 
-
+	qDebug() << " "; 
+	qDebug() << " "; 
 }
 
 void
@@ -2848,3 +2940,5 @@ GPlatesGui::TopologyTools::should_reverse_section(
 	// which is what we want.
 	return reversed_arc_distance < arc_distance;
 }
+
+

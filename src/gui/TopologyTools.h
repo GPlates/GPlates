@@ -301,11 +301,8 @@ namespace GPlatesGui
 		void
 		draw_insertion_neighbors();
 
-#if 0
-// FIXME: this can produce too much visual clutter ; but keep it in for debugging
 		void
 		draw_click_points();
-#endif
 
 		void
 		draw_click_point();
@@ -469,10 +466,15 @@ namespace GPlatesGui
 		 * These vectors hold results from a TopologySectionsFinder
 		 */
 		std::vector<GPlatesModel::FeatureId> d_section_ids;
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
-			d_section_ptrs;
 		std::vector<std::pair<double, double> > d_section_click_points;
 		std::vector<bool> d_section_reverse_flags;
+
+		/** 
+		 * Filled by both TopologySectionsFinder and create_sections_from_sections_table()
+		 */
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
+			d_section_ptrs;
+
 
 		/**
 		 * a collection of TopologySectionsContainer::TableRow structs
