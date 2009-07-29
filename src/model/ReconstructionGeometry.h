@@ -40,6 +40,7 @@ namespace GPlatesModel
 	// Forward declaration to avoid circularity of headers.
 	class Reconstruction;
 	class ReconstructionGeometryVisitor;
+	class ConstReconstructionGeometryVisitor;
 
 
 	/**
@@ -71,7 +72,7 @@ namespace GPlatesModel
 		typedef boost::intrusive_ptr<ReconstructionGeometry> maybe_null_ptr_type;
 
 		/**
-		 * A convenience typedef for the geometry of this RFG.
+		 * A convenience typedef for the geometry of this ReconstructionGeometry.
 		 */
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr_type;
 
@@ -89,10 +90,10 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Access the Reconstruction instance which contains this RFG.
+		 * Access the Reconstruction instance which contains this ReconstructionGeometry.
 		 *
 		 * This could be used, for instance, to access the ReconstructionTree which was
-		 * used to reconstruct this RFG.
+		 * used to reconstruct this ReconstructionGeometry.
 		 *
 		 * Note that this pointer may be NULL.
 		 */
@@ -103,10 +104,10 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Access the Reconstruction instance which contains this RFG.
+		 * Access the Reconstruction instance which contains this ReconstructionGeometry.
 		 *
 		 * This could be used, for instance, to access the ReconstructionTree which was
-		 * used to reconstruct this RFG.
+		 * used to reconstruct this ReconstructionGeometry.
 		 *
 		 * Note that this pointer may be NULL.
 		 */
@@ -119,12 +120,13 @@ namespace GPlatesModel
 		/**
 		 * Set the reconstruction pointer.
 		 *
-		 * This function is intended to be invoked @em only when the RFG is sitting in the
-		 * vector inside the Reconstruction instance, since even a copy-construction will
-		 * reset the value of the reconstruction pointer back to NULL.
+		 * This function is intended to be invoked @em only when the ReconstructionGeometry is
+		 * sitting in the vector inside the Reconstruction instance, since even a
+		 * copy-construction will reset the value of the reconstruction pointer back to NULL.
 		 *
 		 * WARNING:  This function should only be invoked by the code which is actually
-		 * assigning an RFG instance into (the vector inside) a Reconstruction instance.
+		 * assigning an ReconstructionGeometry instance into (the vector inside) a
+		 * Reconstruction instance.
 		 */
 		void
 		set_reconstruction_ptr(
@@ -132,6 +134,14 @@ namespace GPlatesModel
 		{
 			d_reconstruction_ptr = reconstruction_ptr;
 		}
+
+		/**
+		 * Accept a ConstReconstructionGeometryVisitor instance.
+		 */
+		virtual
+		void
+		accept_visitor(
+				ConstReconstructionGeometryVisitor &visitor) const = 0;
 
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
@@ -166,18 +176,18 @@ namespace GPlatesModel
 		geometry_ptr_type d_geometry_ptr;
 
 		/**
-		 * This is the Reconstruction instance which contains this RFG.
+		 * This is the Reconstruction instance which contains this ReconstructionGeometry.
 		 *
 		 * Note that we do NOT want this to be any sort of ref-counting pointer, since the
-		 * Reconstruction instance which contains this RFG, does so using a ref-counting
-		 * pointer; circularity of ref-counting pointers would lead to memory leaks.
+		 * Reconstruction instance which contains this ReconstructionGeometry, does so using a
+		 * ref-counting pointer; circularity of ref-counting pointers would lead to memory leaks.
 		 *
 		 * Note that this pointer may be NULL.
 		 *
 		 * This pointer should only @em ever point to a Reconstruction instance which
-		 * @em does contain this RFG inside its vector.  (This is the only way we can
-		 * guarantee that the Reconstruction instance actually exists, ie that the pointer
-		 * is not a dangling pointer.)
+		 * @em does contain this ReconstructionGeometry inside its vector.  (This is the only
+		 * way we can guarantee that the Reconstruction instance actually exists, ie that the
+		 * pointer is not a dangling pointer.)
 		 */
 		Reconstruction *d_reconstruction_ptr;
 

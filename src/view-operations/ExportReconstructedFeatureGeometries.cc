@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <map>
+#include <vector>
 // Disable Visual Studio warning "qualifier applied to reference type; ignored" in boost 1.36.0
 #if defined(_MSC_VER)
 #	pragma warning( push )
@@ -57,7 +58,7 @@ namespace
 			active_files_collection_type;
 
 	//! Convenience typedef for sequence of RFGs.
-	typedef GPlatesAppLogic::ReconstructionGeometryUtils::reconstructed_feature_geom_seq_type
+	typedef std::vector<GPlatesModel::ReconstructedFeatureGeometry *>
 			reconstructed_feature_geom_seq_type;
 
 	//! Convenience typedef for iterator into global list of loaded feature collection files.
@@ -265,9 +266,8 @@ GPlatesViewOperations::ExportReconstructedFeatureGeometries::export_visible_geom
 			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
-	GPlatesAppLogic::ReconstructionGeometryUtils::reconstructed_feature_geom_seq_type
-			reconstruct_feature_geom_seq;
-	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstructed_feature_geometries(
+	reconstructed_feature_geom_seq_type reconstruct_feature_geom_seq;
+	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 			reconstruction_geom_seq.begin(),
 			reconstruction_geom_seq.end(),
 			reconstruct_feature_geom_seq);

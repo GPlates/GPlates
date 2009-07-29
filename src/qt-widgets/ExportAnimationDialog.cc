@@ -305,6 +305,9 @@ GPlatesQtWidgets::ExportAnimationDialog::recalculate_parameters_description()
 	if (d_export_animation_context_ptr->velocity_exporter_enabled()) {
 		list_parameters_output_files->addItem(d_export_animation_context_ptr->velocity_exporter_filename_template());
 	}
+	if (d_export_animation_context_ptr->resolved_topology_exporter_enabled()) {
+		list_parameters_output_files->addItem(d_export_animation_context_ptr->resolved_topology_exporter_filename_template());
+	}
 }
 
 

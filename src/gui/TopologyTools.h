@@ -220,22 +220,22 @@ namespace GPlatesGui
 		void
 		set_focus(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		display_feature(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		display_feature_focus_modified(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		display_topology(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		handle_shift_left_click(

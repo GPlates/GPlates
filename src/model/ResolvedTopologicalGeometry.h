@@ -28,11 +28,19 @@
 #ifndef GPLATES_MODEL_RESOLVEDTOPOLOGICALGEOMETRY_H
 #define GPLATES_MODEL_RESOLVEDTOPOLOGICALGEOMETRY_H
 
+#include <cstddef>
+#include <iterator>
+#include <vector>
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
+
 #include "ReconstructionGeometry.h"
 #include "WeakObserver.h"
 #include "types.h"
 #include "FeatureHandle.h"
+
+#include "maths/PolygonOnSphere.h"
+
 #include "property-values/GeoTimeInstant.h"
 
 
@@ -70,21 +78,210 @@ namespace GPlatesModel
 		typedef WeakObserver<FeatureHandle> WeakObserverType;
 
 		/**
+		 * A convenience typedef for the geometry of this @a ResolvedTopologicalGeometry.
+		 */
+		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+				resolved_topology_geometry_ptr_type;
+
+		/**
+		 * A convenience typedef for the geometry of subsegments of this RTG.
+		 */
+		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type sub_segment_geometry_ptr_type;
+
+
+		/**
+		 * Records the reconstructed geometry, and any other relevant information,
+		 * of a subsegment.
+		 *
+		 * A subsegment is the subset of a reconstructed topological section's
+		 * vertices that are used to form part of the boundary of the
+		 * resolved topology geometry.
+		 */
+		class SubSegment
+		{
+		public:
+			SubSegment(
+					resolved_topology_geometry_ptr_type resolved_topology_geometry,
+					const std::size_t sub_segment_vertex_index,
+					const std::size_t sub_segment_num_vertices,
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
+					bool use_reverse) :
+				d_resolved_topology_geometry_ptr(resolved_topology_geometry),
+				d_sub_segment_vertex_index(sub_segment_vertex_index),
+				d_sub_segment_num_vertices(sub_segment_num_vertices),
+				d_feature_ref(feature_ref),
+				d_use_reverse(use_reverse)
+			{  }
+
+			//! The subset of vertices of topological section used in resolved topology geometry.
+			const sub_segment_geometry_ptr_type &
+			get_geometry() const
+			{
+				if (!d_geometry_ptr)
+				{
+					create_sub_segment_geometry();
+				}
+
+				return *d_geometry_ptr;
+			}
+
+			//! Reference to the feature referenced by the topological section.
+			const GPlatesModel::FeatureHandle::const_weak_ref &
+			get_feature_ref() const
+			{
+				return d_feature_ref;
+			}
+
+			bool
+			get_use_reverse() const
+			{
+				return d_use_reverse;
+			}
+
+		private:
+			//! The resolved platepolygon geometry.
+			resolved_topology_geometry_ptr_type d_resolved_topology_geometry_ptr;
+
+			std::size_t d_sub_segment_vertex_index;
+			std::size_t d_sub_segment_num_vertices;
+
+			//! Reference to the feature handle of topological section.
+			GPlatesModel::FeatureHandle::const_weak_ref d_feature_ref;
+
+			//! Indicates if geometry direction was reversed when assembling topology.
+			bool d_use_reverse;
+
+			//! The subsegment geometry.
+			mutable boost::optional<sub_segment_geometry_ptr_type> d_geometry_ptr;
+
+
+			void
+			create_sub_segment_geometry() const;
+		};
+
+
+		//! Typedef for a sequence of @a SubSegment objects.
+		typedef std::vector<SubSegment> sub_segment_seq_type;
+
+
+		/**
+		 * Forward iterator over export template filename sequence.
+		 * Dereferencing iterator returns a 'const QString'.
+		 */
+		class SubSegmentConstIterator :
+				public std::iterator<std::bidirectional_iterator_tag, const SubSegment>,
+				public boost::bidirectional_iteratable<SubSegmentConstIterator, const SubSegment *>
+		{
+		public:
+			//! Create begin iterator.
+			static
+			SubSegmentConstIterator
+			create_begin(
+					const sub_segment_seq_type &sub_segment_seq)
+			{
+				return SubSegmentConstIterator(sub_segment_seq, 0);
+			}
+
+
+			//! Create end iterator.
+			static
+			SubSegmentConstIterator
+			create_end(
+					const sub_segment_seq_type &sub_segment_seq)
+			{
+				return SubSegmentConstIterator(sub_segment_seq, sub_segment_seq.size());
+			}
+
+
+			/**
+			 * Dereference operator.
+			 * Operator->() provided by class boost::bidirectional_iteratable.
+			 */
+			const SubSegment &
+			operator*() const
+			{
+				return (*d_sub_segment_seq)[d_sequence_index];
+			}
+
+
+			/**
+			 * Pre-increment operator.
+			 * Post-increment operator provided by base class boost::bidirectional_iteratable.
+			 */
+			SubSegmentConstIterator &
+			operator++()
+			{
+				++d_sequence_index;
+				return *this;
+			}
+
+
+			/**
+			 * Pre-decrement operator.
+			 * Post-decrement operator provided by base class boost::bidirectional_iteratable.
+			 */
+			SubSegmentConstIterator &
+			operator--()
+			{
+				--d_sequence_index;
+				return *this;
+			}
+
+
+			/**
+			 * Equality comparison.
+			 * Inequality operator provided by base class boost::bidirectional_iteratable.
+			 */
+			friend
+			bool
+			operator==(
+					const SubSegmentConstIterator &lhs,
+					const SubSegmentConstIterator &rhs)
+			{
+				return lhs.d_sub_segment_seq == rhs.d_sub_segment_seq &&
+					lhs.d_sequence_index == rhs.d_sequence_index;
+			}
+
+		private:
+			const sub_segment_seq_type *d_sub_segment_seq;
+			std::size_t d_sequence_index;
+
+
+			SubSegmentConstIterator(
+					const sub_segment_seq_type &sub_segment_seq,
+					std::size_t sequence_index) :
+				d_sub_segment_seq(&sub_segment_seq),
+				d_sequence_index(sequence_index)
+			{  }
+		};
+
+
+		/**
+		 * The type used to const_iterate over the subsegments.
+		 */
+		typedef SubSegmentConstIterator sub_segment_const_iterator;
+
+
+		/**
 		 * Create a ResolvedTopologicalGeometry instance with an optional plate ID and an
 		 * optional time of formation.
 		 */
+		template<typename SubSegmentForwardIter>
 		static
 		const non_null_ptr_type
 		create(
-				geometry_ptr_type geometry_ptr,
+				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
+				SubSegmentForwardIter sub_segment_sequence_begin,
+				SubSegmentForwardIter sub_segment_sequence_end,
 				boost::optional<integer_plate_id_type> plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_)
 		{
 			non_null_ptr_type ptr(
-					new ResolvedTopologicalGeometry(geometry_ptr, feature_handle,
-							property_iterator_, plate_id_, time_of_formation_),
+					new ResolvedTopologicalGeometry(resolved_topology_geometry_ptr, feature_handle,
+							property_iterator_, sub_segment_sequence_begin, sub_segment_sequence_end,
+							plate_id_, time_of_formation_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -98,16 +295,19 @@ namespace GPlatesModel
 		 * geometry was resolved.
 		 *
 		 */
+		template<typename SubSegmentForwardIter>
 		static
 		const non_null_ptr_type
 		create(
-				geometry_ptr_type geometry_ptr,
+				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::properties_iterator property_iterator_)
+				FeatureHandle::properties_iterator property_iterator_,
+				SubSegmentForwardIter sub_segment_sequence_begin,
+				SubSegmentForwardIter sub_segment_sequence_end)
 		{
 			non_null_ptr_type ptr(
-					new ResolvedTopologicalGeometry(geometry_ptr, feature_handle,
-							property_iterator_),
+					new ResolvedTopologicalGeometry(resolved_topology_geometry_ptr, feature_handle,
+							property_iterator_, sub_segment_sequence_begin, sub_segment_sequence_end),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -115,6 +315,17 @@ namespace GPlatesModel
 		virtual
 		~ResolvedTopologicalGeometry()
 		{  }
+
+		/**
+		 * Get a non-null pointer to a const ResolvedTopologicalGeometry which points to this
+		 * instance.
+		 *
+		 * Since the ResolvedTopologicalGeometry constructors are private, it should never
+		 * be the case that a ResolvedTopologicalGeometry instance has been constructed on
+		 * the stack.
+		 */
+		const non_null_ptr_to_const_type
+		get_non_null_pointer_to_const() const;
 
 		/**
 		 * Get a non-null pointer to a ResolvedTopologicalGeometry which points to this
@@ -204,6 +415,35 @@ namespace GPlatesModel
 			return d_time_of_formation;
 		}
 
+
+		/**
+		 * Returns const iterator to beginning of the internal sequence of @a SubSegment objects.
+		 */
+		sub_segment_const_iterator
+		sub_segment_begin() const
+		{
+			return sub_segment_const_iterator::create_begin(d_sub_segment_seq);
+		}
+
+
+		/**
+		 * Returns const iterator to end of the internal sequence of @a SubSegment objects.
+		 */
+		sub_segment_const_iterator
+		sub_segment_end() const
+		{
+			return sub_segment_const_iterator::create_end(d_sub_segment_seq);
+		}
+
+
+		/**
+		 * Accept a ConstReconstructionGeometryVisitor instance.
+		 */
+		virtual
+		void
+		accept_visitor(
+				ConstReconstructionGeometryVisitor &visitor) const;
+
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
 		 */
@@ -221,7 +461,6 @@ namespace GPlatesModel
 				WeakObserverVisitor<FeatureHandle> &visitor);
 
 	private:
-
 		/**
 		 * This is an iterator to the (topological-geometry-valued) property from which
 		 * this RTG was derived.
@@ -250,23 +489,36 @@ namespace GPlatesModel
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
 
 		/**
+		 * The sequence of @a SubSegment objects that form the resolved topology geometry.
+		 *
+		 * This contains the subset of vertices of each reconstructed topological section
+		 * used to generate the resolved topology geometry.
+		 */
+		sub_segment_seq_type d_sub_segment_seq;
+
+
+		/**
 		 * Instantiate a resolved topological geometry with an optional reconstruction
 		 * plate ID and an optional time of formation.
 		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
+		template<typename SubSegmentForwardIter>
 		ResolvedTopologicalGeometry(
-				geometry_ptr_type geometry_ptr,
+				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
+				SubSegmentForwardIter sub_segment_sequence_begin,
+				SubSegmentForwardIter sub_segment_sequence_end,
 				boost::optional<integer_plate_id_type> plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_):
-			ReconstructionGeometry(geometry_ptr),
+			ReconstructionGeometry(resolved_topology_geometry_ptr),
 			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_),
 			d_plate_id(plate_id_),
-			d_time_of_formation(time_of_formation_)
+			d_time_of_formation(time_of_formation_),
+			d_sub_segment_seq(sub_segment_sequence_begin, sub_segment_sequence_end)
 		{  }
 
 		/**
@@ -276,13 +528,17 @@ namespace GPlatesModel
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
+		template<typename SubSegmentForwardIter>
 		ResolvedTopologicalGeometry(
-				geometry_ptr_type geometry_ptr,
+				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
-				FeatureHandle::properties_iterator property_iterator_):
-			ReconstructionGeometry(geometry_ptr),
+				FeatureHandle::properties_iterator property_iterator_,
+				SubSegmentForwardIter sub_segment_sequence_begin,
+				SubSegmentForwardIter sub_segment_sequence_end):
+			ReconstructionGeometry(resolved_topology_geometry_ptr),
 			WeakObserverType(feature_handle),
-			d_property_iterator(property_iterator_)
+			d_property_iterator(property_iterator_),
+			d_sub_segment_seq(sub_segment_sequence_begin, sub_segment_sequence_end)
 		{  }
 
 		// This constructor should never be defined, because we don't want to allow
@@ -298,27 +554,6 @@ namespace GPlatesModel
 		operator=(
 				const ResolvedTopologicalGeometry &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const ResolvedTopologicalGeometry *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const ResolvedTopologicalGeometry *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_RESOLVEDTOPOLOGICALGEOMETRY_H

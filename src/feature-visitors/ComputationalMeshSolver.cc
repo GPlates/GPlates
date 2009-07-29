@@ -321,45 +321,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_handle(
 }
 
 
-void
-GPlatesFeatureVisitors::ComputationalMeshSolver::visit_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
-{
-	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
-	for ( ; iter != end; ++iter) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) {
-			// FIXME: This d_current_property thing could go in {Const,}FeatureVisitor base.
-			d_accumulator->d_current_property = iter;
-			(*iter)->accept_visitor(*this);
-		}
-	}
-}
-
-
-
-void
-GPlatesFeatureVisitors::ComputationalMeshSolver::visit_top_level_property_inline(
-		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	visit_property_values( top_level_property_inline );
-}
-
-
-void
-GPlatesFeatureVisitors::ComputationalMeshSolver::visit_property_values(
-		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	GPlatesModel::TopLevelPropertyInline::const_iterator iter = top_level_property_inline.begin();
-	GPlatesModel::TopLevelPropertyInline::const_iterator end = top_level_property_inline.end();
-	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(*this);
-	}
-}
-
-
 
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
@@ -539,7 +500,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_time_period(
 		// We're gathering information, not performing reconstructions.
 
 		// Note that we're going to assume that we're in a property...
-		if (d_accumulator->current_property_name() == valid_time_property_name) {
+		if (current_top_level_propname() == valid_time_property_name) {
 			// This time period is the "valid time" time period.
 			if ( ! gml_time_period.contains(d_recon_time)) {
 				// Oh no!  This feature instance is not defined at the recon time!
@@ -569,7 +530,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gpml_plate_id(
 		// We're gathering information, not performing reconstructions.
 
 		// Note that we're going to assume that we're in a property...
-		if (d_accumulator->current_property_name() == reconstruction_plate_id_property_name) {
+		if (current_top_level_propname() == reconstruction_plate_id_property_name) {
 			// This plate ID is the reconstruction plate ID.
 			d_accumulator->d_recon_plate_id = gpml_plate_id.value();
 		}

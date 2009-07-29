@@ -26,7 +26,8 @@
  */
 
 #include "PlatesColourTable.h"
-#include "model/ReconstructedFeatureGeometry.h"
+
+#include "app-logic/ReconstructionGeometryUtils.h"
 
 
 GPlatesGui::PlatesColourTable *
@@ -43,29 +44,16 @@ GPlatesGui::PlatesColourTable::Instance()
 
 GPlatesGui::ColourTable::const_iterator
 GPlatesGui::PlatesColourTable::lookup(
-		const GPlatesModel::ReconstructedFeatureGeometry &feature) const
+		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
 {
-	GPlatesModel::integer_plate_id_type id = *(feature.reconstruction_plate_id());
-
-	// First, ensure that the ID isn't greater than the highest ID in the
-	// ID table (which would result in an out-of-bounds index).
-	if (id > d_highest_known_rid) {
-
-		// The ID is outside the bounds of this table.
+	GPlatesModel::integer_plate_id_type plate_id;
+	if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(
+			&reconstruction_geometry, plate_id))
+	{
 		return end();
 	}
 
-	// Now, convert the ID into an index into the 'ID table'.
-	size_t idx = static_cast< size_t >(id);
-	const Colour *colour_ptr = d_id_table[idx];
-	if (colour_ptr == NULL) {
-
-		// There is no entry for this ID in the table.
-		return end();
-
-	} else {
-		return const_iterator(colour_ptr);
-	}
+	return lookup_by_plate_id(plate_id);
 }
 
 

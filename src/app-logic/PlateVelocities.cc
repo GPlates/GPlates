@@ -297,7 +297,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 bool
 GPlatesAppLogic::PlateVelocities::load_reconstructable_feature_collection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		const QString &feature_collection_filename,
+		const GPlatesFileIO::FileInfo &feature_collection_file_info,
 		GPlatesModel::ModelInterface &model)
 {
 	// Only interested in feature collections with velocity mesh nodes.
@@ -316,7 +316,7 @@ GPlatesAppLogic::PlateVelocities::load_reconstructable_feature_collection(
 	d_velocity_field_feature_collection_infos.push_back(
 			VelocityFieldFeatureCollectionInfo(
 					feature_collection,
-					feature_collection_filename,
+					feature_collection_file_info,
 					velocity_field_feature_collection));
 
 	return true;

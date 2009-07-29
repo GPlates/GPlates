@@ -33,7 +33,7 @@
 
 namespace GPlatesModel
 {
-	class ReconstructedFeatureGeometry;
+	class ReconstructionGeometry;
 }
 
 namespace GPlatesGui
@@ -53,10 +53,16 @@ namespace GPlatesGui
 			return NULL;
 		}
 
+		/**
+		 * Returns an iterator referencing a @a Colour if @a reconstruction_geometry
+		 * has the necessary parameters, otherwise returns @a end.
+		 *
+		 * Note: The caller should check the return value against @a end before dereferencing.
+		 */
 		virtual
 		const_iterator
 		lookup(
-				const GPlatesModel::ReconstructedFeatureGeometry &feature) const = 0;
+				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const = 0;
 	};
 }
 

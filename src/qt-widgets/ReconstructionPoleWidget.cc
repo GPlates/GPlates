@@ -28,6 +28,7 @@
 #include "ReconstructionPoleWidget.h"
 #include "ViewportWindow.h"
 #include "ApplyReconstructionPoleAdjustmentDialog.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "utils/MathUtils.h"
@@ -393,10 +394,10 @@ GPlatesQtWidgets::ReconstructionPoleWidget::reset_adjustment()
 void
 GPlatesQtWidgets::ReconstructionPoleWidget::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
 {
 	if ( ! focused_geometry) {
-		// No RFG, so nothing we can do.
+		// No RG, so nothing we can do.
 
 		// Clear the plate ID and the plate ID field.
 		d_plate_id = boost::none;
@@ -409,13 +410,24 @@ GPlatesQtWidgets::ReconstructionPoleWidget::set_focus(
 		draw_initial_geometries();
 		return;
 	}
-	if (d_plate_id == focused_geometry->reconstruction_plate_id()) {
+
+	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalGeometry's,
+	// for instance, are used to assign plate ids to regular features so we probably only
+	// want to look at geometries of regular features).
+	const GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
+	if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
+			focused_geometry, rfg))
+	{
+		return;
+	}
+
+	if (d_plate_id == rfg->reconstruction_plate_id()) {
 		// The plate ID hasn't changed, so there's nothing to do.
 		return;
 	}
 	reset_adjustment();
 	d_initial_geometries.clear();
-	d_plate_id = focused_geometry->reconstruction_plate_id();
+	d_plate_id = rfg->reconstruction_plate_id();
 	if (d_plate_id) {
 		QLocale locale_;
 		// We need this static-cast because apparently QLocale's 'toString' member function
@@ -457,15 +469,13 @@ GPlatesQtWidgets::ReconstructionPoleWidget::populate_initial_geometries()
 	for ( ; iter != end; ++iter) {
 		GPlatesModel::ReconstructionGeometry *rg = iter->get();
 
-		// We use a dynamic cast here (despite the fact that dynamic casts are generally
-		// considered bad form) because we only care about one specific derivation.
-		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
-		// "if ... else if ..." chain would imply that we should be using polymorphism --
-		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
-		// the "if ... else if ..." chain each time a new derivation is added.)
-		GPlatesModel::ReconstructedFeatureGeometry *rfg =
-				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
-		if (rfg) { 
+		// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalGeometry's,
+		// for instance, are used to assign plate ids to regular features so we probably only
+		// want to look at geometries of regular features).
+		GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
+		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
+				rg, rfg))
+		{
 			// It's an RFG, so let's look at its reconstruction plate ID property (if
 			// there is one).
 			if (rfg->reconstruction_plate_id()) {

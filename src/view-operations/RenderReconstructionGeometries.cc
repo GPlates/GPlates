@@ -35,7 +35,6 @@
 #include "gui/ColourTable.h"
 
 #include "model/Reconstruction.h"
-#include "model/ReconstructedFeatureGeometry.h"
 
 
 void
@@ -70,24 +69,13 @@ GPlatesViewOperations::render_reconstruction_geometries(
 
 	for ( ; iter != end; ++iter)
 	{
-		GPlatesGui::ColourTable::const_iterator colour = colour_table.end();
-
 		GPlatesModel::ReconstructionGeometry *reconstruction_geom = iter->get();
 
-		GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
-		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstructed_feature_geometry(
-				iter->get(), rfg))
+		GPlatesGui::ColourTable::const_iterator colour =
+				colour_table.lookup(*reconstruction_geom);
+
+		if (colour == colour_table.end())
 		{
-			// It's an RFG, so let's look at the feature it's
-			// referencing.
-			if (rfg->reconstruction_plate_id())
-			{
-				colour = colour_table.lookup(*rfg);
-			}
-		}
-
-
-		if (colour == colour_table.end()) {
 			// Anything not in the table uses the 'Olive' colour.
 			colour = &GPlatesGui::Colour::get_olive();
 		}

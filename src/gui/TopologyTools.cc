@@ -43,6 +43,8 @@
 
 #include "TopologyTools.h"
 
+#include "app-logic/ReconstructionGeometryUtils.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
@@ -198,11 +200,11 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 
 		// Load the topology into the Topology Sections Table 
  		display_topology(
-			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_reconstruction_geometry() );
 
 		// Load the topology into the Topology Widget
 		d_topology_tools_widget_ptr->display_topology(
-			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+			d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_reconstruction_geometry() );
 
 		// NOTE: this will NOT trigger a set_focus signal with NULL ref ; 
 		// NOTE: the focus connection is below 
@@ -307,21 +309,21 @@ GPlatesGui::TopologyTools::connect_to_focus_signals(bool state)
 			d_feature_focus_ptr,
 			SIGNAL( focus_changed(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this,
 			SLOT( set_focus(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 	
 		QObject::connect(
 			d_feature_focus_ptr,
 			SIGNAL( focused_feature_modified(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this,
 			SLOT( display_feature_focus_modified(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 	} 
 	else 
 	{
@@ -330,7 +332,7 @@ GPlatesGui::TopologyTools::connect_to_focus_signals(bool state)
 			d_feature_focus_ptr, 
 			SIGNAL( focus_changed(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this, 
 			0);
 	
@@ -338,7 +340,7 @@ GPlatesGui::TopologyTools::connect_to_focus_signals(bool state)
 			d_feature_focus_ptr, 
 			SIGNAL( focused_feature_modified(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this, 
 			0);
 	}
@@ -505,7 +507,7 @@ GPlatesGui::TopologyTools::handle_reconstruction_time_change(
 
 	// re-display feature focus
 	display_feature( 
-		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_reconstruction_geometry() );
 
 // FIXME : remove diagnostic
 #ifdef DEBUG
@@ -519,7 +521,7 @@ show_numbers();
 void
 GPlatesGui::TopologyTools::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type /*associated_rg*/)
 {
 	if (! d_is_active ) { 
 		return; }
@@ -552,7 +554,7 @@ GPlatesGui::TopologyTools::set_focus(
 
 	// display this feature ; or unset focus if it is a topology
 	display_feature( 
-		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_rfg() );
+		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_reconstruction_geometry() );
 
 
 #ifdef DEBUG
@@ -568,9 +570,9 @@ show_numbers();
 void
 GPlatesGui::TopologyTools::display_feature_focus_modified(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg)
 {
-	display_feature( feature_ref, associated_rfg );
+	display_feature( feature_ref, associated_rg );
 }
 
 //
@@ -579,7 +581,7 @@ GPlatesGui::TopologyTools::display_feature_focus_modified(
 void
 GPlatesGui::TopologyTools::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg)
 {
 	if (! d_is_active) { return; }
 
@@ -603,10 +605,10 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 	GPlatesModel::FeatureId id = feature_ref->feature_id();
 	qDebug() << "id = " << GPlatesUtils::make_qstring_from_icu_string( id.get() );
 
-	if ( associated_rfg ) { 
-		qDebug() << "associated_rfg = okay " ;
+	if ( associated_rg ) { 
+		qDebug() << "associated_rg = okay " ;
 	} else { 
-		qDebug() << "associated_rfg = NULL " ; 
+		qDebug() << "associated_rg = NULL " ; 
 	}
 #endif
 
@@ -679,7 +681,7 @@ GPlatesGui::TopologyTools::find_feature_in_topology(
 void
 GPlatesGui::TopologyTools::display_topology(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type /*associated_rg*/)
 {
 	// Clear the d_section_ vectors
 	d_section_ptrs.clear();
@@ -894,14 +896,22 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	int click_index = clicked_table.current_index().row();
 
 	// Get the feature id from the RG
-	GPlatesModel::ReconstructionGeometry *rg_ptr = 
+	const GPlatesModel::ReconstructionGeometry *rg_ptr = 
 		( clicked_table.geometry_sequence().begin() + click_index )->get();
 
 	// only insert features with a valid RG
 	if (! rg_ptr ) { return ; }
 
-	GPlatesModel::ReconstructedFeatureGeometry *rfg_ptr =
-		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg_ptr);
+	// Only insert features that have a ReconstructedFeatureGeometry.
+	// We exclude features with a ResolvedTopologicalGeometry because those features are
+	// themselves topological boundaries and we're trying to build a topological boundary
+	// from ordinary features.
+	const GPlatesModel::ReconstructedFeatureGeometry *rfg_ptr = NULL;
+	if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
+			rg_ptr, rfg_ptr))
+	{
+		return;
+	}
 
 	//const GPlatesModel::FeatureId id = rfg_ptr->feature_handle_ptr()->feature_id();
 
@@ -928,12 +938,14 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	// NOTE: See the comments there.
 
 	// Iterate through the top level properties; look for the first name that matches
-	GPlatesModel::FeatureHandle::properties_iterator it = table_row.d_feature_ref->properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator end = table_row.d_feature_ref->properties_end();
-	for ( ; it != end; ++it) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*it != NULL && (*it)->property_name() == property_name) {
+	GPlatesModel::FeatureHandle::properties_iterator it =
+			table_row.d_feature_ref->properties_begin();
+	GPlatesModel::FeatureHandle::properties_iterator end =
+			table_row.d_feature_ref->properties_end();
+	for ( ; it != end; ++it)
+	{
+		if (it.is_valid() && (*it)->property_name() == property_name)
+		{
 			table_row.d_geometry_property_opt = it;
 		}
 	}
@@ -1396,13 +1408,13 @@ GPlatesGui::TopologyTools::draw_focused_geometry()
 	// always check weak refs
 	if ( ! d_feature_focus_ptr->is_valid() ) { return; }
 
-	if ( d_feature_focus_ptr->associated_rfg() )
+	if ( d_feature_focus_ptr->associated_reconstruction_geometry() )
 	{
 		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			GPlatesViewOperations::create_rendered_geometry_on_sphere(
-				d_feature_focus_ptr->associated_rfg()->geometry(),
+				d_feature_focus_ptr->associated_reconstruction_geometry()->geometry(),
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
 				GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
@@ -1413,7 +1425,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry()
 		d_feature_focus_head_points.clear();
 		d_feature_focus_tail_points.clear();
 		d_visit_to_get_focus_end_points = true;
-		d_feature_focus_ptr->associated_rfg()->geometry()->accept_visitor(*this);
+		d_feature_focus_ptr->associated_reconstruction_geometry()->geometry()->accept_visitor(*this);
 		d_visit_to_get_focus_end_points = false;
 
 		// draw the focused end_points

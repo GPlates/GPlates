@@ -117,7 +117,9 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		GPlatesFileIO::FileInfo velocity_file;
 
 		// Get cap file information, work out filenames we will use.
-		const QString velocity_filename = plate_velocities.get_velocity_filename(velocity_index);
+		const GPlatesFileIO::FileInfo &velocity_file_info =
+				plate_velocities.get_velocity_file(velocity_index);
+		const QString &velocity_filename = velocity_file_info.get_qfileinfo().absoluteFilePath();
 		//QString cap_display_name = velocity_filename.fileName();
 		QString output_basename = calculate_output_basename(output_filename_prefix, velocity_filename);
 		QString full_output_filename = target_dir.absoluteFilePath(output_basename);

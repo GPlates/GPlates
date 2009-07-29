@@ -29,6 +29,8 @@
 #include <vector>
 #include <QString>
 
+#include "file-io/FileInfo.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
@@ -155,7 +157,7 @@ namespace GPlatesAppLogic
 		bool
 		load_reconstructable_feature_collection(
 				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				const QString &feature_collection_filename,
+				const GPlatesFileIO::FileInfo &feature_collection_file_info,
 				GPlatesModel::ModelInterface &model);
 
 
@@ -205,14 +207,14 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the filename of feature collection at index @a index.
+		 * Returns the file info of feature collection at index @a index.
 		 */
-		const QString &
-		get_velocity_filename(
+		const GPlatesFileIO::FileInfo &
+		get_velocity_file(
 				unsigned int index) const
 		{
 			return d_velocity_field_feature_collection_infos[index]
-					.d_mesh_node_feature_collection_filename;
+					.d_mesh_node_feature_collection_file_info;
 		}
 
 
@@ -239,15 +241,15 @@ namespace GPlatesAppLogic
 		{
 			VelocityFieldFeatureCollectionInfo(
 					GPlatesModel::FeatureCollectionHandle::weak_ref &mesh_node_feature_collection,
-					const QString &mesh_node_feature_collection_filename,
+					const GPlatesFileIO::FileInfo &mesh_node_feature_collection_file_info,
 					GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection) :
 				d_mesh_node_feature_collection(mesh_node_feature_collection),
-				d_mesh_node_feature_collection_filename(mesh_node_feature_collection_filename),
+				d_mesh_node_feature_collection_file_info(mesh_node_feature_collection_file_info),
 				d_velocity_field_feature_collection(velocity_field_feature_collection)
 			{  }
 
 			GPlatesModel::FeatureCollectionHandle::weak_ref d_mesh_node_feature_collection;
-			QString d_mesh_node_feature_collection_filename;
+			GPlatesFileIO::FileInfo d_mesh_node_feature_collection_file_info;
 			GPlatesModel::FeatureCollectionHandle::weak_ref d_velocity_field_feature_collection;
 		};
 

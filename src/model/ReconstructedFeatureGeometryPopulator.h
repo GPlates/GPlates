@@ -67,7 +67,6 @@ namespace GPlatesModel
 			 */
 			bool d_feature_is_defined_at_recon_time;
 
-			boost::optional<FeatureHandle::properties_iterator> d_current_property;
 			boost::optional<integer_plate_id_type> d_recon_plate_id;
 			boost::optional<GPlatesMaths::FiniteRotation> d_recon_rotation;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
@@ -76,17 +75,6 @@ namespace GPlatesModel
 				d_perform_reconstructions(false),
 				d_feature_is_defined_at_recon_time(true)
 			{  }
-
-			/**
-			 * Return the name of the current property.
-			 *
-			 * Note that this function assumes we're actually in a property!
-			 */
-			const PropertyName &
-			current_property_name() const
-			{
-				return (**d_current_property)->property_name();
-			}
 		};
 
 		typedef std::vector<ReconstructionGeometry::non_null_ptr_type>
@@ -110,16 +98,6 @@ namespace GPlatesModel
 		void
 		visit_feature_handle(
 				FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_feature_properties(
-				FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_top_level_property_inline(
-				TopLevelPropertyInline &top_level_property_inline);
 
 		virtual
 		void

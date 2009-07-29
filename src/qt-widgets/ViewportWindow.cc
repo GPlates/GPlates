@@ -235,9 +235,7 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 							GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 									*file.get_feature_collection();
 							if (!d_plate_velocities.load_reconstructable_feature_collection(
-									feature_collection,
-									file.get_qfileinfo().absoluteFilePath(),
-									d_model))
+									feature_collection, file, d_model))
 							{
 								// Only add the file if it's not a velocity cap file because
 								// would like to render things its own way.
@@ -692,7 +690,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	enable_or_disable_feature_actions(d_feature_focus.focused_feature());
 	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
 					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this, SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
 
 	// Set up the Specify Anchored Plate ID dialog.
@@ -710,24 +708,24 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Connect the geometry-focus highlight to the feature focus.
 	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
 					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			&(d_globe_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
 					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_modified(
 					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			&(d_globe_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
 					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 
 	// Connect the reconstruction pole widget to the feature focus.
 	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
 					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(set_focus(
 					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 
 	// The Reconstruction Pole widget needs to know when the reconstruction time changes.
 	QObject::connect(this, SIGNAL(reconstruction_time_changed(
@@ -768,13 +766,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// GeometryFocusHighlight below.
 	QObject::connect(&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this, SLOT(reconstruct()));
 
 	// If the focused feature is modified, we may need to update the ShapefileAttributeViewerDialog.
 	QObject::connect(&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			&d_shapefile_attribute_viewer_dialog, SLOT(update()));
 
 	// Set up the Map and Globe Canvas Tools Choices.
@@ -1262,7 +1260,7 @@ GPlatesQtWidgets::ViewportWindow::reconstruct()
 	if (d_feature_focus.is_valid()) {
 		// There's a focused feature.
 		// We need to update the associated RFG for the new reconstruction.
-		d_feature_focus.find_new_associated_rfg(reconstruction());
+		d_feature_focus.find_new_associated_reconstruction_geometry(reconstruction());
 	}
 }
 

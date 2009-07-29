@@ -23,9 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/optional.hpp>
+
 #include "AgeColourTable.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "ColourSpectrum.h"
+
+#include "app-logic/ReconstructionGeometryUtils.h"
+
+#include "property-values/GeoTimeInstant.h"
 
 
 GPlatesGui::AgeColourTable *
@@ -47,16 +52,26 @@ GPlatesGui::AgeColourTable::AgeColourTable()
 
 GPlatesGui::ColourTable::const_iterator
 GPlatesGui::AgeColourTable::lookup(
-		const GPlatesModel::ReconstructedFeatureGeometry &feature_geometry) const
+		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
 {
-	GPlatesGui::ColourTable::const_iterator colour = NULL;
+	boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_time_of_formation(
+					&reconstruction_geometry);
 
-	if ( ! feature_geometry.time_of_formation()) {
+	if ( !time_of_formation) {
 		// The feature does not have a gml:validTime property.
 		return &GPlatesGui::Colour::get_maroon();
 	}
 
-	const GPlatesPropertyValues::GeoTimeInstant &geo_time = *(feature_geometry.time_of_formation());
+	return lookup_by_age(*time_of_formation);
+}
+
+GPlatesGui::ColourTable::const_iterator
+GPlatesGui::AgeColourTable::lookup_by_age(
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time) const
+{
+	GPlatesGui::ColourTable::const_iterator colour = end();
+
 	if (geo_time.is_distant_past()) {
 		// The feature's time of appearance is the distant past.
 		// We cannot calculate the 'age' from the point of view of the current recon time.

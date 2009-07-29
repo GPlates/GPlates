@@ -27,7 +27,32 @@
 
 #include "TemporaryGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
+#include "ConstReconstructionGeometryVisitor.h"
 #include "global/IntrusivePointerZeroRefCountException.h"
+
+
+const GPlatesModel::TemporaryGeometry::non_null_ptr_to_const_type
+GPlatesModel::TemporaryGeometry::get_non_null_pointer_to_const() const
+{
+	if (get_reference_count() == 0) {
+		// How did this happen?  This should not have happened.
+		//
+		// Presumably, the programmer obtained the raw TemporaryGeometry pointer
+		// from inside a TemporaryGeometry::non_null_ptr_type, and is invoking
+		// this member function upon the instance indicated by the raw pointer, after all
+		// ref-counting pointers have expired and the instance has actually been deleted.
+		//
+		// Regardless of how this happened, this is an error.
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
+				this);
+	} else {
+		// This instance is already managed by intrusive-pointers, so we can simply return
+		// another intrusive-pointer to this instance.
+		return non_null_ptr_to_const_type(
+				this,
+				GPlatesUtils::NullIntrusivePointerHandler());
+	}
+}
 
 
 const GPlatesModel::TemporaryGeometry::non_null_ptr_type
@@ -51,6 +76,14 @@ GPlatesModel::TemporaryGeometry::get_non_null_pointer()
 				this,
 				GPlatesUtils::NullIntrusivePointerHandler());
 	}
+}
+
+
+void
+GPlatesModel::TemporaryGeometry::accept_visitor(
+		ConstReconstructionGeometryVisitor &visitor) const
+{
+	visitor.visit_temporary_geometry(this->get_non_null_pointer_to_const());
 }
 
 

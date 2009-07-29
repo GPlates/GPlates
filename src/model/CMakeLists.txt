@@ -13,6 +13,7 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     ConstFeatureVisitor.cc
     ConstFeatureVisitor.h
+    ConstReconstructionGeometryVisitor.h
     DummyTransactionHandle.cc
     DummyTransactionHandle.h
     FeatureCollectionHandle.cc
@@ -53,6 +54,8 @@ set(srcs
     Reconstruction.cc
     Reconstruction.h
     ReconstructionGeometry.h
+    ReconstructionGeometryFinder.cc
+    ReconstructionGeometryFinder.h
     ReconstructionGeometryVisitor.h
     ReconstructionGraph.cc
     ReconstructionGraph.h

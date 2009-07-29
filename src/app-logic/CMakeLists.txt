@@ -17,7 +17,6 @@ set(srcs
     PlateVelocities.h
     Reconstruct.cc
     Reconstruct.h
-    ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
     ReconstructTemplate.cc
     ReconstructTemplate.h

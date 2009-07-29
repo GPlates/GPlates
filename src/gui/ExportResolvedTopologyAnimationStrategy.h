@@ -1,9 +1,10 @@
 /* $Id$ */
 
+
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
  *
@@ -23,22 +24,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_EXPORTVELOCITYANIMATIONSTRATEGY_H
-#define GPLATES_GUI_EXPORTVELOCITYANIMATIONSTRATEGY_H
+#ifndef GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYSTRATEGY_H
+#define GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYSTRATEGY_H
 
+
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 
 #include <QString>
 
+#include "gui/ExportAnimationStrategy.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
-#include "utils/ReferenceCount.h"
 
 #include "utils/ExportTemplateFilenameSequence.h"
 
-#include "gui/ExportAnimationStrategy.h"
 
+namespace GPlatesModel
+{
+	class ResolvedTopologicalGeometry;
+}
 
 namespace GPlatesGui
 {
@@ -49,18 +56,18 @@ namespace GPlatesGui
 	 * Concrete implementation of the ExportAnimationStrategy class for 
 	 * writing plate velocity meshes.
 	 * 
-	 * ExportVelocityAnimationStrategy serves as the concrete Strategy role as
+	 * ExportResolvedTopologyAnimationStrategy serves as the concrete Strategy role as
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
 	 */
-	class ExportVelocityAnimationStrategy:
+	class ExportResolvedTopologyAnimationStrategy:
 			public GPlatesGui::ExportAnimationStrategy
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportVelocityAnimationStrategy,
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportVelocityAnimationStrategy,
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 
@@ -71,9 +78,18 @@ namespace GPlatesGui
 
 
 		virtual
-		~ExportVelocityAnimationStrategy()
+		~ExportResolvedTopologyAnimationStrategy()
 		{  }
 		
+
+		/**
+		 * Sets the internal ExportTemplateFilenameSequence.
+		 */
+		virtual
+		void
+		set_template_filename(
+				const QString &filename);
+
 
 		/**
 		 * Does one frame of export. Called by the ExportAnimationContext.
@@ -106,14 +122,48 @@ namespace GPlatesGui
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
 		explicit
-		ExportVelocityAnimationStrategy(
+		ExportResolvedTopologyAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context);
 		
 	private:
+		/**
+		 * This string gets inserted into template filename sequence and later replaced
+		 * with the different strings used to differentiate the types of export.
+		 */
+		static const QString s_placeholder_string;
+
+		//! Replaces placeholder string when exporting all platepolygons to a single file.
+		static const QString s_placeholder_platepolygons;
+
+		//! Replaces placeholder string when exporting all line geometry to a single file.
+		static const QString s_placeholder_lines;
+
+		//! Replaces placeholder string when exporting all ridge/transform geometry to a single file.
+		static const QString s_placeholder_ridge_transforms;
+
+		//! Replaces placeholder string when exporting all subduction geometry to a single file.
+		static const QString s_placeholder_subductions;
+
+		//! Replaces placeholder string when exporting all left subduction geometry to a single file.
+		static const QString s_placeholder_left_subductions;
+
+		//! Replaces placeholder string when exporting all right subduction geometry to a single file.
+		static const QString s_placeholder_right_subductions;
+
+		//! Typedef for a sequence of resolved topological geometries.
+		typedef std::vector<const GPlatesModel::ResolvedTopologicalGeometry *> resolved_geom_seq_type;
+
+
+		/**
+		 * Export to the various files.
+		 */
+		void
+		export_files(
+				const resolved_geom_seq_type &resolved_geom_seq,
+				const double &recon_time,
+				const QString &filebasename);
 	};
 }
 
 
-#endif //GPLATES_GUI_EXPORTVELOCITYANIMATIONSTRATEGY_H
-
-
+#endif // GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYSTRATEGY_H

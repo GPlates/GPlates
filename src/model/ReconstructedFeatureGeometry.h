@@ -119,6 +119,17 @@ namespace GPlatesModel
 		{  }
 
 		/**
+		 * Get a non-null pointer to a const ReconstructedFeatureGeometry which points to this
+		 * instance.
+		 *
+		 * Since the ReconstructedFeatureGeometry constructors are private, it should never
+		 * be the case that a ReconstructedFeatureGeometry instance has been constructed on
+		 * the stack.
+		 */
+		const non_null_ptr_to_const_type
+		get_non_null_pointer_to_const() const;
+
+		/**
 		 * Get a non-null pointer to a ReconstructedFeatureGeometry which points to this
 		 * instance.
 		 *
@@ -206,6 +217,14 @@ namespace GPlatesModel
 		{
 			return d_time_of_formation;
 		}
+
+		/**
+		 * Accept a ConstReconstructionGeometryVisitor instance.
+		 */
+		virtual
+		void
+		accept_visitor(
+				ConstReconstructionGeometryVisitor &visitor) const;
 
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.

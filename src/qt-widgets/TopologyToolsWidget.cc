@@ -198,7 +198,7 @@ GPlatesQtWidgets::TopologyToolsWidget::set_click_point(  double lat, double lon 
 void
 GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type /*associated_rg*/)
 {
 	// Always check your weak_refs!
 	if ( ! feature_ref.is_valid()) {

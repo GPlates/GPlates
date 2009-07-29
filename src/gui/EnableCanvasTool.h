@@ -80,7 +80,7 @@ namespace GPlatesGui
 		void
 		feature_focus_changed(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
 
 		/**
 		 * Geometry builder modifications have stopped.

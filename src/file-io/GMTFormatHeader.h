@@ -127,8 +127,7 @@ namespace GPlatesFileIO
 	 * Otherwise formats a short header containing feature type and id.
 	 */
 	class GMTFormatPlates4StyleHeader :
-			public GPlatesFileIO::GMTFormatHeader,
-			private GPlatesModel::ConstFeatureVisitor
+			public GPlatesFileIO::GMTFormatHeader
 	{
 	public:
 		virtual

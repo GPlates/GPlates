@@ -275,6 +275,15 @@ namespace GPlatesModel
 				const FeatureHandle &feature_handle);
 
 		/**
+		 * Access the iterator of the top-level property which we're currently visiting.
+		 */
+		const boost::optional<FeatureHandle::properties_const_iterator> &
+		current_top_level_propiter() const
+		{
+			return d_current_top_level_propiter;
+		}
+
+		/**
 		 * Access the name of the top-level property which we're currently visiting.
 		 */
 		const boost::optional<PropertyName> &
@@ -550,6 +559,11 @@ namespace GPlatesModel
 		void
 		log_invalid_iterator(
 				const FeatureCollectionHandle::features_iterator &iterator);
+
+		/**
+		 * Tracks the iterator of the most-recently read top-level property.
+		 */
+		boost::optional<FeatureHandle::properties_const_iterator> d_current_top_level_propiter;
 
 		/**
 		 * Tracks the name of the most-recently read top-level property.

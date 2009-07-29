@@ -95,7 +95,7 @@ namespace GPlatesQtWidgets
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
 
 		void
 		handle_reconstruction_time_change(

@@ -102,7 +102,7 @@ namespace GPlatesQtWidgets
 		void
 		display_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg);
 		
 	signals:
 
@@ -118,9 +118,9 @@ namespace GPlatesQtWidgets
 		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 
 		/**
-		 * The @a ReconstructedFeatureGeometry associated with the feature that is in focus.
+		 * The @a ReconstructionGeometry associated with the feature that is in focus.
 		 */
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_focused_rfg;
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_rg;
 	};
 }
 

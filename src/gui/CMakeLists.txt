@@ -33,6 +33,8 @@ set(srcs
     ExportAnimationStrategy.h
     ExportReconstructedGeometryAnimationStrategy.cc
     ExportReconstructedGeometryAnimationStrategy.h
+    ExportResolvedTopologyAnimationStrategy.cc
+    ExportResolvedTopologyAnimationStrategy.h
     ExportSvgAnimationStrategy.cc
     ExportSvgAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc

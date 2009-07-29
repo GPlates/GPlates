@@ -1355,13 +1355,32 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq,
-			bool is_active)
+			bool is_active,
+			const char *subduction_side_enumeration_content = "Unknown")
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 				create_common(model, collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("SubductionZone"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
-		
+	
+		const GPlatesPropertyValues::TemplateTypeParameterType subduction_side_property_type =
+			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("SubductionSideEnumeration");
+
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type subduction_side_property_value =
+				GPlatesPropertyValues::Enumeration::create(
+						"gpml:SubductionSideEnumeration", subduction_side_enumeration_content);
+	
+		// create the ConstantValue
+		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type subducting_slab_constant_value =
+			GPlatesPropertyValues::GpmlConstantValue::create(
+				subduction_side_property_value, 
+				subduction_side_property_type);
+
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
+				subducting_slab_constant_value, 
+				GPlatesModel::PropertyName::create_gpml("subductingSlab"), 
+				feature_handle);
+
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
 				GPlatesPropertyValues::XsBoolean::create(is_active);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
@@ -1392,6 +1411,28 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			const geometry_seq_type &geometry_seq)
 	{
 		return create_subduction_zone(model, collection, header, geometry_seq, false);
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_subduction_zone_left(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_subduction_zone(model, collection, header, geometry_seq, false, "Left");
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_subduction_zone_right(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_subduction_zone(model, collection, header, geometry_seq, false, "Right");
 	}
 
 
@@ -1569,8 +1610,8 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["XT"] = create_subduction_zone_inactive;
 		map["PP"] = create_topological_closed_plate_boundary; // GP8 feature type
 		map["ln"] = create_inferred_paleo_boundary; // GP8 feature type
-		map["sL"] = create_subduction_zone_active; // GP8 feature type
-		map["sR"] = create_subduction_zone_active; // GP8 feature type
+		map["sL"] = create_subduction_zone_left; // GP8 feature type
+		map["sR"] = create_subduction_zone_right; // GP8 feature type
 		return map;
 	}
 

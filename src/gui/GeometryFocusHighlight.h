@@ -64,7 +64,7 @@ namespace GPlatesGui
 
 		/**
 		 * Change which reconstruction geometry is currently focused, also specifying an
-		 * (optional) weak-ref to the feature which contains the geometry whose RFG is the
+		 * (optional) weak-ref to the feature which contains the geometry whose RG is the
 		 * currently-focused reconstruction geometry.
 		 *
 		 * The counter-intuitive ordering of the arguments (feature first, followed by the
@@ -74,7 +74,7 @@ namespace GPlatesGui
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
 
 		/**
 		 * Draw the focused geometry (if there is one) on the screen.

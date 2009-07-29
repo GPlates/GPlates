@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>503</width>
-    <height>351</height>
+    <height>380</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -187,6 +187,40 @@
       <widget class="QLabel" name="label_example_filename_velocity" >
        <property name="text" >
         <string>velocity_colat+lon_at_01_65Ma_on_mesh-&lt;cap filename>.gpml</string>
+       </property>
+       <property name="textInteractionFlags" >
+        <set>Qt::LinksAccessibleByMouse|Qt::NoTextInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkbox_export_resolved_topology" >
+     <property name="text" >
+      <string>Export resolved &amp;topologies</string>
+     </property>
+     <property name="checked" >
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_example_filename_rt" >
+       <property name="text" >
+        <string>Example filename:</string>
+       </property>
+       <property name="alignment" >
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_example_filename_resolved_topology" >
+       <property name="text" >
+        <string>Polygons.&lt;placeholder>.65.xy</string>
        </property>
        <property name="textInteractionFlags" >
         <set>Qt::LinksAccessibleByMouse|Qt::NoTextInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>

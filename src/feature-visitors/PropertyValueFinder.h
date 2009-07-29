@@ -41,6 +41,10 @@
 
 namespace GPlatesFeatureVisitors
 {
+	///////////////
+	// Interface //
+	///////////////
+
 	/**
 	 * Returns true if @a feature_weak_ref has a property value of type @a PropertyValueType
 	 * and property name @a property_name.
@@ -140,6 +144,11 @@ namespace GPlatesFeatureVisitors
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
 			std::vector<PropertyValueType *> &property_values);
+
+
+	////////////////////
+	// Implementation //
+	////////////////////
 
 
 	/**

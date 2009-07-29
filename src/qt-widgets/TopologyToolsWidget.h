@@ -87,7 +87,7 @@ namespace GPlatesQtWidgets
 		void
 		display_topology(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		display_number_of_sections( int i ) {

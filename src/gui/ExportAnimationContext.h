@@ -139,7 +139,9 @@ namespace GPlatesGui
 		const QString
 		velocity_exporter_filename_template()
 		{
-			return "velocity_%u_%0.2f.gpml";
+			// FIXME: the "<cap filename>" part is probably not meant to be there - currently
+			// it works because it's only used for display and not filename generation.
+			return "velocity_colat+lon_at_%u_%0.2fMa_on_mesh-<cap filename>.gpml";
 		}
 
 		bool
@@ -178,6 +180,27 @@ namespace GPlatesGui
 		shp_exporter_filename_template()
 		{
 			return "reconstructed_%u_%0.2f.shp";
+		}
+
+		bool
+		resolved_topology_exporter_enabled()
+		{
+			return d_resolved_topology_exporter_enabled;
+		}
+		
+		void
+		set_resolved_topology_exporter_enabled(
+				bool enable)
+		{
+			d_resolved_topology_exporter_enabled = enable;
+		}
+		
+		const QString
+		resolved_topology_exporter_filename_template()
+		{
+			// FIXME: the "<resolved boundary type>" part is probably not meant to be there -
+			// currently it works because it's only used for display and not filename generation.
+			return "Polygons.<placeholder>.%d.xy";
 		}
 
 
@@ -288,6 +311,13 @@ namespace GPlatesGui
 		 * strategy-specific 'configuration' object. But time is of the essence.
 		 */
 		bool d_shp_exporter_enabled;
+
+		/**
+		 * Whether the strategy for writing resolved topology files should be enabled during export.
+		 * Note we may later put this flag plus filename template etc. into a
+		 * strategy-specific 'configuration' object. But time is of the essence.
+		 */
+		bool d_resolved_topology_exporter_enabled;
 	};
 }
 

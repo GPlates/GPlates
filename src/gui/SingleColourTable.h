@@ -48,7 +48,7 @@ namespace GPlatesGui
 			virtual
 			ColourTable::const_iterator
 			lookup(
-					const GPlatesModel::ReconstructedFeatureGeometry &feature) const;
+					const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
 
 			void
 			set_colour(
