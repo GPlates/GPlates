@@ -22,7 +22,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-//#define DEBUG
+#define DEBUG
 //#define DEBUG1
 
 #include <map>
@@ -887,22 +887,81 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 		( clicked_table.geometry_sequence().begin() + click_index )->get();
 
 	// only insert features with a valid RG
-	if (! rg_ptr ) { return ; }
+	if (! rg_ptr ) 
+	{ 
+		qDebug() << "WARNING: could not insert feature ; NO Reconstructed Geom. ptr!";
+		return ; 
+	}
 
 	GPlatesModel::ReconstructedFeatureGeometry *rfg_ptr =
 		dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg_ptr);
 
-	//const GPlatesModel::FeatureId id = rfg_ptr->feature_handle_ptr()->feature_id();
+	// FIXME: should we check for RFG? 
 
 	// Set the raw data for this row 
 	table_row.d_feature_id = rfg_ptr->feature_handle_ptr()->feature_id();
 
-	// set the raw data for this row 
+	// Set the raw data for this row 
 	table_row.d_feature_ref = rfg_ptr->feature_handle_ptr()->reference();
 
-	// click point from canvas
-	table_row.d_click_point = GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
 
+	//
+	// Compute and set the user click point 
+	//
+
+	// Get a feature handle for the id
+	// get the plate id for the feature
+	static const GPlatesModel::PropertyName plate_id_property_name =
+		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
+	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+
+	if ( GPlatesFeatureVisitors::get_property_value(
+		table_row.d_feature_ref, plate_id_property_name, recon_plate_id ) )
+	{
+		// The feature has a reconstruction plate ID.
+qDebug() << "USE recon_plate_id: " << recon_plate_id;
+qDebug() << "USE recon_plate_id: " << recon_plate_id;
+qDebug() << "USE recon_plate_id: " << recon_plate_id;
+
+		// first, get the user click point into a point on sphere 
+		GPlatesMaths::PointOnSphere user_point = 
+			GPlatesMaths::make_point_on_sphere(
+				GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon)
+			);
+
+		// Get the recon tree from the view state ptr
+		GPlatesModel::Reconstruction &recon = d_view_state_ptr->reconstruction();
+		GPlatesModel::ReconstructionTree &recon_tree = recon.reconstruction_tree();	
+
+		// get the forward rotation for this plate id
+		const GPlatesMaths::FiniteRotation &fwd_rot = 
+			recon_tree.get_composed_absolute_rotation( recon_plate_id->value() ).first;
+
+		// get the reverse rotation
+		const GPlatesMaths::FiniteRotation rev_rot = GPlatesMaths::get_reverse( fwd_rot );
+
+		// un-reconstruct the point 
+		const GPlatesMaths::PointOnSphere un_rotated_point = 
+			GPlatesMaths::operator*( rev_rot, user_point );
+
+		// set the click point coordinates:
+		table_row.d_click_point =
+			GPlatesMaths::make_lat_lon_point( un_rotated_point );
+std::cerr << "SET click point: " << table_row.d_click_point.get() << std::endl;
+
+	}
+	else
+	{
+		// NOTE: no rotation 
+		// set the click point from canvas ; 
+		table_row.d_click_point = 
+			GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
+std::cerr << "SET click point:" << table_row.d_click_point.get() << std::endl;
+		// FIXME: else - what to do? 
+	}
+
+	// Set the reverse to a default ; see below for the auto update 
 	table_row.d_reverse = false;
 
 	// visit the RFG's geom to check type and set d_tmp_property_name
@@ -926,6 +985,8 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 			table_row.d_geometry_property_opt = it;
 		}
 	}
+
+std::cerr << " handle_insert: " <<  table_row.d_click_point.get() ;
 
 	// Insert the row
 	d_topology_sections_container_ptr->insert( table_row );
@@ -2021,6 +2082,8 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 void
 GPlatesGui::TopologyTools::process_intersections()
 {
+std::cerr << "process_intersections:\n" ;
+
 	//
 	// Double check for empty click_point for this feature 
 	//
@@ -2034,12 +2097,16 @@ GPlatesGui::TopologyTools::process_intersections()
 		return;
 	}
 
-	// set the click point ptr for this feature 
+std::cerr << "click_point: " 
+<< d_topology_sections_container_ptr->at( d_tmp_index ).d_click_point.get() << "\n";
+
+
+	// Get the click point ptr for this feature 
+	// it is set above in create_sections_from_sections_table 
 	GPlatesMaths::PointOnSphere click_pos = GPlatesMaths::make_point_on_sphere(
 		(d_topology_sections_container_ptr->at( d_tmp_index ).d_click_point).get() 
 	);
 
-	// Set above in create_sections_from_sections_table 
 	d_click_point_ptr = &click_pos;
 
 	// This is used below to create the reference property GPlatesPropertyValues::GmlPoint
