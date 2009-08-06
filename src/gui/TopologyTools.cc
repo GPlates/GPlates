@@ -938,16 +938,30 @@ GPlatesGui::TopologyTools::handle_add_feature()
 		return; 
 	}
 
+	// Double check that the feature is not already in the topology
+	int check_index = find_feature_in_topology( d_feature_focus_ptr->focused_feature() );
+	if (check_index != -1 )	
+	{
+std::cout << "handle_add_feature() FOUND feature at check_index = " << check_index << "\n";
+		return;
+	}
+	// else
+
 	// Get the current insertion point 
-	int index = d_topology_sections_container_ptr->insertion_point();
+	int insert_index = d_topology_sections_container_ptr->insertion_point();
+
+std::cout << "handle_add_feature() int insert_index = " << insert_index << "\n";
 
 	// insert the feature into the boundary
-	handle_insert_feature( index );
+	handle_insert_feature( insert_index );
 }
 
 void
-GPlatesGui::TopologyTools::handle_insert_feature(int index)
+GPlatesGui::TopologyTools::handle_insert_feature(int insert_index)
 {
+
+std::cout << "handle_insert_feature(int index) = " << insert_index << "\n";
+
 	// Flip to Topology Sections Table
 	d_view_state_ptr->change_tab( 2 );
 
@@ -963,6 +977,8 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 
 	// Table index of clicked feature
 	int click_index = clicked_table.current_index().row();
+
+std::cout << "click_index = " << click_index << "\n";
 
 	// Get the feature id from the RG
 	const GPlatesModel::ReconstructionGeometry *rg_ptr = 
@@ -1093,13 +1109,13 @@ std::cerr << "SET click point:" << table_row.d_click_point.get() << std::endl;
 	// See if the inserted section should be reversed.
 	// This is done after 'update_geometry()' because we need the intersection
 	// clipped topology sections that neighbour the inserted section.
-	if (should_reverse_section(index))
+	if (should_reverse_section(insert_index))
 	{
 		// Flip the reverse flag for the inserted section.
 		table_row.d_reverse = !table_row.d_reverse;
 
 		// Update the topology sections container.
-		d_topology_sections_container_ptr->update_at(index, table_row);
+		d_topology_sections_container_ptr->update_at(insert_index, table_row);
 
 		//
 		// Since we are not connected to the topology sections container signals
