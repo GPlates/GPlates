@@ -773,7 +773,6 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 			table_row.d_feature_ref, plate_id_property_name, recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
-qDebug() << "USE recon_plate_id: " << recon_plate_id;
 
 			// first, get the user click point into a point on sphere 
 			GPlatesMaths::PointOnSphere user_point = 
@@ -799,30 +798,27 @@ qDebug() << "USE recon_plate_id: " << recon_plate_id;
 			// set the click point coordinates:
 			table_row.d_click_point =
 				GPlatesMaths::make_lat_lon_point( un_rotated_point );
-std::cerr << "SET click point: " << table_row.d_click_point.get() << std::endl;
 		}
 		else
 		{
 			// NOTE: no rotation 
 			// set the click point from canvas ; 
-
 			table_row.d_click_point =
  				GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
-			std::cerr << "SET click point from CANVAS:" 
-				<< table_row.d_click_point.get() << std::endl;
  			// FIXME: else - what to do? 
 		}
 
 		// Update the row
 		d_topology_sections_container_ptr->update_at(index, table_row);
 
-qDebug() << "GPlatesGui::TopologyTools::handle_shift_left_click END";
+		// flip the tab
+		d_topology_tools_widget_ptr->choose_topology_tab();
+
 		return;
 
 	}
-	// end of check on index 
 
-qDebug() << "GPlatesGui::TopologyTools::handle_shift_left_click END";
+	// end of check on index 
 	return;
 }
 
@@ -942,15 +938,12 @@ GPlatesGui::TopologyTools::handle_add_feature()
 	int check_index = find_feature_in_topology( d_feature_focus_ptr->focused_feature() );
 	if (check_index != -1 )	
 	{
-std::cout << "handle_add_feature() FOUND feature at check_index = " << check_index << "\n";
 		return;
 	}
 	// else
 
 	// Get the current insertion point 
 	int insert_index = d_topology_sections_container_ptr->insertion_point();
-
-std::cout << "handle_add_feature() int insert_index = " << insert_index << "\n";
 
 	// insert the feature into the boundary
 	handle_insert_feature( insert_index );
@@ -959,9 +952,6 @@ std::cout << "handle_add_feature() int insert_index = " << insert_index << "\n";
 void
 GPlatesGui::TopologyTools::handle_insert_feature(int insert_index)
 {
-
-std::cout << "handle_insert_feature(int index) = " << insert_index << "\n";
-
 	// Flip to Topology Sections Table
 	d_view_state_ptr->change_tab( 2 );
 
@@ -977,8 +967,6 @@ std::cout << "handle_insert_feature(int index) = " << insert_index << "\n";
 
 	// Table index of clicked feature
 	int click_index = clicked_table.current_index().row();
-
-std::cout << "click_index = " << click_index << "\n";
 
 	// Get the feature id from the RG
 	const GPlatesModel::ReconstructionGeometry *rg_ptr = 
@@ -1021,9 +1009,6 @@ std::cout << "click_index = " << click_index << "\n";
 		table_row.d_feature_ref, plate_id_property_name, recon_plate_id ) )
 	{
 		// The feature has a reconstruction plate ID.
-qDebug() << "USE recon_plate_id: " << recon_plate_id;
-qDebug() << "USE recon_plate_id: " << recon_plate_id;
-qDebug() << "USE recon_plate_id: " << recon_plate_id;
 
 		// first, get the user click point into a point on sphere 
 		GPlatesMaths::PointOnSphere user_point = 
@@ -1049,8 +1034,6 @@ qDebug() << "USE recon_plate_id: " << recon_plate_id;
 		// set the click point coordinates:
 		table_row.d_click_point =
 			GPlatesMaths::make_lat_lon_point( un_rotated_point );
-std::cerr << "SET click point: " << table_row.d_click_point.get() << std::endl;
-
 	}
 	else
 	{
@@ -1058,7 +1041,6 @@ std::cerr << "SET click point: " << table_row.d_click_point.get() << std::endl;
 		// set the click point from canvas ; 
 		table_row.d_click_point = 
 			GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
-std::cerr << "SET click point:" << table_row.d_click_point.get() << std::endl;
 		// FIXME: else - what to do? 
 	}
 
@@ -1511,11 +1493,36 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 				*d_topology_geometry_opt_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
+				GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_LINE_WIDTH_HINT);
 
 		d_topology_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
 
+	// loop over vertices
+	std::vector<GPlatesMaths::PointOnSphere>::iterator itr, end;
+	itr = d_topology_vertices.begin();
+	end = d_topology_vertices.end();
+	for ( ; itr != end ; ++itr)
+	{
+		// get a geom
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type pos_ptr = 
+			itr->clone_as_geometry();
+
+		if (pos_ptr) 
+		{
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0);
+
+			// Create rendered geometry.
+			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+					pos_ptr,
+					colour,
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
+					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
+
+			d_topology_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
+		}
+	}
 	// update the canvas 
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
