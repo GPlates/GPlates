@@ -439,6 +439,11 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
+	// click point of the current mouse position
+	d_click_point_layer_ptr =
+		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+
 	// click points of the boundary feature data 
 	d_click_points_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
@@ -468,6 +473,7 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 	d_insertion_neighbors_layer_ptr->set_active();
 	d_segments_layer_ptr->set_active();
 	d_intersection_points_layer_ptr->set_active();
+	d_click_point_layer_ptr->set_active();
 	d_click_points_layer_ptr->set_active();
 	d_end_points_layer_ptr->set_active();
 }
@@ -1493,6 +1499,7 @@ GPlatesGui::TopologyTools::draw_all_layers_clear()
 	d_segments_layer_ptr->clear_rendered_geometries();
 	d_end_points_layer_ptr->clear_rendered_geometries();
 	d_intersection_points_layer_ptr->clear_rendered_geometries();
+	d_click_point_layer_ptr->clear_rendered_geometries();
 	d_click_points_layer_ptr->clear_rendered_geometries();
 
 	d_view_state_ptr->globe_canvas().update_canvas();
@@ -1838,7 +1845,7 @@ GPlatesGui::TopologyTools::draw_intersection_points()
 void
 GPlatesGui::TopologyTools::draw_click_point()
 {
-	d_click_points_layer_ptr->clear_rendered_geometries();
+	d_click_point_layer_ptr->clear_rendered_geometries();
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	// make a point from the coordinates
@@ -1861,7 +1868,7 @@ GPlatesGui::TopologyTools::draw_click_point()
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_LINE_WIDTH_HINT);
 
-		d_click_points_layer_ptr->add_rendered_geometry(rendered_geometry);
+		d_click_point_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
 
 	// update the canvas 
@@ -1880,21 +1887,6 @@ GPlatesGui::TopologyTools::draw_click_points()
 	end = d_click_points.end();
 	for ( ; itr != end ; ++itr)
 	{
-	
-#if 0
-	std::vector<std::pair<double, double> >::iterator itr, end;
-	itr = d_section_click_points.begin();
-	end = d_section_click_points.end();
-	for ( ; itr != end ; ++itr)
-	{
-		// make a point from the coordinates
-		GPlatesMaths::PointOnSphere click_pos = GPlatesMaths::make_point_on_sphere(
-			GPlatesMaths::LatLonPoint( itr->first, itr->second ) );
-
-		// get a geom
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type pos_ptr = 
-			click_pos.clone_as_geometry();
-#endif
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type pos_ptr = 
 			itr->clone_as_geometry();
 

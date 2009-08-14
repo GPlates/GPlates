@@ -370,6 +370,7 @@ namespace GPlatesGui
 			d_segments_layer_ptr,
 			d_end_points_layer_ptr,
 			d_intersection_points_layer_ptr,
+			d_click_point_layer_ptr,
 			d_click_points_layer_ptr;
 
 		/**
