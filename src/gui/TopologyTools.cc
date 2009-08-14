@@ -76,7 +76,6 @@
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
 #include "feature-visitors/TopologySectionsFinder.h"
 #include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
@@ -500,6 +499,30 @@ GPlatesGui::TopologyTools::handle_reconstruction_time_change(
 {
 	if (! d_is_active) { return; }
 
+ 	// check to make sure the topology feature is defined for this new time
+
+	// Get the time period for the d_topology_feature_ref's validTime prop
+	// FIXME: (Assuming a gml:TimePeriod, rather than a gml:TimeInstant!)
+	static const GPlatesModel::PropertyName valid_time_property_name =
+		GPlatesModel::PropertyName::create_gml("validTime");
+
+	const GPlatesPropertyValues::GmlTimePeriod *time_period;
+
+	GPlatesFeatureVisitors::get_property_value(
+		d_topology_feature_ref, valid_time_property_name, time_period);
+
+	const GPlatesPropertyValues::GeoTimeInstant recon_time( new_time );
+
+	if ( ! time_period->contains( recon_time ) )
+	{
+		draw_all_layers_clear();
+		return;
+	}
+
+	//
+	// else continue with the update
+	//
+
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
@@ -798,6 +821,14 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 			// set the click point coordinates:
 			table_row.d_click_point =
 				GPlatesMaths::make_lat_lon_point( un_rotated_point );
+
+#if 0
+			//
+			// FIXME this is a TEST to use the click point as raw data with no rotations
+			//
+			table_row.d_click_point =
+				GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
+#endif
 		}
 		else
 		{
@@ -1034,6 +1065,14 @@ GPlatesGui::TopologyTools::handle_insert_feature(int insert_index)
 		// set the click point coordinates:
 		table_row.d_click_point =
 			GPlatesMaths::make_lat_lon_point( un_rotated_point );
+
+#if 0
+		//
+		// FIXME this is a TEST to use the click point as raw data with no rotations
+		//
+		table_row.d_click_point = 
+			GPlatesMaths::LatLonPoint(d_click_point_lat, d_click_point_lon);
+#endif
 	}
 	else
 	{
@@ -1470,7 +1509,8 @@ GPlatesGui::TopologyTools::draw_all_layers()
 	draw_intersection_points();
 	draw_insertion_neighbors();
 	
-	//draw_click_points();
+	// FIXME: this tends to produce too much clutter
+	draw_click_points();
 
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
@@ -1517,7 +1557,7 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
-					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
+					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
 					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
 
 			d_topology_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
@@ -1828,9 +1868,6 @@ GPlatesGui::TopologyTools::draw_click_point()
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
 
-#if 0
-// FIXME: This tends to produce too much visual clutter 
-// but keep it in here for debugging - just in case ...
 void
 GPlatesGui::TopologyTools::draw_click_points()
 {
@@ -1838,6 +1875,13 @@ GPlatesGui::TopologyTools::draw_click_points()
 	d_view_state_ptr->globe_canvas().update_canvas();
 
 	// loop over click points 
+	std::vector<GPlatesMaths::PointOnSphere>::iterator itr, end;
+	itr = d_click_points.begin();
+	end = d_click_points.end();
+	for ( ; itr != end ; ++itr)
+	{
+	
+#if 0
 	std::vector<std::pair<double, double> >::iterator itr, end;
 	itr = d_section_click_points.begin();
 	end = d_section_click_points.end();
@@ -1850,18 +1894,21 @@ GPlatesGui::TopologyTools::draw_click_points()
 		// get a geom
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type pos_ptr = 
 			click_pos.clone_as_geometry();
+#endif
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type pos_ptr = 
+			itr->clone_as_geometry();
 
 		if (pos_ptr) 
 		{
-			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_olive();
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_black();
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
-					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-					GPlatesViewOperations::RenderedLayerParameters::DEFUALT_LINE_WIDTH_HINT);
+					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
+					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);
 
 			d_click_points_layer_ptr->add_rendered_geometry(rendered_geometry);
 		}
@@ -1870,7 +1917,6 @@ GPlatesGui::TopologyTools::draw_click_points()
 	// update the canvas 
 	d_view_state_ptr->globe_canvas().update_canvas();
 }
-#endif
 
 
 
@@ -1894,6 +1940,8 @@ GPlatesGui::TopologyTools::update_geometry()
 	d_tail_end_points.clear();
 	d_intersection_points.clear();
 	d_segments.clear();
+
+	d_click_points.clear();
 
 	// FIXME: do we need these here?
 	d_feature_focus_head_points.clear();
@@ -2203,11 +2251,59 @@ GPlatesGui::TopologyTools::process_intersections()
 		(d_topology_sections_container_ptr->at( d_tmp_index ).d_click_point).get() 
 	);
 
-	// Set above in create_sections_from_sections_table 
 	d_click_point_ptr = &click_pos;
 
+
 	// This is used below to create the reference property GPlatesPropertyValues::GmlPoint
+	// in the present day coords (as stored in the section table )
 	const GPlatesMaths::PointOnSphere const_pos(click_pos); 
+
+	// rotate the click_point with the src feature 
+	// before the call to compute_intersection()
+	
+	// Get a feature handle for the id
+	// get the plate id for the feature
+	static const GPlatesModel::PropertyName plate_id_property_name =
+		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
+	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+
+	if ( GPlatesFeatureVisitors::get_property_value(
+			d_topology_sections_container_ptr->at( d_tmp_index ).d_feature_ref, 
+			plate_id_property_name, 
+			recon_plate_id ) )
+	{
+		// The feature has a reconstruction plate ID.
+
+		// Get the recon tree from the view state ptr
+		GPlatesModel::Reconstruction &recon = d_view_state_ptr->reconstruction();
+		GPlatesModel::ReconstructionTree &recon_tree = recon.reconstruction_tree();	
+
+		// get the forward rotation for this plate id
+		const GPlatesMaths::FiniteRotation &fwd_rot = 
+			recon_tree.get_composed_absolute_rotation( recon_plate_id->value() ).first;
+
+#if 0
+// TEST : 
+		// get the reverse rotation
+		const GPlatesMaths::FiniteRotation rev_rot = GPlatesMaths::get_reverse( fwd_rot );
+
+		// un-reconstruct the point 
+		const GPlatesMaths::PointOnSphere rotated_point = 
+			GPlatesMaths::operator*( rev_rot, click_pos );
+#endif
+		// reconstruct the point 
+		const GPlatesMaths::PointOnSphere rotated_point = 
+			GPlatesMaths::operator*( fwd_rot, click_pos );
+
+
+		// reset the d_click_point_ptr to the rotated point
+		d_click_point_ptr = &rotated_point;
+	}
+
+
+	// Add in the click point to the list
+	d_click_points.push_back( *d_click_point_ptr );
 
 	//
 	// Index math to close the loop of boundary sections
@@ -2324,7 +2420,7 @@ GPlatesGui::TopologyTools::process_intersections()
 	//
 	// if INDEX and PREV intersect, then create the startIntersection property value
 	//
-	if ( d_visit_to_create_properties && (d_num_intersections_with_prev != 0) )
+	if ( (d_num_intersections_with_prev != 0) && d_visit_to_create_properties )
 	{
 		const GPlatesModel::FeatureId prev_fid = prev_feature_ref->feature_id();
 
@@ -2598,11 +2694,7 @@ qDebug() << "llp=" << llp.latitude() << "," << llp.longitude();
 }
 #endif
 
-		// now check which element of parts.first
-		// is closest to d_click_point_ptr:
-
-		// NOTE: d_click_point_ptr is NOT rotated ; 
-		// The user is clicking on already rotated RFGs.
+		// now check which element of parts.first is closest to d_click_point_ptr:
 
 		// FIXME: is there a global setting for PROXIMITY?
 		GPlatesMaths::real_t closeness_inclusion_threshold = 0.9;

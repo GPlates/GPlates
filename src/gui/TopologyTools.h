@@ -301,11 +301,8 @@ namespace GPlatesGui
 		void
 		draw_insertion_neighbors();
 
-#if 0
-// FIXME: this can produce too much visual clutter ; but keep it in for debugging
 		void
 		draw_click_points();
-#endif
 
 		void
 		draw_click_point();
@@ -479,6 +476,9 @@ namespace GPlatesGui
 		 */
 		GPlatesGui::TopologySectionsContainer::container_type d_topology_sections;
 
+		// collection of click points from the Topolog
+			//
+		std::vector<GPlatesMaths::PointOnSphere> d_click_points;
 
 		// collection of end points for all boundary features
 		std::vector<GPlatesMaths::PointOnSphere> d_head_end_points;
