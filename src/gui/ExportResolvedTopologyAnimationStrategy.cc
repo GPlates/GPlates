@@ -473,6 +473,33 @@ namespace
 
 			visit_feature(feature);
 
+			//
+			// FIXME: This probably should be done in a better way ... 
+			// but it works for the global data set ... as a re-check on oldPlatesHeader 
+			//
+			static const GPlatesModel::PropertyName old_plates_header_property_name =
+				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
+
+			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header;
+
+			if ( GPlatesFeatureVisitors::get_property_value(
+				feature,
+				old_plates_header_property_name,
+				old_plates_header ) )
+			{
+				if ( old_plates_header->data_type_code() == "sL" )
+				{
+					// re-set the type
+					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
+				}
+
+				if ( old_plates_header->data_type_code() == "sR" )
+				{
+					// re-set the type
+					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
+				}
+			}
+
 			return d_sub_segment_type;
 		}
 
@@ -593,6 +620,7 @@ namespace
 					? SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT
 					: SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
 		}
+
 	};
 
 

@@ -313,7 +313,7 @@
         </gpml:HotSpot>
     </gml:featureMember>
     <gml:featureMember>
-        <gpml:MidOceanRidge>
+        <gpml:SubductionZone>
             <gpml:identity>GPlates-1383d4e0-03bf-48c0-89be-48e05936da01</gpml:identity>
             <gpml:revision>GPlates-1b86d075-b172-44e9-8b3c-5eceea33bc74</gpml:revision>
             <gpml:reconstructionPlateId>
@@ -360,7 +360,7 @@
                     <gpml:plateIdNumber>103</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
-                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCode>sR</gpml:dataTypeCode>
                     <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
                     <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
                     <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
@@ -368,7 +368,7 @@
                     <gpml:numberOfPoints>4</gpml:numberOfPoints>
                 </gpml:OldPlatesHeader>
             </gpml:oldPlatesHeader>
-        </gpml:MidOceanRidge>
+        </gpml:SubductionZone>
     </gml:featureMember>
     <gml:featureMember>
         <gpml:MidOceanRidge>
@@ -478,7 +478,7 @@
         </gpml:HotSpot>
     </gml:featureMember>
     <gml:featureMember>
-        <gpml:MidOceanRidge>
+        <gpml:SubductionZone>
             <gpml:identity>GPlates-489e6a7a-2b51-4785-b3ca-d32281e1993b</gpml:identity>
             <gpml:revision>GPlates-8a5340a9-d575-4746-9a65-c2088a628b7b</gpml:revision>
             <gpml:reconstructionPlateId>
@@ -525,7 +525,7 @@
                     <gpml:plateIdNumber>104</gpml:plateIdNumber>
                     <gpml:ageOfAppearance>999</gpml:ageOfAppearance>
                     <gpml:ageOfDisappearance>-999</gpml:ageOfDisappearance>
-                    <gpml:dataTypeCode>RI</gpml:dataTypeCode>
+                    <gpml:dataTypeCode>sL</gpml:dataTypeCode>
                     <gpml:dataTypeCodeNumber>0</gpml:dataTypeCodeNumber>
                     <gpml:dataTypeCodeNumberAdditional></gpml:dataTypeCodeNumberAdditional>
                     <gpml:conjugatePlateIdNumber>0</gpml:conjugatePlateIdNumber>
@@ -533,7 +533,7 @@
                     <gpml:numberOfPoints>4</gpml:numberOfPoints>
                 </gpml:OldPlatesHeader>
             </gpml:oldPlatesHeader>
-        </gpml:MidOceanRidge>
+        </gpml:SubductionZone>
     </gml:featureMember>
     <gml:featureMember>
         <gpml:MidOceanRidge>
