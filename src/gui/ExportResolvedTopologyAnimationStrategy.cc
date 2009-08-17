@@ -328,33 +328,11 @@ namespace
 
 			// Use the two-letter PLATES data type code if we have a GpmlOldPlatesHeader
 			// otherwise output the gpml feature type.
-			QString feature_type_code = get_feature_type_code(
-					source_feature, sub_segment_type, source_feature_old_plates_header);
-
-			//
-			// FIXME: this is a quick hack to re-set the feature_type_code 
-			// for reverse segments	
-			//
-			// NOTE: if sub_segment.get_use_reverse() is TRUE,
-			// then the sub_segment_type has been flipped
-			// BUT get_feature_type_code() uses the original old plates header to assign
-			// feature_type_code 
-			//
-			// and so we need to 'force' feature_type_code to match the sub_segment_type here:
-			//
-			if ( sub_segment.get_use_reverse() )
-			{
-				if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT) 
-				{
-					// flip the orientation flag
-					feature_type_code = "sL";
-				}
-				else if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT) 
-				{
-					// flip the orientation flag
-					feature_type_code = "sR";
-				}
-			}
+			const QString feature_type_code = get_feature_type_code(
+					source_feature,
+					sub_segment_type,
+					sub_segment.get_use_reverse(),
+					source_feature_old_plates_header);
 
 			d_header_line =
 					feature_type_code +
@@ -387,17 +365,32 @@ namespace
 		get_feature_type_code(
 				const GPlatesModel::FeatureHandle::const_weak_ref &source_feature,
 				const SubSegmentType sub_segment_type,
+				const bool sub_segment_use_reverse,
 				const GPlatesPropertyValues::GpmlOldPlatesHeader *source_feature_old_plates_header)
 		{
 			if (source_feature_old_plates_header)
 			{
-				return GPlatesUtils::make_qstring_from_icu_string(
+				const QString data_type_code = GPlatesUtils::make_qstring_from_icu_string(
 						source_feature_old_plates_header->data_type_code());
+
+				if (data_type_code == "sL")
+				{
+					return sub_segment_use_reverse ? "sR" : "sL";
+				}
+				if (data_type_code == "sR")
+				{
+					return sub_segment_use_reverse ? "sL" : "sR";
+				}
+				// else fall through and handle this elsewhere
 			}
 			else
 			{
 				// We can still infer the PLATES data type code from the
 				// subsegment type.
+				//
+				// NOTE: we don't need to handle reverse direction of subsegment
+				// because variables of type 'SubSegmentType' already have this
+				// information in them.
 				switch (sub_segment_type)
 				{
 				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT:
@@ -409,6 +402,7 @@ namespace
 				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN:
 				case SUB_SEGMENT_TYPE_OTHER:
 				default:
+					// else fall through and handle this elsewhere
 					break;
 				}
 			}
