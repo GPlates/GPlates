@@ -328,8 +328,33 @@ namespace
 
 			// Use the two-letter PLATES data type code if we have a GpmlOldPlatesHeader
 			// otherwise output the gpml feature type.
-			const QString feature_type_code = get_feature_type_code(
+			QString feature_type_code = get_feature_type_code(
 					source_feature, sub_segment_type, source_feature_old_plates_header);
+
+			//
+			// FIXME: this is a quick hack to re-set the feature_type_code 
+			// for reverse segments	
+			//
+			// NOTE: if sub_segment.get_use_reverse() is TRUE,
+			// then the sub_segment_type has been flipped
+			// BUT get_feature_type_code() uses the original old plates header to assign
+			// feature_type_code 
+			//
+			// and so we need to 'force' feature_type_code to match the sub_segment_type here:
+			//
+			if ( sub_segment.get_use_reverse() )
+			{
+				if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT) 
+				{
+					// flip the orientation flag
+					feature_type_code = "sL";
+				}
+				else if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT) 
+				{
+					// flip the orientation flag
+					feature_type_code = "sR";
+				}
+			}
 
 			d_header_line =
 					feature_type_code +
@@ -743,9 +768,28 @@ namespace
 			GMTFeatureExporter &subduction_left_exporter,
 			GMTFeatureExporter &subduction_right_exporter)
 	{
+		// 
+		// FIXME: this is a quick hack to account for the use_reverse adjustments
+		//
+
 		// Determine the feature type of subsegment.
-		const SubSegmentType sub_segment_type = get_sub_segment_feature_type(
+		SubSegmentType sub_segment_type = get_sub_segment_feature_type(
 				sub_segment.get_feature_ref(), recon_time);
+
+		// check if the sub_segment is being used in reverse in the polygon boundary
+		if ( sub_segment.get_use_reverse() )
+		{
+			if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT) 
+			{
+				// flip the orientation flag
+				sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
+			}
+			else if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT) 
+			{
+				// flip the orientation flag
+				sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
+			}
+		}
 
 		// The files with specific types of subsegments use a different header format
 		// than the file with all subsegments (regardless of type).
