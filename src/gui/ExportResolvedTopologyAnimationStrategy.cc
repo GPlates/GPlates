@@ -326,12 +326,13 @@ namespace
 				return;
 			}
 
-			// Use the two-letter PLATES data type code if we have a GpmlOldPlatesHeader
-			// otherwise output the gpml feature type.
+			// Get a two-letter PLATES data type code from the subsegment type if
+			// it's a subduction zone, otherwise get the data type code from a
+			// GpmlOldPlatesHeader if there is one, otherwise get the full gpml
+			// feature type.
 			const QString feature_type_code = get_feature_type_code(
 					source_feature,
 					sub_segment_type,
-					sub_segment.get_use_reverse(),
 					source_feature_old_plates_header);
 
 			d_header_line =
@@ -358,56 +359,45 @@ namespace
 
 
 		/**
-		 * Returns the two-letter PLATES data type code if we have a GpmlOldPlatesHeader
-		 * otherwise output the gpml feature type.
+		 * Get a two-letter PLATES data type code from the subsegment type if
+		 * it's a subduction zone, otherwise get the data type code from a
+		 * GpmlOldPlatesHeader if there is one, otherwise get the full gpml
+		 * feature type.
 		 */
 		const QString
 		get_feature_type_code(
 				const GPlatesModel::FeatureHandle::const_weak_ref &source_feature,
 				const SubSegmentType sub_segment_type,
-				const bool sub_segment_use_reverse,
 				const GPlatesPropertyValues::GpmlOldPlatesHeader *source_feature_old_plates_header)
 		{
+			// First determine the PLATES data type code from the subsegment type.
+			// We do this because for subduction zones the subsegment type has
+			// already accounted for any direction reversal by reversing
+			// the subduction type.
+			//
+			// NOTE: we don't need to handle reverse direction of subsegment
+			// because variables of type 'SubSegmentType' already have this
+			// information in them.
+			if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT)
+			{
+				return "sL";
+			}
+			if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT)
+			{
+				return "sR";
+			}
+			// Note: We don't test for SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN.
+
+			// The type is not a subduction left or right so just output the plates
+			// data type code if there is an old plates header.
 			if (source_feature_old_plates_header)
 			{
-				const QString data_type_code = GPlatesUtils::make_qstring_from_icu_string(
+				return GPlatesUtils::make_qstring_from_icu_string(
 						source_feature_old_plates_header->data_type_code());
-
-				if (data_type_code == "sL")
-				{
-					return sub_segment_use_reverse ? "sR" : "sL";
-				}
-				if (data_type_code == "sR")
-				{
-					return sub_segment_use_reverse ? "sL" : "sR";
-				}
-				// else fall through and handle this elsewhere
-			}
-			else
-			{
-				// We can still infer the PLATES data type code from the
-				// subsegment type.
-				//
-				// NOTE: we don't need to handle reverse direction of subsegment
-				// because variables of type 'SubSegmentType' already have this
-				// information in them.
-				switch (sub_segment_type)
-				{
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT:
-					return "sL";
-
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT:
-					return "sR";
-
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN:
-				case SUB_SEGMENT_TYPE_OTHER:
-				default:
-					// else fall through and handle this elsewhere
-					break;
-				}
 			}
 
-			// Just use the full gpml feature type.
+			// It's not a subduction zone and it doesn't have an old plates header
+			// so just return the full gpml feature type.
 			// Mark will put in code in his external scripts to check for this.
 			return GPlatesUtils::make_qstring_from_icu_string(
 					source_feature->feature_type().get_name());
