@@ -498,31 +498,18 @@ namespace
 
 			visit_feature(feature);
 
+			// We just visited 'feature' looking for:
+			// - a feature type of "SubductionZone",
+			// - a property named "subductingSlab",
+			// - a property type of "gpml:SubductionSideEnumeration".
+			// - an enumeration value other than "Unknown".
 			//
-			// FIXME: This probably should be done in a better way ... 
-			// but it works for the global data set ... as a re-check on oldPlatesHeader 
+			// If we didn't find this information then look for the "sL" and "sR"
+			// data type codes in an old plates header if we can find one.
 			//
-			static const GPlatesModel::PropertyName old_plates_header_property_name =
-				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
-
-			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header;
-
-			if ( GPlatesFeatureVisitors::get_property_value(
-				feature,
-				old_plates_header_property_name,
-				old_plates_header ) )
+			if (d_sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN)
 			{
-				if ( old_plates_header->data_type_code() == "sL" )
-				{
-					// re-set the type
-					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
-				}
-
-				if ( old_plates_header->data_type_code() == "sR" )
-				{
-					// re-set the type
-					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
-				}
+				get_sub_segment_feature_type_from_old_plates_header(feature);
 			}
 
 			return d_sub_segment_type;
@@ -644,6 +631,35 @@ namespace
 			d_sub_segment_type = left.is_equal_to(enumeration.value())
 					? SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT
 					: SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
+		}
+
+
+		void
+		get_sub_segment_feature_type_from_old_plates_header(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+		{
+			static const GPlatesModel::PropertyName old_plates_header_property_name =
+				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
+
+			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header;
+
+			if ( GPlatesFeatureVisitors::get_property_value(
+					feature,
+					old_plates_header_property_name,
+					old_plates_header ) )
+			{
+				if ( old_plates_header->data_type_code() == "sL" )
+				{
+					// set the type
+					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
+				}
+
+				if ( old_plates_header->data_type_code() == "sR" )
+				{
+					// set the type
+					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
+				}
+			}
 		}
 
 	};
