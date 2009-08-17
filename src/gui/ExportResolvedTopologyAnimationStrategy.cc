@@ -492,9 +492,12 @@ namespace
 
 		SubSegmentType
 		get_sub_segment_feature_type(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+				const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment)
 		{
 			d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
+
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature =
+					sub_segment.get_feature_ref();
 
 			visit_feature(feature);
 
@@ -510,6 +513,12 @@ namespace
 			if (d_sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN)
 			{
 				get_sub_segment_feature_type_from_old_plates_header(feature);
+			}
+
+			// Check if the sub_segment is being used in reverse in the polygon boundary
+			if (sub_segment.get_use_reverse())
+			{
+				reverse_orientation();
 			}
 
 			return d_sub_segment_type;
@@ -662,6 +671,22 @@ namespace
 			}
 		}
 
+
+		void
+		reverse_orientation()
+		{
+			if (d_sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT) 
+			{
+				// flip the orientation flag
+				d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
+			}
+			else if (d_sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT) 
+			{
+				// flip the orientation flag
+				d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
+			}
+		}
+
 	};
 
 
@@ -669,11 +694,11 @@ namespace
 	 * Determines feature type of subsegment source feature referenced by platepolygon.
 	 */
 	SubSegmentType
-	get_sub_segment_feature_type(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+	get_sub_segment_type(
+			const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment,
 			const double &recon_time)
 	{
-		return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(feature);
+		return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(sub_segment);
 	}
 
 
@@ -784,28 +809,8 @@ namespace
 			GMTFeatureExporter &subduction_left_exporter,
 			GMTFeatureExporter &subduction_right_exporter)
 	{
-		// 
-		// FIXME: this is a quick hack to account for the use_reverse adjustments
-		//
-
 		// Determine the feature type of subsegment.
-		SubSegmentType sub_segment_type = get_sub_segment_feature_type(
-				sub_segment.get_feature_ref(), recon_time);
-
-		// check if the sub_segment is being used in reverse in the polygon boundary
-		if ( sub_segment.get_use_reverse() )
-		{
-			if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT) 
-			{
-				// flip the orientation flag
-				sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
-			}
-			else if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT) 
-			{
-				// flip the orientation flag
-				sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
-			}
-		}
+		const SubSegmentType sub_segment_type = get_sub_segment_type(sub_segment, recon_time);
 
 		// The files with specific types of subsegments use a different header format
 		// than the file with all subsegments (regardless of type).
