@@ -92,7 +92,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_gpml_constant_value(
 
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_multipoint_on_sphere(
+GPlatesFeatureVisitors::GeometryTypeFinder::visit_multi_point_on_sphere(
 	const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 {
 	d_found_multi_point_geometries = true;

@@ -92,7 +92,7 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_multipoint_on_sphere(
+		visit_multi_point_on_sphere(
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere);
 
 		virtual
