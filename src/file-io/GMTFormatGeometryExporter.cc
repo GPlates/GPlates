@@ -134,6 +134,21 @@ GPlatesFileIO::GMTFormatGeometryExporter::export_geometry(
 
 
 void
+GPlatesFileIO::GMTFormatGeometryExporter::visit_multi_point_on_sphere(
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+{
+	// Write out each point of the multipoint.
+	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multi_point_on_sphere->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator end = multi_point_on_sphere->end();
+
+	// Output all points to produce the line segments.
+	for ( ; iter != end; ++iter) {
+		print_gmt_coordinate_line(*d_stream_ptr, *iter, d_reverse_coordinate_order);
+	}
+}
+
+
+void
 GPlatesFileIO::GMTFormatGeometryExporter::visit_point_on_sphere(
 	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
