@@ -1703,7 +1703,7 @@ GPlatesFeatureVisitors::TopologyResolver::locate_point(
 		{
 			// FIXME: Error reporting?
 			qDebug() << "ERROR: locate_point():";
-			qDebug() << "ERROR: No feature found for feature_id =";
+			qDebug() << "ERROR: " << back_refs.size() << " features found for feature_id =";
 			qDebug() << "ERROR:" << GPlatesUtils::make_qstring_from_icu_string( fid.get() );
 			qDebug() << "ERROR: Unable test this feature for point location";
 			qDebug() << " ";
