@@ -153,6 +153,12 @@ namespace GPlatesGui
 		update_geometry();
 
 		/**
+		 * Loop over the Sections Table, check each entry 
+		 */
+		void
+		check_sections_table();
+
+		/**
 		 * From the Sections Table, create the tmp. geom. and property value items 
 		 */
 		void
@@ -406,6 +412,8 @@ namespace GPlatesGui
 		 * and used during interation around the Sections Table
 		 * as the code bounces between visitor functions and intersection processing functions.
 		 */
+		QString d_warning;
+
 		int d_tmp_index;
 		int d_tmp_sections_size;
 		int d_tmp_prev_index;

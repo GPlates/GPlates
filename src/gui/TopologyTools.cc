@@ -22,7 +22,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-//#define DEBUG
+#define DEBUG
 //#define DEBUG1
 
 #include <map>
@@ -36,6 +36,7 @@
 #include <QLocale>
 #include <QDebug>
 #include <QString>
+#include <QMessageBox>
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
@@ -162,6 +163,33 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 	// Draw the topology
 	draw_topology_geometry();
 
+
+	// 
+	// Report errors
+	//
+	if ( ! d_warning.isEmpty() )
+	{
+		// Add some helpful hints:
+		d_warning.append(tr("\n"));
+		d_warning.append(tr("Please check the Topology Sections table:\n"));
+		d_warning.append(tr("\n"));
+		d_warning.append(tr("a red row indicates either:\n"));
+		d_warning.append(tr("- the feature is missing from the loaded data\n"));
+		d_warning.append(tr("- the feature is loaded more than once\n"));
+		d_warning.append(tr("\n"));
+		d_warning.append(tr("a yellow row indicates either:\n"));
+		d_warning.append(tr("- the feature has a missing geometry property\n"));
+		d_warning.append(tr("- the feature is being used outside its lifetime\n"));
+		d_warning.append(tr("\n"));
+
+		QMessageBox::warning(
+			d_topology_tools_widget_ptr, 
+			tr("Error Building Topology"), 
+			d_warning,
+			QMessageBox::Ok, 
+			QMessageBox::Ok);
+	}
+
 	// Connect to focus signals from Feature Focus
 	connect_to_focus_signals( true );
 
@@ -218,6 +246,11 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 
 		// Flip the TopologyToolsWidget to the Toplogy Tab
 		d_topology_tools_widget_ptr->choose_topology_tab();
+
+		// check 
+
+		// report 
+
 }
 
 void
@@ -528,7 +561,6 @@ GPlatesGui::TopologyTools::handle_reconstruction_time_change(
 	//
 	// else continue with the update
 	//
-
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
 	update_geometry();
@@ -1104,16 +1136,27 @@ GPlatesGui::TopologyTools::handle_insert_feature(int insert_index)
 	// NOTE: GPlatesFeatureVisitors::TopologySectionsFinder::find_properties_iterator
 	// NOTE: See the comments there.
 
+	// NOTE: it is the row.d_geometry_property_opt  that determines
+	// the color of the row in the table: YELLOW for missing geom's 
+
 	// Iterate through the top level properties; look for the first name that matches
 	GPlatesModel::FeatureHandle::properties_iterator it =
 			table_row.d_feature_ref->properties_begin();
 	GPlatesModel::FeatureHandle::properties_iterator end =
 			table_row.d_feature_ref->properties_end();
+
 	for ( ; it != end; ++it)
 	{
 		if (it.is_valid() && (*it)->property_name() == property_name)
 		{
+			// the table row will be drawn normally
 			table_row.d_geometry_property_opt = it;
+			break; // out of for loop 
+		}
+		else
+		{
+			// the table row will be drawn in yellow 
+			table_row.d_geometry_property_opt = boost::none;
 		}
 	}
 
@@ -1939,6 +1982,9 @@ GPlatesGui::TopologyTools::update_geometry()
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
 
+	// loop over the Sections Table to check if all enties are valid
+	check_sections_table();
+
 	// loop over Sections Table to fill d_topology_vertices
 	create_sections_from_sections_table();
 
@@ -1990,6 +2036,373 @@ GPlatesGui::TopologyTools::fill_topology_sections_from_section_table()
 }
 
 
+///
+/// Loop over the Topology Section entries and double check everything 
+///
+
+//
+// FIXME: some of this can
+//
+void
+GPlatesGui::TopologyTools::check_sections_table()
+{
+	// a list of the particular indices to remove 
+	std::vector<int> indexes_with_errors;
+
+	// clear the warning string 
+	d_warning = tr("");
+
+	// update the table 
+	d_topology_sections_container_ptr->update();
+
+	// get the size of the table
+	d_tmp_sections_size = d_topology_sections_container_ptr->size();
+
+	// super short cut for empty table
+	if ( d_tmp_sections_size == 0 ) { 
+		return; 
+	}
+
+	// Compute indices for insertion neighbors
+	GPlatesGui::TopologySectionsContainer::size_type insertion_point = 
+		d_topology_sections_container_ptr->insertion_point();
+
+	d_feature_before_insert_index = --( insertion_point );
+	d_feature_after_insert_index = ++( insertion_point );
+
+	// wrap around
+	if ( insertion_point == 0 ) {
+		d_feature_before_insert_index = d_topology_sections_container_ptr->size();
+	}
+	// wrap around
+	if ( insertion_point == d_topology_sections_container_ptr->size() ) {
+		d_feature_after_insert_index = 0;
+	}
+
+qDebug() << "BUG: d_tmp_sections_size = " << d_tmp_sections_size << " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
+	// Loop over each geom in the Sections Table
+	d_tmp_index = 0;
+	for ( ; d_tmp_index != d_tmp_sections_size ; ++d_tmp_index )
+	{
+		// clear the tmp index list
+		d_tmp_index_vertex_list.clear();
+
+		// Set the fid for the tmp_index section 
+		d_tmp_index_fid = 
+			( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_feature_id;
+
+qDebug() << "BUG: d_tmp_index = " << d_tmp_index << "; id = " << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
+
+		// set the tmp reverse flag to this feature's flag
+		d_tmp_index_use_reverse =
+			 ( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_reverse;
+
+		// Get a vector of FeatureHandle weak_refs for this FeatureId
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
+		std::vector<GPlatesModel::FeatureHandle::weak_ref>::iterator ref_itr;
+
+		d_tmp_index_fid.find_back_ref_targets( append_as_weak_refs( back_refs ) );
+
+		// Double check back_refs
+		if ( back_refs.size() == 0 )
+		{
+			// FIXME: feak out? 
+			qDebug() << "ERROR: ======================================";
+			qDebug() << "ERROR: check_sections_table():";
+			qDebug() << "ERROR: No feature found for feature_id =";
+			qDebug() <<
+				GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
+			qDebug() << "ERROR: Unable to obtain feature (and its geometry, or vertices)";
+			qDebug() << "ERROR: continue to next element in Sections Table";
+			qDebug() << "ERROR: ======================================";
+
+			// create a warning message 
+			d_warning.append( tr("Missing feature reference:\n") );
+			d_warning.append( tr("id = ") );
+			d_warning.append(
+				GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() ) );
+			d_warning.append( tr("\n") );
+			d_warning.append( tr("\n") );
+
+			// FIXME: what else to do?
+
+			// add this entry to the remove list 
+			indexes_with_errors.push_back( d_tmp_index );
+
+			// no change to vertex_list
+			continue; // to next element in the Sections Table
+		}
+
+		if ( back_refs.size() > 1)
+		{
+			qDebug() << "ERROR: ======================================";
+			qDebug() << "ERROR: check_sections_table():";
+			qDebug() << "ERROR: " << back_refs.size() << " features found for feature_id =";
+			qDebug() <<
+				GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
+			qDebug() << "ERROR: Unable to determine feature";
+			qDebug() << "ERROR: continue to next element in Sections Table";
+			qDebug() << "ERROR: ======================================";
+
+			static const GPlatesModel::PropertyName prop_name = 
+				GPlatesModel::PropertyName::create_gml("name");
+
+			const GPlatesPropertyValues::XsString *name;
+
+			// create a warning message 
+			d_warning.append( tr("Multiple feature references for:\n") );
+			d_warning.append( tr("id = ") );
+			d_warning.append(
+				GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() ) );
+			d_warning.append( tr("\n") );
+			d_warning.append( tr("The feature names found are:\n") );
+
+			// Loop over the refs picking up the various names
+			for ( ref_itr = back_refs.begin(); ref_itr != back_refs.end(); ++ref_itr)
+			{
+				if ( GPlatesFeatureVisitors::get_property_value(*ref_itr, prop_name, name) )
+				{
+					d_warning.append( tr("name = '") );
+					d_warning.append( 
+						GPlatesUtils::make_qstring(name->value()) );
+					d_warning.append( tr("'\n") );
+				}
+				else 
+				{
+					d_warning.append("MISSSING NAME PROPERTY");
+				}
+			}
+			
+			d_warning.append(tr("\n") );
+
+			// FIXME: what else to do?
+
+			// add this entry to the remove list 
+			indexes_with_errors.push_back( d_tmp_index );
+
+			// no change to vertex_list
+			continue; // to next element in the Sections Table
+		}
+
+		// else , get the first ref on the list
+		GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
+		
+
+
+		// Get the RFG for this feature 
+		GPlatesModel::ReconstructedFeatureGeometryFinder finder( 
+			&(d_view_state_ptr->reconstruction()) );
+
+		finder.find_rfgs_of_feature( feature_ref );
+
+		GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator find_iter;
+		find_iter = finder.found_rfgs_begin();
+
+		// Keep track of the vertices belonging to the current potentially clipped section.
+		// We'll use this later to determine if a newly inserted/added section should
+		// automatically have its reverse flag changed.
+		clipped_section_vertex_range_type clipped_section_vertex_range(
+				d_topology_vertices.size(), d_topology_vertices.size());
+
+		// Double check RFGs
+		if ( find_iter != finder.found_rfgs_end() )
+		{
+			// Get the geometry on sphere from the RFG
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type gos_ptr =
+				(*find_iter)->geometry();
+
+			if (gos_ptr) 
+			{
+				// visit the geoms.  :
+				// fill additional d_tmp_index_ vars 
+				// fill d_head_end_points d_tail_end_points 
+				// set d_tmp_process_intersections
+
+				// visit will call :
+				// d_topology_sections_container_ptr->update_at( d_tmp_index, row )
+				// to set GpmlTopologicalSection for that row
+
+				d_visit_to_check_type = false;
+				d_visit_to_create_properties = true;
+				gos_ptr->accept_visitor(*this);
+
+
+				// Get the GpmlTopologicalSection ptr and add it to the working vector
+				if ( d_topology_sections_container_ptr->at( d_tmp_index ).d_section_ptr )
+				{
+					GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type gts_ptr =
+					(d_topology_sections_container_ptr->at( d_tmp_index ).d_section_ptr).get();
+					
+					d_section_ptrs.push_back( gts_ptr );
+				}
+				else
+				{
+					qDebug() << "ERROR: ======================================";
+					qDebug() << "ERROR: check_sections_table():";
+					qDebug() << "ERROR: no GpmlTopologicalSection found in Table!";
+					qDebug() << "ERROR: continue to next element in Sections Table";
+					qDebug() << "ERROR: ======================================";
+
+					// add this entry to the remove list 
+					indexes_with_errors.push_back( d_tmp_index );
+
+					//
+					// Create warning message
+					//
+					d_warning.append( tr("\n") );
+					d_warning.append(tr("Missing GpmlTopologicalSection for:\n") );
+					d_warning.append( tr("id = ") );
+					d_warning.append(
+						GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() ) );
+					d_warning.append( tr("\n") );
+					d_warning.append( tr("name = ") );
+					static const GPlatesModel::PropertyName prop_name = 
+						GPlatesModel::PropertyName::create_gml("name");
+					const GPlatesPropertyValues::XsString *name;
+					if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop_name, name) )
+					{
+						d_warning.append( tr("'") );
+						d_warning.append( GPlatesUtils::make_qstring( name->value() ) );
+						d_warning.append( tr("'\n") );
+					}
+					else
+					{
+						d_warning.append( tr("NO name property found") );
+					}
+					d_warning.append( tr("\n") );
+		
+					//
+					// Adjust d_geometry_property_opt
+					//
+					// get the current row
+					GPlatesGui::TopologySectionsContainer::TableRow row =
+						d_topology_sections_container_ptr->at( d_tmp_index );
+		
+					// update the d_geometry_property_opt to be 'False'
+					row.d_geometry_property_opt = boost::none;
+		
+					// update the row
+					connect_to_topology_sections_container_signals( false );
+					d_topology_sections_container_ptr->update_at( d_tmp_index, row );
+				connect_to_topology_sections_container_signals( true );
+	
+					continue;
+				}
+			}
+			else
+			{
+				// else no GOS for RFG 
+				qDebug() << "ERROR: ======================================";
+				qDebug() << "ERROR: check_sections_table():";
+				qDebug() << "ERROR: no geometry on sphere ptr!";
+				qDebug() << "ERROR: continue to next element in Sections Table";
+				qDebug() << "ERROR: ======================================";
+				// FIXME: what to do here??!
+
+				// add this entry to the remove list 
+				indexes_with_errors.push_back( d_tmp_index );
+
+				//
+				// Create warning message
+				//
+				d_warning.append( tr("\n") );
+				d_warning.append(tr("Missing Geometry On Sphere for:\n") );
+				d_warning.append( tr("id = ") );
+				d_warning.append(
+					GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() ) );
+				d_warning.append( tr("\n") );
+				d_warning.append( tr("name = ") );
+				static const GPlatesModel::PropertyName prop_name = 
+					GPlatesModel::PropertyName::create_gml("name");
+				const GPlatesPropertyValues::XsString *name;
+				if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop_name, name) )
+				{
+					d_warning.append( tr("'") );
+					d_warning.append( GPlatesUtils::make_qstring( name->value() ) );
+					d_warning.append( tr("'\n") );
+				}
+				else
+				{
+					d_warning.append( tr("NO name property found") );
+				}
+				d_warning.append( tr("\n") );
+	
+				//
+				// Adjust d_geometry_property_opt
+				//
+				// get the current row
+				GPlatesGui::TopologySectionsContainer::TableRow row =
+					d_topology_sections_container_ptr->at( d_tmp_index );
+	
+				// update the d_geometry_property_opt to be 'False'
+				row.d_geometry_property_opt = boost::none;
+	
+				// update the row
+				connect_to_topology_sections_container_signals( false );
+				d_topology_sections_container_ptr->update_at( d_tmp_index, row );
+				connect_to_topology_sections_container_signals( true );
+	
+				continue; // to next element in the Sections Table
+			}
+		} 
+		else
+		{
+			// else no RFG found for feature 
+			qDebug() << "ERROR: ======================================";
+			qDebug() << "ERROR: check_sections_table():";
+			qDebug() << "ERROR: no RFG!";
+			qDebug() << "ERROR: continue to next element in Sections Table";
+			qDebug() << "ERROR: ======================================";
+			// FIXME: what to do here??!
+
+			// add this entry to the remove list 
+			indexes_with_errors.push_back( d_tmp_index );
+
+			//
+			// Create warning message
+			//
+			d_warning.append( tr("\n") );
+			d_warning.append(tr("Missing Reconstructed Feature Geometry for:\n") );
+			d_warning.append( tr("id = ") );
+			d_warning.append(
+				GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() ) );
+			d_warning.append( tr("\n") );
+			d_warning.append( tr("name = ") );
+			static const GPlatesModel::PropertyName prop_name = 
+				GPlatesModel::PropertyName::create_gml("name");
+			const GPlatesPropertyValues::XsString *name;
+			if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop_name, name) )
+			{
+				d_warning.append( tr("'") );
+				d_warning.append( GPlatesUtils::make_qstring( name->value() ) );
+				d_warning.append( tr("'\n") );
+			}
+			else
+			{
+				d_warning.append( tr("NO name property found") );
+			}
+			d_warning.append( tr("\n") );
+
+			//
+			// Adjust d_geometry_property_opt
+			//
+			// get the current row
+			GPlatesGui::TopologySectionsContainer::TableRow row =
+				d_topology_sections_container_ptr->at( d_tmp_index );
+
+			// update the d_geometry_property_opt to be 'False'
+			row.d_geometry_property_opt = boost::none;
+
+			// update the row
+			connect_to_topology_sections_container_signals( false );
+			d_topology_sections_container_ptr->update_at( d_tmp_index, row );
+			connect_to_topology_sections_container_signals( true );
+
+			continue; // to next element in the Sections Table
+		}
+
+	}
+}
 
 ///
 /// Loop over the Topology Section entries and fill the working lists
@@ -2030,6 +2443,7 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		d_feature_after_insert_index = 0;
 	}
 
+qDebug() << "BUG: d_tmp_sections_size = " << d_tmp_sections_size << " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
 	// Loop over each geom in the Sections Table
 	d_tmp_index = 0;
 	for ( ; d_tmp_index != d_tmp_sections_size ; ++d_tmp_index )
@@ -2040,6 +2454,8 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		// Set the fid for the tmp_index section 
 		d_tmp_index_fid = 
 			( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_feature_id;
+
+qDebug() << "BUG: d_tmp_index = " << d_tmp_index << "; id = " << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
 
 		// set the tmp reverse flag to this feature's flag
 		d_tmp_index_use_reverse =
@@ -2070,7 +2486,7 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		{
 			qDebug() << "ERROR: ======================================";
 			qDebug() << "ERROR: create_sections_from_sections_table():";
-			qDebug() << "ERROR: More than one feature found for feature_id =";
+			qDebug() << "ERROR: " << back_refs.size() << " features found for feature_id =";
 			qDebug() <<
 				GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
 			qDebug() << "ERROR: Unable to determine feature";
@@ -2284,6 +2700,7 @@ GPlatesGui::TopologyTools::process_intersections()
 		const GPlatesMaths::PointOnSphere rotated_point = 
 			GPlatesMaths::operator*( rev_rot, click_pos );
 #endif
+
 		// reconstruct the point 
 		const GPlatesMaths::PointOnSphere rotated_point = 
 			GPlatesMaths::operator*( fwd_rot, click_pos );
@@ -2455,11 +2872,15 @@ GPlatesGui::TopologyTools::process_intersections()
 			geom_delegte,
 			ref_point,
 			plate_id_delegate);
-			
+
+		// get a GpmlTopologicalSection nnptr from the Continer
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type gts_ptr =
+			(d_topology_sections_container_ptr->at( d_tmp_index ).d_section_ptr).get();
+
 		// Set the start instersection
 		GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
-			dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
-				d_section_ptrs.at( d_tmp_index ).get() );
+			dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>( 
+				gts_ptr.get() );
 
 		gtls_ptr->set_start_intersection( start_ti );
 	}
@@ -2592,15 +3013,18 @@ GPlatesGui::TopologyTools::process_intersections()
 			geom_delegte,
 			ref_point,
 			plate_id_delegate);
-			
+
+		// get a GpmlTopologicalSection nnptr from the Topology Sections Continer
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type gts_ptr =
+			(d_topology_sections_container_ptr->at( d_tmp_index ).d_section_ptr).get();
+
 		// Set the end instersection
 		GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
 			dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
-				d_section_ptrs.at( d_tmp_index ).get() );
+				gts_ptr.get() );
 
 		gtls_ptr->set_end_intersection( end_ti );
 	}
-
 }
 
 void
