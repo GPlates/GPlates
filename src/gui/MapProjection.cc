@@ -54,7 +54,7 @@ namespace
 
 	struct ProjectionParameters 
 	{
-		int projection_name;
+		GPlatesGui::ProjectionType projection_name;
 		const char* proj4_name;
 		const char* proj4_ellipse;
 		double scaling_factor;
@@ -75,7 +75,7 @@ namespace
 GPlatesGui::MapProjection::MapProjection():
 	d_projection(0),
 	d_scale(1.),
-	d_projection_type(0),
+	d_projection_type(ORTHOGRAPHIC),
 	d_central_llp(0,0),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
@@ -83,11 +83,11 @@ GPlatesGui::MapProjection::MapProjection():
 }
 
 GPlatesGui::MapProjection::MapProjection(
-	int projection_type_):
+	ProjectionType projection_type_):
 	d_projection(0),
 	d_latlon_projection(0),
 	d_scale(1.),
-	d_projection_type(0),
+	d_projection_type(ORTHOGRAPHIC),
 	d_central_llp(0,0),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
@@ -111,7 +111,7 @@ GPlatesGui::MapProjection::~MapProjection()
 
 void
 GPlatesGui::MapProjection::set_projection_type(
-	int projection_type_)
+		ProjectionType projection_type_)
 {
 
 	if ((projection_type_ < MIN_PROJECTION_INDEX) || (projection_type_ > NUM_PROJECTIONS-1))

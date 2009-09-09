@@ -108,3 +108,52 @@ GPlatesAppLogic::Reconstruct::create_reconstruction(
 
 	return std::make_pair(reconstruction, topology_resolver);
 }
+
+
+// Remove this function once it is possible to create empty reconstructions by simply passing empty
+// lists of feature-collections into the previous function.
+const GPlatesModel::Reconstruction::non_null_ptr_type
+GPlatesAppLogic::Reconstruct::create_empty_reconstruction(
+		const double &time,
+		GPlatesModel::integer_plate_id_type root)
+{
+	GPlatesModel::ReconstructionGraph graph(time);
+
+	// Build the reconstruction tree, using 'root' as the root of the tree.
+	GPlatesModel::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> empty_vector;
+	GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
+			GPlatesModel::Reconstruction::create(tree, empty_vector);
+
+	return reconstruction;
+}
+
+#ifdef HAVE_PYTHON
+//
+// FIXME: I moved this over from GPlatesModel::Model so it probably doesn't work.
+//
+boost::python::tuple
+GPlatesAppLogic::Reconstruct::create_reconstruction_py(
+		const double &time,
+		unsigned long root)
+{
+	GPlatesModel::FeatureCollectionHandle::weak_ref reconstructable_features = GPlatesModel::Model::create_feature_collection();
+	GPlatesModel::FeatureCollectionHandle::weak_ref reconstruction_features = GPlatesModel::Model::create_feature_collection();
+	GPlatesModel::Reconstruction::non_null_ptr_type reconstruction = create_reconstruction(reconstructable_features, reconstruction_features, time, root);
+	boost::python::list points;
+	boost::python::list polylines;
+	/*
+	for (std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator p = point_reconstructions.begin();
+			p != point_reconstructions.end(); ++p)
+	{
+		points.append(*(p->geometry()));
+	}
+	for (std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator p = polyline_reconstructions.begin();
+			p != polyline_reconstructions.end(); ++p)
+	{
+		polylines.append(*(p->geometry()));
+	}
+	*/
+	return boost::python::make_tuple(points, polylines);
+}
+#endif

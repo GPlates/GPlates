@@ -142,22 +142,6 @@ GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
 }
 
 
-void
-GPlatesFileIO::PlatesLineFormatWriter::write_feature(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
-{
-	visit_feature(feature);
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::write_feature(
-		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
-{
-	visit_feature(feature);
-}
-
-
 bool
 GPlatesFileIO::PlatesLineFormatWriter::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)

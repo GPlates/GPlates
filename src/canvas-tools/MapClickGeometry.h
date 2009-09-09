@@ -30,10 +30,6 @@
 #include "gui/FeatureTableModel.h"
 #include "gui/MapCanvasTool.h"
 
-namespace GPlatesGui
-{
-	class GeometryFocusHighlight;
-}
 
 namespace GPlatesQtWidgets
 {
@@ -80,12 +76,11 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight)
+				GPlatesGui::FeatureFocus &feature_focus)
 		{
 			MapClickGeometry::non_null_ptr_type ptr(
 					new MapClickGeometry(rendered_geom_collection,map_canvas_, map_view_, view_state_,
-							clicked_table_model, fp_dialog_, feature_focus, geometry_focus_highlight),
+							clicked_table_model, fp_dialog_, feature_focus),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -118,15 +113,13 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight_):
+				GPlatesGui::FeatureFocus &feature_focus):
 			MapCanvasTool(map_canvas_, map_view_),
 			d_rendered_geom_collection(&rendered_geom_collection),
 			d_view_state_ptr(&view_state_),
 			d_clicked_table_model_ptr(&clicked_table_model_),
 			d_fp_dialog_ptr(&fp_dialog_),
-			d_feature_focus_ptr(&feature_focus),
-			d_geometry_focus_highlight(&geometry_focus_highlight_)
+			d_feature_focus_ptr(&feature_focus)
 		{  }
 
 		const GPlatesQtWidgets::ViewportWindow &
@@ -180,11 +173,6 @@ namespace GPlatesCanvasTools
 		 * application know what the user just clicked on.
 		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
-
-		/**
-		 * Used to draw the focused geometry explicitly (if currently in focus).
-		 */
-		GPlatesGui::GeometryFocusHighlight *d_geometry_focus_highlight;
 		
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.

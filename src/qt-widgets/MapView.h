@@ -36,6 +36,7 @@
 #include "maths/LatLonPointConversions.h"
 #include "qt-widgets/SceneView.h"
 #include "view-operations/QueryProximityThreshold.h"
+#include "view-operations/ViewState.h"
 
 namespace GPlatesQtWidgets
 {
@@ -82,9 +83,8 @@ namespace GPlatesQtWidgets
 		};
 
 		MapView(
-			ViewportWindow &view_state,
+			GPlatesViewOperations::ViewState &view_state,
 			QWidget *parent,
-			GPlatesGui::ViewportZoom *viewport_zoom,
 			MapCanvas *map_canvas);
 
 		/** 

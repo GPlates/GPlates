@@ -183,16 +183,16 @@ GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
 
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		ViewportWindow &view_state,
+		GPlatesViewOperations::ViewState &view_state,
 		QWidget *parent_):
 	QGLWidget(parent_),
-	d_view_state_ptr(&view_state),
+	d_view_state(view_state),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_globe(rendered_geom_collection),
-	d_geometry_focus_highlight(rendered_geom_collection)
+	d_viewport_zoom(view_state.get_viewport_zoom())
 {
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
@@ -210,6 +210,11 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	globe_size_policy.setHorizontalStretch(255);
 	setSizePolicy(globe_size_policy);
 	setMinimumSize(100, 100);
+
+	QObject::connect(&globe().orientation(), SIGNAL(orientation_changed()),
+			this, SLOT(notify_of_orientation_change()));
+	QObject::connect(&globe().orientation(), SIGNAL(orientation_changed()),
+			this, SLOT(force_mouse_pointer_pos_change()));
 
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
 	// This will cause 'paintGL()' to be called which will visit the rendered
@@ -333,7 +338,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 		glRotatef(-90.0, 1.0, 0.0, 0.0);
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-		const double viewport_zoom_factor = viewport_zoom().zoom_factor();
+		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
 		d_globe.paint_vector_output(viewport_zoom_factor);
 	}
 	catch (const GPlatesGlobal::Exception &e){
@@ -439,7 +444,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		glRotatef(-90.0, 1.0, 0.0, 0.0);
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-		const double viewport_zoom_factor = viewport_zoom().zoom_factor();
+		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
 		d_globe.paint(viewport_zoom_factor);
 
 	} catch (const GPlatesGlobal::Exception &e){
@@ -582,8 +587,6 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 {
 
 	set_view();
-
-	d_rendered_geom_collection->set_viewport_zoom_factor(d_viewport_zoom.zoom_factor());
 
 	// QWidget::update:
 	//   Updates the widget unless updates are disabled or the widget is hidden.

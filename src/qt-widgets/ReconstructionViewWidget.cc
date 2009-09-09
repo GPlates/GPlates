@@ -43,6 +43,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 #include "utils/FloatingPointComparisons.h"
+#include "view-operations/ViewportProjection.h"
 
 
 namespace
@@ -158,7 +159,8 @@ namespace
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		GPlatesGui::AnimationController &animation_controller,
-		ViewportWindow &view_state,
+		ViewportWindow &viewport_window,
+		GPlatesViewOperations::ViewState &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_splitter_widget(new QSplitter(this))
@@ -178,10 +180,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Create the MapCanvas.
 	d_map_canvas_ptr = new MapCanvas(rendered_geom_collection);
 	// Create the ZoomSliderWidget for the right-hand side.
-	d_zoom_slider_widget = new ZoomSliderWidget(d_globe_canvas_ptr->viewport_zoom(), this);
+	d_zoom_slider_widget = new ZoomSliderWidget(view_state.get_viewport_zoom(), this);
 
 	// Create the MapView.
-	d_map_view_ptr = new MapView(view_state,this,&(d_globe_canvas_ptr->viewport_zoom()),d_map_canvas_ptr);
+	d_map_view_ptr = new MapView(view_state,this,d_map_canvas_ptr);
 
 	// Set the active_view_ptr to the globe view.
 	d_active_view_ptr = static_cast<SceneView*>(d_globe_canvas_ptr);
@@ -197,8 +199,8 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 #endif
 	// Construct the "View Bar" for the bottom.
 	std::auto_ptr<QWidget> viewbar = 
-		construct_viewbar_with_projections(d_globe_canvas_ptr->viewport_zoom(),
-										   d_map_canvas_ptr);
+		construct_viewbar_with_projections(view_state.get_viewport_zoom(),
+										   view_state.get_viewport_projection());
 
 
 	// With all our widgets constructed, on to the main canvas layout:-
@@ -271,14 +273,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(d_map_view_ptr, SIGNAL(view_changed()),
 			this, SLOT(recalc_camera_position()));
 
-	GPlatesGui::ViewportZoom &vzoom = d_globe_canvas_ptr->viewport_zoom();
+	GPlatesGui::ViewportZoom &vzoom = view_state.get_viewport_zoom();
 	QObject::connect(&vzoom, SIGNAL(zoom_changed()),
 			this, SLOT(handle_zoom_change()));
 
-	QObject::connect(d_projection_control_widget_ptr, SIGNAL(projection_changed(int)),
-		this,SLOT(change_projection(int)));
+	GPlatesViewOperations::ViewportProjection &vprojection = view_state.get_viewport_projection();
+	QObject::connect(
+			&vprojection, SIGNAL(projection_type_changed(const GPlatesViewOperations::ViewportProjection &)),
+			this, SLOT(change_projection(const GPlatesViewOperations::ViewportProjection &)));
 
-	QObject::connect(this,SIGNAL(update_tools_and_status_message()),&view_state,SLOT(update_tools_and_status_message()));
+	QObject::connect(this,SIGNAL(update_tools_and_status_message()),
+			&viewport_window,SLOT(update_tools_and_status_message()));
 
 	recalc_camera_position();
 
@@ -316,7 +321,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 		GPlatesGui::ViewportZoom &vzoom,
-		GPlatesQtWidgets::MapCanvas *map_canvas_ptr)
+		GPlatesViewOperations::ViewportProjection &vprojection)
 {
 	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
 	// auto_ptr will keep tabs on the memory for us until we can return it
@@ -328,7 +333,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 		
 	// Insert Zoom and Projection controls.
 	awesomebar_layout->addWidget(wrap_with_frame(new ProjectionControlWidget(
-			map_canvas_ptr,
+			vprojection,
 			awesomebar_widget.get())));
 
 	return awesomebar_widget;
@@ -382,7 +387,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 	GPlatesGui::ViewportZoom &vzoom,
-	GPlatesQtWidgets::MapCanvas *map_canvas_ptr)
+	GPlatesViewOperations::ViewportProjection &vprojection)
 {
 	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
 	// auto_ptr will keep tabs on the memory for us until we can return it
@@ -417,7 +422,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 		d_globe_canvas_ptr, SLOT(setFocus()));
 
 	// Create the ProjectionControlWidget
-	d_projection_control_widget_ptr = new ProjectionControlWidget(map_canvas_ptr,viewbar_widget.get());
+	d_projection_control_widget_ptr = new ProjectionControlWidget(vprojection,viewbar_widget.get());
 
 	// Create a view-controls widget to house the View label, Projection box, Zoom spinbox, and Camera. 
 	QWidget *view_controls_widget = new QWidget(viewbar_widget.get());
@@ -560,12 +565,15 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_zoom_change()
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::change_projection(
-	int projection_type)
+		const GPlatesViewOperations::ViewportProjection &view_projection)
 {
+	// Update the map canvas' projection
+	d_map_canvas_ptr->set_projection_type(
+		view_projection.get_projection_type());
 
-	switch(projection_type)
+	switch(view_projection.get_projection_type())
 	{
-	case 0:
+	case GPlatesGui::ORTHOGRAPHIC:
 		d_active_view_ptr = d_globe_canvas_ptr;
 		d_globe_canvas_ptr->update_canvas();
 		if (d_camera_llp)
@@ -588,9 +596,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::change_projection(
 		break;
 	}
 	
-	// This will be unnecessary if we arrived here because of a change in the projection
-	// widget's status, but we may have arrived here via the SetProjectionDialog. 
-	d_projection_control_widget_ptr->handle_projection_changed(projection_type);
 	recalc_camera_position();
 	emit update_tools_and_status_message();
 }

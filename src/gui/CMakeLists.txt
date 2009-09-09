@@ -117,7 +117,6 @@ set(srcs
     TreeWidgetBuilder.cc
     TreeWidgetBuilder.h
     Viewport.h
-    ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h
 )

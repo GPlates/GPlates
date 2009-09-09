@@ -56,6 +56,8 @@ namespace GPlatesMaths
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
+	class ViewportProjection;
+	class ViewState;
 }
 
 namespace GPlatesGui
@@ -86,7 +88,8 @@ namespace GPlatesQtWidgets
 		ReconstructionViewWidget(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::AnimationController &animation_controller,
-				ViewportWindow &view_state,
+				ViewportWindow &viewport_window,
+				GPlatesViewOperations::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
 
@@ -199,7 +202,7 @@ namespace GPlatesQtWidgets
 
 		void
 		change_projection(
-			int projection_type);
+			const GPlatesViewOperations::ViewportProjection &view_projection);
 
 	signals:
 
@@ -215,7 +218,7 @@ namespace GPlatesQtWidgets
 		std::auto_ptr<QWidget>
 		construct_awesomebar_two(
 				GPlatesGui::ViewportZoom &vzoom,
-				GPlatesQtWidgets::MapCanvas *map_canvas_ptr);
+				GPlatesViewOperations::ViewportProjection &vprojection);
 
 		std::auto_ptr<QWidget>
 		construct_viewbar(
@@ -225,7 +228,7 @@ namespace GPlatesQtWidgets
 		std::auto_ptr<QWidget>
 		construct_viewbar_with_projections(
 				GPlatesGui::ViewportZoom &vzoom,
-				GPlatesQtWidgets::MapCanvas *map_canvas_ptr);
+				GPlatesViewOperations::ViewportProjection &vprojection);
 
 		/**
 		 * The QSplitter responsible for dividing the interface between canvas

@@ -36,7 +36,6 @@
 #include <QString>
 
 #include "FileInfo.h"
-#include "FeatureWriter.h"
 #include "OgrWriter.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -50,8 +49,7 @@ namespace GPlatesFileIO
 {
 
 	class ShapefileWriter :
-		public FeatureWriter,
-		private GPlatesModel::ConstFeatureVisitor
+		public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
@@ -66,26 +64,6 @@ namespace GPlatesFileIO
 		virtual
 			~ShapefileWriter()
 		{};
-
-		/**
-		* Writes a feature in ESRI Shapefile format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
-
-		/**
-		* Writes a feature in ESRI Shapefile format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 	private:
 

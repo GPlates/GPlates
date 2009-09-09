@@ -79,12 +79,12 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 
 void
 GPlatesQtWidgets::MapCanvas::set_projection_type(
-	int projection_type_)
+	GPlatesGui::ProjectionType projection_type_)
 {
 	d_map_projection.set_projection_type(projection_type_);
 }
 
-int
+GPlatesGui::ProjectionType
 GPlatesQtWidgets::MapCanvas::projection_type()
 {
 	return d_map_projection.projection_type();

@@ -27,9 +27,11 @@
 
 #include "ZoomGlobe.h"
 
+#include "gui/ViewportZoom.h"
+#include "maths/LatLonPointConversions.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "maths/LatLonPointConversions.h"
+#include "view-operations/ViewState.h"
 
 
 void
@@ -37,7 +39,7 @@ GPlatesCanvasTools::ZoomGlobe::handle_activation()
 {
 	if (globe_canvas().isVisible())
 	{
-		d_view_state_ptr->status_message(QObject::tr(
+		d_viewport_window->status_message(QObject::tr(
 				"Click to zoom in."
 				" Shift+click to zoom out."
 				" Ctrl+drag to re-orient the globe."));
@@ -60,7 +62,7 @@ GPlatesCanvasTools::ZoomGlobe::handle_left_click(
 	globe().UpdateHandlePos(centre_of_canvas);
 
 	// Now, zoom in.
-	globe_canvas().viewport_zoom().zoom_in();
+	d_view_state.get_viewport_zoom().zoom_in();
 }
 
 
@@ -70,5 +72,5 @@ GPlatesCanvasTools::ZoomGlobe::handle_shift_left_click(
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
-	globe_canvas().viewport_zoom().zoom_out();
+	d_view_state.get_viewport_zoom().zoom_out();
 }

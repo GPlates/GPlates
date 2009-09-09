@@ -30,6 +30,9 @@
 
 #include "SetProjectionDialogUi.h"
 
+#include "gui/MapProjection.h"
+
+
 namespace GPlatesQtWidgets
 {
 
@@ -60,14 +63,14 @@ namespace GPlatesQtWidgets
 
 		void
 		set_projection(
-			int projection_type);
+			GPlatesGui::ProjectionType projection_type);
 
 		void
 		set_central_meridian(
 			double central_meridian);
 
-		int
-		projection_type();
+		GPlatesGui::ProjectionType
+		get_projection_type() const;
 
 		double
 		central_meridian();

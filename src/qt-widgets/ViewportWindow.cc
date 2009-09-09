@@ -82,7 +82,6 @@
 #include "model/ReconstructionTreePopulator.h"
 #include "model/ReconstructionTree.h"
 
-#include "file-io/FeatureWriter.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/FileFormatNotSupportedException.h"
@@ -121,27 +120,24 @@ GPlatesQtWidgets::ViewportWindow::save_file(
 				"Attempted to write an empty feature collection.");
 	}
 
-	boost::shared_ptr<GPlatesFileIO::FeatureWriter> writer =
-		GPlatesFileIO::get_feature_collection_writer(
-		file_info,
-		feature_collection_write_format);
+	const GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
+			*file_info.get_feature_collection();
 
-	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
-		*file_info.get_feature_collection();
-
-
-	if (feature_collection.is_valid())
+	if (!feature_collection.is_valid())
 	{
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator
-			iter = feature_collection->features_begin(), 
-			end = feature_collection->features_end();
-
-		for ( ; iter != end; ++iter)
-		{
-			writer->write_feature(iter);
-		}
-		feature_collection->set_contains_unsaved_changes(false);
+		return;
 	}
+
+	boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> feature_collection_writer =
+			GPlatesFileIO::get_feature_collection_writer(
+					file_info,
+					feature_collection_write_format);
+
+	// Write the feature collection.
+	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
+			feature_collection,*feature_collection_writer);
+
+	feature_collection->set_contains_unsaved_changes(false);
 }
 
 
@@ -599,7 +595,9 @@ GPlatesQtWidgets::ViewportWindow::get_colour_table()
 
 GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_model(),
-	d_reconstruction(d_model->create_empty_reconstruction(0.0, 0)),
+	d_feature_focus(*this),
+	d_view_state(d_rendered_geom_collection, d_feature_focus),
+	d_reconstruction(GPlatesAppLogic::Reconstruct::create_empty_reconstruction(0.0, 0)),
 	d_comp_mesh_point_layer(
 			d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
@@ -611,9 +609,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_plate_velocities(d_comp_mesh_point_layer, d_comp_mesh_arrow_layer),
 	d_recon_time(0.0),
 	d_recon_root(0),
-	d_feature_focus(*this),
 	d_animation_controller(*this),
-	d_reconstruction_view_widget(d_rendered_geom_collection, d_animation_controller, *this, this),
+	d_reconstruction_view_widget(d_rendered_geom_collection, d_animation_controller, *this, d_view_state, this),
 	d_about_dialog(*this, this),
 	d_animate_dialog(d_animation_controller, this),
 	d_export_animation_dialog(d_animation_controller, *this, this),
@@ -705,20 +702,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	QObject::connect(&(d_reconstruction_view_widget.map_view()), SIGNAL(mouse_pointer_position_changed(const boost::optional<GPlatesMaths::LatLonPoint>&, bool)),
 			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const boost::optional<GPlatesMaths::LatLonPoint>&, bool)));
 
-	// Connect the geometry-focus highlight to the feature focus.
-	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
-			&(d_globe_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
-	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_modified(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
-			&(d_globe_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
-
 	// Connect the reconstruction pole widget to the feature focus.
 	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
 					GPlatesModel::FeatureHandle::weak_ref,
@@ -791,8 +774,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
-					d_task_panel_ptr->topology_tools_widget(),
-					d_globe_canvas_ptr->geometry_focus_highlight()));
+					d_task_panel_ptr->topology_tools_widget()));
 
 
 
@@ -807,13 +789,13 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_globe_canvas_ptr->globe(),
 					*d_globe_canvas_ptr,
 					*this,
+					d_view_state,
 					*d_feature_table_model_ptr,
 					d_feature_properties_dialog,
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
-					d_task_panel_ptr->topology_tools_widget(),
-					d_globe_canvas_ptr->geometry_focus_highlight()));
+					d_task_panel_ptr->topology_tools_widget()));
 
 
 
@@ -856,7 +838,6 @@ GPlatesQtWidgets::ViewportWindow::~ViewportWindow()
 void	
 GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 {
-	GlobeCanvas *canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
 	// If you want to add a new menu action, the steps are:
 	// 0. Open ViewportWindowUi.ui in the Designer.
 	// 1. Create a QAction in the Designer's Action Editor, called action_Something.
@@ -1026,11 +1007,11 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Set_Zoom, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
 	QObject::connect(action_Zoom_In, SIGNAL(triggered()),
-			&(canvas_ptr->viewport_zoom()), SLOT(zoom_in()));
+			&d_view_state.get_viewport_zoom(), SLOT(zoom_in()));
 	QObject::connect(action_Zoom_Out, SIGNAL(triggered()),
-			&(canvas_ptr->viewport_zoom()), SLOT(zoom_out()));
+			&d_view_state.get_viewport_zoom(), SLOT(zoom_out()));
 	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
-			&(canvas_ptr->viewport_zoom()), SLOT(reset_zoom()));
+			&d_view_state.get_viewport_zoom(), SLOT(reset_zoom()));
 	// ----
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
@@ -2335,16 +2316,14 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_projection_dialog()
 	if (d_set_projection_dialog.exec())
 	{
 		try {
-			// Update the map canvas' projection
-			d_reconstruction_view_widget.map_canvas().set_projection_type(
-				d_set_projection_dialog.projection_type());
-
-			d_reconstruction_view_widget.map_canvas().set_central_meridian(
-				d_set_projection_dialog.central_meridian());
-
-			// Update the reconstruction view. 
-			d_reconstruction_view_widget.change_projection(d_set_projection_dialog.projection_type());
-
+			// Notify the view state of the projection change.
+			// It will handle the rest.
+			GPlatesViewOperations::ViewportProjection &viewport_projection =
+					d_view_state.get_viewport_projection();
+			viewport_projection.set_projection_type(
+					d_set_projection_dialog.get_projection_type());
+			viewport_projection.set_central_meridian(
+					d_set_projection_dialog.central_meridian());
 		}
 		catch(GPlatesGui::ProjectionException &e)
 		{

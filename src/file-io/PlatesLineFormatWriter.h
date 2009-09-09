@@ -35,7 +35,6 @@
 #include <QTextStream>
 
 #include "FileInfo.h"
-#include "FeatureWriter.h"
 #include "PlatesLineFormatHeaderVisitor.h"
 
 #include "model/ConstFeatureVisitor.h"
@@ -51,8 +50,7 @@ namespace GPlatesFileIO
 	struct OldPlatesHeader;
 
 	class PlatesLineFormatWriter:
-			public FeatureWriter,
-			private GPlatesModel::ConstFeatureVisitor
+			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
@@ -66,26 +64,6 @@ namespace GPlatesFileIO
 		virtual
 		~PlatesLineFormatWriter()
 		{ }
-
-		/**
-		* Writes a feature in PLATES4 line format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
-
-		/**
-		* Writes a feature in PLATES4 line format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 	private:
 

@@ -60,8 +60,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	class GeometryFocusHighlight;
-
 	/**
 	 * This class contains the current choice of MapCanvasTool.
 	 *
@@ -95,8 +93,7 @@ namespace GPlatesGui
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget);
 
 		~MapCanvasToolChoice()
 		{  }

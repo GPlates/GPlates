@@ -51,9 +51,9 @@ namespace GPlatesQtWidgets
 
 		void
 		set_projection_type(
-			int projection_type);
+			GPlatesGui::ProjectionType projection_type);
 
-		int
+		GPlatesGui::ProjectionType
 		projection_type();
 
 		void

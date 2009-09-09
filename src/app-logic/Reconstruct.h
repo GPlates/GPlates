@@ -86,6 +86,31 @@ namespace GPlatesAppLogic
 						reconstruction_features_collection,
 				const double &time,
 				GPlatesModel::integer_plate_id_type root);
+
+
+		/**
+		 * Create and return an empty reconstruction for the reconstruction time @a time,
+		 * with root @a root.
+		 *
+		 * The reconstruction tree contained within the reconstruction will also be empty.
+		 *
+		 * FIXME:  Remove this function once it is possible to create empty reconstructions
+		 * by simply passing empty lists of feature-collections into the prev function.
+		 */
+		const GPlatesModel::Reconstruction::non_null_ptr_type
+		create_empty_reconstruction(
+				const double &time,
+				GPlatesModel::integer_plate_id_type root);
+
+
+#ifdef HAVE_PYTHON
+		// A Python wrapper for create_reconstruction
+		// FIXME: I moved this over from GPlatesModel::Model so it probably doesn't work.
+		boost::python::tuple
+		create_reconstruction_py(
+				const double &time,
+				unsigned long root);
+#endif
 	}
 }
 

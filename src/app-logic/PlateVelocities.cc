@@ -36,6 +36,7 @@
 #include "feature-visitors/ComputationalMeshSolver.h"
 
 #include "model/FeatureType.h"
+#include "model/ConstFeatureVisitor.h"
 #include "model/Model.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
@@ -51,7 +52,7 @@ namespace
 	 * Determines if any mesh node features that can be used by plate velocity calculations.
 	 */
 	class DetectVelocityMeshNodes:
-			public GPlatesModel::FeatureVisitor
+			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 		DetectVelocityMeshNodes() :
@@ -69,7 +70,7 @@ namespace
 		virtual
 		void
 		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle)
+				const GPlatesModel::FeatureHandle &feature_handle)
 		{
 			if (d_found_velocity_mesh_nodes)
 			{
@@ -86,6 +87,9 @@ namespace
 			{
 				d_found_velocity_mesh_nodes = true;
 			}
+
+			// NOTE: We don't actually want to visit the feature's properties
+			// so we're not calling 'visit_feature_properties()'.
 		}
 
 	private:
@@ -98,7 +102,7 @@ namespace
 	 * of type "gpml:VelocityField" and adds to a new feature collection.
 	 */
 	class AddVelocityFieldFeatures:
-			public GPlatesModel::FeatureVisitor
+			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 		AddVelocityFieldFeatures(
@@ -110,57 +114,37 @@ namespace
 
 
 		virtual
-		void
-		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle)
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle)
 		{
 			static const GPlatesModel::FeatureType mesh_node_feature_type = 
 					GPlatesModel::FeatureType::create_gpml("MeshNode");
 
 			if (feature_handle.feature_type() != mesh_node_feature_type)
 			{
-				return;
+				// Don't visit this feature.
+				return false;
 			}
 
 			d_velocity_field_feature = create_velocity_field_feature();
 
-			visit_feature_properties(feature_handle);
-		}
-
-
-		virtual
-		void
-		visit_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle)
-		{
-			GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-			GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
-			for ( ; iter != end; ++iter)
-			{
-				// Elements of this properties vector can be NULL pointers.  (See the comment in
-				// "model/FeatureRevision.h" for more details.)
-				if (*iter != NULL)
-				{
-					d_current_property_name = (*iter)->property_name();
-
-					(*iter)->accept_visitor(*this);
-				}
-			}
+			return true;
 		}
 
 
 		virtual
 		void
 		visit_gml_multi_point(
-				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 		{
 			static const GPlatesModel::PropertyName mesh_points_prop_name =
 					GPlatesModel::PropertyName::create_gpml("meshPoints");
 
 			// Note: we can't get here without a valid property name but check
 			// anyway in case visiting a property value directly (ie, not via a feature).
-			if (d_current_property_name &&
-				*d_current_property_name == mesh_points_prop_name)
+			if (current_top_level_propname() &&
+				*current_top_level_propname() == mesh_points_prop_name)
 			{
 				// We only expect one "meshPoints" property per mesh node feature.
 				// If there are multiple then we'll create multiple "domainSet" properties
@@ -177,7 +161,6 @@ namespace
 		GPlatesModel::FeatureCollectionHandle::weak_ref &d_velocity_field_feature_collection;
 		GPlatesModel::ModelInterface &d_model;
 		GPlatesModel::FeatureHandle::weak_ref d_velocity_field_feature;
-		boost::optional<GPlatesModel::PropertyName> d_current_property_name;
 
 
 		const GPlatesModel::FeatureHandle::weak_ref
@@ -194,7 +177,7 @@ namespace
 
 		void
 		create_and_append_domain_set_property_to_velocity_field_feature(
-				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 		{
 			//
 			// Create the "gml:domainSet" property of type GmlMultiPoint -

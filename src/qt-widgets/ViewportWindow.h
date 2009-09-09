@@ -84,6 +84,7 @@
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
 #include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/ViewState.h"
 
 
 namespace GPlatesGui
@@ -594,6 +595,10 @@ namespace GPlatesQtWidgets
 		//! Must be declared before 'd_reconstruction_view_widget'.
 		GPlatesViewOperations::RenderedGeometryCollection d_rendered_geom_collection;
 
+		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
+
+		GPlatesViewOperations::ViewState d_view_state;
+
 		/**
 		 * Is the reconstruction engine/framework.
 		 * Currently must be declared after 'd_rendered_geom_collection' because
@@ -618,7 +623,6 @@ namespace GPlatesQtWidgets
 
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
-		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
 		GPlatesGui::AnimationController d_animation_controller;
 
 		ReconstructionViewWidget d_reconstruction_view_widget;

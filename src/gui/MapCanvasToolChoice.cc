@@ -54,8 +54,7 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 		GPlatesGui::TopologySectionsContainer &topology_sections_container,
-		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight):
+		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget):
 	d_pan_map_tool_ptr(GPlatesCanvasTools::PanMap::create(
 		map_canvas_, map_view_,view_state_)),
 	d_zoom_map_tool_ptr(GPlatesCanvasTools::ZoomMap::create(
@@ -67,8 +66,7 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 		view_state_,
 		clicked_table_model,
 		fp_dialog,
-		feature_focus,
-		geometry_focus_highlight)),
+		feature_focus)),
 	d_digitise_polyline_tool_ptr(GPlatesCanvasTools::MapDigitiseGeometry::create(
 			GPlatesViewOperations::GeometryType::POLYLINE,
 			geometry_operation_target,

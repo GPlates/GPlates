@@ -41,29 +41,40 @@ namespace GPlatesAppLogic
 		/**
 		 * A convenience function for iterating over a the features in a
 		 * @a GPlatesModel::FeatureCollectionHandle::weak_ref and visiting
-		 * them with @a visitor.
+		 * them with a @a GPlatesModel::FeatureVisitor.
 		 */
 		void
 		visit_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 				GPlatesModel::FeatureVisitor &visitor);
 
 
 		/**
 		 * A convenience function for iterating over a the features in a
 		 * @a GPlatesModel::FeatureCollectionHandle::const_weak_ref and visiting
-		 * them with @a visitor.
+		 * them with a @a GPlatesModel::ConstFeatureVisitor.
 		 */
 		void
 		visit_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				GPlatesModel::ConstFeatureVisitor &visitor);
+
+
+		/**
+		 * A convenience function for iterating over a the features in a
+		 * @a GPlatesModel::FeatureCollectionHandle::weak_ref and visiting
+		 * them with a @a GPlatesModel::ConstFeatureVisitor.
+		 */
+		void
+		visit_feature_collection(
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 				GPlatesModel::ConstFeatureVisitor &visitor);
 
 
 		/**
 		 * A convenience function for iterating over a sequence of
 		 * @a GPlatesModel::FeatureCollectionHandle::weak_ref objects and visiting
-		 * them with @a visitor.
+		 * them with a @a GPlatesModel::FeatureVisitor.
 		 */
 		template< typename FeatureCollectionWeakRefIterator >
 		void
@@ -72,42 +83,39 @@ namespace GPlatesAppLogic
 				FeatureCollectionWeakRefIterator collections_end,
 				GPlatesModel::FeatureVisitor &visitor)
 		{
-			using namespace GPlatesModel;
-
 			// We visit each of the features in each of the feature collections in
 			// the given range.
 			FeatureCollectionWeakRefIterator collections_iter = collections_begin;
 			for ( ; collections_iter != collections_end; ++collections_iter)
 			{
-				FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
-
-				visit_feature_collection(feature_collection, visitor);
+				visit_feature_collection(*collections_iter, visitor);
 			}
 		}
 
 
 		/**
 		 * A convenience function for iterating over a sequence of
-		 * @a GPlatesModel::FeatureCollectionHandle::weak_ref objects and visiting
-		 * them with @a visitor.
+		 * @a GPlatesModel::FeatureCollectionHandle::weak_ref or
+		 * @a GPlatesModel::FeatureCollectionHandle::const_weak_ref objects and
+		 * visiting them with a @a GPlatesModel::ConstFeatureVisitor.
 		 */
-		template< typename FeatureCollectionConstWeakRefIterator >
+		template< typename FeatureCollectionWeakRefIterator >
 		void
 		visit_feature_collections(
-				FeatureCollectionConstWeakRefIterator collections_begin, 
-				FeatureCollectionConstWeakRefIterator collections_end,
+				FeatureCollectionWeakRefIterator collections_begin, 
+				FeatureCollectionWeakRefIterator collections_end,
 				GPlatesModel::ConstFeatureVisitor &visitor)
 		{
-			using namespace GPlatesModel;
-
 			// We visit each of the features in each of the feature collections in
 			// the given range.
-			FeatureCollectionConstWeakRefIterator collections_iter = collections_begin;
+			FeatureCollectionWeakRefIterator collections_iter = collections_begin;
 			for ( ; collections_iter != collections_end; ++collections_iter)
 			{
-				FeatureCollectionHandle::const_weak_ref feature_collection = *collections_iter;
-
-				visit_feature_collection(feature_collection, visitor);
+				// NOTE: 'collections_iter' can reference either a
+				// 'GPlatesModel::FeatureCollectionHandle::weak_ref' or a
+				// 'GPlatesModel::FeatureCollectionHandle::const_weak_ref' depending on
+				// the type of the template parameter 'FeatureCollectionWeakRefIterator'.
+				visit_feature_collection(*collections_iter, visitor);
 			}
 		}
 	}

@@ -108,135 +108,14 @@ GPlatesModel::Model::create_feature(
 }
 
 
-namespace 
-{
-	template< typename FeatureCollectionIterator >
-	void
-	visit_feature_collections(
-			FeatureCollectionIterator collections_begin, 
-			FeatureCollectionIterator collections_end,
-			GPlatesModel::FeatureVisitor &visitor)
-	{
-		using namespace GPlatesModel;
-
-		// Visit each of the features in each of the feature collections in the given
-		// iterator range.
-		for ( ; collections_begin != collections_end; ++collections_begin) {
-
-			FeatureCollectionHandle::weak_ref feature_collection = *collections_begin;
-
-			// Before we dereference the weak_ref using 'operator->', let's be sure
-			// that it's valid to dereference.
-			if (feature_collection.is_valid()) {
-				FeatureCollectionHandle::features_iterator iter =
-						feature_collection->features_begin();
-				FeatureCollectionHandle::features_iterator end =
-						feature_collection->features_end();
-				for ( ; iter != end; ++iter) {
-					visitor.visit_feature(iter);
-				}
-			}
-		}
-	}
-}
-
-
-const GPlatesModel::ReconstructionTree::non_null_ptr_type
-GPlatesModel::Model::create_reconstruction_tree(
-		const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-		const double &time,
-		GPlatesModel::integer_plate_id_type root)
-{
-	ReconstructionGraph graph(time);
-	ReconstructionTreePopulator rtp(time, graph);
-
-	visit_feature_collections(
-			reconstruction_features_collection.begin(),
-			reconstruction_features_collection.end(),
-			rtp);
-
-	// Build the reconstruction tree, using 'root' as the root of the tree.
-	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
-	return tree;
-}
-
-
-const GPlatesModel::Reconstruction::non_null_ptr_type
-GPlatesModel::Model::create_reconstruction(
-		const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
-		const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-		const double &time,
-		GPlatesModel::integer_plate_id_type root)
-{
-	ReconstructionTree::non_null_ptr_type tree =
-			create_reconstruction_tree(reconstruction_features_collection, time, root);
-	Reconstruction::non_null_ptr_type reconstruction =
-			Reconstruction::create(tree, reconstruction_features_collection);
-
-	ReconstructedFeatureGeometryPopulator rfgp(time, root, *reconstruction,
-			reconstruction->reconstruction_tree(),
-			reconstruction->geometries());
-
-	visit_feature_collections(
-		reconstructable_features_collection.begin(),
-		reconstructable_features_collection.end(),
-		rfgp);
-
-	return reconstruction;
-}
-
-
-// Remove this function once it is possible to create empty reconstructions by simply passing empty
-// lists of feature-collections into the previous function.
-const GPlatesModel::Reconstruction::non_null_ptr_type
-GPlatesModel::Model::create_empty_reconstruction(
-		const double &time,
-		GPlatesModel::integer_plate_id_type root)
-{
-	ReconstructionGraph graph(time);
-
-	// Build the reconstruction tree, using 'root' as the root of the tree.
-	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
-	std::vector<FeatureCollectionHandle::weak_ref> empty_vector;
-	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree, empty_vector);
-
-	return reconstruction;
-}
-
-
 #ifdef HAVE_PYTHON
-boost::python::tuple
-GPlatesModel::Model::create_reconstruction_py(
-		const double &time,
-		unsigned long root)
-{
-	GPlatesModel::FeatureCollectionHandle::weak_ref reconstructable_features = GPlatesModel::Model::create_feature_collection();
-	GPlatesModel::FeatureCollectionHandle::weak_ref reconstruction_features = GPlatesModel::Model::create_feature_collection();
-	GPlatesModel::Reconstruction::non_null_ptr_type reconstruction = create_reconstruction(reconstructable_features, reconstruction_features, time, root);
-	boost::python::list points;
-	boost::python::list polylines;
-	/*
-	for (std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator p = point_reconstructions.begin();
-			p != point_reconstructions.end(); ++p)
-	{
-		points.append(*(p->geometry()));
-	}
-	for (std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator p = polyline_reconstructions.begin();
-			p != polyline_reconstructions.end(); ++p)
-	{
-		polylines.append(*(p->geometry()));
-	}
-	*/
-	return boost::python::make_tuple(points, polylines);
-}
-
-
 using namespace boost::python;
-
 
 void
 GPlatesModel::export_Model()
 {
+	// FIXME: I moved create_reconstruction() over to GPlatesAppLogic::Reconstruct so
+	// this needs fixing.
 	class_<GPlatesModel::Model>("Model", init<>())
 		.def("create_reconstruction", &GPlatesModel::Model::create_reconstruction_py)
 	;

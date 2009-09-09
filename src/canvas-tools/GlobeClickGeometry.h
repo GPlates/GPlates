@@ -31,11 +31,6 @@
 #include "gui/FeatureTableModel.h"
 
 
-namespace GPlatesGui
-{
-	class GeometryFocusHighlight;
-}
-
 namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
@@ -81,8 +76,7 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		
 		virtual
@@ -117,8 +111,7 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		const GPlatesQtWidgets::ViewportWindow &
 		view_state() const
@@ -171,11 +164,6 @@ namespace GPlatesCanvasTools
 		 * application know what the user just clicked on.
 		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
-
-		/**
-		 * Used to draw the focused geometry explicitly (if currently in focus).
-		 */
-		GPlatesGui::GeometryFocusHighlight *d_geometry_focus_highlight;
 	};
 }
 

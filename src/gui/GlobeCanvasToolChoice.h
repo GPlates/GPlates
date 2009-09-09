@@ -56,12 +56,11 @@ namespace GPlatesViewOperations
 	class GeometryOperationTarget;
 	class QueryProximityThreshold;
 	class RenderedGeometryCollection;
+	class ViewState;
 }
 
 namespace GPlatesGui
 {
-	class GeometryFocusHighlight;
-
 	/**
 	 * This class contains the current choice of GlobeCanvasTool.
 	 *
@@ -90,14 +89,14 @@ namespace GPlatesGui
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				const GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesViewOperations::ViewState &view_state,
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget);
 
 		~GlobeCanvasToolChoice()
 		{  }

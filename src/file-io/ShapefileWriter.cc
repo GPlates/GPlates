@@ -35,7 +35,6 @@
 #include <QString>
 
 #include "FileInfo.h"
-#include "FeatureWriter.h"
 #include "OgrException.h"
 #include "ShapefileUtils.h"
 #include "feature-visitors/GeometryTypeFinder.h"
@@ -806,22 +805,6 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 
 	}
 
-}
-
-
-void
-GPlatesFileIO::ShapefileWriter::write_feature(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
-{
-	visit_feature(feature);
-}
-
-
-void
-GPlatesFileIO::ShapefileWriter::write_feature(
-		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
-{
-	visit_feature(feature);
 }
 
 

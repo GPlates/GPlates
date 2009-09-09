@@ -34,13 +34,13 @@
 
 namespace GPlatesModel
 {
+	class ConstFeatureVisitor;
 	class ModelInterface;
 }
 
 namespace GPlatesFileIO
 {
 	class FileInfo;
-	class FeatureWriter;
 	class FeatureCollectionReader;
 	struct ReadErrorAccumulation;
 }
@@ -87,8 +87,8 @@ namespace GPlatesFileIO
 	 * @param file_info file whose extension used to determine file format.
 	 */
 	FeatureCollectionFileFormat::Format
-		get_feature_collection_file_format(
-		const FileInfo& file_info);
+	get_feature_collection_file_format(
+			const FileInfo& file_info);
 
 	/**
 	 * Determine feature collection file type based on file extension.
@@ -96,8 +96,8 @@ namespace GPlatesFileIO
 	 * @param file_info file whose extension used to determine file format.
 	 */
 	FeatureCollectionFileFormat::Format
-		get_feature_collection_file_format(
-		const QFileInfo& file_info);
+	get_feature_collection_file_format(
+			const QFileInfo& file_info);
 
 	/**
 	* Creates and returns a feature collection writer.
@@ -113,11 +113,11 @@ namespace GPlatesFileIO
 	* @throws ErrorOpeningFileForWritingException if file is not writable.
 	* @throws FileFormatNotSupportedException if file format has no writer.
 	*/
-	boost::shared_ptr<FeatureWriter>
-		get_feature_collection_writer(
-		const FileInfo& file_info,
-		FeatureCollectionWriteFormat::Format write_format =
-			FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+	boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
+	get_feature_collection_writer(
+			const FileInfo& file_info,
+			FeatureCollectionWriteFormat::Format write_format =
+				FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
 	/**
 	* Reads a feature collection from a file.
@@ -129,10 +129,10 @@ namespace GPlatesFileIO
 	* @throws FileFormatNotSupportedException if file format not recognised or has no reader.
 	*/
 	void
-		read_feature_collection_file(
-		FileInfo &fileinfo,
-		GPlatesModel::ModelInterface &model,
-		ReadErrorAccumulation &read_errors);
+	read_feature_collection_file(
+			FileInfo &fileinfo,
+			GPlatesModel::ModelInterface &model,
+			ReadErrorAccumulation &read_errors);
 }
 
 #endif // GPLATES_FILEIO_FEATURECOLLECTIONFILEFORMAT_H

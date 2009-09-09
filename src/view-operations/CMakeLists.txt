@@ -64,6 +64,9 @@ set(srcs
     RenderReconstructionGeometries.h
     UndoRedo.cc
     UndoRedo.h
+    ViewportProjection.h
+    ViewState.cc
+    ViewState.h
 )
 
 

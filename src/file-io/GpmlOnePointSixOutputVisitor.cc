@@ -532,22 +532,6 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 
 
 void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
-{
-	visit_feature(feature);
-}
-
-
-void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
-		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
-{
-	visit_feature(feature);
-}
-
-
-void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::start_writing_document(
 		XmlWriter &writer)
 {

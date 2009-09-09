@@ -47,7 +47,6 @@
 #include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
 #include "gui/PlatesColourTable.h"
-#include "gui/GeometryFocusHighlight.h"
 
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -60,6 +59,7 @@
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
+	class ViewState;
 }
 
 namespace GPlatesQtWidgets 
@@ -117,7 +117,7 @@ namespace GPlatesQtWidgets
 		explicit
 		GlobeCanvas(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				ViewportWindow &view_state,
+				GPlatesViewOperations::ViewState &view_state,
 				QWidget *parent_ = 0);
 
 
@@ -157,18 +157,6 @@ namespace GPlatesQtWidgets
 		globe()
 		{
 			return d_globe;
-		}
-
-		GPlatesGui::ViewportZoom &
-		viewport_zoom()
-		{
-			return d_viewport_zoom;
-		}
-
-		GPlatesGui::GeometryFocusHighlight &
-		geometry_focus_highlight()
-		{
-			return d_geometry_focus_highlight;
 		}
 
 		/**
@@ -509,14 +497,6 @@ namespace GPlatesQtWidgets
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
-		/**
-		 * This signal should only be emitted if the zoom is actually different to what it
-		 * was.
-		 */
-		void
-		zoom_changed(
-				double zoom_percent);
-
 	private slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -526,7 +506,7 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
-		ViewportWindow *d_view_state_ptr;
+		GPlatesViewOperations::ViewState &d_view_state;
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
@@ -581,10 +561,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::Globe d_globe;
 
-		// FIXME: As this is now shared between the GlobeCanvas and the MapView, it should
-		// probably reside somewhere else. 
-		GPlatesGui::ViewportZoom d_viewport_zoom;
-		GPlatesGui::GeometryFocusHighlight d_geometry_focus_highlight;  // Depends upon Globe.
+		GPlatesGui::ViewportZoom &d_viewport_zoom;
 
 
 		void

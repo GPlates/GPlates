@@ -49,8 +49,7 @@ GPlatesCanvasTools::GlobeClickGeometry::create(
 		const GPlatesQtWidgets::ViewportWindow &view_state,
 		GPlatesGui::FeatureTableModel &clicked_table_model,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
-		GPlatesGui::FeatureFocus &feature_focus,
-		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
 	return GlobeClickGeometry::non_null_ptr_type(
 			new GlobeClickGeometry(
@@ -60,8 +59,7 @@ GPlatesCanvasTools::GlobeClickGeometry::create(
 					view_state,
 					clicked_table_model,
 					fp_dialog,
-					feature_focus,
-					geometry_focus_highlight),
+					feature_focus),
 			GPlatesUtils::NullIntrusivePointerHandler());
 }
 
@@ -72,15 +70,13 @@ GPlatesCanvasTools::GlobeClickGeometry::GlobeClickGeometry(
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
-		GPlatesGui::FeatureFocus &feature_focus_,
-		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight_):
+		GPlatesGui::FeatureFocus &feature_focus_):
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_view_state_ptr(&view_state_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	d_fp_dialog_ptr(&fp_dialog_),
-	d_feature_focus_ptr(&feature_focus_),
-	d_geometry_focus_highlight(&geometry_focus_highlight_)
+	d_feature_focus_ptr(&feature_focus_)
 {
 }
 

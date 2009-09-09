@@ -66,11 +66,10 @@ namespace
 
 
 GPlatesQtWidgets::MapView::MapView(
-	GPlatesQtWidgets::ViewportWindow &view_state,
+	GPlatesViewOperations::ViewState &view_state,
 	QWidget *parent_,
-	GPlatesGui::ViewportZoom *viewport_zoom_,
 	GPlatesQtWidgets::MapCanvas *map_canvas_):
-	d_viewport_zoom(viewport_zoom_),
+	d_viewport_zoom(&view_state.get_viewport_zoom()),
 	d_map_canvas_ptr(map_canvas_),
 	d_centre_of_viewport(0.,0.),
 	d_scene_rect(-180,-90,360,180)

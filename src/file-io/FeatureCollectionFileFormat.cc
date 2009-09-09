@@ -26,7 +26,6 @@
  */
 
 #include "FeatureCollectionFileFormat.h"
-#include "FeatureWriter.h"
 #include "FileInfo.h"
 
 #include "GpmlOnePointSixOutputVisitor.h"
@@ -52,7 +51,8 @@
 namespace
 {
 	bool
-		file_name_ends_with(const QFileInfo &file, const QString &suffix)
+	file_name_ends_with(
+			const QFileInfo &file, const QString &suffix)
 	{
 		return file.completeSuffix().endsWith(
 			QString(suffix),
@@ -60,14 +60,16 @@ namespace
 	}
 
 	bool
-		is_gmt_format_file(const QFileInfo &file)
+	is_gmt_format_file(
+			const QFileInfo &file)
 	{
 		return file_name_ends_with(file, "xy");
 	}
 
 
 	bool
-		is_plates_line_format_file(const QFileInfo &file)
+	is_plates_line_format_file(
+			const QFileInfo &file)
 	{
 		return file_name_ends_with(file, "dat") ||
 			file_name_ends_with(file, "pla");
@@ -75,13 +77,15 @@ namespace
 
 
 	bool
-		is_plates_rotation_format_file(const QFileInfo &file)
+	is_plates_rotation_format_file(
+			const QFileInfo &file)
 	{
 		return file_name_ends_with(file, "rot");
 	}
 
 	bool
-		is_shapefile_format_file(const QFileInfo &file)
+	is_shapefile_format_file(
+			const QFileInfo &file)
 	{
 		return file_name_ends_with(file, "shp");
 
@@ -90,7 +94,8 @@ namespace
 	}
 
 	bool
-		is_gpml_format_file(const QFileInfo &file)
+	is_gpml_format_file(
+			const QFileInfo &file)
 	{
 		return file_name_ends_with(file, "gpml");
 	}
@@ -108,9 +113,9 @@ namespace
 	 * @param file_format format determined by file extension.
 	 */
 	bool
-		is_write_format_compatible_with_file_format(
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format write_format,
-		GPlatesFileIO::FeatureCollectionFileFormat::Format file_format)
+	is_write_format_compatible_with_file_format(
+			GPlatesFileIO::FeatureCollectionWriteFormat::Format write_format,
+			GPlatesFileIO::FeatureCollectionFileFormat::Format file_format)
 	{
 		switch (write_format)
 		{
@@ -130,11 +135,11 @@ namespace
 	}
 
 	/**
-	 * Create a derived @a FeatureWriter determined by file extension.
+	 * Create a derived @a GPlatesModel::ConstFeatureVisitor determined by file extension.
 	 */
-	boost::shared_ptr<GPlatesFileIO::FeatureWriter>
-		get_feature_collection_writer_from_file_extension(
-		const GPlatesFileIO::FileInfo& file_info)
+	boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
+	get_feature_collection_writer_from_file_extension(
+			const GPlatesFileIO::FileInfo& file_info)
 	{
 		// Determine file format from file extension.
 		const GPlatesFileIO::FeatureCollectionFileFormat::Format file_format =
@@ -143,27 +148,27 @@ namespace
 		switch (file_format)
 		{
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
-			return boost::shared_ptr<GPlatesFileIO::FeatureWriter>(
+			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 				new GPlatesFileIO::GpmlOnePointSixOutputVisitor(file_info, false));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
-			return boost::shared_ptr<GPlatesFileIO::FeatureWriter>(
+			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 				new GPlatesFileIO::GpmlOnePointSixOutputVisitor(file_info, true));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
-			return boost::shared_ptr<GPlatesFileIO::FeatureWriter>(
+			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 				new GPlatesFileIO::PlatesLineFormatWriter(file_info));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
-			return boost::shared_ptr<GPlatesFileIO::FeatureWriter>(
+			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 				new GPlatesFileIO::PlatesRotationFormatWriter(file_info));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
-			return boost::shared_ptr<GPlatesFileIO::FeatureWriter>(
+			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 				new GPlatesFileIO::GMTFormatWriter(file_info));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-			return boost::shared_ptr<GPlatesFileIO::FeatureWriter>(
+			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 				new GPlatesFileIO::ShapefileWriter(file_info));
 		default:
 			throw GPlatesFileIO::FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
@@ -177,7 +182,8 @@ namespace
 	};
 
 	FileMagic
-		identify_by_magic_number(const GPlatesFileIO::FileInfo& file_info)
+	identify_by_magic_number(
+			const GPlatesFileIO::FileInfo& file_info)
 	{
 		static const QByteArray MAGIC_UTF8 = QByteArray::fromHex("efbbbf");
 		static const QByteArray MAGIC_UTF16_BIG_ENDIAN = QByteArray::fromHex("feff");
@@ -219,14 +225,14 @@ namespace
 
 GPlatesFileIO::FeatureCollectionFileFormat::Format
 GPlatesFileIO::get_feature_collection_file_format(
-	const FileInfo& file_info)
+		const FileInfo& file_info)
 {
 	return get_feature_collection_file_format( file_info.get_qfileinfo() );
 }
 
 GPlatesFileIO::FeatureCollectionFileFormat::Format
 GPlatesFileIO::get_feature_collection_file_format(
-	const QFileInfo& file_info)
+		const QFileInfo& file_info)
 {
 	if (is_gpml_format_file(file_info))
 	{
@@ -261,10 +267,10 @@ GPlatesFileIO::get_feature_collection_file_format(
 	}
 }
 
-boost::shared_ptr<GPlatesFileIO::FeatureWriter>
+boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
 GPlatesFileIO::get_feature_collection_writer(
-	const FileInfo& file_info,
-	FeatureCollectionWriteFormat::Format write_format)
+		const FileInfo& file_info,
+		FeatureCollectionWriteFormat::Format write_format)
 {
 	if ( ! is_writable(file_info) )
 	{
@@ -293,15 +299,15 @@ GPlatesFileIO::get_feature_collection_writer(
 		return get_feature_collection_writer_from_file_extension(file_info);
 
 	case FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER:
-		return boost::shared_ptr<FeatureWriter>(
+		return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 			new GMTFormatWriter(file_info, GMTFormatWriter::PLATES4_STYLE_HEADER));
 
 	case FeatureCollectionWriteFormat::GMT_VERBOSE_HEADER:
-		return boost::shared_ptr<FeatureWriter>(
+		return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 			new GMTFormatWriter(file_info, GMTFormatWriter::VERBOSE_HEADER));
 
 	case FeatureCollectionWriteFormat::GMT_PREFER_PLATES4_STYLE_HEADER:
-		return boost::shared_ptr<FeatureWriter>(
+		return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 			new GMTFormatWriter(file_info, GMTFormatWriter::PREFER_PLATES4_STYLE_HEADER));
 
 	default:
@@ -312,9 +318,9 @@ GPlatesFileIO::get_feature_collection_writer(
 
 void
 GPlatesFileIO::read_feature_collection_file(
-	FileInfo &file_info,
-	GPlatesModel::ModelInterface &model,
-	ReadErrorAccumulation &read_errors)
+		FileInfo &file_info,
+		GPlatesModel::ModelInterface &model,
+		ReadErrorAccumulation &read_errors)
 {
 	switch ( get_feature_collection_file_format(file_info) )
 	{

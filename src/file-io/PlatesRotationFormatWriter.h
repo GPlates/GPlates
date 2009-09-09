@@ -32,7 +32,6 @@
 #include <list>
 #include <fstream>
 #include "FileInfo.h"
-#include "FeatureWriter.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
@@ -49,8 +48,7 @@ namespace GPlatesPropertyValues
 namespace GPlatesFileIO
 {
 	class PlatesRotationFormatWriter:
-			public GPlatesModel::ConstFeatureVisitor,
-			public FeatureWriter
+			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
@@ -66,26 +64,6 @@ namespace GPlatesFileIO
 		{
 			delete d_output;
 		}
-
-		/**
-		* Writes a feature in PLATES4 rotation format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
-
-		/**
-		* Writes a feature in PLATES4 rotation format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 	protected:
 

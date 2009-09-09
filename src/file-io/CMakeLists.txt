@@ -23,7 +23,6 @@ set(srcs
     FeatureCollectionFileFormat.h
     FeaturePropertiesMap.cc
     FeaturePropertiesMap.h
-    FeatureWriter.h
     FileFormatNotSupportedException.h
     FileInfo.cc
     FileInfo.h

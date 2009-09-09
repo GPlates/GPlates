@@ -36,7 +36,6 @@
 #include "model/PropertyName.h"
 #include "XmlWriter.h"
 #include "FileInfo.h"
-#include "FeatureWriter.h"
 
 
 namespace GPlatesPropertyValues
@@ -52,8 +51,7 @@ namespace GPlatesFileIO
 
 
 	class GpmlOnePointSixOutputVisitor:
-			public GPlatesModel::ConstFeatureVisitor,
-			public FeatureWriter
+			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 		static
@@ -90,25 +88,6 @@ namespace GPlatesFileIO
 		virtual
 		~GpmlOnePointSixOutputVisitor();
 
-		/**
-		* Writes a feature in GPML 1.6 format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
-
-		/**
-		* Writes a feature in GPML 1.6 format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 		/**
 		 * Start writing the document (via the XML writer) to the output file or device.
