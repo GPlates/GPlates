@@ -290,6 +290,13 @@ namespace
 		return entry.d_feature_ref.is_valid();
 	}
 	
+	bool
+	check_row_validity_geom(
+			const GPlatesGui::TopologySectionsContainer::TableRow &entry)
+	{
+		return entry.d_geometry_property_opt;
+	}
+	
 	
 	const QString
 	get_invalid_row_message(
@@ -408,6 +415,9 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	QObject::connect(d_container_ptr, SIGNAL(entries_inserted(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
 	QObject::connect(d_container_ptr, SIGNAL(entries_modified(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
+			this, SLOT(update_table()));
+
+	QObject::connect(d_container_ptr, SIGNAL(update_table_sig()),
 			this, SLOT(update_table()));
 
 	QObject::connect(d_container_ptr, SIGNAL(focus_feature_at_index( GPlatesGui::TopologySectionsContainer::size_type)),
@@ -803,9 +813,17 @@ GPlatesGui::TopologySectionsTable::update_table_row(
 // for the render_ functions, but perhaps a copy will suffice for now.
 		TopologySectionsContainer::TableRow entry = d_container_ptr->at(index);
 		resolve_feature_id(entry);
+
 		if (check_row_validity(entry)) {
-			// Draw a nice normal valid row.
-			render_table_row(row, entry);
+
+			if ( ! check_row_validity_geom(entry)) {
+				// Draw a yellow row
+				render_table_row(row, entry, QColor("#FFFF00") );
+			} else {
+				// Draw a nice normal valid row.
+				render_table_row(row, entry);
+			}
+
 		} else {
 			// Draw a big red invalid row.
 			render_invalid_row(row, get_invalid_row_message(entry));
@@ -817,8 +835,12 @@ GPlatesGui::TopologySectionsTable::update_table_row(
 void
 GPlatesGui::TopologySectionsTable::render_table_row(
 		int row,
-		const TopologySectionsContainer::TableRow &row_data)
+		const TopologySectionsContainer::TableRow &row_data,
+		QColor bg
+		)
 {
+	static const QColor invalid_bg = QColor("#FF6149");
+
 	// We are changing the table programmatically. We don't want cellChanged events.
 	TableUpdateGuard guard(d_suppress_update_notification_guard);
 	
@@ -839,10 +861,14 @@ GPlatesGui::TopologySectionsTable::render_table_row(
 		// QTableWidget handles the memory of these things.
 		QTableWidgetItem *item = new QTableWidgetItem;
 		d_table->setItem(row, column, item);
+
+
 		
 		// Set default flags and alignment for all table cells in this column.
 		item->setTextAlignment(column_heading_info_table[column].data_alignment);
 		item->setFlags(column_heading_info_table[column].data_flags);
+		
+		item->setData(Qt::BackgroundRole, bg);
 
 		// Call accessor function to put raw data into the table.
 		table_accessor_type accessor_fn = column_heading_info_table[column].accessor;
