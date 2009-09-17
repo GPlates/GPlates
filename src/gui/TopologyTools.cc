@@ -22,7 +22,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#define DEBUG
+//#define DEBUG
 //#define DEBUG1
 
 #include <map>
@@ -570,10 +570,6 @@ GPlatesGui::TopologyTools::handle_reconstruction_time_change(
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_reconstruction_geometry() );
 
-// FIXME : remove diagnostic
-#ifdef DEBUG
-show_numbers();
-#endif
 }
 
 //
@@ -616,12 +612,6 @@ GPlatesGui::TopologyTools::set_focus(
 	// display this feature ; or unset focus if it is a topology
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(), d_feature_focus_ptr->associated_reconstruction_geometry() );
-
-
-#ifdef DEBUG
-// FIXME: remove this diag
-show_numbers();
-#endif
 
 	return;
 }
@@ -2079,7 +2069,6 @@ GPlatesGui::TopologyTools::check_sections_table()
 		d_feature_after_insert_index = 0;
 	}
 
-qDebug() << "BUG: d_tmp_sections_size = " << d_tmp_sections_size << " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
 	// Loop over each geom in the Sections Table
 	d_tmp_index = 0;
 	for ( ; d_tmp_index != d_tmp_sections_size ; ++d_tmp_index )
@@ -2091,7 +2080,6 @@ qDebug() << "BUG: d_tmp_sections_size = " << d_tmp_sections_size << " <<<<<<<<<<
 		d_tmp_index_fid = 
 			( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_feature_id;
 
-qDebug() << "BUG: d_tmp_index = " << d_tmp_index << "; id = " << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
 
 		// set the tmp reverse flag to this feature's flag
 		d_tmp_index_use_reverse =
@@ -2443,7 +2431,6 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		d_feature_after_insert_index = 0;
 	}
 
-qDebug() << "BUG: d_tmp_sections_size = " << d_tmp_sections_size << " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
 	// Loop over each geom in the Sections Table
 	d_tmp_index = 0;
 	for ( ; d_tmp_index != d_tmp_sections_size ; ++d_tmp_index )
@@ -2454,8 +2441,6 @@ qDebug() << "BUG: d_tmp_sections_size = " << d_tmp_sections_size << " <<<<<<<<<<
 		// Set the fid for the tmp_index section 
 		d_tmp_index_fid = 
 			( d_topology_sections_container_ptr->at( d_tmp_index ) ).d_feature_id;
-
-qDebug() << "BUG: d_tmp_index = " << d_tmp_index << "; id = " << GPlatesUtils::make_qstring_from_icu_string( d_tmp_index_fid.get() );
 
 		// set the tmp reverse flag to this feature's flag
 		d_tmp_index_use_reverse =

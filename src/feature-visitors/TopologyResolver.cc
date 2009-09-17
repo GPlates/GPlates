@@ -25,8 +25,8 @@
  */
 
 
-#define DEBUG
 #if 0
+#define DEBUG
 #define DEBUG_RESOLVE_INTERSECTION
 #define DEBUG_VISIT
 #define DEBUG_RESOLVE_BOUNDARY
