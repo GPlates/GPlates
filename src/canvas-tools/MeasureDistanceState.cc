@@ -188,12 +188,18 @@ GPlatesCanvasTools::MeasureDistanceState::quick_measure_add_point(
 		}
 		else if (!d_quick_measure_end) // 1 point
 		{
-			d_quick_measure_end = boost::optional<GPlatesMaths::PointOnSphere>(point);
+			if (*d_quick_measure_start != point) // the two points cannot be the same
+			{
+				d_quick_measure_end = boost::optional<GPlatesMaths::PointOnSphere>(point);
+			}
 		}
 		else // 2 points
 		{
-			d_quick_measure_start = d_quick_measure_end;
-			d_quick_measure_end = boost::optional<GPlatesMaths::PointOnSphere>(point);
+			if (*d_quick_measure_end != point) // the two points cannot be the same
+			{
+				d_quick_measure_start = d_quick_measure_end;
+				d_quick_measure_end = boost::optional<GPlatesMaths::PointOnSphere>(point);
+			}
 		}
 		
 		emit_quick_measure_updated();
