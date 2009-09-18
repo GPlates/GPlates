@@ -29,6 +29,7 @@
 #define GPLATES_QTWIDGETS_MAPVIEW_H
 
 #include <QGraphicsView>
+#include <QGLWidget>
 
 #include <boost/optional.hpp>
 
@@ -352,6 +353,10 @@ namespace GPlatesQtWidgets
 		 */
 		QRectF d_scene_rect;
 
+		/**
+		 * The QGLWidget that we use for this widget's viewport
+		 */
+		QGLWidget *d_gl_widget_ptr;
 	};
 
 }

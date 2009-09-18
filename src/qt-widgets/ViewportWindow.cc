@@ -102,8 +102,8 @@
 #include "feature-visitors/ComputationalMeshSolver.h"
 #include "feature-visitors/TopologyResolver.h"
 #include "qt-widgets/MapCanvas.h"
-#include "qt-widgets/MapView.h"
 
+#include "canvas-tools/MeasureDistanceState.h"
 
 void
 GPlatesQtWidgets::ViewportWindow::save_file(
@@ -636,6 +636,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_focused_feature_geometry_builder,
 			d_feature_focus,
 			*this),
+	d_measure_distance_state_ptr(new GPlatesCanvasTools::MeasureDistanceState(
+				d_rendered_geom_collection,
+				d_geometry_operation_target)),
 	d_task_panel_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog(*this,this),
 	d_feature_table_model_ptr( new GPlatesGui::FeatureTableModel(d_feature_focus)),
@@ -654,6 +657,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_digitise_geometry_builder,
 			d_geometry_operation_target,
 			d_active_geometry_operation,
+			*d_measure_distance_state_ptr,
 			*this,
 			d_choose_canvas_tool,
 			this));
@@ -774,7 +778,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
-					d_task_panel_ptr->topology_tools_widget()));
+					d_task_panel_ptr->topology_tools_widget(),
+					*d_measure_distance_state_ptr));
 
 
 
@@ -795,8 +800,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_feature_focus,
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
-					d_task_panel_ptr->topology_tools_widget()));
-
+					d_task_panel_ptr->topology_tools_widget(),
+					*d_measure_distance_state_ptr));
 
 
 
@@ -876,6 +881,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			&d_choose_canvas_tool, SLOT(choose_build_topology_tool()));
 	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
 			&d_choose_canvas_tool, SLOT(choose_edit_topology_tool()));
+	QObject::connect(action_Measure_Distance, SIGNAL(triggered()),
+			&d_choose_canvas_tool, SLOT(choose_measure_distance_tool()));
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
@@ -1478,6 +1485,13 @@ GPlatesQtWidgets::ViewportWindow::enable_edit_topology_tool(
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::enable_measure_distance_tool(
+		bool enable)
+{
+	action_Measure_Distance->setEnabled(enable);
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 {
 	uncheck_all_tools();
@@ -1592,6 +1606,16 @@ GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 	d_task_panel_ptr->choose_modify_geometry_tab();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
+{
+	uncheck_all_tools();
+	action_Measure_Distance->setChecked(true);
+	d_globe_canvas_tool_choice_ptr->choose_measure_distance_tool();
+	d_map_canvas_tool_choice_ptr->choose_measure_distance_tool();
+
+	d_task_panel_ptr->choose_measure_distance_tab();
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
@@ -1657,6 +1681,7 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
 	action_Manipulate_Pole->setChecked(false);
 	action_Build_Topology->setChecked(false);
 	action_Edit_Topology->setChecked(false);
+	action_Measure_Distance->setChecked(false);
 }
 
 
@@ -2353,6 +2378,8 @@ GPlatesQtWidgets::ViewportWindow::setup_rendered_geom_collection()
 			GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
+	orthogonal_main_layers.set(
+			GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER);
 
 	d_rendered_geom_collection.set_orthogonal_main_layers(orthogonal_main_layers);
 }

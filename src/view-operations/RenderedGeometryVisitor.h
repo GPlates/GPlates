@@ -35,6 +35,7 @@ namespace GPlatesViewOperations
 	class RenderedPolygonOnSphere;
 	class RenderedDirectionArrow;
 	class RenderedReconstructionGeometry;
+	class RenderedString;
 
 	/**
 	 * Interface for visiting a derived @a RenderedGeometryImpl object.
@@ -84,6 +85,12 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_reconstruction_geometry(
 				const RenderedReconstructionGeometry &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_string(
+				const RenderedString &)
 		{  }
 	};
 }

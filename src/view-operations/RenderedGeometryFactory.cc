@@ -31,6 +31,7 @@
 #include "RenderedPolygonOnSphere.h"
 #include "RenderedPolylineOnSphere.h"
 #include "RenderedReconstructionGeometry.h"
+#include "RenderedString.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 namespace GPlatesViewOperations
@@ -270,3 +271,24 @@ GPlatesViewOperations::create_rendered_reconstruction_geometry(
 
 	return RenderedGeometry(rendered_geom_impl);
 }
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_string(
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
+		const QString &string,
+		const GPlatesGui::Colour &colour,
+		int x_offset,
+		int y_offset,
+		const QFont &font)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedString(
+				point_on_sphere,
+				string,
+				colour,
+				x_offset,
+				y_offset,
+				font));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+

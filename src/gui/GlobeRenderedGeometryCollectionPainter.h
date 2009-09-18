@@ -28,11 +28,13 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "GlobeRenderedGeometryLayerPainter.h"
-
+#include "RenderSettings.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
 
+#include <QGLWidget>
 
 namespace GPlatesViewOperations
 {
@@ -42,9 +44,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	// FIXME: remove all reference to Globe.
-	class Globe;
-
 	class GlobeRenderedGeometryLayerPainter;
 	class NurbsRenderer;
 
@@ -59,8 +58,8 @@ namespace GPlatesGui
 	public:
 		GlobeRenderedGeometryCollectionPainter(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				// FIXME: Remove globe hack.
-				GPlatesGui::Globe *globe);
+				const RenderSettings &render_settings,
+				boost::shared_ptr<TextRenderer> text_renderer_ptr);
 
 
 		/**
@@ -87,8 +86,11 @@ namespace GPlatesGui
 		double d_current_layer_far_depth;
 		double d_depth_range_per_layer;
 
-		// FIXME: Remove this hack.
-		GPlatesGui::Globe *const d_globe;
+		// rendering flags to determine what gets shown
+		const RenderSettings &d_render_settings;
+		
+		// used for rendering text on an OpenGL canvas
+		boost::shared_ptr<TextRenderer> d_text_renderer_ptr;
 
 		//! Parameters that are only available when @a paint is called.
 		struct PaintParams

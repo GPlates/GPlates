@@ -31,6 +31,7 @@
 #include "qt-widgets/MapView.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 class QPointF;
@@ -51,7 +52,8 @@ namespace GPlatesGui
 	 *
 	 * The currently-activated MapCanvasTool is referenced by an instance of MapCanvasToolChoice.
 	 */
-	class MapCanvasTool
+	class MapCanvasTool :
+			public GPlatesUtils::ReferenceCount<MapCanvasTool>
 	{
 	public:
 		/**
@@ -60,11 +62,6 @@ namespace GPlatesGui
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<MapCanvasTool,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * Construct a MapCanvasTool instance.
@@ -78,7 +75,6 @@ namespace GPlatesGui
 		MapCanvasTool(
 			GPlatesQtWidgets::MapCanvas &map_canvas_,
 			GPlatesQtWidgets::MapView &map_view_):
-			d_ref_count(0),
 			d_map_view_ptr(&map_view_),
 			d_map_canvas_ptr(&map_canvas_)
 
@@ -301,10 +297,8 @@ namespace GPlatesGui
 		virtual
 		void
 		handle_shift_ctrl_left_click(
-			const QPointF &initial_point_on_scene,
-			bool was_on_surface,
-			const QPointF &current_point_on_scene,
-			bool is_on_surface)
+				const QPointF &click_point_on_scene,
+				bool is_on_surface)
 		{  }
 
 		/**
@@ -383,35 +377,6 @@ namespace GPlatesGui
 				bool is_on_surface,
 				const QPointF &translation)
 		{  }
-
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
 
 	protected:
 		GPlatesQtWidgets::MapView &
@@ -509,10 +474,6 @@ namespace GPlatesGui
 #endif
 
 	private:
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		/**
 		 * The map view
@@ -523,38 +484,7 @@ namespace GPlatesGui
 		 * The map canvas.
 		 */
 		GPlatesQtWidgets::MapCanvas *d_map_canvas_ptr;
-
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		MapCanvasTool(
-				const MapCanvasTool &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		MapCanvasTool &
-		operator=(
-				const MapCanvasTool &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const MapCanvasTool *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const MapCanvasTool *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
 }
 
 #endif  // GPLATES_GUI_MAPCANVASTOOL_H

@@ -28,9 +28,11 @@
 #include <cmath>
 #include <QDebug>
 #include <QGraphicsView>
+#include <boost/shared_ptr.hpp>
 
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
+#include "gui/QGLWidgetTextRenderer.h"
 #include "maths/InvalidLatLonException.h"
 #include "MapCanvas.h"
 #include "ViewportWindow.h"
@@ -72,11 +74,14 @@ GPlatesQtWidgets::MapView::MapView(
 	d_viewport_zoom(&view_state.get_viewport_zoom()),
 	d_map_canvas_ptr(map_canvas_),
 	d_centre_of_viewport(0.,0.),
-	d_scene_rect(-180,-90,360,180)
+	d_scene_rect(-180,-90,360,180),
+	d_gl_widget_ptr(new QGLWidget(
+			QGLFormat(QGL::SampleBuffers)))
 {
-
-	setViewport(new QGLWidget(
-		QGLFormat(QGL::SampleBuffers)));
+	setViewport(d_gl_widget_ptr);
+	d_map_canvas_ptr->set_text_renderer(
+			boost::shared_ptr<GPlatesGui::TextRenderer>(
+				new GPlatesGui::QGLWidgetTextRenderer(d_gl_widget_ptr)));
 
 	setViewportUpdateMode(
 		QGraphicsView::MinimalViewportUpdate);

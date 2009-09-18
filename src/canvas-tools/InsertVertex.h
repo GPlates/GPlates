@@ -23,12 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_MAPINSERTVERTEX_H
-#define GPLATES_CANVASTOOLS_MAPINSERTVERTEX_H
+#ifndef GPLATES_CANVASTOOLS_INSERTVERTEX_H
+#define GPLATES_CANVASTOOLS_INSERTVERTEX_H
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gui/MapCanvasTool.h"
+#include "CanvasTool.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 
@@ -57,48 +57,29 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to insert vertices into geometry.
 	 */
-	class MapInsertVertex:
-			public GPlatesGui::MapCanvasTool
+	class InsertVertex:
+			public CanvasTool
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MapInsertVertex,
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<InsertVertex,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<MapInsertVertex,
+		typedef GPlatesUtils::non_null_intrusive_ptr<InsertVertex,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~MapInsertVertex();
+		~InsertVertex();
 
 		/**
-		 * Create a MapInsertVertex instance.
+		 * Create a InsertVertex instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
+		InsertVertex(
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				// Ultimately would like to remove the following arguments...
-				GPlatesQtWidgets::MapCanvas &map_canvas,
-				GPlatesQtWidgets::MapView &map_view,
-				const GPlatesQtWidgets::ViewportWindow &view_state)
-		{
-			return MapInsertVertex::non_null_ptr_type(
-					new MapInsertVertex(
-							geometry_operation_target,
-							active_geometry_operation,
-							rendered_geometry_collection,
-							choose_canvas_tool,
-							query_proximity_threshold,
-							map_canvas,
-							map_view,
-							view_state),
-					GPlatesUtils::NullIntrusivePointerHandler());
-		}
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
 		
 		
 		virtual
@@ -114,44 +95,28 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_left_click(
-				const QPointF &click_point_on_scene,
-				bool is_on_surface);
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
 		virtual
 		void
 		handle_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+				bool was_on_earth,
+				double initial_proximity_inclusion_threshold,
+				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+				bool is_on_earth,
+				double current_proximity_inclusion_threshold);
 
 		virtual
 		void
 		handle_move_without_drag(
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
-
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		MapInsertVertex(
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				// Ultimately would like to remove the following arguments...
-				GPlatesQtWidgets::MapCanvas &map_canvas,
-				GPlatesQtWidgets::MapView &map_view,
-				const GPlatesQtWidgets::ViewportWindow &view_state);
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
 	private:
-		/**
-		 * This is the view state used to update the viewport window status bar.
-		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * Used to set main rendered layer.
@@ -171,4 +136,4 @@ namespace GPlatesCanvasTools
 	};
 }
 
-#endif // GPLATES_CANVASTOOLS_MAPINSERTVERTEX_H
+#endif // GPLATES_CANVASTOOLS_INSERTVERTEX_H

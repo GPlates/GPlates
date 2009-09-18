@@ -29,8 +29,11 @@
 #define GPLATES_GUI_MAPCANVASPAINTER_H
 
 #include <proj_api.h>
+#include <boost/shared_ptr.hpp>
 
 #include "gui/ColourTable.h"
+#include "gui/RenderSettings.h"
+#include "gui/TextRenderer.h"
 #include "qt-widgets/MapCanvas.h"
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryCollection.h"
@@ -48,9 +51,13 @@ namespace GPlatesGui
 	public:
 		explicit
 		MapCanvasPainter(
-			GPlatesQtWidgets::MapCanvas &canvas_,
-			GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit):
+				GPlatesQtWidgets::MapCanvas &canvas_,
+				const GPlatesGui::RenderSettings &render_settings,
+				const boost::shared_ptr<GPlatesGui::TextRenderer> &text_renderer_ptr,
+				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit):
 			d_canvas_ptr(&canvas_),
+			d_render_settings(render_settings),
+			d_text_renderer_ptr(text_renderer_ptr),
 			d_main_rendered_layers_to_visit(layers_to_visit)
 		{  }
 		
@@ -90,6 +97,11 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere);
 
 
+		virtual
+		void
+		visit_rendered_string(
+				const GPlatesViewOperations::RenderedString &rendered_string);
+
 	private:
 
 
@@ -104,10 +116,18 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::MapCanvas *d_canvas_ptr;
 
+		//! Rendering flags for determining what gets shown
+		const RenderSettings &d_render_settings;
+
+		//! Used for rendering text
+		boost::shared_ptr<GPlatesGui::TextRenderer> d_text_renderer_ptr;
+
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_main_rendered_layers_to_visit;
 
 		static const float POINT_SIZE_ADJUSTMENT;
 		static const float LINE_SIZE_ADJUSTMENT;
+
+		
 	};
 
 }

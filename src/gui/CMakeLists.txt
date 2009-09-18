@@ -93,9 +93,12 @@ set(srcs
     ProjectionException.h
     ProximityTests.cc
     ProximityTests.h
+    QGLWidgetTextRenderer.cc
+    QGLWidgetTextRenderer.h
     Quadrics.cc
     Quadrics.h
     ReconstructionGeometrySequence.h
+    RenderSettings.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
     SingleColourTable.cc
@@ -106,6 +109,7 @@ set(srcs
     SvgExport.h
     TemporaryGeometryFocus.cc
     TemporaryGeometryFocus.h
+    TextRenderer.h
     Texture.cc
     Texture.h
     TopologySectionsContainer.cc

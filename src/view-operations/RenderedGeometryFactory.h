@@ -38,6 +38,9 @@
 #include "maths/MultiPointOnSphere.h"
 #include "model/ReconstructionGeometry.h"
 
+#include <QString>
+#include <QFont>
+
 
 namespace GPlatesMaths
 {
@@ -235,6 +238,36 @@ namespace GPlatesViewOperations
 	create_rendered_reconstruction_geometry(
 			GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
 			RenderedGeometry rendered_geom);
+
+	/**
+	 * Creates a @a RenderedGeometry for text.
+	 */
+	RenderedGeometry
+	create_rendered_string(
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type,
+			const QString &,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			int x_offset = 0,
+			int y_offset = 0,
+			const QFont &font = QFont());
+
+	/**
+	 * Creates a @a RenderedGeometry for text.
+	 */
+	inline
+	RenderedGeometry
+	create_rendered_string(
+			const GPlatesMaths::PointOnSphere &point_on_sphere,
+			const QString &string,
+			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			int x_offset = 0,
+			int y_offset = 0,
+			const QFont &font = QFont())
+	{
+		return create_rendered_string(
+				point_on_sphere.clone_as_point(), string, colour, x_offset, y_offset, font);
+	}
+
 }
 
 #endif // GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYFACTORY_H

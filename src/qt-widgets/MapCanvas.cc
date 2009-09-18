@@ -54,13 +54,7 @@ namespace
 
 GPlatesQtWidgets::MapCanvas::MapCanvas(
 	GPlatesViewOperations::RenderedGeometryCollection &collection):
-	d_rendered_geometry_collection(&collection),
-	d_show_point(true),
-	d_show_line(true),
-	d_show_polygon(true),
-	d_show_topology(true),
-	d_show_multipoint(true),
-	d_show_arrows(true)
+	d_rendered_geometry_collection(&collection)
 {
 
 	// Give the scene a nice big rectangle.
@@ -222,7 +216,11 @@ GPlatesQtWidgets::MapCanvas::drawItems(
 {
 	set_opengl_flags();
 	
-	GPlatesGui::MapCanvasPainter map_canvas_painter(*this,d_update_type);	
+	GPlatesGui::MapCanvasPainter map_canvas_painter(
+		*this,
+		d_render_settings,
+		d_text_renderer_ptr,
+		d_update_type);	
 	
 	d_rendered_geometry_collection->accept_visitor(map_canvas_painter);
 }

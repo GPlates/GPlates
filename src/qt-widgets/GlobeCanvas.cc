@@ -45,6 +45,7 @@
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
+#include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SvgExport.h"
 #include "gui/Texture.h"
 
@@ -191,7 +192,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
 	d_rendered_geom_collection(&rendered_geom_collection),
-	d_globe(rendered_geom_collection),
+	d_globe(rendered_geom_collection,
+			boost::shared_ptr<GPlatesGui::TextRenderer>(new GPlatesGui::QGLWidgetTextRenderer(this))),
 	d_viewport_zoom(view_state.get_viewport_zoom())
 {
 	// QWidget::setMouseTracking:

@@ -1,11 +1,13 @@
 /* $Id$ */
 
 /**
- * \file 
- * $Revision$
- * $Date$ 
+ * @file 
+ * File specific comments.
+ *
+ * Most recent change:
+ *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,19 +26,23 @@
  */
 
 #include <queue>
+#include <QLocale>
+
+#include "ClickGeometry.h"
 
 #include "global/InternalInconsistencyException.h"
+#include "gui/ProximityTests.h"
 #include "maths/ProximityCriteria.h"
+#include "maths/PointOnSphere.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "qt-widgets/GlobeCanvas.h"
-#include "maths/PointOnSphere.h"
 #include "qt-widgets/ViewportWindow.h"
+#include "qt-widgets/FeaturePropertiesDialog.h"
+#include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryProximity.h"
 #include "view-operations/RenderedGeometryVisitor.h"
 #include "view-operations/RenderedReconstructionGeometry.h"
-
-#include "CommonClickGeometry.h"
 
 namespace
 {
@@ -120,8 +126,49 @@ namespace
 	}
 }
 
+GPlatesCanvasTools::ClickGeometry::ClickGeometry(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesGui::FeatureTableModel &clicked_table_model_,
+		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
+		GPlatesGui::FeatureFocus &feature_focus_):
+	d_rendered_geom_collection(&rendered_geom_collection),
+	d_view_state_ptr(&view_state_),
+	d_clicked_table_model_ptr(&clicked_table_model_),
+	d_fp_dialog_ptr(&fp_dialog_),
+	d_feature_focus_ptr(&feature_focus_)
+{
+}
+
 void
-GPlatesCanvasTools::CommonClickGeometry::handle_left_click(
+GPlatesCanvasTools::ClickGeometry::handle_activation()
+{
+	set_status_bar_message(QObject::tr(
+		"Click a geometry to choose a feature."
+		" Shift+click to query immediately."
+		" Ctrl+drag to re-orient the globe."));
+
+	// Activate the geometry focus hightlight layer.
+	d_rendered_geom_collection->set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
+}
+
+void
+GPlatesCanvasTools::ClickGeometry::handle_left_click(
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
+{
+	handle_left_click(point_on_sphere,
+				proximity_inclusion_threshold,
+				*d_view_state_ptr,
+				*d_clicked_table_model_ptr,
+				*d_feature_focus_ptr,
+				*d_rendered_geom_collection);
+}
+
+void
+GPlatesCanvasTools::ClickGeometry::handle_left_click(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		double proximity_inclusion_threshold,
 		const GPlatesQtWidgets::ViewportWindow &view_state,
@@ -148,11 +195,11 @@ GPlatesCanvasTools::CommonClickGeometry::handle_left_click(
 	
 	// Give the user some useful feedback in the status bar.
 	if (sorted_hits.size() == 0) {
-		view_state.status_message(QObject::tr("Clicked %1 geometries.").arg(sorted_hits.size()));
+		set_status_bar_message(QObject::tr("Clicked %1 geometries.").arg(sorted_hits.size()));
 	} else if (sorted_hits.size() == 1) {
-		view_state.status_message(QObject::tr("Clicked %1 geometry.").arg(sorted_hits.size()));
+		set_status_bar_message(QObject::tr("Clicked %1 geometry.").arg(sorted_hits.size()));
 	} else {
-		view_state.status_message(QObject::tr("Clicked %1 geometries.").arg(sorted_hits.size()));
+		set_status_bar_message(QObject::tr("Clicked %1 geometries.").arg(sorted_hits.size()));
 	}
 
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
@@ -171,3 +218,21 @@ GPlatesCanvasTools::CommonClickGeometry::handle_left_click(
 	view_state.highlight_first_clicked_feature_table_row();
 
 }
+
+void
+GPlatesCanvasTools::ClickGeometry::handle_shift_left_click(
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
+{
+	handle_left_click(
+			point_on_sphere,
+			is_on_earth,
+			proximity_inclusion_threshold);
+
+	// If there is a feature focused, we'll assume that the user wants to look at it in detail.
+	if (d_feature_focus_ptr->is_valid()) {
+		fp_dialog().choose_query_widget_and_open();
+	}
+}
+

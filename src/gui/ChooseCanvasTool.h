@@ -142,6 +142,9 @@ namespace GPlatesGui
 		void
 		choose_edit_topology_tool();
 
+		void
+		choose_measure_distance_tool();
+
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt

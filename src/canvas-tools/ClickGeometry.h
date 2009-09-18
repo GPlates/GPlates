@@ -23,13 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_GLOBECLICKGEOMETRY_H
-#define GPLATES_CANVASTOOLS_GLOBECLICKGEOMETRY_H
+#ifndef GPLATES_CANVASTOOLS_CLICKGEOMETRY_H
+#define GPLATES_CANVASTOOLS_CLICKGEOMETRY_H
 
 #include "gui/FeatureFocus.h"
-#include "gui/GlobeCanvasTool.h"
+#include "CanvasTool.h"
 #include "gui/FeatureTableModel.h"
-
 
 namespace GPlatesQtWidgets
 {
@@ -48,36 +47,25 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to focus features by clicking on them.
 	 */
-	class GlobeClickGeometry:
-			public GPlatesGui::GlobeCanvasTool
+	class ClickGeometry:
+			public CanvasTool
 	{
 
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ClickGeometry,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GlobeClickGeometry,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~GlobeClickGeometry()
+		~ClickGeometry()
 		{  }
 
 		/**
-		 * Create a GlobeClickGeometry instance.
+		 * Create a ClickGeometry instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
+		ClickGeometry(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesGui::Globe &globe,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus);
-
 		
 		virtual
 		void
@@ -86,50 +74,21 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_left_click(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-				bool is_on_globe);
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
 		virtual
 		void
 		handle_shift_left_click(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-				bool is_on_globe);
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
 #if 0
 		void
 		no_hits_found();
 #endif
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		GlobeClickGeometry(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesGui::Globe &globe,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
-				GPlatesGui::FeatureTableModel &clicked_table_model,
-				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
-				GPlatesGui::FeatureFocus &feature_focus);
-
-		const GPlatesQtWidgets::ViewportWindow &
-		view_state() const
-		{
-			return *d_view_state_ptr;
-		}
-
-		GPlatesGui::FeatureTableModel &
-		clicked_table_model() const
-		{
-			return *d_clicked_table_model_ptr;
-		}
-
-		GPlatesQtWidgets::FeaturePropertiesDialog &
-		fp_dialog() const
-		{
-			return *d_fp_dialog_ptr;
-		}
 
 	private:
 
@@ -164,7 +123,23 @@ namespace GPlatesCanvasTools
 		 * application know what the user just clicked on.
 		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
+
+		void
+		handle_left_click(
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				double proximity_inclusion_threshold,
+				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesGui::FeatureTableModel &clicked_table_model,
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
+
+		GPlatesQtWidgets::FeaturePropertiesDialog &
+		fp_dialog() const
+		{
+			return *d_fp_dialog_ptr;
+		}
+
 	};
 }
 
-#endif  // GPLATES_CANVASTOOLS_GLOBECLICKGEOMETRY_H
+#endif  // GPLATES_CANVASTOOLS_CLICKGEOMETRY_H

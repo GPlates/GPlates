@@ -34,15 +34,17 @@
 #include "canvas-tools/BuildTopology.h"   // Not Globe/Mapified yet!
 #include "canvas-tools/EditTopology.h"    // Not Globe/Mapified yet!
 
-#include "canvas-tools/GlobeClickGeometry.h"
-#include "canvas-tools/GlobeDeleteVertex.h"
-#include "canvas-tools/GlobeDigitiseGeometry.h"
-#include "canvas-tools/GlobeInsertVertex.h"
-#include "canvas-tools/GlobeMoveVertex.h"
+#include "canvas-tools/CanvasToolAdapterForGlobe.h"
+#include "canvas-tools/MeasureDistance.h"
+#include "canvas-tools/DigitiseGeometry.h"
+#include "canvas-tools/ClickGeometry.h"
+#include "canvas-tools/DeleteVertex.h"
+#include "canvas-tools/InsertVertex.h"
+#include "canvas-tools/MoveVertex.h"
+
 #include "canvas-tools/GlobeManipulatePole.h"
 
 #include "qt-widgets/DigitisationWidget.h"
-
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -61,109 +63,125 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 		GPlatesGui::TopologySectionsContainer &topology_sections_container,
-		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget):
-d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(
-		globe,
-		globe_canvas,
-		viewport_window)),
-d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(
-		globe,
-		globe_canvas,
-		viewport_window,
-		view_state)),
-d_click_geometry_tool_ptr(GPlatesCanvasTools::GlobeClickGeometry::create(
-		rendered_geom_collection,
-		globe,
-		globe_canvas,
-		viewport_window,
-		clicked_table_model,
-		fp_dialog,
-		feature_focus)),
-d_digitise_polyline_tool_ptr(GPlatesCanvasTools::GlobeDigitiseGeometry::create(
-		GPlatesViewOperations::GeometryType::POLYLINE,
-		geometry_operation_target,
-		active_geometry_operation,
-		rendered_geom_collection,
-		choose_canvas_tool,
-		GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE,
-		query_proximity_threshold,
-		globe,
-		globe_canvas,
-		viewport_window)),
-d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::GlobeDigitiseGeometry::create(
-		GPlatesViewOperations::GeometryType::MULTIPOINT,
-		geometry_operation_target,
-		active_geometry_operation,
-		rendered_geom_collection,
-		choose_canvas_tool,
-		GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT,
-		query_proximity_threshold,
-		globe,
-		globe_canvas,
-		viewport_window)),
-d_digitise_polygon_tool_ptr(GPlatesCanvasTools::GlobeDigitiseGeometry::create(
-		GPlatesViewOperations::GeometryType::POLYGON,
-		geometry_operation_target,
-		active_geometry_operation,
-		rendered_geom_collection,
-		choose_canvas_tool,
-		GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON,
-		query_proximity_threshold,
-		globe,
-		globe_canvas,
-		viewport_window)),
-d_move_vertex_tool_ptr(GPlatesCanvasTools::GlobeMoveVertex::create(
-		geometry_operation_target,
-		active_geometry_operation,
-		rendered_geom_collection,
-		choose_canvas_tool,
-		query_proximity_threshold,
-		globe,
-		globe_canvas,
-		viewport_window)),
-d_delete_vertex_tool_ptr(GPlatesCanvasTools::GlobeDeleteVertex::create(
-		geometry_operation_target,
-		active_geometry_operation,
-		rendered_geom_collection,
-		choose_canvas_tool,
-		query_proximity_threshold,
-		globe,
-		globe_canvas,
-		viewport_window)),
-d_insert_vertex_tool_ptr(GPlatesCanvasTools::GlobeInsertVertex::create(
-		geometry_operation_target,
-		active_geometry_operation,
-		rendered_geom_collection,
-		choose_canvas_tool,
-		query_proximity_threshold,
-		globe,
-		globe_canvas,
-		viewport_window)),
-d_manipulate_pole_tool_ptr(GPlatesCanvasTools::GlobeManipulatePole::create(
-		rendered_geom_collection,
-		globe,
-		globe_canvas,
-		viewport_window,
-		pole_widget)),
-d_build_topology_tool_ptr( GPlatesCanvasTools::BuildTopology::create(
-		rendered_geom_collection,
-		globe, 
-		globe_canvas, 
-		viewport_window, 
-		clicked_table_model, 
-		topology_sections_container,
-		topology_tools_widget,
-		feature_focus)),
-d_edit_topology_tool_ptr( GPlatesCanvasTools::EditTopology::create(
-		rendered_geom_collection,
-		globe, 
-		globe_canvas, 
-		viewport_window, 
-		clicked_table_model, 
-		topology_sections_container,
-		topology_tools_widget,
-		feature_focus)),
-d_tool_choice_ptr(d_reorient_globe_tool_ptr)
+		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
+		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state):
+	d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(
+			globe,
+			globe_canvas,
+			viewport_window,
+			view_state)),
+	d_click_geometry_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::ClickGeometry(
+				rendered_geom_collection,
+				viewport_window,
+				clicked_table_model,
+				fp_dialog,
+				feature_focus),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_digitise_polyline_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::DigitiseGeometry(
+				GPlatesViewOperations::GeometryType::POLYLINE,
+				geometry_operation_target,
+				active_geometry_operation,
+				rendered_geom_collection,
+				choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE,
+				query_proximity_threshold),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_digitise_multipoint_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::DigitiseGeometry(
+				GPlatesViewOperations::GeometryType::MULTIPOINT,
+				geometry_operation_target,
+				active_geometry_operation,
+				rendered_geom_collection,
+				choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT,
+				query_proximity_threshold),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_digitise_polygon_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::DigitiseGeometry(
+				GPlatesViewOperations::GeometryType::POLYGON,
+				geometry_operation_target,
+				active_geometry_operation,
+				rendered_geom_collection,
+				choose_canvas_tool,
+				GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON,
+				query_proximity_threshold),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_move_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::MoveVertex(
+				geometry_operation_target,
+				active_geometry_operation,
+				rendered_geom_collection,
+				choose_canvas_tool,
+				query_proximity_threshold),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_delete_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::DeleteVertex(
+				geometry_operation_target,
+				active_geometry_operation,
+				rendered_geom_collection,
+				choose_canvas_tool,
+				query_proximity_threshold),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_insert_vertex_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::InsertVertex(
+				geometry_operation_target,
+				active_geometry_operation,
+				rendered_geom_collection,
+				choose_canvas_tool,
+				query_proximity_threshold),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_manipulate_pole_tool_ptr(GPlatesCanvasTools::GlobeManipulatePole::create(
+			rendered_geom_collection,
+			globe,
+			globe_canvas,
+			viewport_window,
+			pole_widget)),
+	d_build_topology_tool_ptr(GPlatesCanvasTools::BuildTopology::create(
+			rendered_geom_collection,
+			globe, 
+			globe_canvas, 
+			viewport_window, 
+			clicked_table_model, 
+			topology_sections_container,
+			topology_tools_widget,
+			feature_focus)),
+	d_edit_topology_tool_ptr(GPlatesCanvasTools::EditTopology::create(
+			rendered_geom_collection,
+			globe, 
+			globe_canvas, 
+			viewport_window, 
+			clicked_table_model, 
+			topology_sections_container,
+			topology_tools_widget,
+			feature_focus)),
+	d_measure_distance_tool_ptr(GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
+			new GPlatesCanvasTools::MeasureDistance(
+				rendered_geom_collection,
+				measure_distance_state),
+			globe,
+			globe_canvas,
+			viewport_window)),
+	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes

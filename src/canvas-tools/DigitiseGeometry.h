@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 Geological Survey of Norway.
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,24 +23,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_MAPDIGITISEGEOMETRY_H
-#define GPLATES_CANVASTOOLS_MAPDIGITISEGEOMETRY_H
+#ifndef GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H
+#define GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H
 
 #include <boost/scoped_ptr.hpp>
 
 #include "canvas-tools/CanvasToolType.h"
-#include "gui/MapCanvasTool.h"
+#include "CanvasTool.h"
 #include "view-operations/GeometryType.h"
 
 
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
-}
-
-namespace GPlatesQtWidgets
-{
-	class ViewportWindow;
 }
 
 namespace GPlatesViewOperations
@@ -57,40 +52,25 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to define new geometry.
 	 */
-	class MapDigitiseGeometry:
-			public GPlatesGui::MapCanvasTool
+	class DigitiseGeometry:
+			public CanvasTool
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MapDigitiseGeometry,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<MapDigitiseGeometry,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~MapDigitiseGeometry();
+		~DigitiseGeometry();
 
 		/**
-		 * Create a MapDigitiseGeometry instance.
-		 *
-		 * FIXME: Clean up unused parameters.
+		 * Create a DigitiseGeometry instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
+		DigitiseGeometry(
 				GPlatesViewOperations::GeometryType::Value geom_type,
-				GPlatesViewOperations::GeometryOperationTarget &geom_operation_target,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				// Ultimately would like to remove the following arguments...
-				GPlatesQtWidgets::MapCanvas &map_canvas,
-				GPlatesQtWidgets::MapView &map_view,
-				const GPlatesQtWidgets::ViewportWindow &view_state);
-		
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);		
 		
 		virtual
 		void
@@ -101,34 +81,14 @@ namespace GPlatesCanvasTools
 		void
 		handle_deactivation();
 
-
 		virtual
 		void
 		handle_left_click(
-			const QPointF &click_point_on_scene,
-			bool is_on_surface);
-
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		MapDigitiseGeometry(
-				GPlatesViewOperations::GeometryType::Value geom_type,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				// Ultimately would like to remove the following arguments...
-				GPlatesQtWidgets::MapCanvas &map_canvas,
-				GPlatesQtWidgets::MapView &map_view,
-				const GPlatesQtWidgets::ViewportWindow &view_state);
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 		
 	private:
-		/**
-		 * This is the view state used to update the viewport window status bar.
-		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * Used to set main rendered layer.
@@ -146,7 +106,7 @@ namespace GPlatesCanvasTools
 		GPlatesCanvasTools::CanvasToolType::Value d_canvas_tool_type;
 
 		/**
-		 * This is the type of geometry this particular MapDigitiseGeometry tool
+		 * This is the type of geometry this particular DigitiseGeometry tool
 		 * should default to.
 		 */
 		GPlatesViewOperations::GeometryType::Value d_default_geom_type;
@@ -159,4 +119,4 @@ namespace GPlatesCanvasTools
 	};
 }
 
-#endif  // GPLATES_CANVASTOOLS_MAPDIGITISEGEOMETRY_H
+#endif  // GPLATES_CANVASTOOLS_DIGITISEGEOMETRY_H

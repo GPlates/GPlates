@@ -36,6 +36,7 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <memory>
 #include <boost/scoped_ptr.hpp>
 #include <QtCore/QTimer>
 #include <QCloseEvent>
@@ -86,6 +87,10 @@
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/ViewState.h"
 
+namespace GPlatesCanvasTools
+{
+	class MeasureDistanceState;
+}
 
 namespace GPlatesGui
 {
@@ -277,6 +282,10 @@ namespace GPlatesQtWidgets
 				bool enable = true);
 
 		void
+		enable_measure_distance_tool(
+				bool enable = true);
+
+		void
 		choose_drag_globe_tool();
 
 		void
@@ -314,6 +323,9 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_edit_topology_tool();
+
+		void
+		choose_measure_distance_tool();
 
 		void
 		enable_or_disable_feature_actions(
@@ -658,6 +670,8 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::ActiveGeometryOperation d_active_geometry_operation;
 		GPlatesGui::EnableCanvasTool d_enable_canvas_tool;
 		GPlatesViewOperations::FocusedFeatureGeometryManipulator d_focused_feature_geom_manipulator;
+
+		boost::scoped_ptr<GPlatesCanvasTools::MeasureDistanceState> d_measure_distance_state_ptr;
 
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
 		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;

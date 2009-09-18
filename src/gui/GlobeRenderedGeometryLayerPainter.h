@@ -27,11 +27,15 @@
 #ifndef GPLATES_GUI_GLOBERENDEREDGEOMETRYLAYERPAINTER_H
 #define GPLATES_GUI_GLOBERENDEREDGEOMETRYLAYERPAINTER_H
 
+#include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
+#include "TextRenderer.h"
+#include "RenderSettings.h"
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryVisitor.h"
 
+#include <QGLWidget>
 
 namespace GPlatesViewOperations
 {
@@ -40,9 +44,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	// FIXME: remove all reference to Globe.
-	class Globe;
-
 	class NurbsRenderer;
 
 	/**
@@ -58,13 +59,14 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const double &inverse_viewport_zoom_factor,
 				GPlatesGui::NurbsRenderer &nurbs_renderer,
-				// FIXME: Remove globe hack.
-				GPlatesGui::Globe *globe) :
+				const RenderSettings &render_settings,
+				boost::shared_ptr<TextRenderer> text_renderer_ptr) :
 			d_rendered_geometry_layer(rendered_geometry_layer),
 			d_nurbs_renderer(&nurbs_renderer),
 			d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 			d_draw_opaque_primitives(true),
-			d_globe(globe)
+			d_render_settings(render_settings),
+			d_text_renderer_ptr(text_renderer_ptr)
 		{  }
 
 
@@ -101,6 +103,11 @@ namespace GPlatesGui
 		visit_rendered_direction_arrow(
 				const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow);
 
+		virtual
+		void
+		visit_rendered_string(
+				const GPlatesViewOperations::RenderedString &rendered_string);
+
 	private:
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 		GPlatesGui::NurbsRenderer *const d_nurbs_renderer;
@@ -109,8 +116,11 @@ namespace GPlatesGui
 		//! Is this the first pass (drawing opaque primitives) or second pass (transparent)?
 		bool d_draw_opaque_primitives;
 
-		// FIXME: Remove this hack.
-		GPlatesGui::Globe *const d_globe;
+		//! Rendering flags for determining what gets shown
+		const RenderSettings &d_render_settings;
+
+		//! For rendering text
+		boost::shared_ptr<TextRenderer> d_text_renderer_ptr;
 
 		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.
 		static const float POINT_SIZE_ADJUSTMENT;

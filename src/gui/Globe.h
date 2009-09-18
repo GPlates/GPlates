@@ -35,11 +35,14 @@
 #include "SphericalGrid.h"
 #include "Texture.h"
 #include "SimpleGlobeOrientation.h"
+#include "TextRenderer.h"
+#include "RenderSettings.h"
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
 #include "utils/VirtualProxy.h"
 
+#include <boost/shared_ptr.hpp>
 
 namespace GPlatesViewOperations
 {
@@ -52,7 +55,8 @@ namespace GPlatesGui
 	{
 	public:
 		Globe(
-				GPlatesViewOperations::RenderedGeometryCollection &);
+				GPlatesViewOperations::RenderedGeometryCollection &,
+				boost::shared_ptr<TextRenderer> text_renderer_ptr);
 
 		~Globe()
 		{  }
@@ -120,36 +124,47 @@ namespace GPlatesGui
 		/** 
 		 * Functions to change display state variables
 		 */ 
-		void enable_point_display()			{ d_show_point		= true; }
-		void enable_line_display()			{ d_show_line 		= true; }
-		void enable_polygon_display() 		{ d_show_polygon 	= true; }
-		void enable_topology_display() 		{ d_show_topology	= true; }
-		void enable_multipoint_display()	{ d_show_multipoint	= true; }
-		void enable_arrows_display()		{ d_show_arrows		= true; }
+		void enable_point_display()			{ d_render_settings.show_points = true; }
+		void enable_line_display()			{ d_render_settings.show_lines = true; }
+		void enable_polygon_display() 		{ d_render_settings.show_polygons = true; }
+		void enable_topology_display() 		{ d_render_settings.show_topology = true; }
+		void enable_multipoint_display()	{ d_render_settings.show_multipoints = true; }
+		void enable_arrows_display()		{ d_render_settings.show_arrows = true; }
+		void enable_strings_display()		{ d_render_settings.show_strings = true; }
 
-		void disable_point_display() 		{ d_show_point 		= false; }
-		void disable_line_display() 		{ d_show_line 		= false; }
-		void disable_polygon_display() 		{ d_show_polygon 	= false; }
-		void disable_topology_display() 	{ d_show_topology 	= false; }
-		void disable_multipoint_display()	{ d_show_multipoint	= false; }
-		void disable_arrows_display()		{ d_show_arrows		= false; }
+		void disable_point_display() 		{ d_render_settings.show_points = false; }
+		void disable_line_display() 		{ d_render_settings.show_lines = false; }
+		void disable_polygon_display() 		{ d_render_settings.show_polygons = false; }
+		void disable_topology_display() 	{ d_render_settings.show_topology = false; }
+		void disable_multipoint_display()	{ d_render_settings.show_multipoints = false; }
+		void disable_arrows_display()		{ d_render_settings.show_arrows = false; }
+		void diable_strings_display()		{ d_render_settings.show_strings = false; }
 
-		void toggle_point_display()			{ d_show_point 		= !d_show_point; }
-		void toggle_line_display() 			{ d_show_line 		= !d_show_line; }
-		void toggle_polygon_display() 		{ d_show_polygon 	= !d_show_polygon; }
-		void toggle_topology_display() 		{ d_show_topology 	= !d_show_topology; }
-		void toggle_multipoint_display()	{ d_show_multipoint	= !d_show_multipoint; }
-		void toggle_arrows_display()		{ d_show_arrows		= !d_show_arrows; }
+		void toggle_point_display()			{ d_render_settings.show_points = !d_render_settings.show_points; }
+		void toggle_line_display() 			{ d_render_settings.show_lines = !d_render_settings.show_lines; }
+		void toggle_polygon_display() 		{ d_render_settings.show_polygons = !d_render_settings.show_polygons; }
+		void toggle_topology_display() 		{ d_render_settings.show_topology = !d_render_settings.show_topology; }
+		void toggle_multipoint_display()	{ d_render_settings.show_multipoints = !d_render_settings.show_multipoints; }
+		void toggle_arrows_display()		{ d_render_settings.show_arrows = !d_render_settings.show_arrows; }
+		void toggle_strings_display()		{ d_render_settings.show_strings = !d_render_settings.show_strings; }
 
-		bool point_display_is_enabled()		{ return d_show_point; }
-		bool line_display_is_enabled()		{ return d_show_line; }		
-		bool polygon_display_is_enabled()		{ return d_show_polygon; }	
-		bool topology_display_is_enabled()		{ return d_show_topology; }
-		bool multipoint_display_is_enabled()		{ return d_show_multipoint; }
-		bool arrows_display_is_enabled()		{ return d_show_arrows; }	
+		bool point_display_is_enabled()		{ return d_render_settings.show_points; }
+		bool line_display_is_enabled()		{ return d_render_settings.show_lines; }		
+		bool polygon_display_is_enabled()		{ return d_render_settings.show_polygons; }
+		bool topology_display_is_enabled()		{ return d_render_settings.show_topology; }
+		bool multipoint_display_is_enabled()	{ return d_render_settings.show_multipoints; }
+		bool arrows_display_is_enabled()		{ return d_render_settings.show_arrows; }
+		bool strings_display_is_enabled()		{ return d_render_settings.show_strings; }
 
 
 	private:
+			
+		/**
+		* Flags to determine what data to show
+		*/
+		RenderSettings d_render_settings;
+			// FIXME: be sure to synchronise default RenderSettings with ViewportWidgetUi.ui
+		
 		/**
 		 * The collection of @a RenderedGeometry objects we need to paint.
 		 */
@@ -205,17 +220,7 @@ namespace GPlatesGui
 		 * One circle of longitude every 30 degrees.
 		 */
 		static const unsigned NUM_CIRCLES_LON = 6;
-		
-		/**
-		* Flags to determine what data to show
-		*/
-		bool d_show_point;
-		bool d_show_line;
-		bool d_show_polygon;
-		bool d_show_topology;
-		bool d_show_multipoint;
-		bool d_show_arrows;		
-		
+
 	};
 }
 

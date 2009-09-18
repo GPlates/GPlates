@@ -13,41 +13,34 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     BuildTopology.cc
     BuildTopology.h
+    CanvasTool.h
+    CanvasToolAdapterForGlobe.cc
+    CanvasToolAdapterForGlobe.h
+    CanvasToolAdapterForMap.cc
+    CanvasToolAdapterForMap.h
     CanvasToolType.h
-    CommonClickGeometry.cc
-    CommonClickGeometry.h
-    CommonDigitiseGeometry.cc
-    CommonDigitiseGeometry.h
-    CommonMoveVertex.cc
-    CommonMoveVertex.h
+    ClickGeometry.cc
+    ClickGeometry.h
+    DeleteVertex.cc
+    DeleteVertex.h
+    DigitiseGeometry.cc
+    DigitiseGeometry.h
     EditTopology.cc
     EditTopology.h
-    GlobeClickGeometry.cc
-    GlobeClickGeometry.h
-    GlobeDeleteVertex.cc
-    GlobeDeleteVertex.h
-    GlobeDigitiseGeometry.cc
-    GlobeDigitiseGeometry.h
-    GlobeInsertVertex.cc
-    GlobeInsertVertex.h
     GlobeManipulatePole.cc
     GlobeManipulatePole.h
-    GlobeMoveVertex.cc
-    GlobeMoveVertex.h
-    MapClickGeometry.cc
-    MapClickGeometry.h
-    MapDeleteVertex.cc
-    MapDeleteVertex.h
-    MapDigitiseGeometry.cc
-    MapDigitiseGeometry.h
-    MapInsertVertex.cc
-    MapInsertVertex.h
+    InsertVertex.cc
+    InsertVertex.h
     MapManipulatePole.cc
     MapManipulatePole.h
-    MapMoveVertex.cc
-    MapMoveVertex.h
+    MeasureDistance.cc
+    MeasureDistance.h
+    MeasureDistanceState.cc
+    MeasureDistanceState.h
     MoveGeometry.cc
     MoveGeometry.h
+    MoveVertex.cc
+    MoveVertex.h
     PanMap.cc
     PanMap.h
     ReorientGlobe.cc

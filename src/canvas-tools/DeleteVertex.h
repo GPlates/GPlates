@@ -23,12 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_GLOBEDELETEVERTEX_H
-#define GPLATES_CANVASTOOLS_GLOBEDELETEVERTEX_H
+#ifndef GPLATES_CANVASTOOLS_DELETEVERTEX_H
+#define GPLATES_CANVASTOOLS_DELETEVERTEX_H
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gui/GlobeCanvasTool.h"
+#include "CanvasTool.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 
@@ -57,50 +57,30 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to delete vertices from geometry.
 	 */
-	class GlobeDeleteVertex:
-			public GPlatesGui::GlobeCanvasTool
+	class DeleteVertex:
+			public CanvasTool
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GlobeDeleteVertex,
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<DeleteVertex,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GlobeDeleteVertex,
+		typedef GPlatesUtils::non_null_intrusive_ptr<DeleteVertex,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~GlobeDeleteVertex();
+		~DeleteVertex();
 
 		/**
-		 * Create a GlobeDeleteVertex instance.
+		 * Create a DeleteVertex instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
+		DeleteVertex(
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				// Ultimately would like to remove the following arguments...
-				GPlatesGui::Globe &globe,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state)
-		{
-			return GlobeDeleteVertex::non_null_ptr_type(
-					new GlobeDeleteVertex(
-							geometry_operation_target,
-							active_geometry_operation,
-							rendered_geometry_collection,
-							choose_canvas_tool,
-							query_proximity_threshold,
-							globe,
-							globe_canvas,
-							view_state),
-					GPlatesUtils::NullIntrusivePointerHandler());
-		}
-		
-		
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
+
 		virtual
 		void
 		handle_activation();
@@ -114,37 +94,18 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_left_click(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-				bool is_on_globe);
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
 		virtual
 		void
 		handle_move_without_drag(
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
-
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		GlobeDeleteVertex(
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				// Ultimately would like to remove the following arguments...
-				GPlatesGui::Globe &globe,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state);
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
 	private:
-		/**
-		 * This is the view state used to update the viewport window status bar.
-		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * Used to set main rendered layer.
@@ -164,4 +125,4 @@ namespace GPlatesCanvasTools
 	};
 }
 
-#endif // GPLATES_CANVASTOOLS_GLOBEDELETEVERTEX_H
+#endif // GPLATES_CANVASTOOLS_DELETEVERTEX_H

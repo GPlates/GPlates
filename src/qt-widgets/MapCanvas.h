@@ -28,9 +28,12 @@
 #ifndef GPLATES_QTWIDGETS_MAPCANVAS_H
 #define GPLATES_QTWIDGETS_MAPCANVAS_H
 
+#include <boost/shared_ptr.hpp>
 #include <QGraphicsScene>
 
 #include "gui/MapProjection.h"
+#include "gui/RenderSettings.h"
+#include "gui/TextRenderer.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 namespace GPlatesQtWidgets
@@ -69,37 +72,44 @@ namespace GPlatesQtWidgets
 		/** 
 		* Functions to change and examine display state variables
 		*/ 
-		void enable_point_display()			{ d_show_point		= true; }
-		void enable_line_display()			{ d_show_line 		= true; }
-		void enable_polygon_display() 		{ d_show_polygon 	= true; }
-		void enable_topology_display() 		{ d_show_topology	= true; }
-		void enable_multipoint_display()	{ d_show_multipoint	= true; }
-		void enable_arrows_display()		{ d_show_arrows		= true; }
+		void enable_point_display()			{ d_render_settings.show_points = true; }
+		void enable_line_display()			{ d_render_settings.show_lines = true; }
+		void enable_polygon_display() 		{ d_render_settings.show_polygons = true; }
+		void enable_topology_display() 		{ d_render_settings.show_topology = true; }
+		void enable_multipoint_display()	{ d_render_settings.show_multipoints = true; }
+		void enable_arrows_display()		{ d_render_settings.show_arrows = true; }
+		void enable_strings_display()		{ d_render_settings.show_strings = true; }
 
-		void disable_point_display() 		{ d_show_point 		= false; }
-		void disable_line_display() 		{ d_show_line 		= false; }
-		void disable_polygon_display() 		{ d_show_polygon 	= false; }
-		void disable_topology_display() 	{ d_show_topology 	= false; }
-		void disable_multipoint_display()	{ d_show_multipoint	= false; }
-		void disable_arrows_display()		{ d_show_arrows		= false; }
+		void disable_point_display() 		{ d_render_settings.show_points = false; }
+		void disable_line_display() 		{ d_render_settings.show_lines = false; }
+		void disable_polygon_display() 		{ d_render_settings.show_polygons = false; }
+		void disable_topology_display() 	{ d_render_settings.show_topology = false; }
+		void disable_multipoint_display()	{ d_render_settings.show_multipoints = false; }
+		void disable_arrows_display()		{ d_render_settings.show_arrows = false; }
+		void disable_strings_display()		{ d_render_settings.show_strings = false; }
 
-		void toggle_point_display()			{ d_show_point 		= !d_show_point; }
-		void toggle_line_display() 			{ d_show_line 		= !d_show_line; }
-		void toggle_polygon_display() 		{ d_show_polygon 	= !d_show_polygon; }
-		void toggle_topology_display() 		{ d_show_topology 	= !d_show_topology; }
-		void toggle_multipoint_display()	{ d_show_multipoint	= !d_show_multipoint; }
-		void toggle_arrows_display()		{ d_show_arrows		= !d_show_arrows; }
+		void toggle_point_display()			{ d_render_settings.show_points = !d_render_settings.show_points; }
+		void toggle_line_display() 			{ d_render_settings.show_lines = !d_render_settings.show_lines; }
+		void toggle_polygon_display() 		{ d_render_settings.show_polygons = !d_render_settings.show_polygons; }
+		void toggle_topology_display() 		{ d_render_settings.show_topology = !d_render_settings.show_topology; }
+		void toggle_multipoint_display()	{ d_render_settings.show_multipoints = !d_render_settings.show_topology; }
+		void toggle_arrows_display()		{ d_render_settings.show_arrows = !d_render_settings.show_arrows; }
+		void toggle_strings_display()		{ d_render_settings.show_strings = !d_render_settings.show_strings; }
 		
-		bool point_display_is_enabled()		{ return d_show_point; }
-		bool line_display_is_enabled()		{ return d_show_line; }		
-		bool polygon_display_is_enabled()		{ return d_show_polygon; }	
-		bool topology_display_is_enabled()		{ return d_show_topology; }
-		bool multipoint_display_is_enabled()		{ return d_show_multipoint; }
-		bool arrows_display_is_enabled()		{ return d_show_arrows; }		
-		
-		
+		bool point_display_is_enabled()			{ return d_render_settings.show_points; }
+		bool line_display_is_enabled()			{ return d_render_settings.show_lines; }
+		bool polygon_display_is_enabled()		{ return d_render_settings.show_polygons; }
+		bool topology_display_is_enabled()		{ return d_render_settings.show_topology; }
+		bool multipoint_display_is_enabled()	{ return d_render_settings.show_multipoints; }
+		bool arrows_display_is_enabled()		{ return d_render_settings.show_arrows; }
+		bool strings_display_is_enabled()		{ return d_render_settings.show_strings; }
 
-
+		void
+		set_text_renderer(
+				const boost::shared_ptr<GPlatesGui::TextRenderer> &text_renderer_ptr)
+		{
+			d_text_renderer_ptr = text_renderer_ptr;
+		}
 
 	public slots:
 
@@ -109,6 +119,12 @@ namespace GPlatesQtWidgets
 			GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type);
 
 	private:
+		
+		/**
+		* Flags to determine what data to show
+		*/
+		GPlatesGui::RenderSettings d_render_settings;
+			// FIXME: be sure to synchronise default RenderSettings with ViewportWidgetUi.ui
 
 		/**
 		 * A virtual override of the QGraphicsScene function. 
@@ -156,17 +172,11 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_update_type;
-		
-		/**
-		* Flags to determine what data to show
-		*/
-		bool d_show_point;
-		bool d_show_line;
-		bool d_show_polygon;
-		bool d_show_topology;
-		bool d_show_multipoint;
-		bool d_show_arrows;		
 
+		/**
+		 * Used for rendering text
+		 */
+		boost::shared_ptr<GPlatesGui::TextRenderer> d_text_renderer_ptr;
 	};
 
 }

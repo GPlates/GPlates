@@ -332,6 +332,33 @@ namespace GPlatesMaths
 	{
 		return p1.position_vector() == p2.position_vector();
 	}
+	
+
+	/**
+	 * Calculate the distance between the points @a p1 and @a p2 on the
+	 * surface of the sphere of radius @a radius_of_sphere.
+	 *
+	 * Consider the circular disc that contains the two points and the centre
+	 * of the sphere. The distance between the points is taken to be the length
+	 * of the shortest arc between the two points on the circumference of that
+	 * disc.
+	 */
+	inline
+	const real_t
+	calculate_distance_on_surface_of_sphere(
+			const PointOnSphere &p1,
+			const PointOnSphere &p2,
+			real_t radius_of_sphere)
+	{
+		if (p1 == p2)
+		{
+			return 0.0;
+		}
+		else
+		{
+			return acos(calculate_closeness(p1, p2)) * radius_of_sphere;
+		}
+	}
 
 
 	inline

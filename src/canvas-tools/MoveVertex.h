@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,12 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_MAPMOVEVERTEX_H
-#define GPLATES_CANVASTOOLS_MAPMOVEVERTEX_H
+#ifndef GPLATES_CANVASTOOLS_MOVEVERTEX_H
+#define GPLATES_CANVASTOOLS_MOVEVERTEX_H
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gui/MapCanvasTool.h"
+#include "CanvasTool.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 
@@ -57,48 +57,29 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to move individual vertices of geometry.
 	 */
-	class MapMoveVertex:
-			public GPlatesGui::MapCanvasTool
+	class MoveVertex:
+			public CanvasTool
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MapMoveVertex,
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MoveVertex,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<MapMoveVertex,
+		typedef GPlatesUtils::non_null_intrusive_ptr<MoveVertex,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
-		~MapMoveVertex();
+		~MoveVertex();
 
 		/**
-		 * Create a MapMoveVertex instance.
+		 * Create a MoveVertex instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
+		MoveVertex(
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				// Ultimately would like to remove the following arguments...
-				GPlatesQtWidgets::MapCanvas &map_canvas,
-				GPlatesQtWidgets::MapView &map_view,
-				const GPlatesQtWidgets::ViewportWindow &view_state)
-		{
-			return MapMoveVertex::non_null_ptr_type(
-					new MapMoveVertex(
-							geometry_operation_target,
-							active_geometry_operation,
-							rendered_geometry_collection,
-							choose_canvas_tool,
-							query_proximity_threshold,
-							map_canvas,
-							map_view,
-							view_state),
-					GPlatesUtils::NullIntrusivePointerHandler());
-		}
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
 		
 		
 		virtual
@@ -114,45 +95,30 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+				bool was_on_earth,
+				double initial_proximity_inclusion_threshold,
+				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+				bool is_on_earth,
+				double current_proximity_inclusion_threshold);
 
 		virtual
 		void
 		handle_left_release_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+				bool was_on_earth,
+				double initial_proximity_inclusion_threshold,
+				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+				bool is_on_earth,
+				double current_proximity_inclusion_threshold);
 				
 		void
 		handle_move_without_drag(
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);					
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		MapMoveVertex(
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				// Ultimately would like to remove the following arguments...
-				GPlatesQtWidgets::MapCanvas &map_canvas,
-				GPlatesQtWidgets::MapView &map_view,
-				const GPlatesQtWidgets::ViewportWindow &view_state);
 	private:
-		/**
-		 * This is the view state used to update the viewport window status bar.
-		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * Used to set main rendered layer.
@@ -174,7 +140,21 @@ namespace GPlatesCanvasTools
 		 * Whether or not this tool is currently in the midst of a drag.
 		 */
 		bool d_is_in_drag;
+
+		void
+		handle_activation(
+			GPlatesViewOperations::GeometryOperationTarget *geometry_operation_target,
+			GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation);
+
+		void
+		handle_left_drag(
+			bool &is_in_drag,
+			GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation,
+			const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+			const double &closeness_inclusion_threshold,
+			const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe);
+
 	};
 }
 
-#endif  // GPLATES_CANVASTOOLS_GLOBEMOVEVERTEX_H
+#endif  // GPLATES_CANVASTOOLS_MOVEVERTEX_H

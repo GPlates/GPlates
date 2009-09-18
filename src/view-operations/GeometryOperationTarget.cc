@@ -34,15 +34,18 @@
 namespace
 {
 	/**
-	 * Returns true if @a tool_type is the drag or zoom tool.
+	 * Returns true if @a tool_type is the drag, zoom or measure tool
+	 * (what these have in common is that they all don't disable access to
+	 * digitisation tools when switched to)
 	 */
 	bool
-	is_drag_or_zoom_tool(
+	is_drag_zoom_or_measure_tool(
 			GPlatesCanvasTools::CanvasToolType::Value tool_type)
 	{
 		return
 				tool_type == GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE ||
-				tool_type == GPlatesCanvasTools::CanvasToolType::ZOOM_GLOBE;
+				tool_type == GPlatesCanvasTools::CanvasToolType::ZOOM_GLOBE ||
+				tool_type == GPlatesCanvasTools::CanvasToolType::MEASURE_DISTANCE;
 	}
 
 	/**
@@ -237,8 +240,8 @@ GPlatesViewOperations::GeometryOperationTarget::set_internal_state(
 
 
 GPlatesViewOperations::GeometryOperationTarget::TargetChooser::TargetChooser() :
-d_is_geometry_in_focus(false),
-d_user_is_digitising_new_geometry(false)
+	d_is_geometry_in_focus(false),
+	d_user_is_digitising_new_geometry(false)
 {
 }
 
@@ -270,7 +273,7 @@ GPlatesViewOperations::GeometryOperationTarget::TargetChooser::change_canvas_too
 		// target the new digitised geometry even if there's a feature in focus.
 		// Otherwise we will give preference to focused feature geometry.
 		if (!is_geometry_operation_tool(chosen_canvas_tool) &&
-				!is_drag_or_zoom_tool(chosen_canvas_tool))
+				!is_drag_zoom_or_measure_tool(chosen_canvas_tool))
 		{
 			d_user_is_digitising_new_geometry = false;
 		}

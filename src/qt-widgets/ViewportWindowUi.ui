@@ -181,6 +181,7 @@
    </attribute>
    <addaction name="action_Drag_Globe" />
    <addaction name="action_Zoom_Globe" />
+   <addaction name="action_Measure_Distance" />
    <addaction name="action_Click_Geometry" />
    <addaction name="action_Digitise_New_Polyline" />
    <addaction name="action_Digitise_New_MultiPoint" />
@@ -1280,6 +1281,26 @@
   <action name="action_Set_Projection" >
    <property name="text" >
     <string>Set &amp;Projection...</string>
+   </property>
+  </action>
+  <action name="action_Measure_Distance" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/measure_distance_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Query Di&amp;stance</string>
+   </property>
+   <property name="iconText" >
+    <string>Query Di&amp;stance</string>
+   </property>
+   <property name="toolTip" >
+    <string>Measure Distance  S</string>
+   </property>
+   <property name="shortcut" >
+    <string>S</string>
    </property>
   </action>
  </widget>

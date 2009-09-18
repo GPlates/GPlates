@@ -134,6 +134,9 @@ set(srcs
     MapCanvas.h
     MapView.cc
     MapView.h
+    MeasureDistanceWidget.cc
+    MeasureDistanceWidget.h
+    MeasureDistanceWidgetUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui

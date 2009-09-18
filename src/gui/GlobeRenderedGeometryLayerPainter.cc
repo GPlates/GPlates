@@ -27,9 +27,6 @@
 #include <boost/bind.hpp>
 
 #include "GlobeRenderedGeometryLayerPainter.h"
-
-// FIXME: Remove all reference to Globe.
-#include "Globe.h"
 #include "NurbsRenderer.h"
 #include "OpenGL.h"
 
@@ -41,9 +38,9 @@
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
+#include "view-operations/RenderedString.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
 #include "view-operations/RenderedGeometryUtils.h"
-
 
 namespace 
 {
@@ -52,7 +49,6 @@ namespace
 	 * more than PI/36 radians (= 5 degrees) apart.
 	 */
 	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI/36.0);
-
 
 	inline
 	void
@@ -283,8 +279,10 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 {
-	// FIXME: remove globe hack.
-	if ( ! d_globe->point_display_is_enabled() ) { return; }
+	if (!d_render_settings.show_points)
+	{
+		return;
+	}
 
 	if (d_draw_opaque_primitives)
 	{
@@ -303,8 +301,10 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sphere(
 		const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 {
-	// FIXME: remove globe hack.
-	if ( ! d_globe->multipoint_display_is_enabled() ) { return; }
+	if (!d_render_settings.show_multipoints)
+	{
+		return;
+	}
 
 	if (d_draw_opaque_primitives)
 	{
@@ -327,8 +327,10 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 		const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
-	// FIXME: remove globe hack.
-	if ( !d_globe->line_display_is_enabled() ) { return; }
+	if (!d_render_settings.show_lines)
+	{
+		return;
+	}
 
 	if (d_draw_opaque_primitives)
 	{
@@ -352,8 +354,10 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
-	// FIXME: remove globe hack.
-	if ( ! d_globe->polygon_display_is_enabled() ) { return; }
+	if (!d_render_settings.show_polygons)
+	{
+		return;
+	}
 
 	if (d_draw_opaque_primitives)
 	{
@@ -378,8 +382,10 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 		const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow)
 {
-	// FIXME: remove globe hack.
-	if ( ! d_globe->arrows_display_is_enabled() ) { return; }
+	if (!d_render_settings.show_arrows)
+	{
+		return;
+	}
 
 	const GPlatesMaths::Vector3D start(
 			rendered_direction_arrow.get_start_position().position_vector());
@@ -438,3 +444,25 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 		glEnd();
 	}
 }
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
+		const GPlatesViewOperations::RenderedString &rendered_string)
+{
+	if (!d_render_settings.show_strings)
+	{
+		return;
+	}
+
+	const GPlatesMaths::UnitVector3D &uv = rendered_string.get_point_on_sphere().position_vector();
+	d_text_renderer_ptr->render_text(
+			uv.x().dval(),
+			uv.y().dval(),
+			uv.z().dval(),
+			rendered_string.get_string(),
+			rendered_string.get_colour(),
+			rendered_string.get_x_offset(),
+			rendered_string.get_y_offset(),
+			rendered_string.get_font());
+}
+

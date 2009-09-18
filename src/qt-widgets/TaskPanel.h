@@ -38,6 +38,10 @@
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
 
+namespace GPlatesCanvasTools
+{
+	class MeasureDistanceState;
+}
 
 namespace GPlatesGui
 {
@@ -55,6 +59,7 @@ namespace GPlatesViewOperations
 namespace GPlatesQtWidgets
 {
 	class ModifyGeometryWidget;
+	class MeasureDistanceWidget;
 	class ViewportWindow;
 
 	/**
@@ -75,6 +80,7 @@ namespace GPlatesQtWidgets
 				GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				ViewportWindow &view_state_,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
@@ -126,6 +132,18 @@ namespace GPlatesQtWidgets
 		{
 			return *d_topology_tools_widget_ptr;
 		}
+		
+		/**
+		 * Access for the MeasureDistanceWidget
+		 *
+		 * This lets the Measure Distance canvas tool interact with the
+		 * MeasureDistanceWidget
+		 */
+		MeasureDistanceWidget &
+		measure_distance_widget() const
+		{
+			return *d_measure_distance_widget_ptr;
+		}
 
 		void
 		enable_modify_pole_tab(
@@ -161,6 +179,12 @@ namespace GPlatesQtWidgets
 		choose_topology_tools_tab()
 		{
 			tabwidget_task_panel->setCurrentWidget(tab_topology_tools);
+		}
+
+		void
+		choose_measure_distance_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_measure_distance);
 		}
 		
 		void
@@ -211,6 +235,13 @@ namespace GPlatesQtWidgets
 		void
 		set_up_topology_tools_tab();
 
+		/**
+		 * Sets up the "Measure Distance" tab in the Task Panel.
+		 * This adds the MeasureDistanceWidget.
+		 */
+		void
+		set_up_measure_distance_tab();
+
 
 		/**
 		 * Widget responsible for the buttons in the Feature Tab.
@@ -252,6 +283,12 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
+
+		/**
+		 * Widget responsible for the controls in the Measure Distance Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::MeasureDistanceWidget *d_measure_distance_widget_ptr;
 
 	};
 }

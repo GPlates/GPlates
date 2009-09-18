@@ -33,6 +33,7 @@
 #include "DigitisationWidget.h"
 #include "ModifyGeometryWidget.h"
 #include "ReconstructionPoleWidget.h"
+#include "MeasureDistanceWidget.h"
 #include "ActionButtonBox.h"
 #include "gui/FeatureFocus.h"
 
@@ -69,6 +70,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 		GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 		ViewportWindow &view_state,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
@@ -80,8 +82,10 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			geometry_operation_target, active_geometry_operation)),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(
 			rendered_geom_collection, view_state)),
-	d_topology_tools_widget_ptr( new TopologyToolsWidget(
-			rendered_geom_collection, feature_focus, model_interface, view_state))
+	d_topology_tools_widget_ptr(new TopologyToolsWidget(
+			rendered_geom_collection, feature_focus, model_interface, view_state)),
+	d_measure_distance_widget_ptr(new MeasureDistanceWidget(
+			measure_distance_state))
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including
@@ -97,6 +101,8 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	tabwidget_task_panel->setTabEnabled(1, false);
 	tabwidget_task_panel->setTabEnabled(2, false);
 	tabwidget_task_panel->setTabEnabled(3, false);
+	tabwidget_task_panel->setTabEnabled(4, false);
+	tabwidget_task_panel->setTabEnabled(5, false);
 	
 	// Set up the EX-TREME Task Panel's tabs.
 	set_up_feature_tab(feature_focus);
@@ -104,6 +110,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	set_up_modify_geometry_tab();
 	set_up_modify_pole_tab();
 	set_up_topology_tools_tab();
+	set_up_measure_distance_tab();
 	
 	choose_feature_tab();
 }
@@ -197,7 +204,7 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 void
 GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 {
-	// Set up the layout to be used by the Modify Pole tab.
+	// Set up the layout to be used by the Topology Tools tab.
 	QVBoxLayout *lay = new QVBoxLayout(tab_topology_tools);
 	lay->setSpacing(2);
 	lay->setContentsMargins(2, 2, 2, 2);
@@ -211,6 +218,24 @@ GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 	// After the main widget and anything else we might want to cram in there,
 	// a spacer to eat up remaining space and push all the widgets to the top
 	// of the tab.
+	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+}
+
+void
+GPlatesQtWidgets::TaskPanel::set_up_measure_distance_tab()
+{
+	// Set up the layout to be used by the Measure Distance tab.
+	QLayout *lay = add_default_layout(tab_measure_distance);
+	
+	// Add the main ReconstructionPoleWidget.
+	// As usual, Qt will take ownership of memory so we don't have to worry.
+	// We cannot set this parent widget in the TaskPanel initialiser list because
+	// setupUi() has not been called yet.
+	lay->addWidget(d_measure_distance_widget_ptr);
+
+	// After the main widget and anything else we might want to cram in there,
+	// a spacer to eat up remaining space and push all the widgets to the top
+	// of the Modify Pole tab.
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 

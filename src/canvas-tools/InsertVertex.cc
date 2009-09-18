@@ -23,24 +23,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "GlobeInsertVertex.h"
+#include "InsertVertex.h"
 
 #include "qt-widgets/ViewportWindow.h"
 #include "view-operations/InsertVertexGeometryOperation.h"
 #include "view-operations/GeometryOperationTarget.h"
 
 
-GPlatesCanvasTools::GlobeInsertVertex::GlobeInsertVertex(
+GPlatesCanvasTools::InsertVertex::InsertVertex(
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-		GPlatesGui::Globe &globe_,
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		const GPlatesQtWidgets::ViewportWindow &view_state_):
-	GlobeCanvasTool(globe_, globe_canvas_),
-	d_view_state_ptr(&view_state_),
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold):
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_insert_vertex_geometry_operation(
@@ -54,18 +49,15 @@ GPlatesCanvasTools::GlobeInsertVertex::GlobeInsertVertex(
 }
 
 
-GPlatesCanvasTools::GlobeInsertVertex::~GlobeInsertVertex()
+GPlatesCanvasTools::InsertVertex::~InsertVertex()
 {
 	// boost::scoped_ptr destructor needs complete type.
 }
 
 
 void
-GPlatesCanvasTools::GlobeInsertVertex::handle_activation()
+GPlatesCanvasTools::InsertVertex::handle_activation()
 {
-	if (globe_canvas().isVisible())
-	{
-
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
@@ -85,16 +77,28 @@ GPlatesCanvasTools::GlobeInsertVertex::handle_activation()
 	// Activate our InsertVertexGeometryOperation.
 	d_insert_vertex_geometry_operation->activate(geometry_builder, main_layer_type);
 
-	// FIXME:  We may have to adjust the message if we are using a Map View.
-	d_view_state_ptr->status_message(QObject::tr(
-			"Click to insert a vertex into the current geometry."
-			" Ctrl+drag to re-orient the globe."));
+	switch (get_view())
+	{
+		case GLOBE_VIEW:
+			set_status_bar_message(QObject::tr(
+				"Click to insert a vertex into the current geometry."
+				" Ctrl+drag to re-orient the globe."));
+			break;
+
+		case MAP_VIEW:
+			set_status_bar_message(QObject::tr(
+				"Click to insert a vertex into the current geometry."
+				" Ctrl+drag to pan the map."));
+			break;
+
+		default:
+			break;
 	}
 }
 
 
 void
-GPlatesCanvasTools::GlobeInsertVertex::handle_deactivation()
+GPlatesCanvasTools::InsertVertex::handle_deactivation()
 {
 	// Deactivate our InsertVertexGeometryOperation.
 	d_insert_vertex_geometry_operation->deactivate();
@@ -102,47 +106,37 @@ GPlatesCanvasTools::GlobeInsertVertex::handle_deactivation()
 
 
 void
-GPlatesCanvasTools::GlobeInsertVertex::handle_left_click(
-		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-		bool is_on_globe)
+GPlatesCanvasTools::InsertVertex::handle_left_click(
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
 {
-	double closeness_inclusion_threshold =
-		globe_canvas().current_proximity_inclusion_threshold(click_pos_on_globe);
-
 	d_insert_vertex_geometry_operation->left_click(
-			oriented_click_pos_on_globe,
-			closeness_inclusion_threshold);
+			point_on_sphere,
+			proximity_inclusion_threshold);
 }
 
 void
-GPlatesCanvasTools::GlobeInsertVertex::handle_left_drag(
-		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-		bool was_on_globe,
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+GPlatesCanvasTools::InsertVertex::handle_left_drag(
+		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+		bool was_on_earth,
+		double initial_proximity_inclusion_threshold,
+		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+		bool is_on_earth,
+		double current_proximity_inclusion_threshold)
 {
-	double closeness_inclusion_threshold =
-		globe_canvas().current_proximity_inclusion_threshold(current_pos_on_globe);
-
 	d_insert_vertex_geometry_operation->mouse_move(
-			oriented_current_pos_on_globe, closeness_inclusion_threshold);
+			current_point_on_sphere,
+			current_proximity_inclusion_threshold);
 }
 
 void
-GPlatesCanvasTools::GlobeInsertVertex::handle_move_without_drag(
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+GPlatesCanvasTools::InsertVertex::handle_move_without_drag(
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
 {
-
-	double closeness_inclusion_threshold =
-		globe_canvas().current_proximity_inclusion_threshold(current_pos_on_globe);
-
 	d_insert_vertex_geometry_operation->mouse_move(
-			oriented_current_pos_on_globe, closeness_inclusion_threshold);
+			point_on_sphere,
+			proximity_inclusion_threshold);
 }

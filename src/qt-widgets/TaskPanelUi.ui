@@ -34,7 +34,16 @@
    <property name="spacing" >
     <number>0</number>
    </property>
-   <property name="margin" >
+   <property name="leftMargin" >
+    <number>0</number>
+   </property>
+   <property name="topMargin" >
+    <number>0</number>
+   </property>
+   <property name="rightMargin" >
+    <number>0</number>
+   </property>
+   <property name="bottomMargin" >
     <number>0</number>
    </property>
    <item>
@@ -43,7 +52,7 @@
       <enum>QTabWidget::North</enum>
      </property>
      <property name="currentIndex" >
-      <number>4</number>
+      <number>5</number>
      </property>
      <property name="elideMode" >
       <enum>Qt::ElideNone</enum>
@@ -74,6 +83,11 @@
      <widget class="QWidget" name="tab_topology_tools" >
       <attribute name="title" >
        <string>Topology Tools</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_measure_distance" >
+      <attribute name="title" >
+       <string>Measure Distance</string>
       </attribute>
      </widget>
     </widget>
