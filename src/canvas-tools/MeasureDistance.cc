@@ -183,6 +183,7 @@ GPlatesCanvasTools::MeasureDistance::paint_feature_measure()
 	GPlatesViewOperations::GeometryBuilder *geometry_builder =
 		d_measure_distance_state_ptr->get_current_geometry_builder_ptr();
 	if (geometry_builder &&
+			geometry_builder->get_num_geometries() > 0 &&
 			(geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYLINE ||
 			 geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON))
 				// Feature Measure tool does not apply to points
@@ -257,6 +258,9 @@ GPlatesCanvasTools::MeasureDistance::handle_left_click(
 	{
 		// add the point to the state object
 		d_measure_distance_state_ptr->quick_measure_add_point(point_on_sphere);
+
+		// remove the label and highlighting in case the user clicked while doing mouse-over
+		remove_distance_label_and_highlight();
 
 		// redraw everything
 		paint();

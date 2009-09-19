@@ -253,6 +253,7 @@ GPlatesCanvasTools::MeasureDistanceState::process_geometry_builder(
 	if (d_is_active)
 	{
 		if (geometry_builder &&
+				geometry_builder->get_num_geometries() &&
 				geometry_builder->get_num_points_in_current_geometry() &&
 					// we treat a geometry builder with fewer than two points as no selection
 				(geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYLINE ||
