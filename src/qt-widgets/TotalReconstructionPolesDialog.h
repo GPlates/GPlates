@@ -111,6 +111,14 @@ namespace GPlatesQtWidgets{
 	export_equivalent();
 
 	private:
+	
+		/**
+		 * Called from @a export_relative and @a export_equivalent to handle
+		 * getting the filename from the user and different export options.
+		 */
+		void
+		handle_export(
+				const QTableWidget &table);
 
 		/**
 		 * The viewport window.

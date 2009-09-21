@@ -36,14 +36,28 @@ namespace GPlatesGui {
 	class CsvExport
 	{
 	public:
+		/**
+		 * This struct is used to specify what variant of CSV to write.
+		 */
+		struct ExportOptions
+		{
+			char delimiter;
+			// TODO: other possible options include:
+			//       ignore locale settings (tricky as TotalReconstructionPolesDialog is currently hard-coding them into strings)
+			//       write table headings
+			//       quote character
+			//       how to escape quote character
+		};
 
 		/**
 		 * Export the contents of the QTableWidget table to the file filename in csv form. 
 		 */
 		static
 		void
-		export_table(QString &filename,
-					QTableWidget *table);
+		export_table(
+				const QString &filename,
+				const ExportOptions &options,
+				const QTableWidget &table);
 
 	};
 
