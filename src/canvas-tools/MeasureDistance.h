@@ -29,10 +29,12 @@
 #define GPLATES_CANVASTOOLS_MEASUREDISTANCE_H
 
 #include <boost/scoped_ptr.hpp>
+#include <vector>
 #include <QString>
 #include <QObject>
 
 #include "CanvasTool.h"
+#include "view-operations/GeometryBuilder.h"
 
 namespace GPlatesGui
 {
@@ -108,6 +110,14 @@ namespace GPlatesCanvasTools
 
 		//! Main rendered geometry layer
 		GPlatesViewOperations::RenderedGeometryLayer *d_main_layer_ptr;
+		
+		/**
+		 * A mapping from rendered line segment indices to point indices, such that the
+		 * i-th element of this vector is the index of the point at the beginning of the
+		 * i-th rendered line segment. This is because a line segment is not rendered
+		 * between two points if they are too close together.
+		 */
+		std::vector<GPlatesViewOperations::GeometryBuilder::PointIndex> d_line_to_point_mapping;
 
 		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
@@ -130,9 +140,6 @@ namespace GPlatesCanvasTools
 		//! End point of mouse-over highlight, if any
 		boost::optional<GPlatesMaths::PointOnSphere> d_highlight_end;
 
-		//! Stores the number of lines rendered for Feature Measure last time paint() was called
-		unsigned int d_num_feature_measure_lines_rendered;
-
 		//! The colour in which Quick Measure points and lines are rendered
 		static
 		const GPlatesGui::Colour
@@ -152,6 +159,11 @@ namespace GPlatesCanvasTools
 		static
 		const GPlatesGui::Colour
 		LABEL_COLOUR;
+
+		//! The colour in which to render the shadow under the label
+		static
+		const GPlatesGui::Colour
+		LABEL_SHADOW_COLOUR;
 
 		//! The size of points
 		static
@@ -202,7 +214,7 @@ namespace GPlatesCanvasTools
 		void
 		paint_label();
 
-		//! Places a point into a RenderedGeometryLayer
+		//! Places a point into a RenderedGeometryLayer.
 		template <typename LayerPointerType>
 		void
 		render_point_on_sphere(
@@ -210,16 +222,19 @@ namespace GPlatesCanvasTools
 				const GPlatesGui::Colour &colour,
 				LayerPointerType layer_ptr);
 
-		//! Places a line into a RenderedGeometryLayer
+		/**
+		 * Places a line into a RenderedGeometryLayer.
+		 * Returns true iff line created and added to layer.
+		 */
 		template <typename LayerPointerType>
-		void
+		bool
 		render_line(
 				const GPlatesMaths::PointOnSphere &start,
 				const GPlatesMaths::PointOnSphere &end,
 				const GPlatesGui::Colour &colour,
 				LayerPointerType layer_ptr);
 
-		//! Places multiple line segments into a RenderedGeometryLayer, assumes two or more points
+		//! Places multiple line segments into a RenderedGeometryLayer, assumes two or more points.
 		template <typename LayerPointerType>
 		void
 		render_multiple_line_segments(

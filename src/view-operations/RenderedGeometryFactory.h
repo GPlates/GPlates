@@ -27,6 +27,7 @@
 #ifndef GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYFACTORY_H
 #define GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYFACTORY_H
 
+#include <boost/optional.hpp>
 #include <vector>
 
 #include "RenderedGeometry.h"
@@ -247,6 +248,8 @@ namespace GPlatesViewOperations
 			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type,
 			const QString &,
 			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			const boost::optional<GPlatesGui::Colour> &shadow_colour
+				= boost::optional<GPlatesGui::Colour>(RenderedGeometryFactory::DEFAULT_COLOUR),
 			int x_offset = 0,
 			int y_offset = 0,
 			const QFont &font = QFont());
@@ -260,12 +263,14 @@ namespace GPlatesViewOperations
 			const GPlatesMaths::PointOnSphere &point_on_sphere,
 			const QString &string,
 			const GPlatesGui::Colour &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			const boost::optional<GPlatesGui::Colour> &shadow_colour
+				= boost::optional<GPlatesGui::Colour>(RenderedGeometryFactory::DEFAULT_COLOUR),
 			int x_offset = 0,
 			int y_offset = 0,
 			const QFont &font = QFont())
 	{
 		return create_rendered_string(
-				point_on_sphere.clone_as_point(), string, colour, x_offset, y_offset, font);
+				point_on_sphere.clone_as_point(), string, colour, shadow_colour, x_offset, y_offset, font);
 	}
 
 }

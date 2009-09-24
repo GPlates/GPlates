@@ -34,6 +34,10 @@
 
 namespace
 {
+	/**
+	 * Sets the text of a QLineEdit to a particular floating point @value
+	 * rounded to @precision decimal places
+	 */
 	void
 	set_lineedit_text(
 			QLineEdit &control,
@@ -43,6 +47,10 @@ namespace
 		control.setText(QString("%1").arg(value, 0, 'f', precision));
 	}
 
+	/**
+	 * Displays @a point_on_sphere in Lat-Lon format in two QLineEdit controls,
+	 * @a lat_control and @a lon_control
+	 */
 	void
 	display_point_on_sphere(
 			QLineEdit &lat_control,
@@ -55,6 +63,9 @@ namespace
 		set_lineedit_text(lon_control, lat_lon.longitude(), precision);
 	}
 
+	/**
+	 * Clears the text and disables a QLineEdit @a control
+	 */
 	void
 	clear_and_disable(
 			QLineEdit *control)
@@ -146,6 +157,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_quick_measure(
 		boost::optional<GPlatesMaths::PointOnSphere> end,
 		boost::optional<double> distance)
 {
+	// start point of Quick Measure line
 	if (start)
 	{
 		display_point_on_sphere(
@@ -162,6 +174,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_quick_measure(
 		clear_and_disable(lineedit_quick_start_lon);
 	}
 
+	// end point of Quick Measure line
 	if (end)
 	{
 		display_point_on_sphere(
@@ -178,6 +191,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_quick_measure(
 		clear_and_disable(lineedit_quick_end_lon);
 	}
 
+	// distance between the two Quick Measure points
 	if (distance)
 	{
 		set_lineedit_text(
@@ -199,17 +213,18 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_feature_measure(
 		boost::optional<GPlatesMaths::PointOnSphere> segment_end,
 		boost::optional<double> segment_distance)
 {
-	// switch which groupbox is shown
+	// hide help text, show main Feature Measure box
 	groupbox_feature_none->setVisible(false);
 	groupbox_feature_present->setVisible(true);
 
+	// note: lineedit_feature_total is never disabled since
+	// total_distance is always supplied
 	set_lineedit_text(
 			*lineedit_feature_total,
 			total_distance,
 			PRECISION);
-	// note: lineedit_feature_total is not disabled ever since
-	// total_distance is always supplied
 
+	// start point of highlighted segment
 	if (segment_start)
 	{
 		display_point_on_sphere(
@@ -226,6 +241,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_feature_measure(
 		clear_and_disable(lineedit_feature_start_lon);
 	}
 
+	// end point of highlighted segment
 	if (segment_end)
 	{
 		display_point_on_sphere(
@@ -242,6 +258,7 @@ GPlatesQtWidgets::MeasureDistanceWidget::update_feature_measure(
 		clear_and_disable(lineedit_feature_end_lon);
 	}
 
+	// length of highlighted segment
 	if (segment_distance)
 	{
 		set_lineedit_text(
@@ -268,6 +285,7 @@ void
 GPlatesQtWidgets::MeasureDistanceWidget::lineedit_radius_text_edited(
 		const QString &text)
 {
+	// change background colour of radius field to red if not a number
 	bool ok;
 	double radius = text.toDouble(&ok);
 	if (ok)
@@ -315,9 +333,9 @@ GPlatesQtWidgets::MeasureDistanceWidget::change_background_colour(
 		QLineEdit *lineedit,
 		const QColor &colour)
 {
-		QPalette colour_palette = d_lineedit_original_palette;
-		colour_palette.setColor(QPalette::Base, colour);
-		lineedit->setPalette(colour_palette);
+	QPalette colour_palette = d_lineedit_original_palette;
+	colour_palette.setColor(QPalette::Base, colour);
+	lineedit->setPalette(colour_palette);
 }
 
 void

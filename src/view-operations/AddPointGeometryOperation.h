@@ -158,14 +158,6 @@ namespace GPlatesViewOperations
 		 */
 		const QueryProximityThreshold *d_query_proximity_threshold;
 
-		/**
-		 * Returns true if specified point is too close to existing points.
-		 */
-		bool
-		too_close_to_existing_points(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
-				const double &closeness_inclusion_threshold);
-
 		void
 		connect_to_geometry_builder_signals();
 

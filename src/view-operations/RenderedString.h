@@ -27,12 +27,14 @@
 #ifndef GPLATES_VIEWOPERATIONS_RENDEREDSTRING_H
 #define GPLATES_VIEWOPERATIONS_RENDEREDSTRING_H
 
-#include "RenderedGeometryImpl.h"
-#include "RenderedGeometryVisitor.h"
-#include "gui/Colour.h"
+#include <boost/optional.hpp>
 
 #include <QString>
 #include <QFont>
+
+#include "RenderedGeometryImpl.h"
+#include "RenderedGeometryVisitor.h"
+#include "gui/Colour.h"
 
 namespace GPlatesViewOperations
 {
@@ -44,12 +46,14 @@ namespace GPlatesViewOperations
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
 				const QString &string,
 				const GPlatesGui::Colour &colour,
+				const boost::optional<GPlatesGui::Colour> &shadow_colour,
 				int x_offset = 0,
 				int y_offset = 0,
 				const QFont &font = QFont()) :
 		d_point_on_sphere(point_on_sphere),
 		d_string(string),
 		d_colour(colour),
+		d_shadow_colour(shadow_colour),
 		d_x_offset(x_offset),
 		d_y_offset(y_offset),
 		d_font(font)
@@ -95,6 +99,12 @@ namespace GPlatesViewOperations
 			return d_colour;
 		}
 
+		const boost::optional<GPlatesGui::Colour> &
+		get_shadow_colour() const
+		{
+			return d_shadow_colour;
+		}
+
 		const QFont &
 		get_font() const
 		{
@@ -114,16 +124,26 @@ namespace GPlatesViewOperations
 		}
 
 	private:
+
+		//! Location of text
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_point_on_sphere;
+
+		//! Text to display
 		QString d_string;
+
+		//! Colour of text
 		GPlatesGui::Colour d_colour;
 
-		//! shifts the text d_x_offset pixels to the right of where it would otherwise be
+		//! Colour of shadow; set to boost::none if you do not want shadows
+		boost::optional<GPlatesGui::Colour> d_shadow_colour;
+
+		//! Shifts the text d_x_offset pixels to the right of where it would otherwise be
 		int d_x_offset;
 
-		//! shifts the text d_y_offset pixels above of where it would otherwise be
+		//! Shifts the text d_y_offset pixels above of where it would otherwise be
 		int d_y_offset;
 
+		//! Font in which to display the text
 		QFont d_font;
 	};
 }

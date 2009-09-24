@@ -27,6 +27,7 @@
 
 #include "QGLWidgetTextRenderer.h"
 #include "OpenGL.h"
+#include "maths/Real.h"
 
 GPlatesGui::QGLWidgetTextRenderer::QGLWidgetTextRenderer(
 		QGLWidget *gl_widget_ptr) :
@@ -43,7 +44,10 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 		const QFont &font) const
 {
 	glColor3fv(colour);
+	// need to change to GL_MODULATE for a moment otherwise the text will be rendered as white
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	d_gl_widget_ptr->renderText(x, y, string, font);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 }
 
 void
@@ -57,25 +61,27 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 		int y_offset,
 		const QFont &font) const
 {
-	if (x_offset == 0 && y_offset == 0)
-	{
-		d_gl_widget_ptr->renderText(x, y, z, string, font);
-	}
-	else
-	{
-		// compute screen coordinates
-		glColor3fv(colour);
-		GLdouble model[16];
-		glGetDoublev(GL_MODELVIEW_MATRIX, model);
-		GLdouble proj[16];
-		glGetDoublev(GL_PROJECTION_MATRIX, proj);
-		GLint view[4];
-		glGetIntegerv(GL_VIEWPORT, view);
-		GLdouble winX, winY, winZ;
-		gluProject(x, y, z, model, proj, view, &winX, &winY, &winZ);
-		int height = view[3];
+	// compute screen coordinates
+	glColor3fv(colour);
+	GLdouble model[16];
+	glGetDoublev(GL_MODELVIEW_MATRIX, model);
+	GLdouble proj[16];
+	glGetDoublev(GL_PROJECTION_MATRIX, proj);
+	GLint view[4];
+	glGetIntegerv(GL_VIEWPORT, view);
+	GLdouble winX, winY, winZ;
+	gluProject(x, y, z, model, proj, view, &winX, &winY, &winZ);
 
-		// render, with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other)
+	// read depth buffer
+	GLfloat depth;
+	glReadPixels(static_cast<int>(winX), static_cast<int>(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+	// don't render if point is occluded
+	typedef GPlatesMaths::Real real_t;
+	if (real_t(depth) > real_t(winZ))
+	{
+		// render with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other)
+		int height = view[3];
 		render_text(static_cast<int>(winX) + x_offset, height - (static_cast<int>(winY) + y_offset), string, colour, font);
 	}
 }

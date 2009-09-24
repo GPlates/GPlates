@@ -91,7 +91,7 @@ namespace GPlatesGui {
 
 
 		/**
-		 * Generates a texture using the data contained in a std::vector<unsinged_byte_type>.
+		 * Generates a texture using the data contained in a std::vector<unsigned_byte_type>.
 		 * This is used for data loaded via GDAL. 
 		 */
 		void

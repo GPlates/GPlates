@@ -27,31 +27,34 @@
 
 #include <iterator>
 #include <QObject>
-#include <QDebug>
 
 #include "MeasureDistance.h"
 #include "MeasureDistanceState.h"
 #include "gui/Colour.h"
+#include "maths/GreatCircleArc.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/ProximityCriteria.h"
-#include "view-operations/GeometryBuilder.h"
+#include "utils/GeometryCreationUtils.h"
 #include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryProximity.h"
 
 const GPlatesGui::Colour
-GPlatesCanvasTools::MeasureDistance::QUICK_MEASURE_LINE_COLOUR = GPlatesGui::Colour::get_white();
+GPlatesCanvasTools::MeasureDistance::QUICK_MEASURE_LINE_COLOUR = GPlatesGui::Colour::get_grey();
 
 const GPlatesGui::Colour
-GPlatesCanvasTools::MeasureDistance::FEATURE_MEASURE_LINE_COLOUR = GPlatesGui::Colour::get_grey();
+GPlatesCanvasTools::MeasureDistance::FEATURE_MEASURE_LINE_COLOUR = GPlatesGui::Colour::get_white();
 
 const GPlatesGui::Colour
 GPlatesCanvasTools::MeasureDistance::HIGHLIGHT_COLOUR = GPlatesGui::Colour::get_yellow();
 
 const GPlatesGui::Colour
 GPlatesCanvasTools::MeasureDistance::LABEL_COLOUR = GPlatesGui::Colour::get_yellow();
+
+const GPlatesGui::Colour
+GPlatesCanvasTools::MeasureDistance::LABEL_SHADOW_COLOUR = GPlatesGui::Colour::get_black();
 
 const float
 GPlatesCanvasTools::MeasureDistance::POINT_SIZE = 2.0f * GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT;
@@ -75,8 +78,7 @@ GPlatesCanvasTools::MeasureDistance::MeasureDistance(
 	d_measure_distance_state_ptr(&measure_distance_state),
 	d_main_layer_ptr(measure_distance_state.get_main_layer_ptr()),
 	d_highlight_layer_ptr(measure_distance_state.get_highlight_layer_ptr()),
-	d_label_layer_ptr(measure_distance_state.get_label_layer_ptr()),
-	d_num_feature_measure_lines_rendered(0)
+	d_label_layer_ptr(measure_distance_state.get_label_layer_ptr())
 {
 	make_signal_slot_connections();
 	d_main_layer_ptr->set_active(true);
@@ -85,6 +87,7 @@ GPlatesCanvasTools::MeasureDistance::MeasureDistance(
 void
 GPlatesCanvasTools::MeasureDistance::make_signal_slot_connections()
 {
+	// listen to state object
 	QObject::connect(
 			d_measure_distance_state_ptr,
 			SIGNAL(feature_in_geometry_builder_changed()),
@@ -95,6 +98,7 @@ GPlatesCanvasTools::MeasureDistance::make_signal_slot_connections()
 void
 GPlatesCanvasTools::MeasureDistance::feature_changed()
 {
+	// repaint if feature changed
 	paint();
 }
 
@@ -103,6 +107,7 @@ GPlatesCanvasTools::MeasureDistance::handle_activation()
 {
 	d_measure_distance_state_ptr->handle_activation();
 
+	// set status bar message
 	switch (get_view())
 	{
 		case GLOBE_VIEW:
@@ -129,16 +134,15 @@ void
 GPlatesCanvasTools::MeasureDistance::handle_deactivation()
 {
 	d_measure_distance_state_ptr->handle_deactivation();
-
-	// deactivate rendered layer
-	d_rendered_geom_collection_ptr->set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER,
-			false);
 }
 
 void
 GPlatesCanvasTools::MeasureDistance::paint()
 {
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
 	// clear the rendered geometries
 	d_main_layer_ptr->clear_rendered_geometries();
 	d_highlight_layer_ptr->clear_rendered_geometries();
@@ -157,9 +161,6 @@ GPlatesCanvasTools::MeasureDistance::paint()
 void
 GPlatesCanvasTools::MeasureDistance::paint_quick_measure()
 {
-	// we draw a point if there's only one point so as to
-	// provide some visual feedback
-	// for two points, we just draw the line
 	boost::optional<GPlatesMaths::PointOnSphere> start =
 		d_measure_distance_state_ptr->get_quick_measure_start();
 	if (start)
@@ -168,10 +169,12 @@ GPlatesCanvasTools::MeasureDistance::paint_quick_measure()
 			d_measure_distance_state_ptr->get_quick_measure_end();
 		if (!end)
 		{
+			// just draw a point if only one point, to provide some visual feedback
 			render_point_on_sphere(*start, QUICK_MEASURE_LINE_COLOUR, d_main_layer_ptr);
 		}
 		if (end)
 		{
+			// for two points, draw the line and no points
 			render_line(*start, *end, QUICK_MEASURE_LINE_COLOUR, d_main_layer_ptr);
 		}
 	}
@@ -180,38 +183,29 @@ GPlatesCanvasTools::MeasureDistance::paint_quick_measure()
 void
 GPlatesCanvasTools::MeasureDistance::paint_feature_measure()
 {
+	// clear line to point mapping
+	d_line_to_point_mapping.clear();
+
 	GPlatesViewOperations::GeometryBuilder *geometry_builder =
 		d_measure_distance_state_ptr->get_current_geometry_builder_ptr();
 	if (geometry_builder &&
-			geometry_builder->get_num_geometries() > 0 &&
+			geometry_builder->get_num_geometries() &&
+			geometry_builder->get_num_points_in_current_geometry() > 1 &&
 			(geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYLINE ||
 			 geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON))
-				// Feature Measure tool does not apply to points
+				// Feature Measure tool does not apply to multipoints
 	{
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex current_index =
 			geometry_builder->get_current_geometry_index();
-		if (geometry_builder->get_num_points_in_current_geometry() > 1)
-		{
-			// how many lines rendered? store for later use
-			bool is_polygon = geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON;
-			d_num_feature_measure_lines_rendered = geometry_builder->get_num_points_in_current_geometry();
-			if (!is_polygon) // for n points, polygon has n lines, polyline has n - 1 lines
-			{
-				--d_num_feature_measure_lines_rendered;
-			}
 
-			// get iterators to points in geometry builder
-			typedef GPlatesViewOperations::GeometryBuilder::point_const_iterator_type iterator_type;
-			iterator_type begin = geometry_builder->get_geometry_point_begin(current_index);
-			iterator_type end = geometry_builder->get_geometry_point_end(current_index);
+		// get iterators to points in geometry builder
+		typedef GPlatesViewOperations::GeometryBuilder::point_const_iterator_type iterator_type;
+		iterator_type begin = geometry_builder->get_geometry_point_begin(current_index);
+		iterator_type end = geometry_builder->get_geometry_point_end(current_index);
 
-			// draw lines
-			render_multiple_line_segments(begin, end, FEATURE_MEASURE_LINE_COLOUR, is_polygon, d_main_layer_ptr);
-		}
-	}
-	else
-	{
-		d_num_feature_measure_lines_rendered = 0;
+		// draw lines
+		bool is_polygon = geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON;
+		render_multiple_line_segments(begin, end, FEATURE_MEASURE_LINE_COLOUR, is_polygon, d_main_layer_ptr);
 	}
 }
 
@@ -233,14 +227,16 @@ GPlatesCanvasTools::MeasureDistance::paint_label()
 {
 	if (d_label_text && d_label_position)
 	{
-		GPlatesViewOperations::RenderedGeometry rendered =
+		// now paint main label on top
+		GPlatesViewOperations::RenderedGeometry main_label =
 			GPlatesViewOperations::create_rendered_string(
 					*d_label_position,
 					*d_label_text,
 					LABEL_COLOUR,
+					LABEL_SHADOW_COLOUR,
 					LABEL_X_OFFSET,
 					LABEL_Y_OFFSET);
-		d_label_layer_ptr->add_rendered_geometry(rendered);
+		d_label_layer_ptr->add_rendered_geometry(main_label);
 	}
 }
 
@@ -278,6 +274,7 @@ GPlatesCanvasTools::MeasureDistance::handle_move_without_drag(
 
 	if (d_measure_distance_state_ptr->is_active() && is_on_earth)
 	{
+		// test if any line segments are near the cursor
 		GPlatesMaths::ProximityCriteria proximity_criteria(
 				point_on_sphere,
 				proximity_inclusion_threshold);
@@ -293,9 +290,9 @@ GPlatesCanvasTools::MeasureDistance::handle_move_without_drag(
 
 			// work out if the rendered geometry belongs to Quick Measure or Feature Measure
 			// note that the Quick Measure line is always rendered immediately after the Feature Meaure lines
-			if (rendered_geom_index == d_num_feature_measure_lines_rendered)
+			if (rendered_geom_index == d_line_to_point_mapping.size())
 			{
-				// Quick Measure (since it's the last line drawn)
+				// Quick Measure
 				if (d_measure_distance_state_ptr->get_quick_measure_distance())
 					// true only if there are two quick measure points
 				{
@@ -307,7 +304,7 @@ GPlatesCanvasTools::MeasureDistance::handle_move_without_drag(
 							true);
 				}
 
-				// no current feature segment
+				// mouse not on a line segment belonging to a feature
 				d_measure_distance_state_ptr->set_feature_segment_points(boost::none, boost::none);
 			}
 			else
@@ -320,34 +317,37 @@ GPlatesCanvasTools::MeasureDistance::handle_move_without_drag(
 					bool is_polygon = geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON;
 					GPlatesViewOperations::GeometryBuilder::GeometryIndex geom_index =
 						geometry_builder->get_current_geometry_index();
+					GPlatesViewOperations::GeometryBuilder::PointIndex start_point_index =
+						d_line_to_point_mapping[rendered_geom_index];
 					typedef GPlatesViewOperations::GeometryBuilder::point_const_iterator_type iterator_type;
 
+					// work out the start and end points of the line segment
 					// if it is a polygon, the last line rendered will be the line joining end to start
-					iterator_type line_segment_begin, line_segment_end;
-					if (is_polygon && rendered_geom_index == d_num_feature_measure_lines_rendered - 1)
+					iterator_type start_point, end_point;
+					if (is_polygon && start_point_index == geometry_builder->get_num_points_in_current_geometry() - 1)
 					{
-						line_segment_end = geometry_builder->get_geometry_point_begin(geom_index);
-						line_segment_begin = line_segment_end;
-						std::advance(line_segment_begin, rendered_geom_index);
+						end_point = geometry_builder->get_geometry_point_begin(geom_index);
+						start_point = end_point;
+						std::advance(start_point, start_point_index);
 					}
 					else
 					{
-						line_segment_begin = geometry_builder->get_geometry_point_begin(geom_index);
-						std::advance(line_segment_begin, rendered_geom_index);
-						line_segment_end = line_segment_begin;
-						++line_segment_end;
+						start_point = geometry_builder->get_geometry_point_begin(geom_index);
+						std::advance(start_point, start_point_index);
+						end_point = start_point;
+						++end_point;
 					}
 
 					d_measure_distance_state_ptr->set_feature_segment_points(
-							boost::optional<GPlatesMaths::PointOnSphere>(*line_segment_begin),
-							boost::optional<GPlatesMaths::PointOnSphere>(*line_segment_end));
+							boost::optional<GPlatesMaths::PointOnSphere>(*start_point),
+							boost::optional<GPlatesMaths::PointOnSphere>(*end_point));
 					if (d_measure_distance_state_ptr->get_feature_segment_distance())
 					{
 						add_distance_label_and_highlight(
 								*(d_measure_distance_state_ptr->get_feature_segment_distance()),
 								point_on_sphere,
-								*line_segment_begin,
-								*line_segment_end,
+								*start_point,
+								*end_point,
 								false);
 					}
 				}
@@ -355,10 +355,10 @@ GPlatesCanvasTools::MeasureDistance::handle_move_without_drag(
 		}
 		else
 		{
-			// no close geometry
+			// no close hit found
 			remove_distance_label_and_highlight();
 
-			// no current feature segment
+			// mouse not on a line segment belonging to a feature
 			d_measure_distance_state_ptr->set_feature_segment_points(boost::none, boost::none);
 		}
 	}
@@ -373,9 +373,13 @@ GPlatesCanvasTools::MeasureDistance::add_distance_label_and_highlight(
 		bool is_quick_measure)
 {
 	d_label_text = boost::optional<QString>(QString("%1").arg(distance, 0, 'f', LABEL_PRECISION).append(" km"));
-	d_label_position = boost::optional<GPlatesMaths::PointOnSphere>(label_position);
 	d_highlight_start = boost::optional<GPlatesMaths::PointOnSphere>(highlight_start);
 	d_highlight_end = boost::optional<GPlatesMaths::PointOnSphere>(highlight_end);
+
+	// snap the label to a point on the line (it looks neater)
+	GPlatesMaths::GreatCircleArc gca = GPlatesMaths::GreatCircleArc::create(highlight_start, highlight_end);
+	d_label_position = boost::optional<GPlatesMaths::PointOnSphere>(
+			*(gca.get_closest_point(label_position)));
 
 	// redraw since we just changed the label
 	paint();
@@ -420,7 +424,7 @@ GPlatesCanvasTools::MeasureDistance::render_point_on_sphere(
 }
 
 template <typename LayerPointerType>
-void
+bool
 GPlatesCanvasTools::MeasureDistance::render_line(
 		const GPlatesMaths::PointOnSphere &start,
 		const GPlatesMaths::PointOnSphere &end,
@@ -428,16 +432,28 @@ GPlatesCanvasTools::MeasureDistance::render_line(
 		LayerPointerType layer_ptr)
 {
 	const GPlatesMaths::PointOnSphere points[] = { start, end };
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-		GPlatesMaths::PolylineOnSphere::create_on_heap(
+	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline =
+		GPlatesUtils::create_polyline_on_sphere(
 				points,
-				points + sizeof(points) / sizeof(GPlatesMaths::PointOnSphere));
-	GPlatesViewOperations::RenderedGeometry rendered =
-		GPlatesViewOperations::create_rendered_polyline_on_sphere(
-				polyline,
-				colour,
-				LINE_WIDTH);
-	layer_ptr->add_rendered_geometry(rendered);
+				points + sizeof(points) / sizeof(GPlatesMaths::PointOnSphere),
+				validity);
+
+	// need to check for validity; it is invalid if the points are too close together
+	if (validity == GPlatesUtils::GeometryConstruction::VALID)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered =
+			GPlatesViewOperations::create_rendered_polyline_on_sphere(
+					*polyline,
+					colour,
+					LINE_WIDTH);
+		layer_ptr->add_rendered_geometry(rendered);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 template <typename LayerPointerType>
@@ -452,15 +468,22 @@ GPlatesCanvasTools::MeasureDistance::render_multiple_line_segments(
 	typedef GPlatesViewOperations::GeometryBuilder::point_const_iterator_type iterator_type;
 	iterator_type previous = begin;
 	iterator_type first = begin;
-	++begin;
-	for (iterator_type iter = begin; iter != end; ++iter)
+	for (iterator_type iter = begin + 1; iter != end; ++iter)
 	{
-		render_line(*previous, *iter, colour, layer_ptr);
+		if (render_line(*previous, *iter, colour, layer_ptr))
+		{
+			d_line_to_point_mapping.push_back(previous - begin);
+		}
 		previous = iter;
 	}
+
+	// close off polygon if we are rendering a polygon
 	if (is_polygon)
 	{
-		render_line(*previous, *first, colour, layer_ptr);
+		if (render_line(*previous, *first, colour, layer_ptr))
+		{
+			d_line_to_point_mapping.push_back(previous - begin);
+		}
 	}
 }
 

@@ -195,15 +195,18 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segm
 	if (!test_proximity_to_rendered_geom_layer(
 			*d_points_layer_ptr,  oriented_pos_on_sphere, closeness_inclusion_threshold))
 	{
+		// Get the index of the point at the start of the line segment
+		GeometryBuilder::PointIndex index_of_start_point = d_line_to_point_mapping[line_segment_index];
+
 		// This can be one past the last point when inserting at end of geometry.
-		const GeometryBuilder::PointIndex index_of_point_to_insert_before = line_segment_index + 1;
+		const GeometryBuilder::PointIndex index_of_point_to_insert_before = index_of_start_point + 1;
 
 		// Instead of inserting a vertex at the mouse position we project the mouse
 		// position onto the line segment and insert there.
 		// This is useful if the user wants to insert directly on the line segment even
 		// though the mouse position might be off the line segment by a pixel or two.
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_to_insert =
-				project_point_onto_line_segment(line_segment_index, oriented_pos_on_sphere);
+				project_point_onto_line_segment(index_of_start_point, oriented_pos_on_sphere);
 
 		insert_vertex(index_of_point_to_insert_before, *point_to_insert);
 	}
@@ -211,7 +214,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segm
 
 GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
 GPlatesViewOperations::InsertVertexGeometryOperation::project_point_onto_line_segment(
-		const unsigned int line_segment_index,
+		const GeometryBuilder::PointIndex start_point_index,
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
 {
 	// We currently only support one internal geometry so set geom index to zero.
@@ -223,15 +226,15 @@ GPlatesViewOperations::InsertVertexGeometryOperation::project_point_onto_line_se
 	// Line segment could be the last segment in a polygon in which case the segment start point
 	// is the last point in polygon and the segment end point is first point in polygon.
 	// Note for polylines this can't happen so this only applies to polygons.
-	if (line_segment_index == d_geometry_builder->get_num_points_in_geometry(geom_index) - 1)
+	if (start_point_index == d_geometry_builder->get_num_points_in_geometry(geom_index) - 1)
 	{
-		line_segment_start = &d_geometry_builder->get_geometry_point(geom_index, line_segment_index);
+		line_segment_start = &d_geometry_builder->get_geometry_point(geom_index, start_point_index);
 		line_segment_end = &d_geometry_builder->get_geometry_point(geom_index, 0);
 	}
 	else
 	{
-		line_segment_start = &d_geometry_builder->get_geometry_point(geom_index, line_segment_index);
-		line_segment_end = &d_geometry_builder->get_geometry_point(geom_index, line_segment_index + 1);
+		line_segment_start = &d_geometry_builder->get_geometry_point(geom_index, start_point_index);
+		line_segment_end = &d_geometry_builder->get_geometry_point(geom_index, start_point_index + 1);
 	}
 
 
@@ -469,10 +472,11 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_lin
 	// Line segment could be the last segment in a polygon in which case the segment start point
 	// is the last point in polygon and the segment end point is first point in polygon.
 	// Note for polylines this can't happen so this only applies to polygons.
-	if (highlight_line_segment_index == d_geometry_builder->get_num_points_in_geometry(geom_index) - 1)
+	unsigned int highlight_start_point_index = d_line_to_point_mapping[highlight_line_segment_index];
+	if (highlight_start_point_index == d_geometry_builder->get_num_points_in_geometry(geom_index) - 1)
 	{
 		const GPlatesMaths::PointOnSphere &start_point =
-				d_geometry_builder->get_geometry_point(geom_index, highlight_line_segment_index);
+				d_geometry_builder->get_geometry_point(geom_index, highlight_start_point_index);
 		const GPlatesMaths::PointOnSphere &end_point =
 				d_geometry_builder->get_geometry_point(geom_index, 0);
 
@@ -483,7 +487,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_lin
 		// Get point at start of line segment.
 		GeometryBuilder::point_const_iterator_type line_segment_begin =
 				d_geometry_builder->get_geometry_point_begin(geom_index);
-		std::advance(line_segment_begin, highlight_line_segment_index);
+		std::advance(line_segment_begin, highlight_start_point_index);
 
 		GeometryBuilder::point_const_iterator_type line_segment_end = line_segment_begin;
 		std::advance(line_segment_end, 2); // Line segment contains two points.
@@ -763,6 +767,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_lines(
 		const GeometryType::Value actual_geom_type)
 {
 	const unsigned int num_points_in_geom = d_geometry_builder->get_num_points_in_geometry(geom_index);
+	d_line_to_point_mapping.clear();
 
 	if (num_points_in_geom < 2)
 	{
@@ -807,6 +812,9 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_lines(
 
 			// Add to the lines layer.
 			d_line_segments_layer_ptr->add_rendered_geometry(rendered_geom);
+
+			// Remember the index of the starting point of this line.
+			d_line_to_point_mapping.push_back(line_segment_iter - first_line_segment_start_point);
 		}
 	}
 
@@ -839,6 +847,9 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_lines(
 
 			// Add to the lines layer.
 			d_line_segments_layer_ptr->add_rendered_geometry(rendered_geom);
+
+			// Remember the index of the starting point of this line.
+			d_line_to_point_mapping.push_back(num_points_in_geom - 1);
 		}
 	}
 }

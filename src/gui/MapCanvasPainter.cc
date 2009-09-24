@@ -277,6 +277,22 @@ namespace
 		QPointF point = get_scene_coords_from_pos(
 				rendered_string.get_point_on_sphere(),
 				projection);
+		
+		// render drop shadow
+		if (rendered_string.get_shadow_colour())
+		{
+			text_renderer.render_text(
+					point.x(),
+					point.y(),
+					0.0,
+					rendered_string.get_string(),
+					*rendered_string.get_shadow_colour(),
+					rendered_string.get_x_offset() + 1, // right 1px
+					rendered_string.get_y_offset() - 1, // down 1px
+					rendered_string.get_font());
+		}
+
+		// render main text
 		text_renderer.render_text(
 				point.x(),
 				point.y(),

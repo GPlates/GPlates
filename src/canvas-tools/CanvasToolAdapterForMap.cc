@@ -368,6 +368,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_ctrl_left_drag(
 						map_view().current_proximity_inclusion_threshold(
 							*current_point_on_sphere)))
 				{
+					// perform default action
 					MapCanvasTool::handle_ctrl_left_drag(
 						initial_point_on_scene,
 						was_on_surface,
@@ -413,6 +414,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_ctrl_left_release_after_drag
 						map_view().current_proximity_inclusion_threshold(
 							*current_point_on_sphere)))
 				{
+					// perform default action
 					MapCanvasTool::handle_ctrl_left_release_after_drag(
 						initial_point_on_scene,
 						was_on_surface,
@@ -484,6 +486,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_ctrl_left_drag(
 						map_view().current_proximity_inclusion_threshold(
 							*current_point_on_sphere)))
 				{
+					// perform default action
 					MapCanvasTool::handle_shift_ctrl_left_drag(
 						initial_point_on_scene,
 						was_on_surface,

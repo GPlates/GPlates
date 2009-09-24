@@ -277,6 +277,7 @@ GPlatesViewOperations::create_rendered_string(
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
 		const QString &string,
 		const GPlatesGui::Colour &colour,
+		const boost::optional<GPlatesGui::Colour> &shadow_colour,
 		int x_offset,
 		int y_offset,
 		const QFont &font)
@@ -285,6 +286,7 @@ GPlatesViewOperations::create_rendered_string(
 				point_on_sphere,
 				string,
 				colour,
+				shadow_colour,
 				x_offset,
 				y_offset,
 				font));

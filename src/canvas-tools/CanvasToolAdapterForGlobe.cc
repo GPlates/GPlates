@@ -240,6 +240,7 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_drag(
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe)))
 		{
+			// perform default action
 			GlobeCanvasTool::handle_ctrl_left_drag(
 					initial_pos_on_globe,
 					oriented_initial_pos_on_globe,
@@ -274,6 +275,7 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_release_after_dr
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe)))
 		{
+			// perform default action
 			GlobeCanvasTool::handle_ctrl_left_release_after_drag(
 					initial_pos_on_globe,
 					oriented_initial_pos_on_globe,
@@ -324,6 +326,7 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_drag(
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe)))
 		{
+			// perform default action
 			GlobeCanvasTool::handle_shift_ctrl_left_drag(
 					initial_pos_on_globe,
 					oriented_initial_pos_on_globe,
@@ -358,6 +361,7 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_release_af
 				globe_canvas().current_proximity_inclusion_threshold(
 					current_pos_on_globe)))
 		{
+			// perform default action
 			GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(
 					initial_pos_on_globe,
 					oriented_initial_pos_on_globe,

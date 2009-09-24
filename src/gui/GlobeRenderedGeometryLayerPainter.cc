@@ -455,6 +455,21 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
 	}
 
 	const GPlatesMaths::UnitVector3D &uv = rendered_string.get_point_on_sphere().position_vector();
+	// render drop shadow, if any
+	if (rendered_string.get_shadow_colour())
+	{
+		d_text_renderer_ptr->render_text(
+				uv.x().dval(),
+				uv.y().dval(),
+				uv.z().dval(),
+				rendered_string.get_string(),
+				*rendered_string.get_shadow_colour(),
+				rendered_string.get_x_offset() + 1, // right 1px
+				rendered_string.get_y_offset() - 1, // down 1px
+				rendered_string.get_font());
+	}
+
+	// render main text
 	d_text_renderer_ptr->render_text(
 			uv.x().dval(),
 			uv.y().dval(),
