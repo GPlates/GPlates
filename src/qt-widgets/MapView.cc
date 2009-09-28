@@ -80,8 +80,7 @@ GPlatesQtWidgets::MapView::MapView(
 {
 	setViewport(d_gl_widget_ptr);
 	d_map_canvas_ptr->set_text_renderer(
-			boost::shared_ptr<GPlatesGui::TextRenderer>(
-				new GPlatesGui::QGLWidgetTextRenderer(d_gl_widget_ptr)));
+				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr));
 
 	setViewportUpdateMode(
 		QGraphicsView::MinimalViewportUpdate);
@@ -425,7 +424,7 @@ GPlatesQtWidgets::MapView::set_camera_viewpoint(
 }
 
 boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::MapView::camera_llp()
+GPlatesQtWidgets::MapView::camera_llp() const
 {
 	double x_pos = d_centre_of_viewport.x();
 	double y_pos = d_centre_of_viewport.y();

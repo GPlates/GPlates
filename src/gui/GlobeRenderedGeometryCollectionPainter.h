@@ -45,6 +45,7 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	class GlobeRenderedGeometryLayerPainter;
+	class GlobeVisibilityTester;
 	class NurbsRenderer;
 
 	/**
@@ -59,7 +60,8 @@ namespace GPlatesGui
 		GlobeRenderedGeometryCollectionPainter(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const RenderSettings &render_settings,
-				boost::shared_ptr<TextRenderer> text_renderer_ptr);
+				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const GlobeVisibilityTester &visibility_tester);
 
 
 		/**
@@ -86,11 +88,14 @@ namespace GPlatesGui
 		double d_current_layer_far_depth;
 		double d_depth_range_per_layer;
 
-		// rendering flags to determine what gets shown
+		//! Rendering flags to determine what gets shown
 		const RenderSettings &d_render_settings;
 		
-		// used for rendering text on an OpenGL canvas
-		boost::shared_ptr<TextRenderer> d_text_renderer_ptr;
+		//! Used for rendering text on an OpenGL canvas
+		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
+
+		//! Used for determining whether a particular point on the globe is visible
+		GlobeVisibilityTester d_visibility_tester;
 
 		//! Parameters that are only available when @a paint is called.
 		struct PaintParams

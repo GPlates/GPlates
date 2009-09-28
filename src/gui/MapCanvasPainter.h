@@ -53,7 +53,7 @@ namespace GPlatesGui
 		MapCanvasPainter(
 				GPlatesQtWidgets::MapCanvas &canvas_,
 				const GPlatesGui::RenderSettings &render_settings,
-				const boost::shared_ptr<GPlatesGui::TextRenderer> &text_renderer_ptr,
+				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit):
 			d_canvas_ptr(&canvas_),
 			d_render_settings(render_settings),
@@ -120,7 +120,7 @@ namespace GPlatesGui
 		const RenderSettings &d_render_settings;
 
 		//! Used for rendering text
-		boost::shared_ptr<GPlatesGui::TextRenderer> d_text_renderer_ptr;
+		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer_ptr;
 
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_main_rendered_layers_to_visit;
 

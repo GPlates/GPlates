@@ -43,6 +43,7 @@
 #include <QSizePolicy>
 
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
+#include "gui/GlobeVisibilityTester.h"
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
 #include "gui/QGLWidgetTextRenderer.h"
@@ -193,7 +194,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_mouse_pointer_is_on_globe(false),
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_globe(rendered_geom_collection,
-			boost::shared_ptr<GPlatesGui::TextRenderer>(new GPlatesGui::QGLWidgetTextRenderer(this))),
+			GPlatesGui::QGLWidgetTextRenderer::create(this),
+			GPlatesGui::GlobeVisibilityTester(*this)),
 	d_viewport_zoom(view_state.get_viewport_zoom())
 {
 	// QWidget::setMouseTracking:
@@ -1004,7 +1006,7 @@ GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 }
 
 boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::GlobeCanvas::camera_llp()
+GPlatesQtWidgets::GlobeCanvas::camera_llp() const
 {
 // This returns a boost::optional for consistency with the virtual function. The globe
 // should always return a valid camera llp. 

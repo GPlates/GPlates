@@ -41,9 +41,17 @@ namespace GPlatesGui
 
 	public:
 
-		explicit
-		QGLWidgetTextRenderer(
-				QGLWidget *gl_widget_ptr);
+		/**
+		 * Construct an instance of QGLWidgetTextRenderer on the heap
+		 */
+		static
+		TextRenderer::ptr_to_const_type
+		create(
+				QGLWidget *gl_widget_ptr)
+		{
+			return TextRenderer::ptr_to_const_type(
+					new QGLWidgetTextRenderer(gl_widget_ptr));
+		}
 
 		/**
 		 * Renders @a string at position (@a x , @a y ) in window coordinates
@@ -77,6 +85,11 @@ namespace GPlatesGui
 	private:
 
 		QGLWidget *d_gl_widget_ptr;
+
+		// prevent direct instantiation
+		explicit
+		QGLWidgetTextRenderer(
+				QGLWidget *gl_widget_ptr);
 
 	};
 }

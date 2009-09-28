@@ -51,12 +51,15 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
+	class GlobeVisibilityTester;
+
 	class Globe
 	{
 	public:
 		Globe(
 				GPlatesViewOperations::RenderedGeometryCollection &,
-				boost::shared_ptr<TextRenderer> text_renderer_ptr);
+				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const GlobeVisibilityTester &visibility_tester);
 
 		~Globe()
 		{  }
@@ -83,7 +86,7 @@ namespace GPlatesGui
 
 		const GPlatesMaths::PointOnSphere
 		Orient(
-				const GPlatesMaths::PointOnSphere &pos);
+				const GPlatesMaths::PointOnSphere &pos) const;
 
 		/**
 		 * Paint the globe and all the visible features and rasters on it.

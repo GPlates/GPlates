@@ -30,6 +30,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
+#include "GlobeVisibilityTester.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
 #include "view-operations/RenderedGeometry.h"
@@ -60,13 +61,15 @@ namespace GPlatesGui
 				const double &inverse_viewport_zoom_factor,
 				GPlatesGui::NurbsRenderer &nurbs_renderer,
 				const RenderSettings &render_settings,
-				boost::shared_ptr<TextRenderer> text_renderer_ptr) :
+				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const GlobeVisibilityTester &visibility_tester) :
 			d_rendered_geometry_layer(rendered_geometry_layer),
 			d_nurbs_renderer(&nurbs_renderer),
 			d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 			d_draw_opaque_primitives(true),
 			d_render_settings(render_settings),
-			d_text_renderer_ptr(text_renderer_ptr)
+			d_text_renderer_ptr(text_renderer_ptr),
+			d_visibility_tester(visibility_tester)
 		{  }
 
 
@@ -120,7 +123,10 @@ namespace GPlatesGui
 		const RenderSettings &d_render_settings;
 
 		//! For rendering text
-		boost::shared_ptr<TextRenderer> d_text_renderer_ptr;
+		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
+
+		//! For determining whether a particular point on the globe is visible or not
+		GlobeVisibilityTester d_visibility_tester;
 
 		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.
 		static const float POINT_SIZE_ADJUSTMENT;

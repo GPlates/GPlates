@@ -28,7 +28,6 @@
 #include <QDebug>
 
 #include "Globe.h"
-
 #include "PlatesColourTable.h"
 #include "Texture.h"
 
@@ -37,13 +36,15 @@
 
 GPlatesGui::Globe::Globe(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		boost::shared_ptr<TextRenderer> text_renderer_ptr) :
+		TextRenderer::ptr_to_const_type text_renderer_ptr,
+		const GlobeVisibilityTester &visibility_tester) :
 d_rendered_geom_collection(&rendered_geom_collection),
 d_sphere( OpaqueSphereFactory(Colour(0.35f, 0.35f, 0.35f)) ),
 d_grid(NUM_CIRCLES_LAT, NUM_CIRCLES_LON),
 d_rendered_geom_collection_painter(rendered_geom_collection,
 		d_render_settings,
-		text_renderer_ptr)
+		text_renderer_ptr,
+		visibility_tester)
 {
 }
 
@@ -65,7 +66,7 @@ GPlatesGui::Globe::UpdateHandlePos(
 
 const GPlatesMaths::PointOnSphere
 GPlatesGui::Globe::Orient(
-		const GPlatesMaths::PointOnSphere &pos)
+		const GPlatesMaths::PointOnSphere &pos) const
 {
 	return d_globe_orientation.reverse_orient_point(pos);
 }

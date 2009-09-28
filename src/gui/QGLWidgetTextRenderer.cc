@@ -27,7 +27,6 @@
 
 #include "QGLWidgetTextRenderer.h"
 #include "OpenGL.h"
-#include "maths/Real.h"
 
 GPlatesGui::QGLWidgetTextRenderer::QGLWidgetTextRenderer(
 		QGLWidget *gl_widget_ptr) :
@@ -72,17 +71,8 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 	GLdouble winX, winY, winZ;
 	gluProject(x, y, z, model, proj, view, &winX, &winY, &winZ);
 
-	// read depth buffer
-	GLfloat depth;
-	glReadPixels(static_cast<int>(winX), static_cast<int>(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-
-	// don't render if point is occluded
-	typedef GPlatesMaths::Real real_t;
-	if (real_t(depth) > real_t(winZ))
-	{
-		// render with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other)
-		int height = view[3];
-		render_text(static_cast<int>(winX) + x_offset, height - (static_cast<int>(winY) + y_offset), string, colour, font);
-	}
+	// render, with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other)
+	int height = view[3];
+	render_text(static_cast<int>(winX) + x_offset, height - (static_cast<int>(winY) + y_offset), string, colour, font);
 }
 

@@ -106,7 +106,7 @@ namespace GPlatesQtWidgets
 
 		void
 		set_text_renderer(
-				const boost::shared_ptr<GPlatesGui::TextRenderer> &text_renderer_ptr)
+				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr)
 		{
 			d_text_renderer_ptr = text_renderer_ptr;
 		}
@@ -176,7 +176,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Used for rendering text
 		 */
-		boost::shared_ptr<GPlatesGui::TextRenderer> d_text_renderer_ptr;
+		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer_ptr;
 	};
 
 }

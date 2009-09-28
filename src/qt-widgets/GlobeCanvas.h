@@ -152,9 +152,14 @@ namespace GPlatesQtWidgets
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point) const;
 
-
 		GPlatesGui::Globe &
 		globe()
+		{
+			return d_globe;
+		}
+
+		const GPlatesGui::Globe &
+		globe() const
 		{
 			return d_globe;
 		}
@@ -258,7 +263,7 @@ namespace GPlatesQtWidgets
 
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
-		camera_llp();
+		camera_llp() const;
 
 
 		virtual

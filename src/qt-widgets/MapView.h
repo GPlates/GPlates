@@ -130,7 +130,7 @@ namespace GPlatesQtWidgets
 		 */
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
-		camera_llp();
+		camera_llp() const;
 				
 		virtual
 		void

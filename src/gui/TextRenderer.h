@@ -32,6 +32,8 @@
 
 #include <QString>
 #include <QFont>
+#include <boost/shared_ptr.hpp>
+
 #include "gui/Colour.h"
 
 namespace GPlatesGui
@@ -40,6 +42,8 @@ namespace GPlatesGui
 	{
 
 	public:
+
+		typedef boost::shared_ptr<const TextRenderer> ptr_to_const_type;
 
 		virtual
 		~TextRenderer()
@@ -61,6 +65,7 @@ namespace GPlatesGui
 		/**
 		 * Renders @a string at position (@a x , @a y , @a z ) in scene coordinates
 		 * using a particular @a colour and @a font.
+		 * No occlusion testing is performed.
 		 */
 		virtual
 		void
@@ -73,6 +78,7 @@ namespace GPlatesGui
 				int x_offset,
 				int y_offset,
 				const QFont &font) const = 0;
+
 	};
 }
 

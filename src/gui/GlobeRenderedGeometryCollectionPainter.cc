@@ -40,12 +40,14 @@
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollectionPainter(
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const RenderSettings &render_settings,
-		boost::shared_ptr<TextRenderer> text_renderer_ptr) :
+		TextRenderer::ptr_to_const_type text_renderer_ptr,
+		const GlobeVisibilityTester &visibility_tester) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_current_layer_far_depth(0),
 	d_depth_range_per_layer(0),
 	d_render_settings(render_settings),
-	d_text_renderer_ptr(text_renderer_ptr)
+	d_text_renderer_ptr(text_renderer_ptr),
+	d_visibility_tester(visibility_tester)
 {
 }
 
@@ -103,7 +105,8 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			d_paint_params->d_inverse_viewport_zoom_factor,
 			*d_paint_params->d_nurbs_renderer,
 			d_render_settings,
-			d_text_renderer_ptr);
+			d_text_renderer_ptr,
+			d_visibility_tester);
 	rendered_geom_layer_painter.paint();
 
 	// We've already visited the rendered geometry layer so don't visit its rendered geometries.

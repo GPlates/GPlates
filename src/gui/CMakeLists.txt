@@ -65,6 +65,8 @@ set(srcs
     GlobeRenderedGeometryCollectionPainter.h
     GlobeRenderedGeometryLayerPainter.cc
     GlobeRenderedGeometryLayerPainter.h
+    GlobeVisibilityTester.cc
+    GlobeVisibilityTester.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc
