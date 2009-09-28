@@ -2107,11 +2107,11 @@ GPlatesQtWidgets::ViewportWindow::enable_raster_display()
 {
 	if (action_Show_Raster->isChecked())
 	{
-		d_globe_canvas_ptr->enable_raster_display();
+		d_reconstruction_view_widget.enable_raster_display();
 	}
 	else
 	{
-		d_globe_canvas_ptr->disable_raster_display();
+		d_reconstruction_view_widget.disable_raster_display();
 	}
 }
 

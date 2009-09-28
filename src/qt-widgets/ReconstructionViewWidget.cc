@@ -613,6 +613,22 @@ GPlatesQtWidgets::ReconstructionViewWidget::map_is_active()
 }
 
 void
+GPlatesQtWidgets::ReconstructionViewWidget::enable_raster_display()
+{
+	d_globe_canvas_ptr->enable_raster_display();
+	// map doesn't show rasters
+	d_active_view_ptr->update_canvas();
+}
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::disable_raster_display()
+{
+	d_globe_canvas_ptr->disable_raster_display();
+	// map doesn't show rasters
+	d_active_view_ptr->update_canvas();
+}
+
+void
 GPlatesQtWidgets::ReconstructionViewWidget::enable_point_display()
 {
 	d_globe_canvas_ptr->enable_point_display();

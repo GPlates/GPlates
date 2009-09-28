@@ -148,6 +148,12 @@ namespace GPlatesQtWidgets
 #endif
 
 		void
+		enable_raster_display();
+
+		void
+		disable_raster_display();
+
+		void
 		enable_point_display();
 		
 		void
