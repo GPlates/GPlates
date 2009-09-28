@@ -48,6 +48,8 @@ set(srcs
     FeatureTableModel.cc
     FeatureTableModel.h
     FeatureWeakRefSequence.h
+    FullScreenMode.cc
+    FullScreenMode.h
     GeometricPropertyValueConstructor.cc
     GeometricPropertyValueConstructor.h
     GeometryFocusHighlight.cc

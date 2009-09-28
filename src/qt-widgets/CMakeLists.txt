@@ -108,6 +108,9 @@ set(srcs
     FeatureSummaryWidgetUi.ui
     GlobeCanvas.cc
     GlobeCanvas.h
+    GMenuButton.cc
+    GMenuButton.h
+    GMenuButtonUi.ui
     GMTHeaderFormatDialog.cc
     GMTHeaderFormatDialog.h
     GMTHeaderFormatDialogUi.ui
@@ -119,6 +122,8 @@ set(srcs
     InvalidPropertyValueException.h
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
+    LeaveFullScreenButton.h
+    LeaveFullScreenButtonUi.ui
     LicenseDialog.cc
     LicenseDialog.h
     ManageFeatureCollectionsActionWidget.cc

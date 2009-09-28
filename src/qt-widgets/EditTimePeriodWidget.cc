@@ -137,7 +137,15 @@ void
 GPlatesQtWidgets::EditTimePeriodWidget::reset_widget_to_default_values()
 {
 	d_time_period_ptr = NULL;
-	spinbox_time_of_appearance->setFocus();
+	// NOTE: We do NOT setFocus() on the spinbox here, as reset_widget is (inexplicably)
+	// called several times, such as on feature focus change, despite this widget not
+	// being visible yet. Normally, this isn't a problem; on Linux and win32, the focus
+	// does not move if the widget is invisible. However, it appears that there is some
+	// odd behaviour on OS X, where the spinbox is able to steal keyboard focus even
+	// while completely invisible. This caused issues that were most noticable while F11
+	// was being developed, where clicking a (F)eature and then toggling to (P)ole
+	// manipulation was failing, since the spinbox was grabbing the keyboard.
+	// This widget is due for a redesign anyway.
 	spinbox_time_of_appearance->selectAll();
 	spinbox_time_of_appearance->setValue(0);
 	spinbox_time_of_disappearance->setValue(0);

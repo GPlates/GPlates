@@ -139,6 +139,7 @@
      <addaction name="action_Reset_Camera_Orientation" />
     </widget>
     <addaction name="action_Set_Projection" />
+    <addaction name="action_Full_Screen" />
     <addaction name="separator" />
     <addaction name="menu_Move_Camera" />
     <addaction name="menu_Rotate_Camera" />
@@ -146,15 +147,21 @@
     <addaction name="separator" />
     <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
+   <widget class="QMenu" name="menu_Tools" >
+    <property name="title" >
+     <string>&amp;Tools</string>
+    </property>
+   </widget>
    <addaction name="menu_File" />
    <addaction name="menu_Edit" />
    <addaction name="menu_View" />
    <addaction name="menu_Reconstruction" />
    <addaction name="menu_Layers" />
+   <addaction name="menu_Tools" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
-  <widget class="QToolBar" name="toolbar_main_tools" >
+  <widget class="QToolBar" name="toolbar_canvas_tools" >
    <property name="contextMenuPolicy" >
     <enum>Qt::PreventContextMenu</enum>
    </property>
@@ -493,7 +500,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/drag_globe_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Drag Globe</string>
+    <string>&amp;Drag Globe</string>
    </property>
    <property name="toolTip" >
     <string>Drag Globe  D</string>
@@ -587,7 +594,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/zoom_globe_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Zoom Globe</string>
+    <string>&amp;Zoom In</string>
    </property>
    <property name="toolTip" >
     <string>Zoom In  Z</string>
@@ -879,10 +886,10 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_polyline_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Digitise New Poly&amp;line</string>
+    <string>Digitise New Poly&amp;line Geometry</string>
    </property>
    <property name="iconText" >
-    <string>Digitise New Poly&amp;line</string>
+    <string>Digitise New Poly&amp;line Geometry</string>
    </property>
    <property name="toolTip" >
     <string>Digitise New Polyline Geometry  L</string>
@@ -902,10 +909,10 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/focus_feature_35.png</iconset>
    </property>
    <property name="text" >
-    <string>&amp;Click Geometry</string>
+    <string>Choose &amp;Feature</string>
    </property>
    <property name="iconText" >
-    <string>&amp;Click Geometry</string>
+    <string>Choose &amp;Feature</string>
    </property>
    <property name="toolTip" >
     <string>Choose Feature  F</string>
@@ -995,10 +1002,10 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_polygon_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Digitise New P&amp;olygon</string>
+    <string>Digitise New Polygon &amp;Geometry</string>
    </property>
    <property name="iconText" >
-    <string>Digitise New P&amp;olygon</string>
+    <string>Digitise New Polygon &amp;Geometry</string>
    </property>
    <property name="toolTip" >
     <string>Digitise New Polygon Geometry  G</string>
@@ -1018,10 +1025,10 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_multipoint_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Digitise New &amp;Points</string>
+    <string>Digitise New &amp;Multi-point Geometry</string>
    </property>
    <property name="iconText" >
-    <string>Digitise New &amp;Points</string>
+    <string>Digitise New &amp;Multi-point Geometry</string>
    </property>
    <property name="toolTip" >
     <string>Digitise New Multi-point Geometry  M</string>
@@ -1057,10 +1064,10 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/move_geometry_35.png</iconset>
    </property>
    <property name="text" >
-    <string>&amp;Move Geometry</string>
+    <string>Move Geometr&amp;y</string>
    </property>
    <property name="iconText" >
-    <string>&amp;Move Geometry</string>
+    <string>Move Geometr&amp;y</string>
    </property>
    <property name="toolTip" >
     <string>Move Geometry  Y</string>
@@ -1149,10 +1156,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/plate_pole_modification_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Manipulate Po&amp;le</string>
-   </property>
-   <property name="iconText" >
-    <string>Manipulate Po&amp;le</string>
+    <string>Modify Reconstruction &amp;Pole</string>
    </property>
    <property name="toolTip" >
     <string>Modify Reconstruction Pole  P</string>
@@ -1172,13 +1176,13 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/topology_build_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Build New Topology</string>
+    <string>&amp;Build New Topology</string>
    </property>
    <property name="iconText" >
     <string>Build New Topology</string>
    </property>
    <property name="toolTip" >
-    <string>Build New Topology</string>
+    <string>Build New Topology  B</string>
    </property>
    <property name="shortcut" >
     <string>B</string>
@@ -1195,13 +1199,13 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/topology_edit_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Edit Topology</string>
+    <string>&amp;Edit Topology</string>
    </property>
    <property name="iconText" >
     <string>Edit Topology</string>
    </property>
    <property name="toolTip" >
-    <string>Edit Topology</string>
+    <string>Edit Topology  E</string>
    </property>
    <property name="shortcut" >
     <string>E</string>
@@ -1291,16 +1295,53 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/measure_distance_35.png</iconset>
    </property>
    <property name="text" >
-    <string>Query Di&amp;stance</string>
+    <string>Measure Di&amp;stance</string>
    </property>
    <property name="iconText" >
-    <string>Query Di&amp;stance</string>
+    <string>Measure Di&amp;stance</string>
    </property>
    <property name="toolTip" >
     <string>Measure Distance  S</string>
    </property>
    <property name="shortcut" >
     <string>S</string>
+   </property>
+  </action>
+  <action name="action_Full_Screen" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Full Screen</string>
+   </property>
+   <property name="shortcut" >
+    <string>F11</string>
+   </property>
+   <property name="shortcutContext" >
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_Gui_Debug_Action" >
+   <property name="enabled" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/info_sign_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>GUI Debug Action</string>
+   </property>
+   <property name="shortcut" >
+    <string>Ctrl+Alt+/</string>
+   </property>
+   <property name="shortcutContext" >
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+   <property name="visible" >
+    <bool>true</bool>
    </property>
   </action>
  </widget>

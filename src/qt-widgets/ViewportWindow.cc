@@ -29,6 +29,7 @@
 #include <boost/format.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include <QtGlobal>
 #include <QFileDialog>
 #include <QLocale>
 #include <QString>
@@ -40,6 +41,7 @@
 #include <QInputDialog>
 #include <QProgressBar>
 #include <QDockWidget>
+#include <QActionGroup>
 #include <QDebug>
 
 #include "ViewportWindow.h"
@@ -545,7 +547,6 @@ namespace
 					d_colour_table);
 		}
 	};
-
 } // namespace
 
 
@@ -610,6 +611,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_recon_time(0.0),
 	d_recon_root(0),
 	d_animation_controller(*this),
+	d_full_screen_mode(*this),
 	d_reconstruction_view_widget(d_rendered_geom_collection, d_animation_controller, *this, d_view_state, this),
 	d_about_dialog(*this, this),
 	d_animate_dialog(d_animation_controller, this),
@@ -666,6 +668,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Connect all the Signal/Slot relationships of ViewportWindow's
 	// toolbar buttons and menu items.
 	connect_menu_actions();
+	
+	// Duplicate the menu structure for the full-screen-mode GMenu.
+	populate_gmenu_from_menubar();
+	// Initialise various elements for full-screen-mode that must wait until after setupUi().
+	d_full_screen_mode.init();
 	
 	// Set up an emergency context menu to control QDockWidgets even if
 	// they're no longer behaving properly.
@@ -815,7 +822,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	connect_canvas_tools();
 
 
-
 	// If the user creates a new feature with the DigitisationWidget, we need to reconstruct to
 	// make sure everything is displayed properly.
 	QObject::connect(&(d_task_panel_ptr->digitisation_widget().get_create_feature_dialog()),
@@ -828,8 +834,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	progress_bar->setMaximumWidth(100);
 	progress_bar->hide();
 	statusBar()->addPermanentWidget(progress_bar.release());
-
-
 
 }
 
@@ -847,11 +851,27 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// 0. Open ViewportWindowUi.ui in the Designer.
 	// 1. Create a QAction in the Designer's Action Editor, called action_Something.
 	// 2. Assign icons, tooltips, and shortcuts as necessary.
+	//    2a. Canvas Tools must have the 'checkable' property set.
 	// 3. Drag this action to a menu.
+	//    3a. If it's a canvas tool, drag it to the toolbar instead. It will appear on the
+	//        Tools menu automatically.
 	// 4. Add code for the triggered() signal your action generates here.
 	//    Please keep this function sorted in the same order as menu items appear.
 
-	// Main Tools:
+	// Canvas Tools:
+	// The canvas tools are special; we only want one of them to be checked at any time.
+	// We can do this quite easily by adding all the actions on the toolbar to a QActionGroup.
+	QList<QAction *> canvas_tools_actions_list = toolbar_canvas_tools->actions();
+	QActionGroup* canvas_tools_group = new QActionGroup(this);	// parented to ViewportWindow.
+	Q_FOREACH(QAction *tool_action, canvas_tools_actions_list) {
+		canvas_tools_group->addAction(tool_action);
+	}
+	// We also want to populate the Tools menu based on the actions added to the toolbar.
+	Q_FOREACH(QAction *tool_action, canvas_tools_actions_list) {
+		menu_Tools->addAction(tool_action);
+	}
+
+	// Canvas Tool connections:
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
 			&d_choose_canvas_tool, SLOT(choose_drag_globe_tool()));
 	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
@@ -883,6 +903,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			&d_choose_canvas_tool, SLOT(choose_edit_topology_tool()));
 	QObject::connect(action_Measure_Distance, SIGNAL(triggered()),
 			&d_choose_canvas_tool, SLOT(choose_measure_distance_tool()));
+
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
@@ -990,6 +1011,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// ----
 	QObject::connect(action_Set_Projection, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_projection_dialog()));
+	QObject::connect(action_Full_Screen, SIGNAL(triggered(bool)),
+			&d_full_screen_mode, SLOT(toggle_full_screen(bool)));
 	// ----
 	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
@@ -1026,6 +1049,35 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// Help Menu:
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
+
+	// This action is for GUI debugging purposes, to help developers trigger
+	// some arbitrary code while debugging GUI problems:
+#ifndef GPLATES_PUBLIC_RELEASE
+	menu_View->addAction(action_Gui_Debug_Action);
+#endif
+	QObject::connect(action_Gui_Debug_Action, SIGNAL(triggered()),
+			this, SLOT(handle_gui_debug_action()));
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::populate_gmenu_from_menubar()
+{
+	// Populate the GMenu with the menubar's menu actions.
+	// For now, this has to be done here in ViewportWindow so we can get at 'menubar'.
+	// It is also difficult to do this in GMenu's constructor, where I'd prefer to put
+	// it, because at that time @a ViewportWindow::setupUi() hasn't been called yet,
+	// so the menu structure does not exist.
+	
+	// Find the GMenu by Qt object name. This is a lot more convenient for this kind
+	// of one-off setup than going through ReconstructionViewWidget, etc.
+	QMenu *gmenu = findChild<QMenu *>("GMenu");
+	if (gmenu) {
+		// Add each of the top-level menu items from the main menu bar.
+		QList<QAction *> main_menubar_actions = menubar->actions();
+		Q_FOREACH(QAction *action, main_menubar_actions) {
+			gmenu->addAction(action);
+		}
+	}
 }
 
 void
@@ -1494,8 +1546,6 @@ GPlatesQtWidgets::ViewportWindow::enable_measure_distance_tool(
 void
 GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 {
-	uncheck_all_tools();
-	action_Drag_Globe->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_reorient_globe_tool();
 	d_map_canvas_tool_choice_ptr->choose_pan_map_tool();
 }
@@ -1504,8 +1554,6 @@ GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
 {
-	uncheck_all_tools();
-	action_Zoom_Globe->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_zoom_globe_tool();
 
 	d_map_canvas_tool_choice_ptr->choose_zoom_map_tool();
@@ -1515,10 +1563,6 @@ GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
 {
-	uncheck_all_tools();
-	action_Click_Geometry->setChecked(true);
-
-
 	d_globe_canvas_tool_choice_ptr->choose_click_geometry_tool();
 	d_map_canvas_tool_choice_ptr->choose_click_geometry_tool();
 
@@ -1529,8 +1573,6 @@ GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 {
-	uncheck_all_tools();
-	action_Digitise_New_Polyline->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1540,8 +1582,6 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
 {
-	uncheck_all_tools();
-	action_Digitise_New_MultiPoint->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1551,8 +1591,6 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_polygon_tool()
 {
-	uncheck_all_tools();
-	action_Digitise_New_Polygon->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1564,8 +1602,6 @@ GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 {
 	// The MoveGeometry tool is not yet implemented.
 #if 0
-	uncheck_all_tools();
-	action_Move_Geometry->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_move_geometry_tool();
 	d_task_panel_ptr->choose_feature_tab();
 #endif
@@ -1575,8 +1611,6 @@ GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 {
-	uncheck_all_tools();
-	action_Move_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_task_panel_ptr->choose_modify_geometry_tab();
@@ -1586,8 +1620,6 @@ GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
 {
-	uncheck_all_tools();
-	action_Delete_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_delete_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_delete_vertex_tool();
 
@@ -1598,8 +1630,6 @@ GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 {
-	uncheck_all_tools();
-	action_Insert_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_insert_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_insert_vertex_tool();
 
@@ -1609,7 +1639,6 @@ GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
 {
-	uncheck_all_tools();
 	action_Measure_Distance->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_measure_distance_tool();
 	d_map_canvas_tool_choice_ptr->choose_measure_distance_tool();
@@ -1620,8 +1649,6 @@ GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 {
-	uncheck_all_tools();
-	action_Manipulate_Pole->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
 
 // The map's manipulate pole tool doesn't yet do anything. 
@@ -1632,8 +1659,6 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 {
-	uncheck_all_tools();
-	action_Build_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_build_topology_tool();
 	// FIXME: There is no MapCanvasToolChoice equivalent yet.
 	
@@ -1650,8 +1675,6 @@ GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 {
-	uncheck_all_tools();
-	action_Edit_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_edit_topology_tool();
 	// FIXME: There is no MapCanvasToolChoice equivalent yet.
 	if(d_reconstruction_view_widget.map_is_active())
@@ -1663,26 +1686,6 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
-
-
-void
-GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
-{
-	action_Drag_Globe->setChecked(false);
-	action_Zoom_Globe->setChecked(false);
-	action_Click_Geometry->setChecked(false);
-	action_Digitise_New_Polyline->setChecked(false);
-	action_Digitise_New_MultiPoint->setChecked(false);
-	action_Digitise_New_Polygon->setChecked(false);
-	action_Move_Geometry->setChecked(false);
-	action_Move_Vertex->setChecked(false);
-	action_Delete_Vertex->setChecked(false);
-	action_Insert_Vertex->setChecked(false);
-	action_Manipulate_Pole->setChecked(false);
-	action_Build_Topology->setChecked(false);
-	action_Edit_Topology->setChecked(false);
-	action_Measure_Distance->setChecked(false);
-}
 
 
 void
@@ -1730,11 +1733,25 @@ GPlatesQtWidgets::ViewportWindow::choose_colour_by_plate_id() {
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour() {	
-	QColor qcolor = QColorDialog::getColor();
+	// Pop up Qt's colour-choosing dialog.
+	// Specifying the default isn't absolutely necessary, but does allow us to pass 'this'
+	// as the parent, solving some dialog placement problems.
+	static QColor default_qcolor = Qt::white;
+	QColor qcolor = QColorDialog::getColor(default_qcolor, this);
+	
+	// Cancelling the dialog returns an invalid colour.
+	if (qcolor.isValid()) {
+		// To be nice, present the user with the colour they chose last time.
+		default_qcolor = qcolor;
 
-	GPlatesGui::Colour colour(qcolor.redF(), qcolor.greenF(), qcolor.blueF(), qcolor.alphaF());
-
-	GPlatesGui::SingleColourTable::Instance()->set_colour(colour);
+		// Assign this new colour to our SingleColourTable.
+		GPlatesGui::Colour colour(qcolor.redF(), qcolor.greenF(), qcolor.blueF(), qcolor.alphaF());
+		GPlatesGui::SingleColourTable::Instance()->set_colour(colour);
+	}
+	
+	// Regardless of whether the user cancels the colour selection dialog, the
+	// colouring mode will change to 'single colour', as it is nontrivial to revert
+	// the selection back to whatever prior colouring method may have been selected.
 	d_colour_table_ptr = GPlatesGui::SingleColourTable::Instance();
 
 	uncheck_all_colouring_tools();
@@ -2119,7 +2136,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_raster()
 {
 
-	QString filename = QFileDialog::getOpenFileName(0,
+	QString filename = QFileDialog::getOpenFileName(this,
 		QObject::tr("Open File"), d_open_file_path, QObject::tr("Raster files (*.jpg *.jpeg)") );
 
 	if ( filename.isEmpty()){
@@ -2290,6 +2307,7 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	}
 }
 
+
 void
 GPlatesQtWidgets::ViewportWindow::handle_move_camera_up()
 {
@@ -2354,6 +2372,27 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_projection_dialog()
 		{
 			std::cerr << e << std::endl;
 		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_gui_debug_action()
+{
+	// Some handy information that may aid debugging:
+#if 0
+	// "Where the hell did my keyboard focus go?"
+	qDebug() << "Current focus:" << QApplication::focusWidget();
+#endif
+	// "What's the name of the current style so I can test against it?"
+	qDebug() << "Current style:" << style()->objectName();
+
+	// "What's this thing doing there?"
+	QWidget *cursor_widget = QApplication::widgetAt(QCursor::pos());
+	qDebug() << "Current widget under cursor:" << cursor_widget;
+	while (cursor_widget && cursor_widget->parentWidget()) {
+		cursor_widget = cursor_widget->parentWidget();
+		qDebug() << "\twhich is inside:" << cursor_widget;
 	}
 }
 

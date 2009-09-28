@@ -29,6 +29,8 @@
 #include <QFrame>
 #include <QLabel>
 #include <QSizePolicy>
+#include <QToolButton>
+#include <QMenu>
 
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
@@ -39,6 +41,7 @@
 #include "ProjectionControlWidget.h"
 #include "MapCanvas.h"
 #include "MapView.h"
+#include "LeaveFullScreenButton.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
@@ -167,14 +170,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 {
 	setupUi(this);
 
-#if 0
-	// Create the GlobeCanvas,
-	d_canvas_ptr = new GlobeCanvas(view_state, this);
-	// and add it to the grid layout in the ReconstructionViewWidget.
-	// Note this is a bit of a hack, relying on the QGridLayout set up in the Designer.
-
-	gridLayout->addWidget(d_canvas_ptr, 0, 0);
-#endif
 	// Create the GlobeCanvas.
 	d_globe_canvas_ptr = new GlobeCanvas(rendered_geom_collection, view_state, this);
 	// Create the MapCanvas.
@@ -192,11 +187,9 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Construct the Awesome Bar. This used to go on top, but we want to push this
 	// down so it goes to the left of the splitter, giving the TaskPanel some more
 	// room.
-	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(animation_controller);
-#if 0
-	// Construct the "View Bar" for the bottom.
-	std::auto_ptr<QWidget> viewbar = construct_viewbar(d_globe_canvas_ptr->viewport_zoom());
-#endif
+	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(
+			animation_controller, viewport_window);
+
 	// Construct the "View Bar" for the bottom.
 	std::auto_ptr<QWidget> viewbar = 
 		construct_viewbar_with_projections(view_state.get_viewport_zoom(),
@@ -221,15 +214,16 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	bars_plus_canvas_layout->setSpacing(2);
 	bars_plus_canvas_layout->setContentsMargins(0, 0, 0, 0);
 	bars_plus_canvas_layout->addWidget(awesomebar_one.release());
+
 	// Globe and slider:
+	
 	QHBoxLayout *canvas_widget_layout = new QHBoxLayout();
 	bars_plus_canvas_layout->addItem(canvas_widget_layout);
 	canvas_widget_layout->setSpacing(2);
-	canvas_widget_layout->setContentsMargins(2, 4, 0, 0);
+	canvas_widget_layout->setContentsMargins(0, 0, 0, 0);
 
 	// Add GlobeCanvas, MapView, and ZoomSliderWidget to this hand-made widget.
 
-	// Try adding yet another level of widget-in-a-widget-ness.
 	QWidget *globe_and_map_widget = new QWidget(canvas_widget);
 	QHBoxLayout *globe_and_map_layout = new QHBoxLayout(globe_and_map_widget);
 	globe_and_map_layout->setSpacing(0);
@@ -292,16 +286,24 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
-		GPlatesGui::AnimationController &animation_controller)
+		GPlatesGui::AnimationController &animation_controller,
+		GPlatesQtWidgets::ViewportWindow &main_window)
 {
 	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
 	// auto_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
 	std::auto_ptr<QWidget> awesomebar_widget(new QWidget);
+	awesomebar_widget->setObjectName("AwesomeBar_1");
 	QHBoxLayout *awesomebar_layout = new QHBoxLayout(awesomebar_widget.get());
 	awesomebar_layout->setSpacing(2);
 	awesomebar_layout->setContentsMargins(0, 0, 0, 0);
 	
+	// Create the GMenu Button (which is hidden until full-screen mode activates).
+	d_gmenu_button_ptr = new GMenuButton(main_window, awesomebar_widget.get());
+	
+	// Create the Leave Full Screen Mode Button (which is hidden until full-screen mode activates).
+	LeaveFullScreenButton *leave_full_screen_button_ptr = new LeaveFullScreenButton(awesomebar_widget.get());
+
 	// Create the AnimateControlWidget.
 	d_animate_control_widget_ptr = new AnimateControlWidget(animation_controller, awesomebar_widget.get());
 
@@ -311,13 +313,19 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 			d_globe_canvas_ptr, SLOT(setFocus()));
 	
 	// Insert Time and Animate controls.
+	awesomebar_layout->addWidget(d_gmenu_button_ptr);
 	awesomebar_layout->addWidget(wrap_with_frame(d_time_control_widget_ptr));
 	awesomebar_layout->addWidget(wrap_with_frame(d_animate_control_widget_ptr));
+	awesomebar_layout->addWidget(leave_full_screen_button_ptr);
 
 	return awesomebar_widget;
 }
 
 
+/**
+ * NOTE! Awesomebar two is not currently used. We played with the idea of a double-bar
+ * at the top for a while, but in the end found other ways to save space.
+ */
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 		GPlatesGui::ViewportZoom &vzoom,
@@ -327,6 +335,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 	// auto_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
 	std::auto_ptr<QWidget> awesomebar_widget(new QWidget);
+	awesomebar_widget->setObjectName("AwesomeBar_2");
 	QHBoxLayout *awesomebar_layout = new QHBoxLayout(awesomebar_widget.get());
 	awesomebar_layout->setSpacing(2);
 	awesomebar_layout->setContentsMargins(0, 0, 0, 0);
@@ -348,6 +357,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 	// auto_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
 	std::auto_ptr<QWidget> viewbar_widget(new QWidget);
+	viewbar_widget->setObjectName("ViewBar");
 	QHBoxLayout *viewbar_layout = new QHBoxLayout(viewbar_widget.get());
 	viewbar_layout->setSpacing(2);
 	viewbar_layout->setContentsMargins(0, 0, 0, 0);
@@ -393,6 +403,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 	// auto_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
 	std::auto_ptr<QWidget> viewbar_widget(new QWidget);
+	viewbar_widget->setObjectName("ViewBar");
 	QHBoxLayout *viewbar_layout = new QHBoxLayout(viewbar_widget.get());
 	viewbar_layout->setSpacing(2);
 	viewbar_layout->setContentsMargins(0, 0, 0, 0);
@@ -707,4 +718,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_arrows_display()
 	d_map_canvas_ptr->disable_arrows_display();
 	d_active_view_ptr->update_canvas();	
 }
+
+
+
 

@@ -74,6 +74,7 @@
 #include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/FullScreenMode.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -397,9 +398,7 @@ namespace GPlatesQtWidgets
 
 		void
 		update_tools_and_status_message();
-
-
-
+		
 	signals:
 		
 		/**
@@ -562,6 +561,7 @@ namespace GPlatesQtWidgets
 		remap_shapefile_attributes(
 			GPlatesFileIO::FileInfo &file_info);
 
+
 		/**
 		 * ViewState accessor for getting at the active reconstructable files list.
 		 * Used by the ExportReconstructionDialog and
@@ -636,6 +636,7 @@ namespace GPlatesQtWidgets
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
 		GPlatesGui::AnimationController d_animation_controller;
+		GPlatesGui::FullScreenMode d_full_screen_mode;
 
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		AboutDialog d_about_dialog;
@@ -690,13 +691,20 @@ namespace GPlatesQtWidgets
 		// The current colour table in use. Do not access this directly, use
 		// get_colour_table() instead.
 		GPlatesGui::ColourTable *d_colour_table_ptr;
-	
+
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
 		 * buttons and menu items.
 		 */
 		void
 		connect_menu_actions();
+
+		/**
+		 * Copies the menu structure found in ViewportWindow's menu bar into the
+		 * special full-screen-mode 'GMenu' button.
+		 */
+		void
+		populate_gmenu_from_menubar();
 
 		/**
 		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
@@ -711,9 +719,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_dock_context_menus();
-
-		void
-		uncheck_all_tools();
 
 		void 
 		uncheck_all_colouring_tools();
@@ -799,6 +804,12 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_set_projection_dialog();
+		
+		/**
+		 * A secret action triggerable with Ctrl+Shift+? to aid GUI-related debugging.
+		 */
+		void
+		handle_gui_debug_action();
 
 	protected:
 	

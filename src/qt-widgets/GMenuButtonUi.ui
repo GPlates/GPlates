@@ -1,0 +1,68 @@
+<ui version="4.0" >
+ <class>GMenuButton</class>
+ <widget class="QWidget" name="GMenuButton" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>154</width>
+    <height>152</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>GMenu</string>
+  </property>
+  <layout class="QHBoxLayout" >
+   <property name="spacing" >
+    <number>2</number>
+   </property>
+   <property name="leftMargin" >
+    <number>0</number>
+   </property>
+   <property name="topMargin" >
+    <number>0</number>
+   </property>
+   <property name="rightMargin" >
+    <number>0</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QToolButton" name="button_gmenu" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip" >
+      <string>Click here to access the main menu</string>
+     </property>
+     <property name="text" >
+      <string>GMenu</string>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/GPlates-icon-160x160-opaque.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>28</width>
+       <height>28</height>
+      </size>
+     </property>
+     <property name="popupMode" >
+      <enum>QToolButton::InstantPopup</enum>
+     </property>
+     <property name="autoRaise" >
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections/>
+</ui>
