@@ -2210,22 +2210,14 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
 
-	QFileDialog file_dialog(this,QObject::tr("Choose Folder Containing Time-dependent Rasters"),d_open_file_path,NULL);
-	file_dialog.setFileMode(QFileDialog::DirectoryOnly);
+	QString directory = QFileDialog::getExistingDirectory(this, "Choose Folder Containing Time-dependent Rasters", d_open_file_path);
 
-	if (file_dialog.exec())
+	if (directory.length() > 0) // i.e. the user did not click cancel
 	{
-		
-		QStringList directory_list = file_dialog.selectedFiles();
-		QString directory = directory_list.at(0);
-
 		GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(d_time_dependent_raster_map,directory,read_errors);
-		
-		QFileInfo last_opened_file(file_dialog.directory().absoluteFilePath(directory_list.last()));
-		d_open_file_path = last_opened_file.path();
-
+		d_open_file_path = directory;
 		d_read_errors_dialog.update();
-	
+
 		// Pop up errors only if appropriate.
 		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
 		if (num_initial_errors != num_final_errors) {
@@ -2238,9 +2230,6 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 		action_Show_Raster->setChecked(true);
 		update_time_dependent_raster();
 	}
-
-
-
 }
 
 void
