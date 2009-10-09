@@ -124,9 +124,9 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::deactivate()
 
 	disconnect_from_geometry_builder_signals();
 
-	// NOTE: we don't deactivate our rendered layers because they still need
-	// to be visible even after we've deactivated.  They will remain in existance
-	// until activate() is called again on this object.
+	// We only deactivate the highlight point layer (e.g. if the user switches
+	// to the rotate globe tool, we don't want the point to still be highlighted)
+	d_highlight_point_layer_ptr->set_active(false);
 
 	// Not using this GeometryBuilder anymore.
 	d_geometry_builder = NULL;

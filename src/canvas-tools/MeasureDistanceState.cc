@@ -221,6 +221,10 @@ GPlatesCanvasTools::MeasureDistanceState::handle_activation()
 	// update all our listeners
 	emit_quick_measure_updated();
 	emit_feature_measure_updated();
+
+	// show the highlight and text layers
+	d_highlight_layer_ptr->set_active(true);
+	d_label_layer_ptr->set_active(true);
 }
 
 void
@@ -244,6 +248,12 @@ void
 GPlatesCanvasTools::MeasureDistanceState::handle_deactivation()
 {
 	d_is_active = false;
+
+	// hide the highlighting (e.g. if switching to rotate globe tool)
+	d_highlight_layer_ptr->set_active(false);
+	d_label_layer_ptr->set_active(false);
+	set_quick_measure_highlight(false);
+	set_feature_measure_highlight(false);
 }
 
 void
