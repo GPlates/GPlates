@@ -132,7 +132,7 @@ Expat
   1. Get and install Expat 2.0.1 from http://sourceforge.net/projects/expat/files/expat_win32/
   2. Add the Expat \Bin directory to the PATH environment variable (see above).
 
-GDAL
+FWTools (for GDAL and Proj4)
 
   1. Get and install FWTools210.exe from http://home.gdal.org/fwtools/ 
   2. Add the FWTools \bin folder to the PATH environment variable (see above).
