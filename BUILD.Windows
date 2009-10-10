@@ -134,9 +134,10 @@ Expat
 
 FWTools (for GDAL and Proj4)
 
-  1. Get and install FWTools210.exe from http://home.gdal.org/fwtools/ 
+  1. Get and install FWTools 2.4.5 from http://home.gdal.org/fwtools/ 
   2. Add the FWTools \bin folder to the PATH environment variable (see above).
-  3. In the FWTools \bin folder, make a copy of proj.dll and call it proj_fw.dll
+  3. If you downloaded a version of FWTools prior to 2.4.5, make a copy of
+     proj.dll in the \bin folder and call it proj_fw.dll.
 
 gzip
 
