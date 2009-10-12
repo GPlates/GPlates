@@ -410,8 +410,8 @@ populate_feature_store(
 
 void
 output_as_gpml(
-		GPlatesModel::FeatureCollectionHandle::features_iterator begin,
-		GPlatesModel::FeatureCollectionHandle::features_iterator end)
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator begin,
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator end)
 {
 	QFile standard_output;
 	standard_output.open(stdout, QIODevice::WriteOnly);
@@ -542,10 +542,12 @@ main(int argc, char *argv[])
 			isochrons_and_total_recon_seqs =
 					::populate_feature_store(model);
 
-	GPlatesModel::FeatureCollectionHandle::weak_ref isochrons =
-			isochrons_and_total_recon_seqs.first;
-	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
-			isochrons_and_total_recon_seqs.second;
+	GPlatesModel::FeatureCollectionHandle::const_weak_ref isochrons =
+			GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
+					isochrons_and_total_recon_seqs.first);
+	GPlatesModel::FeatureCollectionHandle::const_weak_ref total_recon_seqs =
+			GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
+					isochrons_and_total_recon_seqs.second);
 
 	::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
 //	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
@@ -562,14 +564,13 @@ main(int argc, char *argv[])
 		GPlatesFileIO::ReadErrorAccumulation accum;
 
 
-		GPlatesFileIO::GpmlOnePointSixReader::read_file(fileinfo, new_model, accum);
+		const GPlatesFileIO::File::shared_ref file =
+				GPlatesFileIO::GpmlOnePointSixReader::read_file(fileinfo, new_model, accum);
 
-		if (fileinfo.get_feature_collection())
-		{
-			boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> features =
-				fileinfo.get_feature_collection();
-			::output_as_gpml((*features)->features_begin(), (*features)->features_end());
-		}
+		GPlatesModel::FeatureCollectionHandle::const_weak_ref features =
+				file->get_const_feature_collection();
+		::output_as_gpml(features->features_begin(), features->features_end());
+
 #if 0
 		QFile file(filename);
 		file.open(QIODevice::ReadOnly | QIODevice::Text);

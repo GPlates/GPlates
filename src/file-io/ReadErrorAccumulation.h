@@ -27,6 +27,8 @@
 #ifndef GPLATES_FILEIO_READERRORACCUMULATION_H
 #define GPLATES_FILEIO_READERRORACCUMULATION_H
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include "ReadErrorOccurrence.h"
@@ -105,6 +107,23 @@ namespace GPlatesFileIO
 			d_recoverable_errors.clear();
 			d_terminating_errors.clear();
 			d_failures_to_begin.clear();
+		}
+
+		/**
+		 * Appends warnings and errors of @a errors into 'this'.
+		 */
+		void
+		accumulate(
+				const ReadErrorAccumulation &errors)
+		{
+			std::copy(errors.d_warnings.begin(), errors.d_warnings.end(),
+					std::back_inserter(d_warnings));
+			std::copy(errors.d_recoverable_errors.begin(), errors.d_recoverable_errors.end(),
+					std::back_inserter(d_recoverable_errors));
+			std::copy(errors.d_terminating_errors.begin(), errors.d_terminating_errors.end(),
+					std::back_inserter(d_terminating_errors));
+			std::copy(errors.d_failures_to_begin.begin(), errors.d_failures_to_begin.end(),
+					std::back_inserter(d_failures_to_begin));
 		}
 	};
 }

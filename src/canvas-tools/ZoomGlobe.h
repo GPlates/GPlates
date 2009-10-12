@@ -35,7 +35,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
-namespace GPlatesViewOperations
+namespace GPlatesPresentation
 {
 	class ViewState;
 }
@@ -69,7 +69,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesViewOperations::ViewState &view_state_)
+				GPlatesPresentation::ViewState &view_state_)
 		{
 			ZoomGlobe::non_null_ptr_type ptr(
 					new ZoomGlobe(globe_, globe_canvas_, viewport_window_, view_state_),
@@ -103,7 +103,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesViewOperations::ViewState &view_state_):
+				GPlatesPresentation::ViewState &view_state_):
 			GlobeCanvasTool(globe_, globe_canvas_),
 			d_viewport_window(&viewport_window_),
 			d_view_state(view_state_)
@@ -119,7 +119,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is the view state (in the presentation tier).
 		 */
-		GPlatesViewOperations::ViewState &d_view_state;
+		GPlatesPresentation::ViewState &d_view_state;
 
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.

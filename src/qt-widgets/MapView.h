@@ -30,6 +30,7 @@
 
 #include <QGraphicsView>
 #include <QGLWidget>
+#include <QMouseEvent>
 
 #include <boost/optional.hpp>
 
@@ -37,11 +38,15 @@
 #include "maths/LatLonPointConversions.h"
 #include "qt-widgets/SceneView.h"
 #include "view-operations/QueryProximityThreshold.h"
-#include "view-operations/ViewState.h"
+
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesQtWidgets
 {
-
 	class MapCanvas;
 	class ViewportWindow;
 
@@ -84,7 +89,7 @@ namespace GPlatesQtWidgets
 		};
 
 		MapView(
-			GPlatesViewOperations::ViewState &view_state,
+			GPlatesPresentation::ViewState &view_state,
 			QWidget *parent,
 			MapCanvas *map_canvas);
 

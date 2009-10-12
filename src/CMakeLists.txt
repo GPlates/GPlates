@@ -1,8 +1,26 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "ICU" "GDAL" "Boost" "GZIP" "PROJ4")
+set(required_libs "Qt4" "OpenGL" "ICU" "GDAL" "GZIP" "PROJ4")
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
+
+# The Boost package is a special case - it is mostly just headers with some object libraries.
+# We don't specify the REQUIRE option like the above packages because:
+# - it fails if the COMPONENTS libraries are not found (we currently only use program_options), and
+# - we only need the program_options boost library for the command-line version of GPLates (gplates-cli), and
+# - since boost is mostly just headers we can still compile the GUI version of GPlates
+#   (which currently only uses boost headers).
+find_package("Boost" 1.33.1 COMPONENTS program_options)
+# However we do need to find the boost include directory to locate the headers.
+if (NOT Boost_INCLUDE_DIR)
+	message(FATAL_ERROR, "Boost include path not found.")
+endif (NOT Boost_INCLUDE_DIR)
+# If the program_options library is not found then we will only disable the 'gplates-cli' target.
+if (Boost_PROGRAM_OPTIONS_FOUND)
+	set(ADD_GPLATES_CLI_TARGET TRUE)
+else (Boost_PROGRAM_OPTIONS_FOUND)
+	message("Warning: boost program_options library not found so GPlates command-line executable gplates-cli will not be available (the GUI version 'gplates' will be available though).")
+endif (Boost_PROGRAM_OPTIONS_FOUND)
 
 # Tell Qt that we use QtXML.
 # NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
@@ -42,18 +60,56 @@ set(GPlates_SRCS
 set(GPlates_no_gui_SRCS
 	gplates_demo_no_gui_main.cc)
 
+if (ADD_GPLATES_CLI_TARGET)
+	set(GPlates_cli_SRCS
+		gplates_cli_main.cc)
+endif (ADD_GPLATES_CLI_TARGET)
+
 # N.B.  The order in which some of these subdirectories are
 # specified is significant.  For example, model must come before
 # feature-visitors.  (This stops weird "undefined reference to 
 # vtable for blah" error messages occurring.)
 set(gui_LIBS
-	qt-resources qt-widgets gui canvas-tools view-operations)
+	qt-resources qt-widgets)
+set(presentation_LIBS
+	gui canvas-tools view-operations presentation)
 set(app_LIBS
 	model file-io feature-visitors property-values app-logic)
 set(util_LIBS
 	maths utils global)
+if (ADD_GPLATES_CLI_TARGET)
+	set(cli_LIBS
+		cli)
+endif (ADD_GPLATES_CLI_TARGET)
+
+# Libraries used by the GUI version of GPlates.
 set(GPlates_LIBS
-	${gui_LIBS} ${app_LIBS} ${util_LIBS})
+	${gui_LIBS} ${presentation_LIBS} ${app_LIBS} ${util_LIBS})
+
+# Libraries used by the command-line (cli) version of GPlates.
+# Note that the gui and presentation libraries are not present -
+# if you get compile/linker errors then it could be that you are
+# referencing these libraries - if that is the case then either
+# you can question whether you should be referencing them or
+# the code you are referencing needs to be refactored such that
+# the functionality that you need to reference is moved out of
+# those libraries and into the app logic, for example.
+if (ADD_GPLATES_CLI_TARGET)
+	set(GPlates_cli_LIBS
+		${cli_LIBS} ${app_LIBS} ${util_LIBS})
+endif (ADD_GPLATES_CLI_TARGET)
+
+# Visual Studio and Borland compilers use autolinking for the Boost libraries
+# (where pragma in header file brings in the library).
+# So instead of specifying the library in target_link_libraries() we
+# specify the location of library directories.
+if (WIN32)
+	# Specify directories in which the linker will look for libraries.
+	# This command will apply only to targets created after it is called.
+	if (Boost_LIBRARY_DIRS)
+		link_directories(${Boost_LIBRARY_DIRS})
+	endif (Boost_LIBRARY_DIRS)
+endif (WIN32)
 
 # Add any include directories of generated header files here (eg, *Ui.h headers).
 set(generated_headers_INCLUDE_DIRS
@@ -75,10 +131,14 @@ set(internal_INCLUDE_DIRS
     ${generated_headers_INCLUDE_DIRS})
 # NOTE: if you're doing an in-place build then SOURCE and BINARY directories are the same and
 # generated source files will be mixed in with your versioned source code.
+	
+# All the GPlates subdirectories.
+set(ALL_GPlates_src_subdirs
+	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS})
 
 # Recurse into subdirectories - CMake continues processing this file when it returns.
 # NOTE: any variables set after 'add_subdirectory' will not be visible in the subdirectory 'CMakeList.txt' files.
-foreach(dir ${GPlates_LIBS})
+foreach(dir ${ALL_GPlates_src_subdirs})
 	add_subdirectory(${dir})
 endforeach(dir)
 
@@ -93,6 +153,7 @@ endforeach(dir)
 if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
     add_dependencies(canvas-tools qt-widgets)
     add_dependencies(view-operations qt-widgets)
+    add_dependencies(presentation qt-widgets)
     add_dependencies(gui qt-widgets)
     #add_dependencies(qt-widgets qt-resources)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
@@ -106,6 +167,9 @@ endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" ST
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(gplates target_GPlates_SRCS ${GPlates_SRCS})
 GPLATES_GENERATE_TARGET_SOURCES(gplates-no-gui target_GPlates_no_gui_SRCS ${GPlates_no_gui_SRCS})
+if (ADD_GPLATES_CLI_TARGET)
+	GPLATES_GENERATE_TARGET_SOURCES(gplates-cli target_GPlates_cli_SRCS ${GPlates_cli_SRCS})
+endif (ADD_GPLATES_CLI_TARGET)
 
 #
 # Set the platform-dependent icon file.
@@ -127,6 +191,9 @@ add_executable(gplates
 # The "EXCLUDE_FROM_ALL" flag means you have to type 'make gplates-no-gui' to build this target -
 # it is not built by default.
 add_executable(gplates-no-gui EXCLUDE_FROM_ALL ${target_GPlates_no_gui_SRCS})
+if (ADD_GPLATES_CLI_TARGET)
+	add_executable(gplates-cli EXCLUDE_FROM_ALL ${target_GPlates_cli_SRCS})
+endif (ADD_GPLATES_CLI_TARGET)
 
 # Referenced in "Package.cmake" so it knows which executable to package up.
 set(GPLATES_MAIN_TARGET gplates)
@@ -159,20 +226,29 @@ if (APPLE)
 		PROPERTIES MACOSX_BUNDLE_COPYRIGHT "${GPLATES_COPYRIGHT_STRING}")
 endif (APPLE)
 
-set(all_LIBS
-	${GPlates_LIBS}
+set(dependency_LIBS
 	${GDAL_LIBRARY}
 	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	)
+# Visual Studio and Borland compilers use autolinking for the Boost libraries
+# (where pragma in header file brings in the library).
+if (NOT WIN32)
+	if (Boost_LIBRARY_DIRS)
+		set(dependency_LIBS ${dependency_LIBS} ${Boost_LIBRARIES})
+	endif (Boost_LIBRARY_DIRS)
+endif (NOT WIN32)
 
 # Avoid all GPlates library link dependencies on the linker command-line by
 # specifying GPlates libraries twice. This gets around some dependencies
 # like 'gui' depends on 'canvas-tools' depends on 'gui' depends on 'maths'.
-target_link_libraries(gplates ${all_LIBS} ${GPlates_LIBS})
-target_link_libraries(gplates-no-gui ${all_LIBS} ${GPlates_LIBS})
+target_link_libraries(gplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
+target_link_libraries(gplates-no-gui ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
+if (ADD_GPLATES_CLI_TARGET)
+	target_link_libraries(gplates-cli ${GPlates_cli_LIBS} ${dependency_LIBS} ${GPlates_cli_LIBS})
+endif (ADD_GPLATES_CLI_TARGET)
 
 # Current binary directory must be included first for g++ pre-compiled headers.
 # There's a '_pch.h' file in current source and current binary directory however the '_pch.h.gch' pre-compiled header
@@ -191,6 +267,9 @@ include_directories(${internal_INCLUDE_DIRS})
 # require access to directory and target properties (eg, include directories).
 GPLATES_POST_ADD_TARGET(gplates target_GPlates_SRCS)
 GPLATES_POST_ADD_TARGET(gplates-no-gui target_GPlates_no_gui_SRCS)
+if (ADD_GPLATES_CLI_TARGET)
+	GPLATES_POST_ADD_TARGET(gplates-cli target_GPlates_cli_SRCS)
+endif (ADD_GPLATES_CLI_TARGET)
 
 if (APPLE)
     install(TARGETS gplates
@@ -217,3 +296,14 @@ endif (APPLE)
 if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
     include(Package)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
+
+# We have a nasty case of a variable shadow warning in the boost program_options library.
+# Since it's a system header it should not emit a warning but it does on g++ 4.1.2 and g++ 4.1.3 
+# only ones tested so far). Luckily this library is only used by gplates_cli_main.cc and so we can
+# use the nasty hack of turning off shadow warnings just for this source file.
+# 'COMPILE_FLAGS' just adds to the default compiler flags.
+# TODO: find a better way of doing this sort of thing.
+if (CMAKE_COMPILER_IS_GNUCXX)
+	set_source_files_properties(gplates_cli_main.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
+endif (CMAKE_COMPILER_IS_GNUCXX)
+

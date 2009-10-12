@@ -38,6 +38,16 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
@@ -56,8 +66,8 @@ namespace GPlatesQtWidgets
 				geometry_collection_type;
 
 		ReconstructionPoleWidget(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				ViewportWindow &view_state,
+				GPlatesPresentation::ViewState &view_state,
+				ViewportWindow &viewport_window,
 				QWidget *parent_ = NULL);
 
 	public slots:
@@ -98,8 +108,7 @@ namespace GPlatesQtWidgets
 				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
 
 		void
-		handle_reconstruction_time_change(
-				double new_time);
+		handle_reconstruction();
 
 		void
 		activate();
@@ -162,6 +171,9 @@ namespace GPlatesQtWidgets
 		clear_and_reset_after_reconstruction();
 
 	private:
+		//! Manages reconstructions.
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+
 		/**
 		 * Used to draw rendered geometries.
 		 */
@@ -178,8 +190,6 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_dragged_geom_layer_ptr;
-
-		ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * The dialog presented to the user, to enable him to complete the modification of
@@ -240,7 +250,8 @@ namespace GPlatesQtWidgets
 		geometry_collection_type d_initial_geometries;
 
 		void
-		make_signal_slot_connections();
+		make_signal_slot_connections(
+				GPlatesPresentation::ViewState &view_state);
 
 		void
 		create_child_rendered_layers();

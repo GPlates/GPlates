@@ -26,24 +26,23 @@
 #include <QString>
 #include "FeaturePropertiesDialog.h"
 
-#include "utils/UnicodeStringUtils.h"
-//#include "utils/Profile.h"
 #include "model/FeatureType.h"
 #include "model/FeatureId.h"
 #include "model/FeatureRevision.h"
+#include "utils/UnicodeStringUtils.h"
+#include "presentation/ViewState.h"
 
 
 GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
-		GPlatesGui::FeatureFocus &feature_focus,
+		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QDialog(parent_),
 	d_query_feature_properties_widget(new GPlatesQtWidgets::QueryFeaturePropertiesWidget(
-			view_state_, feature_focus, this)),
+			view_state_, this)),
 	d_edit_feature_properties_widget(new GPlatesQtWidgets::EditFeaturePropertiesWidget(
-			view_state_, feature_focus, this)),
+			view_state_, this)),
 	d_view_feature_geometries_widget(new GPlatesQtWidgets::ViewFeatureGeometriesWidget(
-			view_state_, feature_focus, this))
+			view_state_, this))
 {
 	setupUi(this);
 	
@@ -62,13 +61,13 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 			this, SLOT(handle_tab_change(int)));
 	
 	// Handle focus changes.
-	QObject::connect(&feature_focus, 
+	QObject::connect(&view_state_.get_feature_focus(), 
 			SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this,
 			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
-	QObject::connect(&feature_focus,
+	QObject::connect(&view_state_.get_feature_focus(),
 			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this,

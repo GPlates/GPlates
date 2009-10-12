@@ -42,7 +42,6 @@
 #include <QtGui/QMouseEvent>
 #include <QSizePolicy>
 
-#include "ViewportWindow.h"  // Remove this when there is a ViewState class.
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
@@ -59,6 +58,7 @@
 #include "utils/UnicodeStringUtils.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
+#include "presentation/ViewState.h"
 
 
 /**
@@ -184,16 +184,13 @@ GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
 
 
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::ViewState &view_state,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QGLWidget(parent_),
-	d_view_state(view_state),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
-	d_rendered_geom_collection(&rendered_geom_collection),
-	d_globe(rendered_geom_collection,
+	d_globe(view_state.get_rendered_geometry_collection(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
 			GPlatesGui::GlobeVisibilityTester(*this)),
 	d_viewport_zoom(view_state.get_viewport_zoom())
@@ -224,7 +221,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	// This will cause 'paintGL()' to be called which will visit the rendered
 	// geometry collection and redraw it.
 	QObject::connect(
-		&rendered_geom_collection,
+		&view_state.get_rendered_geometry_collection(),
 		SIGNAL(collection_was_updated(
 				GPlatesViewOperations::RenderedGeometryCollection &,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),

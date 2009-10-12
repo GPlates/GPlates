@@ -33,21 +33,15 @@
 namespace GPlatesGlobal
 {
 	/**
-	 * Should be thrown when a function that has not YET been
+	 * Should be thrown when a function or call path not YET been
 	 * implemented is called.
 	 */
 	class NotYetImplementedException : public Exception
 	{
 		public:
-			/**
-			 * @param fname is the name of the function which is
-			 * not yet implemented.   
-			 */
 			NotYetImplementedException(
-					const GPlatesUtils::CallStack::Trace &exception_source,
-					const char *fname) :
-				Exception(exception_source),
-				_fname(fname)
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				Exception(exception_source)
 			{  }
 
 		protected:
@@ -56,17 +50,6 @@ namespace GPlatesGlobal
 
 				return "NotYetImplementedException";
 			}
-
-			virtual
-			void
-			write_message(
-					std::ostream &os) const
-			{
-				write_string_message(os, _fname);
-			}
-
-		private:
-			std::string _fname;
 	};
 }
 

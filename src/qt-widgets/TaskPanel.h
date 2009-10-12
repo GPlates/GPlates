@@ -43,6 +43,11 @@ namespace GPlatesCanvasTools
 	class MeasureDistanceState;
 }
 
+namespace GPlatesAppLogic
+{
+	class FeatureCollectionFileState;
+}
+
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
@@ -74,14 +79,12 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		TaskPanel(
-				GPlatesGui::FeatureFocus &feature_focus_,
-				GPlatesModel::ModelInterface &model_interface,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
-				ViewportWindow &view_state_,
+				ViewportWindow &viewport_window_,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
 		

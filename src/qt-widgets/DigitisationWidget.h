@@ -38,9 +38,19 @@
 #include "model/ModelInterface.h"
 
 
+namespace GPlatesAppLogic
+{
+	class FeatureCollectionFileState;
+}
+
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
 }
 
 namespace GPlatesViewOperations
@@ -65,9 +75,9 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		DigitisationWidget(
-				GPlatesModel::ModelInterface &model_interface,
 				GPlatesViewOperations::GeometryBuilder &new_geometry_builder,
-				ViewportWindow &view_state_,
+				GPlatesPresentation::ViewState &view_state_,
+				ViewportWindow &viewport_window_,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
 
@@ -113,12 +123,6 @@ namespace GPlatesQtWidgets
 		handle_export();
 
 	private:
-		/**
-		 * The View State is used to access the digitisation layer in the globe in the
-		 * globe canvas.
-		 */
-		ViewportWindow *d_view_state_ptr;
-
 		/**
 		 * The dialog the user sees when they hit the Export button.
 		 * Memory managed by Qt.

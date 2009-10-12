@@ -45,7 +45,6 @@
 
 #include "EditWidgetChooser.h"
 #include "NoActiveEditWidgetException.h"
-#include "qt-widgets/ViewportWindow.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "property-values/GpmlPlateId.h"
 
@@ -80,9 +79,8 @@ namespace
 
 
 GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	d_view_state_ptr(&view_state_),
 	d_active_widget_ptr(NULL),
 	d_edit_time_instant_widget_ptr(new EditTimeInstantWidget(this)),
 	d_edit_time_period_widget_ptr(new EditTimePeriodWidget(this)),

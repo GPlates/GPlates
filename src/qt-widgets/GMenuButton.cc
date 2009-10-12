@@ -28,7 +28,6 @@
 #include <QAction>
 
 #include "GMenuButton.h"
-#include "ViewportWindow.h"
 
 
 GPlatesQtWidgets::GMenuButton::GMenuButton(

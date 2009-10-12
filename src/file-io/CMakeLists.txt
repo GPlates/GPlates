@@ -12,20 +12,28 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    ErrorOpeningFileForReadingException.cc
     ErrorOpeningFileForReadingException.h
     ErrorOpeningFileForWritingException.cc
     ErrorOpeningFileForWritingException.h
+    ErrorOpeningPipeFromGzipException.cc
     ErrorOpeningPipeFromGzipException.h
+    ErrorOpeningPipeToGzipException.cc
     ErrorOpeningPipeToGzipException.h
     ExternalProgram.cc
     ExternalProgram.h
     FeatureCollectionFileFormat.cc
     FeatureCollectionFileFormat.h
+    FeatureCollectionReaderWriter.cc
+    FeatureCollectionReaderWriter.h
     FeaturePropertiesMap.cc
     FeaturePropertiesMap.h
+    File.cc
+    File.h
     FileFormatNotSupportedException.h
     FileInfo.cc
     FileInfo.h
+    FileLoadAbortedException.h
     GdalReader.cc
     GdalReader.h
     GeometryExporter.h
@@ -72,6 +80,8 @@ set(srcs
     ReadErrors.h
     ReconstructedFeatureGeometryExport.cc
     ReconstructedFeatureGeometryExport.h
+    ReconstructedFeatureGeometryExportImpl.cc
+    ReconstructedFeatureGeometryExportImpl.h
     ShapefileFormatReconstructedFeatureGeometryExport.cc
     ShapefileFormatReconstructedFeatureGeometryExport.h
     ShapefileGeometryExporter.cc

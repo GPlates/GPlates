@@ -32,7 +32,6 @@
 
 #include "gui/AnimationController.h"
 #include "qt-widgets/ExportAnimationDialog.h"
-#include "qt-widgets/ViewportWindow.h"	// ViewState, needed for .reconstruction_root()
 
 #include "gui/ExportSvgAnimationStrategy.h"
 #include "gui/ExportVelocityAnimationStrategy.h"
@@ -44,10 +43,12 @@
 GPlatesGui::ExportAnimationContext::ExportAnimationContext(
 		GPlatesQtWidgets::ExportAnimationDialog &export_animation_dialog_,
 		GPlatesGui::AnimationController &animation_controller_,
-		GPlatesQtWidgets::ViewportWindow &view_state_):
+		GPlatesPresentation::ViewState &view_state_,
+		GPlatesQtWidgets::ViewportWindow &viewport_window_):
 	d_export_animation_dialog_ptr(&export_animation_dialog_),
 	d_animation_controller_ptr(&animation_controller_),
-	d_view_state_ptr(&view_state_),
+	d_view_state(&view_state_),
+	d_viewport_window(&viewport_window_),
 	d_abort_now(false),
 	d_export_running(false),
 	d_svg_exporter_enabled(true),
@@ -72,10 +73,17 @@ GPlatesGui::ExportAnimationContext::animation_controller() const
 }
 
 
-GPlatesQtWidgets::ViewportWindow &
+GPlatesPresentation::ViewState &
 GPlatesGui::ExportAnimationContext::view_state()
 {
-	return *d_view_state_ptr;
+	return *d_view_state;
+}
+
+
+GPlatesQtWidgets::ViewportWindow &
+GPlatesGui::ExportAnimationContext::viewport_window()
+{
+	return *d_viewport_window;
 }
 
 

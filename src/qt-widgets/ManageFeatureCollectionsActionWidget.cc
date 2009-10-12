@@ -31,7 +31,7 @@
 
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollectionsActionWidget(
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &feature_collections_dialog,
-		GPlatesAppState::ApplicationState::file_info_iterator file_it,
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_collections_dialog(feature_collections_dialog),
@@ -54,13 +54,14 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::ManageFeatureCollections
 void
 GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state()
 {
-	QFileInfo qfileinfo = d_file_info_iterator->get_qfileinfo();
+	const GPlatesFileIO::FileInfo &fileinfo = d_file_info_iterator->get_file_info();
+
 	// Enable the buttons in question first, then disable if needed.
 	button_save->setDisabled(false);
 	button_reload->setDisabled(false);
 	
 	// Disable specific buttons for specific formats.
-	switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
+	switch ( GPlatesFileIO::get_feature_collection_file_format(fileinfo) )
 	{
 			
 	case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
@@ -80,7 +81,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update_state()
 	// feature collection at the end of d10n), then any "Save" function
 	// should be disabled in favour of "Save As". Similarly, the FeatureCollection
 	// cannot be "Reloaded".
-	if ( ! qfileinfo.exists()) {
+	if ( ! GPlatesFileIO::file_exists(fileinfo)) {
 		button_save->setDisabled(true);
 		button_reload->setDisabled(true);
 	}

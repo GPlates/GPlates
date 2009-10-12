@@ -31,7 +31,7 @@
 #include "maths/LatLonPointConversions.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "view-operations/ViewState.h"
+#include "presentation/ViewState.h"
 
 
 void

@@ -29,14 +29,16 @@
 #include <QObject>
 #include <boost/optional.hpp>
 
+#include "app-logic/FeatureCollectionFileState.h"
+
 #include "model/FeatureHandle.h"
 #include "model/ReconstructionGeometry.h"
 
 
-namespace GPlatesQtWidgets
+namespace GPlatesAppLogic
 {
-	// Forward reference to ViewState - you know why.
-	class ViewportWindow;
+	class ApplicationState;
+	class Reconstruct;
 }
 
 
@@ -55,9 +57,8 @@ namespace GPlatesGui
 	public:
 		
 		FeatureFocus(
-				GPlatesQtWidgets::ViewportWindow &view_state_):
-			d_view_state_ptr(&view_state_)
-		{  }
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesAppLogic::Reconstruct &reconstruct);
 
 		virtual
 		~FeatureFocus()
@@ -152,22 +153,6 @@ namespace GPlatesGui
 		unset_focus();
 
 		/**
-		 * Find the new associated ReconstructionGeometry for the currently-focused feature (if any).
-		 *
-		 * When the reconstruction is re-calculated, it will be populated with all-new
-		 * RGs.  The old RGs will be meaningless (but due to the power of intrusive-ptrs,
-		 * the associated RG currently referenced by this class will still exist).
-		 *
-		 * This function is used to iterate through the reconstruction geometries in the
-		 * supplied Reconstruction and find the new RG (if there is one) which corresponds
-		 * to the current associated RG; if a new RG is found, it will be assigned to be
-		 * the associated RG.
-		 */
-		void
-		find_new_associated_reconstruction_geometry(
-				GPlatesModel::Reconstruction &reconstruction);
-
-		/**
 		 * Call this method when you have modified the properties of the currently-focused
 		 * feature.
 		 *
@@ -204,6 +189,23 @@ namespace GPlatesGui
 		 */
 		void
 		announce_deletion_of_focused_feature();
+
+		/**
+		 * Notification of a new reconstruction - we use this to find a new associated
+		 * reconstruction geometry for the focused feature (if any).
+		 */
+		void
+		handle_reconstruction(
+				GPlatesAppLogic::Reconstruct &reconstructer);
+
+		/**
+		 * FIXME: This is a temporary hack to stop highlighting the focused feature if
+		 * it's in the feature collection we're about to unload.
+		 */
+		void
+		begin_remove_feature_collection(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
 
 	signals:
 
@@ -294,11 +296,11 @@ namespace GPlatesGui
 		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_associated_geometry_property_opt;
 
 		/**
-		 * ViewState pointer! Yes!
+		 * Manages reconstruction generation.
 		 * ONLY needed so that FeatureFocus can have a stab at finding an RFG automatically
 		 * when given a properties_iterator during @a set_focus().
 		 */
-		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
 
 
 		/**
@@ -310,6 +312,22 @@ namespace GPlatesGui
 		{
 			return d_associated_geometry_property_opt;
 		}
+
+		/**
+		 * Find the new associated ReconstructionGeometry for the currently-focused feature (if any).
+		 *
+		 * When the reconstruction is re-calculated, it will be populated with all-new
+		 * RGs.  The old RGs will be meaningless (but due to the power of intrusive-ptrs,
+		 * the associated RG currently referenced by this class will still exist).
+		 *
+		 * This function is used to iterate through the reconstruction geometries in the
+		 * supplied Reconstruction and find the new RG (if there is one) which corresponds
+		 * to the current associated RG; if a new RG is found, it will be assigned to be
+		 * the associated RG.
+		 */
+		void
+		find_new_associated_reconstruction_geometry(
+				GPlatesModel::Reconstruction &reconstruction);
 	};
 }
 

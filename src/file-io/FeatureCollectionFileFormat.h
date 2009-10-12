@@ -28,25 +28,14 @@
 #ifndef GPLATES_FILEIO_FEATURECOLLECTIONFILEFORMAT_H
 #define GPLATES_FILEIO_FEATURECOLLECTIONFILEFORMAT_H
 
-#include <boost/shared_ptr.hpp>
 #include <QFileInfo>
 
-
-namespace GPlatesModel
-{
-	class ConstFeatureVisitor;
-	class ModelInterface;
-}
 
 namespace GPlatesFileIO
 {
 	class FileInfo;
-	class FeatureCollectionReader;
-	struct ReadErrorAccumulation;
-}
 
-namespace GPlatesFileIO
-{
+
 	namespace FeatureCollectionFileFormat
 	{
 		//! Formats of files that can contain feature collections.
@@ -98,41 +87,6 @@ namespace GPlatesFileIO
 	FeatureCollectionFileFormat::Format
 	get_feature_collection_file_format(
 			const QFileInfo& file_info);
-
-	/**
-	* Creates and returns a feature collection writer.
-	*
-	* If @a write_format is not @a USE_FILE_EXTENSION then it must
-	* be compatible with the format obtained from the file extension of @a file_info.
-	* For example, @a GMT and @a GMT_VERBOSE_HEADER should only be specified for
-	* a file that has the GMT '.xy' extension.
-	*
-	* @param file_info feature collection and output file
-	* @param write_format specifies which format to write.
-	*
-	* @throws ErrorOpeningFileForWritingException if file is not writable.
-	* @throws FileFormatNotSupportedException if file format has no writer.
-	*/
-	boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
-	get_feature_collection_writer(
-			const FileInfo& file_info,
-			FeatureCollectionWriteFormat::Format write_format =
-				FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
-
-	/**
-	* Reads a feature collection from a file.
-	*
-	* @param fileinfo file to read from and store feature collection in.
-	* @param model to create feature collection.
-	* @param read_errors to contain errors reading file.
-	*
-	* @throws FileFormatNotSupportedException if file format not recognised or has no reader.
-	*/
-	void
-	read_feature_collection_file(
-			FileInfo &fileinfo,
-			GPlatesModel::ModelInterface &model,
-			ReadErrorAccumulation &read_errors);
 }
 
 #endif // GPLATES_FILEIO_FEATURECOLLECTIONFILEFORMAT_H

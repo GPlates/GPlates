@@ -1,13 +1,11 @@
 /* $Id$ */
 
 /**
- * @file 
- * Contains the main function of GPlates.
- *
+ * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,7 +23,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ApplicationState.h"
+#include <ostream>
 
-GPlatesAppState::ApplicationState *
-GPlatesAppState::ApplicationState::d_instance = NULL;
+#include "ErrorOpeningPipeToGzipException.h"
+
+
+void
+GPlatesFileIO::ErrorOpeningPipeToGzipException::write_message(
+		std::ostream &os) const
+{
+	os
+			<< "Error opening pipe to write to file '"
+			<< d_filename.toStdString()
+			<< "' using command '"
+			<< d_command.toStdString()
+			<< "'";
+}

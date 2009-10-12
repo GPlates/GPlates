@@ -29,6 +29,7 @@
 #include "ExportResolvedTopologyAnimationStrategy.h"
 
 #include "app-logic/AppLogicUtils.h"
+#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
@@ -36,6 +37,9 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/GMTFormatGeometryExporter.h"
 #include "file-io/GMTFormatHeader.h"
+
+#include "gui/ExportAnimationContext.h"
+#include "gui/AnimationController.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/PolygonOnSphere.h"
@@ -53,10 +57,7 @@
 #include "utils/FloatingPointComparisons.h"
 #include "utils/UnicodeStringUtils.h"
 
-#include "gui/ExportAnimationContext.h"
-#include "gui/AnimationController.h"
-
-#include "qt-widgets/ViewportWindow.h"	// ViewState, needed for .reconstruction_root()
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -899,10 +900,12 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	// The View is already set to the appropriate reconstruction time for
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
 	//
-	GPlatesModel::Reconstruction &reconstruction =
-			d_export_animation_context_ptr->view_state().reconstruction();
-	const double &reconstruction_time =
-			d_export_animation_context_ptr->view_state().reconstruction_time();
+
+	GPlatesAppLogic::Reconstruct &reconstruct =
+			d_export_animation_context_ptr->view_state().get_reconstruct();
+
+	GPlatesModel::Reconstruction &reconstruction = reconstruct.get_current_reconstruction();
+	const double &reconstruction_time = reconstruct.get_current_reconstruction_time();
 
 	// Find any ResolvedTopologicalGeometry objects in the reconstruction.
 	resolved_geom_seq_type resolved_geom_seq;

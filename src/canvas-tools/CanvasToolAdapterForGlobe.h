@@ -77,7 +77,7 @@ namespace GPlatesCanvasTools
 				CanvasTool *canvas_tool_ptr,
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state);
+				const GPlatesQtWidgets::ViewportWindow &viewport_window_);
 		
 		virtual
 		void
@@ -218,7 +218,7 @@ namespace GPlatesCanvasTools
 				CanvasTool *canvas_tool_ptr,
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_);
+				const GPlatesQtWidgets::ViewportWindow &viewport_window_);
 		
 	private:
 

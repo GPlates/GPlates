@@ -18,6 +18,7 @@ set(srcs
     DummyTransactionHandle.h
     FeatureCollectionHandle.cc
     FeatureCollectionHandle.h
+    FeatureCollectionHandleUnloader.h
     FeatureCollectionRevision.cc
     FeatureCollectionRevision.h
     FeatureHandle.cc

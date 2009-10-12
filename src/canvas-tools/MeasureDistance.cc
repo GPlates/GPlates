@@ -416,7 +416,7 @@ GPlatesCanvasTools::MeasureDistance::render_point_on_sphere(
 		LayerPointerType layer_ptr)
 {
 	GPlatesViewOperations::RenderedGeometry rendered =
-		GPlatesViewOperations::create_rendered_point_on_sphere(
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
 				point_on_sphere,
 				colour,
 				POINT_SIZE);
@@ -443,7 +443,7 @@ GPlatesCanvasTools::MeasureDistance::render_line(
 	if (validity == GPlatesUtils::GeometryConstruction::VALID)
 	{
 		GPlatesViewOperations::RenderedGeometry rendered =
-			GPlatesViewOperations::create_rendered_polyline_on_sphere(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 					*polyline,
 					colour,
 					LINE_WIDTH);

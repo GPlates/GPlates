@@ -27,8 +27,6 @@ set(srcs
     AnimateDialog.cc
     AnimateDialog.h
     AnimateDialogUi.ui
-    ApplicationState.cc
-    ApplicationState.h
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui

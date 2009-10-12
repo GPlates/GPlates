@@ -34,6 +34,7 @@
 #include <QVariant>
 
 #include "ErrorOpeningFileForReadingException.h"
+#include "FileLoadAbortedException.h"
 #include "PropertyMapper.h"
 #include "ShapefileReader.h"
 #include "ShapefileUtils.h"
@@ -384,23 +385,21 @@ namespace
 
 	/**
 	 * Uses the @a model_to_attribute_map to create model properties from the 
-	 * shapefile-attributes key-value-dictionary, for each feature in @a file_info's 
+	 * shapefile-attributes key-value-dictionary, for each feature in @a file's 
 	 * feature collection. 
 	 */
 	void
 	remap_feature_collection(
-		GPlatesFileIO::FileInfo file_info,
+		GPlatesFileIO::File &file,
 		QMap< QString,QString > model_to_attribute_map,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
+		QString filename = file.get_file_info().get_qfileinfo().filePath();
 
-		boost::optional< GPlatesModel::FeatureCollectionHandle::weak_ref > collection =
-			file_info.get_feature_collection();
+		GPlatesModel::FeatureCollectionHandle::weak_ref collection = file.get_feature_collection();
 
-		QString filename = file_info.get_qfileinfo().filePath();
-
-		GPlatesModel::FeatureCollectionHandle::features_iterator it = (*collection)->features_begin();
-		GPlatesModel::FeatureCollectionHandle::features_iterator it_end = (*collection)->features_end();
+		GPlatesModel::FeatureCollectionHandle::features_iterator it = collection->features_begin();
+		GPlatesModel::FeatureCollectionHandle::features_iterator it_end = collection->features_end();
 		int count = 0;
 		for ( ; it != it_end ; ++it)
 		{
@@ -1114,9 +1113,9 @@ GPlatesFileIO::ShapefileReader::is_valid_shape_data(
 	return true;
 }
 
-void
+const GPlatesFileIO::File::shared_ref
 GPlatesFileIO::ShapefileReader::read_file(
-		FileInfo &fileinfo,
+		const FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
@@ -1125,11 +1124,11 @@ GPlatesFileIO::ShapefileReader::read_file(
 
 	ShapefileReader reader;
 	if (!reader.open_file(absolute_path_filename)){
-		throw ErrorOpeningFileForReadingException(filename);
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
 	if (!reader.check_file_format(read_errors)){
-		throw ErrorOpeningFileForReadingException(filename);
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 	reader.get_field_names(read_errors);
 
@@ -1143,7 +1142,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 		if (!fill_attribute_map_from_dialog(filename,s_field_names,s_model_to_attribute_map,s_property_mapper,false))
 		{
 			// The user has cancelled the mapper-dialog routine, so cancel the whole shapefile loading procedure.
-			return;
+			throw FileLoadAbortedException(GPLATES_EXCEPTION_SOURCE, "File load aborted.");
 		}
 		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
 	}
@@ -1154,13 +1153,16 @@ GPlatesFileIO::ShapefileReader::read_file(
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
 		= model->create_feature_collection();
 
+	// Make sure feature collection gets unloaded when it's no longer needed.
+	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
+			GPlatesModel::FeatureCollectionHandleUnloader::create(collection);
+
 	reader.read_features(model,collection,read_errors);
 
 
 	//reader.display_feature_counts();
 
-	fileinfo.set_feature_collection(collection);
-	return;
+	return File::create_loaded_file(collection_unloader, fileinfo);
 }
 
 void
@@ -1591,25 +1593,28 @@ GPlatesFileIO::ShapefileReader::add_ring_to_points_list(
 
 void
 GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
-	GPlatesFileIO::FileInfo &fileinfo,
+	File &file,
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)
 {
-	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
-	QString filename = fileinfo.get_qfileinfo().fileName();
+	const FileInfo &file_info = file.get_file_info();
+
+	QString absolute_path_filename = file_info.get_qfileinfo().absoluteFilePath();
+	QString filename = file_info.get_qfileinfo().fileName();
 
 	ShapefileReader reader;
 	if (!reader.open_file(absolute_path_filename)){
-		throw ErrorOpeningFileForReadingException(filename);
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
 	if (!reader.check_file_format(read_errors)){
-		throw ErrorOpeningFileForReadingException(filename);
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
 	reader.get_field_names(read_errors);
 
-	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(fileinfo.get_qfileinfo());
+	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(
+			file_info.get_qfileinfo());
 
 	s_model_to_attribute_map.clear();
 
@@ -1623,13 +1628,10 @@ GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
 	}
 	ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,s_model_to_attribute_map);
 
-	fileinfo.set_model_to_shapefile_map(s_model_to_attribute_map);
+	file_info.set_model_to_shapefile_map(s_model_to_attribute_map);
 
-	if (fileinfo.get_feature_collection())
-	{
-		remap_feature_collection(
-								fileinfo,
-								s_model_to_attribute_map,
-								read_errors);
-	}
+	remap_feature_collection(
+							file,
+							s_model_to_attribute_map,
+							read_errors);
 }

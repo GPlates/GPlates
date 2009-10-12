@@ -13,6 +13,7 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     BuildTopology.cc
     BuildTopology.h
+    CanvasTool.cc
     CanvasTool.h
     CanvasToolAdapterForGlobe.cc
     CanvasToolAdapterForGlobe.h

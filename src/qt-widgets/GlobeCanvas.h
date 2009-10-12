@@ -56,10 +56,15 @@
 #include "view-operations/QueryProximityThreshold.h"
 #include "view-operations/RenderedGeometryFactory.h"
 
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
-	class ViewState;
 }
 
 namespace GPlatesQtWidgets 
@@ -116,8 +121,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		GlobeCanvas(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesViewOperations::ViewState &view_state,
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = 0);
 
 
@@ -511,8 +515,6 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
-		GPlatesViewOperations::ViewState &d_view_state;
-
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
 		 * on the globe.
@@ -558,11 +560,6 @@ namespace GPlatesQtWidgets
 		double d_larger_dim;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
-
-		/**
-		 * The collection of @a RenderedGeometry objects we need to paint.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 
 		GPlatesGui::Globe d_globe;
 

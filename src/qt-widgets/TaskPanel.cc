@@ -35,7 +35,9 @@
 #include "ReconstructionPoleWidget.h"
 #include "MeasureDistanceWidget.h"
 #include "ActionButtonBox.h"
+
 #include "gui/FeatureFocus.h"
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -64,26 +66,24 @@ namespace
 
 
 GPlatesQtWidgets::TaskPanel::TaskPanel(
-		GPlatesGui::FeatureFocus &feature_focus,
-		GPlatesModel::ModelInterface &model_interface,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesPresentation::ViewState &view_state,
 		GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
-		ViewportWindow &view_state,
+		ViewportWindow &viewport_window,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_action_button_box_ptr(new ActionButtonBox(5, 22, this)),
 	d_digitisation_widget_ptr(new DigitisationWidget(
-			model_interface, digitise_geometry_builder, view_state, choose_canvas_tool)),
+			digitise_geometry_builder, view_state, viewport_window, choose_canvas_tool)),
 	d_modify_geometry_widget_ptr(new ModifyGeometryWidget(
 			geometry_operation_target, active_geometry_operation)),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(
-			rendered_geom_collection, view_state)),
-	d_topology_tools_widget_ptr(new TopologyToolsWidget(
-			rendered_geom_collection, feature_focus, model_interface, view_state)),
+			view_state, viewport_window)),
+	d_topology_tools_widget_ptr( new TopologyToolsWidget(
+			view_state, viewport_window)),
 	d_measure_distance_widget_ptr(new MeasureDistanceWidget(
 			measure_distance_state))
 {
@@ -105,7 +105,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	tabwidget_task_panel->setTabEnabled(5, false);
 	
 	// Set up the EX-TREME Task Panel's tabs.
-	set_up_feature_tab(feature_focus);
+	set_up_feature_tab(view_state.get_feature_focus());
 	set_up_digitisation_tab();
 	set_up_modify_geometry_tab();
 	set_up_modify_pole_tab();

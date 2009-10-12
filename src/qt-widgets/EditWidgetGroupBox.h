@@ -35,9 +35,13 @@
 #include "qt-widgets/AbstractEditWidget.h"
 
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
 	class EditTimeInstantWidget;
 	class EditTimePeriodWidget;
 	class EditOldPlatesHeaderWidget;
@@ -82,7 +86,7 @@ namespace GPlatesQtWidgets
 		
 		explicit
 		EditWidgetGroupBox(
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 		
 		virtual
@@ -339,17 +343,6 @@ namespace GPlatesQtWidgets
 		activate_edit_shapefile_attributes_widget(
 				GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 
-		
-		/**
-		 * Obtain a reference to the ViewState this EditWidgetGroupBox knows about.
-		 * Used for e.g. obtaining the current reconstruction time.
-		 */
-		const GPlatesQtWidgets::ViewportWindow &
-		view_state() const
-		{
-			return *d_view_state_ptr;
-		}
-		
 		/**
 		 * Accessor for the EditGeometryWidget, to support the extra functionality
 		 * available (e.g. set_reconstruction_plate_id())
@@ -403,12 +396,6 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::AbstractEditWidget *
 		get_widget_by_name(
 				const QString &property_value_type_name);
-		
-		/**
-		 * The view state, used to obtain current reconstruction time and allow
-		 * EditGeometryWidget to iterate over RFGs.
-		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * This pointer always refers to the one edit widget which is currently active

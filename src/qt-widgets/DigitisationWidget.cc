@@ -36,7 +36,6 @@
 
 #include "DigitisationWidget.h"
 #include "LatLonCoordinatesTable.h"
-#include "ViewportWindow.h"
 #include "ExportCoordinatesDialog.h"
 #include "CreateFeatureDialog.h"
 #include "global/GPlatesAssert.h"
@@ -54,15 +53,18 @@
 
 
 GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
-		GPlatesModel::ModelInterface &model_interface,
 		GPlatesViewOperations::GeometryBuilder &new_geometry_builder,
-		ViewportWindow &view_state_,
+		GPlatesPresentation::ViewState &view_state_,
+		ViewportWindow &viewport_window_,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_view_state_ptr(&view_state_),
 	d_export_coordinates_dialog(new ExportCoordinatesDialog(this)),
-	d_create_feature_dialog(new CreateFeatureDialog(model_interface, view_state_, GPlatesQtWidgets::CreateFeatureDialog::NORMAL, this)),
+	d_create_feature_dialog(
+			new CreateFeatureDialog(
+					view_state_,
+					viewport_window_,
+					GPlatesQtWidgets::CreateFeatureDialog::NORMAL, this)),
 	d_new_geom_builder(&new_geometry_builder),
 	d_choose_canvas_tool(&choose_canvas_tool)
 {

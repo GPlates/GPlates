@@ -651,12 +651,9 @@ namespace
 
 	void
 	create_default_kvd_from_collection(
-		const GPlatesFileIO::FileInfo &file_info,
-		boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> &default_key_value_dictionary)
+			const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> &default_key_value_dictionary)
 	{
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
-			*file_info.get_feature_collection();
-
 		if (feature_collection.is_valid())
 		{
 			GPlatesModel::FeatureCollectionHandle::features_const_iterator
@@ -746,63 +743,56 @@ namespace
 }
 
 GPlatesFileIO::ShapefileWriter::ShapefileWriter(
-	const FileInfo &file_info)
+	const FileInfo &file_info,
+	const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref)
 {
+	// Check what types of geometries exist in the feature collection.
 
-	if (file_info.get_feature_collection())
+	GPlatesFeatureVisitors::GeometryTypeFinder finder;
+
+	GPlatesModel::FeatureCollectionHandle::features_const_iterator 
+		iter = feature_collection_ref->features_begin(),
+		end = feature_collection_ref->features_end();
+
+	for ( ; iter != end ; ++iter)
 	{
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_handle =
-			*(file_info.get_feature_collection());
+		finder.visit_feature(iter);
+	}
 
-		// Check what types of geometries exist in the feature collection.
+	// Set up an appropriate OgrWriter.
+	d_ogr_writer.reset(new OgrWriter(file_info.get_qfileinfo().filePath(),finder.has_found_multiple_geometries()));
 
-		GPlatesFeatureVisitors::GeometryTypeFinder finder;
-
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator 
-			iter = feature_collection_handle->features_begin(),
-			end = feature_collection_handle->features_end();
-
-		for ( ; iter != end ; ++iter)
-		{
-			finder.visit_feature(iter);
-		}
-
-		// Set up an appropriate OgrWriter.
-		d_ogr_writer.reset(new OgrWriter(file_info.get_qfileinfo().filePath(),finder.has_found_multiple_geometries()));
-
-		// The file_info might not have a model_to_shapefile_map - the feature collection
-		// might have originated from a plates file, for example. If we don't have one,
-		// create a default map.
-		if (file_info.get_model_to_shapefile_map().isEmpty())
-		{
-			create_default_model_to_shapefile_map(file_info);
+	// The file_info might not have a model_to_shapefile_map - the feature collection
+	// might have originated from a plates file, for example. If we don't have one,
+	// create a default map.
+	if (file_info.get_model_to_shapefile_map().isEmpty())
+	{
+		create_default_model_to_shapefile_map(file_info);
 
 #if 0
-		// Disable exporting of xml file for the moment, until I arrange things so that
-		// multiple-layer shapefiles each have their own xml mapping file.  
+	// Disable exporting of xml file for the moment, until I arrange things so that
+	// multiple-layer shapefiles each have their own xml mapping file.  
 
-			// Export the newly created map as an shp.gplates.xml file.
-			QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo());
+		// Export the newly created map as an shp.gplates.xml file.
+		QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo());
 
-			// FIXME: If we have multiple layers, we should really export the appropriately named xml file
-			// for each layer. 
-			ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
-				file_info.get_model_to_shapefile_map());
+		// FIXME: If we have multiple layers, we should really export the appropriately named xml file
+		// for each layer. 
+		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
+			file_info.get_model_to_shapefile_map());
 #endif
-		}
+	}
 
-		d_model_to_shapefile_map = file_info.get_model_to_shapefile_map();
+	d_model_to_shapefile_map = file_info.get_model_to_shapefile_map();
 
-		// Look for a key value dictionary, and store it as the default. 
-		create_default_kvd_from_collection(file_info,d_default_key_value_dictionary);
+	// Look for a key value dictionary, and store it as the default. 
+	create_default_kvd_from_collection(feature_collection_ref,d_default_key_value_dictionary);
 
-		// We didn't find one, so make one from the model-to-attribute-map. 
-		if (!d_default_key_value_dictionary)
-		{
-			create_default_kvd_from_map(d_default_key_value_dictionary,
-				d_model_to_shapefile_map);
-		}
-
+	// We didn't find one, so make one from the model-to-attribute-map. 
+	if (!d_default_key_value_dictionary)
+	{
+		create_default_kvd_from_map(d_default_key_value_dictionary,
+			d_model_to_shapefile_map);
 	}
 
 }

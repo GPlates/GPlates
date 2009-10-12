@@ -63,6 +63,17 @@
 
 #include "view-operations/RenderedGeometryCollection.h"
 
+
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
 	class CreateFeatureDialog;
@@ -73,10 +84,8 @@ namespace GPlatesQtWidgets
 namespace GPlatesGui
 {
 	class FeatureFocus;
-}
 
-namespace GPlatesGui
-{
+
 	class TopologyTools:
 			public QObject, 
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
@@ -100,9 +109,8 @@ namespace GPlatesGui
 
 		/** Constructor */
 		TopologyTools(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesQtWidgets::ViewportWindow &view_state);
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesQtWidgets::ViewportWindow &viewport_window);
 		
 		/**
 		 * Set the click point (called from canvas tool)
@@ -215,7 +223,7 @@ namespace GPlatesGui
 	public slots:
 		
 		void
-		handle_reconstruction_time_change( double t );
+		handle_reconstruction();
 
 		void
 		set_focus(
@@ -382,10 +390,15 @@ namespace GPlatesGui
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
 
 		/**
+		 * Used to query the reconstruction.
+		 */
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+
+		/**
 		 * The View State is used to access the digitisation layer in the globe in the
 		 * globe canvas.
 		 */
-		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
 
 		/*
 		* pointer to the TopologySectionsContainer in ViewportWindow.

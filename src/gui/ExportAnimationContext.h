@@ -36,6 +36,11 @@
 #include "gui/ExportAnimationStrategy.h"
 
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;		// ViewState.
@@ -75,7 +80,8 @@ namespace GPlatesGui
 		ExportAnimationContext(
 				GPlatesQtWidgets::ExportAnimationDialog &export_animation_dialog_,
 				GPlatesGui::AnimationController &animation_controller_,
-				GPlatesQtWidgets::ViewportWindow &view_state_);
+				GPlatesPresentation::ViewState &view_state_,
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
 		virtual
 		~ExportAnimationContext()
@@ -208,8 +214,11 @@ namespace GPlatesGui
 		const GPlatesGui::AnimationController &
 		animation_controller() const;
 
-		GPlatesQtWidgets::ViewportWindow &
+		GPlatesPresentation::ViewState &
 		view_state();
+
+		GPlatesQtWidgets::ViewportWindow &
+		viewport_window();
 
 
 		/**
@@ -255,13 +264,20 @@ namespace GPlatesGui
 		 * ExportAnimationContext, AnimateDialog and AnimateControlWidget.
 		 */
 		GPlatesGui::AnimationController *d_animation_controller_ptr;
-		
+				
 		/**
 		 * View State pointer, which needs to be accessible to the various
 		 * strategies so that they can get access to things like the current
 		 * anchored plate ID and the Reconstruction.
 		 */
-		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesPresentation::ViewState *d_view_state;
+
+		/**
+		 * Temporary access point for some view state.
+		 * FIXME: remove this after everything non widget based has been moved
+		 * from ViewportWindow to ViewState.
+		 */
+		GPlatesQtWidgets::ViewportWindow *d_viewport_window;
 
 		/**
 		 * Flag that gets set when the user requests, nay demands, that we

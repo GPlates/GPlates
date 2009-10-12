@@ -35,7 +35,12 @@
 #include <boost/bind.hpp>
 
 #include "maths/PointOnSphere.h"
-#include "qt-widgets/ViewportWindow.h"
+
+
+namespace GPlatesQtWidgets
+{
+	class ViewportWindow;
+}
 
 namespace GPlatesCanvasTools
 {
@@ -81,10 +86,7 @@ namespace GPlatesCanvasTools
 			
 			virtual
 			void
-			update_status_bar_message(const QString &message)
-			{
-				d_view_state_ptr->status_message(message);
-			}
+			update_status_bar_message(const QString &message);
 
 		private:
 

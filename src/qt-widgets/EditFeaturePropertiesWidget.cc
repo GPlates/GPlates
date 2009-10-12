@@ -34,19 +34,17 @@
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
 #include "model/DummyTransactionHandle.h"
-#include "utils/UnicodeStringUtils.h"
-#include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/EditTimePeriodWidget.h"
+#include "utils/UnicodeStringUtils.h"
+#include "presentation/ViewState.h"
 
 
 GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
-		GPlatesGui::FeatureFocus &feature_focus,
+		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_view_state_ptr(&view_state_),
-	d_feature_focus_ptr(&feature_focus),
-	d_property_model_ptr(new GPlatesGui::FeaturePropertyTableModel(feature_focus)),
+	d_feature_focus_ptr(&view_state_.get_feature_focus()),
+	d_property_model_ptr(new GPlatesGui::FeaturePropertyTableModel(view_state_.get_feature_focus())),
 	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(view_state_, this)),
 	d_add_property_dialog_ptr(new GPlatesQtWidgets::AddPropertyDialog(*this, view_state_, this))
 {

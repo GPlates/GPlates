@@ -78,7 +78,7 @@ namespace GPlatesViewOperations
 			visit_multi_point_on_sphere(
 					GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 			{
-				d_rendered_geom = create_rendered_multi_point_on_sphere(
+				d_rendered_geom = RenderedGeometryFactory::create_rendered_multi_point_on_sphere(
 						multi_point_on_sphere, d_colour, d_point_size_hint);
 			}
 
@@ -87,7 +87,7 @@ namespace GPlatesViewOperations
 			visit_point_on_sphere(
 					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_rendered_geom = create_rendered_point_on_sphere(
+				d_rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
 						*point_on_sphere, d_colour, d_point_size_hint);
 			}
 
@@ -96,7 +96,7 @@ namespace GPlatesViewOperations
 			visit_polygon_on_sphere(
 					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 			{
-				d_rendered_geom = create_rendered_polygon_on_sphere(
+				d_rendered_geom = RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 						polygon_on_sphere, d_colour, d_line_width_hint);
 			}
 
@@ -105,7 +105,7 @@ namespace GPlatesViewOperations
 			visit_polyline_on_sphere(
 					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 			{
-				d_rendered_geom = create_rendered_polyline_on_sphere(
+				d_rendered_geom = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 						polyline_on_sphere, d_colour, d_line_width_hint);
 			}
 
@@ -120,7 +120,7 @@ namespace GPlatesViewOperations
 
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::create_rendered_geometry_on_sphere(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float point_size_hint,
@@ -135,7 +135,7 @@ GPlatesViewOperations::create_rendered_geometry_on_sphere(
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::create_rendered_point_on_sphere(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float point_size_hint)
@@ -147,7 +147,7 @@ GPlatesViewOperations::create_rendered_point_on_sphere(
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::create_rendered_multi_point_on_sphere(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_multi_point_on_sphere(
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float point_size_hint)
@@ -159,7 +159,7 @@ GPlatesViewOperations::create_rendered_multi_point_on_sphere(
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::create_rendered_polyline_on_sphere(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float line_width_hint)
@@ -171,7 +171,7 @@ GPlatesViewOperations::create_rendered_polyline_on_sphere(
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::create_rendered_polygon_on_sphere(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float line_width_hint)
@@ -184,7 +184,7 @@ GPlatesViewOperations::create_rendered_polygon_on_sphere(
 
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::create_rendered_direction_arrow(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 		const GPlatesMaths::PointOnSphere &start,
 		const GPlatesMaths::Vector3D &arrow_direction,
 		const float ratio_unit_vector_direction_to_globe_radius,
@@ -213,7 +213,7 @@ GPlatesViewOperations::create_rendered_direction_arrow(
 
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::create_rendered_dashed_polyline(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_dashed_polyline(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline,
 		const GPlatesGui::Colour &colour)
 {
@@ -222,7 +222,7 @@ GPlatesViewOperations::create_rendered_dashed_polyline(
 }
 
 GPlatesViewOperations::RenderedGeometryFactory::rendered_geometry_seq_type
-GPlatesViewOperations::create_rendered_dashed_polyline_segments_on_sphere(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_dashed_polyline_segments_on_sphere(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline,
 		const GPlatesGui::Colour &colour)
 {
@@ -262,7 +262,7 @@ GPlatesViewOperations::create_rendered_dashed_polyline_segments_on_sphere(
 }
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::create_rendered_reconstruction_geometry(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
 		GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
 		RenderedGeometry rendered_geom)
 {

@@ -528,7 +528,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_lin
 	// in a thrown exception.
 	if (line_segment_validity == GPlatesUtils::GeometryConstruction::VALID)
 	{
-		RenderedGeometry rendered_geom = create_rendered_polyline_on_sphere(
+		RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 					*line_segment_on_sphere,
 					GeometryOperationParameters::HIGHLIGHT_COLOUR,
 					GeometryOperationParameters::HIGHLIGHT_LINE_WIDTH_HINT);
@@ -805,7 +805,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_lines(
 		// in a thrown exception.
 		if (line_segment_validity == GPlatesUtils::GeometryConstruction::VALID)
 		{
-			RenderedGeometry rendered_geom = create_rendered_polyline_on_sphere(
+			RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 						*line_segment_on_sphere,
 						GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 						GeometryOperationParameters::LINE_WIDTH_HINT);
@@ -840,7 +840,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_lines(
 		// in a thrown exception.
 		if (line_segment_validity == GPlatesUtils::GeometryConstruction::VALID)
 		{
-			RenderedGeometry rendered_geom = create_rendered_polyline_on_sphere(
+			RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 						*line_segment_on_sphere,
 						GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 						GeometryOperationParameters::LINE_WIDTH_HINT);
@@ -870,7 +870,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_points(
 	{
 		const GPlatesMaths::PointOnSphere &point_on_sphere = *builder_geom_iter;
 
-		RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
+		RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
 			point_on_sphere,
 			GeometryOperationParameters::FOCUS_COLOUR,
 			GeometryOperationParameters::LARGE_POINT_SIZE_HINT);

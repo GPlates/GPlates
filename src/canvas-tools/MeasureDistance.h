@@ -34,7 +34,9 @@
 #include <QObject>
 
 #include "CanvasTool.h"
+
 #include "view-operations/GeometryBuilder.h"
+#include "view-operations/RenderedGeometryCollection.h"
 
 namespace GPlatesGui
 {
@@ -48,7 +50,7 @@ namespace GPlatesMaths
 
 namespace GPlatesViewOperations
 {
-	class RenderedGeometryCollection;
+	class RenderedGeometryLayer;
 }
 
 namespace GPlatesCanvasTools

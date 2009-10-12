@@ -28,9 +28,9 @@
 #ifndef GPLATES_GUI_COLOURSPECTRUM_H
 #define GPLATES_GUI_COLOURSPECTRUM_H
 
-#include "ColourTable.h"
-#include "qt-widgets/ViewportWindow.h"
 #include <vector>
+
+#include "ColourTable.h"
 
 
 namespace GPlatesGui 

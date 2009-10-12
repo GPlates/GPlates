@@ -24,7 +24,7 @@
  */
  
 #include "SetCameraViewpointDialog.h"
-#include "ViewportWindow.h"
+
 
 GPlatesQtWidgets::SetCameraViewpointDialog::SetCameraViewpointDialog(
 		ViewportWindow &viewport_window,

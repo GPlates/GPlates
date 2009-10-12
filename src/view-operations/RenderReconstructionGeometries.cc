@@ -82,17 +82,17 @@ GPlatesViewOperations::render_reconstruction_geometries(
 
 		// Create a RenderedGeometry for drawing the reconstructed geometry.
 		RenderedGeometry rendered_geom =
-			create_rendered_geometry_on_sphere(
-					reconstruction_geom->geometry(),
-					*colour,
-					RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
-					RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+						reconstruction_geom->geometry(),
+						*colour,
+						RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
+						RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT);
 
 		// Create a RenderedGeometry for storing the reconstructed geometry
 		// and the RenderedGeometry used for drawing it.
 		RenderedGeometry rendered_reconstruction_geom =
-			GPlatesViewOperations::create_rendered_reconstruction_geometry(
-					*iter, rendered_geom);
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+						*iter, rendered_geom);
 
 		// Add to the reconstruction rendered layer.
 		// Updates to the canvas will be taken care of since canvas listens

@@ -47,6 +47,7 @@
 #include "maths/LatLonPointConversions.h"
 #include "utils/FloatingPointComparisons.h"
 #include "view-operations/ViewportProjection.h"
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -160,10 +161,9 @@ namespace
 
 
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		GPlatesGui::AnimationController &animation_controller,
 		ViewportWindow &viewport_window,
-		GPlatesViewOperations::ViewState &view_state,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_splitter_widget(new QSplitter(this))
@@ -171,9 +171,9 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	setupUi(this);
 
 	// Create the GlobeCanvas.
-	d_globe_canvas_ptr = new GlobeCanvas(rendered_geom_collection, view_state, this);
+	d_globe_canvas_ptr = new GlobeCanvas(view_state, this);
 	// Create the MapCanvas.
-	d_map_canvas_ptr = new MapCanvas(rendered_geom_collection);
+	d_map_canvas_ptr = new MapCanvas(view_state.get_rendered_geometry_collection());
 	// Create the ZoomSliderWidget for the right-hand side.
 	d_zoom_slider_widget = new ZoomSliderWidget(view_state.get_viewport_zoom(), this);
 

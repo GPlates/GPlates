@@ -43,14 +43,18 @@
 
 #include "TopologyTools.h"
 
+#include "FeatureFocus.h"
+#include "ProximityTests.h"
+
+#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
+#include "feature-visitors/TopologySectionsFinder.h"
+#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
-
-#include "qt-widgets/ViewportWindow.h"
-#include "qt-widgets/ExportCoordinatesDialog.h"
-#include "qt-widgets/CreateFeatureDialog.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/GeometryOnSphere.h"
@@ -63,22 +67,12 @@
 #include "maths/PolylineIntersections.h"
 #include "maths/Real.h"
 
-#include "FeatureFocus.h"
-#include "ProximityTests.h"
-
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ModelUtils.h"
 #include "model/ReconstructedFeatureGeometryFinder.h"
 #include "model/ReconstructionGeometry.h"
 #include "model/DummyTransactionHandle.h"
-
-#include "utils/UnicodeStringUtils.h"
-#include "utils/GeometryCreationUtils.h"
-
-#include "feature-visitors/PropertyValueFinder.h"
-#include "feature-visitors/TopologySectionsFinder.h"
-#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlMultiPoint.h"
@@ -102,26 +96,35 @@
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/TemplateTypeParameterType.h"
 
+#include "qt-widgets/CreateFeatureDialog.h"
+#include "qt-widgets/ExportCoordinatesDialog.h"
+#include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/ViewportWindow.h"
+
+#include "utils/UnicodeStringUtils.h"
+#include "utils/GeometryCreationUtils.h"
+
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
+#include "presentation/ViewState.h"
 
 
 // 
 // Constructor
 // 
 GPlatesGui::TopologyTools::TopologyTools(
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesGui::FeatureFocus &feature_focus,
-		GPlatesQtWidgets::ViewportWindow &view_state):
-	d_rendered_geom_collection(&rendered_geom_collection),
-	d_feature_focus_ptr(&feature_focus),
-	d_view_state_ptr(&view_state)
+		GPlatesPresentation::ViewState &view_state,
+		GPlatesQtWidgets::ViewportWindow &viewport_window):
+	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
+	d_feature_focus_ptr(&view_state.get_feature_focus()),
+	d_reconstruct_ptr(&view_state.get_reconstruct()),
+	d_viewport_window_ptr(&viewport_window)
 {
 	// set up the drawing
 	create_child_rendered_layers();
 
 	// Set pointer to TopologySectionsContainer
-	d_topology_sections_container_ptr = &( d_view_state_ptr->topology_sections_container() );
+	d_topology_sections_container_ptr = &( d_viewport_window_ptr->topology_sections_container() );
 
 
 	// set the internal state flags
@@ -142,7 +145,7 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 	// NOTE: should this be in the constructor ?
 	// Set the pointer to the Topology Tools Widget 
 	d_topology_tools_widget_ptr = 
-		&( d_view_state_ptr->task_panel_ptr()->topology_tools_widget() );
+		&( d_viewport_window_ptr->task_panel_ptr()->topology_tools_widget() );
 
 
 	if ( d_mode == BUILD )
@@ -171,15 +174,15 @@ GPlatesGui::TopologyTools::activate( CanvasToolMode mode )
 
 	// Connect to recon time changes
 	QObject::connect(
-		d_view_state_ptr,
-		SIGNAL(reconstruction_time_changed(double)),
+		d_reconstruct_ptr,
+		SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
 		this,
-		SLOT(handle_reconstruction_time_change(double)));
+		SLOT(handle_reconstruction()));
 
 	// set the widget state
 	d_is_active = true;
 
-	d_view_state_ptr->status_message(QObject::tr(
+	d_viewport_window_ptr->status_message(QObject::tr(
  		"Click on a features to Add or Remove them from the Topology."
  		" Ctrl+drag to reorient the globe."));
 
@@ -212,10 +215,10 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 		d_feature_focus_head_points.clear();
 		d_feature_focus_tail_points.clear();
 		// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-		d_view_state_ptr->feature_table_model().clear();
+		d_viewport_window_ptr->feature_table_model().clear();
 
 		// Flip the ViewportWindow to the Topology Sections Table
-		d_view_state_ptr->choose_topology_sections_table();
+		d_viewport_window_ptr->choose_topology_sections_table();
 
 		// Flip the TopologyToolsWidget to the Toplogy Tab
 		d_topology_tools_widget_ptr->choose_topology_tab();
@@ -237,7 +240,7 @@ GPlatesGui::TopologyTools::deactivate()
 	draw_all_layers_clear();
 
 	// Flip the ViewportWindow to the Clicked Geometry Table
-	d_view_state_ptr->choose_clicked_geometry_table();
+	d_viewport_window_ptr->choose_clicked_geometry_table();
 
 	// Connect to focus signals from Feature Focus
 	connect_to_focus_signals( false );
@@ -247,10 +250,10 @@ GPlatesGui::TopologyTools::deactivate()
 
 	// connect to recon time changes
 	QObject::disconnect(
-		d_view_state_ptr,
-		SIGNAL(reconstruction_time_changed(double)),
+		d_reconstruct_ptr,
+		SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
 		this,
-		SLOT(handle_reconstruction_time_change(double)));
+		SLOT(handle_reconstruction()));
 
 	// Clear out all old data
 	clear_widgets_and_data();
@@ -263,7 +266,7 @@ void
 GPlatesGui::TopologyTools::clear_widgets_and_data()
 {
 	// clear the tables
-	d_view_state_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->feature_table_model().clear();
 
 	// loop over TopologySectionsTable 
 	int i = d_topology_sections_container_ptr->size(); 
@@ -495,8 +498,7 @@ GPlatesGui::TopologyTools::set_click_point(double lat, double lon)
 // reconstruction signals get sent here from a connect in ViewportWindow.cc
 //
 void
-GPlatesGui::TopologyTools::handle_reconstruction_time_change(
-		double new_time)
+GPlatesGui::TopologyTools::handle_reconstruction()
 {
 	if (! d_is_active) { return; }
 
@@ -544,7 +546,7 @@ GPlatesGui::TopologyTools::set_focus(
 		// NOTE: this will trigger a set_focus signal with NULL ref
 		d_feature_focus_ptr->unset_focus(); 
 		// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-		d_view_state_ptr->feature_table_model().clear();
+		d_viewport_window_ptr->feature_table_model().clear();
 		return;
 	} 
 	
@@ -635,7 +637,7 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 		if ( i != -1 )
 		{
 			// Flip to the Topology Sections Table
-			d_view_state_ptr->choose_topology_sections_table();
+			d_viewport_window_ptr->choose_topology_sections_table();
 
 			// Pretend we clicked in that row
 		 	TopologySectionsContainer::size_type index = 
@@ -648,7 +650,7 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 		// else, not found on boundary 
 
 		// Flip to the Clicked Features tab
-		d_view_state_ptr->choose_clicked_geometry_table();
+		d_viewport_window_ptr->choose_clicked_geometry_table();
 	}
 }
 
@@ -791,7 +793,7 @@ GPlatesGui::TopologyTools::react_entry_removed(
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_view_state_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->feature_table_model().clear();
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
@@ -815,7 +817,7 @@ GPlatesGui::TopologyTools::react_entries_inserted(
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_view_state_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->feature_table_model().clear();
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
@@ -841,7 +843,7 @@ GPlatesGui::TopologyTools::react_entries_modified(
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_view_state_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->feature_table_model().clear();
 
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
@@ -880,7 +882,7 @@ void
 GPlatesGui::TopologyTools::handle_insert_feature(int index)
 {
 	// Flip to Topology Sections Table
-	d_view_state_ptr->change_tab( 2 );
+	d_viewport_window_ptr->change_tab( 2 );
 
 	// Disconnect to FeatureFocus and TopologySectionsTable signals while changing Table
 	connect_to_topology_sections_container_signals( false );
@@ -890,7 +892,7 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	GPlatesGui::TopologySectionsContainer::TableRow table_row;
 
 	// Pointer to the Clicked Features table
-	GPlatesGui::FeatureTableModel &clicked_table = d_view_state_ptr->feature_table_model();
+	GPlatesGui::FeatureTableModel &clicked_table = d_viewport_window_ptr->feature_table_model();
 
 	// Table index of clicked feature
 	int click_index = clicked_table.current_index().row();
@@ -958,7 +960,7 @@ GPlatesGui::TopologyTools::handle_insert_feature(int index)
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_view_state_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->feature_table_model().clear();
 
 	// set flags for visit from update_geom()
 	d_visit_to_check_type = false;
@@ -1009,10 +1011,10 @@ GPlatesGui::TopologyTools::handle_remove_feature()
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_view_state_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->feature_table_model().clear();
 
 	// Flip to Topology Sections Table
-	d_view_state_ptr->change_tab( 2 );
+	d_viewport_window_ptr->change_tab( 2 );
 
 	// process the sections vectors 
 	d_visit_to_check_type = false;
@@ -1034,7 +1036,7 @@ GPlatesGui::TopologyTools::handle_remove_all_sections()
 	d_feature_focus_head_points.clear();
 	d_feature_focus_tail_points.clear();
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_view_state_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->feature_table_model().clear();
 
 	// disconnect from signals 
 	connect_to_topology_sections_container_signals(false);
@@ -1312,7 +1314,7 @@ GPlatesGui::TopologyTools::draw_all_layers_clear()
 	d_intersection_points_layer_ptr->clear_rendered_geometries();
 	d_click_points_layer_ptr->clear_rendered_geometries();
 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 void
@@ -1328,7 +1330,7 @@ GPlatesGui::TopologyTools::draw_all_layers()
 	
 	//draw_click_points();
 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 
@@ -1336,7 +1338,7 @@ void
 GPlatesGui::TopologyTools::draw_topology_geometry()
 {
 	d_topology_geometry_layer_ptr->clear_rendered_geometries();
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 
 	if (d_topology_geometry_opt_ptr) 
 	{
@@ -1345,7 +1347,7 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				*d_topology_geometry_opt_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1355,14 +1357,14 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 	}
 
 	// update the canvas 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 void
 GPlatesGui::TopologyTools::draw_insertion_neighbors()
 {
 	d_insertion_neighbors_layer_ptr->clear_rendered_geometries();
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 
 	if ( d_feature_before_insert_opt_ptr ) 
 	{
@@ -1370,7 +1372,7 @@ GPlatesGui::TopologyTools::draw_insertion_neighbors()
 
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				*d_feature_before_insert_opt_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1386,7 +1388,7 @@ GPlatesGui::TopologyTools::draw_insertion_neighbors()
 
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				*d_feature_after_insert_opt_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1396,14 +1398,14 @@ GPlatesGui::TopologyTools::draw_insertion_neighbors()
 	}
 
 	// update the canvas 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 void
 GPlatesGui::TopologyTools::draw_focused_geometry()
 {
 	d_focused_feature_layer_ptr->clear_rendered_geometries();
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 
 	// always check weak refs
 	if ( ! d_feature_focus_ptr->is_valid() ) { return; }
@@ -1413,7 +1415,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry()
 		const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				d_feature_focus_ptr->associated_reconstruction_geometry()->geometry(),
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
@@ -1454,7 +1456,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry_end_points()
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					geom_on_sphere_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
@@ -1480,7 +1482,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry_end_points()
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::LARGE_POINT_SIZE_HINT,
@@ -1496,7 +1498,7 @@ void
 GPlatesGui::TopologyTools::draw_segments()
 {
 	d_segments_layer_ptr->clear_rendered_geometries();
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 
 	std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator itr, end;
 	itr = d_segments.begin();
@@ -1512,7 +1514,7 @@ GPlatesGui::TopologyTools::draw_segments()
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1522,14 +1524,14 @@ GPlatesGui::TopologyTools::draw_segments()
 		}
 	}
 	// update the canvas 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 void
 GPlatesGui::TopologyTools::draw_end_points()
 {
 	d_end_points_layer_ptr->clear_rendered_geometries();
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 
 	std::vector<GPlatesMaths::PointOnSphere>::iterator itr, end;
 
@@ -1548,7 +1550,7 @@ GPlatesGui::TopologyTools::draw_end_points()
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
@@ -1574,7 +1576,7 @@ GPlatesGui::TopologyTools::draw_end_points()
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT,
@@ -1586,14 +1588,14 @@ GPlatesGui::TopologyTools::draw_end_points()
 	}
 
 	// update the canvas 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 void
 GPlatesGui::TopologyTools::draw_intersection_points()
 {
 	d_intersection_points_layer_ptr->clear_rendered_geometries();
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 
 	// loop over click points 
 	std::vector<GPlatesMaths::PointOnSphere>::iterator itr, end;
@@ -1611,7 +1613,7 @@ GPlatesGui::TopologyTools::draw_intersection_points()
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1621,7 +1623,7 @@ GPlatesGui::TopologyTools::draw_intersection_points()
 		}
 	}
 	// update the canvas 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 
@@ -1630,7 +1632,7 @@ void
 GPlatesGui::TopologyTools::draw_click_point()
 {
 	d_click_points_layer_ptr->clear_rendered_geometries();
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 
 	// make a point from the coordinates
 	GPlatesMaths::PointOnSphere click_pos = GPlatesMaths::make_point_on_sphere(
@@ -1646,7 +1648,7 @@ GPlatesGui::TopologyTools::draw_click_point()
 
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				pos_ptr,
 				colour,
 				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1656,7 +1658,7 @@ GPlatesGui::TopologyTools::draw_click_point()
 	}
 
 	// update the canvas 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 #if 0
@@ -1688,7 +1690,7 @@ GPlatesGui::TopologyTools::draw_click_points()
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
@@ -1876,7 +1878,7 @@ GPlatesGui::TopologyTools::create_sections_from_sections_table()
 		
 		// Get the RFG for this feature 
 		GPlatesModel::ReconstructedFeatureGeometryFinder finder( 
-			&(d_view_state_ptr->reconstruction()) );
+				&d_reconstruct_ptr->get_current_reconstruction());
 
 		finder.find_rfgs_of_feature( feature_ref );
 
@@ -2054,7 +2056,7 @@ GPlatesGui::TopologyTools::process_intersections()
 	{
 		// Get the RFG for this feature 
 		GPlatesModel::ReconstructedFeatureGeometryFinder finder( 
-			&(d_view_state_ptr->reconstruction()) );
+			&d_reconstruct_ptr->get_current_reconstruction());
 
 		finder.find_rfgs_of_feature( prev_feature_ref );
 
@@ -2189,7 +2191,7 @@ GPlatesGui::TopologyTools::process_intersections()
 	{
 		// Get the RFG for this feature 
 		GPlatesModel::ReconstructedFeatureGeometryFinder next_finder( 
-			&(d_view_state_ptr->reconstruction()) );
+			&d_reconstruct_ptr->get_current_reconstruction());
 
 		next_finder.find_rfgs_of_feature( next_feature_ref );
 
@@ -2639,7 +2641,7 @@ GPlatesGui::TopologyTools::append_boundary_to_feature(
 		feature_ref);
 
 	// Set the ball rolling again ...
-	d_view_state_ptr->reconstruct(); 
+	d_reconstruct_ptr->reconstruct(); 
 }
 
 

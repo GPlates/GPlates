@@ -37,7 +37,8 @@
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
-#include "qt-widgets/ViewportWindow.h"	// ViewState, needed for .reconstruction_root()
+
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -105,7 +106,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
 	//
 	const GPlatesAppLogic::PlateVelocities &plate_velocities =
-			d_export_animation_context_ptr->view_state().plate_velocities();
+			d_export_animation_context_ptr->view_state().get_plate_velocities();
 	
 	// Iterate over the velocity feature collections currently being solved.
 	const unsigned int num_velocity_feature_collections =
@@ -114,11 +115,9 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		velocity_index < num_velocity_feature_collections;
 		++velocity_index)
 	{
-		GPlatesFileIO::FileInfo velocity_file;
-
 		// Get cap file information, work out filenames we will use.
 		const GPlatesFileIO::FileInfo &velocity_file_info =
-				plate_velocities.get_velocity_file(velocity_index);
+				plate_velocities.get_velocity_file_info(velocity_index);
 		const QString &velocity_filename = velocity_file_info.get_qfileinfo().absoluteFilePath();
 		//QString cap_display_name = velocity_filename.fileName();
 		QString output_basename = calculate_output_basename(output_filename_prefix, velocity_filename);

@@ -39,7 +39,13 @@
 #include "EditStringWidget.h"
 #include "InformationDialog.h"
 #include "ViewportWindow.h"
-#include "qt-widgets/ApplicationState.h"
+
+#include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/Reconstruct.h"
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "gui/GeometricPropertyValueConstructor.h"
 #include "model/types.h"
 #include "model/Model.h"
 #include "model/PropertyName.h"
@@ -48,7 +54,7 @@
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 #include "utils/UnicodeStringUtils.h"
-#include "gui/GeometricPropertyValueConstructor.h"
+#include "presentation/ViewState.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -368,35 +374,46 @@ namespace
 	public:
 		// Standard constructor for creating FeatureCollection entry.
 		FeatureCollectionItem(
-				GPlatesModel::FeatureCollectionHandle::weak_ref collection,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter,
 				const QString &label):
 			QListWidgetItem(label),
-			d_collection(collection),
-			d_is_create_new_collection_item(false)
+			d_file_iter(file_iter)
 		{  }
 
 		// Constructor for creating fake "Make a new Feature Collection" entry.
 		FeatureCollectionItem(
 				const QString &label):
-			QListWidgetItem(label),
-			d_is_create_new_collection_item(true)
+			QListWidgetItem(label)
 		{  }
-		
-		GPlatesModel::FeatureCollectionHandle::weak_ref
-		get_collection()
-		{
-			return d_collection;
-		}
-		
+			
 		bool
 		is_create_new_collection_item()
 		{
-			return d_is_create_new_collection_item;
+			return !d_file_iter;
+		}
+
+		/**
+		 * NOTE: Check with @a is_create_new_collection_item first and set a valid file
+		 * iterator if necessary before calling this method.
+		 */
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+		get_file_iterator()
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_file_iter, GPLATES_ASSERTION_SOURCE);
+
+			return *d_file_iter;
+		}
+
+		void
+		set_file_iterator(
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter)
+		{
+			d_file_iter = file_iter;
 		}
 	
 	private:
-		GPlatesModel::FeatureCollectionHandle::weak_ref d_collection;
-		bool d_is_create_new_collection_item;
+		boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_iterator> d_file_iter;
 	};
 
 
@@ -499,25 +516,37 @@ namespace
 	 */
 	void
 	populate_feature_collections_list(
-			QListWidget &list_widget)
+			QListWidget &list_widget,
+			GPlatesAppLogic::FeatureCollectionFileState &state)
 	{
-		GPlatesAppState::ApplicationState *state = GPlatesAppState::ApplicationState::instance();
-		
-		GPlatesAppState::ApplicationState::file_info_iterator it = state->files_begin();
-		GPlatesAppState::ApplicationState::file_info_iterator end = state->files_end();
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
+				state.loaded_files();
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
 		
 		list_widget.clear();
 		for (; it != end; ++it) {
 			// Get the FeatureCollectionHandle for this file.
-			boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> collection_opt =
+			GPlatesModel::FeatureCollectionHandle::weak_ref collection_opt =
 					it->get_feature_collection();
-					
-			// Get a suitable label; we will prefer the full filename.
-			QString label = it->get_display_name(true);
+
+			// Some files might not actually exist yet if the user created a new
+			// feature collection internally and hasn't saved it to file yet.
+			QString label;
+			if (GPlatesFileIO::file_exists(it->get_file_info()))
+			{
+				// Get a suitable label; we will prefer the full filename.
+				label = it->get_file_info().get_display_name(true);
+			}
+			else
+			{
+				// The file doesn't exist so give it a filename to indicate this.
+				label = "New Feature Collection";
+			}
 			
 			// We are only interested in loaded files which have valid FeatureCollections.
-			if (collection_opt) {
-				list_widget.addItem(new FeatureCollectionItem(*collection_opt, label));
+			if (collection_opt.is_valid()) {
+				list_widget.addItem(new FeatureCollectionItem(it, label));
 			}
 		}
 		// Add a final option for creating a brand new FeatureCollection.
@@ -545,13 +574,16 @@ namespace
 
 
 GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
-		GPlatesModel::ModelInterface &model_interface,
-		GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesPresentation::ViewState &view_state_,
+		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		FeatureType creation_type,
 		QWidget *parent_):
 	QDialog(parent_),
-	d_model_ptr(&model_interface),
-	d_view_state_ptr(&view_state_),
+	d_model_ptr(view_state_.get_application_state().get_model_interface()),
+	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
+	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),
+	d_reconstruct_ptr(&view_state_.get_reconstruct()),
+	d_viewport_window_ptr(&viewport_window_),
 	d_creation_type(creation_type),
 	d_geometry_opt_ptr(boost::none),
 	d_plate_id_widget(new EditPlateIdWidget(this)),
@@ -652,7 +684,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_collection_page()
 	// Populate list of feature collections.
 	// Note that this should also be done any time the user opens the dialog with
 	// fresh geometry they wish to create a Feature with.
-	populate_feature_collections_list(*listwidget_feature_collections);
+	populate_feature_collections_list(*listwidget_feature_collections, d_file_state);
 	
 	// Pushing Enter or double-clicking should cause the buttonbox to focus.
 	QObject::connect(listwidget_feature_collections, SIGNAL(itemActivated(QListWidgetItem *)),
@@ -695,7 +727,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_geometry_and_display(
 	// Set the stack back to the first page.
 	stack->setCurrentIndex(0);
 	// The Feature Collections list needs to be repopulated each time.
-	populate_feature_collections_list(*listwidget_feature_collections);
+	populate_feature_collections_list(*listwidget_feature_collections, d_file_state);
 	
 	// Show the dialog modally.
 	return exec();
@@ -708,7 +740,7 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 	// Set the stack back to the first page.
 	stack->setCurrentIndex(0);
 	// The Feature Collections list needs to be repopulated each time.
-	populate_feature_collections_list(*listwidget_feature_collections);
+	populate_feature_collections_list(*listwidget_feature_collections, d_file_state);
 	
 	// Show the dialog modally.
 	return exec();
@@ -809,7 +841,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	// expressed in terms of present day location, given the plate ID that is associated
 	// with it and the current reconstruction time.
 	GPlatesModel::ReconstructionTree &recon_tree = 
-			d_view_state_ptr->reconstruction().reconstruction_tree();
+			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree();
 	GPlatesModel::integer_plate_id_type int_plate_id = 
 			d_plate_id_widget->create_integer_plate_id_from_widget();	
 	// It will also wrap the present-day GeometryOnSphere in a suitable PropertyValue,
@@ -852,14 +884,13 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection;
 
 	if (collection_item->is_create_new_collection_item()) {
-		GPlatesAppState::ApplicationState::file_info_iterator new_file = 
-				d_view_state_ptr->create_empty_reconstructable_file();
-		collection = *(new_file->get_feature_collection());
-	} else {
-		collection = collection_item->get_collection();
+		collection_item->set_file_iterator(d_file_io.create_empty_file());
 	}
+
+	collection = collection_item->get_file_iterator()->get_feature_collection();
+
 	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = (*d_model_ptr)->create_feature(type, collection);
+	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
 	
 
 	// Add a (possibly ConstantValue-wrapped, see GeometricPropertyValueConstructor)
@@ -890,6 +921,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 			d_name_widget->create_property_value_from_widget(),
 			GPlatesModel::PropertyName::create_gml("name"),
 			feature);
+
+	// We've just modified the feature collection so let the feature collection file state
+	// know this so it can reclassify it.
+	// TODO: This is not ideal since we have to manually call this whenever a feature in
+	// the feature collection is modified - remove this call when feature/feature-collection
+	// callbacks have been implemented and then utilised inside FeatureCollectionFileState to
+	// listen on feature collection changes.
+	d_file_state.reclassify_feature_collection(collection_item->get_file_iterator());
 	
 	emit feature_created(feature);
 	accept();
@@ -902,7 +941,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_and_save()
 	handle_create();
 
 	// and now open the manage feature collections dialog
-	d_view_state_ptr->pop_up_manage_feature_collections_dialog();
+	d_viewport_window_ptr->pop_up_manage_feature_collections_dialog();
 }
 
 void
@@ -943,16 +982,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection;
 
 	if (collection_item->is_create_new_collection_item()) {
-		GPlatesAppState::ApplicationState::file_info_iterator new_file =
-			d_view_state_ptr->create_empty_reconstructable_file();
-		collection = *(new_file->get_feature_collection());
-	} else {
-		collection = collection_item->get_collection();
+		collection_item->set_file_iterator(d_file_io.create_empty_file());
 	}
+
+	collection = collection_item->get_file_iterator()->get_feature_collection();
 	
 	// Actually create the Feature!
 	GPlatesModel::FeatureHandle::weak_ref feature = 
-		(*d_model_ptr)->create_feature(type, collection);
+		d_model_ptr->create_feature(type, collection);
 	
 
 	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
@@ -980,6 +1017,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 			d_name_widget->create_property_value_from_widget(),
 			GPlatesModel::PropertyName::create_gml("name"),
 			feature);
+
+	// We've just modified the feature collection so let the feature collection file state
+	// know this so it can reclassify it.
+	// TODO: This is not ideal since we have to manually call this whenever a feature in
+	// the feature collection is modified - remove this call when feature/feature-collection
+	// callbacks have been implemented and then utilised inside FeatureCollectionFileState to
+	// listen on feature collection changes.
+	d_file_state.reclassify_feature_collection(collection_item->get_file_iterator());
 
 	emit feature_created(feature);
 	accept();

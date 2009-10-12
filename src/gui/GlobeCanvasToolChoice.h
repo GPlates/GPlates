@@ -55,13 +55,17 @@ namespace GPlatesCanvasTools
 	class MeasureDistanceState;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesViewOperations
 {
 	class ActiveGeometryOperation;
 	class GeometryOperationTarget;
 	class QueryProximityThreshold;
 	class RenderedGeometryCollection;
-	class ViewState;
 }
 
 namespace GPlatesGui
@@ -95,7 +99,7 @@ namespace GPlatesGui
 				Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				const GPlatesQtWidgets::ViewportWindow &viewport_window,
-				GPlatesViewOperations::ViewState &view_state,
+				GPlatesPresentation::ViewState &view_state,
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,

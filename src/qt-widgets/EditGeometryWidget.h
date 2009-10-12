@@ -37,10 +37,20 @@
 
 #include "EditGeometryWidgetUi.h"
 
+
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
 	class EditGeometryActionWidget;
-	class ViewportWindow;
 	
 	class EditGeometryWidget:
 			public AbstractEditWidget, 
@@ -51,7 +61,7 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		EditGeometryWidget(
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 		
 		virtual
@@ -143,8 +153,10 @@ namespace GPlatesQtWidgets
 		 * also cause the table of points to be updated.
 		 */
 		void
-		handle_reconstruction_time_change(
-				double time);
+		handle_reconstruction(
+				GPlatesAppLogic::Reconstruct &reconstructer,
+				bool reconstruction_time_changed,
+				bool anchor_plate_id_changed);
 		
 
 		/**
@@ -204,11 +216,11 @@ namespace GPlatesQtWidgets
 		set_geometry_for_property_value();
 		
 		/**
-		 * A pointer to the view state so that the EditGeometryWidget can query
+		 * A pointer to the reconstruction generator so that the EditGeometryWidget can query
 		 * it for the current reconstruction time and perform reconstructions
 		 * of the points in the table.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		const GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
 		
 		/**
 		 * The plate ID that should be used for reconstructions.

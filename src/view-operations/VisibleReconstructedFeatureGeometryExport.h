@@ -23,32 +23,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_VIEWOPERATIONS_EXPORTRECONSTRUCTEDFEATUREGEOMETRIES_H
-#define GPLATES_VIEWOPERATIONS_EXPORTRECONSTRUCTEDFEATUREGEOMETRIES_H
+#ifndef GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
+#define GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
 
 #include <vector>
 #include <QString>
 
+#include "file-io/File.h"
+
 #include "model/types.h"
-#include "qt-widgets/ApplicationState.h"
 
-
-namespace GPlatesModel
-{
-	class Reconstruction;
-}
 
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
 
-	namespace ExportReconstructedFeatureGeometries
+	namespace VisibleReconstructedFeatureGeometryExport
 	{
-		//! Typedef for iterator into global list of loaded feature collection files.
-		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_const_iterator_type;
-
-		//! Typedef for sequence of feature collection file iterators.
-		typedef std::vector<file_info_const_iterator_type> active_files_collection_type;
+		//! Typedef for sequence of feature collection files.
+		typedef std::vector<const GPlatesFileIO::File *> files_collection_type;
 
 		/**
 		 * Collects visible @a ReconstructedFeatureGeometry objects from
@@ -57,7 +50,7 @@ namespace GPlatesViewOperations
 		 * Only those @a ReconstructionFeatureGeometry objects that are visible in
 		 * the RECONSTRUCTION_LAYER of @a rendered_geom_collection are exported.
 		 *
-		 * @param active_reconstructable_files used to determine which files the RFGs came from.
+		 * @param reconstructable_files used to determine which files the RFGs came from.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
 		 * @param reconstruction_time time at which the reconstruction took place.
 		 *
@@ -67,12 +60,11 @@ namespace GPlatesViewOperations
 		void
 		export_visible_geometries(
 				const QString &filename,
-				const GPlatesModel::Reconstruction &reconstruction,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				const active_files_collection_type &active_reconstructable_files,
+				const files_collection_type &reconstructable_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 	}
 }
 
-#endif // GPLATES_VIEWOPERATIONS_EXPORTRECONSTRUCTEDFEATUREGEOMETRIES_H
+#endif // GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTEDFEATUREGEOMETRYEXPORT_H

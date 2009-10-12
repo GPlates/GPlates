@@ -30,14 +30,15 @@
 #include <QGraphicsView>
 #include <boost/shared_ptr.hpp>
 
+#include "MapView.h"
+
+#include "MapCanvas.h"
+
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
 #include "gui/QGLWidgetTextRenderer.h"
 #include "maths/InvalidLatLonException.h"
-#include "MapCanvas.h"
-#include "ViewportWindow.h"
-
-#include "MapView.h"
+#include "presentation/ViewState.h"
 
 namespace
 {
@@ -68,7 +69,7 @@ namespace
 
 
 GPlatesQtWidgets::MapView::MapView(
-	GPlatesViewOperations::ViewState &view_state,
+	GPlatesPresentation::ViewState &view_state,
 	QWidget *parent_,
 	GPlatesQtWidgets::MapCanvas *map_canvas_):
 	d_viewport_zoom(&view_state.get_viewport_zoom()),

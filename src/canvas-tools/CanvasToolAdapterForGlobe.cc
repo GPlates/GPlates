@@ -26,17 +26,19 @@
  */
 
 #include "CanvasToolAdapterForGlobe.h"
+
 #include "maths/PointOnSphere.h"
+#include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::CanvasToolAdapterForGlobe (
 		CanvasTool *canvas_tool_ptr,
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		const GPlatesQtWidgets::ViewportWindow &view_state_) :
+		const GPlatesQtWidgets::ViewportWindow &viewport_window_) :
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_canvas_tool_ptr(canvas_tool_ptr),
-	d_status_bar_listener(&view_state_)
+	d_status_bar_listener(&viewport_window_)
 {
 	canvas_tool_ptr->set_view(CanvasTool::GLOBE_VIEW);
 	canvas_tool_ptr->add_status_bar_listener(&d_status_bar_listener);
@@ -47,14 +49,14 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::create(
 		CanvasTool *canvas_tool_ptr,
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		const GPlatesQtWidgets::ViewportWindow &view_state) 
+		const GPlatesQtWidgets::ViewportWindow &viewport_window) 
 {
 	CanvasToolAdapterForGlobe::non_null_ptr_type ptr(
 			new CanvasToolAdapterForGlobe(
 				canvas_tool_ptr,
 				globe_,
 				globe_canvas_,
-				view_state),
+				viewport_window),
 			GPlatesUtils::NullIntrusivePointerHandler());
 	return ptr;
 }

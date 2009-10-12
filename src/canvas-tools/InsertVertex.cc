@@ -25,7 +25,6 @@
 
 #include "InsertVertex.h"
 
-#include "qt-widgets/ViewportWindow.h"
 #include "view-operations/InsertVertexGeometryOperation.h"
 #include "view-operations/GeometryOperationTarget.h"
 

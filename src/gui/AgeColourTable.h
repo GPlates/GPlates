@@ -28,10 +28,15 @@
 #ifndef GPLATES_GUI_AGECOLOURTABLE_H
 #define GPLATES_GUI_AGECOLOURTABLE_H
 
-#include "ColourTable.h"
-#include "qt-widgets/ViewportWindow.h"
 #include <vector>
 
+#include "ColourTable.h"
+
+
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
 
 namespace GPlatesPropertyValues
 {
@@ -62,8 +67,8 @@ namespace GPlatesGui
 				const GPlatesPropertyValues::GeoTimeInstant &geo_time) const;
 
 		void 
-		set_viewport_window(
-				const GPlatesQtWidgets::ViewportWindow &viewport);
+		set_reconstruct_state(
+				const GPlatesAppLogic::Reconstruct &reconstruct);
 
 		void 
 		set_colour_scale_factor(
@@ -83,7 +88,7 @@ namespace GPlatesGui
 
 		std::vector<GPlatesGui::Colour> *d_colours;		
 
-		const GPlatesQtWidgets::ViewportWindow *d_viewport_window;
+		const GPlatesAppLogic::Reconstruct *d_reconstruct;
 
 		int d_colour_scale_factor;
 	};

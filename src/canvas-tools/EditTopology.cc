@@ -31,36 +31,38 @@
 
 #include "EditTopology.h"
 
+#include "app-logic/Reconstruct.h"
+#include "feature-visitors/PropertyValueFinder.h"
+#include "global/InternalInconsistencyException.h"
 #include "gui/ProximityTests.h"
-#include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/ViewportWindow.h"
 #include "maths/LatLonPointConversions.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
-#include "global/InternalInconsistencyException.h"
+#include "property-values/XsString.h"
+#include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/ViewportWindow.h"
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
-#include "property-values/XsString.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "presentation/ViewState.h"
+
 
 GPlatesCanvasTools::EditTopology::EditTopology(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesPresentation::ViewState &view_state_,
+				const GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesGui::FeatureFocus &feature_focus):
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget):
 	GlobeCanvasTool(globe_, globe_canvas_),
-	d_rendered_geom_collection(&rendered_geom_collection),
-	d_view_state_ptr(&view_state_),
+	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
+	d_reconstruct_ptr(&view_state_.get_reconstruct()),
+	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	d_topology_sections_container_ptr(&topology_sections_container),
 	d_topology_tools_widget_ptr(&topology_tools_widget),
-	d_feature_focus_ptr(&feature_focus)
+	d_feature_focus_ptr(&view_state_.get_feature_focus())
 {
-
 }
 
 
@@ -74,7 +76,7 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	{
 		// switch to the choose feature tool
 		// FIXME:  Since ViewportWindow is passed as a const ref cannot call this :
-		// d_view_state_ptr->choose_click_geometry_tool();
+		// d_viewport_window_ptr->choose_click_geometry_tool();
 		return;
 	}
 
@@ -90,7 +92,7 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	{
 		// switch to the choose feature tool
 		// FIXME:  Since ViewportWindow is passed as a const ref cannot call this :
-		// d_view_state_ptr->choose_click_geometry_tool();
+		// d_viewport_window_ptr->choose_click_geometry_tool();
 
 		// unset the focus
  		d_feature_focus_ptr->unset_focus();
@@ -127,7 +129,7 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 	d_topology_tools_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
 
 	// Show the 'Clicked' Feature Table
-	d_view_state_ptr->choose_clicked_geometry_table();
+	d_viewport_window_ptr->choose_clicked_geometry_table();
 
 	//
 	// From ClickGeometry
@@ -138,23 +140,26 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 	// What did the user click on just now?
 	std::priority_queue<GPlatesGui::ProximityTests::ProximityHit> sorted_hits;
 
-	GPlatesGui::ProximityTests::find_close_rfgs(sorted_hits, view_state().reconstruction(),
-			oriented_click_pos_on_globe, proximity_inclusion_threshold);
+	GPlatesGui::ProximityTests::find_close_rfgs(
+			sorted_hits,
+			d_reconstruct_ptr->get_current_reconstruction(),
+			oriented_click_pos_on_globe,
+			proximity_inclusion_threshold);
 	
 	// Give the user some useful feedback in the status bar.
 	if (sorted_hits.size() == 0) {
-		d_view_state_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
+		d_viewport_window_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
 	} else if (sorted_hits.size() == 1) {
-		d_view_state_ptr->status_message(tr("Clicked %1 geometry.").arg(sorted_hits.size()));
+		d_viewport_window_ptr->status_message(tr("Clicked %1 geometry.").arg(sorted_hits.size()));
 	} else {
-		d_view_state_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
+		d_viewport_window_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
 	}
 
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
 	d_clicked_table_model_ptr->clear();
 
 	if (sorted_hits.size() == 0) {
-		d_view_state_ptr->status_message(tr("Clicked 0 geometries."));
+		d_viewport_window_ptr->status_message(tr("Clicked 0 geometries."));
 		// User clicked on empty space! Clear the currently focused feature.
 		d_feature_focus_ptr->unset_focus();
 		emit no_hits_found();
@@ -170,7 +175,7 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 		sorted_hits.pop();
 	}
 	d_clicked_table_model_ptr->end_insert_features();
-	d_view_state_ptr->highlight_first_clicked_feature_table_row();
+	d_viewport_window_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
 }
 
@@ -188,7 +193,7 @@ GPlatesCanvasTools::EditTopology::handle_shift_left_click(
 	d_topology_tools_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
 
 	// Show the 'Clicked' Feature Table
-	d_view_state_ptr->choose_clicked_geometry_table();
+	d_viewport_window_ptr->choose_clicked_geometry_table();
 
 	//
 	// From ClickGeometry
@@ -199,23 +204,26 @@ GPlatesCanvasTools::EditTopology::handle_shift_left_click(
 	// What did the user click on just now?
 	std::priority_queue<GPlatesGui::ProximityTests::ProximityHit> sorted_hits;
 
-	GPlatesGui::ProximityTests::find_close_rfgs(sorted_hits, view_state().reconstruction(),
-			oriented_click_pos_on_globe, proximity_inclusion_threshold);
+	GPlatesGui::ProximityTests::find_close_rfgs(
+			sorted_hits,
+			d_reconstruct_ptr->get_current_reconstruction(),
+			oriented_click_pos_on_globe,
+			proximity_inclusion_threshold);
 	
 	// Give the user some useful feedback in the status bar.
 	if (sorted_hits.size() == 0) {
-		d_view_state_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
+		d_viewport_window_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
 	} else if (sorted_hits.size() == 1) {
-		d_view_state_ptr->status_message(tr("Clicked %1 geometry.").arg(sorted_hits.size()));
+		d_viewport_window_ptr->status_message(tr("Clicked %1 geometry.").arg(sorted_hits.size()));
 	} else {
-		d_view_state_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
+		d_viewport_window_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
 	}
 
 	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
 	d_clicked_table_model_ptr->clear();
 
 	if (sorted_hits.size() == 0) {
-		d_view_state_ptr->status_message(tr("Clicked 0 geometries."));
+		d_viewport_window_ptr->status_message(tr("Clicked 0 geometries."));
 		// User clicked on empty space! Clear the currently focused feature.
 		d_feature_focus_ptr->unset_focus();
 		emit no_hits_found();
@@ -231,7 +239,7 @@ GPlatesCanvasTools::EditTopology::handle_shift_left_click(
 		sorted_hits.pop();
 	}
 	d_clicked_table_model_ptr->end_insert_features();
-	d_view_state_ptr->highlight_first_clicked_feature_table_row();
+	d_viewport_window_ptr->highlight_first_clicked_feature_table_row();
 	emit sorted_hits_updated();
 
 	// Pass the click info to the widget 

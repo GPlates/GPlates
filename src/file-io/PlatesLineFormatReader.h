@@ -28,6 +28,7 @@
 #ifndef GPLATES_FILEIO_PLATESLINEFORMATREADER_H
 #define GPLATES_FILEIO_PLATESLINEFORMATREADER_H
 
+#include "File.h"
 #include "FileInfo.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "ReadErrorAccumulation.h"
@@ -46,9 +47,9 @@ namespace GPlatesFileIO {
 		 * ErrorOpeningFileForReadingException will be thrown.
 		 */
 		static 
-		void
+		File::shared_ref
 		read_file(
-				FileInfo &fileinfo,
+				const FileInfo &fileinfo,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 	};

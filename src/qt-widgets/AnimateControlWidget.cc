@@ -26,7 +26,6 @@
 #include "AnimateControlWidget.h"
 
 #include <QDebug>
-#include "ViewportWindow.h"		// for ViewportWindow::pop_up_animate_dialog().
 #include "gui/AnimationController.h"
 #include "utils/FloatingPointComparisons.h"
 

@@ -29,6 +29,7 @@
 #include "FeatureCollectionFileFormat.h"
 #include "FileFormatNotSupportedException.h"
 #include "ShapefileFormatReconstructedFeatureGeometryExport.h"
+#include "ReconstructedFeatureGeometryExportImpl.h"
 
 
 GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
@@ -60,19 +61,32 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
 
 void
 GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
-		const feature_geometry_group_seq_type &feature_geometry_group_seq,
+		const QString &filename,
 		ReconstructedFeatureGeometryExport::Format export_format,
-		const QFileInfo& file_info,
-		const referenced_files_collection_type &referenced_files,
+		const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
+		const files_collection_type &reconstructable_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
+	// Get the list of active reconstructable feature collection files that contain
+	// the features referenced by the ReconstructedFeatureGeometry objects.
+	ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type referenced_files;
+	ReconstructedFeatureGeometryExportImpl::get_files_referenced_by_geometries(
+			referenced_files, reconstructed_feature_geom_seq, reconstructable_files);
+
+	// Group the RFGs by their feature.
+	ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type grouped_rfgs_seq;
+	ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_feature(
+			grouped_rfgs_seq, reconstructed_feature_geom_seq);
+
+
+	// Export depending on the file format.
 	switch (export_format)
 	{
 	case GMT:
 		GMTFormatReconstructedFeatureGeometryExport::export_geometries(
-				feature_geometry_group_seq,
-				file_info,
+				grouped_rfgs_seq,
+				filename,
 				referenced_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time);
@@ -80,11 +94,11 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
 		
 	case SHAPEFILE:
 		ShapefileFormatReconstructedFeatureGeometryExport::export_geometries(
-			feature_geometry_group_seq,
-			file_info,
-			referenced_files,
-			reconstruction_anchor_plate_id,
-			reconstruction_time);		
+				grouped_rfgs_seq,
+				filename,
+				referenced_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time);		
 		break;
 
 	default:

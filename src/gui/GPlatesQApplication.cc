@@ -33,6 +33,7 @@
 
 #include "GPlatesQApplication.h"
 
+#include "global/Constants.h"
 #include "global/GPlatesException.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -66,6 +67,10 @@ namespace
 
 			// Extract the call stack trace to the location where the exception was thrown.
 			exc.get_call_stack_trace_string(call_stack_trace_std);
+		}
+		catch(std::exception& exc)
+		{
+			error_message_std = exc.what();
 		}
 		catch (...)
 		{
@@ -109,22 +114,23 @@ namespace
 					QMessageBox::Ok);
 		}
 
-		// If we have an installed message handler then this will also output to a log file.
+		// If we have an installed message handler then this will output to a log file.
 		qWarning() << error_message;
 
 		// Output the call stack trace if we have one.
 		if (!call_stack_trace_std.empty())
 		{
-			// If we have an installed message handler then this will also output to a log file.
+			// If we have an installed message handler then this will output to a log file.
 			// Also write out the SVN revision number so we know which source code to look
 			// at when users send us back a log file.
 			qWarning()
 					<< QString::fromStdString(call_stack_trace_std)
 					<< endl
-					<< "SVN $Revision$";
+					<< GPlatesGlobal::SourceCodeControlVersionString;
 		}
 
-		// If we have an installed message handler then this will also output to a log file.
+		// If we have an installed message handler then this will output to a log file.
+		// This is where the core dump or debugger trigger happens on debug builds.
 		qFatal("Exiting due to exception caught");
 
 		// Shouldn't get past qFatal - this just keeps compiler happy.

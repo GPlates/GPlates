@@ -27,6 +27,8 @@
 
 #include "AppLogicUtils.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
+
 #include "model/ReconstructionGraph.h"
 #include "model/ReconstructionTreePopulator.h"
 #include "model/ReconstructedFeatureGeometryPopulator.h"
@@ -35,7 +37,7 @@
 
 
 const GPlatesModel::ReconstructionTree::non_null_ptr_type
-GPlatesAppLogic::Reconstruct::create_reconstruction_tree(
+GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstruction_features_collection,
 		const double &time,
@@ -58,7 +60,7 @@ GPlatesAppLogic::Reconstruct::create_reconstruction_tree(
 std::pair<
 		const GPlatesModel::Reconstruction::non_null_ptr_type,
 		boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
-GPlatesAppLogic::Reconstruct::create_reconstruction(
+GPlatesAppLogic::ReconstructUtils::create_reconstruction(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstructable_features_collection,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
@@ -113,7 +115,7 @@ GPlatesAppLogic::Reconstruct::create_reconstruction(
 // Remove this function once it is possible to create empty reconstructions by simply passing empty
 // lists of feature-collections into the previous function.
 const GPlatesModel::Reconstruction::non_null_ptr_type
-GPlatesAppLogic::Reconstruct::create_empty_reconstruction(
+GPlatesAppLogic::ReconstructUtils::create_empty_reconstruction(
 		const double &time,
 		GPlatesModel::integer_plate_id_type root)
 {
@@ -128,32 +130,201 @@ GPlatesAppLogic::Reconstruct::create_empty_reconstruction(
 	return reconstruction;
 }
 
-#ifdef HAVE_PYTHON
-//
-// FIXME: I moved this over from GPlatesModel::Model so it probably doesn't work.
-//
-boost::python::tuple
-GPlatesAppLogic::Reconstruct::create_reconstruction_py(
-		const double &time,
-		unsigned long root)
+
+
+namespace
 {
-	GPlatesModel::FeatureCollectionHandle::weak_ref reconstructable_features = GPlatesModel::Model::create_feature_collection();
-	GPlatesModel::FeatureCollectionHandle::weak_ref reconstruction_features = GPlatesModel::Model::create_feature_collection();
-	GPlatesModel::Reconstruction::non_null_ptr_type reconstruction = create_reconstruction(reconstructable_features, reconstruction_features, time, root);
-	boost::python::list points;
-	boost::python::list polylines;
-	/*
-	for (std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator p = point_reconstructions.begin();
-			p != point_reconstructions.end(); ++p)
+	bool
+	has_reconstruction_time_changed(
+			double old_reconstruction_time,
+			double new_reconstruction_time)
 	{
-		points.append(*(p->geometry()));
+		// != does not work with doubles, so we must wrap them in Real.
+		return GPlatesMaths::Real(old_reconstruction_time)
+				!= GPlatesMaths::Real(new_reconstruction_time);
 	}
-	for (std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator p = polyline_reconstructions.begin();
-			p != polyline_reconstructions.end(); ++p)
+
+
+	bool
+	has_anchor_plate_id_changed(
+			GPlatesModel::integer_plate_id_type old_anchor_plate_id,
+			GPlatesModel::integer_plate_id_type new_anchor_plate_id)
 	{
-		polylines.append(*(p->geometry()));
+		return old_anchor_plate_id != new_anchor_plate_id;
 	}
-	*/
-	return boost::python::make_tuple(points, polylines);
+
+
+	void
+	get_feature_collections_from_file_info_collection(
+			const GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range &active_files,
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &features_collection)
+	{
+		GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator iter = active_files.begin;
+		GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator end = active_files.end;
+		for ( ; iter != end; ++iter)
+		{
+			features_collection.push_back(iter->get_feature_collection());
+		}
+	}
+
+
+	void
+	get_active_feature_collections_from_application_state(
+			GPlatesAppLogic::FeatureCollectionFileState &file_state,
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+					reconstructable_features_collection,
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+					reconstruction_features_collection)
+	{
+		// Get the active reconstructable feature collections from the application state.
+		get_feature_collections_from_file_info_collection(
+				file_state.get_active_reconstructable_files(),
+				reconstructable_features_collection);
+
+		// Get the active reconstruction feature collections from the application state.
+		get_feature_collections_from_file_info_collection(
+				file_state.get_active_reconstruction_files(),
+				reconstruction_features_collection);
+	}
 }
-#endif
+
+
+GPlatesAppLogic::Reconstruct::Reconstruct(
+		GPlatesModel::ModelInterface &model,
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		double reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchored_plate_id,
+		Hook *reconstruction_hook) :
+	d_model(model),
+	d_file_state(file_state),
+	d_reconstruction_time(reconstruction_time),
+	d_anchored_plate_id(anchored_plate_id),
+	d_reconstruction_hook(reconstruction_hook),
+	d_reconstruction(
+			ReconstructUtils::create_empty_reconstruction(
+					reconstruction_time, anchored_plate_id))
+{
+}
+
+
+void
+GPlatesAppLogic::Reconstruct::reconstruct()
+{
+	// Reconstruct before we tell everyone that we've reconstructed!
+	reconstruct_application_state();
+
+	emit reconstructed(*this, false/*reconstruction_time_changed*/, false/*anchor_plate_id_changed*/);
+}
+
+
+void
+GPlatesAppLogic::Reconstruct::reconstruct_to_time(
+		double new_reconstruction_time)
+{
+	// See if the reconstruction time has changed.
+	const bool reconstruction_time_changed = has_reconstruction_time_changed(
+			d_reconstruction_time, new_reconstruction_time);
+
+	d_reconstruction_time = new_reconstruction_time;
+
+	// Reconstruct before we tell everyone that we've reconstructed!
+	reconstruct_application_state();
+
+	emit reconstructed(*this, reconstruction_time_changed, false/*anchor_plate_id_changed*/);
+}
+
+
+void
+GPlatesAppLogic::Reconstruct::reconstruct_with_anchor(
+		unsigned long new_anchor_plate_id)
+{
+	const bool anchor_plate_id_changed = has_anchor_plate_id_changed(
+			d_anchored_plate_id, new_anchor_plate_id);
+
+	d_anchored_plate_id = new_anchor_plate_id;
+
+	// Reconstruct before we tell everyone that we've reconstructed!
+	reconstruct_application_state();
+
+	emit reconstructed(*this, false/*reconstruction_time_changed*/, new_anchor_plate_id);
+}
+
+
+void
+GPlatesAppLogic::Reconstruct::reconstruct_to_time_with_anchor(
+		double new_reconstruction_time,
+		unsigned long new_anchor_plate_id)
+{
+	// See if the reconstruction time has changed.
+	const bool reconstruction_time_changed = has_reconstruction_time_changed(
+			d_reconstruction_time, new_reconstruction_time);
+
+	d_reconstruction_time = new_reconstruction_time;
+
+	const bool anchor_plate_id_changed = has_anchor_plate_id_changed(
+			d_anchored_plate_id, new_anchor_plate_id);
+
+	d_anchored_plate_id = new_anchor_plate_id;
+
+	// Reconstruct before we tell everyone that we've reconstructed!
+	reconstruct_application_state();
+
+	emit reconstructed(*this, reconstruction_time_changed, anchor_plate_id_changed);
+}
+
+
+void
+GPlatesAppLogic::Reconstruct::reconstruct_application_state()
+{
+	//
+	// Call the client's callback before the reconstruction.
+	//
+	if (d_reconstruction_hook)
+	{
+		d_reconstruction_hook->begin_reconstruction(
+				d_model,
+				d_reconstruction_time,
+				d_anchored_plate_id);
+	}
+
+
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+		reconstructable_features_collection,
+		reconstruction_features_collection;
+
+	get_active_feature_collections_from_application_state(
+			d_file_state,
+			reconstructable_features_collection,
+			reconstruction_features_collection);
+
+	// Perform the actual reconstruction.
+	std::pair<
+		const GPlatesModel::Reconstruction::non_null_ptr_type,
+		boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
+				reconstruct_result =
+						ReconstructUtils::create_reconstruction(
+								reconstructable_features_collection,
+								reconstruction_features_collection,
+								d_reconstruction_time,
+								d_anchored_plate_id);
+
+	// Unpack the results of the reconstruction.
+	d_reconstruction = reconstruct_result.first;
+	GPlatesFeatureVisitors::TopologyResolver &topology_resolver =
+			*reconstruct_result.second;
+
+	//
+	// Call the client's callback after the reconstruction.
+	//
+	if (d_reconstruction_hook)
+	{
+		d_reconstruction_hook->end_reconstruction(
+				d_model,
+				*d_reconstruction,
+				d_reconstruction_time,
+				d_anchored_plate_id,
+				reconstructable_features_collection,
+				reconstruction_features_collection,
+				topology_resolver);
+	}
+}

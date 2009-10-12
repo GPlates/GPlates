@@ -32,13 +32,19 @@
 
 #include "TotalReconstructionPolesDialogUi.h"
 
-#include "model/Reconstruction.h"
 
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
 
-namespace GPlatesQtWidgets{
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
-	class ViewportWindow;
-
+namespace GPlatesQtWidgets
+{
 	class TotalReconstructionPolesDialog:
 		public QDialog,
 		protected Ui_TotalReconstructionPolesDialog
@@ -47,8 +53,8 @@ namespace GPlatesQtWidgets{
 
 	public:
 	TotalReconstructionPolesDialog(
-		ViewportWindow &viewport_window,
-		QWidget *parent_ = NULL);
+			GPlatesPresentation::ViewState &view_state,
+			QWidget *parent_ = NULL);
 
 	/**
 	 * Set the dialog reconstruction time. 
@@ -121,9 +127,9 @@ namespace GPlatesQtWidgets{
 				const QTableWidget &table);
 
 		/**
-		 * The viewport window.
+		 * To query the reconstruction.
 		 */
-		ViewportWindow *d_viewport_window_ptr;
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
 
 		/**
 		 * The stationary plate id.

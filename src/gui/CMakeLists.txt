@@ -23,6 +23,7 @@ set(srcs
     ColourSpectrum.cc
     ColourSpectrum.h
     ColourTable.h
+    ColourTableDelegator.h
     CsvExport.cc
     CsvExport.h
     EnableCanvasTool.cc

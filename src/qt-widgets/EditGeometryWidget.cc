@@ -31,10 +31,15 @@
 #include <QTableWidgetItem>
 #include <QString>
 #include <QLocale>
+
 #include "EditGeometryWidget.h"
 #include "EditGeometryActionWidget.h"
+#include "InvalidPropertyValueException.h"
+#include "UninitialisedEditWidgetException.h"
 
-#include "qt-widgets/ViewportWindow.h"
+#include "app-logic/Reconstruct.h"
+#include "feature-visitors/GeometrySetter.h"
+#include "gui/GeometricPropertyValueConstructor.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/GeometryOnSphere.h"
@@ -43,11 +48,8 @@
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlPolygon.h"
-#include "UninitialisedEditWidgetException.h"
-#include "InvalidPropertyValueException.h"
 #include "utils/GeometryCreationUtils.h"
-#include "gui/GeometricPropertyValueConstructor.h"
-#include "feature-visitors/GeometrySetter.h"
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -631,10 +633,10 @@ namespace
 
 
 GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	AbstractEditWidget(parent_),
-	d_view_state_ptr(&view_state_)
+	d_reconstruct_ptr(&view_state_.get_reconstruct())
 {
 	setupUi(this);
 	// Set column widths and resizabilty.
@@ -679,8 +681,9 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 			this, SLOT(handle_cell_changed(int, int)));
 	
 	// Handle view state time changes.
-	QObject::connect(d_view_state_ptr, SIGNAL(reconstruction_time_changed(double)),
-			this, SLOT(handle_reconstruction_time_change(double)));
+	QObject::connect(d_reconstruct_ptr,
+			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+			this, SLOT(handle_reconstruction(GPlatesAppLogic::Reconstruct &, bool, bool)));
 	
 	// Signals for managing data entry focus for the "Append Point" widgets.
 	QObject::connect(button_append_point, SIGNAL(clicked()),
@@ -710,7 +713,7 @@ GPlatesQtWidgets::EditGeometryWidget::reset_widget_to_default_values()
 	// Reset widgets.
 	combobox_geometry_type->setCurrentIndex(0);
 	combobox_coordinate_time_display->setCurrentIndex(0);
-	update_reconstruction_time_display(d_view_state_ptr->reconstruction_time());
+	update_reconstruction_time_display(d_reconstruct_ptr->get_current_reconstruction_time());
 	spinbox_lat->setValue(0.0);
 	spinbox_lon->setValue(0.0);
 	
@@ -738,7 +741,7 @@ GPlatesQtWidgets::EditGeometryWidget::set_reconstruction_plate_id(
 		boost::optional<GPlatesModel::integer_plate_id_type> plate_id_opt)
 {
 	d_reconstruction_plate_id_opt = plate_id_opt;
-	update_reconstruction_time_display(d_view_state_ptr->reconstruction_time());
+	update_reconstruction_time_display(d_reconstruct_ptr->get_current_reconstruction_time());
 	
 	// If we don't have a plate id anymore, we can't view reconstruction-time coords.
 	if ( ! d_reconstruction_plate_id_opt) {
@@ -955,10 +958,17 @@ GPlatesQtWidgets::EditGeometryWidget::handle_cell_changed(
 
 
 void
-GPlatesQtWidgets::EditGeometryWidget::handle_reconstruction_time_change(
-		double time)
+GPlatesQtWidgets::EditGeometryWidget::handle_reconstruction(
+		GPlatesAppLogic::Reconstruct &reconstructer,
+		bool reconstruction_time_changed,
+		bool /*anchor_plate_id_changed*/)
 {
-	update_reconstruction_time_display(time);
+	if (!reconstruction_time_changed)
+	{
+		return;
+	}
+
+	update_reconstruction_time_display(reconstructer.get_current_reconstruction_time());
 	// TODO: If we are in "Reconstruction Time" mode, we also need to update the
 	// table of points.
 }

@@ -202,7 +202,7 @@ namespace
 
 bool
 GPlatesAppLogic::PlateVelocityUtils::detect_velocity_mesh_nodes(
-		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	if (!feature_collection.is_valid())
 	{
@@ -219,19 +219,25 @@ GPlatesAppLogic::PlateVelocityUtils::detect_velocity_mesh_nodes(
 }
 
 
-GPlatesModel::FeatureCollectionHandle::weak_ref
+GPlatesModel::FeatureCollectionHandleUnloader::shared_ref
 GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes,
 		GPlatesModel::ModelInterface &model)
 {
 	if (!feature_collection_with_mesh_nodes.is_valid())
 	{
-		return GPlatesModel::FeatureCollectionHandle::weak_ref();
+		return GPlatesModel::FeatureCollectionHandleUnloader::create(
+				GPlatesModel::FeatureCollectionHandle::weak_ref());
 	}
 
 	// Create a new feature collection to store our velocity field features.
 	GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
 			model->create_feature_collection();
+
+	const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref
+			velocity_field_feature_collection_unloader =
+					GPlatesModel::FeatureCollectionHandleUnloader::create(
+							velocity_field_feature_collection);
 
 	// A visitor to look for mesh node features in the original feature collection
 	// and create corresponding velocity field features in the new feature collection.
@@ -242,13 +248,13 @@ GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
 			feature_collection_with_mesh_nodes, add_velocity_field_features);
 
 	// Return the newly created feature collection.
-	return velocity_field_feature_collection;
+	return velocity_field_feature_collection_unloader;
 }
 
 
 void
 GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
-		GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
 		GPlatesModel::ReconstructionTree &reconstruction_tree_1,
 		GPlatesModel::ReconstructionTree &reconstruction_tree_2,
 		const double &reconstruction_time_1,
@@ -278,11 +284,14 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 
 
 bool
-GPlatesAppLogic::PlateVelocities::load_reconstructable_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		const GPlatesFileIO::FileInfo &feature_collection_file_info,
-		GPlatesModel::ModelInterface &model)
+GPlatesAppLogic::PlateVelocities::add_file(
+		FeatureCollectionFileState::file_iterator file_iter,
+		const ClassifyFeatureCollection::classifications_type &classification,
+		bool /*used_by_higher_priority_workflow*/)
 {
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+			file_iter->get_feature_collection();
+
 	// Only interested in feature collections with velocity mesh nodes.
 	if (!PlateVelocityUtils::detect_velocity_mesh_nodes(feature_collection))
 	{
@@ -291,41 +300,25 @@ GPlatesAppLogic::PlateVelocities::load_reconstructable_feature_collection(
 
 	// Create a new feature collection with velocity field features that the
 	// velocity solver can use for its calculations.
-	GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
+	const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref velocity_field_feature_collection =
 			PlateVelocityUtils::create_velocity_field_feature_collection(
-					feature_collection, model);
+					feature_collection, d_model);
 
 	// Add to our list of velocity field feature collections.
 	d_velocity_field_feature_collection_infos.push_back(
 			VelocityFieldFeatureCollectionInfo(
-					feature_collection,
-					feature_collection_file_info,
+					file_iter,
 					velocity_field_feature_collection));
+	d_velocity_field_feature_collection_infos.back().d_active = true;
 
 	return true;
 }
 
 
 void
-GPlatesAppLogic::PlateVelocities::load_reconstruction_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+GPlatesAppLogic::PlateVelocities::remove_file(
+		FeatureCollectionFileState::file_iterator file_iter)
 {
-	d_reconstruction_feature_collections.push_back(feature_collection);
-}
-
-
-void
-GPlatesAppLogic::PlateVelocities::unload_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
-{
-	// Try removing it from the reconstruction feature collections.
-	d_reconstruction_feature_collections.erase(
-			std::remove(
-					d_reconstruction_feature_collections.begin(),
-					d_reconstruction_feature_collections.end(),
-					feature_collection),
-			d_reconstruction_feature_collections.end());
-
 	using boost::lambda::_1;
 	using boost::lambda::bind;
 
@@ -334,9 +327,39 @@ GPlatesAppLogic::PlateVelocities::unload_feature_collection(
 			std::remove_if(
 					d_velocity_field_feature_collection_infos.begin(),
 					d_velocity_field_feature_collection_infos.end(),
-					bind(&VelocityFieldFeatureCollectionInfo::d_mesh_node_feature_collection, _1)
-							== feature_collection),
+					bind(&VelocityFieldFeatureCollectionInfo::d_file_iterator, _1) == file_iter),
 			d_velocity_field_feature_collection_infos.end());
+}
+
+
+bool
+GPlatesAppLogic::PlateVelocities::changed_file(
+		FeatureCollectionFileState::file_iterator file_iter,
+		GPlatesFileIO::File &old_file,
+		const ClassifyFeatureCollection::classifications_type &new_classification)
+{
+	// Only interested in feature collections with velocity mesh nodes.
+	return PlateVelocityUtils::detect_velocity_mesh_nodes(file_iter->get_feature_collection());
+}
+
+
+void
+GPlatesAppLogic::PlateVelocities::set_file_active(
+		FeatureCollectionFileState::file_iterator file_iter,
+		bool activate)
+{
+	using boost::lambda::_1;
+	using boost::lambda::bind;
+
+	velocity_field_feature_collection_info_seq_type::iterator iter = std::find_if(
+			d_velocity_field_feature_collection_infos.begin(),
+			d_velocity_field_feature_collection_infos.end(),
+			bind(&VelocityFieldFeatureCollectionInfo::d_file_iterator, _1) == file_iter);
+
+	if (iter != d_velocity_field_feature_collection_infos.end())
+	{
+		iter->d_active = activate;
+	}
 }
 
 
@@ -345,6 +368,8 @@ GPlatesAppLogic::PlateVelocities::solve_velocities(
 		GPlatesModel::Reconstruction &reconstruction,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+				reconstruction_features_collection,
 		GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
 {
 	// Return if there's no velocity feature collections to solve.
@@ -361,8 +386,8 @@ GPlatesAppLogic::PlateVelocities::solve_velocities(
 	// Create a second reconstruction tree for velocity calculations.
 	//
 	GPlatesModel::ReconstructionTree::non_null_ptr_type reconstruction_tree_2_ptr = 
-			GPlatesAppLogic::Reconstruct::create_reconstruction_tree(
-					d_reconstruction_feature_collections,
+			GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+					reconstruction_features_collection,
 					reconstruction_time_2,
 					reconstruction_anchored_plate_id);
 
@@ -393,8 +418,16 @@ GPlatesAppLogic::PlateVelocities::solve_velocities(
 		velocity_field_feature_collection_iter != d_velocity_field_feature_collection_infos.end();
 		++velocity_field_feature_collection_iter)
 	{
-		GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection =
-				velocity_field_feature_collection_iter->d_velocity_field_feature_collection;
+		// Only interested in active files.
+		if (!velocity_field_feature_collection_iter->d_active)
+		{
+			continue;
+		}
+
+		const GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
+				velocity_field_feature_collection_iter->d_velocity_field_feature_collection
+						->get_feature_collection();
+
 
 		PlateVelocityUtils::solve_velocities(
 			velocity_field_feature_collection,

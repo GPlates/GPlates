@@ -25,30 +25,33 @@
 
 #include <iostream>
 
+#include "ApplyReconstructionPoleAdjustmentDialog.h"
 #include "ReconstructionPoleWidget.h"
 #include "ViewportWindow.h"
-#include "ApplyReconstructionPoleAdjustmentDialog.h"
+
+#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "utils/MathUtils.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
+#include "presentation/ViewState.h"
 
 
 GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		ViewportWindow &view_state,
+		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow &viewport_window,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_rendered_geom_collection(&rendered_geom_collection),
-	d_view_state_ptr(&view_state),
-	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&view_state)),
+	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
+	d_reconstruct_ptr(&view_state.get_reconstruct()),
+	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
 	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr))
 {
 	setupUi(this);
 
-	make_signal_slot_connections();
+	make_signal_slot_connections(view_state);
 
 	create_child_rendered_layers();
 }
@@ -351,7 +354,8 @@ GPlatesQtWidgets::ReconstructionPoleWidget::apply()
 	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
 	find_trses(sequence_choices, trs_plate_id_finder, trs_time_period_finder, *d_plate_id,
-			d_view_state_ptr->reconstruction(), d_view_state_ptr->reconstruction_time());
+			d_reconstruct_ptr->get_current_reconstruction(),
+			d_reconstruct_ptr->get_current_reconstruction_time());
 
 	// The Applicator should be set before the dialog is set up.
 	// Why, you ask?  Because when the dialog is set up, the first row in the sequence choices
@@ -360,10 +364,10 @@ GPlatesQtWidgets::ReconstructionPoleWidget::apply()
 	d_applicator_ptr->set(
 			sequence_choices,
 			d_accum_orientation->rotation(),
-			d_view_state_ptr->reconstruction_time());
+			d_reconstruct_ptr->get_current_reconstruction_time());
 	d_dialog_ptr->setup_for_new_pole(
 			*d_plate_id,
-			d_view_state_ptr->reconstruction_time(),
+			d_reconstruct_ptr->get_current_reconstruction_time(),
 			sequence_choices,
 			d_accum_orientation->rotation());
 
@@ -442,8 +446,7 @@ GPlatesQtWidgets::ReconstructionPoleWidget::set_focus(
 
 
 void
-GPlatesQtWidgets::ReconstructionPoleWidget::handle_reconstruction_time_change(
-		double new_time)
+GPlatesQtWidgets::ReconstructionPoleWidget::handle_reconstruction()
 {
 	if (d_is_active) {
 		d_initial_geometries.clear();
@@ -463,9 +466,9 @@ GPlatesQtWidgets::ReconstructionPoleWidget::populate_initial_geometries()
 	}
 
 	GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
-			d_view_state_ptr->reconstruction().geometries().begin();
+			d_reconstruct_ptr->get_current_reconstruction().geometries().begin();
 	GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
-			d_view_state_ptr->reconstruction().geometries().end();
+			d_reconstruct_ptr->get_current_reconstruction().geometries().end();
 	for ( ; iter != end; ++iter) {
 		GPlatesModel::ReconstructionGeometry *rg = iter->get();
 
@@ -521,7 +524,7 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries()
 	{
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					*iter,
 					white_colour,
 					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
@@ -561,7 +564,7 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_dragged_geometries()
 	{
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					d_accum_orientation->orient_geometry(*iter),
 					silver_colour,
 					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
@@ -607,7 +610,8 @@ GPlatesQtWidgets::ReconstructionPoleWidget::clear_and_reset_after_reconstruction
 }
 
 void
-GPlatesQtWidgets::ReconstructionPoleWidget::make_signal_slot_connections()
+GPlatesQtWidgets::ReconstructionPoleWidget::make_signal_slot_connections(
+		GPlatesPresentation::ViewState &view_state)
 {
 	// The user wants to apply the current adjustment.
 	QObject::connect(button_apply, SIGNAL(clicked()),
@@ -628,6 +632,23 @@ GPlatesQtWidgets::ReconstructionPoleWidget::make_signal_slot_connections()
 	// The user has agreed to apply the adjustment as described in the dialog.
 	QObject::connect(d_applicator_ptr, SIGNAL(have_reconstructed()),
 		this, SLOT(clear_and_reset_after_reconstruction()));
+
+	// Connect the reconstruction pole widget to the feature focus.
+	QObject::connect(
+			&view_state.get_feature_focus(),
+			SIGNAL(focus_changed(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			this,
+			SLOT(set_focus(
+					GPlatesModel::FeatureHandle::weak_ref,
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+
+	// The Reconstruction Pole widget needs to know when the reconstruction time changes.
+	QObject::connect(d_reconstruct_ptr,
+			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+			this,
+			SLOT(handle_reconstruction()));
 }
 
 void

@@ -447,9 +447,9 @@ namespace
 }
 
 
-void
+const GPlatesFileIO::File::shared_ref
 GPlatesFileIO::GpmlOnePointSixReader::read_file(
-		FileInfo &fileinfo,
+		const FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors,
 		bool use_gzip)
@@ -467,7 +467,8 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		// In fact, it may need to be a user preference.
 		input_process.start(gunzip_program().command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
 		if ( ! input_process.waitForStarted()) {
-			throw ErrorOpeningPipeFromGzipException(gunzip_program().command(), filename);
+			throw ErrorOpeningPipeFromGzipException(GPLATES_EXCEPTION_SOURCE,
+					gunzip_program().command(), filename);
 		}
 		input_process.waitForReadyRead(20000);
 		reader.setDevice(&input_process);
@@ -476,7 +477,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 	
 		if ( ! input_file.open(QIODevice::ReadOnly | QIODevice::Text)) 
 		{
-			throw ErrorOpeningFileForReadingException(filename);
+			throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 		}
 		reader.setDevice(&input_file);
 	}
@@ -486,6 +487,10 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 			new LocalFileDataSource(filename, DataFormats::GpmlOnePointSix));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
 			model->create_feature_collection();
+
+	// Make sure feature collection gets unloaded when it's no longer needed.
+	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
+			GPlatesModel::FeatureCollectionHandleUnloader::create(collection);
 
 	GpmlReaderUtils::ReaderParams params(reader, source, read_errors);
 	boost::shared_ptr<Model::XmlElementNode::AliasToNamespaceMap> alias_map(
@@ -532,5 +537,5 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		}
 	}
 
-	fileinfo.set_feature_collection(collection);
+	return File::create_loaded_file(collection_unloader, fileinfo);
 }

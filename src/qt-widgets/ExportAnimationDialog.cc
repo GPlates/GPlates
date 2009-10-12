@@ -29,19 +29,24 @@
 #include "utils/FloatingPointComparisons.h"
 #include "utils/ExportTemplateFilenameSequence.h"
 #include "gui/AnimationController.h"
-#include "qt-widgets/ViewportWindow.h"	// ViewState, needed for .reconstruction_root()
 
 
 
 GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 		GPlatesGui::AnimationController &animation_controller,
-		GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesPresentation::ViewState &view_state_,
+		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		QWidget *parent_):
 	QDialog(parent_),
-	d_export_animation_context_ptr(new GPlatesGui::ExportAnimationContext(
-		*this, animation_controller, view_state_), GPlatesUtils::NullIntrusivePointerHandler()),
+	d_export_animation_context_ptr(
+			new GPlatesGui::ExportAnimationContext(
+					*this,
+					animation_controller,
+					view_state_,
+					viewport_window_),
+			GPlatesUtils::NullIntrusivePointerHandler()),
 	d_animation_controller_ptr(&animation_controller),
-	d_view_state_ptr(&view_state_),
+	d_view_state_ptr(&viewport_window_),
 	d_configure_parameters_dialog_ptr(new GPlatesQtWidgets::ConfigureExportParametersDialog(
 			d_export_animation_context_ptr, this))
 {

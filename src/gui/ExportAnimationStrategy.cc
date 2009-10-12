@@ -26,13 +26,14 @@
 
 #include "ExportAnimationStrategy.h"
 
+#include "app-logic/Reconstruct.h"
+
+#include "gui/AnimationController.h"
+#include "gui/ExportAnimationContext.h"
+
 #include "utils/FloatingPointComparisons.h"
 
-#include "gui/ExportAnimationContext.h"
-#include "gui/AnimationController.h"
-#include "qt-widgets/ViewportWindow.h"	// ViewState, needed for .reconstruction_root()
-
-
+#include "presentation/ViewState.h"
 
 
 GPlatesGui::ExportAnimationStrategy::ExportAnimationStrategy(
@@ -50,7 +51,7 @@ GPlatesGui::ExportAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
 	d_filename_sequence_opt = GPlatesUtils::ExportTemplateFilenameSequence(filename,
-			d_export_animation_context_ptr->view_state().reconstruction_root(),
+			d_export_animation_context_ptr->view_state().get_reconstruct().get_current_anchored_plate_id(),
 			d_export_animation_context_ptr->animation_controller().start_time(),
 			d_export_animation_context_ptr->animation_controller().end_time(),
 			d_export_animation_context_ptr->animation_controller().raw_time_increment(),

@@ -42,6 +42,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "model/ConstFeatureVisitor.h"
+#include "model/FeatureCollectionHandle.h"
 #include "model/PropertyName.h"
 
 
@@ -56,10 +57,13 @@ namespace GPlatesFileIO
 		/**
 		* @pre is_writable(file_info) is true.
 		* @param file_info file to write to.
+		* @param feature_collection_ref feature collection that will be written
+		*        using calls to @a write_feature.
 		*/
 		explicit
-			ShapefileWriter(
-			const FileInfo &file_info);
+		ShapefileWriter(
+				const FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref);
 
 		virtual
 			~ShapefileWriter()

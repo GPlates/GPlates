@@ -34,6 +34,8 @@
 #include "GMTFormatGeometryExporter.h"
 #include "GMTFormatHeader.h"
 
+#include "file-io/FileInfo.h"
+
 #include "model/ReconstructedFeatureGeometry.h"
 
 
@@ -44,8 +46,8 @@ namespace
 			referenced_files_collection_type;
 
 	//! Convenience typedef for reconstructed geometries.
-	typedef GPlatesFileIO::ReconstructedFeatureGeometryExport::reconstructed_feature_geometry_seq_type
-		reconstructed_feature_geometry_seq_type;
+	typedef GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::reconstructed_feature_geom_seq_type
+		reconstructed_feature_geom_seq_type;
 
 	/**
 	 * Prints GMT format header at top of the exported file containing information
@@ -74,9 +76,16 @@ namespace
 			file_iter != referenced_files.end();
 			++file_iter)
 		{
-			const GPlatesFileIO::FileInfo &file_info = **file_iter;
+			const GPlatesFileIO::File *file = *file_iter;
 
-			filenames << file_info.get_display_name(false/*use_absolute_path_name*/);
+			// Some files might not actually exist yet if the user created a new
+			// feature collection internally and hasn't saved it to file yet.
+			if (!GPlatesFileIO::file_exists(file->get_file_info()))
+			{
+				continue;
+			}
+
+			filenames << file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
 		}
 
 		header_lines.push_back(filenames.join(" "));
@@ -126,7 +135,7 @@ GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
 		feature_iter != feature_geometry_group_seq.end();
 		++feature_iter)
 	{
-		const ReconstructedFeatureGeometryExport::FeatureGeometryGroup &feature_geom_group =
+		const ReconstructedFeatureGeometryExportImpl::FeatureGeometryGroup &feature_geom_group =
 				*feature_iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
@@ -141,7 +150,7 @@ GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
 		gmt_header.get_feature_header_lines(feature_ref, header_lines);
 
 		// Iterate through the reconstructed geometries of the current feature and write to output.
-		reconstructed_feature_geometry_seq_type::const_iterator rfg_iter;
+		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
 		for (rfg_iter = feature_geom_group.recon_feature_geoms.begin();
 			rfg_iter != feature_geom_group.recon_feature_geoms.end();
 			++rfg_iter)

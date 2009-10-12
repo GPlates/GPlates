@@ -29,9 +29,13 @@
 #include <vector>
 #include <QString>
 
+#include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileState.h"
+
 #include "file-io/FileInfo.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/FeatureCollectionHandleUnloader.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
 
@@ -48,7 +52,6 @@ namespace GPlatesFeatureVisitors
 
 namespace GPlatesModel
 {
-	class ModelInterface;
 	class Reconstruction;
 	class ReconstructionTree;
 }
@@ -64,7 +67,7 @@ namespace GPlatesAppLogic
 		 */
 		bool
 		detect_velocity_mesh_nodes(
-				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		/**
@@ -80,9 +83,9 @@ namespace GPlatesAppLogic
 		 * domain suitable for velocity calculations (use @a detect_velocity_mesh_nodes
 		 * to avoid this).
 		 */
-		GPlatesModel::FeatureCollectionHandle::weak_ref
+		GPlatesModel::FeatureCollectionHandleUnloader::shared_ref
 		create_velocity_field_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes,
 				GPlatesModel::ModelInterface &model);
 
 
@@ -115,7 +118,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		solve_velocities(
-				GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
 				GPlatesModel::ReconstructionTree &reconstruction_tree_1,
 				GPlatesModel::ReconstructionTree &reconstruction_tree_2,
 				const double &reconstruction_time_1,
@@ -130,7 +133,8 @@ namespace GPlatesAppLogic
 	/**
 	 * Class to handle velocity feature collection loading/unloading and calculations.
 	 */
-	class PlateVelocities
+	class PlateVelocities : public
+			FeatureCollectionFileState::Workflow
 	{
 	public:
 		/**
@@ -138,50 +142,88 @@ namespace GPlatesAppLogic
 		 * Remove any rendered geometry code to the presentation tier.
 		 */
 		PlateVelocities(
+				ApplicationState &application_state,
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer) :
+			d_model(application_state.get_model_interface()),
 			d_comp_mesh_point_layer(comp_mesh_point_layer),
 			d_comp_mesh_arrow_layer(comp_mesh_arrow_layer)
-		{  }
+		{
+			register_workflow(application_state.get_feature_collection_file_state());
+		}
+
+
+		~PlateVelocities()
+		{
+			unregister_workflow();
+		}
+
+
+		virtual
+		tag_type
+		get_tag() const
+		{
+			return "PlateVelocities";
+		}
 
 
 		/**
-		 * Call this when a new feature collection of reconstructable features
-		 * has been loaded by the user.
+		 * Priority of this @a FeatureCollectionFileState workflow.
+		 */
+		virtual
+		priority_type
+		get_priority() const
+		{
+			return PRIORITY_NORMAL;
+		}
+
+
+		/**
+		 * Callback method notifying of new file (called from @a FeatureCollectionFileState).
 		 *
 		 * If the feature collection contains features that can be used for
 		 * velocity calculations then this method returns true and a new
 		 * feature collection is created internally that is used directly
 		 * by the velocity solver.
 		 */
+		virtual
 		bool
-		load_reconstructable_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				const GPlatesFileIO::FileInfo &feature_collection_file_info,
-				GPlatesModel::ModelInterface &model);
+		add_file(
+				FeatureCollectionFileState::file_iterator file_iter,
+				const ClassifyFeatureCollection::classifications_type &classification,
+				bool used_by_higher_priority_workflow);
 
 
 		/**
-		 * Call this when a new feature collection of reconstruction features
-		 * has been loaded by the user.
-		 *
-		 * This is used to determine finite rotations for the velocity calculations.
+		 * Callback method notifying about to remove file (called from @a FeatureCollectionFileState).
 		 */
+		virtual
 		void
-		load_reconstruction_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+		remove_file(
+				FeatureCollectionFileState::file_iterator file_iter);
 
 
 		/**
-		 * Call this when any type of feature collection has been unloaded by the user.
+		 * Callback method notifying file has changed (called from @a FeatureCollectionFileState).
 		 *
-		 * If the feature collection is stored internally then it will be removed.
-		 * Applies to calls to either @a load_reconstructable_feature_collection
-		 * or @a load_reconstruction_feature_collection.
+		 * If the feature collection contains features that can be used for
+		 * velocity calculations then this method returns true and a new
+		 * feature collection is created internally that is used directly
+		 * by the velocity solver.
 		 */
+		virtual
+		bool
+		changed_file(
+				FeatureCollectionFileState::file_iterator file_iter,
+				GPlatesFileIO::File &old_file,
+				const ClassifyFeatureCollection::classifications_type &new_classification);
+
+
+		virtual
 		void
-		unload_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+		set_file_active(
+				FeatureCollectionFileState::file_iterator file_iter,
+				bool active);
 
 
 		/**
@@ -197,12 +239,12 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the feature collection at index @a index.
 		 */
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &
+		const GPlatesModel::FeatureCollectionHandle::weak_ref
 		get_velocity_feature_collection(
 				unsigned int index) const
 		{
 			return d_velocity_field_feature_collection_infos[index]
-					.d_velocity_field_feature_collection;
+					.d_velocity_field_feature_collection->get_feature_collection();
 		}
 
 
@@ -210,11 +252,11 @@ namespace GPlatesAppLogic
 		 * Returns the file info of feature collection at index @a index.
 		 */
 		const GPlatesFileIO::FileInfo &
-		get_velocity_file(
+		get_velocity_file_info(
 				unsigned int index) const
 		{
 			return d_velocity_field_feature_collection_infos[index]
-					.d_mesh_node_feature_collection_file_info;
+					.d_file_iterator->get_file_info();
 		}
 
 
@@ -229,6 +271,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::Reconstruction &reconstruction,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						reconstruction_features_collection,
 				GPlatesFeatureVisitors::TopologyResolver &topology_resolver);
 
 	private:
@@ -240,25 +284,26 @@ namespace GPlatesAppLogic
 		struct VelocityFieldFeatureCollectionInfo
 		{
 			VelocityFieldFeatureCollectionInfo(
-					GPlatesModel::FeatureCollectionHandle::weak_ref &mesh_node_feature_collection,
-					const GPlatesFileIO::FileInfo &mesh_node_feature_collection_file_info,
-					GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection) :
-				d_mesh_node_feature_collection(mesh_node_feature_collection),
-				d_mesh_node_feature_collection_file_info(mesh_node_feature_collection_file_info),
-				d_velocity_field_feature_collection(velocity_field_feature_collection)
+					FeatureCollectionFileState::file_iterator file_iter,
+					const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &velocity_field_feature_collection) :
+				d_file_iterator(file_iter),
+				d_velocity_field_feature_collection(velocity_field_feature_collection),
+				d_active(false)
 			{  }
 
-			GPlatesModel::FeatureCollectionHandle::weak_ref d_mesh_node_feature_collection;
-			GPlatesFileIO::FileInfo d_mesh_node_feature_collection_file_info;
-			GPlatesModel::FeatureCollectionHandle::weak_ref d_velocity_field_feature_collection;
+			FeatureCollectionFileState::file_iterator d_file_iterator;
+			GPlatesModel::FeatureCollectionHandleUnloader::shared_ref d_velocity_field_feature_collection;
+			bool d_active;
 		};
 
-		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-				feature_collection_weak_ref_seq_type;
+		/**
+		 * Typedef for a sequence of associations between mesh node velocity feature collections
+		 * and corresponding velocity field feature collections.
+		 */
 		typedef std::vector<VelocityFieldFeatureCollectionInfo>
 				velocity_field_feature_collection_info_seq_type;
 
-		feature_collection_weak_ref_seq_type d_reconstruction_feature_collections;
+		GPlatesModel::ModelInterface d_model;
 		velocity_field_feature_collection_info_seq_type d_velocity_field_feature_collection_infos;
 
 		/*

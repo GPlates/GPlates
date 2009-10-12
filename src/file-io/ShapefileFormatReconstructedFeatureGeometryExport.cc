@@ -50,8 +50,8 @@ namespace
 			referenced_files_collection_type;
 
 	//! Convenience typedef for reconstructed geometries.
-	typedef GPlatesFileIO::ReconstructedFeatureGeometryExport::reconstructed_feature_geometry_seq_type
-		reconstructed_feature_geometry_seq_type;
+	typedef GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::reconstructed_feature_geom_seq_type
+		reconstructed_feature_geom_seq_type;
 
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type
 	create_kvd_from_feature(
@@ -130,12 +130,19 @@ namespace
 			file_iter != referenced_files.end();
 			++file_iter, ++file_count)
 		{
-			const GPlatesFileIO::FileInfo &file_info = **file_iter;
+			const GPlatesFileIO::File *file = *file_iter;
 
 			QString count_string = QString("%1").arg(file_count);
 			QString field_name = file_string + count_string;
 
-			QString filename = file_info.get_display_name(false/*use_absolute_path_name*/);
+			// Some files might not actually exist yet if the user created a new
+			// feature collection internally and hasn't saved it to file yet.
+			if (!GPlatesFileIO::file_exists(file->get_file_info()))
+			{
+				continue;
+			}
+
+			QString filename = file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
 
 			key = GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(field_name));
 			GPlatesPropertyValues::XsString::non_null_ptr_type file_value = 
@@ -172,7 +179,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		feature_iter != feature_geometry_group_seq.end();
 		++feature_iter)
 	{
-		const ReconstructedFeatureGeometryExport::FeatureGeometryGroup &feature_geom_group =
+		const ReconstructedFeatureGeometryExportImpl::FeatureGeometryGroup &feature_geom_group =
 			*feature_iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
@@ -183,7 +190,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		}
 
 		// Iterate through the reconstructed geometries of the current feature.
-		reconstructed_feature_geometry_seq_type::const_iterator rfg_iter;
+		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
 		for (rfg_iter = feature_geom_group.recon_feature_geoms.begin();
 			rfg_iter != feature_geom_group.recon_feature_geoms.end();
 			++rfg_iter)
@@ -206,7 +213,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 		++feature_iter)
 	{
 
-		const ReconstructedFeatureGeometryExport::FeatureGeometryGroup &feature_geom_group =
+		const ReconstructedFeatureGeometryExportImpl::FeatureGeometryGroup &feature_geom_group =
 				*feature_iter;
 
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
@@ -224,7 +231,7 @@ GPlatesFileIO::ShapefileFormatReconstructedFeatureGeometryExport::export_geometr
 									reconstruction_time);
 
 		// Iterate through the reconstructed geometries of the current feature and write to output.
-		reconstructed_feature_geometry_seq_type::const_iterator rfg_iter;
+		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
 		for (rfg_iter = feature_geom_group.recon_feature_geoms.begin();
 			rfg_iter != feature_geom_group.recon_feature_geoms.end();
 			++rfg_iter)

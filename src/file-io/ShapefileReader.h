@@ -44,6 +44,7 @@
 #include <ogrsf_frmts.h>
 #endif  // HAVE_CONFIG_H
 
+#include "File.h"
 #include "FileInfo.h"
 #include "PropertyMapper.h"
 #include "ReadErrorAccumulation.h"
@@ -64,9 +65,9 @@ namespace GPlatesFileIO
 	public:
 
 		static
-		void
+		const File::shared_ref
 		read_file(
-				FileInfo& fileinfo,
+				const FileInfo& fileinfo,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 
@@ -78,7 +79,7 @@ namespace GPlatesFileIO
 		static
 		void
 		remap_shapefile_attributes(
-			FileInfo &file_info,
+			File &file,
 			GPlatesModel::ModelInterface &model,
 			ReadErrorAccumulation &read_errors);
 

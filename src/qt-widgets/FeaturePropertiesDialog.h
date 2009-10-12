@@ -36,10 +36,13 @@
 #include "ViewFeatureGeometriesWidget.h"
 
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
-
 	class FeaturePropertiesDialog:
 			public QDialog,
 			protected Ui_FeaturePropertiesDialog
@@ -49,8 +52,7 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		FeaturePropertiesDialog(
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 
 		virtual

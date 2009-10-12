@@ -505,7 +505,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_lines_for_polyl
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 		GPlatesMaths::PolylineOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
 
-	RenderedGeometry rendered_geom = create_rendered_polyline_on_sphere(
+	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 				polyline_on_sphere,
 				GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 				GeometryOperationParameters::LINE_WIDTH_HINT);
@@ -527,7 +527,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_lines_for_polyg
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 		GPlatesMaths::PolygonOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
 
-	RenderedGeometry rendered_geom = create_rendered_polygon_on_sphere(
+	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 				polygon_on_sphere,
 				GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
 				GeometryOperationParameters::LINE_WIDTH_HINT);
@@ -552,7 +552,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_points(
 	{
 		const GPlatesMaths::PointOnSphere &point_on_sphere = *builder_geom_iter;
 
-		RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
+		RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
 			point_on_sphere,
 			GeometryOperationParameters::FOCUS_COLOUR,
 			GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
@@ -576,7 +576,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_highlight_rendered_po
 	const GPlatesMaths::PointOnSphere &highlight_point_on_sphere =
 			d_geometry_builder->get_geometry_point(geometry_index, highlight_point_index);
 
-	RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
+	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
 		highlight_point_on_sphere,
 		GeometryOperationParameters::HIGHLIGHT_COLOUR,
 		GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT);

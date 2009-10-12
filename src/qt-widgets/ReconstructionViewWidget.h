@@ -61,6 +61,10 @@ namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
 	class ViewportProjection;
+}
+
+namespace GPlatesPresentation
+{
 	class ViewState;
 }
 
@@ -90,10 +94,9 @@ namespace GPlatesQtWidgets
 		
 	public:
 		ReconstructionViewWidget(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::AnimationController &animation_controller,
 				ViewportWindow &viewport_window,
-				GPlatesViewOperations::ViewState &view_state,
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
 		enum WidgetIndex

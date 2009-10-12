@@ -30,7 +30,6 @@
 
 #include "AddPropertyDialog.h"
 #include "EditFeaturePropertiesWidget.h"
-#include "ViewportWindow.h"
 #include "InvalidPropertyValueException.h"
 
 #include "model/PropertyName.h"
@@ -283,11 +282,10 @@ namespace
 
 GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
 		GPlatesQtWidgets::EditFeaturePropertiesWidget &edit_widget,
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QDialog(parent_),
 	d_edit_feature_properties_widget_ptr(&edit_widget),
-	d_view_state_ptr(&view_state_),
 	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(view_state_, this))
 {
 	setupUi(this);

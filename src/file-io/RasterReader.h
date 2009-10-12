@@ -51,7 +51,7 @@ namespace GPlatesFileIO{
 		static
 		void
 		read_file(
-			FileInfo &file_info,
+			const FileInfo &file_info,
 			GPlatesPropertyValues::InMemoryRaster &raster,
 			ReadErrorAccumulation &read_errors);
 

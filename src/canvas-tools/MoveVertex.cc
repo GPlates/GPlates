@@ -27,7 +27,6 @@
 
 #include "MoveVertex.h"
 
-#include "qt-widgets/ViewportWindow.h"
 #include "view-operations/MoveVertexGeometryOperation.h"
 #include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/MoveVertexGeometryOperation.h"

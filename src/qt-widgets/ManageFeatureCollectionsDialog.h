@@ -33,18 +33,24 @@
 # include <boost/python.hpp>
 #endif
 
+#include <boost/function.hpp>
 #include <QObject>
 #include <QString>
 
-#include "ApplicationState.h"
-#include "file-io/FeatureCollectionFileFormat.h"
-
 #include "ManageFeatureCollectionsDialogUi.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
+
+#include "file-io/FeatureCollectionFileFormat.h"
+
+
+namespace GPlatesAppLogic
+{
+	class FeatureCollectionFileIO;
+}
 
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
 	class ManageFeatureCollectionsActionWidget;
 	class ManageFeatureCollectionsStateWidget;
 	
@@ -59,27 +65,16 @@ namespace GPlatesQtWidgets
 	
 		explicit
 		ManageFeatureCollectionsDialog(
-				ViewportWindow &viewport_window,
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				QWidget *parent_ = NULL);
 		
 		/**
-		 * Updates the contents of the table to match the current ApplicationState.
+		 * Updates the contents of the table to match the current FeatureCollectionFileState.
 		 * This clears the table completely, and adds a new row for each loaded file.
 		 */
 		void
 		update();
-		
-		/**
-		 * Updates the ManageFeatureCollectionStateWidgets in the current table,
-		 * based on whether the referenced files are currently active or not.
-		 *
-		 * This does not clear the table or add rows - it is not supposed to handle
-		 * addition or removal of files, only changes in file 'active' state (triggered
-		 * by clicking on the StateWidgets), as in this situation it is undesirable
-		 * to clear and re-build the table.
-		 */
-		void
-		update_state();
 		
 		
 		/**
@@ -88,6 +83,13 @@ namespace GPlatesQtWidgets
 		void
 		edit_configuration(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
+
+		/**
+		 * Opens the specified files and keeps track of them internally.
+		 */
+		void
+		open_files(
+				const QStringList &filenames);
 
 		/**
 		 * Causes the file referenced by the action widget to be saved with its
@@ -141,7 +143,7 @@ namespace GPlatesQtWidgets
 		void
 		set_reconstructable_state_for_file(
 				ManageFeatureCollectionsStateWidget *state_widget_ptr,
-				bool desired_state);
+				bool activate);
 
 		/**
 		 * Causes the file referenced by the state widget to be added or
@@ -151,17 +153,52 @@ namespace GPlatesQtWidgets
 		void
 		set_reconstruction_state_for_file(
 				ManageFeatureCollectionsStateWidget *state_widget_ptr,
-				bool desired_state);
+				bool activate);
 	
 	public slots:
 	
 		void
-		open_file();
+		open_files();
 		
 		void
 		save_all()
 		{  }	// FIXME: This should invoke a call on AppState or ViewportWindow etc.
-			
+
+	private slots:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
+		void
+		end_add_feature_collections(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end);
+
+		void
+		begin_remove_feature_collection(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+
+		void
+		reconstructable_file_activation(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
+				bool activation);
+
+		void
+		reconstruction_file_activation(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
+				bool activation);
+
+		void
+		workflow_file_activation(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
+				const GPlatesAppLogic::FeatureCollectionFileState::Workflow::tag_type &workflow_tag,
+				bool activation);
+
 	protected:
 	
 		/**
@@ -176,7 +213,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		add_row(
-				GPlatesAppState::ApplicationState::file_info_iterator file_it);
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it);
 		
 		/**
 		 * Locates the current row of the table used by the given action widget.
@@ -185,6 +222,14 @@ namespace GPlatesQtWidgets
 		int
 		find_row(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
+		
+		/**
+		 * Locates the current row of the table used by the given file info iterator.
+		 * Will return table_feature_collections->rowCount() if not found.
+		 */
+		int
+		find_row(
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it);
 
 		/**
 		 * Removes the row indicated by the given action widget.
@@ -194,20 +239,47 @@ namespace GPlatesQtWidgets
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
 
 		/**
+		 * Removes the row indicated indexed by @a row.
+		 */
+		void
+		remove_row(
+				int row);
+
+		/**
 		 * Get format for writing to feature collection file.
 		 */
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format
-			get_feature_collection_write_format(
-			const GPlatesFileIO::FileInfo& file_info);
+		get_feature_collection_write_format(
+				const GPlatesFileIO::FileInfo& file_info);
+
+
+
+		/**
+		 * Reloads specified file and handles any exceptions thrown while doing so.
+		 */
+		void
+		reload_file(
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file_it);
+
+		/**
+		 * Saves specified feature collection into a file described by @a file_info.
+		 */
+		void
+		save_file(
+				const GPlatesFileIO::FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format);
 
 	private:
-		
 		/**
-		 * A reference to the ViewportWindow in order to load and unload files.
-		 * Note: using ViewportWindow to handle things is the wrong way to do it, but
-		 * is necessary for now.
+		 * The loaded feature collection files.
 		 */
-		ViewportWindow *d_viewport_window_ptr;
+		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
+
+		/**
+		 * Handles loading/unloading of feature collections.
+		 */
+		GPlatesAppLogic::FeatureCollectionFileIO *d_feature_collection_file_io;
 
 		/**
 		 * Holds the path information from the last file opened using the Open File dialog.
@@ -220,6 +292,27 @@ namespace GPlatesQtWidgets
 		 * Controls whether Save File dialogs include a Compressed GPML option.
 		 */
 		bool d_gzip_available;
+
+
+		/**
+		 * Connect to signals from a @a FeatureCollectionFileState object.
+		 */
+		void
+		connect_to_file_state_signals();
+
+		/**
+		 * Allows calling multiple functions that throw the same types of exceptions and
+		 * handles those exceptions in one place.
+		 */
+		void
+		try_catch_file_load(
+				boost::function<void ()> file_load_func);
+
+		/**
+		 * Deactivates all currently active reconstruction files.
+		 */
+		void
+		deactivate_active_reconstruction_files();
 	};
 }
 

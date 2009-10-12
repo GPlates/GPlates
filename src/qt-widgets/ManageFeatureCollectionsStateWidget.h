@@ -34,8 +34,11 @@
 #endif
 
 #include <QWidget>
-#include "ApplicationState.h"
+
 #include "ManageFeatureCollectionsStateWidgetUi.h"
+
+#include "app-logic/FeatureCollectionFileState.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -52,24 +55,35 @@ namespace GPlatesQtWidgets
 		explicit
 		ManageFeatureCollectionsStateWidget(
 				ManageFeatureCollectionsDialog &feature_collections_dialog,
-				GPlatesAppState::ApplicationState::file_info_iterator file_it,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
 				bool reconstructable_active,
 				bool reconstruction_active,
+				bool enable_reconstructable,
+				bool enable_reconstruction,
 				QWidget *parent_ = NULL);
 
 		/**
-		 * Updates the StateWidget by checking/unchecking checkboxes and
+		 * Updates the reconstructable state of StateWidget by checking/unchecking checkboxes and
 		 * disabling/enabling buttons as necessary.
 		 */
 		void
-		update_state(
-				bool reconstructable_active,
-				bool reconstruction_active);		
-		
-		GPlatesAppState::ApplicationState::file_info_iterator
-		get_file_info_iterator() const
+		update_reconstructable_state(
+				bool active,
+				bool enable_reconstructable);
+	
+		/**
+		 * Updates the reconstruction state of StateWidget by checking/unchecking checkboxes and
+		 * disabling/enabling buttons as necessary.
+		 */
+		void
+		update_reconstruction_state(
+				bool active,
+				bool enable_reconstruction);
+	
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+		get_file_iterator() const
 		{
-			return d_file_info_iterator;
+			return d_file_iterator;
 		}
 	
 	private slots:
@@ -107,7 +121,7 @@ namespace GPlatesQtWidgets
 				bool is_enabled);
 	
 		ManageFeatureCollectionsDialog &d_feature_collections_dialog;
-		GPlatesAppState::ApplicationState::file_info_iterator d_file_info_iterator;
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator d_file_iterator;
 		
 	};
 }

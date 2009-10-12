@@ -30,19 +30,23 @@
 #include "CreateFeatureDialog.h"
 #include "FeatureSummaryWidget.h"
 
+#include "app-logic/ApplicationState.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
+
 #include "gui/FeatureFocus.h"
 #include "gui/TopologyTools.h"
 
 #include "model/FeatureHandle.h"
 
-#include "utils/UnicodeStringUtils.h"
-
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/XsString.h"
+
+#include "utils/UnicodeStringUtils.h"
+
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -89,30 +93,25 @@ namespace
 
 
 GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesGui::FeatureFocus &feature_focus,
-		GPlatesModel::ModelInterface &model_interface,
-		ViewportWindow &view_state_,
+		GPlatesPresentation::ViewState &view_state_,
+		ViewportWindow &viewport_window_,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_rendered_geom_collection(&rendered_geom_collection),
-	d_feature_focus_ptr(&feature_focus),
-	d_model_interface(&model_interface),
-	d_view_state_ptr(&view_state_),
+	d_feature_focus_ptr(&view_state_.get_feature_focus()),
+	d_model_interface(&view_state_.get_application_state().get_model_interface()),
 	d_create_feature_dialog(
 		new CreateFeatureDialog(
-			model_interface, 
-			view_state_, 
+			view_state_,
+			viewport_window_, 
 			GPlatesQtWidgets::CreateFeatureDialog::TOPOLOGICAL, this) 
 	),
 	d_topology_tools_ptr(
 		new GPlatesGui::TopologyTools(
-			rendered_geom_collection, 
-			feature_focus, 
-			view_state_) 
+			view_state_, 
+			viewport_window_) 
 	),
 	d_feature_summary_widget_ptr(
-		new FeatureSummaryWidget(feature_focus)
+		new FeatureSummaryWidget(view_state_.get_feature_focus())
 	)
 {
 	setupUi(this);
