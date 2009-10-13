@@ -322,6 +322,18 @@ ELSE (_boost_IN_CACHE)
       )
   ENDIF( NOT Boost_INCLUDE_DIR )
 
+  # Also look for libraries relative to the boost include path.
+  # This is in case the user specified CMAKE_INCLUDE_PATH
+  # but not CMAKE_LIBRARY_PATH for example.
+  IF(Boost_INCLUDE_DIR)
+   SET(_boost_LIBRARIES_SEARCH_DIRS 
+      ${Boost_INCLUDE_DIR}/lib
+	  ${Boost_INCLUDE_DIR}/stage/lib
+      ${Boost_INCLUDE_DIR}/../lib
+	  ${Boost_INCLUDE_DIR}/../stage/lib
+	  ${_boost_LIBRARIES_SEARCH_DIRS})
+  ENDIF(Boost_INCLUDE_DIR)
+
   IF(Boost_INCLUDE_DIR)
     # Extract Boost_VERSION and Boost_LIB_VERSION from version.hpp
     # Read the whole file:
