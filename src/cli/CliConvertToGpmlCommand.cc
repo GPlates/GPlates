@@ -47,8 +47,6 @@ namespace
 	//! Option name for loading feature collection file(s) with short version.
 	const char *LOAD_FEATURE_COLLECTION_OPTION_NAME_WITH_SHORT_OPTION = "load-fc,l";
 
-	//! Option name for output filename suffix appended to input file basename.
-	const char *OUTPUT_SUFFIX_OPTION_NAME = "suffix";
 	//! Same as @a OUTPUT_SUFFIX_OPTION_NAME with added short version.
 	const char *OUTPUT_SUFFIX_OPTION_NAME_WITH_SHORT_OPTION = "suffix,s";
 }

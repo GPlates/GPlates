@@ -112,7 +112,7 @@ namespace GPlatesGui
 namespace GPlatesPresentation
 {
 	class ViewState;
-};
+}
 
 namespace GPlatesPresentation
 {

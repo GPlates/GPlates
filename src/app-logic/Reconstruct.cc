@@ -199,10 +199,10 @@ GPlatesAppLogic::Reconstruct::Reconstruct(
 	d_file_state(file_state),
 	d_reconstruction_time(reconstruction_time),
 	d_anchored_plate_id(anchored_plate_id),
-	d_reconstruction_hook(reconstruction_hook),
 	d_reconstruction(
 			ReconstructUtils::create_empty_reconstruction(
-					reconstruction_time, anchored_plate_id))
+					reconstruction_time, anchored_plate_id)),
+	d_reconstruction_hook(reconstruction_hook)
 {
 }
 
@@ -246,7 +246,7 @@ GPlatesAppLogic::Reconstruct::reconstruct_with_anchor(
 	// Reconstruct before we tell everyone that we've reconstructed!
 	reconstruct_application_state();
 
-	emit reconstructed(*this, false/*reconstruction_time_changed*/, new_anchor_plate_id);
+	emit reconstructed(*this, false/*reconstruction_time_changed*/, anchor_plate_id_changed);
 }
 
 

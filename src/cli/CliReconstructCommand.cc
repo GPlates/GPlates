@@ -52,13 +52,9 @@ namespace
 	//! Option name for loading reconstruction feature collection file(s) with short version.
 	const char *LOAD_RECONSTRUCTION_OPTION_NAME_WITH_SHORT_OPTION = "load-reconstruction,r";
 
-	//! Option name for reconstruction time.
-	const char *RECONSTRUCTION_TIME_OPTION_NAME = "recon-time";
 	//! Option name for reconstruction time with short version.
 	const char *RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION = "recon-time,t";
 
-	//! Option name for anchor plate id.
-	const char *ANCHOR_PLATE_ID_OPTION_NAME = "anchor-plate-id";
 	//! Option name for anchor plate id with short version.
 	const char *ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "anchor-plate-id,a";
 }

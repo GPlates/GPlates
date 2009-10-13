@@ -182,12 +182,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_application(application),
 	d_reconstruction(GPlatesAppLogic::ReconstructUtils::create_empty_reconstruction(0.0, 0)),
 	d_animation_controller(get_view_state().get_reconstruct()),
+	d_full_screen_mode(*this),
 	d_reconstruction_view_widget(
 			d_animation_controller,
 			*this,
 			get_view_state(),
 			this),
-	d_full_screen_mode(*this),
 	d_about_dialog(*this, this),
 	d_animate_dialog(d_animation_controller, this),
 	d_export_animation_dialog(d_animation_controller, get_view_state(), *this, this),

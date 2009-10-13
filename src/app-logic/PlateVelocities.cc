@@ -320,14 +320,14 @@ GPlatesAppLogic::PlateVelocities::remove_file(
 		FeatureCollectionFileState::file_iterator file_iter)
 {
 	using boost::lambda::_1;
-	using boost::lambda::bind;
 
 	// Try removing it from the velocity feature collections.
 	d_velocity_field_feature_collection_infos.erase(
 			std::remove_if(
 					d_velocity_field_feature_collection_infos.begin(),
 					d_velocity_field_feature_collection_infos.end(),
-					bind(&VelocityFieldFeatureCollectionInfo::d_file_iterator, _1) == file_iter),
+					boost::lambda::bind(&VelocityFieldFeatureCollectionInfo::d_file_iterator, _1)
+							== file_iter),
 			d_velocity_field_feature_collection_infos.end());
 }
 
@@ -349,12 +349,12 @@ GPlatesAppLogic::PlateVelocities::set_file_active(
 		bool activate)
 {
 	using boost::lambda::_1;
-	using boost::lambda::bind;
 
 	velocity_field_feature_collection_info_seq_type::iterator iter = std::find_if(
 			d_velocity_field_feature_collection_infos.begin(),
 			d_velocity_field_feature_collection_infos.end(),
-			bind(&VelocityFieldFeatureCollectionInfo::d_file_iterator, _1) == file_iter);
+			boost::lambda::bind(&VelocityFieldFeatureCollectionInfo::d_file_iterator, _1)
+					== file_iter);
 
 	if (iter != d_velocity_field_feature_collection_infos.end())
 	{

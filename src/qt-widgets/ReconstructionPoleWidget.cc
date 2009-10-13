@@ -44,8 +44,8 @@ GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
 		ViewportWindow &viewport_window,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
 	d_reconstruct_ptr(&view_state.get_reconstruct()),
+	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
 	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
 	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr))
 {

@@ -226,9 +226,9 @@ namespace GPlatesAppLogic
 			FileNodeState(
 					const ClassifyFeatureCollection::classifications_type &classification =
 							ClassifyFeatureCollection::classifications_type(),
-					const FileNodeActiveState &active_state = FileNodeActiveState()) :
+					const FileNodeActiveState &active_state_ = FileNodeActiveState()) :
 				d_classification(classification),
-				d_active_state(active_state)
+				d_active_state(active_state_)
 			{  }
 
 
@@ -275,10 +275,10 @@ namespace GPlatesAppLogic
 			 * Default file state has all flags set to false.
 			 */
 			FileNode(
-					const GPlatesFileIO::File::shared_ref &file,
-					const FileNodeState &file_node_state = FileNodeState()) :
-				d_file(file),
-				d_file_node_state(file_node_state)
+					const GPlatesFileIO::File::shared_ref &file_,
+					const FileNodeState &file_node_state_ = FileNodeState()) :
+				d_file(file_),
+				d_file_node_state(file_node_state_)
 			{  }
 
 
