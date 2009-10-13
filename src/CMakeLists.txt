@@ -70,11 +70,11 @@ endif (ADD_GPLATES_CLI_TARGET)
 # feature-visitors.  (This stops weird "undefined reference to 
 # vtable for blah" error messages occurring.)
 set(gui_LIBS
-	qt-resources qt-widgets)
+	qt-widgets qt-resources)
 set(presentation_LIBS
-	gui canvas-tools view-operations presentation)
+	view-operations presentation gui canvas-tools)
 set(app_LIBS
-	model file-io feature-visitors property-values app-logic)
+	app-logic file-io feature-visitors property-values model)
 set(util_LIBS
 	maths utils global)
 if (ADD_GPLATES_CLI_TARGET)
