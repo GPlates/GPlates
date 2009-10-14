@@ -140,7 +140,7 @@ namespace GPlatesViewOperations
 		 * Extra large size of point to render at each point/vertex.
 		 * Used to make point/vertex even more visible or to emphasise it even more.
 		 */
-		const float EXTRA_LARGE_POINT_SIZE_HINT = 6.0f;
+		const float EXTRA_LARGE_POINT_SIZE_HINT = 8.0f;
 
 		/////////////
 		// Colours //

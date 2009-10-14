@@ -315,6 +315,14 @@ namespace GPlatesGui
 		clear();
 
 
+		/**
+		 * Updates the container data 
+		 *
+		 * The @a update_table() signal is emitted.
+		 */
+		void
+		update();
+
 
 #if 0	// The following slots were only used to support easier testing before the platepolygon branch merge.
 		// they should go away once everything works fine.
@@ -358,6 +366,9 @@ namespace GPlatesGui
 		 */
 		void
 		cleared();
+
+		void
+		update_table_sig();
 
 		/**
 		 * Emitted whenever the insertion point changes location.

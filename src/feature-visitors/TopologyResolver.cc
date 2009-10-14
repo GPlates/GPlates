@@ -27,8 +27,8 @@
 
 #if 0
 #define DEBUG
-#define DEBUG_VISIT
 #define DEBUG_RESOLVE_INTERSECTION
+#define DEBUG_VISIT
 #define DEBUG_RESOLVE_BOUNDARY
 #define DEBUG_GET_VERTEX_LIST
 #define DEBUG_BOUNDS
@@ -1128,7 +1128,7 @@ const GPlatesMaths::PolylineOnSphere& pl1 = *node1_polyline;
 GPlatesMaths::PolylineOnSphere::VertexConstIterator itr1 = pl1.vertex_begin();
 GPlatesMaths::PolylineOnSphere::VertexConstIterator end1 = pl1.vertex_end();
 for ( ; itr1 != end1 ; ++itr1) {
-std::cout << "TEST: llp( *itr1 ) = " << GPlatesMaths::make_lat_lon_point(*itr1) << std::endl;
+std::cout << "DEBUG_GET_VERTEX_LIST: llp( *itr1 ) = " << GPlatesMaths::make_lat_lon_point(*itr1) << std::endl;
 }
 std::cout << std::endl;
 #endif
@@ -1143,7 +1143,7 @@ const GPlatesMaths::PolylineOnSphere& pl2 = *node2_polyline;
 GPlatesMaths::PolylineOnSphere::VertexConstIterator itr2 = pl2.vertex_begin();
 GPlatesMaths::PolylineOnSphere::VertexConstIterator end2 = pl2.vertex_end();
 for ( ; itr2 != end2 ; ++itr2) {
-std::cout << "TEST: llp( *itr2 ) = " << GPlatesMaths::make_lat_lon_point(*itr2) << std::endl;
+std::cout << "DEBUG_GET_VERTEX_LIST: llp( *itr2 ) = " << GPlatesMaths::make_lat_lon_point(*itr2) << std::endl;
 }
 std::cout << std::endl;
 #endif
@@ -2199,7 +2199,7 @@ GPlatesFeatureVisitors::TopologyResolver::BoundaryFeaturePopulator::resolve_inte
 	const GPlatesModel::FeatureId &intersection_geometry_feature_id,
 	GPlatesFeatureVisitors::TopologyResolver::NeighborRelation relation)
 {
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 std::cout << "TopologyResolver::resolve_intersection: " << std::endl;
 //std::cout << "TopologyResolver::resolve_intersection: src_geometry_id= " << src_geometry_id << std::endl;
 //std::cout << "TopologyResolver::resolve_intersection: intersection_id= " << intersection_id << std::endl;
@@ -2345,8 +2345,18 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 
 		// Get a vector of FeatureHandle weak_refs for this FeatureId
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;
-		d_ref_point_plate_id_fid.find_back_ref_targets( append_as_weak_refs( back_refs ) );
 
+		//
+		// FIXME: this code holds experiments and tests on how best to use the click point 
+		//
+		// to rotate the click_point chose ONE of the next 2 statements:
+
+		// This is a TEST on how to rotate the click point with the ref point id
+		//d_ref_point_plate_id_fid.find_back_ref_targets( append_as_weak_refs( back_refs ) );
+
+		// This is a TEST on how to rotate the click point with the src geom 
+		source_geometry_feature_id.find_back_ref_targets( append_as_weak_refs( back_refs ) );
+		
 		// Double check refs
 		if ( back_refs.size() == 0 )
 		{
@@ -2372,9 +2382,6 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 			ref_point_feature_ref, plate_id_property_name, recon_plate_id ) )
 		{
 			// The feature has a reconstruction plate ID.
-#ifdef DEBUG_RESOLVE_INTERSECTION
-std::cout << "TopologyResolver::resolve_intersection: MOVE the click point with plate id " << recon_plate_id << std::endl;
-#endif
 			const GPlatesMaths::FiniteRotation &r = 
 				d_recon_tree_ptr->get_composed_absolute_rotation(
 					recon_plate_id->value() 
@@ -2434,8 +2441,7 @@ std::cout << "TopologyResolver::resolve_intersection: MOVE the click point with 
 			// FIXME : freak out!
 		}
 
-//#ifdef DEBUG_RESOLVE_INTERSECTION
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 std::cout << "TopologyResolver::resolve_intersection: "
 << "closeness_head=" << closeness_head << " and " 
 << "closeness_tail=" << closeness_tail << std::endl;
@@ -2445,8 +2451,7 @@ std::cout << "TopologyResolver::resolve_intersection: "
 		if ( closeness_head > closeness_tail )
 		{
 
-//#ifdef DEBUG_RESOLVE_INTERSECTION
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 qDebug() << "TopologyResolver::resolve_intersection: use HEAD of: " 
 << GPlatesUtils::make_qstring_from_icu_string( source_geometry_feature_id.get() );
 #endif
@@ -2474,8 +2479,7 @@ qDebug() << "TopologyResolver::resolve_intersection: use HEAD of: "
 		else if ( closeness_tail > closeness_head )
 		{
 			d_closeness = closeness_tail;
-//#ifdef DEBUG_RESOLVE_INTERSECTION
-#ifdef DEBUG
+#ifdef DEBUG_RESOLVE_INTERSECTION
 qDebug() << "TopologyResolver::resolve_intersection: use TAIL of: " 
 << GPlatesUtils::make_qstring_from_icu_string( source_geometry_feature_id.get() );
 #endif

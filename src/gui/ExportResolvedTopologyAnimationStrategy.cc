@@ -327,10 +327,14 @@ namespace
 				return;
 			}
 
-			// Use the two-letter PLATES data type code if we have a GpmlOldPlatesHeader
-			// otherwise output the gpml feature type.
+			// Get a two-letter PLATES data type code from the subsegment type if
+			// it's a subduction zone, otherwise get the data type code from a
+			// GpmlOldPlatesHeader if there is one, otherwise get the full gpml
+			// feature type.
 			const QString feature_type_code = get_feature_type_code(
-					source_feature, sub_segment_type, source_feature_old_plates_header);
+					source_feature,
+					sub_segment_type,
+					source_feature_old_plates_header);
 
 			d_header_line =
 					feature_type_code +
@@ -356,8 +360,10 @@ namespace
 
 
 		/**
-		 * Returns the two-letter PLATES data type code if we have a GpmlOldPlatesHeader
-		 * otherwise output the gpml feature type.
+		 * Get a two-letter PLATES data type code from the subsegment type if
+		 * it's a subduction zone, otherwise get the data type code from a
+		 * GpmlOldPlatesHeader if there is one, otherwise get the full gpml
+		 * feature type.
 		 */
 		const QString
 		get_feature_type_code(
@@ -365,31 +371,34 @@ namespace
 				const SubSegmentType sub_segment_type,
 				const GPlatesPropertyValues::GpmlOldPlatesHeader *source_feature_old_plates_header)
 		{
+			// First determine the PLATES data type code from the subsegment type.
+			// We do this because for subduction zones the subsegment type has
+			// already accounted for any direction reversal by reversing
+			// the subduction type.
+			//
+			// NOTE: we don't need to handle reverse direction of subsegment
+			// because variables of type 'SubSegmentType' already have this
+			// information in them.
+			if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT)
+			{
+				return "sL";
+			}
+			if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT)
+			{
+				return "sR";
+			}
+			// Note: We don't test for SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN.
+
+			// The type is not a subduction left or right so just output the plates
+			// data type code if there is an old plates header.
 			if (source_feature_old_plates_header)
 			{
 				return GPlatesUtils::make_qstring_from_icu_string(
 						source_feature_old_plates_header->data_type_code());
 			}
-			else
-			{
-				// We can still infer the PLATES data type code from the
-				// subsegment type.
-				switch (sub_segment_type)
-				{
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT:
-					return "sL";
 
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT:
-					return "sR";
-
-				case SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN:
-				case SUB_SEGMENT_TYPE_OTHER:
-				default:
-					break;
-				}
-			}
-
-			// Just use the full gpml feature type.
+			// It's not a subduction zone and it doesn't have an old plates header
+			// so just return the full gpml feature type.
 			// Mark will put in code in his external scripts to check for this.
 			return GPlatesUtils::make_qstring_from_icu_string(
 					source_feature->feature_type().get_name());
@@ -468,11 +477,34 @@ namespace
 
 		SubSegmentType
 		get_sub_segment_feature_type(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+				const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment)
 		{
 			d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature =
+					sub_segment.get_feature_ref();
+
 			visit_feature(feature);
+
+			// We just visited 'feature' looking for:
+			// - a feature type of "SubductionZone",
+			// - a property named "subductingSlab",
+			// - a property type of "gpml:SubductionSideEnumeration".
+			// - an enumeration value other than "Unknown".
+			//
+			// If we didn't find this information then look for the "sL" and "sR"
+			// data type codes in an old plates header if we can find one.
+			//
+			if (d_sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN)
+			{
+				get_sub_segment_feature_type_from_old_plates_header(feature);
+			}
+
+			// Check if the sub_segment is being used in reverse in the polygon boundary
+			if (sub_segment.get_use_reverse())
+			{
+				reverse_orientation();
+			}
 
 			return d_sub_segment_type;
 		}
@@ -594,6 +626,52 @@ namespace
 					? SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT
 					: SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
 		}
+
+
+		void
+		get_sub_segment_feature_type_from_old_plates_header(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+		{
+			static const GPlatesModel::PropertyName old_plates_header_property_name =
+				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
+
+			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header;
+
+			if ( GPlatesFeatureVisitors::get_property_value(
+					feature,
+					old_plates_header_property_name,
+					old_plates_header ) )
+			{
+				if ( old_plates_header->data_type_code() == "sL" )
+				{
+					// set the type
+					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
+				}
+
+				if ( old_plates_header->data_type_code() == "sR" )
+				{
+					// set the type
+					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
+				}
+			}
+		}
+
+
+		void
+		reverse_orientation()
+		{
+			if (d_sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT) 
+			{
+				// flip the orientation flag
+				d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
+			}
+			else if (d_sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT) 
+			{
+				// flip the orientation flag
+				d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
+			}
+		}
+
 	};
 
 
@@ -601,11 +679,11 @@ namespace
 	 * Determines feature type of subsegment source feature referenced by platepolygon.
 	 */
 	SubSegmentType
-	get_sub_segment_feature_type(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+	get_sub_segment_type(
+			const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment,
 			const double &recon_time)
 	{
-		return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(feature);
+		return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(sub_segment);
 	}
 
 
@@ -717,8 +795,7 @@ namespace
 			GMTFeatureExporter &subduction_right_exporter)
 	{
 		// Determine the feature type of subsegment.
-		const SubSegmentType sub_segment_type = get_sub_segment_feature_type(
-				sub_segment.get_feature_ref(), recon_time);
+		const SubSegmentType sub_segment_type = get_sub_segment_type(sub_segment, recon_time);
 
 		// The files with specific types of subsegments use a different header format
 		// than the file with all subsegments (regardless of type).
