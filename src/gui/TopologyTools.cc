@@ -559,7 +559,10 @@ GPlatesGui::TopologyTools::handle_reconstruction()
 	GPlatesFeatureVisitors::get_property_value(
 		d_topology_feature_ref, valid_time_property_name, time_period);
 
+	const GPlatesPropertyValues::GeoTimeInstant recon_time( d_reconstruct_ptr->get_current_reconstruction_time() );
+#if 0
 	const GPlatesPropertyValues::GeoTimeInstant recon_time( new_time );
+#endif 
 
 	if ( ! time_period->contains( recon_time ) )
 	{
@@ -841,7 +844,8 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 				);
 
 			// Get the recon tree from the view state ptr
-			GPlatesModel::Reconstruction &recon = d_view_state_ptr->reconstruction();
+			GPlatesModel::Reconstruction &recon = d_reconstruct_ptr->get_current_reconstruction();
+			///d_viewport_window_ptr->reconstruction();
 			GPlatesModel::ReconstructionTree &recon_tree = recon.reconstruction_tree();	
 
 			// get the forward rotation for this plate id
@@ -1085,7 +1089,7 @@ GPlatesGui::TopologyTools::handle_insert_feature(int insert_index)
 			);
 
 		// Get the recon tree from the view state ptr
-		GPlatesModel::Reconstruction &recon = d_view_state_ptr->reconstruction();
+		GPlatesModel::Reconstruction &recon = d_reconstruct_ptr->get_current_reconstruction();
 		GPlatesModel::ReconstructionTree &recon_tree = recon.reconstruction_tree();	
 
 		// get the forward rotation for this plate id
@@ -1603,7 +1607,7 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 
 			// Create rendered geometry.
 			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					pos_ptr,
 					colour,
 					GPlatesViewOperations::GeometryOperationParameters::EXTRA_LARGE_POINT_SIZE_HINT,
@@ -1921,7 +1925,7 @@ void
 GPlatesGui::TopologyTools::draw_click_points()
 {
 	d_click_points_layer_ptr->clear_rendered_geometries();
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 
 	// loop over click points 
 	std::vector<GPlatesMaths::PointOnSphere>::iterator itr, end;
@@ -1949,7 +1953,7 @@ GPlatesGui::TopologyTools::draw_click_points()
 	}
 
 	// update the canvas 
-	d_view_state_ptr->globe_canvas().update_canvas();
+	d_viewport_window_ptr->globe_canvas().update_canvas();
 }
 
 
@@ -2188,7 +2192,7 @@ GPlatesGui::TopologyTools::check_sections_table()
 
 		// Get the RFG for this feature 
 		GPlatesModel::ReconstructedFeatureGeometryFinder finder( 
-			&(d_view_state_ptr->reconstruction()) );
+			&( d_reconstruct_ptr->get_current_reconstruction() ) );
 
 		finder.find_rfgs_of_feature( feature_ref );
 
@@ -2678,7 +2682,7 @@ GPlatesGui::TopologyTools::process_intersections()
 		// The feature has a reconstruction plate ID.
 
 		// Get the recon tree from the view state ptr
-		GPlatesModel::Reconstruction &recon = d_view_state_ptr->reconstruction();
+		GPlatesModel::Reconstruction &recon = d_reconstruct_ptr->get_current_reconstruction();
 		GPlatesModel::ReconstructionTree &recon_tree = recon.reconstruction_tree();	
 
 		// get the forward rotation for this plate id
