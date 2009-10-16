@@ -130,9 +130,8 @@ GPlatesViewOperations::MoveVertexGeometryOperation::deactivate()
 		disconnect_from_geometry_builder_signals();
 	}
 
-	// We only deactivate the highlight point layer (e.g. if the user switches
-	// to the rotate globe tool, we don't want the point to still be highlighted)
-	d_highlight_point_layer_ptr->set_active(false);
+	// Get rid of the highlighting (e.g. if switching to rotate globe tool)
+	d_highlight_point_layer_ptr->clear_rendered_geometries();
 
 	// User will have to click another vertex when this operation activates again.
 	d_is_vertex_selected = false;

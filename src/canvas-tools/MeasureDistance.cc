@@ -134,6 +134,9 @@ void
 GPlatesCanvasTools::MeasureDistance::handle_deactivation()
 {
 	d_measure_distance_state_ptr->handle_deactivation();
+
+	// remove the highlighting (e.g. if switching to rotate globe tool)
+	remove_distance_label_and_highlight();
 }
 
 void
