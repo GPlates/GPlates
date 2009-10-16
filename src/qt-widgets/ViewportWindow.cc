@@ -46,6 +46,7 @@
 
 #include "ViewportWindow.h"
 
+#include "AboutDialog.h"
 #include "ActionButtonBox.h"
 #include "CreateFeatureDialog.h"
 #include "GlobeCanvas.h"
@@ -188,12 +189,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			*this,
 			get_view_state(),
 			this),
-	d_about_dialog(*this, this),
+	d_about_dialog_ptr(NULL),
 	d_animate_dialog(d_animation_controller, this),
 	d_export_animation_dialog(d_animation_controller, get_view_state(), *this, this),
 	d_total_reconstruction_poles_dialog(get_view_state(), this),
 	d_feature_properties_dialog(get_view_state(), this),
-	d_license_dialog(&d_about_dialog),
 	d_manage_feature_collections_dialog(
 			get_application_state().get_feature_collection_file_state(),
 			get_application_state().get_feature_collection_file_io(),
@@ -951,28 +951,19 @@ GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 {
-	d_about_dialog.show();
+	if (!d_about_dialog_ptr)
+	{
+		d_about_dialog_ptr.reset(new AboutDialog(this));
+	}
+
+	d_about_dialog_ptr->show();
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
 	// a second time, when the dialog is still open, should make the dialog 'active'
 	// and return keyboard focus to it.
-	d_about_dialog.activateWindow();
+	d_about_dialog_ptr->activateWindow();
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_about_dialog.raise();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
-{
-	d_license_dialog.show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_license_dialog.activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_license_dialog.raise();
+	d_about_dialog_ptr->raise();
 }
 
 
@@ -1434,11 +1425,13 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file(
 void
 GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 {
-	d_about_dialog.reject();
+	if (d_about_dialog_ptr)
+	{
+		d_about_dialog_ptr->reject();
+	}
 	d_animate_dialog.reject();
 	d_total_reconstruction_poles_dialog.reject();
 	d_feature_properties_dialog.reject();
-	d_license_dialog.reject();
 	d_manage_feature_collections_dialog.reject();
 	d_read_errors_dialog.reject();
 	d_set_camera_viewpoint_dialog.reject();

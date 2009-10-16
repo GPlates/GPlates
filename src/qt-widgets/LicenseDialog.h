@@ -45,7 +45,8 @@ namespace GPlatesQtWidgets
 
 		virtual
 		~LicenseDialog()
-		{  }
+		{
+		}
 	};
 }
 

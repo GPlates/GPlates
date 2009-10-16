@@ -43,12 +43,10 @@
 #include <QStringList>
 #include <QUndoGroup>
 
-#include "AboutDialog.h"
 #include "AnimateDialog.h"
 #include "ExportAnimationDialog.h"
 #include "ExportReconstructedFeatureGeometryDialog.h"
 #include "FeaturePropertiesDialog.h"
-#include "LicenseDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
@@ -121,6 +119,8 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
+	class AboutDialog;
+
 	class ViewportWindow:
 			public QMainWindow, 
 			protected Ui_ViewportWindow
@@ -216,9 +216,6 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_reconstruction();
-
-		void
-		pop_up_license_dialog();
 
 		void
 		enable_drag_globe_tool(
@@ -441,12 +438,11 @@ namespace GPlatesQtWidgets
 		GPlatesGui::FullScreenMode d_full_screen_mode;
 
 		ReconstructionViewWidget d_reconstruction_view_widget;
-		AboutDialog d_about_dialog;
+		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		AnimateDialog d_animate_dialog;
 		ExportAnimationDialog d_export_animation_dialog;
 		TotalReconstructionPolesDialog d_total_reconstruction_poles_dialog;
 		FeaturePropertiesDialog d_feature_properties_dialog;
-		LicenseDialog d_license_dialog;
 		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
 		ReadErrorAccumulationDialog d_read_errors_dialog;
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;

@@ -24,20 +24,22 @@
  */
  
 #include "AboutDialog.h"
-#include "ViewportWindow.h"
+#include "LicenseDialog.h"
 #include "global/Constants.h"  // the copyright string macro
 
+GPlatesQtWidgets::AboutDialog::~AboutDialog()
+{
+}
 
 GPlatesQtWidgets::AboutDialog::AboutDialog(
-		ViewportWindow &viewport,
 		QWidget *parent_):
 	QDialog(parent_),
-	d_viewport_ptr(&viewport)
+	d_license_dialog_ptr(NULL)
 {
 	setupUi(this);
 
 	QObject::connect(button_License, SIGNAL(clicked()),
-			d_viewport_ptr, SLOT(pop_up_license_dialog()));
+			this, SLOT(pop_up_license_dialog()));
 
 	QString version(QObject::tr(GPlatesGlobal::VersionString));
 	label_GPlates->setText(version);
@@ -45,3 +47,22 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	QString copyright(QObject::tr(GPlatesGlobal::HtmlCopyrightString));
 	text_Copyright->setHtml(copyright);
 }
+
+void
+GPlatesQtWidgets::AboutDialog::pop_up_license_dialog()
+{
+	if (!d_license_dialog_ptr)
+	{
+		d_license_dialog_ptr.reset(new LicenseDialog(this));
+	}
+
+	d_license_dialog_ptr->show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	d_license_dialog_ptr->activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	d_license_dialog_ptr->raise();
+}
+
