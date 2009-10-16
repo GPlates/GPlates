@@ -547,31 +547,31 @@ GPlatesGui::TopologyTools::handle_reconstruction()
 {
 	if (! d_is_active) { return; }
 
- 	// check to make sure the topology feature is defined for this new time
-
-	// Get the time period for the d_topology_feature_ref's validTime prop
-	// FIXME: (Assuming a gml:TimePeriod, rather than a gml:TimeInstant!)
-	static const GPlatesModel::PropertyName valid_time_property_name =
-		GPlatesModel::PropertyName::create_gml("validTime");
-
-	const GPlatesPropertyValues::GmlTimePeriod *time_period;
-
-	GPlatesFeatureVisitors::get_property_value(
-		d_topology_feature_ref, valid_time_property_name, time_period);
-
-	const GPlatesPropertyValues::GeoTimeInstant recon_time( d_reconstruct_ptr->get_current_reconstruction_time() );
-#if 0
-	const GPlatesPropertyValues::GeoTimeInstant recon_time( new_time );
-#endif 
-
-	if ( ! time_period->contains( recon_time ) )
+ 	// Check to make sure the topology feature is defined for this new time
+	if ( d_topology_feature_ref.is_valid() )
 	{
-		draw_all_layers_clear();
-		return;
+		// Get the time period for the d_topology_feature_ref's validTime prop
+		// FIXME: (Assuming a gml:TimePeriod, rather than a gml:TimeInstant!)
+		static const GPlatesModel::PropertyName valid_time_property_name =
+			GPlatesModel::PropertyName::create_gml("validTime");
+
+		const GPlatesPropertyValues::GmlTimePeriod *time_period;
+
+		GPlatesFeatureVisitors::get_property_value(
+			d_topology_feature_ref, valid_time_property_name, time_period);
+
+		const GPlatesPropertyValues::GeoTimeInstant recon_time( d_reconstruct_ptr->get_current_reconstruction_time() );
+
+		if ( ! time_period->contains( recon_time ) )
+		{
+			// Clear all the layers
+			draw_all_layers_clear();
+			return;
+		}
 	}
 
 	//
-	// else continue with the update
+	// Continue with the update
 	//
 	d_visit_to_check_type = false;
 	d_visit_to_create_properties = true;
