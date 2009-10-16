@@ -117,6 +117,7 @@ Boost
 
   1. Get and install boost_1_34_1_setup.exe from:
      http://www.boostpro.com/download
+      * In addition to the default packages, also install "Program Options".
 
 ICU
 
