@@ -275,6 +275,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// Stretchable Task Panel hack for testing: Make the Task Panel
 	// into a QDockWidget, undocked by default.
 	QDockWidget *task_panel_dock = new QDockWidget(tr("Task Panel"), this);
+	task_panel_dock->setObjectName("TaskPanelDock");
 	task_panel_dock->setWidget(task_panel_auto_ptr.release());
 	task_panel_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, task_panel_dock);
@@ -631,7 +632,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 
 	// This action is for GUI debugging purposes, to help developers trigger
 	// some arbitrary code while debugging GUI problems:
-#ifndef GPLATES_PUBLIC_RELEASE
+#if 0	// I'm paranoid this will make it into the release somehow, so disabling until we get a commandline switch.
 	menu_View->addAction(action_Gui_Debug_Action);
 #endif
 	QObject::connect(action_Gui_Debug_Action, SIGNAL(triggered()),
@@ -1685,8 +1686,8 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	action_Show_Arrow_Decorations->setEnabled(globe_is_active);
 	
 	// Grey-out the modify pole tab when in map mode. 
-	d_task_panel_ptr->enable_modify_pole_tab(globe_is_active);
-	d_task_panel_ptr->enable_topology_tab(d_reconstruction_view_widget.globe_is_active());
+	d_task_panel_ptr->set_tab_enabled(TaskPanel::MODIFY_POLE, globe_is_active);
+	d_task_panel_ptr->set_tab_enabled(TaskPanel::TOPOLOGY_TOOLS, globe_is_active);
 	
 	// Display appropriate status bar message for tools which are not available on the map.
 	if (action_Build_Topology->isChecked() && d_reconstruction_view_widget.map_is_active())

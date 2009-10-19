@@ -16,7 +16,8 @@
    <string>Export Coordinates</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
   <property name="sizeGripEnabled" >
    <bool>true</bool>
@@ -83,9 +84,17 @@
       <item>
        <widget class="QStackedWidget" name="stack_format_options" >
         <property name="currentIndex" >
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="page_format_plates4" >
+         <property name="geometry" >
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>391</width>
+           <height>84</height>
+          </rect>
+         </property>
          <layout class="QVBoxLayout" >
           <item>
            <widget class="QLabel" name="label_info_plates4" >
@@ -100,6 +109,14 @@
          </layout>
         </widget>
         <widget class="QWidget" name="page_format_gmt" >
+         <property name="geometry" >
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>391</width>
+           <height>84</height>
+          </rect>
+         </property>
          <layout class="QVBoxLayout" >
           <item>
            <widget class="QLabel" name="label_info_gmt" >
@@ -114,6 +131,14 @@
          </layout>
         </widget>
         <widget class="QWidget" name="page_format_shapefile" >
+         <property name="geometry" >
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>391</width>
+           <height>84</height>
+          </rect>
+         </property>
          <layout class="QGridLayout" >
           <item row="0" column="0" >
            <widget class="QLabel" name="label_info_shapefile" >
@@ -128,6 +153,14 @@
          </layout>
         </widget>
         <widget class="QWidget" name="page_format_wkt" >
+         <property name="geometry" >
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>391</width>
+           <height>84</height>
+          </rect>
+         </property>
          <layout class="QVBoxLayout" >
           <item>
            <widget class="QLabel" name="label_info_wkt" >
@@ -142,6 +175,14 @@
          </layout>
         </widget>
         <widget class="QWidget" name="page_format_csv" >
+         <property name="geometry" >
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>100</width>
+           <height>30</height>
+          </rect>
+         </property>
          <layout class="QVBoxLayout" >
           <item>
            <widget class="QLabel" name="label_info_csv" >
@@ -250,7 +291,8 @@
            <string/>
           </property>
           <property name="icon" >
-           <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+           <iconset resource="../qt-resources/qt_widgets.qrc" >
+            <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
           </property>
          </widget>
         </item>
@@ -259,7 +301,7 @@
           <property name="orientation" >
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" >
+          <property name="sizeHint" stdset="0" >
            <size>
             <width>40</width>
             <height>20</height>
@@ -324,6 +366,14 @@
          </sizepolicy>
         </property>
         <widget class="QWidget" name="page_export_select_file" >
+         <property name="geometry" >
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>391</width>
+           <height>48</height>
+          </rect>
+         </property>
          <layout class="QHBoxLayout" >
           <item>
            <widget class="QLineEdit" name="lineedit_filename" />
@@ -337,7 +387,16 @@
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="page_export_clipboard" />
+        <widget class="QWidget" name="page_export_clipboard" >
+         <property name="geometry" >
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>100</width>
+           <height>30</height>
+          </rect>
+         </property>
+        </widget>
        </widget>
       </item>
      </layout>

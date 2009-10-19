@@ -192,7 +192,6 @@ set(srcs
     SpecifyTimeIncrementDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
-    TaskPanelUi.ui
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui
