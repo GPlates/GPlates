@@ -25,7 +25,7 @@
 
 #include "ReconstructView.h"
 
-#include "app-logic/PlateVelocities.h"
+#include "app-logic/PlateVelocityWorkflow.h"
 
 #include "view-operations/RenderReconstructionGeometries.h"
 
@@ -43,7 +43,7 @@ GPlatesViewOperations::ReconstructView::end_reconstruction(
 		GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
 {
 	// Solve plate velocities.
-	d_plate_velocities.solve_velocities(
+	d_plate_velocity_workflow.solve_velocities(
 			reconstruction,
 			reconstruction_time,
 			reconstruction_anchored_plate_id,

@@ -42,6 +42,7 @@ namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
 	class FeatureCollectionFileState;
+	class ReconstructionActivationStrategy;
 
 
 	/**
@@ -83,8 +84,12 @@ namespace GPlatesAppLogic
 		// NOTE: Most of these are boost::scoped_ptr's to avoid having to include header files.
 		//
 
-		boost::scoped_ptr<GPlatesAppLogic::FeatureCollectionFileState> d_feature_collection_file_state;
-		boost::scoped_ptr<GPlatesAppLogic::FeatureCollectionFileIO> d_feature_collection_file_io;
+		boost::scoped_ptr<GPlatesAppLogic::ReconstructionActivationStrategy>
+				d_reconstruction_activation_strategy;
+		boost::scoped_ptr<GPlatesAppLogic::FeatureCollectionFileState>
+				d_feature_collection_file_state;
+		boost::scoped_ptr<GPlatesAppLogic::FeatureCollectionFileIO>
+				d_feature_collection_file_io;
 	};
 }
 

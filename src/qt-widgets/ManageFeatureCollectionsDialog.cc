@@ -315,7 +315,7 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
 {
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
-			d_file_state.loaded_files();
+			d_file_state.get_loaded_files();
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
 	
@@ -482,7 +482,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstructable_state_for_
 	//
 	// FIXME: When the GUI supports workflows (in FeatureCollectionFileState) then
 	// remove this code.
-	typedef std::vector<GPlatesAppLogic::FeatureCollectionFileState::Workflow::tag_type>
+	typedef std::vector<GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type>
 			workflow_seq_type;
 	const workflow_seq_type workflow_tags = d_file_state.get_workflow_tags(file_it);
 	if (workflow_tags.empty())
@@ -517,47 +517,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstruction_state_for_f
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it =
 			state_widget_ptr->get_file_iterator();
 
-	if (activate)
-	{
-		// Only allow one reconstruction file to be active at a time - so disable
-		// any other active reconstruction files before we activate the new one.
-		deactivate_active_reconstruction_files();
-
-		// Activate the new reconstruction file.
-		d_file_state.set_file_active_reconstruction(file_it, true);
-	}
-	else
-	{
-		// Deactivating a reconstruction file is easier because we're not
-		// reactivating the most recently deactivated reconstruction file.
-		d_file_state.set_file_active_reconstruction(file_it, false);
-	}
-}
-
-
-void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::deactivate_active_reconstruction_files()
-{
-	// Get the list of all active reconstruction files.
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range active_file_iter_range =
-			d_file_state.get_active_reconstruction_files();
-
-	// Deactivate them all.
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator active_file_iter =
-			active_file_iter_range.begin;
-	while (active_file_iter != active_file_iter_range.end)
-	{
-		// Convert to an iterator we can use in the FeatureCollectionFileState interface.
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter =
-				GPlatesAppLogic::FeatureCollectionFileState::convert_to_file_iterator(active_file_iter);
-
-		// Increment the iterator before we deactivate otherwise we would invalidate the
-		// iterator and prevent it from incrementing.
-		++active_file_iter;
-
-		// Deactivate reconstruction file.
-		d_file_state.set_file_active_reconstruction(file_iter, false);
-	}
+	// Activate the new reconstruction file.
+	d_file_state.set_file_active_reconstruction(file_it, activate);
 }
 
 
@@ -585,29 +546,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::end_add_feature_collections(
 		GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
 		GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end)
 {
-	// Used to see if we added any reconstruction files and, if so, what the last one was.
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator last_reconstruction_file =
-			new_files_end;
-
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_iter = new_files_begin;
 	for ( ; new_file_iter != new_files_end; ++new_file_iter)
 	{
 		add_row(new_file_iter);
-
-		// See if any new files are reconstruction files.
-		if (file_state.is_file_active_reconstruction(new_file_iter))
-		{
-			last_reconstruction_file = new_file_iter;
-		}
-	}
-
-	// If we added one or more reconstruction files then deactivate all active reconstruction
-	// files except the last one added.
-	if (last_reconstruction_file != new_files_end)
-	{
-		deactivate_active_reconstruction_files();
-
-		file_state.set_file_active_reconstruction(last_reconstruction_file, true);
 	}
 }
 
@@ -688,7 +630,7 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::workflow_file_activation(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
-		const GPlatesAppLogic::FeatureCollectionFileState::Workflow::tag_type &workflow_tag,
+		const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &workflow_tag,
 		bool activation)
 {
 	const int row = find_row(file_it);
@@ -711,11 +653,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::workflow_file_activation(
 			const bool enable_reconstructable =
 					file_state.is_reconstructable_workflow_using_file(file_it) ||
 					!file_state.get_workflow_tags(file_it).empty();
-#else
-			const bool enable_reconstructable =
-					file_state.is_file_using_workflow(file_it, workflow_tag);
-#endif
 			state_widget->update_reconstructable_state(activation, enable_reconstructable);
+#else
+			const bool enable_workflow =
+					file_state.is_file_using_workflow(file_it, workflow_tag);
+			state_widget->update_workflow_state(activation, enable_workflow);
+#endif
 		}
 
 		ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(
@@ -782,13 +725,13 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::connect_to_file_state_signals(
 			SIGNAL(workflow_file_activation(
 				GPlatesAppLogic::FeatureCollectionFileState &,
 				GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-				const GPlatesAppLogic::FeatureCollectionFileState::Workflow::tag_type &,
+				const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &,
 				bool)),
 			this,
 			SLOT(workflow_file_activation(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					const GPlatesAppLogic::FeatureCollectionFileState::Workflow::tag_type &,
+					const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &,
 					bool)));
 }
 
@@ -826,8 +769,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	QString filename_str = qfileinfo.fileName();
 	QString filepath_str = qfileinfo.path();
 	QString format_str = get_format_for_file(qfileinfo);
-	const bool active_reconstructable = d_file_state.is_file_active_reconstructable(file);
-	const bool active_reconstruction = d_file_state.is_file_active_reconstruction(file);
 #if 1
 	// A temporary hack to hijack the active reconstructable GUI button to activate/deactivate
 	// all the workflows (instead of activate/deactivate generation/rendering of RFGs).
@@ -835,13 +776,30 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	// FIXME: When the GUI supports workflows (in FeatureCollectionFileState) then
 	// remove this code.
 	//
+	// Check the reconstructable button if the file is activated in the reconstructable workflow
+	// *or* if it is activated with any other workflow.
+	bool active_reconstructable = d_file_state.is_reconstructable_workflow_using_file(file);
+	typedef std::vector<GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type>
+			workflow_tag_seq_type;
+	const workflow_tag_seq_type workflow_tags = d_file_state.get_workflow_tags(file);
+	workflow_tag_seq_type::const_iterator workflow_tags_iter = workflow_tags.begin();
+	workflow_tag_seq_type::const_iterator workflow_tags_end = workflow_tags.end();
+	for ( ; workflow_tags_iter != workflow_tags_end; ++workflow_tags_iter)
+	{
+		if (d_file_state.is_file_active_workflow(file, *workflow_tags_iter))
+		{
+			active_reconstructable = true;
+		}
+	}
 	// Enable reconstructable button if the reconstructable workflow is using the file *or*
 	// if there are any other workflows using it.
 	const bool enable_reconstructable = d_file_state.is_reconstructable_workflow_using_file(file) ||
 			!d_file_state.get_workflow_tags(file).empty();
 #else
+	const bool active_reconstructable = d_file_state.is_file_active_reconstructable(file);
 	const bool enable_reconstructable = d_file_state.is_reconstructable_workflow_using_file(file);
 #endif
+	const bool active_reconstruction = d_file_state.is_file_active_reconstruction(file);
 	const bool enable_reconstruction = d_file_state.is_reconstruction_workflow_using_file(file);
 	
 	// Add blank row.

@@ -17,16 +17,29 @@ set(srcs
     AppLogicUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
+    FeatureCollectionActivationStrategy.cc
+    FeatureCollectionActivationStrategy.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
     FeatureCollectionFileState.h
+    FeatureCollectionFileStateDecls.h
+    FeatureCollectionFileStateImpl.cc
     FeatureCollectionFileStateImpl.h
-    PlateVelocities.cc
-    PlateVelocities.h
+    FeatureCollectionFileStateImplDecls.h
+    FeatureCollectionWorkflow.cc
+    FeatureCollectionWorkflow.h
+    PlateVelocityUtils.cc
+    PlateVelocityUtils.h
+    PlateVelocityWorkflow.cc
+    PlateVelocityWorkflow.h
     Reconstruct.cc
     Reconstruct.h
+    ReconstructionActivationStrategy.cc
+    ReconstructionActivationStrategy.h
     ReconstructionGeometryUtils.h
+    ReconstructUtils.cc
+    ReconstructUtils.h
 )
 
 

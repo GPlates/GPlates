@@ -229,7 +229,7 @@ GPlatesQtWidgets::ShapefileAttributeViewerDialog::update(
 	// update the table if necessary. 
 	
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
-			file_state.loaded_files();
+			file_state.get_loaded_files();
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
 	

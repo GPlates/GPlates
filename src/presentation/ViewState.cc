@@ -28,7 +28,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
-#include "app-logic/PlateVelocities.h"
+#include "app-logic/PlateVelocityWorkflow.h"
 #include "app-logic/Reconstruct.h"
 
 #include "gui/AgeColourTable.h"
@@ -74,12 +74,16 @@ GPlatesPresentation::ViewState::ViewState(
 			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
 					0.175f)),
-	d_plate_velocities(
-			new GPlatesAppLogic::PlateVelocities(
+	d_plate_velocity_workflow(
+			new GPlatesAppLogic::PlateVelocityWorkflow(
 					application_state, d_comp_mesh_point_layer, d_comp_mesh_arrow_layer)),
+	d_plate_velocity_unregister(
+			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
+					d_plate_velocity_workflow.get(),
+					application_state.get_feature_collection_file_state())),
 	d_reconstruct_view(
 			new GPlatesViewOperations::ReconstructView(
-					*d_plate_velocities, *d_rendered_geometry_collection, *d_colour_table))
+					*d_plate_velocity_workflow, *d_rendered_geometry_collection, *d_colour_table))
 {
 	// Call the operations in ReconstructView whenever a reconstruction is generated.
 	d_reconstruct->set_reconstruction_hook(d_reconstruct_view.get());
@@ -148,10 +152,10 @@ GPlatesPresentation::ViewState::get_viewport_projection()
 }
 
 
-const GPlatesAppLogic::PlateVelocities &
-GPlatesPresentation::ViewState::get_plate_velocities() const
+const GPlatesAppLogic::PlateVelocityWorkflow &
+GPlatesPresentation::ViewState::get_plate_velocity_workflow() const
 {
-	return *d_plate_velocities;
+	return *d_plate_velocity_workflow;
 }
 
 

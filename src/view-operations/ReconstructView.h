@@ -31,7 +31,7 @@
 
 namespace GPlatesAppLogic
 {
-	class PlateVelocities;
+	class PlateVelocityWorkflow;
 }
 
 namespace GPlatesGui
@@ -57,10 +57,10 @@ namespace GPlatesViewOperations
 	{
 	public:
 		ReconstructView(
-				GPlatesAppLogic::PlateVelocities &plate_velocities,
+				GPlatesAppLogic::PlateVelocityWorkflow &plate_velocity_workflow,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesGui::ColourTable &colour_table) :
-			d_plate_velocities(plate_velocities),
+			d_plate_velocity_workflow(plate_velocity_workflow),
 			d_rendered_geom_collection(rendered_geom_collection),
 			d_colour_table(colour_table)
 		{  }
@@ -83,7 +83,7 @@ namespace GPlatesViewOperations
 				GPlatesFeatureVisitors::TopologyResolver &topology_resolver);
 
 	private:
-		GPlatesAppLogic::PlateVelocities &d_plate_velocities;
+		GPlatesAppLogic::PlateVelocityWorkflow &d_plate_velocity_workflow;
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 		const GPlatesGui::ColourTable &d_colour_table;
 	};

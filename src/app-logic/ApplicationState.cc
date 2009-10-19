@@ -27,15 +27,21 @@
 
 #include "FeatureCollectionFileState.h"
 #include "FeatureCollectionFileIO.h"
+#include "ReconstructionActivationStrategy.h"
 
 
 GPlatesAppLogic::ApplicationState::ApplicationState() :
+	d_reconstruction_activation_strategy(
+			new GPlatesAppLogic::ReconstructionActivationStrategy()),
 	d_feature_collection_file_state(
 			new GPlatesAppLogic::FeatureCollectionFileState()),
 	d_feature_collection_file_io(
 			new GPlatesAppLogic::FeatureCollectionFileIO(
 					d_model, *d_feature_collection_file_state))
 {
+	// We have a strategy for activating reconstruction files.
+	d_feature_collection_file_state->set_reconstruction_activation_strategy(
+			d_reconstruction_activation_strategy.get());
 }
 
 

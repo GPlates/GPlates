@@ -62,7 +62,7 @@
 
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/PlateVelocities.h"
+#include "app-logic/PlateVelocityWorkflow.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 
@@ -426,13 +426,6 @@ namespace GPlatesQtWidgets
 	private:
 		//! Holds application state and view state.
 		GPlatesPresentation::Application &d_application;
-
-		/**
-		 * Is the reconstruction engine/framework.
-		 * Currently must be declared after 'd_rendered_geom_collection' because
-		 * it contains objects created by it.
-		 */
-		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction;
 
 		GPlatesGui::AnimationController d_animation_controller;
 		GPlatesGui::FullScreenMode d_full_screen_mode;

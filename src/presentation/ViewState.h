@@ -28,6 +28,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,7 +46,8 @@ namespace GPlatesAppLogic
 {
 	class ApplicationState;
 	class FeatureCollectionFileIO;
-	class PlateVelocities;
+	class FeatureCollectionWorkflow;
+	class PlateVelocityWorkflow;
 	class Reconstruct;
 }
 
@@ -142,8 +144,8 @@ namespace GPlatesPresentation
 		get_viewport_projection();
 
 
-		const GPlatesAppLogic::PlateVelocities &
-		get_plate_velocities() const;
+		const GPlatesAppLogic::PlateVelocityWorkflow &
+		get_plate_velocity_workflow() const;
 
 
 		//! Colour reconstruction geometry by plate id.
@@ -217,7 +219,12 @@ namespace GPlatesPresentation
 			d_comp_mesh_point_layer;
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_comp_mesh_arrow_layer;
-		boost::scoped_ptr<GPlatesAppLogic::PlateVelocities> d_plate_velocities;
+
+		//! Feature collection workflow for calculating plate velocities - pointer owns workflow.
+		boost::scoped_ptr<GPlatesAppLogic::PlateVelocityWorkflow> d_plate_velocity_workflow;
+
+		//! This shared pointer only unregisters the plate velocity workflow - doesn't own it.
+		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_plate_velocity_unregister;
 
 		//! Performs tasks each time a reconstruction is generated.
 		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;

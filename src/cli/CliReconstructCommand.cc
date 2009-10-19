@@ -27,7 +27,7 @@
 #include "CliReconstructCommand.h"
 #include "CliRequiredOptionNotPresent.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "file-io/ReconstructedFeatureGeometryExport.h"

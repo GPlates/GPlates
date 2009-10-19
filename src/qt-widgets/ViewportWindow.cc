@@ -181,7 +181,6 @@ GPlatesQtWidgets::ViewportWindow::handle_read_errors(
 GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 		GPlatesPresentation::Application &application) :
 	d_application(application),
-	d_reconstruction(GPlatesAppLogic::ReconstructUtils::create_empty_reconstruction(0.0, 0)),
 	d_animation_controller(get_view_state().get_reconstruct()),
 	d_full_screen_mode(*this),
 	d_reconstruction_view_widget(

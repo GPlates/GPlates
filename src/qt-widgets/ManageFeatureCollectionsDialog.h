@@ -196,7 +196,7 @@ namespace GPlatesQtWidgets
 		workflow_file_activation(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
-				const GPlatesAppLogic::FeatureCollectionFileState::Workflow::tag_type &workflow_tag,
+				const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &workflow_tag,
 				bool activation);
 
 	protected:
@@ -307,12 +307,6 @@ namespace GPlatesQtWidgets
 		void
 		try_catch_file_load(
 				boost::function<void ()> file_load_func);
-
-		/**
-		 * Deactivates all currently active reconstruction files.
-		 */
-		void
-		deactivate_active_reconstruction_files();
 	};
 }
 

@@ -29,7 +29,7 @@
 #include "ExportVelocityAnimationStrategy.h"
 
 #include "app-logic/AppLogicUtils.h"
-#include "app-logic/PlateVelocities.h"
+#include "app-logic/PlateVelocityWorkflow.h"
 
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 
@@ -105,19 +105,19 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	// velocities. The View is already set to the appropriate reconstruction time for
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
 	//
-	const GPlatesAppLogic::PlateVelocities &plate_velocities =
-			d_export_animation_context_ptr->view_state().get_plate_velocities();
+	const GPlatesAppLogic::PlateVelocityWorkflow &plate_velocity_workflow =
+			d_export_animation_context_ptr->view_state().get_plate_velocity_workflow();
 	
 	// Iterate over the velocity feature collections currently being solved.
 	const unsigned int num_velocity_feature_collections =
-			plate_velocities.get_num_velocity_feature_collections();
+			plate_velocity_workflow.get_num_velocity_feature_collections();
 	for (unsigned int velocity_index = 0;
 		velocity_index < num_velocity_feature_collections;
 		++velocity_index)
 	{
 		// Get cap file information, work out filenames we will use.
 		const GPlatesFileIO::FileInfo &velocity_file_info =
-				plate_velocities.get_velocity_file_info(velocity_index);
+				plate_velocity_workflow.get_velocity_file_info(velocity_index);
 		const QString &velocity_filename = velocity_file_info.get_qfileinfo().absoluteFilePath();
 		//QString cap_display_name = velocity_filename.fileName();
 		QString output_basename = calculate_output_basename(output_filename_prefix, velocity_filename);
@@ -142,7 +142,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		//
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref velocity_feature_collection =
 				GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-						plate_velocities.get_velocity_feature_collection(velocity_index));
+						plate_velocity_workflow.get_velocity_feature_collection(velocity_index));
 		GPlatesFileIO::FileInfo export_file_info(full_output_filename);
 		GPlatesFileIO::GpmlOnePointSixOutputVisitor gpml_writer(export_file_info, false);
 		GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
