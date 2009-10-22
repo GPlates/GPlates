@@ -4,19 +4,13 @@ Table of Contents
 
  1. Introduction
  2. Using Microsoft Visual C++
-	1. Version requirements
-	2. Visual C++ Express Edition
-	3. Note before starting
-	4. Library and binary dependencies
-        1. CMake
-		2. Qt
-		3. Boost
-		4. ICU
-		5. GDAL
-		6. gzip
-    5. Creating Visual Studio solution and project files with CMake
-	6. Building GPlates via the IDE	
-	7. Building GPlates via the Command Line (MSVC2005+ only)
+     1. Version requirements
+     2. Visual C++ Express Edition
+     3. Note before starting
+     4. Program and library dependencies
+ 3. Creating Visual Studio solution and project files with CMake
+     1. Building GPlates via the IDE	
+     2. Building GPlates via the Command Line (MSVC2005+ only)
 
 Introduction
 
@@ -54,113 +48,10 @@ Microsoft Visual Studio 200X > Visual Studio Tools" menu. This starts a command
 prompt and sets up environment variables, allowing use of VC command line 
 applications (such as the compiler, linker, and make tool).
 
-Environment variables
+Program and library dependencies
 
-Instructions below may direct you to modify the PATH variable, to add directories
-to the search path for executable files. (Note that the name of the variable is
-not case sensitive, so it could be called Path instead.)
-
- * Windows XP:
-     1. Click on the Start button.
-     2. Right-click on My Computer and select Properties.
-     3. On the Advanced tab, click on the Environment Variables button.
-     4. If you edit the PATH variable in the User variables section, the change
-        only affects your account. If you edit the PATH variable in the System
-        variables section (assuming you have sufficient privileges to do so),
-        the change will affect all users on the computer. Edit the variable in
-        whichever section is most suitable. If the PATH variable does not exist,
-        click the New button to add it. Separate paths with semicolons.
- * Windows Vista (if you have administrator access and you wish to change the
-   PATH variable for all users):
-     1. Click on the Start button.
-     2. Right-click on Computer and select Properties.
-     3. Click on the Advanced system settings link in the left-hand Tasks panel.
-     4. If prompted, enter an administrator password for UAC.
-     5. On the Advanced tab, click on the Environment Variables button.
-     6. Edit the PATH variable in the System variables section. If the PATH
-        variable does not exist, click the New button to add it. Separate paths
-        with semicolons.
- * Windows Vista (if you do not have administrator access or you wish to change
-   the PATH variable only for your account):
-     1. Click on the Start button.
-     2. Click your account's picture at the very top of the second column.
-     3. Click on the Change my environment variables link in the left-hand Tasks
-        panel.
-     4. Edit the PATH variable in the User variables section. If the PATH
-        variable does not exist, click the New button to add it. Separate paths
-        with semicolons.
-
-Library dependencies
-
-The following libraries and binaries are required to build GPlates. If you
-cannot use, or you cannot obtain, the exact same version as listed, you should
-try to use a version with the same major and minor build numbers (i.e. for a
-version number of x.y.z, you should aim to keep x and y the same).
-
-CMake
-
-  1. Get and install cmake-2.6.2-win32-x86.exe from: http://www.cmake.org/
-
-Qt
-
-  1. Download qt-win-opensource-src-4.3.4.zip from: http://get.qt.nokia.com/qt/source/
-  2. Extract it to a path containing no spaces 
-  3. Run: configure 
-  4. Run: nmake 
-  5. In VC access Tools, Options, Projects, Directories and add the following Qt 
-    directories: 
-      * Executable files: \bin
-  6. Add the Qt \bin and \qmake directories to the PATH environment variable
-     (see above).
-
-Boost
-
-  1. Get and install boost_1_34_1_setup.exe from:
-     http://www.boostpro.com/download
-      * In addition to the default packages, also install "Program Options".
-
-ICU
-
-  1. Get and extract icu4c-3_8-Win32-msvc8.zip from: http://icu-project.org/
-     download/3.8.html 
-  2. In VC access Tools, Options, Projects, Directories and add the following 
-     ICU directories: 
-       * Executable files: \bin
-  3. Add the \bin directory to the PATH environment variable (see above).
-
-Expat
-
-  1. Get and install Expat 2.0.1 from http://sourceforge.net/projects/expat/files/expat_win32/
-  2. Add the Expat \Bin directory to the PATH environment variable (see above).
-
-FWTools (for GDAL and Proj4)
-
-  1. Get and install FWTools 2.4.5 from http://home.gdal.org/fwtools/ 
-  2. Add the FWTools \bin folder to the PATH environment variable (see above).
-  3. If you downloaded a version of FWTools prior to 2.4.5, make a copy of
-     proj.dll in the \bin folder and call it proj_fw.dll.
-
-gzip
-
-  1. Get and install gzip from http://gnuwin32.sourceforge.net/packages/gzip.htm 
-     . Select the 'complete package, except sources' link.
-       * Alternatively, Cygwin (http://www.cygwin.com/), a complete POSIX
-         environment for Windows, contains gzip.
-  2. Add the location of the gzip executable to the PATH environment variable
-     (see above).
-
-Graphviz (required for documentation, but not required to build GPlates)
-
-  1. Get and install the latest version of Graphviz from http://www.graphviz.org/
-  2. Add the location of the Graphviz main executable to the PATH environment
-     variable (see above).
-
-Doxygen (required for documentation, but not required to build GPlates)
-
-  1. Get and install the latest version of Doxygen from
-     http://www.stack.nl/~dimitri/doxygen/download.html#latestsrc
-  2. Add the location of the Doxygen main executable to the PATH environment
-     variable (see above).
+Firstly, you should ensure that you have installed the dependencies as described
+in "DEPS.Windows".
 
 Creating Visual Studio solution and project files with CMake
 
