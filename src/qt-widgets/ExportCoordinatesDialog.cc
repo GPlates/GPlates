@@ -70,7 +70,7 @@ const QString GPlatesQtWidgets::ExportCoordinatesDialog::s_terminating_point_inf
 
 GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_geometry_opt_ptr(boost::none),
 	d_export_file_dialog(new QFileDialog(this, tr("Select a filename for exporting"), QString(),
 			"All files (*)")),

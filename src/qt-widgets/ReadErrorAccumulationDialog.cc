@@ -549,7 +549,7 @@ namespace
 
 GPlatesQtWidgets::ReadErrorAccumulationDialog::ReadErrorAccumulationDialog(
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_information_dialog(s_information_dialog_text, s_information_dialog_title, this)
 {
 	setupUi(this);

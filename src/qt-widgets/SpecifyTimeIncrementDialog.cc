@@ -31,7 +31,7 @@
 GPlatesQtWidgets::SpecifyTimeIncrementDialog::SpecifyTimeIncrementDialog(
 		GPlatesGui::AnimationController &animation_controller,
 		QWidget *parent_):
-	QDialog(parent_)
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint)
 {
 	setupUi(this);
 

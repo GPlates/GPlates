@@ -27,7 +27,7 @@
 
 GPlatesQtWidgets::LicenseDialog::LicenseDialog(
 		QWidget *parent_):
-	QDialog(parent_)
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint)
 {
 	setupUi(this);
 	setWindowTitle(QObject::tr("License"));

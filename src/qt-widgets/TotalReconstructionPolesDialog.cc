@@ -216,7 +216,7 @@ namespace {
 GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_reconstruct_ptr(&view_state.get_reconstruct())
 {
 	setupUi(this);

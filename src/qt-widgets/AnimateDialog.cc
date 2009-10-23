@@ -31,7 +31,7 @@
 GPlatesQtWidgets::AnimateDialog::AnimateDialog(
 		GPlatesGui::AnimationController &animation_controller,
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_animation_controller_ptr(&animation_controller)
 {
 	setupUi(this);
