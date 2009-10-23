@@ -39,38 +39,31 @@
 namespace
 {
 	/**
-	 * Return the first suffix found in the filter string.
-	 * 
-	 * Looks for a string contained between "(*." and ")", and interprets this as
-	 * the suffix. 
-	 * 
-	 * This is a bit naff but I can't find a way to automatically set the suffix if the 
-	 * user hasn't explicitly provided one.  
+	 * Returns the file extension from a @a filename, or the empty string if
+	 * there is no file extension.
 	 */
 	QString
-	get_suffix_from_filter(
-		const QString &filter)
+	get_file_extension(
+		const QString &filename)
 	{
-		QStringList string_list = filter.split("(*.");
-		if (string_list.size() > 1)
+		QStringList parts = filename.split(".");
+		if (parts.size() > 1)
 		{
-			QString second_string = string_list.at(1);
-			QStringList suffix_list = second_string.split(")");
-			if (!suffix_list.empty())
-			{
-				QString suffix_string = suffix_list.at(0);
-				return suffix_string;
-			}
-			
-		} 
-		return QString();
+			return parts.at(parts.size() - 1);
+		}
+		else
+		{
+			return QString();
+		}
 	}
 
 	QString
 	get_output_filters()
 	{
-		static const QString filter_gmt(QObject::tr("GMT xy (*.xy)"));
-		static const QString filter_shp(QObject::tr("ESRI Shapefile (*.shp)"));
+		static const QString filter_gmt(QObject::tr(
+			GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::FILTER_GMT));
+		static const QString filter_shp(QObject::tr(
+			GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::FILTER_SHP));
 
 		QStringList file_filters;
 		file_filters << filter_gmt;
@@ -82,21 +75,12 @@ namespace
 
 GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::ExportReconstructedFeatureGeometryDialog(
 	QWidget *parent_) :
-d_export_file_dialog(new QFileDialog(
-		parent_,
-		QObject::tr("Select a filename for exporting"),
-		QString(),
-		get_output_filters()))
+d_parent_ptr(parent_)
 {
-	d_export_file_dialog->setAcceptMode(QFileDialog::AcceptSave);
-
-	// Set the default suffix to that contained in the initial filter string. 
-	handle_filter_changed();
-
-	QObject::connect(d_export_file_dialog, SIGNAL(filterSelected(const QString&)), 
-		this, SLOT(handle_filter_changed()));
 }
 
+const char *GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::FILTER_GMT = "GMT xy (*.xy)";
+const char *GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::FILTER_SHP = "ESRI Shapefile (*.shp)";
 
 void
 GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::export_visible_reconstructed_feature_geometries(
@@ -107,17 +91,28 @@ GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::export_visible_recon
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
-	if (!d_export_file_dialog->exec())
+	QString file_ext = get_file_extension(d_last_file_name);
+	QString selected_filter;
+	if (file_ext == "xy")
 	{
-		return;
+		selected_filter = FILTER_GMT;
 	}
-
-	QString filename = d_export_file_dialog->selectedFiles().front();
+	else if (file_ext == "shp")
+	{
+		selected_filter = FILTER_SHP;
+	}
+	QString filename = QFileDialog::getSaveFileName(
+		d_parent_ptr,
+		"Select a filename for exporting",
+		d_last_file_name,
+		get_output_filters(),
+		&selected_filter);
 
 	if (filename.isEmpty())
 	{
 		return;
 	}
+	d_last_file_name = filename;
 
 	try
 	{
@@ -145,14 +140,3 @@ GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::export_visible_recon
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 }
-
-void
-GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::handle_filter_changed()
-{
-	QString filter = d_export_file_dialog->selectedFilter();
-
-	QString suffix_string = get_suffix_from_filter(filter);
-
-	d_export_file_dialog->setDefaultSuffix(suffix_string);
-}
-
