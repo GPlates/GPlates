@@ -174,14 +174,18 @@ function(get_bundle_and_executable app bundle_var executable_var valid_var)
       is_file_executable("${app}" is_executable)
       if(is_executable)
         get_dotapp_dir("${app}" dotapp_dir)
-        if(EXISTS "${dotapp_dir}" AND EXISTS "${app}")
+        if(EXISTS "${dotapp_dir}")
           set(${bundle_var} "${dotapp_dir}" PARENT_SCOPE)
           set(${executable_var} "${app}" PARENT_SCOPE)
           set(valid 1)
-          #message(STATUS "info: handled executable file case...")
-        else(EXISTS "${dotapp_dir}" AND EXISTS "${app}")
-          message(STATUS "warning: *NOT* handled - executable file case...")
-        endif(EXISTS "${dotapp_dir}" AND EXISTS "${app}")
+          #message(STATUS "info: handled executable file in .app dir case...")
+        else(EXISTS "${dotapp_dir}")
+          get_filename_component(app_dir "${app}" PATH)
+          set(${bundle_var} "${app_dir}" PARENT_SCOPE)
+          set(${executable_var} "${app}" PARENT_SCOPE)
+          set(valid 1)
+          #message(STATUS "info: handled executable file in any dir case...")
+        endif(EXISTS "${dotapp_dir}"")
       else(is_executable)
         message(STATUS "warning: *NOT* handled - not .app dir, not executable file...")
       endif(is_executable)
@@ -230,6 +234,9 @@ endfunction(get_bundle_all_executables)
 #
 function(get_item_key item key_var)
   get_filename_component(item_name "${item}" NAME)
+  if(WIN32)
+    string(TOLOWER "${item_name}" item_name)
+  endif()
   string(REGEX REPLACE "\\." "_" ${key_var} "${item_name}")
   set(${key_var} ${${key_var}} PARENT_SCOPE)
 endfunction(get_item_key)
@@ -390,15 +397,25 @@ endfunction(get_bundle_keys)
 
 # copy_resolved_item_into_bundle
 #
-# Copy a resolved item into the bundle if necessary. Copy is not necessary if the resolved_item
-# is the same as the resolved_embedded_item.
+# Copy a resolved item into the bundle if necessary. Copy is not necessary if
+# the resolved_item is "the same as" the resolved_embedded_item.
 #
 function(copy_resolved_item_into_bundle resolved_item resolved_embedded_item)
-  if("${resolved_item}" STREQUAL "${resolved_embedded_item}")
+  if(WIN32)
+    # ignore case on Windows
+    string(TOLOWER "${resolved_item}" resolved_item_compare)
+    string(TOLOWER "${resolved_embedded_item}" resolved_embedded_item_compare)
+  else(WIN32)
+    set(resolved_item_compare "${resolved_item}")
+    set(resolved_embedded_item_compare "${resolved_embedded_item}")
+  endif(WIN32)
+
+  if("${resolved_item_compare}" STREQUAL "${resolved_embedded_item_compare}")
     message(STATUS "warning: resolved_item == resolved_embedded_item - not copying...")
-  else("${resolved_item}" STREQUAL "${resolved_embedded_item}")
+  else("${resolved_item_compare}" STREQUAL "${resolved_embedded_item_compare}")
+    #message(STATUS "copying COMMAND ${CMAKE_COMMAND} -E copy ${resolved_item} ${resolved_embedded_item}")
     execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${resolved_item}" "${resolved_embedded_item}")
-  endif("${resolved_item}" STREQUAL "${resolved_embedded_item}")
+  endif("${resolved_item_compare}" STREQUAL "${resolved_embedded_item_compare}")
 endfunction(copy_resolved_item_into_bundle)
 
 
@@ -505,9 +522,12 @@ function(fixup_bundle app libs dirs)
     message(STATUS "fixup_bundle: fixing...")
     foreach(key ${keys})
       math(EXPR i ${i}+1)
-      message(STATUS "${i}/${n}: fixing up '${${key}_RESOLVED_EMBEDDED_ITEM}'")
-      #message(STATUS "           exepath='${exepath}'")
-      fixup_bundle_item("${${key}_RESOLVED_EMBEDDED_ITEM}" "${exepath}" "${dirs}")
+      if(APPLE)
+        message(STATUS "${i}/${n}: fixing up '${${key}_RESOLVED_EMBEDDED_ITEM}'")
+        fixup_bundle_item("${${key}_RESOLVED_EMBEDDED_ITEM}" "${exepath}" "${dirs}")
+      else(APPLE)
+        message(STATUS "${i}/${n}: fix-up not required on this platform '${${key}_RESOLVED_EMBEDDED_ITEM}'")
+      endif(APPLE)
     endforeach(key)
 
     message(STATUS "fixup_bundle: cleaning up...")
@@ -516,7 +536,7 @@ function(fixup_bundle app libs dirs)
     message(STATUS "fixup_bundle: verifying...")
     verify_app("${app}")
   else(valid)
-    message(STATUS "error: fixup_bundle: not a valid bundle")
+    message(SEND_ERROR "error: fixup_bundle: not a valid bundle")
   endif(valid)
 
   message(STATUS "fixup_bundle: done")
@@ -552,30 +572,41 @@ function(verify_bundle_prerequisites bundle result_var info_var)
     is_file_executable("${f}" is_executable)
     if(is_executable)
       get_filename_component(exepath "${f}" PATH)
-      message(STATUS "executable file: ${f}")
-
       math(EXPR count "${count} + 1")
+
+      message(STATUS "executable file ${count}: ${f}")
 
       set(prereqs "")
       get_prerequisites("${f}" prereqs 1 1 "${exepath}" "")
 
+      # On the Mac,
       # "embedded" and "system" prerequisites are fine... anything else means
       # the bundle's prerequisites are not verified (i.e., the bundle is not
       # really "standalone")
+      #
+      # On Windows (and others? Linux/Unix/...?)
+      # "local" and "system" prereqs are fine...
       #
       set(external_prereqs "")
       foreach(p ${prereqs})
         set(p_type "")
         gp_file_type("${f}" "${p}" p_type)
-        if (NOT "${p_type}" STREQUAL "embedded" AND NOT "${p_type}" STREQUAL "system")
-          set(external_prereqs ${external_prereqs} "${p}")
-        endif (NOT "${p_type}" STREQUAL "embedded" AND NOT "${p_type}" STREQUAL "system")
+
+        if(APPLE)
+          if(NOT "${p_type}" STREQUAL "embedded" AND NOT "${p_type}" STREQUAL "system")
+            set(external_prereqs ${external_prereqs} "${p}")
+          endif(NOT "${p_type}" STREQUAL "embedded" AND NOT "${p_type}" STREQUAL "system")
+        else(APPLE)
+          if(NOT "${p_type}" STREQUAL "local" AND NOT "${p_type}" STREQUAL "system")
+            set(external_prereqs ${external_prereqs} "${p}")
+          endif(NOT "${p_type}" STREQUAL "local" AND NOT "${p_type}" STREQUAL "system")
+        endif(APPLE)
       endforeach(p)
 
       if(external_prereqs)
-        # Found non-system/non-embedded prerequisites:
+        # Found non-system/somehow-unacceptable prerequisites:
         set(result 0)
-        set(info ${info} "non-system/non-embedded prerequisites found:\nf='${f}'\nexternal_prereqs='${external_prereqs}'\n")
+        set(info ${info} "external prerequisites found:\nf='${f}'\nexternal_prereqs='${external_prereqs}'\n")
       endif(external_prereqs)
     endif(is_executable)
   endforeach(f)
