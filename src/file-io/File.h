@@ -209,7 +209,7 @@ namespace GPlatesFileIO
 		 * This is so the file format accurately reflects the feature collection (see
 		 * comment below about modifying FileInfo for more detail).
 		 */
-		const FeatureCollectionFileFormat::Format
+		FeatureCollectionFileFormat::Format
 		get_loaded_file_format() const
 		{
 			return d_loaded_file_format;
