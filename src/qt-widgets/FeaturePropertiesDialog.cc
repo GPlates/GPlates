@@ -36,7 +36,7 @@
 GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	QDialog(parent_, Qt::Window),
 	d_query_feature_properties_widget(new GPlatesQtWidgets::QueryFeaturePropertiesWidget(
 			view_state_, this)),
 	d_edit_feature_properties_widget(new GPlatesQtWidgets::EditFeaturePropertiesWidget(

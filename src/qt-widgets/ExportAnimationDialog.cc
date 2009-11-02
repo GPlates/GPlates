@@ -37,7 +37,7 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
+	QDialog(parent_, Qt::Window),
 	d_export_animation_context_ptr(
 			new GPlatesGui::ExportAnimationContext(
 					*this,
