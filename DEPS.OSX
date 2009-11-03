@@ -64,7 +64,7 @@ Or you can install the dependent packages using precompiled installer packages w
 
 In fact Christian Heine has written a great document titled
 "Building GPlates from source on Mac OS X without package managers" dated 26th February 2009.
-A link to that document should be available soon at http://www.gplates.org. In that document he
+A link to that document is available at http://www.gplates.org/docs.html. In that document he
 lists several websites where you can download GPlates dependencies as precompiled binaries in
 the form of installer packages. These are certainly a better alternative to Macports or Fink
 because the installation requires no compilation of source code and hence is much quicker to install.
