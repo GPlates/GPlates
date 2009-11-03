@@ -2674,6 +2674,13 @@ GPlatesGui::TopologyTools::process_intersections()
 
 	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 
+	// FIXME: this is moved outside the following 'if' statement to stop
+	// 'd_click_point_ptr' referencing a local variable inside the 'if' statement
+	// - but it is only used when the 'if' statement is 'true'.
+	GPlatesMaths::PointOnSphere rotated_point(
+			// NOTE: arbitrary unit vector because will either get unused or overwritten
+			GPlatesMaths::UnitVector3D(1,0,0));
+
 	if ( GPlatesFeatureVisitors::get_property_value(
 			d_topology_sections_container_ptr->at( d_tmp_index ).d_feature_ref, 
 			plate_id_property_name, 
@@ -2700,8 +2707,17 @@ GPlatesGui::TopologyTools::process_intersections()
 #endif
 
 		// reconstruct the point 
+		//
+		// NOTE: moved declaration of 'rotated_point' outside this 'if' statement
+		// to stop 'd_click_point_ptr' referencing a local variable inside this 'if' statement
+		// - but it is only used when the 'if' statement is 'true'.
+#if 0
 		const GPlatesMaths::PointOnSphere rotated_point = 
 			GPlatesMaths::operator*( fwd_rot, click_pos );
+#else
+		rotated_point = 
+			GPlatesMaths::operator*( fwd_rot, click_pos );
+#endif
 
 
 		// reset the d_click_point_ptr to the rotated point
