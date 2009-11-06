@@ -24,7 +24,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include "RenderedGeometryUtils.h"
 
@@ -233,6 +236,18 @@ GPlatesViewOperations::RenderedGeometryUtils::get_reconstruction_geometries(
 			only_if_main_layer_active);
 
 	collect_recon_geoms_visitor.call_function(rendered_geom_collection);
+
+	using boost::lambda::_1;
+	using boost::lambda::_2;
+
+	// Remove any duplicate reconstruction geometries.
+	reconstruction_geom_seq.erase(
+			std::unique(
+					reconstruction_geom_seq.begin(),
+					reconstruction_geom_seq.end(),
+					boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _1) ==
+							boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _1)),
+			reconstruction_geom_seq.end());
 
 	return !reconstruction_geom_seq.empty();
 }
