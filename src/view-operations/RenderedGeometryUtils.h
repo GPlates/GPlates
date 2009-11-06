@@ -116,7 +116,6 @@ namespace GPlatesViewOperations
 		 * NOTE: Before returning, any duplicate @a ReconstructionGeometry objects are removed
 		 * in @a reconstruction_geom_seq.
 		 *
-		 * Note: typically only the RECONSTRUCTION_LAYER will have these types of @a RenderedGeometry.
 		 * If @a only_if_main_layer_active is true then only collects if main layer is active.
 		 * However the @a RenderedGeometryLayer layers within in the main layer must
 		 * be active to be considered for collection.
@@ -136,7 +135,6 @@ namespace GPlatesViewOperations
 		 * NOTE: Before returning, any duplicate @a ReconstructionGeometry objects are removed
 		 * in @a reconstruction_geom_seq.
 		 *
-		 * Note: typically only the RECONSTRUCTION_LAYER will have these types of @a RenderedGeometry.
 		 * If @a only_if_main_layer_active is true then only collects for those main
 		 * layers that are active.
 		 * However the @a RenderedGeometryLayer layers within in the main layers must

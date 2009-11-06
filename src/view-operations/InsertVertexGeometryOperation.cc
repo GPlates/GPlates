@@ -577,7 +577,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::test_proximity_to_rendered
 		closeness_inclusion_threshold);
 
 	sorted_rendered_geometry_proximity_hits_type sorted_hits;
-	if (!test_proximity(sorted_hits, rendered_geom_layer, proximity_criteria))
+	if (!test_proximity(sorted_hits, proximity_criteria, rendered_geom_layer))
 	{
 		return boost::none;
 	}

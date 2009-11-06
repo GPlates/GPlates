@@ -61,7 +61,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Requests input from user and exports @a reconstruction to a file.
 		 * Only those @a ReconstructionFeatureGeometry objects that are visible in
-		 * the RECONSTRUCTION_LAYER of @a rendered_geom_collection are exported.
+		 * @a rendered_geom_collection are exported.
 		 */
 		void
 		export_visible_reconstructed_feature_geometries(

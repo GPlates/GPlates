@@ -330,7 +330,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::test_proximity_to_points(
 			closeness_inclusion_threshold);
 
 	sorted_rendered_geometry_proximity_hits_type sorted_hits;
-	if (!test_proximity(sorted_hits, *d_points_layer_ptr, proximity_criteria))
+	if (!test_proximity(sorted_hits, proximity_criteria, *d_points_layer_ptr))
 	{
 		return boost::none;
 	}

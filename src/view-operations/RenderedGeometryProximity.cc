@@ -116,8 +116,8 @@ namespace GPlatesViewOperations
 bool
 GPlatesViewOperations::test_proximity(
 		sorted_rendered_geometry_proximity_hits_type &sorted_proximity_seq,
-		const RenderedGeometryLayer &rendered_geom_layer,
-		const GPlatesMaths::ProximityCriteria &proximity_criteria)
+		const GPlatesMaths::ProximityCriteria &proximity_criteria,
+		const RenderedGeometryLayer &rendered_geom_layer)
 {
 	// Setup up to do proximity tests.
 	RenderedGeometryLayerProximity proximity_accumulator(
@@ -136,8 +136,8 @@ bool
 GPlatesViewOperations::test_proximity(
 		sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
 		const RenderedGeometryCollection &rendered_geom_collection,
-		const RenderedGeometryCollection::main_layers_update_type main_layers_to_test,
 		const GPlatesMaths::ProximityCriteria &proximity_criteria,
+		const RenderedGeometryCollection::main_layers_update_type main_layers_to_test,
 		bool only_if_main_layer_active)
 {
 	// Setup up to do proximity tests.
@@ -168,16 +168,16 @@ bool
 GPlatesViewOperations::test_proximity(
 		sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
 		const RenderedGeometryCollection &rendered_geom_collection,
-		RenderedGeometryCollection::MainLayerType main_layer_to_test,
 		const GPlatesMaths::ProximityCriteria &proximity_criteria,
+		RenderedGeometryCollection::MainLayerType main_layer_to_test,
 		bool only_if_main_layer_active)
 {
 	// Only test proximity on the specified main layer.
 	RenderedGeometryCollection::main_layers_update_type main_layers_to_test;
 	main_layers_to_test.set(main_layer_to_test);
 
-	return test_proximity(sorted_proximity_hits, rendered_geom_collection, main_layers_to_test,
-			proximity_criteria, only_if_main_layer_active);
+	return test_proximity(sorted_proximity_hits, rendered_geom_collection,
+			proximity_criteria, main_layers_to_test, only_if_main_layer_active);
 }
 
 GPlatesViewOperations::RenderedGeometryProximityHit::RenderedGeometryProximityHit(

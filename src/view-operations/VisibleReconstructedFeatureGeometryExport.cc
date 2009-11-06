@@ -50,13 +50,12 @@ GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
-	// Get any ReconstructionGeometry objects that are visible in the RECONSTRUCTION_LAYER
+	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
 	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	RenderedGeometryUtils::get_reconstruction_geometries(
 			reconstruction_geom_seq,
-			rendered_geom_collection,
-			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
+			rendered_geom_collection);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
 	reconstructed_feature_geom_seq_type reconstruct_feature_geom_seq;

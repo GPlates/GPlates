@@ -190,7 +190,6 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 	GPlatesViewOperations::test_proximity(
 			sorted_hits,
 			rendered_geometry_collection,
-			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
 			criteria);
 	
 	// Give the user some useful feedback in the status bar.
