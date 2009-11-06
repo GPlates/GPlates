@@ -41,41 +41,17 @@
 #include "qt-widgets/FeaturePropertiesDialog.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryProximity.h"
+#include "view-operations/RenderedGeometryUtils.h"
 #include "view-operations/RenderedGeometryVisitor.h"
 #include "view-operations/RenderedReconstructionGeometry.h"
 
 namespace
 {
 	/**
-	 * A rendered geometry visitor that adds reconstruction geometries to a sequence.
-	 */
-	class AddReconstructionGeometriesToFeatureTable :
-			public GPlatesViewOperations::ConstRenderedGeometryVisitor
-	{
-	public:
-		AddReconstructionGeometriesToFeatureTable(
-				GPlatesGui::FeatureTableModel::geometry_sequence_type &recon_geom_seq) :
-			d_recon_geom_seq(recon_geom_seq)
-		{  }
-
-		virtual
-		void
-		visit_rendered_reconstruction_geometry(
-				const GPlatesViewOperations::RenderedReconstructionGeometry &rendered_recon_geom)
-		{
-			d_recon_geom_seq.push_back(rendered_recon_geom.get_reconstruction_geometry());
-		}
-
-	private:
-		GPlatesGui::FeatureTableModel::geometry_sequence_type &d_recon_geom_seq;
-	};
-
-	/**
 	 * Adds @a ReconstructionGeometry objects in the sorted proximity hits to the feature table model.
 	 *
-	 * Returns false if no hits to begin with or if none of the hits are @a ReconstructionGeometry objects
-	 * - the latter shouldn't really happen but could if other rendered geometry types are put
-	 * in the RECONSTRUCTION layer.	 
+	 * Returns false if no hits to begin with or
+	 * if none of the hits are @a ReconstructionGeometry objects
 	 */
 	bool
 	add_clicked_reconstruction_geoms_to_feature_table_model(
@@ -88,22 +64,12 @@ namespace
 		}
 
 		// The sequence of ReconstructionGeometry's were going to add to.
-		GPlatesGui::FeatureTableModel::geometry_sequence_type new_recon_geom_seq;
+		GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type new_recon_geom_seq;
 
-		// Used to add reconstruction geometries to clicked table model.
-		AddReconstructionGeometriesToFeatureTable add_recon_geoms(new_recon_geom_seq);
-
-		GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type::const_iterator sorted_iter;
-		for (sorted_iter = sorted_hits.begin(); sorted_iter != sorted_hits.end(); ++sorted_iter)
-		{
-			GPlatesViewOperations::RenderedGeometry rendered_geom =
-				sorted_iter->d_rendered_geom_layer->get_rendered_geometry(
-				sorted_iter->d_rendered_geom_index);
-
-			// If rendered geometry contains a reconstruction geometry then add that
-			// to the clicked table model.
-			rendered_geom.accept_visitor(add_recon_geoms);
-		}
+		// Get any ReconstructionGeometry objects that are referenced by the clicked
+		// RenderedGeometry objects.
+		GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
+				new_recon_geom_seq, sorted_hits);
 
 		if (new_recon_geom_seq.empty())
 		{

@@ -53,7 +53,7 @@ GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
 	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
-	RenderedGeometryUtils::get_reconstruction_geometries(
+	RenderedGeometryUtils::get_unique_reconstruction_geometries(
 			reconstruction_geom_seq,
 			rendered_geom_collection);
 

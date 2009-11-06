@@ -31,6 +31,7 @@
 
 #include "RenderedGeometryCollection.h"
 #include "RenderedGeometryCollectionVisitor.h"
+#include "RenderedGeometryProximity.h"
 
 #include "model/ReconstructionGeometry.h"
 
@@ -121,7 +122,7 @@ namespace GPlatesViewOperations
 		 * be active to be considered for collection.
 		 */
 		bool
-		get_reconstruction_geometries(
+		get_unique_reconstruction_geometries(
 				reconstruction_geom_seq_type &reconstruction_geom_seq,
 				const RenderedGeometryCollection &rendered_geom_collection,
 				RenderedGeometryCollection::MainLayerType main_layer_type,
@@ -141,12 +142,27 @@ namespace GPlatesViewOperations
 		 * be active to be considered for collection.
 		 */
 		bool
-		get_reconstruction_geometries(
+		get_unique_reconstruction_geometries(
 				reconstruction_geom_seq_type &reconstruction_geom_seq,
 				const RenderedGeometryCollection &rendered_geom_collection,
 				RenderedGeometryCollection::main_layers_update_type main_layers =
 						RenderedGeometryCollection::ALL_MAIN_LAYERS,
 				bool only_if_main_layer_active = true);
+
+
+		/**
+		 * Collects any @a ReconstructionGeometry objects contained in
+		 * the results of a proximity test.
+		 * Returns true if any found.
+		 *
+		 * NOTE: Before returning, any duplicate @a ReconstructionGeometry objects are removed
+		 * in @a reconstruction_geom_seq.
+		 */
+		bool
+		get_unique_reconstruction_geometries(
+				reconstruction_geom_seq_type &reconstruction_geom_seq,
+				const GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type &
+						sorted_rendered_geometry_hits);
 
 
 		/**
