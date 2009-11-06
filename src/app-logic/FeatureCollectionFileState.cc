@@ -94,10 +94,8 @@ namespace GPlatesAppLogic
 					const ClassifyFeatureCollection::classifications_type &classification,
 					bool used_by_higher_priority_workflow)
 			{
-				// We're interested in a file if it contains reconstructable features *and*
-				// it's *not* being used by a higher priority workflow.
-				return classification.test(ClassifyFeatureCollection::RECONSTRUCTABLE) &&
-						!used_by_higher_priority_workflow;
+				// We're interested in a file if it contains reconstructable features.
+				return classification.test(ClassifyFeatureCollection::RECONSTRUCTABLE);
 			}
 
 			virtual
