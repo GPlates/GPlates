@@ -148,19 +148,6 @@ namespace GPlatesFileIO
 			visit_xs_string(
 			const GPlatesPropertyValues::XsString &xs_string);
 
-		/**
-		 * Determines Plates header data type code from the specified feature.
-		 * If the feature cannot be mapped to a plates data type then "XX" is returned.
-		 */
-		UnicodeString
-		get_plates_data_type_code(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature) const;
-
-		/**
-		 * Creates map of feature types to valid Plates data types.
-		 */
-		void
-		build_plates_data_type_code_map();
 
 		struct PlatesHeaderAccumulator
 		{
@@ -173,17 +160,8 @@ namespace GPlatesFileIO
 			boost::optional<UnicodeString> geographic_description;
 		};
 
-		typedef UnicodeString (*get_data_type_code_function_type)(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
-
-		/**
-		 * Maps feature type to plates header data type code.
-		 */
-		typedef std::map<GPlatesModel::FeatureType, get_data_type_code_function_type>
-				plates_data_type_code_map_type;
 
 		PlatesHeaderAccumulator d_accum;
-		plates_data_type_code_map_type d_plates_data_type_code_map;
 	};
 }
 

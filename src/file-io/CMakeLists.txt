@@ -57,6 +57,8 @@ set(srcs
     OgrException.h
     OgrWriter.cc
     OgrWriter.h
+    PlatesFormatUtils.cc
+    PlatesFormatUtils.h
     PlatesLineFormatGeometryExporter.cc
     PlatesLineFormatGeometryExporter.h
     PlatesLineFormatHeaderVisitor.cc
