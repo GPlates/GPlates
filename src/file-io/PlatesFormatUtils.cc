@@ -364,10 +364,57 @@ namespace
 	}
 
 	UnicodeString
-	get_data_type_code_for_subduction_zone_active(
+	get_data_type_code_for_subduction_zone(
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
-		return get_data_type_code_for_active_inactive_feature(feature, "TR", "XT");
+		//
+		// First test to see if subduction zone is subducting on left or right of geometry.
+		//
+
+		static const GPlatesModel::PropertyName subducting_slab_property_name = 
+			GPlatesModel::PropertyName::create_gpml("subductingSlab");
+
+		const GPlatesPropertyValues::Enumeration *subducting_slab_property_value = NULL;
+		if (GPlatesFeatureVisitors::get_property_value(
+				feature, subducting_slab_property_name, subducting_slab_property_value))
+		{
+			static GPlatesPropertyValues::EnumerationType subducting_slab_enumeration_type(
+				"gpml:SubductionSideEnumeration");
+			static GPlatesPropertyValues::EnumerationContent subducting_slab_enumeration_value_left(
+				"Left");
+			static GPlatesPropertyValues::EnumerationContent subducting_slab_enumeration_value_right(
+				"Right");
+
+			if (subducting_slab_enumeration_type.is_equal_to(subducting_slab_property_value->type()))
+			{
+				if (subducting_slab_enumeration_value_left.is_equal_to(
+						subducting_slab_property_value->value()))
+				{
+					return "sL";
+				}
+				if (subducting_slab_enumeration_value_right.is_equal_to(
+						subducting_slab_property_value->value()))
+				{
+					return "sR";
+				}
+			}
+		}
+
+		static const GPlatesModel::PropertyName is_active_property_name = 
+			GPlatesModel::PropertyName::create_gpml("isActive");
+
+		// See if active or not.
+		// Note: set to NULL due to "may be used uninitialized in this function"
+		// error on g++ 4.3.3-3.
+		const GPlatesPropertyValues::XsBoolean *is_active_property_value = NULL;
+		if (GPlatesFeatureVisitors::get_property_value(
+				feature, is_active_property_name, is_active_property_value))
+		{
+			return is_active_property_value->value() ? "TR" : "XT";
+		}
+
+		// No "isActive" property on feature so assume inactive.
+		return "XT";
 	}
 
 	UnicodeString
@@ -481,7 +528,7 @@ namespace
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Topography")] = 
 					get_data_type_code_for_topography;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("SubductionZone")] = 
-					get_data_type_code_for_subduction_zone_active;
+					get_data_type_code_for_subduction_zone;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Volcano")] = 
 					get_data_type_code_for_volcano;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince")] = 
