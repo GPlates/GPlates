@@ -1407,21 +1407,102 @@ GPlatesGui::TopologyTools::visit_polygon_on_sphere(
 	// set type only
 	if (d_visit_to_check_type) {
 		d_tmp_feature_type = GPlatesGlobal::POLYGON_FEATURE;
+		d_tmp_property_name = "outlineOf";
+		d_tmp_value_type = "LinearRing";
 		return;
 	}
 
 	// get end points only
 	if (d_visit_to_get_focus_end_points) 
 	{
+		d_feature_focus_head_points.push_back( *(polygon_on_sphere->vertex_begin()) );
+		d_feature_focus_tail_points.push_back( *(--polygon_on_sphere->vertex_end()) );
 		return;
 	}
 
-	// return early if properties are not needed
-	if (! d_visit_to_create_properties) 
-	{ 
-		return; 
+	// set the global flag for intersection processing 
+	d_tmp_process_intersections = true;
+
+	// Write out each point of the polygon.
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = 
+		polygon_on_sphere->vertex_begin();
+
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = 
+		polygon_on_sphere->vertex_end();
+
+	// create a list of this polygon's vertices
+	std::vector<GPlatesMaths::PointOnSphere> polygon_vertices;
+	polygon_vertices.clear();
+	
+	for ( ; iter != end; ++iter) 
+	{
+		polygon_vertices.push_back( *iter );
 	}
 
+	// check for reverse flag
+	if (d_tmp_index_use_reverse) 
+	{
+		d_tmp_index_vertex_list.insert( d_tmp_index_vertex_list.end(), 
+			polygon_vertices.rbegin(), polygon_vertices.rend() );
+
+		// set the head and tail end_points
+		d_head_end_points.push_back( *(--polygon_on_sphere->vertex_end()) );
+		d_tail_end_points.push_back( *(polygon_on_sphere->vertex_begin()) );
+	}
+	else 
+	{
+		d_tmp_index_vertex_list.insert( d_tmp_index_vertex_list.end(), 
+			polygon_vertices.begin(), polygon_vertices.end() );
+
+		// set the head and tail end_points
+		d_head_end_points.push_back( *(polygon_on_sphere->vertex_begin()) );
+		d_tail_end_points.push_back( *(--polygon_on_sphere->vertex_end()) );
+	}
+
+	// return early if properties are not needed
+	if (! d_visit_to_create_properties) { return; }
+
+
+	// Set the d_tmp vars to create a sourceGeometry property delegate 
+	d_tmp_property_name = "outlineOf";
+	d_tmp_value_type = "LinearRing";
+
+	const GPlatesModel::FeatureId fid(d_tmp_index_fid);
+
+	const GPlatesModel::PropertyName prop_name =
+		GPlatesModel::PropertyName::create_gpml(d_tmp_property_name);
+
+	const GPlatesPropertyValues::TemplateTypeParameterType value_type =
+		GPlatesPropertyValues::TemplateTypeParameterType::create_gml( d_tmp_value_type );
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd_ptr = 
+		GPlatesPropertyValues::GpmlPropertyDelegate::create( 
+			fid,
+			prop_name,
+			value_type
+		);
+
+	// create a GpmlTopologicalLineSection from the delegate
+	GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type gtls_ptr =
+		GPlatesPropertyValues::GpmlTopologicalLineSection::create(
+			pd_ptr,
+			boost::none,
+			boost::none,
+			d_tmp_index_use_reverse);
+
+	// Update the Topology Sections Container
+
+	// get the current row
+	GPlatesGui::TopologySectionsContainer::TableRow row =
+		d_topology_sections_container_ptr->at( d_tmp_index );
+
+	// update the section pointer
+	row.d_section_ptr = gtls_ptr;
+
+	// update the row
+	connect_to_topology_sections_container_signals( false );
+	d_topology_sections_container_ptr->update_at( d_tmp_index, row );
+	connect_to_topology_sections_container_signals( true );
 }
 
 void
