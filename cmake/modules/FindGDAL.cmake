@@ -109,7 +109,13 @@ FIND_PATH(GDAL_INCLUDE_DIR gdal.h
 #
 # The various possible library names for the GDAL library are listed here.
 # 
-set(GDAL_LIBRARY_NAMES gdal gdal_i gdal1.5.2 gdal1.5.0 gdal1.4.0 gdal1.3.2 GDAL)
+set(GDAL_LIBRARY_NAMES
+	gdal gdal_i
+	gdal1.6.2 gdal1.6.1 gdal1.6.0
+	gdal1.5.4 gdal1.5.3 gdal1.5.2 gdal1.5.1 gdal1.5.0
+	gdal1.4.5 gdal1.4.4 gdal1.4.3 gdal1.4.2 gdal1.4.1 gdal1.4.0
+	gdal1.3.2
+	GDAL)
 
 #
 # Try only searching directories of CMake variable 'GDAL_DIR' and environment
