@@ -227,7 +227,6 @@ GPlatesQtWidgets::ShapefileAttributeViewerDialog::update(
 
 	// Update the combo box with currently loaded shapefile feature collections, and
 	// update the table if necessary. 
-	
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
 			file_state.get_loaded_files();
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;

@@ -30,6 +30,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
+#include <QColor>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,22 +149,32 @@ namespace GPlatesPresentation
 		get_plate_velocity_workflow() const;
 
 
-		//! Colour reconstruction geometry by plate id.
-		void
-		choose_colour_by_plate_id();
-
-		//! Colour reconstruction geometry with a single colour.
-		void
-		choose_colour_by_single_colour(
-				const GPlatesGui::Colour &colour);
-
+		// FIXME: Delete after refactoring
 		//! Colour reconstruction geometry by feature type.
 		void
 		choose_colour_by_feature_type();
 
+		// FIXME: Delete after refactoring
 		//! Colour reconstruction geometry by age.
 		void
 		choose_colour_by_age();
+
+		//! Colour reconstruction geometry with a single colour.
+		void
+		choose_colour_by_single_colour(
+				const QColor &qcolor);
+
+		//! Colour reconstruction geometry by plate ID (default colouring)
+		void
+		choose_colour_by_plate_id_default();
+
+		//! Colour reconstruction geometry by plate ID (regional colouring)
+		void
+		choose_colour_by_plate_id_regional();
+
+		//! Returns the colour last used for the "Single Colour" colouring option
+		QColor
+		get_last_single_colour() const;
 
 		/**
 		 * Returns the colour table.
@@ -229,6 +240,8 @@ namespace GPlatesPresentation
 		//! Performs tasks each time a reconstruction is generated.
 		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;
 
+		//! The current choice of colour for the "Single Colour" colouring option
+		QColor d_last_single_colour;
 
 		void
 		connect_to_viewport_zoom();

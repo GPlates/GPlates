@@ -35,52 +35,19 @@
 #include "file-io/FileFormatNotSupportedException.h"
 #include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
 
-
-namespace
-{
-	/**
-	 * Returns the file extension from a @a filename, or the empty string if
-	 * there is no file extension.
-	 */
-	QString
-	get_file_extension(
-		const QString &filename)
-	{
-		QStringList parts = filename.split(".");
-		if (parts.size() > 1)
-		{
-			return parts.at(parts.size() - 1);
-		}
-		else
-		{
-			return QString();
-		}
-	}
-
-	QString
-	get_output_filters()
-	{
-		static const QString filter_gmt(QObject::tr(
-			GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::FILTER_GMT));
-		static const QString filter_shp(QObject::tr(
-			GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::FILTER_SHP));
-
-		QStringList file_filters;
-		file_filters << filter_gmt;
-		file_filters << filter_shp;
-		
-		return file_filters.join(";;");
-	}
-}
-
 GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::ExportReconstructedFeatureGeometryDialog(
-	QWidget *parent_) :
-d_parent_ptr(parent_)
+		QWidget *parent)
 {
-}
+	// create filters for save dialog box
+	std::vector<std::pair<QString, QString> > filters;
+	filters.push_back(std::make_pair("GMT xy (*.xy)", "xy"));
+	filters.push_back(std::make_pair("ESRI Shapefile (*.shp)", "shp"));
 
-const char *GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::FILTER_GMT = "GMT xy (*.xy)";
-const char *GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::FILTER_SHP = "ESRI Shapefile (*.shp)";
+	d_save_file_dialog_ptr = SaveFileDialog::get_save_file_dialog(
+				parent,
+				"Select a filename for exporting",
+				filters);
+}
 
 void
 GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::export_visible_reconstructed_feature_geometries(
@@ -91,33 +58,16 @@ GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::export_visible_recon
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
-	QString file_ext = get_file_extension(d_last_file_name);
-	QString selected_filter;
-	if (file_ext == "xy")
-	{
-		selected_filter = FILTER_GMT;
-	}
-	else if (file_ext == "shp")
-	{
-		selected_filter = FILTER_SHP;
-	}
-	QString filename = QFileDialog::getSaveFileName(
-		d_parent_ptr,
-		"Select a filename for exporting",
-		d_last_file_name,
-		get_output_filters(),
-		&selected_filter);
-
-	if (filename.isEmpty())
+	boost::optional<QString> filename = d_save_file_dialog_ptr->get_file_name();
+	if (!filename)
 	{
 		return;
 	}
-	d_last_file_name = filename;
 
 	try
 	{
 		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries(
-				filename,
+				*filename,
 				rendered_geom_collection,
 				active_reconstructable_files,
 				reconstruction_anchor_plate_id,

@@ -103,7 +103,7 @@ GPlatesMaths::PointOnSphere::is_close_to(
 		real_t &closeness) const
 {
 	closeness = calculate_closeness(test_point, *this);
-	return closeness.isPreciselyGreaterThan(closeness_inclusion_threshold.dval());
+	return closeness.is_precisely_greater_than(closeness_inclusion_threshold.dval());
 }
 
 

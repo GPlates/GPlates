@@ -46,7 +46,6 @@
 #include "gui/Globe.h"
 #include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
-#include "gui/PlatesColourTable.h"
 
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -234,6 +233,15 @@ namespace GPlatesQtWidgets
 
 		void
 		disable_arrows_display();
+
+		void
+		toggle_strings_display();
+
+		void
+		enable_strings_display();
+
+		void
+		disable_strings_display();
 
 		void
 		toggle_raster_image();

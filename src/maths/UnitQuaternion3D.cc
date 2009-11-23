@@ -112,7 +112,7 @@ GPlatesMaths::UnitQuaternion3D::get_rotation_params(
 	// pointing in the expected direction (ie, in the direction the user originally specified).
 	// FIXME:  Should we assert that the result of the dot product is never approx zero?
 	if (axis_hint) {
-		if (isNegative(dot(axis_unit_vector, *axis_hint))) {
+		if (is_strictly_negative(dot(axis_unit_vector, *axis_hint))) {
 			// The calculated axis seems to be pointing in the opposite direction to
 			// that which the user would expect.
 			axis_unit_vector = -axis_unit_vector;

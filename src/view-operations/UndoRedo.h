@@ -31,7 +31,6 @@
 #include <stack>
 #include <memory>
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <QUndoGroup>
 #include <QUndoStack>
@@ -40,6 +39,7 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "utils/Singleton.h"
 
 
 namespace GPlatesViewOperations
@@ -51,17 +51,12 @@ namespace GPlatesViewOperations
 	}
 
 	class UndoRedo :
-		private boost::noncopyable
+		public GPlatesUtils::Singleton<UndoRedo>
 	{
+		GPLATES_SINGLETON_CONSTRUCTOR_DEF(UndoRedo)
+
 	public:
 		~UndoRedo();
-
-		/**
-		 * Obtain singleton instance.
-		 */
-		static
-		UndoRedo&
-		instance();
 
 		/**
 		 * Typedef for a handle to a @a QUndoStack.
@@ -237,16 +232,11 @@ namespace GPlatesViewOperations
 		//! Typedef for stack of unique command ids in begin/end scopes.
 		typedef std::stack<CommandId> unique_command_id_scope_stack;
 
-		// Constructor is private since we're a singleton.
-		UndoRedo();
-
 		QUndoGroup d_undo_group;
 		undo_stack_ptr_seq_type d_undo_stack_seq;
 		UndoStackHandle d_active_stack_handle;
 		unique_command_id_scope_stack d_unique_command_id_scope_stack;
 		boost::shared_ptr<UndoRedoInternal::CommandIdFactory> d_command_id_factory;
-
-		static boost::scoped_ptr<UndoRedo> s_instance;
 	};
 }
 

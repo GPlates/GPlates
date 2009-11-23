@@ -32,7 +32,6 @@
 #include <QPaintEngine>
 #include <QPainter>
 
-#include "gui/PlatesColourTable.h"
 #include "gui/MapCanvasPainter.h"
 #include "gui/MapProjection.h"
 #include "MapCanvas.h"

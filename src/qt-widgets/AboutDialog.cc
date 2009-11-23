@@ -29,6 +29,11 @@
 
 GPlatesQtWidgets::AboutDialog::~AboutDialog()
 {
+	// close license dialog if it somehow is still there
+	if (d_license_dialog_ptr)
+	{
+		d_license_dialog_ptr->reject();
+	}
 }
 
 GPlatesQtWidgets::AboutDialog::AboutDialog(

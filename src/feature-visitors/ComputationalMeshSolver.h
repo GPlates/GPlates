@@ -33,6 +33,8 @@
 
 #include "global/types.h"
 
+#include "gui/PlateIdColourPalettes.h"
+
 #include "maths/types.h"
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
@@ -50,8 +52,6 @@
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryParameters.h"
-
-#include "gui/PlatesColourTable.h"
 
 #include "property-values/GeoTimeInstant.h"
 
@@ -205,7 +205,7 @@ namespace GPlatesFeatureVisitors
 		int d_num_points_on_multiple_plates;
 
 		/** used to set the color of the points found on a plate */
-		GPlatesGui::PlatesColourTable *d_colour_table_ptr;
+		GPlatesGui::DefaultPlateIdColourPalette d_colour_palette;
 
 		/** vectors to hold computed values */
 		std::vector<double> d_velocity_colat_values;

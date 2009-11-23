@@ -209,8 +209,8 @@ namespace
 			GPlatesMaths::real_t closeness_c_to_a = dot(c, a);
 			GPlatesMaths::real_t closeness_c_to_b = dot(c, b);
 
-			if (closeness_c_to_a.isPreciselyGreaterThan(closeness_a_to_b.dval()) &&
-				closeness_c_to_b.isPreciselyGreaterThan(closeness_a_to_b.dval())) {
+			if (closeness_c_to_a.is_precisely_greater_than(closeness_a_to_b.dval()) &&
+				closeness_c_to_b.is_precisely_greater_than(closeness_a_to_b.dval())) {
 
 				/*
 				 * C is closer to A than B is to A, and also closer to
@@ -231,7 +231,7 @@ namespace
 				 * will be the closest point on the GCA to
 				 * 'test_point'.
 				 */
-				if (closeness_c_to_a.isPreciselyGreaterThan(closeness_c_to_b.dval())) {
+				if (closeness_c_to_a.is_precisely_greater_than(closeness_c_to_b.dval())) {
 
 					/*
 					 * C is closer to A than it is to B, so by
@@ -282,7 +282,7 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 		real_t closeness_to_poles = abs(dot(test_point.position_vector(), rotation_axis()));
 
 		// This first if-statement should weed out most of the no-hopers.
-		if (closeness_to_poles.isPreciselyGreaterThan(latitude_exclusion_threshold.dval())) {
+		if (closeness_to_poles.is_precisely_greater_than(latitude_exclusion_threshold.dval())) {
 
 			/*
 			 * 'test_point' lies within latitudes sufficiently far above or
@@ -297,7 +297,7 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 			calculate_closest_feature(
 					*this, test_point, closest_point_on_great_circle_arc, closeness);
 			
-			return closeness.isPreciselyGreaterThan(closeness_inclusion_threshold.dval());
+			return closeness.is_precisely_greater_than(closeness_inclusion_threshold.dval());
 		}
 	}
 

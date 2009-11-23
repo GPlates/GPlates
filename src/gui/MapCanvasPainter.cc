@@ -1,11 +1,11 @@
-/* $Id: MapCanvasPainter.cc 4818 2009-02-13 10:05:30Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2009-02-13 11:05:30 +0100 (fr, 13 feb 2009) $
+ *   $Date$
  * 
  * Copyright (C) 2009 The Geological Survey of Norway
  *
@@ -35,7 +35,6 @@
 
 #include "gui/MapCanvasPainter.h"
 #include "gui/MapProjection.h"
-#include "gui/PlatesColourTable.h"
 #include "maths/GreatCircle.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/MultiPointOnSphere.h"

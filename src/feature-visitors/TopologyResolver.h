@@ -251,7 +251,7 @@ namespace GPlatesFeatureVisitors
 			*/
 			bool operator<( const BoundaryFeature &other) const
 			{
-				return ( m_closeness.isPreciselyLessThan( other.m_closeness.dval() ) );
+				return ( m_closeness.is_precisely_less_than( other.m_closeness.dval() ) );
 			}
 
 		}; // end of struct BoundaryFeature

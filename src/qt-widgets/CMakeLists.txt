@@ -160,6 +160,8 @@ set(srcs
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    SaveFileDialog.cc
+    SaveFileDialog.h
     SceneView.h
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h

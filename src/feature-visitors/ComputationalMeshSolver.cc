@@ -82,8 +82,8 @@
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/FileInfo.h"
 
+#include "gui/ColourSchemeFactory.h"
 #include "gui/ProximityTests.h"
-#include "gui/PlatesColourTable.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -118,8 +118,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_num_meshes = 0;
 	d_num_points = 0;
 	d_num_points_on_multiple_plates = 0;
-
-	d_colour_table_ptr = GPlatesGui::PlatesColourTable::Instance();
 }
 
 
@@ -431,12 +429,11 @@ std::cout << ")" << std::endl;
 		
 
 	// get the color for the highest numeric id 
-	GPlatesGui::ColourTable::const_iterator colour = d_colour_table_ptr->end();
-	colour = d_colour_table_ptr->lookup_by_plate_id( plate_id ); 
-	if (colour == d_colour_table_ptr->end()) { 
-		colour = &GPlatesGui::Colour::get_olive(); 
+	boost::optional<GPlatesGui::Colour> colour = d_colour_palette.get_colour(plate_id);
+	if (!colour)
+	{
+		colour = boost::optional<GPlatesGui::Colour>(GPlatesGui::Colour::get_olive());
 	}
-
 
 	// Create a RenderedGeometry using the reconstructed geometry.
 	const GPlatesViewOperations::RenderedGeometry rendered_geom =

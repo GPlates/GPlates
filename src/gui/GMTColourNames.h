@@ -1,11 +1,13 @@
 /* $Id$ */
 
 /**
- * \file 
- * $Revision$
- * $Date$ 
+ * @file 
+ * Contains the definition of the GMTColourNames class.
+ *
+ * Most recent change:
+ *   $Date$
  * 
- * Copyright (C) 2006 The University of Sydney, Australia
+ * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,17 +25,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-namespace GPlatesInterface
+#ifndef GPLATES_GUI_GMTCOLOURNAMES_H
+#define GPLATES_GUI_GMTCOLOURNAMES_H
+
+#include "ColourNameSet.h"
+#include "utils/Singleton.h"
+
+namespace GPlatesGui
 {
-	class Interface
+	/**
+	 * This class maps colour names used by GMT to colours.
+	 */
+	class GMTColourNames :
+		public ColourNameSet,
+		public GPlatesUtils::Singleton<GMTColourNames>
 	{
-	public:
-		// Abstract routines to create widgets go here.
-		
-		virtual 
-		void
-		create_main_window(
-				const std::string &title) = 0;
-				
+
+		GPLATES_SINGLETON_CONSTRUCTOR_DEF(GMTColourNames)
+
 	};
+
 }
+
+#endif  // GPLATES_GUI_GMTCOLOURNAMES_H

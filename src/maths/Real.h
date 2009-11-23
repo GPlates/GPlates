@@ -41,9 +41,9 @@ namespace GPlatesMaths
 {
 	using namespace GPlatesGlobal;
 
-	/// \f$ \pi \f$, the ratio of the circumference to the diameter of a circle
+	//! \f$ \pi \f$, the ratio of the circumference to the diameter of a circle
 	static const double PI = 3.14159265358979323846264338;
-	/// \f$ \frac{\pi}{2} \f$
+	//! \f$ \frac{\pi}{2} \f$
 	static const double PI_2 = 1.57079632679489661923;
 
 	/**
@@ -89,13 +89,11 @@ namespace GPlatesMaths
 			: _dval(d)
 		{  }
 
-
 		const double &
 		dval() const
 		{
 			return _dval;
 		}
-
 
 		Real &
 		operator+=(Real other)
@@ -126,16 +124,49 @@ namespace GPlatesMaths
 		}
 
 		bool
-		isPreciselyGreaterThan(double d) const
+		is_precisely_greater_than(double d) const
 		{
 			return _dval > d;
 		}
 
 		bool
-		isPreciselyLessThan(double d) const
+		is_precisely_less_than(double d) const
 		{
 			return _dval < d;
 		}
+
+		bool
+		is_nan() const;
+
+		bool
+		is_infinity() const;
+
+		bool
+		is_positive_infinity() const;
+
+		bool
+		is_negative_infinity() const;
+
+		bool
+		is_finite() const;
+
+		bool
+		is_zero() const
+		{
+			return *this == Real(0.0);
+		}
+
+		static
+		Real
+		nan();
+
+		static
+		Real
+		positive_infinity();
+
+		static
+		Real
+		negative_infinity();
 
 #ifdef HAVE_PYTHON
 		/**
@@ -278,12 +309,10 @@ namespace GPlatesMaths
 	/**
 	 * Using the exact value of the Real, return whether it is positive
 	 * (ie. greater than exact zero) or not.
-	 *
-	 * FIXME:  Rename this to 'is_strictly_positive'.
 	 */
 	inline
 	bool
-	isPositive(
+	is_strictly_positive(
 			const Real &r)
 	{
 		return r.dval() > 0.0;
@@ -293,12 +322,10 @@ namespace GPlatesMaths
 	/**
 	 * Using the exact value of the Real, return whether it is negative
 	 * (ie. less than exact zero) or not.
-	 *
-	 * FIXME:  Rename this to 'is_strictly_negative'.
 	 */
 	inline
 	bool
-	isNegative(
+	is_strictly_negative(
 			const Real &r)
 	{
 		return r.dval() < 0.0;
@@ -308,12 +335,10 @@ namespace GPlatesMaths
 	/**
 	 * Using the exact value of the Real, return whether it is greater
 	 * than exact one or not.
-	 *
-	 * FIXME:  Rename this to 'is_strictly_greater_than_one'.
 	 */
 	inline
 	bool
-	isGreaterThanOne(
+	is_strictly_greater_than_one(
 			const Real &r)
 	{
 		return r.dval() > 1.0;
@@ -323,12 +348,10 @@ namespace GPlatesMaths
 	/**
 	 * Using the exact value of the Real, return whether it is greater
 	 * than exact minus-one or not.
-	 *
-	 * FIXME:  Rename this to 'is_strictly_less_than_minus_one'.
 	 */
 	inline
 	bool
-	isLessThanMinusOne(
+	is_strictly_less_than_minus_one(
 			const Real &r)
 	{
 		return r.dval() < -1.0;
@@ -488,11 +511,39 @@ namespace GPlatesMaths
 			const Real &y,
 			const Real &x);
 
+	bool
+	is_nan(double d);
 
+	bool
+	is_infinity(double d);
+
+	bool
+	is_positive_infinity(double d);
+
+	bool
+	is_negative_infinity(double d);
+
+	bool
+	is_finite(double d);
+
+	bool
+	is_zero(double d);
+
+	double
+	nan();
+
+	double
+	positive_infinity();
+
+	double
+	negative_infinity();
+
+#ifdef HAVE_PYTHON
 	/**
 	 * This routine exports the Python wrapper class and associated functionality
 	 */
 	void export_Real();
+#endif
 }
 
 #endif  // _GPLATES_MATHS_REAL_H_

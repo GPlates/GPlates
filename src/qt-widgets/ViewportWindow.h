@@ -43,21 +43,8 @@
 #include <QStringList>
 #include <QUndoGroup>
 
-#include "AnimateDialog.h"
-#include "ExportAnimationDialog.h"
-#include "ExportReconstructedFeatureGeometryDialog.h"
-#include "FeaturePropertiesDialog.h"
-#include "ManageFeatureCollectionsDialog.h"
-#include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
-#include "SetCameraViewpointDialog.h"
-#include "SetProjectionDialog.h"
-#include "SetRasterSurfaceExtentDialog.h"
-#include "SpecifyAnchoredPlateIdDialog.h"
-#include "SpecifyTimeIncrementDialog.h"
 #include "TaskPanel.h"
-#include "TotalReconstructionPolesDialog.h"
-#include "ShapefileAttributeViewerDialog.h"
 #include "ViewportWindowUi.h"
 
 #include "app-logic/FeatureCollectionFileIO.h"
@@ -120,6 +107,19 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class AboutDialog;
+	class AnimateDialog;
+	class ExportAnimationDialog;
+	class ExportReconstructedFeatureGeometryDialog;
+	class FeaturePropertiesDialog;
+	class ManageFeatureCollectionsDialog;
+	class ReadErrorAccumulationDialog;
+	class SetCameraViewpointDialog;
+	class SetProjectionDialog;
+	class SetRasterSurfaceExtentDialog;
+	class ShapefileAttributeViewerDialog;
+	class SpecifyAnchoredPlateIdDialog;
+	class SpecifyTimeIncrementDialog;
+	class TotalReconstructionPolesDialog;
 
 	class ViewportWindow:
 			public QMainWindow, 
@@ -319,17 +319,44 @@ namespace GPlatesQtWidgets
 		enable_or_disable_feature_actions(
 				GPlatesModel::FeatureHandle::weak_ref focused_feature);
 
-		void		
-		choose_colour_by_plate_id();
-
+		/**
+		 * Uncheck all colouring menu items, and then check @a checked_action
+		 */
 		void
-		choose_colour_by_single_colour();
+		change_checked_colouring_action(
+				QAction *action);
 		
+		// FIXME: Delete after refactoring
 		void	
 		choose_colour_by_feature_type();
 
+		// FIXME: Delete after refactoring
 		void
 		choose_colour_by_age();
+		
+		void
+		choose_colour_by_single_colour_red();
+
+		void
+		choose_colour_by_single_colour_blue();
+
+		void
+		choose_colour_by_single_colour_green();
+
+		void
+		choose_colour_by_single_colour_yellow();
+
+		void
+		choose_colour_by_single_colour_white();
+
+		void
+		choose_colour_by_single_colour_customise();
+
+		void
+		choose_colour_by_plate_id_default();
+
+		void
+		choose_colour_by_plate_id_regional();
 
 		void
 		choose_clicked_geometry_table() const
@@ -432,19 +459,19 @@ namespace GPlatesQtWidgets
 
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
-		AnimateDialog d_animate_dialog;
-		ExportAnimationDialog d_export_animation_dialog;
-		TotalReconstructionPolesDialog d_total_reconstruction_poles_dialog;
-		FeaturePropertiesDialog d_feature_properties_dialog;
-		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
-		ReadErrorAccumulationDialog d_read_errors_dialog;
-		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
-		SetRasterSurfaceExtentDialog d_set_raster_surface_extent_dialog;
-		SpecifyAnchoredPlateIdDialog d_specify_anchored_plate_id_dialog;
-		ExportReconstructedFeatureGeometryDialog d_export_rfg_dialog;
-		SpecifyTimeIncrementDialog d_specify_time_increment_dialog;
-
-		SetProjectionDialog d_set_projection_dialog;
+		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
+		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
+		boost::scoped_ptr<ExportReconstructedFeatureGeometryDialog> d_export_rfg_dialog_ptr;
+		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
+		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
+		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
+		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
+		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
+		boost::scoped_ptr<SetRasterSurfaceExtentDialog> d_set_raster_surface_extent_dialog_ptr;
+		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
+		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
+		boost::scoped_ptr<SpecifyTimeIncrementDialog> d_specify_time_increment_dialog_ptr;
+		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
 
 		GlobeCanvas *d_globe_canvas_ptr;
 		
@@ -466,19 +493,17 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<GPlatesCanvasTools::MeasureDistanceState> d_measure_distance_state_ptr;
 
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
-		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
 
 		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.		
 
 		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_sections_container_ptr;	// The data behind the Topology Sections table.
 		GPlatesGui::TopologySectionsTable *d_topology_sections_table_ptr;	// Manages the 'Topology Sections' table, and is parented to it - Qt will clean up when the table disappears!
 
-		//  map a time value to a raster filename
+		//!  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;
 
-		// The last path used for opening raster files.
+		//! The last path used for opening raster files.
 		QString d_open_file_path; 
-	
 
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
@@ -520,9 +545,6 @@ namespace GPlatesQtWidgets
 		void
 		set_up_dock_context_menus();
 
-		void 
-		uncheck_all_colouring_tools();
-
 		bool
 		load_raster(
 			QString filename);
@@ -563,6 +585,9 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_arrows_display();
+
+		void
+		enable_strings_display();
 
 		void
 		enable_raster_display();

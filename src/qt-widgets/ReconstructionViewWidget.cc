@@ -719,6 +719,19 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_arrows_display()
 	d_active_view_ptr->update_canvas();	
 }
 
+void
+GPlatesQtWidgets::ReconstructionViewWidget::enable_strings_display()
+{
+	d_globe_canvas_ptr->enable_strings_display();
+	d_map_canvas_ptr->enable_strings_display();
+	d_active_view_ptr->update_canvas();	
+}
 
-
+void
+GPlatesQtWidgets::ReconstructionViewWidget::disable_strings_display()
+{
+	d_globe_canvas_ptr->disable_strings_display();
+	d_map_canvas_ptr->disable_strings_display();
+	d_active_view_ptr->update_canvas();	
+}
 

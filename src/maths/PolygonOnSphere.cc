@@ -171,7 +171,7 @@ GPlatesMaths::PolygonOnSphere::is_close_to(
 
 			if (have_already_found_a_close_gca) {
 
-				if (gca_closeness.isPreciselyGreaterThan(
+				if (gca_closeness.is_precisely_greater_than(
 				     closest_closeness_so_far.dval())) {
 
 					closest_closeness_so_far =

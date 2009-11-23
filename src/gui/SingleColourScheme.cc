@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * File specific comments.
+ * Contains the implementation of the SingleColourScheme class.
  *
  * Most recent change:
  *   $Date$
@@ -25,36 +25,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "SingleColourTable.h"
+#include "SingleColourScheme.h"
 
-GPlatesGui::SingleColourTable *
-GPlatesGui::SingleColourTable::Instance()
+GPlatesGui::SingleColourScheme::SingleColourScheme()
 {
-	if (d_instance == NULL) {
-
-		// create a new instance
-		d_instance = new SingleColourTable();
-	}
-	return d_instance;
+	d_colour = boost::optional<Colour>(DEFAULT_COLOUR);
 }
 
-GPlatesGui::SingleColourTable::SingleColourTable()
+GPlatesGui::SingleColourScheme::SingleColourScheme(
+		const Colour &colour)
 {
-	d_colour = GPlatesGui::Colour::get_green();
+	d_colour = boost::optional<Colour>(colour);
 }
 
-void
-GPlatesGui::SingleColourTable::set_colour(const Colour &colour)
-{
-	d_colour = colour;
-}
-
-GPlatesGui::ColourTable::const_iterator
-GPlatesGui::SingleColourTable::lookup(
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::SingleColourScheme::get_colour(
 		const GPlatesModel::ReconstructionGeometry &) const
 {
-	return &d_colour;
+	return d_colour;
 }
 
-GPlatesGui::SingleColourTable *
-GPlatesGui::SingleColourTable::d_instance;
+const GPlatesGui::Colour
+GPlatesGui::SingleColourScheme::DEFAULT_COLOUR = GPlatesGui::Colour::get_white();

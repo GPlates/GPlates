@@ -20,6 +20,11 @@ set(srcs
     ChooseCanvasTool.h
     Colour.cc
     Colour.h
+    ColourNameSet.cc
+    ColourNameSet.h
+    ColourPalette.h
+    ColourScheme.h
+    ColourSchemeFactory.h
     ColourSpectrum.cc
     ColourSpectrum.h
     ColourTable.h
@@ -51,6 +56,10 @@ set(srcs
     FeatureWeakRefSequence.h
     FullScreenMode.cc
     FullScreenMode.h
+    GenericColourScheme.h
+    GenericContinuousColourPalette.cc
+    GenericContinuousColourPalette.h
+    GenericDiscreteColourPalette.h
     GeometricPropertyValueConstructor.cc
     GeometricPropertyValueConstructor.h
     GeometryFocusHighlight.cc
@@ -70,11 +79,15 @@ set(srcs
     GlobeRenderedGeometryLayerPainter.h
     GlobeVisibilityTester.cc
     GlobeVisibilityTester.h
+    GMTColourNames.cc
+    GMTColourNames.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc
     GPlatesQtMsgHandler.h
     GuiException.h
+    HTMLColourNames.cc
+    HTMLColourNames.h
     Interface.h
     MapCanvasPainter.cc
     MapCanvasPainter.h
@@ -93,8 +106,8 @@ set(srcs
     OpenGL.h
     OpenGLBadAllocException.h
     OpenGLException.h
-    PlatesColourTable.cc
-    PlatesColourTable.h
+    PlateIdColourPalettes.cc
+    PlateIdColourPalettes.h
     ProjectionException.h
     ProximityTests.cc
     ProximityTests.h
@@ -106,8 +119,8 @@ set(srcs
     RenderSettings.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
-    SingleColourTable.cc
-    SingleColourTable.h
+    SingleColourScheme.cc
+    SingleColourScheme.h
     SphericalGrid.cc
     SphericalGrid.h
     SvgExport.cc

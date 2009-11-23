@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
 #include "ViewState.h"
 
 #include "app-logic/ApplicationState.h"
@@ -32,12 +31,13 @@
 #include "app-logic/Reconstruct.h"
 
 #include "gui/AgeColourTable.h"
+#include "gui/ColourSchemeFactory.h"
 #include "gui/ColourTableDelegator.h"
 #include "gui/FeatureColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
-#include "gui/PlatesColourTable.h"
-#include "gui/SingleColourTable.h"
+#include "gui/ColourSchemeFactory.h"
+#include "gui/SingleColourScheme.h"
 #include "gui/ViewportZoom.h"
 
 #include "view-operations/ReconstructView.h"
@@ -57,7 +57,7 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
 	d_colour_table(
 			new GPlatesGui::ColourTableDelegator(
-					GPlatesGui::PlatesColourTable::Instance())),
+					GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme())),
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
@@ -83,7 +83,8 @@ GPlatesPresentation::ViewState::ViewState(
 					application_state.get_feature_collection_file_state())),
 	d_reconstruct_view(
 			new GPlatesViewOperations::ReconstructView(
-					*d_plate_velocity_workflow, *d_rendered_geometry_collection, *d_colour_table))
+					*d_plate_velocity_workflow, *d_rendered_geometry_collection, *d_colour_table)),
+	d_last_single_colour(Qt::white)
 {
 	// Call the operations in ReconstructView whenever a reconstruction is generated.
 	d_reconstruct->set_reconstruction_hook(d_reconstruct_view.get());
@@ -160,22 +161,6 @@ GPlatesPresentation::ViewState::get_plate_velocity_workflow() const
 
 
 void
-GPlatesPresentation::ViewState::choose_colour_by_plate_id()
-{
-	d_colour_table->set_target_colour_table(GPlatesGui::PlatesColourTable::Instance());
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_single_colour(
-		const GPlatesGui::Colour &colour)
-{
-	GPlatesGui::SingleColourTable::Instance()->set_colour(colour);
-	d_colour_table->set_target_colour_table(GPlatesGui::SingleColourTable::Instance());
-}
-
-
-void
 GPlatesPresentation::ViewState::choose_colour_by_feature_type()
 {
 	d_colour_table->set_target_colour_table(GPlatesGui::FeatureColourTable::Instance());
@@ -187,6 +172,40 @@ GPlatesPresentation::ViewState::choose_colour_by_age()
 {
 	GPlatesGui::AgeColourTable::Instance()->set_reconstruct_state(get_reconstruct());
 	d_colour_table->set_target_colour_table(GPlatesGui::AgeColourTable::Instance());
+}
+
+
+void
+GPlatesPresentation::ViewState::choose_colour_by_single_colour(
+		const QColor &qcolor)
+{
+	boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme(
+			new GPlatesGui::SingleColourScheme(qcolor));
+	d_colour_table->set_colour_scheme(colour_scheme);
+	d_last_single_colour = qcolor;
+}
+
+
+void
+GPlatesPresentation::ViewState::choose_colour_by_plate_id_default()
+{
+	d_colour_table->set_colour_scheme(
+			GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme());
+}
+
+
+void
+GPlatesPresentation::ViewState::choose_colour_by_plate_id_regional()
+{
+	d_colour_table->set_colour_scheme(
+			GPlatesGui::ColourSchemeFactory::create_regional_plate_id_colour_scheme());
+}
+
+
+QColor
+GPlatesPresentation::ViewState::get_last_single_colour() const
+{
+	return d_last_single_colour;
 }
 
 

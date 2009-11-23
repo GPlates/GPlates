@@ -35,6 +35,7 @@ set(srcs
     Profile.cc
     Profile.h
     ReferenceCount.h
+    Singleton.h
     SmartNodeLinkedList.h
     StringFormattingUtils.cc
     StringFormattingUtils.h

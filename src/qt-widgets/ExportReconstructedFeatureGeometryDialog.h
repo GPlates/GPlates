@@ -27,11 +27,10 @@
 #define GPLATES_QTWIDGETS_EXPORTRECONSTRUCTIONDIALOG_H
 
 #include <QWidget>
-#include <QFileDialog>
 
+#include "SaveFileDialog.h"
 #include "model/types.h"
 #include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
-
 
 namespace GPlatesModel
 {
@@ -72,13 +71,9 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 
-		static const char *FILTER_GMT;
-		static const char *FILTER_SHP;
-
 	private:
 
-		QString d_last_file_name;
-		QWidget *d_parent_ptr;
+		boost::shared_ptr<SaveFileDialog> d_save_file_dialog_ptr;
 
 	};
 }

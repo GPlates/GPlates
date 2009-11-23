@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * Contains the definition of the ColourTable class.
+ * Contains the definition of the ColourScheme class.
  *
  * Most recent change:
  *   $Date$
@@ -25,11 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_COLOURTABLE_H
-#define GPLATES_GUI_COLOURTABLE_H
+#ifndef GPLATES_GUI_COLOURSCHEME_H
+#define GPLATES_GUI_COLOURSCHEME_H
+
+#include <boost/optional.hpp>
 
 #include "Colour.h"
-
 
 namespace GPlatesModel
 {
@@ -41,38 +42,26 @@ namespace GPlatesGui
 	/**
 	 * This class assigns colours to ReconstructionGeometry instances.
 	 */
-	class ColourTable
+	class ColourScheme
 	{
 	public:
-		//! A typedef for Colour *
-		typedef const Colour *const_iterator;
 
 		//! Destructor
 		virtual
-		~ColourTable()
+		~ColourScheme()
 		{  }
 
 		/**
-		 * The value returned by lookup() if the ReconstructionGeometry instance if
-		 * it does not have the necessary parameters.
-		 */
-		const_iterator
-		end() const
-		{
-			return NULL;
-		}
-
-		/**
-		 * Returns an iterator referencing a @a Colour if @a reconstruction_geometry
-		 * has the necessary parameters, otherwise returns @a end.
-		 *
-		 * Note: The caller should check the return value against @a end before dereferencing.
+		 * Returns a colour for a particular @a reconstruction_geometry, or
+		 * boost::none if it does not have the necessary parameters or if the
+		 * reconstruction geometry should not be drawn for some other reason
 		 */
 		virtual
-		const_iterator
-		lookup(
+		boost::optional<Colour>
+		get_colour(
 				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const = 0;
+
 	};
 }
 
-#endif  /* GPLATES_GUI_COLOURTABLE_H */
+#endif  /* GPLATES_GUI_COLOURSCHEME_H */

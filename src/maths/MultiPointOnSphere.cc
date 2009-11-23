@@ -112,7 +112,7 @@ GPlatesMaths::MultiPointOnSphere::is_close_to(
 				closeness_inclusion_threshold, point_closeness))
 		{
 			if (have_already_found_a_close_point) {
-				if (point_closeness.isPreciselyGreaterThan(
+				if (point_closeness.is_precisely_greater_than(
 							closest_closeness_so_far.dval()))
 				{
 					closest_closeness_so_far = point_closeness;

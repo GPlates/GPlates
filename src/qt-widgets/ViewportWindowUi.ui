@@ -19,16 +19,26 @@
    <string>GPlates</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/GPlates-icon-160x160-opaque.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <normaloff>:/GPlates-icon-160x160-opaque.png</normaloff>:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
-  <widget class="QWidget" name="centralwidget" />
+  <widget class="QWidget" name="centralwidget" >
+   <property name="geometry" >
+    <rect>
+     <x>48</x>
+     <y>25</y>
+     <width>676</width>
+     <height>517</height>
+    </rect>
+   </property>
+  </widget>
   <widget class="QMenuBar" name="menubar" >
    <property name="geometry" >
     <rect>
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>29</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -90,10 +100,61 @@
      <property name="title" >
       <string>Geometry &amp;Colours</string>
      </property>
-     <addaction name="action_Colour_By_Plate_ID" />
-     <addaction name="action_Colour_By_Single_Colour" />
+     <widget class="QMenu" name="menu_Single_Colour" >
+      <property name="title" >
+       <string>&amp;Single Colour</string>
+      </property>
+      <addaction name="action_Colour_By_Single_Colour_Red" />
+      <addaction name="action_Colour_By_Single_Colour_Green" />
+      <addaction name="action_Colour_By_Single_Colour_Blue" />
+      <addaction name="action_Colour_By_Single_Colour_Yellow" />
+      <addaction name="action_Colour_By_Single_Colour_White" />
+      <addaction name="separator" />
+      <addaction name="action_Colour_By_Single_Colour_Customise" />
+     </widget>
+     <widget class="QMenu" name="menu_Plate_ID" >
+      <property name="title" >
+       <string>&amp;Plate ID</string>
+      </property>
+      <addaction name="action_Colour_By_Plate_ID_Default" />
+      <addaction name="action_Colour_By_Plate_ID_Regional" />
+      <addaction name="action_Colour_By_Plate_ID_CPT" />
+      <addaction name="action_Colour_By_Plate_ID_Customise" />
+     </widget>
+     <widget class="QMenu" name="menu_Feature_Type" >
+      <property name="title" >
+       <string>Feature &amp;Type</string>
+      </property>
+      <addaction name="action_Colour_By_Feature_Type_Default" />
+      <addaction name="action_Colour_By_Feature_Type_CPT" />
+      <addaction name="separator" />
+      <addaction name="action_Colour_By_Feature_Type_Customise" />
+     </widget>
+     <widget class="QMenu" name="menu_Feature_Age" >
+      <property name="title" >
+       <string>Feature &amp;Age</string>
+      </property>
+      <addaction name="action_Colour_By_Feature_Age_Default" />
+      <addaction name="action_Colour_By_Feature_Age_CPT" />
+      <addaction name="separator" />
+      <addaction name="action_Colour_By_Feature_Age_Customise" />
+     </widget>
+     <widget class="QMenu" name="menu_Feature_Collection" >
+      <property name="title" >
+       <string>Feature &amp;Collection</string>
+      </property>
+      <addaction name="action_Colour_By_Feature_Collection_Default" />
+      <addaction name="action_Colour_By_Feature_Collection_CPT" />
+      <addaction name="separator" />
+      <addaction name="action_Colour_By_Feature_Collection_Customise" />
+     </widget>
+     <addaction name="menu_Plate_ID" />
+     <addaction name="menu_Single_Colour" />
      <addaction name="action_Colour_By_Feature_Type" />
+     <addaction name="menu_Feature_Type" />
      <addaction name="action_Colour_By_Age" />
+     <addaction name="menu_Feature_Age" />
+     <addaction name="menu_Feature_Collection" />
     </widget>
     <addaction name="menu_Colour_Geometries_By" />
     <addaction name="separator" />
@@ -106,6 +167,7 @@
     <addaction name="action_Show_Multipoint_Features" />
     <addaction name="separator" />
     <addaction name="action_Show_Arrow_Decorations" />
+    <addaction name="action_Show_Strings" />
    </widget>
    <widget class="QMenu" name="menu_View" >
     <property name="title" >
@@ -160,8 +222,25 @@
    <addaction name="menu_Tools" />
    <addaction name="menu_Help" />
   </widget>
-  <widget class="QStatusBar" name="statusbar" />
+  <widget class="QStatusBar" name="statusbar" >
+   <property name="geometry" >
+    <rect>
+     <x>0</x>
+     <y>678</y>
+     <width>724</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
   <widget class="QToolBar" name="toolbar_canvas_tools" >
+   <property name="geometry" >
+    <rect>
+     <x>0</x>
+     <y>25</y>
+     <width>48</width>
+     <height>653</height>
+    </rect>
+   </property>
    <property name="contextMenuPolicy" >
     <enum>Qt::PreventContextMenu</enum>
    </property>
@@ -202,19 +281,35 @@
    <addaction name="action_Edit_Topology" />
   </widget>
   <widget class="QDockWidget" name="dock_search_results" >
+   <property name="geometry" >
+    <rect>
+     <x>48</x>
+     <y>548</y>
+     <width>676</width>
+     <height>130</height>
+    </rect>
+   </property>
    <property name="contextMenuPolicy" >
     <enum>Qt::ActionsContextMenu</enum>
    </property>
    <property name="features" >
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar|QDockWidget::NoDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar</set>
    </property>
    <property name="allowedAreas" >
-    <set>Qt::BottomDockWidgetArea|Qt::NoDockWidgetArea|Qt::TopDockWidgetArea</set>
+    <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
    </property>
    <attribute name="dockWidgetArea" >
     <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents" >
+    <property name="geometry" >
+     <rect>
+      <x>23</x>
+      <y>0</y>
+      <width>653</width>
+      <height>130</height>
+     </rect>
+    </property>
     <property name="contextMenuPolicy" >
      <enum>Qt::PreventContextMenu</enum>
     </property>
@@ -222,16 +317,7 @@
      <property name="spacing" >
       <number>0</number>
      </property>
-     <property name="leftMargin" >
-      <number>0</number>
-     </property>
-     <property name="topMargin" >
-      <number>0</number>
-     </property>
-     <property name="rightMargin" >
-      <number>0</number>
-     </property>
-     <property name="bottomMargin" >
+     <property name="margin" >
       <number>0</number>
      </property>
      <item>
@@ -258,6 +344,14 @@
         <number>0</number>
        </property>
        <widget class="QWidget" name="tab_clicked" >
+        <property name="geometry" >
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>649</width>
+          <height>103</height>
+         </rect>
+        </property>
         <attribute name="title" >
          <string>Clicked</string>
         </attribute>
@@ -265,16 +359,7 @@
          <property name="spacing" >
           <number>2</number>
          </property>
-         <property name="leftMargin" >
-          <number>2</number>
-         </property>
-         <property name="topMargin" >
-          <number>2</number>
-         </property>
-         <property name="rightMargin" >
-          <number>2</number>
-         </property>
-         <property name="bottomMargin" >
+         <property name="margin" >
           <number>2</number>
          </property>
          <item>
@@ -302,6 +387,14 @@
         </layout>
        </widget>
        <widget class="QWidget" name="tab_selected" >
+        <property name="geometry" >
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>649</width>
+          <height>103</height>
+         </rect>
+        </property>
         <attribute name="title" >
          <string>Selected</string>
         </attribute>
@@ -309,16 +402,7 @@
          <property name="spacing" >
           <number>2</number>
          </property>
-         <property name="leftMargin" >
-          <number>2</number>
-         </property>
-         <property name="topMargin" >
-          <number>2</number>
-         </property>
-         <property name="rightMargin" >
-          <number>2</number>
-         </property>
-         <property name="bottomMargin" >
+         <property name="margin" >
           <number>2</number>
          </property>
          <item>
@@ -334,6 +418,14 @@
         </layout>
        </widget>
        <widget class="QWidget" name="tab_topology" >
+        <property name="geometry" >
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>649</width>
+          <height>103</height>
+         </rect>
+        </property>
         <attribute name="title" >
          <string>Topology Sections</string>
         </attribute>
@@ -341,16 +433,7 @@
          <property name="spacing" >
           <number>2</number>
          </property>
-         <property name="leftMargin" >
-          <number>2</number>
-         </property>
-         <property name="topMargin" >
-          <number>2</number>
-         </property>
-         <property name="rightMargin" >
-          <number>2</number>
-         </property>
-         <property name="bottomMargin" >
+         <property name="margin" >
           <number>2</number>
          </property>
          <item>
@@ -423,7 +506,8 @@
   </action>
   <action name="action_Quit" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_application_exit_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_application_exit_16.png</normaloff>:/gnome_application_exit_16.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Quit</string>
@@ -437,7 +521,8 @@
     <bool>true</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_gtk_about_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;About</string>
@@ -458,7 +543,8 @@
   </action>
   <action name="action_Increment_Animation_Time_Backwards" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_seek_backward_16.png</normaloff>:/gnome_seek_backward_16.png</iconset>
    </property>
    <property name="text" >
     <string>Step &amp;Backward One Frame</string>
@@ -469,7 +555,8 @@
   </action>
   <action name="action_Increment_Animation_Time_Forwards" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_seek_forward_16.png</normaloff>:/gnome_seek_forward_16.png</iconset>
    </property>
    <property name="text" >
     <string>Step &amp;Forward One Frame</string>
@@ -497,7 +584,8 @@
     <bool>true</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/drag_globe_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/drag_globe_35.png</normaloff>:/drag_globe_35.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Drag Globe</string>
@@ -517,7 +605,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_edit_find_22.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_edit_find_22.png</normaloff>:/gnome_edit_find_22.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Query Feature</string>
@@ -542,7 +631,8 @@
   </action>
   <action name="action_File_Errors" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_dialog_warning_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_dialog_warning_16.png</normaloff>:/gnome_dialog_warning_16.png</iconset>
    </property>
    <property name="text" >
     <string>View Read &amp;Errors</string>
@@ -555,7 +645,8 @@
   </action>
   <action name="action_Zoom_In" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_zoom_in_16.png</normaloff>:/gnome_zoom_in_16.png</iconset>
    </property>
    <property name="text" >
     <string>Zoom &amp;In</string>
@@ -566,7 +657,8 @@
   </action>
   <action name="action_Zoom_Out" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_zoom_out_16.png</normaloff>:/gnome_zoom_out_16.png</iconset>
    </property>
    <property name="text" >
     <string>Zoom &amp;Out</string>
@@ -577,7 +669,8 @@
   </action>
   <action name="action_Reset_Zoom_Level" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_zoom_original_16.png</normaloff>:/gnome_zoom_original_16.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Reset Zoom</string>
@@ -591,7 +684,8 @@
     <bool>true</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/zoom_globe_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/zoom_globe_35.png</normaloff>:/zoom_globe_35.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Zoom In</string>
@@ -605,7 +699,8 @@
   </action>
   <action name="action_Export_Geometry_Snapshot" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_applets_screenshooter_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_applets_screenshooter_16.png</normaloff>:/gnome_applets_screenshooter_16.png</iconset>
    </property>
    <property name="text" >
     <string>E&amp;xport Geometry Snapshot...</string>
@@ -616,7 +711,8 @@
   </action>
   <action name="action_Manage_Feature_Collections" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_preferences_desktop_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_preferences_desktop_16.png</normaloff>:/gnome_preferences_desktop_16.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Manage Feature Collections</string>
@@ -646,7 +742,8 @@
   </action>
   <action name="action_Move_Camera_Up" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_up_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_go_up_16.png</normaloff>:/gnome_go_up_16.png</iconset>
    </property>
    <property name="text" >
     <string>Move &amp;Up</string>
@@ -657,7 +754,8 @@
   </action>
   <action name="action_Move_Camera_Down" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_down_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_go_down_16.png</normaloff>:/gnome_go_down_16.png</iconset>
    </property>
    <property name="text" >
     <string>Move &amp;Down</string>
@@ -668,7 +766,8 @@
   </action>
   <action name="action_Move_Camera_Left" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_previous_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_go_previous_16.png</normaloff>:/gnome_go_previous_16.png</iconset>
    </property>
    <property name="text" >
     <string>Move &amp;Left</string>
@@ -679,7 +778,8 @@
   </action>
   <action name="action_Move_Camera_Right" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_next_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_go_next_16.png</normaloff>:/gnome_go_next_16.png</iconset>
    </property>
    <property name="text" >
     <string>Move &amp;Right</string>
@@ -690,7 +790,8 @@
   </action>
   <action name="action_Rotate_Camera_Clockwise" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_view_refresh_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/human_view_refresh_16.png</normaloff>:/human_view_refresh_16.png</iconset>
    </property>
    <property name="text" >
     <string>Rotate &amp;Clockwise</string>
@@ -701,7 +802,8 @@
   </action>
   <action name="action_Rotate_Camera_Anticlockwise" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_view_refresh_flipped_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/human_view_refresh_flipped_16.png</normaloff>:/human_view_refresh_flipped_16.png</iconset>
    </property>
    <property name="text" >
     <string>Rotate &amp;Anti-clockwise</string>
@@ -712,7 +814,8 @@
   </action>
   <action name="action_Reset_Camera_Orientation" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/reorient_poles_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/reorient_poles_16.png</normaloff>:/reorient_poles_16.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Reset Orientation</string>
@@ -729,7 +832,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_gtk_edit_22.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_gtk_edit_22.png</normaloff>:/gnome_gtk_edit_22.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Edit Feature</string>
@@ -840,25 +944,6 @@
     <string>Open &amp;Time-dependent Raster Sequence...</string>
    </property>
   </action>
-  <action name="action_Colour_By_Plate_ID" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="checked" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Plate ID</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Single_Colour" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Single Colour...</string>
-   </property>
-  </action>
   <action name="action_Colour_By_Feature_Type" >
    <property name="checkable" >
     <bool>true</bool>
@@ -883,7 +968,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_polyline_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/digitise_polyline_35.png</normaloff>:/digitise_polyline_35.png</iconset>
    </property>
    <property name="text" >
     <string>Digitise New Poly&amp;line Geometry</string>
@@ -906,7 +992,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/focus_feature_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
    </property>
    <property name="text" >
     <string>Choose &amp;Feature</string>
@@ -923,7 +1010,8 @@
   </action>
   <action name="action_Delete_Feature" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_edit_delete_22.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_edit_delete_22.png</normaloff>:/gnome_edit_delete_22.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Delete Feature</string>
@@ -937,7 +1025,8 @@
   </action>
   <action name="action_Add_Feature_To_Selection" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_list_add_22.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_list_add_22.png</normaloff>:/gnome_list_add_22.png</iconset>
    </property>
    <property name="text" >
     <string>Add Feature to Select&amp;ion</string>
@@ -945,7 +1034,8 @@
   </action>
   <action name="action_Remove_Feature_From_Selection" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_list_remove_22.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_list_remove_22.png</normaloff>:/gnome_list_remove_22.png</iconset>
    </property>
    <property name="text" >
     <string>Remove Feature from Selecti&amp;on</string>
@@ -953,7 +1043,8 @@
   </action>
   <action name="action_Clear_Selection" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_window_close_22.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_window_close_22.png</normaloff>:/gnome_window_close_22.png</iconset>
    </property>
    <property name="text" >
     <string>Clear Se&amp;lection</string>
@@ -961,7 +1052,8 @@
   </action>
   <action name="action_Information_Dock_At_Bottom" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_down_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_go_down_16.png</normaloff>:/gnome_go_down_16.png</iconset>
    </property>
    <property name="text" >
     <string>Dock at &amp;Bottom</string>
@@ -969,7 +1061,8 @@
   </action>
   <action name="action_Information_Dock_At_Top" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_up_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_go_up_16.png</normaloff>:/gnome_go_up_16.png</iconset>
    </property>
    <property name="text" >
     <string>Dock at &amp;Top</string>
@@ -977,7 +1070,8 @@
   </action>
   <action name="action_Actions_Dock_At_Left" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_previous_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_go_previous_16.png</normaloff>:/gnome_go_previous_16.png</iconset>
    </property>
    <property name="text" >
     <string>Dock at &amp;Left</string>
@@ -985,7 +1079,8 @@
   </action>
   <action name="action_Actions_Dock_At_Right" >
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_next_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/gnome_go_next_16.png</normaloff>:/gnome_go_next_16.png</iconset>
    </property>
    <property name="text" >
     <string>Dock at &amp;Right</string>
@@ -999,7 +1094,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_polygon_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/digitise_polygon_35.png</normaloff>:/digitise_polygon_35.png</iconset>
    </property>
    <property name="text" >
     <string>Digitise New Polygon &amp;Geometry</string>
@@ -1022,7 +1118,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_multipoint_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/digitise_multipoint_35.png</normaloff>:/digitise_multipoint_35.png</iconset>
    </property>
    <property name="text" >
     <string>Digitise New &amp;Multi-point Geometry</string>
@@ -1061,7 +1158,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/move_geometry_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/move_geometry_35.png</normaloff>:/move_geometry_35.png</iconset>
    </property>
    <property name="text" >
     <string>Move Geometr&amp;y</string>
@@ -1084,7 +1182,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/move_vertex_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/move_vertex_35.png</normaloff>:/move_vertex_35.png</iconset>
    </property>
    <property name="text" >
     <string>Mo&amp;ve Vertex</string>
@@ -1107,7 +1206,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/delete_vertex_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/delete_vertex_35.png</normaloff>:/delete_vertex_35.png</iconset>
    </property>
    <property name="text" >
     <string>Delete Verte&amp;x</string>
@@ -1130,7 +1230,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/insert_vertex_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/insert_vertex_35.png</normaloff>:/insert_vertex_35.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Insert Vertex</string>
@@ -1153,7 +1254,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/plate_pole_modification_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
    </property>
    <property name="text" >
     <string>Modify Reconstruction &amp;Pole</string>
@@ -1173,7 +1275,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/topology_build_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/topology_build_35.png</normaloff>:/topology_build_35.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Build New Topology</string>
@@ -1196,7 +1299,8 @@
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/topology_edit_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/topology_edit_35.png</normaloff>:/topology_edit_35.png</iconset>
    </property>
    <property name="text" >
     <string>&amp;Edit Topology</string>
@@ -1292,7 +1396,8 @@
     <bool>true</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/measure_distance_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/measure_distance_35.png</normaloff>:/measure_distance_35.png</iconset>
    </property>
    <property name="text" >
     <string>Measure Di&amp;stance</string>
@@ -1329,7 +1434,8 @@
     <bool>true</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/info_sign_16.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/info_sign_16.png</normaloff>:/info_sign_16.png</iconset>
    </property>
    <property name="text" >
     <string>GUI Debug Action</string>
@@ -1342,6 +1448,172 @@
    </property>
    <property name="visible" >
     <bool>true</bool>
+   </property>
+  </action>
+  <action name="action_Show_Strings" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Text</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether text is shown.</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Single_Colour_Red" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Red</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Single_Colour_Green" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Green</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Single_Colour_Blue" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Blue</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Single_Colour_Yellow" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Yellow</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Single_Colour_White" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;White</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Single_Colour_Customise" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Customise...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Plate_ID_Default" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Default</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Plate_ID_Regional" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Group by &amp;Region</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Plate_ID_Customise" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Customise...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Plate_ID_CPT" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>CPT &amp;File...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Type_Default" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Default</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Type_Customise" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Customise...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Type_CPT" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>CPT &amp;File...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Age_Default" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Default</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Age_Customise" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Customise...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Age_CPT" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>CPT &amp;File...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Collection_Default" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Default</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Collection_CPT" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>CPT &amp;File...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Collection_Customise" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Customise...</string>
    </property>
   </action>
  </widget>

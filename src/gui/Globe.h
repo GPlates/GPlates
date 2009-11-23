@@ -141,7 +141,7 @@ namespace GPlatesGui
 		void disable_topology_display() 	{ d_render_settings.show_topology = false; }
 		void disable_multipoint_display()	{ d_render_settings.show_multipoints = false; }
 		void disable_arrows_display()		{ d_render_settings.show_arrows = false; }
-		void diable_strings_display()		{ d_render_settings.show_strings = false; }
+		void disable_strings_display()		{ d_render_settings.show_strings = false; }
 
 		void toggle_point_display()			{ d_render_settings.show_points = !d_render_settings.show_points; }
 		void toggle_line_display() 			{ d_render_settings.show_lines = !d_render_settings.show_lines; }

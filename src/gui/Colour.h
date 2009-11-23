@@ -2,12 +2,12 @@
 
 /**
  * @file 
- * File specific comments.
+ * Contains the definition of the Colour class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,11 +29,60 @@
 #define GPLATES_GUI_COLOUR_H
 
 #include <iosfwd>
-#include "OpenGL.h"
+#include <QColor>
 
+#include "OpenGL.h"
 
 namespace GPlatesGui
 {
+	struct HSVColour
+	{
+		/** Hue */
+		double h;
+		/** Saturation */
+		double s;
+		/** Value */
+		double v;
+		/** Alpha */
+		double a;
+
+		HSVColour(
+				double h_,
+				double s_,
+				double v_,
+				double a_ = 1.0) :
+			h(h_),
+			s(s_),
+			v(v_),
+			a(a_)
+		{	
+		}
+	};
+
+	struct CMYKColour
+	{
+		/** Cyan */
+		double c;
+		/** Magenta */
+		double m;
+		/** Yellow */
+		double y;
+		/** Black */
+		double k;
+
+		CMYKColour(
+				double c_,
+				double m_,
+				double y_,
+				double k_) :
+			c(c_),
+			m(m_),
+			y(y_),
+			k(k_)
+		{
+		}
+	};
+
 	class Colour
 	{
 	public:
@@ -56,7 +105,7 @@ namespace GPlatesGui
 		static const Colour & get_maroon();
 
 		static const Colour & get_purple();
-		static const Colour & get_fuschia();
+		static const Colour & get_fuchsia();
 		static const Colour & get_lime();
 		static const Colour & get_olive();
 
@@ -94,6 +143,13 @@ namespace GPlatesGui
 				const GLfloat &blue  = 0.0,
 				const GLfloat &alpha = 1.0);
 
+		/**
+		 * Construct a Colour from its QColor equivalent.
+		 * Note: this is not an explicit constructor by design.
+		 */
+		Colour(
+				const QColor &qcolor);
+
 		Colour(
 				const Colour &colour)
 		{
@@ -104,8 +160,11 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * Accessor methods.
+		 * Converts the Colour to a QColor.
 		 */
+		operator QColor() const;
+
+		// Accessor methods
 
 		GLfloat
 		red() const
@@ -131,9 +190,7 @@ namespace GPlatesGui
 			return d_rgba[ALPHA_INDEX];
 		}
 
-		/*
-		 * Accessor methods which allow modification.
-		 */
+		// Accessor methods which allow modification
 
 		GLfloat &
 		red()
@@ -174,6 +231,59 @@ namespace GPlatesGui
 			return &d_rgba[0];
 		}
 
+		/**
+		 * Linearly interpolate between two colours.
+		 * @param first The first colour to mix
+		 * @param second The second colour to mix
+		 * @param position A value between 0.0 and 1.0 (inclusive), which can be
+		 * interpreted as where the returned colour lies in the range between the
+		 * first colour and the second colour.
+		 */
+		static
+		Colour
+		linearly_interpolate(
+				Colour first,
+				Colour second,
+				double position);
+
+		/**
+		 * Converts a CMYK colour to a Colour (which is RGBA). The cyan,
+		 * magenta, yellow and black components of the colour must be in the range
+		 * 0.0-1.0 inclusive. Alpha value of colour is set to 1.0.
+		 */
+		static
+		Colour
+		from_cmyk(
+				const CMYKColour &cmyk);
+
+		/**
+		 * Converts a Colour (which is RGBA) to CMYK.
+		 * @returns CMYK colour, where the component values are between 0.0-1.0 inclusive.
+		 */
+		static
+		CMYKColour
+		to_cmyk(
+				const Colour &colour);
+
+		/**
+		 * Converts a HSV colour to a Colour (which is RGBA). The hue,
+		 * saturation, value and alpha components of the colour must be in the range
+		 * 0.0-1.0 inclusive.
+		 */
+		static
+		Colour
+		from_hsv(
+				const HSVColour &hsv);
+
+		/**
+		 * Converts a Colour (which is RGBA) to HSV.
+		 * @returns HSV colour, where the component values are between 0.0-1.0 inclusive.
+		 */
+		static
+		HSVColour
+		to_hsv(
+				const Colour &colour);
+
 	private:
 
 		/**
@@ -186,7 +296,6 @@ namespace GPlatesGui
 		 */
 		GLfloat d_rgba[RGBA_SIZE];
 	};
-
 
 	std::ostream &
 	operator<<(

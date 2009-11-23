@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * File specific comments.
+ * Contains the definition of the SingleColourScheme class.
  *
  * Most recent change:
  *   $Date$
@@ -25,49 +25,37 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_SINGLECOLOURTABLE_H
-#define GPLATES_GUI_SINGLECOLOURTABLE_H
+#ifndef GPLATES_GUI_SINGLECOLOURSCHEME_H
+#define GPLATES_GUI_SINGLECOLOURSCHEME_H
 
-#include "ColourTable.h"
-
+#include "ColourScheme.h"
 
 namespace GPlatesGui 
 {
-	class SingleColourTable:
-			public ColourTable
+	/**
+	 * This class assigns a fixed colour to reconstruction geometries.
+	 */
+	class SingleColourScheme:
+			public ColourScheme
 	{
 		public:
-			static
-			SingleColourTable *
-			Instance();
+			SingleColourScheme();
 
-			virtual 
-			~SingleColourTable()
-			{  }
-
-			virtual
-			ColourTable::const_iterator
-			lookup(
-					const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
-
-			void
-			set_colour(
+			SingleColourScheme(
 					const Colour &colour);
 
-		protected:
-			/**
-			 * Private constructor to enforce singleton design.
-			 */
-			SingleColourTable();
+			virtual
+			boost::optional<Colour>
+			get_colour(
+					const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
 
 		private:
-			/**
-			 * The singleton instance.
-			 */
-			static SingleColourTable *d_instance;
+			boost::optional<Colour> d_colour;
 
-			Colour d_colour;
+			static
+			const Colour
+			DEFAULT_COLOUR;
 	};
 }
 
-#endif  /* GPLATES_GUI_SINGLECOLOURTABLE_H */
+#endif  /* GPLATES_GUI_SINGLECOLOURSCHEME_H */
