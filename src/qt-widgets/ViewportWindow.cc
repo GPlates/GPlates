@@ -436,6 +436,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// Render everything on the screen in present-day positions.
 	get_view_state().get_reconstruct().reconstruct_to_time_with_anchor(0.0, 0);
 	
+	// Check the default colouring option
+	change_checked_colouring_action(action_Colour_By_Plate_ID_Default);
+
 	// FIXME: these colouring options aren't implemented yet, so hide them for now
 	menu_Colour_Geometries_By->removeAction(menu_Feature_Type->menuAction());
 	menu_Colour_Geometries_By->removeAction(menu_Feature_Age->menuAction());
