@@ -27,6 +27,7 @@
 #define GPLATES_GUI_COLOURTABLEDELEGATOR_H
 
 #include <boost/shared_ptr.hpp>
+#include <boost/optional.hpp>
 
 #include "ColourTable.h"
 #include "ColourScheme.h"
@@ -91,10 +92,22 @@ namespace GPlatesGui
 			lookup(
 					const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
 			{
+				// This is the emergency fallback colour to use if the colour scheme fails to deliver.
+				static const Colour &fallback_colour = Colour::get_olive();
+				
 				if (d_colour_scheme)
 				{
-					d_colour_from_scheme = *(d_colour_scheme->get_colour(reconstruction_geometry));
-					return &d_colour_from_scheme;
+					boost::optional<Colour> colour_from_scheme_opt = d_colour_scheme->get_colour(reconstruction_geometry);
+					if (colour_from_scheme_opt) {
+						// Good, we got a legitimate colour from the colour scheme.
+						d_colour_from_scheme = *colour_from_scheme_opt;
+						return &d_colour_from_scheme;
+					} else {
+						// Despite our new colour-by-plate-id scheme which is guaranteed to assign a colour regardless
+						// of plate id, it still falls over if the reconstruction geometry HAS NO PLATE ID, which
+						// seems to be the case with some of the Topology magic geometry (click reference points).
+						return &fallback_colour;
+					}
 				}
 				else
 				{
