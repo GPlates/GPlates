@@ -38,6 +38,7 @@ set(srcs
     ReconstructView.cc
     ReconstructView.h
     RenderedDirectionArrow.h
+    RenderedEllipse.h
     RenderedGeometry.cc
     RenderedGeometry.h
     RenderedGeometryCollection.cc
@@ -60,6 +61,8 @@ set(srcs
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
     RenderedReconstructionGeometry.h
+    RenderedSmallCircle.h
+    RenderedSmallCircleArc.h
     RenderedString.h
     RenderReconstructionGeometries.cc
     RenderReconstructionGeometries.h

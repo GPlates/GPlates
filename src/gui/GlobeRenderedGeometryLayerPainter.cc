@@ -30,10 +30,13 @@
 #include "NurbsRenderer.h"
 #include "OpenGL.h"
 
+#include "maths/EllipseGenerator.h"
 #include "maths/Real.h"
+#include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
 
 #include "view-operations/RenderedDirectionArrow.h"
+#include "view-operations/RenderedEllipse.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
@@ -41,6 +44,10 @@
 #include "view-operations/RenderedString.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
 #include "view-operations/RenderedGeometryUtils.h"
+#include "view-operations/RenderedSmallCircle.h"
+#include "view-operations/RenderedSmallCircleArc.h"
+
+
 
 namespace 
 {
@@ -49,6 +56,7 @@ namespace
 	 * more than PI/36 radians (= 5 degrees) apart.
 	 */
 	const double GCA_DISTANCE_THRESHOLD_DOT = std::cos(GPlatesMaths::PI/36.0);
+	const double TWO_PI = 2.*GPlatesMaths::PI;
 
 	inline
 	void
@@ -230,6 +238,45 @@ namespace
 					last_circle_vertex.z().dval());
 		glEnd();
 	}
+	
+	void
+	draw_ellipse(
+		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse,
+		const double &inverse_zoom_factor)
+	{
+	// We could make this zoom dependent, but:
+	// For an ellipse with fairly tight curvature, at maximum zoom (10000%),
+	// 128 steps gives a just-about-noticeable jagged appearance; 256 steps
+	// appears pretty smooth (to me, at least).  We could reduce this at lower
+	// zooms, but anything below about 64 steps makes large ellipses (e.g. one which
+	// is effectively a great circle) appear jagged at minimum zoom (100%).
+	// So we could make the number of steps vary from (say) 64 at 100% zoom to
+	// 256 at 10000% zoom.
+	// The inverse zoom factor varies from 1 at 100% zoom to 0.01 at 10000% zoom. 
+	// Using the sqrt of the inverse zoom factor, we could use 64 steps at min zoom
+	// and 640 steps at max zoom, for example.
+
+		static const unsigned int nsteps = 256;
+		static const double dt = TWO_PI/nsteps;
+
+		GPlatesMaths::EllipseGenerator ellipse_generator(
+			rendered_ellipse.get_centre(),
+			rendered_ellipse.get_semi_major_axis_radians(),
+			rendered_ellipse.get_semi_minor_axis_radians(),
+			rendered_ellipse.get_axis());
+					
+		glBegin(GL_LINE_LOOP);
+		
+		for (double i = 0 ; i < TWO_PI ; i += dt)
+		{
+
+			GPlatesMaths::UnitVector3D uv = ellipse_generator.get_point_on_ellipse(i);
+			glVertex3d(uv.x().dval(),uv.y().dval(),uv.z().dval());
+		}
+		glEnd();
+	
+	}
+	
 }
 
 
@@ -484,4 +531,58 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
 				rendered_string.get_font());
 	}
 }
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle(
+		const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle)
+{
+
+	if (d_draw_opaque_primitives)
+	{
+		return;
+	}
+
+	glColor3fv(rendered_small_circle.get_colour());
+	glLineWidth(rendered_small_circle.get_line_width_hint() * POINT_SIZE_ADJUSTMENT);
+
+	d_nurbs_renderer->draw_small_circle(
+		rendered_small_circle.get_centre(),
+		rendered_small_circle.get_radius_in_radians());
+}
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
+		const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc)
+{
+
+	if (d_draw_opaque_primitives)
+	{
+		return;
+	}
+
+	glColor3fv(rendered_small_circle_arc.get_colour());
+	glLineWidth(rendered_small_circle_arc.get_line_width_hint() * POINT_SIZE_ADJUSTMENT);
+
+	d_nurbs_renderer->draw_small_circle_arc(
+			rendered_small_circle_arc.get_centre(),
+			rendered_small_circle_arc.get_start_point(),
+			rendered_small_circle_arc.get_arc_length_in_radians());	
+}
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_ellipse(
+		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse)
+{
+	if (d_draw_opaque_primitives)
+	{
+		return;
+	}
+
+	glColor3fv(rendered_ellipse.get_colour());
+	glLineWidth(rendered_ellipse.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);	
+	
+	draw_ellipse(rendered_ellipse,d_inverse_zoom_factor);
+}
+
 

@@ -32,6 +32,7 @@
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "PolylineOnSphere.h"
+#include "SmallCircle.h"
 
 
 namespace GPlatesMaths
@@ -102,6 +103,7 @@ namespace GPlatesMaths
 		visit_polyline_on_sphere(
 				PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{  }
+
 
 	private:
 

@@ -38,7 +38,7 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 				std::vector<PointOnSphere> &points) const
 {
 	// If small circle and great circle are parallel, no intersections
-	if (collinear (_axis, other.axisvector ()))
+	if (collinear (d_axis, other.axis_vector ()))
 		return 0;
 
 	// Since the axes are not collinear, the planes that the circles live
@@ -46,9 +46,9 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 
 	// A is one point on the line through the intersection points, and
 	// B is the direction vector, so the line equation is: x = A + Bt
-	Vector3D B = cross (other.axisvector (), _axis);
-	real_t scale = _cos_colat / B.magSqrd ();
-	Vector3D A = cross (B, other.axisvector ()) * scale;
+	Vector3D B = cross (other.axis_vector (), d_axis);
+	real_t scale = d_cos_colat / B.magSqrd ();
+	Vector3D A = cross (B, other.axis_vector ()) * scale;
 
 	// solve a quadratic equation to get the actual points
 	real_t a, b, c;
@@ -81,12 +81,12 @@ unsigned int GPlatesMaths::SmallCircle::intersection (const GreatCircle &other,
 void
 GPlatesMaths::SmallCircle::AssertInvariantHolds () const
 {
-	if (abs (_cos_colat) > 1.0) {
+	if (abs (d_cos_colat) > 1.0) {
 
 		// an invalid cos(colatitude)
 		std::ostringstream oss;
 		oss << "Small circle has invalid cos(colatitude) of "
-		 << _cos_colat << ".";
+		 << d_cos_colat << ".";
 		throw ViolatedClassInvariantException(GPLATES_EXCEPTION_SOURCE,
 				oss.str().c_str());
 	}

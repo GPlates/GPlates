@@ -35,6 +35,7 @@
 #include "RenderedGeometryLayerVisitor.h"
 #include "RenderedGeometryVisitor.h"
 #include "RenderedPointOnSphere.h"
+#include "RenderedSmallCircle.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"

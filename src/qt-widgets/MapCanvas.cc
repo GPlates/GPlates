@@ -52,8 +52,10 @@ namespace
 }
 
 GPlatesQtWidgets::MapCanvas::MapCanvas(
-	GPlatesViewOperations::RenderedGeometryCollection &collection):
-	d_rendered_geometry_collection(&collection)
+	GPlatesViewOperations::RenderedGeometryCollection &collection,
+	GPlatesGui::ViewportZoom &viewport_zoom_):
+		d_rendered_geometry_collection(&collection),
+		d_viewport_zoom(viewport_zoom_)
 {
 
 	// Give the scene a nice big rectangle.
@@ -215,11 +217,14 @@ GPlatesQtWidgets::MapCanvas::drawItems(
 {
 	set_opengl_flags();
 	
+	double inverse_zoom_factor = 1.0/d_viewport_zoom.zoom_level();
+
 	GPlatesGui::MapCanvasPainter map_canvas_painter(
 		*this,
 		d_render_settings,
 		d_text_renderer_ptr,
-		d_update_type);	
+		d_update_type,
+		inverse_zoom_factor);
 	
 	d_rendered_geometry_collection->accept_visitor(map_canvas_painter);
 }

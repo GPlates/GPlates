@@ -81,6 +81,13 @@ namespace GPlatesGui
 		paint();
 
 	private:
+	
+		virtual
+		void
+		visit_rendered_ellipse(
+				const GPlatesViewOperations::RenderedEllipse &rendered_ellipse);
+	
+	
 		virtual
 		void
 		visit_rendered_point_on_sphere(
@@ -105,6 +112,16 @@ namespace GPlatesGui
 		void
 		visit_rendered_direction_arrow(
 				const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow);
+				
+		virtual
+		void
+		visit_rendered_small_circle(
+				const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle);
+				
+		virtual
+		void
+		visit_rendered_small_circle_arc(
+				const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc);				
 
 		virtual
 		void

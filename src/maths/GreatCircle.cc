@@ -32,7 +32,7 @@
 
 GPlatesMaths::GreatCircle::GreatCircle (const PointOnSphere &p1,
  const PointOnSphere &p2)
- : _axis (calcNormal(p1.position_vector(), p2.position_vector())) {  }
+ : d_axis (calc_normal(p1.position_vector(), p2.position_vector())) {  }
 
 
 #if 0
@@ -57,7 +57,7 @@ GPlatesMaths::GreatCircle::intersection (const GreatCircle &other) const
 
 
 GPlatesMaths::UnitVector3D
-GPlatesMaths::GreatCircle::calcNormal(const UnitVector3D &u1,
+GPlatesMaths::GreatCircle::calc_normal(const UnitVector3D &u1,
  const UnitVector3D &u2) {
 
 	Vector3D v = cross(u1, u2);

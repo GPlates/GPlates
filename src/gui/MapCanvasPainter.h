@@ -54,11 +54,13 @@ namespace GPlatesGui
 				GPlatesQtWidgets::MapCanvas &canvas_,
 				const GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
-				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit):
+				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
+				const double &inverse_zoom_factor):
 			d_canvas_ptr(&canvas_),
 			d_render_settings(render_settings),
 			d_text_renderer_ptr(text_renderer_ptr),
-			d_main_rendered_layers_to_visit(layers_to_visit)
+			d_main_rendered_layers_to_visit(layers_to_visit),
+			d_inverse_zoom_factor(inverse_zoom_factor)
 		{  }
 		
 		virtual
@@ -74,6 +76,12 @@ namespace GPlatesGui
             const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
             GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type);
 #endif
+
+		virtual
+		void
+		visit_rendered_ellipse(
+				const GPlatesViewOperations::RenderedEllipse &rendered_ellipse);
+
 		virtual
 		void
 		visit_rendered_multi_point_on_sphere(
@@ -96,6 +104,15 @@ namespace GPlatesGui
 		visit_rendered_polyline_on_sphere(
 				const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere);
 
+		virtual
+		void
+		visit_rendered_small_circle(
+				const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle);
+
+		virtual
+		void
+		visit_rendered_small_circle_arc(
+			const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc);
 
 		virtual
 		void
@@ -124,8 +141,10 @@ namespace GPlatesGui
 
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_main_rendered_layers_to_visit;
 
+		const double d_inverse_zoom_factor;
+
 		static const float POINT_SIZE_ADJUSTMENT;
-		static const float LINE_SIZE_ADJUSTMENT;
+		static const float LINE_WIDTH_ADJUSTMENT;
 
 		
 	};

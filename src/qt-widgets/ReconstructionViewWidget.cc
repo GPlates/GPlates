@@ -173,7 +173,8 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Create the GlobeCanvas.
 	d_globe_canvas_ptr = new GlobeCanvas(view_state, this);
 	// Create the MapCanvas.
-	d_map_canvas_ptr = new MapCanvas(view_state.get_rendered_geometry_collection());
+	d_map_canvas_ptr = new MapCanvas(view_state.get_rendered_geometry_collection(),
+							view_state.get_viewport_zoom());
 	// Create the ZoomSliderWidget for the right-hand side.
 	d_zoom_slider_widget = new ZoomSliderWidget(view_state.get_viewport_zoom(), this);
 

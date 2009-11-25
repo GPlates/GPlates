@@ -16,6 +16,8 @@ set(srcs
     CartesianConvMatrix3D.cc
     CartesianConvMatrix3D.h
     ConstGeometryOnSphereVisitor.h
+    EllipseGenerator.cc
+    EllipseGenerator.h
     FiniteRotation.cc
     FiniteRotation.h
     FiniteRotationSnapshotTable.h

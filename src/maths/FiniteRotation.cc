@@ -397,7 +397,7 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GreatCircle &g)
 {
-	UnitVector3D axis = r * g.axisvector();
+	UnitVector3D axis = r * g.axis_vector();
 	return GreatCircle(axis);
 }
 
@@ -407,8 +407,8 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const SmallCircle &s)
 {
-	UnitVector3D axis = r * s.axisvector();
-	return SmallCircle(axis, s.cosColatitude());
+	UnitVector3D axis = r * s.axis_vector();
+	return SmallCircle(axis, s.cos_colatitude());
 }
 
 

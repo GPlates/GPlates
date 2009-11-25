@@ -99,5 +99,8 @@ GPlatesViewOperations::render_reconstruction_geometries(
 		// to the update signal of RenderedGeometryCollection which in turn
 		// listens to its rendered layers.
 		reconstruction_layer->add_rendered_geometry(rendered_reconstruction_geom);
+		
+
 	}
+
 }

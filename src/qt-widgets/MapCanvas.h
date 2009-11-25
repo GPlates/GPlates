@@ -34,6 +34,7 @@
 #include "gui/MapProjection.h"
 #include "gui/RenderSettings.h"
 #include "gui/TextRenderer.h"
+#include "gui/ViewportZoom.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 namespace GPlatesQtWidgets
@@ -45,7 +46,8 @@ namespace GPlatesQtWidgets
 	Q_OBJECT
 	public:
 		MapCanvas(
-			GPlatesViewOperations::RenderedGeometryCollection &collection);
+			GPlatesViewOperations::RenderedGeometryCollection &collection,
+			GPlatesGui::ViewportZoom &viewport_zoom);
 
 		const GPlatesGui::MapProjection &
 		projection(){
@@ -177,6 +179,12 @@ namespace GPlatesQtWidgets
 		 * Used for rendering text
 		 */
 		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer_ptr;
+		
+		/**
+		 * For zoom-dependent rendered objects.                                                                     
+		 */
+		GPlatesGui::ViewportZoom &d_viewport_zoom;		
+		
 	};
 
 }

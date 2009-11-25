@@ -232,6 +232,9 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 
 	d_rendered_geometry_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
+		
+	d_rendered_geometry_collection->set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_TOOL_LAYER);		
 
 	// Activate the main rendered layer.
 	// Specify which main rendered layers are orthogonal to each other - when

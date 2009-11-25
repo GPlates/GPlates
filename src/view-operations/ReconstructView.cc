@@ -29,7 +29,6 @@
 
 #include "view-operations/RenderReconstructionGeometries.h"
 
-
 void
 GPlatesViewOperations::ReconstructView::end_reconstruction(
 		GPlatesModel::ModelInterface &/*model*/,
@@ -49,6 +48,8 @@ GPlatesViewOperations::ReconstructView::end_reconstruction(
 			reconstruction_anchored_plate_id,
 			reconstruction_features_collection,
 			topology_resolver);
+
+
 
 	// Render all reconstruction geometries as rendered geometries.
 	GPlatesViewOperations::render_reconstruction_geometries(
