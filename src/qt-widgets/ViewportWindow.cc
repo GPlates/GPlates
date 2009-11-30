@@ -28,7 +28,9 @@
 #include <memory>
 #include <boost/format.hpp>
 #include <boost/scoped_ptr.hpp>
+#if 0  // FIXME: Re-enable once we increase minimum Boost to 1.34.
 #include <boost/foreach.hpp>
+#endif
 
 #include <QtGlobal>
 #include <QFileDialog>
@@ -1391,10 +1393,22 @@ GPlatesQtWidgets::ViewportWindow::change_checked_colouring_action(
 		action_Colour_By_Plate_ID_Customise
 	};
 
+#if 0  // FIXME: Re-enable once we increase minimum Boost to 1.34.
 	BOOST_FOREACH(QAction *action, colouring_actions)
 	{
 		action->setChecked(action == checked_action);
 	}
+#else
+	// (Q_FOREACH only works upon Qt containers like QList.)
+	size_t num_colouring_actions = sizeof(colouring_actions) / sizeof(colouring_actions[0]);
+	for (QAction **actions_iter = colouring_actions, **actions_end = colouring_actions + num_colouring_actions;
+			actions_iter != actions_end;
+			++actions_iter)
+	{
+		QAction *action = *actions_iter;
+		action->setChecked(action == checked_action);
+	}
+#endif
 }
 
 
