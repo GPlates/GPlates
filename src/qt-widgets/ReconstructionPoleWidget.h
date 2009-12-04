@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -36,6 +36,7 @@
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "view-operations/RenderedGeometryCollection.h"
+#include "maths/PointOnSphere.h"
 
 
 namespace GPlatesAppLogic
@@ -101,6 +102,10 @@ namespace GPlatesQtWidgets
 
 		void
 		reset_adjustment();
+
+		void
+		change_constrain_latitude_checkbox_state(
+				int new_checkbox_state);
 
 		void
 		set_focus(
@@ -205,6 +210,18 @@ namespace GPlatesQtWidgets
 		// This is technically a memory leak, but since the ReconstructionPoleWidget will
 		// never be deleted...
 		AdjustmentApplicator *d_applicator_ptr;
+
+		/**
+		 * Whether or not the latitude of the dragging motion should be constrained.
+		 */
+		bool d_should_constrain_latitude;
+
+		/**
+		 * The start-point of a latitude-constraining drag.
+		 *
+		 * This data member is used @em only by latitude-constraining drags.
+		 */
+		boost::optional<GPlatesMaths::PointOnSphere> d_drag_start;
 
 		/**
 		 * Whether or not this dialog is currently active.

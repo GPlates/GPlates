@@ -47,7 +47,8 @@ GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
 	d_reconstruct_ptr(&view_state.get_reconstruct()),
 	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
 	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
-	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr))
+	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr)),
+	d_should_constrain_latitude(false)
 {
 	setupUi(this);
 
@@ -81,6 +82,50 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries_at_activatio
 }
 
 
+namespace
+{
+	/**
+	 * Return the closest point on the equator to @a p.
+	 *
+	 * This result point will be at the same longitude as @a p.
+	 *
+	 * If @p is at the North Pole or South Pole, there is no unique "closest" point to @a p on
+	 * the equator, so boost::none will be returned.
+	 */
+	const boost::optional<GPlatesMaths::PointOnSphere>
+	get_closest_point_on_equator(
+			const GPlatesMaths::PointOnSphere &p)
+	{
+		using namespace GPlatesMaths;
+
+		if (abs(p.position_vector().z()) >= 1.0) {
+			// The point is on the North Pole or South Pole.  Hence, there is no unique
+			// "closest" point on the equator.
+			return boost::none;
+		}
+		// Else, the point is _not_ on the North Pole or South Pole, meaning there *is* a
+		// unique "closest" point on the equator.  Hence, we can proceed.
+
+		// Since the point is on neither the North Pole nor South Pole, it lies on a
+		// well-defined small-circle of latitude (ie, a small-circle of latitude with a
+		// non-zero radius).
+		//
+		// Equivalently, since the point is on neither the North Pole nor South Pole, the
+		// z-coord of the unit-vector must lie in the range [-1, 1].  Hence, at least one
+		// of the x- and y-coords must be non-zero, which means that the following radius
+		// result will be greater than zero.
+		const double &x = p.position_vector().x().dval();
+		const double &y = p.position_vector().y().dval();
+		double radius_of_small_circle = std::sqrt(x*x + y*y);
+
+		// Since the radius is greater than zero, the following fraction is well-defined.
+		double one_on_radius = 1.0 / radius_of_small_circle;
+
+		return PointOnSphere(UnitVector3D(one_on_radius * x, one_on_radius * y, 0.0));
+	}
+}
+
+
 void
 GPlatesQtWidgets::ReconstructionPoleWidget::start_new_drag(
 		const GPlatesMaths::PointOnSphere &current_oriented_position)
@@ -88,12 +133,29 @@ GPlatesQtWidgets::ReconstructionPoleWidget::start_new_drag(
 	if ( ! d_accum_orientation) {
 		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
 	}
-	d_accum_orientation->set_new_handle_at_pos(current_oriented_position);
+	if (d_should_constrain_latitude) {
+		d_drag_start = get_closest_point_on_equator(current_oriented_position);
+		if (d_drag_start) {
+			d_accum_orientation->set_new_handle_at_pos(*d_drag_start);
+		}
+		// Else, the drag-start was at the North Pole or South Pole, so there was no unique
+		// "closest" point to the equator; don't try to do anything until the drag leaves
+		// the poles.
+	} else {
+		d_accum_orientation->set_new_handle_at_pos(current_oriented_position);
+	}
 }
 
 
 namespace
 {
+	/**
+	 * Return the closest point on the horizon to @a oriented_point_within_horizon.
+	 *
+	 * If @a oriented_point_within_horizon is either coincident with the centre of the
+	 * viewport, or (somehow) antipodal to the centre of the viewport, boost::none will be
+	 * returned.
+	 */
 	const boost::optional<GPlatesMaths::PointOnSphere>
 	get_closest_point_on_horizon(
 			const GPlatesMaths::PointOnSphere &oriented_point_within_horizon,
@@ -106,7 +168,7 @@ namespace
 			// The point (which is meant to be) within the horizon is either coincident
 			// with the centre of the viewport, or (somehow) antipodal to the centre of
 			// the viewport (which should not be possible, but right now, we don't care
-			// about the history, we just care about the maths).
+			// about the story, we just care about the maths).
 			//
 			// Hence, it's not mathematically possible to calculate a closest point on
 			// the horizon.
@@ -133,6 +195,16 @@ GPlatesQtWidgets::ReconstructionPoleWidget::start_new_rotation_drag(
 		const GPlatesMaths::PointOnSphere &current_oriented_position,
 		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {
+	if (d_should_constrain_latitude) {
+		// Rotation-dragging of the plate is disabled when the "Constrain Latitude"
+		// checkbox is checked:  When you're constraining the latitude, you're also
+		// implicitly constraining the plate orientation, since you want the VGP pole
+		// position to remain in its current position.
+		//
+		// Hence, nothing to do in this function.
+		return;
+	}
+
 	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
 			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
 	if ( ! point_on_horizon) {
@@ -151,7 +223,31 @@ void
 GPlatesQtWidgets::ReconstructionPoleWidget::update_drag_position(
 		const GPlatesMaths::PointOnSphere &current_oriented_position)
 {
-	d_accum_orientation->move_handle_to_pos(current_oriented_position);
+	if (d_should_constrain_latitude) {
+		if ( ! d_drag_start) {
+			// We haven't set the drag start yet.  The mouse pointer must have been at
+			// either the North Pole or South Pole.  The first thing we should try to
+			// do is start the drag now.
+			d_drag_start = get_closest_point_on_equator(current_oriented_position);
+			if (d_drag_start) {
+				d_accum_orientation->set_new_handle_at_pos(*d_drag_start);
+			}
+			// Else, the drag-start was at the North Pole or South Pole, so there was
+			// no unique "closest" point to the equator; don't try to do anything until
+			// the drag leaves the poles.
+		} else {
+			boost::optional<GPlatesMaths::PointOnSphere> drag_update =
+					get_closest_point_on_equator(current_oriented_position);
+			if (drag_update) {
+				d_accum_orientation->move_handle_to_pos(*drag_update);
+			}
+			// Else, the drag-update was at the North Pole or South Pole, so there was
+			// no unique "closest" point to the equator; don't try to do anything until
+			// the drag leaves the poles.
+		}
+	} else {
+		d_accum_orientation->move_handle_to_pos(current_oriented_position);
+	}
 
 	draw_dragged_geometries();
 	update_adjustment_fields();
@@ -163,6 +259,16 @@ GPlatesQtWidgets::ReconstructionPoleWidget::update_rotation_drag_position(
 		const GPlatesMaths::PointOnSphere &current_oriented_position,
 		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
 {
+	if (d_should_constrain_latitude) {
+		// Rotation-dragging of the plate is disabled when the "Constrain Latitude"
+		// checkbox is checked:  When you're constraining the latitude, you're also
+		// implicitly constraining the plate orientation, since you want the VGP pole
+		// position to remain in its current position.
+		//
+		// Hence, nothing to do in this function.
+		return;
+	}
+
 	if ( ! d_accum_orientation) {
 		// We must be in the middle of a non-drag.  Perhaps the user tried to drag at the
 		// centre of the viewport, for instance.
@@ -392,6 +498,20 @@ GPlatesQtWidgets::ReconstructionPoleWidget::reset_adjustment()
 	field_adjustment_lat->clear();
 	field_adjustment_lon->clear();
 	spinbox_adjustment_angle->setValue(0.0);
+}
+
+
+void
+GPlatesQtWidgets::ReconstructionPoleWidget::change_constrain_latitude_checkbox_state(
+		int new_checkbox_state)
+{
+	if (new_checkbox_state == Qt::Unchecked) {
+		d_should_constrain_latitude = false;
+	}
+	else if (new_checkbox_state == Qt::Checked) {
+		d_should_constrain_latitude = true;
+	}
+	// Ignore any other values of 'new_checkbox_state'.
 }
 
 
@@ -649,6 +769,10 @@ GPlatesQtWidgets::ReconstructionPoleWidget::make_signal_slot_connections(
 			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
 			this,
 			SLOT(handle_reconstruction()));
+
+	// Respond to changes in the "Constrain Latitude" checkbox.
+	QObject::connect(checkbox_constrain_latitude, SIGNAL(stateChanged(int)),
+			this, SLOT(change_constrain_latitude_checkbox_state(int)));
 }
 
 void
