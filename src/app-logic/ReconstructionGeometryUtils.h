@@ -36,10 +36,14 @@
 #include "model/ReconstructionGeometryVisitor.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/ResolvedTopologicalGeometry.h"
-#include "model/TemporaryGeometry.h"
 
 #include "property-values/GeoTimeInstant.h"
 
+
+namespace GPlatesModel
+{
+	class Reconstruction;
+}
 
 namespace GPlatesAppLogic
 {
@@ -144,6 +148,15 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
+		/**
+		 * Simply adds @a recon_geom to the list of geometries in @a reconstruction and
+		 * sets the @a Reconstruction pointer in @a recon_geom to @a reconstruction.
+		 */
+		void
+		add_reconstruction_geometry_to_reconstruction(
+				GPlatesModel::ReconstructionGeometry::non_null_ptr_type recon_geom,
+				GPlatesModel::Reconstruction *reconstruction);
+
 
 		////////////////////
 		// Implementation //
@@ -243,9 +256,6 @@ namespace GPlatesAppLogic
 
 DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ReconstructedFeatureGeometry, \
 		visit_reconstructed_feature_geometry)
-
-DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::TemporaryGeometry, \
-		visit_temporary_geometry)
 
 DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopologicalGeometry, \
 		visit_resolved_topological_geometry)

@@ -33,6 +33,7 @@
 
 #include <cstddef>
 #include <utility>
+#include <vector>
 
 #include "global/types.h"
 
@@ -83,6 +84,7 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesGui
 {
+	class ChooseCanvasTool;
 	class FeatureFocus;
 
 
@@ -100,106 +102,28 @@ namespace GPlatesGui
 			BUILD, EDIT
 		};
 
-		/** simple enum to identify neighbor relation of topology sections */
-		enum NeighborRelation
-		{
-			NONE, INTERSECT_PREV, INTERSECT_NEXT, OVERLAP_PREV, OVERLAP_NEXT, OTHER
-		};
-
 
 		/** Constructor */
 		TopologyTools(
 				GPlatesPresentation::ViewState &view_state,
-				GPlatesQtWidgets::ViewportWindow &viewport_window);
-		
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool);
+
+		void
+		activate(
+				CanvasToolMode);
+
+
+		void
+		deactivate();
+
+
 		/**
 		 * Set the click point (called from canvas tool)
 		 */
 		void
 		set_click_point( double lat, double lon );
 
-
-		// Please keep these geometries ordered alphabetically.
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere);
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere);
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere);
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
-
-
-		/**
-		 * Updates the  geometry rendered on screen.
-		 */
-		void
-		update_geometry();
-
-		/**
-		 * Loop over the Sections Table, check each entry 
-		 */
-		void
-		check_sections_table();
-
-		/**
-		 * From the Sections Table, create the tmp. geom. and property value items 
-		 */
-		void
-		create_sections_from_sections_table();
-
-		/**
-		 * FIXME:
-		 */
-		void
-		process_intersections();
-
-		/**
-		 * FIXME:
-		 */
-		void
-		compute_intersection(
-			const GPlatesMaths::PolylineOnSphere* node1_polyline,
-			const GPlatesMaths::PolylineOnSphere* node2_polyline,
-			NeighborRelation relation);
-
-		/**
-		 * 
-		 */
-		int
-		find_feature_in_topology(
-			GPlatesModel::FeatureHandle::weak_ref feature);
-
-		void
-		set_topology_feature_ref(
-			GPlatesModel::FeatureHandle::weak_ref feature)
-		{
-			d_topology_feature_ref = feature;
-		}
 
 		/**
 		 * Get a weak_ref on the topology feature 
@@ -209,14 +133,6 @@ namespace GPlatesGui
 		{
 			return d_topology_feature_ref;
 		}
-
-		void
-		append_boundary_to_feature(
-			GPlatesModel::FeatureHandle::weak_ref feature);
-
-
-		void
-		fill_topology_sections_from_section_table();
 
 
 		int
@@ -233,23 +149,15 @@ namespace GPlatesGui
 
 		void
 		set_focus(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
-
-		void
-		display_feature(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
+			GPlatesGui::FeatureFocus &feature_focus);
 
 		void
 		display_feature_focus_modified(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
+			GPlatesGui::FeatureFocus &feature_focus);
 
-		void
-		display_topology(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
+		//
+		// Slots for signals from TopologyToolsWidget or its FeatureCreationDialog
+		//
 
 		void
 		handle_shift_left_click(
@@ -257,13 +165,46 @@ namespace GPlatesGui
 			const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 			bool is_on_globe);
 
-
-		/** Slots for signals from TopologyToolsWidget or its FeatureCreationDialog */
 		void
 		handle_create_new_feature(
 			GPlatesModel::FeatureHandle::weak_ref);
 
-		/** Slots for signals from TopologySectionsContainer */
+
+		/**
+		 * The slot that gets called when the user clicks "Add Focused Feature".
+		 *
+		 * This will insert the focused feature at the location displayed in the
+		 * topological sections tab of the feature table.
+		 *
+		 * The topology feature being edited is not modified yet though - to do that
+		 * call @a handle_apply.
+		 */
+		void
+		handle_add_feature();
+
+		/**
+		 * The slot that gets called when the user clicks "Remove All Features".
+		 *
+		 * The topology feature being edited is not modified yet though - to do that
+		 * call @a handle_apply.
+		 */
+		void
+		handle_remove_all_sections();
+
+		/**
+		 * The slot that gets called when the user clicks "Apply".
+		 *
+		 * This stores any edits made so far to the topology feature (whether
+		 * that's a newly created feature from the create feature dialog when using
+		 * build tool or an existing topology feature when using the edit tool).
+		 */
+		void
+		handle_apply();
+
+		//
+		// Slots for signals from TopologySectionsContainer
+		//
+
 		void
 		react_cleared();
 
@@ -278,96 +219,154 @@ namespace GPlatesGui
 		void
 		react_entries_inserted(
 			GPlatesGui::TopologySectionsContainer::size_type inserted_index,
-			GPlatesGui::TopologySectionsContainer::size_type quantity);
+			GPlatesGui::TopologySectionsContainer::size_type quantity,
+			GPlatesGui::TopologySectionsContainer::const_iterator inserted_begin,
+			GPlatesGui::TopologySectionsContainer::const_iterator inserted_end);
 
 		void
-		react_entries_modified(
-			GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
-			GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
-
-		/**
-		 * Draw the temporary geometry (if there is one) on the screen.
-		 */
-		void
-		draw_all_layers_clear();
-
-		void
-		draw_all_layers();
-
-		void 
-		draw_topology_geometry();
-
-		void 
-		draw_focused_geometry();
-
-		void 
-		draw_focused_geometry_end_points();
-
-		void
-		draw_segments();
-
-		void
-		draw_end_points();
-
-		void
-		draw_intersection_points();
-
-		void
-		draw_insertion_neighbors();
-
-		void
-		draw_click_points();
-
-		void
-		draw_click_point();
-
-		void
-		activate( CanvasToolMode );
-
-		void
-		activate_build_mode();
-
-		void
-		activate_edit_mode();
-
-		void
-		deactivate();
-
-		void
-		clear_widgets_and_data();
-
-		void
-		connect_to_focus_signals( bool state );
-
-		void
-		connect_to_topology_sections_container_signals( bool state );
-
-
-		/**
-		 * The slot that gets called when the user clicks "Add Focused Feature".
-		 */
-		void
-		handle_add_feature();
-
-		void
-		handle_insert_feature(int index);
-
-		void
-		handle_remove_all_sections();
-
-		/**
-		 * The slot that gets called when the user clicks "Remove Feature".
-		 */
-		void
-		handle_remove_feature();
-
-		/**
-		 * The slot that gets called when the user clicks "Apply".
-		 */
-		void
-		handle_apply();
+		react_entry_modified(
+			GPlatesGui::TopologySectionsContainer::size_type modified_index);
 
 	private:
+		/**
+		 * Keeps track of topological section data.
+		 *
+		 * The information stored here is extra information not contained in the table rows
+		 * of @a TopologySectionsContainer and is information specific to us.
+		 * It's information that other clients of @a TopologySectionsContainer don't need
+		 * to know about and hence don't need to be notified
+		 * (via @a TopologySectionsContainer signals) whenever it's modified.
+		 */
+		class SectionInfo
+		{
+		public:
+			SectionInfo(
+					const GPlatesGui::TopologySectionsContainer::TableRow &table_row) :
+				d_table_row(table_row)
+			{  }
+
+			/**
+			 * Resets all variables except the TableRow in @a d_table_row.
+			 */
+			void
+			reset();
+
+			/**
+			 * Initialises those data members that deal with reconstructions.
+			 */
+			void
+			reconstruct_section_info_from_table_row(
+					GPlatesModel::Reconstruction &reconstruction);
+
+
+			/**
+			 * Keep a copy of the @a TopologySectionsContainer table row.
+			 * We will update this each time @a TopologySectionsContainer signals
+			 * us that the table row has been modified - so it will always be in sync.
+			 */
+			GPlatesGui::TopologySectionsContainer::TableRow d_table_row;
+
+			/**
+			 * The unclipped, un-intersected section geometry - this is the full geometry
+			 * of the RFG - it is not the subsegment geometry.
+			 *
+			 * NOTE: This does not take into account the reverse flag for this section.
+			 */
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+					d_section_geometry_unreversed;
+
+			/**
+			 * The potentially clipped section geometry - the part of geometry of the topological
+			 * section that represents the resolved topological polygon boundary.
+			 *
+			 * NOTE: This does not take into account the reverse flag for this section.
+			 * It is designed this way to make the polyline clipping faster (which accounts
+			 * for most of the CPU for resolving topology polygons).
+			 */
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+					d_subsegment_geometry_unreversed;
+
+			/**
+			 * The start of the section (takes into account whether section is reversed).
+			 * It's optional in case we can't find the section's geometry.
+			 *
+			 * NOTE: This is not the start of the (clipped) subsegment - it is the
+			 * start of the unclipped section geometry.
+			 */
+			boost::optional<GPlatesMaths::PointOnSphere> d_section_start_point;
+
+			/**
+			 * The end of the section (takes into account whether section is reversed).
+			 * It's optional in case we can't find the section's geometry.
+			 *
+			 * NOTE: This is not the end of the (clipped) subsegment - it is the
+			 * end of the unclipped section geometry.
+			 */
+			boost::optional<GPlatesMaths::PointOnSphere> d_section_end_point;
+
+			/**
+			 * This is the 'd_click_point' in 'd_table_row' at the current reconstruction time.
+			 */
+			boost::optional<GPlatesMaths::PointOnSphere> d_reconstructed_click_point;
+
+			//! The optional intersection point with previous section.
+			boost::optional<GPlatesMaths::PointOnSphere> d_intersection_point_with_prev;
+
+			//! The optional intersection point with next section.
+			boost::optional<GPlatesMaths::PointOnSphere> d_intersection_point_with_next;
+		};
+
+		//! Typedef for a sequence of @a SectionInfo objects.
+		typedef std::vector<SectionInfo> section_info_seq_type;
+
+
+		/**
+		 * Keeps track of the user's click point, the feature that was clicked and
+		 * reconstructions needed to rotate the click point with the feature.
+		 */
+		class ClickPoint
+		{
+		public:
+			void
+			set_focus(
+					const GPlatesModel::FeatureHandle::weak_ref &focused_feature_ref,
+					const GPlatesMaths::PointOnSphere &reconstructed_click_point,
+					GPlatesModel::ReconstructionTree &reconstruction_tree)
+			{
+				d_clicked_feature_ref = focused_feature_ref;
+				d_reconstructed_click_point = reconstructed_click_point;
+				d_present_day_click_point = boost::none;
+				// Calculate present day click point from reconstructed click point.
+				calc_present_day_click_point(reconstruction_tree);
+			}
+
+			void
+			unset_focus()
+			{
+				d_clicked_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
+				d_present_day_click_point = boost::none;
+				d_reconstructed_click_point = boost::none;
+			}
+
+			/**
+			 * Recalculates 'd_reconstructed_click_point' when the reconstruction time
+			 * changes - uses the 'reconstructionPlateId' in the clicked feature.
+			 */
+			void
+			update_reconstructed_click_point(
+					GPlatesModel::ReconstructionTree &reconstruction_tree);
+
+			GPlatesModel::FeatureHandle::weak_ref d_clicked_feature_ref;
+			boost::optional<GPlatesMaths::PointOnSphere> d_present_day_click_point;
+			boost::optional<GPlatesMaths::PointOnSphere> d_reconstructed_click_point;
+
+		private:
+			//! Calculates the present day click point from the reconstructed click point.
+			void
+			calc_present_day_click_point(
+					GPlatesModel::ReconstructionTree &reconstruction_tree);
+		};
+
 
 		/**
 		 * Used to draw rendered geometries.
@@ -414,157 +413,129 @@ namespace GPlatesGui
 		*/
 		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
 
+		/**
+		 * To change the canvas tool when we are finished editing/building topology.
+		 */
+		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
 
-	
-		/** Keeps track of what canvas tool mode activted this object */
+
+		/** Keeps track of what canvas tool mode activated this object */
 		CanvasToolMode d_mode;	
 
 
-		/**
-		 * These d_tmp_ vars are all set by the canvas tool, or the widget
-		 * and used during interation around the Sections Table
-		 * as the code bounces between visitor functions and intersection processing functions.
-		 */
 		QString d_warning;
-
-		int d_tmp_index;
-		int d_tmp_sections_size;
-		int d_tmp_prev_index;
-		int d_tmp_next_index;
 
 		// These control the behavior of the geom. visitors
 		bool d_is_active;
 		bool d_in_edit;
-			
-		// These control the behavior of the geom. visitors
-		bool d_visit_to_check_type;
-		bool d_visit_to_create_properties;
-		bool d_visit_to_get_focus_end_points;
 
-		// These get set during the visit 
-		GPlatesGlobal::FeatureTypes d_tmp_feature_type;
-
-		bool d_tmp_index_use_reverse;
-		bool d_tmp_process_intersections;
-
-
-		std::vector<GPlatesMaths::PointOnSphere> d_tmp_index_vertex_list;
-
-		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> 
-			d_source_geometry_property_delegate_ptrs;
-
-		GPlatesModel::FeatureId d_tmp_index_fid;
-
-		QString d_tmp_property_name;
-		QString d_tmp_value_type;
-		
-
-		int d_num_intersections_with_prev;
-		int d_num_intersections_with_next;
-
+		//! Keeps track of the click point and the feature clicked on.
+		ClickPoint d_click_point;
 
 		/**
-		* this d_ vars keep track of the widget's current state as data is transfered from
-		* the Clicked Table to the Sections Table
-		*/
-		bool d_use_reverse;
-
-
-		// collection of intersection points
-		std::vector<GPlatesMaths::PointOnSphere> d_intersection_vertex_list;
-
-		GPlatesMaths::real_t d_closeness;
-
-		double d_click_point_lat;
-		double d_click_point_lon;
-		const GPlatesMaths::PointOnSphere *d_click_point_ptr;
-
-		// end_points for currently focused feature 
-		std::vector<GPlatesMaths::PointOnSphere> d_feature_focus_head_points; 
-		std::vector<GPlatesMaths::PointOnSphere> d_feature_focus_tail_points; 
-
-
-		/**
-		 * These vectors hold results from a TopologySectionsFinder
+		 * Contains information about the sections in the topology.
+		 *
+		 * This sequence matches the table row sequence in @a TopologySectionsContainer
+		 * and is updated whenever that is updated (by listening to its insert, etc signals).
 		 */
-		std::vector<GPlatesModel::FeatureId> d_section_ids;
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
-			d_section_ptrs;
-		std::vector<std::pair<double, double> > d_section_click_points;
-		std::vector<bool> d_section_reverse_flags;
+		section_info_seq_type d_section_info_seq;
 
 		/**
-		 * a collection of TopologySectionsContainer::TableRow structs
-		 */
-		GPlatesGui::TopologySectionsContainer::container_type d_topology_sections;
-
-		// collection of click points from the Topolog
-			//
-		std::vector<GPlatesMaths::PointOnSphere> d_click_points;
-
-		// collection of end points for all boundary features
-		std::vector<GPlatesMaths::PointOnSphere> d_head_end_points;
-		std::vector<GPlatesMaths::PointOnSphere> d_tail_end_points; 
-
-		// collection of intersection points for all boundary features
-		std::vector<GPlatesMaths::PointOnSphere> d_intersection_points;
-		
-		// collection of sub-segments for all boundary features
-		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
-			d_segments;
-
-		/**
-		 * An odered collection of all the vertices
+		 * An ordered collection of all the vertices in the topology.
 		 */
 		std::vector<GPlatesMaths::PointOnSphere> d_topology_vertices;
 
-		typedef std::pair<std::size_t,std::size_t> clipped_section_vertex_range_type;
 		/**
-		 * A collection of offsets into 'd_topology_vertices' of the
-		 * potentially intersection clipped topology sections.
-		 * Each section has a @a std::pair which contains the begin and end offsets.
-		 */
-		std::vector<clipped_section_vertex_range_type> d_section_ranges_into_topology_vertices;
-
-		/**
-		 * The d_vertex_list gets processed into this geometry; may be boost::none 
+		 * The 'd_topology_vertices' get processed into this geometry.
 		 */
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
 			d_topology_geometry_opt_ptr;
 
-
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
-			d_feature_before_insert_opt_ptr;
-
-
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> 
-			d_feature_after_insert_opt_ptr;
-
-		GPlatesGui::TopologySectionsContainer::size_type d_feature_before_insert_index;
-		GPlatesGui::TopologySectionsContainer::size_type d_feature_after_insert_index;
-
 		/*
-		 * 
+		 * The topology feature being edited (if using edit tool) or NULL (if using
+		 * the build tool) until the topology feature is created in the create feature dialog.
 		 */ 
 		GPlatesModel::FeatureHandle::weak_ref d_topology_feature_ref;
-
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_topology_feature_rfg;
 
 
 		//
 		// private functions 
 		//
+
+		void
+		connect_to_focus_signals( bool state );
+
+		void
+		connect_to_topology_sections_container_signals( bool state );
+
+		void
+		activate_build_mode();
+
+		void
+		activate_edit_mode();
+
+		void
+		display_feature(
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+			const GPlatesModel::FeatureHandle::properties_iterator &properties_iter);
+
+		/**
+		 * Initialise the topology from the currently focused feature.
+		 */
+		void
+		initialise_focused_topology();
+
+		/**
+		 * Updates the topology from modified sections and
+		 * redraws the screen.
+		 */
+		void
+		update_and_redraw_topology(
+				const section_info_seq_type::size_type first_modified_section_index,
+				const section_info_seq_type::size_type num_sections);
+
+		/**
+		 * Processes intersection between two adjacent sections.
+		 *
+		 * NOTE: The second section must follow the first section.
+		 */
+		void
+		process_intersection(
+				const section_info_seq_type::size_type first_section_index,
+				const section_info_seq_type::size_type second_section_index,
+				bool first_section_already_clipped,
+				bool second_section_already_clipped);
+
+		//! Returns the index of the previous section.
+		section_info_seq_type::size_type
+		get_prev_section_index(
+				section_info_seq_type::size_type section_index) const;
+
+		//! Returns the index of the next section.
+		section_info_seq_type::size_type
+		get_next_section_index(
+				section_info_seq_type::size_type section_index) const;
+
+		/**
+		 * Find the matching topological section given a feature reference and
+		 * a geometry feature property iterator.
+		 */
+		int
+		find_topological_section_index(
+				const GPlatesModel::FeatureHandle::weak_ref &feature,
+				const GPlatesModel::FeatureHandle::properties_iterator &properties_iter);
+
 		void
 		create_child_rendered_layers();
 
 		void
 		show_numbers();
 
-		/** sets d_topology_geometry_opt_ptr */
+		/**
+		 * Gathers the points of all topology subsegments to be used for rendering.
+		 */
 		void
-		create_geometry_from_vertex_list(
-			std::vector<GPlatesMaths::PointOnSphere> &points,
-			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity);
+		update_topology_vertices();
 
 		/**
 		 * Returns true if the topological section at index @a section_index should
@@ -572,10 +543,67 @@ namespace GPlatesGui
 		 */
 		bool
 		should_reverse_section(
-				int section_index);
+				const section_info_seq_type::size_type section_index);
+
+		/**
+		 * Creates the 'gpml:boundary' property value from the current topology state
+		 * and sets in on @a feature.
+		 */
+		void
+		convert_topology_to_boundary_feature_property(
+				const GPlatesModel::FeatureHandle::weak_ref &feature);
+
+		/**
+		 * Creates a sequence of @a GpmlTopologicalSection reflecting the
+		 * current topology state.
+		 */
+		void
+		create_topological_sections(
+				std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
+						topological_sections);
+
+		void
+		clear_widgets_and_data();
+
+		//
+		// Rendering methods
+		//
+
+		void
+		draw_all_layers_clear();
+
+		void
+		draw_all_layers();
+
+		void 
+		draw_topology_geometry();
+
+		void 
+		draw_focused_geometry();
+
+		void 
+		draw_focused_geometry_end_points(
+				const GPlatesMaths::PointOnSphere &start_point,
+				const GPlatesMaths::PointOnSphere &end_point);
+
+		void
+		draw_segments();
+
+		void
+		draw_end_points();
+
+		void
+		draw_intersection_points();
+
+		void
+		draw_insertion_neighbors();
+
+		void
+		draw_click_points();
+
+		void
+		draw_click_point();
 	};
 }
 
 #endif  // GPLATES_GUI_TOPOLOGY_TOOLS_H
-
-

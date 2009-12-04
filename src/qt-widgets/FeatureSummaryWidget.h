@@ -60,8 +60,7 @@ namespace GPlatesQtWidgets
 
 		void
 		display_feature(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
+				GPlatesGui::FeatureFocus &feature_focus);
 	
 	private:
 

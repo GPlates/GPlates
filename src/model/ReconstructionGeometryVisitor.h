@@ -30,7 +30,6 @@
 
 #include "ReconstructedFeatureGeometry.h"
 #include "ResolvedTopologicalGeometry.h"
-#include "TemporaryGeometry.h"
 
 
 namespace GPlatesModel
@@ -82,15 +81,6 @@ namespace GPlatesModel
 		void
 		visit_resolved_topological_geometry(
 				ResolvedTopologicalGeometry::non_null_ptr_type rtg)
-		{  }
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_temporary_geometry(
-				TemporaryGeometry::non_null_ptr_type tg)
 		{  }
 
 	private:

@@ -72,8 +72,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
 	// Handle things without error if the feature we are looking at is deleted.
 	QObject::connect(d_feature_focus_ptr, 
 			SIGNAL(focused_feature_deleted(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+					GPlatesGui::FeatureFocus &)),
 			this,
 			SLOT(handle_feature_deletion()));
 

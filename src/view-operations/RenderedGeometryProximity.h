@@ -32,13 +32,9 @@
 
 #include "RenderedGeometryCollection.h"
 #include "RenderedGeometryLayer.h"
+#include "maths/ProximityCriteria.h"
 #include "maths/ProximityHitDetail.h"
 
-
-namespace GPlatesMaths
-{
-	class ProximityCriteria;
-}
 
 namespace GPlatesViewOperations
 {

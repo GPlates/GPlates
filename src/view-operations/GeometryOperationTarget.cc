@@ -128,12 +128,10 @@ GPlatesViewOperations::GeometryOperationTarget::connect_to_feature_focus(
 	QObject::connect(
 		&feature_focus,
 		SIGNAL(focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+				GPlatesGui::FeatureFocus &)),
 		this,
 		SLOT(set_focus(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+				GPlatesGui::FeatureFocus &)));
 }
 
 void
@@ -190,10 +188,10 @@ GPlatesViewOperations::GeometryOperationTarget::update_current_geometry_builder(
 
 void
 GPlatesViewOperations::GeometryOperationTarget::set_focus(
-		GPlatesModel::FeatureHandle::weak_ref /*feature_ref*/,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
-	d_target_chooser.set_focused_geometry(focused_geometry);
+	d_target_chooser.set_focused_geometry(
+			feature_focus.associated_reconstruction_geometry());
 
 	update_current_geometry_builder();
 }

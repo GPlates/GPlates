@@ -29,8 +29,6 @@
 #include "FeatureCollectionFileState.h"
 #include "ReconstructUtils.h"
 
-#include "feature-visitors/TopologyResolver.h"
-
 
 namespace
 {
@@ -198,20 +196,11 @@ GPlatesAppLogic::Reconstruct::reconstruct_application_state()
 			reconstruction_features_collection);
 
 	// Perform the actual reconstruction.
-	std::pair<
-		const GPlatesModel::Reconstruction::non_null_ptr_type,
-		boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
-				reconstruct_result =
-						ReconstructUtils::create_reconstruction(
-								reconstructable_features_collection,
-								reconstruction_features_collection,
-								d_reconstruction_time,
-								d_anchored_plate_id);
-
-	// Unpack the results of the reconstruction.
-	d_reconstruction = reconstruct_result.first;
-	GPlatesFeatureVisitors::TopologyResolver &topology_resolver =
-			*reconstruct_result.second;
+	d_reconstruction = ReconstructUtils::create_reconstruction(
+			reconstructable_features_collection,
+			reconstruction_features_collection,
+			d_reconstruction_time,
+			d_anchored_plate_id);
 
 	//
 	// Call the client's callback after the reconstruction.
@@ -224,7 +213,6 @@ GPlatesAppLogic::Reconstruct::reconstruct_application_state()
 				d_reconstruction_time,
 				d_anchored_plate_id,
 				reconstructable_features_collection,
-				reconstruction_features_collection,
-				topology_resolver);
+				reconstruction_features_collection);
 	}
 }

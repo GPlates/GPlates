@@ -44,11 +44,8 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 				feature_collection->features_end();
 		for ( ; iter != end; ++iter)
 		{
-			// Check that it's ok to dereference the iterator.
-			if (iter.is_valid())
-			{
-				visitor.visit_feature(iter);
-			}
+			// 'visit_feature' method checks for valid iterator.
+			visitor.visit_feature(iter);
 		}
 	}
 }
@@ -68,11 +65,8 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 				feature_collection->features_end();
 		for ( ; iter != end; ++iter)
 		{
-			// Check that it's ok to dereference the iterator.
-			if (iter.is_valid())
-			{
-				visitor.visit_feature(iter);
-			}
+			// 'visit_feature' method checks for valid iterator.
+			visitor.visit_feature(iter);
 		}
 	}
 }
@@ -94,11 +88,8 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 				const_feature_collection->features_end();
 		for ( ; iter != end; ++iter)
 		{
-			// Check that it's ok to dereference the iterator.
-			if (iter.is_valid())
-			{
-				visitor.visit_feature(iter);
-			}
+			// 'visit_feature' method checks for valid iterator.
+			visitor.visit_feature(iter);
 		}
 	}
 }

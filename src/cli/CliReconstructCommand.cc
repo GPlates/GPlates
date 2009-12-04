@@ -125,20 +125,16 @@ GPlatesCli::ReconstructCommand::run(
 	get_feature_collections(reconstruction_features_collection, d_loaded_reconstruction_files);
 
 	// Perform reconstruction.
-	std::pair<
-			const GPlatesModel::Reconstruction::non_null_ptr_type,
-			boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> > 
-					reconstruct_result =
-							GPlatesAppLogic::ReconstructUtils::create_reconstruction(
-									reconstructable_features_collection,
-									reconstruction_features_collection,
-									d_recon_time,
-									d_anchor_plate_id);
+	const GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
+			GPlatesAppLogic::ReconstructUtils::create_reconstruction(
+					reconstructable_features_collection,
+					reconstruction_features_collection,
+					d_recon_time,
+					d_anchor_plate_id);
 
 	// Get the reconstruction geometries.
-	GPlatesModel::Reconstruction &reconstruction = *reconstruct_result.first;
 	const GPlatesModel::Reconstruction::geometry_collection_type &reconstruction_geometries =
-			reconstruction.geometries();
+			reconstruction->geometries();
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::reconstructed_feature_geom_seq_type

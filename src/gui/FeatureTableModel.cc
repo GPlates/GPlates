@@ -443,9 +443,10 @@ namespace
 	};
 
 
+	template <typename ReconstructionGeometryPointer>
 	const boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
 	get_geometry_property_if_valid(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			ReconstructionGeometryPointer geometry)
 	{
 		// See if type derived from ReconstructionGeometry has a valid geometry property.
 		GPlatesModel::FeatureHandle::properties_iterator geometry_property;
@@ -588,11 +589,9 @@ GPlatesGui::FeatureTableModel::FeatureTableModel(
 	d_feature_focus_ptr(&feature_focus)
 {
 	QObject::connect(d_feature_focus_ptr,
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(handle_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+			SLOT(handle_feature_modified(GPlatesGui::FeatureFocus &)));
 }
 
 
@@ -728,18 +727,37 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 		// When the user clicks a line of the table, we change the currently focused
 		// feature.
 		//
-		// FIXME: If we end up using this class elsewhere, e.g. search results, we may
-		// want to re-evaluate this behaviour.
-		d_feature_focus_ptr->set_focus(feature_ref, rg);
+
+		// NOTE: We use the geometry property iterator rather than the reconstruction geometry
+		// because the reconstruction time may have changed since the reconstruction geometries
+		// were added to the table and hence (for RFGs) they no longer reference a Reconstruction
+		// (since it probably got deleted/replaced and set all its RFGs to point to NULL).
+		// This can be problematic when we set one of these reconstruction geometries as
+		// as the focused geometry because the code to highlight the focused geometry
+		// finds all reconstruction geometries that are in the same Reconstruction as the
+		// focused geometry and if that is NULL then RFGs from all Reconstruction's are
+		// found and we start drawing RFGs from different reconstruction times.
+		// FIXME: A better solution might be to store geometry property iterators in the
+		// table rather than reconstruction geometries.
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> rg_geom_property =
+				get_geometry_property_if_valid(rg);
+		if (rg_geom_property)
+		{
+			// FIXME: If we end up using this class elsewhere, e.g. search results, we may
+			// want to re-evaluate this behaviour.
+			d_feature_focus_ptr->set_focus(feature_ref, *rg_geom_property);
+		}
 	}
 }
 
 
 void
 GPlatesGui::FeatureTableModel::handle_feature_modified(
-		GPlatesModel::FeatureHandle::weak_ref modified_feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
+	const GPlatesModel::FeatureHandle::weak_ref modified_feature_ref =
+			feature_focus.focused_feature();
+
 	// First, figure out which row(s) of the table (if any) contains the modified feature
 	// weak-ref.  Note that, since each row of the table corresponds to a single geometry
 	// rather than a single feature, there might be multiple rows which match this feature.

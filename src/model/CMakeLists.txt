@@ -50,8 +50,6 @@ set(srcs
     ReconstructedFeatureGeometry.h
     ReconstructedFeatureGeometryFinder.cc
     ReconstructedFeatureGeometryFinder.h
-    ReconstructedFeatureGeometryPopulator.cc
-    ReconstructedFeatureGeometryPopulator.h
     Reconstruction.cc
     Reconstruction.h
     ReconstructionGeometry.h
@@ -73,8 +71,6 @@ set(srcs
     StringContentTypeGenerator.h
     StringSetSingletons.cc
     StringSetSingletons.h
-    TemporaryGeometry.cc
-    TemporaryGeometry.h
     TopLevelProperty.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h

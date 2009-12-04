@@ -151,7 +151,7 @@ namespace GPlatesGui
 		//       to not be able to connect them at runtime.
 
 		/**
-		 * This signal is emitted when one the above slot methods is called.
+		 * The @a ChooseCanvasTool chose/switched to a canvas tool.
 		 */
 		void
 		chose_canvas_tool(

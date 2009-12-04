@@ -36,8 +36,6 @@
 #include "model/ReconstructionTree.h"
 #include "model/types.h"
 
-#include "feature-visitors/TopologyResolver.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -72,14 +70,8 @@ namespace GPlatesAppLogic
 		 *
 		 * Question:  Do any of those other functions actually throw exceptions when
 		 * they're passed invalid weak_refs?  They should.
-		 *
-		 * TopologyResolver is currently referenced by ComputationalMeshSolver
-		 * so we return it to the caller. Later it may be divided into two parts
-		 * and not need to be returned here.
 		 */
-		std::pair<
-				const GPlatesModel::Reconstruction::non_null_ptr_type,
-				boost::shared_ptr<GPlatesFeatureVisitors::TopologyResolver> >
+		const GPlatesModel::Reconstruction::non_null_ptr_type
 		create_reconstruction(
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstructable_features_collection,

@@ -30,8 +30,6 @@ set(srcs
     QueryFeaturePropertiesWidgetPopulator.h
     ShapefileAttributeFinder.cc
     ShapefileAttributeFinder.h
-    TopologyResolver.cc
-    TopologyResolver.h
     TopologySectionsFinder.cc
     TopologySectionsFinder.h
     ToQvariantConverter.cc

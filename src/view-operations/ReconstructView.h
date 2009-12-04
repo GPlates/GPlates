@@ -79,8 +79,7 @@ namespace GPlatesViewOperations
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstructable_features_collection,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstruction_features_collection,
-				GPlatesFeatureVisitors::TopologyResolver &topology_resolver);
+						reconstruction_features_collection);
 
 	private:
 		GPlatesAppLogic::PlateVelocityWorkflow &d_plate_velocity_workflow;

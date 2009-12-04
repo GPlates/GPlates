@@ -95,6 +95,7 @@ namespace
 GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 		GPlatesPresentation::ViewState &view_state_,
 		ViewportWindow &viewport_window_,
+		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
@@ -108,7 +109,8 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	d_topology_tools_ptr(
 		new GPlatesGui::TopologyTools(
 			view_state_, 
-			viewport_window_) 
+			viewport_window_,
+			choose_canvas_tool) 
 	),
 	d_feature_summary_widget_ptr(
 		new FeatureSummaryWidget(view_state_.get_feature_focus())

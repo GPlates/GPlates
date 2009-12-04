@@ -31,6 +31,8 @@
 #include <list>
 #include <boost/optional.hpp>
 
+#include "app-logic/TopologyUtils.h"
+
 #include "global/types.h"
 
 #include "gui/PlateIdColourPalettes.h"
@@ -55,11 +57,6 @@
 
 #include "property-values/GeoTimeInstant.h"
 
-#include "feature-visitors/TopologyResolver.h"
-
-#define POINT_OUTSIDE_POLYGON 0
-#define POINT_ON_POLYGON  1
-#define POINT_INSIDE_POLYGON  2
 
 namespace GPlatesFeatureVisitors
 {
@@ -109,15 +106,16 @@ namespace GPlatesFeatureVisitors
 
 		// This is a mimic of ReconstructedFeatureGeometryPopulator()
 
-		explicit
 		ComputationalMeshSolver(
+			GPlatesModel::Reconstruction &reconstruction,
 			const double &recon_time,
 			const double &recon_time_2,
 			unsigned long root_plate_id,
 			//GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::ReconstructionTree &recon_tree_2,
-			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
+			const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_point_inclusion_query_type &
+					resolved_geoms_for_testing_point_inclusion,
 			//reconstruction_geometries_type &reconstructed_geometries,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
@@ -172,10 +170,12 @@ namespace GPlatesFeatureVisitors
 		//
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 		GPlatesModel::integer_plate_id_type d_root_plate_id;
-		//GPlatesModel::Reconstruction *d_recon_ptr;
+		GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_2_ptr;
-		GPlatesFeatureVisitors::TopologyResolver *d_topology_resolver_ptr;
+		GPlatesAppLogic::TopologyUtils::resolved_geometries_for_point_inclusion_query_type
+				d_resolved_geoms_for_testing_point_inclusion;
+
 
 		//reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
 

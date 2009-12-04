@@ -38,16 +38,14 @@ GPlatesViewOperations::ReconstructView::end_reconstruction(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstructable_features_collection,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstruction_features_collection,
-		GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
+				reconstruction_features_collection)
 {
 	// Solve plate velocities.
 	d_plate_velocity_workflow.solve_velocities(
 			reconstruction,
 			reconstruction_time,
 			reconstruction_anchored_plate_id,
-			reconstruction_features_collection,
-			topology_resolver);
+			reconstruction_features_collection);
 
 
 

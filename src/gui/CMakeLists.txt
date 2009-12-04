@@ -12,6 +12,8 @@ include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
     AbstractWindow.h
+    AddClickedGeometriesToFeatureTable.cc
+    AddClickedGeometriesToFeatureTable.h
     AgeColourTable.cc
     AgeColourTable.h
     AnimationController.cc
@@ -109,8 +111,6 @@ set(srcs
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h
-    ProximityTests.cc
-    ProximityTests.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
     Quadrics.cc
@@ -125,8 +125,6 @@ set(srcs
     SphericalGrid.h
     SvgExport.cc
     SvgExport.h
-    TemporaryGeometryFocus.cc
-    TemporaryGeometryFocus.h
     TextRenderer.h
     Texture.cc
     Texture.h

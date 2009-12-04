@@ -44,6 +44,11 @@ namespace GPlatesAppLogic
 	class Reconstruct;
 }
 
+namespace GPlatesGui
+{
+	class FeatureFocus;
+}
+
 namespace GPlatesPresentation
 {
 	class ViewState;
@@ -109,8 +114,7 @@ namespace GPlatesQtWidgets
 
 		void
 		set_focus(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		void
 		handle_reconstruction();

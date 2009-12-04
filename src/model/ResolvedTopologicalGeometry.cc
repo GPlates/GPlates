@@ -96,6 +96,27 @@ GPlatesModel::ResolvedTopologicalGeometry::get_feature_ref() const
 }
 
 
+const GPlatesModel::ResolvedTopologicalGeometry::resolved_topology_geometry_ptr_type
+GPlatesModel::ResolvedTopologicalGeometry::resolved_topology_geometry() const
+{
+	// Get geometry-on-sphere.
+	const geometry_ptr_type geom_on_sphere = geometry();
+
+	// We know the geometry is always a polygon-on-sphere since this class created it
+	// so we can dynamic cast it.
+	const resolved_topology_geometry_ptr_type::element_type *poly_on_sphere =
+			dynamic_cast<const resolved_topology_geometry_ptr_type::element_type *>(
+					geom_on_sphere.get());
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			poly_on_sphere, GPLATES_ASSERTION_SOURCE);
+
+	// Increment reference count to same geometry and return smart pointer.
+	return resolved_topology_geometry_ptr_type(
+			poly_on_sphere,
+			GPlatesUtils::NullIntrusivePointerHandler());
+}
+
+
 void
 GPlatesModel::ResolvedTopologicalGeometry::accept_visitor(
 		ConstReconstructionGeometryVisitor &visitor) const
@@ -117,40 +138,4 @@ GPlatesModel::ResolvedTopologicalGeometry::accept_weak_observer_visitor(
 		WeakObserverVisitor<FeatureHandle> &visitor)
 {
 	visitor.visit_resolved_topological_geometry(*this);
-}
-
-
-void
-GPlatesModel::ResolvedTopologicalGeometry::SubSegment::create_sub_segment_geometry() const
-{
-	// Caller has ensured there is at least one vertex.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_sub_segment_num_vertices != 0,
-			GPLATES_ASSERTION_SOURCE);
-
-	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity geometry_validity;
-
-	const GPlatesMaths::PolygonOnSphere::vertex_const_iterator sub_segment_vertex_iter_begin =
-			d_resolved_topology_geometry_ptr->vertex_indexed_iterator(
-					d_sub_segment_vertex_index);
-	const GPlatesMaths::PolygonOnSphere::vertex_const_iterator sub_segment_vertex_iter_end =
-			d_resolved_topology_geometry_ptr->vertex_indexed_iterator(
-					d_sub_segment_vertex_index + d_sub_segment_num_vertices);
-			
-	// Try and create a PolylineOnSphere.
-	d_geometry_ptr = GPlatesUtils::create_polyline_on_sphere(
-			sub_segment_vertex_iter_begin, sub_segment_vertex_iter_end, geometry_validity);
-
-	// If that fails then try to create a PointOnSphere.
-	if (geometry_validity != GPlatesUtils::GeometryConstruction::VALID)
-	{
-		d_geometry_ptr = GPlatesUtils::create_point_on_sphere(
-				sub_segment_vertex_iter_begin, sub_segment_vertex_iter_end, geometry_validity);
-
-		// The caller has ensured there's at least one vertex so we should be able to
-		// create a PointOnSphere.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				geometry_validity == GPlatesUtils::GeometryConstruction::VALID,
-				GPLATES_ASSERTION_SOURCE);
-	}
 }

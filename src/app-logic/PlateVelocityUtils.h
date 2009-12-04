@@ -39,13 +39,9 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
-namespace GPlatesFeatureVisitors
-{
-	class TopologyResolver;
-}
-
 namespace GPlatesModel
 {
+	class Reconstruction;
 	class ReconstructionTree;
 }
 
@@ -100,24 +96,18 @@ namespace GPlatesAppLogic
 		 * created with @a create_velocity_field_feature_collection so that it contains
 		 * features and property(s) of the correct type for the velocity solver.
 		 *
-		 * FIXME: When TopologyResolver is divided into two parts (see comment inside
-		 * GPlatesAppLogic::Reconstruct::create_reconstruction) remove it from argument list
-		 * replacing it with a @a GPlatesModel::Reconstruction so that the plate boundaries
-		 * can be queried from the reconstruction geometries associated with features of type
-		 * TopologicalClosedPlateBoundary instead of using the TopologyResolver.
-		 *
 		 * FIXME: Presentation code should not be in here (this is app logic code).
 		 * Remove any rendered geometry code to the presentation tier.
 		 */
 		void
 		solve_velocities(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
+				GPlatesModel::Reconstruction &reconstruction,
 				GPlatesModel::ReconstructionTree &reconstruction_tree_1,
 				GPlatesModel::ReconstructionTree &reconstruction_tree_2,
 				const double &reconstruction_time_1,
 				const double &reconstruction_time_2,
 				GPlatesModel::integer_plate_id_type reconstruction_root,
-				GPlatesFeatureVisitors::TopologyResolver &topology_resolver,
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer);
 	}

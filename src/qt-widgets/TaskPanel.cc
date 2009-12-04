@@ -30,12 +30,13 @@
 #include <QLabel>
 #include "TaskPanel.h"
 
-#include "FeatureSummaryWidget.h"
+#include "ActionButtonBox.h"
 #include "DigitisationWidget.h"
+#include "FeatureSummaryWidget.h"
+#include "MeasureDistanceWidget.h"
 #include "ModifyGeometryWidget.h"
 #include "ReconstructionPoleWidget.h"
-#include "MeasureDistanceWidget.h"
-#include "ActionButtonBox.h"
+#include "TopologyToolsWidget.h"
 
 #include "gui/FeatureFocus.h"
 #include "presentation/ViewState.h"
@@ -125,7 +126,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(
 			view_state, viewport_window)),
 	d_topology_tools_widget_ptr( new TopologyToolsWidget(
-			view_state, viewport_window)),
+			view_state, viewport_window, choose_canvas_tool)),
 	d_measure_distance_widget_ptr(new MeasureDistanceWidget(
 			measure_distance_state))
 {

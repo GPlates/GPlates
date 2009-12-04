@@ -49,6 +49,8 @@ set(srcs
     MultiPointOnSphere.cc
     MultiPointOnSphere.h
     MultiPointProximityHitDetail.h
+    PointInPolygon.cc
+    PointInPolygon.h
     PointLiesOnGreatCircleArc.cc
     PointLiesOnGreatCircleArc.h
     PointOnSphere.cc

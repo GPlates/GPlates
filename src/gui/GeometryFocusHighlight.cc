@@ -27,6 +27,7 @@
 
 #include "GeometryFocusHighlight.h"
 #include "gui/ColourTable.h"
+#include "gui/FeatureFocus.h"
 #include "model/ReconstructionGeometryFinder.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
@@ -45,10 +46,11 @@ d_highlight_layer_ptr(
 
 void
 GPlatesGui::GeometryFocusHighlight::set_focus(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
-	if (d_focused_geometry == focused_geometry && d_feature == feature_ref) {
+	if (d_focused_geometry == feature_focus.associated_reconstruction_geometry() &&
+		d_feature == feature_focus.focused_feature())
+	{
 		// No change, so nothing to do.
 		return;
 	}
@@ -58,8 +60,8 @@ GPlatesGui::GeometryFocusHighlight::set_focus(
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
 	// Else, presumably the focused geometry has changed.
-	d_feature = feature_ref;
-	d_focused_geometry = focused_geometry;
+	d_feature = feature_focus.focused_feature();
+	d_focused_geometry = feature_focus.associated_reconstruction_geometry();
 	draw_focused_geometry();
 }
 
@@ -93,8 +95,8 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 	// The reconstruction that the focused geometry came from.
 	const GPlatesModel::Reconstruction *reconstruction = d_focused_geometry->reconstruction();
 
-	// Iterate through the RFGs belonging to the same 'reconstruction' that the
-	// clicked geometry came from and that belong to the focused feature.
+	// Iterate through the ReconstructionGeometry's belonging to the same 'reconstruction'
+	// that the clicked geometry came from and that belong to the focused feature.
 	GPlatesModel::ReconstructionGeometryFinder rgFinder(reconstruction);
 	rgFinder.find_rgs_of_feature(d_feature);
 

@@ -62,17 +62,13 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 	
 	// Handle focus changes.
 	QObject::connect(&view_state_.get_feature_focus(), 
-			SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+			SLOT(display_feature(GPlatesGui::FeatureFocus &)));
 	QObject::connect(&view_state_.get_feature_focus(),
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+			SLOT(display_feature(GPlatesGui::FeatureFocus &)));
 	
 	// Refresh display - since the feature ref is invalid at this point,
 	// the dialog should lock everything down that might otherwise cause problems.
@@ -82,11 +78,10 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 
 void
 GPlatesQtWidgets::FeaturePropertiesDialog::display_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
-	d_feature_ref = feature_ref;
-	d_focused_rg = focused_rg;
+	d_feature_ref = feature_focus.focused_feature();
+	d_focused_rg = feature_focus.associated_reconstruction_geometry();
 
 	refresh_display();
 }

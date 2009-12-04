@@ -27,7 +27,6 @@
 #define GPLATES_GUI_FEATUREFOCUS_H
 
 #include <QObject>
-#include <boost/optional.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
 
@@ -66,7 +65,8 @@ namespace GPlatesGui
 
 		/**
 		 * Accessor for the currently-focused feature.
-		 * Remember to check is_valid()!
+		 *
+		 * NOTE: Remember to check 'is_valid()' on returned feature reference.
 		 */
 		GPlatesModel::FeatureHandle::weak_ref
 		focused_feature() const
@@ -87,12 +87,24 @@ namespace GPlatesGui
 		 * Accessor for the @a ReconstructGeometry associated with the
 		 * currently-focused feature (if there is one).
 		 *
-		 * FIXME: See mega fixme comment on @a focus_changed().
+		 * NOTE: Remember to do boolean check on returned reconstruction geometry.
 		 */
 		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type
 		associated_reconstruction_geometry() const
 		{
 			return d_associated_reconstruction_geometry;
+		}
+
+		/**
+		 * Accessor for the geometry property used by the most recent RFG associated with the
+		 * currently-focused feature (if there is one).
+		 *
+		 * NOTE: Remember to check 'is_valid()' on returned properties iterator.
+		 */
+		const GPlatesModel::FeatureHandle::properties_iterator &
+		associated_geometry_property() const
+		{
+			return d_associated_geometry_property;
 		}
 
 	public slots:
@@ -214,39 +226,10 @@ namespace GPlatesGui
 		 * cleared.
 		 * 
 		 * Remember to check is_valid()!
-		 *
-		 * BIG FIXME COMMENT HURRAY:
-		 * At this stage (nearing 0.9.5, needing to cram stuff into FeatureFocus),
-		 * I'd really like to overhaul the FeatureFocus signal interface. Specifically,
-		 * focus_changed() and pals should include less and less detail in their parameters.
-		 * Despite this being super-convenient for several slot connection cases (i.e.
-		 * being able to directly connect changed(FH) to do_stuff(FH)), I currently need
-		 * to add the ability to focus a feature with a properties_iterator rather than
-		 * RG directly. This means we need to do the lookup of RG via
-		 * @a find_new_associated_reconstruction_geometry() sometime, and if we need to
-		 * emit this signal with an RG then our options are limited to:-
-		 *  a) Emit a null RG ptr focus event first, let client code call
-		 *     @a find_new_associated_reconstruction_geometry() if they really want it
-		 *    (dumb, and causing a spurious focus event...), or
-		 *  b) Let FeatureFocus do the RG-finding automatically whenever someone refocuses
-		 *     via a properties_iterator rather than explicit RG. This is likely the best
-		 *     option for now, as only the TopologySectionsTable should be using that
-		 *     set_focus() signature - but I don't like doing that heavy function call
-		 *     on focus change, when it might not be necessary. Maybe not so heavy anymore
-		 *     since not O(n) lookup in number of reconstruction geometries, but could still
-		 *     do with an overhaul.
-		 * 
-		 * A better way forward would be to get focus listeners to explicitly ask for
-		 * the associated {feature handle, rfg, properties_iterator} when the focus changes,
-		 * if they're interested in that. Then we could do a lazy lookup of the RG from
-		 * the properties_iterator only if we really need to.
-		 * But that is a big change to the FeatureFocus interface which we don't have time
-		 * for now. -JC
 		 */
 		void
 		focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		/**
 		 * Emitted when the currently-focused feature has been modified.
@@ -254,8 +237,7 @@ namespace GPlatesGui
 		 */
 		void
 		focused_feature_modified(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		/**
 		 * Emitted when the currently-focused feature has been deleted.
@@ -266,8 +248,7 @@ namespace GPlatesGui
 		 */
 		void
 		focused_feature_deleted(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type);	
+				GPlatesGui::FeatureFocus &feature_focus);	
 
 	private:
 
@@ -293,7 +274,7 @@ namespace GPlatesGui
 		 *
 		 * Note that when focused feature changes the associated.
 		 */
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_associated_geometry_property_opt;
+		GPlatesModel::FeatureHandle::properties_iterator d_associated_geometry_property;
 
 		/**
 		 * Manages reconstruction generation.
@@ -301,17 +282,6 @@ namespace GPlatesGui
 		 * when given a properties_iterator during @a set_focus().
 		 */
 		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
-
-
-		/**
-		 * Accessor for the geometry property used by the most recent RFG associated with the
-		 * currently-focused feature (if there is one).
-		 */
-		const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &
-		associated_geometry_property() const
-		{
-			return d_associated_geometry_property_opt;
-		}
 
 		/**
 		 * Find the new associated ReconstructionGeometry for the currently-focused feature (if any).

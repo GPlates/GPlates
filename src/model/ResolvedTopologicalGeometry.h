@@ -101,28 +101,24 @@ namespace GPlatesModel
 		{
 		public:
 			SubSegment(
-					resolved_topology_geometry_ptr_type resolved_topology_geometry,
-					const std::size_t sub_segment_vertex_index,
-					const std::size_t sub_segment_num_vertices,
+					const sub_segment_geometry_ptr_type &sub_segment_geometry,
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
 					bool use_reverse) :
-				d_resolved_topology_geometry_ptr(resolved_topology_geometry),
-				d_sub_segment_vertex_index(sub_segment_vertex_index),
-				d_sub_segment_num_vertices(sub_segment_num_vertices),
+				d_sub_segment_geometry(sub_segment_geometry),
 				d_feature_ref(feature_ref),
 				d_use_reverse(use_reverse)
 			{  }
 
-			//! The subset of vertices of topological section used in resolved topology geometry.
-			const sub_segment_geometry_ptr_type &
+			/**
+			 * The subset of vertices of topological section used in resolved topology geometry.
+			 *
+			 * NOTE: The vertices have already been reversed if this subsegment is reversed
+			 * (as determined by @a get_use_reverse).
+			 */
+			sub_segment_geometry_ptr_type
 			get_geometry() const
 			{
-				if (!d_geometry_ptr)
-				{
-					create_sub_segment_geometry();
-				}
-
-				return *d_geometry_ptr;
+				return d_sub_segment_geometry;
 			}
 
 			//! Reference to the feature referenced by the topological section.
@@ -139,24 +135,14 @@ namespace GPlatesModel
 			}
 
 		private:
-			//! The resolved platepolygon geometry.
-			resolved_topology_geometry_ptr_type d_resolved_topology_geometry_ptr;
+			//! The subsegment geometry.
+			sub_segment_geometry_ptr_type d_sub_segment_geometry;
 
-			std::size_t d_sub_segment_vertex_index;
-			std::size_t d_sub_segment_num_vertices;
-
-			//! Reference to the feature handle of topological section.
+			//! Reference to the source feature handle of the topological section.
 			GPlatesModel::FeatureHandle::const_weak_ref d_feature_ref;
 
 			//! Indicates if geometry direction was reversed when assembling topology.
 			bool d_use_reverse;
-
-			//! The subsegment geometry.
-			mutable boost::optional<sub_segment_geometry_ptr_type> d_geometry_ptr;
-
-
-			void
-			create_sub_segment_geometry() const;
 		};
 
 
@@ -385,13 +371,24 @@ namespace GPlatesModel
 		get_feature_ref() const;
 
 		/**
-		 * Access the feature property which contained the topological geometry.
+		 * Access the topological polygon feature property used to generate
+		 * the resolved topological geometry.
 		 */
 		const FeatureHandle::properties_iterator
 		property() const
 		{
 			return d_property_iterator;
 		}
+
+		/**
+		 * Access the resolved topology polygon geometry.
+		 *
+		 * This returns the same geometry as the base class @a geometry method does but
+		 * returns it as a @a resolved_topology_geometry_ptr_type instead
+		 * of a @a geometry_ptr_type.
+		 */
+		const resolved_topology_geometry_ptr_type
+		resolved_topology_geometry() const;
 
 		/**
 		 * Access the cached plate ID, if it exists.

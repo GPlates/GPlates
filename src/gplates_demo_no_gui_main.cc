@@ -34,6 +34,8 @@
 #include <iostream>
 #include <utility>  /* std::pair */
 
+#include "app-logic/ReconstructedFeatureGeometryPopulator.h"
+
 #include "model/Model.h"
 #include "model/ModelInterface.h"
 #include "model/FeatureStore.h"
@@ -47,7 +49,6 @@
 #include "model/ReconstructionGraph.h"
 #include "model/ReconstructionTree.h"
 #include "model/ReconstructionTreePopulator.h"
-#include "model/ReconstructedFeatureGeometryPopulator.h"
 
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
 #include "file-io/XmlOutputInterface.h"
@@ -464,10 +465,9 @@ output_reconstructions(
 
 		traverse_recon_tree(reconstruction->reconstruction_tree());
 
-		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
+		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
 				*reconstruction,
-				reconstruction->reconstruction_tree(),
-				reconstruction->geometries());
+				reconstruction->reconstruction_tree());
 
 		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {

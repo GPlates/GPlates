@@ -45,9 +45,10 @@
 
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
+#include "presentation/ViewState.h"
+#include "qt-widgets/TaskPanel.h"
 #include "utils/FloatingPointComparisons.h"
 #include "view-operations/ViewportProjection.h"
-#include "presentation/ViewState.h"
 
 
 namespace

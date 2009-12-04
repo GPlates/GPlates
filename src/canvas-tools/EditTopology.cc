@@ -32,14 +32,16 @@
 #include "EditTopology.h"
 
 #include "app-logic/Reconstruct.h"
+#include "app-logic/TopologyInternalUtils.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "global/InternalInconsistencyException.h"
-#include "gui/ProximityTests.h"
+#include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "maths/LatLonPointConversions.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "property-values/XsString.h"
 #include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
@@ -83,7 +85,7 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	// else check type 
 
 	// Check feature type via qstrings 
-	QString topology_type_name ("TopologicalClosedPlateBoundary");
+	static QString topology_type_name ("TopologicalClosedPlateBoundary");
 	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
 		d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
 
@@ -122,61 +124,31 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
-	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
-		oriented_click_pos_on_globe);
-
-	// send the click point to the widget
-	d_topology_tools_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
-
 	// Show the 'Clicked' Feature Table
 	d_viewport_window_ptr->choose_clicked_geometry_table();
 
-	//
-	// From ClickGeometry
-	//
-	double proximity_inclusion_threshold =
+	const double proximity_inclusion_threshold =
 			globe_canvas().current_proximity_inclusion_threshold(click_pos_on_globe);
-	
-	// What did the user click on just now?
-	std::priority_queue<GPlatesGui::ProximityTests::ProximityHit> sorted_hits;
 
-	GPlatesGui::ProximityTests::find_close_rfgs(
-			sorted_hits,
-			d_reconstruct_ptr->get_current_reconstruction(),
+	GPlatesGui::add_clicked_geometries_to_feature_table(
 			oriented_click_pos_on_globe,
-			proximity_inclusion_threshold);
-	
-	// Give the user some useful feedback in the status bar.
-	if (sorted_hits.size() == 0) {
-		d_viewport_window_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
-	} else if (sorted_hits.size() == 1) {
-		d_viewport_window_ptr->status_message(tr("Clicked %1 geometry.").arg(sorted_hits.size()));
-	} else {
-		d_viewport_window_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
-	}
+			proximity_inclusion_threshold,
+			*d_viewport_window_ptr,
+			*d_clicked_table_model_ptr,
+			*d_feature_focus_ptr,
+			*d_rendered_geom_collection,
+			&GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries);
 
-	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
-	d_clicked_table_model_ptr->clear();
+	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
+		oriented_click_pos_on_globe);
 
-	if (sorted_hits.size() == 0) {
-		d_viewport_window_ptr->status_message(tr("Clicked 0 geometries."));
-		// User clicked on empty space! Clear the currently focused feature.
-		d_feature_focus_ptr->unset_focus();
-		emit no_hits_found();
-		return;
-	}
-
-	// Populate the 'Clicked' FeatureTableModel.
-	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
-	while ( ! sorted_hits.empty())
-	{
-		d_clicked_table_model_ptr->geometry_sequence().push_back(
-				sorted_hits.top().d_recon_geometry);
-		sorted_hits.pop();
-	}
-	d_clicked_table_model_ptr->end_insert_features();
-	d_viewport_window_ptr->highlight_first_clicked_feature_table_row();
-	emit sorted_hits_updated();
+	// Send the click point to the widget.
+	//
+	// NOTE: This is done after adding the clicked geometries to the feature table
+	// to ensure that the focused feature is set, or unset, first since our handling
+	// of 'set_click_point()' relies on this - because it tracks the feature that was
+	// clicked on.
+	d_topology_tools_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
 }
 
 
@@ -186,65 +158,17 @@ GPlatesCanvasTools::EditTopology::handle_shift_left_click(
 		const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 		bool is_on_globe)
 {
-	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
-		oriented_click_pos_on_globe);
+	handle_left_click(click_pos_on_globe, oriented_click_pos_on_globe, is_on_globe);
 
-	// send the click point to the widget
-	d_topology_tools_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
-
-	// Show the 'Clicked' Feature Table
-	d_viewport_window_ptr->choose_clicked_geometry_table();
-
+	// Pass the click info to the widget.
 	//
-	// From ClickGeometry
+	// NOTE: This is done after adding the clicked geometries to the feature table
+	// to ensure that the focused feature is set, or unset, first since our handling
+	// of shift-left-click relies on this. For example, changing the stored click point
+	// in a topological section which only changes it if there's a focused feature
+	// at the clicked point.
 	//
-	double proximity_inclusion_threshold =
-			globe_canvas().current_proximity_inclusion_threshold(click_pos_on_globe);
-	
-	// What did the user click on just now?
-	std::priority_queue<GPlatesGui::ProximityTests::ProximityHit> sorted_hits;
-
-	GPlatesGui::ProximityTests::find_close_rfgs(
-			sorted_hits,
-			d_reconstruct_ptr->get_current_reconstruction(),
-			oriented_click_pos_on_globe,
-			proximity_inclusion_threshold);
-	
-	// Give the user some useful feedback in the status bar.
-	if (sorted_hits.size() == 0) {
-		d_viewport_window_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
-	} else if (sorted_hits.size() == 1) {
-		d_viewport_window_ptr->status_message(tr("Clicked %1 geometry.").arg(sorted_hits.size()));
-	} else {
-		d_viewport_window_ptr->status_message(tr("Clicked %1 geometries.").arg(sorted_hits.size()));
-	}
-
-	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
-	d_clicked_table_model_ptr->clear();
-
-	if (sorted_hits.size() == 0) {
-		d_viewport_window_ptr->status_message(tr("Clicked 0 geometries."));
-		// User clicked on empty space! Clear the currently focused feature.
-		d_feature_focus_ptr->unset_focus();
-		emit no_hits_found();
-		return;
-	}
-
-	// Populate the 'Clicked' FeatureTableModel.
-	d_clicked_table_model_ptr->begin_insert_features(0, static_cast<int>(sorted_hits.size()) - 1);
-	while ( ! sorted_hits.empty())
-	{
-		d_clicked_table_model_ptr->geometry_sequence().push_back(
-				sorted_hits.top().d_recon_geometry);
-		sorted_hits.pop();
-	}
-	d_clicked_table_model_ptr->end_insert_features();
-	d_viewport_window_ptr->highlight_first_clicked_feature_table_row();
-	emit sorted_hits_updated();
-
-	// Pass the click info to the widget 
 	d_topology_tools_widget_ptr->handle_shift_left_click(
 		click_pos_on_globe, oriented_click_pos_on_globe, is_on_globe);
-
 }
 

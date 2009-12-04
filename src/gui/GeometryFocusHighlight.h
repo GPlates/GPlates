@@ -42,6 +42,8 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
+	class FeatureFocus;
+
 	/**
 	 * This class is used to control the highlighting of the currently-focused reconstruction
 	 * geometry.
@@ -72,8 +74,7 @@ namespace GPlatesGui
 		 */
 		void
 		set_focus(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		/**
 		 * Draw the focused geometry (if there is one) on the screen.

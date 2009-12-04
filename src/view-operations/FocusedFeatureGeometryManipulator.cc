@@ -265,12 +265,10 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::connect_to_feature_foc
 	QObject::connect(
 		d_feature_focus,
 		SIGNAL(focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+				GPlatesGui::FeatureFocus &)),
 		this,
 		SLOT(set_focus(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+				GPlatesGui::FeatureFocus &)));
 }
 
 void
@@ -324,8 +322,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::move_point_in_current_
 
 void
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
 	// Stop infinite loop from happening where we update geometry builder with feature
 	// which updates feature with geometry builder in a continuous loop.
@@ -346,14 +343,14 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 	// Set these data member variables first because when we call operations
 	// on GeometryBuilder then 'this' object will receive signals from it
 	// and use these variables.
-	d_feature = feature_ref;
+	d_feature = feature_focus.focused_feature();
 
 	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalGeometry's,
 	// for instance, reference regular feature geometries).
 	GPlatesModel::ReconstructedFeatureGeometry *focused_rfg = NULL;
-	if (focused_geometry &&
+	if (feature_focus.associated_reconstruction_geometry() &&
 		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-				focused_geometry, focused_rfg))
+				feature_focus.associated_reconstruction_geometry(), focused_rfg))
 	{
 		d_focused_geometry = focused_rfg;
 	}

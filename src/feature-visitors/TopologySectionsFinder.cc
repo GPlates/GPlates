@@ -34,6 +34,7 @@
 
 #include "TopologySectionsFinder.h"
 
+#include "app-logic/TopologyInternalUtils.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
@@ -85,92 +86,11 @@
 #include "maths/ProximityCriteria.h"
 #include "maths/PolylineIntersections.h"
 
-#include "gui/ProximityTests.h"
-
 #include "utils/UnicodeStringUtils.h"
 
 
-namespace
+GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder()
 {
-	/**
-	 * Resolves a FeatureId reference in a TableRow (or doesn't,
-	 * if it can't be resolved.)
-	 *
-	 * Copied from TopologySectionsTable.cc.
-	 */
-	void
-	resolve_feature_id(
-			GPlatesGui::TopologySectionsContainer::TableRow &entry)
-	{
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
-		entry.d_feature_id.find_back_ref_targets(
-				GPlatesModel::append_as_weak_refs(back_ref_targets));
-		
-		if (back_ref_targets.size() == 1) {
-			GPlatesModel::FeatureHandle::weak_ref weakref = *back_ref_targets.begin();
-			entry.d_feature_ref = weakref;
-		} else {
-			static const GPlatesModel::FeatureHandle::weak_ref null_ref;
-			entry.d_feature_ref = null_ref;
-		}
-	}
-
-	/**
-	 * "Resolves" the target of a PropertyDelegate to a FeatureHandle::properties_iterator.
-	 * Ideally, a PropertyDelegate would be able to uniquely identify a particular property,
-	 * regardless of how many times that property appears inside a Feature or how many
-	 * in-line properties (an idea which is now deprecated) that property might have.
-	 *
-	 * In reality, we need a way to go from FeatureId+PropertyName to a properties_iterator,
-	 * and we need one now. This function exists to grab the first properties_iterator belonging
-	 * to the FeatureHandle (which in turn can be resolved with the @a resolve_feature_id
-	 * function above) which matches the supplied PropertyName.
-	 *
-	 * It returns a boost::optional because there is naturally no guarantee that we will
-	 * find a match.
-	 */
-	boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
-	find_properties_iterator(
-			const GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			const GPlatesModel::PropertyName property_name)
-	{
-		if ( ! feature_ref.is_valid()) {
-			return boost::none;
-		}
-		
-		// Iterate through the top level properties; look for the first name that matches.
-		GPlatesModel::FeatureHandle::properties_iterator it = feature_ref->properties_begin();
-		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
-		for ( ; it != end; ++it) {
-			// Elements of this properties vector can be NULL pointers.  (See the comment in
-			// "model/FeatureRevision.h" for more details.)
-			if (*it != NULL && (*it)->property_name() == property_name) {
-				return it;
-			}
-		}
-		
-		// No match.
-		return boost::none;
-	}
-}
-
-
-
-GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder( 
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &section_ptrs,
-		std::vector<GPlatesModel::FeatureId> &section_ids,
-		std::vector< std::pair<double, double> > &click_points,
-		std::vector<bool> &reverse_flags):
-	d_section_ptrs( &section_ptrs ),
-	d_section_ids( &section_ids ),
-	d_click_points( &click_points ),
-	d_reverse_flags( &reverse_flags )
-{
-	d_section_ptrs->clear();
-	d_section_ids->clear();
-	d_click_points->clear();
-	d_reverse_flags->clear();
-
 	// clear the working vector
 	d_table_rows.clear();
 }
@@ -182,7 +102,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_propertie
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// super short-cut for features without boundary list properties
-	QString type("TopologicalClosedPlateBoundary");
+	static QString type("TopologicalClosedPlateBoundary");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
 			feature_handle.feature_type().get_name() ) ) { 
 		// Quick-out: No need to continue.
@@ -249,17 +169,8 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_polygon" << std::en
 	// loop over all the sections
 	for ( ; iter != end; ++iter) 
 	{
-		// save raw data
-		d_section_ptrs->push_back( *iter );
-
-		// set the GpmlTopologicalSection::non_null_ptr of the working row
-		d_table_row.d_section_ptr = *iter;
-
 		// visit the rest of the gpml 
 		(*iter)->accept_visitor(*this);
-
-		// append the working row to the vector
-		d_table_rows.push_back( d_table_row );
 	}
 }
 
@@ -280,42 +191,43 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_line_section" << st
 	GPlatesModel::FeatureId src_geom_id = property_delegate_ptr->feature_id();
 	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->target_property();
 
-	// feature id
-	d_section_ids->push_back( src_geom_id );
+	// check for click point
+	boost::optional<GPlatesMaths::PointOnSphere> click_point = boost::none;
 
-	d_table_row.d_feature_id = src_geom_id;
+	//
+	// The present day click point is the same for the start and end intersection.
+	// It represents where the user clicked on the current section.
+	//
+	// The reference plate ids can be different though (for the start and end intersection)
+	// but currently they are not used - instead the plate id of the current section is
+	// used - it was like that before to allow testing different algorithms for click points
+	// but it was decided that it makes most sense to rotate the click point with
+	// the feature that was clicked.
+	//
 
-	// Set d_table_row.d_feature_ref from d_table_row.d_feature_id if we can.
-	resolve_feature_id(d_table_row);
-	// Also set d_table_row.d_geometry_property_opt from a suitable-looking property
-	// that looks like it matches the PropertyDelegate. Assuming everything else
-	// resolved ok.
-	d_table_row.d_geometry_property_opt = find_properties_iterator(
-			d_table_row.d_feature_ref, src_prop_name);
-
-	// check for intersection and click points
+	// Just look for the first click point we can find.
+	// If we don't find one then it means either both adjacent sections are point sections
+	// and hence cannot intersect or that one or more of the adjacent sections are
+	// line sections but that they were not intersecting when the topology was built.
 	if ( gpml_toplogical_line_section.get_start_intersection() )
 	{
-		gpml_toplogical_line_section.get_start_intersection()->accept_visitor(*this);
+		click_point = *gpml_toplogical_line_section.get_start_intersection()
+				->reference_point()->point(); 
 	} 
 	else if ( gpml_toplogical_line_section.get_end_intersection() )
 	{
-		gpml_toplogical_line_section.get_end_intersection()->accept_visitor(*this);
+		click_point = *gpml_toplogical_line_section.get_end_intersection()
+				->reference_point()->point(); 
 	} 
-	else 
-	{
-		// FIXME: what to put here?
-		// fill in an 'empty' point 	
-		d_click_points->push_back( std::make_pair( 0, 0 ) );
-		d_table_row.d_click_point = boost::none;
-	}
 
-	
 	// use reverse 
-	bool use_reverse = gpml_toplogical_line_section.get_reverse_order();
-	d_reverse_flags->push_back( use_reverse );
+	const bool use_reverse = gpml_toplogical_line_section.get_reverse_order();
 
-	d_table_row.d_reverse = use_reverse;
+	const GPlatesGui::TopologySectionsContainer::TableRow table_row(
+			src_geom_id, src_prop_name, use_reverse, click_point);
+
+	// append the working row to the vector
+	d_table_rows.push_back( table_row );
 
 #ifdef DEBUG
 qDebug() << "  src_geom_id = " << GPlatesUtils::make_qstring_from_icu_string(src_geom_id.get());
@@ -323,27 +235,6 @@ qDebug() << "  use_reverse = " << use_reverse;
 #endif
 }
 
-
-void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_intersection(
-	GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection)
-{  
-#ifdef DEBUG
-std::cout << "TopologySectionsFinder::visit_gpml_topological_intersection" << std::endl;
-#endif
-	// reference_point property value is a gml_point:
-	GPlatesMaths::PointOnSphere pos =
-		*( ( gpml_toplogical_intersection.reference_point() )->point() ); 
-
-// std::cout << "llp=" << GPlatesMaths::make_lat_lon_point( pos ) << std::endl;
-
-	double click_point_lat = (GPlatesMaths::make_lat_lon_point( pos )).latitude();
-	double click_point_lon = (GPlatesMaths::make_lat_lon_point( pos )).longitude();
-	
-	d_click_points->push_back( std::make_pair( click_point_lat, click_point_lon ) );
-
-	d_table_row.d_click_point = GPlatesMaths::make_lat_lon_point( pos );
-}
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
@@ -361,30 +252,15 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 	GPlatesModel::FeatureId	src_geom_id = property_delegate_ptr->feature_id();
 	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->target_property();
 
-	// fill the vectors
-	d_section_ids->push_back( src_geom_id );
+	// No click point and no reverse for point sections.
+	const GPlatesGui::TopologySectionsContainer::TableRow table_row(src_geom_id, src_prop_name);
 
-	d_table_row.d_feature_id = src_geom_id;
-	
-	// Set d_table_row.d_feature_ref from d_table_row.d_feature_id if we can.
-	resolve_feature_id(d_table_row);
-	// Also set d_table_row.d_geometry_property_opt from a suitable-looking property
-	// that looks like it matches the PropertyDelegate. Assuming everything else
-	// resolved ok.
-	d_table_row.d_geometry_property_opt = find_properties_iterator(
-			d_table_row.d_feature_ref, src_prop_name);
-
-	// fill in an 'empty' flag 	
-	d_reverse_flags->push_back( false );
-	d_table_row.d_reverse = false;
-
-	// fill in an 'empty' point 	
-	d_click_points->push_back( std::make_pair( 0, 0 ) );
-	d_table_row.d_click_point = boost::none;
+	// append the working row to the vector
+	d_table_rows.push_back( table_row );
 
 #ifdef DEBUG
 qDebug() << "  src_geom_id = " << GPlatesUtils::make_qstring_from_icu_string(src_geom_id.get());
-qDebug() << "  use_reverse = " << use_reverse;
+qDebug() << "  use_reverse = false";
 #endif
 }
 		
@@ -395,31 +271,30 @@ GPlatesFeatureVisitors::TopologySectionsFinder::report()
 {
 	std::cout << "-------------------------------------------------------------" << std::endl;
 	std::cout << "TopologySectionsFinder::report()" << std::endl;
-	std::cout << "number sections visited = " << d_section_ids->size() << std::endl;
+	std::cout << "number sections visited = " << d_table_rows.size() << std::endl;
 
-	std::vector<GPlatesModel::FeatureId>::iterator f_itr = d_section_ids->begin();
-	std::vector<std::pair<double, double> >::iterator c_itr = d_click_points->begin();
-	std::vector<bool>::iterator r_itr = d_reverse_flags->begin();
+	GPlatesGui::TopologySectionsContainer::const_iterator section_iter = d_table_rows.begin();
+	GPlatesGui::TopologySectionsContainer::const_iterator section_end = d_table_rows.end();
 
-	for ( ; f_itr != d_section_ids->end() ; ++f_itr, ++r_itr, ++c_itr)
+	for ( ; section_iter != section_end ; ++section_iter)
 	{
-		qDebug() << "id =" << GPlatesUtils::make_qstring_from_icu_string( f_itr->get() );
-		qDebug() << "reverse? = " << *r_itr;
-		qDebug() << "click_point_lat = " << c_itr->first << "; lon = " << c_itr->second;
-	}
-	std::cout << "--                              --                         --" << std::endl;
+		qDebug()
+			<< "id ="
+			<< GPlatesUtils::make_qstring_from_icu_string(section_iter->get_feature_id().get());
+		qDebug()
+			<< "reverse? = "
+			<< section_iter->get_reverse();
 
-	std::vector<GPlatesGui::TopologySectionsContainer::TableRow>::iterator tr_itr;
-	tr_itr = d_table_rows.begin();
-	
-	// loop over rows
-	for ( ; tr_itr != d_table_rows.end() ; ++tr_itr)
-	{
-		qDebug() << "id =" 
-			<< GPlatesUtils::make_qstring_from_icu_string( (*tr_itr).d_feature_id.get() );
-		qDebug() << "reverse? = " << (*tr_itr).d_reverse;
+		if (section_iter->get_present_day_click_point())
+		{
+			qDebug()
+				<< "click_point lat = "
+				<< GPlatesMaths::make_lat_lon_point(*section_iter->get_present_day_click_point()).latitude()
+				<< "; lon = "
+				<< GPlatesMaths::make_lat_lon_point(*section_iter->get_present_day_click_point()).longitude();
+		}
 	}
+
 	std::cout << "-------------------------------------------------------------" << std::endl;
-
 }
 

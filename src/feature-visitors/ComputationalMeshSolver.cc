@@ -39,16 +39,18 @@
 
 #include "ComputationalMeshSolver.h"
 
+#include "app-logic/TopologyUtils.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
 
-
+#include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
+#include "model/ModelUtils.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
-#include "model/FeatureHandle.h"
+#include "model/ResolvedTopologicalGeometry.h"
 #include "model/TopLevelPropertyInline.h"
-#include "model/ModelUtils.h"
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlLineString.h"
@@ -83,7 +85,6 @@
 #include "file-io/FileInfo.h"
 
 #include "gui/ColourSchemeFactory.h"
-#include "gui/ProximityTests.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -92,23 +93,26 @@
 
 
 GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
+			GPlatesModel::Reconstruction &reconstruction,
 			const double &recon_time,
 			const double &recon_time_2,
 			unsigned long root_plate_id,
 			//GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::ReconstructionTree &recon_tree_2,
-			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
+			const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_point_inclusion_query_type &
+					resolved_geoms_for_testing_point_inclusion,
 			//reconstruction_geometries_type &reconstructed_geometries,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
-	//d_recon_ptr(&recon),
+	d_recon_ptr(&reconstruction),
 	d_recon_tree_ptr(&recon_tree),
 	d_recon_tree_2_ptr(&recon_tree_2),
-	d_topology_resolver_ptr(&topo_resolver),
+	d_resolved_geoms_for_testing_point_inclusion(
+			resolved_geoms_for_testing_point_inclusion),
 	//d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_rendered_point_layer(point_layer),
 	d_rendered_arrow_layer(arrow_layer),
@@ -351,44 +355,37 @@ GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 #endif
 
-	std::vector<GPlatesModel::FeatureId> feature_ids;
-	std::vector<GPlatesModel::FeatureId>::iterator iter;
-
-	std::list<GPlatesModel::integer_plate_id_type> recon_plate_ids;
-	std::list<GPlatesModel::integer_plate_id_type>::iterator p_iter;
-
-	// Locate the point
-	feature_ids = d_topology_resolver_ptr->locate_point( point );
+	// Get a list of all resolved topological geometries that contain 'point'.
+	GPlatesAppLogic::TopologyUtils::resolved_topological_geometry_seq_type
+			resolved_topological_geoms_containing_point;
+	GPlatesAppLogic::TopologyUtils::find_resolved_topologies_containing_point(
+			resolved_topological_geoms_containing_point,
+			point,
+			d_resolved_geoms_for_testing_point_inclusion);
 
 #ifdef DEBUG
 // FIXME
 std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.size() << " plates." << std::endl;
 #endif
 
-	// loop over feature ids 
-	for (iter = feature_ids.begin(); iter != feature_ids.end(); ++iter)
+	std::list<GPlatesModel::integer_plate_id_type> recon_plate_ids;
+
+	// loop over resolved topological geometries 
+	GPlatesAppLogic::TopologyUtils::resolved_topological_geometry_seq_type::const_iterator
+			rtg_iter;
+	for (rtg_iter = resolved_topological_geoms_containing_point.begin();
+		rtg_iter != resolved_topological_geoms_containing_point.end();
+		++rtg_iter)
 	{
-		GPlatesModel::FeatureId feature_id = *iter;
+		const GPlatesModel::ResolvedTopologicalGeometry *rtg = *rtg_iter;
 
-		// Get a vector of FeatureHandle weak_refs for this Feature ID
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;	
-		feature_id.find_back_ref_targets( append_as_weak_refs( back_refs ) );
-
-		// Double check vector
-		if ( back_refs.size() == 0 )
-		{
-			continue; // to next feature id 
-		}
-
-	 	// else , get the first ref on the list		
-	 	GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
+	 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = rtg->get_feature_ref();
 
 		// Get all the reconstructionPlateId for this point 
-		const GPlatesModel::PropertyName property_name =
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+		static const GPlatesModel::PropertyName property_name =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
 		if ( GPlatesFeatureVisitors::get_property_value(
 				feature_ref, property_name, recon_plate_id ) )
 		{
@@ -417,6 +414,7 @@ std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.
 #ifdef DEBUG
 // FIXME: remove this diagnostic 
 std::cout << "plate ids: (";
+std::list<GPlatesModel::integer_plate_id_type>::iterator p_iter;
 for ( p_iter = recon_plate_ids.begin(); p_iter != recon_plate_ids.end(); ++p_iter)
 {
 	std::cout << *p_iter << ", ";

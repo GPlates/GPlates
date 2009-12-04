@@ -82,6 +82,28 @@ namespace GPlatesModel
 		{  }
 
 		/**
+		 * Constructor.
+		 *
+		 * Limit the result to that RFG reconstructed from a geometry with the feature
+		 * properties iterator @a properties_iterator_to_match.
+		 *
+		 * NOTE: Since @a properties_iterator_to_match can only reference a single property in
+		 * a single feature, we can find at most one matching RFG (so @a num_rfgs_found should
+		 * only return zero or one).
+		 *
+		 * If a non-NULL Reconstruction pointer is supplied to the optional parameter
+		 * @a reconstruction_to_match, the results will be limited to those RFGs contained
+		 * in that Reconstruction instance.
+		 */
+		explicit
+		ReconstructedFeatureGeometryFinder(
+				const GPlatesModel::FeatureHandle::properties_iterator &properties_iterator_to_match,
+				const Reconstruction *reconstruction_to_match = NULL):
+			d_properties_iterator_to_match(properties_iterator_to_match),
+			d_reconstruction_to_match(reconstruction_to_match)
+		{  }
+
+		/**
 		 * Destructor.
 		 */
 		virtual
@@ -148,6 +170,7 @@ namespace GPlatesModel
 
 	private:
 		boost::optional<GPlatesModel::PropertyName> d_property_name_to_match;
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_properties_iterator_to_match;
 		const Reconstruction *d_reconstruction_to_match;
 		rfg_container_type d_found_rfgs;
 	};

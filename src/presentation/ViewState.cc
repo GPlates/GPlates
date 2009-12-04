@@ -296,8 +296,7 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 	// GeometryFocusHighlight below.
 	QObject::connect(
 			&get_feature_focus(),
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			&get_reconstruct(),
 			SLOT(reconstruct()));
 
@@ -305,20 +304,16 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 	QObject::connect(
 			&get_feature_focus(),
 			SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+					GPlatesGui::FeatureFocus &)),
 			d_geometry_focus_highlight.get(),
 			SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+					GPlatesGui::FeatureFocus &)));
 
 	QObject::connect(
 			&get_feature_focus(),
 			SIGNAL(focused_feature_modified(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+					GPlatesGui::FeatureFocus &)),
 			d_geometry_focus_highlight.get(),
 			SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+					GPlatesGui::FeatureFocus &)));
 }

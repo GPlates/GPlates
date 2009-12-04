@@ -31,6 +31,7 @@
 
 #include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "gui/FeatureFocus.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "utils/MathUtils.h"
@@ -517,9 +518,11 @@ GPlatesQtWidgets::ReconstructionPoleWidget::change_constrain_latitude_checkbox_s
 
 void
 GPlatesQtWidgets::ReconstructionPoleWidget::set_focus(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
+	const GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry =
+			feature_focus.associated_reconstruction_geometry();
+
 	if ( ! focused_geometry) {
 		// No RG, so nothing we can do.
 
@@ -757,12 +760,10 @@ GPlatesQtWidgets::ReconstructionPoleWidget::make_signal_slot_connections(
 	QObject::connect(
 			&view_state.get_feature_focus(),
 			SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+					GPlatesGui::FeatureFocus &)),
 			this,
 			SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+					GPlatesGui::FeatureFocus &)));
 
 	// The Reconstruction Pole widget needs to know when the reconstruction time changes.
 	QObject::connect(d_reconstruct_ptr,

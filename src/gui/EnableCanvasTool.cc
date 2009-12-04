@@ -26,6 +26,7 @@
 
 #include "EnableCanvasTool.h"
 
+#include "ChooseCanvasTool.h"
 #include "FeatureFocus.h"
 
 #include "qt-widgets/ViewportWindow.h"
@@ -37,10 +38,12 @@
 GPlatesGui::EnableCanvasTool::EnableCanvasTool(
 		GPlatesQtWidgets::ViewportWindow &viewport_window,
 		const GPlatesGui::FeatureFocus &feature_focus,
-		const GPlatesViewOperations::GeometryOperationTarget &geom_operation_target) :
+		const GPlatesViewOperations::GeometryOperationTarget &geom_operation_target,
+		const GPlatesGui::ChooseCanvasTool &choose_canvas_tool) :
 d_viewport_window(&viewport_window),
 d_feature_focus(&feature_focus),
 d_feature_geom_is_in_focus(feature_focus.focused_feature().is_valid()),
+d_current_canvas_tool_type(GPlatesCanvasTools::CanvasToolType::NONE),
 d_geom_operation_target(&geom_operation_target)
 {
 	connect_to_feature_focus(feature_focus);
@@ -53,6 +56,8 @@ d_geom_operation_target(&geom_operation_target)
 			*d_geom_operation_target->get_focused_feature_geometry_builder());
 
 	connect_to_geometry_operation_target(geom_operation_target);
+
+	connect_to_choose_canvas_tool(choose_canvas_tool);
 }
 
 void
@@ -63,14 +68,16 @@ GPlatesGui::EnableCanvasTool::initialise()
 
 	update();
 
-	// These tools are always enabled.
+	// These tools are always enabled regardless of the current state.
+	//
+	// NOTE: If you are updating the tool in 'update()' above then you
+	// don't need to enable/disable it here.
 	d_viewport_window->enable_drag_globe_tool(true);
 	d_viewport_window->enable_zoom_globe_tool(true);
 	d_viewport_window->enable_click_geometry_tool(true);
 	d_viewport_window->enable_digitise_polyline_tool(true);
 	d_viewport_window->enable_digitise_multipoint_tool(true);
 	d_viewport_window->enable_digitise_polygon_tool(true);
-	d_viewport_window->enable_build_topology_tool(true);
 }
 
 void
@@ -80,12 +87,10 @@ GPlatesGui::EnableCanvasTool::connect_to_feature_focus(
 	QObject::connect(
 		&feature_focus,
 		SIGNAL(focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+				GPlatesGui::FeatureFocus &)),
 		this,
 		SLOT(feature_focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+				GPlatesGui::FeatureFocus &)));
 }
 
 void
@@ -120,11 +125,27 @@ GPlatesGui::EnableCanvasTool::connect_to_geometry_operation_target(
 }
 
 void
-GPlatesGui::EnableCanvasTool::feature_focus_changed(
-		GPlatesModel::FeatureHandle::weak_ref /*focused_feature*/,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
+GPlatesGui::EnableCanvasTool::connect_to_choose_canvas_tool(
+		const GPlatesGui::ChooseCanvasTool &choose_canvas_tool)
 {
-	d_feature_geom_is_in_focus = focused_geometry;
+	// Connect to the choose canvas tool's signals.
+
+	QObject::connect(
+			&choose_canvas_tool,
+			SIGNAL(chose_canvas_tool(
+					GPlatesGui::ChooseCanvasTool &,
+					GPlatesCanvasTools::CanvasToolType::Value)),
+			this,
+			SLOT(chose_canvas_tool(
+					GPlatesGui::ChooseCanvasTool &,
+					GPlatesCanvasTools::CanvasToolType::Value)));
+}
+
+void
+GPlatesGui::EnableCanvasTool::feature_focus_changed(
+		GPlatesGui::FeatureFocus &feature_focus)
+{
+	d_feature_geom_is_in_focus = feature_focus.associated_reconstruction_geometry();
 
 	update();
 }
@@ -151,6 +172,17 @@ GPlatesGui::EnableCanvasTool::switched_geometry_builder(
 }
 
 void
+GPlatesGui::EnableCanvasTool::chose_canvas_tool(
+		GPlatesGui::ChooseCanvasTool &,
+		GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type)
+{
+	// The current canvas tool has just changed.
+	d_current_canvas_tool_type = canvas_tool_type;
+
+	update();
+}
+
+void
 GPlatesGui::EnableCanvasTool::update()
 {
 	update_move_geometry_tool();
@@ -171,6 +203,17 @@ GPlatesGui::EnableCanvasTool::update_move_geometry_tool()
 void
 GPlatesGui::EnableCanvasTool::update_move_vertex_tool()
 {
+	// If we're currently using the build or edit topology tool then disable this tool.
+	// This is because the topology tools set/modify the focused feature but for their
+	// own purpose of adding topology sections and not for specifying a focused feature
+	// for other tools to target.
+	if (d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY ||
+		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY)
+	{
+		d_viewport_window->enable_move_vertex_tool(false);
+		return;
+	}
+
 	//
 	// Enable the move vertex tool if there are vertices.
 	// 
@@ -189,6 +232,17 @@ GPlatesGui::EnableCanvasTool::update_move_vertex_tool()
 void
 GPlatesGui::EnableCanvasTool::update_insert_vertex_tool()
 {
+	// If we're currently using the build or edit topology tool then disable this tool.
+	// This is because the topology tools set/modify the focused feature but for their
+	// own purpose of adding topology sections and not for specifying a focused feature
+	// for other tools to target.
+	if (d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY ||
+		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY)
+	{
+		d_viewport_window->enable_insert_vertex_tool(false);
+		return;
+	}
+
 	//
 	// Enable the insert vertex tool if inserting a vertex won't change the type of
 	// geometry. In other words disable in the following situations:
@@ -233,6 +287,17 @@ GPlatesGui::EnableCanvasTool::update_insert_vertex_tool()
 void
 GPlatesGui::EnableCanvasTool::update_delete_vertex_tool()
 {
+	// If we're currently using the build or edit topology tool then disable this tool.
+	// This is because the topology tools set/modify the focused feature but for their
+	// own purpose of adding topology sections and not for specifying a focused feature
+	// for other tools to target.
+	if (d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY ||
+		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY)
+	{
+		d_viewport_window->enable_delete_vertex_tool(false);
+		return;
+	}
+
 	//
 	// Enable the delete vertex tool if deleting a vertex won't change the type of
 	// geometry. In other words disable in the following situations:
@@ -278,35 +343,80 @@ GPlatesGui::EnableCanvasTool::update_delete_vertex_tool()
 void
 GPlatesGui::EnableCanvasTool::update_manipulate_pole_tool()
 {
+	// If we're currently using the build or edit topology tool then disable this tool.
+	// This is because the topology tools set/modify the focused feature but for their
+	// own purpose of adding topology sections and not for specifying a focused feature
+	// for other tools to target.
+	if (d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY ||
+		d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY)
+	{
+		d_viewport_window->enable_manipulate_pole_tool(false);
+		return;
+	}
+
 	d_viewport_window->enable_manipulate_pole_tool(d_feature_geom_is_in_focus);
 }
 
 void
 GPlatesGui::EnableCanvasTool::update_build_topology_tool()
 {
-	// only enable tool if a feature is NOT focused
-	d_viewport_window->enable_build_topology_tool( !d_feature_geom_is_in_focus );
+	bool enable_build_topology_tool = false;
+	
+	// The build topology tool is enabled whenever it is the current tool
+	// regardless of whether a feature is focused or not - this is because
+	// the feature focus is used to add topology sections so it's always
+	// focusing, unfocusing, etc while the tool is being used.
+	if (d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY)
+	{
+		enable_build_topology_tool = true;
+	}
+	// If the build topology and edit topology tools are not the current tool then it is only
+	// enabled if a feature is *not* focused.
+	else if (d_current_canvas_tool_type != GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY)
+	{
+		if (!d_feature_geom_is_in_focus)
+		{
+			enable_build_topology_tool = true;
+		}
+	}
+
+	d_viewport_window->enable_build_topology_tool(enable_build_topology_tool);
 }
 
 void
 GPlatesGui::EnableCanvasTool::update_edit_topology_tool()
 {
-	// check for focus
-	if ( d_feature_focus->is_valid() )
+	bool enable_edit_topology_tool = false;
+
+	// The edit topology tool is enabled whenever it is the current tool
+	// regardless of whether a feature is focused or not - this is because
+	// the feature focus is used to add topology sections so it's always
+	// focusing, unfocusing, etc while the tool is being used.
+	if (d_current_canvas_tool_type == GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY)
 	{
-		// Check feature type via qstrings
-		QString topology_type_name ("TopologicalClosedPlateBoundary");
-		QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
-			d_feature_focus->focused_feature()->feature_type().get_name() );
-		// Only activate for topologies
-		if ( feature_type_name != topology_type_name )
+		enable_edit_topology_tool = true;
+	}
+	// If the edit topology tool is not the current tool then it is only
+	// enabled if a feature is focused and that feature is a
+	// topological closed plate polygon.
+	else if (d_feature_geom_is_in_focus)
+	{
+		if (d_feature_focus->is_valid())
 		{
-			d_viewport_window->enable_edit_topology_tool(false);
-			return;
+			// Check feature type via qstrings
+			static QString topology_type_name ("TopologicalClosedPlateBoundary");
+			QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+					d_feature_focus->focused_feature()->feature_type().get_name() );
+
+			// Only activate for topologies.
+			if (feature_type_name == topology_type_name)
+			{
+				enable_edit_topology_tool = true;
+			}
 		}
 	}
-	// else enable tool if d_feature_geom_is_in_focus
-	d_viewport_window->enable_edit_topology_tool(d_feature_geom_is_in_focus);
+
+	d_viewport_window->enable_edit_topology_tool(enable_edit_topology_tool);
 }
 
 

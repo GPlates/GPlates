@@ -27,6 +27,7 @@
 
 #include "AppLogicUtils.h"
 #include "Reconstruct.h"
+#include "TopologyUtils.h"
 
 #include "feature-visitors/ComputationalMeshSolver.h"
 
@@ -249,24 +250,30 @@ GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
 void
 GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
+		GPlatesModel::Reconstruction &reconstruction,
 		GPlatesModel::ReconstructionTree &reconstruction_tree_1,
 		GPlatesModel::ReconstructionTree &reconstruction_tree_2,
 		const double &reconstruction_time_1,
 		const double &reconstruction_time_2,
 		GPlatesModel::integer_plate_id_type reconstruction_root,
-		GPlatesFeatureVisitors::TopologyResolver &topology_resolver,
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer)
 {
+	// Get the resolved topological geometries in the reconstruction (they will be optimised for
+	// point-in-polygon tests used by the velocity solver).
+	const TopologyUtils::resolved_geometries_for_point_inclusion_query_type resolved_geoms_query =
+			TopologyUtils::query_resolved_topologies_for_testing_point_inclusion(reconstruction);
+
 	// Visit the feature collections and fill computational meshes with 
 	// nice juicy velocity data
 	GPlatesFeatureVisitors::ComputationalMeshSolver velocity_solver( 
+			reconstruction,
 			reconstruction_time_1,
 			reconstruction_time_2,
 			reconstruction_root,
 			reconstruction_tree_1,
 			reconstruction_tree_2,
-			topology_resolver,
+			resolved_geoms_query,
 			comp_mesh_point_layer,
 			comp_mesh_arrow_layer,
 			true); // keep features without recon plate id

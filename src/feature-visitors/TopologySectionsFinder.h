@@ -31,6 +31,7 @@
 #include <iostream>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
+#include <boost/noncopyable.hpp>
 
 #include <QTreeWidget>
 #include <QLocale>
@@ -71,16 +72,13 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesFeatureVisitors
 {
-	class TopologySectionsFinder : public GPlatesModel::FeatureVisitor
+	class TopologySectionsFinder :
+			public GPlatesModel::FeatureVisitor,
+			private boost::noncopyable
 	{
 	public:
 		explicit
-		TopologySectionsFinder(
-		
-			std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &sections_ptrs,
-			std::vector<GPlatesModel::FeatureId> &section_ids,
-			std::vector< std::pair<double, double> > &click_points,
-			std::vector<bool> &reverse_flags);
+		TopologySectionsFinder();
 
 		virtual
 		~TopologySectionsFinder () 
@@ -117,24 +115,19 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_gpml_topological_intersection(
-			GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection);
-
-		virtual
-		void
 		visit_gpml_topological_point(
 			GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
 
 		void
 		report();
 
-		std::vector<GPlatesGui::TopologySectionsContainer::TableRow>::iterator
+		GPlatesGui::TopologySectionsContainer::const_iterator
 		found_rows_begin()
 		{
 			return d_table_rows.begin();
 		}
 			
-		std::vector<GPlatesGui::TopologySectionsContainer::TableRow>::iterator
+		GPlatesGui::TopologySectionsContainer::const_iterator
 		found_rows_end()
 		{
 			return d_table_rows.end();
@@ -147,28 +140,8 @@ namespace GPlatesFeatureVisitors
 		}
 
 	private:
-
-		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
-			*d_section_ptrs;
-
-		std::vector<GPlatesModel::FeatureId> *d_section_ids;
-
-		std::vector< std::pair<double, double> > *d_click_points;
-
-		std::vector<bool> *d_reverse_flags;
-
-		TopologySectionsFinder(
-				const TopologySectionsFinder &);
-
-		TopologySectionsFinder &
-		operator=(
-			const TopologySectionsFinder &);
-
-		// working row ; populated by visit_* calls
-		GPlatesGui::TopologySectionsContainer::TableRow d_table_row;
-
 		// Collection of TableRows built from this features Topology data
-		std::vector<GPlatesGui::TopologySectionsContainer::TableRow> d_table_rows;
+		GPlatesGui::TopologySectionsContainer::container_type d_table_rows;
 	};
 }
 

@@ -70,6 +70,7 @@
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
 
+#include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
@@ -82,7 +83,10 @@
 
 #include "gui/AgeColourTable.h"
 #include "gui/ChooseCanvasTool.h"
+#include "gui/EnableCanvasTool.h"
 #include "gui/FeatureColourTable.h"
+#include "gui/FeatureFocus.h"
+#include "gui/FeatureTableModel.h"
 #include "gui/FeatureWeakRefSequence.h"
 #include "gui/GlobeCanvasToolAdapter.h"
 #include "gui/GlobeCanvasToolChoice.h"
@@ -100,40 +104,30 @@
 
 #include "model/Model.h"
 #include "model/types.h"
-#include "model/ReconstructedFeatureGeometry.h"
-#include "model/DummyTransactionHandle.h"
-#include "model/ReconstructionGraph.h"
-#include "model/ReconstructionTreePopulator.h"
-#include "model/ReconstructionTree.h"
 
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
-#include "file-io/PlatesLineFormatReader.h"
-#include "file-io/PlatesRotationFormatReader.h"
 #include "file-io/FileInfo.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/RasterReader.h"
 #include "file-io/ShapefileReader.h"
-#include "file-io/GpmlOnePointSixReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 
-#include "feature-visitors/FeatureCollectionClassifier.h"
-#include "feature-visitors/ComputationalMeshSolver.h"
-#include "feature-visitors/TopologyResolver.h"
-
 #include "presentation/Application.h"
+#include "presentation/ViewState.h"
 
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ShapefilePropertyMapper.h"
 
-#include "view-operations/RenderedGeometryFactory.h"
+#include "view-operations/ActiveGeometryOperation.h"
+#include "view-operations/FocusedFeatureGeometryManipulator.h"
+#include "view-operations/GeometryBuilder.h"
+#include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/RenderedGeometryParameters.h"
-#include "view-operations/RenderReconstructionGeometries.h"
 #include "view-operations/UndoRedo.h"
 #include "view-operations/ViewportProjection.h"
-#include "presentation/ViewState.h"
 
 
 void
@@ -229,22 +223,34 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				d_animation_controller, this)),
 	d_total_reconstruction_poles_dialog_ptr(
 			new TotalReconstructionPolesDialog(get_view_state(), this)),
-	d_choose_canvas_tool(*this),
+	d_globe_canvas_ptr(NULL),
+	d_choose_canvas_tool(new GPlatesGui::ChooseCanvasTool(*this)),
+	d_digitise_geometry_builder(new GPlatesViewOperations::GeometryBuilder()),
+	d_focused_feature_geometry_builder(new GPlatesViewOperations::GeometryBuilder()),
 	d_geometry_operation_target(
-			d_digitise_geometry_builder,
-			d_focused_feature_geometry_builder,
-			get_view_state().get_feature_focus(),
-			d_choose_canvas_tool),
-	d_enable_canvas_tool(*this, get_view_state().get_feature_focus(), d_geometry_operation_target),
+			new GPlatesViewOperations::GeometryOperationTarget(
+					*d_digitise_geometry_builder,
+					*d_focused_feature_geometry_builder,
+					get_view_state().get_feature_focus(),
+					*d_choose_canvas_tool)),
+	d_active_geometry_operation(
+			new GPlatesViewOperations::ActiveGeometryOperation()),
 	d_focused_feature_geom_manipulator(
-			d_focused_feature_geometry_builder,
-			get_view_state()),
+			new GPlatesViewOperations::FocusedFeatureGeometryManipulator(
+					*d_focused_feature_geometry_builder,
+					get_view_state())),
+	d_enable_canvas_tool(
+			new GPlatesGui::EnableCanvasTool(
+					*this,
+					get_view_state().get_feature_focus(),
+					*d_geometry_operation_target,
+					*d_choose_canvas_tool)),
 	d_measure_distance_state_ptr(new GPlatesCanvasTools::MeasureDistanceState(
 				get_view_state().get_rendered_geometry_collection(),
-				d_geometry_operation_target)),
-	d_task_panel_ptr(NULL),
-	d_feature_table_model_ptr( new GPlatesGui::FeatureTableModel(get_view_state().get_feature_focus())),
+				*d_geometry_operation_target)),
 	d_topology_sections_container_ptr( new GPlatesGui::TopologySectionsContainer()),
+	d_feature_table_model_ptr( new GPlatesGui::FeatureTableModel(get_view_state().get_feature_focus())),
+	d_task_panel_ptr(NULL),
 	d_open_file_path("")
 {
 	setupUi(this);
@@ -268,12 +274,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	std::auto_ptr<TaskPanel> task_panel_auto_ptr(new TaskPanel(
 			get_view_state(),
-			d_digitise_geometry_builder,
-			d_geometry_operation_target,
-			d_active_geometry_operation,
+			*d_digitise_geometry_builder,
+			*d_geometry_operation_target,
+			*d_active_geometry_operation,
 			*d_measure_distance_state_ptr,
 			*this,
-			d_choose_canvas_tool,
+			*d_choose_canvas_tool,
 			this));
 	d_task_panel_ptr = task_panel_auto_ptr.get();
 
@@ -306,13 +312,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	set_up_task_panel_actions();
 
 	// Enable/disable canvas tools according to the current state.
-	d_enable_canvas_tool.initialise();
+	d_enable_canvas_tool->initialise();
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
-	enable_or_disable_feature_actions(get_view_state().get_feature_focus().focused_feature());
+	enable_or_disable_feature_actions(get_view_state().get_feature_focus());
 	QObject::connect(&get_view_state().get_feature_focus(), SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
-			this, SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
+					GPlatesGui::FeatureFocus &)),
+			this, SLOT(enable_or_disable_feature_actions(GPlatesGui::FeatureFocus &)));
 
 	// Set up the Specify Anchored Plate ID dialog.
 	// Perform a reconstruction when the anchor plate id changes.
@@ -350,24 +355,24 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
 
 	// Set up the Topology Sections Table, now that the table widget has been created.
-	d_topology_sections_table_ptr = new GPlatesGui::TopologySectionsTable(
-			*table_widget_topology_sections,
-			*d_topology_sections_container_ptr,
-			get_view_state().get_feature_focus());
+	d_topology_sections_table_ptr.reset(
+			new GPlatesGui::TopologySectionsTable(
+					*table_widget_topology_sections,
+					*d_topology_sections_container_ptr,
+					get_view_state().get_feature_focus()));
 
 	// If the focused feature is modified, we may need to update the ShapefileAttributeViewerDialog.
 	QObject::connect(&get_view_state().get_feature_focus(),
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			d_shapefile_attribute_viewer_dialog_ptr.get(), SLOT(update()));
 
 	// Set up the Map and Globe Canvas Tools Choices.
 	d_map_canvas_tool_choice_ptr.reset(
 			new GPlatesGui::MapCanvasToolChoice(
 					get_view_state().get_rendered_geometry_collection(),
-					d_geometry_operation_target,
-					d_active_geometry_operation,
-					d_choose_canvas_tool,
+					*d_geometry_operation_target,
+					*d_active_geometry_operation,
+					*d_choose_canvas_tool,
 					d_reconstruction_view_widget.map_view(),
 					d_reconstruction_view_widget.map_canvas(),
 					d_reconstruction_view_widget.map_view(),
@@ -386,9 +391,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_globe_canvas_tool_choice_ptr.reset(
 			new GPlatesGui::GlobeCanvasToolChoice(
 					get_view_state().get_rendered_geometry_collection(),
-					d_geometry_operation_target,
-					d_active_geometry_operation,
-					d_choose_canvas_tool,
+					*d_geometry_operation_target,
+					*d_active_geometry_operation,
+					*d_choose_canvas_tool,
 					*d_globe_canvas_ptr,
 					d_globe_canvas_ptr->globe(),
 					*d_globe_canvas_ptr,
@@ -485,36 +490,36 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 
 	// Canvas Tool connections:
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_drag_globe_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_drag_globe_tool()));
 	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_zoom_globe_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_zoom_globe_tool()));
 	QObject::connect(action_Click_Geometry, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_click_geometry_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_click_geometry_tool()));
 	QObject::connect(action_Digitise_New_Polyline, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_digitise_polyline_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_digitise_polyline_tool()));
 	QObject::connect(action_Digitise_New_MultiPoint, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_digitise_multipoint_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_digitise_multipoint_tool()));
 	QObject::connect(action_Digitise_New_Polygon, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_digitise_polygon_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_digitise_polygon_tool()));
 	QObject::connect(action_Move_Geometry, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_move_geometry_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_move_geometry_tool()));
 	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_move_vertex_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_move_vertex_tool()));
 	QObject::connect(action_Delete_Vertex, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_delete_vertex_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_delete_vertex_tool()));
 	QObject::connect(action_Insert_Vertex, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_insert_vertex_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_insert_vertex_tool()));
 	// FIXME: The Move Geometry tool, although it has an awesome icon,
 	// is to be disabled until it can be implemented.
 	action_Move_Geometry->setVisible(false);
 	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_manipulate_pole_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_manipulate_pole_tool()));
 	QObject::connect(action_Build_Topology, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_build_topology_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_build_topology_tool()));
 	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_edit_topology_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_edit_topology_tool()));
 	QObject::connect(action_Measure_Distance, SIGNAL(triggered()),
-			&d_choose_canvas_tool, SLOT(choose_measure_distance_tool()));
+			d_choose_canvas_tool.get(), SLOT(choose_measure_distance_tool()));
 
 
 	// File Menu:
@@ -1192,6 +1197,7 @@ GPlatesQtWidgets::ViewportWindow::enable_measure_distance_tool(
 void
 GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 {
+	action_Drag_Globe->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_reorient_globe_tool();
 	d_map_canvas_tool_choice_ptr->choose_pan_map_tool();
 }
@@ -1200,8 +1206,8 @@ GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
 {
+	action_Zoom_Globe->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_zoom_globe_tool();
-
 	d_map_canvas_tool_choice_ptr->choose_zoom_map_tool();
 }
 
@@ -1209,6 +1215,7 @@ GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
 {
+	action_Click_Geometry->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_click_geometry_tool();
 	d_map_canvas_tool_choice_ptr->choose_click_geometry_tool();
 
@@ -1219,6 +1226,7 @@ GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 {
+	action_Digitise_New_Polyline->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1228,6 +1236,7 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
 {
+	action_Digitise_New_MultiPoint->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1237,6 +1246,7 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_polygon_tool()
 {
+	action_Digitise_New_Polygon->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1248,6 +1258,7 @@ GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 {
 	// The MoveGeometry tool is not yet implemented.
 #if 0
+	action_Move_Geometry->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_move_geometry_tool();
 	d_task_panel_ptr->choose_feature_tab();
 #endif
@@ -1257,6 +1268,7 @@ GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 {
+	action_Move_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_task_panel_ptr->choose_modify_geometry_tab();
@@ -1266,6 +1278,7 @@ GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
 {
+	action_Delete_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_delete_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_delete_vertex_tool();
 
@@ -1276,6 +1289,7 @@ GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 {
+	action_Insert_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_insert_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_insert_vertex_tool();
 
@@ -1295,6 +1309,7 @@ GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 {
+	action_Manipulate_Pole->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
 
 // The map's manipulate pole tool doesn't yet do anything. 
@@ -1305,6 +1320,7 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 {
+	action_Build_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_build_topology_tool();
 	// FIXME: There is no MapCanvasToolChoice equivalent yet.
 	
@@ -1321,6 +1337,7 @@ GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 {
+	action_Edit_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_edit_topology_tool();
 	// FIXME: There is no MapCanvasToolChoice equivalent yet.
 	if(d_reconstruction_view_widget.map_is_active())
@@ -1336,14 +1353,13 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
-		GPlatesModel::FeatureHandle::weak_ref focused_feature)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
 	// Note: enabling/disabling canvas tools is now done in class 'EnableCanvasTool'.
-	bool enable_canvas_tool_actions = focused_feature.is_valid();
+	bool enable_canvas_tool_actions = feature_focus.focused_feature().is_valid();
 	
 	action_Query_Feature->setEnabled(enable_canvas_tool_actions);
 	action_Edit_Feature->setEnabled(enable_canvas_tool_actions);
-	action_Manipulate_Pole->setEnabled(enable_canvas_tool_actions);
 	
 #if 0		// Delete Feature is nontrivial to implement (in the model) properly.
 	action_Delete_Feature->setEnabled(enable_canvas_tool_actions);

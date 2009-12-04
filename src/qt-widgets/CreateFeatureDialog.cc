@@ -41,6 +41,7 @@
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Reconstruct.h"
 #include "global/AssertionFailureException.h"

@@ -35,11 +35,22 @@ set(srcs
     PlateVelocityWorkflow.h
     Reconstruct.cc
     Reconstruct.h
+    ReconstructedFeatureGeometryPopulator.cc
+    ReconstructedFeatureGeometryPopulator.h
     ReconstructionActivationStrategy.cc
     ReconstructionActivationStrategy.h
+    ReconstructionFeatureProperties.cc
+    ReconstructionFeatureProperties.h
+    ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
     ReconstructUtils.cc
     ReconstructUtils.h
+    TopologyInternalUtils.cc
+    TopologyInternalUtils.h
+    TopologyResolver.cc
+    TopologyResolver.h
+    TopologyUtils.cc
+    TopologyUtils.h
 )
 
 

@@ -43,7 +43,6 @@
 #include <QSizePolicy>
 
 #include "gui/GlobeVisibilityTester.h"
-#include "gui/ProximityTests.h"
 #include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SvgExport.h"
 #include "gui/Texture.h"
@@ -54,10 +53,12 @@
 
 #include "global/GPlatesException.h"
 #include "model/FeatureHandle.h"
+
+#include "presentation/ViewState.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
-#include "presentation/ViewState.h"
 
 
 /**

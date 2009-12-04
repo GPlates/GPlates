@@ -29,7 +29,10 @@
 #include <QDebug>
 #include <vector>
 #include <boost/noncopyable.hpp>
+
 #include "TopologySectionsTable.h"
+
+#include "app-logic/TopologyInternalUtils.h"
 
 #include "model/PropertyName.h"
 #include "model/FeatureHandle.h"
@@ -51,31 +54,6 @@
 
 namespace
 {
-	/**
-	 * Resolves a FeatureId reference in a TableRow (or doesn't,
-	 * if it can't be resolved.)
-	 *
-	 * FIXME:Quickie implementation. Could be better, to give user
-	 * more feedback.
-	 */
-	void
-	resolve_feature_id(
-			GPlatesGui::TopologySectionsContainer::TableRow &entry)
-	{
-
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
-		entry.d_feature_id.find_back_ref_targets(
-				GPlatesModel::append_as_weak_refs(back_ref_targets));
-		
-		if (back_ref_targets.size() == 1) {
-			GPlatesModel::FeatureHandle::weak_ref weakref = *back_ref_targets.begin();
-			entry.d_feature_ref = weakref;
-		} else {
-			static const GPlatesModel::FeatureHandle::weak_ref null_ref;
-			entry.d_feature_ref = null_ref;
-		}
-	}
-
 	/**
 	 * Defines a function used to turn a TopologySectionsContainer::TableRow
 	 * into an appropriate cell of data in the QTableWidget.
@@ -107,7 +85,7 @@ namespace
 			const GPlatesGui::TopologySectionsContainer::TableRow &row_data,
 			QTableWidgetItem &cell)
 	{
-		cell.setCheckState(row_data.d_reverse? Qt::Checked : Qt::Unchecked);
+		cell.setCheckState(row_data.get_reverse()? Qt::Checked : Qt::Unchecked);
 	}
 
 
@@ -116,9 +94,9 @@ namespace
 			const GPlatesGui::TopologySectionsContainer::TableRow &row_data,
 			QTableWidgetItem &cell)
 	{
-		if (row_data.d_feature_ref.is_valid()) {
+		if (row_data.get_feature_ref().is_valid()) {
 			cell.setData(Qt::DisplayRole, QVariant(GPlatesUtils::make_qstring_from_icu_string(
-					row_data.d_feature_ref->feature_type().build_aliased_name() )));
+					row_data.get_feature_ref()->feature_type().build_aliased_name() )));
 		}
 	}
 			
@@ -131,7 +109,7 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		
-		if (row_data.d_feature_ref.is_valid()) {
+		if (row_data.get_feature_ref().is_valid()) {
 			// Declare a pointer to a const GpmlPlateId. This is used as a return value;
 			// It is passed by reference into the get_property_value() call below,
 			// which sets it.
@@ -139,7 +117,7 @@ namespace
 			
 			// Attempt to find the property name and value we are interested in.
 			if (GPlatesFeatureVisitors::get_property_value(
-					row_data.d_feature_ref,
+					row_data.get_feature_ref(),
 					plate_id_property_name,
 					property_return_value)) {
 				// Convert it to something Qt can display.
@@ -161,7 +139,7 @@ namespace
 		static const GPlatesModel::PropertyName gml_name_property_name =
 				GPlatesModel::PropertyName::create_gml("name");
 		
-		if (row_data.d_feature_ref.is_valid()) {
+		if (row_data.get_feature_ref().is_valid()) {
 			// FIXME: As in other situations involving gml:name, we -do- want to
 			// address the gml:codeSpace issue someday.
 			
@@ -172,7 +150,7 @@ namespace
 			
 			// Attempt to find the property name and value we are interested in.
 			if (GPlatesFeatureVisitors::get_property_value(
-					row_data.d_feature_ref,
+					row_data.get_feature_ref(),
 					gml_name_property_name,
 					property_return_value)) {
 				// Convert it to something Qt can display.
@@ -207,8 +185,8 @@ namespace
 		}
 		
 		// Modify the TableRow data.
-		if (new_reverse_flag != row_data.d_reverse) {
-			row_data.d_reverse = new_reverse_flag;
+		if (new_reverse_flag != row_data.get_reverse()) {
+			row_data.set_reverse(new_reverse_flag);
 			// Note: the update_data_from_table() method will push this table row into
 			// the d_container_ptr vector, which will ultimately emit signals to notify
 			// others about the updated data.
@@ -287,14 +265,14 @@ namespace
 	check_row_validity(
 			const GPlatesGui::TopologySectionsContainer::TableRow &entry)
 	{
-		return entry.d_feature_ref.is_valid();
+		return entry.get_feature_ref().is_valid();
 	}
 	
 	bool
 	check_row_validity_geom(
 			const GPlatesGui::TopologySectionsContainer::TableRow &entry)
 	{
-		return entry.d_geometry_property_opt;
+		return entry.get_geometry_property().is_valid();
 	}
 	
 	
@@ -302,7 +280,7 @@ namespace
 	get_invalid_row_message(
 			const GPlatesGui::TopologySectionsContainer::TableRow &entry)
 	{
-		QString feature_id_qstr = GPlatesUtils::make_qstring(entry.d_feature_id);
+		QString feature_id_qstr = GPlatesUtils::make_qstring(entry.get_feature_id());
 		QString message = QObject::tr("(Unresolvable feature reference to \"%1\")")
 				.arg(feature_id_qstr);
 		return message;
@@ -412,12 +390,16 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 			this, SLOT(update_table()));
 	QObject::connect(d_container_ptr, SIGNAL(entry_removed(GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entries_inserted(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
-			this, SLOT(update_table()));
-	QObject::connect(d_container_ptr, SIGNAL(entries_modified(GPlatesGui::TopologySectionsContainer::size_type,GPlatesGui::TopologySectionsContainer::size_type)),
-			this, SLOT(update_table()));
-
-	QObject::connect(d_container_ptr, SIGNAL(update_table_sig()),
+	QObject::connect(
+			d_container_ptr,
+			SIGNAL(entries_inserted(
+					GPlatesGui::TopologySectionsContainer::size_type,
+					GPlatesGui::TopologySectionsContainer::size_type,
+					GPlatesGui::TopologySectionsContainer::const_iterator,
+					GPlatesGui::TopologySectionsContainer::const_iterator)),
+			this,
+			SLOT(update_table()));
+	QObject::connect(d_container_ptr, SIGNAL(entry_modified(GPlatesGui::TopologySectionsContainer::size_type)),
 			this, SLOT(update_table()));
 
 	QObject::connect(d_container_ptr, SIGNAL(focus_feature_at_index( GPlatesGui::TopologySectionsContainer::size_type)),
@@ -807,12 +789,7 @@ GPlatesGui::TopologySectionsTable::update_table_row(
 	} else {
 		// Map this table row to an entry in the data vector.
 		TopologySectionsContainer::size_type index = convert_table_row_to_data_index(row);
-//		const TopologySectionsContainer::TableRow &entry = d_container_ptr->at(index);
-//FIXME: CHEATING. I need a non-const so I can resolve the damn thing, but maybe I shouldn't
-// be doing that here. I would prefer to pass in a const reference to the original
-// for the render_ functions, but perhaps a copy will suffice for now.
-		TopologySectionsContainer::TableRow entry = d_container_ptr->at(index);
-		resolve_feature_id(entry);
+		const TopologySectionsContainer::TableRow &entry = d_container_ptr->at(index);
 
 		if (check_row_validity(entry)) {
 
@@ -989,9 +966,9 @@ GPlatesGui::TopologySectionsTable::focus_feature_at_row(
 	const TopologySectionsContainer::TableRow &trow = d_container_ptr->at(index);
 
 	// Do we have enough information?
-	if (trow.d_feature_ref.is_valid() && trow.d_geometry_property_opt) {
+	if (trow.get_feature_ref().is_valid() && trow.get_geometry_property().is_valid()) {
 		// Then adjust the focus.
-		d_feature_focus_ptr->set_focus(trow.d_feature_ref, *trow.d_geometry_property_opt);
+		d_feature_focus_ptr->set_focus(trow.get_feature_ref(), trow.get_geometry_property());
 	
 		// And provide visual feedback for user.
 		d_table->selectRow(row);
