@@ -27,7 +27,7 @@ if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
         "# To also enable parallel project builds set\n"
         "# “Tools->Options->Programs and Solutions->Build and Run->maximum number of parallel project builds” to\n"
         "# the number of cores on your CPU.\n"
-        "set(GPLATES_MSVC80_PARALLEL_BUILD true)\n\n")
+        "set(GPLATES_MSVC80_PARALLEL_BUILD false)\n\n")
 endif (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 include ("${CMAKE_SOURCE_DIR}/cmake/ConfigUser.cmake")
 
