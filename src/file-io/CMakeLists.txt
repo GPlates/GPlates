@@ -37,6 +37,8 @@ set(srcs
     GdalReader.cc
     GdalReader.h
     GeometryExporter.h
+    GmapReader.cc
+    GmapReader.h
     GMTFormatGeometryExporter.cc
     GMTFormatGeometryExporter.h
     GMTFormatHeader.cc

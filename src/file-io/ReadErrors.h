@@ -159,9 +159,15 @@ namespace GPlatesFileIO
 			ParseError,
 			UnexpectedNonEmptyAttributeList,
 
+			// The following are specific to GMAP vgp files
+			// FIXME: This is a generic GmapError, we should add more field-specific errors.
+			GmapError,
+			GmapFieldFormatError,
+
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,
-			FileIsEmpty
+			FileIsEmpty,
+			NoFeaturesFoundInFile
 		};
 
 		enum Result
@@ -206,6 +212,9 @@ namespace GPlatesFileIO
 			AssumingCorrectVersion,
 			FeatureNotInterpreted,
 			AttributesIgnored,
+			
+			// The following are specific to GMAP vgp files
+			GmapFeatureIgnored,
 
 			// The following are generic to all local files
 			FileNotLoaded

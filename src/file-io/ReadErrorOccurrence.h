@@ -66,6 +66,7 @@ namespace GPlatesFileIO
 			PlatesRotation,
 			PlatesLine,
 			Shapefile,
+			Gmap,
 			Unspecified
 		};
 

@@ -32,6 +32,44 @@
  
  #include "global/types.h"
  
+ 
+ namespace
+ {
+ #if 0
+	void
+	draw_point(
+		const GPlatesMaths::PointOnSphere &point)
+	{
+		glBegin(GL_POINTS);
+		glVertex3d(point.position_vector().x().dval(),
+					point.position_vector().y().dval(),
+					point.position_vector().z().dval());
+		glEnd();
+	}
+#endif
+	GPlatesMaths::Real
+	get_rotation_angle(
+		const GPlatesMaths::PointOnSphere &u1,
+		const GPlatesMaths::PointOnSphere &u2,
+		const GPlatesMaths::PointOnSphere &pivot)
+	{
+		GPlatesMaths::GreatCircle c1(pivot,u1);
+		GPlatesMaths::GreatCircle c2(pivot,u2);
+
+		GPlatesMaths::Real angle = GPlatesMaths::acos(GPlatesMaths::dot(c1.normal(),c2.normal()));
+
+		GPlatesMaths::UnitVector3D norm_cross_product = 
+			GPlatesMaths::cross(c1.normal(),c2.normal()).get_normalisation();
+	
+		if (GPlatesMaths::dot(norm_cross_product,pivot.position_vector()).is_precisely_less_than(0.))
+		{
+			angle = - angle;
+		}			
+
+		return angle;
+	}	
+ }
+ 
 GPlatesMaths::EllipseGenerator::EllipseGenerator(
 	const PointOnSphere &centre, 
 	const Real &semi_major_axis_radians,
@@ -65,13 +103,9 @@ d_rotation(Rotation::create(UnitVector3D(1,0,0),0))
 	Rotation r3 = Rotation::create(axis.axis_vector(),semi_minor_axis_radians);
 	// p2 is a point at the end of the ellipse's semi-minor axis. 
 	PointOnSphere p2 = r3*centre;		
-
+	
 	// Determine the angle required to rotate p1 to p2, with rotation around the ellipse centre.	
-	Vector3D v1 = Vector3D(p1.position_vector()) - Vector3D(centre.position_vector());
-	Vector3D v2 = Vector3D(p2.position_vector()) - Vector3D(centre.position_vector());	
-	UnitVector3D u1 = v1.get_normalisation();
-	UnitVector3D u2 = v2.get_normalisation();			
-	Real angle = acos(dot(u1,u2));
+	Real angle = get_rotation_angle(p1,p2,centre);
 
 	Rotation r4 = Rotation::create(centre.position_vector(),angle);
 
@@ -84,7 +118,6 @@ GPlatesMaths::UnitVector3D
 GPlatesMaths::EllipseGenerator::get_point_on_ellipse(
 	double angle_from_semi_major_axis)
 {
-
 	double x = d_semi_major_axis*std::cos(angle_from_semi_major_axis);
 	double y = d_semi_minor_axis*std::sin(angle_from_semi_major_axis);
 	Vector3D v = Vector3D(x,y,1.);

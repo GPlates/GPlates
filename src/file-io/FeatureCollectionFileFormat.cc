@@ -82,10 +82,17 @@ namespace
 	}
 
 	bool
-		is_gpml_gz_format_file(const QFileInfo &file)
+	is_gpml_gz_format_file(const QFileInfo &file)
 	{
 		return file_name_ends_with(file, "gpml.gz");
 	}
+	
+	bool
+	is_gmap_format_file(const QFileInfo &file)
+	{
+		return file_name_ends_with(file,"vgp");
+	}
+	
 }
 
 
@@ -126,6 +133,10 @@ GPlatesFileIO::get_feature_collection_file_format(
 	else if (is_gmt_format_file(file_info))
 	{
 		return FeatureCollectionFileFormat::GMT;
+	}
+	else if (is_gmap_format_file(file_info))
+	{
+		return FeatureCollectionFileFormat::GMAP;
 	}
 	else
 	{

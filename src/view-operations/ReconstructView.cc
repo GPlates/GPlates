@@ -25,6 +25,7 @@
 
 #include "ReconstructView.h"
 
+#include "app-logic/PaleomagWorkflow.h"
 #include "app-logic/PlateVelocityWorkflow.h"
 
 #include "view-operations/RenderReconstructionGeometries.h"
@@ -46,8 +47,12 @@ GPlatesViewOperations::ReconstructView::end_reconstruction(
 			reconstruction_time,
 			reconstruction_anchored_plate_id,
 			reconstruction_features_collection);
-
-
+			
+	// Draw paleomag-specific geometries.
+	d_paleomag_workflow.draw_paleomag_features(
+			reconstruction,
+			reconstruction_time,
+			d_colour_table);
 
 	// Render all reconstruction geometries as rendered geometries.
 	GPlatesViewOperations::render_reconstruction_geometries(

@@ -787,6 +787,12 @@ namespace
 			const double &inverse_zoom_factor)
 	{
 	
+		if ((rendered_ellipse.get_semi_major_axis_radians() == 0.)
+			|| (rendered_ellipse.get_semi_minor_axis_radians() == 0.))
+		{
+			return;	
+		}		
+	
 		// See comments in the GlobeRenderedGeometryLayerPainter for possibilities
 		// of making the number of steps zoom-dependent.
 			

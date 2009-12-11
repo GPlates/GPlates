@@ -75,6 +75,7 @@ namespace
 		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
 		static const QString format_gpml_gz(QObject::tr("Compressed GPML"));
 		static const QString format_gmt(QObject::tr("GMT xy"));
+		static const QString format_gmap(QObject::tr("GMAP VGP"));
 		static const QString format_unknown(QObject::tr(""));
 		
 		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
@@ -96,6 +97,9 @@ namespace
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
 			return format_gmt;
+			
+		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
+			return format_gmap;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
 		default:
@@ -184,7 +188,6 @@ namespace
 			
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			{
-				// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
 				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
 				filters.push_back(make_pair(filter_line, filter_line_ext));
 				if (has_gzip)
@@ -196,7 +199,16 @@ namespace
 				filters.push_back(make_pair(filter_all, filter_all_ext));
 			}
 			break;
-
+		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
+			{
+				// No GMAP writing yet. (Ever?).
+				// Offer gmpl/gpml_gz export. 
+				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
+				if (has_gzip)
+				{
+					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
+				}
+			}
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
 		default: // If no file extension then use same options as GMPL.
@@ -559,11 +571,12 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_files()
 {
 	static const QString filters = tr(
-			"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpml.gz);;"
+			"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpml.gz *.vgp);;"
 			"PLATES4 line (*.dat *.pla);;"
 			"PLATES4 rotation (*.rot);;"
 			"ESRI shapefile (*.shp);;"
 			"GPlates Markup Language (*.gpml *.gpml.gz);;"
+			"GMAP VGP file (*.vgp);;"
 			"All files (*)" );
 	
 	QStringList filenames = QFileDialog::getOpenFileNames(parentWidget(),

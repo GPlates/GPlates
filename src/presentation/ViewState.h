@@ -48,6 +48,7 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 	class FeatureCollectionFileIO;
 	class FeatureCollectionWorkflow;
+	class PaleomagWorkflow;
 	class PlateVelocityWorkflow;
 	class Reconstruct;
 }
@@ -230,12 +231,18 @@ namespace GPlatesPresentation
 			d_comp_mesh_point_layer;
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_comp_mesh_arrow_layer;
+			
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_paleomag_layer;
 
 		//! Feature collection workflow for calculating plate velocities - pointer owns workflow.
 		boost::scoped_ptr<GPlatesAppLogic::PlateVelocityWorkflow> d_plate_velocity_workflow;
 
 		//! This shared pointer only unregisters the plate velocity workflow - doesn't own it.
 		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_plate_velocity_unregister;
+
+		boost::shared_ptr<GPlatesAppLogic::PaleomagWorkflow> d_paleomag_workflow;
+		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_paleomag_unregister;
 
 		//! Performs tasks each time a reconstruction is generated.
 		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;

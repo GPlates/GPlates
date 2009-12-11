@@ -27,6 +27,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/PaleomagWorkflow.h"
 #include "app-logic/PlateVelocityWorkflow.h"
 #include "app-logic/Reconstruct.h"
 
@@ -74,6 +75,10 @@ GPlatesPresentation::ViewState::ViewState(
 			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
 					0.175f)),
+	d_paleomag_layer(
+			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
+					GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER,
+					0.175f)),					
 	d_plate_velocity_workflow(
 			new GPlatesAppLogic::PlateVelocityWorkflow(
 					application_state, d_comp_mesh_point_layer, d_comp_mesh_arrow_layer)),
@@ -81,9 +86,16 @@ GPlatesPresentation::ViewState::ViewState(
 			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
 					d_plate_velocity_workflow.get(),
 					application_state.get_feature_collection_file_state())),
+	d_paleomag_workflow(
+			new GPlatesAppLogic::PaleomagWorkflow(
+					application_state, d_paleomag_layer)),
+	d_paleomag_unregister(
+			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
+					d_paleomag_workflow.get(),
+					application_state.get_feature_collection_file_state())),
 	d_reconstruct_view(
 			new GPlatesViewOperations::ReconstructView(
-					*d_plate_velocity_workflow, *d_rendered_geometry_collection, *d_colour_table)),
+					*d_plate_velocity_workflow, *d_paleomag_workflow,*d_rendered_geometry_collection, *d_colour_table)),
 	d_last_single_colour(Qt::white)
 {
 	// Call the operations in ReconstructView whenever a reconstruction is generated.
@@ -234,7 +246,11 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
 		
 	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_TOOL_LAYER);		
+		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_TOOL_LAYER);	
+		
+	d_rendered_geometry_collection->set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER);			
+			
 
 	// Activate the main rendered layer.
 	// Specify which main rendered layers are orthogonal to each other - when

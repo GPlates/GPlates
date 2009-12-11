@@ -68,7 +68,10 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 	public:
 
-		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		// FIXME: This typedef has been changed to include an RFG pointer.
+		// This is part of the paleomag workarounds.
+		typedef std::vector<std::pair<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+			GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> >
 				geometry_collection_type;
 
 		ReconstructionPoleWidget(

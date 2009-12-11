@@ -2,11 +2,12 @@
 
 /**
  * \file 
+ * File specific comments.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -24,35 +25,27 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ReadErrorOccurrence.h"
+#ifndef GPLATES_FILEIO_GMAPREADER_H
+#define GPLATES_FILEIO_GMAPREADER_H
 
+#include "FileInfo.h"
+#include "ReadErrorAccumulation.h"
+#include "model/ModelInterface.h"
 
-const char *
-GPlatesFileIO::DataFormats::data_format_to_str(
-		DataFormat data_format)
+namespace GPlatesFileIO
 {
-	const char *str = NULL;
-
-	switch (data_format) {
-	case GpmlOnePointSix:
-		str = "GPML 1.6";
-		break;
-	case PlatesRotation:
-		str = "PLATES \"rotation\"";
-		break;
-	case PlatesLine:
-		str = "PLATES \"line\"";
-		break;
-	case Shapefile:
-		str = "ESRI Shapefile";
-		break;
-	case Gmap:
-		str = "GMAP VGP";
-		break;		
-	case Unspecified:
-		str = "unspecified";
-		break;
-	}
-
-	return str;
+	class GmapReader
+	{
+		public:
+		
+			static
+			const File::shared_ref
+			read_file(
+				const FileInfo& fileinfo,
+				GPlatesModel::ModelInterface &model,
+				ReadErrorAccumulation &read_errors);
+				
+	};
 }
+
+#endif //GPLATES_FILEIO_GMAPREADER_H

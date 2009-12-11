@@ -29,6 +29,10 @@ set(srcs
     FeatureCollectionFileStateImplDecls.h
     FeatureCollectionWorkflow.cc
     FeatureCollectionWorkflow.h
+    PaleomagUtils.cc
+    PaleomagUtils.h
+    PaleomagWorkflow.cc
+    PaleomagWorkflow.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
     PlateVelocityWorkflow.cc

@@ -146,6 +146,7 @@ namespace GPlatesViewOperations
 			MOUSE_MOVEMENT_LAYER,
 			MEASURE_DISTANCE_LAYER,
 			SMALL_CIRCLE_TOOL_LAYER,
+			PALEOMAG_LAYER,
 
 			NUM_LAYERS // Must be the last enum.
 		};

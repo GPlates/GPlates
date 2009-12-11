@@ -259,6 +259,12 @@ namespace
 		static const unsigned int nsteps = 256;
 		static const double dt = TWO_PI/nsteps;
 
+		if ((rendered_ellipse.get_semi_major_axis_radians() == 0.)
+			|| (rendered_ellipse.get_semi_minor_axis_radians() == 0.))
+		{
+			return;	
+		}
+		
 		GPlatesMaths::EllipseGenerator ellipse_generator(
 			rendered_ellipse.get_centre(),
 			rendered_ellipse.get_semi_major_axis_radians(),

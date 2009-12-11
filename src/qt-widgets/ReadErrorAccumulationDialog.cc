@@ -377,13 +377,24 @@ namespace
 				QT_TR_NOOP("Multiple raster sets found."),
 				QT_TR_NOOP("More than one suitable raster file set was found in the selected folder.") },
 
+		// Errors relating to GMAP VGP files
+		{ GPlatesFileIO::ReadErrors::GmapError,
+				QT_TR_NOOP("Error reading GMAP file."),
+				QT_TR_NOOP("Error reading GMAP file.") },	
+		{ GPlatesFileIO::ReadErrors::GmapFieldFormatError,
+				QT_TR_NOOP("Error reading GMAP field."),
+				QT_TR_NOOP("There was an error reading a field in the GMAP file.") },		
+
 		// Generic file-related error descriptions:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
-				QT_TR_NOOP("Error opening file"),
+				QT_TR_NOOP("Error opening file."),
 				QT_TR_NOOP("Error opening the file for reading.") },
 		{ GPlatesFileIO::ReadErrors::FileIsEmpty,
-				QT_TR_NOOP("File is empty"),
+				QT_TR_NOOP("File is empty."),
 				QT_TR_NOOP("The file contains no data.") },
+		{ GPlatesFileIO::ReadErrors::NoFeaturesFoundInFile,
+				QT_TR_NOOP("No features in file."),
+				QT_TR_NOOP("The file contains no features.") }
 	};
 	
 	/**
@@ -447,6 +458,10 @@ namespace
 				QT_TR_NOOP("No raster file set was loaded.") },
 		{ GPlatesFileIO::ReadErrors::OnlyFirstRasterSetLoaded,
 				QT_TR_NOOP("Only the first raster file set was loaded.") },
+				
+		// The following apply to GMAP vgp files.		
+		{ GPlatesFileIO::ReadErrors::GmapFeatureIgnored,
+				QT_TR_NOOP("The GMAP feature was ignored.") },				
 				
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,

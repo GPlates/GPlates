@@ -31,13 +31,48 @@
 
 #include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-#include "gui/FeatureFocus.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
+#include "gui/FeatureFocus.h"
+#include "presentation/ViewState.h"
 #include "utils/MathUtils.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
-#include "presentation/ViewState.h"
+
+// FIXME: The following 3 files are temporary includes for paleomag workaround.
+#include "maths/ConstGeometryOnSphereVisitor.h"
+#include "feature-visitors/PropertyValueFinder.h" 
+#include "property-values/XsDouble.h"
+
+namespace
+{
+	/**
+	 * This returns the point-on-sphere from a geometry-on-sphere. This
+	 * is part of the temporary paleomag workarounds.                                                                      
+	 */
+	class PointFinder:
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+
+		virtual
+		void
+		visit_point_on_sphere(
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_point_on_sphere.reset(*point_on_sphere);
+		}
+	
+		boost::optional<GPlatesMaths::PointOnSphere>
+		get_point()
+		{
+			return d_point_on_sphere;
+		}
+
+	private:
+		boost::optional<GPlatesMaths::PointOnSphere> d_point_on_sphere;
+	};
+}
 
 
 GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
@@ -588,6 +623,8 @@ GPlatesQtWidgets::ReconstructionPoleWidget::populate_initial_geometries()
 		return;
 	}
 
+
+
 	GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
 			d_reconstruct_ptr->get_current_reconstruction().geometries().begin();
 	GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
@@ -607,7 +644,7 @@ GPlatesQtWidgets::ReconstructionPoleWidget::populate_initial_geometries()
 			if (rfg->reconstruction_plate_id()) {
 				// OK, so the RFG *does* have a reconstruction plate ID.
 				if (*(rfg->reconstruction_plate_id()) == *d_plate_id) {
-					d_initial_geometries.push_back(rfg->geometry());
+					d_initial_geometries.push_back(std::make_pair(rfg->geometry(),rfg->get_non_null_pointer_to_const()));
 				}
 			}
 		}
@@ -625,6 +662,9 @@ GPlatesQtWidgets::ReconstructionPoleWidget::populate_initial_geometries()
 void
 GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries()
 {
+	static const GPlatesModel::PropertyName vgp_prop_name =
+		GPlatesModel::PropertyName::create_gpml("polePosition");
+
 	populate_initial_geometries();
 
 	// Delay any notification of changes to the rendered geometry collection
@@ -648,13 +688,45 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries()
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					*iter,
+					(*iter).first,
 					white_colour,
 					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
 					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
 
 		// Add to pole manipulation layer.
 		d_initial_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
+
+		///////////////////////////////////////////////////////////////////
+		// FIXME: The following is part of the paleomag workarounds.
+		if ((*(*iter).second->property())->property_name() == vgp_prop_name)
+		{
+
+			// Found a vgp geometry. We need to get the vgp feature handle, extract the 
+			// circle/ellipse info, and use it to create a rendered geometry. 
+
+			const GPlatesPropertyValues::XsDouble *radius;
+			static const GPlatesModel::PropertyName a95_prop_name =
+				GPlatesModel::PropertyName::create_gpml("poleAlpha95");
+			if (GPlatesFeatureVisitors::get_property_value((*iter).second->get_feature_ref(),a95_prop_name,radius))
+			{
+
+				PointFinder finder;
+				(*iter).first->accept_visitor(finder);
+				if (finder.get_point())
+				{
+					GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
+						GPlatesViewOperations::create_rendered_small_circle(
+							*finder.get_point(),
+							GPlatesMaths::degreesToRadians(radius->value()),
+							white_colour,
+							GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
+					d_initial_geom_layer_ptr->add_rendered_geometry(rendered_small_circle);
+				}
+
+			}
+		}
+		// End of paleomag workaround.
+		//////////////////////////////////////////////////////////////////////
 	}
 }
 
@@ -676,6 +748,9 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_dragged_geometries()
 		return;
 	}
 
+	static const GPlatesModel::PropertyName vgp_prop_name =
+		GPlatesModel::PropertyName::create_gpml("polePosition");
+
 	// Clear all dragged geometry RenderedGeometry's before adding new ones.
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
@@ -688,13 +763,46 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_dragged_geometries()
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					d_accum_orientation->orient_geometry(*iter),
+					d_accum_orientation->orient_geometry((*iter).first),
 					silver_colour,
 					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
 					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
 
 		// Add to pole manipulation layer.
 		d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
+		
+		///////////////////////////////////////////////////////////////////////////
+		// FIXME: The following is part of the paleomag workarounds.
+		if ((*(*iter).second->property())->property_name() == vgp_prop_name)
+		{
+
+			// Found a vgp geometry. We need to get the vgp feature handle, extract the 
+			// circle/ellipse info, and use it to create a rendered geometry. 
+
+			const GPlatesPropertyValues::XsDouble *radius;
+			static const GPlatesModel::PropertyName a95_prop_name =
+				GPlatesModel::PropertyName::create_gpml("poleAlpha95");
+			if (GPlatesFeatureVisitors::get_property_value((*iter).second->get_feature_ref(),a95_prop_name,radius))
+			{
+				
+				PointFinder finder;
+				(d_accum_orientation->orient_geometry((*iter).first))->accept_visitor(finder);
+				if (finder.get_point())
+				{
+					GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
+						GPlatesViewOperations::create_rendered_small_circle(
+						*finder.get_point(),
+						GPlatesMaths::degreesToRadians(radius->value()),
+						silver_colour,
+						GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
+					d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_small_circle);
+				}
+
+			}
+		}	
+		// End of paleomag workaround.	
+		////////////////////////////////////////////////////////////////////////////		
+		
 	}
 }
 
