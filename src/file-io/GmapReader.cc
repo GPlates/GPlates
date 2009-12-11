@@ -23,6 +23,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <cmath> // std::floor
+
  #include <QChar>
  #include <QDebug>
  #include <QString>
@@ -263,7 +265,6 @@
 		{
 			append_plate_id_to_feature(feature,*vgp.plate_id);
 		}
-		// FIXME: Add dm and dp fields.
 		
 	}
  
@@ -455,10 +456,11 @@
 			--line_number;
 			input.seek(last_good_position);
 		}
-		if (plate_id && (*plate_id != static_cast<unsigned int>(*plate_id)))
+		if (plate_id && (GPlatesMaths::Real(*plate_id) != GPlatesMaths::Real(std::floor(*plate_id))))
 		{
-		// We did find a plate id, but it's not an integer
-			throw GPlatesFileIO::ReadErrors::GmapError;
+		// We did find a plate id, but it's not an integer. Should we round
+		// it and use it, or complain? Let's complain.
+			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
 		}
 		vgp.plate_id = plate_id;
 		
