@@ -527,25 +527,21 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstructable_state_for_
 	//
 	// FIXME: When the GUI supports workflows (in FeatureCollectionFileState) then
 	// remove this code.
+	if (d_file_state.is_reconstructable_workflow_using_file(file_it))
+	{
+		d_file_state.set_file_active_reconstructable(file_it, activate);
+	}
 	typedef std::vector<GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type>
 			workflow_seq_type;
 	const workflow_seq_type workflow_tags = d_file_state.get_workflow_tags(file_it);
-	if (workflow_tags.empty())
+	// FIXME: HACK: We're hijacking the set reconstructable active button to set all
+	// the workflows active instead - we're relying on the fact that the reconstructable
+	// workflow will not be interested in this file if any other workflow is.
+	workflow_seq_type::const_iterator tags_iter = workflow_tags.begin();
+	const workflow_seq_type::const_iterator tag_end = workflow_tags.end();
+	for ( ; tags_iter != tag_end; ++tags_iter )
 	{
-		// File will only be activated if it contains reconstructable features.
-		d_file_state.set_file_active_reconstructable(file_it, activate);
-	}
-	else
-	{
-		// FIXME: HACK: We're hijacking the set reconstructable active button to set all
-		// the workflows active instead - we're relying on the fact that the reconstructable
-		// workflow will not be interested in this file if any other workflow is.
-		workflow_seq_type::const_iterator tags_iter = workflow_tags.begin();
-		const workflow_seq_type::const_iterator tag_end = workflow_tags.end();
-		for ( ; tags_iter != tag_end; ++tags_iter )
-		{
-			d_file_state.set_file_active_workflow(file_it, *tags_iter, activate);
-		}
+		d_file_state.set_file_active_workflow(file_it, *tags_iter, activate);
 	}
 #else
 	// File will only be activated if it contains reconstructable features.
