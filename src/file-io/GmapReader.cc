@@ -1,4 +1,5 @@
 /* $Id$ */
+
 /**
  * \file 
  * File specific comments.
@@ -23,31 +24,32 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include <cmath> // std::floor
 
- #include <QChar>
- #include <QDebug>
- #include <QString>
- #include <QTextStream>
- 
- #include "ErrorOpeningFileForReadingException.h"
- #include "File.h"
- #include "FileInfo.h"
- #include "GmapReader.h"
- #include "ReadErrorAccumulation.h"
- #include "ReadErrors.h"
- 
- #include "model/Model.h"
- #include "model/ModelInterface.h"
- #include "model/ModelUtils.h"
- 
- #include "property-values/GmlPoint.h"
- #include "property-values/GpmlPlateId.h"
- #include "property-values/XsDouble.h"
- #include "property-values/XsString.h"
- 
- namespace
- {
+#include <QChar>
+#include <QDebug>
+#include <QString>
+#include <QTextStream>
+
+#include "ErrorOpeningFileForReadingException.h"
+#include "File.h"
+#include "FileInfo.h"
+#include "GmapReader.h"
+#include "ReadErrorAccumulation.h"
+#include "ReadErrors.h"
+
+#include "model/Model.h"
+#include "model/ModelInterface.h"
+#include "model/ModelUtils.h"
+
+#include "property-values/GmlPoint.h"
+#include "property-values/GpmlPlateId.h"
+#include "property-values/XsDouble.h"
+#include "property-values/XsString.h"
+
+namespace
+{
 	// The initial time-of-apperance, time-of-disappearance will be set to be the
 	// sample age +/- DELTA_AGE.
 	// 
