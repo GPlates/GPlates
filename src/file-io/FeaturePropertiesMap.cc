@@ -534,11 +534,11 @@ namespace
 			GET_PROP_VAL_NAME(create_xs_double);
 		map[ PropertyName::create_gpml("averageDeclination") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);	
-		map[ PropertyName::create_gpml("poleAlpha95") ] = 
+		map[ PropertyName::create_gpml("poleA95") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
-		map[ PropertyName::create_gpml("confidenceEllipseSemiMajorAxis") ] = 
+		map[ PropertyName::create_gpml("poleDp") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
-		map[ PropertyName::create_gpml("confidenceEllipseSemiMinorAxis") ] = 
+		map[ PropertyName::create_gpml("poleDm") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
 		map[ PropertyName::create_gpml("averageAge") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);

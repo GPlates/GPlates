@@ -89,7 +89,7 @@ d_rotation(Rotation::create(UnitVector3D(1,0,0),0))
 	d_semi_minor_axis = std::tan(semi_minor_axis_radians.dval());
 
 	// r1 is a rotation around our x-axis.
-	Rotation r1 = Rotation::create(UnitVector3D(1,0,0),semi_minor_axis_radians);
+	Rotation r1 = Rotation::create(UnitVector3D(0,1,0),semi_major_axis_radians);
 	// Rotate a point at the north pole so that it lies at the end of the ellipse's semi-minor axis.
 	PointOnSphere p1= r1*PointOnSphere::north_pole;
 	// r2 is a rotation from the north pole to the ellipse's desired centre.
@@ -100,7 +100,7 @@ d_rotation(Rotation::create(UnitVector3D(1,0,0),0))
 
 	// Consider the ellipse at its desired location and orientation.
 	// r3 represents a rotation from the ellipse's centre to the end of its semi-minor axis.
-	Rotation r3 = Rotation::create(axis.axis_vector(),semi_minor_axis_radians);
+	Rotation r3 = Rotation::create(axis.axis_vector(),semi_major_axis_radians);
 	// p2 is a point at the end of the ellipse's semi-minor axis. 
 	PointOnSphere p2 = r3*centre;		
 	

@@ -215,18 +215,23 @@ GPlatesQtWidgets::MapCanvas::drawItems(
 	const QStyleOptionGraphicsItem options[], 
 	QWidget *widget)
 {
-	set_opengl_flags();
-	
-	double inverse_zoom_factor = 1.0/d_viewport_zoom.zoom_level();
+	try{
+		set_opengl_flags();
 
-	GPlatesGui::MapCanvasPainter map_canvas_painter(
-		*this,
-		d_render_settings,
-		d_text_renderer_ptr,
-		d_update_type,
-		inverse_zoom_factor);
-	
-	d_rendered_geometry_collection->accept_visitor(map_canvas_painter);
+		double inverse_zoom_factor = 1.0/d_viewport_zoom.zoom_factor();
+
+		GPlatesGui::MapCanvasPainter map_canvas_painter(
+			*this,
+			d_render_settings,
+			d_text_renderer_ptr,
+			d_update_type,
+			inverse_zoom_factor);
+
+		d_rendered_geometry_collection->accept_visitor(map_canvas_painter);
+	}
+	catch (const GPlatesGlobal::Exception &e){
+		std::cerr << e << std::endl;
+	}
 }
 
 #if 0

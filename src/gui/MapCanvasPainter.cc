@@ -44,6 +44,7 @@
 #include "maths/PolylineIntersections.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/Rotation.h"
+#include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
@@ -55,9 +56,14 @@
 
 int GPlatesGui::MapCanvasPainter::s_num_vertices_drawn = 0;
 
-const float GPlatesGui::MapCanvasPainter::POINT_SIZE_ADJUSTMENT = 1.5f;
-const float GPlatesGui::MapCanvasPainter::LINE_WIDTH_ADJUSTMENT = 1.5f;
+const float GPlatesGui::MapCanvasPainter::POINT_SIZE_ADJUSTMENT = 1.0f;
+const float GPlatesGui::MapCanvasPainter::LINE_WIDTH_ADJUSTMENT = 1.0f;
 const double TWO_PI = 2.*GPlatesMaths::PI;
+
+// Variables for drawing velocity arrows.
+const float GLOBE_TO_MAP_FACTOR = 180.;
+const float MAP_VELOCITY_SCALE_FACTOR = 3.0;
+const double ARROWHEAD_BASE_HEIGHT_RATIO = 0.5;
 
 // Threshold in degrees for breaking up arcs into smaller arcs.
 const double RADIAN_STEP = GPlatesMaths::PI/72.0;
@@ -80,6 +86,20 @@ namespace
 	using namespace GPlatesMaths;
 
 	struct CoincidentGreatCirclesException{};
+
+
+	void
+	draw_filled_triangle(
+		const QPointF &v1,
+		const QPointF &v2,
+		const QPointF &v3)
+	{
+		glBegin(GL_TRIANGLES);
+		glVertex2d(v1.x(),v1.y());
+		glVertex2d(v2.x(),v2.y());
+		glVertex2d(v3.x(),v3.y());
+		glEnd();
+	}
 
 	QPointF
 	get_scene_coords_from_llp(
@@ -149,6 +169,37 @@ namespace
 
 		return sqrt(difference.x()*difference.x() + difference.y()*difference.y());
 	}
+
+	void
+	draw_arrowhead(
+		const QPointF &start_qpoint,
+		const QPointF &end_qpoint,
+		const double arrowhead_size)
+	{
+		// A vector in the direction start_point->end_point. This will be the direction of the arrowhead.
+		QPointF distance_vector = end_qpoint - start_qpoint;
+
+		// The length of the distance vector
+		real_t d = sqrt(distance_vector.x()*distance_vector.x() + distance_vector.y()*distance_vector.y());
+		if (d == 0.)
+		{ 
+			return;
+		}
+
+		// Unit vector in the direction of the arrowhead, then scaled up to the arrowhead size.
+		distance_vector*= (arrowhead_size/d.dval());
+
+		// A vector perpendicular to the arrow direction, for forming the base of the triangle.
+		QPointF perpendicular_vector(-distance_vector.y(),distance_vector.x());
+
+		QPointF base_qpoint = end_qpoint - distance_vector;
+		QPointF corner1 = base_qpoint + perpendicular_vector*ARROWHEAD_BASE_HEIGHT_RATIO;
+		QPointF corner2 = base_qpoint - perpendicular_vector*ARROWHEAD_BASE_HEIGHT_RATIO;
+
+		draw_filled_triangle(end_qpoint,corner1,corner2);
+
+	}
+
 
 	double
 	angle_between_vectors(
@@ -536,11 +587,13 @@ namespace
 		const PointOnSphere &end_point_on_sphere,
 		const GPlatesGui::MapProjection &projection,
 		const GreatCircle &great_circle,
-		const PointOnSphere &central_pos)
+		const PointOnSphere &central_pos,
+		const boost::optional<double> &arrowhead_size = boost::none)
 	{
 
 		glBegin(GL_LINES);
 			QPointF start_qpoint = get_scene_coords_from_pos(start_point_on_sphere,projection);
+			QPointF last_start_qpoint = start_qpoint;
 			glVertex2d(start_qpoint.x(),start_qpoint.y());
 
 			QPointF end_qpoint = get_scene_coords_from_pos(end_point_on_sphere,projection);
@@ -636,6 +689,10 @@ namespace
 						glEnd();
 						glBegin(GL_LINES);
 						glVertex2d(-intersection_qpoint.x(),intersection_qpoint.y());
+						// Set our new start-point in case we need to
+						// draw an arrowhead.
+						last_start_qpoint.setX(-intersection_qpoint.x());
+						last_start_qpoint.setY(intersection_qpoint.y());
 					}
 				}
 			} // if (segment_crosses_great_circle)
@@ -645,6 +702,12 @@ namespace
 			// So either way, we need to draw a line to the second point. 
 			glVertex2d(end_qpoint.x(),end_qpoint.y());
 		glEnd();
+
+		if(arrowhead_size)
+		{
+			draw_arrowhead(last_start_qpoint,end_qpoint,*arrowhead_size);
+		}		
+		
 	}
 
 	/**
@@ -1018,3 +1081,62 @@ GPlatesGui::MapCanvasPainter::visit_rendered_ellipse(
 				d_inverse_zoom_factor);
 }
 
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_direction_arrow(
+	const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow)
+{
+	if (!d_render_settings.show_arrows)
+	{
+		return;
+	}
+
+	const GPlatesMaths::PointOnSphere start_point_on_sphere =
+		rendered_direction_arrow.get_start_position();
+
+	const GPlatesMaths::Vector3D start_vector(start_point_on_sphere.position_vector());
+
+	// Calculate position from start point along tangent direction to
+	// end point off the globe. The length of the arrow in world space
+	// is inversely proportional to the zoom or magnification.
+	const GPlatesMaths::Vector3D end_vector = GPlatesMaths::Vector3D(start_vector) +
+		d_inverse_zoom_factor * rendered_direction_arrow.get_arrow_direction() * MAP_VELOCITY_SCALE_FACTOR;
+
+	const GPlatesMaths::Vector3D arrowline = end_vector -start_vector;
+	const double arrowline_length = arrowline.magnitude().dval();
+
+	// This will project the end point on the surface. 
+	const GPlatesMaths::UnitVector3D normalised_end = end_vector.get_normalisation();
+
+	const GPlatesMaths::PointOnSphere end_point_on_sphere =
+		GPlatesMaths::PointOnSphere(normalised_end);
+
+	glColor3fv(rendered_direction_arrow.get_colour());
+	glLineWidth(rendered_direction_arrow.get_arrowline_width_hint()* LINE_WIDTH_ADJUSTMENT);
+
+
+	boost::optional<double> arrowhead_size;
+	arrowhead_size.reset( 
+		d_inverse_zoom_factor*rendered_direction_arrow.get_arrowhead_projected_size()*GLOBE_TO_MAP_FACTOR);
+
+	const float min_ratio_arrowhead_to_arrowline = 
+		rendered_direction_arrow.get_min_ratio_arrowhead_to_arrowline()*GLOBE_TO_MAP_FACTOR;
+
+	// We want to keep the projected arrowhead size constant regardless of the
+	// the length of the arrowline, except...
+	//
+	// ...if the ratio of arrowhead size to arrowline length is large enough then
+	// we need to start scaling the arrowhead size by the arrowline length so
+	// that the arrowhead disappears as the arrowline disappears.
+	if (arrowhead_size > min_ratio_arrowhead_to_arrowline * arrowline_length)
+	{
+		arrowhead_size = min_ratio_arrowhead_to_arrowline * arrowline_length;
+	}
+
+	GPlatesMaths::GreatCircle great_circle = d_canvas_ptr->projection().boundary_great_circle();
+	GPlatesMaths::LatLonPoint central_llp = d_canvas_ptr->projection().central_llp();
+	GPlatesMaths::PointOnSphere central_pos = GPlatesMaths::make_point_on_sphere(central_llp);
+
+	draw_segment(start_point_on_sphere,end_point_on_sphere,d_canvas_ptr->projection(),
+			great_circle,central_pos,arrowhead_size);
+
+}

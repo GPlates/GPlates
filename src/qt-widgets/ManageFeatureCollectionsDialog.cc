@@ -116,8 +116,6 @@ namespace
 		using std::make_pair;
 
 		// Appropriate filters for available output formats.
-		// Note that since we cannot write Shapefiles yet, we use PLATES4 line format as
-		// the default when the user clicks "Save a Copy" etc on shapefiles.
 		static const QString filter_gmt(QObject::tr("GMT xy (*.xy)"));
 		static const QString filter_gmt_ext(QObject::tr("xy"));
 		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
@@ -201,13 +199,22 @@ namespace
 			break;
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
 			{
+#if 0			
+				// Disable any kind of export from GMAP data. 
+				break;
+#else			
 				// No GMAP writing yet. (Ever?).
-				// Offer gmpl/gpml_gz export. 
+				// Offer gmpl/gpml_gz export.
+				// 
+				// (Probably not useful to export these in shapefile or plates formats
+				// for example - users would get the geometries but nothing else).
 				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
 				if (has_gzip)
 				{
 					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
 				}
+				break;
+#endif
 			}
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:

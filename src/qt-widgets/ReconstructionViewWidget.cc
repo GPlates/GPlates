@@ -277,6 +277,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(
 			&vprojection, SIGNAL(projection_type_changed(const GPlatesViewOperations::ViewportProjection &)),
 			this, SLOT(change_projection(const GPlatesViewOperations::ViewportProjection &)));
+			
+	QObject::connect(
+			&vprojection, SIGNAL(central_meridian_changed(const GPlatesViewOperations::ViewportProjection &)),
+			this, SLOT(change_projection(const GPlatesViewOperations::ViewportProjection &))); 
 
 	QObject::connect(this,SIGNAL(update_tools_and_status_message()),
 			&viewport_window,SLOT(update_tools_and_status_message()));
@@ -583,6 +587,9 @@ GPlatesQtWidgets::ReconstructionViewWidget::change_projection(
 	// Update the map canvas' projection
 	d_map_canvas_ptr->set_projection_type(
 		view_projection.get_projection_type());
+		
+	d_map_canvas_ptr->set_central_meridian(
+		view_projection.get_central_meridian());		
 
 	switch(view_projection.get_projection_type())
 	{

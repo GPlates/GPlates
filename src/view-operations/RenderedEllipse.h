@@ -121,7 +121,7 @@ namespace GPlatesViewOperations
 		//! The semi-minor axis of the ellipse, in radians
 		GPlatesMaths::Real d_semi_minor_axis_radians;
 		
-		//! The orientation of the ellipse. The semi-minor axis will lie along the great circle @a d_axis
+		//! The orientation of the ellipse. The semi-major axis will lie along the great circle @a d_axis
 		GPlatesMaths::GreatCircle d_axis;
 		
 		GPlatesGui::Colour d_colour;

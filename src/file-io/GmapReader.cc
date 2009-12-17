@@ -54,7 +54,7 @@ namespace
 	// sample age +/- DELTA_AGE.
 	// 
 	// DELTA_AGE is in My.
-	const float DELTA_AGE = 10.; 
+	const float DELTA_AGE = 5.; 
  
 	struct VirtualGeomagneticPole
 	{
@@ -130,6 +130,32 @@ namespace
 	}
 	
 	void
+	append_inclination_to_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		const float &inclination)	
+	{
+		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_inclination = 
+			GPlatesPropertyValues::XsDouble::create(inclination);
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
+			gpml_inclination, 
+			GPlatesModel::PropertyName::create_gpml("averageInclination"), 
+			feature);
+	}	
+	
+	void
+	append_declination_to_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		const float &declination)	
+	{
+		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_declination = 
+			GPlatesPropertyValues::XsDouble::create(declination);
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
+			gpml_declination, 
+			GPlatesModel::PropertyName::create_gpml("averageDeclination"), 
+			feature);
+	}	
+	
+	void
 	append_a95_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		const float &a95)	
@@ -139,10 +165,8 @@ namespace
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 			gpml_a95, 
 			//FIXME: Temporary name until role of a95/alpha95 is clarified.
-			GPlatesModel::PropertyName::create_gpml("poleAlpha95"), 
+			GPlatesModel::PropertyName::create_gpml("poleA95"), 
 			feature);
-			
-		
 	}
 	
 	void
@@ -224,7 +248,7 @@ namespace
 			GPlatesPropertyValues::XsDouble::create(dm);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 			gpml_dm, 
-			GPlatesModel::PropertyName::create_gpml("confidenceEllipseSemiMinorAxis"), 
+			GPlatesModel::PropertyName::create_gpml("vgpDm"), 
 			feature);	
 	}
 	
@@ -237,7 +261,7 @@ namespace
 			GPlatesPropertyValues::XsDouble::create(dp);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 			gpml_dp, 
-			GPlatesModel::PropertyName::create_gpml("confidenceEllipseSemiMajorAxis"), 
+			GPlatesModel::PropertyName::create_gpml("vgpDp"), 
 			feature);
 	}	
  
@@ -257,7 +281,8 @@ namespace
 		
 		append_site_geometry_to_feature(feature,vgp.site_latitude,vgp.site_longitude);
 			
-		//FIXME: Add inclination and declination fields.
+		append_inclination_to_feature(feature,vgp.inclination);
+		append_declination_to_feature(feature,vgp.declination);
 		append_a95_to_feature(feature,vgp.a95);
 		append_vgp_position_to_feature(feature,vgp.vgp_latitude,vgp.vgp_longitude);
 		append_age_to_feature(feature,vgp.age);
@@ -340,6 +365,7 @@ namespace
 		
 		// Line 1, inclination, degreees.
 		boost::optional<float> inclination = check_format_and_return_value(next_line);
+		// FIXME: Check for valid range of inclination.
 		if (!inclination)
 		{
 			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
@@ -351,6 +377,7 @@ namespace
 		
 		// Line 2, declination, degrees.
 		boost::optional<float> declination = check_format_and_return_value(next_line);
+		// FIXME: Check for valid range of declination.
 		if (!declination)
 		{	
 			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;

@@ -43,7 +43,7 @@ namespace GPlatesMaths
 	 *
 	 * Usage: 
 	 * 1. construct an EllipseGenerator, providing the desired centre, semi-major and
-	 * semi-minor axes, and orientation. The semi-minor axis of the ellipse will lie along
+	 * semi-minor axes, and orientation. The semi-major axis of the ellipse will lie along
 	 * the great circle @a axis.
 	 * 2. Call the function get_point_on_ellipse(double angle_in_radians) to obtain the 
 	 * unit vector of the point at angle @a angle_from_semi_major_axis from the semi-major axis.

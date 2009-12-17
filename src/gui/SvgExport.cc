@@ -99,6 +99,40 @@ namespace
 		vertex->alpha = *position;
 	}
 
+	void
+	parse_and_draw_polygon_vertices(
+		std::vector<GLfloat>::const_iterator buffer_position,
+		const QPointF &offset,		
+		QPainter *painter
+		)
+	{
+		int num_vertices = static_cast<int>(*buffer_position);
+		buffer_position++;
+		QColor colour;		
+		QPolygonF polygon;
+		for (int i=0 ; i < num_vertices ; ++i)
+		{
+			vertex_data vertex;
+			vertex_data* vertex_ptr = &vertex;
+			fill_vertex_data_from_buffer(vertex_ptr,buffer_position);		
+			colour.setRgbF(
+				vertex.red,
+				vertex.green,
+				vertex.blue,
+				vertex.alpha);				
+			QPointF point(vertex.x,-vertex.y);
+			point += offset;
+			polygon << point;
+			buffer_position += VERTEX_SIZE;
+		}
+
+
+		// Draw the polygon, filled with the last grabbed colour, and with no outline. 
+
+		painter->setBrush(colour);
+		painter->drawPolygon(polygon);
+	}	
+
 	/**
 	 * Try drawing to the opengl feedback buffer, and return the number of items
 	 * in the buffer. If the buffer was not large enough, a negative number
@@ -336,7 +370,6 @@ namespace
 		// buffer. 
 
 		int token;
-		int num_vertices;
 		int num_items = 0;
 
 		std::vector<GLfloat>::const_iterator buffer_position = feedback_buffer.begin();
@@ -464,9 +497,9 @@ namespace
 				// I am paranoid, I will leave in the code which at least steps over the polygon
 				// data correctly. 
 				case GL_POLYGON_TOKEN:
-					num_vertices = static_cast<int>(*buffer_position);
-					buffer_position++;
-					buffer_position += (VERTEX_SIZE*num_vertices);
+					// Rendered arrow heads are drawn as triangle_fans, which are made up of triangles,
+					// which are polygons.
+					parse_and_draw_polygon_vertices(buffer_position,offset,&painter);
 					break;
 				case GL_BITMAP_TOKEN:
 					buffer_position += VERTEX_SIZE;

@@ -63,7 +63,7 @@ GPlatesAppLogic::PaleomagUtils::detect_paleomag_features(
 
 
 void
-GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_gml_point(
+GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gml_point(
 	GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	static const GPlatesModel::PropertyName site_name = 
@@ -84,17 +84,17 @@ GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_gml_point(
 }
 
 void
-GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_xs_double(
+GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_xs_double(
 	GPlatesPropertyValues::XsDouble &xs_double)
 {
 	static const GPlatesModel::PropertyName a95_name = 
-		GPlatesModel::PropertyName::create_gpml("poleAlpha95");
+		GPlatesModel::PropertyName::create_gpml("poleA95");
 		
 	static const GPlatesModel::PropertyName dm_name = 
-		GPlatesModel::PropertyName::create_gpml("confidenceEllipseSemiMinorAxis");
+		GPlatesModel::PropertyName::create_gpml("poleDm");
 		
 	static const GPlatesModel::PropertyName dp_name = 
-		GPlatesModel::PropertyName::create_gpml("confidenceEllipseSemiMajorAxis");		
+		GPlatesModel::PropertyName::create_gpml("poleDp");		
 	
 	if (current_top_level_propname() == a95_name)
 	{
@@ -112,7 +112,7 @@ GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_xs_double(
 }
 
 void
-GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_gpml_plate_id(
+GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gpml_plate_id(
 	GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const GPlatesModel::PropertyName plate_id_name = 
@@ -126,14 +126,14 @@ GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_gpml_plate_id(
 
 
 void
-GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_gpml_constant_value(
+GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gpml_constant_value(
 	GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 void
-GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_gml_time_period(
+GPlatesAppLogic::PaleomagUtils::VgpRenderer::visit_gml_time_period(
 	GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	static const GPlatesModel::PropertyName valid_time_name = 
@@ -149,7 +149,7 @@ GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::visit_gml_time_period(
 
 
 void
-GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::finalise_post_feature_properties(
+GPlatesAppLogic::PaleomagUtils::VgpRenderer::finalise_post_feature_properties(
 	GPlatesModel::FeatureHandle &feature_handle)
 {
 
@@ -158,17 +158,20 @@ GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::finalise_post_feature_properti
 		return;
 	}
 
-	GPlatesPropertyValues::GeoTimeInstant time = 
-		GPlatesPropertyValues::GeoTimeInstant(d_reconstruction_time);
+	if (d_reconstruction_time)
+	{
+		GPlatesPropertyValues::GeoTimeInstant time = 
+			GPlatesPropertyValues::GeoTimeInstant(*d_reconstruction_time);
 
-	// If we're outside the valid time of the feature, don't draw the error circle/ellipse.	
-	if (d_begin_time && time.is_strictly_earlier_than(*d_begin_time))
-	{
-		return;
-	}
-	if (d_end_time && time.is_strictly_later_than(*d_end_time))
-	{
-		return;
+		// If we're outside the valid time of the feature, don't draw the error circle/ellipse.	
+		if (d_begin_time && time.is_strictly_earlier_than(*d_begin_time))
+		{
+			return;
+		}
+		if (d_end_time && time.is_strictly_later_than(*d_end_time))
+		{
+			return;
+		}
 	}
 
 
@@ -181,38 +184,16 @@ GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::finalise_post_feature_properti
 		GPlatesMaths::FiniteRotation rotation = 
 			reconstruction_tree.get_composed_absolute_rotation(*d_plate_id).first;
 
+		if (d_additional_rotation)
+		{
+			rotation = GPlatesMaths::compose(*d_additional_rotation,rotation);
+		}
+
 		d_vgp_point.reset(rotation*(*d_vgp_point));	
 		d_site_point.reset(rotation*(*d_site_point));
 	}
 
-	// FIXME: This is a hack to get the same colour as the rendered geometry of this feature. To access
-	// the colour via the ColourTable->lookup functions we need a ReconstructionGeometry, so I'm creating
-	// a temporary reconstruction geometry just for the purpose of grabbing the appropriate colour.
-	//
-	// If we later take control of the site and vgp rendering in this class, then we'll have to go through
-	// this RFG creation process anyway.
-	//
-	// If instead we later have a separate RFG->RenderedGeometry style Workflow, then we'd also be able to 
-	// access the RFG's colour there.
 
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point = (*d_vgp_point).get_non_null_pointer();
-
-	GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg = 
-		GPlatesModel::ReconstructedFeatureGeometry::create(
-		point,
-		feature_handle,
-		feature_handle.properties_begin(),
-		d_plate_id,
-		boost::none);	
-
-	GPlatesGui::ColourTable::const_iterator colour =
-		d_colour_table.lookup(*rfg);
-
-	if (colour == d_colour_table.end())
-	{
-		// Anything not in the table uses the 'Olive' colour.
-		colour = &GPlatesGui::Colour::get_olive();
-	}
 
 	if (!d_draw_error_as_ellipse && d_a95)
 	{
@@ -221,12 +202,11 @@ GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::finalise_post_feature_properti
 			GPlatesViewOperations::create_rendered_small_circle(
 			*d_vgp_point,
 			GPlatesMaths::degreesToRadians(*d_a95),
-			*colour);
+			d_colour);
 
-		d_paleomag_layer->add_rendered_geometry(rendered_small_circle);		
+		d_target_layer->add_rendered_geometry(rendered_small_circle);		
 	}
-	else
-	if (d_draw_error_as_ellipse && d_dm && d_dp )
+	else if (d_draw_error_as_ellipse && d_dm && d_dp )
 	{
 		GPlatesMaths::GreatCircle great_circle(*d_site_point,*d_vgp_point);
 				
@@ -236,9 +216,9 @@ GPlatesAppLogic::PaleomagUtils::PaleomagRenderer::finalise_post_feature_properti
 			GPlatesMaths::degreesToRadians(*d_dp),
 			GPlatesMaths::degreesToRadians(*d_dm),
 			great_circle,
-			*colour);
+			d_colour);
 
-		d_paleomag_layer->add_rendered_geometry(rendered_ellipse);			
+		d_target_layer->add_rendered_geometry(rendered_ellipse);			
 	}
 
 

@@ -79,6 +79,11 @@ namespace GPlatesGui
 
 		virtual
 		void
+		visit_rendered_direction_arrow(
+				const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow);
+
+		virtual
+		void
 		visit_rendered_ellipse(
 				const GPlatesViewOperations::RenderedEllipse &rendered_ellipse);
 

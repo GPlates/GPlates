@@ -26,6 +26,8 @@
 #ifndef GPLATES_APP_LOGIC_PALEOMAGUTILS_H
 #define GPLATES_APP_LOGIC_PALEOMAGUTILS_H
 
+#include "gui/Colour.h"
+#include "maths/Rotation.h"
 #include "model/FeatureVisitor.h"
 #include "model/FeatureHandle.h"
 
@@ -34,10 +36,6 @@
 
 #include "view-operations/RenderedGeometryCollection.h"
 
-namespace GPlatesGui
-{
-	class ColourTable;
-}
 
 namespace GPlatesModel
 {
@@ -103,22 +101,24 @@ namespace GPlatesAppLogic
 			GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection);
 			
 	
-		class PaleomagRenderer:
+		class VgpRenderer:
 			public GPlatesModel::FeatureVisitor
 		{
 		public:
 			
-			PaleomagRenderer(
+			VgpRenderer(
 				GPlatesModel::Reconstruction &reconstruction,
-				const double &reconstruction_time,
-				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type paleomag_layer,
-				const GPlatesGui::ColourTable &colour_table,
+				boost::optional<const double> &reconstruction_time,
+				boost::optional<GPlatesMaths::Rotation> &additional_rotation,
+				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type target_layer,
+				const GPlatesGui::Colour &colour,
 				bool draw_error_as_ellipse = true
 				):
 				d_reconstruction(reconstruction),
 				d_reconstruction_time(reconstruction_time),
-				d_paleomag_layer(paleomag_layer),
-				d_colour_table(colour_table),
+				d_additional_rotation(additional_rotation),
+				d_target_layer(target_layer),
+				d_colour(colour),
 				d_draw_error_as_ellipse(draw_error_as_ellipse)
 			{ };
 			
@@ -157,9 +157,10 @@ namespace GPlatesAppLogic
 		private:
 		
 			GPlatesModel::Reconstruction &d_reconstruction;
-			const double d_reconstruction_time;
-			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_paleomag_layer;
-			const GPlatesGui::ColourTable &d_colour_table;
+			boost::optional<const double> d_reconstruction_time;
+			boost::optional<GPlatesMaths::Rotation> d_additional_rotation;
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_target_layer;
+			const GPlatesGui::Colour &d_colour;
 			const bool d_draw_error_as_ellipse;
 			
 			boost::optional<GPlatesMaths::PointOnSphere> d_site_point;
