@@ -248,7 +248,7 @@ namespace
 			GPlatesPropertyValues::XsDouble::create(dm);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 			gpml_dm, 
-			GPlatesModel::PropertyName::create_gpml("vgpDm"), 
+			GPlatesModel::PropertyName::create_gpml("poleDm"), 
 			feature);	
 	}
 	
@@ -261,7 +261,7 @@ namespace
 			GPlatesPropertyValues::XsDouble::create(dp);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 			gpml_dp, 
-			GPlatesModel::PropertyName::create_gpml("vgpDp"), 
+			GPlatesModel::PropertyName::create_gpml("poleDp"), 
 			feature);
 	}	
  
