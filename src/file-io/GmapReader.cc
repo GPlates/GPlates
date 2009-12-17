@@ -69,7 +69,7 @@ namespace
 		float dp;
 		float dm;
 		float age;
-		boost::optional<float> plate_id;
+		boost::optional<GPlatesModel::integer_plate_id_type> plate_id;
 	};
 	
 	void
@@ -204,7 +204,7 @@ namespace
 	void
 	append_plate_id_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
-		const float &plate_id)
+		const GPlatesModel::integer_plate_id_type &plate_id)
 	{
 		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_plate_id = 
 			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
@@ -453,23 +453,34 @@ namespace
 		boost::optional<float> plate_id = check_format_and_return_value(next_line);
 		if (!plate_id)
 		{
-		// No plate id field; that's ok, but to keep track of line numbers for error-reporting,
-		// reset the line number and text stream.
+			// No plate id field; that's ok, but to keep track of line numbers for
+			// error-reporting, reset the line number and text stream.
 			--line_number;
 			input.seek(last_good_position);
+			vgp.plate_id = boost::none;
 		}
-		if (plate_id && (GPlatesMaths::Real(*plate_id) != GPlatesMaths::Real(std::floor(*plate_id))))
-		{
-		// We did find a plate id, but it's not an integer. Should we round
-		// it and use it, or complain? Let's complain.
-			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
+		else {
+			// We have a plate id field.
+			float plate_id_as_float = *plate_id;
+			if ((GPlatesMaths::Real(plate_id_as_float) !=
+					GPlatesMaths::Real(std::floor(plate_id_as_float))))
+			{
+				// We did find a plate id, but it's not an integer.
+				// Should we round it and use it, or complain?
+				// Let's complain.
+				throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
+			}
+			// The plate id is an integer.
+			// Now, we'll cast it to an integer type for the rest of GPlates.
+			GPlatesModel::integer_plate_id_type plate_id_as_integer =
+					static_cast<GPlatesModel::integer_plate_id_type>(plate_id_as_float);
+			vgp.plate_id = plate_id_as_integer;
 		}
-		vgp.plate_id = plate_id;
-		
-		// If we have got this far, we should have enough information to create the feature.
-		
+
+		// If we've come this far, we should have enough information to create the feature.
+
 		//display_vgp(vgp);
-		
+
 		create_vgp_feature(model,collection,vgp);
 	}
 	
