@@ -347,13 +347,6 @@
    <item>
     <layout class="QHBoxLayout" >
      <item>
-      <widget class="QLabel" name="label_limitation" >
-       <property name="text" >
-        <string>&lt;b>Only &lt;em>polyline&lt;/em> features and &lt;em>VirtualGeomagneticPole&lt;/em>s supported in this GPlates release&lt;/b></string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <spacer>
        <property name="orientation" >
         <enum>Qt::Horizontal</enum>

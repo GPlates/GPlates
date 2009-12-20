@@ -49,10 +49,8 @@ namespace
 	const QString HELP_FEATURE_COLLECTIONS_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<h3>Select the feature collections that will be assigned reconstruction plate ids</h3>"
-			"<b>Currently only polyline features can be assigned plate ids - in a future release "
-			"support for polygon, multipoint and point features will be added.</b>"
 			"<p>All selected feature collections will have their features assigned a "
-			"reconstruction plate id.</p>"
+			"reconstruction plate id (if they already have one it will be overwritten).</p>"
 			"<p>The plate ids are assigned using the currently loaded and active plate boundary "
 			"feature collections (these are the ones containing TopologicalClosedPlateBoundary "
 			"features).</p>"
@@ -60,27 +58,33 @@ namespace
 			"Manage Feature Collections dialog will be available for selection in this dialog - "
 			"if a feature collection appears to be missing try activating it in the "
 			"Manage Feature Collections dialog first.</p>" 
-			"<p><b>If this dialog was activated automatically when loading or reloading a "
-			"feature collection then that feature collection contains features "
-			"that have no reconstruction plate id.</b></p>"
+			"<p><em>If this dialog was activated automatically when loading or reloading a "
+			"feature collection then that feature collection contains one or more features "
+			"that have no reconstruction plate id.</em></p>"
 			"</body></html>\n");
 	const QString HELP_RECONSTRUCTION_TIME_DIALOG_TITLE = QObject::tr("Selecting reconstruction time");
 	const QString HELP_RECONSTRUCTION_TIME_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<h3>Select the reconstruction time representing the geometry in the "
 			"feature collections</h3>"
-			"<p>The geometry in the feature collections effectively represents a snapshot "
-			"of the features at the reconstruction time - this is not present day geometry "
-			"(unless the 'present day' option is selected).</p>"
-			"<p>The plate boundaries are rotated to this reconstruction time before "
-			"testing for overlap/intersection with the feature collections.</p>"
+			"<p>The three options for reconstruction time are:</p>"
 			"<ul>"
-			"<li><b>Present day:</b> reconstruction time is 0Ma.</li>"
-			"<li><b>Current reconstruction time:</b> the reconstruction time in the main window.</li>"
-			"<li><b>Specify reconstruction time:</b> choose an arbitrary reconstruction time.</li>"
+			"<li><b>Present day:</b> reconstruction time is 0Ma.</li>\n"
+			"<li><b>Current reconstruction time:</b> the reconstruction time in the main window.</li>\n"
+			"<li><b>Specify reconstruction time:</b> choose an arbitrary reconstruction time.</li>\n"
 			"</ul>"
-			"<p>Note: Present day should be selected when assigning plate ids to "
-			"<b>VirtualGeomagneticPole</b> features.</p>"
+			"<p><em>Note: Present day should be selected when assigning plate ids to "
+			"<b>VirtualGeomagneticPole</b> features.</em></p>"
+			"<p>The plate boundaries are rotated to the selected reconstruction time before "
+			"testing for overlap/intersection with the feature collections.</p>"
+			"<p>The geometry in the feature collections effectively represents a snapshot "
+			"of the features at the reconstruction time.</p>"
+			"<ul>"
+			"<li>For features with an existing reconstruction plate id this will be "
+			"the rotated geometry at the selected reconstruction time.</li>"
+			"<li>For features with no existing reconstruction plate id this will be "
+			"the unrotated geometry stored in the feature.</li>"
+			"</ul>"
 			"</body></html>\n");
 	const QString HELP_ASSIGN_PLATE_ID_DIALOG_TITLE = QObject::tr("Assign plate id options");
 	const QString HELP_ASSIGN_PLATE_ID_DIALOG_TEXT = QObject::tr(
@@ -117,15 +121,15 @@ namespace
 			"These two partitioned geometries will now be two features since they "
 			"have different plate ids.</li>\n"
 			"</ul>\n"
-			"<p>If the plate boundaries do not cover all the globe's surface it is "
+			"<p>If the plate boundaries do not cover the entire surface of the globe then it is "
 			"possible for some features (or partitioned geometries) to fall outside "
 			"all plate boundaries. In this situation the feature (or partitioned geometry) "
-			"is not assigned a plate id and any existing plate id it has is removed. "
-			"These features will then all have the same colour and will not move if the "
+			"is not assigned a plate id and any existing plate id is removed. "
+			"These features will all have the same colour and will not move when the "
 			"reconstruction time is changed or animated.</p>"
-			"<p><b>VirtualGeomagneticPole</b> features are treated differently - these "
+			"<p><em><b>VirtualGeomagneticPole</b> features are treated differently - these "
 			"features are assigned to the plate whose boundary contains the feature's "
-			"sample site point location. For these features the above options are ignored.</p>"
+			"sample site point location. For these features the above options are ignored.</em></p>"
 			"</body></html>\n");
 }
 
@@ -283,7 +287,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::check_for_plate_boundaries
 void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::pop_up_no_plate_boundaries_message_box()
 {
-	const QString message = tr("GPlates cannot assign plate ids without plate boundary features.\n"
+	const QString message = tr("GPlates cannot assign plate ids without plate boundary features.\n\n"
 			"Please load feature collection(s) containing "
 			"TopologicalClosedPlateBoundary features.");
 	QMessageBox::warning(this, tr("No plate boundary features loaded"), message,
