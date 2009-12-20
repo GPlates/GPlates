@@ -50,6 +50,7 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
 
 #include "model/FeatureType.h"
@@ -179,27 +180,87 @@ namespace
 
 
 	/**
-	 * Creates a property value suitable for @a polyline and appends it
+	 * Visits a @a GeometryOnSphere and creates a suitable property value for it.
+	 */
+	class CreateGeometryProperty :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		create_geometry_property(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
+		{
+			d_geometry_property = boost::none;
+
+			geometry->accept_visitor(*this);
+
+			return d_geometry_property;
+		}
+
+	protected:
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+		}
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
+					GPlatesPropertyValues::GmlLineString::create(polyline_on_sphere);
+			GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
+					GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
+			d_geometry_property = GPlatesModel::ModelUtils::create_gpml_constant_value(
+					gml_orientable_curve, 
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
+		}
+
+	private:
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> d_geometry_property;
+	};
+
+
+	/**
+	 * Creates a property value suitable for @a geometry and appends it
 	 * to @a feature_ref with the property name @a geometry_property_name.
 	 *
 	 * It doesn't attempt to remove any existing properties named @a geometry_property_name.
 	 */
 	void
-	append_polyline_to_feature(
-			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+	append_geometry_to_feature(
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 			const GPlatesModel::PropertyName &geometry_property_name,
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 	{
-		GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
-				GPlatesPropertyValues::GmlLineString::create(polyline);
-		GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
-				GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
-		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-				GPlatesModel::ModelUtils::create_gpml_constant_value(
-						gml_orientable_curve, 
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				property_value, geometry_property_name, feature_ref);
+		CreateGeometryProperty geometry_property_creator;
+
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+				geometry_property =
+						geometry_property_creator.create_geometry_property(geometry);
+
+		if (geometry_property)
+		{
+			GPlatesModel::ModelUtils::append_property_value_to_feature(
+					*geometry_property, geometry_property_name, feature_ref);
+		}
 	}
 
 
@@ -369,10 +430,10 @@ namespace
 	};
 
 
-	class GeometryPropertyAllPartitionedPolylines
+	class GeometryPropertyAllPartitionedGeometries
 	{
 	public:
-		GeometryPropertyAllPartitionedPolylines(
+		GeometryPropertyAllPartitionedGeometries(
 				const GPlatesModel::PropertyName &geometry_property_name_,
 				const GPlatesModel::FeatureHandle::properties_iterator &geometry_properties_iterator_) :
 			geometry_property_name(geometry_property_name_),
@@ -381,37 +442,37 @@ namespace
 
 		GPlatesModel::PropertyName geometry_property_name;
 		GPlatesModel::FeatureHandle::properties_iterator geometry_properties_iterator;
-		GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_polylines_seq_type
-				partitioned_inside_polylines_seq;
-		GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type
-				partitioned_outside_polylines;
+		GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_geometries_seq_type
+				partitioned_inside_geometries_seq;
+		GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type
+				partitioned_outside_geometries;
 	};
-	typedef std::list<GeometryPropertyAllPartitionedPolylines>
-			geometry_property_all_partitioned_polylines_seq_type;
+	typedef std::list<GeometryPropertyAllPartitionedGeometries>
+			geometry_property_all_partitioned_geometries_seq_type;
 
 
-	class GeometryPropertyPartitionedInsidePolylines
+	class GeometryPropertyPartitionedInsideGeometries
 	{
 	public:
-		GeometryPropertyPartitionedInsidePolylines(
+		GeometryPropertyPartitionedInsideGeometries(
 				const GPlatesModel::PropertyName &geometry_property_name_,
-				const GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type &
-						partitioned_polylines_) :
+				const GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type &
+						partitioned_geometries_) :
 			geometry_property_name(geometry_property_name_),
-			partitioned_polylines(partitioned_polylines_)
+			partitioned_geometries(partitioned_geometries_)
 		{  }
 
 		GPlatesModel::PropertyName geometry_property_name;
-		GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type partitioned_polylines;
+		GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type partitioned_geometries;
 	};
-	typedef std::list<GeometryPropertyPartitionedInsidePolylines>
-			geometry_property_partitioned_inside_polylines_seq_type;
+	typedef std::list<GeometryPropertyPartitionedInsideGeometries>
+			geometry_property_partitioned_inside_geometries_seq_type;
 
 	class ResolvedBoundaryGeometryProperties
 	{
 	public:
-		geometry_property_partitioned_inside_polylines_seq_type
-				geometry_property_partitioned_inside_polylines_seq;
+		geometry_property_partitioned_inside_geometries_seq_type
+				geometry_property_partitioned_inside_geometries_seq;
 	};
 	typedef std::map<
 			const GPlatesModel::ResolvedTopologicalBoundary *,
@@ -429,15 +490,15 @@ namespace
 	{
 	public:
 		PartitionFeatureGeometryVisitor(
-				geometry_property_all_partitioned_polylines_seq_type &
-						geometry_property_all_partitioned_polylines_seq,
+				geometry_property_all_partitioned_geometries_seq_type &
+						geometry_property_all_partitioned_geometries_seq,
 				const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 						geometry_partition_query,
 				const boost::optional<double> &reconstruction_time = boost::none) :
 			d_geometry_partition_query(geometry_partition_query),
 			d_reconstruction_time(reconstruction_time),
-			d_geometry_property_all_partitioned_polylines_seq(
-					geometry_property_all_partitioned_polylines_seq)
+			d_geometry_property_all_partitioned_geometries_seq(
+					geometry_property_all_partitioned_geometries_seq)
 		{  }
 
 	protected:
@@ -469,18 +530,18 @@ namespace
 		visit_gml_line_string(
 				GPlatesPropertyValues::GmlLineString &gml_line_string)
 		{
-			GeometryPropertyAllPartitionedPolylines geometry_property_all_partitioned_polylines(
+			GeometryPropertyAllPartitionedGeometries geometry_property_all_partitioned_geometries(
 					*current_top_level_propname(),
 					*current_top_level_propiter());
 
-			GPlatesAppLogic::TopologyUtils::partition_polyline_using_resolved_topology_boundaries(
-					geometry_property_all_partitioned_polylines.partitioned_inside_polylines_seq,
-					geometry_property_all_partitioned_polylines.partitioned_outside_polylines,
+			GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
+					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
+					geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
 					gml_line_string.polyline(),
 					d_geometry_partition_query);
 
-			d_geometry_property_all_partitioned_polylines_seq.push_back(
-					geometry_property_all_partitioned_polylines);
+			d_geometry_property_all_partitioned_geometries_seq.push_back(
+					geometry_property_all_partitioned_geometries);
 		}
 
 
@@ -526,9 +587,11 @@ namespace
 	private:
 		GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
 				d_geometry_partition_query;
+
 		boost::optional<double> d_reconstruction_time;
 
-		geometry_property_all_partitioned_polylines_seq_type &d_geometry_property_all_partitioned_polylines_seq;
+		geometry_property_all_partitioned_geometries_seq_type &
+				d_geometry_property_all_partitioned_geometries_seq;
 	};
 
 
@@ -536,61 +599,61 @@ namespace
 	map_resolved_boundaries_to_geometry_properties(
 			resolved_boundary_geometry_properties_map_type &
 					resolved_boundary_geometry_properties_map,
-			const geometry_property_all_partitioned_polylines_seq_type &
-					geometry_property_all_partitioned_polylines_seq)
+			const geometry_property_all_partitioned_geometries_seq_type &
+					geometry_property_all_partitioned_geometries_seq)
 	{
-		geometry_property_all_partitioned_polylines_seq_type::const_iterator
-				geometry_property_all_partitioned_polylines_iter =
-						geometry_property_all_partitioned_polylines_seq.begin();
-		geometry_property_all_partitioned_polylines_seq_type::const_iterator
-				geometry_property_all_partitioned_polylines_end =
-						geometry_property_all_partitioned_polylines_seq.end();
+		geometry_property_all_partitioned_geometries_seq_type::const_iterator
+				geometry_property_all_partitioned_geometries_iter =
+						geometry_property_all_partitioned_geometries_seq.begin();
+		geometry_property_all_partitioned_geometries_seq_type::const_iterator
+				geometry_property_all_partitioned_geometries_end =
+						geometry_property_all_partitioned_geometries_seq.end();
 		for ( ;
-			geometry_property_all_partitioned_polylines_iter !=
-				geometry_property_all_partitioned_polylines_end;
-			++geometry_property_all_partitioned_polylines_iter)
+			geometry_property_all_partitioned_geometries_iter !=
+				geometry_property_all_partitioned_geometries_end;
+			++geometry_property_all_partitioned_geometries_iter)
 		{
-			const GeometryPropertyAllPartitionedPolylines &
-					geometry_property_all_partitioned_polylines = 
-							*geometry_property_all_partitioned_polylines_iter;
+			const GeometryPropertyAllPartitionedGeometries &
+					geometry_property_all_partitioned_geometries = 
+							*geometry_property_all_partitioned_geometries_iter;
 
 			const GPlatesModel::PropertyName &geometry_property_name =
-					geometry_property_all_partitioned_polylines.geometry_property_name;
+					geometry_property_all_partitioned_geometries.geometry_property_name;
 
-			const GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_polylines_seq_type &
-					resolved_boundary_partitioned_polylines_seq =
-							geometry_property_all_partitioned_polylines
-									.partitioned_inside_polylines_seq;
+			const GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_geometries_seq_type &
+					resolved_boundary_partitioned_geometries_seq =
+							geometry_property_all_partitioned_geometries
+									.partitioned_inside_geometries_seq;
 
 			GPlatesAppLogic::TopologyUtils
-					::resolved_boundary_partitioned_polylines_seq_type::const_iterator
-							resolved_boundary_partitioned_polylines_iter =
-									resolved_boundary_partitioned_polylines_seq.begin();
+					::resolved_boundary_partitioned_geometries_seq_type::const_iterator
+							resolved_boundary_partitioned_geometries_iter =
+									resolved_boundary_partitioned_geometries_seq.begin();
 			GPlatesAppLogic::TopologyUtils
-					::resolved_boundary_partitioned_polylines_seq_type::const_iterator
-							resolved_boundary_partitioned_polylines_end =
-									resolved_boundary_partitioned_polylines_seq.end();
+					::resolved_boundary_partitioned_geometries_seq_type::const_iterator
+							resolved_boundary_partitioned_geometries_end =
+									resolved_boundary_partitioned_geometries_seq.end();
 			for ( ;
-				resolved_boundary_partitioned_polylines_iter !=
-					resolved_boundary_partitioned_polylines_end;
-				++resolved_boundary_partitioned_polylines_iter)
+				resolved_boundary_partitioned_geometries_iter !=
+					resolved_boundary_partitioned_geometries_end;
+				++resolved_boundary_partitioned_geometries_iter)
 			{
-				const GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedPolylines &
-						resolved_boundary_partitioned_polylines =
-								*resolved_boundary_partitioned_polylines_iter;
+				const GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedGeometries &
+						resolved_boundary_partitioned_geometries =
+								*resolved_boundary_partitioned_geometries_iter;
 
 				const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary =
-						resolved_boundary_partitioned_polylines.resolved_topological_boundary;
+						resolved_boundary_partitioned_geometries.resolved_topological_boundary;
 
-				GeometryPropertyPartitionedInsidePolylines
-						geometry_property_partitioned_inside_polylines(
+				GeometryPropertyPartitionedInsideGeometries
+						geometry_property_partitioned_inside_geometries(
 								geometry_property_name,
-								resolved_boundary_partitioned_polylines
-										.partitioned_inside_polylines);
+								resolved_boundary_partitioned_geometries
+										.partitioned_inside_geometries);
 
 				resolved_boundary_geometry_properties_map[resolved_topological_boundary]
-						.geometry_property_partitioned_inside_polylines_seq
-						.push_back(geometry_property_partitioned_inside_polylines);
+						.geometry_property_partitioned_inside_geometries_seq
+						.push_back(geometry_property_partitioned_inside_geometries);
 			}
 		}
 	}
@@ -598,50 +661,50 @@ namespace
 
 	bool
 	assign_partitioned_geometry_outside_all_resolved_boundaries(
-			const geometry_property_all_partitioned_polylines_seq_type &
-					geometry_property_all_partitioned_polylines_seq,
+			const geometry_property_all_partitioned_geometries_seq_type &
+					geometry_property_all_partitioned_geometries_seq,
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 	{
 		bool assigned_to_feature = false;
 
-		geometry_property_all_partitioned_polylines_seq_type::const_iterator
-				geometry_property_all_partitioned_polylines_iter =
-						geometry_property_all_partitioned_polylines_seq.begin();
-		geometry_property_all_partitioned_polylines_seq_type::const_iterator
-				geometry_property_all_partitioned_polylines_end =
-						geometry_property_all_partitioned_polylines_seq.end();
+		geometry_property_all_partitioned_geometries_seq_type::const_iterator
+				geometry_property_all_partitioned_geometries_iter =
+						geometry_property_all_partitioned_geometries_seq.begin();
+		geometry_property_all_partitioned_geometries_seq_type::const_iterator
+				geometry_property_all_partitioned_geometries_end =
+						geometry_property_all_partitioned_geometries_seq.end();
 		for ( ;
-			geometry_property_all_partitioned_polylines_iter !=
-				geometry_property_all_partitioned_polylines_end;
-			++geometry_property_all_partitioned_polylines_iter)
+			geometry_property_all_partitioned_geometries_iter !=
+				geometry_property_all_partitioned_geometries_end;
+			++geometry_property_all_partitioned_geometries_iter)
 		{
-			const GeometryPropertyAllPartitionedPolylines &
-					geometry_property_all_partitioned_polylines = 
-							*geometry_property_all_partitioned_polylines_iter;
+			const GeometryPropertyAllPartitionedGeometries &
+					geometry_property_all_partitioned_geometries = 
+							*geometry_property_all_partitioned_geometries_iter;
 
-			if (geometry_property_all_partitioned_polylines.partitioned_outside_polylines.empty())
+			if (geometry_property_all_partitioned_geometries.partitioned_outside_geometries.empty())
 			{
 				continue;
 			}
 
 			const GPlatesModel::PropertyName &geometry_property_name =
-					geometry_property_all_partitioned_polylines.geometry_property_name;
-			const GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type &
-					outside_polyline_seq =
-						geometry_property_all_partitioned_polylines.partitioned_outside_polylines;
+					geometry_property_all_partitioned_geometries.geometry_property_name;
+			const GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type &
+					outside_geometry_seq =
+						geometry_property_all_partitioned_geometries.partitioned_outside_geometries;
 
-			// Iterate over the outside polylines.
-			GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type::const_iterator
-					outside_polyline_iter = outside_polyline_seq.begin();
-			GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type::const_iterator
-					outside_polyline_end = outside_polyline_seq.end();
-			for ( ; outside_polyline_iter != outside_polyline_end; ++outside_polyline_iter)
+			// Iterate over the outside geometries.
+			GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
+					outside_geometry_iter = outside_geometry_seq.begin();
+			GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
+					outside_geometry_end = outside_geometry_seq.end();
+			for ( ; outside_geometry_iter != outside_geometry_end; ++outside_geometry_iter)
 			{
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &
-						outside_polyline = *outside_polyline_iter;
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
+						outside_geometry = *outside_geometry_iter;
 
-				append_polyline_to_feature(
-						outside_polyline, geometry_property_name, feature_ref);
+				append_geometry_to_feature(
+						outside_geometry, geometry_property_name, feature_ref);
 			}
 
 			assigned_to_feature = true;
@@ -653,33 +716,33 @@ namespace
 
 	/**
 	 * Returns true if all geometry properties in
-	 * @a geometry_property_all_partitioned_polylines_seq are outside
+	 * @a geometry_property_all_partitioned_geometries_seq are outside
 	 * all resolved boundaries.
 	 */
 	bool
 	is_geometry_outside_all_resolved_boundaries(
-			const geometry_property_all_partitioned_polylines_seq_type &
-					geometry_property_all_partitioned_polylines_seq)
+			const geometry_property_all_partitioned_geometries_seq_type &
+					geometry_property_all_partitioned_geometries_seq)
 	{
-		geometry_property_all_partitioned_polylines_seq_type::const_iterator
-				geometry_property_all_partitioned_polylines_iter =
-						geometry_property_all_partitioned_polylines_seq.begin();
-		geometry_property_all_partitioned_polylines_seq_type::const_iterator
-				geometry_property_all_partitioned_polylines_end =
-						geometry_property_all_partitioned_polylines_seq.end();
+		geometry_property_all_partitioned_geometries_seq_type::const_iterator
+				geometry_property_all_partitioned_geometries_iter =
+						geometry_property_all_partitioned_geometries_seq.begin();
+		geometry_property_all_partitioned_geometries_seq_type::const_iterator
+				geometry_property_all_partitioned_geometries_end =
+						geometry_property_all_partitioned_geometries_seq.end();
 		for ( ;
-			geometry_property_all_partitioned_polylines_iter !=
-				geometry_property_all_partitioned_polylines_end;
-			++geometry_property_all_partitioned_polylines_iter)
+			geometry_property_all_partitioned_geometries_iter !=
+				geometry_property_all_partitioned_geometries_end;
+			++geometry_property_all_partitioned_geometries_iter)
 		{
-			const GeometryPropertyAllPartitionedPolylines &
-					geometry_property_all_partitioned_polylines = 
-							*geometry_property_all_partitioned_polylines_iter;
+			const GeometryPropertyAllPartitionedGeometries &
+					geometry_property_all_partitioned_geometries = 
+							*geometry_property_all_partitioned_geometries_iter;
 
-			if (!geometry_property_all_partitioned_polylines
-				.partitioned_inside_polylines_seq.empty())
+			if (!geometry_property_all_partitioned_geometries
+				.partitioned_inside_geometries_seq.empty())
 			{
-				// We found some inside polylines which means not all geometries
+				// We found some inside geometries which means not all geometries
 				// are outside all resolved boundaries.
 				return false;
 			}
@@ -758,14 +821,14 @@ namespace
 
 			// Iterate over the geometry properties that have partitioned polylines
 			// for the current resolved boundary.
-			const geometry_property_partitioned_inside_polylines_seq_type &
+			const geometry_property_partitioned_inside_geometries_seq_type &
 					geometry_property_partitioned_inside_polylines_seq =
 							resolved_boundary_geometry_properties
-									.geometry_property_partitioned_inside_polylines_seq;
-			geometry_property_partitioned_inside_polylines_seq_type::const_iterator
+									.geometry_property_partitioned_inside_geometries_seq;
+			geometry_property_partitioned_inside_geometries_seq_type::const_iterator
 					geometry_property_partitioned_inside_polylines_iter =
 							geometry_property_partitioned_inside_polylines_seq.begin();
-			geometry_property_partitioned_inside_polylines_seq_type::const_iterator
+			geometry_property_partitioned_inside_geometries_seq_type::const_iterator
 					geometry_property_partitioned_inside_polylines_end =
 							geometry_property_partitioned_inside_polylines_seq.end();
 			for ( ;
@@ -773,19 +836,19 @@ namespace
 					geometry_property_partitioned_inside_polylines_end;
 				++geometry_property_partitioned_inside_polylines_iter)
 			{
-				const GeometryPropertyPartitionedInsidePolylines &
+				const GeometryPropertyPartitionedInsideGeometries &
 						geometry_property_partitioned_inside_polylines =
 								*geometry_property_partitioned_inside_polylines_iter;
 
-				const GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type &
+				const GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type &
 						partitioned_inside_polyline_seq =
 								geometry_property_partitioned_inside_polylines
-										.partitioned_polylines;
+										.partitioned_geometries;
 
 				// Iterate over the partitioned polylines of the current geometry.
-				GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type::const_iterator
+				GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
 						partitioned_inside_polyline_iter = partitioned_inside_polyline_seq.begin();
-				GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type::const_iterator
+				GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
 						paritioned_inside_polyline_end = partitioned_inside_polyline_seq.end();
 				for ( ;
 					partitioned_inside_polyline_iter != paritioned_inside_polyline_end;
@@ -836,7 +899,7 @@ namespace
 	bool
 	find_resolved_boundary_with_valid_plate_id_that_contains_most_geometry(
 			const GPlatesModel::ResolvedTopologicalBoundary *&resolved_boundary_containing_most_geometry,
-			const GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_polylines_seq_type &
+			const GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_geometries_seq_type &
 					resolved_boundary_partitioned_polylines_seq)
 	{
 		resolved_boundary_containing_most_geometry = NULL;
@@ -868,11 +931,11 @@ namespace
 		// was partitioned into and determine which one contains the most geometry
 		// from the current geometry property.
 		GPlatesAppLogic::TopologyUtils
-				::resolved_boundary_partitioned_polylines_seq_type::const_iterator
+				::resolved_boundary_partitioned_geometries_seq_type::const_iterator
 						resolved_boundary_partitioned_polylines_iter =
 								resolved_boundary_partitioned_polylines_seq.begin();
 		GPlatesAppLogic::TopologyUtils
-				::resolved_boundary_partitioned_polylines_seq_type::const_iterator
+				::resolved_boundary_partitioned_geometries_seq_type::const_iterator
 						resolved_boundary_partitioned_polylines_end =
 								resolved_boundary_partitioned_polylines_seq.end();
 
@@ -881,7 +944,7 @@ namespace
 				resolved_boundary_partitioned_polylines_end;
 			++resolved_boundary_partitioned_polylines_iter)
 		{
-			const GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedPolylines &
+			const GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedGeometries &
 					resolved_boundary_partitioned_polylines =
 							*resolved_boundary_partitioned_polylines_iter;
 
@@ -894,17 +957,17 @@ namespace
 				continue;
 			}
 
-			const GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type &
+			const GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type &
 					partitioned_inside_polyline_seq =
-							resolved_boundary_partitioned_polylines.partitioned_inside_polylines;
+							resolved_boundary_partitioned_polylines.partitioned_inside_geometries;
 
 			GPlatesMaths::real_t resolved_boundary_partitioned_geometry_distance = 0;
 
 			// Iterate over the partitioned inside polylines of the current
 			// resolved boundary of the current geometry property.
-			GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type::const_iterator
+			GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
 					partitioned_inside_polyline_iter = partitioned_inside_polyline_seq.begin();
-			GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type::const_iterator
+			GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
 					paritioned_inside_polyline_end = partitioned_inside_polyline_seq.end();
 			for ( ;
 				partitioned_inside_polyline_iter != paritioned_inside_polyline_end;
@@ -950,7 +1013,7 @@ namespace
 	bool
 	assign_feature_to_plate_it_overlaps_the_most(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-			const geometry_property_all_partitioned_polylines_seq_type &
+			const geometry_property_all_partitioned_geometries_seq_type &
 					geometry_property_all_partitioned_polylines_seq,
 			const resolved_boundary_geometry_properties_map_type &
 					resolved_boundary_geometry_properties_map,
@@ -1022,7 +1085,7 @@ namespace
 	bool
 	assign_feature_sub_geometry_to_plate_it_overlaps_the_most(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-			const geometry_property_all_partitioned_polylines_seq_type &
+			const geometry_property_all_partitioned_geometries_seq_type &
 					geometry_property_all_partitioned_polylines_seq,
 			const resolved_boundary_geometry_properties_map_type &
 					resolved_boundary_geometry_properties_map,
@@ -1054,10 +1117,10 @@ namespace
 		GPlatesModel::FeatureHandle::weak_ref no_plate_id_feature_ref;
 
 		// Iterate over the geometry properties.
-		geometry_property_all_partitioned_polylines_seq_type::const_iterator
+		geometry_property_all_partitioned_geometries_seq_type::const_iterator
 				geometry_property_all_partitioned_polylines_iter =
 						geometry_property_all_partitioned_polylines_seq.begin();
-		geometry_property_all_partitioned_polylines_seq_type::const_iterator
+		geometry_property_all_partitioned_geometries_seq_type::const_iterator
 				geometry_property_all_partitioned_polylines_end =
 						geometry_property_all_partitioned_polylines_seq.end();
 		for ( ;
@@ -1065,7 +1128,7 @@ namespace
 				geometry_property_all_partitioned_polylines_end;
 			++geometry_property_all_partitioned_polylines_iter)
 		{
-			const GeometryPropertyAllPartitionedPolylines &
+			const GeometryPropertyAllPartitionedGeometries &
 					geometry_property_all_partitioned_polylines = 
 							*geometry_property_all_partitioned_polylines_iter;
 
@@ -1077,7 +1140,7 @@ namespace
 			GeometryPropertiesIteratorRemover geometry_properties_iterator_remover(
 					geometry_properties_iterator);
 
-			if (geometry_property_all_partitioned_polylines.partitioned_inside_polylines_seq.empty())
+			if (geometry_property_all_partitioned_polylines.partitioned_inside_geometries_seq.empty())
 			{
 				// There were no inside polylines which means the current geometry
 				// property is outside all resolved boundaries.
@@ -1119,7 +1182,7 @@ namespace
 					resolved_boundary_containing_most_geometry = NULL;
 			if (!find_resolved_boundary_with_valid_plate_id_that_contains_most_geometry(
 					resolved_boundary_containing_most_geometry,
-					geometry_property_all_partitioned_polylines.partitioned_inside_polylines_seq))
+					geometry_property_all_partitioned_polylines.partitioned_inside_geometries_seq))
 			{
 				// We shouldn't get here since we should have at least one
 				// resolved boundary and it should have at least one partitioned polyline
@@ -1203,7 +1266,7 @@ namespace
 	bool
 	partition_feature(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-			const geometry_property_all_partitioned_polylines_seq_type &
+			const geometry_property_all_partitioned_geometries_seq_type &
 					geometry_property_all_partitioned_polylines_seq,
 			const resolved_boundary_geometry_properties_map_type &
 					resolved_boundary_geometry_properties_map,
@@ -1289,14 +1352,14 @@ namespace
 
 			// Iterate over the geometry properties that have partitioned polylines
 			// for the current resolved boundary.
-			const geometry_property_partitioned_inside_polylines_seq_type &
+			const geometry_property_partitioned_inside_geometries_seq_type &
 					geometry_property_partitioned_inside_polylines_seq =
 							resolved_boundary_geometry_properties
-									.geometry_property_partitioned_inside_polylines_seq;
-			geometry_property_partitioned_inside_polylines_seq_type::const_iterator
+									.geometry_property_partitioned_inside_geometries_seq;
+			geometry_property_partitioned_inside_geometries_seq_type::const_iterator
 					geometry_property_partitioned_inside_polylines_iter =
 							geometry_property_partitioned_inside_polylines_seq.begin();
-			geometry_property_partitioned_inside_polylines_seq_type::const_iterator
+			geometry_property_partitioned_inside_geometries_seq_type::const_iterator
 					geometry_property_partitioned_inside_polylines_end =
 							geometry_property_partitioned_inside_polylines_seq.end();
 			for ( ;
@@ -1304,21 +1367,21 @@ namespace
 					geometry_property_partitioned_inside_polylines_end;
 				++geometry_property_partitioned_inside_polylines_iter)
 			{
-				const GeometryPropertyPartitionedInsidePolylines &
+				const GeometryPropertyPartitionedInsideGeometries &
 						geometry_property_partitioned_inside_polylines =
 								*geometry_property_partitioned_inside_polylines_iter;
 
 				const GPlatesModel::PropertyName &geometry_property_name =
 						geometry_property_partitioned_inside_polylines.geometry_property_name;
 
-				const GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type &
+				const GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type &
 						partitioned_inside_polyline_seq =
 								geometry_property_partitioned_inside_polylines
-										.partitioned_polylines;
+										.partitioned_geometries;
 
-				GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type::const_iterator
+				GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
 						partitioned_inside_polyline_iter = partitioned_inside_polyline_seq.begin();
-				GPlatesAppLogic::TopologyUtils::partitioned_polyline_seq_type::const_iterator
+				GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
 						paritioned_inside_polyline_end = partitioned_inside_polyline_seq.end();
 				for ( ;
 					partitioned_inside_polyline_iter != paritioned_inside_polyline_end;
@@ -1335,8 +1398,8 @@ namespace
 									? reverse_rotation * inside_polyline
 									: inside_polyline;
 
-					// Append a polyline property to the new feature.
-					append_polyline_to_feature(
+					// Append a geometry property to the new feature.
+					append_geometry_to_feature(
 							reverse_reconstructed_inside_polyline,
 							geometry_property_name,
 							new_feature_ref);
@@ -1426,7 +1489,7 @@ namespace
 		{
 			// Iterate over the geometry properties in the feature and partition them
 			// using 'geometry_partition_query'.
-			geometry_property_all_partitioned_polylines_seq_type
+			geometry_property_all_partitioned_geometries_seq_type
 					geometry_property_all_partitioned_polylines_seq;
 			PartitionFeatureGeometryVisitor partition_feature_geom_visitor(
 					geometry_property_all_partitioned_polylines_seq,
