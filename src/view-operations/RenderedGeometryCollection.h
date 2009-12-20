@@ -226,8 +226,8 @@ namespace GPlatesViewOperations
 		 * multiple geometries in a sample bin is rendered (this being the closest
 		 * to the sample bin centre). The sample bins are all designed to cover the
 		 * globe and have roughly equal area. The dimension of each sample bin extends
-		 * roughly @a ratio_zoom_dependent_bin_dimension_to_globe_radius radians
-		 * across the globe when the globe is fully visible in the viewport window.
+		 * roughly @a ratio_zoom_dependent_bin_dimension_to_globe_radius times the
+		 * globe's radius when the globe is fully visible in the viewport window.
 		 * As the zoom changes the apparent projected size of the sample bins onto
 		 * the viewport remains constant.
 		 *

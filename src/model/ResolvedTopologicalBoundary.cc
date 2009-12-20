@@ -25,7 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "ReconstructionGeometryVisitor.h"
 #include "ConstReconstructionGeometryVisitor.h"
 #include "WeakObserverVisitor.h"
@@ -37,14 +37,14 @@
 #include "utils/GeometryCreationUtils.h"
 
 
-const GPlatesModel::ResolvedTopologicalGeometry::non_null_ptr_to_const_type
-GPlatesModel::ResolvedTopologicalGeometry::get_non_null_pointer_to_const() const
+const GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type
+GPlatesModel::ResolvedTopologicalBoundary::get_non_null_pointer_to_const() const
 {
 	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
-		// Presumably, the programmer obtained the raw ResolvedTopologicalGeometry pointer
-		// from inside a ResolvedTopologicalGeometry::non_null_ptr_type, and is invoking
+		// Presumably, the programmer obtained the raw ResolvedTopologicalBoundary pointer
+		// from inside a ResolvedTopologicalBoundary::non_null_ptr_type, and is invoking
 		// this member function upon the instance indicated by the raw pointer, after all
 		// ref-counting pointers have expired and the instance has actually been deleted.
 		//
@@ -61,14 +61,14 @@ GPlatesModel::ResolvedTopologicalGeometry::get_non_null_pointer_to_const() const
 }
 
 
-const GPlatesModel::ResolvedTopologicalGeometry::non_null_ptr_type
-GPlatesModel::ResolvedTopologicalGeometry::get_non_null_pointer()
+const GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_type
+GPlatesModel::ResolvedTopologicalBoundary::get_non_null_pointer()
 {
 	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
-		// Presumably, the programmer obtained the raw ResolvedTopologicalGeometry pointer
-		// from inside a ResolvedTopologicalGeometry::non_null_ptr_type, and is invoking
+		// Presumably, the programmer obtained the raw ResolvedTopologicalBoundary pointer
+		// from inside a ResolvedTopologicalBoundary::non_null_ptr_type, and is invoking
 		// this member function upon the instance indicated by the raw pointer, after all
 		// ref-counting pointers have expired and the instance has actually been deleted.
 		//
@@ -86,7 +86,7 @@ GPlatesModel::ResolvedTopologicalGeometry::get_non_null_pointer()
 
 
 const GPlatesModel::FeatureHandle::weak_ref
-GPlatesModel::ResolvedTopologicalGeometry::get_feature_ref() const
+GPlatesModel::ResolvedTopologicalBoundary::get_feature_ref() const
 {
 	if (is_valid()) {
 		return feature_handle_ptr()->reference();
@@ -96,8 +96,8 @@ GPlatesModel::ResolvedTopologicalGeometry::get_feature_ref() const
 }
 
 
-const GPlatesModel::ResolvedTopologicalGeometry::resolved_topology_geometry_ptr_type
-GPlatesModel::ResolvedTopologicalGeometry::resolved_topology_geometry() const
+const GPlatesModel::ResolvedTopologicalBoundary::resolved_topology_geometry_ptr_type
+GPlatesModel::ResolvedTopologicalBoundary::resolved_topology_geometry() const
 {
 	// Get geometry-on-sphere.
 	const geometry_ptr_type geom_on_sphere = geometry();
@@ -118,24 +118,24 @@ GPlatesModel::ResolvedTopologicalGeometry::resolved_topology_geometry() const
 
 
 void
-GPlatesModel::ResolvedTopologicalGeometry::accept_visitor(
+GPlatesModel::ResolvedTopologicalBoundary::accept_visitor(
 		ConstReconstructionGeometryVisitor &visitor) const
 {
-	visitor.visit_resolved_topological_geometry(this->get_non_null_pointer_to_const());
+	visitor.visit_resolved_topological_boundary(this->get_non_null_pointer_to_const());
 }
 
 
 void
-GPlatesModel::ResolvedTopologicalGeometry::accept_visitor(
+GPlatesModel::ResolvedTopologicalBoundary::accept_visitor(
 		ReconstructionGeometryVisitor &visitor)
 {
-	visitor.visit_resolved_topological_geometry(this->get_non_null_pointer());
+	visitor.visit_resolved_topological_boundary(this->get_non_null_pointer());
 }
 
 
 void
-GPlatesModel::ResolvedTopologicalGeometry::accept_weak_observer_visitor(
+GPlatesModel::ResolvedTopologicalBoundary::accept_weak_observer_visitor(
 		WeakObserverVisitor<FeatureHandle> &visitor)
 {
-	visitor.visit_resolved_topological_geometry(*this);
+	visitor.visit_resolved_topological_boundary(*this);
 }

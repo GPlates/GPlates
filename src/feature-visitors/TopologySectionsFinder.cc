@@ -102,10 +102,14 @@ GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_propertie
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// super short-cut for features without boundary list properties
-	static QString type("TopologicalClosedPlateBoundary");
-	if ( type != GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.feature_type().get_name() ) ) { 
-		// Quick-out: No need to continue.
+	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
+	static const QString topology_network_type_name("TopologicalNetwork");
+	const QString feature_type = GPlatesUtils::make_qstring_from_icu_string( feature_handle.feature_type().get_name() );
+
+	// Quick-out: No need to continue.
+	if ( ( feature_type != topology_boundary_type_name ) &&
+		( feature_type != topology_network_type_name ) )
+	{
 		return false; 
 	}
 
@@ -260,7 +264,6 @@ std::cout << "TopologySectionsFinder::visit_gpml_topological_point" << std::endl
 
 #ifdef DEBUG
 qDebug() << "  src_geom_id = " << GPlatesUtils::make_qstring_from_icu_string(src_geom_id.get());
-qDebug() << "  use_reverse = false";
 #endif
 }
 		
@@ -294,7 +297,6 @@ GPlatesFeatureVisitors::TopologySectionsFinder::report()
 				<< GPlatesMaths::make_lat_lon_point(*section_iter->get_present_day_click_point()).longitude();
 		}
 	}
-
 	std::cout << "-------------------------------------------------------------" << std::endl;
 }
 

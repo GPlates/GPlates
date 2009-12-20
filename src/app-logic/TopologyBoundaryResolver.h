@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_APP_LOGIC_TOPOLOGY_RESOLVER_H
-#define GPLATES_APP_LOGIC_TOPOLOGY_RESOLVER_H
+#ifndef GPLATES_APP_LOGIC_TOPOLOGY_BOUNDARY_RESOLVER_H
+#define GPLATES_APP_LOGIC_TOPOLOGY_BOUNDARY_RESOLVER_H
 
 #include <cstddef> // For std::size_t
 #include <vector>
@@ -65,25 +65,25 @@ namespace GPlatesAppLogic
 	/**
 	 * Finds all topological closed plate boundary features (in the features visited)
 	 * that exist at a particular reconstruction time and creates
-	 * @a ResolvedTopologicalGeometry objects for each one and stores them
+	 * @a ResolvedTopologicalBoundary objects for each one and stores them
 	 * in a @a Reconstruction object.
 	 *
 	 * @pre the features referenced by any of these topological closed plate boundary features
 	 *      must have already been reconstructed and exist in the @a Reconstruction object
-	 *      passed to constructor of @a TopologyResolver.
+	 *      passed to constructor of @a TopologyBoundaryResolver.
 	 */
-	class TopologyResolver: 
+	class TopologyBoundaryResolver: 
 		public GPlatesModel::FeatureVisitor,
 		private boost::noncopyable
 	{
 
 	public:
-		TopologyResolver(
+		TopologyBoundaryResolver(
 				const double &recon_time,
 				GPlatesModel::Reconstruction &recon);
 
 		virtual
-		~TopologyResolver() 
+		~TopologyBoundaryResolver() 
 		{  }
 
 		virtual
@@ -197,12 +197,12 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Create a @a ResolvedTopologicalGeometry from information gathered
+		 * Create a @a ResolvedTopologicalBoundary from information gathered
 		 * from the most recently visited topological polygon
 		 * (stored in @a d_resolved_boundary) and add it to the @a Reconstruction.
 		 */
 		void
-		create_resolved_topology_geometry();
+		create_resolved_topology_boundary();
 
 		void
 		record_topological_sections(
@@ -234,4 +234,4 @@ namespace GPlatesAppLogic
 	};
 }
 
-#endif  // GPLATES_APP_LOGIC_TOPOLOGY_RESOLVER_H
+#endif  // GPLATES_APP_LOGIC_TOPOLOGY_BOUNDARY_RESOLVER_H

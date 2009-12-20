@@ -857,6 +857,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	// Topological features.
 	d_map[ FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
 		get_topological_closed_plate_boundary_properties();
+	d_map[ FeatureType::create_gpml("TopologicalNetwork") ] =
+		get_topological_closed_plate_boundary_properties();
 
 	// Reconstruction features.
 	d_map[ FeatureType::create_gpml("TotalReconstructionSequence") ] = 

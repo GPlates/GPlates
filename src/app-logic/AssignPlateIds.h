@@ -242,7 +242,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Keep a @a Reconstruction around in case even if we're just linking to
 		 * one from @a Reconstruct - if we're creating our own however then we need
-		 * to keep the @a ResolvedTopologicalGeometry objects, contained within,
+		 * to keep the @a ResolvedTopologicalBoundary objects, contained within,
 		 * alive for the cookie-cutting queries.
 		 */
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction;
@@ -250,7 +250,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Used to partition geometry using all resolved boundaries in a @a Reconstruction.
 		 */
-		GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type
+		GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
 				d_resolved_boundaries_geometry_partitioning_query;
 
 

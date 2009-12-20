@@ -1,5 +1,5 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "ICU" "GDAL" "GZIP" "PROJ4")
+set(required_libs "Qt4" "OpenGL" "ICU" "GDAL" "GZIP" "PROJ4" "CGAL")
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -34,6 +34,11 @@ include(${QT_USE_FILE})
 SET(ICU_USE_I18N 1)
 SET(ICU_USE_IO 1)
 include (${ICU_USE_FILE})
+
+# Include CGAL.
+if (CGAL_FOUND)
+	include(${CGAL_USE_FILE})
+endif (CGAL_FOUND)
 
 # Some useful utilities.
 include (Util)
@@ -118,7 +123,7 @@ set(generated_headers_INCLUDE_DIRS
 # The 'include_directories' command doesn't propagate to subdirectories but any variable we set does.
 # We'll use this variable in subdirectories to add these includes directories (avoids duplicating changes to subdirectories).
 # External include directories:
-# NOTE: Qt and ICU includes are taken care of by including QT_USE_FILE and ICU_USE_FILE.
+# NOTE: Qt, ICU and CGAL includes are taken care of by including QT_USE_FILE, ICU_USE_FILE and CGAL_USE_FILE.
 set(external_INCLUDE_DIRS
 	${OPENGL_INCLUDE_DIR} 
 	${GDAL_INCLUDE_DIR}

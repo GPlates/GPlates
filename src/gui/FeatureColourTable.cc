@@ -48,6 +48,8 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 {
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
 			GPlatesGui::Colour::get_black();
+	d_colours[ GPlatesModel::FeatureType::create_gpml("TopologicalNetwork") ] =
+			GPlatesGui::Colour::get_olive();
 
 	// Reconstruction features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence") ] = 

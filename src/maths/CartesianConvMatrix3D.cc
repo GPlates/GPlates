@@ -73,3 +73,30 @@ GPlatesMaths::operator*(const CartesianConvMatrix3D &ccm, const Vector3D &v)
 }
 
 
+
+GPlatesMaths::Vector3D
+GPlatesMaths::inverse_multiply(const CartesianConvMatrix3D &ccm, const Vector3D &v)
+{
+	real_t n = v.x();
+	real_t e = v.y();
+	real_t d = v.z();
+
+	real_t x = ccm.nx() * n +
+	           ccm.ex() * e +
+	           ccm.dx() * d;
+
+	real_t y = ccm.ny() * n +
+	           ccm.ey() * e +
+	           ccm.dy() * d;
+
+	real_t z = ccm.nz() * n +
+	           ccm.ez() * e +
+	           ccm.dz() * d;
+
+	return Vector3D(x, y, z);
+}
+
+
+
+
+

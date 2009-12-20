@@ -539,7 +539,7 @@ GPlatesQtWidgets::ReconstructionPoleWidget::set_focus(
 		return;
 	}
 
-	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalGeometry's,
+	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 	// for instance, are used to assign plate ids to regular features so we probably only
 	// want to look at geometries of regular features).
 	const GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;
@@ -598,7 +598,7 @@ GPlatesQtWidgets::ReconstructionPoleWidget::populate_initial_geometries()
 	for ( ; iter != end; ++iter) {
 		GPlatesModel::ReconstructionGeometry *rg = iter->get();
 
-		// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalGeometry's,
+		// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 		// for instance, are used to assign plate ids to regular features so we probably only
 		// want to look at geometries of regular features).
 		GPlatesModel::ReconstructedFeatureGeometry *rfg = NULL;

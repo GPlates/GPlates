@@ -251,7 +251,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 	// and use these variables.
 	d_feature = feature_focus.focused_feature();
 
-	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalGeometry's,
+	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 	// for instance, reference regular feature geometries).
 	GPlatesModel::ReconstructedFeatureGeometry *focused_rfg = NULL;
 	if (feature_focus.associated_reconstruction_geometry() &&

@@ -59,7 +59,7 @@
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
 #include "model/ReconstructionTree.h"
-#include "model/ResolvedTopologicalGeometry.h"
+#include "model/ResolvedTopologicalBoundary.h"
 #include "model/TopLevelProperty.h"
 
 #include "property-values/GpmlConstantValue.h"
@@ -414,7 +414,7 @@ namespace
 				geometry_property_partitioned_inside_polylines_seq;
 	};
 	typedef std::map<
-			const GPlatesModel::ResolvedTopologicalGeometry *,
+			const GPlatesModel::ResolvedTopologicalBoundary *,
 			ResolvedBoundaryGeometryProperties>
 					resolved_boundary_geometry_properties_map_type;
 
@@ -431,7 +431,7 @@ namespace
 		PartitionFeatureGeometryVisitor(
 				geometry_property_all_partitioned_polylines_seq_type &
 						geometry_property_all_partitioned_polylines_seq,
-				const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type &
+				const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 						geometry_partition_query,
 				const boost::optional<double> &reconstruction_time = boost::none) :
 			d_geometry_partition_query(geometry_partition_query),
@@ -524,7 +524,7 @@ namespace
 		}
 
 	private:
-		GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type
+		GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
 				d_geometry_partition_query;
 		boost::optional<double> d_reconstruction_time;
 
@@ -579,7 +579,7 @@ namespace
 						resolved_boundary_partitioned_polylines =
 								*resolved_boundary_partitioned_polylines_iter;
 
-				const GPlatesModel::ResolvedTopologicalGeometry *resolved_topological_boundary =
+				const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary =
 						resolved_boundary_partitioned_polylines.resolved_topological_boundary;
 
 				GeometryPropertyPartitionedInsidePolylines
@@ -699,7 +699,7 @@ namespace
 	 */
 	bool
 	find_resolved_boundary_with_valid_plate_id_that_contains_most_geometry(
-			const GPlatesModel::ResolvedTopologicalGeometry *&resolved_boundary_containing_most_geometry,
+			const GPlatesModel::ResolvedTopologicalBoundary *&resolved_boundary_containing_most_geometry,
 			const resolved_boundary_geometry_properties_map_type &resolved_boundary_geometry_properties_map)
 	{
 		resolved_boundary_containing_most_geometry = NULL;
@@ -743,7 +743,7 @@ namespace
 				resolved_boundary_geometry_properties_end;
 			++resolved_boundary_geometry_properties_iter)
 		{
-			const GPlatesModel::ResolvedTopologicalGeometry *resolved_topological_boundary =
+			const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary =
 					resolved_boundary_geometry_properties_iter->first;
 			const ResolvedBoundaryGeometryProperties &resolved_boundary_geometry_properties =
 					resolved_boundary_geometry_properties_iter->second;
@@ -835,7 +835,7 @@ namespace
 	 */
 	bool
 	find_resolved_boundary_with_valid_plate_id_that_contains_most_geometry(
-			const GPlatesModel::ResolvedTopologicalGeometry *&resolved_boundary_containing_most_geometry,
+			const GPlatesModel::ResolvedTopologicalBoundary *&resolved_boundary_containing_most_geometry,
 			const GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_polylines_seq_type &
 					resolved_boundary_partitioned_polylines_seq)
 	{
@@ -885,7 +885,7 @@ namespace
 					resolved_boundary_partitioned_polylines =
 							*resolved_boundary_partitioned_polylines_iter;
 
-			const GPlatesModel::ResolvedTopologicalGeometry *resolved_topological_boundary =
+			const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary =
 					resolved_boundary_partitioned_polylines.resolved_topological_boundary;
 
 			if (!resolved_topological_boundary->plate_id())
@@ -979,7 +979,7 @@ namespace
 		// Give the feature the plate id of the plate that has the
 		// largest distance contains the most geometry of the feature).
 		//
-		const GPlatesModel::ResolvedTopologicalGeometry *
+		const GPlatesModel::ResolvedTopologicalBoundary *
 				resolved_boundary_containing_most_geometry = NULL;
 		if (!find_resolved_boundary_with_valid_plate_id_that_contains_most_geometry(
 				resolved_boundary_containing_most_geometry,
@@ -1115,7 +1115,7 @@ namespace
 				continue;
 			}
 
-			const GPlatesModel::ResolvedTopologicalGeometry *
+			const GPlatesModel::ResolvedTopologicalBoundary *
 					resolved_boundary_containing_most_geometry = NULL;
 			if (!find_resolved_boundary_with_valid_plate_id_that_contains_most_geometry(
 					resolved_boundary_containing_most_geometry,
@@ -1247,7 +1247,7 @@ namespace
 				resolved_boundary_geometry_properties_end;
 			++resolved_boundary_geometry_properties_iter)
 		{
-			const GPlatesModel::ResolvedTopologicalGeometry *resolved_topological_boundary =
+			const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary =
 					resolved_boundary_geometry_properties_iter->first;
 			const ResolvedBoundaryGeometryProperties &resolved_boundary_geometry_properties =
 					resolved_boundary_geometry_properties_iter->second;
@@ -1380,7 +1380,7 @@ namespace
 		bool
 		assign_plate_id_to_feature(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-				const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type &
+				const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 						geometry_partition_query) = 0;
 	};
 
@@ -1421,7 +1421,7 @@ namespace
 		bool
 		assign_plate_id_to_feature(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-				const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type &
+				const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 						geometry_partition_query)
 		{
 			// Iterate over the geometry properties in the feature and partition them
@@ -1530,7 +1530,7 @@ namespace
 		bool
 		assign_plate_id_to_feature(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-				const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type &
+				const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 						geometry_partition_query)
 		{
 			// Look for the 'gpml:averageSampleSitePosition' property.
@@ -1549,8 +1549,8 @@ namespace
 			const GPlatesMaths::PointOnSphere &sample_site_point = *sample_site_gml_point->point();
 
 			// Find all resolved boundaries that contain the sample site point.
-			GPlatesAppLogic::TopologyUtils::resolved_topological_geometry_seq_type resolved_boundary_seq;
-			if (!GPlatesAppLogic::TopologyUtils::find_resolved_topologies_containing_point(
+			GPlatesAppLogic::TopologyUtils::resolved_topological_boundary_seq_type resolved_boundary_seq;
+			if (!GPlatesAppLogic::TopologyUtils::find_resolved_topology_boundaries_containing_point(
 					resolved_boundary_seq,
 					sample_site_point,
 					geometry_partition_query))

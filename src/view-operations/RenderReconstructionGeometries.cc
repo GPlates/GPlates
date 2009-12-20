@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cstddef> // For std::size_t
+
 #include "RenderReconstructionGeometries.h"
 
 #include "RenderedGeometryCollection.h"
@@ -30,11 +32,91 @@
 #include "RenderedGeometryFactory.h"
 #include "RenderedGeometryParameters.h"
 
+#include "app-logic/PlateVelocityUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "gui/Colour.h"
 #include "gui/ColourTable.h"
 
 #include "model/Reconstruction.h"
+#include "model/ResolvedTopologicalNetwork.h"
+
+
+namespace
+{
+	/**
+	 * Render velocities for the points in resolved topological networks.
+	 *
+	 * FIXME: Putting this here is just temporary - soon I'll be setting up
+	 * a framework to handle this sort of thing better.
+	 */
+	void
+	render_resolved_topological_network_velocities(
+			const GPlatesModel::Reconstruction &reconstruction,
+			GPlatesViewOperations::RenderedGeometryLayer *reconstruction_layer)
+	{
+		const GPlatesGui::Colour &velocity_colour = GPlatesGui::Colour::get_white();
+
+		GPlatesAppLogic::TopologyUtils::resolved_topological_network_impl_seq_type
+				resolved_topological_network_impl_seq;
+
+		GPlatesAppLogic::TopologyUtils::find_resolved_topological_network_impls(
+				resolved_topological_network_impl_seq,
+				reconstruction);
+
+		// Iterate through the unique topological networks.
+		GPlatesAppLogic::TopologyUtils::resolved_topological_network_impl_seq_type::const_iterator
+				resolved_network_iter = resolved_topological_network_impl_seq.begin();
+		GPlatesAppLogic::TopologyUtils::resolved_topological_network_impl_seq_type::const_iterator
+				resolved_network_end = resolved_topological_network_impl_seq.end();
+		for ( ; resolved_network_iter != resolved_network_end; ++resolved_network_iter)
+		{
+			const GPlatesModel::ResolvedTopologicalNetworkImpl *resolved_network_impl =
+					*resolved_network_iter;
+
+			const GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities &network_velocites =
+					resolved_network_impl->get_network_velocities();
+			if (!network_velocites.contains_velocities())
+			{
+				continue;
+			}
+
+			// Get the velocities at the network points.
+			std::vector<GPlatesMaths::PointOnSphere> network_points;
+			std::vector<GPlatesMaths::VectorColatitudeLongitude> network_velocities;
+			network_velocites.get_network_velocities(
+					network_points, network_velocities);
+
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					network_points.size() == network_velocities.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			// Render each velocity in the current network.
+			for (std::size_t velocity_index = 0;
+				velocity_index < network_velocities.size();
+				++velocity_index)
+			{
+				const GPlatesMaths::PointOnSphere &point = network_points[velocity_index];
+				const GPlatesMaths::Vector3D velocity_vector =
+						GPlatesMaths::convert_vector_from_colat_lon_to_xyz(
+								point, network_velocities[velocity_index]);
+
+				// Create a RenderedGeometry using the velocity vector.
+				const GPlatesViewOperations::RenderedGeometry rendered_vector =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+						point,
+						velocity_vector,
+						0.05f,
+						velocity_colour);
+
+				reconstruction_layer->add_rendered_geometry(rendered_vector);
+			}
+		}
+	}
+}
 
 
 void
@@ -62,14 +144,21 @@ GPlatesViewOperations::render_reconstruction_geometries(
 	// Clear all RenderedGeometry's before adding new ones.
 	reconstruction_layer->clear_rendered_geometries();
 
-	GPlatesModel::Reconstruction::geometry_collection_type::iterator iter =
+	// Get the reconstruction geometries that are resolved topological networks and
+	// draw the velocities at the network points if there are any.
+	//
+	// FIXME: Putting this here is just temporary - soon I'll be setting up
+	// a framework to handle this sort of thing better.
+	render_resolved_topological_network_velocities(reconstruction, reconstruction_layer);
+
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator iter =
 			reconstruction.geometries().begin();
-	GPlatesModel::Reconstruction::geometry_collection_type::iterator end =
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator end =
 			reconstruction.geometries().end();
 
 	for ( ; iter != end; ++iter)
 	{
-		GPlatesModel::ReconstructionGeometry *reconstruction_geom = iter->get();
+		const GPlatesModel::ReconstructionGeometry *reconstruction_geom = iter->get();
 
 		GPlatesGui::ColourTable::const_iterator colour =
 				colour_table.lookup(*reconstruction_geom);
@@ -99,8 +188,5 @@ GPlatesViewOperations::render_reconstruction_geometries(
 		// to the update signal of RenderedGeometryCollection which in turn
 		// listens to its rendered layers.
 		reconstruction_layer->add_rendered_geometry(rendered_reconstruction_geom);
-		
-
 	}
-
 }

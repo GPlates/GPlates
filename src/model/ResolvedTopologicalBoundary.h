@@ -46,31 +46,31 @@
 
 namespace GPlatesModel
 {
-	class ResolvedTopologicalGeometry:
+	class ResolvedTopologicalBoundary:
 			public ReconstructionGeometry,
 			public WeakObserver<FeatureHandle>
 	{
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalGeometry,
+		 * GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalBoundary,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalGeometry,
+		typedef GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalBoundary,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalGeometry,
+		 * GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalBoundary,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalGeometry,
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalBoundary,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_to_const_type;
 
 		/**
-		 * A convenience typedef for boost::intrusive_ptr<ResolvedTopologicalGeometry>.
+		 * A convenience typedef for boost::intrusive_ptr<ResolvedTopologicalBoundary>.
 		 */
-		typedef boost::intrusive_ptr<ResolvedTopologicalGeometry> maybe_null_ptr_type;
+		typedef boost::intrusive_ptr<ResolvedTopologicalBoundary> maybe_null_ptr_type;
 
 		/**
 		 * A convenience typedef for the WeakObserver base class of this class.
@@ -78,13 +78,13 @@ namespace GPlatesModel
 		typedef WeakObserver<FeatureHandle> WeakObserverType;
 
 		/**
-		 * A convenience typedef for the geometry of this @a ResolvedTopologicalGeometry.
+		 * A convenience typedef for the geometry of this @a ResolvedTopologicalBoundary.
 		 */
 		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 				resolved_topology_geometry_ptr_type;
 
 		/**
-		 * A convenience typedef for the geometry of subsegments of this RTG.
+		 * A convenience typedef for the geometry of subsegments of this RTB.
 		 */
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type sub_segment_geometry_ptr_type;
 
@@ -249,7 +249,7 @@ namespace GPlatesModel
 
 
 		/**
-		 * Create a ResolvedTopologicalGeometry instance with an optional plate ID and an
+		 * Create a ResolvedTopologicalBoundary instance with an optional plate ID and an
 		 * optional time of formation.
 		 */
 		template<typename SubSegmentForwardIter>
@@ -265,7 +265,7 @@ namespace GPlatesModel
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_)
 		{
 			non_null_ptr_type ptr(
-					new ResolvedTopologicalGeometry(resolved_topology_geometry_ptr, feature_handle,
+					new ResolvedTopologicalBoundary(resolved_topology_geometry_ptr, feature_handle,
 							property_iterator_, sub_segment_sequence_begin, sub_segment_sequence_end,
 							plate_id_, time_of_formation_),
 					GPlatesUtils::NullIntrusivePointerHandler());
@@ -273,10 +273,10 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Create a ResolvedTopologicalGeometry instance @em without a plate ID or a
+		 * Create a ResolvedTopologicalBoundary instance @em without a plate ID or a
 		 * feature formation time.
 		 *
-		 * For instance, a ResolvedTopologicalGeometry might be created without a plate ID
+		 * For instance, a ResolvedTopologicalBoundary might be created without a plate ID
 		 * if no plate ID is found amongst the properties of the feature whose topological
 		 * geometry was resolved.
 		 *
@@ -292,40 +292,40 @@ namespace GPlatesModel
 				SubSegmentForwardIter sub_segment_sequence_end)
 		{
 			non_null_ptr_type ptr(
-					new ResolvedTopologicalGeometry(resolved_topology_geometry_ptr, feature_handle,
+					new ResolvedTopologicalBoundary(resolved_topology_geometry_ptr, feature_handle,
 							property_iterator_, sub_segment_sequence_begin, sub_segment_sequence_end),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
-		~ResolvedTopologicalGeometry()
+		~ResolvedTopologicalBoundary()
 		{  }
 
 		/**
-		 * Get a non-null pointer to a const ResolvedTopologicalGeometry which points to this
+		 * Get a non-null pointer to a const ResolvedTopologicalBoundary which points to this
 		 * instance.
 		 *
-		 * Since the ResolvedTopologicalGeometry constructors are private, it should never
-		 * be the case that a ResolvedTopologicalGeometry instance has been constructed on
+		 * Since the ResolvedTopologicalBoundary constructors are private, it should never
+		 * be the case that a ResolvedTopologicalBoundary instance has been constructed on
 		 * the stack.
 		 */
 		const non_null_ptr_to_const_type
 		get_non_null_pointer_to_const() const;
 
 		/**
-		 * Get a non-null pointer to a ResolvedTopologicalGeometry which points to this
+		 * Get a non-null pointer to a ResolvedTopologicalBoundary which points to this
 		 * instance.
 		 *
-		 * Since the ResolvedTopologicalGeometry constructors are private, it should never
-		 * be the case that a ResolvedTopologicalGeometry instance has been constructed on
+		 * Since the ResolvedTopologicalBoundary constructors are private, it should never
+		 * be the case that a ResolvedTopologicalBoundary instance has been constructed on
 		 * the stack.
 		 */
 		const non_null_ptr_type
 		get_non_null_pointer();
 
 		/**
-		 * Return whether this RTG references @a that_feature_handle.
+		 * Return whether this RTB references @a that_feature_handle.
 		 *
 		 * This function will not throw.
 		 */
@@ -363,7 +363,7 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return a weak-ref to the feature whose resolved topological geometry this RTG
+		 * Return a weak-ref to the feature whose resolved topological geometry this RTB
 		 * contains, or an invalid weak-ref, if this pointer is not valid to be
 		 * dereferenced.
 		 */
@@ -393,7 +393,7 @@ namespace GPlatesModel
 		/**
 		 * Access the cached plate ID, if it exists.
 		 *
-		 * Note that it's possible for a ResolvedTopologicalGeometry to be created without
+		 * Note that it's possible for a ResolvedTopologicalBoundary to be created without
 		 * a plate ID -- for example, if no plate ID is found amongst the properties of the
 		 * feature whose topological geometry was resolved.
 		 */
@@ -460,14 +460,14 @@ namespace GPlatesModel
 	private:
 		/**
 		 * This is an iterator to the (topological-geometry-valued) property from which
-		 * this RTG was derived.
+		 * this RTB was derived.
 		 */
 		FeatureHandle::properties_iterator d_property_iterator;
 
 		/**
 		 * The cached plate ID, if it exists.
 		 *
-		 * Note that it's possible for a ResolvedTopologicalGeometry to be created without
+		 * Note that it's possible for a ResolvedTopologicalBoundary to be created without
 		 * a plate ID -- for example, if no plate ID is found amongst the properties of the
 		 * feature whose topological geometry was resolved.
 		 *
@@ -502,7 +502,7 @@ namespace GPlatesModel
 		 * instantiation of this type on the stack.
 		 */
 		template<typename SubSegmentForwardIter>
-		ResolvedTopologicalGeometry(
+		ResolvedTopologicalBoundary(
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
@@ -526,7 +526,7 @@ namespace GPlatesModel
 		 * instantiation of this type on the stack.
 		 */
 		template<typename SubSegmentForwardIter>
-		ResolvedTopologicalGeometry(
+		ResolvedTopologicalBoundary(
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
@@ -540,16 +540,16 @@ namespace GPlatesModel
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.
-		ResolvedTopologicalGeometry(
-				const ResolvedTopologicalGeometry &other);
+		ResolvedTopologicalBoundary(
+				const ResolvedTopologicalBoundary &other);
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive-pointer to another.
-		ResolvedTopologicalGeometry &
+		ResolvedTopologicalBoundary &
 		operator=(
-				const ResolvedTopologicalGeometry &);
+				const ResolvedTopologicalBoundary &);
 	};
 }
 

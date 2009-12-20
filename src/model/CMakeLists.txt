@@ -64,8 +64,11 @@ set(srcs
     ReconstructionTreeEdge.h
     ReconstructionTreePopulator.cc
     ReconstructionTreePopulator.h
-    ResolvedTopologicalGeometry.cc
-    ResolvedTopologicalGeometry.h
+    ResolvedTopologicalBoundary.cc
+    ResolvedTopologicalBoundary.h
+    ResolvedTopologicalNetwork.cc
+    ResolvedTopologicalNetwork.h
+    ResolvedTopologicalNetworkImpl.h
     RevisionAwareIterator.h
     RevisionId.h
     StringContentTypeGenerator.h

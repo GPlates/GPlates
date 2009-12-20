@@ -28,7 +28,7 @@
 #include <vector>
 #include <QDebug>
 
-#include "TopologyResolver.h"
+#include "TopologyBoundaryResolver.h"
 
 #include "ReconstructionGeometryUtils.h"
 #include "TopologyInternalUtils.h"
@@ -42,7 +42,7 @@
 
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
-#include "model/ResolvedTopologicalGeometry.h"
+#include "model/ResolvedTopologicalBoundary.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
@@ -62,7 +62,7 @@
 #define CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS
 
 
-GPlatesAppLogic::TopologyResolver::TopologyResolver(
+GPlatesAppLogic::TopologyBoundaryResolver::TopologyBoundaryResolver(
 			const double &recon_time,
 			GPlatesModel::Reconstruction &recon) :
 	d_recon_ptr(&recon),
@@ -73,7 +73,7 @@ GPlatesAppLogic::TopologyResolver::TopologyResolver(
 
 
 bool
-GPlatesAppLogic::TopologyResolver::initialise_pre_feature_properties(
+GPlatesAppLogic::TopologyBoundaryResolver::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// super short-cut for features without boundary list properties
@@ -104,7 +104,7 @@ GPlatesAppLogic::TopologyResolver::initialise_pre_feature_properties(
 
 
 void
-GPlatesAppLogic::TopologyResolver::visit_gpml_constant_value(
+GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -112,7 +112,7 @@ GPlatesAppLogic::TopologyResolver::visit_gpml_constant_value(
 
 
 void
-GPlatesAppLogic::TopologyResolver::visit_gpml_piecewise_aggregation(
+GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_piecewise_aggregation(
 		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
@@ -129,7 +129,7 @@ GPlatesAppLogic::TopologyResolver::visit_gpml_piecewise_aggregation(
 
 
 void
-GPlatesAppLogic::TopologyResolver::visit_gpml_time_window(
+GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_time_window(
 		GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
 	gpml_time_window.time_dependent_value()->accept_visitor(*this);
@@ -138,7 +138,7 @@ GPlatesAppLogic::TopologyResolver::visit_gpml_time_window(
 
 
 void
-GPlatesAppLogic::TopologyResolver::visit_gpml_topological_polygon(
+GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_polygon(
 		GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
 {
 	PROFILE_FUNC();
@@ -148,7 +148,7 @@ GPlatesAppLogic::TopologyResolver::visit_gpml_topological_polygon(
 
 	//
 	// Visit the topological sections to gather needed information and store
-	// it in internally in 'd_resolved_boundary'.
+	// it internally in 'd_resolved_boundary'.
 	//
 	record_topological_sections(gpml_topological_polygon.sections());
 
@@ -165,14 +165,14 @@ GPlatesAppLogic::TopologyResolver::visit_gpml_topological_polygon(
 	process_topological_section_intersections();
 
 	//
-	// Now create the ResolvedTopologicalGeometry.
+	// Now create the ResolvedTopologicalBoundary.
 	//
-	create_resolved_topology_geometry();
+	create_resolved_topology_boundary();
 }
 
 
 void
-GPlatesAppLogic::TopologyResolver::record_topological_sections(
+GPlatesAppLogic::TopologyBoundaryResolver::record_topological_sections(
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
 				sections)
 {
@@ -191,7 +191,7 @@ GPlatesAppLogic::TopologyResolver::record_topological_sections(
 
 
 void
-GPlatesAppLogic::TopologyResolver::visit_gpml_topological_line_section(
+GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_line_section(
 		GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
 {  
 	const GPlatesModel::FeatureId source_feature_id =
@@ -230,7 +230,7 @@ GPlatesAppLogic::TopologyResolver::visit_gpml_topological_line_section(
 
 
 void
-GPlatesAppLogic::TopologyResolver::visit_gpml_topological_point(
+GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_point(
 		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
 {  
 	const GPlatesModel::FeatureId source_feature_id =
@@ -251,7 +251,7 @@ GPlatesAppLogic::TopologyResolver::visit_gpml_topological_point(
 
 
 void
-GPlatesAppLogic::TopologyResolver::record_topological_section_reconstructed_geometry(
+GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstructed_geometry(
 		ResolvedBoundary::Section &section,
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
@@ -277,7 +277,7 @@ GPlatesAppLogic::TopologyResolver::record_topological_section_reconstructed_geom
 
 
 void
-GPlatesAppLogic::TopologyResolver::validate_topological_section_intersections()
+GPlatesAppLogic::TopologyBoundaryResolver::validate_topological_section_intersections()
 {
 	// Iterate over our internal sequence of sections that we built up by
 	// visiting the topological sections of a topological polygon.
@@ -295,7 +295,7 @@ GPlatesAppLogic::TopologyResolver::validate_topological_section_intersections()
 
 
 void
-GPlatesAppLogic::TopologyResolver::validate_topological_section_intersection(
+GPlatesAppLogic::TopologyBoundaryResolver::validate_topological_section_intersection(
 		const std::size_t current_section_index)
 {
 	const std::size_t num_sections = d_resolved_boundary.d_sections.size();
@@ -344,7 +344,7 @@ GPlatesAppLogic::TopologyResolver::validate_topological_section_intersection(
 
 
 void
-GPlatesAppLogic::TopologyResolver::process_topological_section_intersections()
+GPlatesAppLogic::TopologyBoundaryResolver::process_topological_section_intersections()
 {
 	// Iterate over our internal sequence of sections that we built up by
 	// visiting the topological sections of a topological polygon.
@@ -362,7 +362,7 @@ GPlatesAppLogic::TopologyResolver::process_topological_section_intersections()
 
 
 void
-GPlatesAppLogic::TopologyResolver::process_topological_section_intersection(
+GPlatesAppLogic::TopologyBoundaryResolver::process_topological_section_intersection(
 		const std::size_t current_section_index)
 {
 	const std::size_t num_sections = d_resolved_boundary.d_sections.size();
@@ -497,7 +497,7 @@ GPlatesAppLogic::TopologyResolver::process_topological_section_intersection(
 
 
 void
-GPlatesAppLogic::TopologyResolver::create_resolved_topology_geometry()
+GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 {
 	PROFILE_FUNC();
 
@@ -509,8 +509,8 @@ GPlatesAppLogic::TopologyResolver::create_resolved_topology_geometry()
 	std::vector<GPlatesMaths::PointOnSphere> rotated_reference_points;
 #endif
 
-	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalGeometry.
-	std::vector<GPlatesModel::ResolvedTopologicalGeometry::SubSegment> output_subsegments;
+	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalBoundary.
+	std::vector<GPlatesModel::ResolvedTopologicalBoundary::SubSegment> output_subsegments;
 
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
@@ -537,7 +537,7 @@ GPlatesAppLogic::TopologyResolver::create_resolved_topology_geometry()
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
-		const GPlatesModel::ResolvedTopologicalGeometry::SubSegment output_subsegment(
+		const GPlatesModel::ResolvedTopologicalBoundary::SubSegment output_subsegment(
 				section.d_subsegment_geom.get(),
 				subsegment_feature_const_ref,
 				section.d_use_reverse);
@@ -575,7 +575,7 @@ GPlatesAppLogic::TopologyResolver::create_resolved_topology_geometry()
 	// just return without creating a resolved topological geometry.
 	if (polygon_validity != GPlatesUtils::GeometryConstruction::VALID)
 	{
-		qDebug() << "ERROR: Failed to create a ResolvedTopologicalGeometry - probably has "
+		qDebug() << "ERROR: Failed to create a ResolvedTopologicalBoundary - probably has "
 				"insufficient points for a polygon.";
 		qDebug() << "Skipping creation for topological polygon feature_id=";
 		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
@@ -584,10 +584,10 @@ GPlatesAppLogic::TopologyResolver::create_resolved_topology_geometry()
 	}
 
 	//
-	// Create the RTG for the plate polygon.
+	// Create the RTB for the plate polygon.
 	//
-	GPlatesModel::ResolvedTopologicalGeometry::non_null_ptr_type rtg_ptr =
-		GPlatesModel::ResolvedTopologicalGeometry::create(
+	GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_type rtg_ptr =
+		GPlatesModel::ResolvedTopologicalBoundary::create(
 			*plate_polygon,
 			*current_top_level_propiter()->collection_handle_ptr(),
 			*current_top_level_propiter(),
@@ -622,7 +622,7 @@ GPlatesAppLogic::TopologyResolver::create_resolved_topology_geometry()
 
 
 void
-GPlatesAppLogic::TopologyResolver::debug_output_topological_section_feature_id(
+GPlatesAppLogic::TopologyBoundaryResolver::debug_output_topological_section_feature_id(
 		const GPlatesModel::FeatureId &section_feature_id)
 {
 	qDebug() << "Topological polygon feature_id=";

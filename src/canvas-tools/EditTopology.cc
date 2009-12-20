@@ -85,17 +85,15 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	// else check type 
 
 	// Check feature type via qstrings 
-	static QString topology_type_name ("TopologicalClosedPlateBoundary");
+	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
+	static const QString topology_network_type_name ("TopologicalNetwork");
 	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
 		d_feature_focus_ptr->focused_feature()->feature_type().get_name() );
 
 	// Only activate for topologies
-	if ( feature_type_name != topology_type_name )
+	if ( ( feature_type_name != topology_boundary_type_name ) &&
+		( feature_type_name != topology_network_type_name ) )
 	{
-		// switch to the choose feature tool
-		// FIXME:  Since ViewportWindow is passed as a const ref cannot call this :
-		// d_viewport_window_ptr->choose_click_geometry_tool();
-
 		// unset the focus
  		d_feature_focus_ptr->unset_focus();
 		

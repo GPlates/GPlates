@@ -28,7 +28,8 @@
 
 #include "ReconstructedFeatureGeometry.h"
 #include "Reconstruction.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
 
 
 namespace
@@ -50,34 +51,38 @@ namespace
 	inline
 	bool
 	property_name_matches(
-			const GPlatesModel::ResolvedTopologicalGeometry &rtg,
+			const GPlatesModel::ResolvedTopologicalBoundary &rtb,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		if ( ! rtg.property().is_valid()) {
+		if ( ! rtb.property().is_valid()) {
 			// Nothing we can do here.
 			return false;
 		}
-		return ((*rtg.property())->property_name() == property_name_to_match);
+		return ((*rtb.property())->property_name() == property_name_to_match);
+	}
+
+
+	inline
+	bool
+	property_name_matches(
+			const GPlatesModel::ResolvedTopologicalNetwork &rtn,
+			const GPlatesModel::PropertyName &property_name_to_match)
+	{
+		if ( ! rtn.property().is_valid()) {
+			// Nothing we can do here.
+			return false;
+		}
+		return ((*rtn.property())->property_name() == property_name_to_match);
 	}
 
 
 	inline
 	bool
 	reconstruction_matches(
-			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
+			const GPlatesModel::ReconstructionGeometry &rg,
 			const GPlatesModel::Reconstruction *reconstruction_to_match)
 	{
-		return (rfg.reconstruction() == reconstruction_to_match);
-	}
-
-
-	inline
-	bool
-	reconstruction_matches(
-			const GPlatesModel::ResolvedTopologicalGeometry &rtg,
-			const GPlatesModel::Reconstruction *reconstruction_to_match)
-	{
-		return (rtg.reconstruction() == reconstruction_to_match);
+		return (rg.reconstruction() == reconstruction_to_match);
 	}
 }
 
@@ -91,10 +96,18 @@ GPlatesModel::ReconstructionGeometryFinder::visit_reconstructed_feature_geometry
 
 
 void
-GPlatesModel::ReconstructionGeometryFinder::visit_resolved_topological_geometry(
-		ResolvedTopologicalGeometry &rtg)
+GPlatesModel::ReconstructionGeometryFinder::visit_resolved_topological_boundary(
+		ResolvedTopologicalBoundary &rtb)
 {
-	visit_reconstruction_geometry_derived_type(rtg);
+	visit_reconstruction_geometry_derived_type(rtb);
+}
+
+
+void
+GPlatesModel::ReconstructionGeometryFinder::visit_resolved_topological_network(
+		ResolvedTopologicalNetwork &rtn)
+{
+	visit_reconstruction_geometry_derived_type(rtn);
 }
 
 

@@ -35,7 +35,8 @@
 #include "model/ConstReconstructionGeometryVisitor.h"
 #include "model/ReconstructionGeometryVisitor.h"
 #include "model/ReconstructedFeatureGeometry.h"
-#include "model/ResolvedTopologicalGeometry.h"
+#include "model/ResolvedTopologicalBoundary.h"
+#include "model/ResolvedTopologicalNetwork.h"
 
 #include "property-values/GeoTimeInstant.h"
 
@@ -123,7 +124,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Visits a @a ReconstructionGeometry to get a plate id (the plate id could be
 		 * a reconstruction plate id in @a ReconstructedFeatureGeometry or a plate id
-		 * to assign to other features in @a ResolvedTopologicalGeometry).
+		 * to assign to other features in @a ResolvedTopologicalBoundary).
 		 * Returns false if derived type of reconstruction geometry has no plate id.
 		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
 		 * non-const pointer to a @a ReconstructionGeometry.
@@ -257,8 +258,11 @@ namespace GPlatesAppLogic
 DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ReconstructedFeatureGeometry, \
 		visit_reconstructed_feature_geometry)
 
-DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopologicalGeometry, \
-		visit_resolved_topological_geometry)
+DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopologicalBoundary, \
+		visit_resolved_topological_boundary)
+
+DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopologicalNetwork, \
+		visit_resolved_topological_network)
 
 
 		template <typename ReconstructionGeometryPointer,
@@ -366,10 +370,18 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			virtual
 			void
-			visit_resolved_topological_geometry(
-					GPlatesModel::ResolvedTopologicalGeometry::non_null_ptr_to_const_type rtg)
+			visit_resolved_topological_boundary(
+					GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
 			{
-				d_feature_ref = rtg->get_feature_ref();
+				d_feature_ref = rtb->get_feature_ref();
+			}
+
+			virtual
+			void
+			visit_resolved_topological_network(
+					GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtn)
+			{
+				d_feature_ref = rtn->get_feature_ref();
 			}
 
 		private:
@@ -419,10 +431,18 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			virtual
 			void
-			visit_resolved_topological_geometry(
-					GPlatesModel::ResolvedTopologicalGeometry::non_null_ptr_to_const_type rtg)
+			visit_resolved_topological_boundary(
+					GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
 			{
-				d_property = rtg->property();
+				d_property = rtb->property();
+			}
+
+			virtual
+			void
+			visit_resolved_topological_network(
+					GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtn)
+			{
+				d_property = rtn->property();
 			}
 
 		private:
@@ -472,10 +492,18 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			virtual
 			void
-			visit_resolved_topological_geometry(
-					GPlatesModel::ResolvedTopologicalGeometry::non_null_ptr_to_const_type rtg)
+			visit_resolved_topological_boundary(
+					GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
 			{
-				d_plate_id = rtg->plate_id();
+				d_plate_id = rtb->plate_id();
+			}
+
+			virtual
+			void
+			visit_resolved_topological_network(
+					GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtn)
+			{
+				d_plate_id = rtn->plate_id();
 			}
 
 		private:
@@ -525,10 +553,18 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 			virtual
 			void
-			visit_resolved_topological_geometry(
-					GPlatesModel::ResolvedTopologicalGeometry::non_null_ptr_to_const_type rtg)
+			visit_resolved_topological_boundary(
+					GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
 			{
-				d_time_of_formation = rtg->time_of_formation();
+				d_time_of_formation = rtb->time_of_formation();
+			}
+
+			virtual
+			void
+			visit_resolved_topological_network(
+					GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtn)
+			{
+				d_time_of_formation = rtn->time_of_formation();
 			}
 
 		private:

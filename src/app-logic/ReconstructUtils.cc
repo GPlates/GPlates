@@ -173,7 +173,7 @@ GPlatesAppLogic::ReconstructUtils::create_reconstruction(
 		reconstructable_features_collection.end(),
 		rfgp);
 
-	// Create resolved topological geometries and store them in 'reconstruction'.
+	// Create resolved topologies and store them in 'reconstruction'.
 	TopologyUtils::resolve_topologies(
 			time, *reconstruction, reconstructable_features_collection);
 

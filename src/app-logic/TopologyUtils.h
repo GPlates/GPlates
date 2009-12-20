@@ -29,27 +29,26 @@
 
 #include <list>
 #include <vector>
+#include <boost/any.hpp>
+#include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonIntersections.h"
 
+
 #include "model/FeatureCollectionHandle.h"
 
-
-namespace GPlatesMaths
-{
-	class PointOnSphere;
-	class PolygonOnSphere;
-	class PolylineOnSphere;
-}
 
 namespace GPlatesModel
 {
 	class Reconstruction;
-	class ResolvedTopologicalGeometry;
+	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalNetwork;
+	class ResolvedTopologicalNetworkImpl;
 }
 
 namespace GPlatesAppLogic
@@ -59,9 +58,29 @@ namespace GPlatesAppLogic
 	 */
 	namespace TopologyUtils
 	{
-		//! Typedef for a sequence of resolved topological geometries.
-		typedef std::vector<const GPlatesModel::ResolvedTopologicalGeometry *>
-				resolved_topological_geometry_seq_type;
+		/**
+		 * Finds all topological closed plate boundary features and network features
+		 * in @a topological_features_collection that exist at time @a reconstruction_time and
+		 * creates @a ResolvedTopologicalBoundary objects and @a ResolvedTopologicalNetwork
+		 * objects respectively for each one found and stores them in @a reconstruction.
+		 *
+		 * @pre the features referenced by any of these topological features
+		 *      must have already been reconstructed and currently exist in @a reconstruction.
+		 */
+		void
+		resolve_topologies(
+				const double &reconstruction_time,
+				GPlatesModel::Reconstruction &reconstruction,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+						topological_features_collection);
+
+		//
+		// Topological boundaries
+		//
+
+		//! Typedef for a sequence of resolved topological boundaries.
+		typedef std::vector<const GPlatesModel::ResolvedTopologicalBoundary *>
+				resolved_topological_boundary_seq_type;
 
 		//! Typedef for a sequence of 'PolylineOnSphere::non_null_ptr_to_const_type'.
 		typedef GPlatesMaths::PolygonIntersections::partitioned_polyline_seq_type
@@ -72,10 +91,10 @@ namespace GPlatesAppLogic
 		{
 		public:
 			ResolvedBoundaryPartitionedPolylines(
-					const GPlatesModel::ResolvedTopologicalGeometry *resolved_topological_boundary);
+					const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary);
 
 			//! The resolved topological boundary that partitioned the polylines.
-			const GPlatesModel::ResolvedTopologicalGeometry *resolved_topological_boundary;
+			const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary;
 
 			//! The partitioned polylines.
 			partitioned_polyline_seq_type partitioned_inside_polylines;
@@ -84,35 +103,18 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Typedef for a sequence of associations of partitioned polylines and
-		 * the @a ResolvedTopologicalGeometry that they were partitioned into.
+		 * the @a ResolvedTopologicalBoundary that they were partitioned into.
 		 */
 		typedef std::list<const ResolvedBoundaryPartitionedPolylines>
 				resolved_boundary_partitioned_polylines_seq_type;
 
-
-		class ResolvedGeometriesForGeometryPartitioning;
+		class ResolvedBoundariesForGeometryPartitioning;
 		/**
-		 * Typedef for the results of finding resolved topologies (and creating
-		 * a structure optimised for point-in-polygon tests).
+		 * Typedef for the results of finding resolved topology boundaries for
+		 * geometry partitioning.
 		 */
-		typedef boost::shared_ptr<ResolvedGeometriesForGeometryPartitioning>
-				resolved_geometries_for_geometry_partitioning_query_type;
-
-
-		/**
-		 * Finds all topological closed plate boundary features in @a topological_features_collection
-		 * that exist at time @a reconstruction_time and creates @a ResolvedTopologicalGeometry objects
-		 * for each one and stores them in @a reconstruction.
-		 *
-		 * @pre the features referenced by any of these topological closed plate boundary features
-		 *      must have already been reconstructed and exist in @a reconstruction.
-		 */
-		void
-		resolve_topologies(
-				const double &reconstruction_time,
-				GPlatesModel::Reconstruction &reconstruction,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						topological_features_collection);
+		typedef boost::shared_ptr<ResolvedBoundariesForGeometryPartitioning>
+				resolved_boundaries_for_geometry_partitioning_query_type;
 
 
 		/**
@@ -126,31 +128,31 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Finds all @a ResolvedTopologicalGeometry objects in @a reconstruction
+		 * Finds all @a ResolvedTopologicalBoundary objects in @a reconstruction
 		 * and returns a structure for partitioning geometry using the polygon
-		 * of each @a ResolvedTopologicalGeometry.
+		 * of each @a ResolvedTopologicalBoundary.
 		 *
 		 * The returned structure can tested tested like a bool - it's true
-		 * if any @a ResolvedTopologicalGeometry objects are found in @a reconstruction.
+		 * if any @a ResolvedTopologicalBoundary objects are found in @a reconstruction.
 		 */
-		resolved_geometries_for_geometry_partitioning_query_type
+		resolved_boundaries_for_geometry_partitioning_query_type
 		query_resolved_topologies_for_geometry_partitioning(
 				GPlatesModel::Reconstruction &reconstruction);
 
 
 		/**
-		 * Searches all @a ResolvedTopologicalGeometry objects in @a resolved_geoms_query
+		 * Searches all @a ResolvedTopologicalBoundary objects in @a resolved_geoms_query
 		 * (returned from a call to @a query_resolved_topologies_for_geometry_partitioning)
 		 * to see which ones contain @a point and returns any found in
-		 * @a resolved_topological_geom_seq.
+		 * @a resolved_topological_boundary_seq.
 		 *
 		 * Returns true if any are found.
 		 */
 		bool
-		find_resolved_topologies_containing_point(
-				resolved_topological_geometry_seq_type &resolved_topological_geom_seq,
+		find_resolved_topology_boundaries_containing_point(
+				resolved_topological_boundary_seq_type &resolved_topological_boundary_seq,
 				const GPlatesMaths::PointOnSphere &point,
-				const resolved_geometries_for_geometry_partitioning_query_type &resolved_geoms_query);
+				const resolved_boundaries_for_geometry_partitioning_query_type &resolved_boundaries_query);
 
 
 		/**
@@ -171,7 +173,7 @@ namespace GPlatesAppLogic
 						resolved_boundary_partitioned_polylines_seq,
 				partitioned_polyline_seq_type &partitioned_outside_polylines,
 				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
-				const resolved_geometries_for_geometry_partitioning_query_type &resolved_geoms_query);
+				const resolved_boundaries_for_geometry_partitioning_query_type &resolved_boundaries_query);
 
 
 		/**
@@ -197,7 +199,170 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesModel::integer_plate_id_type>
 		find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
-				const resolved_topological_geometry_seq_type &resolved_boundaries);
+				const resolved_topological_boundary_seq_type &resolved_boundaries);
+
+
+		//
+		// Topological networks
+		//
+
+		//! Typedef for a sequence of resolved topological networks.
+		typedef std::vector<GPlatesModel::ResolvedTopologicalNetwork *>
+				resolved_topological_network_seq_type;
+
+		class ResolvedNetworkForInterpolationQuery;
+		/**
+		 * Typedef for an interpolation query of a single resolved topology network.
+		 */
+		typedef boost::shared_ptr<ResolvedNetworkForInterpolationQuery>
+				resolved_network_for_interpolation_query_type;
+
+		class ResolvedNetworksForInterpolationQuery;
+		/**
+		 * Typedef for interpolation queries of resolved topology networks.
+		 */
+		typedef boost::shared_ptr<ResolvedNetworksForInterpolationQuery>
+				resolved_networks_for_interpolation_query_type;
+
+		/**
+		 * A function that accepts a point and a feature reference and returns one or more
+		 * floating-point scalars.
+		 *
+		 * There is also a boost::any parameter that is passed directly from the
+		 * @a query_resolved_topology_networks_for_interpolation function (that
+		 * invokes this function).
+		 *
+		 * For example, a function to calculate a 3D velocity vector would
+		 * return three numbers (for the x, y and z components).
+		 */
+		typedef std::vector<double> map_point_to_scalars_function_signature(
+				const GPlatesMaths::PointOnSphere &,
+				const GPlatesModel::FeatureHandle::const_weak_ref &,
+				const boost::any &);
+		typedef boost::function<map_point_to_scalars_function_signature>
+				map_point_to_scalars_function_type;
+
+		/**
+		 * A function that accepts a ResolvedTopologicalNetworkImpl pointer as
+		 * the first argument and a @a resolved_network_for_interpolation_query_type as
+		 * the second argument.
+		 */
+		typedef void network_interpolation_query_callback_signature(
+				GPlatesModel::ResolvedTopologicalNetworkImpl *,
+				const resolved_network_for_interpolation_query_type &);
+		typedef boost::function<network_interpolation_query_callback_signature>
+				network_interpolation_query_callback_type;
+
+
+		/**
+		 * Finds all @a ResolvedTopologicalNetwork objects in @a reconstruction
+		 * and generates a mapping from each point in each network to a tuple of scalars
+		 * using the function @a map_point_to_scalars_function.
+		 *
+		 * The returned structure can be passed to @a interpolate_resolved_topology_networks.
+		 *
+		 * @a num_mapped_scalars_per_point should be the number of scalars returned by the
+		 * function @a map_point_to_scalars_function.
+		 *
+		 * @a map_point_to_scalars_user_data is arbitrary data (decided by the caller) that
+		 * is passed directly to the @a map_point_to_scalars_function function whenever
+		 * it is invoked internally. This is effectively any information needed by that
+		 * function that it cannot obtain from the feature reference that is also passed to it.
+		 *
+		 * @a network_interpolation_query_callback is an optional function that takes
+		 * a ResolvedTopologicalNetworkImpl pointer as the first argument and a
+		 * @a resolved_network_for_interpolation_query_type as a second argument and
+		 * can be used to let the caller know about the individual network queries.
+		 *
+		 * The returned structure can be tested like a bool - it's true
+		 * if any @a ResolvedTopologicalNetwork objects are found in @a reconstruction.
+		 *
+		 * For example, to calculate 3D velocity vectors for each point in each network
+		 * you would pass a function that returned three scalars and you would set
+		 * @a num_mapped_scalars_per_point to three (for the x, y and z components).
+		 */
+		resolved_networks_for_interpolation_query_type
+		query_resolved_topology_networks_for_interpolation(
+				GPlatesModel::Reconstruction &reconstruction,
+				const map_point_to_scalars_function_type &map_point_to_scalars_function,
+				const unsigned int num_mapped_scalars_per_point,
+				const boost::any &map_point_to_scalars_user_data,
+				const network_interpolation_query_callback_type &network_interpolation_query_callback =
+						network_interpolation_query_callback_type());
+
+
+		/**
+		 * Returns the scalars filled in by @a query_resolved_topology_networks_for_interpolation
+		 * for a specific resolved topological network identified by @a resolved_network_query.
+		 *
+		 * @post The network points and the scalar tuples at each point are returned in
+		 *       @a network_points and @a network_scalar_tuple_sequence and both these
+		 *       sequences are in the same order and have the same size.
+		 */
+		void
+		get_resolved_topology_network_scalars(
+				const resolved_network_for_interpolation_query_type &resolved_network_query,
+				std::vector<GPlatesMaths::PointOnSphere> &network_points,
+				std::vector< std::vector<double> > &network_scalar_tuple_sequence);
+
+
+		/**
+		 * Iterates through all resolved networks in @a resolved_networks_query
+		 * and finds the first network that contains @a point.
+		 *
+		 * For this network it interpolates the network points nearest @a point in that network
+		 * and uses that to interpolate the mapped scalars for those points.
+		 *
+		 * The interpolated scalars are returned and the number of scalars is the
+		 * 'num_mapped_scalars_per_point' parameters passed to
+		 * @a query_resolved_topology_networks_for_interpolation.
+		 *
+		 * Returns false if @a point is not in any of the resolved networks.
+		 *
+		 * For example, if interpolating 3D velocity vectors this function would
+		 * return three scalars (for the x, y and z velocity components).
+		 */
+		boost::optional< std::vector<double> >
+		interpolate_resolved_topology_networks(
+				const resolved_networks_for_interpolation_query_type &resolved_networks_query,
+				const GPlatesMaths::PointOnSphere &point);
+
+
+		/**
+		 * For this network it interpolates the network points nearest @a point in that network
+		 * and uses that to interpolate the mapped scalars for those points.
+		 *
+		 * The interpolated scalars are returned and the number of scalars is the
+		 * 'num_mapped_scalars_per_point' parameters passed to
+		 * @a query_resolved_topology_networks_for_interpolation.
+		 *
+		 * Returns false if @a point is in the resolved network.
+		 *
+		 * For example, if interpolating 3D velocity vectors this function would
+		 * return three scalars (for the x, y and z velocity components).
+		 */
+		boost::optional< std::vector<double> >
+		interpolate_resolved_topology_network(
+				const resolved_network_for_interpolation_query_type &resolved_network_query,
+				const GPlatesMaths::PointOnSphere &point);
+
+
+		//! Typedef for a sequence of resolved topological networks.
+		typedef std::vector<GPlatesModel::ResolvedTopologicalNetworkImpl *>
+				resolved_topological_network_impl_seq_type;
+
+		/**
+		 * Finds all @a ResolvedTopologicalNetworkImpl objects in @a reconstruction.
+		 *
+		 * NOTE: These are the full topological networks - currently
+		 * @a ResolvedTopologicalNetwork only refers to a part of the network and
+		 * multiple @a ResolvedTopologicalNetwork objects can refer to/share the same
+		 * @a ResolvedTopologicalNetworkImpl object.
+		 */
+		void
+		find_resolved_topological_network_impls(
+				resolved_topological_network_impl_seq_type &,
+				const GPlatesModel::Reconstruction &reconstruction);
 	}
 }
 

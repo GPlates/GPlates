@@ -5,7 +5,6 @@ Table of Contents
  1. Introduction
  2. Environment variables
  3. Program and library dependencies
-     1. 
 
 Introduction
 
@@ -48,7 +47,7 @@ variable is not case sensitive, so it could be called Path instead.)
         variable does not exist, click the New button to add it. Separate paths
         with semicolons.
 
-Library dependencies
+Program and library dependencies
 
 The following libraries and binaries are required to build GPlates. If you
 cannot use, or you cannot obtain, the exact same version as listed, you should
@@ -97,6 +96,29 @@ FWTools (for GDAL and Proj4)
   2. Add the FWTools \bin folder to the PATH environment variable (see above).
   3. If you downloaded a version of FWTools prior to 2.4.5, make a copy of
      proj.dll in the \bin folder and call it proj_fw.dll.
+
+CGAL
+
+  1. Get and install the CGAL 3.5 source code from http://www.cgal.org/:
+     * Download and run 'CGAL-3.5-Setup.exe'.
+	 * Under 'Select Default Variants' leave everything unticked.
+	 * Under 'Choose Components' untick everything ('Main CGAL' cannot be unticked).
+	 * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.5'.
+	 * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
+  2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
+     * Specify the CGAL installation location as the source and build directories.
+	 * Untick all 'WITH_*' options.
+	 * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.5').
+	 * Click the 'Configure' button twice.
+	 * Click the 'Generate' button.
+	 * If this is successful then a Visual Studio solution file 'CGAL.sln'.
+  3. Build CGAL:
+     * Open the generated Visual Studio solution file 'CGAL.sln'.
+	 * Select the 'Release' build type.
+	 * (GPlates developers will also want to build 'Debug', etc so that similar builds in
+	   GPlates can find the CGAL library of the correct build type).
+	 * Build the 'INSTALL' project.
+  When GPlates is built it should find CGAL via the "CGAL_DIR" environment variable.
 
 gzip
 

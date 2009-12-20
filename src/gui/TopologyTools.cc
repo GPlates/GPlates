@@ -23,7 +23,6 @@
  */
 
 //#define DEBUG
-//#define DEBUG1
 
 #include <algorithm>
 #include <iterator>
@@ -239,6 +238,26 @@ GPlatesGui::TopologyTools::activate_build_mode()
 void
 GPlatesGui::TopologyTools::activate_edit_mode()
 {
+
+		// Check the focused feature topology type
+ 		static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
+ 		static const QString topology_network_type_name("TopologicalNetwork");
+		const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+			(d_feature_focus_ptr->focused_feature())->feature_type().get_name() );
+
+		if ( feature_type_name == topology_boundary_type_name )
+		{ 
+			d_topology_type = GPlatesGlobal::PLATEPOLYGON;
+		}
+		else if ( feature_type_name == topology_network_type_name )
+		{
+			d_topology_type = GPlatesGlobal::NETWORK;
+		}
+		else
+		{
+			d_topology_type = GPlatesGlobal::UNKNOWN_TOPOLOGY;
+		}
+
 		// Load the topology into the Topology Sections Table 
  		initialise_focused_topology();
 
@@ -262,11 +281,6 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 
 		// Flip the TopologyToolsWidget to the Toplogy Tab
 		d_topology_tools_widget_ptr->choose_topology_tab();
-
-		// check 
-
-		// report 
-
 }
 
 
@@ -524,6 +538,10 @@ GPlatesGui::TopologyTools::set_click_point(double lat, double lon)
 void
 GPlatesGui::TopologyTools::handle_reconstruction()
 {
+#ifdef DEBUG
+std::cout << "GPlatesGui::TopologyTools::handle_reconstruction() " << std::endl;
+#endif
+
 	if (! d_is_active) { return; }
 
  	// Check to make sure the topology feature is defined for this new time
@@ -566,7 +584,6 @@ GPlatesGui::TopologyTools::handle_reconstruction()
 	display_feature( 
 		d_feature_focus_ptr->focused_feature(),
 		d_feature_focus_ptr->associated_geometry_property() );
-
 }
 
 
@@ -596,16 +613,18 @@ GPlatesGui::TopologyTools::set_focus(
 	//
 	// The following check for "TopologicalClosedPlateBoundary" is not needed
 	// anymore since only ReconstructedFeatureGeometry's and not
-	// ResolvedTopologicalGeometry's are added to the clicked feature table
+	// ResolvedTopologicalBoundary's are added to the clicked feature table
 	// when using the topology tools.
 	// However we'll keep it here just in case.
 	//
 	// Check feature type via qstrings 
- 	static QString topology_type_name ("TopologicalClosedPlateBoundary");
+ 	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
+ 	static const QString topology_network_type_name ("TopologicalNetwork");
 	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
 		feature_ref->feature_type().get_name() );
 
-	if ( feature_type_name == topology_type_name )
+	if ( ( feature_type_name == topology_boundary_type_name ) ||
+		( feature_type_name == topology_network_type_name ) )
 	{
 		// NOTE: this will trigger a set_focus signal with NULL ref
 		d_feature_focus_ptr->unset_focus(); 
@@ -685,11 +704,13 @@ qDebug() << "d_feature_focus_ptr = " << GPlatesUtils::make_qstring_from_icu_stri
 	//
 	// Check feature type via qstrings 
 	//
- 	static QString topology_type_name ("TopologicalClosedPlateBoundary");
-	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+ 	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
+ 	static const QString topology_network_type_name ("TopologicalNetwork");
+	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
 		feature_ref->feature_type().get_name() );
 
-	if ( feature_type_name == topology_type_name )
+	if ( ( feature_type_name == topology_boundary_type_name ) ||
+		( feature_type_name == topology_network_type_name ) )
 	{
 		// Only focus TopologicalClosedPlateBoundary types upon activate() calls
 		return;
@@ -802,10 +823,12 @@ GPlatesGui::TopologyTools::handle_shift_left_click(
 	}
 
 	// Check if the focused feature is a topology
-	static QString topology_type_name("TopologicalClosedPlateBoundary");
-	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
+	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
+	static const QString topology_network_type_name("TopologicalNetwork");
+	const QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(
 		(d_feature_focus_ptr->focused_feature())->feature_type().get_name() );
-	if ( feature_type_name == topology_type_name ) 
+	if ( feature_type_name == topology_boundary_type_name ||
+		feature_type_name == topology_network_type_name ) 
 	{
 		return;
 	}
@@ -1005,7 +1028,7 @@ GPlatesGui::TopologyTools::handle_add_feature()
 	if (! rg_ptr ) { return ; }
 
 	// Only insert features that have a ReconstructedFeatureGeometry.
-	// We exclude features with a ResolvedTopologicalGeometry because those features are
+	// We exclude features with a ResolvedTopologicalBoundary because those features are
 	// themselves topological boundaries and we're trying to build a topological boundary
 	// from ordinary features.
 	const GPlatesModel::ReconstructedFeatureGeometry *rfg_ptr = NULL;
@@ -1124,20 +1147,29 @@ GPlatesGui::TopologyTools::draw_topology_geometry()
 {
 	d_topology_geometry_layer_ptr->clear_rendered_geometries();
 
-	if (d_topology_geometry_opt_ptr) 
+
+	if ( d_topology_type == GPlatesGlobal::NETWORK )
 	{
-		// light grey
-		const GPlatesGui::Colour &segment_colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0);
+		// FIXME: eventually we will want the network drawn here too, 
+		// but for now, don't draw the network, just let the Resolver do it
+	}
+	else
+	{
+		if (d_topology_geometry_opt_ptr) 
+		{
+			// draw the single plate polygon 
+			// light grey
+			const GPlatesGui::Colour &colour = GPlatesGui::Colour::Colour(0.75, 0.75, 0.75, 1.0);
 
-		// Create rendered geometry.
-		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				*d_topology_geometry_opt_ptr,
-				segment_colour,
-				GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
-				GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_LINE_WIDTH_HINT);
-
-		d_topology_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
+			// Create rendered geometry.
+			const GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+					*d_topology_geometry_opt_ptr,
+					colour,
+					GPlatesViewOperations::RenderedLayerParameters::DEFAULT_POINT_SIZE_HINT,
+					GPlatesViewOperations::RenderedLayerParameters::DIGITISATION_LINE_WIDTH_HINT);
+			d_topology_geometry_layer_ptr->add_rendered_geometry(rendered_geometry);
+		}
 	}
 
 

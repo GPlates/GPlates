@@ -17,6 +17,8 @@ set(srcs
     AppLogicUtils.h
     AssignPlateIds.cc
     AssignPlateIds.h
+    CgalUtils.cc
+    CgalUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
     FeatureCollectionActivationStrategy.cc
@@ -51,10 +53,12 @@ set(srcs
     ReconstructionGeometryUtils.h
     ReconstructUtils.cc
     ReconstructUtils.h
+    TopologyBoundaryResolver.cc
+    TopologyBoundaryResolver.h
     TopologyInternalUtils.cc
     TopologyInternalUtils.h
-    TopologyResolver.cc
-    TopologyResolver.h
+    TopologyNetworkResolver.cc
+    TopologyNetworkResolver.h
     TopologyUtils.cc
     TopologyUtils.h
 )

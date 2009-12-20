@@ -80,8 +80,11 @@ Creating Visual Studio solution and project files with CMake
       to the correct locations.
   8.  Even if no popup messages occurred the 'OK' will still be greyed out so you'll need
       to click 'configure' once more.
-  9.  Click 'OK'.
-  10. The CMake GUI closes and you should have a 'gplates.sln' file in your root GPlates directory.
+  9.  Click 'OK' or 'Generate' - NOTE: you might get multiple warning messages that look like..
+      "WARNING: Target "gplates" requests linking to directory..." referring to the CGAL library location.
+	  This is ok and can be ignored.
+  10. The CMake GUI closes or stays open and says 'Generating done'.
+  11. You should now have a 'gplates.sln' file in your root GPlates directory.
 
 Building GPlates via the IDE
 

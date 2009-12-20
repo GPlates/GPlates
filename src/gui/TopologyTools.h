@@ -240,6 +240,7 @@ namespace GPlatesGui
 		class SectionInfo
 		{
 		public:
+			explicit
 			SectionInfo(
 					const GPlatesGui::TopologySectionsContainer::TableRow &table_row) :
 				d_table_row(table_row)
@@ -428,6 +429,9 @@ namespace GPlatesGui
 		// These control the behavior of the geom. visitors
 		bool d_is_active;
 		bool d_in_edit;
+
+		// This gets set upon activation 
+		GPlatesGlobal::TopologyTypes d_topology_type;
 
 		//! Keeps track of the click point and the feature clicked on.
 		ClickPoint d_click_point;

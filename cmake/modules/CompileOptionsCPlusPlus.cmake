@@ -22,8 +22,14 @@ endif (NOT APPLE)
 # NOTE: Setting 'CMAKE_CXX_FLAGS*' variables here will override the cached versions in 'CMakeCache.txt' file
 # (the ones that appear in the GUI editor) when generating a native build environment, but won't change ' CMakeCache.txt' file.
 # The cached versions are set to sensible defaults by CMake when it detects the compiler (defaults change with different compilers).
-# You can override the cached versions completely using set(CMAKE_CXX_FLAGS ...) or
-# add to them using set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ...").
+
+# WARNING: The CGAL library requires applications that use it to have the same settings as
+# when the CGAL library itself was built.
+# So do not override the cached versions completely using set(CMAKE_CXX_FLAGS ...).
+# Instead use set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ...") to add to the current versions
+# already set by CGAL when find_package("CGAL") was called - actually CGAL overrides CMAKE_CXX_FLAGS the first time cmake
+# configures (which overrides our settings in this file) but in the second configure
+# (there appears to be two configure stages in cmake) CGAL does not override and then we add to CGAL's settings here.
 
 # Mac OSX specific configuration options:
 if(APPLE)
@@ -110,8 +116,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         set(warnings_flags_list )
     else(APPLE)
         # Use a list instead of a string so we can have multiple lines (instead of one giant line).
+#        set(warnings_flags_list
+#            -W -Wall -pedantic -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
+#            -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
+#            -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
         set(warnings_flags_list
-            -W -Wall -pedantic -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
+            -W -Wall -ansi -Wcast-align -Wwrite-strings -Wfloat-equal
             -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
             -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
     endif(APPLE)
@@ -129,6 +139,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     else (GPLATES_PUBLIC_RELEASE)
         set(CMAKE_CXX_FLAGS "${warnings_flags}")
     endif (GPLATES_PUBLIC_RELEASE)
+
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frounding-math")
+
     #set(CMAKE_EXE_LINKER_FLAGS )
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )

@@ -41,7 +41,7 @@ namespace GPlatesModel
 	/**
 	 * This weak observer visitor finds all the reconstruction geometries (RGs) which
 	 * are observing a given feature (eg, ReconstructedFeatureGeometry
-	 * and ResolvedTopologicalGeometry).
+	 * and ResolvedTopologicalBoundary).
 	 *
 	 * Optionally, it can limit its results to those RG instances which are contained within a
 	 * particular Reconstruction, which were reconstructed from geometries with a particular
@@ -151,8 +151,13 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_resolved_topological_geometry(
-				ResolvedTopologicalGeometry &rtg);
+		visit_resolved_topological_boundary(
+				ResolvedTopologicalBoundary &rtb);
+
+		virtual
+		void
+		visit_resolved_topological_network(
+				ResolvedTopologicalNetwork &rtn);
 
 	private:
 		boost::optional<GPlatesModel::PropertyName> d_property_name_to_match;
