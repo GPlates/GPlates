@@ -86,6 +86,15 @@ namespace
 					multi_point_on_sphere,
 					partitioned_multipoint_inside,
 					partitioned_multipoint_outside);
+
+			if (partitioned_multipoint_inside)
+			{
+				d_partitioned_geometries_inside.push_back(*partitioned_multipoint_inside);
+			}
+			if (partitioned_multipoint_outside)
+			{
+				d_partitioned_geometries_outside.push_back(*partitioned_multipoint_outside);
+			}
 		}
 
 		virtual
