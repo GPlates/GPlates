@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include "PolygonIntersections.h"
@@ -34,9 +36,129 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
+
 
 namespace
 {
+	using GPlatesMaths::PolygonIntersections;
+	using GPlatesMaths::GeometryOnSphere;
+	using GPlatesMaths::MultiPointOnSphere;
+	using GPlatesMaths::PointOnSphere;
+	using GPlatesMaths::PolygonOnSphere;
+	using GPlatesMaths::PolylineOnSphere;
+
+	class GeometryPartitioner :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		GeometryPartitioner(
+				PolygonIntersections &polygon_intersections,
+				PolygonIntersections::partitioned_geometry_seq_type &partitioned_geometries_inside,
+				PolygonIntersections::partitioned_geometry_seq_type &partitioned_geometries_outside) :
+			d_polygon_intersections(polygon_intersections),
+			d_partitioned_geometries_inside(partitioned_geometries_inside),
+			d_partitioned_geometries_outside(partitioned_geometries_outside)
+		{  }
+
+
+		PolygonIntersections::Result
+		partition_geometry(
+				const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned)
+		{
+			d_result = PolygonIntersections::GEOMETRY_OUTSIDE;
+
+			return d_result;
+		}
+
+	protected:
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type>
+					partitioned_multipoint_inside,
+					partitioned_multipoint_outside;
+			d_result = d_polygon_intersections.partition_multipoint(
+					multi_point_on_sphere,
+					partitioned_multipoint_inside,
+					partitioned_multipoint_outside);
+		}
+
+		virtual
+		void
+		visit_point_on_sphere(
+				PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_result = d_polygon_intersections.partition_point(*point_on_sphere);
+
+			if (d_result == PolygonIntersections::GEOMETRY_OUTSIDE)
+			{
+				d_partitioned_geometries_outside.push_back(point_on_sphere);
+			}
+			else
+			{
+				d_partitioned_geometries_inside.push_back(point_on_sphere);
+			}
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_inside;
+			PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_outside;
+			d_result = d_polygon_intersections.partition_polygon(
+					polygon_on_sphere,
+					partitioned_polylines_inside,
+					partitioned_polylines_outside);
+
+			if (d_result == PolygonIntersections::GEOMETRY_INSIDE)
+			{
+				d_partitioned_geometries_inside.push_back(polygon_on_sphere);
+			}
+			else if (d_result == PolygonIntersections::GEOMETRY_OUTSIDE)
+			{
+				d_partitioned_geometries_outside.push_back(polygon_on_sphere);
+			}
+
+			std::copy(partitioned_polylines_inside.begin(), partitioned_polylines_inside.end(),
+					std::back_inserter(d_partitioned_geometries_inside));
+			std::copy(partitioned_polylines_outside.begin(), partitioned_polylines_outside.end(),
+					std::back_inserter(d_partitioned_geometries_outside));
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_inside;
+			PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_outside;
+			d_result = d_polygon_intersections.partition_polyline(
+					polyline_on_sphere,
+					partitioned_polylines_inside,
+					partitioned_polylines_outside);
+
+			std::copy(partitioned_polylines_inside.begin(), partitioned_polylines_inside.end(),
+					std::back_inserter(d_partitioned_geometries_inside));
+			std::copy(partitioned_polylines_outside.begin(), partitioned_polylines_outside.end(),
+					std::back_inserter(d_partitioned_geometries_outside));
+		}
+
+	private:
+		PolygonIntersections &d_polygon_intersections;
+
+		PolygonIntersections::Result d_result;
+		PolygonIntersections::partitioned_geometry_seq_type &
+				d_partitioned_geometries_inside;
+		PolygonIntersections::partitioned_geometry_seq_type &
+				d_partitioned_geometries_outside;
+	};
+
+
 	/**
 	 * Sequential partitioned polylines that are inside and/or overlapping with the
 	 * partitioning polygon's boundary can really be merged into a single polygon since
@@ -167,6 +289,19 @@ GPlatesMaths::PolygonIntersections::PolygonIntersections(
 
 
 GPlatesMaths::PolygonIntersections::Result
+GPlatesMaths::PolygonIntersections::partition_geometry(
+		const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned,
+		partitioned_geometry_seq_type &partitioned_geometries_inside,
+		partitioned_geometry_seq_type &partitioned_geometries_outside)
+{
+	GeometryPartitioner geometry_partitioner(
+			*this, partitioned_geometries_inside, partitioned_geometries_outside);
+
+	return geometry_partitioner.partition_geometry(geometry_to_be_partitioned);
+}
+
+
+GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_polyline(
 		const PolylineOnSphere::non_null_ptr_to_const_type &polyline_to_be_partitioned,
 		partitioned_polyline_seq_type &partitioned_polylines_inside,
@@ -206,7 +341,7 @@ GPlatesMaths::PolygonIntersections::partition_polyline(
 
 	// Determine which partitioned polylines are inside/outside the partitioning polygon
 	// and add to the appropriate lists.
-	partition_geometry(
+	partition_intersecting_geometry(
 			*partitioned_polylines_graph,
 			partitioned_polylines_inside,
 			partitioned_polylines_outside);
@@ -247,7 +382,7 @@ GPlatesMaths::PolygonIntersections::partition_polygon(
 
 	// Determine which partitioned polylines are inside/outside the partitioning polygon
 	// and add to the appropriate lists.
-	partition_geometry(
+	partition_intersecting_geometry(
 			*partitioned_polylines_graph,
 			partitioned_polylines_inside,
 			partitioned_polylines_outside);
@@ -284,17 +419,18 @@ GPlatesMaths::PolygonIntersections::partition_point(
 
 GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_multipoint(
-		const MultiPointOnSphere &multipoint_to_be_partitioned,
-		partitioned_point_seq_type &partitioned_points_inside,
-		partitioned_point_seq_type &partitioned_points_outside)
+		const MultiPointOnSphere::non_null_ptr_to_const_type &multipoint_to_be_partitioned,
+		boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_inside,
+		boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_outside)
 {
-	bool any_inside_points = false;
-	bool any_outside_points = false;
 	bool any_intersecting_points = false;
 
+	std::vector<GPlatesMaths::PointOnSphere> partitioned_points_inside;
+	std::vector<GPlatesMaths::PointOnSphere> partitioned_points_outside;
+
 	// Iterate over the points in the multipoint and test each one.
-	MultiPointOnSphere::const_iterator multipoint_iter = multipoint_to_be_partitioned.begin();
-	MultiPointOnSphere::const_iterator multipoint_end = multipoint_to_be_partitioned.end();
+	MultiPointOnSphere::const_iterator multipoint_iter = multipoint_to_be_partitioned->begin();
+	MultiPointOnSphere::const_iterator multipoint_end = multipoint_to_be_partitioned->end();
 	for ( ; multipoint_iter != multipoint_end; ++multipoint_iter)
 	{
 		const PointOnSphere &point = *multipoint_iter;
@@ -305,12 +441,10 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 		case GEOMETRY_OUTSIDE:
 		default:
 			partitioned_points_outside.push_back(point);
-			any_outside_points = true;
 			break;
 
 		case GEOMETRY_INSIDE:
 			partitioned_points_inside.push_back(point);
-			any_inside_points = true;
 			break;
 
 		case GEOMETRY_INTERSECTING:
@@ -321,17 +455,28 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 		}
 	}
 
+	if (!partitioned_points_inside.empty())
+	{
+		partitioned_multipoint_inside = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+				partitioned_points_inside.begin(), partitioned_points_inside.end());
+	}
+	if (!partitioned_points_outside.empty())
+	{
+		partitioned_multipoint_outside = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+				partitioned_points_outside.begin(), partitioned_points_outside.end());
+	}
+
 	// If there were any points on the boundary or there are points inside
 	// and outside then classify that as intersecting.
 	if (any_intersecting_points ||
-			(any_inside_points && any_outside_points))
+			(!partitioned_points_inside.empty() && !partitioned_points_outside.empty()))
 	{
 		return GEOMETRY_INTERSECTING;
 	}
 
 	// Only one of inside or outside lists has any points in it.
 
-	if (any_inside_points)
+	if (!partitioned_points_inside.empty())
 	{
 		return GEOMETRY_INSIDE;
 	}
@@ -370,7 +515,7 @@ GPlatesMaths::PolygonIntersections::partition_polyline_or_polygon_fully_inside_o
 
 
 void
-GPlatesMaths::PolygonIntersections::partition_geometry(
+GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 		const GPlatesMaths::PolylineIntersections::Graph &partitioned_polylines_graph,
 		partitioned_polyline_seq_type &partitioned_polylines_inside,
 		partitioned_polyline_seq_type &partitioned_polylines_outside)

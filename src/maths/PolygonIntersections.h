@@ -28,6 +28,7 @@
 #define GPLATES_MATHS_POLYGONINTERSECTIONS_H
 
 #include <list>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "MultiPointOnSphere.h"
@@ -90,12 +91,24 @@ namespace GPlatesMaths
 		};
 
 
+		//! Typedef for a sequence of partitioned geometries.
+		typedef std::list<GeometryOnSphere::non_null_ptr_to_const_type>
+				partitioned_geometry_seq_type;
+
 		//! Typedef for a sequence of partitioned polylines.
 		typedef std::list<PolylineOnSphere::non_null_ptr_to_const_type>
 				partitioned_polyline_seq_type;
 
-		//! Typedef for a sequence of partitioned points.
-		typedef std::list<PointOnSphere> partitioned_point_seq_type;
+
+		/**
+		 * Partition @a geometry_to_be_partitioned into geometries inside and outside
+		 * the partitioning polygon.
+		 */
+		Result
+		partition_geometry(
+				const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned,
+				partitioned_geometry_seq_type &partitioned_geometries_inside,
+				partitioned_geometry_seq_type &partitioned_geometries_outside);
 
 
 		/**
@@ -141,17 +154,17 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Partition @a multipoint_to_be_partitioned into points inside and outside
-		 * the partitioning polygon.
+		 * Partition @a multipoint_to_be_partitioned into an optional multipoint inside and
+		 * an optional multipoint outside the partitioning polygon.
 		 *
 		 * @a GEOMETRY_INTERSECTING is returned if any points were on the boundary
 		 * of the partitioning polygon or if points were partitioned both inside and outside.
 		 */
 		Result
 		partition_multipoint(
-				const MultiPointOnSphere &multipoint_to_be_partitioned,
-				partitioned_point_seq_type &partitioned_points_inside,
-				partitioned_point_seq_type &partitioned_points_outside);
+				const MultiPointOnSphere::non_null_ptr_to_const_type &multipoint_to_be_partitioned,
+				boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_inside,
+				boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_outside);
 
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;
@@ -175,7 +188,7 @@ namespace GPlatesMaths
 		 * partitioning polygon and appends to the appropriate partition list.
 		 */
 		void
-		partition_geometry(
+		partition_intersecting_geometry(
 				const GPlatesMaths::PolylineIntersections::Graph &partitioned_polylines_graph,
 				partitioned_polyline_seq_type &partitioned_polylines_inside,
 				partitioned_polyline_seq_type &partitioned_polylines_outside);
