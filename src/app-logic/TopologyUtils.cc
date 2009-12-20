@@ -325,10 +325,10 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topology_boundaries_containing_poi
 
 
 bool
-GPlatesAppLogic::TopologyUtils::partition_polyline_using_resolved_topology_boundaries(
-		resolved_boundary_partitioned_polylines_seq_type &resolved_boundary_partitioned_polylines_seq,
-		partitioned_polyline_seq_type &partitioned_outside_polylines,
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
+		resolved_boundary_partitioned_geometries_seq_type &resolved_boundary_partitioned_geometries_seq,
+		partitioned_geometry_seq_type &partitioned_outside_geometries,
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 		const resolved_boundaries_for_geometry_partitioning_query_type &resolved_boundaries_query)
 {
 	// Return early if query does not exist.
@@ -337,20 +337,20 @@ GPlatesAppLogic::TopologyUtils::partition_polyline_using_resolved_topology_bound
 		return false;
 	}
 
-	bool was_polyline_partitioned_into_any_resolved_boundaries = false;
+	bool was_geometry_partitioned_into_any_resolved_boundaries = false;
 
-	// Keeps track of the polylines that are outside the resolved boundary
+	// Keeps track of the geometries that are outside the resolved boundary
 	// being processed (and outside all resolved boundaries processed so far).
-	partitioned_polyline_seq_type partitioned_outside_polylines1;
-	partitioned_polyline_seq_type partitioned_outside_polylines2;
-	partitioned_polyline_seq_type *current_resolved_boundary_partitioned_outside_polylines =
-			&partitioned_outside_polylines1;
-	partitioned_polyline_seq_type *next_resolved_boundary_partitioned_outside_polylines =
-			&partitioned_outside_polylines2;
+	partitioned_geometry_seq_type partitioned_outside_geometries1;
+	partitioned_geometry_seq_type partitioned_outside_geometries2;
+	partitioned_geometry_seq_type *current_resolved_boundary_partitioned_outside_geometries =
+			&partitioned_outside_geometries1;
+	partitioned_geometry_seq_type *next_resolved_boundary_partitioned_outside_geometries =
+			&partitioned_outside_geometries2;
 
-	// Add the input polyline to the current list of outside polylines
+	// Add the input geometry to the current list of outside geometries
 	// to start off the processing chain.
-	current_resolved_boundary_partitioned_outside_polylines->push_back(polyline);
+	current_resolved_boundary_partitioned_outside_geometries->push_back(geometry);
 
 	// Iterate through the resolved boundaries.
 	ResolvedBoundariesForGeometryPartitioning::resolved_boundary_seq_type::const_iterator rtb_iter =
@@ -361,57 +361,57 @@ GPlatesAppLogic::TopologyUtils::partition_polyline_using_resolved_topology_bound
 	{
 		const ResolvedBoundaryForGeometryPartitioning &rtb = *rtb_iter;
 
-		// Polylines partitioned inside the current resolved boundary are stored here.
-		ResolvedBoundaryPartitionedPolylines resolved_boundary_partitioned_polylines(
+		// Geometries partitioned inside the current resolved boundary are stored here.
+		ResolvedBoundaryPartitionedGeometries resolved_boundary_partitioned_polylines(
 				rtb.resolved_topological_boundary);
 
 		// Clear the next list before we start filling it up.
-		next_resolved_boundary_partitioned_outside_polylines->clear();
+		next_resolved_boundary_partitioned_outside_geometries->clear();
 
-		// Iterate over the current sequence of outside polylines and partition them
+		// Iterate over the current sequence of outside geometries and partition them
 		// using the current resolved boundary.
-		partitioned_polyline_seq_type::const_iterator outside_polyline_iter =
-				current_resolved_boundary_partitioned_outside_polylines->begin();
-		partitioned_polyline_seq_type::const_iterator outside_polyline_end =
-				current_resolved_boundary_partitioned_outside_polylines->end();
-		for ( ; outside_polyline_iter != outside_polyline_end; ++outside_polyline_iter)
+		partitioned_geometry_seq_type::const_iterator outside_geometry_iter =
+				current_resolved_boundary_partitioned_outside_geometries->begin();
+		partitioned_geometry_seq_type::const_iterator outside_geometry_end =
+				current_resolved_boundary_partitioned_outside_geometries->end();
+		for ( ; outside_geometry_iter != outside_geometry_end; ++outside_geometry_iter)
 		{
-			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &outside_polyline =
-					*outside_polyline_iter;
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &outside_geometry =
+					*outside_geometry_iter;
 
-			// Partition the current outside polyline against the resolved topology boundary
-			// polygon. Polylines partitioned outside the current resolved boundary get stored
-			// in the sequence of outside polylines used for the next resolved boundary.
-			rtb.polygon_intersections->partition_polyline(
-					outside_polyline,
-					resolved_boundary_partitioned_polylines.partitioned_inside_polylines/*inside*/,
-					*next_resolved_boundary_partitioned_outside_polylines/*outside*/);
+			// Partition the current outside geometry against the resolved topology boundary
+			// polygon. Geometry partitioned outside the current resolved boundary get stored
+			// in the sequence of outside geometries used for the next resolved boundary.
+			rtb.polygon_intersections->partition_geometry(
+					outside_geometry,
+					resolved_boundary_partitioned_polylines.partitioned_inside_geometries/*inside*/,
+					*next_resolved_boundary_partitioned_outside_geometries/*outside*/);
 		}
 
-		// Add the partitioned polylines to the caller's list if any were partitioned
+		// Add the partitioned geometries to the caller's list if any were partitioned
 		// into the current resolved boundary.
-		if (!resolved_boundary_partitioned_polylines.partitioned_inside_polylines.empty())
+		if (!resolved_boundary_partitioned_polylines.partitioned_inside_geometries.empty())
 		{
-			resolved_boundary_partitioned_polylines_seq.push_back(
+			resolved_boundary_partitioned_geometries_seq.push_back(
 					resolved_boundary_partitioned_polylines);
 
-			was_polyline_partitioned_into_any_resolved_boundaries = true;
+			was_geometry_partitioned_into_any_resolved_boundaries = true;
 		}
 
-		// Swap the pointers to the current and next list of outside polylines.
+		// Swap the pointers to the current and next list of outside geometries.
 		std::swap(
-				current_resolved_boundary_partitioned_outside_polylines,
-				next_resolved_boundary_partitioned_outside_polylines);
+				current_resolved_boundary_partitioned_outside_geometries,
+				next_resolved_boundary_partitioned_outside_geometries);
 
 	}
 
-	// Pass any remaining partitioned outside polylines to the caller.
+	// Pass any remaining partitioned outside geometries to the caller.
 	// These are not inside any of the resolved boundaries.
-	partitioned_outside_polylines.splice(
-			partitioned_outside_polylines.end(),
-			*current_resolved_boundary_partitioned_outside_polylines);
+	partitioned_outside_geometries.splice(
+			partitioned_outside_geometries.end(),
+			*current_resolved_boundary_partitioned_outside_geometries);
 
-	return was_polyline_partitioned_into_any_resolved_boundaries;
+	return was_geometry_partitioned_into_any_resolved_boundaries;
 }
 
 
@@ -450,7 +450,7 @@ GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_ancho
 }
 
 
-GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedPolylines::ResolvedBoundaryPartitionedPolylines(
+GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedGeometries::ResolvedBoundaryPartitionedGeometries(
 		const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary_) :
 	resolved_topological_boundary(resolved_topological_boundary_)
 {

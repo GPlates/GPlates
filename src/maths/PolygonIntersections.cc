@@ -68,6 +68,8 @@ namespace
 		{
 			d_result = PolygonIntersections::GEOMETRY_OUTSIDE;
 
+			geometry_to_be_partitioned->accept_visitor(*this);
+
 			return d_result;
 		}
 

@@ -82,31 +82,31 @@ namespace GPlatesAppLogic
 		typedef std::vector<const GPlatesModel::ResolvedTopologicalBoundary *>
 				resolved_topological_boundary_seq_type;
 
-		//! Typedef for a sequence of 'PolylineOnSphere::non_null_ptr_to_const_type'.
-		typedef GPlatesMaths::PolygonIntersections::partitioned_polyline_seq_type
-				partitioned_polyline_seq_type;
+		//! Typedef for a sequence of 'GeometryOnSphere::non_null_ptr_to_const_type'.
+		typedef GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type
+				partitioned_geometry_seq_type;
 
 
-		class ResolvedBoundaryPartitionedPolylines
+		class ResolvedBoundaryPartitionedGeometries
 		{
 		public:
-			ResolvedBoundaryPartitionedPolylines(
+			ResolvedBoundaryPartitionedGeometries(
 					const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary);
 
 			//! The resolved topological boundary that partitioned the polylines.
 			const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary;
 
-			//! The partitioned polylines.
-			partitioned_polyline_seq_type partitioned_inside_polylines;
+			//! The partitioned geometries.
+			partitioned_geometry_seq_type partitioned_inside_geometries;
 		};
 
 
 		/**
-		 * Typedef for a sequence of associations of partitioned polylines and
+		 * Typedef for a sequence of associations of partitioned geometries and
 		 * the @a ResolvedTopologicalBoundary that they were partitioned into.
 		 */
-		typedef std::list<const ResolvedBoundaryPartitionedPolylines>
-				resolved_boundary_partitioned_polylines_seq_type;
+		typedef std::list<const ResolvedBoundaryPartitionedGeometries>
+				resolved_boundary_partitioned_geometries_seq_type;
 
 		class ResolvedBoundariesForGeometryPartitioning;
 		/**
@@ -156,23 +156,24 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Partition @a polyline into the resolved topological boundaries.
+		 * Partition @a geometry into the resolved topological boundaries.
 		 *
 		 * The boundaries are assumed to not overlap each other - if they do then
 		 * which overlapping resolved boundary it is partitioned into is undefined.
 		 *
-		 * On returning @a partitioned_outside_polylines contains any partitioned
-		 * polylines that are not inside any resolved boundaries.
+		 * On returning @a partitioned_outside_geometries contains any partitioned
+		 * geometries that are not inside any resolved boundaries.
 		 *
-		 * Returns true if @a polyline is inside any resolved boundaries in which
-		 * case elements were appended to @a resolved_boundary_partitioned_polylines_seq.
+		 * Returns true if @a geometry is inside any resolved boundaries (even partially)
+		 * in which case elements were appended to
+		 * @a resolved_boundary_partitioned_geometries_seq.
 		 */
 		bool
-		partition_polyline_using_resolved_topology_boundaries(
-				resolved_boundary_partitioned_polylines_seq_type &
-						resolved_boundary_partitioned_polylines_seq,
-				partitioned_polyline_seq_type &partitioned_outside_polylines,
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+		partition_geometry_using_resolved_topology_boundaries(
+				resolved_boundary_partitioned_geometries_seq_type &
+						resolved_boundary_partitioned_geometries_seq,
+				partitioned_geometry_seq_type &partitioned_outside_geometries,
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				const resolved_boundaries_for_geometry_partitioning_query_type &resolved_boundaries_query);
 
 
