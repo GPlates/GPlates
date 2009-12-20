@@ -141,8 +141,7 @@ namespace GPlatesGui
 
 		/**
 		 * Change which feature is currently focused, also specifying an associated
-		 * property iterator. This is for the benefit of the TopologySections{Table,Container},
-		 * which doesn't (and shouldn't) know about RGs.
+		 * property iterator.
 		 *
 		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
 		 * is actually different to the previous feature.
@@ -215,7 +214,7 @@ namespace GPlatesGui
 		 * it's in the feature collection we're about to unload.
 		 */
 		void
-		begin_remove_feature_collection(
+		modifying_feature_collection(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
 

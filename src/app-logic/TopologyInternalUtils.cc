@@ -1011,16 +1011,13 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 	typedef boost::optional<GPlatesMaths::PointOnSphere> optional_intersection_point_type;
 
 	// Intersect the two section polylines.
-	std::list<GPlatesMaths::PointOnSphere> intersection_points;
-	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> partitioned_lines;
-	const int num_intersect = GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
-		*first_section_polyline,
-		*second_section_polyline,
-		intersection_points,
-		partitioned_lines);
+	boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph> intersection_graph =
+			GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
+					*first_section_polyline,
+					*second_section_polyline);
 
 	// If there were no intersections then return the original geometries.
-	if (num_intersect == 0)
+	if (!intersection_graph)
 	{
 		// Return original geometries.
 		return boost::make_tuple<optional_intersection_point_type>(
@@ -1030,10 +1027,10 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 	}
 
 	// FIXME: We currently don't handle more than one intersection.
-	if (num_intersect >= 2)
+	if (intersection_graph->intersections.size() >= 2)
 	{
 		std::cerr << "TopologyInternalUtils::intersect_topological_sections: " << std::endl
-			<< "WARN: num_intersect=" << num_intersect << std::endl 
+			<< "WARN: num_intersect=" << intersection_graph->intersections.size() << std::endl 
 			<< "WARN: Unable to set boundary feature intersection relations!" << std::endl
 			<< "WARN: Make sure boundary feature's only intersect once." << std::endl
 			<< std::endl;
@@ -1050,37 +1047,35 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 	// There was a single intersection.
 	//
 
-	// pair of polyline lists from intersection
-	std::pair<
-		std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-		std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
-	> intersected_polyline_parts;
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!intersection_graph->partitioned_polylines1.empty() &&
+					!intersection_graph->partitioned_polylines2.empty(),
+			GPLATES_ASSERTION_SOURCE);
 
-	// unambiguously identify partitioned lines:
-	// intersected_polyline_parts.first.front is the head of first_section_polyline
-	// intersected_polyline_parts.first.back is the tail of first_section_polyline
-	// intersected_polyline_parts.second.front is the head of second_section_polyline
-	// intersected_polyline_parts.second.back is the tail of second_section_polyline
-	intersected_polyline_parts = GPlatesMaths::PolylineIntersections::identify_partitioned_polylines(
-			*first_section_polyline,
-			*second_section_polyline,
-			intersection_points,
-			partitioned_lines);
+	// It's possible for the intersection to form a T-junction where
+	// one polyline is divided into two but the other one is not.
+	// If that happens then we don't need to test the polyline that is not divided
+	// because will be the closest segment to the reference point already.
 
 	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_closest_segment =
-			find_closest_intersected_segment_to_reference_point(
-					first_section_reference_point,
-					intersected_polyline_parts.first.front(),
-					intersected_polyline_parts.first.back());
+			(intersection_graph->partitioned_polylines1.size() == 1)
+					? intersection_graph->partitioned_polylines1[0]->polyline
+					: find_closest_intersected_segment_to_reference_point(
+							first_section_reference_point,
+							intersection_graph->partitioned_polylines1[0]->polyline,
+							intersection_graph->partitioned_polylines1[1]->polyline);
 
 	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_closest_segment =
-			find_closest_intersected_segment_to_reference_point(
-					second_section_reference_point,
-					intersected_polyline_parts.second.front(),
-					intersected_polyline_parts.second.back());
+			(intersection_graph->partitioned_polylines2.size() == 1)
+					? intersection_graph->partitioned_polylines2[0]->polyline
+					: find_closest_intersected_segment_to_reference_point(
+							second_section_reference_point,
+							intersection_graph->partitioned_polylines2[0]->polyline,
+							intersection_graph->partitioned_polylines2[1]->polyline);
 
 	return boost::make_tuple(
-			intersection_points.front()/*the single intersection point*/,
+			// The single intersection point...
+			intersection_graph->intersections[0]->intersection_point,
 			first_section_closest_segment,
 			second_section_closest_segment);
 }

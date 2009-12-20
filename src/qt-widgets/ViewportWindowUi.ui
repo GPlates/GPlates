@@ -77,6 +77,8 @@
     <addaction name="separator" />
     <addaction name="action_Export_Animation" />
     <addaction name="action_Export_Reconstruction" />
+    <addaction name="separator" />
+    <addaction name="action_Assign_Plate_IDs" />
    </widget>
    <widget class="QMenu" name="menu_Edit" >
     <property name="title" >
@@ -1374,6 +1376,11 @@
    </property>
    <property name="text" >
     <string>Show &amp;Instantaneous Features</string>
+   </property>
+  </action>
+  <action name="action_Assign_Plate_IDs" >
+   <property name="text" >
+    <string>&amp;Assign Plate IDs...</string>
    </property>
   </action>
   <action name="action_Export_Reconstruction" >

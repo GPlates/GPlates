@@ -29,22 +29,189 @@
 #define GPLATES_MATHS_POLYLINEINTERSECTIONS_H
 
 #include <list>
-#include "PointOnSphere.h"
-#include "PolylineOnSphere.h"
+#include <vector>
+#include <boost/shared_ptr.hpp>
+
 #include "GreatCircleArc.h"
+#include "PointOnSphere.h"
+#include "PolygonOnSphere.h"
+#include "PolylineOnSphere.h"
+
 
 namespace GPlatesMaths {
 
 	namespace PolylineIntersections {
 
 		/**
+		 * Contains the results of intersecting two geometries in a form where
+		 * the resulting partitioned polylines from each geometry can be traversed and queried.
+		 */
+		class Graph
+		{
+		public:
+			class Intersection;
+
+			//! Typedef for pointer to const @a Intersection.
+			typedef boost::shared_ptr<const Intersection>
+					intersection_ptr_to_const_type;
+			//! Typedef for pointer to non-const @a Intersection.
+			typedef boost::shared_ptr<Intersection>
+					intersection_ptr_type;
+
+			//! Typedef for sequence of pointers to const @a Intersection.
+			typedef std::vector< intersection_ptr_to_const_type >
+					intersection_ptr_to_const_seq_type;
+			//! Typedef for sequence of pointers to non-const @a Intersection.
+			typedef std::vector< intersection_ptr_type >
+					intersection_ptr_seq_type;
+
+			class PartitionedPolyline;
+
+			//! Typedef for pointer to const @a PartitionedPolyline.
+			typedef boost::shared_ptr<const PartitionedPolyline>
+					partitioned_polyline_ptr_to_const_type;
+			//! Typedef for pointer to non-const @a PartitionedPolyline.
+			typedef boost::shared_ptr<PartitionedPolyline>
+					partitioned_polyline_ptr_type;
+
+			//! Typedef for sequence of pointers to const @a PartitionedPolyline.
+			typedef std::vector< partitioned_polyline_ptr_to_const_type >
+					partitioned_polyline_ptr_to_const_seq_type;
+			//! Typedef for sequence of pointers to non-const @a PartitionedPolyline.
+			typedef std::vector< partitioned_polyline_ptr_type >
+					partitioned_polyline_ptr_seq_type;
+
+			/**
+			 * A section of one of the two original intersected geometries;
+			 */
+			class PartitionedPolyline
+			{
+			public:
+				PartitionedPolyline(
+						PolylineOnSphere::non_null_ptr_to_const_type polyline_,
+						bool is_overlapping_);
+
+				//! The actual partitioned polyline geometry.
+				PolylineOnSphere::non_null_ptr_to_const_type polyline;
+
+				/**
+				 * This is true if this partitioned polyline is a section of the
+				 * two original geometries where their linear extents overlap -
+				 * in which case this is where the graph of partitioned polylines
+				 * converges to a polyline section rather than just an intersection point.
+				 * For example the ascii art looks like:
+				 *
+				 *    \/                  \/
+				 *     |    rather than   /\
+				 *     |
+				 *    /\
+				 *
+				 * ...where there are one or more contiguous overlapping polylines.
+				 * Each overlapping polyline will be bounded by an @a Intersection
+				 * as is the case for all partitioned polylines.
+				 */
+				bool is_overlapping;
+
+				/**
+				 * The previous intersection if there is one.
+				 *
+				 * If NULL or false then there's no previous intersection;
+				 * meaning this polyline is the first partitioned polyline
+				 * in one of the original geometries; although it's still
+				 * possible for the first polyline to start with a non-NULL
+				 * intersection (for example a T-junction).
+				 */
+				intersection_ptr_to_const_type prev_intersection;
+
+				/**
+				 * The next intersection if there is one.
+				 *
+				 * If NULL or false then there's no next intersection;
+				 * meaning this polyline is the last partitioned polyline
+				 * in one of the original geometries; although it's still
+				 * possible for the last polyline to end with a non-NULL
+				 * intersection (for example a T-junction).
+				 */
+				intersection_ptr_to_const_type next_intersection;
+			};
+
+			/**
+			 * A point of intersection of the two original intersected geometries;
+			 */
+			class Intersection
+			{
+			public:
+				Intersection(
+						const PointOnSphere &intersection_point_);
+
+				//! The point of intersection.
+				PointOnSphere intersection_point;
+
+				/**
+				 * The previous partitioned polyline from the first original geometry.
+				 * If NULL or false then this intersection is a T-junction.
+				 */
+				partitioned_polyline_ptr_to_const_type prev_partitioned_polyline1;
+				/**
+				 * The next partitioned polyline from the first original geometry.
+				 * If NULL or false then this intersection is a T-junction.
+				 */
+				partitioned_polyline_ptr_to_const_type next_partitioned_polyline1;
+
+				/**
+				 * The previous partitioned polyline from the second original geometry.
+				 * If NULL or false then this intersection is a T-junction.
+				 */
+				partitioned_polyline_ptr_to_const_type prev_partitioned_polyline2;
+				/**
+				 * The next partitioned polyline from the second original geometry.
+				 * If NULL or false then this intersection is a T-junction.
+				 */
+				partitioned_polyline_ptr_to_const_type next_partitioned_polyline2;
+			};
+
+
+			Graph(
+					const intersection_ptr_seq_type &intersections_,
+					const partitioned_polyline_ptr_seq_type &partitioned_polylines1_,
+					const partitioned_polyline_ptr_seq_type &partitioned_polylines2_);
+
+			/**
+			 * The intersection points.
+			 *
+			 * These points are not necessarily ordered in any particular way
+			 * - this is just a sequence storage container.
+			 */
+			intersection_ptr_to_const_seq_type intersections;
+
+			/**
+			 * The partitioned polylines belonging to the first original geometry.
+			 *
+			 * The order and orientation of the polylines is the same as for the
+			 * original geometry (it just has extra polylines inserted at intersection
+			 * points where necessary).
+			 */
+			partitioned_polyline_ptr_to_const_seq_type partitioned_polylines1;
+
+			/**
+			 * The partitioned polylines belonging to the second original geometry.
+			 *
+			 * The order and orientation of the polylines is the same as for the
+			 * original geometry (it just has extra polylines inserted at intersection
+			 * points where necessary).
+			 */
+			partitioned_polyline_ptr_to_const_seq_type partitioned_polylines2;
+		};
+
+
+		/**
 		 * Find all points of intersection (with one exception; see
 		 * below) of @a polyline1 and @a polyline2, and append them to
-		 * @a intersection_points; partition @a polyline1 and
-		 * @a polyline2 at these points of intersection, and append
-		 * these new, non-intersecting polylines to
-		 * @a partitioned_polylines; return the number of points of
-		 * intersection found.
+		 * 'intersections' in the returned @a Graph object; partition
+		 * @a polyline1 and @a polyline2 at these points of intersection,
+		 * and store these new, non-intersecting polylines in
+		 * 'partitioned_polylines1' and 'partitioned_polylines2' in the
+		 * returned @a Graph object; return false if no intersections found.
 		 *
 		 * The "one exception" mentioned above is this:  If the
 		 * polylines touch endpoint-to-endpoint, this will not be
@@ -52,29 +219,20 @@ namespace GPlatesMaths {
 		 *
 		 * Other points of note:
 		 *
-		 *  - If no intersections are found, nothing will be appended
-		 *    to @a intersection_points or @a partitioned_polylines. 
-		 *    The point here is that @a partitioned_polylines is
-		 *    @em not defined as the list of non-intersecting polylines
+		 *  - If no intersections are found then false is returned
+		 *    (the returned boost shared pointer can be tested like a boolean).
+		 *    The point here is that the returned @a Graph object
+		 *    does not contain the list of non-intersecting polylines
 		 *    (which would mean that @a polyline1 and @a polyline2
-		 *    would be appended to it if they were found not to
-		 *    intersect); rather, it is defined as the list of
-		 *    polylines obtained by partitioning @a polyline1 and
-		 *    @a polyline2 if they are found to intersect.
+		 *    would be stored in it if they were found not to
+		 *    intersect); rather, the returned @a Graph object is defined
+		 *    as the list of polylines obtained by partitioning
+		 *    @a polyline1 and @a polyline2 if they are found to intersect.
 		 *
 		 *  - It is assumed that neither @a polyline1 nor @a polyline2
 		 *    is self-intersecting.  That should be handled elsewhere.
 		 *    No guarantees are made about what will happen if either
 		 *    of the polylines @em is self-intersecting.
-		 *
-		 *  - This function does not assume that either list is empty;
-		 *    it will simply append items to the end of the list.  (In
-		 *    particular, this function will not attempt to ensure that
-		 *    items in either list are unique within that list.  That
-		 *    should be handled elsewhere.)  The value returned will be
-		 *    the number of items @em added to @a intersection_points
-		 *    rather than the total number of items in
-		 *    @a intersection_points.
 		 *
 		 *  - Bearing in mind the earlier point about self-intersecting
 		 *    polylines, if there are line-segments of the polylines
@@ -82,8 +240,8 @@ namespace GPlatesMaths {
 		 *    linear extent of non-zero length rather than the usual
 		 *    point-like intersection), the shared extent will be
 		 *    partitioned into a single line-segment.  Also, @em two
-		 *    points will be appended to @a intersection_points -- the
-		 *    two endpoints of the shared extent.
+		 *    points will be appended to the list of intersection points
+		 *    -- the two endpoints of the shared extent.
 		 *
 		 *  - Bearing in mind the earlier point about self-intersecting
 		 *    polylines, if this function is passed the same polyline
@@ -95,14 +253,75 @@ namespace GPlatesMaths {
 		 *  - This function is strongly exception-safe (that is, if it
 		 *    terminates due to an exception, program state will remain
 		 *    unchanged) and exception-neutral (that is, any exceptions
-		 *    are propagated to the caller).
+		 *    are propagated to the caller). The strong exception-safe
+		 *    property is a result of the fact that this function has
+		 *    no non-const arguments (the results are returned in the
+		 *    return parameter).
 		 */
-		std::list< PointOnSphere >::size_type
-		partition_intersecting_polylines(
+		boost::shared_ptr<const Graph>
+		partition_intersecting_geometries(
 		 const PolylineOnSphere &polyline1,
-		 const PolylineOnSphere &polyline2,
-		 std::list< PointOnSphere > &intersection_points,
-		 std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polylines);
+		 const PolylineOnSphere &polyline2);
+
+
+		/**
+		 * Another overload of @a partition_intersecting_geometries;
+		 * intersects two polygons.
+		 *
+		 * The polygons are treated as if they were polylines - that is
+		 * you can think of them as polylines that just happens to have
+		 * there endpoints coincident. So no special treatment of the fact
+		 * that they are polygons is taken into account.
+		 *
+		 * See the overload of @a partition_intersecting_geometries taking
+		 * two polylines arguments for more details. The exception regarding
+		 * the two geometries touching endpoint-to-endpoint mentioned there
+		 * applies here too.
+		 */
+		boost::shared_ptr<const Graph>
+		partition_intersecting_geometries(
+		 const PolygonOnSphere &polygon1,
+		 const PolygonOnSphere &polygon2);
+
+
+		/**
+		 * Another overload of @a partition_intersecting_geometries;
+		 * intersects a polyline and a polygon.
+		 *
+		 * The polygon is treated as if it was a polyline - that is
+		 * you can think of it as a polyline that just happens to have
+		 * its endpoints coincident. So no special treatment of the fact
+		 * that it is a polygon is taken into account.
+		 *
+		 * See the overload of @a partition_intersecting_geometries taking
+		 * two polylines arguments for more details. The exception regarding
+		 * the two geometries touching endpoint-to-endpoint mentioned there
+		 * applies here too.
+		 */
+		boost::shared_ptr<const Graph>
+		partition_intersecting_geometries(
+		 const PolylineOnSphere &polyline,
+		 const PolygonOnSphere &polygon);
+
+
+		/**
+		 * Another overload of @a partition_intersecting_geometries;
+		 * intersects a polygon and a polyline.
+		 *
+		 * The polygons are treated as if they were polylines - that is
+		 * you can think of them as polylines that just happen to have
+		 * there endpoints coincident. So no special treatment of the fact
+		 * that they are polygons is taken into account.
+		 *
+		 * See the overload of @a partition_intersecting_geometries taking
+		 * two polylines arguments for more details. The exception regarding
+		 * the two geometries touching endpoint-to-endpoint mentioned there
+		 * applies here too.
+		 */
+		boost::shared_ptr<const Graph>
+		partition_intersecting_geometries(
+		 const PolygonOnSphere &polygon,
+		 const PolylineOnSphere &polyline);
 
 
 		/**
@@ -148,32 +367,6 @@ namespace GPlatesMaths {
 		 const std::list< PolylineOnSphere::non_null_ptr_to_const_type > &polyline_set,
 		 std::list< PointOnSphere > &intersection_points,
 		 std::list< GreatCircleArc > &overlap_segments);
-
-
-		/**
-		* create and return two ordered lists of polylines resulting 
-		* from a call to partition_intersecting_polylines, 
-		*
-		* The elements of pair.first list are from polyline1.
-		* The elements of pair.second list are from polyline2.
-		*
-		* pair.first.front() is polyline1's head part
-		* pair.first.back() is polyline1's tail part
-		*
-		* pair.second.front() is polyline2's head part
-		* pair.second.back() is polyline2's tail part
-		*
-		*/
-		std::pair<
-				std::list< PolylineOnSphere::non_null_ptr_to_const_type >,
-				std::list< PolylineOnSphere::non_null_ptr_to_const_type > 
-		>
-		identify_partitioned_polylines(
-			const PolylineOnSphere &polyline1,
-			const PolylineOnSphere &polyline2,
-			std::list< PointOnSphere > &intersection_points,
-			std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polylines);
-
 
 	}
 }

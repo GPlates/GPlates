@@ -220,10 +220,18 @@ namespace GPlatesPresentation
 		//! The viewport projection state.
 		boost::scoped_ptr<GPlatesViewOperations::ViewportProjection> d_viewport_projection;
 
-		//! Renders the focused geometry highlighted.
+		/**
+		 * Renders the focused geometry highlighted.
+		 *
+		 * Depends on d_rendered_geometry_collection.
+		 */
 		boost::scoped_ptr<GPlatesGui::GeometryFocusHighlight> d_geometry_focus_highlight;
 
-		//! Tracks the currently focused feature (if any).
+		/**
+		 * Tracks the currently focused feature (if any).
+		 *
+		 * Depends on d_reconstruct.
+		 */
 		boost::scoped_ptr<GPlatesGui::FeatureFocus> d_feature_focus;
 
 		// FIXME: remove these 
@@ -245,6 +253,11 @@ namespace GPlatesPresentation
 		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_paleomag_unregister;
 
 		//! Performs tasks each time a reconstruction is generated.
+		/**
+		 * Performs tasks each time a reconstruction is generated.
+		 *
+		 * Depends on d_plate_velocity_workflow, d_rendered_geometry_collection, d_colour_table.
+		 */
 		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;
 
 		//! The current choice of colour for the "Single Colour" colouring option

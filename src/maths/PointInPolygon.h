@@ -40,7 +40,7 @@ namespace GPlatesMaths
 		/**
 		 * Result of testing where a point is located relative to a polygon.
 		 */
-		enum PointInPolygonResult
+		enum Result
 		{
 			POINT_OUTSIDE_POLYGON,
 			POINT_ON_POLYGON,
@@ -71,7 +71,7 @@ namespace GPlatesMaths
 		 * Using this function you can test multiple points against the same polygon
 		 * more efficiently than using the other overload of @a test_point_in_polygon.
 		 */
-		PointInPolygonResult
+		Result
 		test_point_in_polygon(
 				const PointOnSphere &point,
 				const optimised_polygon_type &optimised_polygon);
@@ -86,7 +86,7 @@ namespace GPlatesMaths
 		 * Internally does the equivalent of calling @a create_optimised_polygon
 		 * followed by @a test_point_in_polygon.
 		 */
-		PointInPolygonResult
+		Result
 		test_point_in_polygon(
 				const PointOnSphere &point,
 				const PolygonOnSphere::non_null_ptr_to_const_type &polygon);

@@ -30,6 +30,9 @@ set(srcs
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui
+    AssignReconstructionPlateIdsDialog.cc
+    AssignReconstructionPlateIdsDialog.h
+    AssignReconstructionPlateIdsDialogUi.ui
     BuildTopologyWidgetUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h

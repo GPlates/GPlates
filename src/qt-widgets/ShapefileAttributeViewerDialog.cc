@@ -23,12 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "ShapefileAttributeViewerDialog.h"
+
 #include "app-logic/FeatureCollectionFileState.h"
+
 #include "feature-visitors/KeyValueDictionaryFinder.h"
 #include "feature-visitors/ToQvariantConverter.h"
-#include "file-io/FileInfo.h"
 
-#include "ShapefileAttributeViewerDialog.h"
+#include "file-io/FileInfo.h"
 
 
 namespace
@@ -205,11 +207,13 @@ namespace
 }
 
 GPlatesQtWidgets::ShapefileAttributeViewerDialog::ShapefileAttributeViewerDialog(
-		ViewportWindow &viewport_window, 
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
+
+	connect_feature_collection_file_state_signals(file_state);
 
 	QObject::connect(combo_feature_collections,SIGNAL(currentIndexChanged(int)),
 					this,SLOT(handle_feature_collection_changed(int)));
@@ -286,4 +290,28 @@ GPlatesQtWidgets::ShapefileAttributeViewerDialog::handle_feature_collection_chan
 	int index)
 {
 	update_table();
+}
+
+
+void	
+GPlatesQtWidgets::ShapefileAttributeViewerDialog::connect_feature_collection_file_state_signals(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state)
+{
+	QObject::connect(
+			&file_state,
+			SIGNAL(end_add_feature_collections(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
+					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
+			this,
+			SLOT(update(
+					GPlatesAppLogic::FeatureCollectionFileState &)));
+
+	QObject::connect(
+			&file_state,
+			SIGNAL(end_remove_feature_collection(
+					GPlatesAppLogic::FeatureCollectionFileState &)),
+			this,
+			SLOT(update(
+					GPlatesAppLogic::FeatureCollectionFileState &)));
 }

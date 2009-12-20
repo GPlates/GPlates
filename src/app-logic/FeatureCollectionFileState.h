@@ -27,6 +27,7 @@
 #ifndef GPLATES_APP_LOGIC_FEATURECOLLECTIONFILESTATE_H
 #define GPLATES_APP_LOGIC_FEATURECOLLECTIONFILESTATE_H
 
+#include <list>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -125,6 +126,9 @@ namespace GPlatesAppLogic
 		 */
 		typedef FeatureCollectionFileStateDecls::workflow_tag_type workflow_tag_type;
 
+		//! Typedef for a sequence of registered workflows.
+		typedef std::list<workflow_tag_type> workflow_tag_seq_type;
+
 
 		//! Constructor.
 		FeatureCollectionFileState();
@@ -145,6 +149,22 @@ namespace GPlatesAppLogic
 		 */
 		file_iterator_range
 		get_loaded_files();
+
+
+		/**
+		 * Finds the list of files that are active with any workflows in @a workflow_tags and
+		 * appends the results to @a active_files.
+		 *
+		 * @a include_reconstructable_workflow and @a include_reconstruction_workflow
+		 * are currently used because the user currently has no way of getting at their
+		 * workflow tags. This will be fixed soon when all workflows are treated equally.
+		 */
+		void
+		get_active_files(
+				std::vector<file_iterator> &active_files,
+				const workflow_tag_seq_type &workflow_tags,
+				bool include_reconstructable_workflow = false,
+				bool include_reconstruction_workflow = false);
 
 
 		/**
@@ -235,6 +255,12 @@ namespace GPlatesAppLogic
 		void
 		unregister_workflow(
 				FeatureCollectionWorkflow *workflow);
+
+		/**
+		 * Returns a list of currently registered workflow tags.
+		 */
+		const workflow_tag_seq_type &
+		get_registered_workflow_tags() const;
 
 
 		/**
@@ -332,6 +358,7 @@ namespace GPlatesAppLogic
 		 * This effectively removes the previous file referenced by @a file_iter
 		 * replacing it with @a file.
 		 *
+		 * Emits signal @a begin_reset_feature_collection just before reseting file.
 		 * Emits signal @a end_reset_feature_collection and @a file_state_changed
 		 * just before returning.
 		 * Also emits @a reconstructable_file_activation or @a reconstruction_file_activation
@@ -350,6 +377,7 @@ namespace GPlatesAppLogic
 		 * This is not normally necessary but can be required when the feature collection
 		 * is modified.
 		 *
+		 * Emits signal @a begin_reclassify_feature_collection just before reclassifying.
 		 * Emits signal @a end_reclassify_feature_collection and @a file_state_changed
 		 * just before returning.
 		 * Also emits @a reconstructable_file_activation or @a reconstruction_file_activation
@@ -507,7 +535,17 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 		void
+		begin_reset_feature_collection(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+
+		void
 		end_reset_feature_collection(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+
+		void
+		begin_reclassify_feature_collection(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
 
@@ -594,6 +632,9 @@ namespace GPlatesAppLogic
 
 		//! The sequence of all currently loaded files.
 		file_seq_impl_type d_loaded_files;
+
+		//! The currently registered workflows.
+		workflow_tag_seq_type d_registered_workflow_seq;
 
 		//! Manages the active files lists for each workflow.
 		boost::scoped_ptr<FeatureCollectionFileStateImpl::ActiveListsManager> d_active_lists_manager;

@@ -147,6 +147,36 @@ namespace GPlatesAppLogic
 		}
 
 
+		/**
+		 * The const overload of @a get_current_reconstruction.
+		 */
+		const GPlatesModel::Reconstruction &
+		get_current_reconstruction() const
+		{
+			return *d_reconstruction;
+		}
+
+
+		/**
+		 * Returns the reconstruction as a non-null shared pointer to non-const.
+		 */
+		GPlatesModel::Reconstruction::non_null_ptr_type
+		get_current_reconstruction_non_null_ptr()
+		{
+			return d_reconstruction;
+		}
+
+
+		/**
+		 * Returns the reconstruction as a non-null shared pointer to const.
+		 */
+		GPlatesModel::Reconstruction::non_null_ptr_to_const_type
+		get_current_reconstruction_non_null_ptr() const
+		{
+			return d_reconstruction;
+		}
+
+
 	public slots:
 		/**
 		 * Create a reconstruction for the current reconstruction time and anchored plate id

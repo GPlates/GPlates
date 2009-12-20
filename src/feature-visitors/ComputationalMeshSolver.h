@@ -114,8 +114,8 @@ namespace GPlatesFeatureVisitors
 			//GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::ReconstructionTree &recon_tree_2,
-			const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_point_inclusion_query_type &
-					resolved_geoms_for_testing_point_inclusion,
+			const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type &
+					resolved_geoms_for_partitioning_geometry_query,
 			//reconstruction_geometries_type &reconstructed_geometries,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
@@ -173,8 +173,8 @@ namespace GPlatesFeatureVisitors
 		GPlatesModel::Reconstruction *d_recon_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_ptr;
 		GPlatesModel::ReconstructionTree *d_recon_tree_2_ptr;
-		GPlatesAppLogic::TopologyUtils::resolved_geometries_for_point_inclusion_query_type
-				d_resolved_geoms_for_testing_point_inclusion;
+		GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type
+				d_resolved_geoms_for_partitioning_geometry_query;
 
 
 		//reconstruction_geometries_type *d_reconstruction_geometries_to_populate;
@@ -202,7 +202,6 @@ namespace GPlatesFeatureVisitors
 		int d_num_features;
 		int d_num_meshes;
 		int d_num_points;
-		int d_num_points_on_multiple_plates;
 
 		/** used to set the color of the points found on a plate */
 		GPlatesGui::DefaultPlateIdColourPalette d_colour_palette;

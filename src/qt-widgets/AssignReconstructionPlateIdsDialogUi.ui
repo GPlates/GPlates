@@ -1,0 +1,423 @@
+<ui version="4.0" >
+ <class>AssignReconstructionPlateIdsDialog</class>
+ <widget class="QDialog" name="AssignReconstructionPlateIdsDialog" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>712</width>
+    <height>788</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Assign Reconstruction Plate Ids</string>
+  </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_preferences_desktop_16.png</iconset>
+  </property>
+  <property name="sizeGripEnabled" >
+   <bool>true</bool>
+  </property>
+  <property name="modal" >
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" >
+   <item>
+    <widget class="QGroupBox" name="files_to_assign" >
+     <property name="title" >
+      <string>Feature Collections</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label" >
+          <property name="text" >
+           <string>Assign reconstruction plate ids to features in the following files:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="push_button_help_feature_collections" >
+          <property name="toolTip" >
+           <string>What does this mean?</string>
+          </property>
+          <property name="text" >
+           <string/>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QTableWidget" name="table_feature_collections" >
+        <property name="alternatingRowColors" >
+         <bool>true</bool>
+        </property>
+        <property name="selectionMode" >
+         <enum>QAbstractItemView::NoSelection</enum>
+        </property>
+        <property name="selectionBehavior" >
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+        <property name="horizontalScrollMode" >
+         <enum>QAbstractItemView::ScrollPerPixel</enum>
+        </property>
+        <property name="gridStyle" >
+         <enum>Qt::DashLine</enum>
+        </property>
+        <property name="columnCount" >
+         <number>2</number>
+        </property>
+        <column>
+         <property name="text" >
+          <string>File Name</string>
+         </property>
+        </column>
+        <column>
+         <property name="text" >
+          <string>Select</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QPushButton" name="button_select_all" >
+          <property name="toolTip" >
+           <string>Select all files</string>
+          </property>
+          <property name="text" >
+           <string>&amp;Select All</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_clear_all" >
+          <property name="enabled" >
+           <bool>true</bool>
+          </property>
+          <property name="toolTip" >
+           <string>Clear all files</string>
+          </property>
+          <property name="text" >
+           <string>&amp;Clear All</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="reconstruction_time" >
+     <property name="title" >
+      <string>Reconstruction Time</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label_reconstruction_time" >
+          <property name="minimumSize" >
+           <size>
+            <width>0</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="text" >
+           <string>Select the reconstruction time representing the geometry in the feature collections:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="push_button_help_reconstruction_time" >
+          <property name="toolTip" >
+           <string>What does this mean?</string>
+          </property>
+          <property name="text" >
+           <string/>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radio_button_present_day" >
+        <property name="text" >
+         <string>Present day</string>
+        </property>
+        <property name="checked" >
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QRadioButton" name="radio_button_current_recon_time" >
+          <property name="text" >
+           <string>Current reconstruction time:</string>
+          </property>
+          <property name="checked" >
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_current_reconstruction_time" >
+          <property name="text" >
+           <string>&lt;current reconstruction time></string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_ma" >
+          <property name="text" >
+           <string>Ma</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QRadioButton" name="radio_button_specify_recon_time" >
+          <property name="text" >
+           <string>Specify reconstruction time:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="double_spin_box_reconstruction_time" />
+        </item>
+        <item>
+         <widget class="QLabel" name="label_ma_spin_box" >
+          <property name="text" >
+           <string>Ma</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="partition_options" >
+     <property name="title" >
+      <string>Assign Plate Id Options</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label_assign_plate_id_options" >
+          <property name="text" >
+           <string>Specify how to assign plate ids to features:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer>
+          <property name="orientation" >
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" >
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="push_button_help_assign_plate_id_options" >
+          <property name="toolTip" >
+           <string>What does this mean?</string>
+          </property>
+          <property name="text" >
+           <string/>
+          </property>
+          <property name="icon" >
+           <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radio_button_assign_features" >
+        <property name="text" >
+         <string>Assign each feature to the plate it overlaps the most</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radio_button_assign_feature_sub_geometries" >
+        <property name="text" >
+         <string>Assign each feature sub-geometry to the plate it overlaps the most</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radio_button_partition_features" >
+        <property name="text" >
+         <string>Partition each feature into its containing plates</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_limitation" >
+       <property name="text" >
+        <string>&lt;b>Only &lt;em>polyline&lt;/em> features and &lt;em>VirtualGeomagneticPole&lt;/em>s supported in this GPlates release&lt;/b></string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_apply" >
+       <property name="toolTip" >
+        <string>Assign plate ids to selected files</string>
+       </property>
+       <property name="text" >
+        <string>OK</string>
+       </property>
+       <property name="default" >
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_cancel" >
+       <property name="toolTip" >
+        <string>Cancel plate id assignment</string>
+       </property>
+       <property name="text" >
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>button_apply</tabstop>
+  <tabstop>button_select_all</tabstop>
+  <tabstop>button_clear_all</tabstop>
+  <tabstop>table_feature_collections</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections>
+  <connection>
+   <sender>button_cancel</sender>
+   <signal>clicked()</signal>
+   <receiver>AssignReconstructionPlateIdsDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>663</x>
+     <y>320</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>355</x>
+     <y>171</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

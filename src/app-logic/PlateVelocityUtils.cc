@@ -261,8 +261,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 {
 	// Get the resolved topological geometries in the reconstruction (they will be optimised for
 	// point-in-polygon tests used by the velocity solver).
-	const TopologyUtils::resolved_geometries_for_point_inclusion_query_type resolved_geoms_query =
-			TopologyUtils::query_resolved_topologies_for_testing_point_inclusion(reconstruction);
+	const TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type resolved_geoms_query =
+			TopologyUtils::query_resolved_topologies_for_geometry_partitioning(reconstruction);
 
 	// Visit the feature collections and fill computational meshes with 
 	// nice juicy velocity data

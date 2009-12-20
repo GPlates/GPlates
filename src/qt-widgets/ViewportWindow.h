@@ -100,6 +100,7 @@ namespace GPlatesQtWidgets
 {
 	class AboutDialog;
 	class AnimateDialog;
+	class AssignReconstructionPlateIdsDialog;
 	class ExportAnimationDialog;
 	class ExportReconstructedFeatureGeometryDialog;
 	class FeaturePropertiesDialog;
@@ -385,6 +386,9 @@ namespace GPlatesQtWidgets
 		pop_up_export_animation_dialog();
 
 		void
+		pop_up_assign_reconstruction_plate_ids_dialog();
+
+		void
 		pop_up_export_reconstruction_dialog();
 
 		void
@@ -411,16 +415,6 @@ namespace GPlatesQtWidgets
 		handle_read_errors(
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				const GPlatesFileIO::ReadErrorAccumulation &new_read_errors);
-
-		void
-		end_add_feature_collections(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end);
-
-		void
-		end_remove_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 
 	private:
@@ -453,6 +447,7 @@ namespace GPlatesQtWidgets
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
+		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<ExportReconstructedFeatureGeometryDialog> d_export_rfg_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
@@ -559,12 +554,6 @@ namespace GPlatesQtWidgets
 		connect_feature_collection_file_io_signals();
 
 		/**
-		 * Connects signals of @a FeatureCollectionFileState to slots of 'this'.
-		 */
-		void
-		connect_feature_collection_file_state_signals();
-
-		/**
 		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
 		 * with some of the QActions that ViewportWindow has on the menu bar.
 		 */
@@ -584,6 +573,9 @@ namespace GPlatesQtWidgets
 
 		void
 		update_time_dependent_raster();
+
+		void
+		set_modify_feature_collections_filter();
 
 	private slots:
 		void

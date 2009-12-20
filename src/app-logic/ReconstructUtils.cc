@@ -29,8 +29,105 @@
 #include "ReconstructedFeatureGeometryPopulator.h"
 #include "TopologyUtils.h"
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
+
 #include "model/ReconstructionGraph.h"
 #include "model/ReconstructionTreePopulator.h"
+
+#include "utils/NullIntrusivePointerHandler.h"
+
+
+namespace
+{
+	/**
+	 * Can either rotate a present day @a GeometryOnSphere into the past or
+	 * rotate a @a GeometryOnSphere from the past back to present day.
+	 */
+	class ReconstructGeometryOnSphere :
+		private GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		ReconstructGeometryOnSphere(
+				const GPlatesModel::integer_plate_id_type plate_id,
+				const GPlatesModel::ReconstructionTree &recon_tree,
+				bool reverse_reconstruct) :
+		d_plate_id(plate_id),
+		d_recon_tree(recon_tree),
+		d_reverse_reconstruct(reverse_reconstruct)
+		{
+		}
+
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
+		{
+			geometry->accept_visitor(*this);
+
+			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
+					d_reconstructed_geom.get(),
+					GPlatesUtils::NullIntrusivePointerHandler());
+		}
+
+	private:
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_reconstructed_geom =
+					GPlatesAppLogic::ReconstructUtils::reconstruct(
+							multi_point_on_sphere,
+							d_plate_id,
+							d_recon_tree,
+							d_reverse_reconstruct).get();
+		}
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_reconstructed_geom =
+					GPlatesAppLogic::ReconstructUtils::reconstruct(
+							point_on_sphere,
+							d_plate_id,
+							d_recon_tree,
+							d_reverse_reconstruct).get();
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_reconstructed_geom =
+					GPlatesAppLogic::ReconstructUtils::reconstruct(
+							polygon_on_sphere,
+							d_plate_id,
+							d_recon_tree,
+							d_reverse_reconstruct).get();
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_reconstructed_geom =
+					GPlatesAppLogic::ReconstructUtils::reconstruct(
+							polyline_on_sphere,
+							d_plate_id,
+							d_recon_tree,
+							d_reverse_reconstruct).get();
+		}
+
+	private:
+		const GPlatesModel::integer_plate_id_type d_plate_id;
+		const GPlatesModel::ReconstructionTree &d_recon_tree;
+		bool d_reverse_reconstruct;
+		GPlatesMaths::GeometryOnSphere::maybe_null_ptr_to_const_type d_reconstructed_geom;
+	};
+}
 
 
 const GPlatesModel::ReconstructionTree::non_null_ptr_type
@@ -100,4 +197,18 @@ GPlatesAppLogic::ReconstructUtils::create_empty_reconstruction(
 			GPlatesModel::Reconstruction::create(tree, empty_vector);
 
 	return reconstruction;
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructUtils::reconstruct(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+		const GPlatesModel::ReconstructionTree &reconstruction_tree,
+		bool reverse_reconstruct)
+{
+	ReconstructGeometryOnSphere reconstruct_geom_on_sphere(
+			reconstruction_plate_id, reconstruction_tree, reverse_reconstruct);
+
+	return reconstruct_geom_on_sphere.reconstruct(geometry);
 }

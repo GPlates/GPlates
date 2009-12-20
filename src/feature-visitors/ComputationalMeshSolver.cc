@@ -100,8 +100,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 			//GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::ReconstructionTree &recon_tree_2,
-			const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_point_inclusion_query_type &
-					resolved_geoms_for_testing_point_inclusion,
+			const GPlatesAppLogic::TopologyUtils::resolved_geometries_for_geometry_partitioning_query_type &
+					resolved_geoms_for_partitioning_geometry_query,
 			//reconstruction_geometries_type &reconstructed_geometries,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
@@ -111,8 +111,8 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_recon_ptr(&reconstruction),
 	d_recon_tree_ptr(&recon_tree),
 	d_recon_tree_2_ptr(&recon_tree_2),
-	d_resolved_geoms_for_testing_point_inclusion(
-			resolved_geoms_for_testing_point_inclusion),
+	d_resolved_geoms_for_partitioning_geometry_query(
+			resolved_geoms_for_partitioning_geometry_query),
 	//d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_rendered_point_layer(point_layer),
 	d_rendered_arrow_layer(arrow_layer),
@@ -121,7 +121,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_num_features = 0;
 	d_num_meshes = 0;
 	d_num_points = 0;
-	d_num_points_on_multiple_plates = 0;
 }
 
 
@@ -357,44 +356,18 @@ std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 
 	// Get a list of all resolved topological geometries that contain 'point'.
 	GPlatesAppLogic::TopologyUtils::resolved_topological_geometry_seq_type
-			resolved_topological_geoms_containing_point;
+			resolved_boundaries_containing_point;
 	GPlatesAppLogic::TopologyUtils::find_resolved_topologies_containing_point(
-			resolved_topological_geoms_containing_point,
+			resolved_boundaries_containing_point,
 			point,
-			d_resolved_geoms_for_testing_point_inclusion);
+			d_resolved_geoms_for_partitioning_geometry_query);
 
-#ifdef DEBUG
-// FIXME
-std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.size() << " plates." << std::endl;
-#endif
+	const boost::optional<GPlatesModel::integer_plate_id_type> recon_plate_id_opt =
+			GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
+					resolved_boundaries_containing_point);
 
-	std::list<GPlatesModel::integer_plate_id_type> recon_plate_ids;
-
-	// loop over resolved topological geometries 
-	GPlatesAppLogic::TopologyUtils::resolved_topological_geometry_seq_type::const_iterator
-			rtg_iter;
-	for (rtg_iter = resolved_topological_geoms_containing_point.begin();
-		rtg_iter != resolved_topological_geoms_containing_point.end();
-		++rtg_iter)
+	if (!recon_plate_id_opt)
 	{
-		const GPlatesModel::ResolvedTopologicalGeometry *rtg = *rtg_iter;
-
-	 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = rtg->get_feature_ref();
-
-		// Get all the reconstructionPlateId for this point 
-		static const GPlatesModel::PropertyName property_name =
-				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-		if ( GPlatesFeatureVisitors::get_property_value(
-				feature_ref, property_name, recon_plate_id ) )
-		{
-			// The feature has a reconstruction plate ID.
-			recon_plate_ids.push_back( recon_plate_id->value() );
-		}
-	}
-
-	if ( recon_plate_ids.empty() ) {
 		// FIXME: do not paint the point any color ; leave it ?
 		// save the data 
 		d_velocity_colat_values.push_back( 0 );
@@ -402,32 +375,10 @@ std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.
 		return; 
 	}
 
-	// update the stats
-	if ( recon_plate_ids.size() > 1) { 
-		d_num_points_on_multiple_plates += 1;
-	}
-
-	// sort the plate ids
-	recon_plate_ids.sort();
-	recon_plate_ids.reverse();
-
-#ifdef DEBUG
-// FIXME: remove this diagnostic 
-std::cout << "plate ids: (";
-std::list<GPlatesModel::integer_plate_id_type>::iterator p_iter;
-for ( p_iter = recon_plate_ids.begin(); p_iter != recon_plate_ids.end(); ++p_iter)
-{
-	std::cout << *p_iter << ", ";
-}
-std::cout << ")" << std::endl;
-#endif
-
-	// get the highest numeric id 
-	GPlatesModel::integer_plate_id_type plate_id = recon_plate_ids.front();
-		
+	const GPlatesModel::integer_plate_id_type recon_plate_id = *recon_plate_id_opt;
 
 	// get the color for the highest numeric id 
-	boost::optional<GPlatesGui::Colour> colour = d_colour_palette.get_colour(plate_id);
+	boost::optional<GPlatesGui::Colour> colour = d_colour_palette.get_colour(recon_plate_id);
 	if (!colour)
 	{
 		colour = boost::optional<GPlatesGui::Colour>(GPlatesGui::Colour::get_olive());
@@ -446,10 +397,10 @@ std::cout << ")" << std::endl;
 
 	// get the finite rotation for this palte id
 	GPlatesMaths::FiniteRotation fr_t1 = 
-		d_recon_tree_ptr->get_composed_absolute_rotation( plate_id ).first;
+		d_recon_tree_ptr->get_composed_absolute_rotation( recon_plate_id ).first;
 
 	GPlatesMaths::FiniteRotation fr_t2 = 
-		d_recon_tree_2_ptr->get_composed_absolute_rotation( plate_id ).first;
+		d_recon_tree_2_ptr->get_composed_absolute_rotation( recon_plate_id ).first;
 
 
 	GPlatesMaths::Vector3D vector_xyz = 
@@ -552,7 +503,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::report()
 	std::cout << "number features visited = " << d_num_features << std::endl;
 	std::cout << "number meshes visited = " << d_num_meshes << std::endl;
 	std::cout << "number points visited = " << d_num_points << std::endl;
-	std::cout << "number points on multiple plates = " << d_num_points_on_multiple_plates << std::endl;
 	std::cout << "-------------------------------------------------------------" << std::endl;
 
 }

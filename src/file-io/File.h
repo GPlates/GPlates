@@ -255,7 +255,7 @@ namespace GPlatesFileIO
 		/**
 		 * Constructor.
 		 *
-		 * Is private so that only to create is via @a create_loaded_file or @a create_save_file.
+		 * Is private so that only way to create is via @a create_loaded_file or @a create_save_file.
 		 */
 		File(
 				const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &feature_collection,

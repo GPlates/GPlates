@@ -134,10 +134,10 @@ namespace
 		// Determine whether file contains reconstructable and/or reconstruction features.
 		const GPlatesAppLogic::ClassifyFeatureCollection::classifications_type classification =
 				file_state.get_feature_collection_classification(file_iter);
-		const bool has_reconstructable_features = classification.test(
-				GPlatesAppLogic::ClassifyFeatureCollection::RECONSTRUCTABLE);
-		const bool has_reconstruction_features = classification.test(
-				GPlatesAppLogic::ClassifyFeatureCollection::RECONSTRUCTION);
+		const bool has_features_with_geometry =
+				GPlatesAppLogic::ClassifyFeatureCollection::found_geometry_feature(classification);
+		const bool has_reconstruction_features =
+				GPlatesAppLogic::ClassifyFeatureCollection::found_reconstruction_feature(classification);
 
 		std::vector<std::pair<QString, QString> > filters;
 		
@@ -225,7 +225,7 @@ namespace
 				{
 					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext)); // Option to change to compressed version.
 				}
-				if (has_reconstructable_features)
+				if (has_features_with_geometry)
 				{
 					// Only offer to save in line-only formats if feature collection
 					// actually has reconstructable features in it!
@@ -248,7 +248,7 @@ namespace
 					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext)); // Save compressed by default, assuming we can.
 				}
 				filters.push_back(make_pair(filter_gpml, filter_gpml_ext)); // Option to change to uncompressed version.
-				if (has_reconstructable_features)
+				if (has_features_with_geometry)
 				{
 					// Only offer to save in line-only formats if feature collection
 					// actually has reconstructable features in it!
@@ -967,6 +967,11 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_files(
 		const QStringList &filenames)
 {
+	if (filenames.isEmpty())
+	{
+		return;
+	}
+
 	try_catch_file_load(
 			boost::bind(
 					&GPlatesAppLogic::FeatureCollectionFileIO::load_files,

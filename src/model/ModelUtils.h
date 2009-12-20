@@ -82,6 +82,28 @@ namespace GPlatesModel
 				const FeatureHandle::weak_ref &feature);
 
 
+		const TopLevelProperty::non_null_ptr_type
+		append_property_value_to_feature(
+				TopLevelProperty::non_null_ptr_type top_level_property,
+				const FeatureHandle::weak_ref &feature);
+
+
+		void
+		remove_property_value_from_feature(
+				FeatureHandle::properties_iterator properties_iterator,
+				const FeatureHandle::weak_ref &feature);
+
+
+		/**
+		 * Removes all property values from @a feature that have
+		 * the property name @a property_name.
+		 */
+		void
+		remove_property_values_from_feature(
+				const PropertyName &property_name,
+				const FeatureHandle::weak_ref &feature);
+
+
 		const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 		create_gml_orientable_curve(
 				const GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string,

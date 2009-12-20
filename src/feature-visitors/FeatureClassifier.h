@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_FEATURECOLLECTIONCLASSIFIER_H
-#define GPLATES_FEATUREVISITORS_FEATURECOLLECTIONCLASSIFIER_H
+#ifndef GPLATES_FEATUREVISITORS_FEATURECLASSIFIER_H
+#define GPLATES_FEATUREVISITORS_FEATURECLASSIFIER_H
 
 
 #include <boost/optional.hpp>
@@ -48,25 +48,15 @@ namespace GPlatesFeatureVisitors
 	 * for the user to craft data which does not resemble anything
 	 * that neatly fits into the normal categories of Feature.
 	 */
-	class FeatureCollectionClassifier:
+	class FeatureClassifier:
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
-		FeatureCollectionClassifier();
+		FeatureClassifier();
 
 		virtual
-		~FeatureCollectionClassifier()
+		~FeatureClassifier()
 		{  }
-		
-		
-		/**
-		 * Iterates over every feature in the feature collection to
-		 * produce the summary of feature types. This is the recommended
-		 * way to use this visitor.
-		 */
-		void
-		scan_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref);
 		
 		
 		/**
@@ -74,7 +64,7 @@ namespace GPlatesFeatureVisitors
 		 * appear to be 'reconstruction' features.
 		 */
 		int
-		reconstruction_feature_count()
+		reconstruction_feature_count() const
 		{
 			return d_reconstruction_feature_count;
 		}
@@ -85,7 +75,7 @@ namespace GPlatesFeatureVisitors
 		 * appear to be 'reconstructable' features.
 		 */
 		int
-		reconstructable_feature_count()
+		reconstructable_feature_count() const
 		{
 			return d_reconstructable_feature_count;
 		}
@@ -96,7 +86,7 @@ namespace GPlatesFeatureVisitors
 		 * appear to be 'instantaneous' features.
 		 */
 		int
-		instantaneous_feature_count()
+		instantaneous_feature_count() const
 		{
 			return d_instantaneous_feature_count;
 		}
@@ -106,7 +96,7 @@ namespace GPlatesFeatureVisitors
 		 * Returns the total number of features seen by the visitor.
 		 */
 		int
-		total_feature_count()
+		total_feature_count() const
 		{
 			return d_total_feature_count;
 		}
@@ -166,4 +156,4 @@ namespace GPlatesFeatureVisitors
 }
 
 
-#endif	// GPLATES_FEATUREVISITORS_FEATURECOLLECTIONCLASSIFIER_H
+#endif	// GPLATES_FEATUREVISITORS_FEATURECLASSIFIER_H

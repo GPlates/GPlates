@@ -52,6 +52,7 @@
 #include "AboutDialog.h"
 #include "AnimateDialog.h"
 #include "ActionButtonBox.h"
+#include "AssignReconstructionPlateIdsDialog.h"
 #include "CreateFeatureDialog.h"
 #include "ExportAnimationDialog.h"
 #include "ExportReconstructedFeatureGeometryDialog.h"
@@ -92,6 +93,7 @@
 #include "gui/GlobeCanvasToolChoice.h"
 #include "gui/MapCanvasToolAdapter.h"
 #include "gui/MapCanvasToolChoice.h"
+#include "gui/ModifyLoadedFeatureCollectionsFilter.h"
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
 #include "gui/TopologySectionsContainer.h"
@@ -149,26 +151,6 @@ GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
 
 
 void
-GPlatesQtWidgets::ViewportWindow::end_add_feature_collections(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator /*new_files_begin*/,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator /*new_files_end*/)
-{
-	// Internal state changed, make sure dialogs are up to date.
-	d_shapefile_attribute_viewer_dialog_ptr->update(file_state);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::end_remove_feature_collection(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state)
-{
-	// Update the shapefile-attribute viewer dialog, which needs to know which files are loaded.
-	d_shapefile_attribute_viewer_dialog_ptr->update(file_state);
-}
-
-
-void
 GPlatesQtWidgets::ViewportWindow::handle_read_errors(
 		GPlatesAppLogic::FeatureCollectionFileIO &,
 		const GPlatesFileIO::ReadErrorAccumulation &new_read_errors)
@@ -198,6 +180,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			this),
 	d_about_dialog_ptr(NULL),
 	d_animate_dialog_ptr(NULL),
+	d_assign_recon_plate_ids_dialog_ptr(
+			new AssignReconstructionPlateIdsDialog(
+					get_application_state(), get_view_state(), this)),
 	d_export_animation_dialog_ptr(NULL),
 	d_export_rfg_dialog_ptr(NULL),
 	d_feature_properties_dialog_ptr(
@@ -213,7 +198,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_set_projection_dialog_ptr(NULL),
 	d_set_raster_surface_extent_dialog_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog_ptr(
-			new ShapefileAttributeViewerDialog(*this, this)),
+			new ShapefileAttributeViewerDialog(
+					get_application_state().get_feature_collection_file_state(),
+					this)),
 	d_specify_anchored_plate_id_dialog_ptr(
 			new SpecifyAnchoredPlateIdDialog(
 				get_view_state().get_reconstruct().get_current_anchored_plate_id(),
@@ -283,6 +270,9 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			this));
 	d_task_panel_ptr = task_panel_auto_ptr.get();
 
+	// Set the filter to call when new feature collections get loaded.
+	set_modify_feature_collections_filter();
+
 	// Connect all the Signal/Slot relationships of ViewportWindow's
 	// toolbar buttons and menu items.
 	connect_menu_actions();
@@ -330,7 +320,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	setCentralWidget(&d_reconstruction_view_widget);
 
 	connect_feature_collection_file_io_signals();
-	connect_feature_collection_file_state_signals();
 
 	QObject::connect(d_globe_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
 			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
@@ -599,6 +588,9 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			this, SLOT(pop_up_export_animation_dialog()));
 	QObject::connect(action_Export_Reconstruction, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_reconstruction_dialog()));
+	// ----
+	QObject::connect(action_Assign_Plate_IDs, SIGNAL(triggered()),
+			this, SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
 	
 	// View Menu:
 	QObject::connect(action_Show_Raster, SIGNAL(triggered()),
@@ -704,31 +696,6 @@ GPlatesQtWidgets::ViewportWindow::connect_feature_collection_file_io_signals()
 			SLOT(handle_read_errors(
 					GPlatesAppLogic::FeatureCollectionFileIO &,
 					const GPlatesFileIO::ReadErrorAccumulation &)));
-}
-
-
-void	
-GPlatesQtWidgets::ViewportWindow::connect_feature_collection_file_state_signals()
-{
-	QObject::connect(
-			&get_application_state().get_feature_collection_file_state(),
-			SIGNAL(end_add_feature_collections(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			this,
-			SLOT(end_add_feature_collections(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
-
-	QObject::connect(
-			&get_application_state().get_feature_collection_file_state(),
-			SIGNAL(end_remove_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &)),
-			this,
-			SLOT(end_remove_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &)));
 }
 
 
@@ -1049,6 +1016,16 @@ GPlatesQtWidgets::ViewportWindow::pop_up_export_animation_dialog()
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_export_animation_dialog_ptr->raise();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_assign_reconstruction_plate_ids_dialog()
+{
+	// d_assign_recon_plate_ids_dialog_ptr is modal and should not need the 'raise' hack
+	// other dialogs use.
+	d_assign_recon_plate_ids_dialog_ptr->reassign_reconstruction_plate_ids(
+			true/*pop_up_message_box_if_no_plate_boundaries*/);
 }
 
 
@@ -1619,6 +1596,10 @@ GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 	{
 		d_animate_dialog_ptr->reject();
 	}
+	if (d_assign_recon_plate_ids_dialog_ptr)
+	{
+		d_assign_recon_plate_ids_dialog_ptr->reject();
+	}
 	if (d_export_animation_dialog_ptr)
 	{
 		d_export_animation_dialog_ptr->reject();
@@ -1881,6 +1862,25 @@ GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
 	load_raster(filename);
 }
 
+
+void
+GPlatesQtWidgets::ViewportWindow::set_modify_feature_collections_filter()
+{
+	// Handles any modifications that the user may want to loaded feature collections.
+	// Currently this is assigning reconstructionPlateId's to feature that don't have them.
+	// This is here because it contains a dialog whose parent is us.
+	boost::shared_ptr<GPlatesGui::ModifyLoadedFeatureCollectionsFilter>
+			modify_loaded_feature_collections_filter(
+					new GPlatesGui::ModifyLoadedFeatureCollectionsFilter(
+							get_application_state(),
+							get_view_state(),
+							this/* parent of internal dialog */));
+
+	get_application_state().get_feature_collection_file_io().set_modify_filter(
+			modify_loaded_feature_collections_filter);
+}
+
+
 // FIXME: Should be a ViewState operation, or /somewhere/ better than this.
 void
 GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
@@ -2055,4 +2055,3 @@ GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_shapefile_attribute_viewer_dialog_ptr->raise();
 }
-

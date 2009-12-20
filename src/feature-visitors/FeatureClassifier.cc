@@ -26,7 +26,7 @@
  */
 
 
-#include "FeatureCollectionClassifier.h"
+#include "FeatureClassifier.h"
 
 #include "model/TopLevelPropertyInline.h"
 #include "property-values/GpmlConstantValue.h"
@@ -45,7 +45,7 @@ namespace
 }
 
 
-GPlatesFeatureVisitors::FeatureCollectionClassifier::FeatureCollectionClassifier():
+GPlatesFeatureVisitors::FeatureClassifier::FeatureClassifier():
 		d_looks_like_reconstruction_feature(false),
 		d_looks_like_reconstructable_feature(false),
 		d_looks_like_instantaneous_feature(false),
@@ -55,42 +55,30 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::FeatureCollectionClassifier
 		d_total_feature_count(0)
 {
 	// Reconstruction Features:
-	d_property_names_to_allow.push_back(
-			GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame"));
-	d_property_names_to_allow.push_back(
-			GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"));
+	static const GPlatesModel::PropertyName fixed_reference_frame_prop_name =
+			GPlatesModel::PropertyName::create_gpml("fixed_reference_frame_prop_name");
+	static const GPlatesModel::PropertyName moving_reference_frame_prop_name =
+			GPlatesModel::PropertyName::create_gpml("movingReferenceFrame");
+	d_property_names_to_allow.push_back(fixed_reference_frame_prop_name);
+	d_property_names_to_allow.push_back(moving_reference_frame_prop_name);
+
 	// Reconstructable Features:
-	d_property_names_to_allow.push_back(
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
+	static const GPlatesModel::PropertyName reconstruction_plate_id_prop_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	d_property_names_to_allow.push_back(reconstruction_plate_id_prop_name);
+
 	// Instantaneous Features:
-	d_property_names_to_allow.push_back(
-			GPlatesModel::PropertyName::create_gpml("reconstructedPlateId"));
-	d_property_names_to_allow.push_back(
-			GPlatesModel::PropertyName::create_gpml("reconstructedTime"));
+	static const GPlatesModel::PropertyName reconstructed_plate_id_prop_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructedPlateId");
+	static const GPlatesModel::PropertyName reconstructed_time_prop_name =
+			GPlatesModel::PropertyName::create_gpml("reconstructedTime");
+	d_property_names_to_allow.push_back(reconstructed_plate_id_prop_name);
+	d_property_names_to_allow.push_back(reconstructed_time_prop_name);
 }
 
 
 void
-GPlatesFeatureVisitors::FeatureCollectionClassifier::scan_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref)
-{
-	if ( ! feature_collection_ref.is_valid()) {
-		// Nothing we can do with this feature collection.
-		// FIXME:  Track down where this is being invoked; check that no other code will be
-		// tripped-up by this invalid weak-ref.
-		return;
-	}
-	GPlatesModel::FeatureCollectionHandle::features_const_iterator
-			it = feature_collection_ref->features_begin(), 
-			end = feature_collection_ref->features_end();
-	for ( ; it != end; ++it) {
-		visit_feature(it);
-	}
-}
-
-
-void
-GPlatesFeatureVisitors::FeatureCollectionClassifier::reset()
+GPlatesFeatureVisitors::FeatureClassifier::reset()
 {
 	d_reconstruction_feature_count = 0;
 	d_reconstructable_feature_count = 0;
@@ -100,7 +88,7 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::reset()
 
 
 bool
-GPlatesFeatureVisitors::FeatureCollectionClassifier::initialise_pre_feature_properties(
+GPlatesFeatureVisitors::FeatureClassifier::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Reset the boolean flags so we can have a quick peek at the tell-tale
@@ -114,7 +102,7 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::initialise_pre_feature_prop
 
 
 void
-GPlatesFeatureVisitors::FeatureCollectionClassifier::finalise_post_feature_properties(
+GPlatesFeatureVisitors::FeatureClassifier::finalise_post_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_total_feature_count++;
@@ -139,7 +127,7 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::finalise_post_feature_prope
 
 
 bool
-GPlatesFeatureVisitors::FeatureCollectionClassifier::initialise_pre_property_values(
+GPlatesFeatureVisitors::FeatureClassifier::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
@@ -155,7 +143,7 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::initialise_pre_property_val
 
 
 void
-GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_gml_time_instant(
+GPlatesFeatureVisitors::FeatureClassifier::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	// Instantaneous Features:
@@ -172,7 +160,7 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_gml_time_instant(
 
 
 void
-GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_gpml_constant_value(
+GPlatesFeatureVisitors::FeatureClassifier::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -180,7 +168,7 @@ GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_gpml_constant_value(
 
 
 void
-GPlatesFeatureVisitors::FeatureCollectionClassifier::visit_gpml_plate_id(
+GPlatesFeatureVisitors::FeatureClassifier::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	// Reconstruction Features:

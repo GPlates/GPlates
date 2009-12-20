@@ -56,8 +56,12 @@ set(srcs
     PointOnSphere.cc
     PointOnSphere.h
     PointProximityHitDetail.h
+    PolygonIntersections.cc
+    PolygonIntersections.h
     PolygonOnSphere.cc
     PolygonOnSphere.h
+    PolygonOrientation.cc
+    PolygonOrientation.h
     PolygonProximityHitDetail.h
     PolylineEquivalencePredicates.h
     PolylineIntersections.cc

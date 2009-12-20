@@ -15,6 +15,8 @@ set(srcs
     ApplicationState.h
     AppLogicUtils.cc
     AppLogicUtils.h
+    AssignPlateIds.cc
+    AssignPlateIds.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
     FeatureCollectionActivationStrategy.cc

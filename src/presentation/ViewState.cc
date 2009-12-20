@@ -37,7 +37,6 @@
 #include "gui/FeatureColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
-#include "gui/ColourSchemeFactory.h"
 #include "gui/SingleColourScheme.h"
 #include "gui/ViewportZoom.h"
 

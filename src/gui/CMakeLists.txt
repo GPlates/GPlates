@@ -101,6 +101,8 @@ set(srcs
     MapCanvasToolChoice.h
     MapProjection.cc
     MapProjection.h
+    ModifyLoadedFeatureCollectionsFilter.cc
+    ModifyLoadedFeatureCollectionsFilter.h
     NurbsRenderer.cc
     NurbsRenderer.h
     OpaqueSphere.cc

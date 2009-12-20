@@ -348,7 +348,7 @@ namespace GPlatesMaths
 			 *	POINT_INSIDE_POLYGON:	p is inside of S
 			 *	POINT_ON_POLYGON:	p is on boundary of S
 			 */
-			PointInPolygonResult 
+			Result 
 			is_point_in_on_out ( 
 				const PointOnSphere &test_point,
 				const PlatePolygon &plate)
@@ -476,7 +476,7 @@ GPlatesMaths::PointInPolygon::create_optimised_polygon(
 }
 
 
-GPlatesMaths::PointInPolygon::PointInPolygonResult
+GPlatesMaths::PointInPolygon::Result
 GPlatesMaths::PointInPolygon::test_point_in_polygon(
 		const PointOnSphere &point,
 		const optimised_polygon_type &opaque_optimised_polygon)
@@ -494,7 +494,7 @@ GPlatesMaths::PointInPolygon::test_point_in_polygon(
 }
 
 
-GPlatesMaths::PointInPolygon::PointInPolygonResult
+GPlatesMaths::PointInPolygon::Result
 GPlatesMaths::PointInPolygon::test_point_in_polygon(
 		const PointOnSphere &point,
 		const PolygonOnSphere::non_null_ptr_to_const_type &polygon)
