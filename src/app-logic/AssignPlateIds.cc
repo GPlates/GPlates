@@ -157,6 +157,27 @@ namespace
 
 
 	/**
+	 * Returns the 'gpml:reconstructionPlateId' plate id if one exists.
+	 */
+	boost::optional<GPlatesModel::integer_plate_id_type>
+	get_reconstruction_plate_id_from_feature(
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+	{
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
+		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id;
+		if (!GPlatesFeatureVisitors::get_property_value(
+				feature_ref,
+				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
+				recon_plate_id))
+		{
+			return boost::none;
+		}
+
+		return recon_plate_id->value();
+	}
+
+
+	/**
 	 * Assigns a 'gpml:reconstructionPlateId' property value to @a feature_ref.
 	 * Removes any properties with this name that might already exist in @a feature_ref.
 	 */
@@ -633,8 +654,10 @@ namespace
 						geometry_property_all_partitioned_geometries_seq,
 				const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 						geometry_partition_query,
+				const boost::optional<GPlatesMaths::FiniteRotation> &reconstruction_rotation,
 				const boost::optional<double> &reconstruction_time = boost::none) :
 			d_geometry_partition_query(geometry_partition_query),
+			d_reconstruction_rotation(reconstruction_rotation),
 			d_reconstruction_time(reconstruction_time),
 			d_geometry_property_all_partitioned_geometries_seq(
 					geometry_property_all_partitioned_geometries_seq)
@@ -673,10 +696,15 @@ namespace
 					*current_top_level_propname(),
 					*current_top_level_propiter());
 
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type reconstructed_polyline =
+					d_reconstruction_rotation
+					? *d_reconstruction_rotation * gml_line_string.polyline()
+					: gml_line_string.polyline();
+
 			GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
 					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
 					geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
-					gml_line_string.polyline(),
+					reconstructed_polyline,
 					d_geometry_partition_query);
 
 			d_geometry_property_all_partitioned_geometries_seq.push_back(
@@ -692,10 +720,15 @@ namespace
 					*current_top_level_propname(),
 					*current_top_level_propiter());
 
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type reconstructed_multipoint =
+					d_reconstruction_rotation
+					? *d_reconstruction_rotation * gml_multi_point.multipoint()
+					: gml_multi_point.multipoint();
+
 			GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
 					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
 					geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
-					gml_multi_point.multipoint(),
+					reconstructed_multipoint,
 					d_geometry_partition_query);
 
 			d_geometry_property_all_partitioned_geometries_seq.push_back(
@@ -719,10 +752,15 @@ namespace
 					*current_top_level_propname(),
 					*current_top_level_propiter());
 
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
+					d_reconstruction_rotation
+					? *d_reconstruction_rotation * gml_point.point()
+					: gml_point.point();
+
 			GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
 					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
 					geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
-					gml_point.point(),
+					reconstructed_point,
 					d_geometry_partition_query);
 
 			d_geometry_property_all_partitioned_geometries_seq.push_back(
@@ -738,11 +776,16 @@ namespace
 					*current_top_level_propname(),
 					*current_top_level_propiter());
 
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type reconstructed_polygon =
+					d_reconstruction_rotation
+					? *d_reconstruction_rotation * gml_polygon.exterior()
+					: gml_polygon.exterior();
+
 			// Partition the exterior polygon.
 			GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
 					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
 					geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
-					gml_polygon.exterior(),
+					reconstructed_polygon,
 					d_geometry_partition_query);
 			d_geometry_property_all_partitioned_geometries_seq.push_back(
 					geometry_property_all_partitioned_geometries);
@@ -765,11 +808,16 @@ namespace
 			{
 				const GPlatesPropertyValues::GmlPolygon::ring_type &interior_polygon = *interior_iter;
 
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type reconstructed_interior_polygon =
+						d_reconstruction_rotation
+						? *d_reconstruction_rotation * interior_polygon
+						: interior_polygon;
+
 				// Partition interior polygon.
 				GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
 						geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
 						geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
-						interior_polygon,
+						reconstructed_interior_polygon,
 						d_geometry_partition_query);
 				d_geometry_property_all_partitioned_geometries_seq.push_back(
 						geometry_property_all_partitioned_geometries);
@@ -787,6 +835,8 @@ namespace
 	private:
 		GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
 				d_geometry_partition_query;
+
+		boost::optional<GPlatesMaths::FiniteRotation> d_reconstruction_rotation;
 
 		boost::optional<double> d_reconstruction_time;
 
@@ -863,7 +913,8 @@ namespace
 	assign_partitioned_geometry_outside_all_resolved_boundaries(
 			const geometry_property_all_partitioned_geometries_seq_type &
 					geometry_property_all_partitioned_geometries_seq,
-			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+			const boost::optional<GPlatesMaths::FiniteRotation> &original_reconstruction_rotation)
 	{
 		bool assigned_to_feature = false;
 
@@ -903,8 +954,27 @@ namespace
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
 						outside_geometry = *outside_geometry_iter;
 
-				append_geometry_to_feature(
-						outside_geometry, geometry_property_name, feature_ref);
+				// Since we're appending reconstructed geometry we need to reverse
+				// reconstruct it using the original rotation. That way if the user
+				// explicitly gives it the same original reconstruction id again then
+				// it's reconstructed position will move back again.
+				if (original_reconstruction_rotation)
+				{
+					const GPlatesMaths::FiniteRotation rotate_to_present_day =
+							GPlatesMaths::get_reverse(*original_reconstruction_rotation);
+
+					append_geometry_to_feature(
+							rotate_to_present_day * outside_geometry,
+							geometry_property_name,
+							feature_ref);
+				}
+				else
+				{
+					append_geometry_to_feature(
+							outside_geometry,
+							geometry_property_name,
+							feature_ref);
+				}
 			}
 
 			assigned_to_feature = true;
@@ -1218,7 +1288,8 @@ namespace
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 			GPlatesModel::ModelInterface &model,
 			const double &reconstruction_time,
-			const GPlatesModel::ReconstructionTree &reconstruction_tree)
+			const GPlatesModel::ReconstructionTree &reconstruction_tree,
+			const boost::optional<GPlatesMaths::FiniteRotation> &original_reconstruction_rotation)
 	{
 		// Start out by removing the 'gpml:reconstructionPlateId' property.
 		GPlatesModel::ModelUtils::remove_property_values_from_feature(
@@ -1258,13 +1329,21 @@ namespace
 
 		// Get the composed absolute rotation needed to reverse reconstruct
 		// geometries to present day.
-		const GPlatesMaths::FiniteRotation reverse_rotation =
+		GPlatesMaths::FiniteRotation rotate_to_present_day =
 				GPlatesMaths::get_reverse(
 						reconstruction_tree.get_composed_absolute_rotation(
 								reconstruction_plate_id).first);
 
+		// If the original feature had a reconstruction plate id then it was
+		// rotated to the reconstruction time so we need to do that too.
+		if (original_reconstruction_rotation)
+		{
+			rotate_to_present_day = compose(
+					rotate_to_present_day, *original_reconstruction_rotation);
+		}
+
 		// Visit the feature and rotate all its geometry using 'reverse_rotation'.
-		GPlatesFeatureVisitors::GeometryRotator geometry_rotator(reverse_rotation);
+		GPlatesFeatureVisitors::GeometryRotator geometry_rotator(rotate_to_present_day);
 		geometry_rotator.visit_feature(feature_ref);
 
 		// Assign the plate id to the feature.
@@ -1290,7 +1369,8 @@ namespace
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 			GPlatesModel::ModelInterface &model,
 			const double &reconstruction_time,
-			const GPlatesModel::ReconstructionTree &reconstruction_tree)
+			const GPlatesModel::ReconstructionTree &reconstruction_tree,
+			const boost::optional<GPlatesMaths::FiniteRotation> &original_reconstruction_rotation)
 	{
 		// Start out by removing the 'gpml:reconstructionPlateId' property.
 		// But don't remove any geometry properties because we are going to clone
@@ -1395,17 +1475,25 @@ namespace
 
 			// Get the composed absolute rotation needed to reverse reconstruct
 			// geometries to present day.
-			const GPlatesMaths::FiniteRotation reverse_rotation =
+			GPlatesMaths::FiniteRotation rotate_to_present_day =
 					GPlatesMaths::get_reverse(
 							reconstruction_tree.get_composed_absolute_rotation(
 									reconstruction_plate_id).first);
+
+			// If the original feature had a reconstruction plate id then it was
+			// rotated to the reconstruction time so we need to do that too.
+			if (original_reconstruction_rotation)
+			{
+				rotate_to_present_day = compose(
+						rotate_to_present_day, *original_reconstruction_rotation);
+			}
 
 			// Clone the current source geometry property value.
 			const GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_geometry_property_value =
 					(*geometry_properties_iterator)->clone();
 
 			// Visit the geometry property and rotate its geometry using 'reverse_rotation'.
-			GPlatesFeatureVisitors::GeometryRotator geometry_rotator(reverse_rotation);
+			GPlatesFeatureVisitors::GeometryRotator geometry_rotator(rotate_to_present_day);
 			cloned_geometry_property_value->accept_visitor(geometry_rotator);
 
 			GPlatesModel::FeatureHandle::weak_ref recon_plate_id_feature_ref;
@@ -1471,7 +1559,8 @@ namespace
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 			GPlatesModel::ModelInterface &model,
 			const double &reconstruction_time,
-			const GPlatesModel::ReconstructionTree &reconstruction_tree)
+			const GPlatesModel::ReconstructionTree &reconstruction_tree,
+			const boost::optional<GPlatesMaths::FiniteRotation> &original_reconstruction_rotation)
 	{
 		bool assigned_any_plate_ids = false;
 
@@ -1487,7 +1576,8 @@ namespace
 		bool has_original_feature_been_assigned_to =
 				assign_partitioned_geometry_outside_all_resolved_boundaries(
 						geometry_property_all_partitioned_geometries_seq,
-						feature_ref);
+						feature_ref,
+						original_reconstruction_rotation);
 
 		//
 		// Iterate over the resolved boundaries and, for all except the first one,
@@ -1589,6 +1679,8 @@ namespace
 
 					// If the reconstruction time is not present day then we'll need to
 					// reverse reconstruct back to present day before storing in feature.
+					// Since we are working with geometry that has already been rotated
+					// to the reconstruction time we do not need to take that into account.
 					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 							reverse_reconstructed_inside_geometry =
 									(reconstruction_time != 0)
@@ -1684,13 +1776,35 @@ namespace
 				const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
 						geometry_partition_query)
 		{
-			// Iterate over the geometry properties in the feature and partition them
-			// using 'geometry_partition_query'.
+			// Get the original reconstruction plate id before we remove it.
+			const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
+			boost::optional<GPlatesModel::integer_plate_id_type> original_reconstruction_plate_id =
+					get_reconstruction_plate_id_from_feature(feature_ref);
+
+			// Calculate the rotation used to reconstruct the feature geometry from
+			// present day to the reconstruction time.
+			// If there's no reconstruction plate id then the feature geometry is
+			// interpreted to be a geometry snapshot at the current reconstruction time
+			// and hence is already rotated to the reconstruction time.
+			boost::optional<GPlatesMaths::FiniteRotation> original_reconstruction_rotation;
+			if (original_reconstruction_plate_id)
+			{
+				// Get the composed absolute rotation needed to reconstruct
+				// the feature to the reconstruction time specified by the user.
+				original_reconstruction_rotation =
+						d_reconstruction_tree.get_composed_absolute_rotation(
+								*original_reconstruction_plate_id).first;
+			}
+
+			// Iterate over the geometry properties in the feature, rotate the
+			// feature geometries from present day to the reconstruction time and
+			// partition the rotated geometries using 'geometry_partition_query'.
 			geometry_property_all_partitioned_geometries_seq_type
 					geometry_property_all_partitioned_polylines_seq;
 			PartitionFeatureGeometryVisitor partition_feature_geom_visitor(
 					geometry_property_all_partitioned_polylines_seq,
-					geometry_partition_query);
+					geometry_partition_query,
+					original_reconstruction_rotation);
 			partition_feature_geom_visitor.visit_feature(feature_ref);
 
 			if (geometry_property_all_partitioned_polylines_seq.empty())
@@ -1725,7 +1839,8 @@ namespace
 						d_feature_collection,
 						d_model,
 						d_reconstruction_time,
-						d_reconstruction_tree);
+						d_reconstruction_tree,
+						original_reconstruction_rotation);
 				break;
 
 			case GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_SUB_GEOMETRY_TO_MOST_OVERLAPPING_PLATE:
@@ -1736,7 +1851,8 @@ namespace
 						d_feature_collection,
 						d_model,
 						d_reconstruction_time,
-						d_reconstruction_tree);
+						d_reconstruction_tree,
+						original_reconstruction_rotation);
 				break;
 
 			case GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE:
@@ -1747,7 +1863,8 @@ namespace
 						d_feature_collection,
 						d_model,
 						d_reconstruction_time,
-						d_reconstruction_tree);
+						d_reconstruction_tree,
+						original_reconstruction_rotation);
 				break;
 
 			default:
