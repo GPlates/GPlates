@@ -819,46 +819,46 @@ namespace
 
 			GPlatesMaths::real_t resolved_boundary_partitioned_geometry_distance = 0;
 
-			// Iterate over the geometry properties that have partitioned polylines
+			// Iterate over the geometry properties that have partitioned geometries
 			// for the current resolved boundary.
 			const geometry_property_partitioned_inside_geometries_seq_type &
-					geometry_property_partitioned_inside_polylines_seq =
+					geometry_property_partitioned_inside_geometries_seq =
 							resolved_boundary_geometry_properties
 									.geometry_property_partitioned_inside_geometries_seq;
 			geometry_property_partitioned_inside_geometries_seq_type::const_iterator
-					geometry_property_partitioned_inside_polylines_iter =
-							geometry_property_partitioned_inside_polylines_seq.begin();
+					geometry_property_partitioned_inside_geometries_iter =
+							geometry_property_partitioned_inside_geometries_seq.begin();
 			geometry_property_partitioned_inside_geometries_seq_type::const_iterator
-					geometry_property_partitioned_inside_polylines_end =
-							geometry_property_partitioned_inside_polylines_seq.end();
+					geometry_property_partitioned_inside_geometries_end =
+							geometry_property_partitioned_inside_geometries_seq.end();
 			for ( ;
-				geometry_property_partitioned_inside_polylines_iter !=
-					geometry_property_partitioned_inside_polylines_end;
-				++geometry_property_partitioned_inside_polylines_iter)
+				geometry_property_partitioned_inside_geometries_iter !=
+					geometry_property_partitioned_inside_geometries_end;
+				++geometry_property_partitioned_inside_geometries_iter)
 			{
 				const GeometryPropertyPartitionedInsideGeometries &
-						geometry_property_partitioned_inside_polylines =
-								*geometry_property_partitioned_inside_polylines_iter;
+						geometry_property_partitioned_inside_geometries =
+								*geometry_property_partitioned_inside_geometries_iter;
 
 				const GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type &
-						partitioned_inside_polyline_seq =
-								geometry_property_partitioned_inside_polylines
+						partitioned_inside_geometry_seq =
+								geometry_property_partitioned_inside_geometries
 										.partitioned_geometries;
 
-				// Iterate over the partitioned polylines of the current geometry.
+				// Iterate over the partitioned geometries of the current geometry.
 				GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
-						partitioned_inside_polyline_iter = partitioned_inside_polyline_seq.begin();
+						partitioned_inside_geometry_iter = partitioned_inside_geometry_seq.begin();
 				GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
-						paritioned_inside_polyline_end = partitioned_inside_polyline_seq.end();
+						paritioned_inside_geometry_end = partitioned_inside_geometry_seq.end();
 				for ( ;
-					partitioned_inside_polyline_iter != paritioned_inside_polyline_end;
-					++partitioned_inside_polyline_iter)
+					partitioned_inside_geometry_iter != paritioned_inside_geometry_end;
+					++partitioned_inside_geometry_iter)
 				{
-					const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &
-							inside_polyline = *partitioned_inside_polyline_iter;
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
+							inside_geometry = *partitioned_inside_geometry_iter;
 
 					resolved_boundary_partitioned_geometry_distance +=
-							calculate_polyline_distance(*inside_polyline);
+							calculate_polyline_distance(*inside_geometry);
 				}
 			}
 
@@ -900,11 +900,11 @@ namespace
 	find_resolved_boundary_with_valid_plate_id_that_contains_most_geometry(
 			const GPlatesModel::ResolvedTopologicalBoundary *&resolved_boundary_containing_most_geometry,
 			const GPlatesAppLogic::TopologyUtils::resolved_boundary_partitioned_geometries_seq_type &
-					resolved_boundary_partitioned_polylines_seq)
+					resolved_boundary_partitioned_geometry_seq)
 	{
 		resolved_boundary_containing_most_geometry = NULL;
 
-		if (resolved_boundary_partitioned_polylines_seq.empty())
+		if (resolved_boundary_partitioned_geometry_seq.empty())
 		{
 			// We shouldn't get here as shouldn't have been called with an empty sequence.
 			return false;
@@ -912,10 +912,10 @@ namespace
 
 		// Shortcut if there's only one resolved boundary since we don't need
 		// to calculate the partitioned geometry distances to find the maximum.
-		if (resolved_boundary_partitioned_polylines_seq.size() == 1)
+		if (resolved_boundary_partitioned_geometry_seq.size() == 1)
 		{
 			resolved_boundary_containing_most_geometry =
-					resolved_boundary_partitioned_polylines_seq.front().resolved_topological_boundary;
+					resolved_boundary_partitioned_geometry_seq.front().resolved_topological_boundary;
 
 			if (!resolved_boundary_containing_most_geometry->plate_id())
 			{
@@ -932,24 +932,24 @@ namespace
 		// from the current geometry property.
 		GPlatesAppLogic::TopologyUtils
 				::resolved_boundary_partitioned_geometries_seq_type::const_iterator
-						resolved_boundary_partitioned_polylines_iter =
-								resolved_boundary_partitioned_polylines_seq.begin();
+						resolved_boundary_partitioned_geometries_iter =
+								resolved_boundary_partitioned_geometry_seq.begin();
 		GPlatesAppLogic::TopologyUtils
 				::resolved_boundary_partitioned_geometries_seq_type::const_iterator
-						resolved_boundary_partitioned_polylines_end =
-								resolved_boundary_partitioned_polylines_seq.end();
+						resolved_boundary_partitioned_geometries_end =
+								resolved_boundary_partitioned_geometry_seq.end();
 
 		for ( ;
-			resolved_boundary_partitioned_polylines_iter !=
-				resolved_boundary_partitioned_polylines_end;
-			++resolved_boundary_partitioned_polylines_iter)
+			resolved_boundary_partitioned_geometries_iter !=
+				resolved_boundary_partitioned_geometries_end;
+			++resolved_boundary_partitioned_geometries_iter)
 		{
 			const GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedGeometries &
-					resolved_boundary_partitioned_polylines =
-							*resolved_boundary_partitioned_polylines_iter;
+					resolved_boundary_partitioned_geometries =
+							*resolved_boundary_partitioned_geometries_iter;
 
 			const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary =
-					resolved_boundary_partitioned_polylines.resolved_topological_boundary;
+					resolved_boundary_partitioned_geometries.resolved_topological_boundary;
 
 			if (!resolved_topological_boundary->plate_id())
 			{
@@ -958,26 +958,26 @@ namespace
 			}
 
 			const GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type &
-					partitioned_inside_polyline_seq =
-							resolved_boundary_partitioned_polylines.partitioned_inside_geometries;
+					partitioned_inside_geometry_seq =
+							resolved_boundary_partitioned_geometries.partitioned_inside_geometries;
 
 			GPlatesMaths::real_t resolved_boundary_partitioned_geometry_distance = 0;
 
-			// Iterate over the partitioned inside polylines of the current
+			// Iterate over the partitioned inside geometries of the current
 			// resolved boundary of the current geometry property.
 			GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
-					partitioned_inside_polyline_iter = partitioned_inside_polyline_seq.begin();
+					partitioned_inside_geometry_iter = partitioned_inside_geometry_seq.begin();
 			GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
-					paritioned_inside_polyline_end = partitioned_inside_polyline_seq.end();
+					paritioned_inside_geometry_end = partitioned_inside_geometry_seq.end();
 			for ( ;
-				partitioned_inside_polyline_iter != paritioned_inside_polyline_end;
-				++partitioned_inside_polyline_iter)
+				partitioned_inside_geometry_iter != paritioned_inside_geometry_end;
+				++partitioned_inside_geometry_iter)
 			{
 				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &
-						inside_polyline = *partitioned_inside_polyline_iter;
+						inside_geometry = *partitioned_inside_geometry_iter;
 
 				resolved_boundary_partitioned_geometry_distance +=
-						calculate_polyline_distance(*inside_polyline);
+						calculate_polyline_distance(*inside_geometry);
 			}
 
 			if (resolved_boundary_partitioned_geometry_distance >
@@ -1014,7 +1014,7 @@ namespace
 	assign_feature_to_plate_it_overlaps_the_most(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 			const geometry_property_all_partitioned_geometries_seq_type &
-					geometry_property_all_partitioned_polylines_seq,
+					geometry_property_all_partitioned_geometries_seq,
 			const resolved_boundary_geometry_properties_map_type &
 					resolved_boundary_geometry_properties_map,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
@@ -1031,7 +1031,7 @@ namespace
 		// this feature  has not been assigned a plate id and therefore
 		// is now considered to be present day geometry.
 		if (is_geometry_outside_all_resolved_boundaries(
-				geometry_property_all_partitioned_polylines_seq))
+				geometry_property_all_partitioned_geometries_seq))
 		{
 			return false;
 		}
@@ -1049,7 +1049,7 @@ namespace
 				resolved_boundary_geometry_properties_map))
 		{
 			// We shouldn't get here since we should have at least one resolved boundary
-			// with a valid plate id and it should have at least one partitioned polyline.
+			// with a valid plate id and it should have at least one partitioned geometry.
 			return false;
 		}
 
@@ -1086,7 +1086,7 @@ namespace
 	assign_feature_sub_geometry_to_plate_it_overlaps_the_most(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 			const geometry_property_all_partitioned_geometries_seq_type &
-					geometry_property_all_partitioned_polylines_seq,
+					geometry_property_all_partitioned_geometries_seq,
 			const resolved_boundary_geometry_properties_map_type &
 					resolved_boundary_geometry_properties_map,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
@@ -1118,31 +1118,31 @@ namespace
 
 		// Iterate over the geometry properties.
 		geometry_property_all_partitioned_geometries_seq_type::const_iterator
-				geometry_property_all_partitioned_polylines_iter =
-						geometry_property_all_partitioned_polylines_seq.begin();
+				geometry_property_all_partitioned_geometries_iter =
+						geometry_property_all_partitioned_geometries_seq.begin();
 		geometry_property_all_partitioned_geometries_seq_type::const_iterator
-				geometry_property_all_partitioned_polylines_end =
-						geometry_property_all_partitioned_polylines_seq.end();
+				geometry_property_all_partitioned_geometries_end =
+						geometry_property_all_partitioned_geometries_seq.end();
 		for ( ;
-			geometry_property_all_partitioned_polylines_iter !=
-				geometry_property_all_partitioned_polylines_end;
-			++geometry_property_all_partitioned_polylines_iter)
+			geometry_property_all_partitioned_geometries_iter !=
+				geometry_property_all_partitioned_geometries_end;
+			++geometry_property_all_partitioned_geometries_iter)
 		{
 			const GeometryPropertyAllPartitionedGeometries &
-					geometry_property_all_partitioned_polylines = 
-							*geometry_property_all_partitioned_polylines_iter;
+					geometry_property_all_partitioned_geometries = 
+							*geometry_property_all_partitioned_geometries_iter;
 
 			GPlatesModel::FeatureHandle::properties_iterator geometry_properties_iterator =
-					geometry_property_all_partitioned_polylines.geometry_properties_iterator;
+					geometry_property_all_partitioned_geometries.geometry_properties_iterator;
 
 			// Make sure geometry property gets removed from the original feature
 			// before continuing to the next geometry property.
 			GeometryPropertiesIteratorRemover geometry_properties_iterator_remover(
 					geometry_properties_iterator);
 
-			if (geometry_property_all_partitioned_polylines.partitioned_inside_geometries_seq.empty())
+			if (geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq.empty())
 			{
-				// There were no inside polylines which means the current geometry
+				// There were no inside geometries which means the current geometry
 				// property is outside all resolved boundaries.
 				// Hence we cannot assign a plate id to it and so cannot
 				// reverse reconstruct to present day.
@@ -1182,10 +1182,10 @@ namespace
 					resolved_boundary_containing_most_geometry = NULL;
 			if (!find_resolved_boundary_with_valid_plate_id_that_contains_most_geometry(
 					resolved_boundary_containing_most_geometry,
-					geometry_property_all_partitioned_polylines.partitioned_inside_geometries_seq))
+					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq))
 			{
 				// We shouldn't get here since we should have at least one
-				// resolved boundary and it should have at least one partitioned polyline
+				// resolved boundary and it should have at least one partitioned geometry
 				// in the current geometry property.
 				continue;
 			}
@@ -1267,7 +1267,7 @@ namespace
 	partition_feature(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 			const geometry_property_all_partitioned_geometries_seq_type &
-					geometry_property_all_partitioned_polylines_seq,
+					geometry_property_all_partitioned_geometries_seq,
 			const resolved_boundary_geometry_properties_map_type &
 					resolved_boundary_geometry_properties_map,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
@@ -1285,11 +1285,10 @@ namespace
 		GPlatesModel::ModelUtils::remove_property_values_from_feature(
 				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME, feature_ref);
 
-		// Append any polyline geometries that are partitioned
-		// outside all resolved boundaries.
+		// Append any geometries that are partitioned outside all resolved boundaries.
 		bool has_original_feature_been_assigned_to =
 				assign_partitioned_geometry_outside_all_resolved_boundaries(
-						geometry_property_all_partitioned_polylines_seq,
+						geometry_property_all_partitioned_geometries_seq,
 						feature_ref);
 
 		//
@@ -1350,57 +1349,57 @@ namespace
 						model);
 			}
 
-			// Iterate over the geometry properties that have partitioned polylines
+			// Iterate over the geometry properties that have partitioned geometries
 			// for the current resolved boundary.
 			const geometry_property_partitioned_inside_geometries_seq_type &
-					geometry_property_partitioned_inside_polylines_seq =
+					geometry_property_partitioned_inside_geometries_seq =
 							resolved_boundary_geometry_properties
 									.geometry_property_partitioned_inside_geometries_seq;
 			geometry_property_partitioned_inside_geometries_seq_type::const_iterator
-					geometry_property_partitioned_inside_polylines_iter =
-							geometry_property_partitioned_inside_polylines_seq.begin();
+					geometry_property_partitioned_inside_geometries_iter =
+							geometry_property_partitioned_inside_geometries_seq.begin();
 			geometry_property_partitioned_inside_geometries_seq_type::const_iterator
-					geometry_property_partitioned_inside_polylines_end =
-							geometry_property_partitioned_inside_polylines_seq.end();
+					geometry_property_partitioned_inside_geometries_end =
+							geometry_property_partitioned_inside_geometries_seq.end();
 			for ( ;
-				geometry_property_partitioned_inside_polylines_iter !=
-					geometry_property_partitioned_inside_polylines_end;
-				++geometry_property_partitioned_inside_polylines_iter)
+				geometry_property_partitioned_inside_geometries_iter !=
+					geometry_property_partitioned_inside_geometries_end;
+				++geometry_property_partitioned_inside_geometries_iter)
 			{
 				const GeometryPropertyPartitionedInsideGeometries &
-						geometry_property_partitioned_inside_polylines =
-								*geometry_property_partitioned_inside_polylines_iter;
+						geometry_property_partitioned_inside_geometries =
+								*geometry_property_partitioned_inside_geometries_iter;
 
 				const GPlatesModel::PropertyName &geometry_property_name =
-						geometry_property_partitioned_inside_polylines.geometry_property_name;
+						geometry_property_partitioned_inside_geometries.geometry_property_name;
 
 				const GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type &
-						partitioned_inside_polyline_seq =
-								geometry_property_partitioned_inside_polylines
+						partitioned_inside_geometry_seq =
+								geometry_property_partitioned_inside_geometries
 										.partitioned_geometries;
 
 				GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
-						partitioned_inside_polyline_iter = partitioned_inside_polyline_seq.begin();
+						partitioned_inside_geometry_iter = partitioned_inside_geometry_seq.begin();
 				GPlatesAppLogic::TopologyUtils::partitioned_geometry_seq_type::const_iterator
-						paritioned_inside_polyline_end = partitioned_inside_polyline_seq.end();
+						paritioned_inside_geometry_end = partitioned_inside_geometry_seq.end();
 				for ( ;
-					partitioned_inside_polyline_iter != paritioned_inside_polyline_end;
-					++partitioned_inside_polyline_iter)
+					partitioned_inside_geometry_iter != paritioned_inside_geometry_end;
+					++partitioned_inside_geometry_iter)
 				{
 					const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &
-							inside_polyline = *partitioned_inside_polyline_iter;
+							inside_geometry = *partitioned_inside_geometry_iter;
 
 					// If the reconstruction time is not present day then we'll need to
 					// reverse reconstruct back to present day before storing in feature.
 					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-							reverse_reconstructed_inside_polyline =
+							reverse_reconstructed_inside_geometry =
 									(reconstruction_time != 0)
-									? reverse_rotation * inside_polyline
-									: inside_polyline;
+									? reverse_rotation * inside_geometry
+									: inside_geometry;
 
 					// Append a geometry property to the new feature.
 					append_geometry_to_feature(
-							reverse_reconstructed_inside_polyline,
+							reverse_reconstructed_inside_geometry,
 							geometry_property_name,
 							new_feature_ref);
 				}
