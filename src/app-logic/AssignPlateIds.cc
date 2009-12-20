@@ -344,6 +344,12 @@ namespace
 		visit_multi_point_on_sphere(
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 		{
+			GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type gml_multi_point =
+					GPlatesPropertyValues::GmlMultiPoint::create(multi_point_on_sphere);
+
+			d_geometry_property = GPlatesModel::ModelUtils::create_gpml_constant_value(
+					gml_multi_point, 
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("MultiPoint"));
 		}
 
 		virtual
@@ -351,6 +357,12 @@ namespace
 		visit_point_on_sphere(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
+			const GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
+					GPlatesPropertyValues::GmlPoint::create(*point_on_sphere);
+
+			d_geometry_property = GPlatesModel::ModelUtils::create_gpml_constant_value(
+					gml_point, 
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
 		}
 
 		virtual
@@ -676,7 +688,18 @@ namespace
 		visit_gml_multi_point(
 				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 		{
-			using namespace GPlatesMaths;
+			GeometryPropertyAllPartitionedGeometries geometry_property_all_partitioned_geometries(
+					*current_top_level_propname(),
+					*current_top_level_propiter());
+
+			GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
+					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
+					geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
+					gml_multi_point.multipoint(),
+					d_geometry_partition_query);
+
+			d_geometry_property_all_partitioned_geometries_seq.push_back(
+					geometry_property_all_partitioned_geometries);
 		}
 
 
@@ -692,7 +715,18 @@ namespace
 		visit_gml_point(
 				GPlatesPropertyValues::GmlPoint &gml_point)
 		{
-			using namespace GPlatesMaths;
+			GeometryPropertyAllPartitionedGeometries geometry_property_all_partitioned_geometries(
+					*current_top_level_propname(),
+					*current_top_level_propiter());
+
+			GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
+					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
+					geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
+					gml_point.point(),
+					d_geometry_partition_query);
+
+			d_geometry_property_all_partitioned_geometries_seq.push_back(
+					geometry_property_all_partitioned_geometries);
 		}
 
 
