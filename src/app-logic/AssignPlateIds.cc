@@ -358,6 +358,12 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
+			GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon =
+					GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
+
+			d_geometry_property = GPlatesModel::ModelUtils::create_gpml_constant_value(
+					gml_polygon, 
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon"));
 		}
 
 		virtual
@@ -694,7 +700,46 @@ namespace
 		visit_gml_polygon(
 				GPlatesPropertyValues::GmlPolygon &gml_polygon)
 		{
-			using namespace GPlatesMaths;
+			GeometryPropertyAllPartitionedGeometries geometry_property_all_partitioned_geometries(
+					*current_top_level_propname(),
+					*current_top_level_propiter());
+
+			// Partition the exterior polygon.
+			GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
+					geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
+					geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
+					gml_polygon.exterior(),
+					d_geometry_partition_query);
+			d_geometry_property_all_partitioned_geometries_seq.push_back(
+					geometry_property_all_partitioned_geometries);
+
+			// Iterate over the interior polygons.
+			//
+			// FIXME: We are losing the distinction between exterior polygon and interior
+			// polygons because when it comes time to build the GmlPolygon (which only
+			// happens if we're partitioning geometry as opposed to assigning the entire
+			// geometry property to a plate) then if there are interior polygons that
+			// are fully inside a plate boundary they will be added to a feature as
+			// an exterior polygon.
+			// For now this is adequate since at least the user don't lose there
+			// interior polygons (they just can reappear as exterior polygons).
+			GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_iter =
+					gml_polygon.interiors_begin();
+			GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_end =
+					gml_polygon.interiors_end();
+			for ( ; interior_iter != interior_end; ++interior_iter)
+			{
+				const GPlatesPropertyValues::GmlPolygon::ring_type &interior_polygon = *interior_iter;
+
+				// Partition interior polygon.
+				GPlatesAppLogic::TopologyUtils::partition_geometry_using_resolved_topology_boundaries(
+						geometry_property_all_partitioned_geometries.partitioned_inside_geometries_seq,
+						geometry_property_all_partitioned_geometries.partitioned_outside_geometries,
+						interior_polygon,
+						d_geometry_partition_query);
+				d_geometry_property_all_partitioned_geometries_seq.push_back(
+						geometry_property_all_partitioned_geometries);
+			}
 		}
 
 
