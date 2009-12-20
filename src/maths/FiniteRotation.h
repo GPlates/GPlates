@@ -48,6 +48,7 @@ namespace GPlatesMaths
 	class PointOnSphere;
 	class PolylineOnSphere;
 	class PolygonOnSphere;
+	class GeometryOnSphere;
 	class GreatCircleArc;
 	class GreatCircle;
 	class SmallCircle;
@@ -288,6 +289,45 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Apply the given rotation to the given intrusive-pointer to polyline.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler>
+	operator*(
+			const FiniteRotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+					GPlatesUtils::NullIntrusivePointerHandler> p);
+
+
+	/**
+	 * Apply the given rotation to the given intrusive-pointer to polygon.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler>
+	operator*(
+			const FiniteRotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
+					GPlatesUtils::NullIntrusivePointerHandler> p);
+
+
+	/**
+	 * Apply the given rotation to the given intrusive-pointer to @a GeometryOnSphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
+			GPlatesUtils::NullIntrusivePointerHandler>
+	operator*(
+			const FiniteRotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
+					GPlatesUtils::NullIntrusivePointerHandler> g);
+
+
+	/**
 	 * Apply the given rotation to the given great circle arc.
 	 *
 	 * This operation is not supposed to be symmetrical.
@@ -329,32 +369,6 @@ namespace GPlatesMaths
 	operator*(
 	 const FiniteRotation &r,
 	 const GridOnSphere &g);
-
-
-	/**
-	 * Apply the given rotation to the given intrusive-pointer to polyline.
-	 *
-	 * This operation is not supposed to be symmetrical.
-	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler>
-	operator*(
-			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-					GPlatesUtils::NullIntrusivePointerHandler> p);
-
-
-	/**
-	 * Apply the given rotation to the given intrusive-pointer to polygon.
-	 *
-	 * This operation is not supposed to be symmetrical.
-	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler>
-	operator*(
-			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-					GPlatesUtils::NullIntrusivePointerHandler> p);
 
 
 	std::ostream &

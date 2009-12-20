@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <boost/optional.hpp>
 
 #include "FiniteRotation.h"
 #include "HighPrecision.h"
@@ -43,6 +44,10 @@
 #include "LatLonPointConversions.h"
 #include "InvalidOperationException.h"
 #include "IndeterminateResultException.h"
+#include "ConstGeometryOnSphereVisitor.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
 
 namespace {
@@ -71,6 +76,83 @@ namespace {
 
 		return ((2.0 * s) * v);
 	}
+
+
+	/**
+	 * Visits a @a GeometryOnSphere, rotates it and returns as a @a GeometryOnSphere.
+	 */
+	class RotateGeometryOnSphere :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		/**
+		 * Construct with the @a FiniteRotation to use for rotating.
+		 */
+		explicit
+		RotateGeometryOnSphere(
+				const GPlatesMaths::FiniteRotation &finite_rotation) :
+			d_finite_rotation(finite_rotation)
+		{  }
+
+
+		/**
+		 * Rotates @a geometry using @a FiniteRotation passed into constructor
+		 * and returns rotated @a GeometryOnSphere.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		rotate(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
+		{
+			d_rotated_geometry = boost::none;
+
+			geometry->accept_visitor(*this);
+
+			// Unless there's a new derived type of GeometryOnSphere we should
+			// be able to dereference 'd_rotated_geometry'.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_rotated_geometry, GPLATES_ASSERTION_SOURCE);
+
+			return *d_rotated_geometry;
+		}
+
+	protected:
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_rotated_geometry = d_finite_rotation * multi_point_on_sphere;
+		}
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_rotated_geometry = d_finite_rotation * point_on_sphere;
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_rotated_geometry = d_finite_rotation * polygon_on_sphere;
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_rotated_geometry = d_finite_rotation * polyline_on_sphere;
+		}
+
+	private:
+		const GPlatesMaths::FiniteRotation &d_finite_rotation;
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+				d_rotated_geometry;
+	};
 }
 
 
@@ -380,6 +462,17 @@ GPlatesMaths::operator*(
 			GPlatesUtils::NullIntrusivePointerHandler> rotated_polygon(
 			PolygonOnSphere::create_on_heap(rotated_points));
 	return rotated_polygon;
+}
+
+
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::GeometryOnSphere,
+		GPlatesUtils::NullIntrusivePointerHandler>
+GPlatesMaths::operator*(
+		const FiniteRotation &r,
+		GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler> g)
+{
+	return RotateGeometryOnSphere(r).rotate(g);
 }
 
 
