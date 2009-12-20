@@ -28,6 +28,7 @@
 #include <map>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QDebug>
@@ -177,6 +178,146 @@ namespace
 				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
 				feature_ref);
 	}
+
+
+	/**
+	 * Calculate polyline distance along unit radius sphere.
+	 */
+	template <typename GreatCircleArcForwardIteratorType>
+	GPlatesMaths::real_t
+	calculate_arc_distance(
+			GreatCircleArcForwardIteratorType gca_begin,
+			GreatCircleArcForwardIteratorType gca_end)
+	{
+		GPlatesMaths::real_t distance = 0;
+
+		GreatCircleArcForwardIteratorType gca_iter = gca_begin;
+		for ( ; gca_iter != gca_end; ++gca_iter)
+		{
+			distance += acos(gca_iter->dot_of_endpoints());
+		}
+
+		return distance;
+	}
+
+
+	/**
+	 * Visits a @a GeometryOnSphere and accumulates a size metric for it;
+	 * for points/multipoints this is number of points and for polylines/polygons
+	 * this is arc distance.
+	 */
+	class GeometrySizeMetric :
+			public boost::less_than_comparable<GeometrySizeMetric>
+	{
+	public:
+		GeometrySizeMetric() :
+			d_num_points(0),
+			d_arc_distance(0),
+			d_using_arc_distance(false)
+		{  }
+
+		unsigned int
+		get_num_points() const
+		{
+			return d_num_points;
+		}
+
+		GPlatesMaths::real_t
+		get_arc_distance() const
+		{
+			return d_arc_distance;
+		}
+
+		/**
+		 * For points and multipoints adds number of points to current total
+		 * number of points; for polylines and polygons adds the
+		 * arc distance (unit sphere) to the current total arc distance.
+		 */
+		void
+		accumulate(
+				const GPlatesMaths::GeometryOnSphere &geometry)
+		{
+			GeometrySize geometry_size(d_num_points, d_arc_distance, d_using_arc_distance);
+			geometry.accept_visitor(geometry_size);
+		}
+
+		/**
+		 * Less than operator.
+		 * Greater than operator provided by base class boost::less_than_comparable.
+		 */
+		bool
+		operator<(
+				const GeometrySizeMetric &rhs) const
+		{
+			// Prefer to compare arc distance if we have visited any
+			// line geometry.
+			if (d_using_arc_distance || rhs.d_using_arc_distance)
+			{
+				return d_arc_distance < rhs.d_arc_distance;
+			}
+
+			return d_num_points < rhs.d_num_points;
+		}
+
+	private:
+		class GeometrySize :
+				public GPlatesMaths::ConstGeometryOnSphereVisitor
+		{
+		public:
+			GeometrySize(
+					unsigned int &num_points,
+					GPlatesMaths::real_t &arc_distance,
+					bool &using_arc_distance) :
+				d_num_points(num_points),
+				d_arc_distance(arc_distance),
+				d_using_arc_distance(using_arc_distance)
+			{  }
+
+			virtual
+			void
+			visit_multi_point_on_sphere(
+					GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+			{
+				d_num_points += multi_point_on_sphere->number_of_points();
+			}
+
+			virtual
+			void
+			visit_point_on_sphere(
+					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+			{
+				++d_num_points;
+			}
+
+			virtual
+			void
+			visit_polygon_on_sphere(
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+			{
+				d_arc_distance += calculate_arc_distance(
+						polygon_on_sphere->begin(), polygon_on_sphere->end());
+				d_using_arc_distance = true;
+			}
+
+			virtual
+			void
+			visit_polyline_on_sphere(
+					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+			{
+				d_arc_distance += calculate_arc_distance(
+						polyline_on_sphere->begin(), polyline_on_sphere->end());
+				d_using_arc_distance = true;
+			}
+
+			unsigned int &d_num_points;
+			GPlatesMaths::real_t &d_arc_distance;
+			bool &d_using_arc_distance;
+		};
+
+		unsigned int d_num_points;
+		GPlatesMaths::real_t d_arc_distance;
+		bool d_using_arc_distance;
+	};
 
 
 	/**
@@ -373,26 +514,6 @@ namespace
 		}
 
 		return new_feature_ref;
-	}
-
-
-	/**
-	 * Calculate polyline distance along unit radius sphere.
-	 */
-	GPlatesMaths::real_t
-	calculate_polyline_distance(
-			const GPlatesMaths::PolylineOnSphere &polyline)
-	{
-		GPlatesMaths::real_t distance = 0;
-
-		GPlatesMaths::PolylineOnSphere::const_iterator gca_iter = polyline.begin();
-		GPlatesMaths::PolylineOnSphere::const_iterator gca_end = polyline.end();
-		for ( ; gca_iter != gca_end; ++gca_iter)
-		{
-			distance += acos(gca_iter->dot_of_endpoints());
-		}
-
-		return distance;
 	}
 
 
@@ -788,7 +909,7 @@ namespace
 			return true;
 		}
 
-		GPlatesMaths::real_t max_resolved_boundary_partitioned_geometry_distance = 0;
+		GeometrySizeMetric max_resolved_boundary_partitioned_geometry_size_metric;
 		resolved_boundary_geometry_properties_map_type::const_iterator
 				resolved_boundary_containing_most_geometry_iter =
 						resolved_boundary_geometry_properties_map.end();
@@ -817,7 +938,7 @@ namespace
 				continue;
 			}
 
-			GPlatesMaths::real_t resolved_boundary_partitioned_geometry_distance = 0;
+			GeometrySizeMetric resolved_boundary_partitioned_geometry_size_metric;
 
 			// Iterate over the geometry properties that have partitioned geometries
 			// for the current resolved boundary.
@@ -857,16 +978,15 @@ namespace
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
 							inside_geometry = *partitioned_inside_geometry_iter;
 
-					resolved_boundary_partitioned_geometry_distance +=
-							calculate_polyline_distance(*inside_geometry);
+					resolved_boundary_partitioned_geometry_size_metric.accumulate(*inside_geometry);
 				}
 			}
 
-			if (resolved_boundary_partitioned_geometry_distance >
-					max_resolved_boundary_partitioned_geometry_distance)
+			if (resolved_boundary_partitioned_geometry_size_metric >
+					max_resolved_boundary_partitioned_geometry_size_metric)
 			{
-				max_resolved_boundary_partitioned_geometry_distance =
-						resolved_boundary_partitioned_geometry_distance;
+				max_resolved_boundary_partitioned_geometry_size_metric =
+						resolved_boundary_partitioned_geometry_size_metric;
 
 				resolved_boundary_containing_most_geometry_iter =
 						resolved_boundary_geometry_properties_iter;
@@ -925,7 +1045,7 @@ namespace
 			return true;
 		}
 
-		GPlatesMaths::real_t max_resolved_boundary_partitioned_geometry_distance = 0;
+		GeometrySizeMetric max_resolved_boundary_partitioned_geometry_size_metric;
 
 		// Iterate over the resolved boundaries that the current geometry property
 		// was partitioned into and determine which one contains the most geometry
@@ -961,7 +1081,7 @@ namespace
 					partitioned_inside_geometry_seq =
 							resolved_boundary_partitioned_geometries.partitioned_inside_geometries;
 
-			GPlatesMaths::real_t resolved_boundary_partitioned_geometry_distance = 0;
+			GeometrySizeMetric resolved_boundary_partitioned_geometry_size_metric;
 
 			// Iterate over the partitioned inside geometries of the current
 			// resolved boundary of the current geometry property.
@@ -973,18 +1093,17 @@ namespace
 				partitioned_inside_geometry_iter != paritioned_inside_geometry_end;
 				++partitioned_inside_geometry_iter)
 			{
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
 						inside_geometry = *partitioned_inside_geometry_iter;
 
-				resolved_boundary_partitioned_geometry_distance +=
-						calculate_polyline_distance(*inside_geometry);
+				resolved_boundary_partitioned_geometry_size_metric.accumulate(*inside_geometry);
 			}
 
-			if (resolved_boundary_partitioned_geometry_distance >
-					max_resolved_boundary_partitioned_geometry_distance)
+			if (resolved_boundary_partitioned_geometry_size_metric >
+					max_resolved_boundary_partitioned_geometry_size_metric)
 			{
-				max_resolved_boundary_partitioned_geometry_distance =
-						resolved_boundary_partitioned_geometry_distance;
+				max_resolved_boundary_partitioned_geometry_size_metric =
+						resolved_boundary_partitioned_geometry_size_metric;
 
 				resolved_boundary_containing_most_geometry = resolved_topological_boundary;
 			}
@@ -1386,12 +1505,12 @@ namespace
 					partitioned_inside_geometry_iter != paritioned_inside_geometry_end;
 					++partitioned_inside_geometry_iter)
 				{
-					const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &
+					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
 							inside_geometry = *partitioned_inside_geometry_iter;
 
 					// If the reconstruction time is not present day then we'll need to
 					// reverse reconstruct back to present day before storing in feature.
-					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 							reverse_reconstructed_inside_geometry =
 									(reconstruction_time != 0)
 									? reverse_rotation * inside_geometry
