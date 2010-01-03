@@ -105,7 +105,7 @@ namespace GPlatesAppLogic
 		 * Typedef for a sequence of associations of partitioned geometries and
 		 * the @a ResolvedTopologicalBoundary that they were partitioned into.
 		 */
-		typedef std::list<const ResolvedBoundaryPartitionedGeometries>
+		typedef std::list<ResolvedBoundaryPartitionedGeometries>
 				resolved_boundary_partitioned_geometries_seq_type;
 
 		class ResolvedBoundariesForGeometryPartitioning;

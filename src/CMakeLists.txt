@@ -10,17 +10,21 @@ endforeach(lib)
 # - we only need the program_options boost library for the command-line version of GPLates (gplates-cli), and
 # - since boost is mostly just headers we can still compile the GUI version of GPlates
 #   (which currently only uses boost headers).
-find_package("Boost" 1.33.1 COMPONENTS program_options)
+find_package("Boost" 1.33.1 COMPONENTS program_options thread)
 # However we do need to find the boost include directory to locate the headers.
 if (NOT Boost_INCLUDE_DIR)
 	message(FATAL_ERROR, "Boost include path not found.")
 endif (NOT Boost_INCLUDE_DIR)
-# If the program_options library is not found then we will only disable the 'gplates-cli' target.
+# If the boost program_options library is not found then we will only disable the 'gplates-cli' target.
 if (Boost_PROGRAM_OPTIONS_FOUND)
 	set(ADD_GPLATES_CLI_TARGET TRUE)
 else (Boost_PROGRAM_OPTIONS_FOUND)
 	message("Warning: boost program_options library not found so GPlates command-line executable gplates-cli will not be available (the GUI version 'gplates' will be available though).")
 endif (Boost_PROGRAM_OPTIONS_FOUND)
+# We currently require the boost thread library since it's used by CGAL.
+if (NOT Boost_THREAD_FOUND)
+	message(FATAL_ERROR, "Boost 'thread' library not found (required by CGAL).")
+endif (NOT Boost_THREAD_FOUND)
 
 # Tell Qt that we use QtXML.
 # NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
@@ -34,11 +38,6 @@ include(${QT_USE_FILE})
 SET(ICU_USE_I18N 1)
 SET(ICU_USE_IO 1)
 include (${ICU_USE_FILE})
-
-# Include CGAL.
-if (CGAL_FOUND)
-	include(${CGAL_USE_FILE})
-endif (CGAL_FOUND)
 
 # Some useful utilities.
 include (Util)
@@ -123,10 +122,11 @@ set(generated_headers_INCLUDE_DIRS
 # The 'include_directories' command doesn't propagate to subdirectories but any variable we set does.
 # We'll use this variable in subdirectories to add these includes directories (avoids duplicating changes to subdirectories).
 # External include directories:
-# NOTE: Qt, ICU and CGAL includes are taken care of by including QT_USE_FILE, ICU_USE_FILE and CGAL_USE_FILE.
+# NOTE: Qt and ICU includes are taken care of by including QT_USE_FILE and ICU_USE_FILE.
 set(external_INCLUDE_DIRS
 	${OPENGL_INCLUDE_DIR} 
 	${GDAL_INCLUDE_DIR}
+	${CGAL_INCLUDE_DIR}
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
 	${PROJ4_INCLUDE_DIR})
@@ -233,6 +233,7 @@ endif (APPLE)
 
 set(dependency_LIBS
 	${GDAL_LIBRARY}
+	${CGAL_LIBRARY}
 	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
 	${OPENGL_LIBRARIES}

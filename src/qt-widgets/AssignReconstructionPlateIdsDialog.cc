@@ -24,6 +24,8 @@
  */
 
 #include <vector>
+#include <boost/cast.hpp>
+#include <QHeaderView>
 #include <QMessageBox>
 #include <QString>
 
@@ -445,7 +447,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_row(
 	// The rows in the QTableWidget and our internal file sequence should be in sync.
 	const int row = table_feature_collections->rowCount();
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			row == d_file_state_seq.size(),
+			row == boost::numeric_cast<int>(d_file_state_seq.size()),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Add a row.

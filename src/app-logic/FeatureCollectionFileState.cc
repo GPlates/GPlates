@@ -404,22 +404,20 @@ std::vector<GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type>
 GPlatesAppLogic::FeatureCollectionFileState::get_workflow_tags(
 		file_iterator file_iter) const
 {
-	typedef std::vector<workflow_tag_type> workflow_tag_seq_type;
-
-	workflow_tag_seq_type workflow_tags =
+	std::vector<workflow_tag_type> workflow_tags =
 			file_iter.get_file_node()->file_node_state().active_state().get_tags();
 
 	// Remove the reconstructable and reconstruction workflow tags since
 	// the client is not aware of those (they are just used internally).
 	// When the client wants to do something with those workflows it
 	// uses API methods specific to those workflows.
-	workflow_tag_seq_type::iterator reconstructable_tag_iter = std::find(
+	std::vector<workflow_tag_type>::iterator reconstructable_tag_iter = std::find(
 			workflow_tags.begin(), workflow_tags.end(), Decls::RECONSTRUCTABLE_WORKFLOW_TAG);
 	if (reconstructable_tag_iter != workflow_tags.end())
 	{
 		workflow_tags.erase(reconstructable_tag_iter);
 	}
-	workflow_tag_seq_type::iterator reconstruction_tag_iter = std::find(
+	std::vector<workflow_tag_type>::iterator reconstruction_tag_iter = std::find(
 			workflow_tags.begin(), workflow_tags.end(), Decls::RECONSTRUCTION_WORKFLOW_TAG);
 	if (reconstruction_tag_iter != workflow_tags.end())
 	{

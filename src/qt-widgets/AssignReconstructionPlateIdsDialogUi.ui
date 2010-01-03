@@ -141,7 +141,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="reconstruction_time" >
+    <widget class="QGroupBox" name="group_box_reconstruction_time" >
      <property name="title" >
       <string>Reconstruction Time</string>
      </property>

@@ -77,9 +77,6 @@
 
 namespace
 {
-	static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
 	/**
 	 * A feature needs a 'reconstructionPlateId' if it doesn't already have one *and*
 	 * it is not a reconstruction feature.
@@ -163,6 +160,9 @@ namespace
 	get_reconstruction_plate_id_from_feature(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 	{
+		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id;
 		if (!GPlatesFeatureVisitors::get_property_value(
@@ -186,6 +186,9 @@ namespace
 			GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 	{
+		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
 		// First remove any that might already exist.
 		GPlatesModel::ModelUtils::remove_property_values_from_feature(
 				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME, feature_ref);
@@ -465,6 +468,9 @@ namespace
 	is_reconstruction_plate_id_property(
 			const GPlatesModel::FeatureHandle::properties_iterator &feature_properties_iter)
 	{
+		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
 		return (*feature_properties_iter)->property_name() ==
 				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME;
 	}
@@ -1291,6 +1297,9 @@ namespace
 			const GPlatesModel::ReconstructionTree &reconstruction_tree,
 			const boost::optional<GPlatesMaths::FiniteRotation> &original_reconstruction_rotation)
 	{
+		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
 		// Start out by removing the 'gpml:reconstructionPlateId' property.
 		GPlatesModel::ModelUtils::remove_property_values_from_feature(
 				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME, feature_ref);
@@ -1372,6 +1381,9 @@ namespace
 			const GPlatesModel::ReconstructionTree &reconstruction_tree,
 			const boost::optional<GPlatesMaths::FiniteRotation> &original_reconstruction_rotation)
 	{
+		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
 		// Start out by removing the 'gpml:reconstructionPlateId' property.
 		// But don't remove any geometry properties because we are going to clone
 		// them as we go and put them in new cloned features.
@@ -1564,6 +1576,9 @@ namespace
 	{
 		bool assigned_any_plate_ids = false;
 
+		static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
 		// First strip off any geometry properties from the feature.
 		// Also remove any 'gpml:reconstructionPlateId' property(s).
 		// This is so we can add new geometry properties and possibly
@@ -1683,7 +1698,7 @@ namespace
 					// to the reconstruction time we do not need to take that into account.
 					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 							reverse_reconstructed_inside_geometry =
-									(reconstruction_time != 0)
+									(reconstruction_time > 0)
 									? reverse_rotation * inside_geometry
 									: inside_geometry;
 
@@ -1777,7 +1792,6 @@ namespace
 						geometry_partition_query)
 		{
 			// Get the original reconstruction plate id before we remove it.
-			const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
 			boost::optional<GPlatesModel::integer_plate_id_type> original_reconstruction_plate_id =
 					get_reconstruction_plate_id_from_feature(feature_ref);
 

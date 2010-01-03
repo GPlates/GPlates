@@ -648,22 +648,24 @@ GPlatesMaths::PolygonIntersections::is_gca_inside_partitioning_polygon(
 	// It is assumed that 'polygon_prev_gca's end point equals
 	// 'polygon_next_gca's start point.
 
-	// When testing to see if 'polyline_gca' is to the left or right of the
-	// two GCAs from the partitioning polygon the test needs to be done
-	// to see if 'polyline_gca' falls in the acute angle region.
-	// For example,
-	//
-	//    ^               ^
-	//     \               \ A /
-	// left \  right        \ /
-	//       ^               ^
-	//      /               / \
-	//     /               / B \
-	//
-	// ...we can test for the left region by testing left of both arcs.
-	// If we tried to test for the right region instead we would try testing
-	// right of both arcs but that would miss regions A and B shown above
-	// which are supposed to be part of the right region.
+	/*
+	 * When testing to see if 'polyline_gca' is to the left or right of the
+	 * two GCAs from the partitioning polygon the test needs to be done
+	 * to see if 'polyline_gca' falls in the acute angle region.
+	 * For example,
+	 *
+	 *    ^               ^
+	 *     \               \ A /
+	 * left \  right        \ /
+	 *       ^               ^
+	 *      /               / \
+	 *     /               / B \
+	 *
+	 * ...we can test for the left region by testing left of both arcs.
+	 * If we tried to test for the right region instead we would try testing
+	 * right of both arcs but that would miss regions A and B shown above
+	 * which are supposed to be part of the right region.
+	 */
 	if (do_adjacent_great_circle_arcs_bend_left(
 			polygon_prev_gca, polygon_next_gca))
 	{

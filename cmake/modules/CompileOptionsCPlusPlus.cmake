@@ -121,7 +121,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 #            -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
 #            -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
         set(warnings_flags_list
-            -W -Wall -ansi -Wcast-align -Wwrite-strings -Wfloat-equal
+            -W -Wall -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
             -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
             -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
     endif(APPLE)

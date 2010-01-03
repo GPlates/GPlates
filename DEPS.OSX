@@ -28,6 +28,7 @@ installed:
   • Boost library headers
   • Qt library (version 4.3.2 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
+  • Computational Geometry Algorithms Library (CDAL) (3.3.1 or newer)
 
 Corresponding package dependencies
 
@@ -40,6 +41,7 @@ ICU             icu
 Boost           boost
 Qt              qt4-mac
 GDAL            gdal
+CGAL            cgal
 
 Installing OpenGL
 
@@ -99,6 +101,7 @@ instead if one exists (ie, for GDAL, Qt and CMake).
     Macports due to the large number of software dependencies required by Qt4.
   • Install Boost with 'sudo port install boost' if you don't have Boost.
   • Install ICU with 'sudo port install icu' if you don't have ICU.
+  • Install CGAL with 'sudo port install cgal' if you don't have CGAL.
   • Install GDAL with 'sudo port install gdal' if you don't have GDAL. Note that the installers
     at "http://www.kyngchaos.com/software:frameworks" are easier than using
     Macports due to the large number of software dependencies required by GDAL.
