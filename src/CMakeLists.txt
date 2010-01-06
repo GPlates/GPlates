@@ -137,10 +137,10 @@ set(external_INCLUDE_DIRS
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
 	${PROJ4_INCLUDE_DIR})
-# The WIN32 inclusion is a temporary hack - will be removed soon.
-if(WIN32)
+# The WIN32 exclusion is a temporary hack - will be removed soon.
+if(NOT WIN32)
 set(external_INCLUDE_DIRS ${external_INCLUDE_DIRS} ${CGAL_INCLUDE_DIR})
-endif(WIN32)
+endif(NOT WIN32)
 	
 # Internal include directories:
 set(internal_INCLUDE_DIRS
@@ -250,10 +250,10 @@ set(dependency_LIBS
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	)
-# The WIN32 inclusion is a temporary hack - will be removed soon.
-if(WIN32)
+# The WIN32 exclusion is a temporary hack - will be removed soon.
+if(NOT WIN32)
 set(dependency_LIBS ${dependency_LIBS} ${CGAL_LIBRARY})
-endif(WIN32)
+endif(NOT WIN32)
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
 if (NOT WIN32)
