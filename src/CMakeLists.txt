@@ -39,6 +39,14 @@ SET(ICU_USE_I18N 1)
 SET(ICU_USE_IO 1)
 include (${ICU_USE_FILE})
 
+# The WIN32 inclusion is a temporary hack - will be removed soon.
+if(WIN32)
+# Include CGAL.
+if (CGAL_FOUND)
+	include(${CGAL_USE_FILE})
+endif (CGAL_FOUND)
+endif(WIN32)
+
 # Some useful utilities.
 include (Util)
 
@@ -122,14 +130,18 @@ set(generated_headers_INCLUDE_DIRS
 # The 'include_directories' command doesn't propagate to subdirectories but any variable we set does.
 # We'll use this variable in subdirectories to add these includes directories (avoids duplicating changes to subdirectories).
 # External include directories:
-# NOTE: Qt and ICU includes are taken care of by including QT_USE_FILE and ICU_USE_FILE.
+# NOTE: Qt, ICU and CGAL includes are taken care of by including QT_USE_FILE, ICU_USE_FILE and CGAL_USE_FILE.
 set(external_INCLUDE_DIRS
 	${OPENGL_INCLUDE_DIR} 
 	${GDAL_INCLUDE_DIR}
-	${CGAL_INCLUDE_DIR}
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
 	${PROJ4_INCLUDE_DIR})
+# The WIN32 inclusion is a temporary hack - will be removed soon.
+if(WIN32)
+set(external_INCLUDE_DIRS ${external_INCLUDE_DIRS} ${CGAL_INCLUDE_DIR})
+endif(WIN32)
+	
 # Internal include directories:
 set(internal_INCLUDE_DIRS
 	${GPlates_SOURCE_DIR}/src				# A lot of "#include" statements reference from this directory.
@@ -233,12 +245,15 @@ endif (APPLE)
 
 set(dependency_LIBS
 	${GDAL_LIBRARY}
-	${CGAL_LIBRARY}
 	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	)
+# The WIN32 inclusion is a temporary hack - will be removed soon.
+if(WIN32)
+set(dependency_LIBS ${dependency_LIBS} ${CGAL_LIBRARY})
+endif(WIN32)
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
 if (NOT WIN32)
