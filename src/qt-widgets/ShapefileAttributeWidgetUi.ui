@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>300</height>
+    <height>340</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -212,6 +212,22 @@
      </item>
      <item row="6" column="1" >
       <widget class="QComboBox" name="combo_description" />
+     </item>
+     <item row="7" column="0" >
+      <widget class="QLabel" name="label_feature_id" >
+       <property name="text" >
+        <string>Feature &amp;ID</string>
+       </property>
+       <property name="alignment" >
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buddy" >
+        <cstring>combo_feature_id</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1" >
+      <widget class="QComboBox" name="combo_feature_id" />
      </item>
     </layout>
    </item>

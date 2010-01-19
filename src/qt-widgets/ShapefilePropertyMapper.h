@@ -37,7 +37,8 @@ namespace ShapefileAttributes {
 		BEGIN,
 		END,
 		NAME,
-		DESCRIPTION
+		DESCRIPTION,
+		FEATURE_ID
 	};
 
 	static const QString model_properties[] = {
@@ -46,7 +47,8 @@ namespace ShapefileAttributes {
 		"Begin",
 		"End",
 		"Name",
-		"Description"
+		"Description",
+		"FeatureId"
 	};
 	
 	static const QString default_attributes[] = {
@@ -55,7 +57,8 @@ namespace ShapefileAttributes {
 		"FROMAGE",
 		"TOAGE",
 		"NAME",
-		"DESCR"
+		"DESCR",
+		"FEATURE_ID"
 	};
 
 }

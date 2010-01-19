@@ -69,6 +69,7 @@ namespace
 		default_fields.insert(ShapefileAttributes::END,ShapefileAttributes::default_attributes[ShapefileAttributes::END]);
 		default_fields.insert(ShapefileAttributes::NAME,ShapefileAttributes::default_attributes[ShapefileAttributes::NAME]);
 		default_fields.insert(ShapefileAttributes::DESCRIPTION,ShapefileAttributes::default_attributes[ShapefileAttributes::DESCRIPTION]);
+		default_fields.insert(ShapefileAttributes::FEATURE_ID,ShapefileAttributes::default_attributes[ShapefileAttributes::FEATURE_ID]);
 	}
 
 	void
@@ -130,6 +131,8 @@ GPlatesQtWidgets::ShapefileAttributeWidget::ShapefileAttributeWidget(
 
 	// The "Feature Type" property cannot be remapped. 
 	combo_feature_type->setEnabled(!remapping);
+	// Don't allow "FeatureId" to be remapped either.
+	combo_feature_id->setEnabled(!remapping);
 
 	if (d_model_to_attribute_map.isEmpty())
 	{
@@ -146,6 +149,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::ShapefileAttributeWidget(
 		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::END);
 		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::NAME);
 		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::DESCRIPTION);
+		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names,ShapefileAttributes::FEATURE_ID);
 	}
 
 	setup();
@@ -166,6 +170,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	combo_to_age->addItem(QString(QObject::tr("<none>")));
 	combo_name->addItem(QString(QObject::tr("<none>")));
 	combo_description->addItem(QString(QObject::tr("<none>")));
+	combo_feature_id->addItem(QString(QObject::tr("<none>")));
 
 	// Fill the remaining fields from the QStringList d_field_names.
 	combo_plateID->addItems(d_field_names);
@@ -174,6 +179,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	combo_to_age->addItems(d_field_names);
 	combo_name->addItems(d_field_names);
 	combo_description->addItems(d_field_names);
+	combo_feature_id->addItems(d_field_names);
 
 	// Check for any of the default field names. If we find any, set the combo box to the default.
 	// 1 is added to the index to account for the <none> item, which is 0th in each combo box. 
@@ -202,6 +208,10 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::DESCRIPTION])) != -1) {	
 		combo_description->setCurrentIndex(index + 1);
 	}
+		
+	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::FEATURE_ID])) != -1) {	
+		combo_feature_id->setCurrentIndex(index + 1);		
+	}
 
 
 // save the state of the combo boxes so that we can reset them.
@@ -212,7 +222,8 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	d_combo_reset_map.push_back(combo_to_age->currentIndex());
 	d_combo_reset_map.push_back(combo_name->currentIndex());
 	d_combo_reset_map.push_back(combo_description->currentIndex());
-
+	d_combo_reset_map.push_back(combo_feature_id->currentIndex());
+	
 }
 
 void
@@ -226,7 +237,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::reset_fields()
 	combo_to_age->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::END]);
 	combo_name->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::NAME]);
 	combo_description->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::DESCRIPTION]);
-
+	combo_feature_id->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::FEATURE_ID]);
 
 }
 
@@ -275,6 +286,12 @@ GPlatesQtWidgets::ShapefileAttributeWidget::accept_fields()
 				ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION],
 						d_field_names[combo_description->currentIndex()-1]);
 		}
+		
+		if (combo_feature_id->currentIndex() != 0){
+			d_model_to_attribute_map.insert(
+				ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID],
+						d_field_names[combo_feature_id->currentIndex()-1]);
+		}		
 
 }
 

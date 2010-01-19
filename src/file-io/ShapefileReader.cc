@@ -78,6 +78,8 @@ QStringList GPlatesFileIO::ShapefileReader::s_field_names;
 	
 namespace
 {
+
+
 	/**
 	 * Creates a gml line string from @a list_of_points and adds this to @a feature.
 	 */
@@ -138,20 +140,25 @@ namespace
 	 * @return a feature handle to the created feature. 
 	 */
 	const GPlatesModel::FeatureHandle::weak_ref
-		create_feature(
+	create_feature(
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-		QString &feature_type_qstring)
+		QString &feature_type_qstring,
+		boost::optional<UnicodeString> &feature_id)
 	{
 
 
 		GPlatesModel::FeatureType feature_type = 
 			GPlatesModel::FeatureType::create_gpml(feature_type_qstring);
 
-		GPlatesModel::FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type,collection);
-
-		return feature;
+		if (feature_id)
+		{
+			return model->create_feature(feature_type,GPlatesModel::FeatureId(*feature_id),collection);		
+		}
+		else
+		{
+			return model->create_feature(feature_type,collection);		
+		}
 	}
 
 	/**
@@ -439,7 +446,7 @@ namespace
 				.arg(xml_reader.errorString()));
 			return false;
 		}
-
+		
 		return true;
 	}
 
@@ -692,6 +699,29 @@ GPlatesFileIO::ShapefileReader::read_features(
 			}
 		}
 		
+		// Check if we have a shapefile attribute corresponding to the Feature ID.
+		d_feature_id.reset();
+		
+		it = s_model_to_attribute_map.find(
+			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
+
+		if ((it != s_model_to_attribute_map.constEnd()) && s_field_names.contains(it.value())) {
+
+			int index = s_field_names.indexOf(it.value());
+
+			// d_field_names should be the same size as d_attributes, but check that we
+			// don't try to go beyond the bounds of d_attributes. If somehow we are trying to do 
+			// this, then we just get a feature without a feature_id.
+			if ((index >= 0) && (index < static_cast<int>(d_attributes.size())))
+			{
+
+				QString feature_id = d_attributes[index].toString();
+
+				d_feature_id.reset(GPlatesUtils::make_icu_string_from_qstring(feature_id));
+				//*d_feature_id = GPlatesUtils::make_icu_string_from_qstring(feature_id);
+			}
+		}		
+		
 
 		d_type = d_geometry_ptr->getGeometryType();
 		d_type = wkb_flatten(d_type);
@@ -750,11 +780,8 @@ GPlatesFileIO::ShapefileReader::create_polygon_feature_from_list(
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
 
-	GPlatesModel::FeatureType feature_type = 
-		GPlatesModel::FeatureType::create_gpml(d_feature_type);
-
-	GPlatesModel::FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type,collection);
+			
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 		GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
@@ -781,13 +808,7 @@ GPlatesFileIO::ShapefileReader::create_line_feature_from_list(
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
-	//	GPlatesModel::FeatureType feature_type = 
-	//		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
-	GPlatesModel::FeatureType feature_type = 
-		GPlatesModel::FeatureType::create_gpml(d_feature_type);
-
-	GPlatesModel::FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type,collection);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
@@ -817,13 +838,7 @@ GPlatesFileIO::ShapefileReader::create_point_feature_from_pair(
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection, 
 	std::pair<double,double> &point)
 {
-	//	GPlatesModel::FeatureType feature_type = 
-	//		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
-	GPlatesModel::FeatureType feature_type = 
-		GPlatesModel::FeatureType::create_gpml(d_feature_type);
-
-	GPlatesModel::FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type,collection);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
 
 	const GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
 		GPlatesPropertyValues::GmlPoint::create(point);
@@ -849,13 +864,7 @@ GPlatesFileIO::ShapefileReader::create_point_feature_from_point_on_sphere(
 	GPlatesMaths::PointOnSphere &point)
 {
 
-	//	GPlatesModel::FeatureType feature_type = 
-	//		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
-	GPlatesModel::FeatureType feature_type = 
-		GPlatesModel::FeatureType::create_gpml(d_feature_type);
-
-	GPlatesModel::FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type,collection);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
 
 	const GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
 		GPlatesPropertyValues::GmlPoint::create(point);
@@ -881,13 +890,7 @@ GPlatesFileIO::ShapefileReader::create_multi_point_feature_from_list(
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
 
-	//	GPlatesModel::FeatureType feature_type = 
-	//		GPlatesModel::FeatureType::create_gpml(d_feature_creation_pair.first);
-	GPlatesModel::FeatureType feature_type = 
-		GPlatesModel::FeatureType::create_gpml(d_feature_type);
-
-	GPlatesModel::FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type,collection);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
 		GPlatesMaths::MultiPointOnSphere::create_on_heap(list_of_points);
@@ -1328,7 +1331,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_linestring(
 	qDebug() << "num geometries: " << num_geometries;
 #endif
 		
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type);				
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);				
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
@@ -1398,7 +1401,7 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 	OGRLinearRing *ring = polygon->getExteriorRing();
 	add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type);				
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);				
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	if (!feature_points.empty()){
@@ -1465,7 +1468,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 	OGRMultiPolygon *multi = static_cast<OGRMultiPolygon*>(d_geometry_ptr);
 	int num_geometries = multi->getNumGeometries();
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type);				
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);				
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	d_total_geometries += num_geometries;

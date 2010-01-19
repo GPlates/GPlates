@@ -71,6 +71,80 @@
 
 namespace
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator 
+	find_element_by_key(
+		const QString &key,
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary)
+	{
+
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator
+			it = dictionary->elements().begin(),
+			end = dictionary->elements().end();
+
+		for (; it != end ; ++it)
+		{
+			QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->key()->value().get());
+			if (key == key_string)
+			{
+				break;
+			}
+		}
+		return it;
+	}
+
+
+	void
+	add_feature_id_to_map_if_necessary(
+		QMap< QString, QString> &model_to_shapefile_map,
+		const GPlatesFileIO::FileInfo &file_info)
+	{
+		QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
+
+		if (it == model_to_shapefile_map.end())
+		{
+			model_to_shapefile_map.insert(
+				ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID],
+				ShapefileAttributes::default_attributes[ShapefileAttributes::FEATURE_ID]);
+			file_info.set_model_to_shapefile_map(model_to_shapefile_map);
+		}	
+	
+	}
+
+	void
+	add_feature_id_to_kvd_if_necessary(
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
+		QMap< QString, QString> &model_to_shapefile_map)
+	{
+		QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
+			
+		if (it != model_to_shapefile_map.end())
+		{
+			QString element_key = it.value();
+
+			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator element = 
+				find_element_by_key(element_key,kvd);
+				
+			if (element == kvd->elements().end())	
+			{
+				GPlatesPropertyValues::XsString::non_null_ptr_type key = GPlatesPropertyValues::XsString::create(
+					GPlatesUtils::make_icu_string_from_qstring(element_key));
+
+				// Create a dummy value				
+				GPlatesPropertyValues::XsString::non_null_ptr_type feature_id_value = 
+					GPlatesPropertyValues::XsString::create(UnicodeString());
+
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement feature_id_element(
+					key,
+					feature_id_value,
+					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+
+				kvd->elements().push_back(feature_id_element);									
+			}
+		}	
+	}
+
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 	create_multi_point_from_points(
 		const std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> &points)
@@ -124,7 +198,7 @@ namespace
 		} // loop over properties in feature. 	
 	
 		//qDebug() << "Adding new kvd...";
-		GPlatesModel::WeakReference<GPlatesModel::FeatureHandle> 			feature_weak_ref(non_const_feature_handle);
+		GPlatesModel::WeakReference<GPlatesModel::FeatureHandle> feature_weak_ref(non_const_feature_handle);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
 			kvd,
 			GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),
@@ -203,26 +277,7 @@ namespace
 	}
 
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator 
-	find_element_by_key(
-		const QString &key,
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary)
-	{
 
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator
-			it = dictionary->elements().begin(),
-			end = dictionary->elements().end();
-
-		for (; it != end ; ++it)
-		{
-			QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->key()->value().get());
-			if (key == key_string)
-			{
-				break;
-			}
-		}
-		return it;
-	}
 
 	void
 	fill_kvd_with_plate_id(
@@ -511,7 +566,48 @@ namespace
 		}
 
 	}
+	
+	void
+	fill_kvd_with_feature_id(
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+		const QMap< QString,QString > &model_to_shapefile_map,
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+	{
 
+		GPlatesModel::PropertyValue::non_null_ptr_type feature_id_value =
+			GPlatesPropertyValues::XsString::create(feature->feature_id().get());
+
+		QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
+
+		if (it != model_to_shapefile_map.end())
+		{
+
+			QString element_key = it.value();
+
+			//qDebug() << "Element key: " << element_key;
+
+			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator element = 
+				find_element_by_key(element_key,dictionary);
+
+			if (element != dictionary->elements().end())
+			{
+				// We've found an element corresponding to the description; replace it with 
+				// a new element containing the value extracted from the feature. 
+				GPlatesPropertyValues::XsString::non_null_ptr_type key = element->key();
+				GPlatesPropertyValues::TemplateTypeParameterType type = element->value_type();
+
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+					key,
+					feature_id_value,
+					type);
+
+				*element = new_element;			
+			}
+		}
+
+	}	
+	
 	void
 	create_default_kvd_from_map(
 		boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> &default_key_value_dictionary,	
@@ -600,6 +696,20 @@ namespace
 			description_value,
 			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
 		elements.push_back(description_element);	
+		
+		
+		// Add a feature-id entry.
+		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID]);
+		key = GPlatesPropertyValues::XsString::create(
+			GPlatesUtils::make_icu_string_from_qstring(*it));
+		GPlatesPropertyValues::XsString::non_null_ptr_type feature_id_value = 
+			GPlatesPropertyValues::XsString::create(UnicodeString());
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement feature_id_element(
+			key,
+			feature_id_value,
+			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+		elements.push_back(feature_id_element);		
 
 		// Add them all to the default kvd.
 		default_key_value_dictionary.reset(GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements));
@@ -608,7 +718,7 @@ namespace
 	void
 	fill_kvd(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
-		const QMap< QString,QString > &model_to_shapefile_map,
+		QMap< QString,QString > &model_to_shapefile_map,
 		const GPlatesModel::FeatureHandle &feature_handle)
 	{
 		GPlatesModel::FeatureHandle::const_weak_ref feature = feature_handle.reference();
@@ -618,7 +728,7 @@ namespace
 		fill_kvd_with_begin_and_end_time(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_name(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_description(dictionary,model_to_shapefile_map,feature);
-
+		fill_kvd_with_feature_id(dictionary,model_to_shapefile_map,feature);
 	}
 	
 	void
@@ -644,8 +754,11 @@ namespace
 		model_to_shapefile_map.insert(
 			ShapefileAttributes::model_properties[ShapefileAttributes::NAME],
 			ShapefileAttributes::default_attributes[ShapefileAttributes::NAME]);
-
-		file_info.set_model_to_shapefile_map(model_to_shapefile_map);
+		model_to_shapefile_map.insert(
+			ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_ID],
+			ShapefileAttributes::default_attributes[ShapefileAttributes::FEATURE_ID]);	
+			
+		file_info.set_model_to_shapefile_map(model_to_shapefile_map);					
 	}
 
 
@@ -765,35 +878,42 @@ GPlatesFileIO::ShapefileWriter::ShapefileWriter(
 	// The file_info might not have a model_to_shapefile_map - the feature collection
 	// might have originated from a plates file, for example. If we don't have one,
 	// create a default map.
+	
 	if (file_info.get_model_to_shapefile_map().isEmpty())
 	{
 		create_default_model_to_shapefile_map(file_info);
-
-#if 0
-	// Disable exporting of xml file for the moment, until I arrange things so that
-	// multiple-layer shapefiles each have their own xml mapping file.  
-
-		// Export the newly created map as an shp.gplates.xml file.
-		QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo());
-
-		// FIXME: If we have multiple layers, we should really export the appropriately named xml file
-		// for each layer. 
-		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
-			file_info.get_model_to_shapefile_map());
-#endif
 	}
 
-	d_model_to_shapefile_map = file_info.get_model_to_shapefile_map();
 
+	d_model_to_shapefile_map = file_info.get_model_to_shapefile_map();	
+
+	add_feature_id_to_map_if_necessary(d_model_to_shapefile_map,file_info);
+	
 	// Look for a key value dictionary, and store it as the default. 
 	create_default_kvd_from_collection(feature_collection_ref,d_default_key_value_dictionary);
+	
 
-	// We didn't find one, so make one from the model-to-attribute-map. 
-	if (!d_default_key_value_dictionary)
+	if (d_default_key_value_dictionary)
+	{
+		add_feature_id_to_kvd_if_necessary(*d_default_key_value_dictionary,d_model_to_shapefile_map);
+	}
+	else
+	// We didn't find one, so make one from the model-to-attribute-map. This map will already have a feature_id
+	// added to it, hence the kvd will have a feature_id element. 
 	{
 		create_default_kvd_from_map(d_default_key_value_dictionary,
 			d_model_to_shapefile_map);
 	}
+
+	// Export the newly created map as an shp.gplates.xml file.
+	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo());
+
+	// FIXME: If we have multiple layers, then we will have multiple shapefiles, but only one xml mapping file.
+	// We should change this so that we have a separate (and appropriately named) xml mapping file for each shapefile. 
+	//
+	ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
+		file_info.get_model_to_shapefile_map());
+
 
 }
 
@@ -853,18 +973,22 @@ GPlatesFileIO::ShapefileWriter::finalise_post_feature_properties(
 
 	}
 	else
-	{
+	{	
 		// We do have a shapefile kvd. Update it from the model. 
 		//qDebug() << "Found already existing kvd.";
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary =
 			GPlatesPropertyValues::GpmlKeyValueDictionary::create((*d_key_value_dictionary)->elements());
-			
+		
+		add_feature_id_to_kvd_if_necessary(dictionary,d_model_to_shapefile_map);
 		fill_kvd(dictionary,
 				d_model_to_shapefile_map,feature_handle);
 				
 		d_key_value_dictionary.reset(dictionary);
 
-		//FIXME: Update the model's kvd from the new kvd values. 
+		// Update the model kvd. This is necessary so that properties which have
+		// been edited by the user will have their corresponding kvd entries updated.  Ideally this would happen
+		// automatically any time the user edited a property, but at the moment we handle all such updates in 
+		// one go, during shapefile export. (i.e. here and now). 
 		replace_model_kvd(feature_handle,
 						dictionary);
 	}

@@ -73,6 +73,7 @@ GPlatesFileIO::ShapefileXmlWriter::write_file(
 						"=====================.... ================================================================ \n"
 						"ReconstructionPlateId ... The plate id used in reconstruction (gpml:reconstructionPlateId). \n"
 						"FeatureType ............. The type of feature. \n"
+						"FeatureId................ The (unique) identifier of the feaure. \n"
 						"Begin ................... The age of appearance (gml:begin part of gml:validTime). \n"
 						"End ..................... The age of disappearance (gml:end part of gml:validTime). \n"
 						"Name .................... The name of the feature (gml:name). \n"

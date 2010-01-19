@@ -76,17 +76,15 @@ GPlatesFileIO::ShapefileXmlReader::read_xml()
 
      while (!atEnd()) {
          readNext();
-#if 0
-		 std::cerr << "Name:" << name().toString().toStdString().c_str() << std::endl;		
-		 std::cerr << "Token type: " << tokenString().toStdString().c_str() << std::endl;
-		 if (isWhitespace()) std::cerr << " (whitespace)";
-#endif	
+
 		 if (isEndElement()){
              break;
 		 }
-			
 
-		 read_map_item();
+		 if (isStartElement())
+		 {
+			 read_map_item();
+		 }
 
      }
 }
