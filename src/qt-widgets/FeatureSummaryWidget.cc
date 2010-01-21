@@ -28,15 +28,21 @@
 
 #include "FeatureSummaryWidget.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/FeatureCollectionFileState.h"
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"
 #include "utils/UnicodeStringUtils.h"
 #include "feature-visitors/PropertyValueFinder.h"
+#include "file-io/FileInfo.h"
+#include "global/InvalidFeatureCollectionException.h"
+#include "global/InvalidParametersException.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/XsString.h"
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -79,19 +85,122 @@ namespace
 			field->setText(QString::number(plate_id->value()));
 		}
 	}
+	
+	
+	/**
+	 * The slow way to test membership of a FeatureHandle in a FeatureCollection.
+	 * It is ONLY okay to use here because we only select new features in response
+	 * to a mouse-click.
+	 */
+	bool
+	feature_collection_contains_feature(
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref collection_ref,
+			GPlatesModel::FeatureHandle::const_weak_ref feature_ref)
+	{
+		// Weak refs. Check them.
+		if ( ! collection_ref.is_valid()) {
+			throw GPlatesGlobal::InvalidFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
+					"Attempted to test for a feature inside an invalid feature collection.");
+		}
+		if ( ! feature_ref.is_valid()) {
+			throw GPlatesGlobal::InvalidParametersException(GPLATES_EXCEPTION_SOURCE,
+					"Attempted to test for an invalid feature inside a feature collection.");
+		}
+		
+		// Search through FeatureCollection, comparing weakrefs until we find one that points
+		// to the same FeatureHandle. I was going to use STL find but it bitched to me about
+		// operator== not matching up quite right, presumably due to const weakref fun.
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator it = collection_ref->features_begin();
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator end = collection_ref->features_end();
+		for (; it != end; ++it) {
+			// 'it' is a revision aware iterator (intrusive ptr to FeatureHandle),
+			if (it.is_valid()) {
+				const GPlatesModel::FeatureHandle &it_handle = **it;
+				// Whereas we have a weakref to the FeatureHandle. We'll compare addresses
+				// to determine if this is the feature handle we are looking for.
+				if (feature_ref.handle_ptr() == &it_handle) {
+					return true;
+				}
+			}
+		}
+		// These aren't the feature handles we are looking for. Move along.
+		return false;
+	}
+	
+	/**
+	 * The slow way to ascertain what File a particular Feature belongs to.
+	 * Only checks FeatureCollections with loaded files, which is appropriate for the
+	 * needs of FeatureSummaryWidget.
+	 *
+	 * If no match is found, the 'end' iterator is returned!
+	 */
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+	get_file_iterator_for_feature(
+			GPlatesAppLogic::FeatureCollectionFileState &state,
+			GPlatesModel::FeatureHandle::const_weak_ref feature_ref)
+	{
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
+				state.get_loaded_files();
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
+		
+		for (; it != end; ++it) {
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref collection_ref =
+					it->get_const_feature_collection();
+			if (feature_collection_contains_feature(collection_ref, feature_ref)) {
+				return it;
+			}
+		}
+		return end;
+	}
+	
+	/**
+	 * Returns the name of the FeatureCollection that the given FeatureHandle is
+	 * contained within.
+	 *
+	 * Needs FeatureCollectionFileState so we can scan through loaded files.
+	 */
+	QString
+	get_feature_collection_name_for_feature(
+			GPlatesAppLogic::FeatureCollectionFileState &state,
+			GPlatesModel::FeatureHandle::const_weak_ref feature_ref)
+	{
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it = 
+				get_file_iterator_for_feature(state, feature_ref);
+		if (file_it == state.get_loaded_files().end) {
+			return QObject::tr("< Invalid Feature Collection >");
+		}
+		
+		// Some files might not actually exist yet if the user created a new
+		// feature collection internally and hasn't saved it to file yet.
+		QString name;
+		if (GPlatesFileIO::file_exists(file_it->get_file_info()))
+		{
+			// Get a suitable label; we will prefer the short filename.
+			name = file_it->get_file_info().get_display_name(false);
+		}
+		else
+		{
+			// The file doesn't exist so give it a filename to indicate this.
+			name = "New Feature Collection";
+		}
+		return name;
+	}
 }
 
 
 GPlatesQtWidgets::FeatureSummaryWidget::FeatureSummaryWidget(
-		GPlatesGui::FeatureFocus &feature_focus,
+		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QWidget(parent_)
+	QWidget(parent_),
+	d_file_state(view_state_.get_application_state().get_feature_collection_file_state())
 {
 	setupUi(this);
 	clear();
 	setDisabled(true);
 	
 	// Subscribe to focus events. We can discard the FeatureFocus reference afterwards.
+	GPlatesGui::FeatureFocus &feature_focus = view_state_.get_feature_focus();
 	QObject::connect(&feature_focus,
 			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
@@ -115,6 +224,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::clear()
 	lineedit_time_of_appearance->clear();
 	lineedit_time_of_disappearance->clear();
 	lineedit_clicked_geometry->clear();
+	lineedit_feature_collection->clear();
 
 	// Show/Hide some of the Plate ID fields depending on if they have anything
 	// useful to report.
@@ -157,6 +267,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		// The feature has one or more name properties. Use the first one for now.
 		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
 		lineedit_name->setCursorPosition(0);
+		lineedit_name->setToolTip(GPlatesUtils::make_qstring(name->value()));
 	}
 
 	// Plate ID.
@@ -214,6 +325,15 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 			lineedit_clicked_geometry->setText(tr("<No longer valid>"));
 		}
 	}
+
+	// Feature Collection's file name
+	GPlatesModel::FeatureHandle::const_weak_ref const_feature_ref = 
+			GPlatesModel::FeatureHandle::get_const_weak_ref(feature_ref);
+	QString feature_collection_name = get_feature_collection_name_for_feature(
+			d_file_state, const_feature_ref);
+	lineedit_feature_collection->setText(feature_collection_name);
+	lineedit_feature_collection->setCursorPosition(0);
+	lineedit_feature_collection->setToolTip(feature_collection_name);
 	
 	// Show/Hide some of the Plate ID fields depending on if they have anything
 	// useful to report.

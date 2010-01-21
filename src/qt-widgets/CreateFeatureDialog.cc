@@ -26,6 +26,7 @@
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 #include <map>
+#include <QSet>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QListWidget>
@@ -570,6 +571,46 @@ namespace
 		}
 		return type_item->get_type();
 	}
+
+
+	/**
+	 * Constructs the set used in @a should_offer_conjugate_plate_id_prop().
+	 * Quick and dirty. Replace with proper GPGIM-querying thing.
+	 */
+	const QSet<QString> &
+	build_feature_conjugate_plate_prop_set()
+	{
+		static QSet<QString> set;
+		set << "gpml:Isochron" << "gpml:MidOceanRidge" << "gpml:ContinentalRift" << 
+				"gpml:SubductionZone" << "gpml:OrogenicBelt" << "gpml:Transform" <<
+				"gpml:FractureZone" << "gpml:PassiveContinentalBoundary";
+		return set;
+	}
+
+	/**
+	 * Quick and dirty way to ascertain whether we should present the user
+	 * with a conjugatePlateId property value edit widget. This is based on
+	 * FeatureType. Ideally, we'd be querying an internal GPGIM structure
+	 * for all of these things.
+	 */
+	bool
+	should_offer_conjugate_plate_id_prop(
+			const QListWidget *listwidget_feature_types)
+	{
+		// Build set of feature types that allow conjugate plate id.
+		static const QSet<QString> &conjugate_feature_set =
+				build_feature_conjugate_plate_prop_set();
+		
+		// Get currently selected feature type
+		boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
+				currently_selected_feature_type(listwidget_feature_types);
+		if (feature_type_opt) {
+			QString t = GPlatesUtils::make_qstring_from_icu_string(feature_type_opt->build_aliased_name());
+			return conjugate_feature_set.contains(t);
+		} else {
+			return false;
+		}
+	}
 }
 
 
@@ -588,6 +629,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_creation_type(creation_type),
 	d_geometry_opt_ptr(boost::none),
 	d_plate_id_widget(new EditPlateIdWidget(this)),
+	d_conjugate_plate_id_widget(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
 	d_name_widget(new EditStringWidget(this))
 {
@@ -660,16 +702,27 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
+	d_conjugate_plate_id_widget->label()->setText(tr("C&onjugate ID:"));
+	// Conjugate Plate IDs are optional.
+	d_conjugate_plate_id_widget->set_null_value_permitted(true);
+	d_conjugate_plate_id_widget->reset_widget_to_default_values();
 	// And set the EditStringWidget's label to something suitable for a gml:name property.
 	d_name_widget->label()->setText(tr("&Name:"));
 	d_name_widget->label()->setHidden(false);
 	
 	// Create the edit widgets we'll need, and add them to the Designer-created widgets.
+	QHBoxLayout *plate_id_layout;
+	plate_id_layout = new QHBoxLayout;
+	plate_id_layout->setSpacing(2);
+	plate_id_layout->setMargin(0);
+	plate_id_layout->addWidget(d_plate_id_widget);
+	plate_id_layout->addWidget(d_conjugate_plate_id_widget);
+
 	QVBoxLayout *edit_layout;
 	edit_layout = new QVBoxLayout;
 	edit_layout->setSpacing(0);
 	edit_layout->setMargin(4);
-	edit_layout->addWidget(d_plate_id_widget);
+	edit_layout->addItem(plate_id_layout);
 	edit_layout->addWidget(d_time_period_widget);
 	edit_layout->addWidget(d_name_widget);
 	groupbox_properties->setLayout(edit_layout);
@@ -795,6 +848,8 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 			listwidget_geometry_destinations->setFocus();
 			d_button_create->setEnabled(false);
 			button_create_and_save->setEnabled(false);
+			d_conjugate_plate_id_widget->setVisible(should_offer_conjugate_plate_id_prop(
+					listwidget_feature_types));
 			break;
 
 	case 2:
@@ -910,6 +965,15 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 			GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type),
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 			feature);
+
+	// Add a gpml:conjugatePlateId Property.
+	if ( ! d_conjugate_plate_id_widget->is_null() &&
+			should_offer_conjugate_plate_id_prop(listwidget_feature_types)) {
+		GPlatesModel::ModelUtils::append_property_value_to_feature(
+				d_conjugate_plate_id_widget->create_property_value_from_widget(),
+				GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+				feature);
+	}
 
 	// Add a gml:validTime Property.
 	GPlatesModel::ModelUtils::append_property_value_to_feature(

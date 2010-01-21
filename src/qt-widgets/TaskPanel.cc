@@ -140,7 +140,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	
 	// Set up the EX-TREME Task Panel's tabs. Please ensure this order matches the
 	// enumeration set up in the class declaration.
-	set_up_feature_tab(view_state.get_feature_focus());
+	set_up_feature_tab(view_state);
 	set_up_digitisation_tab();
 	set_up_modify_geometry_tab();
 	set_up_modify_pole_tab();
@@ -176,7 +176,7 @@ GPlatesQtWidgets::TaskPanel::set_up_ui()
 
 void
 GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
-		GPlatesGui::FeatureFocus &feature_focus)
+		GPlatesPresentation::ViewState &view_state)
 {
 	// Set up the layout to be used by the Feature tab.
 	QWidget *page = add_page_with_title(d_stacked_widget_ptr, tr("Current Feature"));
@@ -184,7 +184,7 @@ GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
 	
 	// Add a summary of the currently-focused Feature.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
-	lay->addWidget(new FeatureSummaryWidget(feature_focus, this));
+	lay->addWidget(new FeatureSummaryWidget(view_state, this));
 	
 	// Action Buttons; these are added by ViewportWindow via
 	// TaskPanel::feature_action_button_box().add_action().

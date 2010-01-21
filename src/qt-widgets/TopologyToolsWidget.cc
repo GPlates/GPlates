@@ -113,7 +113,7 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 			choose_canvas_tool) 
 	),
 	d_feature_summary_widget_ptr(
-		new FeatureSummaryWidget(view_state_.get_feature_focus())
+		new FeatureSummaryWidget(view_state_)
 	)
 {
 	setupUi(this);

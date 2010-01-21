@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>176</width>
-    <height>288</height>
+    <height>340</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -16,16 +16,7 @@
    <property name="spacing" >
     <number>2</number>
    </property>
-   <property name="leftMargin" >
-    <number>2</number>
-   </property>
-   <property name="topMargin" >
-    <number>2</number>
-   </property>
-   <property name="rightMargin" >
-    <number>2</number>
-   </property>
-   <property name="bottomMargin" >
+   <property name="margin" >
     <number>2</number>
    </property>
    <item>
@@ -197,6 +188,20 @@
    </item>
    <item>
     <widget class="QLineEdit" name="lineedit_clicked_geometry" >
+     <property name="readOnly" >
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_feature_collection" >
+     <property name="text" >
+      <string>Feature collection:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="lineedit_feature_collection" >
      <property name="readOnly" >
       <bool>true</bool>
      </property>

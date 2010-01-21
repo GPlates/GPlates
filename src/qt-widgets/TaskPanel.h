@@ -33,8 +33,9 @@
 #include "ReconstructionPoleWidget.h"
 #include "ActionButtonBox.h"
 
-#include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
+#include "presentation/ViewState.h"
+
 
 namespace GPlatesCanvasTools
 {
@@ -247,7 +248,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_feature_tab(
-				GPlatesGui::FeatureFocus &feature_focus);
+				GPlatesPresentation::ViewState &view_state);
 
 
 		/**

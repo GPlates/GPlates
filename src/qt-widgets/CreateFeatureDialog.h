@@ -179,9 +179,14 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
 
 		/**
-		 * The custom edit widget for GpmlPlateId. Memory managed by Qt.
+		 * The custom edit widget for reconstruction. Memory managed by Qt.
 		 */
 		EditPlateIdWidget *d_plate_id_widget;
+
+		/**
+		 * The custom edit widget for conjugate plate id. Memory managed by Qt.
+		 */
+		EditPlateIdWidget *d_conjugate_plate_id_widget;
 
 		/**
 		 * The custom edit widget for GmlTimePeriod. Memory managed by Qt.
